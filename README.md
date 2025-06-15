@@ -20,6 +20,8 @@ Quest Bound is a free and open source engine for creating digital tabletop role 
 
 Join our [Discord Server](https://discord.gg/7QGV4muT39) to join discussions and troubleshoot issues.
 
+Download and run the Quest Bound documentation [here](https://github.com/curtmorgan3/quest-bound-docs).
+
 ---------
 
 ## Sponsor Shoutout
