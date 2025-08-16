@@ -38,7 +38,7 @@ export function useLogicState(attribute?: Attribute | null) {
   const [attributeOverrides, setAttributeOverrides] = useState<Override[]>([]);
   const [operationOverrides, setOperationOverrides] = useState<Override[]>([]);
 
-  const { attributes } = useAttributes();
+  const { attributes } = useAttributes(false, undefined, true);
   const { attributes: rulesetItems } = useAttributes(false, AttributeType.ITEM, true);
   const items = buildContextualItems(rulesetItems);
 
