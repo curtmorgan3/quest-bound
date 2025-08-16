@@ -1,7 +1,9 @@
+import { getApiEndpoint } from '@/constants';
 import { SignUpForm, SocialLinks } from '@/libs/compass-api';
 import {
   AnimatedSplashCard,
   Button,
+  Input,
   SplashCard,
   Stack,
   useDeviceSize,
@@ -9,7 +11,7 @@ import {
 import { EnvContext } from '@/libs/compass-web-utils';
 import { NotificationPriority, useNotifications } from '@/stores';
 import { motion } from 'framer-motion';
-import { useContext, useEffect } from 'react';
+import { useContext, useEffect, useState } from 'react';
 
 export const SignIn = () => {
   const { mobile } = useDeviceSize();
@@ -19,6 +21,13 @@ export const SignIn = () => {
   const { addNotification } = useNotifications();
 
   const bypassAuthorized = localStorage.getItem('bypassMaintenance') === 'true';
+
+  const [newApiEndpoint, setNewApiEndpoint] = useState(getApiEndpoint());
+
+  const handleApiEndpointChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setNewApiEndpoint(e.target.value);
+    localStorage.setItem('qb-api-endpoint', e.target.value);
+  };
 
   useEffect(() => {
     if (enableMaintenance) {
@@ -47,12 +56,27 @@ export const SignIn = () => {
             <SignUpForm title='Login or Signup' disabled={enableMaintenance && !bypassAuthorized} />
             <Stack width='50%' sx={{ mt: mobile ? 1 : 2 }} spacing={1} alignItems='center'>
               <SocialLinks />
-              <Button href='https://signup.questbound.com' target='_blank' variant='text'>
+              <Button href='https://questbound.com' target='_blank' variant='text'>
                 Learn More
               </Button>
             </Stack>
           </Stack>
         </motion.div>
+      </Stack>
+      <Stack
+        direction='row'
+        alignItems='center'
+        style={{ position: 'absolute', bottom: 0, left: 25 }}>
+        <Input
+          id='api-endpoint'
+          value={newApiEndpoint}
+          label='Server Address'
+          onChange={handleApiEndpointChange}
+          ignoreHelperText
+        />
+        <Button variant='text' onClick={() => window.location.reload()}>
+          Save
+        </Button>
       </Stack>
     </Stack>
   );

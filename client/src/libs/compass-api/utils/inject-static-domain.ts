@@ -1,4 +1,4 @@
-import { API_ENDPOINT } from '@/constants';
+import { getApiEndpoint } from '@/constants';
 import { ApolloLink } from '@apollo/client';
 
 /**
@@ -7,7 +7,7 @@ import { ApolloLink } from '@apollo/client';
  * This isn't recommended for production use. If you're using a CDN, you should store the full domain.
  */
 export const addStaticDomain = new ApolloLink((operation, forward) => {
-  const host = `${API_ENDPOINT}/storage`;
+  const host = `${getApiEndpoint()}/storage`;
 
   function shouldUpdate(src: string) {
     return src && !src.includes('http');

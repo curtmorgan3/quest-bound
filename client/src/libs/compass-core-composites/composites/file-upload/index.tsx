@@ -1,4 +1,4 @@
-import { API_ENDPOINT } from '@/constants';
+import { getApiEndpoint } from '@/constants';
 import { FileResponse } from '@/libs/compass-api';
 import { generateId } from '@/libs/compass-web-utils';
 import Uppy, { Meta, UploadResult, UppyFile } from '@uppy/core';
@@ -36,7 +36,7 @@ const useUppy = ({
 }: FileUploadProps) => {
   const [uppy, setUppy] = useState<Uppy | null>(null);
 
-  const imageUploadUrl = `${API_ENDPOINT}/storage/upload`;
+  const imageUploadUrl = `${getApiEndpoint()}/storage/upload`;
 
   const getObjectName = (name: string) => (convertToJson ? name.replace(/.csv/g, '.json') : name);
 

@@ -1,4 +1,4 @@
-import { API_ENDPOINT } from '@/constants';
+import { getApiEndpoint } from '@/constants';
 import axios from 'axios';
 import { useState } from 'react';
 import { useParams } from 'react-router-dom';
@@ -29,7 +29,7 @@ export const useImportAttributes = ({ type }: { type?: AttributeType }) => {
     try {
       setLoading(true);
       await axios.post(
-        `${API_ENDPOINT}/import/attributes`,
+        `${getApiEndpoint()}/import/attributes`,
         {
           fileKey,
           rulesetId,
