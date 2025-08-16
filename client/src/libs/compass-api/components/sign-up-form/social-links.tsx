@@ -7,7 +7,7 @@ interface SocialLinksProps {
 }
 
 export const SocialLinks = ({ style }: SocialLinksProps) => (
-  <Stack direction='row' sx={{ justifyContent: 'space-between', width: '80px', ...style }}>
+  <Stack direction='row' sx={{ justifyContent: 'center', width: '80px', ...style }}>
     <JoinDiscord iconButton />
   </Stack>
 );
