@@ -14,6 +14,9 @@ import { makeExecutableSchema } from '@graphql-tools/schema';
 import { WebSocketServer } from 'ws';
 import { useServer } from 'graphql-ws/lib/use/ws';
 
+import dotenv from 'dotenv';
+dotenv.config();
+
 const port = process.env.PORT;
 
 const queriesWithoutAuth = [

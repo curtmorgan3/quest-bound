@@ -1,5 +1,8 @@
 import { PrismaClient } from '@prisma/client';
 import { LocalSupabaseClient, createLocalSupabaseClient } from '../local-utils';
+import dotenv from 'dotenv';
+
+dotenv.config();
 
 const mode = process.env.MODE ?? 'local';
 
