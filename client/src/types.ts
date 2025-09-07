@@ -14,3 +14,18 @@ export type PageTreeItem = Omit<TreeItem, 'children'> & {
   sortIndex: number;
   children: PageTreeItem[];
 };
+
+export type User = {
+  id: string;
+  email: string;
+  username: string;
+  avatarSrc?: string | null;
+  onboarded: boolean;
+  preferences: Record<string, any>;
+  sheets: Array<Sheet>;
+  rulesets: Array<Ruleset>;
+};
+
+export type Sheet = {};
+
+export type Ruleset = {};

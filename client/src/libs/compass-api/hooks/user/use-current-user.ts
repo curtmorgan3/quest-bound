@@ -1,38 +1,35 @@
 import { debugLog } from '@/libs/compass-web-utils';
-import { UserContext } from '@/stores/user-context';
-import { useContext, useRef } from 'react';
+import { useUserStore } from '@/stores/user-store';
+import { useEffect } from 'react';
 import { useError } from '../metrics';
 
 const debug = debugLog('API', 'useCurrentUser');
 
-export const useCurrentUser = (pollInterval = 0) => {
-  const { currentUser, setCurrentUser } = useContext(UserContext);
-  const attemptedLogin = useRef<boolean>(false);
+export const useCurrentUser = (_pollInterval = 0) => {
+  const { currentUser, setCurrentUser, loading, error } = useUserStore();
 
-  // const { data, loading, error } = useQuery<CurrentUserQuery>(currentUser, {
-  //   skip: !token || attemptedLogin.current,
-  //   pollInterval,
-  // });
+  useEffect(() => {
+    if (!!currentUser || loading) return;
 
-  // useEffect(() => {
-  //   if (error) {
-  //     attemptedLogin.current = true;
-  //   }
-  // }, [data, error]);
+    const lastLoggedInUsername = localStorage.getItem('qb.lastLoggedInUsername');
+
+    if (lastLoggedInUsername) {
+      setCurrentUser(lastLoggedInUsername);
+    }
+  }, [currentUser, loading]);
 
   useError({
-    error: undefined,
+    error,
     message: 'Unable to get current user. Please try again.',
     status: 'error',
   });
 
   const revokeCurrentUser = () => {
-    // client.resetStore();
-    // localStorage.removeItem("questbound-user-id");
+    setCurrentUser(null);
   };
 
   return {
-    currentUser: null,
+    currentUser,
     setCurrentUser,
     isCreator: false,
     error: null,
