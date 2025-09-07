@@ -5,3 +5,4 @@ export * from './provider';
 export * from './providers';
 export * from './types';
 export * from './utils/defaults';
+export * from './_types';
