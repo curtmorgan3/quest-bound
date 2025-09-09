@@ -1,6 +1,6 @@
 import { useDeviceSize } from '@/libs/compass-core-ui';
 import { Card, CardHeader, Heading, Stack } from '@chakra-ui/react';
-import { AutoStories, CollectionsBookmark, DoubleArrow, PeopleAlt } from '@mui/icons-material';
+import { AutoStories, DoubleArrow, PeopleAlt } from '@mui/icons-material';
 import { IconButton } from '@mui/material';
 import { motion } from 'framer-motion';
 import { useState } from 'react';
@@ -16,16 +16,14 @@ export const SelectCategory = ({ selection, setSelection }: Props) => {
 
   const width = expanded ? 300 : 80;
 
-  const options = ['My Shelf', 'Characters', 'Custom Rulesets'];
+  const options = ['Rulesets', 'Characters'];
 
   const renderIcon = (option: string) => {
     switch (option) {
-      case 'My Shelf':
-        return <CollectionsBookmark />;
+      case 'Rulesets':
+        return <AutoStories />;
       case 'Characters':
         return <PeopleAlt />;
-      case 'Custom Rulesets':
-        return <AutoStories />;
     }
   };
 

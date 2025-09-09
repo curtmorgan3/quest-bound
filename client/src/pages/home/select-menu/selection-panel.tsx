@@ -10,6 +10,7 @@ import {
   useRulesetPermittedUsers,
   useUpdateRuleset,
 } from '@/libs/compass-api';
+import { Module } from '@/types';
 import {
   Button,
   Drawer,
@@ -34,7 +35,7 @@ import { useNavigate } from 'react-router-dom';
 import { CreateCharacter } from './components/create-character';
 
 interface Props {
-  selection?: Ruleset | Character | null;
+  selection?: Ruleset | Module | Character | null;
   onClose: () => void;
 }
 

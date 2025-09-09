@@ -1,16 +1,16 @@
 import { Character, Ruleset } from '@/libs/compass-api';
+import { Module } from '@/types';
 import { Stack } from '@chakra-ui/react';
 import { useEffect, useState } from 'react';
 import { Characters } from './characters';
 import { CustomRulesets } from './custom-rulesets';
 import { SelectCategory } from './select-category';
 import { SelectionPanel } from './selection-panel';
-import { Shelf } from './shelf';
 
 export const SelectMenu = () => {
-  const [selection, setSelection] = useState<Ruleset | Character | null>(null);
+  const [selection, setSelection] = useState<Ruleset | Module | Character | null>(null);
 
-  const [categorySelection, setCategorySelection] = useState<string>('My Shelf');
+  const [categorySelection, setCategorySelection] = useState<string>('Rulesets');
 
   useEffect(() => {
     setSelection(null);
@@ -18,12 +18,10 @@ export const SelectMenu = () => {
 
   const renderContent = () => {
     switch (categorySelection) {
-      case 'My Shelf':
-        return <Shelf onSelect={setSelection} selection={selection} />;
+      case 'Rulesets':
+        return <CustomRulesets onSelect={setSelection} selection={selection as Ruleset} />;
       case 'Characters':
         return <Characters onSelect={setSelection} selection={selection as Character} />;
-      case 'Custom Rulesets':
-        return <CustomRulesets onSelect={setSelection} selection={selection as Ruleset} />;
     }
   };
 

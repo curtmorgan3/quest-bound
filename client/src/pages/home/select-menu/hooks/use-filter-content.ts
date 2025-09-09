@@ -1,35 +1,16 @@
-import { Ruleset } from '@/libs/compass-api';
+import { Module, Ruleset } from '@/types';
 
 interface Props {
-  content: Ruleset[];
-  typeFilter: string;
-  parentFilter: string;
+  content: Array<Ruleset | Module>;
   searchFilter: string;
 }
 
-export const useFilterContent = ({ content, typeFilter, parentFilter, searchFilter }: Props) => {
+export const useFilterContent = ({ content, searchFilter }: Props) => {
   const sortedByDate = content.sort((a, b) => {
     return parseInt(a.createdAt) - parseInt(b.createdAt);
   });
 
-  const filteredRulesets = sortedByDate.filter((ruleset) => {
-    if (typeFilter === 'Modules') {
-      return ruleset.isModule;
-    }
-    if (typeFilter === 'Rulesets') {
-      return !ruleset.isModule;
-    }
-    return true;
-  });
-
-  const filteredByParent = filteredRulesets.filter((ruleset) => {
-    if (typeFilter !== 'Modules' || parentFilter === 'All') {
-      return true;
-    }
-    return ruleset.rulesetTitle === parentFilter;
-  });
-
-  const filteredBySearch = filteredByParent.filter((ruleset) => {
+  const filteredBySearch = sortedByDate.filter((ruleset) => {
     if (searchFilter === '') {
       return true;
     }

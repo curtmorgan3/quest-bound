@@ -1,5 +1,5 @@
 import { debugLog } from '@/libs/compass-web-utils';
-import { useUserStore } from '@/stores/user-store';
+import { useUserStore } from '@/stores';
 import { useEffect } from 'react';
 import { useError } from '../metrics';
 
@@ -9,7 +9,11 @@ export const useCurrentUser = (_pollInterval = 0) => {
   const { currentUser, setCurrentUser, loading, error } = useUserStore();
 
   useEffect(() => {
-    if (!!currentUser || loading) return;
+    if (loading) return;
+    if (!!currentUser) {
+      localStorage.setItem('qb.lastLoggedInUsername', currentUser.username);
+      return;
+    }
 
     const lastLoggedInUsername = localStorage.getItem('qb.lastLoggedInUsername');
 

@@ -1,23 +1,22 @@
-import { Ruleset, rulesets, RulesetsQuery } from '../../gql';
-import { useQuery } from '../../utils';
+import { useRulesetStore } from '@/stores';
+import { useEffect } from 'react';
 import { useError } from '../metrics';
 
 export const useRulesets = (pollInterval = 0) => {
-  const { data, loading, error } = useQuery<RulesetsQuery>(rulesets, {
-    pollInterval,
-  });
+  const { rulesets, modules, loading, error, loadRulesets } = useRulesetStore();
 
   useError({
     error,
     message: 'Failed to load rulesets',
   });
 
-  const userContent = (data?.rulesets ?? []) as Ruleset[];
-  const modules = userContent.filter((ruleset) => ruleset.isModule);
-  const userRulesets = userContent.filter((ruleset) => !ruleset.isModule);
+  useEffect(() => {
+    if (!loading) return;
+    loadRulesets();
+  }, [loading]);
 
   return {
-    rulesets: userRulesets,
+    rulesets,
     modules,
     loading,
     error,

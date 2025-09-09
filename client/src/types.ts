@@ -15,8 +15,13 @@ export type PageTreeItem = Omit<TreeItem, 'children'> & {
   children: PageTreeItem[];
 };
 
-export type User = {
+type BaseDetails = {
   id: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type User = BaseDetails & {
   email: string;
   username: string;
   avatarSrc?: string | null;
@@ -28,4 +33,30 @@ export type User = {
 
 export type Sheet = {};
 
-export type Ruleset = {};
+export type Attribute = {};
+
+export type Item = {};
+
+export type Chart = {};
+
+interface ModuleContent {
+  sheets: Array<Sheet>;
+  attributes: Array<Attribute>;
+  items: Array<Item>;
+  charts: Array<Chart>;
+}
+
+export type ModuleDetails = BaseDetails & {
+  version: string;
+  createdBy: string;
+  title: string;
+  description: string;
+  details: string;
+};
+
+export type Module = ModuleDetails &
+  ModuleContent & {
+    rulesetId?: string;
+  };
+
+export type Ruleset = ModuleDetails & ModuleContent;
