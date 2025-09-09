@@ -1,1 +1,0 @@
-export const SUBSCRIBERS_LIST_ID = 'b7f6f88c-f348-11ed-a1cc-6d7234740485';
