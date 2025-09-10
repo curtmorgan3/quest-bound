@@ -1,7 +1,6 @@
-import { Button, Stack, Text } from '@/components';
+import { Button, Input, Stack, Text } from '@/components';
 import { useCurrentUser } from '@/libs/compass-api';
 import { useNotifications } from '@/stores';
-import { Input } from '@chakra-ui/react';
 import { useState } from 'react';
 
 interface SignUpFormProps {
@@ -40,15 +39,15 @@ export const SignUpForm = ({ title, style, disabled = false }: SignUpFormProps) 
       style={{ minWidth: '350px', ...style }}
       alignItems='center'
       justifyContent='center'
-      gap={2}>
-      {title && <Text textStyle='md'>{title}</Text>}
+      gap={6}>
+      {title && <Text variant='h3'>{title}</Text>}
       <Input
         disabled={disabled}
         placeholder='Username'
         value={username}
         onChange={(e) => setUsername(e.target.value)}
       />
-      <Button loading={loading} disabled={disabled} color='secondary' onClick={handleLogin}>
+      <Button loading={loading} disabled={disabled} onClick={handleLogin}>
         Submit
       </Button>
     </Stack>

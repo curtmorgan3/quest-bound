@@ -1,3 +1,3 @@
-import { Link } from '@chakra-ui/react';
-
-export { Link };
+export function Link(props: React.AnchorHTMLAttributes<HTMLAnchorElement>) {
+  return <a {...props} />;
+}

@@ -20,7 +20,7 @@ export const SplashCard = ({ style }: SplashCardProps) => {
       padding={4}>
       <LogoDark style={{ height: '400px', width: '80%' }} />
       <Stack direction='row' width='100%' justifyContent='flex-end'>
-        <Text textStyle='h5'>Tabletop Game Engine</Text>
+        <Text variant='h5'>Tabletop Game Engine</Text>
       </Stack>
     </Stack>
   );
@@ -31,13 +31,12 @@ export const AnimatedSplashCard = ({ style, delay = 0 }: SplashCardProps) => {
 
   return (
     <Stack
-      style={{ paddingBottom: 0, paddingTop: 0, width: '100%', ...style }}
-      overflow='hidden'
+      style={{ paddingBottom: 0, paddingTop: 0, width: '100%', overflow: 'hidden', ...style }}
       alignItems='center'
       justifyContent='center'
       gap={2}
       padding={4}>
-      <Stack direction='row' alignItems='center' position='relative'>
+      <Stack direction='row' alignItems='center' style={{ position: 'relative' }}>
         <motion.div
           initial={{ position: 'relative', left: 200 }}
           animate={{ left: 35 }}
@@ -52,12 +51,16 @@ export const AnimatedSplashCard = ({ style, delay = 0 }: SplashCardProps) => {
           <Stack alignItems='flex-end' gap={1}>
             <LogoText style={{ height: 200 }} />
 
-            <Stack width='80%' justifyContent='flex-end' direction='row' pr='30px'>
+            <Stack
+              width='80%'
+              justifyContent='flex-end'
+              direction='row'
+              style={{ paddingRight: 30 }}>
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ duration: 2, delay: initialDelay + 2 }}>
-                <Text textStyle='h5'>Tabletop Game Engine</Text>
+                <Text variant='h5'>Tabletop Game Engine</Text>
               </motion.div>
             </Stack>
           </Stack>

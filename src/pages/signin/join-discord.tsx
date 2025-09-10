@@ -1,4 +1,4 @@
-import { IconButton, Link, Stack } from '@/components';
+import { Button, Link, Stack } from '@/components';
 import DiscordImage from './discord-icon.png';
 
 interface JoinDiscordProps {
@@ -32,9 +32,9 @@ export const JoinDiscord = ({
   if (iconButton) {
     return (
       <a target='_blank' href='https://discord.gg/7QGV4muT39'>
-        <IconButton style={style}>
+        <Button variant='ghost' style={style}>
           <DiscordIcon style={sizes[size]} />
-        </IconButton>
+        </Button>
       </a>
     );
   }

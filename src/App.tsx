@@ -1,4 +1,3 @@
-import { CompassThemeProvider } from '@/components';
 import { ErrorBoundary, ErrorPage } from '@/pages';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import { Layout } from './components/layout';
@@ -16,14 +15,13 @@ function CompassRoutes() {
   // const blockTablet = [''];
 
   return (
-    <CompassThemeProvider>
-      <ErrorBoundary>
-        <BrowserRouter>
-          <Routes>
-            <Route element={<Layout />}>
-              <Route index element={<p>Home</p>} />
+    <ErrorBoundary>
+      <BrowserRouter>
+        <Routes>
+          <Route element={<Layout />}>
+            <Route index element={<p>Home</p>} />
 
-              {/* 
+            {/* 
                 {rulesetPages.map((page) => (
                   <Route
                     key={page}
@@ -170,12 +168,11 @@ function CompassRoutes() {
                   }
                 /> */}
 
-              <Route path='*' element={<ErrorPage type='404' />} />
-            </Route>
-          </Routes>
-        </BrowserRouter>
-      </ErrorBoundary>
-    </CompassThemeProvider>
+            <Route path='*' element={<ErrorPage type='404' />} />
+          </Route>
+        </Routes>
+      </BrowserRouter>
+    </ErrorBoundary>
   );
 }
 
