@@ -36,6 +36,7 @@ export const SignUpForm = ({ title, style, disabled = false }: SignUpFormProps) 
 
   return (
     <Stack
+      data-testid='sign-up-form'
       style={{ minWidth: '350px', ...style }}
       alignItems='center'
       justifyContent='center'

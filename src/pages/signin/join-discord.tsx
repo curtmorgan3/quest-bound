@@ -31,7 +31,7 @@ export const JoinDiscord = ({
 
   if (iconButton) {
     return (
-      <a target='_blank' href='https://discord.gg/7QGV4muT39'>
+      <a target='_blank' href='https://discord.gg/7QGV4muT39' data-testid='join-discord'>
         <Button variant='ghost' style={style}>
           <DiscordIcon style={sizes[size]} />
         </Button>
@@ -40,7 +40,7 @@ export const JoinDiscord = ({
   }
 
   return (
-    <Stack direction='row' gap={2} alignItems='center'>
+    <Stack direction='row' gap={2} alignItems='center' data-testid='join-discord'>
       <DiscordIcon style={sizes[size]} />
       <Link href='https://discord.gg/7QGV4muT39' target='_blank'>
         {label}

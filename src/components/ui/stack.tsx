@@ -11,12 +11,14 @@ interface StackProps extends React.HTMLAttributes<HTMLDivElement> {
   mb?: number | string;
   ml?: number | string;
   mr?: number | string;
+  "data-testid"?: string;
 }
 
 export const Stack = ({ direction = 'column', ...props }: StackProps) => {
   return (
     <div
       className={`flex ${direction === 'column' ? 'flex-col' : 'flex-row'} gap-${props.gap}`}
+      data-testid={props['data-testid']}
       style={{
         alignItems: props.alignItems,
         justifyContent: props.justifyContent,

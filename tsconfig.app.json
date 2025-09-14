@@ -24,7 +24,8 @@
     "noUncheckedSideEffectImports": true,
     "paths": {
       "@/*": ["./src/*"]
-    }
+    },
+    "types": ["cypress", "node"],
   },
   "include": ["src"]
 }
