@@ -1,5 +1,5 @@
 import { Button, Input, Stack, Text } from '@/components';
-import { useCurrentUser } from '@/libs/compass-api';
+import { useCurrentUser } from '@/lib/compass-api';
 import { useNotifications } from '@/stores';
 import { useState } from 'react';
 

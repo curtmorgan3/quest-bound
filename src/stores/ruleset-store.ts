@@ -1,4 +1,4 @@
-import { FileManager } from '@/libs/compass-file-manager';
+import { FileManager } from '@/lib/compass-file-manager';
 import type { Module, Ruleset } from '@/types';
 import { create } from 'zustand';
 import type { CompassStore } from './types';

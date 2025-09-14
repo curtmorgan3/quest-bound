@@ -2,7 +2,7 @@
 // import { Onboarding } from '@/pages/onboarding';
 // import { QuickCreateModal } from '@/pages/ruleset/components';
 import { Loading } from '@/components';
-import { useCurrentUser } from '@/libs/compass-api';
+import { useCurrentUser } from '@/lib/compass-api';
 import { SignIn } from '@/pages';
 import { Outlet, useLocation, useSearchParams } from 'react-router-dom';
 
