@@ -17,6 +17,7 @@
     "test:all": "npm run test:e2e && npm run test:component"
   },
   "dependencies": {
+    "@cypress/react": "^9.0.1",
     "@hookform/resolvers": "^5.2.1",
     "@radix-ui/react-accordion": "^1.2.12",
     "@radix-ui/react-alert-dialog": "^1.1.15",
@@ -51,6 +52,7 @@
     "date-fns": "^4.1.0",
     "embla-carousel-react": "^8.6.0",
     "framer-motion": "^12.23.12",
+    "idb-keyval": "^6.2.2",
     "input-otp": "^1.4.2",
     "lottie-react": "^2.4.1",
     "lucide-react": "^0.543.0",
@@ -75,6 +77,7 @@
   "devDependencies": {
     "@cypress/vite-dev-server": "^7.0.0",
     "@eslint/js": "^9.33.0",
+    "@types/mocha": "^10.0.10",
     "@types/node": "^24.3.1",
     "@types/react": "^19.1.10",
     "@types/react-dom": "^19.1.7",

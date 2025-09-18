@@ -1,25 +1,14 @@
-import { ErrorBoundary, ErrorPage } from '@/pages';
+import { ErrorBoundary, ErrorPage, Home } from '@/pages';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import { Layout } from './components/layout';
 
 function CompassRoutes() {
-  // const rulesetPages: RulesetEntity[] = [
-  //   'attributes',
-  //   'archetypes',
-  //   'items',
-  //   'charts',
-  //   'documents',
-  //   'page-templates',
-  //   'sheet-templates',
-  // ];
-  // const blockTablet = [''];
-
   return (
     <ErrorBoundary>
       <BrowserRouter>
         <Routes>
           <Route element={<Layout />}>
-            <Route index element={<p>Home</p>} />
+            <Route index element={<Home />} />
 
             {/* 
                 {rulesetPages.map((page) => (

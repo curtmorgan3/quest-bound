@@ -16,4 +16,10 @@ export class TestUserFileManager implements UserFileManager {
   saveUser = async (user: User) => {
     inMemoryUser = user;
   };
+  getUsernames = async () => {
+    return [];
+  };
+  createUser = async (_username: string) => {
+    return inMemoryUser as User;
+  };
 }

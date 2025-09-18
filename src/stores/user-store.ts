@@ -6,15 +6,33 @@ import type { CompassStore } from './types';
 interface UserStore extends CompassStore {
   currentUser: User | null;
   setCurrentUser: (username: string | null) => void;
+  usernames: string[] | null;
+  fetchAndSetUsers: () => void;
+  loading: boolean;
+  setLoading: (loading: boolean) => void;
 }
 
 export const useUserStore = create<UserStore>()((set) => ({
   currentUser: null,
-  loading: false,
+  usernames: null,
+  loading: true,
   error: undefined,
+  setLoading: (loading) => set({ loading }),
+  fetchAndSetUsers: async () => {
+    try {
+      set({ error: undefined });
+      const usernames = await FileManager.getUsernames();
+      if (usernames) {
+        set({ usernames });
+      }
+    } catch (e) {
+      set({ error: e as Error });
+    }
+  },
   setCurrentUser: async (username) => {
+    set({ loading: true });
     if (!username) {
-      set({ currentUser: null });
+      set({ currentUser: null, loading: false });
       return;
     }
 

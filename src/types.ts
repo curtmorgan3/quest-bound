@@ -8,7 +8,7 @@ type BaseDetails = {
 export type User = BaseDetails & {
   email: string;
   username: string;
-  avatarSrc?: string | null;
+  avatar?: string | null;
   onboarded: boolean;
   preferences: Record<string, any>;
   sheets: Array<Sheet>;
