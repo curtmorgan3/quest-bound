@@ -84,7 +84,7 @@ export const SignIn = () => {
               Set Root Directory
             </Button>
             <div className='flex flex-col gap-4 items-center'>
-              <Link href='https://questbound.com' target='_blank'>
+              <Link href='https://docs.questbound.com' target='_blank'>
                 Learn More
               </Link>
               <a target='_blank' href='https://discord.gg/7QGV4muT39' data-testid='join-discord'>

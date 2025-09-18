@@ -6,12 +6,9 @@ type BaseDetails = {
 };
 
 export type User = BaseDetails & {
-  email: string;
   username: string;
   avatar?: string | null;
-  onboarded: boolean;
   preferences: Record<string, any>;
-  sheets: Array<Sheet>;
   rulesets: Array<Ruleset>;
 };
 

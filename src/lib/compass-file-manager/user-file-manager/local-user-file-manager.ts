@@ -1,7 +1,9 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import type { User } from '@/types';
 import type { FileSystemAPIDirectoryHandle } from '@/vite-env';
+import { getNewFileHandle, readJsonFile, writeFile } from '../utils';
 import type { UserFileManager } from './types';
+import { getUserFilename, userConstructor, verifyUserData } from './user-constructor';
 
 export class LocalUserFileManager implements UserFileManager {
   private rootDirectoryHandler: FileSystemAPIDirectoryHandle | undefined;
@@ -37,18 +39,14 @@ export class LocalUserFileManager implements UserFileManager {
     });
 
     if (!userFile) {
-      console.error(`User file for ${username} not found`);
-      return null;
+      throw Error(`User file for ${username} not found`);
     }
 
-    if (!userFile) return null;
-
-    const userData = (await userFile
-      .getFile()
-      .then((file) => file.text())
-      .then((text) => JSON.parse(text))) as User;
-
-    // TODO: Verify userData structure
+    const userData = (await readJsonFile(userFile)) as User;
+    const isValid = verifyUserData(userData);
+    if (!isValid) {
+      throw Error(`User data for ${username} is invalid`);
+    }
 
     if (userData.avatar) {
       const assetsDir = await usersDir?.getDirectoryHandle('assets', {
@@ -100,7 +98,9 @@ export class LocalUserFileManager implements UserFileManager {
   };
 
   createUser = async (username: string) => {
-    console.log('createUser', username);
-    return {} as User;
+    const user = userConstructor(username);
+    const fileHandle = await getNewFileHandle(getUserFilename(username));
+    await writeFile(fileHandle, JSON.stringify(user, null, 2));
+    return user;
   };
 }

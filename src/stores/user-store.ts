@@ -6,13 +6,15 @@ import type { CompassStore } from './types';
 interface UserStore extends CompassStore {
   currentUser: User | null;
   setCurrentUser: (username: string | null) => void;
+  createUser: (username: string) => Promise<User>;
   usernames: string[] | null;
   fetchAndSetUsers: () => void;
   loading: boolean;
   setLoading: (loading: boolean) => void;
+  setRootDir: () => Promise<void>;
 }
 
-export const useUserStore = create<UserStore>()((set) => ({
+export const useUserStore = create<UserStore>()((set, get) => ({
   currentUser: null,
   usernames: null,
   loading: true,
@@ -23,7 +25,7 @@ export const useUserStore = create<UserStore>()((set) => ({
       set({ error: undefined });
       const usernames = await FileManager.getUsernames();
       if (usernames) {
-        set({ usernames });
+        set({ usernames: usernames.sort() });
       }
     } catch (e) {
       set({ error: e as Error });
@@ -39,7 +41,13 @@ export const useUserStore = create<UserStore>()((set) => ({
     try {
       set({ loading: true, error: undefined });
       const user = await FileManager.getUser(username);
+
+      const { usernames } = get();
+
       if (user) {
+        if (!usernames?.includes(username)) {
+          set({ usernames: [...(usernames || []), username] });
+        }
         set({ currentUser: user });
       }
     } catch (e) {
@@ -48,4 +56,25 @@ export const useUserStore = create<UserStore>()((set) => ({
       set({ loading: false });
     }
   },
+  createUser: async (username) => {
+    set({ loading: true });
+    try {
+      set({ error: undefined });
+      const newUser = await FileManager.createUser(username);
+      const { usernames } = get();
+      if (newUser) {
+        if (!usernames?.includes(username)) {
+          set({ usernames: [...(usernames || []), username] });
+        }
+        set({ currentUser: newUser });
+      }
+      return newUser;
+    } catch (e) {
+      set({ error: e as Error });
+      throw e;
+    } finally {
+      set({ loading: false });
+    }
+  },
+  setRootDir: () => FileManager.setRootDirectory(),
 }));

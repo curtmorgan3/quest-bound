@@ -16,6 +16,8 @@ export interface FileSystemAPIDirectoryHandle {
   values(): AsyncIterableIterator<FileSystemHandle>;
   entries(): AsyncIterableIterator<[string, FileSystemHandle]>;
   [Symbol.asyncIterator](): AsyncIterableIterator<[string, FileSystemHandle]>;
+  queryPermission(options?: { mode: string }): Promise<PermissionState>;
+  requestPermission(options?: { mode: string }): Promise<PermissionState>;
 }
 
 interface FileSystemFileHandle {
@@ -23,6 +25,7 @@ interface FileSystemFileHandle {
   name: string;
   getFile(): Promise<File>;
   createWritable(options?: FileSystemCreateWritableOptions): Promise<FileSystemWritableFileStream>;
+  isSameEntry(other: FileSystemHandle): Promise<boolean>;
 }
 
 interface FileSystemHandle {
@@ -47,6 +50,7 @@ declare global {
       options?: DirectoryPickerOptions,
     ): Promise<FileSystemAPIDirectoryHandle | undefined>;
     showFilePicker(options?: FilePickerOptions): Promise<FileSystemFileHandle[] | undefined>;
+    showSaveFilePicker(options?: FilePickerOptions): Promise<FileSystemFileHandle>;
   }
 }
 
@@ -68,6 +72,7 @@ interface FilePickerOptions {
   mode?: 'read' | 'readwrite';
   startIn?:
     | FileSystemHandle
+    | FileSystemAPIDirectoryHandle
     | 'desktop'
     | 'documents'
     | 'downloads'

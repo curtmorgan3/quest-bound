@@ -1,5 +1,4 @@
 import type { FileSystemAPIDirectoryHandle } from '@/vite-env';
-import { get, set } from 'idb-keyval';
 import {
   LocalRulsetFileManager,
   TestRulsetFileManager,
@@ -11,6 +10,7 @@ import {
   TestUserFileManager,
   type UserFileManager,
 } from './user-file-manager';
+import { getDirectoryHandle, resetRootDirectory } from './utils';
 
 class FileManagerClass implements IFileManager {
   private env: string = 'test';
@@ -22,20 +22,18 @@ class FileManagerClass implements IFileManager {
     this.env = env ?? 'test';
     this.userFileManager = new LocalUserFileManager();
     this.rulesetFileManager = new LocalRulsetFileManager();
-    get('qb.rootDir').then((dir: FileSystemAPIDirectoryHandle | undefined) => {
-      if (dir) {
-        this.rootDir = dir;
-        this.initializeFileManagers();
-      } else {
-        window.dispatchEvent(new Event('qb.fileManagerReady'));
-      }
-    });
+    this.initializeFileManagers();
   }
 
-  initializeFileManagers() {
-    if (!this.rootDir) {
-      throw Error('Root directory not set');
+  async initializeFileManagers() {
+    const rootDir = await getDirectoryHandle('qb.rootDir');
+
+    if (!rootDir) {
+      console.error('Root directory not set');
+      return;
     }
+
+    this.rootDir = rootDir;
 
     switch (this.env) {
       case 'test':
@@ -50,23 +48,17 @@ class FileManagerClass implements IFileManager {
     window.dispatchEvent(new Event('qb.fileManagerReady'));
   }
 
+  async setRootDirectory() {
+    await resetRootDirectory();
+    this.initializeFileManagers();
+  }
+
   getRootDir() {
     return this.rootDir;
   }
 
   hasRootDir() {
     return this.rootDir !== null;
-  }
-
-  async setRootDirectory() {
-    const dirHandle: FileSystemAPIDirectoryHandle | undefined = await window.showDirectoryPicker({
-      mode: 'readwrite',
-    });
-    if (dirHandle) {
-      await set('qb.rootDir', dirHandle);
-      this.rootDir = dirHandle;
-      this.initializeFileManagers();
-    }
   }
 
   async getUser(username: string) {
@@ -80,7 +72,8 @@ class FileManagerClass implements IFileManager {
   }
 
   async createUser(username: string) {
-    return this.userFileManager.createUser(username);
+    const user = await this.userFileManager.createUser(username);
+    return user;
   }
 
   async getRulesets() {
