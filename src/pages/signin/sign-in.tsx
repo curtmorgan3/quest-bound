@@ -14,25 +14,24 @@ import DiscordImage from './discord-icon.png';
 
 export const SignIn = () => {
   const { addNotification } = useNotifications();
-  const { usernames, hasRootDir, setRootDir, createUser, setCurrentUser, loading } = useUsers();
+  const { users, createUser, setCurrentUserById, loading } = useUsers();
 
-  const [username, setUsername] = useState<string>();
+  const [selectedUserId, setSelectedUserId] = useState<string>('');
   const [newUsername, setNewUsername] = useState<string>('');
 
   const handleLogin = async () => {
     try {
-      if (!username) {
-        addNotification({
-          message: 'Must enter username',
-          status: 'error',
-        });
-        return;
-      }
-
-      if (username === '_new') {
+      if (selectedUserId === '_new') {
+        if (!newUsername) {
+          addNotification({
+            message: 'Must enter username',
+            status: 'error',
+          });
+          return;
+        }
         createUser(newUsername);
       } else {
-        setCurrentUser(username);
+        setCurrentUserById(selectedUserId);
       }
     } catch (e: any) {
       addNotification({
@@ -50,57 +49,47 @@ export const SignIn = () => {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 1, delay: 2.5 }}>
-        {hasRootDir ? (
-          <div className='flex flex-col gap-6 items-center justify-center'>
-            <div className='flex gap-4 items-center'>
-              <Select onValueChange={(value) => setUsername(value)} value={username}>
-                <SelectTrigger className='w-[200px]'>
-                  <SelectValue placeholder='Select a user' />
-                </SelectTrigger>
-                <SelectContent>
-                  {usernames?.map((username) => (
-                    <SelectItem className='w-[200px]' key={username} value={username}>
-                      {username}
-                    </SelectItem>
-                  ))}
-                  <SelectItem className='w-[200px]' value='_new'>
-                    New User
+        <div className='flex flex-col gap-6 items-center justify-center'>
+          <div className='flex gap-4 items-center'>
+            <Select onValueChange={(value) => setSelectedUserId(value)} value={selectedUserId}>
+              <SelectTrigger className='w-[200px]'>
+                <SelectValue placeholder='Select a user' />
+              </SelectTrigger>
+              <SelectContent>
+                {users?.map((user) => (
+                  <SelectItem className='w-[200px]' key={user.id} value={user.id}>
+                    {user.username}
                   </SelectItem>
-                </SelectContent>
-              </Select>
-              {username === '_new' && (
-                <Input
-                  className='w-[200px]'
-                  placeholder='Username'
-                  value={newUsername}
-                  onChange={(e) => setNewUsername(e.target.value)}
-                />
-              )}
-              <Button loading={loading} onClick={handleLogin}>
-                Submit
+                ))}
+                <SelectItem className='w-[200px]' value='_new'>
+                  New User
+                </SelectItem>
+              </SelectContent>
+            </Select>
+            {selectedUserId === '_new' && (
+              <Input
+                className='w-[200px]'
+                placeholder='Username'
+                value={newUsername}
+                onChange={(e) => setNewUsername(e.target.value)}
+              />
+            )}
+            <Button loading={loading} onClick={handleLogin}>
+              Submit
+            </Button>
+          </div>
+
+          <div className='flex flex-col gap-4 items-center'>
+            <Link href='https://docs.questbound.com' target='_blank'>
+              Learn More
+            </Link>
+            <a target='_blank' href='https://discord.gg/7QGV4muT39' data-testid='join-discord'>
+              <Button variant='ghost'>
+                <img alt='Discord' src={DiscordImage} style={{ height: 30, width: 30 }} />
               </Button>
-            </div>
-            <Button variant='outline' onClick={setRootDir}>
-              Set Root Directory
-            </Button>
-            <div className='flex flex-col gap-4 items-center'>
-              <Link href='https://docs.questbound.com' target='_blank'>
-                Learn More
-              </Link>
-              <a target='_blank' href='https://discord.gg/7QGV4muT39' data-testid='join-discord'>
-                <Button variant='ghost'>
-                  <img alt='Discord' src={DiscordImage} style={{ height: 30, width: 30 }} />
-                </Button>
-              </a>
-            </div>
+            </a>
           </div>
-        ) : (
-          <div className='flex flex-col gap-6 items-center justify-center'>
-            <Button variant='outline' onClick={setRootDir}>
-              Set Root Directory
-            </Button>
-          </div>
-        )}
+        </div>
       </motion.div>
     </div>
   );

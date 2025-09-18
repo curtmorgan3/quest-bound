@@ -1,25 +1,73 @@
-import { useUserStore } from '@/stores';
-import { useUserEffects } from './use-user-effects';
+import { useError } from '@/hooks';
+import { db, useCurrentUser } from '@/stores';
+import { useLiveQuery } from 'dexie-react-hooks';
+import { useEffect, useState } from 'react';
 
 export const useUsers = () => {
-  const { usernames, setCurrentUser, currentUser, loading, createUser, setRootDir } =
-    useUserStore();
-  const { hasRootDir } = useUserEffects();
+  const { currentUser, setCurrentUser } = useCurrentUser();
+
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<Error | undefined>();
+  const users = useLiveQuery(() => db.users.toArray(), []);
+
+  useError({
+    error,
+    message: error?.message || 'Error in useUsers',
+    location: 'useUsers',
+    context: { error },
+  });
 
   const signOut = () => {
-    localStorage.removeItem('qb.lastLoggedInUsername');
     setCurrentUser(null);
   };
 
+  useEffect(() => {
+    const lastLoggedInUsername = localStorage.getItem('qb.lastLoggedInUsername');
+    if (lastLoggedInUsername && users) {
+      const user = users.find((u) => u.username === lastLoggedInUsername) || null;
+      if (user) {
+        setCurrentUser(user);
+      }
+    }
+  }, [setCurrentUser, users]);
+
+  const createUser = async (username: string) => {
+    setLoading(true);
+    const id = await db.users.add({
+      username,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      preferences: {},
+      rulesets: [],
+      avatar: null,
+    });
+
+    const user = await db.users.get(id);
+    if (user) {
+      setCurrentUser(user);
+    }
+
+    setLoading(false);
+    return id;
+  };
+
+  const setCurrentUserById = async (id: string) => {
+    const user = await db.users.get(id);
+
+    if (!user) {
+      setError(new Error('User not found for id ' + id));
+      return;
+    }
+
+    setCurrentUser(user);
+  };
+
   return {
+    users,
     currentUser,
-    setCurrentUser,
+    setCurrentUserById,
     signOut,
-    usernames,
     createUser,
-    error: null,
     loading,
-    hasRootDir,
-    setRootDir,
   };
 };
