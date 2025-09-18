@@ -85,4 +85,11 @@ class FileManagerClass implements IFileManager {
   }
 }
 
-export const FileManager = new FileManagerClass(localStorage.getItem('qb.env'));
+let fileManagerInstance: FileManagerClass | null = null;
+
+export const getFileManager = () => {
+  if (!fileManagerInstance) {
+    fileManagerInstance = new FileManagerClass(localStorage.getItem('qb.env'));
+  }
+  return fileManagerInstance;
+};

@@ -38,7 +38,6 @@ export const useUsers = () => {
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       preferences: {},
-      rulesets: [],
       avatar: null,
     });
 

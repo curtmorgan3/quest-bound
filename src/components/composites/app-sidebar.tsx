@@ -13,13 +13,15 @@ import {
   SidebarTrigger,
   useSidebar,
 } from '@/components/ui/sidebar';
-import { useUsers } from '@/lib/compass-api';
+import { useRulesets, useUsers } from '@/lib/compass-api';
 import { Link, useLocation } from 'react-router-dom';
 import { Avatar, AvatarImage } from '../ui/avatar';
-import { Text } from '../ui/text';
+import { Button } from '../ui/button';
+import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 
 export function AppSidebar() {
   const { currentUser, signOut } = useUsers();
+  const { activeRuleset } = useRulesets();
   const { open } = useSidebar();
   const location = useLocation();
   const isHomepage = location.pathname === '/';
@@ -27,22 +29,22 @@ export function AppSidebar() {
   const rulesetItems = [
     {
       title: 'Attributes',
-      url: 'attributes',
+      url: `/rulesets/${activeRuleset?.id}/attributes`,
       icon: UserRoundPen,
     },
     {
       title: 'Actions',
-      url: 'actions',
+      url: `/rulesets/${activeRuleset?.id}/actions`,
       icon: HandFist,
     },
     {
       title: 'Items',
-      url: 'items',
+      url: `/rulesets/${activeRuleset?.id}/items`,
       icon: Sword,
     },
     {
       title: 'Charts',
-      url: 'charts',
+      url: `/rulesets/${activeRuleset?.id}/charts`,
       icon: FileSpreadsheet,
     },
   ];
@@ -69,7 +71,7 @@ export function AppSidebar() {
       <SidebarContent>
         <SidebarGroup>
           <div className='flex items-center justify-left'>
-            <SidebarGroupLabel>Quest Bound</SidebarGroupLabel>
+            <SidebarGroupLabel>{activeRuleset?.title ?? 'Quest Bound'}</SidebarGroupLabel>
             {open && <SidebarTrigger />}
           </div>
           <SidebarGroupContent>
@@ -82,7 +84,9 @@ export function AppSidebar() {
                 </SidebarMenuItem>
               )}
               {items.map((item) => (
-                <SidebarMenuItem key={item.title}>
+                <SidebarMenuItem
+                  key={item.title}
+                  className={`${location.pathname.includes(item.title.toLowerCase()) ? 'text-primary' : ''}`}>
                   <SidebarMenuButton asChild>
                     <Link to={item.url}>
                       <item.icon />
@@ -96,12 +100,23 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
       <SidebarFooter>
-        <div className={`p-${open ? 2 : 0} pb-2 flex items-center gap-2`} onClick={signOut}>
-          <Avatar className={open ? 'rounded-lg' : 'rounded-sm'}>
-            <AvatarImage src={currentUser?.avatar ?? ''} alt={currentUser?.username} />
-          </Avatar>
-          {open && <Text variant='p'>{currentUser?.username}</Text>}
-        </div>
+        <Popover>
+          <PopoverTrigger asChild>
+            <div className={`p-${open ? 2 : 0} pb-2 flex items-center gap-2`}>
+              <Avatar className={open ? 'rounded-lg' : 'rounded-sm'}>
+                <AvatarImage src={currentUser?.avatar ?? ''} alt={currentUser?.username} />
+              </Avatar>
+              {open && <p>{currentUser?.username}</p>}
+            </div>
+          </PopoverTrigger>
+          <PopoverContent>
+            <div className='w-40 flex justify-center'>
+              <Button variant='link' onClick={signOut}>
+                Sign out
+              </Button>
+            </div>
+          </PopoverContent>
+        </Popover>
       </SidebarFooter>
     </Sidebar>
   );
