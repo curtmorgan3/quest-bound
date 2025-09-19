@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-empty-object-type */
 type BaseDetails = {
-  id: number;
+  id: string;
   createdAt: string;
   updatedAt: string;
 };
@@ -20,9 +20,22 @@ export type Ruleset = BaseDetails & {
   image: string | null;
 };
 
-export type Sheet = {};
+export type Attribute = BaseDetails & {
+  rulesetId: string;
+  title: string;
+  description: string;
+  category?: string;
+  type: 'string' | 'number' | 'boolean' | 'enum';
+  options?: string[];
+  defaultValue: string | number | boolean;
+  // When options are derived from a chart column
+  optionsChartRef?: number;
+  optionsChartColumnHeader?: string;
+  min?: number;
+  max?: number;
+};
 
-export type Attribute = {};
+export type Sheet = {};
 
 export type Item = {};
 

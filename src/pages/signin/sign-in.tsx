@@ -74,7 +74,10 @@ export const SignIn = () => {
                 onChange={(e) => setNewUsername(e.target.value)}
               />
             )}
-            <Button loading={loading} onClick={handleLogin}>
+            <Button
+              loading={loading}
+              onClick={handleLogin}
+              disabled={!selectedUserId || (selectedUserId === '_new' && !newUsername)}>
               Submit
             </Button>
           </div>

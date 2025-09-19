@@ -13,7 +13,7 @@ export const useRulesets = () => {
 
   const { rulesetId } = useParams();
 
-  const activeRuleset = rulesetId ? rulesets?.find((r) => r.id === parseInt(rulesetId)) : null;
+  const activeRuleset = rulesetId ? rulesets?.find((r) => r.id === rulesetId) : null;
 
   useError({
     error,
@@ -26,6 +26,7 @@ export const useRulesets = () => {
     setLoading(true);
 
     const id = await db.rulesets.add({
+      id: crypto.randomUUID(),
       title: 'New Ruleset',
       description: '',
       details: {},
@@ -41,9 +42,11 @@ export const useRulesets = () => {
     setLoading(false);
   };
 
-  const deleteRuleset = async (id: number) => {
+  const deleteRuleset = async (id: string) => {
     setLoading(true);
     await db.rulesets.delete(id);
+    await db.attributes.where('rulesetId').equals(id).delete();
+    localStorage.removeItem('qb.lastEditedRulesetId');
     setLoading(false);
   };
 

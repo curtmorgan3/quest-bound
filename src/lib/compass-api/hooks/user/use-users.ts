@@ -34,6 +34,7 @@ export const useUsers = () => {
   const createUser = async (username: string) => {
     setLoading(true);
     const id = await db.users.add({
+      id: crypto.randomUUID(),
       username,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
