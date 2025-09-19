@@ -68,7 +68,7 @@ export class LocalUserFileManager implements UserFileManager {
         });
       });
 
-      userData.avatar = rawAvatar;
+      userData.avatar = rawAvatar ?? null;
     }
 
     return userData as User;

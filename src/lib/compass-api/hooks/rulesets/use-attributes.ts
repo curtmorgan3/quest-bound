@@ -27,5 +27,17 @@ export const useAttributes = () => {
     } as Attribute);
   };
 
-  return { attributes, createAttribute };
+  const updateAttribute = async (id: string, data: Partial<Attribute>) => {
+    const now = new Date().toISOString();
+    await db.attributes.update(id, {
+      ...data,
+      updatedAt: now,
+    });
+  };
+
+  const deleteAttribute = async (id: string) => {
+    await db.attributes.delete(id);
+  };
+
+  return { attributes: attributes ?? [], createAttribute, updateAttribute, deleteAttribute };
 };

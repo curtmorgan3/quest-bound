@@ -79,10 +79,6 @@ class FileManagerClass implements IFileManager {
   async getRulesets() {
     return this.rulesetFileManager.getRulesets();
   }
-
-  async getModules() {
-    return this.rulesetFileManager.getModules();
-  }
 }
 
 let fileManagerInstance: FileManagerClass | null = null;

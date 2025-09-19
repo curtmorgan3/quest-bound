@@ -1,0 +1,11 @@
+@import url('https://fonts.googleapis.com/css2?family=Roboto+Condensed');
+.ag-theme-quartz-dark {
+  --ag-font-family: Roboto Condensed !important;
+  --ag-foreground-color: #faf7f2 !important;
+  --ag-background-color: #2a2a2a !important;
+  --ag-header-foreground-color: #faf7f2 !important;
+  --ag-header-background-color: #42403d !important;
+  --ag-active-color: #417090 !important;
+  --ag-checkbox-checked-background-color: #e66a3c !important;
+  --ag-checkbox-checked-border-color: #e66a3c !important;
+}

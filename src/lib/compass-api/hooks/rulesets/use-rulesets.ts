@@ -12,8 +12,10 @@ export const useRulesets = () => {
   const rulesets = useLiveQuery(() => db.rulesets.toArray(), []);
 
   const { rulesetId } = useParams();
+  const lastEditedRulesetId = localStorage.getItem('qb.lastEditedRulesetId');
+  const rulesetIdToUse = rulesetId && rulesetId !== 'undefined' ? rulesetId : lastEditedRulesetId;
 
-  const activeRuleset = rulesetId ? rulesets?.find((r) => r.id === rulesetId) : null;
+  const activeRuleset = rulesetId ? rulesets?.find((r) => r.id === rulesetIdToUse) : null;
 
   useError({
     error,

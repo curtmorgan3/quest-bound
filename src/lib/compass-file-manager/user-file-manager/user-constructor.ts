@@ -8,7 +8,6 @@ export function userConstructor(username: string): User {
     avatar: null,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
-    rulesets: [],
   };
 }
 

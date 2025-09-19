@@ -26,6 +26,8 @@ export function AppSidebar() {
   const location = useLocation();
   const isHomepage = location.pathname === '/';
 
+  console.log(activeRuleset);
+
   const rulesetItems = [
     {
       title: 'Attributes',
