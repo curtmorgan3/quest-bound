@@ -46,7 +46,7 @@ export const useAttributeValues = ({
   }, [activeAttribute]);
 
   const [defaultValue, setDefaultValue] = useState<string | number>('');
-  const [typeValue, setTypeValue] = useState('string');
+  const [typeValue, setTypeValue] = useState('number');
   const [defaultBoolean, setDefaultBoolean] = useState(false);
   const [attributeListOptions, setAttributeListOptions] = useState<string[]>([]);
 
@@ -61,7 +61,7 @@ export const useAttributeValues = ({
   const resetAll = () => {
     setDefaultBoolean(false);
     setDefaultValue('');
-    setTypeValue('string');
+    setTypeValue('number');
   };
 
   const attributeProperties: Partial<Attribute> = {

@@ -22,6 +22,7 @@ import {
 } from '@/components/ui/sidebar';
 import { useRulesets, useUsers } from '@/lib/compass-api';
 import { Settings } from '@/pages';
+import { useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Avatar, AvatarImage } from '../ui/avatar';
 import { Button } from '../ui/button';
@@ -31,9 +32,16 @@ import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 export function AppSidebar() {
   const { currentUser, signOut } = useUsers();
   const { activeRuleset } = useRulesets();
-  const { open } = useSidebar();
+  const { open, setOpen } = useSidebar();
   const location = useLocation();
   const isHomepage = location.pathname === '/';
+
+  useEffect(() => {
+    const storedState = localStorage.getItem('qb.sidebarCollapsed');
+    if (storedState !== null) {
+      setOpen(storedState === 'false');
+    }
+  }, []);
 
   const rulesetItems = isHomepage
     ? []
@@ -67,14 +75,20 @@ export function AppSidebar() {
           <SidebarGroup>
             <div className='flex items-center justify-left'>
               <SidebarGroupLabel>{activeRuleset?.title ?? 'Quest Bound'}</SidebarGroupLabel>
-              {open && <SidebarTrigger />}
+              {open && (
+                <SidebarTrigger
+                  onClick={() => localStorage.setItem('qb.sidebarCollapsed', 'true')}
+                />
+              )}
             </div>
             <SidebarGroupContent>
               <SidebarMenu>
                 {!open && (
                   <SidebarMenuItem>
                     <SidebarMenuButton asChild>
-                      <SidebarTrigger />
+                      <SidebarTrigger
+                        onClick={() => localStorage.setItem('qb.sidebarCollapsed', 'false')}
+                      />
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 )}
@@ -115,7 +129,7 @@ export function AppSidebar() {
         <SidebarFooter>
           <Popover>
             <PopoverTrigger asChild>
-              <div className={`p-${open ? 2 : 0} pb-2 flex items-center gap-2`}>
+              <div className={`p-${open ? 2 : 0} pb-2 flex items-center gap-2 cursor-pointer`}>
                 <Avatar className={open ? 'rounded-lg' : 'rounded-sm'}>
                   <AvatarImage src={currentUser?.avatar ?? ''} alt={currentUser?.username} />
                 </Avatar>

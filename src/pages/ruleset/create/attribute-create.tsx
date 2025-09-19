@@ -49,8 +49,8 @@ export const AttributeCreate = ({
               <SelectValue placeholder='Type' />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value='string'>Text</SelectItem>
               <SelectItem value='number'>Number</SelectItem>
+              <SelectItem value='string'>Text</SelectItem>
               <SelectItem value='boolean'>Boolean</SelectItem>
               <SelectItem value='enum'>List</SelectItem>
             </SelectContent>
