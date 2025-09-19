@@ -44,6 +44,15 @@ export const useRulesets = () => {
     setLoading(false);
   };
 
+  const updateRuleset = async (id: string, updates: Partial<Ruleset>) => {
+    setLoading(true);
+    await db.rulesets.update(id, {
+      ...updates,
+      updatedAt: new Date().toISOString(),
+    });
+    setLoading(false);
+  };
+
   const deleteRuleset = async (id: string) => {
     setLoading(true);
     await db.rulesets.delete(id);
@@ -59,5 +68,6 @@ export const useRulesets = () => {
     error,
     createRuleset,
     deleteRuleset,
+    updateRuleset,
   };
 };

@@ -3,7 +3,7 @@ import { FileSpreadsheet, HandFist, Sword, UserRoundPen } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useLocation, useSearchParams } from 'react-router-dom';
 import { AttributeCreate } from './attribute-create';
-import { useAttributeValues } from './use-attribute-values';
+import { useAttributeValues } from './hooks';
 
 const iconset = {
   attributes: UserRoundPen,

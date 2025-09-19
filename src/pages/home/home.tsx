@@ -1,4 +1,4 @@
-import { Button, Input } from '@/components';
+import { Button, Input, Textarea } from '@/components';
 import { Card, CardAction, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Dialog,
@@ -52,7 +52,7 @@ export const Home = () => {
               </div>
               <div className='grid gap-3'>
                 <Label htmlFor='ruleset-description'>Description</Label>
-                <Input
+                <Textarea
                   id='ruleset-description'
                   name='username'
                   value={description}
@@ -72,15 +72,26 @@ export const Home = () => {
         </form>
       </Dialog>
 
-      <div className='flex flex-col gap-2'>
+      <div className='flex flex-row gap-2 flex-wrap'>
         {rulesets?.map((r) => (
-          <Card key={r.id} className='p-4'>
+          <Card
+            key={r.id}
+            className='p-4 w-[350px] h-[280px] flex flex-col justify-between'
+            style={
+              r.image
+                ? {
+                    background: `url(${r.image})`,
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                  }
+                : undefined
+            }>
             <CardHeader>
               <CardTitle className='text-lg'>{r.title}</CardTitle>
             </CardHeader>
-            <CardDescription>{r.description}</CardDescription>
-            <div className='flex gap-2 mt-2'>
-              <Button variant='ghost' onClick={() => deleteRuleset(r.id)}>
+            <CardDescription className='grow-1'>{r.description}</CardDescription>
+            <div className='flex gap-2 mt-2 bg-secondary rounded-md p-2 justify-between items-center'>
+              <Button variant='ghost' onClick={() => deleteRuleset(r.id)} className='text-red-500'>
                 Delete
               </Button>
               <CardAction>

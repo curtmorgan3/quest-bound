@@ -1,5 +1,6 @@
 import { useError } from '@/hooks';
 import { db, useCurrentUser } from '@/stores';
+import type { User } from '@/types';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useEffect, useState } from 'react';
 
@@ -62,9 +63,33 @@ export const useUsers = () => {
     setCurrentUser(user);
   };
 
+  const updateUser = async (id: string, updates: Partial<User>) => {
+    setLoading(true);
+    try {
+      const user = await db.users.get(id);
+      if (!user) {
+        setError(new Error('User not found for id ' + id));
+        setLoading(false);
+        return;
+      }
+
+      const updatedUser = {
+        ...user,
+        ...updates,
+        updatedAt: new Date().toISOString(),
+      };
+      await db.users.put(updatedUser);
+      setCurrentUser(updatedUser);
+    } catch (e) {
+      setError(e as Error);
+    }
+    setLoading(false);
+  };
+
   return {
     users,
     currentUser,
+    updateUser,
     setCurrentUserById,
     signOut,
     createUser,
