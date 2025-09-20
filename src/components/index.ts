@@ -1,5 +1,6 @@
 export * from './composites';
 export * from './layout';
+export * from './pwa-install-prompt';
 export * from './ui/accordion';
 export * from './ui/alert-dialog';
 export * from './ui/avatar';
