@@ -35,7 +35,12 @@ export type Attribute = BaseDetails & {
   max?: number;
 };
 
-export type Sheet = {};
+export type Action = BaseDetails & {
+  rulesetId: string;
+  title: string;
+  description: string;
+  category?: string;
+};
 
 export type Item = BaseDetails & {
   rulesetId: string;

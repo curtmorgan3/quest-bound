@@ -3,7 +3,7 @@ import { FileSpreadsheet, HandFist, Sword, UserRoundPen } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useLocation, useSearchParams } from 'react-router-dom';
 import { AttributeCreate } from './attribute-create';
-import { useAttributeValues, useItemValues } from './hooks';
+import { useActionValues, useAttributeValues, useItemValues } from './hooks';
 import { ItemCreate } from './item-create';
 
 const iconset = {
@@ -30,6 +30,17 @@ export const BaseCreate = ({ onCreate }: BaseCreateProps) => {
   const baseProperties = { title, description, category };
 
   const { saveAttribute, ...attributeProps } = useAttributeValues({
+    id: editId || undefined,
+    baseProperties,
+    onCreate: () => {
+      document.getElementById('create-title')?.focus();
+    },
+    setTitle,
+    setDescription,
+    setCategory,
+  });
+
+  const { saveAction } = useActionValues({
     id: editId || undefined,
     baseProperties,
     onCreate: () => {
@@ -80,6 +91,9 @@ export const BaseCreate = ({ onCreate }: BaseCreateProps) => {
         setDescription('');
         break;
       case 'actions':
+        saveAction();
+        setTitle('');
+        setDescription('');
         break;
       case 'charts':
         break;

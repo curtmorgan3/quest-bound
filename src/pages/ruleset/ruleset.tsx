@@ -2,6 +2,7 @@ import { Button, Dialog, DialogContent, DialogTitle, DialogTrigger } from '@/com
 import { useRulesets } from '@/lib/compass-api';
 import { useState } from 'react';
 import { Navigate, useSearchParams } from 'react-router-dom';
+import { ActionChart } from './actions';
 import { AttributeChart } from './attributes/attribute-chart';
 import { BaseCreate } from './create';
 import { ItemChart } from './items/item-chart';
@@ -22,7 +23,7 @@ export const Ruleset = ({ page }: { page?: 'attributes' | 'items' | 'actions' | 
       case 'items':
         return <ItemChart />;
       case 'actions':
-        return <div>Actions</div>;
+        return <ActionChart />;
       case 'charts':
         return <div>Charts</div>;
       default:

@@ -1,15 +1,15 @@
 import { Grid, type CellRendererProps, type GridColumn } from '@/components';
-import { useItems } from '@/lib/compass-api';
-import type { Attribute, Item } from '@/types';
+import { useActions } from '@/lib/compass-api';
+import type { Action, Attribute } from '@/types';
 import { useSearchParams } from 'react-router-dom';
 import { ChartControls } from '../components';
-import { itemChartColumns } from './item-columns';
+import { actionChartColumns } from './action-columns';
 
-export const ItemChart = () => {
-  const { items, deleteItem, updateItem } = useItems();
+export const ActionChart = () => {
+  const { actions, deleteAction, updateAction } = useActions();
   const [, setSearchParams] = useSearchParams();
 
-  const columns: GridColumn<Item>[] = [...itemChartColumns]
+  const columns: GridColumn<Attribute>[] = [...actionChartColumns]
     .map((c) => {
       if (c.field !== 'controls') return c;
       return {
@@ -25,20 +25,18 @@ export const ItemChart = () => {
     })
     .sort((a, b) => (a.sortIndex ?? 0) - (b.sortIndex ?? 0));
 
-  const handleUpdate = (data: Partial<Item>) => {
+  const handleUpdate = (data: Partial<Action>) => {
     if (!data.id) {
-      console.error('No ID found for item');
+      console.error('No ID found for action');
       return;
     }
 
-    updateItem(data.id, {
-      ...data,
-    });
+    updateAction(data.id, data);
   };
 
   const handleDelete = (id: string) => {
-    deleteItem(id);
+    deleteAction(id);
   };
 
-  return <Grid rowData={items} colDefs={columns} onCellValueChanged={handleUpdate} />;
+  return <Grid rowData={actions} colDefs={columns} onCellValueChanged={handleUpdate} />;
 };
