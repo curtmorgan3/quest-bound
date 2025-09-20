@@ -1,4 +1,4 @@
-import { Button, Input, Label } from '@/components';
+import { Button, Input, Label, PWAInstallPrompt } from '@/components';
 import { useUsers } from '@/lib/compass-api';
 import { Trash } from 'lucide-react';
 import { useState } from 'react';
@@ -36,6 +36,8 @@ export const UserSettings = () => {
         <Label htmlFor='username'>Username</Label>
         <Input id='username' value={username} onChange={(e) => setUsername(e.target.value)} />
       </div>
+
+      <PWAInstallPrompt ignoreDismissed />
 
       {currentUser?.avatar ? (
         <div className='flex gap-2'>

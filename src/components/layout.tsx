@@ -3,7 +3,6 @@ import { useUsers } from '@/lib/compass-api';
 import { SignIn } from '@/pages';
 import { Outlet } from 'react-router-dom';
 import { SidebarProvider } from './ui/sidebar';
-import { PWAInstallPrompt } from './pwa-install-prompt';
 
 export function Layout() {
   const { currentUser, loading } = useUsers();
@@ -25,7 +24,6 @@ export function Layout() {
         }}>
         <Outlet />
       </main>
-      <PWAInstallPrompt />
     </SidebarProvider>
   );
 }

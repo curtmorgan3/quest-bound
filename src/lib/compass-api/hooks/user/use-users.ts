@@ -3,9 +3,12 @@ import { db, useCurrentUser } from '@/stores';
 import type { User } from '@/types';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useEffect, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 
 export const useUsers = () => {
   const { currentUser, setCurrentUser } = useCurrentUser();
+  const [, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | undefined>();
@@ -19,7 +22,9 @@ export const useUsers = () => {
   });
 
   const signOut = () => {
+    setSearchParams({});
     setCurrentUser(null);
+    navigate('/');
   };
 
   useEffect(() => {

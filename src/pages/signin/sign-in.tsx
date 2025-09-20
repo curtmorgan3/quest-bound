@@ -1,5 +1,5 @@
 import videoSrc from '@/assets/logo-animation.mp4';
-import { Button, Input, Link } from '@/components';
+import { Button, Input, Link, PWAInstallPrompt } from '@/components';
 import {
   Select,
   SelectContent,
@@ -96,6 +96,7 @@ export const SignIn = () => {
           </a>
         </div>
       </motion.div>
+      <PWAInstallPrompt />
     </div>
   );
 };
