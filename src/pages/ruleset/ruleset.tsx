@@ -1,15 +1,17 @@
 import { Button, Dialog, DialogContent, DialogTitle, DialogTrigger } from '@/components';
 import { useRulesets } from '@/lib/compass-api';
+import { Pencil } from 'lucide-react';
 import { useState } from 'react';
 import { Navigate, useSearchParams } from 'react-router-dom';
 import { ActionChart } from './actions';
 import { AttributeChart } from './attributes/attribute-chart';
+import { ChartSelect } from './charts';
 import { BaseCreate } from './create';
 import { ItemChart } from './items/item-chart';
 
 export const Ruleset = ({ page }: { page?: 'attributes' | 'items' | 'actions' | 'charts' }) => {
   const { activeRuleset } = useRulesets();
-  const [, setSearchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [open, setOpen] = useState(false);
 
   if (!page) {
@@ -25,7 +27,7 @@ export const Ruleset = ({ page }: { page?: 'attributes' | 'items' | 'actions' | 
       case 'actions':
         return <ActionChart />;
       case 'charts':
-        return <div>Charts</div>;
+        return <ChartSelect />;
       default:
         return <div>Not Found</div>;
     }
@@ -36,14 +38,34 @@ export const Ruleset = ({ page }: { page?: 'attributes' | 'items' | 'actions' | 
       <Dialog
         open={open}
         onOpenChange={(open) => {
-          if (!open) setSearchParams({});
+          if (!open) {
+            searchParams.set('edit', '');
+            setSearchParams(searchParams);
+          }
           setOpen(open);
         }}>
-        <DialogTrigger asChild>
-          <Button className='w-[180px]' onClick={() => setOpen(true)}>
-            New
-          </Button>
-        </DialogTrigger>
+        <div className='flex gap-2'>
+          <DialogTrigger asChild>
+            <Button className='w-[180px]' onClick={() => setOpen(true)}>
+              New
+            </Button>
+          </DialogTrigger>
+          {page === 'charts' && searchParams.get('chart') && (
+            <DialogTrigger asChild>
+              <Button
+                className='w-[50px]'
+                variant='outline'
+                onClick={() => {
+                  const chartId = searchParams.get('chart');
+                  searchParams.set('edit', chartId ?? '');
+                  setSearchParams(searchParams);
+                  setOpen(true);
+                }}>
+                <Pencil />
+              </Button>
+            </DialogTrigger>
+          )}
+        </div>
 
         {renderChart()}
 
@@ -53,7 +75,8 @@ export const Ruleset = ({ page }: { page?: 'attributes' | 'items' | 'actions' | 
             onCreate={(isEditMode) => {
               if (isEditMode) {
                 setOpen(false);
-                setSearchParams({});
+                searchParams.set('edit', '');
+                setSearchParams(searchParams);
               }
             }}
           />

@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-empty-object-type */
 type BaseDetails = {
   id: string;
   createdAt: string;
@@ -58,4 +57,10 @@ export type Item = BaseDetails & {
   inventoryHeight: number;
 };
 
-export type Chart = {};
+export type Chart = BaseDetails & {
+  rulesetId: string;
+  title: string;
+  description: string;
+  category?: string;
+  data: string;
+};

@@ -3,7 +3,8 @@ import { FileSpreadsheet, HandFist, Sword, UserRoundPen } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useLocation, useSearchParams } from 'react-router-dom';
 import { AttributeCreate } from './attribute-create';
-import { useActionValues, useAttributeValues, useItemValues } from './hooks';
+import { ChartCreate } from './chart-create';
+import { useActionValues, useAttributeValues, useChartValues, useItemValues } from './hooks';
 import { ItemCreate } from './item-create';
 
 const iconset = {
@@ -19,7 +20,7 @@ interface BaseCreateProps {
 
 export const BaseCreate = ({ onCreate }: BaseCreateProps) => {
   const { pathname } = useLocation();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const editId = searchParams.get('edit');
   const isEditMode = !!editId;
 
@@ -62,6 +63,17 @@ export const BaseCreate = ({ onCreate }: BaseCreateProps) => {
     setCategory,
   });
 
+  const { saveChart, ...chartProps } = useChartValues({
+    id: editId || undefined,
+    baseProperties,
+    onCreate: () => {
+      document.getElementById('create-title')?.focus();
+    },
+    setTitle,
+    setDescription,
+    setCategory,
+  });
+
   const initialType = pathname.split('/').pop() as 'attributes' | 'items' | 'actions' | 'charts';
   const [activeType, setActiveType] = useState<'attributes' | 'items' | 'actions' | 'charts'>(
     initialType || 'attributes',
@@ -69,6 +81,8 @@ export const BaseCreate = ({ onCreate }: BaseCreateProps) => {
 
   useEffect(() => {
     resetAll();
+    searchParams.set('edit', '');
+    setSearchParams(searchParams);
   }, [activeType]);
 
   const resetAll = () => {
@@ -81,25 +95,22 @@ export const BaseCreate = ({ onCreate }: BaseCreateProps) => {
     switch (activeType) {
       case 'attributes':
         saveAttribute();
-        setTitle('');
-        setDescription('');
-        // Keep cateogry for faster entry
         break;
       case 'items':
         saveItem();
-        setTitle('');
-        setDescription('');
         break;
       case 'actions':
         saveAction();
-        setTitle('');
-        setDescription('');
         break;
       case 'charts':
+        saveChart();
         break;
       default:
         break;
     }
+    setTitle('');
+    setDescription('');
+    // Keep cateogry for faster entry
     document.getElementById('create-title')?.focus();
     onCreate?.(isEditMode);
   };
@@ -153,6 +164,7 @@ export const BaseCreate = ({ onCreate }: BaseCreateProps) => {
         </div>
         {activeType === 'attributes' && <AttributeCreate {...attributeProps} />}
         {activeType === 'items' && <ItemCreate {...itemProps} />}
+        {activeType === 'charts' && <ChartCreate {...chartProps} />}
 
         <div className='grid gap-3'>
           <Label htmlFor='create-description'>Description</Label>

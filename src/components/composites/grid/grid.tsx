@@ -19,7 +19,7 @@ interface Props<T> {
   rowData: T[];
   colDefs: GridColumn<T>[];
   onSelectionChanged?: (selections: T[]) => void;
-  onCellValueChanged?: (data: T, columnId: string) => void;
+  onCellValueChanged?: (data: T, columnId: string, rowIndex: number | null) => void;
   onDragEnd?: (api: GridApi) => void;
   onDragStopped?: (api: GridApi) => void;
   onDragLeave?: (api: GridApi) => void;
@@ -60,7 +60,7 @@ export const Grid = <T,>({
           onDragEnter?.(e.api);
         }}
         onSelectionChanged={(e) => onSelectionChanged?.(e.api.getSelectedRows())}
-        onCellValueChanged={(e) => onCellValueChanged?.(e.data, e.column.getColId())}
+        onCellValueChanged={(e) => onCellValueChanged?.(e.data, e.column.getColId(), e.rowIndex)}
       />
     </div>
   );

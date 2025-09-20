@@ -1,4 +1,4 @@
-import type { Action, Attribute, Item, Ruleset, User } from '@/types';
+import type { Action, Attribute, Chart, Item, Ruleset, User } from '@/types';
 import Dexie, { type EntityTable } from 'dexie';
 
 const db = new Dexie('qbdb') as Dexie & {
@@ -10,6 +10,7 @@ const db = new Dexie('qbdb') as Dexie & {
   attributes: EntityTable<Attribute, 'id'>;
   actions: EntityTable<Action, 'id'>;
   items: EntityTable<Item, 'id'>;
+  charts: EntityTable<Chart, 'id'>;
 };
 
 const common = '++id, createdAt, updatedAt';
@@ -21,6 +22,7 @@ db.version(1).stores({
   attributes: `${common}, rulesetId, title, description, category, type, options, defaultValue, optionsChartRef, optionsChartColumnHeader, min, max`,
   actions: `${common}, rulesetId, title, description, category`,
   items: `${common}, rulesetId, title, description, category, weight, defaultQuantity, stackSize, isContainer, isStorable, isEquippable, isConsumable, inventoryWidth, inventoryHeight`,
+  charts: `${common}, rulesetId, title, description, category, data`,
 });
 
 export { db };
