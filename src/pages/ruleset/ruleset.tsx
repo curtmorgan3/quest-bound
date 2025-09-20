@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Navigate, useSearchParams } from 'react-router-dom';
 import { AttributeChart } from './attributes/attribute-chart';
 import { BaseCreate } from './create';
+import { ItemChart } from './items/item-chart';
 
 export const Ruleset = ({ page }: { page?: 'attributes' | 'items' | 'actions' | 'charts' }) => {
   const { activeRuleset } = useRulesets();
@@ -19,7 +20,7 @@ export const Ruleset = ({ page }: { page?: 'attributes' | 'items' | 'actions' | 
       case 'attributes':
         return <AttributeChart />;
       case 'items':
-        return <div>Items</div>;
+        return <ItemChart />;
       case 'actions':
         return <div>Actions</div>;
       case 'charts':

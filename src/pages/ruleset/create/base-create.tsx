@@ -3,7 +3,8 @@ import { FileSpreadsheet, HandFist, Sword, UserRoundPen } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useLocation, useSearchParams } from 'react-router-dom';
 import { AttributeCreate } from './attribute-create';
-import { useAttributeValues } from './hooks';
+import { useAttributeValues, useItemValues } from './hooks';
+import { ItemCreate } from './item-create';
 
 const iconset = {
   attributes: UserRoundPen,
@@ -39,6 +40,17 @@ export const BaseCreate = ({ onCreate }: BaseCreateProps) => {
     setCategory,
   });
 
+  const { saveItem, ...itemProps } = useItemValues({
+    id: editId || undefined,
+    baseProperties,
+    onCreate: () => {
+      document.getElementById('create-title')?.focus();
+    },
+    setTitle,
+    setDescription,
+    setCategory,
+  });
+
   const initialType = pathname.split('/').pop() as 'attributes' | 'items' | 'actions' | 'charts';
   const [activeType, setActiveType] = useState<'attributes' | 'items' | 'actions' | 'charts'>(
     initialType || 'attributes',
@@ -63,6 +75,9 @@ export const BaseCreate = ({ onCreate }: BaseCreateProps) => {
         // Keep cateogry for faster entry
         break;
       case 'items':
+        saveItem();
+        setTitle('');
+        setDescription('');
         break;
       case 'actions':
         break;
@@ -123,6 +138,7 @@ export const BaseCreate = ({ onCreate }: BaseCreateProps) => {
           </div>
         </div>
         {activeType === 'attributes' && <AttributeCreate {...attributeProps} />}
+        {activeType === 'items' && <ItemCreate {...itemProps} />}
 
         <div className='grid gap-3'>
           <Label htmlFor='create-description'>Description</Label>

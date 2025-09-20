@@ -37,6 +37,20 @@ export type Attribute = BaseDetails & {
 
 export type Sheet = {};
 
-export type Item = {};
+export type Item = BaseDetails & {
+  rulesetId: string;
+  title: string;
+  description: string;
+  category?: string;
+  weight: number;
+  defaultQuantity: number;
+  stackSize: number;
+  isContainer: boolean;
+  isStorable: boolean;
+  isEquippable: boolean;
+  isConsumable: boolean;
+  inventoryWidth: number;
+  inventoryHeight: number;
+};
 
 export type Chart = {};

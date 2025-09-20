@@ -3,6 +3,14 @@ import type { Attribute } from '@/types';
 
 export const attributeChartColumns: GridColumn<Attribute>[] = [
   {
+    field: 'controls',
+    headerName: '',
+    editable: false,
+    sortIndex: 0,
+    width: 100,
+    resizable: false,
+  },
+  {
     field: 'title',
     headerName: 'Title',
     editable: true,
@@ -53,13 +61,5 @@ export const attributeChartColumns: GridColumn<Attribute>[] = [
     sortIndex: 5,
     flex: 1,
     minWidth: 80,
-  },
-  {
-    field: 'controls',
-    headerName: 'Controls',
-    editable: false,
-    sortIndex: 7,
-    width: 100,
-    resizable: false,
   },
 ];

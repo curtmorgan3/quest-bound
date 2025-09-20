@@ -1,9 +1,9 @@
-import { Button, DialogTrigger, Grid, type CellRendererProps, type GridColumn } from '@/components';
+import { Grid, type CellRendererProps, type GridColumn } from '@/components';
 import { useAttributes } from '@/lib/compass-api/hooks/rulesets/use-attributes';
 import type { Attribute } from '@/types';
-import { Pencil, Trash } from 'lucide-react';
 import { useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { ChartControls } from '../components';
 import { attributeChartColumns } from './attribute-columns';
 
 const typeLabels = {
@@ -45,19 +45,11 @@ export const AttributeChart = () => {
       return {
         ...c,
         cellRenderer: (params: CellRendererProps<Attribute>) => (
-          <div className='flex items-center justify-end gap-2'>
-            <DialogTrigger asChild>
-              <Button
-                variant='ghost'
-                size='icon'
-                onClick={() => setSearchParams({ edit: params.data.id })}>
-                <Pencil />
-              </Button>
-            </DialogTrigger>
-            <Button variant='ghost' size='icon' onClick={() => handleDelete(params.data.id)}>
-              <Trash />
-            </Button>
-          </div>
+          <ChartControls
+            id={params.data.id}
+            handleDelete={handleDelete}
+            handleEdit={(id) => setSearchParams({ edit: id })}
+          />
         ),
       };
     })
