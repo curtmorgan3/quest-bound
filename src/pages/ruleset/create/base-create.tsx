@@ -20,7 +20,7 @@ interface BaseCreateProps {
 
 export const BaseCreate = ({ onCreate }: BaseCreateProps) => {
   const { pathname } = useLocation();
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
   const editId = searchParams.get('edit');
   const isEditMode = !!editId;
 
@@ -81,8 +81,6 @@ export const BaseCreate = ({ onCreate }: BaseCreateProps) => {
 
   useEffect(() => {
     resetAll();
-    searchParams.set('edit', '');
-    setSearchParams(searchParams);
   }, [activeType]);
 
   const resetAll = () => {

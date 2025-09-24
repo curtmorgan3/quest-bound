@@ -6,6 +6,7 @@ import { Navigate, useSearchParams } from 'react-router-dom';
 import { ActionChart } from './actions';
 import { AttributeChart } from './attributes/attribute-chart';
 import { ChartSelect } from './charts';
+import { Export, Import } from './components';
 import { BaseCreate } from './create';
 import { ItemChart } from './items/item-chart';
 
@@ -65,6 +66,8 @@ export const Ruleset = ({ page }: { page?: 'attributes' | 'items' | 'actions' | 
               </Button>
             </DialogTrigger>
           )}
+          {page !== 'charts' && <Export type={page} />}
+          {page !== 'charts' && <Import type={page} />}
         </div>
 
         {renderChart()}
