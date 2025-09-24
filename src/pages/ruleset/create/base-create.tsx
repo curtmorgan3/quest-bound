@@ -90,6 +90,7 @@ export const BaseCreate = ({ onCreate }: BaseCreateProps) => {
   };
 
   const handleCreate = () => {
+    if (!title) return;
     switch (activeType) {
       case 'attributes':
         saveAttribute();
@@ -175,7 +176,7 @@ export const BaseCreate = ({ onCreate }: BaseCreateProps) => {
         </div>
       </div>
       <div className='flex justify-end items-end flex-grow'>
-        <Button type='submit' className='w-full' onClick={handleCreate}>
+        <Button type='submit' className='w-full' onClick={handleCreate} disabled={!title}>
           {isEditMode ? 'Save Changes' : 'Create'}
         </Button>
       </div>

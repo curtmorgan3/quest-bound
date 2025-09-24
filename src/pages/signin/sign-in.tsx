@@ -8,13 +8,11 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useUsers } from '@/lib/compass-api';
-import { useNotifications } from '@/stores';
 import { motion } from 'framer-motion';
 import { useState } from 'react';
 import DiscordImage from './discord-icon.png';
 
 export const SignIn = () => {
-  const { addNotification } = useNotifications();
   const { users, createUser, setCurrentUserById, loading } = useUsers();
 
   const [selectedUserId, setSelectedUserId] = useState<string>('');
@@ -24,10 +22,6 @@ export const SignIn = () => {
     try {
       if (selectedUserId === '_new') {
         if (!newUsername) {
-          addNotification({
-            message: 'Must enter username',
-            status: 'error',
-          });
           return;
         }
         createUser(newUsername);
@@ -35,10 +29,7 @@ export const SignIn = () => {
         setCurrentUserById(selectedUserId);
       }
     } catch (e: any) {
-      addNotification({
-        status: 'error',
-        message: e.message.length <= 200 ? e.message : 'Something went wrong. Please try again.',
-      });
+      console.error('Login failed', e);
     }
   };
 

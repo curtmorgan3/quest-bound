@@ -66,7 +66,12 @@ export const useAttributeValues = ({
 
   const attributeProperties: Partial<Attribute> = {
     type: typeValue as 'string' | 'number' | 'boolean' | 'enum',
-    defaultValue: typeValue === 'boolean' ? defaultBoolean : defaultValue,
+    defaultValue:
+      typeValue === 'boolean'
+        ? defaultBoolean
+        : typeValue === 'number'
+          ? (defaultValue ?? 0)
+          : defaultValue,
     options: typeValue === 'enum' ? attributeListOptions : undefined,
   };
 
@@ -75,6 +80,10 @@ export const useAttributeValues = ({
       ...baseProperties,
       ...attributeProperties,
     };
+
+    if (data.type === 'number' && data.defaultValue === '') {
+      data.defaultValue = 0;
+    }
 
     if (isEditMode) {
       updateAttribute(id, data);

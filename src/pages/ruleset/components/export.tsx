@@ -39,7 +39,6 @@ export const Export = ({ type }: ExportProps) => {
       disabled={isLoading}
       className='gap-2'>
       <Download className='h-4 w-4' />
-      Export {type.charAt(0).toUpperCase() + type.slice(1)}
     </Button>
   );
 };

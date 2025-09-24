@@ -1,4 +1,3 @@
-import { useError } from '@/hooks';
 import { db, useCurrentUser } from '@/stores';
 import type { User } from '@/types';
 import { useLiveQuery } from 'dexie-react-hooks';
@@ -11,15 +10,7 @@ export const useUsers = () => {
   const navigate = useNavigate();
 
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<Error | undefined>();
   const users = useLiveQuery(() => db.users.toArray(), []);
-
-  useError({
-    error,
-    message: error?.message || 'Error in useUsers',
-    location: 'useUsers',
-    context: { error },
-  });
 
   const signOut = () => {
     setSearchParams({});
@@ -61,7 +52,7 @@ export const useUsers = () => {
     const user = await db.users.get(id);
 
     if (!user) {
-      setError(new Error('User not found for id ' + id));
+      console.error('User not found for id', id);
       return;
     }
 
@@ -73,7 +64,7 @@ export const useUsers = () => {
     try {
       const user = await db.users.get(id);
       if (!user) {
-        setError(new Error('User not found for id ' + id));
+        console.error('User not found for id', id);
         setLoading(false);
         return;
       }
@@ -86,7 +77,7 @@ export const useUsers = () => {
       await db.users.put(updatedUser);
       setCurrentUser(updatedUser);
     } catch (e) {
-      setError(e as Error);
+      console.error('Failed to update user', e);
     }
     setLoading(false);
   };

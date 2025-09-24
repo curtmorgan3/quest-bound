@@ -1,4 +1,3 @@
-import { useError } from '@/hooks';
 import { db, useCurrentUser } from '@/stores';
 import type { Ruleset } from '@/types';
 import { useLiveQuery } from 'dexie-react-hooks';
@@ -8,7 +7,6 @@ import { useParams } from 'react-router-dom';
 export const useRulesets = () => {
   const { currentUser } = useCurrentUser();
   const [loading, setLoading] = useState(false);
-  const [error] = useState<Error | undefined>();
   const rulesets = useLiveQuery(() => db.rulesets.toArray(), []);
 
   const { rulesetId } = useParams();
@@ -16,13 +14,6 @@ export const useRulesets = () => {
   const rulesetIdToUse = rulesetId && rulesetId !== 'undefined' ? rulesetId : lastEditedRulesetId;
 
   const activeRuleset = rulesetId ? rulesets?.find((r) => r.id === rulesetIdToUse) : null;
-
-  useError({
-    error,
-    message: error?.message || 'Error in useUsers',
-    location: 'useUsers',
-    context: { error },
-  });
 
   const createRuleset = async (data: Partial<Ruleset>) => {
     setLoading(true);
@@ -65,7 +56,6 @@ export const useRulesets = () => {
     rulesets,
     activeRuleset,
     loading,
-    error,
     createRuleset,
     deleteRuleset,
     updateRuleset,

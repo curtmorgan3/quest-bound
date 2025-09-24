@@ -38,10 +38,6 @@ export const Import = ({ type, onImportComplete }: ImportProps) => {
     fileInputRef.current?.click();
   };
 
-  const getTypeLabel = () => {
-    return type.charAt(0).toUpperCase() + type.slice(1);
-  };
-
   return (
     <div className='space-y-3 flex flex-row gap-4'>
       <div className='space-y-2'>
@@ -65,7 +61,6 @@ export const Import = ({ type, onImportComplete }: ImportProps) => {
             ) : (
               <Upload className='h-4 w-4' />
             )}
-            {isLoading ? 'Importing...' : `Import ${getTypeLabel()}`}
           </Button>
         </div>
       </div>

@@ -19,10 +19,10 @@ const common = '++id, createdAt, updatedAt';
 db.version(1).stores({
   users: `${common}, username, avatar, preferences`,
   rulesets: `${common}, version, createdBy, title, description, details, image`,
-  attributes: `${common}, rulesetId, title, description, category, type, options, defaultValue, optionsChartRef, optionsChartColumnHeader, min, max`,
-  actions: `${common}, rulesetId, title, description, category`,
-  items: `${common}, rulesetId, title, description, category, weight, defaultQuantity, stackSize, isContainer, isStorable, isEquippable, isConsumable, inventoryWidth, inventoryHeight`,
-  charts: `${common}, rulesetId, title, description, category, data`,
+  attributes: `${common}, rulesetId, &title, description, category, type, options, defaultValue, optionsChartRef, optionsChartColumnHeader, min, max`,
+  actions: `${common}, rulesetId, &title, description, category`,
+  items: `${common}, rulesetId, &title, description, category, weight, defaultQuantity, stackSize, isContainer, isStorable, isEquippable, isConsumable, inventoryWidth, inventoryHeight`,
+  charts: `${common}, rulesetId, &title, description, category, data`,
 });
 
 export { db };
