@@ -1,3 +1,4 @@
+import { useErrorHandler } from '@/hooks';
 import { db } from '@/stores';
 import type { Attribute } from '@/types';
 import { useLiveQuery } from 'dexie-react-hooks';
@@ -5,6 +6,7 @@ import { useRulesets } from './use-rulesets';
 
 export const useAttributes = () => {
   const { activeRuleset } = useRulesets();
+  const { handleError } = useErrorHandler();
 
   const attributes = useLiveQuery(
     () =>
@@ -27,7 +29,10 @@ export const useAttributes = () => {
         updatedAt: now,
       } as Attribute);
     } catch (e) {
-      console.error('Failed to create attribute', e);
+      handleError(e as Error, {
+        component: 'useAttributes/createAttribute',
+        severity: 'medium',
+      });
     }
   };
 

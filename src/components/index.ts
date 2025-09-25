@@ -1,4 +1,5 @@
 export * from './composites';
+export * from './error-boundary';
 export * from './layout';
 export * from './pwa-install-prompt';
 export * from './ui/accordion';

@@ -2,6 +2,7 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
+import './lib/global-error-handler';
 
 // Register service worker for PWA
 if ('serviceWorker' in navigator) {

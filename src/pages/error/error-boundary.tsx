@@ -1,5 +1,6 @@
 import React from 'react';
 import { ErrorBoundary as ReactErrorBoundary } from 'react-error-boundary';
+import { errorLogger } from '@/lib/error-logger';
 import { ErrorPage } from './error-page';
 
 interface ErrorBoundaryProps {
@@ -7,6 +8,20 @@ interface ErrorBoundaryProps {
 }
 
 export const ErrorBoundary = ({ children }: ErrorBoundaryProps) => {
+  const handleError = (error: Error, errorInfo: { componentStack: string }) => {
+    // Log the error using our error logger
+    errorLogger.logError(error, {
+      component: 'ReactErrorBoundary',
+      severity: 'critical',
+      additionalContext: {
+        componentStack: errorInfo.componentStack,
+        errorBoundary: true,
+        url: window.location.href,
+        timestamp: new Date().toISOString(),
+      },
+    });
+  };
+
   const Fallback = (
     <div
       id='error-boundary'
@@ -23,5 +38,12 @@ export const ErrorBoundary = ({ children }: ErrorBoundaryProps) => {
     </div>
   );
 
-  return <ReactErrorBoundary fallback={Fallback}>{children}</ReactErrorBoundary>;
+  return (
+    <ReactErrorBoundary 
+      fallback={Fallback}
+      onError={handleError}
+    >
+      {children}
+    </ReactErrorBoundary>
+  );
 };

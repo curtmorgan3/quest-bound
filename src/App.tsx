@@ -1,10 +1,11 @@
-import { ErrorBoundary, ErrorPage, Home, Ruleset } from '@/pages';
+import { ErrorPage, Home, Ruleset } from '@/pages';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
+import { ErrorBoundary } from './components';
 import { Layout } from './components/layout';
 
 function CompassRoutes() {
   return (
-    <ErrorBoundary>
+    <ErrorBoundary showDetails>
       <BrowserRouter>
         <Routes>
           <Route element={<Layout />}>
