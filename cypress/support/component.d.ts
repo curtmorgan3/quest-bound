@@ -1,5 +1,4 @@
 /// <reference types="cypress" />
-/// <reference path="./component.tsx" />
 
 import { ReactNode } from 'react';
 

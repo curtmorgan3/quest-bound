@@ -9,7 +9,7 @@ describe('SignIn Component', () => {
     cy.get('[role="combobox"]').should('be.visible'); // SelectTrigger
     cy.contains('Select a user').should('be.visible');
     cy.contains('Submit').should('be.visible');
-    
+
     // Check for the links section
     cy.get('[data-testid="join-discord"]').should('be.visible');
     cy.contains('Learn More').should('be.visible');

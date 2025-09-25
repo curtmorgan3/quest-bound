@@ -14,35 +14,19 @@
 // ***********************************************************
 
 // Import commands.js using ES2015 syntax:
+import '../../src/index.css';
 import './commands';
 
-import '../../src/index.css';
-
 import { mount } from 'cypress/react';
+import { type ReactNode } from 'react';
 import { BrowserRouter } from 'react-router-dom';
-import { ReactNode } from 'react';
 
 // Custom mount function that wraps components with router
 const mountWithRouter = (component: ReactNode, options?: any) => {
-  return mount(
-    <BrowserRouter>
-      {component}
-    </BrowserRouter>,
-    options
-  );
+  return mount(<BrowserRouter>{component}</BrowserRouter>, options);
 };
 
-// Augment the Cypress namespace to include type definitions for
-// your custom command.
-// Alternatively, can be defined in cypress/support/component.d.ts
-// with a <reference path="./component" /> at the top of your spec.
-declare global {
-  namespace Cypress {
-    interface Chainable {
-      mount: typeof mountWithRouter;
-    }
-  }
-}
+// Type definitions are handled in component.d.ts
 
 Cypress.Commands.add('mount', mountWithRouter);
 
