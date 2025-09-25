@@ -14,12 +14,23 @@
 // ***********************************************************
 
 // Import commands.js using ES2015 syntax:
-import './commands'
+import './commands';
 
-import '../../src/index.css'
-import '../../src/App.css'
+import '../../src/index.css';
 
-import { mount } from 'cypress/react'
+import { mount } from 'cypress/react';
+import { BrowserRouter } from 'react-router-dom';
+import { ReactNode } from 'react';
+
+// Custom mount function that wraps components with router
+const mountWithRouter = (component: ReactNode, options?: any) => {
+  return mount(
+    <BrowserRouter>
+      {component}
+    </BrowserRouter>,
+    options
+  );
+};
 
 // Augment the Cypress namespace to include type definitions for
 // your custom command.
@@ -28,16 +39,16 @@ import { mount } from 'cypress/react'
 declare global {
   namespace Cypress {
     interface Chainable {
-      mount: typeof mount
+      mount: typeof mountWithRouter;
     }
   }
 }
 
-Cypress.Commands.add('mount', mount)
+Cypress.Commands.add('mount', mountWithRouter);
 
 before(() => {
   localStorage.setItem('qb.env', 'test');
-})
+});
 
 // Example use:
 // cy.mount(<MyComponent />)

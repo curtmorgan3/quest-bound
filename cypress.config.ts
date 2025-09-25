@@ -10,6 +10,7 @@ export default defineConfig({
       bundler: "vite",
     },
     specPattern: "src/**/*.test.{js,jsx,ts,tsx}",
+    supportFile: "cypress/support/component.tsx",
   },
 
   e2e: {
