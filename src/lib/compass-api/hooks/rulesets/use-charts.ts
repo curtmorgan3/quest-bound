@@ -1,3 +1,4 @@
+import { useErrorHandler } from '@/hooks/use-error-handler';
 import { db } from '@/stores';
 import type { Chart } from '@/types';
 import { useLiveQuery } from 'dexie-react-hooks';
@@ -5,6 +6,7 @@ import { useRulesets } from './use-rulesets';
 
 export const useCharts = () => {
   const { activeRuleset } = useRulesets();
+  const { handleError } = useErrorHandler();
 
   const charts = useLiveQuery(
     () =>
@@ -18,25 +20,46 @@ export const useCharts = () => {
   const createChart = async (data: Partial<Chart>) => {
     if (!activeRuleset) return;
     const now = new Date().toISOString();
-    await db.charts.add({
-      ...data,
-      id: crypto.randomUUID(),
-      rulesetId: activeRuleset.id,
-      createdAt: now,
-      updatedAt: now,
-    } as Chart);
+    try {
+      await db.charts.add({
+        ...data,
+        id: crypto.randomUUID(),
+        rulesetId: activeRuleset.id,
+        createdAt: now,
+        updatedAt: now,
+      } as Chart);
+    } catch (e) {
+      handleError(e as Error, {
+        component: 'useCharts/createChart',
+        severity: 'medium',
+      });
+    }
   };
 
   const updateChart = async (id: string, data: Partial<Chart>) => {
     const now = new Date().toISOString();
-    await db.charts.update(id, {
-      ...data,
-      updatedAt: now,
-    });
+    try {
+      await db.charts.update(id, {
+        ...data,
+        updatedAt: now,
+      });
+    } catch (e) {
+      handleError(e as Error, {
+        component: 'useCharts/updateChart',
+        severity: 'medium',
+      });
+    }
   };
 
   const deleteChart = async (id: string) => {
-    await db.charts.delete(id);
+    try {
+      await db.charts.delete(id);
+    } catch (e) {
+      handleError(e as Error, {
+        component: 'useCharts/deleteChart',
+        severity: 'medium',
+      });
+    }
   };
 
   return { charts: charts ?? [], createChart, updateChart, deleteChart };

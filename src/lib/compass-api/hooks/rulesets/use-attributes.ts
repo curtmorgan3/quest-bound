@@ -38,14 +38,28 @@ export const useAttributes = () => {
 
   const updateAttribute = async (id: string, data: Partial<Attribute>) => {
     const now = new Date().toISOString();
-    await db.attributes.update(id, {
-      ...data,
-      updatedAt: now,
-    });
+    try {
+      await db.attributes.update(id, {
+        ...data,
+        updatedAt: now,
+      });
+    } catch (e) {
+      handleError(e as Error, {
+        component: 'useAttributes/updateAttribute',
+        severity: 'medium',
+      });
+    }
   };
 
   const deleteAttribute = async (id: string) => {
-    await db.attributes.delete(id);
+    try {
+      await db.attributes.delete(id);
+    } catch (e) {
+      handleError(e as Error, {
+        component: 'useAttributes/deleteAttribute',
+        severity: 'medium',
+      });
+    }
   };
 
   return { attributes: attributes ?? [], createAttribute, updateAttribute, deleteAttribute };
