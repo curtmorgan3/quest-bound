@@ -111,6 +111,7 @@ export const AttributeCreate = ({
             <Button
               variant='outline'
               className='mt-6 w-[50px]'
+              data-testid='add-list-option-button'
               onClick={() => {
                 addListOption(optionInput);
                 setOptionInput('');

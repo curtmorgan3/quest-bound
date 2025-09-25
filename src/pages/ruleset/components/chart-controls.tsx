@@ -23,13 +23,17 @@ export const ChartControls = ({ id, handleDelete, handleEdit }: ChartControlsPro
   return (
     <div className='flex items-center justify-end gap-2'>
       {doNotAsk ? (
-        <Button variant='ghost' size='icon' onClick={() => handleDelete(id)}>
+        <Button
+          variant='ghost'
+          size='icon'
+          onClick={() => handleDelete(id)}
+          data-testid='chart-controls-delete'>
           <Trash className='text-neutral-400' />
         </Button>
       ) : (
         <AlertDialog>
           <AlertDialogTrigger>
-            <Button variant='ghost' size='icon'>
+            <Button variant='ghost' size='icon' data-testid='chart-controls-delete'>
               <Trash className='text-neutral-400' />
             </Button>
           </AlertDialogTrigger>
@@ -48,13 +52,21 @@ export const ChartControls = ({ id, handleDelete, handleEdit }: ChartControlsPro
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction onClick={() => handleDelete(id)}>Delete</AlertDialogAction>
+              <AlertDialogAction
+                data-testid='chart-controls-delete-confirm'
+                onClick={() => handleDelete(id)}>
+                Delete
+              </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
       )}
       <DialogTrigger asChild>
-        <Button variant='ghost' size='icon' onClick={() => handleEdit(id)}>
+        <Button
+          variant='ghost'
+          size='icon'
+          onClick={() => handleEdit(id)}
+          data-testid='chart-controls-edit'>
           <Pencil className='text-neutral-400' />
         </Button>
       </DialogTrigger>
