@@ -97,7 +97,7 @@ export function AppSidebar() {
                     key={item.title}
                     className={`${location.pathname.includes(item.title.toLowerCase()) ? 'text-primary' : ''}`}>
                     <SidebarMenuButton asChild>
-                      <Link to={item.url}>
+                      <Link to={item.url} data-testid={`nav-${item.title.toLowerCase()}`}>
                         <item.icon />
                         <span>{item.title}</span>
                       </Link>
@@ -129,7 +129,9 @@ export function AppSidebar() {
         <SidebarFooter>
           <Popover>
             <PopoverTrigger asChild>
-              <div className={`p-${open ? 2 : 0} pb-2 flex items-center gap-2 cursor-pointer`} data-testid="user-menu">
+              <div
+                className={`p-${open ? 2 : 0} pb-2 flex items-center gap-2 cursor-pointer`}
+                data-testid='user-menu'>
                 <Avatar className={open ? 'rounded-lg' : 'rounded-sm'}>
                   <AvatarImage src={currentUser?.avatar ?? ''} alt={currentUser?.username} />
                 </Avatar>
@@ -138,7 +140,7 @@ export function AppSidebar() {
             </PopoverTrigger>
             <PopoverContent>
               <div className='w-40 flex justify-center'>
-                <Button variant='link' onClick={signOut} data-testid="sign-out">
+                <Button variant='link' onClick={signOut} data-testid='sign-out'>
                   Sign out
                 </Button>
               </div>
