@@ -42,7 +42,7 @@ export const SignIn = () => {
       <div className='flex flex-col gap-6 items-center justify-center'>
         <div className='flex gap-4 items-center'>
           <Select onValueChange={(value) => setSelectedUserId(value)} value={selectedUserId}>
-            <SelectTrigger className='w-[200px]'>
+            <SelectTrigger className='w-[200px]' data-testid="user-select">
               <SelectValue placeholder='Select a user' />
             </SelectTrigger>
             <SelectContent>
@@ -62,12 +62,14 @@ export const SignIn = () => {
               placeholder='Username'
               value={newUsername}
               onChange={(e) => setNewUsername(e.target.value)}
+              data-testid="username-input"
             />
           )}
           <Button
             loading={loading}
             onClick={handleLogin}
-            disabled={!selectedUserId || (selectedUserId === '_new' && !newUsername)}>
+            disabled={!selectedUserId || (selectedUserId === '_new' && !newUsername)}
+            data-testid="submit-button">
             Submit
           </Button>
         </div>

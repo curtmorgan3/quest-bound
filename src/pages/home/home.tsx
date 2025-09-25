@@ -34,7 +34,7 @@ export const Home = () => {
       <Dialog>
         <form>
           <DialogTrigger asChild>
-            <Button className='w-[180px]'>Create New</Button>
+            <Button className='w-[180px]' data-testid="create-ruleset-button">Create New</Button>
           </DialogTrigger>
           <DialogContent className='sm:max-w-[425px]'>
             <DialogHeader>

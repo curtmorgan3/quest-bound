@@ -27,5 +27,5 @@
     },
     "types": ["cypress", "node"]
   },
-  "include": ["src", "./cypress/support/component.d.ts"]
+  "include": ["src", "cypress.d.ts", "cypress"]
 }
