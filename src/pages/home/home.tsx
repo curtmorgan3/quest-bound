@@ -34,7 +34,9 @@ export const Home = () => {
       <Dialog>
         <form>
           <DialogTrigger asChild>
-            <Button className='w-[180px]' data-testid="create-ruleset-button">Create New</Button>
+            <Button className='w-[180px]' data-testid='create-ruleset-button'>
+              Create New
+            </Button>
           </DialogTrigger>
           <DialogContent className='sm:max-w-[425px]'>
             <DialogHeader>
@@ -65,7 +67,9 @@ export const Home = () => {
                 <Button variant='outline'>Cancel</Button>
               </DialogClose>
               <DialogClose asChild>
-                <Button onClick={handleCreate}>Create</Button>
+                <Button data-testid='create-ruleset-submit' onClick={handleCreate}>
+                  Create
+                </Button>
               </DialogClose>
             </DialogFooter>
           </DialogContent>
@@ -77,6 +81,7 @@ export const Home = () => {
           <Card
             key={r.id}
             className='p-4 w-[350px] h-[280px] flex flex-col justify-between'
+            data-testid={`ruleset-card-${r.id}`}
             style={
               r.image
                 ? {
@@ -91,11 +96,18 @@ export const Home = () => {
             </CardHeader>
             <CardDescription className='grow-1'>{r.description}</CardDescription>
             <div className='flex gap-2 mt-2 bg-secondary rounded-md p-2 justify-between items-center'>
-              <Button variant='ghost' onClick={() => deleteRuleset(r.id)} className='text-red-500'>
+              <Button 
+                variant='ghost' 
+                onClick={() => deleteRuleset(r.id)} 
+                className='text-red-500'
+                data-testid={`delete-ruleset-${r.id}`}>
                 Delete
               </Button>
               <CardAction>
-                <Button variant='link' onClick={() => navigate(`/rulesets/${r.id}`)}>
+                <Button 
+                  variant='link' 
+                  onClick={() => navigate(`/rulesets/${r.id}`)}
+                  data-testid={`open-ruleset-${r.id}`}>
                   Open
                 </Button>
               </CardAction>

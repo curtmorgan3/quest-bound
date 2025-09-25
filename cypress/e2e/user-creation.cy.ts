@@ -1,51 +1,17 @@
 describe('User Creation Flow', () => {
   beforeEach(() => {
     // Clear any existing data before each test
-    cy.clearLocalStorage();
-    cy.window().then((win) => {
-      // Clear IndexedDB
-      win.indexedDB.deleteDatabase('qbdb');
-    });
+    cy.clearUserData();
   });
 
   it('should navigate to home page and create a new user', () => {
-    // Visit the home page
-    cy.visit('/');
+    // Use the reusable function to create a user and sign in
+    cy.createUserAndSignIn().then((username) => {
+      // Additional verification that the user was created successfully
+      cy.log(`Created user: ${username}`);
 
-    // Should be on sign-in page since no user is logged in
-    cy.url().should('include', '/');
-
-    // Verify we're on the sign-in page by checking for the sign-in elements
-    cy.get('[data-testid="user-select"]').should('be.visible');
-    cy.get('[data-testid="user-select"]').click();
-
-    // Select "New User" option
-    cy.contains('New User').click();
-
-    // Verify the username input field appears
-    cy.get('[data-testid="username-input"]').should('be.visible');
-
-    // Enter a new username
-    const newUsername = `TestUser_${Date.now()}`;
-    cy.get('[data-testid="username-input"]').type(newUsername);
-
-    // Click submit button to create the user
-    cy.get('[data-testid="submit-button"]').click();
-
-    // Wait for the user creation to complete and navigation to home page
-    // The app should redirect to home page after successful user creation
-    cy.get('h1', { timeout: 10000 }).should('contain', 'Rulesets');
-
-    // Verify we're now on the home page (should show "Rulesets" heading)
-    cy.get('h1').should('contain', 'Rulesets');
-
-    // Verify the user was created by checking if we can see the home page content
-    cy.get('[data-testid="create-ruleset-button"]').should('be.visible');
-
-    // Verify the username is stored in localStorage
-    cy.window().then((win) => {
-      const lastLoggedInUsername = win.localStorage.getItem('qb.lastLoggedInUsername');
-      expect(lastLoggedInUsername).to.equal(newUsername);
+      // Verify we can see the home page content
+      cy.get('[data-testid="create-ruleset-button"]').should('be.visible');
     });
   });
 
@@ -69,32 +35,44 @@ describe('User Creation Flow', () => {
   });
 
   it('should allow selecting existing user and navigate to home page', () => {
-    // First create a user
-    cy.visit('/');
-    cy.get('[data-testid="user-select"]').click();
-    cy.contains('New User').click();
+    // First create a user using the reusable function
+    cy.createUserAndSignIn().then((username) => {
+      // Sign out to test existing user selection
+      cy.signOut();
 
-    const existingUsername = `ExistingUser_${Date.now()}`;
-    cy.get('[data-testid="username-input"]').type(existingUsername);
-    cy.get('[data-testid="submit-button"]').click();
+      // Sign in with the existing user
+      cy.signInWithExistingUser(username);
 
-    // Wait for navigation to home page
-    cy.get('h1', { timeout: 10000 }).should('contain', 'Rulesets');
+      // Verify we're back on the home page
+      cy.get('h1').should('contain', 'Rulesets');
+      cy.get('[data-testid="create-ruleset-button"]').should('be.visible');
+    });
+  });
 
-    // Sign out to test existing user selection
-    cy.get('[data-testid="user-menu"]').click();
-    cy.get('[data-testid="sign-out"]').click();
+  it('should create multiple users and switch between them', () => {
+    // Create first user
+    cy.createUserAndSignIn('UserOne').then((username1) => {
+      cy.log(`Created first user: ${username1}`);
 
-    // Should be back on sign-in page
-    cy.url().should('include', '/');
+      // Sign out
+      cy.signOut();
 
-    // Select the existing user from the dropdown
-    cy.get('[data-testid="user-select"]').click();
-    // Look for the user by their username in the dropdown
-    cy.contains(existingUsername).click();
-    cy.get('[data-testid="submit-button"]').click();
+      // Create second user
+      cy.createUserAndSignIn('UserTwo').then((username2) => {
+        cy.log(`Created second user: ${username2}`);
 
-    // Should navigate back to home page
-    cy.get('h1', { timeout: 10000 }).should('contain', 'Rulesets');
+        // Sign out
+        cy.signOut();
+
+        // Sign in with first user
+        cy.signInWithExistingUser(username1);
+        cy.get('h1').should('contain', 'Rulesets');
+
+        // Sign out and sign in with second user
+        cy.signOut();
+        cy.signInWithExistingUser(username2);
+        cy.get('h1').should('contain', 'Rulesets');
+      });
+    });
   });
 });

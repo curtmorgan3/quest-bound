@@ -176,7 +176,12 @@ export const BaseCreate = ({ onCreate }: BaseCreateProps) => {
         </div>
       </div>
       <div className='flex justify-end items-end flex-grow'>
-        <Button type='submit' className='w-full' onClick={handleCreate} disabled={!title}>
+        <Button
+          type='submit'
+          className='w-full'
+          onClick={handleCreate}
+          disabled={!title}
+          data-testid='base-create-submit'>
           {isEditMode ? 'Save Changes' : 'Create'}
         </Button>
       </div>
