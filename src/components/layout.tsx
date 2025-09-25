@@ -3,6 +3,7 @@ import { useUsers } from '@/lib/compass-api';
 import { SignIn } from '@/pages';
 import { Outlet } from 'react-router-dom';
 import { SidebarProvider } from './ui/sidebar';
+import { Toaster } from './ui/sonner';
 
 export function Layout() {
   const { currentUser, loading } = useUsers();
@@ -24,6 +25,7 @@ export function Layout() {
         }}>
         <Outlet />
       </main>
+      <Toaster />
     </SidebarProvider>
   );
 }

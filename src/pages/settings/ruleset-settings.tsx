@@ -57,7 +57,7 @@ export const RulesetSettings = ({ activeRuleset }: RulesetSettingsProps) => {
         </div>
       ) : (
         <div
-          className='h-[124px] bg-muted flex items-center justify-center rounded-lg text-3xl cursor-pointer'
+          className='h-[124px] w-[124px] bg-muted flex items-center justify-center rounded-lg text-3xl cursor-pointer'
           onClick={() => document.getElementById('image-settings-ruleset-image-upload')?.click()}>
           <span className='text-sm'>{loading ? 'Loading' : 'Upload Image'}</span>
         </div>
