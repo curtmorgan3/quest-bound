@@ -40,23 +40,27 @@ export const ItemCreate = ({
       <div className='w-full flex flex-row justify-between'>
         <div
           className='flex flex-col gap-2 items-center cursor-pointer'
+          data-testid='item-create-container'
           onClick={() => setIsContainer((prev) => !prev)}>
           <PackageOpen className={isContainer ? 'text-primary' : ''} />
           <Label htmlFor='is-container'>Container</Label>
         </div>
         <div
           className='flex flex-col gap-2 items-center cursor-pointer'
+          data-testid='item-create-storable'
           onClick={() => setIsStorable((prev) => !prev)}>
           <Boxes className={isStorable ? 'text-primary' : ''} />
           <Label htmlFor='is-storable'>Storable</Label>
         </div>
         <div
+          data-testid='item-create-equippable'
           className='flex flex-col gap-2 items-center cursor-pointer'
           onClick={() => setIsEquippable((prev) => !prev)}>
           <Shirt className={isEquippable ? 'text-primary' : ''} />
           <Label htmlFor='is-equippable'>Equippable</Label>
         </div>
         <div
+          data-testid='item-create-consumable'
           className='flex flex-col gap-2 items-center cursor-pointer'
           onClick={() => setIsConsumable((prev) => !prev)}>
           <Drumstick className={isConsumable ? 'text-primary' : ''} />
