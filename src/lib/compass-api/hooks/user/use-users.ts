@@ -37,6 +37,7 @@ export const useUsers = () => {
       updatedAt: new Date().toISOString(),
       preferences: {},
       avatar: null,
+      rulesets: [],
     });
 
     const user = await db.users.get(id);

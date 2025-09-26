@@ -8,6 +8,7 @@ export type User = BaseDetails & {
   username: string;
   avatar: string | null;
   preferences: Record<string, any>;
+  rulesets: string[]; // Array of Ruleset IDs
 };
 
 export type Ruleset = BaseDetails & {

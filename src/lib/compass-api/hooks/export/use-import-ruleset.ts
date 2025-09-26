@@ -3,6 +3,7 @@ import { db } from '@/stores';
 import type { Action, Attribute, Chart, Item, Ruleset } from '@/types';
 import JSZip from 'jszip';
 import { useState } from 'react';
+import { useRulesets } from '../rulesets';
 
 export interface ImportRulesetResult {
   success: boolean;
@@ -45,6 +46,7 @@ interface ImportedMetadata {
 export const useImportRuleset = () => {
   const [isImporting, setIsImporting] = useState(false);
   const { handleError } = useErrorHandler();
+  const { createRuleset } = useRulesets();
 
   const validateMetadata = (metadata: any): { isValid: boolean; errors: string[] } => {
     const errors: string[] = [];
@@ -199,7 +201,8 @@ export const useImportRuleset = () => {
         updatedAt: now,
       };
 
-      await db.rulesets.add(newRuleset);
+      // await db.rulesets.add(newRuleset);
+      await createRuleset(newRuleset);
 
       // Import content files
       const importedCounts = {
