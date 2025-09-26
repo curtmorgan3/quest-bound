@@ -28,11 +28,8 @@ export const AttributeChart = () => {
     () =>
       attributes.map((a) => {
         return {
-          id: a.id,
-          title: a.title,
+          ...a,
           type: typeLabels[a.type] as keyof typeof typeLabels,
-          category: a.category,
-          description: a.description,
           defaultValue: a.type === 'number' ? parseInt(a.defaultValue.toString()) : a.defaultValue,
         };
       }),

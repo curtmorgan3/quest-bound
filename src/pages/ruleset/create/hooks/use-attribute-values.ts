@@ -35,6 +35,9 @@ export const useAttributeValues = ({
       setCategory(activeAttribute.category || '');
       setTypeValue(activeAttribute.type);
       setAttributeListOptions(activeAttribute.options || []);
+      setMin(activeAttribute.min ?? -Infinity);
+      setMax(activeAttribute.max ?? Infinity);
+      // Handle default value based on type
       if (activeAttribute.type === 'boolean') {
         setDefaultBoolean(!!activeAttribute.defaultValue);
       } else {
@@ -49,6 +52,8 @@ export const useAttributeValues = ({
   const [typeValue, setTypeValue] = useState('number');
   const [defaultBoolean, setDefaultBoolean] = useState(false);
   const [attributeListOptions, setAttributeListOptions] = useState<string[]>([]);
+  const [min, setMin] = useState<number>(-Infinity);
+  const [max, setMax] = useState<number>(Infinity);
 
   const addListOption = (opt: string) => {
     setAttributeListOptions((prev) => [...prev, opt]);
@@ -73,6 +78,8 @@ export const useAttributeValues = ({
           ? (defaultValue ?? 0)
           : defaultValue,
     options: typeValue === 'enum' ? attributeListOptions : undefined,
+    min: typeValue === 'number' ? min : undefined,
+    max: typeValue === 'number' ? max : undefined,
   };
 
   const saveAttribute = () => {
@@ -106,5 +113,9 @@ export const useAttributeValues = ({
     addListOption,
     attributeListOptions,
     removeListOption,
+    min,
+    max,
+    setMin,
+    setMax,
   };
 };

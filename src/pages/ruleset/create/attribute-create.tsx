@@ -10,7 +10,7 @@ import {
   SelectValue,
 } from '@/components';
 import { Plus, Trash } from 'lucide-react';
-import { useState, type Dispatch, type SetStateAction } from 'react';
+import { useEffect, useState, type Dispatch, type SetStateAction } from 'react';
 
 interface AttributeCreateProps {
   typeValue: string;
@@ -22,6 +22,10 @@ interface AttributeCreateProps {
   attributeListOptions?: string[];
   addListOption: (opt: string) => void;
   removeListOption: (opt: string) => void;
+  min: number;
+  max: number;
+  setMin: Dispatch<SetStateAction<number>>;
+  setMax: Dispatch<SetStateAction<number>>;
 }
 
 export const AttributeCreate = ({
@@ -34,10 +38,24 @@ export const AttributeCreate = ({
   attributeListOptions = [],
   addListOption,
   removeListOption,
+  min,
+  max,
+  setMin,
+  setMax,
 }: AttributeCreateProps) => {
   const [optionInput, setOptionInput] = useState('');
 
   const optionsReversed = [...attributeListOptions].reverse();
+
+  useEffect(() => {
+    if (typeValue !== 'number') return;
+    if (defaultValue === '') return;
+    if (min > Number(defaultValue)) {
+      setDefaultValue(min);
+    } else if (max < Number(defaultValue)) {
+      setMax(Number(defaultValue));
+    }
+  }, [defaultValue, min, max]);
 
   return (
     <div className='flex flex-col gap-4'>
@@ -89,6 +107,45 @@ export const AttributeCreate = ({
           )}
         </div>
       </div>
+      {typeValue === 'number' && (
+        <div className='w-full flex flex-row gap-4'>
+          <div className='grid gap-3 w-[50%]'>
+            <Label htmlFor='create-min'>Min</Label>
+            <Input
+              id='create-min'
+              name='min'
+              type='number'
+              onChange={(e) => {
+                const val = e.target.value;
+                if (val === '') {
+                  setMin(-Infinity);
+                } else {
+                  setMin(Number(val));
+                }
+              }}
+              value={min}
+            />
+          </div>
+          <div className='grid gap-3 w-[50%]'>
+            <Label htmlFor='create-max'>Max</Label>
+            <Input
+              id='create-max'
+              name='max'
+              type='number'
+              onChange={(e) => {
+                const val = e.target.value;
+                if (val === '') {
+                  setMax(Infinity);
+                } else {
+                  setMax(Number(val));
+                }
+              }}
+              value={max}
+            />
+          </div>
+        </div>
+      )}
+
       {typeValue === 'enum' && (
         <div className='w-full flex flex-row gap-4 items-end'>
           <div className='grid gap-3 w-[50%]'>
