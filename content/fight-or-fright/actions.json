@@ -1,0 +1,164 @@
+[
+  {
+    "id": "action-attack",
+    "rulesetId": "fight-or-fright-001",
+    "title": "Attack",
+    "description": "Launch a physical assault against a monster or supernatural entity. Roll Combat + Luck to determine damage.",
+    "category": "Combat",
+    "createdAt": "2024-01-15T00:00:00.000Z",
+    "updatedAt": "2024-01-15T00:00:00.000Z"
+  },
+  {
+    "id": "action-sneak",
+    "rulesetId": "fight-or-fright-001",
+    "title": "Sneak",
+    "description": "Move silently through the haunted house, avoiding detection by monsters and supernatural entities. Roll Stealth + Luck.",
+    "category": "Stealth",
+    "createdAt": "2024-01-15T00:00:00.000Z",
+    "updatedAt": "2024-01-15T00:00:00.000Z"
+  },
+  {
+    "id": "action-hide",
+    "rulesetId": "fight-or-fright-001",
+    "title": "Hide",
+    "description": "Conceal yourself in shadows, behind furniture, or in closets to avoid being discovered by pursuing monsters.",
+    "category": "Stealth",
+    "createdAt": "2024-01-15T00:00:00.000Z",
+    "updatedAt": "2024-01-15T00:00:00.000Z"
+  },
+  {
+    "id": "action-examine",
+    "rulesetId": "fight-or-fright-001",
+    "title": "Examine",
+    "description": "Carefully inspect an object, room, or area for clues, traps, or hidden secrets. Roll Supernatural Knowledge + Luck.",
+    "category": "Investigation",
+    "createdAt": "2024-01-15T00:00:00.000Z",
+    "updatedAt": "2024-01-15T00:00:00.000Z"
+  },
+  {
+    "id": "action-banish",
+    "rulesetId": "fight-or-fright-001",
+    "title": "Banish",
+    "description": "Attempt to drive away or destroy a supernatural entity using holy symbols, incantations, or blessed items. Roll Sanctity + Supernatural Knowledge.",
+    "category": "Supernatural",
+    "createdAt": "2024-01-15T00:00:00.000Z",
+    "updatedAt": "2024-01-15T00:00:00.000Z"
+  },
+  {
+    "id": "action-resist-fear",
+    "rulesetId": "fight-or-fright-001",
+    "title": "Resist Fear",
+    "description": "Fight against supernatural terror and maintain your sanity when confronted with horrifying sights or entities. Roll Fear Resistance + Sanctity.",
+    "category": "Mental",
+    "createdAt": "2024-01-15T00:00:00.000Z",
+    "updatedAt": "2024-01-15T00:00:00.000Z"
+  },
+  {
+    "id": "action-heal",
+    "rulesetId": "fight-or-fright-001",
+    "title": "Heal",
+    "description": "Use medical supplies, magic, or supernatural abilities to restore Health points. Effectiveness depends on available resources.",
+    "category": "Support",
+    "createdAt": "2024-01-15T00:00:00.000Z",
+    "updatedAt": "2024-01-15T00:00:00.000Z"
+  },
+  {
+    "id": "action-lockpick",
+    "rulesetId": "fight-or-fright-001",
+    "title": "Lockpick",
+    "description": "Attempt to open locked doors, chests, or containers using tools or improvised methods. Roll Stealth + Luck.",
+    "category": "Utility",
+    "createdAt": "2024-01-15T00:00:00.000Z",
+    "updatedAt": "2024-01-15T00:00:00.000Z"
+  },
+  {
+    "id": "action-communicate",
+    "rulesetId": "fight-or-fright-001",
+    "title": "Communicate",
+    "description": "Attempt to speak with ghosts, spirits, or other supernatural entities. May reveal information or trigger unexpected consequences.",
+    "category": "Supernatural",
+    "createdAt": "2024-01-15T00:00:00.000Z",
+    "updatedAt": "2024-01-15T00:00:00.000Z"
+  },
+  {
+    "id": "action-trap-disarm",
+    "rulesetId": "fight-or-fright-001",
+    "title": "Disarm Trap",
+    "description": "Carefully neutralize mechanical or magical traps that could cause harm. Roll Supernatural Knowledge + Luck.",
+    "category": "Utility",
+    "createdAt": "2024-01-15T00:00:00.000Z",
+    "updatedAt": "2024-01-15T00:00:00.000Z"
+  },
+  {
+    "id": "action-ritual",
+    "rulesetId": "fight-or-fright-001",
+    "title": "Perform Ritual",
+    "description": "Conduct a supernatural ceremony or ritual to achieve specific effects, such as protection, divination, or banishment.",
+    "category": "Supernatural",
+    "createdAt": "2024-01-15T00:00:00.000Z",
+    "updatedAt": "2024-01-15T00:00:00.000Z"
+  },
+  {
+    "id": "action-barricade",
+    "rulesetId": "fight-or-fright-001",
+    "title": "Barricade",
+    "description": "Use furniture, debris, or other objects to block doorways or create barriers against pursuing monsters.",
+    "category": "Defense",
+    "createdAt": "2024-01-15T00:00:00.000Z",
+    "updatedAt": "2024-01-15T00:00:00.000Z"
+  },
+  {
+    "id": "action-distract",
+    "rulesetId": "fight-or-fright-001",
+    "title": "Distract",
+    "description": "Create noise, throw objects, or use other methods to divert a monster's attention away from yourself or allies.",
+    "category": "Tactical",
+    "createdAt": "2024-01-15T00:00:00.000Z",
+    "updatedAt": "2024-01-15T00:00:00.000Z"
+  },
+  {
+    "id": "action-escape",
+    "rulesetId": "fight-or-fright-001",
+    "title": "Escape",
+    "description": "Attempt to flee from a dangerous situation or pursuing monster. Success depends on speed, obstacles, and available exits.",
+    "category": "Movement",
+    "createdAt": "2024-01-15T00:00:00.000Z",
+    "updatedAt": "2024-01-15T00:00:00.000Z"
+  },
+  {
+    "id": "action-identify",
+    "rulesetId": "fight-or-fright-001",
+    "title": "Identify Monster",
+    "description": "Study a supernatural entity to determine its type, weaknesses, and abilities. Roll Supernatural Knowledge + Luck.",
+    "category": "Investigation",
+    "createdAt": "2024-01-15T00:00:00.000Z",
+    "updatedAt": "2024-01-15T00:00:00.000Z"
+  },
+  {
+    "id": "action-bless",
+    "rulesetId": "fight-or-fright-001",
+    "title": "Bless",
+    "description": "Confer divine protection or enhancement upon yourself, allies, or objects. Provides temporary bonuses against supernatural threats.",
+    "category": "Supernatural",
+    "createdAt": "2024-01-15T00:00:00.000Z",
+    "updatedAt": "2024-01-15T00:00:00.000Z"
+  },
+  {
+    "id": "action-summon",
+    "rulesetId": "fight-or-fright-001",
+    "title": "Summon",
+    "description": "Attempt to call forth supernatural entities, spirits, or otherworldly beings. Extremely dangerous and unpredictable.",
+    "category": "Supernatural",
+    "createdAt": "2024-01-15T00:00:00.000Z",
+    "updatedAt": "2024-01-15T00:00:00.000Z"
+  },
+  {
+    "id": "action-scout",
+    "rulesetId": "fight-or-fright-001",
+    "title": "Scout",
+    "description": "Carefully explore ahead to identify threats, traps, or opportunities before the group advances. Roll Stealth + Supernatural Knowledge.",
+    "category": "Reconnaissance",
+    "createdAt": "2024-01-15T00:00:00.000Z",
+    "updatedAt": "2024-01-15T00:00:00.000Z"
+  }
+]

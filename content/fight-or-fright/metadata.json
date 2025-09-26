@@ -1,0 +1,32 @@
+{
+  "ruleset": {
+    "id": "fight-or-fright-001",
+    "title": "Fight or Fright",
+    "description": "A Halloween-themed dungeon crawler where brave adventurers navigate haunted houses, battle supernatural creatures, and uncover dark secrets. Players must balance courage with caution as they explore spooky environments filled with traps, treasures, and terrifying monsters.",
+    "version": "1.0.0",
+    "createdBy": "Quest Bound",
+    "createdAt": "2024-01-15T00:00:00.000Z",
+    "updatedAt": "2024-01-15T00:00:00.000Z",
+    "details": {
+      "theme": "Halloween",
+      "genre": "Dungeon Crawler",
+      "setting": "Haunted Houses",
+      "difficulty": "Medium",
+      "playTime": "2-4 hours",
+      "playerCount": "1-4 players",
+      "ageRating": "Teen+"
+    },
+    "image": null
+  },
+  "exportInfo": {
+    "exportedAt": "2024-01-15T00:00:00.000Z",
+    "exportedBy": "Quest Bound",
+    "version": "1.0.0"
+  },
+  "counts": {
+    "attributes": 8,
+    "actions": 18,
+    "items": 238,
+    "charts": 2
+  }
+}

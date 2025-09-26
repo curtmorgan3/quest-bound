@@ -1,0 +1,297 @@
+title	category	health	damage	fear
+Ancient Dragon	Dragons	200	25	18
+Young Dragon	Dragons	120	18	15
+Wyvern	Dragons	80	15	12
+Drake	Dragons	60	12	10
+Dragonling	Dragons	40	8	7
+Shadow Dragon	Dragons	150	20	16
+Fire Dragon	Dragons	140	22	14
+Ice Dragon	Dragons	130	20	15
+Storm Dragon	Dragons	160	24	17
+Crystal Dragon	Dragons	110	16	13
+Goblin	Humanoids	15	4	2
+Orc	Humanoids	25	6	3
+Hobgoblin	Humanoids	20	5	3
+Bugbear	Humanoids	30	7	4
+Kobold	Humanoids	8	3	1
+Gnoll	Humanoids	22	6	3
+Troll	Humanoids	45	10	6
+Ogre	Humanoids	50	12	7
+Hill Giant	Humanoids	80	15	8
+Stone Giant	Humanoids	90	16	9
+Fire Giant	Humanoids	100	18	10
+Frost Giant	Humanoids	95	17	9
+Cloud Giant	Humanoids	110	20	11
+Storm Giant	Humanoids	120	22	12
+Skeleton	Undead	12	3	4
+Zombie	Undead	18	4	5
+Ghoul	Undead	20	5	6
+Wight	Undead	35	8	8
+Wraith	Undead	40	9	9
+Specter	Undead	25	6	7
+Banshee	Undead	30	7	10
+Lich	Undead	80	18	15
+Vampire	Undead	60	14	12
+Mummy	Undead	45	10	8
+Wight Lord	Undead	50	12	10
+Death Knight	Undead	70	16	13
+Lich King	Undead	100	22	18
+Shadow	Undead	15	4	6
+Phantom	Undead	20	5	7
+Revenant	Undead	55	13	11
+Wolf	Beasts	12	4	2
+Dire Wolf	Beasts	25	7	4
+Bear	Beasts	35	8	5
+Dire Bear	Beasts	50	12	7
+Lion	Beasts	20	6	3
+Tiger	Beasts	25	7	4
+Panther	Beasts	18	5	3
+Cheetah	Beasts	15	4	2
+Eagle	Beasts	8	3	1
+Giant Eagle	Beasts	20	6	3
+Hawk	Beasts	6	2	1
+Falcon	Beasts	5	2	1
+Owl	Beasts	4	1	1
+Giant Owl	Beasts	15	4	2
+Snake	Beasts	8	3	2
+Giant Snake	Beasts	20	6	4
+Cobra	Beasts	10	4	3
+Python	Beasts	25	7	5
+Viper	Beasts	6	2	2
+Spider	Beasts	5	2	2
+Giant Spider	Beasts	15	5	4
+Tarantula	Beasts	12	4	3
+Scorpion	Beasts	8	3	3
+Giant Scorpion	Beasts	20	7	5
+Crab	Beasts	10	3	2
+Giant Crab	Beasts	18	5	4
+Octopus	Beasts	15	4	3
+Giant Octopus	Beasts	30	8	6
+Squid	Beasts	12	3	2
+Giant Squid	Beasts	40	10	8
+Shark	Beasts	25	8	5
+Great White Shark	Beasts	35	10	6
+Whale	Beasts	60	15	8
+Killer Whale	Beasts	45	12	7
+Dolphin	Beasts	15	4	2
+Seal	Beasts	12	3	2
+Walrus	Beasts	20	5	3
+Elephant	Beasts	40	10	6
+Mammoth	Beasts	50	12	7
+Rhino	Beasts	35	9	5
+Hippo	Beasts	30	8	4
+Giraffe	Beasts	25	6	3
+Zebra	Beasts	18	4	2
+Horse	Beasts	20	5	2
+Unicorn	Beasts	30	8	5
+Pegasus	Beasts	25	7	4
+Centaur	Beasts	35	9	6
+Minotaur	Beasts	45	11	7
+Satyr	Beasts	20	5	3
+Faun	Beasts	15	4	2
+Dryad	Beasts	25	6	4
+Nymph	Beasts	20	5	3
+Siren	Beasts	30	7	8
+Harpy	Beasts	25	6	5
+Griffin	Beasts	40	10	7
+Hippogriff	Beasts	35	9	6
+Phoenix	Beasts	60	15	10
+Roc	Beasts	50	12	8
+Thunderbird	Beasts	45	11	7
+Elemental	Elementals	30	8	6
+Fire Elemental	Elementals	35	10	7
+Water Elemental	Elementals	32	9	6
+Earth Elemental	Elementals	40	11	8
+Air Elemental	Elementals	28	7	5
+Ice Elemental	Elementals	33	9	7
+Lightning Elemental	Elementals	37	10	8
+Shadow Elemental	Elementals	25	6	9
+Void Elemental	Elementals	45	12	10
+Chaos Elemental	Elementals	50	14	11
+Demon	Fiends	40	10	8
+Imp	Fiends	8	3	4
+Succubus	Fiends	35	8	9
+Incubus	Fiends	35	8	9
+Balor	Fiends	80	18	15
+Pit Fiend	Fiends	90	20	16
+Erinyes	Fiends	45	11	10
+Rakshasa	Fiends	50	12	11
+Cambion	Fiends	30	7	7
+Lemure	Fiends	12	4	5
+Quasit	Fiends	10	3	4
+Nightmare	Fiends	40	9	8
+Hell Hound	Fiends	25	6	6
+Barghest	Fiends	30	7	7
+Devil	Fiends	35	8	8
+Archdevil	Fiends	70	16	14
+Demon Lord	Fiends	100	22	18
+Angel	Celestials	50	12	5
+Archangel	Celestials	80	18	8
+Seraph	Celestials	70	16	7
+Cherub	Celestials	30	7	4
+Throne	Celestials	60	14	6
+Dominion	Celestials	55	13	6
+Virtue	Celestials	45	11	5
+Power	Celestials	40	10	5
+Principality	Celestials	35	9	4
+Guardian Angel	Celestials	25	6	3
+Construct	Golems	30	8	2
+Clay Golem	Golems	40	10	3
+Stone Golem	Golems	60	14	4
+Iron Golem	Golems	80	16	5
+Steel Golem	Golems	90	18	6
+Bronze Golem	Golems	50	12	3
+Silver Golem	Golems	55	13	4
+Gold Golem	Golems	70	15	5
+Crystal Golem	Golems	45	11	3
+Wood Golem	Golems	25	6	2
+Flesh Golem	Golems	35	9	4
+Bone Golem	Golems	30	7	5
+Shadow Golem	Golems	40	9	6
+Void Golem	Golems	65	15	7
+Chaos Golem	Golems	75	17	8
+Plant	Plants	15	4	3
+Treant	Plants	50	12	6
+Dryad Tree	Plants	35	8	5
+Vine Horror	Plants	25	6	4
+Shambling Mound	Plants	40	10	5
+Strangler Fig	Plants	20	5	4
+Carnivorous Plant	Plants	12	3	3
+Man-Eating Tree	Plants	45	11	7
+Thorn Bush	Plants	8	2	2
+Poison Ivy	Plants	6	1	2
+Giant Mushroom	Plants	18	4	3
+Spore Cloud	Plants	10	2	4
+Will-o'-Wisp	Plants	5	1	6
+Fairy	Fey	8	2	1
+Sprite	Fey	6	1	1
+Pixie	Fey	5	1	1
+Brownie	Fey	10	2	1
+Leprechaun	Fey	12	3	2
+Elf	Fey	15	4	2
+Dark Elf	Fey	18	5	3
+High Elf	Fey	20	5	2
+Wood Elf	Fey	16	4	2
+Sea Elf	Fey	17	4	2
+Drow	Fey	22	6	4
+Eladrin	Fey	25	6	3
+Sidhe	Fey	30	7	4
+Tuatha De Danann	Fey	35	8	5
+Sluagh	Fey	28	6	6
+Bean Sidhe	Fey	32	7	7
+Pooka	Fey	20	4	3
+Kelpie	Fey	25	6	5
+Selkie	Fey	18	4	3
+Merrow	Fey	22	5	4
+Nixie	Fey	15	3	2
+Undine	Fey	20	4	3
+Salamander	Fey	25	6	4
+Sylph	Fey	18	4	3
+Gnome	Fey	12	3	1
+Deep Gnome	Fey	15	4	2
+Forest Gnome	Fey	10	2	1
+Rock Gnome	Fey	11	3	1
+Halfling	Fey	8	2	1
+Stout Halfling	Fey	9	2	1
+Lightfoot Halfling	Fey	7	1	1
+Ghostwise Halfling	Fey	8	2	1
+Dwarf	Fey	18	5	2
+Mountain Dwarf	Fey	20	5	2
+Hill Dwarf	Fey	16	4	2
+Duergar	Fey	22	6	3
+Derro	Fey	14	3	2
+Goblinoid	Fey	12	3	2
+Hobgoblin	Fey	15	4	2
+Bugbear	Fey	18	5	3
+Orc	Fey	20	5	3
+Half-Orc	Fey	16	4	2
+Tiefling	Fey	14	3	3
+Aasimar	Fey	12	3	2
+Genasi	Fey	15	4	2
+Goliath	Fey	25	6	3
+Firbolg	Fey	30	7	4
+Lizardfolk	Fey	22	5	3
+Tortle	Fey	20	4	2
+Kenku	Fey	12	3	2
+Aarakocra	Fey	14	3	2
+Tabaxi	Fey	13	3	2
+Triton	Fey	18	4	3
+Yuan-ti	Fey	25	6	4
+Minotaur	Fey	30	7	4
+Centaur	Fey	28	6	4
+Satyr	Fey	16	3	2
+Faun	Fey	14	3	2
+Dryad	Fey	20	4	3
+Nymph	Fey	18	4	3
+Siren	Fey	25	5	6
+Harpy	Fey	22	5	4
+Griffin	Fey	35	8	5
+Hippogriff	Fey	30	7	5
+Phoenix	Fey	50	12	8
+Roc	Fey	40	10	6
+Thunderbird	Fey	35	9	6
+Elemental	Fey	25	6	4
+Fire Elemental	Fey	28	7	5
+Water Elemental	Fey	26	6	4
+Earth Elemental	Fey	32	8	6
+Air Elemental	Fey	24	5	3
+Ice Elemental	Fey	27	6	5
+Lightning Elemental	Fey	30	7	6
+Shadow Elemental	Fey	22	5	7
+Void Elemental	Fey	35	9	8
+Chaos Elemental	Fey	40	10	9
+Demon	Fey	32	8	6
+Imp	Fey	6	2	3
+Succubus	Fey	28	6	7
+Incubus	Fey	28	6	7
+Balor	Fey	65	14	12
+Pit Fiend	Fey	70	16	13
+Erinyes	Fey	35	8	8
+Rakshasa	Fey	40	9	9
+Cambion	Fey	24	5	5
+Lemure	Fey	10	3	4
+Quasit	Fey	8	2	3
+Nightmare	Fey	32	7	6
+Hell Hound	Fey	20	4	4
+Barghest	Fey	24	5	5
+Devil	Fey	28	6	6
+Archdevil	Fey	55	12	11
+Demon Lord	Fey	80	18	15
+Angel	Fey	40	9	4
+Archangel	Fey	65	14	6
+Seraph	Fey	55	12	5
+Cherub	Fey	24	5	3
+Throne	Fey	48	10	4
+Dominion	Fey	44	9	4
+Virtue	Fey	36	8	4
+Power	Fey	32	7	4
+Principality	Fey	28	6	3
+Guardian Angel	Fey	20	4	2
+Construct	Fey	24	6	1
+Clay Golem	Fey	32	8	2
+Stone Golem	Fey	48	11	3
+Iron Golem	Fey	64	13	4
+Steel Golem	Fey	72	14	4
+Bronze Golem	Fey	40	9	2
+Silver Golem	Fey	44	10	3
+Gold Golem	Fey	56	12	4
+Crystal Golem	Fey	36	8	2
+Wood Golem	Fey	20	4	1
+Flesh Golem	Fey	28	7	3
+Bone Golem	Fey	24	5	4
+Shadow Golem	Fey	32	7	4
+Void Golem	Fey	52	12	5
+Chaos Golem	Fey	60	13	6
+Plant	Fey	12	3	2
+Treant	Fey	40	9	4
+Dryad Tree	Fey	28	6	4
+Vine Horror	Fey	20	4	3
+Shambling Mound	Fey	32	8	4
+Strangler Fig	Fey	16	4	3
+Carnivorous Plant	Fey	10	2	2
+Man-Eating Tree	Fey	36	8	5
+Thorn Bush	Fey	6	1	1
+Poison Ivy	Fey	5	1	1
+Giant Mushroom	Fey	14	3	2
+Spore Cloud	Fey	8	1	3
+Will-o'-Wisp	Fey	4	1	4

@@ -339,7 +339,7 @@ export const useImportRuleset = () => {
 
       return {
         success: allErrors.length === 0,
-        message: `Successfully imported ruleset "${newRuleset.title}" with ${totalImported} items`,
+        message: `Successfully imported ruleset "${newRuleset.title}" with ${totalImported} entities.`,
         importedRuleset: newRuleset,
         importedCounts,
         errors: allErrors,
