@@ -1,12 +1,12 @@
 import { ErrorPage, Home, Ruleset } from '@/pages';
-import { BrowserRouter, Route, Routes } from 'react-router-dom';
+import { HashRouter, Route, Routes } from 'react-router-dom';
 import { ErrorBoundary } from './components';
 import { Layout } from './components/layout';
 
 function CompassRoutes() {
   return (
     <ErrorBoundary showDetails>
-      <BrowserRouter>
+      <HashRouter>
         <Routes>
           <Route element={<Layout />}>
             <Route index element={<Home />} />
@@ -23,7 +23,7 @@ function CompassRoutes() {
             <Route path='*' element={<ErrorPage type='404' />} />
           </Route>
         </Routes>
-      </BrowserRouter>
+      </HashRouter>
     </ErrorBoundary>
   );
 }
