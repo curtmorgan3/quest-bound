@@ -1,7 +1,7 @@
 import { Button, Input, Label } from '@/components';
-import { useRulesets } from '@/lib/compass-api';
+import { useExportRuleset, useRulesets } from '@/lib/compass-api';
 import type { Ruleset } from '@/types';
-import { Trash } from 'lucide-react';
+import { Download, Trash } from 'lucide-react';
 import { useState } from 'react';
 
 interface RulesetSettingsProps {
@@ -10,6 +10,7 @@ interface RulesetSettingsProps {
 
 export const RulesetSettings = ({ activeRuleset }: RulesetSettingsProps) => {
   const { updateRuleset } = useRulesets();
+  const { exportRuleset } = useExportRuleset(activeRuleset.id);
 
   const [title, setTitle] = useState(activeRuleset.title);
   const [loading, setLoading] = useState(false);
@@ -34,10 +35,20 @@ export const RulesetSettings = ({ activeRuleset }: RulesetSettingsProps) => {
   };
 
   return (
-    <div className='flex flex-col gap-4'>
-      <div className='flex flex-col gap-2 max-w-sm'>
-        <Label htmlFor='username'>Username</Label>
-        <Input id='username' value={title} onChange={(e) => setTitle(e.target.value)} />
+    <div className='flex flex-col gap-6'>
+      <div className='flex items-end gap-4'>
+        <div className='flex flex-col gap-2 max-w-sm flex-1'>
+          <Label htmlFor='ruleset-title'>Title</Label>
+          <Input id='ruleset-title' value={title} onChange={(e) => setTitle(e.target.value)} />
+        </div>
+
+        <Button
+          className='gap-2 w-[50px]'
+          variant='outline'
+          onClick={exportRuleset}
+          disabled={loading}>
+          <Download className='h-4 w-4' />
+        </Button>
       </div>
 
       {activeRuleset.image ? (
