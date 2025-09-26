@@ -20,30 +20,4 @@ I’ve laid out a roadmap for v2’s development. This is my high level vision, 
 
 The most important way you can help is try to use it. Report bugs in the bug channel and make feature requests in the feature channel. I may eventually get our fancy reporting system back up and running, but for now we’ll use Discord.
 
-Roadmap
-
-Phase 1: Content Manager ✅
-
-- New streamlined, but familiar, UI
-- Support for attributes, actions, items and charts
-- Offline first progressive web app—access QB online for free and use it without an internet connection
-- Export and share ruleset content as files
-
-Phase 2: Editor 🏗️
-
-- New design editor using a GPU accelerated WebGL rendering engine
-- Bring-your-own editor UI on a per ruleset basis with asset uploads
-- Modular, component-based design system
-
-Phase 3: Logic 🔜
-
-- Replace current logic parser with in-browser interpreter
-- QB Script custom programming language
-- Add logic to attributes, items and actions
-
-Phase 4: Characters 🔜
-
-- Support for rulebooks, archetypes and characters
-- Add logic to archetypes
-- Character data synchronization with remote server
-- Stream character sheets as dynamic overlays
+Join the [Quest Bound Discord Server](https://discord.gg/7QGV4muT39)
