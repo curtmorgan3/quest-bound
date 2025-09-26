@@ -1,6 +1,6 @@
 import { Button, Dialog, DialogContent, DialogTitle, DialogTrigger } from '@/components';
-import { useRulesets } from '@/lib/compass-api';
-import { Pencil } from 'lucide-react';
+import { useExportChart, useRulesets } from '@/lib/compass-api';
+import { Download, Pencil } from 'lucide-react';
 import { useState } from 'react';
 import { Navigate, useSearchParams } from 'react-router-dom';
 import { ActionChart } from './actions';
@@ -14,6 +14,9 @@ export const Ruleset = ({ page }: { page?: 'attributes' | 'items' | 'actions' | 
   const { activeRuleset } = useRulesets();
   const [searchParams, setSearchParams] = useSearchParams();
   const [open, setOpen] = useState(false);
+  const { exportChartAsCSV } = useExportChart();
+
+  const chartId = searchParams.get('chart');
 
   if (!page) {
     return <Navigate to={`/rulesets/${activeRuleset?.id}/attributes`} replace={true} />;
@@ -51,20 +54,24 @@ export const Ruleset = ({ page }: { page?: 'attributes' | 'items' | 'actions' | 
               New
             </Button>
           </DialogTrigger>
-          {page === 'charts' && searchParams.get('chart') && (
-            <DialogTrigger asChild>
-              <Button
-                className='w-[50px]'
-                variant='outline'
-                onClick={() => {
-                  const chartId = searchParams.get('chart');
-                  searchParams.set('edit', chartId ?? '');
-                  setSearchParams(searchParams);
-                  setOpen(true);
-                }}>
-                <Pencil />
+          {page === 'charts' && chartId && (
+            <div className='flex gap-2'>
+              <DialogTrigger asChild>
+                <Button
+                  className='w-[50px]'
+                  variant='outline'
+                  onClick={() => {
+                    searchParams.set('edit', chartId);
+                    setSearchParams(searchParams);
+                    setOpen(true);
+                  }}>
+                  <Pencil />
+                </Button>
+              </DialogTrigger>
+              <Button onClick={() => exportChartAsCSV(chartId)} variant='outline'>
+                <Download className='h-4 w-4' />
               </Button>
-            </DialogTrigger>
+            </div>
           )}
           {page !== 'charts' && <Export type={page} />}
           {page !== 'charts' && <Import type={page} />}
