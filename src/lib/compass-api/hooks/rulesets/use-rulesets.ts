@@ -4,11 +4,9 @@ import type { Ruleset } from '@/types';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { useUsers } from '../user';
 
 export const useRulesets = () => {
   const { currentUser } = useCurrentUser();
-  const { updateUser } = useUsers();
   const [loading, setLoading] = useState(false);
   const _rulesets = useLiveQuery(() => db.rulesets.toArray(), []);
   const rulesets = _rulesets?.filter((r) => currentUser?.rulesets?.includes(r.id)) || [];
@@ -40,7 +38,7 @@ export const useRulesets = () => {
       localStorage.setItem('qb.lastEditedRulesetId', id.toString());
       if (currentUser) {
         const updatedRulesetIds = Array.from(new Set([...(currentUser.rulesets || []), id]));
-        await updateUser(currentUser.id, { rulesets: updatedRulesetIds });
+        await db.users.update(currentUser.id, { rulesets: updatedRulesetIds });
       }
       return id;
     } catch (e) {

@@ -4,7 +4,7 @@ import { Trash } from 'lucide-react';
 import { useState } from 'react';
 
 export const UserSettings = () => {
-  const { currentUser, updateUser } = useUsers();
+  const { currentUser, updateUser, deleteUser } = useUsers();
 
   const [username, setUsername] = useState(currentUser?.username || '');
   const [loading, setLoading] = useState(false);
@@ -75,6 +75,14 @@ export const UserSettings = () => {
         onClick={handleUpdate}
         disabled={!currentUser || username === currentUser.username}>
         Update
+      </Button>
+
+      <Button
+        className='w-sm'
+        variant='destructive'
+        onClick={() => deleteUser(currentUser!.id)}
+        disabled={!currentUser}>
+        Delete User
       </Button>
     </div>
   );

@@ -3,9 +3,11 @@ import type { User } from '@/types';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useRulesets } from '../rulesets';
 
 export const useUsers = () => {
   const { currentUser, setCurrentUser } = useCurrentUser();
+  const { deleteRuleset } = useRulesets();
   const [, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
 
@@ -83,6 +85,32 @@ export const useUsers = () => {
     setLoading(false);
   };
 
+  const deleteUser = async (id: string) => {
+    setLoading(true);
+    try {
+      const user = await db.users.get(id);
+      if (!user) {
+        console.error('User not found for id', id);
+        setLoading(false);
+        return;
+      }
+
+      // Delete associated rulesets
+      for (const rulesetId of user.rulesets || []) {
+        await deleteRuleset(rulesetId);
+      }
+
+      await db.users.delete(id);
+      if (currentUser?.id === id) {
+        setCurrentUser(null);
+        navigate('/');
+      }
+    } catch (e) {
+      console.error('Failed to delete user', e);
+    }
+    setLoading(false);
+  };
+
   return {
     users,
     currentUser,
@@ -90,6 +118,7 @@ export const useUsers = () => {
     setCurrentUserById,
     signOut,
     createUser,
+    deleteUser,
     loading,
   };
 };
