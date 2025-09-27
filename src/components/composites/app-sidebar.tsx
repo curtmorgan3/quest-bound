@@ -38,6 +38,8 @@ export function AppSidebar() {
   const location = useLocation();
   const isHomepage = location.pathname === '/';
 
+  const enableEditor = localStorage.getItem('qb.enableEditor') === 'true';
+
   useEffect(() => {
     const storedState = localStorage.getItem('qb.sidebarCollapsed');
     if (storedState !== null) {
@@ -68,12 +70,15 @@ export function AppSidebar() {
           url: `/rulesets/${activeRuleset?.id}/charts`,
           icon: FileSpreadsheet,
         },
-        {
-          title: 'Editor',
-          url: `/rulesets/${activeRuleset?.id}/editor`,
-          icon: PaintRoller,
-        },
       ];
+
+  if (enableEditor) {
+    rulesetItems.push({
+      title: 'Editor',
+      url: `/rulesets/${activeRuleset?.id}/editor`,
+      icon: PaintRoller,
+    });
+  }
 
   return (
     <Drawer direction='bottom'>

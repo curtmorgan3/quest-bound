@@ -1,5 +1,8 @@
 import { v4 } from 'uuid';
 
+const debugStyle =
+  'background-color: #1d8d9eff; color: white; font-weight: bold; padding: 4px 8px; border-radius: 3px;';
+
 /**
  * Returns functions to log, warn or error in the console.
  *
@@ -24,7 +27,7 @@ export function debugLog(label: string, subLabel?: string) {
         return (...args: any[]) => {
           // Only hide messages for logs
           if ((debugAll && !ignoreDebugScoped) || (!debugAll && debugScoped)) {
-            console.debug(msg, ...args);
+            console.debug(`%c${msg}`, debugStyle, ...args);
           }
         };
       case 'warn':

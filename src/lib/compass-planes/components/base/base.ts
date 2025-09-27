@@ -1,7 +1,10 @@
+import { debugLog } from '@/utils';
 import type { Container as TContainer } from 'pixi.js';
 import { Container, Ticker } from 'pixi.js';
-import { editorState } from '../editor';
-import type { EditorComponent } from '../types';
+import { editorState } from '../../cache';
+import type { EditorComponent } from '../../types';
+
+const { log } = debugLog('planes', 'base-component');
 
 /**
  * Draws base container, adds decorators and leaf component based on type.
@@ -9,17 +12,20 @@ import type { EditorComponent } from '../types';
  * Adds listener for component update
  */
 export function drawBase(parent: TContainer, component: EditorComponent): TContainer {
-  console.log('base: ', editorState);
-
   const ticker = new Ticker();
 
   const base = new Container({
+    eventMode: 'static',
     label: 'base-component',
     x: component.position.x,
     y: component.position.y,
     rotation: component.position.rotation,
     height: component.size.height,
     width: component.size.width,
+  });
+
+  base.on('pointerdown', () => {
+    log('click', component.id);
   });
 
   ticker.add(() => {

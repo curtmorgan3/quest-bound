@@ -1,9 +1,4 @@
-import {
-  destroyEditor,
-  initializeEditor,
-  type EditorComponent,
-  type EditorState,
-} from '@/lib/compass-planes';
+import { initializeEditor, type EditorComponent, type EditorState } from '@/lib/compass-planes';
 import { useEffect, useState } from 'react';
 
 const comp: EditorComponent = {
@@ -24,7 +19,7 @@ export const Editor = () => {
   }, [JSON.stringify(editorState)]);
 
   useEffect(() => {
-    return () => destroyEditor();
+    // return () => destroyEditor();
   }, []);
 
   const handleMove = () => {

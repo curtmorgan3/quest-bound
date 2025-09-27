@@ -1,7 +1,7 @@
 import { Graphics, type Container } from 'pixi.js';
-import type { EditorComponent } from '../types';
+import { defaultComponentStyles } from '../../defaults';
+import type { EditorComponent } from '../../types';
 import { drawBase } from './base';
-import { defaultComponentStyles } from './default';
 
 export function drawShape(parent: Container, component: EditorComponent) {
   const graphics = new Graphics({
