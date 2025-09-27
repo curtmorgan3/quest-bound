@@ -1,6 +1,6 @@
 import { useErrorHandler } from '@/hooks';
 import { db } from '@/stores';
-import type { Action, Attribute, Chart, Item, Ruleset } from '@/types';
+import type { Action, Asset, Attribute, Chart, Item, Ruleset } from '@/types';
 import JSZip from 'jszip';
 import { useState } from 'react';
 import { useRulesets } from '../rulesets';
@@ -14,6 +14,7 @@ export interface ImportRulesetResult {
     actions: number;
     items: number;
     charts: number;
+    assets: number;
   };
   errors: string[];
 }
@@ -40,6 +41,7 @@ interface ImportedMetadata {
     actions: number;
     items: number;
     charts: number;
+    assets: number;
   };
 }
 
@@ -73,7 +75,7 @@ export const useImportRuleset = () => {
 
   const validateData = (
     data: any[],
-    type: 'attributes' | 'actions' | 'items' | 'charts',
+    type: 'attributes' | 'actions' | 'items' | 'charts' | 'assets',
   ): { isValid: boolean; errors: string[] } => {
     const errors: string[] = [];
 
@@ -83,17 +85,12 @@ export const useImportRuleset = () => {
     }
 
     data.forEach((item, index) => {
-      // Check required fields
-      if (!item.title || typeof item.title !== 'string') {
-        errors.push(`${type} ${index + 1}: title is required and must be a string`);
-      }
-      // if (!item.description || typeof item.description !== 'string') {
-      //   errors.push(`${type} ${index + 1}: description is required and must be a string`);
-      // }
-
       // Type-specific validation
       switch (type) {
         case 'attributes':
+          if (!item.title || typeof item.title !== 'string') {
+            errors.push(`${type} ${index + 1}: title is required and must be a string`);
+          }
           if (!item.type || !['string', 'number', 'boolean', 'enum'].includes(item.type)) {
             errors.push(
               `Attribute ${index + 1}: type must be one of: string, number, boolean, enum`,
@@ -108,6 +105,9 @@ export const useImportRuleset = () => {
           break;
 
         case 'items':
+          if (!item.title || typeof item.title !== 'string') {
+            errors.push(`${type} ${index + 1}: title is required and must be a string`);
+          }
           if (typeof item.weight !== 'number') {
             errors.push(`Item ${index + 1}: weight must be a number`);
           }
@@ -139,11 +139,29 @@ export const useImportRuleset = () => {
 
         case 'actions':
           // Actions only require title and description, which are already validated above
+          if (!item.title || typeof item.title !== 'string') {
+            errors.push(`${type} ${index + 1}: title is required and must be a string`);
+          }
           break;
 
         case 'charts':
+          if (!item.title || typeof item.title !== 'string') {
+            errors.push(`${type} ${index + 1}: title is required and must be a string`);
+          }
           if (!item.data || typeof item.data !== 'string') {
             errors.push(`Chart ${index + 1}: data is required and must be a string`);
+          }
+          break;
+
+        case 'assets':
+          if (!item.data || typeof item.data !== 'string') {
+            errors.push(`Asset ${index + 1}: data is required and must be a string`);
+          }
+          if (!item.type || typeof item.type !== 'string') {
+            errors.push(`Asset ${index + 1}: type is required and must be a string`);
+          }
+          if (!item.filename || typeof item.filename !== 'string') {
+            errors.push(`Asset ${index + 1}: filename is required and must be a string`);
           }
           break;
       }
@@ -166,7 +184,7 @@ export const useImportRuleset = () => {
         return {
           success: false,
           message: 'Invalid zip file: metadata.json not found',
-          importedCounts: { attributes: 0, actions: 0, items: 0, charts: 0 },
+          importedCounts: { attributes: 0, actions: 0, items: 0, charts: 0, assets: 0 },
           errors: ['metadata.json file is required'],
         };
       }
@@ -180,7 +198,7 @@ export const useImportRuleset = () => {
         return {
           success: false,
           message: `Metadata validation failed: ${metadataValidation.errors.length} errors found`,
-          importedCounts: { attributes: 0, actions: 0, items: 0, charts: 0 },
+          importedCounts: { attributes: 0, actions: 0, items: 0, charts: 0, assets: 0 },
           errors: metadataValidation.errors,
         };
       }
@@ -197,6 +215,7 @@ export const useImportRuleset = () => {
         createdBy: metadata.ruleset.createdBy,
         details: metadata.ruleset.details || {},
         image: metadata.ruleset.image,
+        assetId: null,
         createdAt: now,
         updatedAt: now,
       };
@@ -210,6 +229,7 @@ export const useImportRuleset = () => {
         actions: 0,
         items: 0,
         charts: 0,
+        assets: 0,
       };
 
       const allErrors: string[] = [];
@@ -334,11 +354,42 @@ export const useImportRuleset = () => {
         }
       }
 
+      // Import assets
+      const assetsFile = zipContent.file('assets.json');
+      if (assetsFile) {
+        try {
+          const assetsText = await assetsFile.async('text');
+          const assets: Asset[] = JSON.parse(assetsText);
+
+          const validation = validateData(assets, 'assets');
+          if (validation.isValid) {
+            for (const asset of assets) {
+              const newAsset: Asset = {
+                ...asset,
+                id: crypto.randomUUID(),
+                rulesetId: newRulesetId,
+                createdAt: now,
+                updatedAt: now,
+              };
+              await db.assets.add(newAsset);
+              importedCounts.assets++;
+            }
+          } else {
+            allErrors.push(...validation.errors);
+          }
+        } catch (error) {
+          allErrors.push(
+            `Failed to import assets: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          );
+        }
+      }
+
       const totalImported =
         importedCounts.attributes +
         importedCounts.actions +
         importedCounts.items +
-        importedCounts.charts;
+        importedCounts.charts +
+        importedCounts.assets;
 
       return {
         success: allErrors.length === 0,
@@ -356,7 +407,7 @@ export const useImportRuleset = () => {
       return {
         success: false,
         message: `Import failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        importedCounts: { attributes: 0, actions: 0, items: 0, charts: 0 },
+        importedCounts: { attributes: 0, actions: 0, items: 0, charts: 0, assets: 0 },
         errors: [error instanceof Error ? error.message : 'Unknown error'],
       };
     } finally {

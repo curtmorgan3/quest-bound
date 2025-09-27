@@ -8,6 +8,7 @@ export type Asset = BaseDetails & {
   data: string; // Base64 or URL
   type: string; // MIME type
   filename: string;
+  rulesetId: string | null; // Nullable for user assets
 };
 
 export type User = BaseDetails & {

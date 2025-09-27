@@ -1,6 +1,9 @@
 import { db } from '@/stores';
+import { useParams } from 'react-router-dom';
 
 export const useAssets = () => {
+  const { rulesetId } = useParams();
+
   const createAsset = async (file: File): Promise<string> => {
     const reader = new FileReader();
     return new Promise<string>((resolve, reject) => {
@@ -14,6 +17,7 @@ export const useAssets = () => {
             filename: file.name,
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
+            rulesetId: rulesetId || null,
           });
           resolve(id);
         } catch (error) {
