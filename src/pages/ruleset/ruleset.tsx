@@ -40,7 +40,7 @@ export const Ruleset = ({ page }: { page?: 'attributes' | 'items' | 'actions' | 
       case 'charts':
         return <ChartSelect />;
       default:
-        return <div>Not Found</div>;
+        return <p>Not Found</p>;
     }
   };
 

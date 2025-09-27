@@ -2,6 +2,7 @@ import {
   FileSpreadsheet,
   FolderOpen,
   HandFist,
+  PaintRoller,
   Settings as SettingsIcon,
   Sword,
   UserRoundPen,
@@ -66,6 +67,11 @@ export function AppSidebar() {
           title: 'Charts',
           url: `/rulesets/${activeRuleset?.id}/charts`,
           icon: FileSpreadsheet,
+        },
+        {
+          title: 'Editor',
+          url: `/rulesets/${activeRuleset?.id}/editor`,
+          icon: PaintRoller,
         },
       ];
 
