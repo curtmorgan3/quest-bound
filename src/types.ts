@@ -11,6 +11,12 @@ export type User = BaseDetails & {
   rulesets: string[]; // Array of Ruleset IDs
 };
 
+export type Asset = BaseDetails & {
+  data: string; // Base64 or URL
+  type: string; // MIME type
+  filename: string;
+};
+
 export type Ruleset = BaseDetails & {
   version: string;
   createdBy: string;

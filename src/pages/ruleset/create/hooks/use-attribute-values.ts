@@ -35,8 +35,8 @@ export const useAttributeValues = ({
       setCategory(activeAttribute.category || '');
       setTypeValue(activeAttribute.type);
       setAttributeListOptions(activeAttribute.options || []);
-      setMin(activeAttribute.min ?? -Infinity);
-      setMax(activeAttribute.max ?? Infinity);
+      setMin(activeAttribute.min);
+      setMax(activeAttribute.max);
       // Handle default value based on type
       if (activeAttribute.type === 'boolean') {
         setDefaultBoolean(!!activeAttribute.defaultValue);
@@ -52,8 +52,8 @@ export const useAttributeValues = ({
   const [typeValue, setTypeValue] = useState('number');
   const [defaultBoolean, setDefaultBoolean] = useState(false);
   const [attributeListOptions, setAttributeListOptions] = useState<string[]>([]);
-  const [min, setMin] = useState<number>(-Infinity);
-  const [max, setMax] = useState<number>(Infinity);
+  const [min, setMin] = useState<number>();
+  const [max, setMax] = useState<number>();
 
   const addListOption = (opt: string) => {
     setAttributeListOptions((prev) => [...prev, opt]);

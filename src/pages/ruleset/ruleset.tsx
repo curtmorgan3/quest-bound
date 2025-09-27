@@ -1,4 +1,11 @@
-import { Button, Dialog, DialogContent, DialogTitle, DialogTrigger } from '@/components';
+import {
+  Button,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components';
 import { useExportChart, useRulesets } from '@/lib/compass-api';
 import { Download, Pencil } from 'lucide-react';
 import { useState } from 'react';
@@ -81,6 +88,7 @@ export const Ruleset = ({ page }: { page?: 'attributes' | 'items' | 'actions' | 
 
         <DialogContent className='min-w-[600px] max-w-[80vw] min-h-[50vh]'>
           <DialogTitle className='hidden'>Quick Create</DialogTitle>
+          <DialogDescription className='hidden'>Quick Create</DialogDescription>
           <BaseCreate
             onCreate={(isEditMode) => {
               if (isEditMode) {

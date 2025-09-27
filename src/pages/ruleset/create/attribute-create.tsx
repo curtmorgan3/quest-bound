@@ -22,10 +22,10 @@ interface AttributeCreateProps {
   attributeListOptions?: string[];
   addListOption: (opt: string) => void;
   removeListOption: (opt: string) => void;
-  min: number;
-  max: number;
-  setMin: Dispatch<SetStateAction<number>>;
-  setMax: Dispatch<SetStateAction<number>>;
+  min?: number;
+  max?: number;
+  setMin: Dispatch<SetStateAction<number | undefined>>;
+  setMax: Dispatch<SetStateAction<number | undefined>>;
 }
 
 export const AttributeCreate = ({
@@ -50,9 +50,9 @@ export const AttributeCreate = ({
   useEffect(() => {
     if (typeValue !== 'number') return;
     if (defaultValue === '') return;
-    if (min > Number(defaultValue)) {
+    if (min && min > Number(defaultValue)) {
       setDefaultValue(min);
-    } else if (max < Number(defaultValue)) {
+    } else if (max && max < Number(defaultValue)) {
       setMax(Number(defaultValue));
     }
   }, [defaultValue, min, max]);
@@ -117,9 +117,7 @@ export const AttributeCreate = ({
               type='number'
               onChange={(e) => {
                 const val = e.target.value;
-                if (val === '') {
-                  setMin(-Infinity);
-                } else {
+                if (val !== '') {
                   setMin(Number(val));
                 }
               }}
@@ -134,9 +132,7 @@ export const AttributeCreate = ({
               type='number'
               onChange={(e) => {
                 const val = e.target.value;
-                if (val === '') {
-                  setMax(Infinity);
-                } else {
+                if (val !== '') {
                   setMax(Number(val));
                 }
               }}
