@@ -4,17 +4,18 @@ type BaseDetails = {
   updatedAt: string;
 };
 
-export type User = BaseDetails & {
-  username: string;
-  avatar: string | null;
-  preferences: Record<string, any>;
-  rulesets: string[]; // Array of Ruleset IDs
-};
-
 export type Asset = BaseDetails & {
   data: string; // Base64 or URL
   type: string; // MIME type
   filename: string;
+};
+
+export type User = BaseDetails & {
+  username: string;
+  assetId: string | null;
+  image: string | null;
+  preferences: Record<string, any>;
+  rulesets: string[]; // Array of Ruleset IDs
 };
 
 export type Ruleset = BaseDetails & {
@@ -23,6 +24,7 @@ export type Ruleset = BaseDetails & {
   title: string;
   description: string;
   details: Record<string, any>;
+  assetId: string | null;
   image: string | null;
 };
 

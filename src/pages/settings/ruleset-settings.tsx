@@ -1,5 +1,5 @@
 import { Button, Input, Label } from '@/components';
-import { useExportRuleset, useRulesets } from '@/lib/compass-api';
+import { useAssets, useExportRuleset, useRulesets } from '@/lib/compass-api';
 import type { Ruleset } from '@/types';
 import { Download, Trash } from 'lucide-react';
 import { useState } from 'react';
@@ -11,6 +11,7 @@ interface RulesetSettingsProps {
 export const RulesetSettings = ({ activeRuleset }: RulesetSettingsProps) => {
   const { updateRuleset } = useRulesets();
   const { exportRuleset } = useExportRuleset(activeRuleset.id);
+  const { createAsset } = useAssets();
 
   const [title, setTitle] = useState(activeRuleset.title);
   const [loading, setLoading] = useState(false);
@@ -19,18 +20,13 @@ export const RulesetSettings = ({ activeRuleset }: RulesetSettingsProps) => {
     await updateRuleset(activeRuleset.id, { title });
   };
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       setLoading(true);
-      const reader = new FileReader();
-      reader.onloadend = async () => {
-        const base64String = reader.result as string;
-        await updateRuleset(activeRuleset.id, { image: base64String });
-        setLoading(false);
-        e.target.value = '';
-      };
-      reader.readAsDataURL(file);
+      const assetId = await createAsset(file);
+      await updateRuleset(activeRuleset.id, { assetId });
+      setLoading(false);
     }
   };
 
@@ -62,7 +58,7 @@ export const RulesetSettings = ({ activeRuleset }: RulesetSettingsProps) => {
           <Button
             variant='ghost'
             disabled={loading}
-            onClick={() => updateRuleset(activeRuleset.id, { image: null })}>
+            onClick={() => updateRuleset(activeRuleset.id, { assetId: null })}>
             <Trash />
           </Button>
         </div>

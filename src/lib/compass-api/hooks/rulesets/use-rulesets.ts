@@ -4,9 +4,11 @@ import type { Ruleset } from '@/types';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useState } from 'react';
 import { useParams } from 'react-router-dom';
+import { useAssets } from '../assets';
 
 export const useRulesets = () => {
   const { currentUser } = useCurrentUser();
+  const { deleteAsset } = useAssets();
   const [loading, setLoading] = useState(false);
   const _rulesets = useLiveQuery(() => db.rulesets.toArray(), []);
   const rulesets = _rulesets?.filter((r) => currentUser?.rulesets?.includes(r.id)) || [];
@@ -29,6 +31,7 @@ export const useRulesets = () => {
         description: '',
         details: {},
         image: null,
+        assetId: null,
         version: '0.1.0',
         createdBy: currentUser?.username || 'unknown',
         createdAt: new Date().toISOString(),
@@ -54,6 +57,13 @@ export const useRulesets = () => {
   const updateRuleset = async (id: string, updates: Partial<Ruleset>) => {
     setLoading(true);
     try {
+      if (updates.assetId === null) {
+        const original = await db.rulesets.get(id);
+        if (original?.assetId) {
+          await deleteAsset(original.assetId);
+        }
+      }
+
       await db.rulesets.update(id, {
         ...updates,
         updatedAt: new Date().toISOString(),

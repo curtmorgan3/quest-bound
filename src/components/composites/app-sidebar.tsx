@@ -134,7 +134,7 @@ export function AppSidebar() {
                 className={`p-${open ? 2 : 0} pb-2 flex items-center gap-2 cursor-pointer`}
                 data-testid='user-menu'>
                 <Avatar className={open ? 'rounded-lg' : 'rounded-sm'}>
-                  <AvatarImage src={currentUser?.avatar ?? ''} alt={currentUser?.username} />
+                  <AvatarImage src={currentUser?.image ?? ''} alt={currentUser?.username} />
                 </Avatar>
                 {open && <p>{currentUser?.username}</p>}
               </div>

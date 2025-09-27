@@ -1,10 +1,11 @@
 import { Button, Input, Label, PWAInstallPrompt } from '@/components';
-import { useUsers } from '@/lib/compass-api';
+import { useAssets, useUsers } from '@/lib/compass-api';
 import { Trash } from 'lucide-react';
 import { useState } from 'react';
 
 export const UserSettings = () => {
   const { currentUser, updateUser, deleteUser } = useUsers();
+  const { createAsset } = useAssets();
 
   const [username, setUsername] = useState(currentUser?.username || '');
   const [loading, setLoading] = useState(false);
@@ -15,18 +16,13 @@ export const UserSettings = () => {
     }
   };
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file && currentUser) {
       setLoading(true);
-      const reader = new FileReader();
-      reader.onloadend = async () => {
-        const base64String = reader.result as string;
-        await updateUser(currentUser.id, { avatar: base64String });
-        setLoading(false);
-        e.target.value = '';
-      };
-      reader.readAsDataURL(file);
+      const assetId = await createAsset(file);
+      await updateUser(currentUser.id, { assetId });
+      setLoading(false);
     }
   };
 
@@ -39,18 +35,18 @@ export const UserSettings = () => {
 
       <PWAInstallPrompt ignoreDismissed />
 
-      {currentUser?.avatar ? (
+      {currentUser?.image ? (
         <div className='flex gap-2'>
           <img
             className='w-[124px] h-[124px] object-cover rounded-lg cursor-pointer'
-            src={currentUser.avatar}
+            src={currentUser.image}
             alt={currentUser.username}
             onClick={() => document.getElementById('image-settings-avatar-upload')?.click()}
           />
           <Button
             variant='ghost'
             disabled={loading}
-            onClick={() => updateUser(currentUser.id, { avatar: null })}>
+            onClick={() => updateUser(currentUser.id, { assetId: null })}>
             <Trash />
           </Button>
         </div>

@@ -1,12 +1,20 @@
 import { db, useCurrentUser } from '@/stores';
-import type { User } from '@/types';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useAssets } from '../assets';
 import { useRulesets } from '../rulesets';
+
+type UpdateUser = {
+  username?: string;
+  assetId?: string | null;
+  preferences?: Record<string, any>;
+  rulesets?: string[];
+};
 
 export const useUsers = () => {
   const { currentUser, setCurrentUser } = useCurrentUser();
+  const { deleteAsset } = useAssets();
   const { deleteRuleset } = useRulesets();
   const [, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -38,7 +46,8 @@ export const useUsers = () => {
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       preferences: {},
-      avatar: null,
+      image: null,
+      assetId: null,
       rulesets: [],
     });
 
@@ -62,7 +71,7 @@ export const useUsers = () => {
     setCurrentUser(user);
   };
 
-  const updateUser = async (id: string, updates: Partial<User>) => {
+  const updateUser = async (id: string, updates: UpdateUser) => {
     setLoading(true);
     try {
       const user = await db.users.get(id);
@@ -72,13 +81,25 @@ export const useUsers = () => {
         return;
       }
 
-      const updatedUser = {
+      if (updates.assetId === null) {
+        console.log(user);
+        if (user?.assetId) {
+          await deleteAsset(user.assetId);
+        }
+      }
+
+      const userUpdates = {
         ...user,
         ...updates,
+        image: null,
         updatedAt: new Date().toISOString(),
       };
-      await db.users.put(updatedUser);
-      setCurrentUser(updatedUser);
+      await db.users.put(userUpdates);
+
+      const updatedUser = await db.users.get(id);
+      if (updatedUser) {
+        setCurrentUser(updatedUser);
+      }
     } catch (e) {
       console.error('Failed to update user', e);
     }
@@ -98,6 +119,10 @@ export const useUsers = () => {
       // Delete associated rulesets
       for (const rulesetId of user.rulesets || []) {
         await deleteRuleset(rulesetId);
+      }
+
+      if (user.assetId) {
+        await deleteAsset(user.assetId);
       }
 
       await db.users.delete(id);
