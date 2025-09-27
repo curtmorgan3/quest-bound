@@ -86,6 +86,8 @@ export const useRulesets = () => {
       await db.items.where('rulesetId').equals(id).delete();
       await db.actions.where('rulesetId').equals(id).delete();
       await db.charts.where('rulesetId').equals(id).delete();
+      await db.assets.where('rulesetId').equals(id).delete();
+
       if (activeRuleset?.id === id) {
         localStorage.removeItem('qb.lastEditedRulesetId');
       }

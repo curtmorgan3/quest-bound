@@ -75,32 +75,11 @@ export function useErrorHandler() {
     [handleError],
   );
 
-  const setupFileLogging = useCallback(async (): Promise<boolean> => {
-    try {
-      const success = await errorLogger.setupFileLogging();
-      if (success) {
-        addNotification('File logging configured successfully', {
-          type: 'success',
-          description: 'Error logs will now be saved to your selected directory.',
-        });
-      }
-      return success;
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    } catch (error) {
-      addNotification('Failed to setup file logging', {
-        type: 'error',
-        description: 'Please try again or check browser permissions.',
-      });
-      return false;
-    }
-  }, [addNotification]);
-
   return {
     handleError,
     handleAsyncError,
     handleCriticalError,
     handleUserError,
-    setupFileLogging,
   };
 }
 
