@@ -1,6 +1,6 @@
 import type { Container } from 'pixi.js';
-import { drawShape } from './components';
-import type { EditorState } from './types';
+import { drawShape } from '../components';
+import type { EditorState } from '../types';
 
 export function drawComponents(parent: Container, components: EditorState) {
   const componentsArray = Object.values(components);

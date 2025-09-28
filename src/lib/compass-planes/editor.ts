@@ -1,9 +1,10 @@
 import { debugLog } from '@/utils';
-import { Application, Container, type ApplicationOptions } from 'pixi.js';
+import { Application, type ApplicationOptions } from 'pixi.js';
 import { editorState, setEditorState } from './cache';
-import { defaultEditorConfig } from './defaults';
-import { drawComponents } from './helpers';
-import type { EditorConfiguration, EditorState } from './types';
+import { drawBackground } from './editor-decorators';
+import { EditorStyles } from './styles';
+import type { EditorComponent, EditorConfiguration, EditorState } from './types';
+import { addDragHandlers, drawComponents } from './utils';
 
 const { log } = debugLog('planes', 'editor');
 
@@ -11,6 +12,7 @@ interface InitializeEditorOptions {
   elementId: string;
   config?: EditorConfiguration;
   state: EditorState;
+  onComponentsUpdated?: (updates: Array<EditorComponent>) => void;
 }
 
 let app: Application | null = null;
@@ -19,7 +21,12 @@ let app: Application | null = null;
  * Creates an editor instance when component state changes.
  * Should only created a new instance when components are added or removed.
  */
-export async function initializeEditor({ elementId, config, state }: InitializeEditorOptions) {
+export async function initializeEditor({
+  elementId,
+  config,
+  state,
+  onComponentsUpdated,
+}: InitializeEditorOptions) {
   setEditorState(state);
   log('new comp state');
 
@@ -34,22 +41,19 @@ export async function initializeEditor({ elementId, config, state }: InitializeE
   app = new Application();
 
   const configuration: Partial<ApplicationOptions> = {
-    ...defaultEditorConfig,
+    ...EditorStyles,
     ...config,
   };
 
   await app.init({ ...configuration, resizeTo: parentElement, eventMode: 'static' });
 
-  const stageBackground = new Container({
-    label: 'editor-background',
-    eventMode: 'static',
-    hitArea: app.renderer.screen,
-  });
+  const handleUpdate = (updates: Array<EditorComponent>) => {
+    onComponentsUpdated?.(updates);
+  };
 
-  stageBackground.on('pointerdown', () => {
-    console.log('background click');
-  });
+  addDragHandlers(app, handleUpdate);
 
+  const stageBackground = drawBackground(app);
   app.stage.addChild(stageBackground);
 
   drawComponents(app.stage, editorState);

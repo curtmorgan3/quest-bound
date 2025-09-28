@@ -1,46 +1,46 @@
-import { initializeEditor, type EditorComponent, type EditorState } from '@/lib/compass-planes';
-import { useEffect, useState } from 'react';
+import { initializeEditor, type EditorComponent } from '@/lib/compass-planes';
+import { debugLog } from '@/utils';
+import { useEffect } from 'react';
 
-const comp: EditorComponent = {
+const { log } = debugLog('pages', 'editor');
+
+const comp1: EditorComponent = {
   id: '1',
   type: 'shape',
   position: { x: 100, y: 100, z: 1, rotation: 0 },
-  size: { height: 50, width: 50 },
+  size: { height: 80, width: 80 },
+  style: {},
+};
+
+const comp2: EditorComponent = {
+  id: '2',
+  type: 'shape',
+  position: { x: 200, y: 200, z: 1, rotation: 0 },
+  size: { height: 80, width: 80 },
   style: {},
 };
 
 export const Editor = () => {
-  const [editorState, setEditorState] = useState<EditorState>({
-    '1': comp,
-  });
+  const editorState = {
+    '1': comp1,
+    '2': comp2,
+  };
+
+  const onComponentsUpdated = (updates: Array<EditorComponent>) => {
+    log('components updated: ', updates);
+  };
 
   useEffect(() => {
-    initializeEditor({ elementId: 'qb-editor', state: editorState });
-  }, [JSON.stringify(editorState)]);
+    initializeEditor({ elementId: 'qb-editor', state: editorState, onComponentsUpdated });
+  }, []);
 
   useEffect(() => {
     // return () => destroyEditor();
   }, []);
 
-  const handleMove = () => {
-    const newState = { ...editorState };
-    newState['1'] = {
-      ...newState['1'],
-      position: {
-        ...newState['1'].position,
-        x: newState['1'].position.x + 10,
-        y: newState['1'].position.y + 10,
-      },
-    };
-    setEditorState(newState);
-  };
-
   return (
     <div className='flex flex-col'>
-      <div className='h-[10vh] w-[100%]'>
-        <button onClick={handleMove}>{`->`}</button>
-      </div>
-      <div id='qb-editor' className='w-[100%] h-[90vh]'></div>
+      <div id='qb-editor' className='w-[100vw] h-[100vh]'></div>
     </div>
   );
 };
