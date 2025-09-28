@@ -3,13 +3,16 @@ import {
   clearDragging,
   componentsAreDragging,
   dragStartPosition,
+  getComponentState,
   getDraggedComponents,
+  getZoom,
+  setComponetState,
 } from '../cache';
 import { EditorStyles } from '../styles';
 import type { EditorComponent } from '../types';
 
 function clampToGrid(value: number) {
-  return Math.floor(value / EditorStyles.gridSize) * EditorStyles.gridSize;
+  return Math.floor(value / EditorStyles.initialGridSize) * EditorStyles.initialGridSize;
 }
 
 export const addDragHandlers = (
@@ -21,24 +24,23 @@ export const addDragHandlers = (
   app.stage.on('pointermove', (e) => {
     if (!componentsAreDragging()) return;
 
-    const deltaX = e.global.x - dragStartPosition.x;
+    const zoom = getZoom();
+
+    const deltaX = (e.global.x - dragStartPosition.x) / zoom;
     const deltaY = e.global.y - dragStartPosition.y;
 
     for (const componentId of getDraggedComponents()) {
-      const component = app?.stage.getChildByLabel(`component-${componentId}`);
+      const component = getComponentState(componentId);
+
       if (component) {
         const newX = component.x + deltaX;
         const newY = component.y + deltaY;
         component.x = clampToGrid(newX);
         component.y = clampToGrid(newY);
-        updates.set(componentId, {
-          position: {
-            x: component.x,
-            y: component.y,
-            rotation: component.rotation,
-            z: component.zIndex,
-          },
-        });
+
+        const update = { x: component.x, y: component.y };
+        setComponetState(componentId, update);
+        updates.set(componentId, update);
       }
     }
 

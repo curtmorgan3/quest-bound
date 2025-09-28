@@ -13,7 +13,7 @@ export function Layout() {
   ) : !currentUser ? (
     <SignIn />
   ) : (
-    <SidebarProvider>
+    <SidebarProvider defaultOpen={false}>
       <AppSidebar />
       <main
         style={{

@@ -3,7 +3,9 @@ import { Container, Point } from 'pixi.js';
 import {
   clearDragging,
   dragStartPosition,
+  getComponentState,
   getSelectedComponents,
+  getZoom,
   isSelected,
   startDragging,
 } from '../../cache';
@@ -18,15 +20,24 @@ import { drawSelect } from './select';
 export function drawBase(parent: TContainer, component: EditorComponent): TContainer {
   const lastMousePos = new Point();
 
+  const initialZoom = getZoom();
+
   const base = new Container({
     eventMode: 'static',
     label: `component-${component.id}`,
-    x: component.position.x,
-    y: component.position.y,
-    rotation: component.position.rotation,
-    height: component.size.height,
-    width: component.size.width,
+    rotation: component.rotation,
+    height: 0,
+    width: 0,
+    x: component.x * initialZoom,
+    y: component.y * initialZoom,
   });
+
+  base.onRender = () => {
+    const componentState = getComponentState(component.id);
+    if (!componentState) return;
+    base.x = componentState.x * getZoom();
+    base.y = componentState.y * getZoom();
+  };
 
   base.on('pointerdown', (e) => {
     lastMousePos.copyFrom(e.global);

@@ -1,6 +1,13 @@
 import type { Container as TContainer } from 'pixi.js';
 import { Container, Graphics, Point, Ticker } from 'pixi.js';
-import { clearSelection, isSelected, otherComponentIsSelected, toggleSelection } from '../../cache';
+import {
+  clearSelection,
+  getComponentState,
+  getZoom,
+  isSelected,
+  otherComponentIsSelected,
+  toggleSelection,
+} from '../../cache';
 import { EditorStyles } from '../../styles';
 import type { EditorComponent } from '../../types';
 
@@ -14,7 +21,7 @@ function movedBeyondThreshold(start: Point, end: Point) {
 
 export const drawSelect = (parent: TContainer, component: EditorComponent): TContainer => {
   const ticker = new Ticker();
-  const lastMousePos = new Point(component.position.x, component.position.y);
+  const lastMousePos = new Point(component.x, component.y);
 
   const selectBox = new Container({
     label: 'selection-box',
@@ -39,14 +46,19 @@ export const drawSelect = (parent: TContainer, component: EditorComponent): TCon
   const border = new Graphics({
     label: 'selection-border',
   });
-  border.rect(0, 0, component.size.width, component.size.height);
-  border.stroke({
-    width: EditorStyles.selectionBoxWidth,
-    color: EditorStyles.selectionBoxColor,
-  });
 
   ticker.add(() => {
     if (isSelected(component.id)) {
+      const componentState = getComponentState(component.id);
+      const zoom = getZoom();
+      if (!componentState) return;
+      border.rect(0, 0, componentState.width * zoom, componentState.height * zoom);
+
+      border.stroke({
+        width: EditorStyles.selectionBoxWidth,
+        color: EditorStyles.selectionBoxColor,
+      });
+
       selectBox.addChild(border);
     } else {
       selectBox.removeChild(border);

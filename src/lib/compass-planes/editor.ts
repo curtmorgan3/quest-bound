@@ -4,7 +4,7 @@ import { editorState, setEditorState } from './cache';
 import { drawBackground } from './editor-decorators';
 import { EditorStyles } from './styles';
 import type { EditorComponent, EditorConfiguration, EditorState } from './types';
-import { addDragHandlers, drawComponents } from './utils';
+import { addCameraHandlers, addDragHandlers, drawComponents } from './utils';
 
 const { log } = debugLog('planes', 'editor');
 
@@ -52,6 +52,7 @@ export async function initializeEditor({
   };
 
   addDragHandlers(app, handleUpdate);
+  addCameraHandlers(app);
 
   const stageBackground = drawBackground(app);
   app.stage.addChild(stageBackground);

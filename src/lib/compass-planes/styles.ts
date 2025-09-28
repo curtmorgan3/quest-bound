@@ -3,6 +3,6 @@ export const EditorStyles = {
   componentBackgroundColor: '#FAF7F2',
   selectionBoxColor: '#417090',
   selectionBoxWidth: 2,
-  gridSize: 20,
+  initialGridSize: 20,
   gridLineColor: '#FAF7F2',
 };
