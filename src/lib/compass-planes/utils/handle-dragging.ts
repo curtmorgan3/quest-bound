@@ -2,18 +2,15 @@ import type { Application } from 'pixi.js';
 import {
   clearDragging,
   componentsAreDragging,
+  componentsAreResizing,
   dragStartPosition,
   getComponentState,
   getDraggedComponents,
   getZoom,
   setComponetState,
 } from '../cache';
-import { EditorStyles } from '../styles';
 import type { EditorComponent } from '../types';
-
-function clampToGrid(value: number) {
-  return Math.floor(value / EditorStyles.initialGridSize) * EditorStyles.initialGridSize;
-}
+import { clampToGrid } from './helpers';
 
 export const addDragHandlers = (
   app: Application,
@@ -23,6 +20,8 @@ export const addDragHandlers = (
 
   app.stage.on('pointermove', (e) => {
     if (!componentsAreDragging()) return;
+    // Don't drag component if resize handle is being dragged
+    if (componentsAreResizing()) return;
 
     const zoom = getZoom();
 

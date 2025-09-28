@@ -1,6 +1,6 @@
 import type { Application, Container as TContainer } from 'pixi.js';
 import { Container } from 'pixi.js';
-import { clearSelection } from '../cache';
+import { clearSelection, componentsAreResizing } from '../cache';
 import { drawGrid } from './grid';
 
 /**
@@ -13,7 +13,9 @@ export const drawBackground = (app: Application): TContainer => {
   });
 
   stageBackground.on('pointerup', () => {
-    clearSelection();
+    if (!componentsAreResizing()) {
+      clearSelection();
+    }
   });
 
   drawGrid(stageBackground);

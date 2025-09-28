@@ -1,5 +1,6 @@
 import { Point } from 'pixi.js';
 
+//#region Selection
 const selectedComponentIds = new Set<string>();
 
 export function selectComponent(id: string) {
@@ -39,7 +40,9 @@ export function toggleSelection(id: string) {
 }
 
 export { selectedComponentIds };
+//#endregion //////////////////////////////
 
+// #region Dragging
 const dragMousePosition = new Point();
 const dragStartPosition = new Point();
 
@@ -72,3 +75,48 @@ export function getDraggedComponents() {
 }
 
 export { draggedComponentIds };
+// #endregion //////////////////////////////
+
+// #region Resizing
+const resizeMousePosition = new Point();
+const resizeStartPosition = new Point();
+let resizeCorner: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right' | null = null;
+
+export { resizeMousePosition, resizeStartPosition };
+
+let resizedComponentId: string | null = null;
+
+export function startResizing(
+  id: string,
+  corner: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right',
+) {
+  resizedComponentId = id;
+  resizeCorner = corner;
+}
+
+export function stopResizing() {
+  resizedComponentId = null;
+  resizeCorner = null;
+}
+
+export function isResizing(id: string) {
+  return resizedComponentId === id;
+}
+
+export function clearResizing() {
+  resizedComponentId = null;
+}
+
+export function componentsAreResizing() {
+  return resizedComponentId !== null;
+}
+
+export function getComponentResizeCorner() {
+  return resizeCorner;
+}
+
+export function getResizeComponentId() {
+  return resizedComponentId;
+}
+
+// #endregion //////////////////////////////

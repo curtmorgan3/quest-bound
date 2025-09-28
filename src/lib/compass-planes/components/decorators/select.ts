@@ -47,21 +47,22 @@ export const drawSelect = (parent: TContainer, component: EditorComponent): TCon
     label: 'selection-border',
   });
 
+  selectBox.addChild(border);
+
   ticker.add(() => {
+    border.clear();
+
     if (isSelected(component.id)) {
       const componentState = getComponentState(component.id);
       const zoom = getZoom();
       if (!componentState) return;
+
       border.rect(0, 0, componentState.width * zoom, componentState.height * zoom);
 
       border.stroke({
         width: EditorStyles.selectionBoxWidth,
         color: EditorStyles.selectionBoxColor,
       });
-
-      selectBox.addChild(border);
-    } else {
-      selectBox.removeChild(border);
     }
   });
 

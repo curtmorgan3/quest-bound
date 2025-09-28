@@ -10,6 +10,7 @@ import {
   startDragging,
 } from '../../cache';
 import type { EditorComponent } from '../../types';
+import { drawResize } from './resize';
 import { drawSelect } from './select';
 
 /**
@@ -32,11 +33,17 @@ export function drawBase(parent: TContainer, component: EditorComponent): TConta
     y: component.y * initialZoom,
   });
 
+  let lastComponentState = component;
+
   base.onRender = () => {
     const componentState = getComponentState(component.id);
     if (!componentState) return;
+
+    if (JSON.stringify(componentState) === JSON.stringify(lastComponentState)) return;
+
     base.x = componentState.x * getZoom();
     base.y = componentState.y * getZoom();
+    lastComponentState = componentState;
   };
 
   base.on('pointerdown', (e) => {
@@ -57,6 +64,7 @@ export function drawBase(parent: TContainer, component: EditorComponent): TConta
   });
 
   parent.addChild(base);
+  const resize = drawResize(base, component);
 
-  return drawSelect(base, component);
+  return drawSelect(resize, component);
 }
