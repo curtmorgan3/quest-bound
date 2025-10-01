@@ -1,6 +1,6 @@
 import type { Container as TContainer, Graphics as TGraphics } from 'pixi.js';
 import { Graphics, Ticker } from 'pixi.js';
-import { getGridSize, isCurrentlyZooming } from '../cache';
+import { getGridSize, getZoom, isCurrentlyZooming } from '../cache';
 import { EditorStyles } from '../styles';
 
 /**
@@ -11,13 +11,20 @@ export const drawGrid = (parent: TContainer): TGraphics => {
 
   function buildGrid(graphics: TGraphics) {
     const viewportWidth = window.innerWidth;
+
+    const adjustedGridSize = getGridSize() * getZoom();
+
     const numLines = (viewportWidth + 400) / getGridSize();
     for (let i = 0; i <= numLines; i++) {
-      graphics.moveTo(i * getGridSize(), 0).lineTo(i * getGridSize(), numLines * getGridSize());
+      graphics
+        .moveTo(i * adjustedGridSize, 0)
+        .lineTo(i * adjustedGridSize, numLines * adjustedGridSize);
     }
 
     for (let i = 0; i <= numLines; i++) {
-      graphics.moveTo(0, i * getGridSize()).lineTo(numLines * getGridSize(), i * getGridSize());
+      graphics
+        .moveTo(0, i * adjustedGridSize)
+        .lineTo(numLines * adjustedGridSize, i * adjustedGridSize);
     }
 
     return graphics;
@@ -44,7 +51,7 @@ export const drawGrid = (parent: TContainer): TGraphics => {
 
   ticker.start();
 
-  if (getGridSize() > 1) {
+  if (getGridSize() * getZoom() > 1) {
     parent.addChild(grid);
   }
 

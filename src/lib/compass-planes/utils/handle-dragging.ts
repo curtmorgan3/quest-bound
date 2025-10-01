@@ -7,7 +7,6 @@ import {
   dragStartPosition,
   getComponentState,
   getDraggedComponents,
-  getZoom,
   setComponetState,
 } from '../cache';
 import type { EditorComponent } from '../types';
@@ -26,10 +25,8 @@ export const addDragHandlers = (
     // Don't drag component if resize handle is being dragged
     if (componentsAreResizing()) return;
 
-    const zoom = getZoom();
-
-    const deltaX = (e.global.x - dragStartPosition.x) / zoom;
-    const deltaY = e.global.y - dragStartPosition.y;
+    const deltaX = Math.floor(e.global.x - dragStartPosition.x);
+    const deltaY = Math.floor(e.global.y - dragStartPosition.y);
 
     for (const componentId of getDraggedComponents()) {
       const component = getComponentState(componentId);

@@ -1,9 +1,8 @@
 import { debugLog } from '@/utils';
 import type { Container as TContainer } from 'pixi.js';
-import { Container, Point } from 'pixi.js';
+import { Container } from 'pixi.js';
 import {
   clearDragging,
-  dragStartPosition,
   getComponentState,
   getSelectedComponents,
   getZoom,
@@ -23,8 +22,6 @@ const { log } = debugLog('planes', 'component-base');
  * Repositions based on zoom.
  */
 export function drawBase(parent: TContainer, component: EditorComponent): TContainer {
-  const lastMousePos = new Point();
-
   const initialZoom = getZoom();
 
   const base = new Container({
@@ -48,16 +45,14 @@ export function drawBase(parent: TContainer, component: EditorComponent): TConta
 
   base.on('pointerdown', (e) => {
     log('pointerdown');
-    lastMousePos.copyFrom(e.global);
-    startDragging(component.id);
+    startDragging(component.id, e.global);
 
     // Drag all selected components together
     if (isSelected(component.id)) {
       for (const componentId of getSelectedComponents()) {
-        startDragging(componentId);
+        startDragging(componentId, e.global);
       }
     }
-    dragStartPosition.copyFrom(e.global);
   });
 
   base.on('pointerup', () => {

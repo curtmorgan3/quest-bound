@@ -11,7 +11,7 @@ export function setZoom(newZoom: number) {
 }
 
 export function getZoom() {
-  return zoom;
+  return parseFloat(zoom.toFixed(2));
 }
 
 export function isCurrentlyZooming() {
@@ -27,5 +27,5 @@ export function setGridSize(newGridSize: number) {
 }
 
 export function getGridSize() {
-  return gridSize * zoom;
+  return gridSize;
 }

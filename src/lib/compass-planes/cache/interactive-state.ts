@@ -50,7 +50,8 @@ export { dragClickStartPosition, dragStartPosition };
 
 const draggedComponentIds = new Set<string>();
 
-export function startDragging(id: string) {
+export function startDragging(id: string, startPoint: Point) {
+  dragStartPosition.copyFrom(startPoint);
   draggedComponentIds.add(id);
 }
 
@@ -64,6 +65,7 @@ export function isDragging(id: string) {
 
 export function clearDragging() {
   draggedComponentIds.clear();
+  dragStartPosition.set(-1, -1);
   dragClickStartPosition.set(-1, -1);
 }
 

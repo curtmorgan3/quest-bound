@@ -1,6 +1,9 @@
+import { debugLog } from '@/utils';
 import { type Container as TContainer } from 'pixi.js';
 import { dragClickStartPosition, getAllComponents, getZoom } from '../cache';
-import { clearSelection, selectComponent } from '../cache/interactive-state';
+import { clearSelection, componentsAreDragging, selectComponent } from '../cache/interactive-state';
+
+const { log } = debugLog('planes', 'handle-click-drag');
 
 export const handleClickAndDragToSelect = (parent: TContainer) => {
   parent.on('pointerdown', (e) => {
@@ -9,6 +12,7 @@ export const handleClickAndDragToSelect = (parent: TContainer) => {
 
   parent.on('pointerup', (e) => {
     const dragEndPosition = e.global;
+    if (componentsAreDragging()) return;
     const components = getAllComponents();
 
     const zoom = getZoom();
@@ -45,6 +49,7 @@ export const handleClickAndDragToSelect = (parent: TContainer) => {
 
     // Select all components that are fully enveloped
     selectedComponents.forEach((component) => {
+      log('selecting: ', component.id);
       selectComponent(component.id);
     });
   });
