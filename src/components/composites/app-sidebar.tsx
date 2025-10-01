@@ -6,6 +6,7 @@ import {
   Settings as SettingsIcon,
   Sword,
   UserRoundPen,
+  Wrench,
 } from 'lucide-react';
 
 import {
@@ -22,8 +23,8 @@ import {
   useSidebar,
 } from '@/components/ui/sidebar';
 import { useRulesets, useUsers } from '@/lib/compass-api';
-import { Settings } from '@/pages';
-import { useEffect } from 'react';
+import { DevTools, Settings } from '@/pages';
+import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Avatar, AvatarImage } from '../ui/avatar';
 import { Button } from '../ui/button';
@@ -37,6 +38,7 @@ export function AppSidebar() {
   const { open, setOpen } = useSidebar();
   const location = useLocation();
   const isHomepage = location.pathname === '/';
+  const [drawerContent, setDrawerContent] = useState<'settings' | 'dev-tools'>('settings');
 
   const enableEditor = localStorage.getItem('qb.enableEditor') === 'true';
 
@@ -128,7 +130,7 @@ export function AppSidebar() {
                 )}
                 <SidebarMenuItem>
                   <DrawerTrigger asChild>
-                    <SidebarMenuButton>
+                    <SidebarMenuButton onClick={() => setDrawerContent('settings')}>
                       <SettingsIcon />
                       <span>Settings</span>
                     </SidebarMenuButton>
@@ -139,6 +141,18 @@ export function AppSidebar() {
           </SidebarGroup>
         </SidebarContent>
         <SidebarFooter>
+          <SidebarMenu>
+            {localStorage.getItem('debug.tools') === 'true' && (
+              <SidebarMenuItem>
+                <DrawerTrigger asChild>
+                  <SidebarMenuButton onClick={() => setDrawerContent('dev-tools')}>
+                    <Wrench />
+                    <span>Dev Tools</span>
+                  </SidebarMenuButton>
+                </DrawerTrigger>
+              </SidebarMenuItem>
+            )}
+          </SidebarMenu>
           <Popover>
             <PopoverTrigger asChild>
               <div
@@ -162,11 +176,15 @@ export function AppSidebar() {
       </Sidebar>
 
       <DrawerContent className='w-[100vw]'>
-        <DialogDescription className='hidden'>Settings</DialogDescription>
+        <DialogDescription className='hidden'>
+          {drawerContent === 'settings' ? 'Settings' : 'Dev Tools'}
+        </DialogDescription>
         <DrawerHeader>
-          <DrawerTitle className='mb-4 text-lg font-medium'>Settings</DrawerTitle>
+          <DrawerTitle className='mb-4 text-lg font-medium'>
+            {drawerContent === 'settings' ? 'Settings' : 'Dev Tools'}
+          </DrawerTitle>
         </DrawerHeader>
-        <Settings />
+        {drawerContent === 'settings' ? <Settings /> : <DevTools />}
       </DrawerContent>
     </Drawer>
   );
