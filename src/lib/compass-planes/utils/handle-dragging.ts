@@ -1,3 +1,4 @@
+import { debugLog } from '@/utils';
 import type { Application } from 'pixi.js';
 import {
   clearDragging,
@@ -11,6 +12,8 @@ import {
 } from '../cache';
 import type { EditorComponent } from '../types';
 import { clampToGrid } from './helpers';
+
+const { log } = debugLog('planes', 'drag-handlers');
 
 export const addDragHandlers = (
   app: Application,
@@ -32,6 +35,7 @@ export const addDragHandlers = (
       const component = getComponentState(componentId);
 
       if (component) {
+        log(`Dragging ${component.id}`);
         const newX = component.x + deltaX;
         const newY = component.y + deltaY;
         component.x = clampToGrid(newX);

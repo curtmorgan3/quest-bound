@@ -48,14 +48,6 @@ export const drawResize = (parent: TContainer, component: EditorComponent): Cont
       return;
     }
 
-    if (
-      lastComponentSize.width === componentState.width &&
-      lastComponentSize.height === componentState.height &&
-      handles.length === 4
-    ) {
-      return;
-    }
-
     lastComponentSize.width = componentState.width;
     lastComponentSize.height = componentState.height;
 

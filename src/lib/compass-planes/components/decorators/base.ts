@@ -1,3 +1,4 @@
+import { debugLog } from '@/utils';
 import type { Container as TContainer } from 'pixi.js';
 import { Container, Point } from 'pixi.js';
 import {
@@ -10,14 +11,17 @@ import {
   startDragging,
 } from '../../cache';
 import type { EditorComponent } from '../../types';
+import { drawRender } from './render';
 import { drawResize } from './resize';
 import { drawSelect } from './select';
+
+const { log } = debugLog('planes', 'component-base');
 
 /**
  * Draws base container and adds decorators.
  * Updates cache to track dragging.
  * Adds listeners for component update.
- * Scales and positions child components based on zoom.
+ * Positions child components based on zoom.
  */
 export function drawBase(parent: TContainer, component: EditorComponent): TContainer {
   const lastMousePos = new Point();
@@ -39,17 +43,12 @@ export function drawBase(parent: TContainer, component: EditorComponent): TConta
     if (!componentState) return;
 
     const zoom = getZoom();
-    for (const child of base.children) {
-      const label = child.label;
-      if (!label.includes(component.id)) return;
-      child.scale.set(zoom, zoom);
-    }
-
-    base.x = componentState.x * getZoom();
-    base.y = componentState.y * getZoom();
+    base.x = componentState.x * zoom;
+    base.y = componentState.y * zoom;
   };
 
   base.on('pointerdown', (e) => {
+    log('pointerdown');
     lastMousePos.copyFrom(e.global);
     startDragging(component.id);
 
@@ -63,11 +62,14 @@ export function drawBase(parent: TContainer, component: EditorComponent): TConta
   });
 
   base.on('pointerup', () => {
+    log('pointerup');
     clearDragging();
   });
 
   parent.addChild(base);
   const resize = drawResize(base, component);
+  const selectBox = drawSelect(resize, component);
+  const renderBox = drawRender(selectBox, component);
 
-  return drawSelect(resize, component);
+  return renderBox;
 }

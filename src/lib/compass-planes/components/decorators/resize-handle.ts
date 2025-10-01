@@ -1,5 +1,5 @@
 import { Graphics } from 'pixi.js';
-import { resizeStartPosition, startResizing, stopResizing } from '../../cache';
+import { getZoom, resizeStartPosition, startResizing, stopResizing } from '../../cache';
 import { EditorStyles } from '../../styles';
 import type { EditorComponent } from '../../types';
 
@@ -9,11 +9,15 @@ export const drawResizeHandle = (
 ): Graphics => {
   const graphics = new Graphics();
 
+  const zoom = getZoom();
+  const width = component.width * zoom;
+  const height = component.height * zoom;
+
   const cornersMap: Map<string, Record<string, any>> = new Map([
     ['top-left', { x: 0, y: 0, cursor: 'nwse-resize' }],
-    ['top-right', { x: component.width, y: 0, cursor: 'nesw-resize' }],
-    ['bottom-left', { x: 0, y: component.height, cursor: 'nesw-resize' }],
-    ['bottom-right', { x: component.width, y: component.height, cursor: 'nwse-resize' }],
+    ['top-right', { x: width, y: 0, cursor: 'nesw-resize' }],
+    ['bottom-left', { x: 0, y: height, cursor: 'nesw-resize' }],
+    ['bottom-right', { x: width, y: height, cursor: 'nwse-resize' }],
   ]);
 
   const cornerPosition = cornersMap.get(corner);

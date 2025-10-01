@@ -1,14 +1,18 @@
+import { debugLog } from '@/utils';
 import type { Container as TContainer } from 'pixi.js';
 import { Container, Graphics, Point } from 'pixi.js';
 import {
   clearSelection,
   getComponentState,
+  getZoom,
   isSelected,
   otherComponentIsSelected,
   toggleSelection,
 } from '../../cache';
 import { EditorStyles } from '../../styles';
 import type { EditorComponent } from '../../types';
+
+const { log } = debugLog('planes', 'component-select');
 
 const SELECTION_MOVE_THRESHOLD = 10;
 
@@ -27,10 +31,12 @@ export const drawSelect = (parent: TContainer, component: EditorComponent): TCon
   });
 
   selectBox.on('pointerdown', (e) => {
+    log('pointerdown');
     lastMousePos.copyFrom(e.global);
   });
 
   selectBox.on('pointerup', (e) => {
+    log('pointerup');
     if (movedBeyondThreshold(lastMousePos, e.global)) {
       return;
     }
@@ -54,7 +60,7 @@ export const drawSelect = (parent: TContainer, component: EditorComponent): TCon
       const componentState = getComponentState(component.id);
       if (!componentState) return;
 
-      border.rect(0, 0, componentState.width, componentState.height);
+      border.rect(0, 0, componentState.width * getZoom(), componentState.height * getZoom());
 
       border.stroke({
         width: EditorStyles.selectionBoxWidth,
