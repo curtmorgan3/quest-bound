@@ -1,5 +1,5 @@
 import type { Container as TContainer } from 'pixi.js';
-import { Container, Graphics, Ticker } from 'pixi.js';
+import { Container, Graphics } from 'pixi.js';
 import type { EditorComponent } from '../..';
 import { getComponentState, isSelected } from '../../cache';
 import { drawResizeHandle } from './resize-handle';
@@ -9,8 +9,6 @@ import { drawResizeHandle } from './resize-handle';
  * Only visible when the component is selected.
  */
 export const drawResize = (parent: TContainer, component: EditorComponent): Container => {
-  const ticker = new Ticker();
-
   const resizeContainer = new Container({
     eventMode: 'static',
     label: `resize-${component.id}`,
@@ -37,7 +35,7 @@ export const drawResize = (parent: TContainer, component: EditorComponent): Cont
 
   const lastComponentSize = { width: component.width, height: component.height };
 
-  ticker.add(() => {
+  resizeContainer.onRender = () => {
     const componentState = getComponentState(component.id);
     if (!componentState) return;
 
@@ -67,9 +65,7 @@ export const drawResize = (parent: TContainer, component: EditorComponent): Cont
     for (const handle of handles) {
       resizeContainer.addChild(handle);
     }
-  });
-
-  ticker.start();
+  };
 
   return resizeContainer;
 };

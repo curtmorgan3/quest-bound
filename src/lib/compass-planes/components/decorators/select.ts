@@ -1,5 +1,5 @@
 import type { Container as TContainer } from 'pixi.js';
-import { Container, Graphics, Point, Ticker } from 'pixi.js';
+import { Container, Graphics, Point } from 'pixi.js';
 import {
   clearSelection,
   getComponentState,
@@ -20,7 +20,6 @@ function movedBeyondThreshold(start: Point, end: Point) {
 }
 
 export const drawSelect = (parent: TContainer, component: EditorComponent): TContainer => {
-  const ticker = new Ticker();
   const lastMousePos = new Point(component.x, component.y);
 
   const selectBox = new Container({
@@ -49,7 +48,7 @@ export const drawSelect = (parent: TContainer, component: EditorComponent): TCon
 
   selectBox.addChild(border);
 
-  ticker.add(() => {
+  selectBox.onRender = () => {
     border.clear();
 
     if (isSelected(component.id)) {
@@ -64,9 +63,7 @@ export const drawSelect = (parent: TContainer, component: EditorComponent): TCon
         color: EditorStyles.selectionBoxColor,
       });
     }
-  });
-
-  ticker.start();
+  };
 
   parent.addChild(selectBox);
   return selectBox;
