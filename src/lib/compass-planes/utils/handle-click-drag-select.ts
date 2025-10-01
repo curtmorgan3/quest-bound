@@ -1,5 +1,5 @@
 import { type Container as TContainer } from 'pixi.js';
-import { dragClickStartPosition, getAllComponents } from '../cache';
+import { dragClickStartPosition, getAllComponents, getZoom } from '../cache';
 import { clearSelection, selectComponent } from '../cache/interactive-state';
 
 export const handleClickAndDragToSelect = (parent: TContainer) => {
@@ -10,6 +10,8 @@ export const handleClickAndDragToSelect = (parent: TContainer) => {
   parent.on('pointerup', (e) => {
     const dragEndPosition = e.global;
     const components = getAllComponents();
+
+    const zoom = getZoom();
 
     // Calculate the selection rectangle bounds
     const minX = Math.min(dragClickStartPosition.x, dragEndPosition.x);
@@ -22,10 +24,15 @@ export const handleClickAndDragToSelect = (parent: TContainer) => {
 
     // Find components that are fully enveloped within the selection rectangle
     const selectedComponents = components.filter((component) => {
-      const componentLeft = component.x;
-      const componentRight = component.x + component.width;
-      const componentTop = component.y;
-      const componentBottom = component.y + component.height;
+      const adjustedX = component.x * zoom;
+      const adjustedY = component.y * zoom;
+      const adjustedWidth = component.width * zoom;
+      const adjustedHeight = component.height * zoom;
+
+      const componentLeft = adjustedX;
+      const componentRight = adjustedX + adjustedWidth;
+      const componentTop = adjustedY;
+      const componentBottom = adjustedY + adjustedHeight;
 
       // Check if component is fully within the selection rectangle
       return (

@@ -3,23 +3,24 @@ import { componentsAreDragging, getZoom, setZoom, toggleZooming } from '../cache
 
 let lastZoom = getZoom();
 
-const zoom_enabled = false;
+const zoom_enabled = true;
 
 export const addCameraHandlers = (app: Application) => {
   const ticker = new Ticker();
 
   app.stage.on('wheel', (e) => {
     if (componentsAreDragging() || !zoom_enabled) return;
+    if (!e.shiftKey) return;
     toggleZooming(true);
     e.stopPropagation();
     e.preventDefault();
 
     // Zooming out
     if (e.deltaY > 0) {
-      setZoom(getZoom() * 0.9);
+      setZoom(getZoom() * 0.99);
       // Zooming in
     } else {
-      setZoom(getZoom() * 1.1);
+      setZoom(getZoom() * 1.01);
     }
 
     setTimeout(() => {

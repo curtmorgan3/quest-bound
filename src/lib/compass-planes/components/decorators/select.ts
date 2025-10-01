@@ -3,7 +3,6 @@ import { Container, Graphics, Point } from 'pixi.js';
 import {
   clearSelection,
   getComponentState,
-  getZoom,
   isSelected,
   otherComponentIsSelected,
   toggleSelection,
@@ -53,10 +52,9 @@ export const drawSelect = (parent: TContainer, component: EditorComponent): TCon
 
     if (isSelected(component.id)) {
       const componentState = getComponentState(component.id);
-      const zoom = getZoom();
       if (!componentState) return;
 
-      border.rect(0, 0, componentState.width * zoom, componentState.height * zoom);
+      border.rect(0, 0, componentState.width, componentState.height);
 
       border.stroke({
         width: EditorStyles.selectionBoxWidth,

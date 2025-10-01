@@ -19,8 +19,8 @@ export function drawShape(parent: Container, component: EditorComponent) {
     const componentState = getComponentState(component.id);
     if (!componentState) return;
 
-    graphics.width = componentState.width * getZoom();
-    graphics.height = componentState.height * getZoom();
+    // graphics.width = componentState.width * getZoom();
+    // graphics.height = componentState.height * getZoom();
   };
 
   drawBase(parent, component).addChild(graphics);

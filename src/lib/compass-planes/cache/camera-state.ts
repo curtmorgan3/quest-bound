@@ -3,9 +3,11 @@ import { EditorStyles } from '../styles';
 let zoom = 1;
 let isZooming = false;
 let gridSize = EditorStyles.initialGridSize;
+const MAX_ZOOM = 1.4;
+const MIN_ZOOM = 0.7;
 
 export function setZoom(newZoom: number) {
-  zoom = newZoom;
+  zoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, newZoom));
 }
 
 export function getZoom() {

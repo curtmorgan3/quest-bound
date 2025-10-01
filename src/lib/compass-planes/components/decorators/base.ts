@@ -17,6 +17,7 @@ import { drawSelect } from './select';
  * Draws base container and adds decorators.
  * Updates cache to track dragging.
  * Adds listeners for component update.
+ * Scales and positions child components based on zoom.
  */
 export function drawBase(parent: TContainer, component: EditorComponent): TContainer {
   const lastMousePos = new Point();
@@ -33,17 +34,19 @@ export function drawBase(parent: TContainer, component: EditorComponent): TConta
     y: component.y * initialZoom,
   });
 
-  let lastComponentState = component;
-
   base.onRender = () => {
     const componentState = getComponentState(component.id);
     if (!componentState) return;
 
-    if (JSON.stringify(componentState) === JSON.stringify(lastComponentState)) return;
+    const zoom = getZoom();
+    for (const child of base.children) {
+      const label = child.label;
+      if (!label.includes(component.id)) return;
+      child.scale.set(zoom, zoom);
+    }
 
     base.x = componentState.x * getZoom();
     base.y = componentState.y * getZoom();
-    lastComponentState = componentState;
   };
 
   base.on('pointerdown', (e) => {
