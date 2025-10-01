@@ -43,10 +43,10 @@ export { selectedComponentIds };
 //#endregion //////////////////////////////
 
 // #region Dragging
-const dragMousePosition = new Point();
 const dragStartPosition = new Point();
+const dragClickStartPosition = new Point(-1, -1);
 
-export { dragMousePosition, dragStartPosition };
+export { dragClickStartPosition, dragStartPosition };
 
 const draggedComponentIds = new Set<string>();
 
@@ -64,6 +64,7 @@ export function isDragging(id: string) {
 
 export function clearDragging() {
   draggedComponentIds.clear();
+  dragClickStartPosition.set(-1, -1);
 }
 
 export function componentsAreDragging() {

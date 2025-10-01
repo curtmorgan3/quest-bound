@@ -21,4 +21,8 @@ export function setComponetState(id: string, state: Partial<EditorComponent>) {
   }
 }
 
+export function getAllComponents() {
+  return Array.from(editorState.values());
+}
+
 export { editorState };

@@ -23,7 +23,7 @@ export const drawGrid = (parent: TContainer): TGraphics => {
     return graphics;
   }
 
-  let grid = buildGrid(new Graphics()).stroke({
+  let grid = buildGrid(new Graphics({ label: 'grid' })).stroke({
     color: EditorStyles.gridLineColor,
     pixelLine: true,
     alpha: 0.1,
@@ -33,7 +33,7 @@ export const drawGrid = (parent: TContainer): TGraphics => {
   ticker.add(() => {
     if (!isCurrentlyZooming()) return;
     parent.removeChild(grid);
-    grid = buildGrid(new Graphics()).stroke({
+    grid = buildGrid(new Graphics({ label: 'grid' })).stroke({
       color: EditorStyles.gridLineColor,
       pixelLine: true,
       alpha: 0.1,

@@ -1,6 +1,8 @@
 import type { Application, Container as TContainer } from 'pixi.js';
 import { Container } from 'pixi.js';
 import { clearSelection, componentsAreResizing } from '../cache';
+import { handleClickAndDragToSelect } from '../utils';
+import { drawClickDragSelectBox } from './click-drag-select-box';
 import { drawGrid } from './grid';
 
 /**
@@ -19,6 +21,9 @@ export const drawBackground = (app: Application): TContainer => {
   });
 
   drawGrid(stageBackground);
+  drawClickDragSelectBox(stageBackground);
+
+  handleClickAndDragToSelect(stageBackground);
 
   return stageBackground;
 };
