@@ -20,8 +20,7 @@ const { log } = debugLog('planes', 'component-base');
 /**
  * Draws base container and adds decorators.
  * Updates cache to track dragging.
- * Adds listeners for component update.
- * Positions child components based on zoom.
+ * Repositions based on zoom.
  */
 export function drawBase(parent: TContainer, component: EditorComponent): TContainer {
   const lastMousePos = new Point();
@@ -67,6 +66,7 @@ export function drawBase(parent: TContainer, component: EditorComponent): TConta
   });
 
   parent.addChild(base);
+
   const resize = drawResize(base, component);
   const selectBox = drawSelect(resize, component);
   const renderBox = drawRender(selectBox, component);

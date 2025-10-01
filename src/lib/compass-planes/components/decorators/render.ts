@@ -3,6 +3,10 @@ import { Container } from 'pixi.js';
 import { getComponentState, getZoom } from '../../cache';
 import type { EditorComponent } from '../../types';
 
+/**
+ * Renders component element.
+ * Resizes based on zoom.
+ */
 export const drawRender = (parent: TContainer, component: EditorComponent) => {
   const renderContainer = new Container({ label: `render-${component.id}` });
 

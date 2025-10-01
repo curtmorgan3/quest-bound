@@ -22,6 +22,10 @@ function movedBeyondThreshold(start: Point, end: Point) {
   return Math.sqrt(dx * dx + dy * dy) > SELECTION_MOVE_THRESHOLD;
 }
 
+/**
+ * Adds a border to selected component.
+ * Toggles selected state on component click.
+ */
 export const drawSelect = (parent: TContainer, component: EditorComponent): TContainer => {
   const lastMousePos = new Point(component.x, component.y);
 
@@ -57,10 +61,11 @@ export const drawSelect = (parent: TContainer, component: EditorComponent): TCon
     border.clear();
 
     if (isSelected(component.id)) {
+      const zoom = getZoom();
       const componentState = getComponentState(component.id);
       if (!componentState) return;
 
-      border.rect(0, 0, componentState.width * getZoom(), componentState.height * getZoom());
+      border.rect(0, 0, componentState.width * zoom, componentState.height * zoom);
 
       border.stroke({
         width: EditorStyles.selectionBoxWidth,
