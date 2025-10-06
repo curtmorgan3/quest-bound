@@ -5,6 +5,10 @@ let isZooming = false;
 let gridSize = EditorStyles.initialGridSize;
 const MAX_ZOOM = 1.4;
 const MIN_ZOOM = 0.7;
+let isPanning = false;
+
+let x = 0;
+let y = 0;
 
 export function setZoom(newZoom: number) {
   zoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, newZoom));
@@ -28,4 +32,32 @@ export function setGridSize(newGridSize: number) {
 
 export function getGridSize() {
   return gridSize;
+}
+
+export function isCurrentlyPanning() {
+  return isPanning;
+}
+
+export function togglePanning(panning: boolean) {
+  isPanning = panning;
+}
+
+export function setCameraPosition(position: { x: number; y: number }) {
+  x = position.x;
+  y = position.y;
+}
+
+export function panCameraRight(value: number) {
+  x += value;
+}
+
+export function panCameraDown(value: number) {
+  y += value;
+}
+
+export function getCameraPosition() {
+  return {
+    x,
+    y,
+  };
 }

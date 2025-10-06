@@ -1,59 +1,34 @@
-import type { Container as TContainer, Graphics as TGraphics } from 'pixi.js';
-import { Graphics, Ticker } from 'pixi.js';
-import { getGridSize, getZoom, isCurrentlyZooming } from '../cache';
-import { EditorStyles } from '../styles';
+import type { Container as TContainer } from 'pixi.js';
+import { Assets, Point, Texture, Ticker, TilingSprite } from 'pixi.js';
+import { getCameraPosition, getZoom } from '../cache';
+import { ASSET_PATH } from '../constants';
+
+const GRID_ASSET_PATH = ASSET_PATH + 'grid-square.png';
 
 /**
  * Draws grid based on editor styles.
  */
-export const drawGrid = (parent: TContainer): TGraphics => {
+export const drawGrid = async (parent: TContainer) => {
   const ticker = new Ticker();
+  await Assets.load(GRID_ASSET_PATH);
 
-  function buildGrid(graphics: TGraphics) {
-    const viewportWidth = window.innerWidth;
-
-    const adjustedGridSize = getGridSize() * getZoom();
-
-    const numLines = (viewportWidth + 400) / getGridSize();
-    for (let i = 0; i <= numLines; i++) {
-      graphics
-        .moveTo(i * adjustedGridSize, 0)
-        .lineTo(i * adjustedGridSize, numLines * adjustedGridSize);
-    }
-
-    for (let i = 0; i <= numLines; i++) {
-      graphics
-        .moveTo(0, i * adjustedGridSize)
-        .lineTo(numLines * adjustedGridSize, i * adjustedGridSize);
-    }
-
-    return graphics;
-  }
-
-  let grid = buildGrid(new Graphics({ label: 'grid' })).stroke({
-    color: EditorStyles.gridLineColor,
-    pixelLine: true,
-    alpha: 0.1,
-    width: 1,
+  const tilingSprite = new TilingSprite({
+    texture: Texture.from(GRID_ASSET_PATH),
+    width: window.innerWidth,
+    height: window.innerHeight,
+    alpha: 0.3,
   });
 
+  parent.addChild(tilingSprite);
+
   ticker.add(() => {
-    if (!isCurrentlyZooming()) return;
-    parent.removeChild(grid);
-    grid = buildGrid(new Graphics({ label: 'grid' })).stroke({
-      color: EditorStyles.gridLineColor,
-      pixelLine: true,
-      alpha: 0.1,
-      width: 1,
-    });
-    parent.addChild(grid);
+    const cameraPos = getCameraPosition();
+    const zoom = getZoom();
+    tilingSprite.tilePosition = new Point(cameraPos.x * -1, cameraPos.y * -1);
+    tilingSprite.scale = zoom;
+    tilingSprite.width = window.innerWidth / zoom;
+    tilingSprite.height = window.innerHeight / zoom;
   });
 
   ticker.start();
-
-  if (getGridSize() * getZoom() > 1) {
-    parent.addChild(grid);
-  }
-
-  return grid;
 };

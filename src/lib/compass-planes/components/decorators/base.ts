@@ -3,6 +3,7 @@ import type { Container as TContainer } from 'pixi.js';
 import { Container } from 'pixi.js';
 import {
   clearDragging,
+  getCameraPosition,
   getComponentState,
   getSelectedComponents,
   getZoom,
@@ -39,8 +40,9 @@ export function drawBase(parent: TContainer, component: EditorComponent): TConta
     if (!componentState) return;
 
     const zoom = getZoom();
-    base.x = componentState.x * zoom;
-    base.y = componentState.y * zoom;
+    const pos = getCameraPosition();
+    base.x = (componentState.x - pos.x) * zoom;
+    base.y = (componentState.y - pos.y) * zoom;
   };
 
   base.on('pointerdown', (e) => {

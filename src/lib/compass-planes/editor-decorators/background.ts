@@ -11,7 +11,7 @@ const { log } = debugLog('planes', 'editor-background');
 /**
  * Adds grid and click event handlers
  */
-export const drawBackground = (app: Application): TContainer => {
+export const drawBackground = async (app: Application): Promise<TContainer> => {
   const stageBackground = new Container({
     label: 'editor-background',
     hitArea: app.renderer.screen,
@@ -24,7 +24,7 @@ export const drawBackground = (app: Application): TContainer => {
     }
   });
 
-  drawGrid(stageBackground);
+  await drawGrid(stageBackground);
   drawClickDragSelectBox(stageBackground);
 
   handleClickAndDragToSelect(stageBackground);

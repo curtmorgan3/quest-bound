@@ -28,8 +28,6 @@ export async function initializeEditor({
   onComponentsUpdated,
 }: InitializeEditorOptions) {
   setEditorState(state);
-  log('new comp state');
-
   if (app) return;
   log('initialize editor');
 
@@ -55,7 +53,7 @@ export async function initializeEditor({
   addResizeHandlers(app, handleUpdate);
   addCameraHandlers(app);
 
-  const stageBackground = drawBackground(app);
+  const stageBackground = await drawBackground(app);
   app.stage.addChild(stageBackground);
 
   drawComponents(app.stage, editorState);

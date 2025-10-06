@@ -47,7 +47,7 @@ export const Editor = () => {
   }, []);
 
   return (
-    <div className='flex flex-col'>
+    <div className='flex flex-col' style={{ overflow: 'hidden' }}>
       <div id='qb-editor' className='flex-grow-1 ' />
     </div>
   );
