@@ -1,3 +1,4 @@
+import type { Component } from '@/types';
 import { debugLog } from '@/utils';
 import type { Application } from 'pixi.js';
 import {
@@ -9,16 +10,15 @@ import {
   getDraggedComponents,
   setComponetState,
 } from '../cache';
-import type { EditorComponent } from '../types';
 import { clampToGrid } from './helpers';
 
 const { log } = debugLog('planes', 'drag-handlers');
 
 export const addDragHandlers = (
   app: Application,
-  onUpdate: (updates: Array<EditorComponent>) => void,
+  onUpdate: (updates: Array<Component>) => void,
 ) => {
-  const updates: Map<string, Partial<EditorComponent>> = new Map();
+  const updates: Map<string, Partial<Component>> = new Map();
 
   app.stage.on('pointermove', (e) => {
     if (!componentsAreDragging()) return;
@@ -51,7 +51,7 @@ export const addDragHandlers = (
 
   app.stage.on('pointerup', () => {
     if (updates.size !== 0) {
-      onUpdate(Array.from(updates).map(([id, update]) => ({ id, ...update }) as EditorComponent));
+      onUpdate(Array.from(updates).map(([id, update]) => ({ id, ...update }) as Component));
       updates.clear();
     }
 

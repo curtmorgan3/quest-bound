@@ -1,23 +1,7 @@
-type ComponentStyle = {
-  backgroundColor?: string;
-};
+import type { Component } from '@/types';
 
-type EditorType = 'shape' | 'input';
-
-export type EditorState = Map<string, EditorComponent>;
+export type EditorState = Map<string, Component>;
 
 export type EditorConfiguration = {
   backgroundColor?: string;
-};
-
-export type EditorComponent = {
-  id: string;
-  type: EditorType;
-  x: number;
-  y: number;
-  z: number;
-  rotation: number;
-  height: number;
-  width: number;
-  style: ComponentStyle;
 };

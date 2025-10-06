@@ -1,3 +1,4 @@
+import type { Component } from '@/types';
 import type { Application } from 'pixi.js';
 import {
   clearResizing,
@@ -7,14 +8,13 @@ import {
   resizeStartPosition,
   setComponetState,
 } from '../cache';
-import type { EditorComponent } from '../types';
 import { clampToGrid } from './helpers';
 
 export const addResizeHandlers = (
   app: Application,
-  onUpdate: (updates: Array<EditorComponent>) => void,
+  onUpdate: (updates: Array<Component>) => void,
 ) => {
-  const updates: Map<string, Partial<EditorComponent>> = new Map();
+  const updates: Map<string, Partial<Component>> = new Map();
 
   app.stage.on('pointermove', (e) => {
     const resizedComponentId = getResizeComponentId();
@@ -90,7 +90,7 @@ export const addResizeHandlers = (
 
   app.stage.on('pointerup', () => {
     if (updates.size !== 0) {
-      onUpdate(Array.from(updates).map(([id, update]) => ({ id, ...update }) as EditorComponent));
+      onUpdate(Array.from(updates).map(([id, update]) => ({ id, ...update }) as Component));
       updates.clear();
     }
 

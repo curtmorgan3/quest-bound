@@ -80,11 +80,13 @@ export type Component = BaseDetails & {
   type: string;
   x: number;
   y: number;
+  z: number;
   height: number;
   width: number;
   rotation: number;
-  assetId: string | null;
-  image: string | null;
+  style: Record<string, any>;
+  assetId?: string;
+  image?: string;
   groupId?: string;
   attributeId?: string;
   actionId?: string;

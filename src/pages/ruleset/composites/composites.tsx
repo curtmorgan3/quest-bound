@@ -7,15 +7,14 @@ import {
   CardTitle,
   Input,
 } from '@/components';
-import { useComposites } from '@/lib/compass-api';
+import { useComposites, useRulesets } from '@/lib/compass-api';
 import { useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
-import { CompositeEditor } from './composite-editor';
+import { useNavigate } from 'react-router-dom';
 
 export const CompositeSelect = () => {
   const { composites, deleteComposite } = useComposites();
-  const [searchParams, setSearchParams] = useSearchParams();
-
+  const { activeRuleset } = useRulesets();
+  const navigate = useNavigate();
   const [filterValue, setFilterValue] = useState('');
 
   const sortedComposites = [...composites].sort((a, b) => a.title.localeCompare(b.title));
@@ -24,12 +23,6 @@ export const CompositeSelect = () => {
       c.title.toLowerCase().includes(filterValue.toLowerCase()) ||
       c.category?.toLowerCase().includes(filterValue.toLowerCase()),
   );
-
-  const compositeId = searchParams.get('composite');
-
-  if (compositeId) {
-    return <CompositeEditor compositeId={compositeId} />;
-  }
 
   return (
     <div className='flex flex-col gap-4'>
@@ -58,7 +51,9 @@ export const CompositeSelect = () => {
                 Delete
               </Button>
               <CardAction>
-                <Button variant='link' onClick={() => setSearchParams({ composite: c.id })}>
+                <Button
+                  variant='link'
+                  onClick={() => navigate(`/rulesets/${activeRuleset?.id}/composites/${c.id}`)}>
                   Open
                 </Button>
               </CardAction>

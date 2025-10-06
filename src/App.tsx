@@ -2,6 +2,7 @@ import { ErrorPage, Home, Ruleset } from '@/pages';
 import { HashRouter, Route, Routes } from 'react-router-dom';
 import { ErrorBoundary } from './components';
 import { Layout } from './components/layout';
+import { CompositeEditor } from './pages/ruleset/composites/composite-editor';
 
 function CompassRoutes() {
   return (
@@ -23,6 +24,11 @@ function CompassRoutes() {
             <Route
               path={`/rulesets/:rulesetId/composites`}
               element={<Ruleset page='composites' />}
+            />
+
+            <Route
+              path={`/rulesets/:rulesetId/composites/:compositeId`}
+              element={<CompositeEditor />}
             />
 
             <Route path='*' element={<ErrorPage type='404' />} />

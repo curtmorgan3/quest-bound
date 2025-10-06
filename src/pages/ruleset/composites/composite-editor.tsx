@@ -1,56 +1,36 @@
-import { initializeEditor, type EditorComponent } from '@/lib/compass-planes';
+import { useComponents } from '@/lib/compass-api';
+import { destroyEditor, initializeEditor } from '@/lib/compass-planes';
+import type { Component } from '@/types';
 import { debugLog } from '@/utils';
 import { useEffect } from 'react';
+import { useParams } from 'react-router-dom';
 
 const { log } = debugLog('pages', 'editor');
 
-const comp1: EditorComponent = {
-  id: '1',
-  type: 'shape',
-  x: 100,
-  y: 100,
-  z: 1,
-  rotation: 0,
-  height: 80,
-  width: 80,
-  style: {},
-};
+export const CompositeEditor = () => {
+  const { compositeId } = useParams();
+  const { components, updateComponents } = useComponents(compositeId);
 
-const comp2: EditorComponent = {
-  id: '2',
-  type: 'shape',
-  x: 200,
-  y: 200,
-  z: 1,
-  rotation: 0,
-  height: 80,
-  width: 80,
-  style: {},
-};
+  const editorState = new Map<string, Component>();
+  for (const comp of components) {
+    editorState.set(comp.id, comp);
+  }
 
-interface CompositeEditorProps {
-  compositeId?: string;
-}
-
-export const CompositeEditor = ({ compositeId }: CompositeEditorProps) => {
-  console.log('compositeId: ', compositeId);
-
-  const editorState = new Map<string, EditorComponent>([
-    ['1', comp1],
-    ['2', comp2],
-  ]);
-
-  const onComponentsUpdated = (updates: Array<EditorComponent>) => {
+  const onComponentsUpdated = (updates: Array<Component>) => {
     log('components updated: ', updates);
+    updateComponents(updates);
   };
 
   useEffect(() => {
+    if (editorState.size !== components.length) return;
     initializeEditor({ elementId: 'qb-editor', state: editorState, onComponentsUpdated });
-  }, []);
+  }, [editorState.size, components.length]);
 
   useEffect(() => {
-    // return () => destroyEditor();
+    return () => destroyEditor();
   }, []);
+
+  if (!compositeId) return null;
 
   return (
     <div className='flex flex-col' style={{ overflow: 'hidden' }}>

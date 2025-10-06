@@ -1,9 +1,10 @@
+import type { Component } from '@/types';
 import { debugLog } from '@/utils';
 import { Application, type ApplicationOptions } from 'pixi.js';
 import { editorState, setEditorState } from './cache';
 import { drawBackground } from './editor-decorators';
 import { EditorStyles } from './styles';
-import type { EditorComponent, EditorConfiguration, EditorState } from './types';
+import type { EditorConfiguration, EditorState } from './types';
 import { addCameraHandlers, addDragHandlers, addResizeHandlers, drawComponents } from './utils';
 
 const { log } = debugLog('planes', 'editor');
@@ -12,7 +13,7 @@ interface InitializeEditorOptions {
   elementId: string;
   config?: EditorConfiguration;
   state: EditorState;
-  onComponentsUpdated?: (updates: Array<EditorComponent>) => void;
+  onComponentsUpdated?: (updates: Array<Component>) => void;
 }
 
 let app: Application | null = null;
@@ -45,7 +46,7 @@ export async function initializeEditor({
 
   await app.init({ ...configuration, resizeTo: parentElement, eventMode: 'static' });
 
-  const handleUpdate = (updates: Array<EditorComponent>) => {
+  const handleUpdate = (updates: Array<Component>) => {
     onComponentsUpdated?.(updates);
   };
 
@@ -62,7 +63,8 @@ export async function initializeEditor({
 }
 
 export function destroyEditor() {
-  if (app) {
+  if (app && app.renderer) {
+    app.destroy();
     app = null;
   }
 }

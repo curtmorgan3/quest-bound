@@ -1,6 +1,6 @@
 import { useErrorHandler } from '@/hooks';
 import { db } from '@/stores';
-import type { Action, Composite } from '@/types';
+import type { Composite } from '@/types';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useRulesets } from './use-rulesets';
 
@@ -27,7 +27,7 @@ export const useComposites = () => {
         rulesetId: activeRuleset.id,
         createdAt: now,
         updatedAt: now,
-      } as Action);
+      } as Composite);
     } catch (e) {
       handleError(e as Error, {
         component: 'useComposites/createComposite',
@@ -56,7 +56,7 @@ export const useComposites = () => {
       await db.composites.delete(id);
     } catch (e) {
       handleError(e as Error, {
-        component: 'useComposites/deleteAction',
+        component: 'useComposites/deleteComposite',
         severity: 'medium',
       });
     }
