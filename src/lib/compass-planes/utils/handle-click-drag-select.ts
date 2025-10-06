@@ -1,6 +1,6 @@
 import { debugLog } from '@/utils';
 import { type Container as TContainer } from 'pixi.js';
-import { dragClickStartPosition, getAllComponents, getZoom } from '../cache';
+import { dragClickStartPosition, getAllComponents, getCameraPosition, getZoom } from '../cache';
 import { clearSelection, componentsAreDragging, selectComponent } from '../cache/interactive-state';
 
 const { log } = debugLog('planes', 'handle-click-drag');
@@ -16,6 +16,7 @@ export const handleClickAndDragToSelect = (parent: TContainer) => {
     const components = getAllComponents();
 
     const zoom = getZoom();
+    const cameraPos = getCameraPosition();
 
     // Calculate the selection rectangle bounds
     const minX = Math.min(dragClickStartPosition.x, dragEndPosition.x);
@@ -28,8 +29,8 @@ export const handleClickAndDragToSelect = (parent: TContainer) => {
 
     // Find components that are fully enveloped within the selection rectangle
     const selectedComponents = components.filter((component) => {
-      const adjustedX = component.x * zoom;
-      const adjustedY = component.y * zoom;
+      const adjustedX = (component.x - cameraPos.x) * zoom;
+      const adjustedY = (component.y - cameraPos.y) * zoom;
       const adjustedWidth = component.width * zoom;
       const adjustedHeight = component.height * zoom;
 
