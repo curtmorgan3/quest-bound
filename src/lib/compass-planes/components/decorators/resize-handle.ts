@@ -1,10 +1,10 @@
+import type { Component } from '@/types';
 import { Graphics } from 'pixi.js';
 import { getZoom, resizeStartPosition, startResizing, stopResizing } from '../../cache';
 import { EditorStyles } from '../../styles';
-import type { EditorComponent } from '../../types';
 
 export const drawResizeHandle = (
-  component: EditorComponent,
+  component: Component,
   corner: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right',
 ): Graphics => {
   const graphics = new Graphics();

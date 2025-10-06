@@ -1,3 +1,4 @@
+import type { Component } from '@/types';
 import { debugLog } from '@/utils';
 import type { Container as TContainer } from 'pixi.js';
 import { Container, Graphics, Point } from 'pixi.js';
@@ -10,7 +11,6 @@ import {
   toggleSelection,
 } from '../../cache';
 import { EditorStyles } from '../../styles';
-import type { EditorComponent } from '../../types';
 
 const { log } = debugLog('planes', 'component-select');
 
@@ -26,7 +26,7 @@ function movedBeyondThreshold(start: Point, end: Point) {
  * Adds a border to selected component.
  * Toggles selected state on component click.
  */
-export const drawSelect = (parent: TContainer, component: EditorComponent): TContainer => {
+export const drawSelect = (parent: TContainer, component: Component): TContainer => {
   const lastMousePos = new Point(component.x, component.y);
 
   const selectBox = new Container({

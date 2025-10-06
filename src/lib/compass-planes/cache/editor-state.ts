@@ -1,4 +1,5 @@
-import type { EditorComponent, EditorState } from '../types';
+import type { Component } from '@/types';
+import type { EditorState } from '../types';
 
 let editorState: EditorState;
 
@@ -14,7 +15,7 @@ export function getComponentState(id: string) {
   return state;
 }
 
-export function setComponetState(id: string, state: Partial<EditorComponent>) {
+export function setComponetState(id: string, state: Partial<Component>) {
   const existing = editorState.get(id);
   if (existing) {
     editorState.set(id, { ...existing, ...state });

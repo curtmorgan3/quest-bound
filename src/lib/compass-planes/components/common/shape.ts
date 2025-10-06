@@ -1,10 +1,10 @@
+import type { Component } from '@/types';
 import { Graphics, type Container } from 'pixi.js';
 import { getZoom } from '../../cache';
 import { EditorStyles } from '../../styles';
-import type { EditorComponent } from '../../types';
 import { drawBase } from '../decorators';
 
-export function drawShape(parent: Container, component: EditorComponent) {
+export function drawShape(parent: Container, component: Component) {
   const graphics = new Graphics({
     label: component.id,
   });

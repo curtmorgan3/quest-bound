@@ -1,6 +1,6 @@
+import type { Component } from '@/types';
 import type { Container as TContainer } from 'pixi.js';
 import { Container, Graphics } from 'pixi.js';
-import type { EditorComponent } from '../..';
 import { getComponentState, isSelected } from '../../cache';
 import { drawResizeHandle } from './resize-handle';
 
@@ -8,13 +8,13 @@ import { drawResizeHandle } from './resize-handle';
  * Container to hold resize handles on each corner of a component.
  * Only visible when the component is selected.
  */
-export const drawResize = (parent: TContainer, component: EditorComponent): Container => {
+export const drawResize = (parent: TContainer, component: Component): Container => {
   const resizeContainer = new Container({
     eventMode: 'static',
     label: `resize-${component.id}`,
   });
 
-  function drawHandles(componentState: EditorComponent): Graphics[] {
+  function drawHandles(componentState: Component): Graphics[] {
     const handles = [];
 
     for (let i = 0; i < 4; i++) {

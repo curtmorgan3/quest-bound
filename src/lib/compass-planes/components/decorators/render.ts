@@ -1,13 +1,13 @@
+import type { Component } from '@/types';
 import type { Container as TContainer } from 'pixi.js';
 import { Container } from 'pixi.js';
 import { getComponentState, getZoom } from '../../cache';
-import type { EditorComponent } from '../../types';
 
 /**
  * Renders component element.
  * Resizes based on zoom.
  */
-export const drawRender = (parent: TContainer, component: EditorComponent) => {
+export const drawRender = (parent: TContainer, component: Component) => {
   const renderContainer = new Container({ label: `render-${component.id}` });
 
   parent.addChild(renderContainer);

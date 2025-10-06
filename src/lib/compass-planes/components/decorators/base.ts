@@ -1,3 +1,4 @@
+import type { Component } from '@/types';
 import { debugLog } from '@/utils';
 import type { Container as TContainer } from 'pixi.js';
 import { Container } from 'pixi.js';
@@ -10,7 +11,6 @@ import {
   isSelected,
   startDragging,
 } from '../../cache';
-import type { EditorComponent } from '../../types';
 import { drawRender } from './render';
 import { drawResize } from './resize';
 import { drawSelect } from './select';
@@ -22,7 +22,7 @@ const { log } = debugLog('planes', 'component-base');
  * Updates cache to track dragging.
  * Repositions based on zoom.
  */
-export function drawBase(parent: TContainer, component: EditorComponent): TContainer {
+export function drawBase(parent: TContainer, component: Component): TContainer {
   const initialZoom = getZoom();
 
   const base = new Container({
