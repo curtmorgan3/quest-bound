@@ -1,4 +1,4 @@
-import { EditorStyles } from '../styles';
+import { EditorStyles } from '../constants';
 
 let zoom = 1;
 let isZooming = false;

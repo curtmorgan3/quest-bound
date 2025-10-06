@@ -1,7 +1,7 @@
 import type { Component } from '@/types';
 import { Graphics, type Container } from 'pixi.js';
 import { getZoom } from '../../cache';
-import { EditorStyles } from '../../styles';
+import { EditorStyles } from '../../constants';
 import { drawBase } from '../decorators';
 
 export function drawShape(parent: Container, component: Component) {

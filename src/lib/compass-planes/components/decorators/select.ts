@@ -10,7 +10,7 @@ import {
   otherComponentIsSelected,
   toggleSelection,
 } from '../../cache';
-import { EditorStyles } from '../../styles';
+import { EditorStyles } from '../../constants';
 
 const { log } = debugLog('planes', 'component-select');
 

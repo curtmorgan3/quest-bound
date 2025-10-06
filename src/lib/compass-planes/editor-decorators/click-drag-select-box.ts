@@ -1,7 +1,7 @@
 import type { Container as TContainer } from 'pixi.js';
 import { Container, Graphics } from 'pixi.js';
 import { dragClickStartPosition } from '../cache';
-import { EditorStyles } from '../styles';
+import { EditorStyles } from '../constants';
 
 export const drawClickDragSelectBox = (parent: TContainer): TContainer => {
   const dragSelectBox = new Container({ label: 'click-drag-select' });

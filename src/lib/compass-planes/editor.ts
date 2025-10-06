@@ -2,8 +2,8 @@ import type { Component } from '@/types';
 import { debugLog } from '@/utils';
 import { Application, type ApplicationOptions } from 'pixi.js';
 import { editorState, setEditorState } from './cache';
+import { EditorStyles } from './constants';
 import { drawBackground } from './editor-decorators';
-import { EditorStyles } from './styles';
 import type { EditorConfiguration, EditorState } from './types';
 import { addCameraHandlers, addDragHandlers, addResizeHandlers, drawComponents } from './utils';
 

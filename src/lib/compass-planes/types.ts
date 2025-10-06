@@ -5,3 +5,5 @@ export type EditorState = Map<string, Component>;
 export type EditorConfiguration = {
   backgroundColor?: string;
 };
+
+export type ComponentType = 'shape';

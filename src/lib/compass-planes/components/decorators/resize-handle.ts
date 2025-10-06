@@ -1,7 +1,7 @@
 import type { Component } from '@/types';
 import { Graphics } from 'pixi.js';
 import { getZoom, resizeStartPosition, startResizing, stopResizing } from '../../cache';
-import { EditorStyles } from '../../styles';
+import { EditorStyles } from '../../constants';
 
 export const drawResizeHandle = (
   component: Component,
