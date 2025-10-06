@@ -20,41 +20,39 @@ export const addResizeHandlers = (
     const resizedComponentId = getResizeComponentId();
     if (!resizedComponentId) return;
 
-    const deltaX = e.global.x - resizeStartPosition.x;
-    const deltaY = e.global.y - resizeStartPosition.y;
+    const deltaX = clampToGrid(e.global.x - resizeStartPosition.x);
+    const deltaY = clampToGrid(e.global.y - resizeStartPosition.y);
 
     const component = getComponentState(resizedComponentId);
     if (!component) return;
     const corner = getComponentResizeCorner();
     if (!corner) return;
 
-    let newWidth: number;
-    let newHeight: number;
-    let widthDelta: number;
-    let heightDelta: number;
+    // TODO: Pull these from a map based on component type
+    const minWidth = 20;
+    const minHeight = 20;
+
+    let newWidth: number = 0;
+    let newHeight: number = 0;
+    let widthDelta: number = 0;
+    let heightDelta: number = 0;
 
     switch (corner) {
       case 'bottom-right':
-        component.width = clampToGrid(component.width + deltaX);
-        component.height = clampToGrid(component.height + deltaY);
+        newWidth = clampToGrid(component.width + deltaX);
+        newHeight = clampToGrid(component.height + deltaY);
         break;
       case 'bottom-left':
         // Resize from bottom-left: adjust width and height, move x position
         newWidth = clampToGrid(component.width - deltaX);
         newHeight = clampToGrid(component.height + deltaY);
         widthDelta = newWidth - component.width;
-        component.x = clampToGrid(component.x - widthDelta);
-        component.width = newWidth;
-        component.height = newHeight;
         break;
       case 'top-right':
         // Resize from top-right: adjust width and height, move y position
         newWidth = clampToGrid(component.width + deltaX);
         newHeight = clampToGrid(component.height - deltaY);
         heightDelta = newHeight - component.height;
-        component.y = clampToGrid(component.y - heightDelta);
-        component.width = newWidth;
-        component.height = newHeight;
         break;
       case 'top-left':
         // Resize from top-left: adjust width and height, move both x and y positions
@@ -62,12 +60,19 @@ export const addResizeHandlers = (
         newHeight = clampToGrid(component.height - deltaY);
         widthDelta = newWidth - component.width;
         heightDelta = newHeight - component.height;
-        component.x = clampToGrid(component.x - widthDelta);
-        component.y = clampToGrid(component.y - heightDelta);
-        component.width = newWidth;
-        component.height = newHeight;
         break;
     }
+
+    if (newWidth >= minWidth) {
+      component.x = clampToGrid(component.x - widthDelta);
+    }
+
+    if (newHeight >= minHeight) {
+      component.y = clampToGrid(component.y - heightDelta);
+    }
+
+    component.width = Math.max(minWidth, newWidth);
+    component.height = Math.max(minHeight, newHeight);
 
     const update = {
       x: component.x,
