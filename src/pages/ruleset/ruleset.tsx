@@ -14,10 +14,15 @@ import { ActionChart } from './actions';
 import { AttributeChart } from './attributes/attribute-chart';
 import { ChartSelect } from './charts';
 import { Export, Import } from './components';
+import { CompositeSelect } from './composites';
 import { BaseCreate } from './create';
 import { ItemChart } from './items/item-chart';
 
-export const Ruleset = ({ page }: { page?: 'attributes' | 'items' | 'actions' | 'charts' }) => {
+export const Ruleset = ({
+  page,
+}: {
+  page?: 'attributes' | 'items' | 'actions' | 'charts' | 'composites';
+}) => {
   const { activeRuleset } = useRulesets();
   const [searchParams, setSearchParams] = useSearchParams();
   const [open, setOpen] = useState(false);
@@ -39,6 +44,8 @@ export const Ruleset = ({ page }: { page?: 'attributes' | 'items' | 'actions' | 
         return <ActionChart />;
       case 'charts':
         return <ChartSelect />;
+      case 'composites':
+        return <CompositeSelect />;
       default:
         return <p>Not Found</p>;
     }
@@ -80,8 +87,8 @@ export const Ruleset = ({ page }: { page?: 'attributes' | 'items' | 'actions' | 
               </Button>
             </div>
           )}
-          {page !== 'charts' && <Export type={page} />}
-          {page !== 'charts' && <Import type={page} />}
+          {page !== 'charts' && page !== 'composites' && <Export type={page} />}
+          {page !== 'charts' && page !== 'composites' && <Import type={page} />}
         </div>
 
         {renderChart()}

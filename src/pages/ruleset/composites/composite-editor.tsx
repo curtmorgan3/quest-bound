@@ -28,7 +28,13 @@ const comp2: EditorComponent = {
   style: {},
 };
 
-export const Editor = () => {
+interface CompositeEditorProps {
+  compositeId?: string;
+}
+
+export const CompositeEditor = ({ compositeId }: CompositeEditorProps) => {
+  console.log('compositeId: ', compositeId);
+
   const editorState = new Map<string, EditorComponent>([
     ['1', comp1],
     ['2', comp2],

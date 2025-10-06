@@ -2,7 +2,6 @@ import { ErrorPage, Home, Ruleset } from '@/pages';
 import { HashRouter, Route, Routes } from 'react-router-dom';
 import { ErrorBoundary } from './components';
 import { Layout } from './components/layout';
-import { Editor } from './pages/editor';
 
 function CompassRoutes() {
   return (
@@ -21,7 +20,10 @@ function CompassRoutes() {
             <Route path={`/rulesets/:rulesetId/actions`} element={<Ruleset page='actions' />} />
             <Route path={`/rulesets/:rulesetId/charts`} element={<Ruleset page='charts' />} />
 
-            <Route path={`/rulesets/:rulesetId/editor`} element={<Editor />} />
+            <Route
+              path={`/rulesets/:rulesetId/composites`}
+              element={<Ruleset page='composites' />}
+            />
 
             <Route path='*' element={<ErrorPage type='404' />} />
           </Route>

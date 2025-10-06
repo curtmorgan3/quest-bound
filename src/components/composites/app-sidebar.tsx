@@ -76,8 +76,8 @@ export function AppSidebar() {
 
   if (enableEditor) {
     rulesetItems.push({
-      title: 'Editor',
-      url: `/rulesets/${activeRuleset?.id}/editor`,
+      title: 'Composites',
+      url: `/rulesets/${activeRuleset?.id}/composites`,
       icon: PaintRoller,
     });
   }

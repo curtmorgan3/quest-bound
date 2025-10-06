@@ -74,3 +74,24 @@ export type Chart = BaseDetails & {
   category?: string;
   data: string;
 };
+
+export type Component = BaseDetails & {
+  compositeId: string;
+  type: string;
+  x: number;
+  y: number;
+  height: number;
+  width: number;
+  rotation: number;
+  assetId: string | null;
+  image: string | null;
+  groupId?: string;
+  attributeId?: string;
+  actionId?: string;
+};
+
+export type Composite = BaseDetails & {
+  rulesetId: string;
+  title: string;
+  category?: string;
+};

@@ -1,4 +1,14 @@
-import type { Action, Asset, Attribute, Chart, Item, Ruleset, User } from '@/types';
+import type {
+  Action,
+  Asset,
+  Attribute,
+  Chart,
+  Component,
+  Composite,
+  Item,
+  Ruleset,
+  User,
+} from '@/types';
 import Dexie, { type EntityTable } from 'dexie';
 import { assetInjectorMiddleware } from './asset-injector-middleware';
 import { memoizedAssets } from './memoization-cache';
@@ -14,6 +24,8 @@ const db = new Dexie('qbdb') as Dexie & {
   items: EntityTable<Item, 'id'>;
   charts: EntityTable<Chart, 'id'>;
   assets: EntityTable<Asset, 'id'>;
+  composites: EntityTable<Composite, 'id'>;
+  components: EntityTable<Component, 'id'>;
 };
 
 const common = '++id, createdAt, updatedAt';
@@ -27,6 +39,8 @@ db.version(1).stores({
   actions: `${common}, &[rulesetId+title], description, category`,
   items: `${common}, &[rulesetId+title], description, category, weight, defaultQuantity, stackSize, isContainer, isStorable, isEquippable, isConsumable, inventoryWidth, inventoryHeight`,
   charts: `${common}, &[rulesetId+title], description, category, data`,
+  composites: `${common}, &[rulesetId+title], category`,
+  components: `${common}, compositeId, type, x, y, height, width, rotation, assetId, image, groupId, attributeId, actionId`,
 });
 
 // Cache assets for reference in the asset injector middleware

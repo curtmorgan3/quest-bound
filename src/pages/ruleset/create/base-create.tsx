@@ -1,10 +1,16 @@
 import { Button, Input, Label, Textarea } from '@/components';
-import { FileSpreadsheet, HandFist, Sword, UserRoundPen } from 'lucide-react';
+import { FileSpreadsheet, HandFist, PaintRoller, Sword, UserRoundPen } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useLocation, useSearchParams } from 'react-router-dom';
 import { AttributeCreate } from './attribute-create';
 import { ChartCreate } from './chart-create';
-import { useActionValues, useAttributeValues, useChartValues, useItemValues } from './hooks';
+import {
+  useActionValues,
+  useAttributeValues,
+  useChartValues,
+  useCompositeValues,
+  useItemValues,
+} from './hooks';
 import { ItemCreate } from './item-create';
 
 const iconset = {
@@ -12,6 +18,7 @@ const iconset = {
   actions: HandFist,
   items: Sword,
   charts: FileSpreadsheet,
+  composites: PaintRoller,
 };
 
 interface BaseCreateProps {
@@ -74,10 +81,25 @@ export const BaseCreate = ({ onCreate }: BaseCreateProps) => {
     setCategory,
   });
 
-  const initialType = pathname.split('/').pop() as 'attributes' | 'items' | 'actions' | 'charts';
-  const [activeType, setActiveType] = useState<'attributes' | 'items' | 'actions' | 'charts'>(
-    initialType || 'attributes',
-  );
+  const { saveComposite } = useCompositeValues({
+    id: editId || undefined,
+    baseProperties,
+    onCreate: () => {
+      document.getElementById('create-title')?.focus();
+    },
+    setTitle,
+    setCategory,
+  });
+
+  const initialType = pathname.split('/').pop() as
+    | 'attributes'
+    | 'items'
+    | 'actions'
+    | 'charts'
+    | 'composites';
+  const [activeType, setActiveType] = useState<
+    'attributes' | 'items' | 'actions' | 'charts' | 'composites'
+  >(initialType || 'attributes');
 
   useEffect(() => {
     resetAll();
@@ -103,6 +125,9 @@ export const BaseCreate = ({ onCreate }: BaseCreateProps) => {
         break;
       case 'charts':
         saveChart();
+        break;
+      case 'composites':
+        saveComposite();
         break;
       default:
         break;
@@ -137,6 +162,11 @@ export const BaseCreate = ({ onCreate }: BaseCreateProps) => {
           onClick={() => setActiveType('charts')}>
           <iconset.charts />
         </Button>
+        <Button
+          variant={activeType === 'composites' ? 'default' : 'outline'}
+          onClick={() => setActiveType('composites')}>
+          <iconset.composites />
+        </Button>
       </div>
 
       <div className='grid gap-4'>
@@ -165,15 +195,17 @@ export const BaseCreate = ({ onCreate }: BaseCreateProps) => {
         {activeType === 'items' && <ItemCreate {...itemProps} />}
         {activeType === 'charts' && <ChartCreate {...chartProps} />}
 
-        <div className='grid gap-3'>
-          <Label htmlFor='create-description'>Description</Label>
-          <Textarea
-            id='create-description'
-            name='description'
-            onChange={(e) => setDescription(e.target.value)}
-            value={description}
-          />
-        </div>
+        {activeType !== 'composites' && (
+          <div className='grid gap-3'>
+            <Label htmlFor='create-description'>Description</Label>
+            <Textarea
+              id='create-description'
+              name='description'
+              onChange={(e) => setDescription(e.target.value)}
+              value={description}
+            />
+          </div>
+        )}
       </div>
       <div className='flex justify-end items-end flex-grow'>
         <Button

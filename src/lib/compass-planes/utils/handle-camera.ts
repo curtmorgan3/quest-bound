@@ -12,7 +12,7 @@ import {
 
 const ZOOM_ENABLED = true;
 const PAN_ENABLED = true;
-const PAN_SENSITIVITY = 5;
+const PAN_SENSITIVITY = 10;
 
 export const addCameraHandlers = (app: Application) => {
   // Handle Zoom
