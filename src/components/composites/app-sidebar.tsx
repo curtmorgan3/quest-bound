@@ -1,9 +1,9 @@
 import {
+  AppWindow,
   FileSpreadsheet,
   FolderOpen,
   HandFist,
   Image,
-  PaintRoller,
   Settings as SettingsIcon,
   Sword,
   UserRoundPen,
@@ -80,7 +80,7 @@ export function AppSidebar() {
     rulesetItems.push({
       title: 'Windows',
       url: `/rulesets/${activeRuleset.id}/composites`,
-      icon: PaintRoller,
+      icon: AppWindow,
     });
   }
 
