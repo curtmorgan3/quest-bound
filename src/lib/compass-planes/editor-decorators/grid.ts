@@ -1,19 +1,17 @@
 import type { Container as TContainer } from 'pixi.js';
-import { Assets, Point, Texture, Ticker, TilingSprite } from 'pixi.js';
+import { Point, Texture, Ticker, TilingSprite } from 'pixi.js';
 import { getCameraPosition, getZoom } from '../cache';
-import { ASSET_PATH } from '../constants';
-
-const GRID_ASSET_PATH = ASSET_PATH + 'grid-square.png';
+import { getEditorAsset } from '../utils';
 
 /**
  * Draws grid based on editor styles.
  */
 export const drawGrid = async (parent: TContainer) => {
   const ticker = new Ticker();
-  await Assets.load(GRID_ASSET_PATH);
+  const gridImage = await getEditorAsset('grid-square.png');
 
   const tilingSprite = new TilingSprite({
-    texture: Texture.from(GRID_ASSET_PATH),
+    texture: Texture.from(gridImage),
     width: window.innerWidth,
     height: window.innerHeight,
     alpha: 0.3,

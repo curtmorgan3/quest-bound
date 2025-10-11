@@ -1,4 +1,5 @@
 export * from './draw-components';
+export * from './get-editor-asset';
 export * from './handle-camera';
 export * from './handle-click-drag-select';
 export * from './handle-dragging';

@@ -52,6 +52,7 @@ export const useRulesets = () => {
     } finally {
       setLoading(false);
     }
+    return '';
   };
 
   const updateRuleset = async (id: string, updates: Partial<Ruleset>) => {

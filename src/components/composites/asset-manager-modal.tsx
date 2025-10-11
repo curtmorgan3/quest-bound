@@ -37,7 +37,7 @@ interface AssetManagerModalProps {
 
 export const AssetManagerModal = ({ children }: AssetManagerModalProps) => {
   const { activeRuleset } = useRulesets();
-  const { assets, createAsset, deleteAsset } = useAssets(activeRuleset?.id);
+  const { assets, createAsset, createDirectory, deleteAsset } = useAssets(activeRuleset?.id);
   const [isOpen, setIsOpen] = useState(false);
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
   const [selectedNode, setSelectedNode] = useState<string | null>(null);
@@ -189,13 +189,7 @@ export const AssetManagerModal = ({ children }: AssetManagerModalProps) => {
         ? selectedNode.replace('folder-', '')
         : undefined;
 
-    // Create a placeholder file to represent the folder in the database
-    // This is a simple approach - in production you might want a separate folders table
-    const folderContent = '';
-    const folderFile: File = new File([folderContent], `.folder-${newFolderName}`, {
-      type: 'text/plain',
-    });
-    await createAsset(folderFile, selectedFolder);
+    await createDirectory(newFolderName, selectedFolder);
 
     setNewFolderName('');
     setIsCreatingFolder(false);
@@ -300,7 +294,7 @@ export const AssetManagerModal = ({ children }: AssetManagerModalProps) => {
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent className=' w-[80vw] h-[80vh] flex flex-col'>
+      <DialogContent className=' w-[80vw] h-[80vh] flex flex-col' full>
         <DialogHeader>
           <DialogTitle>Asset Manager</DialogTitle>
           <DialogDescription>

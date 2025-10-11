@@ -1,6 +1,7 @@
 import { db } from '@/stores';
 import type { Asset } from '@/types';
 import { useLiveQuery } from 'dexie-react-hooks';
+import { gridSquare } from './editor-assets';
 
 export const useAssets = (rulesetId?: string) => {
   // Get all assets for the current ruleset
@@ -10,7 +11,11 @@ export const useAssets = (rulesetId?: string) => {
       [rulesetId],
     ) || [];
 
-  const createAsset = async (file: File, directory?: string): Promise<string> => {
+  const createAsset = async (
+    file: File,
+    directory?: string,
+    overrideRulesetId?: string,
+  ): Promise<string> => {
     const reader = new FileReader();
     return new Promise<string>((resolve, reject) => {
       reader.onloadend = async () => {
@@ -24,8 +29,9 @@ export const useAssets = (rulesetId?: string) => {
             directory: directory || undefined,
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
-            rulesetId: rulesetId || null,
+            rulesetId: rulesetId || overrideRulesetId || null,
           });
+
           resolve(id);
         } catch (error) {
           reject(error);
@@ -36,6 +42,15 @@ export const useAssets = (rulesetId?: string) => {
       };
       reader.readAsDataURL(file);
     });
+  };
+
+  const createDirectory = async (dirName: string, parent = '', rulesetId?: string) => {
+    const folderContent = '';
+    const folderFile: File = new File([folderContent], `.folder-${dirName}`, {
+      type: 'text/plain',
+    });
+
+    await createAsset(folderFile, parent, rulesetId);
   };
 
   const deleteAsset = async (id: string) => {
@@ -49,9 +64,26 @@ export const useAssets = (rulesetId?: string) => {
     });
   };
 
+  const bootstrapInitialRulesetAssets = async (rulesetId: string) => {
+    await createDirectory('Editor Assets', undefined, rulesetId);
+
+    await db.assets.add({
+      id: crypto.randomUUID(),
+      data: gridSquare,
+      type: 'image/png',
+      filename: 'grid-square.png',
+      directory: 'Editor Assets',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      rulesetId,
+    });
+  };
+
   return {
     assets,
     createAsset,
+    bootstrapInitialRulesetAssets,
+    createDirectory,
     deleteAsset,
     updateAsset,
   };

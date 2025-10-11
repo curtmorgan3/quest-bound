@@ -33,7 +33,7 @@ const common = '++id, createdAt, updatedAt';
 // Schema declaration:
 db.version(1).stores({
   users: `${common}, username, assetId, image, preferences`,
-  assets: `${common}, data, type, filename, rulesetId`,
+  assets: `${common}, [rulesetId+directory+filename], data, type`,
   rulesets: `${common}, version, createdBy, title, description, details, assetId, image`,
   attributes: `${common}, &[rulesetId+title], description, category, type, options, defaultValue, optionsChartRef, optionsChartColumnHeader, min, max`,
   actions: `${common}, &[rulesetId+title], description, category`,
