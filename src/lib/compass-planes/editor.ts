@@ -1,9 +1,10 @@
 import type { Component } from '@/types';
 import { debugLog } from '@/utils';
+import '@pixi/layout';
 import { Application, type ApplicationOptions } from 'pixi.js';
 import { editorState, setEditorState } from './cache';
 import { EditorStyles } from './constants';
-import { drawBackground } from './editor-decorators';
+import { drawBackground, drawComponentContainerMenu } from './editor-decorators';
 import type { EditorConfiguration, EditorState } from './types';
 import { addCameraHandlers, addDragHandlers, addResizeHandlers, drawComponents } from './utils';
 
@@ -14,6 +15,7 @@ interface InitializeEditorOptions {
   config?: EditorConfiguration;
   state: EditorState;
   onComponentsUpdated?: (updates: Array<Component>) => void;
+  onComponentsCreated?: (updates: Array<Component>) => void;
 }
 
 let app: Application | null = null;
@@ -27,6 +29,7 @@ export async function initializeEditor({
   config,
   state,
   onComponentsUpdated,
+  onComponentsCreated,
 }: InitializeEditorOptions) {
   setEditorState(state);
   if (app) return;
@@ -50,12 +53,19 @@ export async function initializeEditor({
     onComponentsUpdated?.(updates);
   };
 
+  const handleCreate = (components: Array<Component>) => {
+    onComponentsCreated?.(components);
+  };
+
   addDragHandlers(app, handleUpdate);
   addResizeHandlers(app, handleUpdate);
   addCameraHandlers(app);
 
-  const stageBackground = await drawBackground(app);
+  const stageBackground = await drawBackground(app, handleCreate);
   app.stage.addChild(stageBackground);
+
+  const componentMenu = await drawComponentContainerMenu();
+  app.stage.addChild(componentMenu);
 
   drawComponents(app.stage, editorState);
 

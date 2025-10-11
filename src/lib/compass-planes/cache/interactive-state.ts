@@ -1,4 +1,5 @@
 import { Point } from 'pixi.js';
+import type { ComponentType } from '../types';
 
 //#region Selection
 const selectedComponentIds = new Set<string>();
@@ -123,3 +124,12 @@ export function getResizeComponentId() {
 }
 
 // #endregion //////////////////////////////
+
+// #region Placing
+let placingType: ComponentType | null = null;
+
+export const isPlacingType = () => !!placingType;
+export const setPlacingType = (type: ComponentType | null) => (placingType = type);
+export const getPlacingType = () => placingType;
+
+// #endregion

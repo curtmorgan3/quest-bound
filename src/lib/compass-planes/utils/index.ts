@@ -1,3 +1,4 @@
+export * from './create-component';
 export * from './draw-components';
 export * from './get-editor-asset';
 export * from './handle-camera';

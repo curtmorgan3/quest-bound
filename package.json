@@ -20,6 +20,8 @@
   "dependencies": {
     "@cypress/react": "^9.0.1",
     "@hookform/resolvers": "^5.2.1",
+    "@pixi/layout": "^3.2.0",
+    "@pixi/ui": "^2.2.7",
     "@radix-ui/react-accordion": "^1.2.12",
     "@radix-ui/react-alert-dialog": "^1.1.15",
     "@radix-ui/react-aspect-ratio": "^1.1.7",

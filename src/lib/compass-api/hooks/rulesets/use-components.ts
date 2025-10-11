@@ -23,7 +23,7 @@ export const useComponents = (compositeId?: string) => {
     try {
       await db.components.add({
         ...data,
-        id: crypto.randomUUID(),
+        id: data.id ?? crypto.randomUUID(),
         compositeId: compositeId,
         createdAt: now,
         updatedAt: now,

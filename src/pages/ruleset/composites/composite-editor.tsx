@@ -9,7 +9,7 @@ const { log } = debugLog('pages', 'editor');
 
 export const CompositeEditor = () => {
   const { compositeId } = useParams();
-  const { components, updateComponents } = useComponents(compositeId);
+  const { components, createComponent, updateComponents } = useComponents(compositeId);
 
   const editorState = new Map<string, Component>();
   for (const comp of components) {
@@ -21,9 +21,24 @@ export const CompositeEditor = () => {
     updateComponents(updates);
   };
 
+  const onComponentsCreated = (components: Array<Component>) => {
+    log('components created', components);
+    for (const comp of components) {
+      createComponent({
+        ...comp,
+        compositeId,
+      });
+    }
+  };
+
   useEffect(() => {
     if (editorState.size !== components.length) return;
-    initializeEditor({ elementId: 'qb-editor', state: editorState, onComponentsUpdated });
+    initializeEditor({
+      elementId: 'qb-editor',
+      state: editorState,
+      onComponentsUpdated,
+      onComponentsCreated,
+    });
   }, [editorState.size, components.length]);
 
   useEffect(() => {
