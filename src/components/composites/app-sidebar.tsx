@@ -76,10 +76,10 @@ export function AppSidebar() {
         },
       ];
 
-  if (enableEditor) {
+  if (enableEditor && activeRuleset) {
     rulesetItems.push({
       title: 'Composites',
-      url: `/rulesets/${activeRuleset?.id}/composites`,
+      url: `/rulesets/${activeRuleset.id}/composites`,
       icon: PaintRoller,
     });
   }

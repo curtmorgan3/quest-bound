@@ -205,15 +205,15 @@ export const AssetManagerModal = ({ children }: AssetManagerModalProps) => {
     if (nodeId.startsWith('folder-')) {
       // Delete all assets in this folder
       const folderPath = nodeId.replace('folder-', '');
-      const assetsToDelete = assets.filter(
-        (asset) =>
-          asset.filename === `.${nodeId}` ||
-          asset.directory === folderPath ||
-          asset.directory?.startsWith(`${folderPath}/`) ||
-          (asset.filename.startsWith('.folder-') && asset.directory === folderPath),
-      );
+      const thisDirName = folderPath.split('/')[folderPath.split('/').length - 1];
 
-      console.log(assetsToDelete);
+      const assetsToDelete = assets.filter((asset) => {
+        return (
+          asset.filename === `.folder-${thisDirName}` ||
+          asset.directory === folderPath ||
+          (asset.filename.startsWith('.folder-') && asset.directory === folderPath)
+        );
+      });
 
       for (const asset of assetsToDelete) {
         await deleteAsset(asset.id);
@@ -222,6 +222,8 @@ export const AssetManagerModal = ({ children }: AssetManagerModalProps) => {
       // Delete single file
       await deleteAsset(nodeId);
     }
+
+    setSelectedNode(null);
   };
 
   const renderTreeNode = (node: TreeNode, depth = 0) => {
@@ -361,7 +363,17 @@ export const AssetManagerModal = ({ children }: AssetManagerModalProps) => {
               </div>
             )}
 
-            <div className='space-y-1'>{directoryTree.map((node) => renderTreeNode(node))}</div>
+            <div className='space-y-1'>
+              {directoryTree.length === 0 ? (
+                <div className='text-center text-muted-foreground py-8'>
+                  <Folder className='h-12 w-12 mx-auto mb-2 opacity-50' />
+                  <p>No assets found</p>
+                  <p className='text-sm'>Upload files or create folders to get started</p>
+                </div>
+              ) : (
+                directoryTree.map((node) => renderTreeNode(node))
+              )}
+            </div>
           </div>
 
           {/* Asset Preview/Details */}
