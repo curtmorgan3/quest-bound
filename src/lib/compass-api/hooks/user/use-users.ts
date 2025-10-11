@@ -82,7 +82,6 @@ export const useUsers = () => {
       }
 
       if (updates.assetId === null) {
-        console.log(user);
         if (user?.assetId) {
           await deleteAsset(user.assetId);
         }

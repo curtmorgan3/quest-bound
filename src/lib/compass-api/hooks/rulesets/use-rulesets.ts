@@ -62,6 +62,7 @@ export const useRulesets = () => {
         if (original?.assetId) {
           await deleteAsset(original.assetId);
         }
+        updates.image = null;
       }
 
       await db.rulesets.update(id, {

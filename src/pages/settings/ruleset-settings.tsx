@@ -1,8 +1,8 @@
-import { Button, Input, Label } from '@/components';
-import { useAssets, useExportRuleset, useRulesets } from '@/lib/compass-api';
+import { Button, ImageUpload, Input, Label } from '@/components';
+import { useExportRuleset, useRulesets } from '@/lib/compass-api';
 import type { Ruleset } from '@/types';
-import { Download, Trash } from 'lucide-react';
-import { useState } from 'react';
+import { Download } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
 interface RulesetSettingsProps {
   activeRuleset: Ruleset;
@@ -11,24 +11,19 @@ interface RulesetSettingsProps {
 export const RulesetSettings = ({ activeRuleset }: RulesetSettingsProps) => {
   const { updateRuleset } = useRulesets();
   const { exportRuleset } = useExportRuleset(activeRuleset.id);
-  const { createAsset } = useAssets();
 
   const [title, setTitle] = useState(activeRuleset.title);
-  const [loading, setLoading] = useState(false);
 
   const handleUpdate = async () => {
     await updateRuleset(activeRuleset.id, { title });
   };
 
-  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setLoading(true);
-      const assetId = await createAsset(file);
-      await updateRuleset(activeRuleset.id, { assetId });
-      setLoading(false);
-    }
-  };
+  useEffect(() => {
+    if (title === activeRuleset.title) return;
+    setTimeout(() => {
+      handleUpdate();
+    }, 500);
+  }, [title]);
 
   return (
     <div className='flex flex-col gap-6'>
@@ -38,52 +33,17 @@ export const RulesetSettings = ({ activeRuleset }: RulesetSettingsProps) => {
           <Input id='ruleset-title' value={title} onChange={(e) => setTitle(e.target.value)} />
         </div>
 
-        <Button
-          className='gap-2 w-[50px]'
-          variant='outline'
-          onClick={exportRuleset}
-          disabled={loading}>
+        <Button className='gap-2 w-[50px]' variant='outline' onClick={exportRuleset}>
           <Download className='h-4 w-4' />
         </Button>
       </div>
 
-      {activeRuleset.image ? (
-        <div className='flex gap-2'>
-          <img
-            className='h-[124px] object-cover rounded-lg cursor-pointer'
-            src={activeRuleset.image}
-            alt={activeRuleset.title}
-            onClick={() => document.getElementById('image-settings-ruleset-image-upload')?.click()}
-          />
-          <Button
-            variant='ghost'
-            disabled={loading}
-            onClick={() => updateRuleset(activeRuleset.id, { assetId: null })}>
-            <Trash />
-          </Button>
-        </div>
-      ) : (
-        <div
-          className='h-[124px] w-[124px] bg-muted flex items-center justify-center rounded-lg text-3xl cursor-pointer'
-          onClick={() => document.getElementById('image-settings-ruleset-image-upload')?.click()}>
-          <span className='text-sm'>{loading ? 'Loading' : 'Upload Image'}</span>
-        </div>
-      )}
-
-      <input
-        id='image-settings-ruleset-image-upload'
-        className='hidden'
-        type='file'
-        accept='image/*'
-        onChange={handleImageChange}
+      <ImageUpload
+        image={activeRuleset.image}
+        alt={activeRuleset.title}
+        onRemove={() => updateRuleset(activeRuleset.id, { assetId: null })}
+        onUpload={(assetId) => updateRuleset(activeRuleset.id, { assetId })}
       />
-
-      <Button
-        className='w-sm'
-        onClick={handleUpdate}
-        disabled={loading || title === activeRuleset.title}>
-        Update
-      </Button>
     </div>
   );
 };

@@ -9,21 +9,20 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
   Button,
+  ImageUpload,
   Input,
   Label,
   PWAInstallPrompt,
 } from '@/components';
-import { useAssets, useUsers } from '@/lib/compass-api';
+import { useUsers } from '@/lib/compass-api';
 import { errorLogger } from '@/lib/error-logger';
-import { Download, Trash } from 'lucide-react';
-import { useState } from 'react';
+import { Download } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
 export const UserSettings = () => {
   const { currentUser, updateUser, deleteUser } = useUsers();
-  const { createAsset } = useAssets();
 
   const [username, setUsername] = useState(currentUser?.username || '');
-  const [loading, setLoading] = useState(false);
   const [exportLoading, setExportLoading] = useState(false);
 
   const handleUpdate = async () => {
@@ -32,15 +31,13 @@ export const UserSettings = () => {
     }
   };
 
-  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file && currentUser) {
-      setLoading(true);
-      const assetId = await createAsset(file);
-      await updateUser(currentUser.id, { assetId });
-      setLoading(false);
-    }
-  };
+  useEffect(() => {
+    if (username === currentUser?.username) return;
+
+    setTimeout(() => {
+      handleUpdate();
+    }, 500);
+  }, [username]);
 
   const handleExportErrors = async () => {
     setExportLoading(true);
@@ -75,6 +72,8 @@ export const UserSettings = () => {
     }
   };
 
+  if (!currentUser) return null;
+
   return (
     <div className='flex flex-col gap-4'>
       <div className='flex flex-col gap-2 max-w-sm'>
@@ -84,43 +83,23 @@ export const UserSettings = () => {
 
       <PWAInstallPrompt ignoreDismissed />
 
-      {currentUser?.image ? (
-        <div className='flex gap-2'>
-          <img
-            className='w-[124px] h-[124px] object-cover rounded-lg cursor-pointer'
-            src={currentUser.image}
-            alt={currentUser.username}
-            onClick={() => document.getElementById('image-settings-avatar-upload')?.click()}
-          />
-          <Button
-            variant='ghost'
-            disabled={loading}
-            onClick={() => updateUser(currentUser.id, { assetId: null })}>
-            <Trash />
-          </Button>
-        </div>
-      ) : (
-        <div
-          className='w-[124px] h-[124px] bg-muted flex items-center justify-center rounded-lg text-3xl cursor-pointer'
-          onClick={() => document.getElementById('image-settings-avatar-upload')?.click()}>
-          <span className='text-sm'>{loading ? 'Loading' : 'Upload Avatar'}</span>
-        </div>
-      )}
-
-      <input
-        id='image-settings-avatar-upload'
-        className='hidden'
-        type='file'
-        accept='image/*'
-        onChange={handleImageChange}
+      <ImageUpload
+        image={currentUser.image}
+        alt={currentUser.username}
+        onRemove={() => updateUser(currentUser.id, { assetId: null })}
+        onUpload={(assetId) => updateUser(currentUser.id, { assetId })}
       />
 
-      <Button
-        className='w-[100px]'
-        onClick={handleUpdate}
-        disabled={!currentUser || username === currentUser.username}>
-        Update
-      </Button>
+      <div className='flex flex-col gap-2'>
+        <Button
+          variant='outline'
+          onClick={handleExportErrors}
+          disabled={exportLoading}
+          className='gap-2 w-[200px]'>
+          <Download className='h-4 w-4' />
+          {exportLoading ? 'Exporting...' : 'Export Error Logs'}
+        </Button>
+      </div>
 
       <AlertDialog>
         <AlertDialogTrigger asChild>
@@ -146,17 +125,6 @@ export const UserSettings = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      <div className='flex flex-col gap-2'>
-        <Button
-          variant='outline'
-          onClick={handleExportErrors}
-          disabled={exportLoading}
-          className='gap-2 w-[200px]'>
-          <Download className='h-4 w-4' />
-          {exportLoading ? 'Exporting...' : 'Export Error Logs'}
-        </Button>
-      </div>
     </div>
   );
 };

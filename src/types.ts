@@ -9,6 +9,7 @@ export type Asset = BaseDetails & {
   type: string; // MIME type
   filename: string;
   rulesetId: string | null; // Nullable for user assets
+  directory?: string;
 };
 
 export type User = BaseDetails & {
