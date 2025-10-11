@@ -112,7 +112,32 @@ export const useExportRuleset = (rulesetId: string) => {
             const fileExtension = asset.type.split('/')[1] || 'bin';
             const filename = asset.filename || `asset_${asset.id}.${fileExtension}`;
             
-            assetsFolder.file(filename, uint8Array);
+            // Determine the target folder based on asset.directory
+            let targetFolder = assetsFolder;
+            if (asset.directory) {
+              // Create nested folder structure based on directory property
+              // Handle both single-level and multi-level directory paths
+              const directoryPath = asset.directory.replace(/^\/+|\/+$/g, ''); // Remove leading/trailing slashes
+              if (directoryPath) {
+                const pathSegments = directoryPath.split('/').filter(segment => segment.length > 0);
+                let currentFolder = assetsFolder;
+                
+                // Create nested folders for each path segment
+                for (const segment of pathSegments) {
+                  const existingFolder = currentFolder.folder(segment);
+                  if (existingFolder) {
+                    currentFolder = existingFolder;
+                  } else {
+                    // If folder creation fails, fall back to root assets folder
+                    currentFolder = assetsFolder;
+                    break;
+                  }
+                }
+                targetFolder = currentFolder;
+              }
+            }
+            
+            targetFolder.file(filename, uint8Array);
           });
         }
       }
@@ -130,7 +155,7 @@ This zip file contains a complete export of the "${ruleset.title}" ruleset from 
 - \`items.json\` - All items defined in this ruleset
 - \`charts.json\` - All charts defined in this ruleset
 - \`assets.json\` - All assets metadata defined in this ruleset
-- \`assets/\` - Directory containing all asset files as individual files
+- \`assets/\` - Directory containing all asset files organized by their directory structure
 
 ## Import Instructions
 
