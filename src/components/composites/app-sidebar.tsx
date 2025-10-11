@@ -78,7 +78,7 @@ export function AppSidebar() {
 
   if (enableEditor && activeRuleset) {
     rulesetItems.push({
-      title: 'Composites',
+      title: 'Windows',
       url: `/rulesets/${activeRuleset.id}/composites`,
       icon: PaintRoller,
     });
@@ -120,16 +120,7 @@ export function AppSidebar() {
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 ))}
-                {!isHomepage && (
-                  <SidebarMenuItem>
-                    <SidebarMenuButton asChild>
-                      <Link to='/'>
-                        <FolderOpen />
-                        <span>Open</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                )}
+
                 {!isHomepage && (
                   <SidebarMenuItem>
                     <AssetManagerModal>
@@ -140,20 +131,30 @@ export function AppSidebar() {
                     </AssetManagerModal>
                   </SidebarMenuItem>
                 )}
-                <SidebarMenuItem>
-                  <DrawerTrigger asChild>
-                    <SidebarMenuButton onClick={() => setDrawerContent('settings')}>
-                      <SettingsIcon />
-                      <span>Settings</span>
-                    </SidebarMenuButton>
-                  </DrawerTrigger>
-                </SidebarMenuItem>
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
         </SidebarContent>
         <SidebarFooter>
           <SidebarMenu>
+            {!isHomepage && (
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <Link to='/'>
+                    <FolderOpen />
+                    <span>Open</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            )}
+            <SidebarMenuItem>
+              <DrawerTrigger asChild>
+                <SidebarMenuButton onClick={() => setDrawerContent('settings')}>
+                  <SettingsIcon />
+                  <span>Settings</span>
+                </SidebarMenuButton>
+              </DrawerTrigger>
+            </SidebarMenuItem>
             {localStorage.getItem('debug.tools') === 'true' && (
               <SidebarMenuItem>
                 <DrawerTrigger asChild>
