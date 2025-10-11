@@ -8,11 +8,18 @@ interface ImageUploadProps {
   alt?: string;
   onUpload?: (assetId: string) => void;
   onRemove?: () => void;
+  rulesetId?: string;
 }
 
-export const ImageUpload = ({ image, onUpload, onRemove, alt = '' }: ImageUploadProps) => {
+export const ImageUpload = ({
+  image,
+  onUpload,
+  onRemove,
+  rulesetId,
+  alt = '',
+}: ImageUploadProps) => {
   const id = crypto.randomUUID();
-  const { createAsset } = useAssets();
+  const { createAsset } = useAssets(rulesetId);
   const [loading, setLoading] = useState(false);
   const [hovering, setHovering] = useState(false);
 

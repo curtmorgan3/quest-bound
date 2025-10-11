@@ -43,6 +43,7 @@ export const RulesetSettings = ({ activeRuleset }: RulesetSettingsProps) => {
         alt={activeRuleset.title}
         onRemove={() => updateRuleset(activeRuleset.id, { assetId: null })}
         onUpload={(assetId) => updateRuleset(activeRuleset.id, { assetId })}
+        rulesetId={activeRuleset.id}
       />
     </div>
   );

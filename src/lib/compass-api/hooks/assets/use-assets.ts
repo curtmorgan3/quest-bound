@@ -1,10 +1,16 @@
 import { db } from '@/stores';
-import { useParams } from 'react-router-dom';
+import type { Asset } from '@/types';
+import { useLiveQuery } from 'dexie-react-hooks';
 
-export const useAssets = () => {
-  const { rulesetId } = useParams();
+export const useAssets = (rulesetId?: string) => {
+  // Get all assets for the current ruleset
+  const assets =
+    useLiveQuery(
+      () => (rulesetId ? db.assets.where('rulesetId').equals(rulesetId).toArray() : []),
+      [rulesetId],
+    ) || [];
 
-  const createAsset = async (file: File): Promise<string> => {
+  const createAsset = async (file: File, directory?: string): Promise<string> => {
     const reader = new FileReader();
     return new Promise<string>((resolve, reject) => {
       reader.onloadend = async () => {
@@ -15,6 +21,7 @@ export const useAssets = () => {
             data: base64String,
             type: file.type,
             filename: file.name,
+            directory: directory || undefined,
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
             rulesetId: rulesetId || null,
@@ -35,8 +42,17 @@ export const useAssets = () => {
     await db.assets.delete(id);
   };
 
+  const updateAsset = async (id: string, updates: Partial<Asset>) => {
+    await db.assets.update(id, {
+      ...updates,
+      updatedAt: new Date().toISOString(),
+    });
+  };
+
   return {
+    assets,
     createAsset,
     deleteAsset,
+    updateAsset,
   };
 };

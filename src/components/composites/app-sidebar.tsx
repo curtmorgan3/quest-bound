@@ -2,6 +2,7 @@ import {
   FileSpreadsheet,
   FolderOpen,
   HandFist,
+  Image,
   PaintRoller,
   Settings as SettingsIcon,
   Sword,
@@ -31,6 +32,7 @@ import { Button } from '../ui/button';
 import { DialogDescription } from '../ui/dialog';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger } from '../ui/drawer';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
+import { AssetManagerModal } from './asset-manager-modal';
 
 export function AppSidebar() {
   const { currentUser, signOut } = useUsers();
@@ -126,6 +128,16 @@ export function AppSidebar() {
                         <span>Open</span>
                       </Link>
                     </SidebarMenuButton>
+                  </SidebarMenuItem>
+                )}
+                {!isHomepage && (
+                  <SidebarMenuItem>
+                    <AssetManagerModal>
+                      <SidebarMenuButton>
+                        <Image />
+                        <span>Assets</span>
+                      </SidebarMenuButton>
+                    </AssetManagerModal>
                   </SidebarMenuItem>
                 )}
                 <SidebarMenuItem>
