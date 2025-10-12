@@ -1,5 +1,6 @@
+import { colorPaper } from '@/palette';
 import { Container, Graphics, type Container as TContainer } from 'pixi.js';
-import { drawShapeButton } from './component-buttons';
+import { drawCreateComponentButton } from './component-button-base';
 
 export async function drawComponentContainerMenu(): Promise<TContainer> {
   const menuWidth = 220;
@@ -26,10 +27,10 @@ export async function drawComponentContainerMenu(): Promise<TContainer> {
 
   menuContainer.addChild(menu);
 
-  const bg = new Graphics().roundRect(0, 0, menuWidth, menuHeight, 8).fill('#42403E');
+  const bg = new Graphics().roundRect(0, 0, menuWidth, menuHeight, 8).fill(colorPaper);
   menu.addChild(bg);
 
-  drawShapeButton(menu);
+  drawCreateComponentButton(menu, 'shape');
 
   menu.onRender = () => {
     const newViewportWidth = window.visualViewport?.width ?? 0;
