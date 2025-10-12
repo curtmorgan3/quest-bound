@@ -1,7 +1,9 @@
 import type { Component } from '@/types';
+import debounce from 'lodash.debounce';
 import type { Container } from 'pixi.js';
 import { drawShape } from '../components';
 import type { EditorState } from '../types';
+import { addToUndoBuffer } from './interactive-state';
 
 let editorState: EditorState = new Map();
 
@@ -44,9 +46,41 @@ export function getComponentState(id: string) {
   return state;
 }
 
+const lastComponentChanges = new Map<string, Component>();
+const prevComponentState: EditorState = new Map();
+let lastIdUpdated = '';
+
+const debouncedBufferAdd = debounce(() => {
+  addToUndoBuffer({
+    action: 'set',
+    state: [...lastComponentChanges.values()],
+    prevState: new Map(prevComponentState),
+  });
+  lastComponentChanges.clear();
+}, 200);
+
+const debouncedSetPrevState = debounce((state: Component) => {
+  prevComponentState.set(state.id, state);
+}, 200);
+
 export function setComponetState(id: string, state: Partial<Component>) {
   const existing = editorState.get(id);
+
   if (existing) {
+    // avoid debouncing if multiple comps are edited together
+    if (lastIdUpdated === id) {
+      debouncedSetPrevState(existing);
+    } else {
+      prevComponentState.set(id, existing);
+    }
+
+    lastIdUpdated = id;
+
+    if (!lastComponentChanges.get(id)) {
+      // Do not overwrite after the first set
+      lastComponentChanges.set(id, existing);
+    }
+    debouncedBufferAdd();
     editorState.set(id, { ...existing, ...state });
   }
 }

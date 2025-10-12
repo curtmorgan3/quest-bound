@@ -2,7 +2,7 @@ import type { Component } from '@/types';
 import { debugLog } from '@/utils';
 import '@pixi/layout';
 import { Application, type ApplicationOptions } from 'pixi.js';
-import { setEditorState } from './cache';
+import { addToUndoBuffer, editorState, setEditorState } from './cache';
 import { EditorStyles } from './constants';
 import { drawBackground, drawComponentContainerMenu } from './editor-decorators';
 import type { EditorConfiguration, EditorState } from './types';
@@ -70,14 +70,31 @@ export async function initializeEditor({
   await app.init({ ...configuration, resizeTo: parentElement, eventMode: 'static' });
 
   handleComponentCrud.onComponentsUpdated = (updates: Array<Component>) => {
+    // Undo buffer set in setEditorState
     onComponentsUpdated?.(updates);
   };
 
   handleComponentCrud.onComponentsCreated = (components: Array<Component>) => {
+    addToUndoBuffer({
+      action: 'create',
+      state: components,
+    });
+
     onComponentsCreated?.(components);
   };
 
   handleComponentCrud.onComponentsDeleted = (ids: Array<string>) => {
+    const deletedComponentsSnapshot: Array<Component> = [];
+    for (const id of ids) {
+      const comp = editorState.get(id);
+      if (comp) deletedComponentsSnapshot.push(comp);
+    }
+
+    addToUndoBuffer({
+      action: 'delete',
+      state: deletedComponentsSnapshot,
+    });
+
     onComponentsDeleted?.(ids);
   };
 

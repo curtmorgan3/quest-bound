@@ -1,4 +1,10 @@
-import { clearSelection, getSelectedComponents, setPlacingType } from '../cache';
+import {
+  clearSelection,
+  getSelectedComponents,
+  redoAction,
+  setPlacingType,
+  undoAction,
+} from '../cache';
 import { handleComponentCrud } from './handle-component-crud';
 import { handleCopyComponents, handlePasteComponents } from './handle-copy-paste';
 
@@ -7,6 +13,8 @@ const keyMap = new Map<string, string>([
   ['delete', 'Backspace'],
   ['copy', 'c'],
   ['paste', 'v'],
+  ['undo', 'z'],
+  ['redo', 'z'],
 ]);
 
 const listeners: Array<(e: KeyboardEvent) => void> = [];
@@ -17,10 +25,20 @@ export function clearEditorKeyListeners() {
   }
 }
 
-function registerEvent(trigger: string, cb: () => void, restrictToMeta = false) {
+function registerEvent(
+  trigger: string,
+  cb: () => void,
+  metaBehavior?: 'require' | 'prevent',
+  shiftBehavior?: 'require' | 'prevent',
+) {
   const listener = (e: KeyboardEvent) => {
     if (e.key === keyMap.get(trigger)) {
-      if (restrictToMeta && !e.metaKey) return;
+      if (metaBehavior === 'require' && !e.metaKey) return;
+      if (metaBehavior === 'prevent' && e.metaKey) return;
+
+      if (shiftBehavior === 'require' && !e.shiftKey) return;
+      if (shiftBehavior === 'prevent' && e.shiftKey) return;
+
       cb();
     }
   };
@@ -40,7 +58,9 @@ export function addEditorKeyListeners(): void {
     handleComponentCrud.onComponentsDeleted(selected);
   });
 
-  registerEvent('copy', handleCopyComponents, true);
+  registerEvent('copy', handleCopyComponents, 'require');
+  registerEvent('paste', handlePasteComponents, 'require');
 
-  registerEvent('paste', handlePasteComponents, true);
+  registerEvent('undo', undoAction, 'require', 'prevent');
+  registerEvent('redo', redoAction, 'require', 'require');
 }

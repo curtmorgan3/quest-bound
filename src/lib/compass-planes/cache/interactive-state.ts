@@ -1,6 +1,7 @@
 import type { Component } from '@/types';
 import { Point } from 'pixi.js';
-import type { ComponentType } from '../types';
+import type { ComponentType, EditorState } from '../types';
+import { handleComponentCrud } from '../utils/handle-component-crud';
 
 //#region Selection
 const selectedComponentIds = new Set<string>();
@@ -155,4 +156,72 @@ export function clearCopiedComponents(): void {
 export function getCopiedComponents(): Array<Component> {
   return copiedComponents;
 }
+// #endregion
+
+// #region Undo/Redo
+type BufferAction = 'create' | 'delete' | 'set';
+
+type UndoRedoBuffer = {
+  action: BufferAction;
+  state: Array<Component>;
+  prevState?: EditorState;
+};
+
+const undoBuffer: Array<UndoRedoBuffer> = [];
+const redoBuffer: Array<UndoRedoBuffer> = [];
+
+export function addToUndoBuffer(buffer: UndoRedoBuffer) {
+  if (undoBuffer.length >= 100) {
+    undoBuffer.shift();
+  }
+  undoBuffer.push(buffer);
+}
+
+export function undoAction() {
+  const lastAction = undoBuffer.pop();
+  if (!lastAction) return;
+  redoBuffer.push(lastAction);
+
+  switch (lastAction.action) {
+    case 'create':
+      //delete component
+      handleComponentCrud.onComponentsDeleted(lastAction.state.map((c) => c.id));
+      break;
+    case 'delete':
+      //create component
+      handleComponentCrud.onComponentsCreated(lastAction.state);
+      break;
+    case 'set':
+      // reset component state
+      handleComponentCrud.onComponentsUpdated(lastAction.state);
+      break;
+  }
+}
+
+export function redoAction() {
+  const lastAction = redoBuffer.pop();
+  if (!lastAction) return;
+
+  switch (lastAction.action) {
+    case 'create':
+      //create component
+      handleComponentCrud.onComponentsCreated(lastAction.state);
+      break;
+    case 'delete':
+      //delete component
+      handleComponentCrud.onComponentsDeleted(lastAction.state.map((c) => c.id));
+      break;
+    case 'set':
+      // reset component state
+      handleComponentCrud.onComponentsUpdated(
+        lastAction.state.map((c) => {
+          const prevState = lastAction.prevState?.get(c.id);
+          return prevState ?? c;
+        }),
+      );
+      break;
+  }
+  undoBuffer.push(lastAction);
+}
+
 // #endregion
