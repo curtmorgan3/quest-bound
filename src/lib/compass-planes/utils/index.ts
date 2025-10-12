@@ -1,4 +1,5 @@
 export * from './editor-key-listeners';
+export * from './editor-mouse-listeners';
 export * from './get-editor-asset';
 export * from './handle-camera';
 export * from './handle-click-drag-select';

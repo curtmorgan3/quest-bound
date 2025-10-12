@@ -10,14 +10,12 @@ import {
   getDraggedComponents,
   setComponetState,
 } from '../cache';
+import { handleComponentCrud } from './handle-component-crud';
 import { clampToGrid } from './helpers';
 
 const { log } = debugLog('planes', 'drag-handlers');
 
-export const addDragHandlers = (
-  app: Application,
-  onUpdate: (updates: Array<Component>) => void,
-) => {
+export const addDragHandlers = (app: Application) => {
   const updates: Map<string, Partial<Component>> = new Map();
 
   app.stage.on('pointermove', (e) => {
@@ -51,7 +49,9 @@ export const addDragHandlers = (
 
   app.stage.on('pointerup', () => {
     if (updates.size !== 0) {
-      onUpdate(Array.from(updates).map(([id, update]) => ({ id, ...update }) as Component));
+      handleComponentCrud.onComponentsUpdated(
+        Array.from(updates).map(([id, update]) => ({ id, ...update }) as Component),
+      );
       updates.clear();
     }
 

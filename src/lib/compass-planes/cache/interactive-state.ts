@@ -1,3 +1,4 @@
+import type { Component } from '@/types';
 import { Point } from 'pixi.js';
 import type { ComponentType } from '../types';
 
@@ -6,6 +7,12 @@ const selectedComponentIds = new Set<string>();
 
 export function selectComponent(id: string) {
   selectedComponentIds.add(id);
+}
+
+export function selectComponents(ids: string[]) {
+  for (const id of ids) {
+    selectedComponentIds.add(id);
+  }
 }
 
 export function deselectComponent(id: string) {
@@ -132,4 +139,20 @@ export const isPlacingType = () => !!placingType;
 export const setPlacingType = (type: ComponentType | null) => (placingType = type);
 export const getPlacingType = () => placingType;
 
+// #endregion
+
+// #region Copying
+let copiedComponents: Array<Component> = [];
+
+export function copyComponents(components: Array<Component>): void {
+  copiedComponents = components;
+}
+
+export function clearCopiedComponents(): void {
+  copiedComponents = [];
+}
+
+export function getCopiedComponents(): Array<Component> {
+  return copiedComponents;
+}
 // #endregion

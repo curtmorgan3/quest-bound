@@ -3,10 +3,10 @@ import type { Container } from 'pixi.js';
 import type { ComponentType } from '..';
 import { getCameraPosition, getPlacingType, getZoom, setPlacingType } from '../cache';
 import { defaultComponentMap } from '../components/common/defaults';
+import { handleComponentCrud } from './handle-component-crud';
 
 interface Props {
   backgroundContainer: Container;
-  onCreated: (comps: Array<Component>) => void;
 }
 
 /**
@@ -16,7 +16,7 @@ interface Props {
  * New components are added to the DB in CompositeEditor and passed back through to the editorState.
  * setEditorState checks the diff and draws components.
  */
-export function handleCreateComponents({ backgroundContainer, onCreated }: Props) {
+export function handleCreateComponents({ backgroundContainer }: Props) {
   backgroundContainer.on('click', (e) => {
     const placingType = getPlacingType();
 
@@ -28,7 +28,7 @@ export function handleCreateComponents({ backgroundContainer, onCreated }: Props
 
       const comp = createComponentFromDefault(placingType, adjustedX, adjustedY);
       if (!comp) return;
-      onCreated([comp]);
+      handleComponentCrud.onComponentsCreated([comp]);
       setPlacingType(null);
     }
   });

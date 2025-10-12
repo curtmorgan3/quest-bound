@@ -1,25 +1,26 @@
 import { clearSelection, getSelectedComponents, setPlacingType } from '../cache';
-
-interface Props {
-  handleDelete: (ids: string[]) => void;
-}
+import { handleComponentCrud } from './handle-component-crud';
+import { handleCopyComponents, handlePasteComponents } from './handle-copy-paste';
 
 const keyMap = new Map<string, string>([
   ['cancel', 'Escape'],
   ['delete', 'Backspace'],
+  ['copy', 'c'],
+  ['paste', 'v'],
 ]);
 
 const listeners: Array<(e: KeyboardEvent) => void> = [];
 
-export function clearEditorListeners() {
+export function clearEditorKeyListeners() {
   for (const listener of listeners) {
     window.removeEventListener('keydown', listener);
   }
 }
 
-function registerEvent(trigger: string, cb: () => void) {
+function registerEvent(trigger: string, cb: () => void, restrictToMeta = false) {
   const listener = (e: KeyboardEvent) => {
     if (e.key === keyMap.get(trigger)) {
+      if (restrictToMeta && !e.metaKey) return;
       cb();
     }
   };
@@ -28,7 +29,7 @@ function registerEvent(trigger: string, cb: () => void) {
   listeners.push(listener);
 }
 
-export function addEditorKeyListeners({ handleDelete }: Props): void {
+export function addEditorKeyListeners(): void {
   registerEvent('cancel', () => {
     clearSelection();
     setPlacingType(null);
@@ -36,6 +37,10 @@ export function addEditorKeyListeners({ handleDelete }: Props): void {
 
   registerEvent('delete', () => {
     const selected = getSelectedComponents();
-    handleDelete(selected);
+    handleComponentCrud.onComponentsDeleted(selected);
   });
+
+  registerEvent('copy', handleCopyComponents, true);
+
+  registerEvent('paste', handlePasteComponents, true);
 }

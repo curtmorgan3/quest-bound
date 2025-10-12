@@ -10,10 +10,13 @@ import {
   addCameraHandlers,
   addDragHandlers,
   addEditorKeyListeners,
+  addEditorMouseListeners,
   addResizeHandlers,
-  clearEditorListeners,
+  clearEditorKeyListeners,
+  clearEditorMouseListeners,
   handleCreateComponents,
 } from './utils';
+import { handleComponentCrud } from './utils/handle-component-crud';
 
 const { log } = debugLog('planes', 'editor');
 
@@ -66,29 +69,27 @@ export async function initializeEditor({
 
   await app.init({ ...configuration, resizeTo: parentElement, eventMode: 'static' });
 
-  const handleUpdate = (updates: Array<Component>) => {
+  handleComponentCrud.onComponentsUpdated = (updates: Array<Component>) => {
     onComponentsUpdated?.(updates);
   };
 
-  const handleCreate = (components: Array<Component>) => {
+  handleComponentCrud.onComponentsCreated = (components: Array<Component>) => {
     onComponentsCreated?.(components);
   };
 
-  const handleDelete = (ids: Array<string>) => {
+  handleComponentCrud.onComponentsDeleted = (ids: Array<string>) => {
     onComponentsDeleted?.(ids);
   };
 
-  addDragHandlers(app, handleUpdate);
-  addResizeHandlers(app, handleUpdate);
+  addDragHandlers(app);
+  addResizeHandlers(app);
   addCameraHandlers(app);
-  addEditorKeyListeners({
-    handleDelete,
-  });
+  addEditorKeyListeners();
+  addEditorMouseListeners();
 
   const stageBackground = await drawBackground(app);
   handleCreateComponents({
     backgroundContainer: stageBackground,
-    onCreated: handleCreate,
   });
   app.stage.addChild(stageBackground);
 
@@ -103,7 +104,8 @@ export async function initializeEditor({
 }
 
 export function destroyEditor() {
-  clearEditorListeners();
+  clearEditorKeyListeners();
+  clearEditorMouseListeners();
   if (app && app.renderer) {
     app.destroy();
     app = null;
