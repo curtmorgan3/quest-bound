@@ -1,4 +1,3 @@
-export * from './draw-components';
 export * from './editor-key-listeners';
 export * from './get-editor-asset';
 export * from './handle-camera';

@@ -39,9 +39,8 @@ export const CompositeEditor = () => {
     }
   };
 
-  useEffect(() => {
-    // Wait for initialization of editorState to complete
-    if (editorState.size !== components.length) return;
+  // Wait for initialization of editorState to complete
+  if (document.getElementById('qb-editor') && editorState.size === components.length) {
     initializeEditor({
       elementId: 'qb-editor',
       state: editorState,
@@ -49,7 +48,7 @@ export const CompositeEditor = () => {
       onComponentsCreated,
       onComponentsDeleted,
     });
-  }, [editorState.size, components.length]);
+  }
 
   useEffect(() => {
     return () => destroyEditor();

@@ -2,7 +2,7 @@ import type { Component } from '@/types';
 import { debugLog } from '@/utils';
 import '@pixi/layout';
 import { Application, type ApplicationOptions } from 'pixi.js';
-import { editorState, setEditorState } from './cache';
+import { setEditorState } from './cache';
 import { EditorStyles } from './constants';
 import { drawBackground, drawComponentContainerMenu } from './editor-decorators';
 import type { EditorConfiguration, EditorState } from './types';
@@ -12,7 +12,6 @@ import {
   addEditorKeyListeners,
   addResizeHandlers,
   clearEditorListeners,
-  drawComponents,
   handleCreateComponents,
 } from './utils';
 
@@ -28,6 +27,7 @@ interface InitializeEditorOptions {
 }
 
 let app: Application | null = null;
+let initializing = false;
 
 /**
  * Creates an editor instance when component state changes.
@@ -41,8 +41,15 @@ export async function initializeEditor({
   onComponentsCreated,
   onComponentsDeleted,
 }: InitializeEditorOptions) {
-  setEditorState(state, app?.stage);
-  if (app) return;
+  // Prevents extra state set if parent rerenders while app is initializing
+  if (app && !initializing) {
+    setEditorState(state, app.stage);
+    return;
+  }
+
+  if (initializing) return;
+
+  initializing = true;
   log('initialize editor');
 
   const parentElement = document.getElementById(elementId);
@@ -88,9 +95,11 @@ export async function initializeEditor({
   const componentMenu = await drawComponentContainerMenu();
   app.stage.addChild(componentMenu);
 
-  drawComponents(app.stage, editorState);
+  // State must be set last so the z-index of the components is higher than editor decorators
+  setEditorState(state, app.stage);
 
   parentElement.appendChild(app.canvas);
+  initializing = false;
 }
 
 export function destroyEditor() {

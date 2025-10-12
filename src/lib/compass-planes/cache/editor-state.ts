@@ -5,12 +5,7 @@ import type { EditorState } from '../types';
 
 let editorState: EditorState = new Map();
 
-export function setEditorState(state: EditorState, container?: Container) {
-  if (!container) {
-    editorState = state;
-    return;
-  }
-
+export function setEditorState(state: EditorState, container: Container) {
   // Components deleted
   if (editorState.size > state.size) {
     for (const component of editorState.values()) {
