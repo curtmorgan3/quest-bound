@@ -6,7 +6,15 @@ import { editorState, setEditorState } from './cache';
 import { EditorStyles } from './constants';
 import { drawBackground, drawComponentContainerMenu } from './editor-decorators';
 import type { EditorConfiguration, EditorState } from './types';
-import { addCameraHandlers, addDragHandlers, addResizeHandlers, drawComponents } from './utils';
+import {
+  addCameraHandlers,
+  addDragHandlers,
+  addEditorKeyListeners,
+  addResizeHandlers,
+  clearEditorListeners,
+  drawComponents,
+  handleCreateComponents,
+} from './utils';
 
 const { log } = debugLog('planes', 'editor');
 
@@ -31,7 +39,7 @@ export async function initializeEditor({
   onComponentsUpdated,
   onComponentsCreated,
 }: InitializeEditorOptions) {
-  setEditorState(state);
+  setEditorState(state, app?.stage);
   if (app) return;
   log('initialize editor');
 
@@ -60,8 +68,13 @@ export async function initializeEditor({
   addDragHandlers(app, handleUpdate);
   addResizeHandlers(app, handleUpdate);
   addCameraHandlers(app);
+  addEditorKeyListeners();
 
-  const stageBackground = await drawBackground(app, handleCreate);
+  const stageBackground = await drawBackground(app);
+  handleCreateComponents({
+    backgroundContainer: stageBackground,
+    onCreated: handleCreate,
+  });
   app.stage.addChild(stageBackground);
 
   const componentMenu = await drawComponentContainerMenu();
@@ -73,6 +86,7 @@ export async function initializeEditor({
 }
 
 export function destroyEditor() {
+  clearEditorListeners();
   if (app && app.renderer) {
     app.destroy();
     app = null;

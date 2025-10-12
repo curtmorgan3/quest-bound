@@ -32,6 +32,7 @@ export const CompositeEditor = () => {
   };
 
   useEffect(() => {
+    // Wait for initialization of editorState to complete
     if (editorState.size !== components.length) return;
     initializeEditor({
       elementId: 'qb-editor',
