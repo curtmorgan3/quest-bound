@@ -1,6 +1,13 @@
-import { clearSelection, setPlacingType } from '../cache';
+import { clearSelection, getSelectedComponents, setPlacingType } from '../cache';
 
-const keyMap = new Map<string, string>([['cancel', 'Escape']]);
+interface Props {
+  handleDelete: (ids: string[]) => void;
+}
+
+const keyMap = new Map<string, string>([
+  ['cancel', 'Escape'],
+  ['delete', 'Backspace'],
+]);
 
 const listeners: Array<(e: KeyboardEvent) => void> = [];
 
@@ -21,9 +28,14 @@ function registerEvent(trigger: string, cb: () => void) {
   listeners.push(listener);
 }
 
-export function addEditorKeyListeners(): void {
+export function addEditorKeyListeners({ handleDelete }: Props): void {
   registerEvent('cancel', () => {
     clearSelection();
     setPlacingType(null);
+  });
+
+  registerEvent('delete', () => {
+    const selected = getSelectedComponents();
+    handleDelete(selected);
   });
 }

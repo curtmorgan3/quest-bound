@@ -15,7 +15,11 @@ export function setEditorState(state: EditorState, container?: Container) {
   if (editorState.size > state.size) {
     for (const component of editorState.values()) {
       if (!state.has(component.id)) {
-        // destroy element
+        const element = container.getChildByLabel(`component-${component.id}`);
+        if (element) {
+          container.removeChild(element);
+          element.destroy({ children: true, texture: true });
+        }
       }
     }
     // Components added

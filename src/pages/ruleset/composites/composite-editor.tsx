@@ -9,7 +9,8 @@ const { log } = debugLog('pages', 'editor');
 
 export const CompositeEditor = () => {
   const { compositeId } = useParams();
-  const { components, createComponent, updateComponents } = useComponents(compositeId);
+  const { components, createComponent, updateComponents, deleteComponent } =
+    useComponents(compositeId);
 
   const editorState = new Map<string, Component>();
   for (const comp of components) {
@@ -31,6 +32,13 @@ export const CompositeEditor = () => {
     }
   };
 
+  const onComponentsDeleted = (ids: Array<string>) => {
+    log('components deleted', ids);
+    for (const id of ids) {
+      deleteComponent(id);
+    }
+  };
+
   useEffect(() => {
     // Wait for initialization of editorState to complete
     if (editorState.size !== components.length) return;
@@ -39,6 +47,7 @@ export const CompositeEditor = () => {
       state: editorState,
       onComponentsUpdated,
       onComponentsCreated,
+      onComponentsDeleted,
     });
   }, [editorState.size, components.length]);
 

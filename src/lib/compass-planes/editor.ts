@@ -24,6 +24,7 @@ interface InitializeEditorOptions {
   state: EditorState;
   onComponentsUpdated?: (updates: Array<Component>) => void;
   onComponentsCreated?: (updates: Array<Component>) => void;
+  onComponentsDeleted?: (ids: Array<string>) => void;
 }
 
 let app: Application | null = null;
@@ -38,6 +39,7 @@ export async function initializeEditor({
   state,
   onComponentsUpdated,
   onComponentsCreated,
+  onComponentsDeleted,
 }: InitializeEditorOptions) {
   setEditorState(state, app?.stage);
   if (app) return;
@@ -65,10 +67,16 @@ export async function initializeEditor({
     onComponentsCreated?.(components);
   };
 
+  const handleDelete = (ids: Array<string>) => {
+    onComponentsDeleted?.(ids);
+  };
+
   addDragHandlers(app, handleUpdate);
   addResizeHandlers(app, handleUpdate);
   addCameraHandlers(app);
-  addEditorKeyListeners();
+  addEditorKeyListeners({
+    handleDelete,
+  });
 
   const stageBackground = await drawBackground(app);
   handleCreateComponents({

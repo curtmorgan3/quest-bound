@@ -37,7 +37,12 @@ export function drawBase(parent: TContainer, component: Component): TContainer {
 
   base.onRender = () => {
     const componentState = getComponentState(component.id);
-    if (!componentState) return;
+    if (!componentState) {
+      // Elements are removed in editorState, but this render might occur first.
+      parent.removeChild(base);
+      base.destroy();
+      return;
+    }
 
     const zoom = getZoom();
     const pos = getCameraPosition();
