@@ -1,7 +1,6 @@
 import type { Component } from '@/types';
 import { Graphics, type Container } from 'pixi.js';
 import { getZoom } from '../../cache';
-import { EditorStyles } from '../../constants';
 import { drawBase } from '../decorators';
 
 export function drawShape(parent: Container, component: Component) {
@@ -13,7 +12,7 @@ export function drawShape(parent: Container, component: Component) {
 
   graphics.rect(0, 0, component.width * initialZoom, component.height * initialZoom);
 
-  graphics.fill(component.style.backgroundColor ?? EditorStyles.componentBackgroundColor);
+  graphics.fill(component.style.color);
 
   drawBase(parent, component).addChild(graphics);
 }

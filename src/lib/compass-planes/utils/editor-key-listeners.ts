@@ -53,10 +53,14 @@ export function addEditorKeyListeners(): void {
     setPlacingType(null);
   });
 
-  registerEvent('delete', () => {
-    const selected = getSelectedComponents();
-    handleComponentCrud.onComponentsDeleted(selected);
-  });
+  registerEvent(
+    'delete',
+    () => {
+      const selected = getSelectedComponents();
+      handleComponentCrud.onComponentsDeleted(selected);
+    },
+    'require',
+  );
 
   registerEvent('copy', handleCopyComponents, 'require');
   registerEvent('paste', handlePasteComponents, 'require');

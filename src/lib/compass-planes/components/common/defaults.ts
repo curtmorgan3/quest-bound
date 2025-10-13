@@ -1,3 +1,4 @@
+import { colorWhite } from '@/palette';
 import type { Component } from '@/types';
 import type { ComponentType } from '../../types';
 
@@ -19,7 +20,9 @@ export const defaultShape: Component = {
   type: 'shape',
   width: 80,
   height: 80,
-  style: {},
+  style: {
+    color: colorWhite,
+  },
 };
 
 export const defaultComponentMap = new Map<ComponentType, Component>([['shape', defaultShape]]);

@@ -1,7 +1,7 @@
 import type { Component } from '@/types';
 import { debugLog } from '@/utils';
 import type { Container as TContainer } from 'pixi.js';
-import { Container } from 'pixi.js';
+import { Container, DEG_TO_RAD } from 'pixi.js';
 import {
   clearDragging,
   getCameraPosition,
@@ -48,6 +48,7 @@ export function drawBase(parent: TContainer, component: Component): TContainer {
     const pos = getCameraPosition();
     base.x = (componentState.x - pos.x) * zoom;
     base.y = (componentState.y - pos.y) * zoom;
+    base.rotation = componentState.rotation * DEG_TO_RAD;
   };
 
   base.on('pointerdown', (e) => {

@@ -4,6 +4,7 @@ import type { Component } from '@/types';
 import { debugLog } from '@/utils';
 import { useEffect } from 'react';
 import { useParams } from 'react-router-dom';
+import { ComponentEditPanel } from './component-edit-panel';
 
 const { log } = debugLog('pages', 'editor');
 
@@ -11,9 +12,6 @@ export const CompositeEditor = () => {
   const { compositeId } = useParams();
   const { components, createComponent, updateComponents, deleteComponent } =
     useComponents(compositeId);
-
-  const selectedComponents = components.filter((c) => c.selected);
-  console.log(selectedComponents);
 
   const editorState = new Map<string, Component>();
   for (const comp of components) {
@@ -60,8 +58,11 @@ export const CompositeEditor = () => {
   if (!compositeId) return null;
 
   return (
-    <div className='flex flex-col' style={{ overflow: 'hidden' }}>
-      <div id='qb-editor' className='flex-grow-1 ' />
-    </div>
+    <>
+      <div className='flex flex-col' style={{ overflow: 'hidden' }}>
+        <div id='qb-editor' className='flex-grow-1 ' />
+      </div>
+      <ComponentEditPanel />
+    </>
   );
 };
