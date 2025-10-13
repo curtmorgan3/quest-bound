@@ -13,6 +13,7 @@ const baseDefaults = {
   y: 0,
   rotation: 0,
   z: 1,
+  opacity: 1,
 };
 
 export const defaultShape: Component = {
@@ -20,9 +21,7 @@ export const defaultShape: Component = {
   type: 'shape',
   width: 80,
   height: 80,
-  style: {
-    color: colorWhite,
-  },
+  color: colorWhite,
 };
 
 export const defaultComponentMap = new Map<ComponentType, Component>([['shape', defaultShape]]);

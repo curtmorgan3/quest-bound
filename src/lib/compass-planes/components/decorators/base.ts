@@ -50,6 +50,7 @@ export function drawBase(parent: TContainer, component: Component): TContainer {
     base.y = (componentState.y - pos.y) * zoom;
     base.zIndex = componentState.z;
     base.rotation = componentState.rotation * DEG_TO_RAD;
+    base.alpha = componentState.opacity;
   };
 
   base.on('pointerdown', (e) => {

@@ -2,32 +2,11 @@ import { useComponents } from '@/lib/compass-api';
 import type { Component } from '@/types';
 import { RotateCw } from 'lucide-react';
 import { EditPanelInput } from './component-edit-panel-input';
+import { parseValue, valueIfAllAreEqual } from './utils';
 
 interface Props {
   components: Array<Component>;
 }
-
-function valueIfAllAreEqual(components: Array<Component>, key: string) {
-  if (!components.length) return '-';
-  const val = components[0][key as keyof (typeof components)[0]];
-
-  for (const component of components) {
-    const comparedVal = component[key as keyof typeof component];
-    if (val !== comparedVal) {
-      return '-';
-    }
-  }
-
-  return val as number | string;
-}
-
-const parseValue = (val: string | number) => {
-  let parsedVal = parseInt(val.toString());
-  if (isNaN(parsedVal)) {
-    parsedVal = 0;
-  }
-  return parsedVal;
-};
 
 const MIXED_VALUE_LABEL = '-';
 

@@ -7,6 +7,7 @@ interface Props {
   width?: string | number;
   number?: boolean;
   disabled?: boolean;
+  step?: number;
 }
 
 export const EditPanelInput = ({
@@ -16,6 +17,7 @@ export const EditPanelInput = ({
   width = '50%',
   number = false,
   disabled = false,
+  step = 1,
 }: Props) => {
   return (
     <div className={`grid w-[${width}]`}>
@@ -30,6 +32,7 @@ export const EditPanelInput = ({
         name={label}
         value={value}
         onChange={(e) => onChange(e.target.value)}
+        step={step.toString()}
       />
     </div>
   );
