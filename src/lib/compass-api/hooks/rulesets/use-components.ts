@@ -52,7 +52,22 @@ export const useComponents = (compositeId?: string) => {
   };
 
   const updateComponents = async (updates: Array<ComponentUpdate>) => {
-    await Promise.all(updates.map((u) => updateComponent(u.id, u)));
+    // await Promise.all(updates.map((u) => updateComponent(u.id, u)));
+    const now = new Date().toISOString();
+    try {
+      await db.components.bulkUpdate(
+        updates.map((u) => ({
+          key: u.id,
+          changes: u,
+          updatedAt: now,
+        })),
+      );
+    } catch (e) {
+      handleError(e as Error, {
+        component: 'useComponents/updateComponents',
+        severity: 'medium',
+      });
+    }
   };
 
   const deleteComponent = async (id: string) => {

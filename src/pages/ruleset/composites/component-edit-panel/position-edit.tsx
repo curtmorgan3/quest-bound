@@ -7,15 +7,39 @@ interface Props {
   components: Array<Component>;
 }
 
+function valueIfAllAreEqual(components: Array<Component>, key: string) {
+  if (!components.length) return '-';
+  const val = components[0][key as keyof (typeof components)[0]];
+
+  for (const component of components) {
+    const comparedVal = component[key as keyof typeof component];
+    if (val !== comparedVal) {
+      return '-';
+    }
+  }
+
+  return val as number | string;
+}
+
+const parseValue = (val: string | number) => {
+  let parsedVal = parseInt(val.toString());
+  if (isNaN(parsedVal)) {
+    parsedVal = 0;
+  }
+  return parsedVal;
+};
+
+const MIXED_VALUE_LABEL = '-';
+
 export const PositionEdit = ({ components }: Props) => {
   const { updateComponents } = useComponents();
-  const singleSelected = components.length === 1 ? components[0] : null;
 
-  const x = singleSelected?.x ?? '-';
-  const y = singleSelected?.y ?? '-';
-  const width = singleSelected?.width ?? '-';
-  const height = singleSelected?.height ?? '-';
-  const rotation = singleSelected?.rotation ?? '-';
+  const x = valueIfAllAreEqual(components, 'x');
+  const y = valueIfAllAreEqual(components, 'y');
+  const width = valueIfAllAreEqual(components, 'width');
+  const height = valueIfAllAreEqual(components, 'height');
+  const rotation = valueIfAllAreEqual(components, 'rotation');
+  const layer = valueIfAllAreEqual(components, 'z');
 
   const handleUpdate = (key: string, value: number | string) => {
     updateComponents(
@@ -26,28 +50,20 @@ export const PositionEdit = ({ components }: Props) => {
     );
   };
 
-  const parseValue = (val: string | number) => {
-    let parsedVal = parseInt(val.toString());
-    if (isNaN(parsedVal)) {
-      parsedVal = 0;
-    }
-    return parsedVal;
-  };
-
   return (
     <div className='flex-col w-full flex flex-col gap-3 pb-2 border-b-1'>
       <p className='text-sm'>Position</p>
       <div className='w-full flex flex-row gap-4'>
         <EditPanelInput
-          number={!!singleSelected}
-          disabled={!singleSelected}
+          number={x !== MIXED_VALUE_LABEL}
+          disabled={x === MIXED_VALUE_LABEL}
           label='X'
           value={x}
           onChange={(val) => handleUpdate('x', parseValue(val))}
         />
         <EditPanelInput
-          number={!!singleSelected}
-          disabled={!singleSelected}
+          number={y !== MIXED_VALUE_LABEL}
+          disabled={y === MIXED_VALUE_LABEL}
           label='Y'
           value={y}
           onChange={(val) => handleUpdate('y', parseValue(val))}
@@ -55,15 +71,15 @@ export const PositionEdit = ({ components }: Props) => {
       </div>
       <div className='w-full flex flex-row gap-4'>
         <EditPanelInput
-          number={!!singleSelected}
-          disabled={!singleSelected}
+          number={width !== MIXED_VALUE_LABEL}
+          disabled={width === MIXED_VALUE_LABEL}
           label='Width'
           value={width}
           onChange={(val) => handleUpdate('width', parseValue(val))}
         />
         <EditPanelInput
-          number={!!singleSelected}
-          disabled={!singleSelected}
+          number={height !== MIXED_VALUE_LABEL}
+          disabled={height === MIXED_VALUE_LABEL}
           label='Height'
           value={height}
           onChange={(val) => handleUpdate('height', parseValue(val))}
@@ -71,18 +87,27 @@ export const PositionEdit = ({ components }: Props) => {
       </div>
       <div className='w-full flex flex-row gap-4 items-end'>
         <EditPanelInput
-          number={!!singleSelected}
-          disabled={!singleSelected}
+          number={rotation !== MIXED_VALUE_LABEL}
+          disabled={rotation === MIXED_VALUE_LABEL}
           label='Rotation'
           value={rotation}
           onChange={(val) => handleUpdate('rotation', parseValue(val))}
         />
         <RotateCw
-          className={`text-xs h-[18px] w-[18px] cursor-${singleSelected ? 'pointer' : 'not-allowed'}`}
+          className={`text-xs h-[18px] w-[18px] cursor-${rotation !== MIXED_VALUE_LABEL ? 'pointer' : 'not-allowed'}`}
           onClick={() => {
-            if (rotation === '-') return;
-            handleUpdate('rotation', rotation + 45);
+            if (rotation === MIXED_VALUE_LABEL) return;
+            handleUpdate('rotation', (rotation as number) + 45);
           }}
+        />
+      </div>
+      <div className='w-full flex flex-row gap-4 items-end'>
+        <EditPanelInput
+          number={layer !== MIXED_VALUE_LABEL}
+          disabled={layer === MIXED_VALUE_LABEL}
+          label='Layer'
+          value={layer}
+          onChange={(val) => handleUpdate('z', Math.max(0, parseValue(val)))}
         />
       </div>
     </div>

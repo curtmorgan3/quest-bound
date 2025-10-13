@@ -48,6 +48,7 @@ export function drawBase(parent: TContainer, component: Component): TContainer {
     const pos = getCameraPosition();
     base.x = (componentState.x - pos.x) * zoom;
     base.y = (componentState.y - pos.y) * zoom;
+    base.zIndex = componentState.z;
     base.rotation = componentState.rotation * DEG_TO_RAD;
   };
 
