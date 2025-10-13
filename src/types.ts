@@ -86,6 +86,7 @@ export type Component = BaseDetails & {
   width: number;
   rotation: number;
   style: Record<string, any>;
+  selected?: boolean;
   assetId?: string;
   image?: string;
   groupId?: string;

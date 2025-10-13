@@ -12,6 +12,9 @@ export const CompositeEditor = () => {
   const { components, createComponent, updateComponents, deleteComponent } =
     useComponents(compositeId);
 
+  const selectedComponents = components.filter((c) => c.selected);
+  console.log(selectedComponents);
+
   const editorState = new Map<string, Component>();
   for (const comp of components) {
     editorState.set(comp.id, comp);

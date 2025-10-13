@@ -1,3 +1,4 @@
+import { db } from '@/stores';
 import type { Component } from '@/types';
 import { Point } from 'pixi.js';
 import type { ComponentType, EditorState } from '../types';
@@ -8,19 +9,37 @@ const selectedComponentIds = new Set<string>();
 
 export function selectComponent(id: string) {
   selectedComponentIds.add(id);
+  db.components.update(id, { selected: true });
 }
 
 export function selectComponents(ids: string[]) {
   for (const id of ids) {
     selectedComponentIds.add(id);
   }
+  db.components.bulkUpdate(
+    ids.map((id) => ({
+      key: id,
+      changes: {
+        selected: true,
+      },
+    })),
+  );
 }
 
 export function deselectComponent(id: string) {
   selectedComponentIds.delete(id);
+  db.components.update(id, { selected: false });
 }
 
 export function clearSelection() {
+  db.components.bulkUpdate(
+    [...selectedComponentIds].map((id) => ({
+      key: id,
+      changes: {
+        selected: false,
+      },
+    })),
+  );
   selectedComponentIds.clear();
 }
 
@@ -43,8 +62,10 @@ export function otherComponentIsSelected(id: string) {
 export function toggleSelection(id: string) {
   if (selectedComponentIds.has(id)) {
     selectedComponentIds.delete(id);
+    db.components.update(id, { selected: false });
   } else {
     selectedComponentIds.add(id);
+    db.components.update(id, { selected: true });
   }
 }
 

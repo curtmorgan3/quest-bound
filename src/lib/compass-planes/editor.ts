@@ -2,7 +2,7 @@ import type { Component } from '@/types';
 import { debugLog } from '@/utils';
 import '@pixi/layout';
 import { Application, type ApplicationOptions } from 'pixi.js';
-import { addToUndoBuffer, editorState, setEditorState } from './cache';
+import { addToUndoBuffer, editorState, selectComponents, setEditorState } from './cache';
 import { EditorStyles } from './constants';
 import { drawBackground, drawComponentContainerMenu } from './editor-decorators';
 import type { EditorConfiguration, EditorState } from './types';
@@ -115,6 +115,8 @@ export async function initializeEditor({
 
   // State must be set last so the z-index of the components is higher than editor decorators
   setEditorState(state, app.stage);
+
+  selectComponents([...state.values()].filter((c) => c.selected).map((c) => c.id));
 
   parentElement.appendChild(app.canvas);
   initializing = false;
