@@ -6,9 +6,11 @@ import { Container, Graphics, Point } from 'pixi.js';
 import {
   clearSelection,
   getComponentState,
+  getGroupedComponents,
   getZoom,
   isSelected,
   otherComponentIsSelected,
+  selectComponents,
   toggleSelection,
 } from '../../cache';
 import { EditorStyles } from '../../constants';
@@ -46,9 +48,23 @@ export const drawSelect = (parent: TContainer, component: Component): TContainer
       return;
     }
 
+    const componentState = getComponentState(component.id);
+
+    if (componentState?.groupId) {
+      if (!componentState.selected) {
+        const groupedComponents = getGroupedComponents(componentState.groupId);
+        selectComponents(groupedComponents.map((c) => c.id));
+      } else {
+        clearSelection();
+        toggleSelection(component.id);
+      }
+      return;
+    }
+
     if (otherComponentIsSelected(component.id) && !e.shiftKey) {
       clearSelection();
     }
+
     toggleSelection(component.id);
   });
 

@@ -22,7 +22,8 @@ export const ActionEdit = ({ components, handleUpdate }: Props) => {
   };
 
   const handleGroup = () => {
-    const newGroupId = groupId === '-' ? crypto.randomUUID() : null;
+    if (components.length < 2) return;
+    const newGroupId = groupId === '-' || groupId === null ? crypto.randomUUID() : null;
     handleUpdate('groupId', newGroupId);
   };
 

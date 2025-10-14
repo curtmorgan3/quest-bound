@@ -8,6 +8,7 @@ import {
   dragStartPosition,
   getComponentState,
   getDraggedComponents,
+  getGroupedComponents,
   setComponetState,
 } from '../cache';
 import { handleComponentCrud } from './handle-component-crud';
@@ -26,9 +27,25 @@ export const addDragHandlers = (app: Application) => {
     const deltaX = Math.floor(e.global.x - dragStartPosition.x);
     const deltaY = Math.floor(e.global.y - dragStartPosition.y);
 
-    for (const componentId of getDraggedComponents()) {
-      const component = getComponentState(componentId);
+    const draggedComponents = getDraggedComponents().map((id) => getComponentState(id));
+    const draggedGroupIds = new Set(draggedComponents.map((c) => c?.groupId));
 
+    const groupedDraggedComponents: Array<Component> = [];
+
+    for (const groupId of [...draggedGroupIds]) {
+      if (!groupId) continue;
+      const groupedComponents = getGroupedComponents(groupId);
+      groupedDraggedComponents.push(...groupedComponents);
+    }
+
+    // Place ungrouped components back in the drag array
+    for (const draggedComp of draggedComponents) {
+      if (draggedComp && !groupedDraggedComponents.find((c) => c.id === draggedComp.id)) {
+        groupedDraggedComponents.push(draggedComp);
+      }
+    }
+
+    for (const component of groupedDraggedComponents) {
       if (component) {
         log(`Dragging ${component.id}`);
         const newX = component.x + deltaX;
@@ -37,8 +54,8 @@ export const addDragHandlers = (app: Application) => {
         component.y = clampToGrid(newY);
 
         const update = { x: component.x, y: component.y };
-        setComponetState(componentId, update);
-        updates.set(componentId, update);
+        setComponetState(component.id, update);
+        updates.set(component.id, update);
       }
     }
 

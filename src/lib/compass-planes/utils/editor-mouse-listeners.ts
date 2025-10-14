@@ -12,7 +12,6 @@ export function getAbsoluteMousePosition() {
 
 export function getRelativeMousePosition() {
   const cameraPos = getCameraPosition();
-  console.log('camera: ', cameraPos);
   return {
     x: x + cameraPos.x,
     y: y + cameraPos.y,

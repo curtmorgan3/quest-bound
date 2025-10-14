@@ -58,6 +58,11 @@ export function getSelectedComponents() {
   return [...components].filter((c) => ids.includes(c.id));
 }
 
+export function getGroupedComponents(groupId: string) {
+  const components = editorState.values();
+  return [...components].filter((c) => c.groupId === groupId);
+}
+
 export function componentsAreSelected() {
   return selectedComponentIds.size > 0;
 }

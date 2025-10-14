@@ -1,5 +1,6 @@
 import {
   clearSelection,
+  getSelectedComponents,
   getSelectedComponentsIds,
   redoAction,
   setPlacingType,
@@ -15,6 +16,7 @@ const keyMap = new Map<string, string>([
   ['paste', 'v'],
   ['undo', 'z'],
   ['redo', 'z'],
+  ['group', 'g'],
 ]);
 
 const listeners: Array<(e: KeyboardEvent) => void> = [];
@@ -39,6 +41,7 @@ function registerEvent(
       if (shiftBehavior === 'require' && !e.shiftKey) return;
       if (shiftBehavior === 'prevent' && e.shiftKey) return;
 
+      e.preventDefault();
       cb();
     }
   };
@@ -67,4 +70,25 @@ export function addEditorKeyListeners(): void {
 
   registerEvent('undo', undoAction, 'require', 'prevent');
   registerEvent('redo', redoAction, 'require', 'require');
+
+  registerEvent(
+    'group',
+    () => {
+      const selectedComponents = getSelectedComponents();
+      const groupIds = new Set(selectedComponents.map((c) => c.groupId).filter(Boolean));
+
+      // If all components grouped together, ungroup
+      // Otherwise, multiple groups selected, group together
+
+      const newGroupId = crypto.randomUUID();
+
+      handleComponentCrud.onComponentsUpdated(
+        selectedComponents.map((c) => ({
+          ...c,
+          groupId: groupIds.size === 1 ? null : newGroupId,
+        })),
+      );
+    },
+    'require',
+  );
 }
