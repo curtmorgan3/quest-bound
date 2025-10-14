@@ -36,6 +36,28 @@ export const useComponents = (compositeId?: string) => {
     }
   };
 
+  const createComponents = async (data: Array<Partial<Component>>) => {
+    const now = new Date().toISOString();
+    try {
+      await db.components.bulkAdd(
+        data.map(
+          (comp) =>
+            ({
+              ...comp,
+              id: comp.id || crypto.randomUUID(),
+              createdAt: now,
+              updatedAt: now,
+            }) as Component,
+        ),
+      );
+    } catch (e) {
+      handleError(e as Error, {
+        component: 'useComponents/createComponent',
+        severity: 'medium',
+      });
+    }
+  };
+
   const updateComponent = async (id: string, data: Partial<Component>) => {
     const now = new Date().toISOString();
     try {
@@ -84,6 +106,7 @@ export const useComponents = (compositeId?: string) => {
   return {
     components: components ?? [],
     createComponent,
+    createComponents,
     updateComponent,
     updateComponents,
     deleteComponent,

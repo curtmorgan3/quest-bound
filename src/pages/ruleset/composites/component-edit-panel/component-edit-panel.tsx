@@ -1,6 +1,7 @@
 import { useComponents } from '@/lib/compass-api';
 import { colorBlack } from '@/palette';
 import { useParams } from 'react-router-dom';
+import { ActionEdit } from './action-edit';
 import { PositionEdit } from './position-edit';
 import { StyleEdit } from './style-edit';
 
@@ -17,6 +18,7 @@ export const ComponentEditPanel = () => {
       style={{ position: 'absolute', right: 0, backgroundColor: colorBlack }}>
       <PositionEdit components={selectedComponents} />
       <StyleEdit components={selectedComponents} />
+      <ActionEdit components={selectedComponents} />
     </div>
   );
 };

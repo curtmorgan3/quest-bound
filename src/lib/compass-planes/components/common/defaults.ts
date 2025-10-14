@@ -14,6 +14,7 @@ const baseDefaults = {
   rotation: 0,
   z: 1,
   opacity: 1,
+  groupId: null,
 };
 
 export const defaultShape: Component = {

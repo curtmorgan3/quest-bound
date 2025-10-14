@@ -87,10 +87,11 @@ export type Component = BaseDetails & {
   rotation: number;
   color: string;
   opacity: number;
+  locked?: boolean;
   selected?: boolean;
   assetId?: string;
   image?: string;
-  groupId?: string;
+  groupId?: string | null;
   attributeId?: string;
   actionId?: string;
 };
