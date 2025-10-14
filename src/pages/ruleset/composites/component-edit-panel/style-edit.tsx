@@ -1,5 +1,4 @@
 import { Popover } from '@/components/ui/popover';
-import { useComponents } from '@/lib/compass-api';
 import type { Component } from '@/types';
 import { PopoverContent, PopoverTrigger } from '@radix-ui/react-popover';
 import { Palette } from 'lucide-react';
@@ -9,24 +8,14 @@ import { parseValue, valueIfAllAreEqual } from './utils';
 
 interface Props {
   components: Array<Component>;
+  handleUpdate: (key: string, value: number | string | boolean | null) => void;
 }
 
 const MIXED_VALUE_LABEL = '-';
 
-export const StyleEdit = ({ components }: Props) => {
-  const { updateComponents } = useComponents();
-
+export const StyleEdit = ({ components, handleUpdate }: Props) => {
   const opacity = valueIfAllAreEqual(components, 'opacity');
   const color = valueIfAllAreEqual(components, 'color') as string;
-
-  const handleUpdate = (key: string, value: number | string) => {
-    updateComponents(
-      components.map((c) => ({
-        id: c.id,
-        [key]: value,
-      })),
-    );
-  };
 
   return (
     <div className='flex-col w-full flex flex-col gap-3 pb-2 border-b-1'>

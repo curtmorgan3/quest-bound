@@ -87,7 +87,9 @@ export async function initializeEditor({
     const deletedComponentsSnapshot: Array<Component> = [];
     for (const id of ids) {
       const comp = editorState.get(id);
-      if (comp) deletedComponentsSnapshot.push(comp);
+      if (comp && !comp.locked) {
+        deletedComponentsSnapshot.push(comp);
+      }
     }
 
     addToUndoBuffer({
@@ -95,7 +97,7 @@ export async function initializeEditor({
       state: deletedComponentsSnapshot,
     });
 
-    onComponentsDeleted?.(ids);
+    onComponentsDeleted?.(deletedComponentsSnapshot.map((c) => c.id));
   };
 
   addDragHandlers(app);

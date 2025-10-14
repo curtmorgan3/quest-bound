@@ -55,12 +55,15 @@ export function drawBase(parent: TContainer, component: Component): TContainer {
 
   base.on('pointerdown', (e) => {
     log('pointerdown');
+    const componentState = getComponentState(component.id);
+    if (componentState?.locked) return;
+
     startDragging(component.id, e.global);
 
     // Drag all selected components together
     if (isSelected(component.id)) {
-      for (const componentId of getSelectedComponents()) {
-        startDragging(componentId, e.global);
+      for (const component of getSelectedComponents().filter((c) => !c.locked)) {
+        startDragging(component.id, e.global);
       }
     }
   });

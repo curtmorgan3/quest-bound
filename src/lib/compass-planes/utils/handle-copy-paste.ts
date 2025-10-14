@@ -3,7 +3,7 @@ import {
   copyComponents,
   editorState,
   getCopiedComponents,
-  getSelectedComponents,
+  getSelectedComponentsIds,
   selectComponents,
 } from '../cache';
 import { getRelativeMousePosition } from './editor-mouse-listeners';
@@ -41,7 +41,7 @@ export function handlePasteComponents() {
 }
 
 export function handleCopyComponents() {
-  const selectedIds = getSelectedComponents();
+  const selectedIds = getSelectedComponentsIds();
   const copiedComps = [];
 
   for (const id of selectedIds) {

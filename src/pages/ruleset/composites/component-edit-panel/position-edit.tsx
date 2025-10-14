@@ -1,4 +1,3 @@
-import { useComponents } from '@/lib/compass-api';
 import type { Component } from '@/types';
 import { RotateCw } from 'lucide-react';
 import { EditPanelInput } from './component-edit-panel-input';
@@ -6,28 +5,18 @@ import { parseValue, valueIfAllAreEqual } from './utils';
 
 interface Props {
   components: Array<Component>;
+  handleUpdate: (key: string, value: number | string | boolean | null) => void;
 }
 
 const MIXED_VALUE_LABEL = '-';
 
-export const PositionEdit = ({ components }: Props) => {
-  const { updateComponents } = useComponents();
-
+export const PositionEdit = ({ components, handleUpdate }: Props) => {
   const x = valueIfAllAreEqual(components, 'x');
   const y = valueIfAllAreEqual(components, 'y');
   const width = valueIfAllAreEqual(components, 'width');
   const height = valueIfAllAreEqual(components, 'height');
   const rotation = valueIfAllAreEqual(components, 'rotation');
   const layer = valueIfAllAreEqual(components, 'z');
-
-  const handleUpdate = (key: string, value: number | string) => {
-    updateComponents(
-      components.map((c) => ({
-        id: c.id,
-        [key]: value,
-      })),
-    );
-  };
 
   return (
     <div className='flex-col w-full flex flex-col gap-3 pb-2 border-b-1'>

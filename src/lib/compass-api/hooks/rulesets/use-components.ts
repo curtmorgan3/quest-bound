@@ -74,7 +74,6 @@ export const useComponents = (compositeId?: string) => {
   };
 
   const updateComponents = async (updates: Array<ComponentUpdate>) => {
-    // await Promise.all(updates.map((u) => updateComponent(u.id, u)));
     const now = new Date().toISOString();
     try {
       await db.components.bulkUpdate(

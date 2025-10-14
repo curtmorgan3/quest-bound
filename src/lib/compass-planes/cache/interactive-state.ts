@@ -3,6 +3,7 @@ import type { Component } from '@/types';
 import { Point } from 'pixi.js';
 import type { ComponentType, EditorState } from '../types';
 import { handleComponentCrud } from '../utils/handle-component-crud';
+import { editorState } from './editor-state';
 
 //#region Selection
 const selectedComponentIds = new Set<string>();
@@ -47,8 +48,14 @@ export function isSelected(id: string) {
   return selectedComponentIds.has(id);
 }
 
-export function getSelectedComponents() {
+export function getSelectedComponentsIds() {
   return Array.from(selectedComponentIds);
+}
+
+export function getSelectedComponents() {
+  const ids = getSelectedComponentsIds();
+  const components = editorState.values();
+  return [...components].filter((c) => ids.includes(c.id));
 }
 
 export function componentsAreSelected() {

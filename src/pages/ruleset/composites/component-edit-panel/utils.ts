@@ -2,6 +2,9 @@ import type { Component } from '@/types';
 
 export function valueIfAllAreEqual(components: Array<Component>, key: string) {
   if (!components.length) return '-';
+
+  if (components.length === 1 && components[0].locked && key !== 'locked') return '-';
+
   const val = components[0][key as keyof (typeof components)[0]];
 
   if (val === undefined) return '-';

@@ -1,3 +1,4 @@
+import { colorPrimary } from '@/palette';
 import type { Component } from '@/types';
 import { debugLog } from '@/utils';
 import type { Container as TContainer } from 'pixi.js';
@@ -69,7 +70,7 @@ export const drawSelect = (parent: TContainer, component: Component): TContainer
 
       border.stroke({
         width: EditorStyles.selectionBoxWidth,
-        color: EditorStyles.selectionBoxColor,
+        color: componentState.locked ? colorPrimary : EditorStyles.selectionBoxColor,
       });
     }
   };

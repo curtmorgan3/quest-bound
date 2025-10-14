@@ -39,7 +39,7 @@ export const drawResize = (parent: TContainer, component: Component): Container 
     const componentState = getComponentState(component.id);
     if (!componentState) return;
 
-    if (!isSelected(component.id)) {
+    if (!isSelected(component.id) || componentState.locked) {
       for (const handle of handles) {
         resizeContainer.removeChild(handle);
         handle.destroy();

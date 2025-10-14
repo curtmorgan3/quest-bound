@@ -1,6 +1,6 @@
 import {
   clearSelection,
-  getSelectedComponents,
+  getSelectedComponentsIds,
   redoAction,
   setPlacingType,
   undoAction,
@@ -56,7 +56,7 @@ export function addEditorKeyListeners(): void {
   registerEvent(
     'delete',
     () => {
-      const selected = getSelectedComponents();
+      const selected = getSelectedComponentsIds();
       handleComponentCrud.onComponentsDeleted(selected);
     },
     'require',
