@@ -46,6 +46,18 @@ export function drawBase(parent: TContainer, component: Component): TContainer {
 
     const zoom = getZoom();
     const pos = getCameraPosition();
+
+    const cullingBuffer = 200;
+
+    const leftLimit = pos.x - cullingBuffer;
+    const rightLimit = (window.visualViewport?.width ?? 0) / zoom + pos.x + cullingBuffer;
+
+    if (componentState.x < leftLimit || componentState.x > rightLimit) {
+      base.visible = false;
+    } else {
+      base.visible = true;
+    }
+
     base.x = (componentState.x - pos.x) * zoom;
     base.y = (componentState.y - pos.y) * zoom;
     base.zIndex = componentState.z;

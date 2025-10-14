@@ -29,7 +29,7 @@ interface InitializeEditorOptions {
   onComponentsDeleted?: (ids: Array<string>) => void;
 }
 
-let app: Application | null = null;
+export let app: Application | null = null;
 let initializing = false;
 
 /**
@@ -70,7 +70,7 @@ export async function initializeEditor({
   await app.init({ ...configuration, resizeTo: parentElement, eventMode: 'static' });
 
   handleComponentCrud.onComponentsUpdated = (updates: Array<Component>) => {
-    // Undo buffer set in setEditorState
+    // Undo buffer is set in setEditorState
     onComponentsUpdated?.(updates);
   };
 

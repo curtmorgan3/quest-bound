@@ -14,6 +14,7 @@ export async function drawComponentContainerMenu(): Promise<TContainer> {
     label: `create-component-menu`,
     y: viewportHeight - 120,
     x: (viewportWidth - menuWidth - sidebarWidth) / 2,
+    zIndex: 1000,
   });
 
   const menu = new Container({

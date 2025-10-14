@@ -5,13 +5,21 @@ import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
+import { useComponents } from '@/lib/compass-api';
+import { app } from '@/lib/compass-planes';
+import { defaultComponentMap } from '@/lib/compass-planes/components/common/defaults';
+import type { Component } from '@/types';
 import { ChevronDown, ChevronRight, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { useParams } from 'react-router-dom';
 
 export const DevTools = () => {
   const [inputValue, setInputValue] = useState('');
   const [debugVars, setDebugVars] = useState<Array<{ key: string; value: string }>>([]);
   const [openSections, setOpenSections] = useState<Set<string>>(new Set());
+
+  const { compositeId } = useParams();
+  const { createComponents } = useComponents(compositeId);
 
   // Load debug variables from localStorage
   const loadDebugVars = () => {
@@ -102,8 +110,39 @@ export const DevTools = () => {
     setOpenSections(newOpenSections);
   };
 
+  const addComponents = async () => {
+    if (!compositeId) return;
+    const comps: Component[] = [];
+    const groupId = 'group';
+
+    for (let x = 0; x < 100; x++) {
+      for (let y = 0; y < 10; y++) {
+        const shape = defaultComponentMap.get('shape') as Component;
+        comps.push({
+          ...shape,
+          compositeId,
+          groupId,
+          width: 60,
+          height: 60,
+          x: x * 80,
+          y: y * 80,
+        });
+      }
+    }
+    await createComponents(comps);
+  };
+
+  const checkCullable = () => {
+    if (!app) return;
+    for (const child of app.stage.children) {
+      console.log(`${child.label}, visible: ${child.visible}`);
+    }
+  };
+
   return (
     <div className='p-4 space-y-4'>
+      <button onClick={checkCullable}>Check Cull Visibility</button>
+      <button onClick={addComponents}>Add 1000 Components</button>
       <div className='space-y-2'>
         <Label htmlFor='debug-input'>Add Debug Variable</Label>
         <div className='flex gap-2'>

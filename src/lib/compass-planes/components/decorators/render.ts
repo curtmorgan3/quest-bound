@@ -8,7 +8,9 @@ import { getComponentState, getZoom } from '../../cache';
  * Resizes based on zoom.
  */
 export const drawRender = (parent: TContainer, component: Component) => {
-  const renderContainer = new Container({ label: `render-${component.id}` });
+  const renderContainer = new Container({
+    label: `render-${component.id}`,
+  });
 
   parent.addChild(renderContainer);
 

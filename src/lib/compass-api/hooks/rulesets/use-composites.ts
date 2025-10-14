@@ -53,6 +53,8 @@ export const useComposites = () => {
 
   const deleteComposite = async (id: string) => {
     try {
+      const components = await db.components.where({ compositeId: id }).toArray();
+      await db.components.bulkDelete(components.map((c) => c.id));
       await db.composites.delete(id);
     } catch (e) {
       handleError(e as Error, {
