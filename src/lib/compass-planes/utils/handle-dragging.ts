@@ -11,6 +11,7 @@ import {
   getGroupedComponents,
   setComponetState,
 } from '../cache';
+import { MIN_CAMERA_X, MIN_CAMERA_Y } from '../constants';
 import { handleComponentCrud } from './handle-component-crud';
 import { clampToGrid } from './helpers';
 
@@ -48,10 +49,11 @@ export const addDragHandlers = (app: Application) => {
     for (const component of groupedDraggedComponents) {
       if (component) {
         log(`Dragging ${component.id}`);
-        const newX = component.x + deltaX;
-        const newY = component.y + deltaY;
-        component.x = clampToGrid(newX);
-        component.y = clampToGrid(newY);
+        const newX = clampToGrid(component.x + deltaX);
+        const newY = clampToGrid(component.y + deltaY);
+
+        component.x = Math.max(MIN_CAMERA_X, newX);
+        component.y = Math.max(MIN_CAMERA_Y, newY);
 
         const update = { x: component.x, y: component.y };
         setComponetState(component.id, update);

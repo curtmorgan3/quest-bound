@@ -9,10 +9,17 @@ import {
   togglePanning,
   toggleZooming,
 } from '../cache';
-
-const ZOOM_ENABLED = true;
-const PAN_ENABLED = true;
-const PAN_SENSITIVITY = 10;
+import {
+  MAX_CAMERA_X,
+  MAX_CAMERA_Y,
+  MAX_ZOOM,
+  MIN_CAMERA_X,
+  MIN_CAMERA_Y,
+  MIN_ZOOM,
+  PAN_ENABLED,
+  PAN_SENSITIVITY,
+  ZOOM_ENABLED,
+} from '../constants';
 
 export const addCameraHandlers = (app: Application) => {
   // Handle Zoom
@@ -23,13 +30,17 @@ export const addCameraHandlers = (app: Application) => {
     e.stopPropagation();
     e.preventDefault();
 
+    let newZoom = getZoom();
+
     // Zooming out
     if (e.deltaY > 0) {
-      setZoom(getZoom() * 0.99);
+      newZoom *= 0.99;
       // Zooming in
     } else {
-      setZoom(getZoom() * 1.01);
+      newZoom *= 1.01;
     }
+
+    setZoom(Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, newZoom)));
 
     setTimeout(() => {
       toggleZooming(false);
@@ -58,7 +69,10 @@ export const addCameraHandlers = (app: Application) => {
       pos.y = pos.y - PAN_SENSITIVITY;
     }
 
-    setCameraPosition(pos);
+    setCameraPosition({
+      x: Math.max(MIN_CAMERA_X, Math.min(MAX_CAMERA_X, pos.x)),
+      y: Math.max(MIN_CAMERA_Y, Math.min(MAX_CAMERA_Y, pos.y)),
+    });
 
     setTimeout(() => {
       togglePanning(false);

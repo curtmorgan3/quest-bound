@@ -3,15 +3,13 @@ import { EditorStyles } from '../constants';
 let zoom = 1;
 let isZooming = false;
 let gridSize = EditorStyles.initialGridSize;
-const MAX_ZOOM = 1.4;
-const MIN_ZOOM = 0.7;
 let isPanning = false;
 
 let x = 0;
 let y = 0;
 
 export function setZoom(newZoom: number) {
-  zoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, newZoom));
+  zoom = newZoom;
 }
 
 export function getZoom() {
