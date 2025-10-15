@@ -5,7 +5,7 @@ import type { ComponentType } from '../../types';
 const baseDefaults = {
   // These are overridden by the createComponent function
   id: '',
-  compositeId: '',
+  windowId: '',
   createdAt: new Date().toISOString(),
   updatedAt: new Date().toISOString(),
   ////////////

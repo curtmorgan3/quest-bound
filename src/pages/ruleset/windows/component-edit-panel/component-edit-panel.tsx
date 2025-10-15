@@ -6,8 +6,8 @@ import { PositionEdit } from './position-edit';
 import { StyleEdit } from './style-edit';
 
 export const ComponentEditPanel = () => {
-  const { compositeId } = useParams();
-  const { components, updateComponents } = useComponents(compositeId);
+  const { windowId } = useParams();
+  const { components, updateComponents } = useComponents(windowId);
   let selectedComponents = components.filter((c) => c.selected);
 
   if (selectedComponents.length === 0) return null;

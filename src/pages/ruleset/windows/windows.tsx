@@ -7,18 +7,18 @@ import {
   CardTitle,
   Input,
 } from '@/components';
-import { useComposites, useRulesets } from '@/lib/compass-api';
+import { useRulesets, useWindows } from '@/lib/compass-api';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-export const CompositeSelect = () => {
-  const { composites, deleteComposite } = useComposites();
+export const WindowSelect = () => {
+  const { windows, deleteWindow } = useWindows();
   const { activeRuleset } = useRulesets();
   const navigate = useNavigate();
   const [filterValue, setFilterValue] = useState('');
 
-  const sortedComposites = [...composites].sort((a, b) => a.title.localeCompare(b.title));
-  const filteredCharts = sortedComposites.filter(
+  const sortedWindows = [...windows].sort((a, b) => a.title.localeCompare(b.title));
+  const filteredCharts = sortedWindows.filter(
     (c) =>
       c.title.toLowerCase().includes(filterValue.toLowerCase()) ||
       c.category?.toLowerCase().includes(filterValue.toLowerCase()),
@@ -44,16 +44,13 @@ export const CompositeSelect = () => {
               </div>
             </CardDescription>
             <div className='flex gap-2 mt-2 bg-secondary rounded-md p-2 justify-between items-center'>
-              <Button
-                variant='ghost'
-                onClick={() => deleteComposite(c.id)}
-                className='text-red-500'>
+              <Button variant='ghost' onClick={() => deleteWindow(c.id)} className='text-red-500'>
                 Delete
               </Button>
               <CardAction>
                 <Button
                   variant='link'
-                  onClick={() => navigate(`/rulesets/${activeRuleset?.id}/composites/${c.id}`)}>
+                  onClick={() => navigate(`/rulesets/${activeRuleset?.id}/windows/${c.id}`)}>
                   Open
                 </Button>
               </CardAction>

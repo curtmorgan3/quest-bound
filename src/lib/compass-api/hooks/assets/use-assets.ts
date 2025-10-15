@@ -1,7 +1,7 @@
 import { db } from '@/stores';
 import type { Asset } from '@/types';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { gridSquare } from './editor-assets';
+import { gridSquare, shapeTool } from './editor-assets';
 
 export const useAssets = (rulesetId?: string) => {
   // Get all assets for the current ruleset
@@ -72,6 +72,17 @@ export const useAssets = (rulesetId?: string) => {
       data: gridSquare,
       type: 'image/png',
       filename: 'grid-square.png',
+      directory: 'Editor Assets',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      rulesetId,
+    });
+
+    await db.assets.add({
+      id: crypto.randomUUID(),
+      data: shapeTool,
+      type: 'image/png',
+      filename: 'shape-tool.png',
       directory: 'Editor Assets',
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),

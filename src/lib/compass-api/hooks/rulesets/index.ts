@@ -5,3 +5,4 @@ export * from './use-components';
 export * from './use-composites';
 export * from './use-items';
 export * from './use-rulesets';
+export * from './use-windows';

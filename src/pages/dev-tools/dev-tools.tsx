@@ -18,8 +18,8 @@ export const DevTools = () => {
   const [debugVars, setDebugVars] = useState<Array<{ key: string; value: string }>>([]);
   const [openSections, setOpenSections] = useState<Set<string>>(new Set());
 
-  const { compositeId } = useParams();
-  const { createComponents } = useComponents(compositeId);
+  const { windowId } = useParams();
+  const { createComponents } = useComponents(windowId);
 
   // Load debug variables from localStorage
   const loadDebugVars = () => {
@@ -111,7 +111,7 @@ export const DevTools = () => {
   };
 
   const addComponents = async () => {
-    if (!compositeId) return;
+    if (!windowId) return;
     const comps: Component[] = [];
     const groupId = 'group';
 
@@ -120,7 +120,7 @@ export const DevTools = () => {
         const shape = defaultComponentMap.get('shape') as Component;
         comps.push({
           ...shape,
-          compositeId,
+          windowId,
           groupId,
           width: 60,
           height: 60,

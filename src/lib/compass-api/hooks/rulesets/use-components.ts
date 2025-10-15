@@ -5,26 +5,26 @@ import { useLiveQuery } from 'dexie-react-hooks';
 
 type ComponentUpdate = { id: string } & Partial<Component>;
 
-export const useComponents = (compositeId?: string) => {
+export const useComponents = (windowId?: string) => {
   const { handleError } = useErrorHandler();
 
   const components = useLiveQuery(
     () =>
       db.components
-        .where('compositeId')
-        .equals(compositeId ?? '')
+        .where('windowId')
+        .equals(windowId ?? '')
         .toArray(),
-    [compositeId],
+    [windowId],
   );
 
   const createComponent = async (data: Partial<Component>) => {
-    if (!compositeId) return;
+    if (!windowId) return;
     const now = new Date().toISOString();
     try {
       await db.components.add({
         ...data,
         id: data.id || crypto.randomUUID(),
-        compositeId: compositeId,
+        windowId,
         createdAt: now,
         updatedAt: now,
       } as Component);

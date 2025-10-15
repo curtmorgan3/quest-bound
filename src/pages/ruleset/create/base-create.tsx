@@ -1,5 +1,5 @@
 import { Button, Input, Label, Textarea } from '@/components';
-import { FileSpreadsheet, HandFist, PaintRoller, Sword, UserRoundPen } from 'lucide-react';
+import { AppWindow, FileSpreadsheet, HandFist, Sword, UserRoundPen } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useLocation, useSearchParams } from 'react-router-dom';
 import { AttributeCreate } from './attribute-create';
@@ -8,8 +8,8 @@ import {
   useActionValues,
   useAttributeValues,
   useChartValues,
-  useCompositeValues,
   useItemValues,
+  useWindowValues,
 } from './hooks';
 import { ItemCreate } from './item-create';
 
@@ -18,7 +18,7 @@ const iconset = {
   actions: HandFist,
   items: Sword,
   charts: FileSpreadsheet,
-  composites: PaintRoller,
+  windows: AppWindow,
 };
 
 interface BaseCreateProps {
@@ -81,7 +81,7 @@ export const BaseCreate = ({ onCreate }: BaseCreateProps) => {
     setCategory,
   });
 
-  const { saveComposite } = useCompositeValues({
+  const { saveWindow } = useWindowValues({
     id: editId || undefined,
     baseProperties,
     onCreate: () => {
@@ -96,9 +96,9 @@ export const BaseCreate = ({ onCreate }: BaseCreateProps) => {
     | 'items'
     | 'actions'
     | 'charts'
-    | 'composites';
+    | 'windows';
   const [activeType, setActiveType] = useState<
-    'attributes' | 'items' | 'actions' | 'charts' | 'composites'
+    'attributes' | 'items' | 'actions' | 'charts' | 'windows'
   >(initialType || 'attributes');
 
   useEffect(() => {
@@ -126,8 +126,8 @@ export const BaseCreate = ({ onCreate }: BaseCreateProps) => {
       case 'charts':
         saveChart();
         break;
-      case 'composites':
-        saveComposite();
+      case 'windows':
+        saveWindow();
         break;
       default:
         break;
@@ -163,9 +163,9 @@ export const BaseCreate = ({ onCreate }: BaseCreateProps) => {
           <iconset.charts />
         </Button>
         <Button
-          variant={activeType === 'composites' ? 'default' : 'outline'}
-          onClick={() => setActiveType('composites')}>
-          <iconset.composites />
+          variant={activeType === 'windows' ? 'default' : 'outline'}
+          onClick={() => setActiveType('windows')}>
+          <iconset.windows />
         </Button>
       </div>
 
@@ -195,7 +195,7 @@ export const BaseCreate = ({ onCreate }: BaseCreateProps) => {
         {activeType === 'items' && <ItemCreate {...itemProps} />}
         {activeType === 'charts' && <ChartCreate {...chartProps} />}
 
-        {activeType !== 'composites' && (
+        {activeType !== 'windows' && (
           <div className='grid gap-3'>
             <Label htmlFor='create-description'>Description</Label>
             <Textarea

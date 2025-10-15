@@ -8,10 +8,10 @@ import { ComponentEditPanel } from './component-edit-panel';
 
 const { log } = debugLog('pages', 'editor');
 
-export const CompositeEditor = () => {
-  const { compositeId } = useParams();
+export const WindowEditor = () => {
+  const { windowId } = useParams();
   const { components, createComponent, updateComponents, deleteComponent } =
-    useComponents(compositeId);
+    useComponents(windowId);
 
   const editorState = new Map<string, Component>();
   for (const comp of components) {
@@ -28,7 +28,7 @@ export const CompositeEditor = () => {
     for (const comp of components) {
       createComponent({
         ...comp,
-        compositeId,
+        windowId,
       });
     }
   };
@@ -55,7 +55,7 @@ export const CompositeEditor = () => {
     return () => destroyEditor();
   }, []);
 
-  if (!compositeId) return null;
+  if (!windowId) return null;
 
   return (
     <>

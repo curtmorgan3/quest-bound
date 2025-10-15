@@ -77,7 +77,7 @@ export type Chart = BaseDetails & {
 };
 
 export type Component = BaseDetails & {
-  compositeId: string;
+  windowId?: string;
   type: string;
   x: number;
   y: number;
@@ -87,6 +87,7 @@ export type Component = BaseDetails & {
   rotation: number;
   color: string;
   opacity: number;
+  compositeId?: string;
   locked?: boolean;
   selected?: boolean;
   assetId?: string;
@@ -97,6 +98,12 @@ export type Component = BaseDetails & {
 };
 
 export type Composite = BaseDetails & {
+  rulesetId: string;
+  title: string;
+  category?: string;
+};
+
+export type Window = BaseDetails & {
   rulesetId: string;
   title: string;
   category?: string;

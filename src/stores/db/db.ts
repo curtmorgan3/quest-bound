@@ -8,6 +8,7 @@ import type {
   Item,
   Ruleset,
   User,
+  Window,
 } from '@/types';
 import Dexie, { type EntityTable } from 'dexie';
 import { assetInjectorMiddleware } from './asset-injector-middleware';
@@ -24,6 +25,7 @@ const db = new Dexie('qbdb') as Dexie & {
   items: EntityTable<Item, 'id'>;
   charts: EntityTable<Chart, 'id'>;
   assets: EntityTable<Asset, 'id'>;
+  windows: EntityTable<Window, 'id'>;
   composites: EntityTable<Composite, 'id'>;
   components: EntityTable<Component, 'id'>;
 };
@@ -39,8 +41,9 @@ db.version(1).stores({
   actions: `${common}, &[rulesetId+title], description, category`,
   items: `${common}, &[rulesetId+title], description, category, weight, defaultQuantity, stackSize, isContainer, isStorable, isEquippable, isConsumable, inventoryWidth, inventoryHeight`,
   charts: `${common}, &[rulesetId+title], description, category, data`,
-  composites: `${common}, &[rulesetId+title], category`,
-  components: `${common}, compositeId, type, x, y, height, width, rotation, selected, assetId, image, groupId, attributeId, actionId`,
+  windows: `${common}, &[rulesetId+title], category`,
+  composites: `${common}, rulesetId, title, category`,
+  components: `${common}, windowId, compositeId, type, x, y, height, width, rotation, selected, assetId, image, groupId, attributeId, actionId`,
 });
 
 // Cache assets for reference in the asset injector middleware

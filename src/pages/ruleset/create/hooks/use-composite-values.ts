@@ -1,4 +1,4 @@
-import { useComposites } from '@/lib/compass-api';
+import { useWindows } from '@/lib/compass-api';
 import { useEffect } from 'react';
 
 interface UseActionValueProps {
@@ -12,40 +12,40 @@ interface UseActionValueProps {
   setCategory: (category: string) => void;
 }
 
-export const useCompositeValues = ({
+export const useWindowValues = ({
   id = '',
   baseProperties,
   onCreate,
   setTitle,
   setCategory,
 }: UseActionValueProps) => {
-  const { composites, createComposite, updateComposite } = useComposites();
+  const { windows, createWindow, updateWindow } = useWindows();
   const isEditMode = !!id;
 
-  const activeComposite = composites.find((a) => a.id === id);
+  const active = windows.find((a) => a.id === id);
 
   useEffect(() => {
-    if (isEditMode && activeComposite) {
-      setTitle(activeComposite.title);
-      setCategory(activeComposite.category || '');
+    if (isEditMode && active) {
+      setTitle(active.title);
+      setCategory(active.category || '');
     }
-  }, [activeComposite]);
+  }, [active]);
 
-  const saveComposite = () => {
+  const saveWindow = () => {
     const data = {
       ...baseProperties,
     };
 
     if (isEditMode) {
-      updateComposite(id, data);
+      updateWindow(id, data);
     } else {
-      createComposite(data);
+      createWindow(data);
     }
 
     onCreate?.();
   };
 
   return {
-    saveComposite,
+    saveWindow,
   };
 };

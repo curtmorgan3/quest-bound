@@ -79,7 +79,7 @@ export function AppSidebar() {
   if (enableEditor && activeRuleset) {
     rulesetItems.push({
       title: 'Windows',
-      url: `/rulesets/${activeRuleset.id}/composites`,
+      url: `/rulesets/${activeRuleset.id}/windows`,
       icon: AppWindow,
     });
   }

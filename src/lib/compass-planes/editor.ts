@@ -2,7 +2,13 @@ import type { Component } from '@/types';
 import { debugLog } from '@/utils';
 import '@pixi/layout';
 import { Application, type ApplicationOptions } from 'pixi.js';
-import { addToUndoBuffer, editorState, selectComponents, setEditorState } from './cache';
+import {
+  addToUndoBuffer,
+  clearEditorState,
+  editorState,
+  selectComponents,
+  setEditorState,
+} from './cache';
 import { EditorStyles } from './constants';
 import { drawBackground, drawComponentContainerMenu } from './editor-decorators';
 import type { EditorConfiguration, EditorState } from './types';
@@ -53,7 +59,7 @@ export async function initializeEditor({
   if (initializing) return;
 
   initializing = true;
-  log('initialize editor');
+  log('initialize editor: ', state);
 
   const parentElement = document.getElementById(elementId);
   if (!parentElement) {
@@ -128,6 +134,8 @@ export function destroyEditor() {
   clearEditorKeyListeners();
   clearEditorMouseListeners();
   if (app && app.renderer) {
+    log('Destorying editor');
+    clearEditorState();
     app.destroy();
     app = null;
   }

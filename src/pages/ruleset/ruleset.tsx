@@ -14,14 +14,14 @@ import { ActionChart } from './actions';
 import { AttributeChart } from './attributes/attribute-chart';
 import { ChartSelect } from './charts';
 import { Export, Import } from './components';
-import { CompositeSelect } from './composites';
 import { BaseCreate } from './create';
 import { ItemChart } from './items/item-chart';
+import { WindowSelect } from './windows';
 
 export const Ruleset = ({
   page,
 }: {
-  page?: 'attributes' | 'items' | 'actions' | 'charts' | 'composites';
+  page?: 'attributes' | 'items' | 'actions' | 'charts' | 'windows';
 }) => {
   const { activeRuleset } = useRulesets();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -44,8 +44,8 @@ export const Ruleset = ({
         return <ActionChart />;
       case 'charts':
         return <ChartSelect />;
-      case 'composites':
-        return <CompositeSelect />;
+      case 'windows':
+        return <WindowSelect />;
       default:
         return <p>Not Found</p>;
     }
@@ -87,8 +87,8 @@ export const Ruleset = ({
               </Button>
             </div>
           )}
-          {page !== 'charts' && page !== 'composites' && <Export type={page} />}
-          {page !== 'charts' && page !== 'composites' && <Import type={page} />}
+          {page !== 'charts' && page !== 'windows' && <Export type={page} />}
+          {page !== 'charts' && page !== 'windows' && <Import type={page} />}
         </div>
 
         {renderChart()}

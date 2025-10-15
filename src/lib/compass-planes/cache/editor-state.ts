@@ -38,6 +38,10 @@ export function setEditorState(state: EditorState, container: Container) {
   editorState = state;
 }
 
+export function clearEditorState() {
+  editorState = new Map();
+}
+
 export function getComponentState(id: string) {
   const state = editorState.get(id);
   if (!state) {
