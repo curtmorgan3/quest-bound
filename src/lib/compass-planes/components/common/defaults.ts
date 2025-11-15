@@ -14,7 +14,10 @@ const baseDefaults = {
   rotation: 0,
   z: 1,
   opacity: 1,
-  borderRadius: 0,
+  borderRadiusTopLeft: 0,
+  borderRadiusTopRight: 0,
+  borderRadiusBottomLeft: 0,
+  borderRadiusBottomRight: 0,
   groupId: null,
 };
 

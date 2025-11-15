@@ -17,15 +17,25 @@ export const ComponentEditPanel = () => {
     selectedComponents = selectedComponents.filter((c) => !c.locked);
   }
 
-  const handleUpdate = (key: string, value: number | string | boolean | null) => {
-    updateComponents(
-      selectedComponents
-        .filter((c) => (key === 'locked' ? true : !c.locked))
-        .map((c) => ({
+  const handleUpdate = (key: string | string[], value: number | string | boolean | null) => {
+    const toUpdate = selectedComponents.filter((c) => (key === 'locked' ? true : !c.locked));
+
+    if (typeof key === 'string') {
+      updateComponents(
+        toUpdate.map((c) => ({
           id: c.id,
           [key]: value,
         })),
-    );
+      );
+    } else {
+      const updated = [...toUpdate];
+      for (const component of updated) {
+        for (const k of key) {
+          Object.assign(component, { [k]: value });
+        }
+      }
+      updateComponents(updated);
+    }
   };
 
   return (

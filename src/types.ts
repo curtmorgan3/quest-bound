@@ -87,7 +87,10 @@ export type Component = BaseDetails & {
   rotation: number;
   color: string;
   opacity: number;
-  borderRadius: number;
+  borderRadiusTopLeft: number;
+  borderRadiusTopRight: number;
+  borderRadiusBottomLeft: number;
+  borderRadiusBottomRight: number;
   compositeId?: string;
   locked?: boolean;
   selected?: boolean;

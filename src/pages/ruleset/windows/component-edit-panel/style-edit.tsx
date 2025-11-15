@@ -1,14 +1,16 @@
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Popover } from '@/components/ui/popover';
 import type { Component } from '@/types';
 import { PopoverContent, PopoverTrigger } from '@radix-ui/react-popover';
-import { Palette } from 'lucide-react';
+import { Palette, SquareRoundCorner } from 'lucide-react';
+import { useState } from 'react';
 import { SketchPicker } from 'react-color';
 import { EditPanelInput } from './component-edit-panel-input';
 import { parseValue, valueIfAllAreEqual } from './utils';
 
 interface Props {
   components: Array<Component>;
-  handleUpdate: (key: string, value: number | string | boolean | null) => void;
+  handleUpdate: (key: string | string[], value: number | string | boolean | null) => void;
 }
 
 const MIXED_VALUE_LABEL = '-';
@@ -16,7 +18,37 @@ const MIXED_VALUE_LABEL = '-';
 export const StyleEdit = ({ components, handleUpdate }: Props) => {
   const opacity = valueIfAllAreEqual(components, 'opacity');
   const color = valueIfAllAreEqual(components, 'color') as string;
-  const borderRadius = valueIfAllAreEqual(components, 'borderRadius');
+  const borderRadiusTopLeft = valueIfAllAreEqual(components, 'borderRadiusTopLeft');
+  const borderRadiusTopRight = valueIfAllAreEqual(components, 'borderRadiusTopRight');
+  const borderRadiusBottomLeft = valueIfAllAreEqual(components, 'borderRadiusBottomLeft');
+  const borderRadiusBottomRight = valueIfAllAreEqual(components, 'borderRadiusBottomRight');
+
+  // Check if all corners have the same value
+  const allCornersEqual =
+    borderRadiusTopLeft !== MIXED_VALUE_LABEL &&
+    borderRadiusTopRight !== MIXED_VALUE_LABEL &&
+    borderRadiusBottomLeft !== MIXED_VALUE_LABEL &&
+    borderRadiusBottomRight !== MIXED_VALUE_LABEL &&
+    borderRadiusTopLeft === borderRadiusTopRight &&
+    borderRadiusTopRight === borderRadiusBottomLeft &&
+    borderRadiusBottomLeft === borderRadiusBottomRight;
+
+  const borderRadiusAll = allCornersEqual ? borderRadiusTopLeft : MIXED_VALUE_LABEL;
+
+  const [isCornersOpen, setIsCornersOpen] = useState(false);
+
+  const handleAllCornersChange = (val: string | number) => {
+    const parsedVal = Math.min(200, Math.max(0, parseValue(val)));
+    handleUpdate(
+      [
+        'borderRadiusTopLeft',
+        'borderRadiusTopRight',
+        'borderRadiusBottomLeft',
+        'borderRadiusBottomRight',
+      ],
+      parsedVal,
+    );
+  };
 
   return (
     <div className='flex-col w-full flex flex-col gap-3 pb-2 border-b-1'>
@@ -47,16 +79,69 @@ export const StyleEdit = ({ components, handleUpdate }: Props) => {
           </PopoverContent>
         </Popover>
       </div>
-      <div className='w-full flex flex-row gap-4 items-end'>
-        <EditPanelInput
-          number={borderRadius !== MIXED_VALUE_LABEL}
-          disabled={borderRadius === MIXED_VALUE_LABEL}
-          label='Border Radius'
-          value={borderRadius}
-          step={1}
-          onChange={(val) => handleUpdate('borderRadius', Math.min(200, Math.max(0, parseValue(val))))}
-        />
-      </div>
+      <Collapsible open={isCornersOpen} onOpenChange={setIsCornersOpen}>
+        <div className='w-full flex flex-row gap-2 items-end'>
+          <div className='flex-1'>
+            <EditPanelInput
+              number={borderRadiusAll !== MIXED_VALUE_LABEL}
+              disabled={borderRadiusAll === MIXED_VALUE_LABEL}
+              label='Border Radius'
+              value={borderRadiusAll}
+              step={1}
+              onChange={handleAllCornersChange}
+            />
+          </div>
+          <CollapsibleTrigger className='flex items-center justify-center h-[18px] w-[18px] text-muted-foreground hover:text-foreground transition-colors cursor-pointer'>
+            <SquareRoundCorner
+              className={`h-[18px] w-[18px] transition-transform ${isCornersOpen ? 'rotate-180' : ''}`}
+            />
+          </CollapsibleTrigger>
+        </div>
+        <CollapsibleContent className='pt-2'>
+          <div className='w-full grid grid-cols-2 gap-2'>
+            <EditPanelInput
+              number={borderRadiusTopLeft !== MIXED_VALUE_LABEL}
+              disabled={borderRadiusTopLeft === MIXED_VALUE_LABEL}
+              label='Top Left'
+              value={borderRadiusTopLeft}
+              step={1}
+              onChange={(val) =>
+                handleUpdate('borderRadiusTopLeft', Math.min(200, Math.max(0, parseValue(val))))
+              }
+            />
+            <EditPanelInput
+              number={borderRadiusTopRight !== MIXED_VALUE_LABEL}
+              disabled={borderRadiusTopRight === MIXED_VALUE_LABEL}
+              label='Top Right'
+              value={borderRadiusTopRight}
+              step={1}
+              onChange={(val) =>
+                handleUpdate('borderRadiusTopRight', Math.min(200, Math.max(0, parseValue(val))))
+              }
+            />
+            <EditPanelInput
+              number={borderRadiusBottomLeft !== MIXED_VALUE_LABEL}
+              disabled={borderRadiusBottomLeft === MIXED_VALUE_LABEL}
+              label='Bottom Left'
+              value={borderRadiusBottomLeft}
+              step={1}
+              onChange={(val) =>
+                handleUpdate('borderRadiusBottomLeft', Math.min(200, Math.max(0, parseValue(val))))
+              }
+            />
+            <EditPanelInput
+              number={borderRadiusBottomRight !== MIXED_VALUE_LABEL}
+              disabled={borderRadiusBottomRight === MIXED_VALUE_LABEL}
+              label='Bottom Right'
+              value={borderRadiusBottomRight}
+              step={1}
+              onChange={(val) =>
+                handleUpdate('borderRadiusBottomRight', Math.min(200, Math.max(0, parseValue(val))))
+              }
+            />
+          </div>
+        </CollapsibleContent>
+      </Collapsible>
     </div>
   );
 };
