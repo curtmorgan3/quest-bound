@@ -31,7 +31,8 @@ export async function drawComponentContainerMenu(): Promise<TContainer> {
   const bg = new Graphics().roundRect(0, 0, menuWidth, menuHeight, 8).fill(colorPaper);
   menu.addChild(bg);
 
-  drawCreateComponentButton(menu, 'shape');
+  drawCreateComponentButton(menu, 'shape', 0);
+  drawCreateComponentButton(menu, 'text', 1);
 
   menu.onRender = () => {
     const newViewportWidth = window.visualViewport?.width ?? 0;

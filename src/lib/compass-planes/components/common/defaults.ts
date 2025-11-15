@@ -31,4 +31,21 @@ export const defaultShape: Component = {
   color: colorWhite,
 };
 
-export const defaultComponentMap = new Map<ComponentType, Component>([['shape', defaultShape]]);
+export const defaultText: Component = {
+  ...baseDefaults,
+  type: 'text',
+  width: 200,
+  height: 40,
+  color: colorWhite,
+  text: 'Text',
+  fontSize: 16,
+  fontFamily: 'Arial',
+  fontWeight: 'normal',
+  textAlign: 'left',
+  lineHeight: 1.2,
+};
+
+export const defaultComponentMap = new Map<ComponentType, Component>([
+  ['shape', defaultShape],
+  ['text', defaultText],
+]);

@@ -1,7 +1,7 @@
 import type { Component } from '@/types';
 import debounce from 'lodash.debounce';
 import type { Container } from 'pixi.js';
-import { drawShape } from '../components';
+import { drawShape, drawText } from '../components';
 import type { EditorState } from '../types';
 import { addToUndoBuffer } from './interactive-state';
 
@@ -26,6 +26,9 @@ export function setEditorState(state: EditorState, container: Container) {
         switch (component.type) {
           case 'shape':
             drawShape(container, component);
+            break;
+          case 'text':
+            drawText(container, component);
             break;
         }
       }

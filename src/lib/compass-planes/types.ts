@@ -6,4 +6,4 @@ export type EditorConfiguration = {
   backgroundColor?: string;
 };
 
-export type ComponentType = 'shape';
+export type ComponentType = 'shape' | 'text';

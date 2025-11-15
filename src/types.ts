@@ -1,3 +1,5 @@
+import type { TextStyleFontWeight } from 'pixi.js';
+
 type BaseDetails = {
   id: string;
   createdAt: string;
@@ -101,6 +103,13 @@ export type Component = BaseDetails & {
   groupId?: string | null;
   attributeId?: string;
   actionId?: string;
+  // Text component properties
+  text?: string;
+  fontSize?: number;
+  fontFamily?: string;
+  fontWeight?: TextStyleFontWeight;
+  textAlign?: 'left' | 'center' | 'right' | 'justify';
+  lineHeight?: number;
 };
 
 export type Composite = BaseDetails & {
