@@ -62,6 +62,8 @@ export const PositionEdit = ({ components, handleUpdate }: Props) => {
           onChange={(val) => handleUpdate('rotation', parseValue(val))}
         />
         <RotateCw
+          role='button'
+          aria-label='Rotate'
           className={`text-xs h-[18px] w-[18px] cursor-${rotation !== MIXED_VALUE_LABEL ? 'pointer' : 'not-allowed'}`}
           onClick={() => {
             if (rotation === MIXED_VALUE_LABEL) return;

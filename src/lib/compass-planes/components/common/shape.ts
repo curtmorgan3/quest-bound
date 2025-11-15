@@ -15,7 +15,7 @@ function drawRoundedRectWithCorners(
   topLeft: number,
   topRight: number,
   bottomRight: number,
-  bottomLeft: number
+  bottomLeft: number,
 ) {
   // Clamp radii to prevent them from being larger than half the width/height
   const maxRadius = Math.min(width, height) / 2;
@@ -26,7 +26,7 @@ function drawRoundedRectWithCorners(
 
   // Start from top-left corner (after the radius if it exists)
   graphics.moveTo(x + tl, y);
-  
+
   // Top edge to top-right corner
   if (tr > 0) {
     graphics.lineTo(x + width - tr, y);
@@ -36,7 +36,7 @@ function drawRoundedRectWithCorners(
   } else {
     graphics.lineTo(x + width, y);
   }
-  
+
   // Right edge to bottom-right corner
   if (br > 0) {
     graphics.lineTo(x + width, y + height - br);
@@ -46,7 +46,7 @@ function drawRoundedRectWithCorners(
   } else {
     graphics.lineTo(x + width, y + height);
   }
-  
+
   // Bottom edge to bottom-left corner
   if (bl > 0) {
     graphics.lineTo(x + bl, y + height);
@@ -56,7 +56,7 @@ function drawRoundedRectWithCorners(
   } else {
     graphics.lineTo(x, y + height);
   }
-  
+
   // Left edge back to top-left corner
   if (tl > 0) {
     graphics.lineTo(x, y + tl);
@@ -66,7 +66,7 @@ function drawRoundedRectWithCorners(
   } else {
     graphics.lineTo(x, y);
   }
-  
+
   graphics.closePath();
 }
 
@@ -82,7 +82,7 @@ export function drawShape(parent: Container, component: Component) {
   const bottomLeft = (component.borderRadiusBottomLeft ?? 0) * initialZoom;
 
   const hasAnyRadius = topLeft > 0 || topRight > 0 || bottomRight > 0 || bottomLeft > 0;
-  
+
   if (hasAnyRadius) {
     drawRoundedRectWithCorners(
       graphics,
@@ -93,7 +93,7 @@ export function drawShape(parent: Container, component: Component) {
       topLeft,
       topRight,
       bottomRight,
-      bottomLeft
+      bottomLeft,
     );
   } else {
     graphics.rect(0, 0, component.width * initialZoom, component.height * initialZoom);
@@ -121,7 +121,7 @@ export function drawShape(parent: Container, component: Component) {
     const zoom = getZoom();
 
     // Check if we need to redraw the shape
-    const needsRedraw = 
+    const needsRedraw =
       currentTopLeft !== lastTopLeft ||
       currentTopRight !== lastTopRight ||
       currentBottomRight !== lastBottomRight ||
@@ -135,9 +135,10 @@ export function drawShape(parent: Container, component: Component) {
       const scaledTopRight = currentTopRight * zoom;
       const scaledBottomRight = currentBottomRight * zoom;
       const scaledBottomLeft = currentBottomLeft * zoom;
-      
-      const hasAnyRadius = scaledTopLeft > 0 || scaledTopRight > 0 || scaledBottomRight > 0 || scaledBottomLeft > 0;
-      
+
+      const hasAnyRadius =
+        scaledTopLeft > 0 || scaledTopRight > 0 || scaledBottomRight > 0 || scaledBottomLeft > 0;
+
       if (hasAnyRadius) {
         drawRoundedRectWithCorners(
           graphics,
@@ -148,13 +149,13 @@ export function drawShape(parent: Container, component: Component) {
           scaledTopLeft,
           scaledTopRight,
           scaledBottomRight,
-          scaledBottomLeft
+          scaledBottomLeft,
         );
       } else {
         graphics.rect(0, 0, currentWidth * zoom, currentHeight * zoom);
       }
       graphics.fill('#FFF');
-      
+
       lastTopLeft = currentTopLeft;
       lastTopRight = currentTopRight;
       lastBottomRight = currentBottomRight;

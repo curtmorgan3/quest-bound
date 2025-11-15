@@ -18,6 +18,8 @@ const baseDefaults = {
   borderRadiusTopRight: 0,
   borderRadiusBottomLeft: 0,
   borderRadiusBottomRight: 0,
+  borderWidth: 0,
+  borderColor: colorWhite,
   groupId: null,
 };
 

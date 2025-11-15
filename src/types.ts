@@ -91,6 +91,8 @@ export type Component = BaseDetails & {
   borderRadiusTopRight: number;
   borderRadiusBottomLeft: number;
   borderRadiusBottomRight: number;
+  borderWidth: number;
+  borderColor: string;
   compositeId?: string;
   locked?: boolean;
   selected?: boolean;
