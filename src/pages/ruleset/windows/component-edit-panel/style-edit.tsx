@@ -16,6 +16,7 @@ const MIXED_VALUE_LABEL = '-';
 export const StyleEdit = ({ components, handleUpdate }: Props) => {
   const opacity = valueIfAllAreEqual(components, 'opacity');
   const color = valueIfAllAreEqual(components, 'color') as string;
+  const borderRadius = valueIfAllAreEqual(components, 'borderRadius');
 
   return (
     <div className='flex-col w-full flex flex-col gap-3 pb-2 border-b-1'>
@@ -46,7 +47,16 @@ export const StyleEdit = ({ components, handleUpdate }: Props) => {
           </PopoverContent>
         </Popover>
       </div>
-      <div className='w-full flex flex-row gap-4 items-end'></div>
+      <div className='w-full flex flex-row gap-4 items-end'>
+        <EditPanelInput
+          number={borderRadius !== MIXED_VALUE_LABEL}
+          disabled={borderRadius === MIXED_VALUE_LABEL}
+          label='Border Radius'
+          value={borderRadius}
+          step={1}
+          onChange={(val) => handleUpdate('borderRadius', Math.min(200, Math.max(0, parseValue(val))))}
+        />
+      </div>
     </div>
   );
 };

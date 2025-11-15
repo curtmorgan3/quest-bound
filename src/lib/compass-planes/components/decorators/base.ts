@@ -35,6 +35,8 @@ export function drawBase(parent: TContainer, component: Component): TContainer {
     y: component.y * initialZoom,
   });
 
+  console.log(component);
+
   base.onRender = () => {
     const componentState = getComponentState(component.id);
     if (!componentState) {
