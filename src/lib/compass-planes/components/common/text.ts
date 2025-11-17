@@ -18,7 +18,7 @@ export function drawText(parent: Container, component: Component) {
     style: {
       fontFamily,
       fontSize: fontSize,
-      // fontSize: 120,
+      // fontSize: 60,
       fontWeight,
       fill: textColor,
       align: textAlign,
