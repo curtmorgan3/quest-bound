@@ -6,3 +6,4 @@ package-lock.json
 dist
 coverage
 pnpm-lock.yaml
+node_modules

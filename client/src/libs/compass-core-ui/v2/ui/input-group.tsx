@@ -3,9 +3,9 @@
 import { cva, type VariantProps } from 'class-variance-authority';
 import * as React from 'react';
 
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
+import { Button } from '@/libs/compass-core-ui/v2/ui/button';
+import { Input } from '@/libs/compass-core-ui/v2/ui/input';
+import { Textarea } from '@/libs/compass-core-ui/v2/ui/textarea';
 import { cn } from '@/libs/compass-core-ui/utils';
 
 function InputGroup({ className, ...props }: React.ComponentProps<'div'>) {

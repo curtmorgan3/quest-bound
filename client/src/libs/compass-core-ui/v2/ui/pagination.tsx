@@ -1,7 +1,7 @@
 import { ChevronLeftIcon, ChevronRightIcon, MoreHorizontalIcon } from 'lucide-react';
 import * as React from 'react';
 
-import { buttonVariants, type Button } from '@/components/ui/button';
+import { buttonVariants, type Button } from '@/libs/compass-core-ui/v2/ui/button';
 import { cn } from '@/libs/compass-core-ui/utils';
 
 function Pagination({ className, ...props }: React.ComponentProps<'nav'>) {

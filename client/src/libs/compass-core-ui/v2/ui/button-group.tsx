@@ -1,7 +1,7 @@
 import { Slot } from '@radix-ui/react-slot';
 import { cva, type VariantProps } from 'class-variance-authority';
 
-import { Separator } from '@/components/ui/separator';
+import { Separator } from '@/libs/compass-core-ui/v2/ui/separator';
 import { cn } from '@/libs/compass-core-ui/utils';
 
 const buttonGroupVariants = cva(

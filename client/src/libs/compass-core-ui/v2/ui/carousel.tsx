@@ -2,7 +2,7 @@ import useEmblaCarousel, { type UseEmblaCarouselType } from 'embla-carousel-reac
 import { ArrowLeft, ArrowRight } from 'lucide-react';
 import * as React from 'react';
 
-import { Button } from '@/components/ui/button';
+import { Button } from '@/libs/compass-core-ui/v2/ui/button';
 import { cn } from '@/libs/compass-core-ui/utils';
 
 type CarouselApi = UseEmblaCarouselType[1];

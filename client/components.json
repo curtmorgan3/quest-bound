@@ -12,11 +12,11 @@
   },
   "iconLibrary": "lucide",
   "aliases": {
-    "components": "@/components",
-    "utils": "@/lib/utils",
-    "ui": "@/components/ui",
+    "components": "@/libs/compass-core-ui/v2/components",
+    "utils": "@/libs/compass-core-ui/utils",
+    "ui": "@/libs/compass-core-ui/v2/components/ui",
     "lib": "@/lib",
-    "hooks": "@/hooks"
+    "hooks": "@/libs/compass-core-ui/hooks"
   },
   "registries": {}
 }

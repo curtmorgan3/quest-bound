@@ -1,8 +1,8 @@
 import { cva, type VariantProps } from 'class-variance-authority';
 import { useMemo } from 'react';
 
-import { Label } from '@/components/ui/label';
-import { Separator } from '@/components/ui/separator';
+import { Label } from '@/libs/compass-core-ui/v2/ui/label';
+import { Separator } from '@/libs/compass-core-ui/v2/ui/separator';
 import { cn } from '@/libs/compass-core-ui/utils';
 
 function FieldSet({ className, ...props }: React.ComponentProps<'fieldset'>) {

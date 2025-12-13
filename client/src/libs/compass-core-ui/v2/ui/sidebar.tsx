@@ -5,18 +5,18 @@ import { cva, type VariantProps } from 'class-variance-authority';
 import { PanelLeftIcon } from 'lucide-react';
 import * as React from 'react';
 
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Separator } from '@/components/ui/separator';
+import { Button } from '@/libs/compass-core-ui/v2/ui/button';
+import { Input } from '@/libs/compass-core-ui/v2/ui/input';
+import { Separator } from '@/libs/compass-core-ui/v2/ui/separator';
 import {
   Sheet,
   SheetContent,
   SheetDescription,
   SheetHeader,
   SheetTitle,
-} from '@/components/ui/sheet';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+} from '@/libs/compass-core-ui/v2/ui/sheet';
+import { Skeleton } from '@/libs/compass-core-ui/v2/ui/skeleton';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/libs/compass-core-ui/v2/ui/tooltip';
 import { useIsMobile } from '@/libs/compass-core-ui/hooks';
 import { cn } from '@/libs/compass-core-ui/utils';
 

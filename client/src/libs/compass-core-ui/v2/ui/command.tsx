@@ -8,7 +8,7 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
+} from '@/libs/compass-core-ui/v2/ui/dialog';
 import { cn } from '@/libs/compass-core-ui/utils';
 
 function Command({ className, ...props }: React.ComponentProps<typeof CommandPrimitive>) {

@@ -4,7 +4,7 @@ import { ChevronDownIcon, ChevronLeftIcon, ChevronRightIcon } from 'lucide-react
 import * as React from 'react';
 import { DayPicker, getDefaultClassNames, type DayButton } from 'react-day-picker';
 
-import { Button, buttonVariants } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/libs/compass-core-ui/v2/ui/button';
 import { cn } from '@/libs/compass-core-ui/utils';
 
 function Calendar({

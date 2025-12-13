@@ -2,7 +2,7 @@ import { Slot } from '@radix-ui/react-slot';
 import { cva, type VariantProps } from 'class-variance-authority';
 import * as React from 'react';
 
-import { Separator } from '@/components/ui/separator';
+import { Separator } from '@/libs/compass-core-ui/v2/ui/separator';
 import { cn } from '@/libs/compass-core-ui/utils';
 
 function ItemGroup({ className, ...props }: React.ComponentProps<'div'>) {
