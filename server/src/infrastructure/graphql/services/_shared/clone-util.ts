@@ -1,9 +1,9 @@
-import { PrismaClient } from '@prisma/client';
 import { convertEntityId } from './entity-ids';
 import { SheetType } from '../../generated-types';
+import { TPrismaClient } from '@/database';
 
 interface CloneUtil {
-  db: PrismaClient;
+  db: TPrismaClient;
   originalRulesetId: string;
   rulesetId: string;
   addingModule?: boolean;

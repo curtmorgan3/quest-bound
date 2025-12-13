@@ -1,9 +1,9 @@
-import { PrismaClient } from '@prisma/client';
 import { v4 as uuidv4 } from 'uuid';
 import { CreateSheet, SheetType } from '../../generated-types';
+import { TPrismaClient } from '@/database';
 
 interface CreateSheetFromTemplateInput {
-  db: PrismaClient;
+  db: TPrismaClient;
   templateId: string;
   rulesetId?: string;
   characterId?: string;
@@ -12,7 +12,7 @@ interface CreateSheetFromTemplateInput {
 }
 
 interface CloneComponentsInput {
-  db: PrismaClient;
+  db: TPrismaClient;
   originalSheetId: string;
   associatedId?: string;
   newSheetId: string;

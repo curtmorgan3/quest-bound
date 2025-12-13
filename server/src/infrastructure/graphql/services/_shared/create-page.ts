@@ -1,8 +1,8 @@
 import { v4 as uuidv4 } from 'uuid';
-import { PrismaClient } from '@prisma/client';
 import { createSheetFromTemplate } from './create-sheet-from-template';
 import { convertEntityId } from './entity-ids';
 import { CreatePage, SheetType } from '../../generated-types';
+import { TPrismaClient } from '@/database';
 
 const defaultPageDetails = JSON.stringify({
   defaultFont: 'Roboto Condensed',
@@ -13,7 +13,7 @@ const defaultPageDetails = JSON.stringify({
 });
 
 interface CreatePageArgs {
-  db: PrismaClient;
+  db: TPrismaClient;
   input: CreatePage;
   bootstrapPageNumber?: number;
 }

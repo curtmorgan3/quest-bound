@@ -1,8 +1,8 @@
-import { PrismaClient } from '@prisma/client';
+import { TPrismaClient } from '@/database';
 import { cloneUtil } from './clone-util';
 
 interface AddModule {
-  db: PrismaClient;
+  db: TPrismaClient;
   moduleId: string;
   rulesetId: string;
   userId: string;

@@ -3,3 +3,4 @@ node_modules
 /src/storage
 .DS_Store
 .npmrc
+src/database/prisma/generated

@@ -1,10 +1,10 @@
-import { PrismaClient } from '@prisma/client';
 import { cloneUtil } from './clone-util';
 import { v4 as uuidv4 } from 'uuid';
 import { AddToShelf } from '../../generated-types';
+import { TPrismaClient } from '@/database';
 
 interface AddToShelfUtil {
-  db: PrismaClient;
+  db: TPrismaClient;
   input: AddToShelf;
   userId: string;
   username?: string;
@@ -41,7 +41,7 @@ export const addToShelf = async ({ db, input, userId, username }: AddToShelfUtil
       id: originalCreatorIsReaddingItToShelf ? publishedRuleset.id : uuidv4(),
       publishedRulesetId: originalCreatorIsReaddingItToShelf ? null : publishedRuleset.id,
       userId,
-      rulesetId: isModule ? publishedRuleset.id : publishedRuleset.rulesetId ?? undefined, // If this is a module, the ID of the ruleset to which it belongs
+      rulesetId: isModule ? publishedRuleset.id : (publishedRuleset.rulesetId ?? undefined), // If this is a module, the ID of the ruleset to which it belongs
       title: isModule ? `${publishedRuleset.title} Module` : publishedRuleset.title,
       isModule: isModule ?? publishedRuleset.isModule ?? false,
       rulesetPermissions: publishedRuleset.rulesetPermissions ?? undefined,

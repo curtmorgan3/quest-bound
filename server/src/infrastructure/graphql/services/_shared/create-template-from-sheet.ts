@@ -1,10 +1,10 @@
-import { PrismaClient } from '@prisma/client';
 import { v4 as uuidv4 } from 'uuid';
 import { createClonedComponents } from './create-sheet-from-template';
 import { CreateSheet, SheetType } from '../../generated-types';
+import { TPrismaClient } from '@/database';
 
 interface CreateTemplateFromSheetInput {
-  db: PrismaClient;
+  db: TPrismaClient;
   sheetId: string;
   rulesetId: string;
   overrides?: CreateSheet;
