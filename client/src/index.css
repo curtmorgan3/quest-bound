@@ -10,6 +10,8 @@
 @import url('https://fonts.googleapis.com/css2?family=Eagle+Lake');
 @import url('https://fonts.googleapis.com/css2?family=Yatra+One');
 
+@import 'tailwindcss';
+
 @font-face {
   font-family: 'CygnitoMonoPro';
   src: url('assets/CygnitoMonoPro-BoldR.otf');
@@ -28,7 +30,6 @@ body {
   overscroll-behavior: none; /* disable pull-to-refresh effect */
   overflow: hidden;
 }
-
 
 .draggable:hover {
   cursor: move;
@@ -92,14 +93,13 @@ body {
   border-left: 4px solid rgba(125, 125, 125, 0.5);
 }
 
-
 .DraftEditor-editorContainer .journal-link {
   text-decoration: underline;
   color: inherit;
 }
 
 .DraftEditor-editorContainer .journal-link:hover {
-  cursor: pointer
+  cursor: pointer;
 }
 
 .react-flow__attribution {
@@ -123,18 +123,19 @@ body {
   flex-grow: 1;
 }
 
-.sheet-text-container  .auto-scale {
+.sheet-text-container .auto-scale {
   /* 100% of the height of the container, clamped between 1 and 30 rem */
   font-size: clamp(1rem, 100cqh, 30rem);
 }
 
-.sheet-text-container  .archetype-auto-scale {
+.sheet-text-container .archetype-auto-scale {
   /* 30% of the height of the container, clamped between 1 and 20 rem */
   font-size: clamp(1rem, 30cqh, 20rem);
   text-align: center;
 }
 
-.react-flow__node .input-node .chakra-numberinput__field, .input-node .chakra-input {
+.react-flow__node .input-node .chakra-numberinput__field,
+.input-node .chakra-input {
   border: none !important;
 }
 
