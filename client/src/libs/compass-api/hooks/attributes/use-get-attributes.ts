@@ -29,10 +29,6 @@ export const useGetAttributes = ({
   const [lazyQuery, { loading, error }] = useLazyQuery<AttributesQuery, AttributesQueryVariables>(
     query,
     {
-      variables: {
-        rulesetId: rulesetId ?? '',
-        type,
-      },
       fetchPolicy,
     },
   );
@@ -44,8 +40,15 @@ export const useGetAttributes = ({
 
   const getAttributes = async ({ fetchPolicy }: { fetchPolicy?: 'no-cache' | 'network-only' }) => {
     const res = await lazyQuery({
-      fetchPolicy,
+      variables: {
+        rulesetId: rulesetId ?? '',
+        type,
+      }
     });
+
+    if (fetchPolicy) {
+      console.warn(`Deprecated fetch policy provided to getAttributes: ${fetchPolicy}`)
+    }
 
     return (res.data?.attributes ?? []) as Attribute[];
   };

@@ -1,4 +1,4 @@
-import { useApolloClient } from '@apollo/client';
+import { useApolloClient } from '@apollo/client/react';
 import { useParams } from 'react-router-dom';
 import { ruleset } from '../gql';
 
@@ -29,7 +29,7 @@ export const useApolloHelpers = () => {
     const data = client.readQuery({
       query,
       variables,
-    });
+    }) as any;
 
     if (!data[typename.toLowerCase()]) {
       console.warn(`No data found for typename: ${typename}`);

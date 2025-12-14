@@ -61,7 +61,7 @@ export const useSheetCrud = ({
   const { deleteComponents: _deleteComponents, loading: deleteComponentsLoading } =
     useDeleteComponents(sheetId, cacheOnly);
 
-  const isUnocked = (id: string) => !components.find((c) => c.id === id)?.locked ?? false;
+  const isUnocked = (id: string) => !components.find((c) => c.id === id)?.locked;
 
   const createComponents = async (input: CreateComponents) => {
     const componentsToCreate = input.components.map((component) => ({

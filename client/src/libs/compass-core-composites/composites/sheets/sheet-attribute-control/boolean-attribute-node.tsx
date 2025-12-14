@@ -2,7 +2,7 @@ import { ContextualAttribute, SheetComponent } from '@/libs/compass-api';
 import { IconButton, Image, Stack, Text, Tooltip } from '@chakra-ui/react';
 import { CheckBox, CheckBoxOutlineBlank, Refresh } from '@mui/icons-material';
 import { motion } from 'framer-motion';
-import { CSSProperties } from 'react';
+import { CSSProperties, type JSX } from 'react';
 
 type CheckboxProps = {
   src?: string;

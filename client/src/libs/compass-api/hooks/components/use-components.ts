@@ -1,4 +1,4 @@
-import { ApolloError } from '@apollo/client/index.js';
+
 import { useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import {
@@ -14,7 +14,7 @@ interface UseComponents {
   components: SheetComponent[];
   getComponents: (sheetId: string) => Promise<SheetComponent[]>;
   loading: boolean;
-  error?: ApolloError;
+  error?: Error;
 }
 
 export const useComponents = (
@@ -59,7 +59,9 @@ export const useComponents = (
   const [query, { loading: lazyLoading, error: lazyError }] = useLazyQuery<
     SheetComponentsQuery,
     SheetComponentsQueryVariables
-  >(sheetComponents);
+  >(sheetComponents, {
+    fetchPolicy: cacheOnly ? 'cache-only' : undefined,
+  });
 
   const getComponents = async (sheetId: string, tabId?: string) => {
     if (!rulesetId) return [];
@@ -71,7 +73,6 @@ export const useComponents = (
           tabId,
         },
       },
-      fetchPolicy: cacheOnly ? 'cache-only' : undefined,
     });
 
     return (res.data?.sheetComponents ?? []) as SheetComponent[];

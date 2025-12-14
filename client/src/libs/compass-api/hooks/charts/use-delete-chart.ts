@@ -1,4 +1,4 @@
-import { ApolloError } from '@apollo/client/index.js';
+
 import { useParams } from 'react-router-dom';
 import {
   Chart,
@@ -13,7 +13,7 @@ import { useError } from '../metrics';
 interface UseDeleteChart {
   deleteChart: (chart: Chart) => Promise<string>;
   loading: boolean;
-  error?: ApolloError;
+  error?: Error;
 }
 
 export const useDeleteChart = (): UseDeleteChart => {

@@ -1,5 +1,5 @@
 import { generateId } from '@/libs/compass-web-utils';
-import { useApolloClient } from '@apollo/client/index.js';
+import { useApolloClient } from "@apollo/client/react";
 import { Character, character, CreateCharacter, Sheet, UpdateCharacter } from '../../gql';
 import { useAttributes } from '../attributes';
 import { useCacheHelpers as useImageCacheHelpers } from '../storage/cache-helpers';
@@ -67,7 +67,7 @@ export const useCacheHelpers = () => {
       variables: {
         id: update.id,
       },
-    });
+    }) as any;
 
     if (!res || !res.character) {
       throw Error('Character not found in cache');

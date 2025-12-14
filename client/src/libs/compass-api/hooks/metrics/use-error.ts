@@ -1,10 +1,9 @@
 import { NotificationPriority, useNotifications } from '@/stores';
-import { ApolloError } from '@apollo/client/index.js';
 import { useEffect } from 'react';
 
 interface UseErrorProps {
   message: string;
-  error?: ApolloError | Error;
+  error?:  Error;
   priority?: NotificationPriority;
   status?: 'error' | 'success' | 'info';
   location?: string;

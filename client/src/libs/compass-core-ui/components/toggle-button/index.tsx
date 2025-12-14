@@ -5,6 +5,8 @@ import MUIToggleButtonGroup, {
   ToggleButtonGroupProps as MUIGroupProps,
 } from '@mui/material/ToggleButtonGroup';
 
+import type { JSX } from "react";
+
 export type ToggleButtonProps = MUIToggleButtonProps;
 export type ToggleButtonGroupProps = MUIGroupProps;
 

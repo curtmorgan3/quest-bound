@@ -1,5 +1,5 @@
 import { debugLog } from '@/libs/compass-web-utils';
-import { ApolloError } from '@apollo/client/index.js';
+
 import debounce from 'lodash.debounce';
 import { useMemo } from 'react';
 import { useParams } from 'react-router-dom';
@@ -31,7 +31,7 @@ export interface UseUpdateComponents {
   updateComponent: (input: UpdateComponentInput) => any;
   updateComponents: (input: UpdateComponentsInput) => any;
   loading: boolean;
-  error?: ApolloError;
+  error?: Error;
 }
 
 interface UseUpdateComponentProps {

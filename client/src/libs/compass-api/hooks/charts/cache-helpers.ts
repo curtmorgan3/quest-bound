@@ -1,4 +1,4 @@
-import { useApolloClient } from '@apollo/client/index.js';
+import { useApolloClient } from "@apollo/client/react";
 import { Chart, chart, UpdateChart } from '../../gql';
 
 export const useCacheHelpers = () => {
@@ -16,7 +16,7 @@ export const useCacheHelpers = () => {
           rulesetId: update.rulesetId,
         },
       },
-    });
+    }) as any;
 
     if (!res || !res.chart) {
       throw Error('Chart not found in cache');

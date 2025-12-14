@@ -3,6 +3,8 @@ import MUISpeedDialAction, {
   SpeedDialActionProps as MUISpeedDialActionProps,
 } from '@mui/material/SpeedDialAction';
 
+import type { JSX } from "react";
+
 export type SpeedDialProps = MUISpeedDialProps;
 export type SpeedDialActionProps = MUISpeedDialActionProps;
 

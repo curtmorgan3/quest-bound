@@ -1,6 +1,8 @@
 import { FormControl, FormHelperText, InputLabel } from '@mui/material';
 import MUISelect, { SelectProps as MUISelectProps } from '@mui/material/Select';
 
+import type { JSX } from "react";
+
 export interface SelectProps extends Omit<MUISelectProps, 'size'> {
   id: string;
   helperText?: string;

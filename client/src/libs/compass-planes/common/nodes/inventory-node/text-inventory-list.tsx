@@ -17,7 +17,7 @@ export const TextInventoryList = ({ inventoryId }: Props) => {
   const [open, setOpen] = useState(false);
   const [longpress, setLongpress] = useState(false);
 
-  const timeoutRef = useRef<NodeJS.Timeout>();
+  const timeoutRef = useRef<NodeJS.Timeout>(undefined);
 
   const initiateLongPress = () => {
     timeoutRef.current = setTimeout(() => {

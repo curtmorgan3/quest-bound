@@ -1,6 +1,8 @@
 import MUIButton, { ButtonProps as MUIButtonProps } from '@mui/material/Button';
 import { Loader } from '../loader';
 
+import type { JSX } from "react";
+
 export interface ButtonProps extends MUIButtonProps {
   loading?: boolean;
   target?: string;

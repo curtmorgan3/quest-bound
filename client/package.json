@@ -8,7 +8,7 @@
     "bootstrap": "npm install && npm run build",
     "dev": "vite --force",
     "host": "vite --port 5173 --host",
-    "compile": "tsc --skipLibCheck",
+    "compile": "tsc",
     "build": "tsc && NODE_OPTIONS=--max-old-space-size=16384 vite build",
     "start": "vite preview --port 5173 --host",
     "prettier": "prettier --write \"src/**/*.{ts,tsx}\""
@@ -74,7 +74,7 @@
     "draft-js": "^0.11.7",
     "embla-carousel-react": "^8.6.0",
     "formik": "^2.2.9",
-    "framer-motion": "^10.18.0",
+    "framer-motion": "^11.0.0",
     "graphql": "^16.6.0",
     "graphql-ws": "^5.16.0",
     "input-otp": "^1.4.2",

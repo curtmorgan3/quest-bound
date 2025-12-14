@@ -1,4 +1,4 @@
-import { ApolloError } from '@apollo/client/index.js';
+
 import { useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { Sheet, sheet, SheetQuery, SheetQueryVariables } from '../../gql';
@@ -10,7 +10,7 @@ interface UseGetSheets {
   getSheet: QueryFunction<string, Sheet>;
   sheet?: Sheet;
   loading: boolean;
-  error?: ApolloError;
+  error?: Error;
 }
 
 export const useGetSheet = (id?: string, cacheOnly?: boolean): UseGetSheets => {
@@ -47,13 +47,15 @@ export const useGetSheet = (id?: string, cacheOnly?: boolean): UseGetSheets => {
   const [query, { loading: lazyLoading, error: lazyError }] = useLazyQuery<
     SheetQuery,
     SheetQueryVariables
-  >(sheet);
+  >(sheet, {
+    fetchPolicy: cacheOnly ? 'cache-only' : undefined,
+  });
 
   const getSheet = async (id: string): Promise<Sheet> => {
     if (!rulesetId) throw Error('Ruleset not found');
     const res = await query({
       variables: { input: { id, rulesetId } },
-      fetchPolicy: cacheOnly ? 'cache-only' : undefined,
+      
     });
 
     if (!res.data?.sheet) {

@@ -1,5 +1,5 @@
 import { debugLog } from '@/libs/compass-web-utils';
-import { useApolloClient } from '@apollo/client/index.js';
+import { useApolloClient } from "@apollo/client/react";
 import { useParams } from 'react-router-dom';
 import {
   componentFragment,
@@ -57,7 +57,7 @@ export const useCacheHelpers = () => {
           tabId,
         },
       },
-    });
+    }) as any;
 
     // When a sheet doesn't have components
     if (!res || !res.sheetComponents) {
@@ -96,7 +96,7 @@ export const useCacheHelpers = () => {
     const res = client.readFragment({
       id: normalizedId,
       fragment: sheetFragment,
-    });
+    }) as any;
 
     return res;
   };
@@ -135,7 +135,7 @@ export const useCacheHelpers = () => {
           rulesetId,
         },
       },
-    });
+    }) as any;
 
     return res?.sheet ?? null;
   };
@@ -149,7 +149,7 @@ export const useCacheHelpers = () => {
           rulesetId,
         },
       },
-    });
+    }) as any;
 
     if (!res || !res.sheet) {
       throw Error('Sheet not found in cache');

@@ -19,7 +19,9 @@ export const useArchetype = (id?: string) => {
   const [lazyQuery, { loading: lazyLoading }] = useLazyQuery<
     ArchetypeQuery,
     ArchetypeQueryVariables
-  >(archetype);
+  >(archetype, {
+      fetchPolicy: 'network-only',
+    });
 
   useError({
     error,
@@ -37,7 +39,6 @@ export const useArchetype = (id?: string) => {
           id,
         },
       },
-      fetchPolicy: 'network-only',
     });
 
     if (!res.data) {

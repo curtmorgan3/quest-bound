@@ -1,4 +1,3 @@
-import { ApolloError } from '@apollo/client/index.js';
 import { useParams } from 'react-router-dom';
 import {
   attributes,
@@ -13,7 +12,7 @@ import { useError } from '../metrics';
 interface UseDeleteAttribute {
   deleteAttribute: (id: string) => Promise<string>;
   loading: boolean;
-  error?: ApolloError;
+  error?: Error;
 }
 
 export const useDeleteAttribute = (): UseDeleteAttribute => {

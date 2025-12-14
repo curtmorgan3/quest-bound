@@ -1,4 +1,4 @@
-import { ApolloError } from '@apollo/client/index.js';
+
 import {
   characters,
   deleteCharacter as deleteCharacterMutation,
@@ -11,7 +11,7 @@ import { useError } from '../metrics';
 interface UseDeleteCharacter {
   deleteCharacter: (id: string) => Promise<string>;
   loading: boolean;
-  error?: ApolloError;
+  error?: Error;
 }
 
 export const useDeleteCharacter = (): UseDeleteCharacter => {

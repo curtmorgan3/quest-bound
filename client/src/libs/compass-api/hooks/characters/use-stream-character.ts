@@ -1,14 +1,16 @@
-import { useQuery } from '@apollo/client';
 import { useCallback } from 'react';
 import {
   Character,
   character,
   CharacterQuery,
   CharacterQueryVariables,
+  Page,
+  Sheet,
   streamCharacter,
   StreamCharacterSubscription,
 } from '../../gql';
 import { useError } from '../metrics';
+import { useQuery } from '../../utils';
 
 export const useStreamCharacter = (id?: string) => {
   const { data, loading, error, subscribeToMore } = useQuery<
@@ -31,8 +33,8 @@ export const useStreamCharacter = (id?: string) => {
         return {
           character: {
             ...data.streamCharacter,
-            sheet: prev.character.sheet,
-            pages: prev.character.pages,
+            sheet: (prev.character?.sheet ?? {}) as Sheet,
+            pages: (prev.character?.pages ?? []) as Page[],
           },
         };
       },

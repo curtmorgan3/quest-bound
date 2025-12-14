@@ -10,6 +10,8 @@ import MUIDialogContentText, {
 } from '@mui/material/DialogContentText';
 import MUIDialogTitle, { DialogTitleProps as MUIDialogTitleProps } from '@mui/material/DialogTitle';
 
+import type { JSX } from "react";
+
 export type DialogProps = MUIDialogProps;
 export const Dialog = ({ ...baseProps }: DialogProps): JSX.Element => <MUIDialog {...baseProps} />;
 

@@ -2,11 +2,11 @@ import { debugLog } from '@/libs/compass-web-utils';
 import {
   ApolloClient,
   ApolloLink,
-  ApolloProvider as Provider,
   createHttpLink,
-} from '@apollo/client/index.js';
+} from '@apollo/client';
+import { ApolloProvider as Provider } from '@apollo/client/react'
 import { setContext } from '@apollo/client/link/context';
-import { from, split } from '@apollo/client/link/core';
+import { from, split } from '@apollo/client/link';
 import { GraphQLWsLink } from '@apollo/client/link/subscriptions';
 import { getMainDefinition } from '@apollo/client/utilities';
 import { createClient as createGraphqlClient } from 'graphql-ws';
@@ -85,8 +85,8 @@ const GraphQLProvider = ({
   });
 
   const preventCallsWithoutAuth = new ApolloLink((operation, forward) => {
-    if (!token && !operationsNotRequiringAuth.includes(operation.operationName)) {
-      return null;
+    if (!token && !operationsNotRequiringAuth.includes(operation.operationName ?? '')) {
+      throw Error('preventCallsWithoutAuth')
     }
 
     return forward(operation);
@@ -100,7 +100,7 @@ const GraphQLProvider = ({
   const client = new ApolloClient({
     link: links,
     cache,
-    connectToDevTools: import.meta.env.VITE_ENV === 'dev' || import.meta.env.VITE_ENV === 'local',
+    devtools: { enabled: import.meta.env.VITE_ENV === 'dev' || import.meta.env.VITE_ENV === 'local' },
   });
 
   return <Provider client={client}>{children}</Provider>;

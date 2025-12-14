@@ -1,4 +1,4 @@
-import { ApolloError } from '@apollo/client/index.js';
+
 import { useParams } from 'react-router-dom';
 import {
   Sheet,
@@ -22,7 +22,7 @@ interface UseUpdateSheet {
   updateSheet: (input: UpdateSheetMutationFn, opt?: { cacheOnly?: boolean }) => Promise<Sheet>;
   convertSheetToTemplate: (sheetId: string, templateType?: TemplateType) => Promise<Sheet>;
   loading: boolean;
-  error?: ApolloError;
+  error?: Error;
 }
 
 export const useUpdateSheet = (cacheOnly?: boolean): UseUpdateSheet => {

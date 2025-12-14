@@ -3,6 +3,8 @@ import MUIImageListItem, {
   ImageListItemProps as MUIImageListItemProps,
 } from '@mui/material/ImageListItem';
 
+import type { JSX } from "react";
+
 export type ImageListProps = MUIImageListProps;
 export type ImageListItemProps = MUIImageListItemProps;
 

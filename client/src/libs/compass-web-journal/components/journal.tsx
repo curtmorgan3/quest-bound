@@ -34,7 +34,7 @@ export const Journal = ({
     onChange(state);
   };
 
-  const editorRef = useRef(null);
+  const editorRef = useRef(null) as React.RefObject<any>
 
   return (
     <JournalProvider value={{ readOnly }}>

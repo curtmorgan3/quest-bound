@@ -2,7 +2,7 @@ import { AttributeContext, AttributeType, SheetComponent } from '@/libs/compass-
 import { useReplaceVariableText } from '@/libs/compass-web-utils';
 import { AnimatePresence } from 'framer-motion';
 import debounce from 'lodash.debounce';
-import { CSSProperties, useContext, useEffect, useMemo, useState } from 'react';
+import { CSSProperties, useContext, useEffect, useMemo, useState, type JSX } from 'react';
 import { ActionAttributeNode } from './action-attribute-node';
 import { AnimatedUpdateMsg } from './animated-update-msg';
 import { BooleanAttributeNode } from './boolean-attribute-node';

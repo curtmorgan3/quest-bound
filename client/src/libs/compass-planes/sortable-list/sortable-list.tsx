@@ -35,7 +35,7 @@ export function SortableList({ children, onSort }: SortableListProps) {
     const planesSortableListId = generateId();
     ids.push(planesSortableListId);
 
-    return React.cloneElement(child as React.ReactElement, {
+    return React.cloneElement(child as React.ReactElement<any>, {
       id: planesSortableListId,
       key: planesSortableListId,
     });

@@ -1,6 +1,6 @@
 import { IconColorPicker } from '@/libs/compass-core-composites';
 import { IconButton, Stack, Tooltip } from '@/libs/compass-core-ui';
-import { ExcalidrawImperativeAPI } from '@excalidraw/excalidraw/types/types';
+import { ExcalidrawImperativeAPI } from '@excalidraw/excalidraw/dist/types/excalidraw/types';
 import { Create, Gradient, HighlightAlt, PanTool } from '@mui/icons-material';
 
 export type ExcalidrawTool =
@@ -15,6 +15,10 @@ export type ExcalidrawTool =
   | 'diamond'
   | 'ellipse'
   | 'image'
+  | 'frame'
+  | 'magicframe'
+  | 'embeddable'
+  | 'laser'
   | 'custom';
 
 interface CanvasToolbarProps {
@@ -34,7 +38,7 @@ export const CanvasToolbar = ({
   fontColor,
   setFontColor,
 }: CanvasToolbarProps) => {
-  const selectTool = (tool: string) => {
+  const selectTool = (tool: any) => {
     drawApi?.setActiveTool({
       type: tool,
       locked: true,

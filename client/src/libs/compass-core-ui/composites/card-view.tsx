@@ -1,5 +1,7 @@
 import { Paper, Stack, Text } from '../components';
 
+import type { JSX } from "react";
+
 type CardItem = {
   label: string;
   createdAt?: string;

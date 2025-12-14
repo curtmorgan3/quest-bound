@@ -1,6 +1,8 @@
 import { FormControl, FormControlLabel } from '@mui/material';
 import MUISwitch, { SwitchProps as MUISwitchProps } from '@mui/material/Switch';
 
+import type { JSX } from "react";
+
 export type SwitchProps = MUISwitchProps & {
   label?: string;
   labelPlacement?: 'top' | 'bottom' | 'start' | 'end';

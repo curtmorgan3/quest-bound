@@ -1,4 +1,3 @@
-import { useQuery } from '@apollo/client';
 import { useCallback } from 'react';
 import {
   GetSheetComponents,
@@ -10,6 +9,7 @@ import {
   StreamComponentsSubscription,
 } from '../../gql';
 import { useError } from '../metrics';
+import { useQuery } from '../../utils';
 
 export const useStreamComponents = (input: GetSheetComponents) => {
   const {

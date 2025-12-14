@@ -1,10 +1,10 @@
 import { debugLog } from "@/libs/compass-web-utils";
-import { useApolloClient } from "@apollo/client/index.js";
 import { useEffect, useRef } from "react";
-import { currentUser, CurrentUserQuery, UserRole } from "../../gql";
+import { currentUser, CurrentUserQuery, User, UserRole } from "../../gql";
 import { useQuery } from "../../utils";
 import { useError } from "../metrics";
 import { useSessionToken } from "./use-session-token";
+import { useApolloClient } from "@apollo/client/react";
 
 const debug = debugLog("API", "useCurrentUser");
 
@@ -38,7 +38,7 @@ export const useCurrentUser = (pollInterval = 0) => {
   };
 
   return {
-    currentUser: data?.currentUser ?? null,
+    currentUser: data?.currentUser ? data.currentUser as User : null,
     isCreator: data?.currentUser?.role === UserRole.CREATOR,
     error,
     maxPlayers: 20,

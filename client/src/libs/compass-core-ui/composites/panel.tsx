@@ -1,5 +1,5 @@
 import CloseIcon from '@mui/icons-material/Close';
-import { CSSProperties, forwardRef, ReactNode } from 'react';
+import { CSSProperties, forwardRef, ReactNode, type JSX } from 'react';
 import { Drawer, IconButton, Stack } from '../components';
 import { useDeviceSize } from '../hooks';
 

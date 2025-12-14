@@ -17,7 +17,7 @@ export const useCharts = (_rulesetId?: string, skip?: boolean) => {
     message: 'Failed to load charts',
   });
 
-  const [query] = useLazyQuery<ChartsQuery, ChartsQueryVariables>(charts);
+  const [query] = useLazyQuery<ChartsQuery, ChartsQueryVariables>(charts, { fetchPolicy: 'network-only' });
 
   const getCharts = async (providedRulesetId?: string) => {
     if (!rulesetId) return;
@@ -25,7 +25,6 @@ export const useCharts = (_rulesetId?: string, skip?: boolean) => {
       variables: {
         rulesetId: providedRulesetId ?? rulesetId,
       },
-      fetchPolicy: 'network-only',
     });
 
     if (!res || !res.data?.charts) {

@@ -13,8 +13,6 @@ import {
   useDisclosure,
 } from '@chakra-ui/react';
 import { Excalidraw } from '@excalidraw/excalidraw';
-import { ExcalidrawElement } from '@excalidraw/excalidraw/types/element/types';
-import { AppState, ExcalidrawImperativeAPI } from '@excalidraw/excalidraw/types/types';
 import { Edit, Gesture } from '@mui/icons-material';
 import { IconButton } from '@mui/material';
 import { useCallback, useEffect, useState } from 'react';
@@ -25,6 +23,8 @@ import { useNodeSize, useSubscribeComponentChanges } from '../../hooks';
 import { getBorderStyles, storedValueDataIsEqualToSheetValueData } from '../../utils';
 import { CanvasToolbar, ExcalidrawTool } from './canvas-toolbar';
 import './player-canvas-node.css';
+import { ExcalidrawElement } from '@excalidraw/excalidraw/dist/types/excalidraw/element/types';
+import { AppState, ExcalidrawImperativeAPI } from '@excalidraw/excalidraw/dist/types/excalidraw/types';
 
 type CanvasData = {
   elements: ExcalidrawElement[];
@@ -197,7 +197,7 @@ export const CanvasNode = () => {
                 className='player-canvas-node'>
                 <Excalidraw
                   name='Canvas'
-                  ref={ref}
+                  excalidrawAPI={ref}
                   onChange={onExcalidrawChange}
                   theme='dark'
                   initialData={canvasData}

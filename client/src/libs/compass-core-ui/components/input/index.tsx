@@ -2,7 +2,7 @@ import MUIInputAdornment, {
   InputAdornmentProps as MUIInputAdornmentProps,
 } from '@mui/material/InputAdornment';
 import MUITextField, { TextFieldProps } from '@mui/material/TextField';
-import { forwardRef } from 'react';
+import { forwardRef, type JSX } from 'react';
 
 export type InputAdornmentProps = MUIInputAdornmentProps;
 

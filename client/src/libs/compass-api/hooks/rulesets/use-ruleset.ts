@@ -23,8 +23,11 @@ export const useRuleset = (id?: string) => {
       variables: {
         id,
       },
-      fetchPolicy,
     });
+
+    if (fetchPolicy) {
+      console.warn(`Deprecated fetch policy passed to getRuleset: ${fetchPolicy}`)
+    }
 
     if (!res.data?.ruleset) {
       throw Error('Failed to load ruleset');

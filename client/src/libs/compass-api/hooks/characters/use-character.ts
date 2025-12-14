@@ -44,8 +44,11 @@ export const useCharacter = (id?: string, opt?: { cacheOnly?: boolean }) => {
       variables: {
         id,
       },
-      fetchPolicy: opt?.fetchPolicy,
     });
+
+    if (opt?.fetchPolicy) {
+      console.warn(`Deprecated fetch policy provided to getCharacter: ${opt?.fetchPolicy}`)
+    }
 
     if (!res.data?.character) {
       throw Error('Failed to load character');

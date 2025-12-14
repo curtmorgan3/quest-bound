@@ -1,6 +1,6 @@
 import { ChakraProvider, extendTheme } from '@chakra-ui/react';
 import { Theme, THEME_ID } from '@mui/material/styles';
-import { ReactNode } from 'react';
+import { ReactNode, type JSX } from 'react';
 import { compassDarkTheme } from '../theme';
 import { injectTheme } from './theme-injections';
 

@@ -2,6 +2,8 @@ import MUIStep, { StepProps as MUIStepProps } from '@mui/material/Step';
 import MUIStepLabel, { StepLabelProps as MUIStepLabelProps } from '@mui/material/StepLabel';
 import MUIStepper, { StepperProps as MUIStepperProps } from '@mui/material/Stepper';
 
+import type { JSX } from "react";
+
 export type StepperProps = MUIStepperProps;
 export type StepProps = MUIStepProps;
 export type StepLabelProps = MUIStepLabelProps;

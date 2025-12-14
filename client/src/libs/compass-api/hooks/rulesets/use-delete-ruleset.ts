@@ -1,4 +1,4 @@
-import { ApolloError } from '@apollo/client/index.js';
+
 import {
   characters,
   deleteRuleset as deleteRulesetMutation,
@@ -12,7 +12,7 @@ import { useError } from '../metrics';
 interface UseDeleteRuleset {
   deleteRuleset: (id: string) => Promise<string>;
   loading: boolean;
-  error?: ApolloError;
+  error?: Error;
 }
 
 export const useDeleteRuleset = (): UseDeleteRuleset => {

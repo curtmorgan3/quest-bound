@@ -1,5 +1,5 @@
 import MUITooltip, { TooltipProps as MUITooltipProps } from '@mui/material/Tooltip';
-import { forwardRef } from 'react';
+import { forwardRef, type JSX } from 'react';
 
 // export { Tooltip };
 

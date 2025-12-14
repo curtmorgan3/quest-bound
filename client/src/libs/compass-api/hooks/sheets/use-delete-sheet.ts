@@ -1,4 +1,4 @@
-import { ApolloError } from '@apollo/client/index.js';
+
 import { useParams } from 'react-router-dom';
 import {
   deleteSheet as deleteSheetMutation,
@@ -13,7 +13,7 @@ import { useError } from '../metrics';
 interface UseDeleteSheet {
   deleteSheet: (id: string) => Promise<string>;
   loading: boolean;
-  error?: ApolloError;
+  error?: Error;
 }
 
 export const useDeleteSheet = (): UseDeleteSheet => {

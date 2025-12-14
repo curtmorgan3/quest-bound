@@ -1,7 +1,7 @@
 import { Sheet, TemplateType, usePageTemplates, useSheetTemplates } from '@/libs/compass-api';
 import { AutoComplete, AutoCompleteOption } from '@/libs/compass-core-ui';
 import { Input, Stack, Text } from '@chakra-ui/react';
-import React from 'react';
+import React, { type JSX } from 'react';
 import { Img } from '../image-gallery';
 
 interface Props {

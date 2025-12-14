@@ -8,7 +8,7 @@ import {
   ModalOverlay,
   Stack,
 } from '@chakra-ui/react';
-import { ReactNode } from 'react';
+import { ReactNode, type JSX } from 'react';
 
 export interface ConfirmProps {
   open: boolean;

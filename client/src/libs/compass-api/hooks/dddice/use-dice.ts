@@ -16,7 +16,7 @@ import {
 import { Dice, DiceTheme, Room, standardTheme, UseDice } from './types';
 
 interface Props {
-  canvasRef?: React.RefObject<HTMLCanvasElement>;
+  canvasRef?: React.RefObject<HTMLCanvasElement | null>;
 }
 
 export const useDice = ({ canvasRef }: Props): UseDice => {

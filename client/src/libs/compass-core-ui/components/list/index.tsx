@@ -10,6 +10,8 @@ import MUIListItemText, {
   ListItemTextProps as MUIListItemTextProps,
 } from '@mui/material/ListItemText';
 
+import type { JSX } from "react";
+
 export type ListProps = MUIListProps;
 export type ListItemProps = MUIListItemProps;
 export type ListItemButtonProps = MUIListItemButtonProps;

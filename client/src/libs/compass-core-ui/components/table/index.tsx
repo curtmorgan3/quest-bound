@@ -11,6 +11,8 @@ import MUITablePagination, {
 } from '@mui/material/TablePagination';
 import MUITableRow, { TableRowProps as MUITableRowProps } from '@mui/material/TableRow';
 
+import type { JSX } from "react";
+
 export type TableProps = MUITableProps;
 export type TableBodyProps = MUITableBodyProps;
 export type TableCellProps = MUITableCellProps;

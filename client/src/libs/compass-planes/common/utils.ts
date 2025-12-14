@@ -132,7 +132,7 @@ export const convertItemToNode = (item: ContextualItem, items: SheetComponent[])
   };
 };
 
-export const getBorderStyles = (css: CSSProperties) => ({
+export const getBorderStyles = (css: CSSProperties): CSSProperties => ({
   borderRadius: css.borderRadius || '0%',
   ...(css.borderRadius === '0%' && {
     borderTopLeftRadius: `${css.borderTopLeftRadius}px`,

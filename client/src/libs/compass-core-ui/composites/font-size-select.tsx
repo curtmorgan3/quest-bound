@@ -5,7 +5,7 @@ import {
   NumberInputField,
   NumberInputStepper,
 } from '@chakra-ui/react';
-import { useState } from 'react';
+import { useState, type JSX } from 'react';
 
 export const DEFAULT_FONT_FAMILY = 'Roboto Condensed';
 

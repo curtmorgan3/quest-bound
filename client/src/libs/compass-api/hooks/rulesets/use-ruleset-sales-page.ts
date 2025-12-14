@@ -21,14 +21,13 @@ export const useRulesetSalesPage = (id?: string) => {
   const [lazy, { loading: lazyLoading }] = useLazyQuery<
     RulesetSalesPageQuery,
     RulesetSalesPageQueryVariables
-  >(rulesetSalesPage);
+  >(rulesetSalesPage, { fetchPolicy: 'network-only'});
 
   const getRulesetSalesPage = async (id: string) => {
     const res = await lazy({
       variables: {
         id,
       },
-      fetchPolicy: 'network-only',
     });
 
     if (!res.data?.rulesetSalesPage) {

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type JSX } from 'react';
 import { Button, Input, Slider, Stack, Text } from '../components';
 
 interface MinMaxSliderProps {

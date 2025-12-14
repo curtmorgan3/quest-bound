@@ -1,5 +1,5 @@
 import { generateId } from '@/libs/compass-web-utils';
-import { ApolloError } from '@apollo/client/index.js';
+
 import { useParams } from 'react-router-dom';
 import {
   CreateSheet,
@@ -28,7 +28,7 @@ interface UseCreateSheet {
   createSheetFromTemplate: (input: CreateSheetFromTemplate) => Promise<Sheet>;
   createSheetCacheOnly: (input: Partial<Omit<Sheet, '__typename'>>) => Sheet;
   loading: boolean;
-  error?: ApolloError;
+  error?: Error;
 }
 
 export const useCreateSheet = (): UseCreateSheet => {

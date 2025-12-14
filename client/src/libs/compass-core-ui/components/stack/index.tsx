@@ -1,5 +1,5 @@
 import MUIStack, { StackProps as MUIStackProps } from '@mui/material/Stack';
-import { forwardRef } from 'react';
+import { forwardRef, type JSX } from 'react';
 
 export type StackProps = MUIStackProps;
 

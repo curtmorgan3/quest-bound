@@ -1,4 +1,4 @@
-import { useApolloClient } from '@apollo/client/index.js';
+import { useApolloClient } from "@apollo/client/react";
 import { Image, images, UpdateImage } from '../../gql';
 import { sortTreeItemSiblings } from '../../utils/tree-helpers';
 
@@ -8,7 +8,7 @@ export const useCacheHelpers = () => {
   const getCachedImages = (): Image[] => {
     const cachedRes = client.readQuery({
       query: images,
-    });
+    }) as any;
 
     if (!cachedRes || !cachedRes.images) return [];
 
@@ -18,7 +18,7 @@ export const useCacheHelpers = () => {
   const removeImageFromCache = (imageId: string) => {
     const cachedImages = client.readQuery({
       query: images,
-    });
+    }) as any;
 
     if (!cachedImages || !cachedImages.images) return [];
 
@@ -50,7 +50,7 @@ export const useCacheHelpers = () => {
   const addImageToCache = (image: Image) => {
     const cachedImages = client.readQuery({
       query: images,
-    });
+    }) as any;
 
     if (!cachedImages || !cachedImages.images) return [];
 
@@ -69,7 +69,7 @@ export const useCacheHelpers = () => {
   const updateImageCacheOnly = (update: UpdateImage): UpdateImage[] => {
     const cachedImagesRes = client.readQuery({
       query: images,
-    });
+    }) as any;
 
     const cachedImages = (cachedImagesRes?.images ?? []) as Image[];
     const updatedImageIdSet = new Set<string>([update.id]);
@@ -103,7 +103,7 @@ export const useCacheHelpers = () => {
       data: {
         images: updatedImages,
       },
-    });
+    }) as any;
 
     // Return only updated pages with updated values
     const onlyUpdatedImages: UpdateImage[] = updatedImages

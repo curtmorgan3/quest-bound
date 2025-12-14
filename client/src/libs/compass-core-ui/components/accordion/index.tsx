@@ -6,6 +6,8 @@ import MuiAccordionSummary, {
   AccordionSummaryProps as MUIAccordionSummaryProps,
 } from '@mui/material/AccordionSummary';
 
+import type { JSX } from "react";
+
 export type AccordionProps = MUIAccordionProps;
 
 export const Accordion = ({ ...baseProps }: AccordionProps): JSX.Element => (

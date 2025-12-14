@@ -9,7 +9,7 @@ import {
   ListAlt,
   People,
 } from '@mui/icons-material';
-import { useContext } from 'react';
+import { useContext, type JSX } from 'react';
 
 interface QuickCreateOptionsProps {
   page: string;

@@ -1,5 +1,7 @@
 import { Skeleton, Stack } from '@/libs/compass-core-ui';
 
+import type { JSX } from "react";
+
 export const LoadingJournalPage = (): JSX.Element => {
   return (
     <Stack spacing={4} sx={{ padding: 4 }}>

@@ -1,5 +1,3 @@
-import 'regenerator-runtime/runtime';
-
 export * from './animations';
 export * from './assets/index';
 export * from './components';

@@ -1,4 +1,4 @@
-import { ApolloError } from '@apollo/client/index.js';
+
 import {
   searchUsers as searchUsersQuery,
   SearchUsersQuery,
@@ -11,7 +11,7 @@ import { useError } from '../metrics';
 interface UseSearchUsers {
   searchUsers: (input: SearchUsersQueryVariables) => Promise<User[]>;
   loading: boolean;
-  error?: ApolloError;
+  error?: Error;
 }
 
 export const useSearchUsers = (): UseSearchUsers => {

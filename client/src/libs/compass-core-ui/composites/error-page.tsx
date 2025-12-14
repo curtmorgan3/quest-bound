@@ -1,6 +1,8 @@
 import { Button, Stack, Text } from '../components';
 import { useDeviceSize } from '../hooks/use-device-size';
 
+import type { JSX } from "react";
+
 const NotFoundImage = 'https://quest-bound-web-assets.s3.us-west-2.amazonaws.com/not-found.png';
 const UncaughtImage = 'https://quest-bound-web-assets.s3.us-west-2.amazonaws.com/broken.png';
 

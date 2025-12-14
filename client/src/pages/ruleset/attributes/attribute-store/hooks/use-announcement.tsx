@@ -11,7 +11,7 @@ export type Announcement = {
 
 export const useAnnouncement = () => {
   const toast = useToast();
-  const toastIdRef = useRef<ToastId>();
+  const toastIdRef = useRef<ToastId>(undefined);
 
   function close() {
     if (toastIdRef.current) {

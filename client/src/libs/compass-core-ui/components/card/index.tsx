@@ -3,6 +3,8 @@ import MUICardActions, { CardActionsProps as MUICardActionsProps } from '@mui/ma
 import MUICardContent, { CardContentProps as MUICardContentProps } from '@mui/material/CardContent';
 import MUICardMedia, { CardMediaProps as MUICardMediaProps } from '@mui/material/CardMedia';
 
+import type { JSX } from "react";
+
 export type CardProps = MUICardProps;
 export type CardActionsProps = MUICardActionsProps;
 export type CardContentProps = MUICardContentProps;

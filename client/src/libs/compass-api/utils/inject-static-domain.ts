@@ -1,5 +1,6 @@
 import { getApiEndpoint } from '@/constants';
 import { ApolloLink } from '@apollo/client';
+import { map } from "rxjs";
 
 /**
  * Image srcs are stored without a domain. This link adds the domain to the srcs.
@@ -16,9 +17,9 @@ export const addStaticDomain = new ApolloLink((operation, forward) => {
   const replacementExpressions = [
     new RegExp(/"avatarSrc":"([^"]*)"/),
     new RegExp(/"src":"([^"]*)"/),
-  ];
+  ];  
 
-  return forward(operation).map((data) => {
+  return forward(operation).pipe(map(data => {
     if (data.data?.images) {
       data.data.images = data.data.images.map((image: any) => {
         if (shouldUpdate(image.src)) {
@@ -39,5 +40,5 @@ export const addStaticDomain = new ApolloLink((operation, forward) => {
     }
 
     return data;
-  });
+  }))
 });

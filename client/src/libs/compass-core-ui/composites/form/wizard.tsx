@@ -66,8 +66,6 @@ export const Wizard = ({
 
   const childrenWithProps = React.Children.map(children, (child) => {
     if (React.isValidElement(child)) {
-      if (child?.props?.skip) return null;
-
       return React.cloneElement(child as ReactElement<ProvidedProps>, {
         index: index++,
       });

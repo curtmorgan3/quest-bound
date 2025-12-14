@@ -1,5 +1,5 @@
 import { MutationFetchPolicy } from '@apollo/client/core/watchQueryOptions';
-import { WatchQueryFetchPolicy } from '@apollo/client/index.js';
+import { WatchQueryFetchPolicy } from '@apollo/client';
 
 export type QueryOptions = {
   fetchPolicy?: WatchQueryFetchPolicy;

@@ -1,4 +1,4 @@
-import { useApolloClient } from '@apollo/client/index.js';
+import { useApolloClient } from "@apollo/client/react";
 import { useParams } from 'react-router-dom';
 import {
   Attribute,
@@ -34,7 +34,7 @@ export const useCacheHelpers = () => {
       variables: {
         rulesetId: update.rulesetId,
       },
-    });
+    }) as any;
 
     const itemRes = client.readQuery({
       query: attributes,
@@ -42,7 +42,7 @@ export const useCacheHelpers = () => {
         rulesetId: update.rulesetId,
         type: AttributeType.ITEM,
       },
-    });
+    }) as any;
 
     if (!attrRes || !attrRes.attributes || !itemRes || !itemRes.attributes) {
       throw Error('Attributes not found in cache');
@@ -121,7 +121,7 @@ export const useCacheHelpers = () => {
           tabId: 'logic-editor',
         },
       },
-    });
+    }) as any;
 
     if (!cRes || !cRes.sheetComponents) {
       return {
@@ -140,7 +140,7 @@ export const useCacheHelpers = () => {
           rulesetId: update.rulesetId,
         },
       },
-    });
+    }) as any;
 
     client.writeQuery({
       query: sheetComponents,
@@ -169,7 +169,7 @@ export const useCacheHelpers = () => {
         rulesetId,
         type: isItem ? AttributeType.ITEM : undefined,
       },
-    });
+    }) as any;
 
     return res?.attributes ?? [];
   };
