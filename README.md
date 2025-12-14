@@ -4,6 +4,8 @@ Quest Bound is a free and open source engine for creating digital tabletop role 
 
 ![Screenshot 2024-12-27 at 8 33 12 AM](https://github.com/user-attachments/assets/98809869-265b-40cf-b45e-555682b42888)
 
+[Live Documentation](https://docs.questbound.com)
+
 [Getting Started](https://github.com/curtmorgan3/quest-bound#getting-started)
 
 [Bootstrapping](https://github.com/curtmorgan3/quest-bound#bootstrapping)
@@ -20,7 +22,7 @@ Quest Bound is a free and open source engine for creating digital tabletop role 
 
 Join our [Discord Server](https://discord.gg/7QGV4muT39) to join discussions and troubleshoot issues.
 
-Download and run the Quest Bound documentation [here](https://github.com/curtmorgan3/quest-bound-docs).
+Contribute to the documentation [here](https://github.com/curtmorgan3/quest-bound-docs).
 
 ---------
 
@@ -41,6 +43,8 @@ GM Pak
 Quest Bound is a web application written entirely in TypeScript, a high level programming language that compiles to JavaScript. You will run two separate applications to use Quest Bound--a server and a client. When both are running, you'll access Quest Bound through a web browser of your choice.
 
 ### Source Code
+
+Be sure you're on the latest release page! Currently, [v1.0.0](https://github.com/curtmorgan3/quest-bound/tree/v1.0.0) is the stable version. 
 
 Download the source code as a zip file and unzip it on your computer anywhere you'd like. Even though Quest Bound will be running on your own computer, it is not a native application, so it isn't picky about where its files are located.
 
