@@ -66,7 +66,7 @@ export const CompassThemeProvider = ({ children }: CompassThemeProviderProps): J
     },
   });
 
-  injectTheme();
+  // injectTheme();
 
   return (
     <ChakraProvider theme={{ ...theme, [THEME_ID]: compassDarkTheme }}>{children}</ChakraProvider>

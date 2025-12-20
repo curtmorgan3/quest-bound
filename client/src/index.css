@@ -1,3 +1,4 @@
+
 @import url('https://fonts.googleapis.com/css2?family=Roboto+Condensed');
 @import url('https://fonts.googleapis.com/css2?family=Oswald');
 @import url('https://fonts.googleapis.com/css2?family=Tilt+Prism');
@@ -10,8 +11,8 @@
 @import url('https://fonts.googleapis.com/css2?family=Eagle+Lake');
 @import url('https://fonts.googleapis.com/css2?family=Yatra+One');
 
-@import 'tailwindcss';
 
+@import 'tailwindcss';
 @import "tw-animate-css";
 
 @custom-variant dark (&:is(.dark *));
