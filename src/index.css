@@ -120,6 +120,10 @@ html {
   --sidebar-ring: oklch(0.667 0.1658 40.05);
 }
 
+.clickable {
+  cursor: pointer;
+}
+
 .sketch-picker {
   color: #faf7f2 !important;
   background-color: #42403e !important;

@@ -42,8 +42,6 @@ export function AppSidebar() {
   const isHomepage = location.pathname === '/';
   const [drawerContent, setDrawerContent] = useState<'settings' | 'dev-tools'>('settings');
 
-  const enableEditor = localStorage.getItem('qb.enableEditor') === 'true';
-
   useEffect(() => {
     const storedState = localStorage.getItem('qb.sidebarCollapsed');
     if (storedState !== null) {
@@ -74,15 +72,12 @@ export function AppSidebar() {
           url: `/rulesets/${activeRuleset?.id}/charts`,
           icon: FileSpreadsheet,
         },
+        {
+          title: 'Windows',
+          url: `/rulesets/${activeRuleset?.id}/windows`,
+          icon: AppWindow,
+        },
       ];
-
-  if (enableEditor && activeRuleset) {
-    rulesetItems.push({
-      title: 'Windows',
-      url: `/rulesets/${activeRuleset.id}/windows`,
-      icon: AppWindow,
-    });
-  }
 
   return (
     <Drawer direction='bottom'>

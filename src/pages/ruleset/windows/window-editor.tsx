@@ -1,8 +1,7 @@
-import { useComponents } from '@/lib/compass-api';
-import { destroyEditor, initializeEditor } from '@/lib/compass-planes';
+import { useComponents, type ComponentUpdate } from '@/lib/compass-api';
+import { SheetEditor } from '@/lib/compass-planes/sheet-editor';
 import type { Component } from '@/types';
 import { debugLog } from '@/utils';
-import { useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { ComponentEditPanel } from './component-edit-panel';
 
@@ -13,17 +12,12 @@ export const WindowEditor = () => {
   const { components, createComponent, updateComponents, deleteComponent } =
     useComponents(windowId);
 
-  const editorState = new Map<string, Component>();
-  for (const comp of components) {
-    editorState.set(comp.id, comp);
-  }
-
-  const onComponentsUpdated = (updates: Array<Component>) => {
+  const onComponentsUpdated = (updates: Array<ComponentUpdate>) => {
     log('components updated: ', updates);
     updateComponents(updates);
   };
 
-  const onComponentsCreated = (components: Array<Component>) => {
+  const onComponentsCreated = (components: Array<Partial<Component>>) => {
     log('components created', components);
     for (const comp of components) {
       createComponent({
@@ -40,27 +34,17 @@ export const WindowEditor = () => {
     }
   };
 
-  // Wait for initialization of editorState to complete
-  if (document.getElementById('qb-editor') && editorState.size === components.length) {
-    initializeEditor({
-      elementId: 'qb-editor',
-      state: editorState,
-      onComponentsUpdated,
-      onComponentsCreated,
-      onComponentsDeleted,
-    });
-  }
-
-  useEffect(() => {
-    return () => destroyEditor();
-  }, []);
-
   if (!windowId) return null;
 
   return (
     <>
       <div className='flex flex-col' style={{ overflow: 'hidden' }}>
-        <div id='qb-editor' className='flex-grow-1 ' />
+        <SheetEditor
+          components={components}
+          onComponentsCreated={onComponentsCreated}
+          onComponentsDeleted={onComponentsDeleted}
+          onComponentsUpdated={onComponentsUpdated}
+        />
       </div>
       <ComponentEditPanel />
     </>

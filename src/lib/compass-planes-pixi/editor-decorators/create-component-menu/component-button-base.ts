@@ -1,8 +1,8 @@
-import type { ComponentType } from '@/lib/compass-planes';
-import { getPlacingType, setPlacingType } from '@/lib/compass-planes/cache';
-import { getEditorAsset } from '@/lib/compass-planes/utils';
 import { colorPrimary, colorWhite } from '@/palette';
 import { Sprite, Texture, type Container } from 'pixi.js';
+import { getPlacingType, setPlacingType } from '../../cache';
+import type { ComponentType } from '../../types';
+import { getEditorAsset } from '../../utils';
 
 export const drawCreateComponentButton = async (
   menu: Container,

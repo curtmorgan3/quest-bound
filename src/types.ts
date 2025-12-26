@@ -6,6 +6,11 @@ type BaseDetails = {
   updatedAt: string;
 };
 
+export type Coordinates = {
+  x: number;
+  y: number;
+};
+
 export type Asset = BaseDetails & {
   data: string; // Base64 or URL
   type: string; // MIME type

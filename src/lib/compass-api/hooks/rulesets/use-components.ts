@@ -2,8 +2,9 @@ import { useErrorHandler } from '@/hooks';
 import { db } from '@/stores';
 import type { Component } from '@/types';
 import { useLiveQuery } from 'dexie-react-hooks';
+import { injectDefaultComponent } from '../../utils';
 
-type ComponentUpdate = { id: string } & Partial<Component>;
+export type ComponentUpdate = { id: string } & Partial<Component>;
 
 export const useComponents = (windowId?: string) => {
   const { handleError } = useErrorHandler();
@@ -22,7 +23,7 @@ export const useComponents = (windowId?: string) => {
     const now = new Date().toISOString();
     try {
       await db.components.add({
-        ...data,
+        ...injectDefaultComponent(data),
         id: data.id || crypto.randomUUID(),
         windowId,
         createdAt: now,
@@ -43,7 +44,7 @@ export const useComponents = (windowId?: string) => {
         data.map(
           (comp) =>
             ({
-              ...comp,
+              ...injectDefaultComponent(comp),
               id: comp.id || crypto.randomUUID(),
               createdAt: now,
               updatedAt: now,
