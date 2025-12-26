@@ -1,5 +1,3 @@
-import type { TextStyleFontWeight } from 'pixi.js';
-
 type BaseDetails = {
   id: string;
   createdAt: string;
@@ -95,7 +93,7 @@ export type ComponentStyle = {
   outlineColor: string;
   fontSize?: number;
   fontFamily?: string;
-  fontWeight?: TextStyleFontWeight;
+  fontWeight?: string;
   textAlign?: 'left' | 'center' | 'right' | 'justify';
   lineHeight?: number;
 };
