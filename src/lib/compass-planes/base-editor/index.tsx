@@ -20,6 +20,7 @@ export function BaseEditor({
   renderContextMenu = true,
   menuOptions,
   onSelectFromMenu,
+  ...props
 }: BaseEditorProps) {
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
 
@@ -39,15 +40,25 @@ export function BaseEditor({
       <ReactFlow
         nodes={nodes}
         onNodesChange={onNodesChange}
-        fitView
         minZoom={1}
         maxZoom={1}
         snapGrid={[20, 20]}
         snapToGrid
         multiSelectionKeyCode={'Shift'}
+        fitView={false}
         panOnDrag={false}
         panOnScroll={false}
-        selectNodesOnDrag={false}>
+        autoPanOnNodeDrag={false}
+        nodeExtent={[
+          [0, 0],
+          [Infinity, Infinity],
+        ]}
+        translateExtent={[
+          [0, 0],
+          [Infinity, Infinity],
+        ]}
+        selectNodesOnDrag={false}
+        {...props}>
         <Background
           id='bg-grid'
           variant={BackgroundVariant.Lines}

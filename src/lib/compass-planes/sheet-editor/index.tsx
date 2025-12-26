@@ -1,9 +1,14 @@
 import type { ComponentUpdate } from '@/lib/compass-api';
 import type { Component, Coordinates } from '@/types';
-import { applyNodeChanges, type Node } from '@xyflow/react';
-import { useCallback, useState } from 'react';
+import {
+  applyNodeChanges,
+  type Node,
+  type NodeChange,
+  type NodePositionChange,
+} from '@xyflow/react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { BaseEditor } from '../base-editor';
-import { contextOptions, type EditorMenuOption } from '../nodes/node-types';
+import { contextOptions, sheetNodeTypes, type EditorMenuOption } from '../nodes/node-types';
 import { convertComponentsToNodes } from '../utils';
 
 interface SheetEditorProps {
@@ -16,23 +21,36 @@ interface SheetEditorProps {
 export const SheetEditor = ({
   components,
   onComponentsCreated,
-  onComponentsDeleted,
   onComponentsUpdated,
+  onComponentsDeleted,
 }: SheetEditorProps) => {
+  const componentLengthRef = useRef<number>(0);
   const [nodes, setNodes] = useState<Node[]>(convertComponentsToNodes(components));
 
-  console.log(nodes);
+  useEffect(() => {
+    if (!nodes.length || components.length !== componentLengthRef.current) {
+      setNodes(convertComponentsToNodes(components));
+      componentLengthRef.current = components.length;
+    }
+  }, [components]);
 
-  const onNodesChange = useCallback(
-    (changes: any) => {
-      setNodes((nodesSnapshot) => applyNodeChanges(changes, nodesSnapshot));
-      console.log(changes);
-    },
-    [setNodes],
-  );
+  const onNodesChange = useCallback((changes: NodeChange<any>[]) => {
+    setNodes((nodesSnapshot) => applyNodeChanges(changes, nodesSnapshot));
+    if (!changes[0] || !(changes[0] as NodePositionChange).position) {
+      console.log('Non position change: ', changes[0]);
+      return;
+    }
+
+    onComponentsUpdated(
+      changes.map((change) => ({
+        id: (change as NodePositionChange).id ?? 'missing-id',
+        x: (change as NodePositionChange).position?.x,
+        y: (change as NodePositionChange).position?.y,
+      })),
+    );
+  }, []);
 
   const handleContextMenuSelection = (selection: EditorMenuOption, coordinates: Coordinates) => {
-    console.log(selection, coordinates);
     onComponentsCreated([
       {
         type: selection.nodeType,
@@ -48,6 +66,7 @@ export const SheetEditor = ({
       onNodesChange={onNodesChange}
       menuOptions={contextOptions}
       onSelectFromMenu={handleContextMenuSelection}
+      nodeTypes={sheetNodeTypes}
     />
   );
 };

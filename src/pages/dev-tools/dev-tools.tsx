@@ -6,8 +6,6 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
 import { useComponents } from '@/lib/compass-api';
-import { app } from '@/lib/compass-planes-pixi';
-import { defaultComponentMap } from '@/lib/compass-planes-pixi/components/common/defaults';
 import type { Component } from '@/types';
 import { ChevronDown, ChevronRight, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
@@ -112,14 +110,13 @@ export const DevTools = () => {
 
   const addComponents = async () => {
     if (!windowId) return;
-    const comps: Component[] = [];
+    const comps: Partial<Component>[] = [];
     const groupId = 'group';
 
     for (let x = 0; x < 100; x++) {
       for (let y = 0; y < 10; y++) {
-        const shape = defaultComponentMap.get('shape') as Component;
         comps.push({
-          ...shape,
+          type: 'shape',
           windowId,
           groupId,
           width: 60,
@@ -132,16 +129,8 @@ export const DevTools = () => {
     await createComponents(comps);
   };
 
-  const checkCullable = () => {
-    if (!app) return;
-    for (const child of app.stage.children) {
-      console.log(`${child.label}, visible: ${child.visible}`);
-    }
-  };
-
   return (
     <div className='p-4 space-y-4'>
-      <button onClick={checkCullable}>Check Cull Visibility</button>
       <button onClick={addComponents}>Add 1000 Components</button>
       <div className='space-y-2'>
         <Label htmlFor='debug-input'>Add Debug Variable</Label>

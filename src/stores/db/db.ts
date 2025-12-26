@@ -43,7 +43,7 @@ db.version(1).stores({
   charts: `${common}, &[rulesetId+title], description, category, data`,
   windows: `${common}, &[rulesetId+title], category`,
   composites: `${common}, rulesetId, title, category`,
-  components: `${common}, windowId, compositeId, type, x, y, height, width, rotation, selected, assetId, image, groupId, attributeId, actionId`,
+  components: `${common}, windowId, compositeId, type, x, y, z, height, width, rotation, selected, assetId, image, groupId, attributeId, actionId, data, style`,
 });
 
 // Cache assets for reference in the asset injector middleware

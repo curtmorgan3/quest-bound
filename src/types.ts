@@ -83,6 +83,35 @@ export type Chart = BaseDetails & {
   data: string;
 };
 
+export type ComponentStyle = {
+  color: string;
+  backgroundColor: string;
+  opacity: number;
+  borderRadiusTopLeft: number;
+  borderRadiusTopRight: number;
+  borderRadiusBottomLeft: number;
+  borderRadiusBottomRight: number;
+  outlineWidth: number;
+  outlineColor: string;
+  fontSize?: number;
+  fontFamily?: string;
+  fontWeight?: TextStyleFontWeight;
+  textAlign?: 'left' | 'center' | 'right' | 'justify';
+  lineHeight?: number;
+};
+
+export type ComponentData = {
+  conditionalRenderAttributeId?: string;
+  conditionalRenderInverse?: boolean;
+  actionId?: string;
+  pageId?: string | null;
+  announcementId?: string | null;
+};
+
+export type ShapeComponentData = ComponentData & {
+  sides: number;
+};
+
 export type Component = BaseDetails & {
   windowId?: string;
   type: string;
@@ -92,14 +121,8 @@ export type Component = BaseDetails & {
   height: number;
   width: number;
   rotation: number;
-  color: string;
-  opacity: number;
-  borderRadiusTopLeft: number;
-  borderRadiusTopRight: number;
-  borderRadiusBottomLeft: number;
-  borderRadiusBottomRight: number;
-  borderWidth: number;
-  borderColor: string;
+  data: string;
+  style: string;
   compositeId?: string;
   locked?: boolean;
   selected?: boolean;
@@ -108,13 +131,6 @@ export type Component = BaseDetails & {
   groupId?: string | null;
   attributeId?: string;
   actionId?: string;
-  // Text component properties
-  text?: string;
-  fontSize?: number;
-  fontFamily?: string;
-  fontWeight?: TextStyleFontWeight;
-  textAlign?: 'left' | 'center' | 'right' | 'justify';
-  lineHeight?: number;
 };
 
 export type Composite = BaseDetails & {
