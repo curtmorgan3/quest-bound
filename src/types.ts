@@ -127,7 +127,6 @@ export type Component = BaseDetails & {
   rotation: number;
   data: string;
   style: string;
-  compositeId?: string;
   locked?: boolean;
   selected?: boolean;
   assetId?: string;
@@ -135,12 +134,6 @@ export type Component = BaseDetails & {
   groupId?: string | null;
   attributeId?: string;
   actionId?: string;
-};
-
-export type Composite = BaseDetails & {
-  rulesetId: string;
-  title: string;
-  category?: string;
 };
 
 export type Window = BaseDetails & {

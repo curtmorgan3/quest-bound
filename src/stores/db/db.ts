@@ -4,7 +4,6 @@ import type {
   Attribute,
   Chart,
   Component,
-  Composite,
   Item,
   Ruleset,
   User,
@@ -26,7 +25,6 @@ const db = new Dexie('qbdb') as Dexie & {
   charts: EntityTable<Chart, 'id'>;
   assets: EntityTable<Asset, 'id'>;
   windows: EntityTable<Window, 'id'>;
-  composites: EntityTable<Composite, 'id'>;
   components: EntityTable<Component, 'id'>;
 };
 
@@ -42,8 +40,7 @@ db.version(1).stores({
   items: `${common}, &[rulesetId+title], description, category, weight, defaultQuantity, stackSize, isContainer, isStorable, isEquippable, isConsumable, inventoryWidth, inventoryHeight`,
   charts: `${common}, &[rulesetId+title], description, category, data`,
   windows: `${common}, &[rulesetId+title], category`,
-  composites: `${common}, rulesetId, title, category`,
-  components: `${common}, windowId, compositeId, type, x, y, z, height, width, rotation, selected, assetId, image, groupId, attributeId, actionId, data, style`,
+  components: `${common}, windowId, type, x, y, z, height, width, rotation, selected, assetId, image, groupId, attributeId, actionId, data, style`,
 });
 
 // Cache assets for reference in the asset injector middleware
