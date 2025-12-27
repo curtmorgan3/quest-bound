@@ -9,6 +9,11 @@ export type Coordinates = {
   y: number;
 };
 
+export type Dimensions = {
+  height: number;
+  width: number;
+};
+
 export type Asset = BaseDetails & {
   data: string; // Base64 or URL
   type: string; // MIME type

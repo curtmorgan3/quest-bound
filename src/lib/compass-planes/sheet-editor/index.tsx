@@ -1,15 +1,11 @@
 import type { ComponentUpdate } from '@/lib/compass-api';
+import { WindowEditorContext } from '@/stores';
 import type { Component, Coordinates } from '@/types';
-import {
-  applyNodeChanges,
-  type Node,
-  type NodeChange,
-  type NodePositionChange,
-} from '@xyflow/react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { type Node } from '@xyflow/react';
+import { useContext, useEffect, useRef, useState } from 'react';
 import { BaseEditor } from '../base-editor';
 import { contextOptions, sheetNodeTypes, type EditorMenuOption } from '../nodes/node-types';
-import { convertComponentsToNodes } from '../utils';
+import { convertComponentsToNodes, useHandleNodeChange } from '../utils';
 
 interface SheetEditorProps {
   components: Component[];
@@ -25,6 +21,7 @@ export const SheetEditor = ({
   onComponentsDeleted,
 }: SheetEditorProps) => {
   const componentLengthRef = useRef<number>(0);
+  const { getComponent } = useContext(WindowEditorContext);
   const [nodes, setNodes] = useState<Node[]>(convertComponentsToNodes(components));
 
   useEffect(() => {
@@ -34,21 +31,12 @@ export const SheetEditor = ({
     }
   }, [components]);
 
-  const onNodesChange = useCallback((changes: NodeChange<any>[]) => {
-    setNodes((nodesSnapshot) => applyNodeChanges(changes, nodesSnapshot));
-    if (!changes[0] || !(changes[0] as NodePositionChange).position) {
-      console.log('Non position change: ', changes[0]);
-      return;
-    }
-
-    onComponentsUpdated(
-      changes.map((change) => ({
-        id: (change as NodePositionChange).id ?? 'missing-id',
-        x: (change as NodePositionChange).position?.x,
-        y: (change as NodePositionChange).position?.y,
-      })),
-    );
-  }, []);
+  const onNodeChange = useHandleNodeChange({
+    setNodes,
+    getComponent,
+    onDeleteNodes: onComponentsDeleted,
+    onChange: onComponentsUpdated,
+  });
 
   const handleContextMenuSelection = (selection: EditorMenuOption, coordinates: Coordinates) => {
     onComponentsCreated([
@@ -63,7 +51,7 @@ export const SheetEditor = ({
   return (
     <BaseEditor
       nodes={nodes}
-      onNodesChange={onNodesChange}
+      onNodesChange={onNodeChange}
       menuOptions={contextOptions}
       onSelectFromMenu={handleContextMenuSelection}
       nodeTypes={sheetNodeTypes}
