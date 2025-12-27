@@ -88,8 +88,9 @@ export type Chart = BaseDetails & {
 
 export type ComponentStyle = {
   color: string;
-  backgroundColor: string;
   opacity: number;
+  outline?: string;
+  borderRadius?: string;
   borderRadiusTopLeft: number;
   borderRadiusTopRight: number;
   borderRadiusBottomLeft: number;

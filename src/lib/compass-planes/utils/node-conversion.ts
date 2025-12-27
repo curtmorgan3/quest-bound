@@ -22,5 +22,15 @@ export function getComponentData(component: Component): ShapeComponentData {
 }
 
 export function getComponentStyles(component: Component): ComponentStyle {
-  return JSON.parse(component.style) as ComponentStyle;
+  const styles = JSON.parse(component.style) as ComponentStyle;
+
+  if (styles.outlineWidth === 0) {
+    styles.outline = undefined;
+  } else {
+    styles.outline = `${styles.outlineWidth}px solid ${styles.outlineColor}`;
+  }
+
+  styles.borderRadius = `${styles.borderRadiusTopLeft}px ${styles.borderRadiusTopRight}px ${styles.borderRadiusBottomRight}px ${styles.borderRadiusBottomLeft}px`;
+
+  return styles;
 }

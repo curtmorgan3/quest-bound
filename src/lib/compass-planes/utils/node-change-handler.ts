@@ -20,27 +20,11 @@ export const useHandleNodeChange = ({
   getComponent,
 }: UseMoveNodesProps) => {
   const onNodesChange = (_changes: Array<any>) => {
-    // Filter out locked and unchanged nodes
+    // Filter out locked components
     const changes = _changes.filter((change: any) => {
       const component = getComponent(change.id);
 
-      if (component?.locked) return false;
-
-      if (change.type === 'dimensions') {
-        if (
-          change.dimensions?.width === component?.width &&
-          change.dimensions?.height === component?.height
-        ) {
-          return false;
-        }
-      }
-
-      if (change.type === 'position') {
-        if (change.position?.x === component?.x && change.position?.y === component?.y) {
-          return false;
-        }
-      }
-
+      if (component?.locked && change.type !== 'select') return false;
       return !!component;
     });
 
@@ -61,7 +45,7 @@ export const useHandleNodeChange = ({
     }
 
     setNodes((nodes) => {
-      return applyNodeChanges(_changes, nodes);
+      return applyNodeChanges(changes, nodes);
     });
   };
 

@@ -45,6 +45,7 @@ export function BaseEditor({
         snapGrid={[20, 20]}
         snapToGrid
         multiSelectionKeyCode={'Shift'}
+        selectionKeyCode={'Meta'}
         fitView={false}
         panOnDrag={false}
         panOnScroll={false}

@@ -8,6 +8,8 @@ export const sheetNodeTypes: NodeTypes = {
 
 export const baseComponentTypes: SheetComponentType[] = [shapeConfig];
 
+export const componentTypes = [...baseComponentTypes];
+
 export const getComponentType = (type: ComponentTypes): SheetComponentType => {
   return baseComponentTypes.find((comp) => comp.type === type)!;
 };

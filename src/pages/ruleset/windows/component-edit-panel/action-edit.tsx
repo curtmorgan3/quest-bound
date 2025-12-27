@@ -1,7 +1,7 @@
 import { useComponents } from '@/lib/compass-api';
 import { colorPrimary } from '@/palette';
 import type { Component } from '@/types';
-import { ComponentIcon, Copy, Group, Lock, Trash } from 'lucide-react';
+import { Copy, Lock, Trash } from 'lucide-react';
 import { valueIfAllAreEqual } from './utils';
 
 interface Props {
@@ -51,14 +51,13 @@ export const ActionEdit = ({ components, handleUpdate }: Props) => {
       <div className='w-full flex flex-row gap-4 items-end'>
         <Copy className={`text-xs h-[18px] w-[18px] cursor-pointer`} onClick={handleCopy} />
 
-        <Group
+        {/* <Group
           className={`text-xs h-[18px] w-[18px] cursor-${components.length === 1 ? 'not-allowed' : 'pointer'}`}
           style={{
             color: groupId === MIXED_VALUE_LABEL || groupId === null ? 'unset' : colorPrimary,
           }}
           onClick={handleGroup}
-        />
-        <ComponentIcon className={`text-xs h-[18px] w-[18px] cursor-pointer`} />
+        /> */}
         <Lock
           className={`text-xs h-[18px] w-[18px] cursor-pointer`}
           style={{

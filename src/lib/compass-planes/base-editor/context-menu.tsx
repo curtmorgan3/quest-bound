@@ -1,5 +1,6 @@
 import { Input, Tooltip } from '@/components';
 import type { Coordinates } from '@/types';
+import { useKeyListeners } from '@/utils';
 import { useViewport } from '@xyflow/react';
 import { useEffect, useRef, useState } from 'react';
 import type { EditorMenuOption } from '../nodes/node-types';
@@ -29,6 +30,8 @@ export const ContextMenu = ({
     option.name.toLowerCase().includes(filterValue.toLowerCase()),
   );
 
+  const selection = filteredOptions[0];
+
   const { x: viewportX, y: viewportY } = useViewport();
   const x = _x - (sidebarCollapsed ? 47 : 255);
   const y = _y;
@@ -57,6 +60,19 @@ export const ContextMenu = ({
     onSelect(option, { x: relativeX, y: relativeY });
     handleClose();
   };
+
+  useKeyListeners({
+    disabled: !isOpen,
+    onKeyDown: (e) => {
+      if (e.key === 'Escape') {
+        handleClose();
+      } else if (e.key === 'Enter') {
+        if (filteredOptions.length > 0) {
+          handleSelect(selection);
+        }
+      }
+    },
+  });
 
   if (!isOpen) return null;
   return (

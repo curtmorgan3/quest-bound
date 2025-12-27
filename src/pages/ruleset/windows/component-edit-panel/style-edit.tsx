@@ -22,8 +22,8 @@ export const StyleEdit = ({ components, handleUpdate }: Props) => {
   const borderRadiusTopRight = valueIfAllAreEqual(components, 'borderRadiusTopRight');
   const borderRadiusBottomLeft = valueIfAllAreEqual(components, 'borderRadiusBottomLeft');
   const borderRadiusBottomRight = valueIfAllAreEqual(components, 'borderRadiusBottomRight');
-  const borderWidth = valueIfAllAreEqual(components, 'borderWidth');
-  const borderColor = valueIfAllAreEqual(components, 'borderColor') as string;
+  const outlineWidth = valueIfAllAreEqual(components, 'outlineWidth');
+  const outlineColor = valueIfAllAreEqual(components, 'outlineColor') as string;
 
   // Check if all corners have the same value
   const allCornersEqual =
@@ -74,6 +74,7 @@ export const StyleEdit = ({ components, handleUpdate }: Props) => {
           </PopoverTrigger>
           <PopoverContent>
             <SketchPicker
+              className='sketch-picker'
               color={color}
               onChange={(color) => handleUpdate('color', color.hex)}
               presetColors={[]}
@@ -86,14 +87,14 @@ export const StyleEdit = ({ components, handleUpdate }: Props) => {
         <p className='text-xs text-muted-foreground'>Border</p>
         <div className='w-full flex flex-row gap-2 items-end'>
           <EditPanelInput
-            number={borderWidth !== MIXED_VALUE_LABEL}
-            disabled={borderWidth === MIXED_VALUE_LABEL}
+            number={outlineWidth !== MIXED_VALUE_LABEL}
+            disabled={outlineWidth === MIXED_VALUE_LABEL}
             label='Width'
-            value={borderWidth}
+            value={outlineWidth}
             width='80px'
             step={1}
             onChange={(val) =>
-              handleUpdate('borderWidth', Math.min(50, Math.max(0, parseValue(val))))
+              handleUpdate('outlineWidth', Math.min(50, Math.max(0, parseValue(val))))
             }
           />
           <EditPanelInput
@@ -108,14 +109,14 @@ export const StyleEdit = ({ components, handleUpdate }: Props) => {
           <Popover>
             <PopoverTrigger title='Border Color'>
               <Palette
-                className={`text-xs h-[18px] w-[18px] cursor-${borderColor !== MIXED_VALUE_LABEL ? 'pointer' : 'not-allowed'}`}
-                color={borderColor !== MIXED_VALUE_LABEL ? borderColor : '#ccc'}
+                className={`text-xs h-[18px] w-[18px] cursor-${outlineColor !== MIXED_VALUE_LABEL ? 'pointer' : 'not-allowed'}`}
+                color={outlineColor !== MIXED_VALUE_LABEL ? outlineColor : '#ccc'}
               />
             </PopoverTrigger>
             <PopoverContent>
               <SketchPicker
-                color={borderColor !== MIXED_VALUE_LABEL ? borderColor : '#000000'}
-                onChange={(color) => handleUpdate('borderColor', color.hex)}
+                color={outlineColor !== MIXED_VALUE_LABEL ? outlineColor : '#000000'}
+                onChange={(color) => handleUpdate('outlineColor', color.hex)}
                 presetColors={[]}
               />
             </PopoverContent>

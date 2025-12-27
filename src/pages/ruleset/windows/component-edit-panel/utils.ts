@@ -5,12 +5,23 @@ export function valueIfAllAreEqual(components: Array<Component>, key: string) {
 
   if (components.length === 1 && components[0].locked && key !== 'locked') return '-';
 
-  const val = components[0][key as keyof (typeof components)[0]];
+  let val = components[0][key as keyof (typeof components)[0]];
+
+  if (val === undefined) {
+    const style = JSON.parse(components[0].style);
+    val = style[key];
+  }
 
   if (val === undefined) return '-';
 
   for (const component of components) {
-    const comparedVal = component[key as keyof typeof component];
+    let comparedVal = component[key as keyof typeof component];
+
+    if (comparedVal === undefined) {
+      const style = JSON.parse(component.style);
+      comparedVal = style[key];
+    }
+
     if (val !== comparedVal) {
       return '-';
     }

@@ -3,6 +3,7 @@ import type { Component } from '@/types';
 import { useNodeId } from '@xyflow/react';
 import { useContext } from 'react';
 import { getComponentData, getComponentStyles } from '../../../utils';
+import { ResizableNode } from '../../decorators';
 
 export const ShapeNode = () => {
   const { getComponent } = useContext(WindowEditorContext);
@@ -13,9 +14,11 @@ export const ShapeNode = () => {
 
   if (!component) return null;
   return (
-    <PrimitiveShapeNode
-      component={{ ...component, height: component.height, width: component.width }}
-    />
+    <ResizableNode component={component}>
+      <PrimitiveShapeNode
+        component={{ ...component, height: component.height, width: component.width }}
+      />
+    </ResizableNode>
   );
 };
 
@@ -33,6 +36,7 @@ export const PrimitiveShapeNode = ({ component }: { component: Component }) => {
           height: `${component.height}px`,
           width: `${component.width}px`,
           zIndex: component.z,
+          backgroundColor: css.color,
           ...css,
         }}
       />
@@ -44,7 +48,7 @@ export const PrimitiveShapeNode = ({ component }: { component: Component }) => {
       key={JSON.stringify(css)}
       sides={numSides}
       diameter={component.width}
-      color={css.backgroundColor || 'primary.light'}
+      color={css.color}
       outlineWidth={outlineWidth}
       outlineColor={css.outlineColor}
       opacity={css.opacity}

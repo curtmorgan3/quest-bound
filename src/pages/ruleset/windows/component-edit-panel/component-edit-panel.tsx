@@ -37,6 +37,34 @@ export const ComponentEditPanel = () => {
       updateComponents(updated);
     }
   };
+  const handleStyleUpdate = (key: string | string[], value: number | string | boolean | null) => {
+    const toUpdate = selectedComponents.filter((c) => (key === 'locked' ? true : !c.locked));
+
+    if (typeof key === 'string') {
+      updateComponents(
+        toUpdate.map((c) => ({
+          id: c.id,
+          style: JSON.stringify({
+            ...JSON.parse(c.style),
+            [key]: value,
+          }),
+        })),
+      );
+    } else {
+      const updated = [...toUpdate];
+      for (const component of updated) {
+        for (const k of key) {
+          Object.assign(component, {
+            style: JSON.stringify({
+              ...JSON.parse(component.style),
+              [k]: value,
+            }),
+          });
+        }
+      }
+      updateComponents(updated);
+    }
+  };
 
   return (
     <div
@@ -45,7 +73,7 @@ export const ComponentEditPanel = () => {
       {selectedComponents.length > 0 ? (
         <>
           <PositionEdit components={selectedComponents} handleUpdate={handleUpdate} />
-          <StyleEdit components={selectedComponents} handleUpdate={handleUpdate} />
+          <StyleEdit components={selectedComponents} handleUpdate={handleStyleUpdate} />
           <ActionEdit components={selectedComponents} handleUpdate={handleUpdate} />
         </>
       ) : (
