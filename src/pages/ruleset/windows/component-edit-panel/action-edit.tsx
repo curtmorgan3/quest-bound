@@ -15,17 +15,17 @@ export const ActionEdit = ({ components, handleUpdate }: Props) => {
   const { createComponents, deleteComponent } = useComponents();
 
   const locked = valueIfAllAreEqual(components, 'locked') as string | boolean;
-  const groupId = valueIfAllAreEqual(components, 'groupId');
+  // const groupId = valueIfAllAreEqual(components, 'groupId');
 
   const handleLock = () => {
     handleUpdate('locked', !locked);
   };
 
-  const handleGroup = () => {
-    if (components.length < 2) return;
-    const newGroupId = groupId === '-' || groupId === null ? crypto.randomUUID() : null;
-    handleUpdate('groupId', newGroupId);
-  };
+  // const handleGroup = () => {
+  //   if (components.length < 2) return;
+  //   const newGroupId = groupId === '-' || groupId === null ? crypto.randomUUID() : null;
+  //   handleUpdate('groupId', newGroupId);
+  // };
 
   const handleCopy = () => {
     createComponents(
