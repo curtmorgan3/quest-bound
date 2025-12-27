@@ -2,7 +2,7 @@ import { WindowEditorContext } from '@/stores';
 import type { Component } from '@/types';
 import { useNodeId } from '@xyflow/react';
 import { useContext } from 'react';
-import { getComponentData, getComponentStyles } from '../utils';
+import { getComponentData, getComponentStyles } from '../../../utils';
 
 export const ShapeNode = () => {
   const { getComponent } = useContext(WindowEditorContext);

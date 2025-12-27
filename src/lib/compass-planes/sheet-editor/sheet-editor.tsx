@@ -4,8 +4,9 @@ import type { Component, Coordinates } from '@/types';
 import { type Node } from '@xyflow/react';
 import { useContext, useEffect, useRef, useState } from 'react';
 import { BaseEditor } from '../base-editor';
-import { contextOptions, sheetNodeTypes, type EditorMenuOption } from '../nodes/node-types';
+import { sheetNodeTypes, type EditorMenuOption } from '../nodes';
 import { convertComponentsToNodes, useHandleNodeChange } from '../utils';
+import { contextOptions } from './sheet-context-options';
 
 interface SheetEditorProps {
   components: Component[];
