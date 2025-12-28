@@ -1,17 +1,23 @@
 import type { Component, ComponentStyle, ShapeComponentData } from '@/types';
 import type { Node } from '@xyflow/react';
 
+export function convertComponentToNode(component: Component): Node {
+  return {
+    id: component.id,
+    position: { x: component.x, y: component.y },
+    type: component.type,
+    zIndex: component.z,
+    selected: component.selected,
+    data: {
+      label: `${component.type}-${component.id}`,
+      ...component,
+    },
+  };
+}
+
 export function convertComponentsToNodes(components: Component[]): Node[] {
   return components.map((component) => {
-    return {
-      id: component.id,
-      position: { x: component.x, y: component.y },
-      type: component.type,
-      data: {
-        label: `${component.type}-${component.id}`,
-        ...component,
-      },
-    };
+    return convertComponentToNode(component);
   });
 }
 

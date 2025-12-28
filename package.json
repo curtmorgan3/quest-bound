@@ -57,6 +57,7 @@
     "dexie": "^4.2.0",
     "dexie-react-hooks": "^4.2.0",
     "embla-carousel-react": "^8.6.0",
+    "eventemitter3": "^5.0.1",
     "framer-motion": "^12.23.12",
     "idb-keyval": "^6.2.2",
     "input-otp": "^1.4.2",

@@ -50,6 +50,7 @@ export function BaseEditor({
         panOnDrag={false}
         panOnScroll={false}
         autoPanOnNodeDrag={false}
+        zIndexMode='manual'
         nodeExtent={[
           [0, 0],
           [Infinity, Infinity],

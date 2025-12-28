@@ -1,3 +1,4 @@
+import { COMPONENTS_POSITION_CHANGE_EVENT, editorEmitter } from '@/lib/compass-planes/utils';
 import type { Component } from '@/types';
 import { RotateCw } from 'lucide-react';
 import { EditPanelInput } from './component-edit-panel-input';
@@ -18,6 +19,18 @@ export const PositionEdit = ({ components, handleUpdate }: Props) => {
   const rotation = valueIfAllAreEqual(components, 'rotation');
   const layer = valueIfAllAreEqual(components, 'z');
 
+  // We only want to fire this when the position is changed from outside react-flow context,
+  // so it's here instead of hooked into the API update hook.
+  const handlePositionChange = (key: string, value: number) => {
+    editorEmitter.emit(COMPONENTS_POSITION_CHANGE_EVENT, {
+      components: components.map((component) => ({
+        ...component,
+        [key]: value,
+      })),
+    });
+    handleUpdate(key, value);
+  };
+
   return (
     <div className='flex-col w-full flex flex-col gap-3 pb-2 border-b-1'>
       <p className='text-sm'>Position</p>
@@ -27,14 +40,14 @@ export const PositionEdit = ({ components, handleUpdate }: Props) => {
           disabled={x === MIXED_VALUE_LABEL}
           label='X'
           value={x}
-          onChange={(val) => handleUpdate('x', parseValue(val))}
+          onChange={(val) => handlePositionChange('x', parseValue(val))}
         />
         <EditPanelInput
           number={y !== MIXED_VALUE_LABEL}
           disabled={y === MIXED_VALUE_LABEL}
           label='Y'
           value={y}
-          onChange={(val) => handleUpdate('y', parseValue(val))}
+          onChange={(val) => handlePositionChange('y', parseValue(val))}
         />
       </div>
       <div className='w-full flex flex-row gap-4'>
@@ -77,7 +90,7 @@ export const PositionEdit = ({ components, handleUpdate }: Props) => {
           disabled={layer === MIXED_VALUE_LABEL}
           label='Layer'
           value={layer}
-          onChange={(val) => handleUpdate('z', Math.max(0, parseValue(val)))}
+          onChange={(val) => handlePositionChange('z', Math.max(0, parseValue(val)))}
         />
       </div>
     </div>

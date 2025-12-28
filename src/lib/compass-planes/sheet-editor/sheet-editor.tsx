@@ -5,7 +5,13 @@ import { type Node } from '@xyflow/react';
 import { useContext, useEffect, useRef, useState } from 'react';
 import { BaseEditor } from '../base-editor';
 import { sheetNodeTypes, type EditorMenuOption } from '../nodes';
-import { convertComponentsToNodes, useHandleNodeChange } from '../utils';
+import {
+  convertComponentsToNodes,
+  convertComponentToNode,
+  useHandleNodeChange,
+  useSubscribeComponentPositionChanges,
+  type ComponentPositionChangeCallback,
+} from '../utils';
 import { contextOptions } from './sheet-context-options';
 
 interface SheetEditorProps {
@@ -22,15 +28,32 @@ export const SheetEditor = ({
   onComponentsDeleted,
 }: SheetEditorProps) => {
   const componentLengthRef = useRef<number>(0);
+
   const { getComponent } = useContext(WindowEditorContext);
   const [nodes, setNodes] = useState<Node[]>(convertComponentsToNodes(components));
+
+  // Update nodes when x, y or z is changed from the component edit panel
+  // Since these values affect the top level node render, we need to refersh state when it changes outside
+  // the context of react-flow
+  const onComponentsPositionChangedFromPanel = (updateMap: ComponentPositionChangeCallback) => {
+    setNodes((prev) =>
+      prev.map((node) => {
+        if (updateMap.has(node.id)) {
+          return convertComponentToNode(updateMap.get(node.id)!);
+        }
+        return node;
+      }),
+    );
+  };
+
+  useSubscribeComponentPositionChanges(onComponentsPositionChangedFromPanel);
 
   useEffect(() => {
     if (!nodes.length || components.length !== componentLengthRef.current) {
       setNodes(convertComponentsToNodes(components));
       componentLengthRef.current = components.length;
     }
-  }, [components]);
+  }, [JSON.stringify(components)]);
 
   const onNodeChange = useHandleNodeChange({
     setNodes,
