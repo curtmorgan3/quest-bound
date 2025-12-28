@@ -2,17 +2,17 @@ import type { ComponentUpdate } from '@/lib/compass-api';
 import { WindowEditorContext } from '@/stores';
 import type { Component, Coordinates } from '@/types';
 import { type Node } from '@xyflow/react';
-import { useContext, useEffect, useRef, useState } from 'react';
+import { useContext, useState } from 'react';
 import { BaseEditor } from '../base-editor';
 import { sheetNodeTypes, type EditorMenuOption } from '../nodes';
 import {
   convertComponentsToNodes,
-  convertComponentToNode,
   useHandleNodeChange,
-  useSubscribeComponentPositionChanges,
-  type ComponentPositionChangeCallback,
+  useSubscribeExteriorComponentChanges,
 } from '../utils';
 import { contextOptions } from './sheet-context-options';
+import { useKeyboardControls } from './use-keyboard-controls';
+import { useSyncNodes } from './use-sync-nodes';
 
 interface SheetEditorProps {
   components: Component[];
@@ -27,39 +27,29 @@ export const SheetEditor = ({
   onComponentsUpdated,
   onComponentsDeleted,
 }: SheetEditorProps) => {
-  const componentLengthRef = useRef<number>(0);
-
   const { getComponent } = useContext(WindowEditorContext);
   const [nodes, setNodes] = useState<Node[]>(convertComponentsToNodes(components));
 
-  // Update nodes when x, y or z is changed from the component edit panel
-  // Since these values affect the top level node render, we need to refersh state when it changes outside
-  // the context of react-flow
-  const onComponentsPositionChangedFromPanel = (updateMap: ComponentPositionChangeCallback) => {
-    setNodes((prev) =>
-      prev.map((node) => {
-        if (updateMap.has(node.id)) {
-          return convertComponentToNode(updateMap.get(node.id)!);
-        }
-        return node;
-      }),
-    );
-  };
+  const { onComponentsChangedExternally } = useSyncNodes({
+    components,
+    nodes,
+    setNodes,
+  });
 
-  useSubscribeComponentPositionChanges(onComponentsPositionChangedFromPanel);
-
-  useEffect(() => {
-    if (!nodes.length || components.length !== componentLengthRef.current) {
-      setNodes(convertComponentsToNodes(components));
-      componentLengthRef.current = components.length;
-    }
-  }, [JSON.stringify(components)]);
+  useSubscribeExteriorComponentChanges(onComponentsChangedExternally);
 
   const onNodeChange = useHandleNodeChange({
     setNodes,
     getComponent,
     onDeleteNodes: onComponentsDeleted,
     onChange: onComponentsUpdated,
+  });
+
+  useKeyboardControls({
+    components,
+    onComponentsCreated,
+    onComponentsDeleted,
+    onComponentsUpdated,
   });
 
   const handleContextMenuSelection = (selection: EditorMenuOption, coordinates: Coordinates) => {

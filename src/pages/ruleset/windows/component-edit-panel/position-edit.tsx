@@ -1,4 +1,4 @@
-import { COMPONENTS_POSITION_CHANGE_EVENT, editorEmitter } from '@/lib/compass-planes/utils';
+import { fireExternalComponentChangeEvent } from '@/lib/compass-planes/utils';
 import type { Component } from '@/types';
 import { RotateCw } from 'lucide-react';
 import { EditPanelInput } from './component-edit-panel-input';
@@ -22,9 +22,9 @@ export const PositionEdit = ({ components, handleUpdate }: Props) => {
   // We only want to fire this when the position is changed from outside react-flow context,
   // so it's here instead of hooked into the API update hook.
   const handlePositionChange = (key: string, value: number) => {
-    editorEmitter.emit(COMPONENTS_POSITION_CHANGE_EVENT, {
-      components: components.map((component) => ({
-        ...component,
+    fireExternalComponentChangeEvent({
+      updates: components.map((component) => ({
+        id: component.id,
         [key]: value,
       })),
     });
