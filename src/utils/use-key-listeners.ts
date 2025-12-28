@@ -7,6 +7,7 @@ interface UseKeyListenerProps {
   onKeyDown?: (args: UtilKeyEvent) => void;
   onKeyUp?: (args: UtilKeyEvent) => void;
   blockPropagation?: boolean;
+  preventDefault?: boolean;
 }
 
 export type UtilKeyEvent = {
@@ -19,6 +20,7 @@ export type UtilKeyEvent = {
 export const useKeyListeners = ({
   disabled,
   blockPropagation,
+  preventDefault,
   onBackspace,
   onDelete,
   onKeyDown,
@@ -29,6 +31,10 @@ export const useKeyListeners = ({
       if (blockPropagation && !disabled) {
         e.stopPropagation();
         e.stopImmediatePropagation();
+      }
+
+      if (preventDefault && !disabled) {
+        e.preventDefault();
       }
 
       if (e.key === 'Backspace' && !disabled) onBackspace?.();

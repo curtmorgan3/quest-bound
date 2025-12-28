@@ -51,6 +51,15 @@ export const useKeyboardControls = ({
     });
   };
 
+  const toggleLock = () => {
+    onComponentsUpdated(
+      selectedComponents.map((c) => ({
+        id: c.id,
+        locked: !c.locked,
+      })),
+    );
+  };
+
   useKeyListeners({
     onKeyDown: (e) => {
       if (e.key === 'c' && (e.meta || e.control)) {
@@ -59,6 +68,8 @@ export const useKeyboardControls = ({
         copy(true);
       } else if (e.key === 'v' && (e.meta || e.control)) {
         paste();
+      } else if (e.key === 'l' && (e.meta || e.control) && e.shift) {
+        toggleLock();
       }
     },
   });
