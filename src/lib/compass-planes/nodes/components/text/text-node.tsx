@@ -24,5 +24,7 @@ export const PrimitiveTextNode = ({ component }: { component: Component }) => {
   const css = getComponentStyles(component);
   const textValue = data.value;
 
+  console.log(css, textValue);
+
   return <span>Text</span>;
 };
