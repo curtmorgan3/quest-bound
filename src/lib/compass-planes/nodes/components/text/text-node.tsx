@@ -1,5 +1,6 @@
+import { getComponentData, getComponentStyles } from '@/lib/compass-planes/utils';
 import { WindowEditorContext } from '@/stores';
-import type { Component } from '@/types';
+import type { Component, TextComponentData } from '@/types';
 import { useNodeId } from '@xyflow/react';
 import { useContext } from 'react';
 import { ResizableNode } from '../../decorators';
@@ -19,5 +20,9 @@ export const TextNode = () => {
 };
 
 export const PrimitiveTextNode = ({ component }: { component: Component }) => {
-  return <span></span>;
+  const data = getComponentData(component) as TextComponentData;
+  const css = getComponentStyles(component);
+  const textValue = data.value;
+
+  return <span>Text</span>;
 };

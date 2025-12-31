@@ -1,4 +1,4 @@
-import type { Component, ComponentStyle, ShapeComponentData } from '@/types';
+import type { Component, ComponentData, ComponentStyle, ShapeComponentData } from '@/types';
 import type { Node } from '@xyflow/react';
 
 export function convertComponentToNode(component: Component): Node {
@@ -21,7 +21,7 @@ export function convertComponentsToNodes(components: Component[]): Node[] {
   });
 }
 
-export function getComponentData(component: Component): ShapeComponentData {
+export function getComponentData(component: Component): ComponentData {
   const data = JSON.parse(component.data);
 
   return data as ShapeComponentData;

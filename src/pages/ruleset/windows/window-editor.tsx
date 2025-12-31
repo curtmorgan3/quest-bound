@@ -25,6 +25,7 @@ export const WindowEditor = () => {
   };
 
   const onComponentsCreated = (components: Array<Partial<Component>>) => {
+    console.log(components);
     log('components created', components);
     for (const comp of components) {
       createComponent({

@@ -1,4 +1,6 @@
 import { DEFAULT_GRID_SIZE } from '@/lib/compass-planes/editor-config';
+import { colorWhite } from '@/palette';
+import type { Component, ComponentStyle, TextComponentData } from '@/types';
 import { ComponentTypes, type SheetComponentType } from '../../node-types';
 
 export const textConfig: SheetComponentType = {
@@ -16,4 +18,29 @@ export const textConfig: SheetComponentType = {
   transparent: true,
   scalable: true,
   hasDoubleClickAction: true,
+};
+
+const DEFAULT_TEXT_DATA: TextComponentData = {
+  value: 'Text',
+};
+
+const DEFAULT_TEXT_STYLES: ComponentStyle = {
+  color: colorWhite,
+  opacity: 1,
+  borderRadiusTopLeft: 0,
+  borderRadiusTopRight: 0,
+  borderRadiusBottomLeft: 0,
+  borderRadiusBottomRight: 0,
+  outlineWidth: 0,
+  outlineColor: '',
+  outline: 'solid',
+};
+
+export const DEFAULT_TEXT: Partial<Component> = {
+  z: 1,
+  height: 40,
+  width: 100,
+  rotation: 0,
+  data: JSON.stringify(DEFAULT_TEXT_DATA),
+  style: JSON.stringify(DEFAULT_TEXT_STYLES),
 };

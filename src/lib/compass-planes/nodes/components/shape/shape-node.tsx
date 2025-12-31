@@ -1,5 +1,5 @@
 import { WindowEditorContext } from '@/stores';
-import type { Component } from '@/types';
+import type { Component, ShapeComponentData } from '@/types';
 import { useNodeId } from '@xyflow/react';
 import { useContext } from 'react';
 import { getComponentData, getComponentStyles } from '../../../utils';
@@ -15,15 +15,13 @@ export const ShapeNode = () => {
   if (!component) return null;
   return (
     <ResizableNode component={component}>
-      <PrimitiveShapeNode
-        component={{ ...component, height: component.height, width: component.width }}
-      />
+      <PrimitiveShapeNode component={component} />
     </ResizableNode>
   );
 };
 
 export const PrimitiveShapeNode = ({ component }: { component: Component }) => {
-  const data = getComponentData(component);
+  const data = getComponentData(component) as ShapeComponentData;
   const css = getComponentStyles(component);
   const outlineWidth = Math.max(0, css.outlineWidth);
   const numSides = data.sides ?? 4;

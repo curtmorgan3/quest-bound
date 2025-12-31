@@ -10,6 +10,7 @@ import {
   useHandleNodeChange,
   useSubscribeExteriorComponentChanges,
 } from '../utils';
+import { injectDefaultComponent } from '../utils/inject-defaults';
 import { contextOptions } from './sheet-context-options';
 import { useKeyboardControls } from './use-keyboard-controls';
 import { useSyncNodes } from './use-sync-nodes';
@@ -55,9 +56,11 @@ export const SheetEditor = ({
   const handleContextMenuSelection = (selection: EditorMenuOption, coordinates: Coordinates) => {
     onComponentsCreated([
       {
-        type: selection.nodeType,
-        x: coordinates.x,
-        y: coordinates.y,
+        ...injectDefaultComponent({
+          type: selection.nodeType,
+          x: coordinates.x,
+          y: coordinates.y,
+        }),
       },
     ]);
   };
