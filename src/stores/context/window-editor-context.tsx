@@ -3,8 +3,9 @@ import { createContext } from 'react';
 
 type WindowEditorContext = {
   components: Component[];
-  getComponent: (id: string) => Component | null;
   viewMode: boolean;
+  getComponent: (id: string) => Component | null;
+  updateComponent: (id: string, data: Partial<Component>) => void;
 };
 
 export const WindowEditorContext = createContext<WindowEditorContext>(null!);

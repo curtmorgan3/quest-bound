@@ -13,7 +13,7 @@ const { log } = debugLog('pages', 'editor');
 
 export const WindowEditor = () => {
   const { windowId } = useParams();
-  const { components, createComponent, updateComponents, deleteComponent } =
+  const { components, createComponent, updateComponents, updateComponent, deleteComponent } =
     useComponents(windowId);
 
   const [viewMode, setViewMode] = useState<boolean>(false);
@@ -44,7 +44,7 @@ export const WindowEditor = () => {
   if (!windowId) return null;
 
   return (
-    <WindowEditorProvider value={{ components, getComponent, viewMode }}>
+    <WindowEditorProvider value={{ viewMode, components, getComponent, updateComponent }}>
       <div className='flex flex-col' style={{ overflow: 'hidden' }}>
         <SheetEditor
           components={components}
