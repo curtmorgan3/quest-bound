@@ -116,6 +116,10 @@ export type ShapeComponentData = ComponentData & {
   sides: number;
 };
 
+export type TextComponentData = ComponentData & {
+  value: string;
+};
+
 export type Component = BaseDetails & {
   windowId?: string;
   type: string;

@@ -1,8 +1,11 @@
 import { useComponents, type ComponentUpdate } from '@/lib/compass-api';
 import { SheetEditor } from '@/lib/compass-planes/sheet-editor';
+import { colorPrimary, colorWhite } from '@/palette';
 import { WindowEditorProvider } from '@/stores';
 import type { Component } from '@/types';
 import { debugLog } from '@/utils';
+import { Eye } from 'lucide-react';
+import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { ComponentEditPanel } from './component-edit-panel';
 
@@ -13,6 +16,7 @@ export const WindowEditor = () => {
   const { components, createComponent, updateComponents, deleteComponent } =
     useComponents(windowId);
 
+  const [viewMode, setViewMode] = useState<boolean>(false);
   const getComponent = (id: string) => components.find((c) => c.id === id) ?? null;
 
   const onComponentsUpdated = (updates: Array<ComponentUpdate>) => {
@@ -40,7 +44,7 @@ export const WindowEditor = () => {
   if (!windowId) return null;
 
   return (
-    <WindowEditorProvider value={{ components, getComponent }}>
+    <WindowEditorProvider value={{ components, getComponent, viewMode }}>
       <div className='flex flex-col' style={{ overflow: 'hidden' }}>
         <SheetEditor
           components={components}
@@ -49,6 +53,16 @@ export const WindowEditor = () => {
           onComponentsUpdated={onComponentsUpdated}
         />
       </div>
+      <Eye
+        className='clickable'
+        onClick={() => setViewMode((prev) => !prev)}
+        style={{
+          position: 'absolute',
+          left: 65,
+          bottom: 30,
+          color: viewMode ? colorPrimary : colorWhite,
+        }}
+      />
       <ComponentEditPanel />
     </WindowEditorProvider>
   );

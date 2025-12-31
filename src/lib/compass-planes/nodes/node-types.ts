@@ -1,18 +1,7 @@
 export enum ComponentTypes {
   SHAPE = 'shape',
+  TEXT = 'text',
 }
-
-export type ComponentData = {
-  conditionalRenderAttributeId?: string;
-  conditionalRenderInverse?: boolean;
-  actionId?: string;
-  pageId?: string | null;
-  announcementId?: string | null;
-};
-
-export type ShapeComponentData = ComponentData & {
-  sides: number;
-};
 
 export type SheetComponentType = {
   type: ComponentTypes;

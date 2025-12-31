@@ -1,4 +1,4 @@
-import { Input, Tooltip } from '@/components';
+import { Input } from '@/components';
 import type { Coordinates } from '@/types';
 import { useKeyListeners } from '@/utils';
 import { useViewport } from '@xyflow/react';
@@ -104,15 +104,13 @@ export const ContextMenu = ({
         {!filteredOptions.length && <p style={{ fontStyle: 'italic' }}>No options found</p>}
         {filteredOptions.map((option, i) => (
           <div key={i}>
-            <Tooltip key={i}>
-              <p
-                className='clickable'
-                onClick={() => {
-                  handleSelect(option);
-                }}>
-                {option.name}
-              </p>
-            </Tooltip>
+            <p
+              className='clickable'
+              onClick={() => {
+                handleSelect(option);
+              }}>
+              {option.name}
+            </p>
           </div>
         ))}
       </div>
