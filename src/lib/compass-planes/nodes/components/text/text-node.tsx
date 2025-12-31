@@ -6,7 +6,7 @@ import {
 import { WindowEditorContext } from '@/stores';
 import type { Component, TextComponentData } from '@/types';
 import { useNodeId } from '@xyflow/react';
-import { useContext } from 'react';
+import { useContext, useEffect, useRef, useState } from 'react';
 import { ResizableNode } from '../../decorators';
 
 /*
@@ -18,6 +18,9 @@ While the node is an input, the enter key should update the component, switch ba
 export const EditTextNode = () => {
   const { getComponent, updateComponent } = useContext(WindowEditorContext);
   const id = useNodeId();
+  const [isEditing, setIsEditing] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
   if (!id) return null;
   const component = getComponent(id);
   if (!component) return null;
@@ -25,14 +28,24 @@ export const EditTextNode = () => {
   const data = getComponentData(component) as TextComponentData;
   const css = getComponentStyles(component);
 
-  const handleToggleLock = () => {
-    const locked = !component.locked;
-    updateComponent(id, {
-      locked,
-    });
-    fireExternalComponentChangeEvent({
-      updates: [{ id, locked }],
-    });
+  // Focus input when entering edit mode
+  useEffect(() => {
+    if (isEditing && inputRef.current) {
+      inputRef.current.focus();
+      inputRef.current.select();
+    }
+  }, [isEditing]);
+
+  const handleDoubleClick = () => {
+    if (!component.locked) {
+      updateComponent(id, {
+        locked: true,
+      });
+      fireExternalComponentChangeEvent({
+        updates: [{ id, locked: true }],
+      });
+      setIsEditing(true);
+    }
   };
 
   const handleUpdate = (value: string) => {
@@ -50,9 +63,53 @@ export const EditTextNode = () => {
     });
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      const value = e.currentTarget.value;
+      handleUpdate(value);
+      setIsEditing(false);
+      updateComponent(id, {
+        locked: false,
+      });
+      fireExternalComponentChangeEvent({
+        updates: [{ id, locked: false }],
+      });
+    }
+  };
+
   return (
     <ResizableNode component={component}>
-      <span>{data.value}</span>
+      {isEditing ? (
+        <input
+          ref={inputRef}
+          type='text'
+          defaultValue={data.value}
+          onKeyDown={handleKeyDown}
+          style={{
+            ...css,
+            background: 'transparent',
+            border: 'none',
+            outline: 'none',
+            padding: 0,
+            margin: 0,
+            width: '100%',
+            height: '100%',
+            font: 'inherit',
+            color: 'inherit',
+          }}
+        />
+      ) : (
+        <section
+          style={{
+            height: component.height,
+            width: component.width,
+            display: 'flex',
+          }}>
+          <span onDoubleClick={handleDoubleClick} style={css}>
+            {data.value}
+          </span>
+        </section>
+      )}
     </ResizableNode>
   );
 };

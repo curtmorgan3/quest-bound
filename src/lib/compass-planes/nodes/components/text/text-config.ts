@@ -38,8 +38,8 @@ const DEFAULT_TEXT_STYLES: ComponentStyle = {
 
 export const DEFAULT_TEXT: Partial<Component> = {
   z: 1,
-  height: 40,
-  width: 100,
+  height: DEFAULT_GRID_SIZE,
+  width: DEFAULT_GRID_SIZE * 6,
   rotation: 0,
   data: JSON.stringify(DEFAULT_TEXT_DATA),
   style: JSON.stringify(DEFAULT_TEXT_STYLES),
