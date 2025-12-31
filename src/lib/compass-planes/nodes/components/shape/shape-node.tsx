@@ -5,7 +5,7 @@ import { useContext } from 'react';
 import { getComponentData, getComponentStyles } from '../../../utils';
 import { ResizableNode } from '../../decorators';
 
-export const ShapeNode = () => {
+export const EditShapeNode = () => {
   const { getComponent } = useContext(WindowEditorContext);
 
   const id = useNodeId();
@@ -15,12 +15,12 @@ export const ShapeNode = () => {
   if (!component) return null;
   return (
     <ResizableNode component={component}>
-      <PrimitiveShapeNode component={component} />
+      <ViewShapeNode component={component} />
     </ResizableNode>
   );
 };
 
-export const PrimitiveShapeNode = ({ component }: { component: Component }) => {
+export const ViewShapeNode = ({ component }: { component: Component }) => {
   const data = getComponentData(component) as ShapeComponentData;
   const css = getComponentStyles(component);
   const outlineWidth = Math.max(0, css.outlineWidth);

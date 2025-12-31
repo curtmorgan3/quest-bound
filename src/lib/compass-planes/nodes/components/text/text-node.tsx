@@ -5,7 +5,7 @@ import { useNodeId } from '@xyflow/react';
 import { useContext } from 'react';
 import { ResizableNode } from '../../decorators';
 
-export const TextNode = () => {
+export const EditTextNode = () => {
   const { getComponent } = useContext(WindowEditorContext);
   const id = useNodeId();
   if (!id) return null;
@@ -14,17 +14,14 @@ export const TextNode = () => {
 
   return (
     <ResizableNode component={component}>
-      <PrimitiveTextNode component={component} />
+      <ViewTextNode component={component} />
     </ResizableNode>
   );
 };
 
-export const PrimitiveTextNode = ({ component }: { component: Component }) => {
+export const ViewTextNode = ({ component }: { component: Component }) => {
   const data = getComponentData(component) as TextComponentData;
   const css = getComponentStyles(component);
-  const textValue = data.value;
 
-  console.log(css, textValue);
-
-  return <span>Text</span>;
+  return <span style={css}>{data.value}</span>;
 };
