@@ -1,5 +1,5 @@
 import { useComponents, type ComponentUpdate } from '@/lib/compass-api';
-import { SheetEditor } from '@/lib/compass-planes/sheet-editor';
+import { SheetEditor, SheetViewer } from '@/lib/compass-planes';
 import { colorPrimary, colorWhite } from '@/palette';
 import { WindowEditorProvider } from '@/stores';
 import type { Component } from '@/types';
@@ -46,12 +46,16 @@ export const WindowEditor = () => {
   return (
     <WindowEditorProvider value={{ viewMode, components, getComponent, updateComponent }}>
       <div className='flex flex-col' style={{ overflow: 'hidden' }}>
-        <SheetEditor
-          components={components}
-          onComponentsCreated={onComponentsCreated}
-          onComponentsDeleted={onComponentsDeleted}
-          onComponentsUpdated={onComponentsUpdated}
-        />
+        {viewMode ? (
+          <SheetViewer windowIds={[windowId]} />
+        ) : (
+          <SheetEditor
+            components={components}
+            onComponentsCreated={onComponentsCreated}
+            onComponentsDeleted={onComponentsDeleted}
+            onComponentsUpdated={onComponentsUpdated}
+          />
+        )}
       </div>
       <Eye
         className='clickable'
