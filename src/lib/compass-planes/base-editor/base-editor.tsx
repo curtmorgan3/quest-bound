@@ -10,8 +10,9 @@ interface BaseEditorProps extends ReactFlowProps {
   nodes: Node[];
   onNodesChange: (change: NodeChange<any>[]) => void;
   renderContextMenu?: boolean;
-  menuOptions: EditorMenuOption[];
-  onSelectFromMenu: (option: EditorMenuOption, coordinates: Coordinates) => void;
+  menuOptions?: EditorMenuOption[];
+  onSelectFromMenu?: (option: EditorMenuOption, coordinates: Coordinates) => void;
+  useGrid?: boolean;
 }
 
 export function BaseEditor({
@@ -20,6 +21,7 @@ export function BaseEditor({
   renderContextMenu = true,
   menuOptions,
   onSelectFromMenu,
+  useGrid = true,
   ...props
 }: BaseEditorProps) {
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
@@ -43,7 +45,7 @@ export function BaseEditor({
         minZoom={1}
         maxZoom={1}
         snapGrid={[20, 20]}
-        snapToGrid
+        snapToGrid={useGrid}
         multiSelectionKeyCode={'Shift'}
         selectionKeyCode={'Meta'}
         fitView={false}
@@ -61,20 +63,22 @@ export function BaseEditor({
         ]}
         selectNodesOnDrag={false}
         {...props}>
-        <Background
-          id='bg-grid'
-          variant={BackgroundVariant.Lines}
-          gap={20}
-          size={1}
-          style={{
-            opacity: 0.1,
-          }}
-        />
+        {useGrid && (
+          <Background
+            id='bg-grid'
+            variant={BackgroundVariant.Lines}
+            gap={20}
+            size={1}
+            style={{
+              opacity: 0.1,
+            }}
+          />
+        )}
         {renderContextMenu && (
           <ContextMenu
             isOpen={!!contextMenu}
-            options={menuOptions}
-            onSelect={onSelectFromMenu}
+            options={menuOptions ?? []}
+            onSelect={(...args) => onSelectFromMenu?.(...args)}
             onClose={() => {
               setContextMenu(null);
             }}

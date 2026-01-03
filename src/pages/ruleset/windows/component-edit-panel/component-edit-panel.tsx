@@ -5,7 +5,7 @@ import { ActionEdit } from './action-edit';
 import { PositionEdit } from './position-edit';
 import { StyleEdit } from './style-edit';
 
-export const ComponentEditPanel = () => {
+export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
   const { windowId } = useParams();
   const { components, updateComponents } = useComponents(windowId);
   let selectedComponents = components.filter((c) => c.selected);
@@ -65,6 +65,8 @@ export const ComponentEditPanel = () => {
       updateComponents(updated);
     }
   };
+
+  if (viewMode) return null;
 
   return (
     <div

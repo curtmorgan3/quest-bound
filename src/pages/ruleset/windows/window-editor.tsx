@@ -47,7 +47,7 @@ export const WindowEditor = () => {
     <WindowEditorProvider value={{ viewMode, components, getComponent, updateComponent }}>
       <div className='flex flex-col' style={{ overflow: 'hidden' }}>
         {viewMode ? (
-          <SheetViewer windowIds={[windowId]} />
+          <SheetViewer windowIds={[windowId]} testMode />
         ) : (
           <SheetEditor
             components={components}
@@ -67,7 +67,7 @@ export const WindowEditor = () => {
           color: viewMode ? colorPrimary : colorWhite,
         }}
       />
-      <ComponentEditPanel />
+      <ComponentEditPanel viewMode={viewMode} />
     </WindowEditorProvider>
   );
 };
