@@ -1,10 +1,12 @@
 import { useComponents, useWindows } from '@/lib/compass-api';
 import { ViewShapeNode, ViewTextNode } from '@/lib/compass-planes/nodes/components';
 import { ComponentTypes } from '@/lib/compass-planes/nodes/node-types';
+import { colorPaper } from '@/palette';
 import type { Component, Window } from '@/types';
 import type { Node, NodeChange } from '@xyflow/react';
 import { applyNodeChanges, ReactFlow } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
+import { OctagonX } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 
 interface SheetViewerProps {
@@ -13,13 +15,12 @@ interface SheetViewerProps {
 
 interface WindowNodeData {
   window: Window;
+  onClose: (id: string) => void;
 }
 
 const WindowNode = ({ data }: { data: WindowNodeData }) => {
-  const { window } = data;
+  const { window, onClose } = data;
   const { components } = useComponents(window.id);
-
-  console.log(window, components);
 
   const renderComponent = (component: Component) => {
     switch (component.type) {
@@ -32,47 +33,70 @@ const WindowNode = ({ data }: { data: WindowNodeData }) => {
     }
   };
 
-  // Calculate window size based on components
+  // Calculate offsets based on leftmost and topmost components
+  const minX = useMemo(() => {
+    if (components.length === 0) return 0;
+    return Math.min(...components.map((c) => c.x));
+  }, [components]);
+
+  const minY = useMemo(() => {
+    if (components.length === 0) return 0;
+    return Math.min(...components.map((c) => c.y));
+  }, [components]);
+
+  // Calculate window size based on components (adjusted for offsets)
   const windowWidth = useMemo(() => {
     if (components.length === 0) return 400;
     const maxX = Math.max(...components.map((c) => c.x + c.width));
-    return Math.max(400, maxX + 40); // Add padding
-  }, [components]);
+    const adjustedMaxX = maxX - minX;
+    return adjustedMaxX;
+  }, [components, minX]);
 
   const windowHeight = useMemo(() => {
     if (components.length === 0) return 300;
-    const maxY = Math.max(...components.map((c) => c.y + c.height));
-    return Math.max(300, maxY + 60); // Add padding for header
-  }, [components]);
+    return Math.max(...components.map((c) => c.y - minY + c.height));
+  }, [components, minY]);
 
   return (
     <div
       className='window-node'
       style={{
         width: windowWidth,
-        height: windowHeight,
-        padding: 20,
-        border: '1px solid #000',
-        borderRadius: 8,
+        height: windowHeight + 20,
         position: 'relative',
         display: 'flex',
         flexDirection: 'column',
       }}>
       <div
         style={{
+          height: '20px',
+          width: '100%',
+          backgroundColor: colorPaper,
+          borderRadius: '8px 8px 0 0',
+          display: 'flex',
+          justifyContent: 'flex-end',
+          padding: '0 4px 0 4px',
+        }}>
+        <OctagonX
+          style={{ width: '20px', height: '20px' }}
+          className='clickable'
+          onClick={() => onClose(window.id)}
+        />
+      </div>
+      <div
+        style={{
           position: 'relative',
           flex: 1,
           width: '100%',
-          height: '100%',
-          minHeight: windowHeight - 60,
+          height: windowHeight,
         }}>
         {components.map((component) => (
           <div
             key={component.id}
             style={{
               position: 'absolute',
-              left: component.x,
-              top: component.y,
+              left: component.x - minX,
+              top: component.y - minY,
               width: component.width,
               height: component.height,
               zIndex: component.z,
@@ -97,6 +121,18 @@ export const SheetViewer = ({ windowIds }: SheetViewerProps) => {
   // State for which windows are open (not minimized)
   const [openWindows, setOpenWindows] = useState<Set<string>>(new Set());
 
+  const toggleWindow = (windowId: string) => {
+    setOpenWindows((prev) => {
+      const next = new Set(prev);
+      if (next.has(windowId)) {
+        next.delete(windowId);
+      } else {
+        next.add(windowId);
+      }
+      return next;
+    });
+  };
+
   function convertWindowsToNode(windows: Window[]): Node[] {
     return windows.map((window, index) => {
       const position = { x: index * 450, y: index * 50 };
@@ -109,6 +145,9 @@ export const SheetViewer = ({ windowIds }: SheetViewerProps) => {
         selectable: false,
         data: {
           window,
+          onClose: (id: string) => {
+            toggleWindow(id);
+          },
         },
       };
     });
@@ -122,18 +161,6 @@ export const SheetViewer = ({ windowIds }: SheetViewerProps) => {
 
   const onNodesChange = (changes: NodeChange[]) => {
     setNodes((prev) => applyNodeChanges(changes, prev));
-  };
-
-  const toggleWindow = (windowId: string) => {
-    setOpenWindows((prev) => {
-      const next = new Set(prev);
-      if (next.has(windowId)) {
-        next.delete(windowId);
-      } else {
-        next.add(windowId);
-      }
-      return next;
-    });
   };
 
   return (
