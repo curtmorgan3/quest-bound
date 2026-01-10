@@ -20,7 +20,7 @@ export const EditImageNode = () => {
   const css = getComponentStyles(component);
   const asset = assets.find((a) => a.id === data.assetId);
 
-  const imageSrc = asset?.data;
+  const imageSrc = asset?.data ?? data.assetUrl;
 
   return (
     <ResizableNode component={component}>
@@ -73,7 +73,7 @@ export const ViewImageNode = ({ component }: { component: Component }) => {
 
   const asset = assets.find((a) => a.id === data.assetId);
 
-  const imageSrc = asset?.data;
+  const imageSrc = asset?.data ?? data.assetUrl;
 
   if (!imageSrc) {
     return null;

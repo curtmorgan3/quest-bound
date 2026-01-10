@@ -1,14 +1,14 @@
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { useAssets, type ComponentUpdate } from '@/lib/compass-api';
 import {
   fireExternalComponentChangeEvent,
   getComponentData,
-  getComponentStyles,
   updateComponentData,
 } from '@/lib/compass-planes/utils';
 import type { Component, ImageComponentData } from '@/types';
 import { Trash } from 'lucide-react';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 interface ImageDataEditProps {
   components: Array<Component>;
@@ -25,9 +25,21 @@ export const ImageDataEdit = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [isRemoving, setIsRemoving] = useState(false);
+  const [urlValue, setUrlValue] = useState('');
 
   // Filter out locked components (handleUpdate does this too, but we need it for UI state)
   const editableComponents = components.filter((c) => !c.locked);
+
+  // Get the assetUrl from the first component for display
+  const firstComponentData = components[0]
+    ? (getComponentData(components[0]) as ImageComponentData)
+    : null;
+  const currentAssetUrl = firstComponentData?.assetUrl || '';
+
+  // Sync URL value when components change
+  useEffect(() => {
+    setUrlValue(currentAssetUrl);
+  }, [currentAssetUrl]);
 
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -41,7 +53,7 @@ export const ImageDataEdit = ({
           const assetId = await createAsset(file);
           return {
             id: component.id,
-            data: updateComponentData(component.data, { assetId }),
+            data: updateComponentData(component.data, { assetId, assetUrl: undefined }),
           };
         }),
       );
@@ -93,11 +105,17 @@ export const ImageDataEdit = ({
       // Create updates for all editable components
       const updates = editableComponents.map((component) => ({
         id: component.id,
-        data: updateComponentData(component.data, { assetId: undefined }),
+        data: updateComponentData(component.data, {
+          assetId: undefined,
+          assetUrl: undefined,
+        }),
       }));
 
-      // Update components through handleUpdate (it will filter locked components)
-      handleUpdate('assetId', null);
+      // Update components
+      await updateComponents(updates);
+
+      // Clear URL input
+      setUrlValue('');
 
       // Fire external change event for synchronization
       fireExternalComponentChangeEvent({
@@ -110,8 +128,28 @@ export const ImageDataEdit = ({
     }
   };
 
+  const handleUrlBlur = async () => {
+    if (editableComponents.length === 0) return;
+
+    const urlToSave = urlValue.trim() || undefined;
+
+    // Create updates for all editable components
+    const updates = editableComponents.map((component) => ({
+      id: component.id,
+      data: updateComponentData(component.data, { assetUrl: urlToSave }),
+    }));
+
+    // Update components
+    await updateComponents(updates);
+
+    // Fire external change event for synchronization
+    fireExternalComponentChangeEvent({
+      updates,
+    });
+  };
+
   // Show the first component's asset as preview
-  const currentAssetId = (getComponentStyles(components[0]) as ImageComponentData)?.assetId;
+  const currentAssetId = firstComponentData?.assetId;
   const currentAsset = currentAssetId ? assets.find((a) => a.id === currentAssetId) : null;
   const hasAsset = editableComponents.some(
     (c) => (getComponentData(c) as ImageComponentData).assetId,
@@ -132,6 +170,19 @@ export const ImageDataEdit = ({
       )}
 
       <div className='w-full flex flex-col gap-2'>
+        <div className='flex flex-col gap-1'>
+          <label className='text-xs text-muted-foreground'>Image URL</label>
+          <Input
+            type='url'
+            placeholder='https://example.com/image.jpg'
+            value={urlValue}
+            onChange={(e) => setUrlValue(e.target.value)}
+            onBlur={handleUrlBlur}
+            disabled={editableComponents.length === 0 || isUploading || isRemoving}
+            onKeyDown={(e) => e.stopPropagation()}
+          />
+        </div>
+
         <Button
           onClick={handleButtonClick}
           disabled={editableComponents.length === 0 || isUploading || isRemoving}
