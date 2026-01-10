@@ -288,7 +288,6 @@ export const useImportRuleset = () => {
       };
 
       const allErrors: string[] = [];
-      const windowIdMap = new Map<string, string>(); // Map old windowId to new windowId
 
       // Import attributes
       const attributesFile = zipContent.file('attributes.json');
