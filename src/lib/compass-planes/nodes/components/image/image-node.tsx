@@ -80,9 +80,10 @@ export const EditImageNode = () => {
             src={imageSrc}
             alt=''
             style={{
-              maxWidth: '100%',
-              maxHeight: '100%',
-              objectFit: 'contain',
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+              borderRadius: css.borderRadius,
             }}
           />
         ) : (
@@ -135,7 +136,7 @@ export const ViewImageNode = ({ component }: { component: Component }) => {
         width: `${component.width}px`,
         maxWidth: '100%',
         maxHeight: '100%',
-        objectFit: 'contain',
+        objectFit: 'cover',
         ...css,
       }}
     />
