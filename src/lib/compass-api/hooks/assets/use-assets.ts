@@ -1,14 +1,17 @@
 import { db } from '@/stores';
 import type { Asset } from '@/types';
 import { useLiveQuery } from 'dexie-react-hooks';
+import { useParams } from 'react-router-dom';
 
-export const useAssets = (rulesetId?: string) => {
+export const useAssets = (_rulesetId?: string) => {
+  const { rulesetId: paramRulesetId } = useParams();
+  const rulesetId = _rulesetId ?? paramRulesetId;
+
   // Get all assets for the current ruleset
-  const assets =
-    useLiveQuery(
-      () => (rulesetId ? db.assets.where('rulesetId').equals(rulesetId).toArray() : []),
-      [rulesetId],
-    ) || [];
+  const assets = useLiveQuery(
+    () => (rulesetId ? db.assets.where('rulesetId').equals(rulesetId).toArray() : []),
+    [rulesetId],
+  );
 
   const createAsset = async (
     file: File,
@@ -64,7 +67,7 @@ export const useAssets = (rulesetId?: string) => {
   };
 
   return {
-    assets,
+    assets: assets ?? ([] as Asset[]),
     createAsset,
     createDirectory,
     deleteAsset,

@@ -98,7 +98,14 @@ export const useComponents = (windowId?: string) => {
 
   const deleteComponent = async (id: string) => {
     try {
-      await db.components.delete(id);
+      const component = await db.components.get(id);
+
+      if (component) {
+        if (component.assetId) {
+          await db.assets.delete(component.assetId);
+        }
+        await db.components.delete(id);
+      }
     } catch (e) {
       handleError(e as Error, {
         component: 'useComponents/deleteComponent',

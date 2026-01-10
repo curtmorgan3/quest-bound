@@ -1,13 +1,21 @@
 import type { NodeTypes } from '@xyflow/react';
-import { EditShapeNode, EditTextNode, shapeConfig, textConfig } from './components';
+import {
+  EditImageNode,
+  EditShapeNode,
+  EditTextNode,
+  imageConfig,
+  shapeConfig,
+  textConfig,
+} from './components';
 import { ComponentTypes, type SheetComponentType } from './node-types';
 
 export const sheetNodeTypes: NodeTypes = {
   [ComponentTypes.SHAPE]: EditShapeNode,
   [ComponentTypes.TEXT]: EditTextNode,
+  [ComponentTypes.IMAGE]: EditImageNode,
 };
 
-export const baseComponentTypes: SheetComponentType[] = [shapeConfig, textConfig];
+export const baseComponentTypes: SheetComponentType[] = [shapeConfig, textConfig, imageConfig];
 
 export const componentTypes = [...baseComponentTypes];
 

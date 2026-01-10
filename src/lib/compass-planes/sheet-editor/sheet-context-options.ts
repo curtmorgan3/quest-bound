@@ -1,6 +1,6 @@
 import { ComponentTypes, getComponentType, type EditorMenuOption } from '../nodes';
 
-const includedComponents = [ComponentTypes.SHAPE, ComponentTypes.TEXT];
+const includedComponents = [ComponentTypes.SHAPE, ComponentTypes.TEXT, ComponentTypes.IMAGE];
 
 export const contextOptions: EditorMenuOption[] = includedComponents.map((component) => ({
   nodeType: component,

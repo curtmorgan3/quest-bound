@@ -1,6 +1,7 @@
 export enum ComponentTypes {
   SHAPE = 'shape',
   TEXT = 'text',
+  IMAGE = 'image',
 }
 
 export type SheetComponentType = {

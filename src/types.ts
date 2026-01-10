@@ -120,7 +120,12 @@ export type TextComponentData = ComponentData & {
   value: string;
 };
 
+export type ImageComponentData = ComponentData & {
+  assetId?: string;
+};
+
 export type Component = BaseDetails & {
+  rulesetId: string;
   windowId: string;
   type: string;
   x: number;
