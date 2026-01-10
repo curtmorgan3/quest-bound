@@ -31,6 +31,22 @@ export const useExportRuleset = (rulesetId: string) => {
     [rulesetId],
   );
 
+  const windows = useLiveQuery(
+    () => (rulesetId ? db.windows.where('rulesetId').equals(rulesetId).toArray() : []),
+    [rulesetId],
+  );
+
+  const components = useLiveQuery(
+    async () => {
+      if (!rulesetId) return [];
+      const rulesetWindows = await db.windows.where('rulesetId').equals(rulesetId).toArray();
+      const windowIds = rulesetWindows.map((w) => w.id);
+      if (windowIds.length === 0) return [];
+      return db.components.where('windowId').anyOf(windowIds).toArray();
+    },
+    [rulesetId],
+  );
+
   const assets = useLiveQuery(
     () => (rulesetId ? db.assets.where('rulesetId').equals(rulesetId).toArray() : []),
     [rulesetId],
@@ -42,6 +58,8 @@ export const useExportRuleset = (rulesetId: string) => {
     actions === undefined ||
     items === undefined ||
     charts === undefined ||
+    windows === undefined ||
+    components === undefined ||
     assets === undefined;
 
   const exportRuleset = async (): Promise<void> => {
@@ -70,6 +88,8 @@ export const useExportRuleset = (rulesetId: string) => {
           actions: actions?.length || 0,
           items: items?.length || 0,
           charts: charts?.length || 0,
+          windows: windows?.length || 0,
+          components: components?.length || 0,
           assets: assets?.length || 0,
         },
       };
@@ -93,9 +113,17 @@ export const useExportRuleset = (rulesetId: string) => {
         zip.file('charts.json', JSON.stringify(charts, null, 2));
       }
 
+      if (windows && windows.length > 0) {
+        zip.file('windows.json', JSON.stringify(windows, null, 2));
+      }
+
+      if (components && components.length > 0) {
+        zip.file('components.json', JSON.stringify(components, null, 2));
+      }
+
       if (assets && assets.length > 0) {
         zip.file('assets.json', JSON.stringify(assets, null, 2));
-        
+
         // Also bundle assets as individual files in an "assets" folder
         const assetsFolder = zip.folder('assets');
         if (assetsFolder) {
@@ -107,11 +135,11 @@ export const useExportRuleset = (rulesetId: string) => {
             for (let i = 0; i < binaryData.length; i++) {
               uint8Array[i] = binaryData.charCodeAt(i);
             }
-            
+
             // Use the original filename or generate one based on asset ID and type
             const fileExtension = asset.type.split('/')[1] || 'bin';
             const filename = asset.filename || `asset_${asset.id}.${fileExtension}`;
-            
+
             // Determine the target folder based on asset.directory
             let targetFolder = assetsFolder;
             if (asset.directory) {
@@ -119,9 +147,11 @@ export const useExportRuleset = (rulesetId: string) => {
               // Handle both single-level and multi-level directory paths
               const directoryPath = asset.directory.replace(/^\/+|\/+$/g, ''); // Remove leading/trailing slashes
               if (directoryPath) {
-                const pathSegments = directoryPath.split('/').filter(segment => segment.length > 0);
+                const pathSegments = directoryPath
+                  .split('/')
+                  .filter((segment) => segment.length > 0);
                 let currentFolder = assetsFolder;
-                
+
                 // Create nested folders for each path segment
                 for (const segment of pathSegments) {
                   const existingFolder = currentFolder.folder(segment);
@@ -136,7 +166,7 @@ export const useExportRuleset = (rulesetId: string) => {
                 targetFolder = currentFolder;
               }
             }
-            
+
             targetFolder.file(filename, uint8Array);
           });
         }
@@ -154,6 +184,8 @@ This zip file contains a complete export of the "${ruleset.title}" ruleset from 
 - \`actions.json\` - All actions defined in this ruleset  
 - \`items.json\` - All items defined in this ruleset
 - \`charts.json\` - All charts defined in this ruleset
+- \`windows.json\` - All windows defined in this ruleset
+- \`components.json\` - All components defined in this ruleset
 - \`assets.json\` - All assets metadata defined in this ruleset
 - \`assets/\` - Directory containing all asset files organized by their directory structure
 
@@ -209,6 +241,8 @@ For more information about Quest Bound, visit the application documentation.
     actions: actions || [],
     items: items || [],
     charts: charts || [],
+    windows: windows || [],
+    components: components || [],
     isLoading,
     isExporting,
     exportRuleset,

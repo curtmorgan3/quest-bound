@@ -40,7 +40,7 @@ db.version(1).stores({
   items: `${common}, &[rulesetId+title], description, category, weight, defaultQuantity, stackSize, isContainer, isStorable, isEquippable, isConsumable, inventoryWidth, inventoryHeight`,
   charts: `${common}, &[rulesetId+title], description, category, data`,
   windows: `${common}, &[rulesetId+title], category`,
-  components: `${common}, windowId, type, x, y, z, height, width, rotation, selected, assetId, image, groupId, attributeId, actionId, data, style`,
+  components: `${common}, rulesetId, windowId, type, x, y, z, height, width, rotation, selected, assetId, image, groupId, attributeId, actionId, data, style`,
 });
 
 // Cache assets for reference in the asset injector middleware

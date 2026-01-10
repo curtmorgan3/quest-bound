@@ -121,7 +121,7 @@ export type TextComponentData = ComponentData & {
 };
 
 export type Component = BaseDetails & {
-  windowId?: string;
+  windowId: string;
   type: string;
   x: number;
   y: number;

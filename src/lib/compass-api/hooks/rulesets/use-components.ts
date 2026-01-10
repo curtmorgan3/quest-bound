@@ -2,11 +2,13 @@ import { useErrorHandler } from '@/hooks';
 import { db } from '@/stores';
 import type { Component } from '@/types';
 import { useLiveQuery } from 'dexie-react-hooks';
+import { useRulesets } from './use-rulesets';
 
 export type ComponentUpdate = { id: string } & Partial<Component>;
 
 export const useComponents = (windowId?: string) => {
   const { handleError } = useErrorHandler();
+  const { activeRuleset } = useRulesets();
 
   const components = useLiveQuery(
     () =>
@@ -18,11 +20,12 @@ export const useComponents = (windowId?: string) => {
   );
 
   const createComponent = async (data: Partial<Component>) => {
-    if (!windowId) return;
+    if (!windowId || !activeRuleset) return;
     const now = new Date().toISOString();
     try {
       await db.components.add({
         id: data.id || crypto.randomUUID(),
+        rulesetId: activeRuleset.id,
         windowId,
         createdAt: now,
         updatedAt: now,
@@ -37,6 +40,7 @@ export const useComponents = (windowId?: string) => {
   };
 
   const createComponents = async (data: Array<Partial<Component>>) => {
+    if (!activeRuleset) return;
     const now = new Date().toISOString();
     try {
       await db.components.bulkAdd(
@@ -44,6 +48,7 @@ export const useComponents = (windowId?: string) => {
           (comp) =>
             ({
               id: comp.id || crypto.randomUUID(),
+              rulesetId: activeRuleset.id,
               createdAt: now,
               updatedAt: now,
               ...comp,

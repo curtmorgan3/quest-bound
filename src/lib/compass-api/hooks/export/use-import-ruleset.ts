@@ -1,6 +1,6 @@
 import { useErrorHandler } from '@/hooks';
 import { db } from '@/stores';
-import type { Action, Asset, Attribute, Chart, Item, Ruleset } from '@/types';
+import type { Action, Asset, Attribute, Chart, Component, Item, Ruleset, Window } from '@/types';
 import JSZip from 'jszip';
 import { useState } from 'react';
 import { useRulesets } from '../rulesets';
@@ -14,6 +14,8 @@ export interface ImportRulesetResult {
     actions: number;
     items: number;
     charts: number;
+    windows: number;
+    components: number;
     assets: number;
   };
   errors: string[];
@@ -41,6 +43,8 @@ interface ImportedMetadata {
     actions: number;
     items: number;
     charts: number;
+    windows: number;
+    components: number;
     assets: number;
   };
 }
@@ -75,7 +79,7 @@ export const useImportRuleset = () => {
 
   const validateData = (
     data: any[],
-    type: 'attributes' | 'actions' | 'items' | 'charts' | 'assets',
+    type: 'attributes' | 'actions' | 'items' | 'charts' | 'windows' | 'components' | 'assets',
   ): { isValid: boolean; errors: string[] } => {
     const errors: string[] = [];
 
@@ -153,6 +157,39 @@ export const useImportRuleset = () => {
           }
           break;
 
+        case 'windows':
+          if (!item.title || typeof item.title !== 'string') {
+            errors.push(`${type} ${index + 1}: title is required and must be a string`);
+          }
+          break;
+
+        case 'components':
+          if (!item.windowId || typeof item.windowId !== 'string') {
+            errors.push(`${type} ${index + 1}: windowId is required and must be a string`);
+          }
+          if (!item.type || typeof item.type !== 'string') {
+            errors.push(`${type} ${index + 1}: type is required and must be a string`);
+          }
+          if (typeof item.x !== 'number') {
+            errors.push(`Component ${index + 1}: x must be a number`);
+          }
+          if (typeof item.y !== 'number') {
+            errors.push(`Component ${index + 1}: y must be a number`);
+          }
+          if (typeof item.z !== 'number') {
+            errors.push(`Component ${index + 1}: z must be a number`);
+          }
+          if (typeof item.height !== 'number') {
+            errors.push(`Component ${index + 1}: height must be a number`);
+          }
+          if (typeof item.width !== 'number') {
+            errors.push(`Component ${index + 1}: width must be a number`);
+          }
+          if (typeof item.rotation !== 'number') {
+            errors.push(`Component ${index + 1}: rotation must be a number`);
+          }
+          break;
+
         case 'assets':
           if (!item.data || typeof item.data !== 'string') {
             errors.push(`Asset ${index + 1}: data is required and must be a string`);
@@ -184,7 +221,15 @@ export const useImportRuleset = () => {
         return {
           success: false,
           message: 'Invalid zip file: metadata.json not found',
-          importedCounts: { attributes: 0, actions: 0, items: 0, charts: 0, assets: 0 },
+          importedCounts: {
+            attributes: 0,
+            actions: 0,
+            items: 0,
+            charts: 0,
+            windows: 0,
+            components: 0,
+            assets: 0,
+          },
           errors: ['metadata.json file is required'],
         };
       }
@@ -198,7 +243,15 @@ export const useImportRuleset = () => {
         return {
           success: false,
           message: `Metadata validation failed: ${metadataValidation.errors.length} errors found`,
-          importedCounts: { attributes: 0, actions: 0, items: 0, charts: 0, assets: 0 },
+          importedCounts: {
+            attributes: 0,
+            actions: 0,
+            items: 0,
+            charts: 0,
+            windows: 0,
+            components: 0,
+            assets: 0,
+          },
           errors: metadataValidation.errors,
         };
       }
@@ -229,10 +282,13 @@ export const useImportRuleset = () => {
         actions: 0,
         items: 0,
         charts: 0,
+        windows: 0,
+        components: 0,
         assets: 0,
       };
 
       const allErrors: string[] = [];
+      const windowIdMap = new Map<string, string>(); // Map old windowId to new windowId
 
       // Import attributes
       const attributesFile = zipContent.file('attributes.json');
@@ -354,6 +410,80 @@ export const useImportRuleset = () => {
         }
       }
 
+      // Import windows (must be imported before components since components reference windows)
+      const windowsFile = zipContent.file('windows.json');
+      if (windowsFile) {
+        try {
+          const windowsText = await windowsFile.async('text');
+          const windows: Window[] = JSON.parse(windowsText);
+
+          const validation = validateData(windows, 'windows');
+          if (validation.isValid) {
+            for (const window of windows) {
+              const oldWindowId = window.id;
+              const newWindowId = crypto.randomUUID();
+              const newWindow: Window = {
+                ...window,
+                id: newWindowId,
+                rulesetId: newRulesetId,
+                createdAt: now,
+                updatedAt: now,
+              };
+              await db.windows.add(newWindow);
+              windowIdMap.set(oldWindowId, newWindowId);
+              importedCounts.windows++;
+            }
+          } else {
+            allErrors.push(...validation.errors);
+          }
+        } catch (error) {
+          allErrors.push(
+            `Failed to import windows: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          );
+        }
+      }
+
+      // Import components (must be imported after windows to map windowIds)
+      const componentsFile = zipContent.file('components.json');
+      if (componentsFile) {
+        try {
+          const componentsText = await componentsFile.async('text');
+          const components: Component[] = JSON.parse(componentsText);
+
+          const validation = validateData(components, 'components');
+          if (validation.isValid) {
+            for (const component of components) {
+              // Map old windowId to new windowId
+              const newWindowId = component.windowId
+                ? windowIdMap.get(component.windowId)
+                : undefined;
+              if (!newWindowId && component.windowId) {
+                allErrors.push(
+                  `Component ${component.id}: windowId "${component.windowId}" not found in imported windows`,
+                );
+                continue;
+              }
+
+              const newComponent: Component = {
+                ...component,
+                id: crypto.randomUUID(),
+                windowId: newWindowId!,
+                createdAt: now,
+                updatedAt: now,
+              };
+              await db.components.add(newComponent);
+              importedCounts.components++;
+            }
+          } else {
+            allErrors.push(...validation.errors);
+          }
+        } catch (error) {
+          allErrors.push(
+            `Failed to import components: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          );
+        }
+      }
+
       // Import assets
       const assetsFile = zipContent.file('assets.json');
       if (assetsFile) {
@@ -389,6 +519,8 @@ export const useImportRuleset = () => {
         importedCounts.actions +
         importedCounts.items +
         importedCounts.charts +
+        importedCounts.windows +
+        importedCounts.components +
         importedCounts.assets;
 
       return {
@@ -407,7 +539,15 @@ export const useImportRuleset = () => {
       return {
         success: false,
         message: `Import failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        importedCounts: { attributes: 0, actions: 0, items: 0, charts: 0, assets: 0 },
+        importedCounts: {
+          attributes: 0,
+          actions: 0,
+          items: 0,
+          charts: 0,
+          windows: 0,
+          components: 0,
+          assets: 0,
+        },
         errors: [error instanceof Error ? error.message : 'Unknown error'],
       };
     } finally {

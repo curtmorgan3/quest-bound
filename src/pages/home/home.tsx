@@ -10,19 +10,13 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
-import {
-  useAssets,
-  useImportRuleset,
-  useRulesets,
-  type ImportRulesetResult,
-} from '@/lib/compass-api';
+import { useImportRuleset, useRulesets, type ImportRulesetResult } from '@/lib/compass-api';
 import { AlertCircle, CheckCircle, Upload } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 export const Home = () => {
   const { rulesets, createRuleset, deleteRuleset } = useRulesets();
-  const { bootstrapInitialRulesetAssets } = useAssets();
   const { importRuleset, isImporting } = useImportRuleset();
 
   const [title, setTitle] = useState('');
@@ -33,12 +27,10 @@ export const Home = () => {
   const navigate = useNavigate();
 
   const handleCreate = async () => {
-    const rulesetId = await createRuleset({
+    await createRuleset({
       title: title || 'New Ruleset',
       description,
     });
-
-    await bootstrapInitialRulesetAssets(rulesetId);
   };
 
   const handleImport = () => {

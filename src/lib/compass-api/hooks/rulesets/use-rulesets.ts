@@ -89,6 +89,7 @@ export const useRulesets = () => {
       await db.actions.where('rulesetId').equals(id).delete();
       await db.charts.where('rulesetId').equals(id).delete();
       await db.assets.where('rulesetId').equals(id).delete();
+      await db.windows.where('rulesetId').equals(id).delete();
       await db.components.where('rulesetId').equals(id).delete();
 
       if (activeRuleset?.id === id) {
