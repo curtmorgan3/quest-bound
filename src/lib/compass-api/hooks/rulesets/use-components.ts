@@ -1,6 +1,7 @@
 import { useErrorHandler } from '@/hooks';
+import { getComponentData } from '@/lib/compass-planes/utils';
 import { db } from '@/stores';
-import type { Component } from '@/types';
+import type { Component, ImageComponentData } from '@/types';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useRulesets } from './use-rulesets';
 
@@ -101,8 +102,9 @@ export const useComponents = (windowId?: string) => {
       const component = await db.components.get(id);
 
       if (component) {
-        if (component.assetId) {
-          await db.assets.delete(component.assetId);
+        const data = getComponentData(component) as ImageComponentData;
+        if (data.assetId) {
+          await db.assets.delete(data.assetId);
         }
         await db.components.delete(id);
       }
