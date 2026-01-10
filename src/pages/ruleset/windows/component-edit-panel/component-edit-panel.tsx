@@ -1,4 +1,7 @@
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useComponents } from '@/lib/compass-api';
+import { ComponentTypes } from '@/lib/compass-planes/nodes';
+import { ImageDataEdit } from '@/lib/compass-planes/nodes/components/image';
 import { colorBlack } from '@/palette';
 import { useParams } from 'react-router-dom';
 import { ActionEdit } from './action-edit';
@@ -68,16 +71,40 @@ export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
 
   if (viewMode) return null;
 
+  // Check if all selected components are image type
+  const allAreImages =
+    selectedComponents.length > 0 &&
+    selectedComponents.every((c) => c.type === ComponentTypes.IMAGE);
+
   return (
     <div
       className='w-[240px] h-[100vh] flex flex-col gap-2 items-center p-2'
       style={{ position: 'absolute', right: 0, backgroundColor: colorBlack }}>
       {selectedComponents.length > 0 ? (
-        <>
-          <PositionEdit components={selectedComponents} handleUpdate={handleUpdate} />
-          <StyleEdit components={selectedComponents} handleUpdate={handleStyleUpdate} />
-          <ActionEdit components={selectedComponents} handleUpdate={handleUpdate} />
-        </>
+        <Tabs defaultValue='style' className='w-full flex flex-col'>
+          <TabsList className='w-full'>
+            <TabsTrigger value='style' className='flex-1'>
+              Style
+            </TabsTrigger>
+            <TabsTrigger value='data' className='flex-1'>
+              Data
+            </TabsTrigger>
+          </TabsList>
+          <TabsContent value='style' className='w-full flex flex-col gap-2 mt-2'>
+            <ActionEdit components={selectedComponents} handleUpdate={handleUpdate} />
+            <PositionEdit components={selectedComponents} handleUpdate={handleUpdate} />
+            <StyleEdit components={selectedComponents} handleUpdate={handleStyleUpdate} />
+          </TabsContent>
+          <TabsContent value='data' className='w-full flex flex-col gap-2 mt-2'>
+            {allAreImages && (
+              <ImageDataEdit
+                components={selectedComponents}
+                handleUpdate={handleUpdate}
+                updateComponents={updateComponents}
+              />
+            )}
+          </TabsContent>
+        </Tabs>
       ) : (
         <p className='text-xs'>All selected components are locked</p>
       )}
