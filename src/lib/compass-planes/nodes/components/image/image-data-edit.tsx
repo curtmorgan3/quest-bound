@@ -188,7 +188,7 @@ export const ImageDataEdit = ({
           disabled={editableComponents.length === 0 || isUploading || isRemoving}
           variant='outline'
           className='w-full'>
-          {isUploading ? 'Uploading...' : 'Set Image Asset'}
+          {isUploading ? 'Uploading...' : 'Set Image'}
         </Button>
 
         {hasAsset && (

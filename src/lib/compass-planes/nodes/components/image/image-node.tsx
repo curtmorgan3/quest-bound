@@ -57,6 +57,7 @@ export const EditImageNode = () => {
               fontSize: '12px',
               textAlign: 'center',
               padding: '8px',
+              overflow: 'hidden',
             }}>
             No image set
           </div>

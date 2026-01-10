@@ -302,7 +302,6 @@ export const useImportRuleset = () => {
             for (const attribute of attributes) {
               const newAttribute: Attribute = {
                 ...attribute,
-                id: crypto.randomUUID(),
                 rulesetId: newRulesetId,
                 createdAt: now,
                 updatedAt: now,
@@ -332,7 +331,6 @@ export const useImportRuleset = () => {
             for (const action of actions) {
               const newAction: Action = {
                 ...action,
-                id: crypto.randomUUID(),
                 rulesetId: newRulesetId,
                 createdAt: now,
                 updatedAt: now,
@@ -362,7 +360,6 @@ export const useImportRuleset = () => {
             for (const item of items) {
               const newItem: Item = {
                 ...item,
-                id: crypto.randomUUID(),
                 rulesetId: newRulesetId,
                 createdAt: now,
                 updatedAt: now,
@@ -392,7 +389,6 @@ export const useImportRuleset = () => {
             for (const chart of charts) {
               const newChart: Chart = {
                 ...chart,
-                id: crypto.randomUUID(),
                 rulesetId: newRulesetId,
                 createdAt: now,
                 updatedAt: now,
@@ -420,17 +416,13 @@ export const useImportRuleset = () => {
           const validation = validateData(windows, 'windows');
           if (validation.isValid) {
             for (const window of windows) {
-              const oldWindowId = window.id;
-              const newWindowId = crypto.randomUUID();
               const newWindow: Window = {
                 ...window,
-                id: newWindowId,
                 rulesetId: newRulesetId,
                 createdAt: now,
                 updatedAt: now,
               };
               await db.windows.add(newWindow);
-              windowIdMap.set(oldWindowId, newWindowId);
               importedCounts.windows++;
             }
           } else {
@@ -453,21 +445,8 @@ export const useImportRuleset = () => {
           const validation = validateData(components, 'components');
           if (validation.isValid) {
             for (const component of components) {
-              // Map old windowId to new windowId
-              const newWindowId = component.windowId
-                ? windowIdMap.get(component.windowId)
-                : undefined;
-              if (!newWindowId && component.windowId) {
-                allErrors.push(
-                  `Component ${component.id}: windowId "${component.windowId}" not found in imported windows`,
-                );
-                continue;
-              }
-
               const newComponent: Component = {
                 ...component,
-                id: crypto.randomUUID(),
-                windowId: newWindowId!,
                 createdAt: now,
                 updatedAt: now,
               };
@@ -496,7 +475,6 @@ export const useImportRuleset = () => {
             for (const asset of assets) {
               const newAsset: Asset = {
                 ...asset,
-                id: crypto.randomUUID(),
                 rulesetId: newRulesetId,
                 createdAt: now,
                 updatedAt: now,
