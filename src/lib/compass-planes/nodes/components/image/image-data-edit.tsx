@@ -1,7 +1,12 @@
 import { Button } from '@/components/ui/button';
 import { useAssets, type ComponentUpdate } from '@/lib/compass-api';
-import { fireExternalComponentChangeEvent } from '@/lib/compass-planes/utils';
-import type { Component } from '@/types';
+import {
+  fireExternalComponentChangeEvent,
+  getComponentData,
+  getComponentStyles,
+  updateComponentData,
+} from '@/lib/compass-planes/utils';
+import type { Component, ImageComponentData } from '@/types';
 import { Trash } from 'lucide-react';
 import { useRef, useState } from 'react';
 
@@ -36,7 +41,7 @@ export const ImageDataEdit = ({
           const assetId = await createAsset(file);
           return {
             id: component.id,
-            assetId,
+            data: updateComponentData(component.data, { assetId }),
           };
         }),
       );
@@ -73,8 +78,10 @@ export const ImageDataEdit = ({
       // Collect all unique assetIds from editable components
       const assetIdsToDelete = new Set<string>();
       editableComponents.forEach((component) => {
-        if (component.assetId) {
-          assetIdsToDelete.add(component.assetId);
+        const data = getComponentData(component) as ImageComponentData;
+
+        if (data.assetId) {
+          assetIdsToDelete.add(data.assetId);
         }
       });
 
@@ -86,7 +93,7 @@ export const ImageDataEdit = ({
       // Create updates for all editable components
       const updates = editableComponents.map((component) => ({
         id: component.id,
-        assetId: undefined,
+        data: updateComponentData(component.data, { assetId: undefined }),
       }));
 
       // Update components through handleUpdate (it will filter locked components)
@@ -104,9 +111,11 @@ export const ImageDataEdit = ({
   };
 
   // Show the first component's asset as preview
-  const currentAssetId = components[0]?.assetId;
+  const currentAssetId = (getComponentStyles(components[0]) as ImageComponentData)?.assetId;
   const currentAsset = currentAssetId ? assets.find((a) => a.id === currentAssetId) : null;
-  const hasAsset = editableComponents.some((c) => c.assetId);
+  const hasAsset = editableComponents.some(
+    (c) => (getComponentData(c) as ImageComponentData).assetId,
+  );
 
   return (
     <div className='flex-col w-full flex flex-col gap-3 pb-2 border-b-1'>

@@ -122,6 +122,7 @@ export type TextComponentData = ComponentData & {
 
 export type ImageComponentData = ComponentData & {
   assetId?: string;
+  assetUrl?: string;
 };
 
 export type Component = BaseDetails & {
@@ -138,8 +139,6 @@ export type Component = BaseDetails & {
   style: string;
   locked?: boolean;
   selected?: boolean;
-  assetId?: string;
-  image?: string;
   groupId?: string | null;
   attributeId?: string;
   actionId?: string;

@@ -1,8 +1,5 @@
 import { useAssets } from '@/lib/compass-api';
-import {
-  getComponentData,
-  getComponentStyles,
-} from '@/lib/compass-planes/utils';
+import { getComponentData, getComponentStyles } from '@/lib/compass-planes/utils';
 import { WindowEditorContext } from '@/stores';
 import type { Component, ImageComponentData } from '@/types';
 import { useNodeId } from '@xyflow/react';
@@ -21,9 +18,9 @@ export const EditImageNode = () => {
 
   const data = getComponentData(component) as ImageComponentData;
   const css = getComponentStyles(component);
-  const asset = assets.find((a) => a.id === component.assetId);
+  const asset = assets.find((a) => a.id === data.assetId);
 
-  const imageSrc = asset?.data || component.image;
+  const imageSrc = asset?.data;
 
   return (
     <ResizableNode component={component}>
@@ -71,11 +68,12 @@ export const EditImageNode = () => {
 
 export const ViewImageNode = ({ component }: { component: Component }) => {
   const css = getComponentStyles(component);
+  const data = getComponentData(component) as ImageComponentData;
   const { assets } = useAssets();
 
-  const asset = assets.find((a) => a.id === component.assetId);
+  const asset = assets.find((a) => a.id === data.assetId);
 
-  const imageSrc = asset?.data || component.image;
+  const imageSrc = asset?.data;
 
   if (!imageSrc) {
     return null;

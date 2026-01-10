@@ -27,6 +27,13 @@ export function getComponentData(component: Component): ComponentData {
   return data as ShapeComponentData;
 }
 
+export function updateComponentData(data: string, update: Record<any, any>): string {
+  return JSON.stringify({
+    ...JSON.parse(data),
+    ...update,
+  });
+}
+
 export function getComponentStyles(component: Component): ComponentStyle {
   const styles = JSON.parse(component.style) as ComponentStyle;
 
