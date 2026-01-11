@@ -1,5 +1,6 @@
 export * from './use-actions';
 export * from './use-attributes';
+export * from './use-character';
 export * from './use-charts';
 export * from './use-components';
 export * from './use-items';

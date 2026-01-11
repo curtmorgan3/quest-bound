@@ -151,7 +151,8 @@ export type Window = BaseDetails & {
 };
 
 export type Character = BaseDetails & {
-  rulsetId: string;
+  userId: string;
+  rulesetId: string;
   name: string;
 };
 
