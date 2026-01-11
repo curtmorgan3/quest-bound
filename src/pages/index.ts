@@ -1,3 +1,4 @@
+export * from './characters';
 export * from './dev-tools';
 export * from './error';
 export * from './home';

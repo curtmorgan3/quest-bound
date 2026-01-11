@@ -1,4 +1,4 @@
-import { Characters, ErrorPage, Ruleset, Rulesets } from '@/pages';
+import { Character, Characters, ErrorPage, Ruleset, Rulesets } from '@/pages';
 import { HashRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { ErrorBoundary } from './components';
 import { Layout } from './components/layout';
@@ -26,6 +26,7 @@ function CompassRoutes() {
             <Route path={`/rulesets/:rulesetId/windows/:windowId`} element={<WindowEditor />} />
 
             <Route path={`/characters`} element={<Characters />} />
+            <Route path={`/characters/:id`} element={<Character />} />
 
             <Route path='*' element={<ErrorPage type='404' />} />
           </Route>
