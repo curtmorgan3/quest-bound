@@ -2,6 +2,7 @@ import { useErrorHandler } from '@/hooks';
 import { db, useCurrentUser } from '@/stores';
 import type { Character, Inventory } from '@/types';
 import { useLiveQuery } from 'dexie-react-hooks';
+import { useAssets } from '../assets';
 
 export type CharacterWithInventories = Character & {
   inventories: Inventory[];
@@ -10,6 +11,7 @@ export type CharacterWithInventories = Character & {
 export const useCharacter = () => {
   const { currentUser } = useCurrentUser();
   const { handleError } = useErrorHandler();
+  const { deleteAsset } = useAssets();
 
   const characters = useLiveQuery(
     () =>
@@ -21,12 +23,13 @@ export const useCharacter = () => {
   );
 
   const createCharacter = async (data: Partial<Character>) => {
-    if (!data.rulesetId) return;
+    if (!data.rulesetId || !currentUser) return;
     const now = new Date().toISOString();
     try {
       await db.characters.add({
         ...data,
         id: crypto.randomUUID(),
+        userId: currentUser.id,
         createdAt: now,
         updatedAt: now,
       } as Character);
@@ -41,6 +44,14 @@ export const useCharacter = () => {
   const updateCharacter = async (id: string, data: Partial<Character>) => {
     const now = new Date().toISOString();
     try {
+      if (data.assetId === null) {
+        const original = await db.characters.get(id);
+        if (original?.assetId) {
+          await deleteAsset(original.assetId);
+        }
+        data.image = null;
+      }
+
       await db.characters.update(id, {
         ...data,
         updatedAt: now,
@@ -55,6 +66,10 @@ export const useCharacter = () => {
 
   const deleteCharacter = async (id: string) => {
     try {
+      const character = await db.characters.get(id);
+      if (character?.assetId) {
+        await deleteAsset(character.assetId);
+      }
       await db.characters.delete(id);
     } catch (e) {
       handleError(e as Error, {
@@ -64,9 +79,7 @@ export const useCharacter = () => {
     }
   };
 
-  const getCharacter = async (
-    id: string,
-  ): Promise<CharacterWithInventories | null> => {
+  const getCharacter = async (id: string): Promise<CharacterWithInventories | null> => {
     try {
       const character = await db.characters.get(id);
       if (!character) return null;
@@ -77,10 +90,7 @@ export const useCharacter = () => {
         .toArray();
 
       const inventoryIds = characterInventories.map((ci) => ci.inventoryId);
-      const inventories = await db.inventories
-        .where('id')
-        .anyOf(inventoryIds)
-        .toArray();
+      const inventories = await db.inventories.where('id').anyOf(inventoryIds).toArray();
 
       return {
         ...character,

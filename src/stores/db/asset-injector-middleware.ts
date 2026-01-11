@@ -25,8 +25,8 @@ export const assetInjectorMiddleware: Middleware<DBCore> = {
       table(tableName) {
         const downlevelTable = downlevelDatabase.table(tableName);
 
-        // Only apply asset replacement to users and rulesets tables
-        if (['users', 'rulesets', 'assets'].indexOf(tableName) === -1) {
+        // Only apply asset replacement to users, rulesets, and characters tables
+        if (['users', 'rulesets', 'characters', 'assets'].indexOf(tableName) === -1) {
           return downlevelTable;
         }
 

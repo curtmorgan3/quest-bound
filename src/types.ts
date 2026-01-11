@@ -154,6 +154,8 @@ export type Character = BaseDetails & {
   userId: string;
   rulesetId: string;
   name: string;
+  assetId: string | null;
+  image: string | null;
 };
 
 export type CharacterInventory = BaseDetails & {
