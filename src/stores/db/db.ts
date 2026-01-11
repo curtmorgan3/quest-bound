@@ -2,8 +2,13 @@ import type {
   Action,
   Asset,
   Attribute,
+  Character,
+  CharacterInventory,
   Chart,
   Component,
+  Inventory,
+  InventoryAction,
+  InventoryItem,
   Item,
   Ruleset,
   User,
@@ -26,6 +31,11 @@ const db = new Dexie('qbdb') as Dexie & {
   assets: EntityTable<Asset, 'id'>;
   windows: EntityTable<Window, 'id'>;
   components: EntityTable<Component, 'id'>;
+  characters: EntityTable<Character, 'id'>;
+  characterInventories: EntityTable<CharacterInventory, 'id'>;
+  inventories: EntityTable<Inventory, 'id'>;
+  inventoryItems: EntityTable<InventoryItem, 'id'>;
+  inventoryActions: EntityTable<InventoryAction, 'id'>;
 };
 
 const common = '++id, createdAt, updatedAt';
@@ -41,6 +51,11 @@ db.version(1).stores({
   charts: `${common}, &[rulesetId+title], description, category, data`,
   windows: `${common}, &[rulesetId+title], category`,
   components: `${common}, rulesetId, windowId, type, x, y, z, height, width, rotation, selected, assetId, image, groupId, attributeId, actionId, data, style`,
+  characters: `${common}, rulesetId`,
+  inventories: `${common}, &[rulesetId+title], category, type`,
+  inventoryItems: `${common}, inventoryId, itemId, quantity, &[inventoryId+itemId]`,
+  inventoryActions: `${common}, inventoryId, actionId, &[inventoryId+actionId]`,
+  characterInventories: `${common}, inventoryId, characterId, &[inventoryId+characterId]`,
 });
 
 // Cache assets for reference in the asset injector middleware

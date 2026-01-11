@@ -149,3 +149,31 @@ export type Window = BaseDetails & {
   title: string;
   category?: string;
 };
+
+export type Character = BaseDetails & {
+  rulsetId: string;
+  name: string;
+};
+
+export type CharacterInventory = BaseDetails & {
+  characterId: string;
+  inventoryId: string;
+};
+
+export type Inventory = BaseDetails & {
+  rulesetId: string;
+  title: string;
+  category?: string;
+  type: 'item' | 'action';
+};
+
+export type InventoryItem = BaseDetails & {
+  inventoryId: string;
+  itemId: string;
+  quantity: number;
+};
+
+export type InventoryAction = BaseDetails & {
+  inventoryId: string;
+  actionId: string;
+};
