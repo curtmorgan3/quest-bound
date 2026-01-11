@@ -15,7 +15,7 @@ import { AlertCircle, CheckCircle, Upload } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-export const Home = () => {
+export const Rulesets = () => {
   const { rulesets, createRuleset, deleteRuleset } = useRulesets();
   const { importRuleset, isImporting } = useImportRuleset();
 

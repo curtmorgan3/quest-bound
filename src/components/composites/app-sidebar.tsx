@@ -1,5 +1,6 @@
 import {
   AppWindow,
+  BookOpen,
   FileSpreadsheet,
   FolderOpen,
   HandFist,
@@ -7,6 +8,7 @@ import {
   Settings as SettingsIcon,
   Sword,
   UserRoundPen,
+  Users,
   Wrench,
 } from 'lucide-react';
 
@@ -39,7 +41,8 @@ export function AppSidebar() {
   const { activeRuleset } = useRulesets();
   const { open, setOpen } = useSidebar();
   const location = useLocation();
-  const isHomepage = location.pathname === '/';
+  const isHomepage =
+    location.pathname === '/rulesets' || location.pathname === '/characters';
   const [drawerContent, setDrawerContent] = useState<'settings' | 'dev-tools'>('settings');
 
   useEffect(() => {
@@ -49,8 +52,21 @@ export function AppSidebar() {
     }
   }, []);
 
+  const homepageItems = [
+    {
+      title: 'Rulesets',
+      url: '/rulesets',
+      icon: BookOpen,
+    },
+    {
+      title: 'Characters',
+      url: '/characters',
+      icon: Users,
+    },
+  ];
+
   const rulesetItems = isHomepage
-    ? []
+    ? homepageItems
     : [
         {
           title: 'Attributes',
@@ -135,7 +151,7 @@ export function AppSidebar() {
             {!isHomepage && (
               <SidebarMenuItem>
                 <SidebarMenuButton asChild>
-                  <Link to='/'>
+                  <Link to='/rulesets'>
                     <FolderOpen />
                     <span>Open</span>
                   </Link>
