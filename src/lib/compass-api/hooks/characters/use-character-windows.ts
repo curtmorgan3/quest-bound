@@ -45,7 +45,7 @@ export const useCharacterWindows = (characterId?: string) => {
     }
   };
 
-  const updateWindow = async (id: string, data: Partial<CharacterWindow>) => {
+  const updateCharacterWindow = async (id: string, data: Partial<CharacterWindow>) => {
     const now = new Date().toISOString();
     try {
       await db.characterWindows.update(id, {
@@ -71,5 +71,10 @@ export const useCharacterWindows = (characterId?: string) => {
     }
   };
 
-  return { windows: windows ?? [], createCharacterWindow, updateWindow, deleteCharacterWindow };
+  return {
+    windows: windows ?? [],
+    createCharacterWindow,
+    updateCharacterWindow,
+    deleteCharacterWindow,
+  };
 };

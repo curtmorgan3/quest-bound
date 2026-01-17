@@ -5,6 +5,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useAssets } from '../assets';
+import { useCharacter } from '../characters';
 
 export const useRulesets = () => {
   const { currentUser } = useCurrentUser();
@@ -15,11 +16,19 @@ export const useRulesets = () => {
 
   const { handleError } = useErrorHandler();
 
-  const { rulesetId } = useParams();
-  const lastEditedRulesetId = localStorage.getItem('qb.lastEditedRulesetId');
-  const rulesetIdToUse = rulesetId && rulesetId !== 'undefined' ? rulesetId : lastEditedRulesetId;
+  const { rulesetId, characterId } = useParams();
+  const { character } = useCharacter(characterId);
 
-  const activeRuleset = rulesetId ? rulesets?.find((r) => r.id === rulesetIdToUse) : null;
+  const lastEditedRulesetId = localStorage.getItem('qb.lastEditedRulesetId');
+
+  const rulesetIdToUse =
+    rulesetId && rulesetId !== 'undefined'
+      ? rulesetId
+      : character
+        ? character.rulesetId
+        : lastEditedRulesetId;
+
+  const activeRuleset = rulesetIdToUse ? rulesets?.find((r) => r.id === rulesetIdToUse) : null;
 
   const createRuleset = async (data: Partial<Ruleset>) => {
     setLoading(true);

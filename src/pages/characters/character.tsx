@@ -3,18 +3,20 @@ import { SheetViewer } from '@/lib/compass-planes';
 import { useParams } from 'react-router-dom';
 
 export const CharacterPage = () => {
-  const { id } = useParams<{ id: string }>();
-  const { character } = useCharacter(id);
-  const { windows } = useCharacterWindows(character?.id);
+  const { characterId } = useParams<{ characterId: string }>();
+  const { character } = useCharacter(characterId);
+  const { windows, updateCharacterWindow, deleteCharacterWindow } = useCharacterWindows(
+    character?.id,
+  );
 
   console.log('Character name:', character?.name, windows);
 
   const handleUpdateWindow = (update: CharacterWindowUpdate) => {
-    console.log(update);
+    updateCharacterWindow(update.id, update);
   };
 
   const handleDeleteWindow = (id: string) => {
-    console.log('delete: ', id);
+    deleteCharacterWindow(id);
   };
 
   return (

@@ -3,7 +3,7 @@ import type { CharacterWindow } from '@/types';
 import type { Node, NodeChange } from '@xyflow/react';
 import { applyNodeChanges } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { BaseEditor } from '../base-editor';
 import { WindowNode } from './window-node';
 import { WindowsTabs } from './windows-tabs';
@@ -27,23 +27,7 @@ export const SheetViewer = ({
   testMode,
 }: SheetViewerProps) => {
   const { windows: characterWindows } = useCharacterWindows(characterId);
-
-  const windowsOpenedByDefault = useRef<boolean>(false);
-
-  // State for which windows are open (not minimized)
-  const [openWindows, setOpenWindows] = useState<Set<string>>(new Set());
-
-  const toggleWindow = (windowId: string) => {
-    setOpenWindows((prev) => {
-      const next = new Set(prev);
-      if (next.has(windowId)) {
-        next.delete(windowId);
-      } else {
-        next.add(windowId);
-      }
-      return next;
-    });
-  };
+  const openWindows = new Set(characterWindows.filter((cw) => !cw.isCollapsed).map((cw) => cw.id));
 
   function convertWindowsToNode(windows: CharacterWindow[]): Node[] {
     return windows.map((window, index) => {
@@ -59,8 +43,7 @@ export const SheetViewer = ({
         data: {
           characterWindow: window,
           onMinimize: (id: string) => {
-            onWindowUpdated?.({ id, isCollapsed: !openWindows.has(id) });
-            toggleWindow(id);
+            onWindowUpdated?.({ id, isCollapsed: true });
           },
           onClose: (id: string) => {
             onWindowDeleted?.(id);
@@ -74,16 +57,12 @@ export const SheetViewer = ({
   const [nodes, setNodes] = useState<Node[]>(convertWindowsToNode(characterWindows));
 
   useEffect(() => {
-    setNodes(convertWindowsToNode(characterWindows.filter((w) => openWindows.has(w.id))));
-
-    if (testMode && characterWindows.length > 0 && !windowsOpenedByDefault.current) {
-      // Open all windows by default by default
-      setOpenWindows(new Set(characterWindows.map((w) => w.id)));
-      windowsOpenedByDefault.current = true;
-    }
-  }, [openWindows, testMode, characterWindows.length]);
+    setNodes(convertWindowsToNode(characterWindows.filter((w) => !w.isCollapsed)));
+  }, [characterWindows]);
 
   const onNodesChange = (changes: NodeChange[]) => {
+    console.log(changes);
+    // for each change, if change.type === 'position', debounce a call to onWindowUpdate with x and y props
     setNodes((prev) => applyNodeChanges(changes, prev));
   };
 
@@ -103,8 +82,8 @@ export const SheetViewer = ({
         <WindowsTabs
           characterId={characterId}
           windows={characterWindows}
-          toggleWindow={toggleWindow}
           openWindows={openWindows}
+          toggleWindow={(id: string) => onWindowUpdated?.({ id, isCollapsed: openWindows.has(id) })}
         />
       )}
     </div>
