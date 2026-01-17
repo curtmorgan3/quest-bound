@@ -3,7 +3,7 @@ import { colorPaper } from '@/palette';
 import type { CharacterWindow } from '@/types';
 import '@xyflow/react/dist/style.css';
 import { OctagonMinus, OctagonX } from 'lucide-react';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { renderViewComponent } from '../nodes';
 
 interface WindowNodeData {
@@ -11,10 +11,11 @@ interface WindowNodeData {
   onClose: (id: string) => void;
   onMinimize: (id: string) => void;
   renderCloseButton: boolean;
+  locked: boolean;
 }
 
 export const WindowNode = ({ data }: { data: WindowNodeData }) => {
-  const { characterWindow, onClose, onMinimize, renderCloseButton } = data;
+  const { characterWindow, onClose, onMinimize, renderCloseButton, locked } = data;
   const { components } = useComponents(characterWindow.windowId);
 
   // Calculate offsets based on leftmost and topmost components
@@ -41,45 +42,41 @@ export const WindowNode = ({ data }: { data: WindowNodeData }) => {
     return Math.max(...components.map((c) => c.y - minY + c.height));
   }, [components, minY]);
 
+  const [isHovered, setIsHovered] = useState(false);
+
   return (
     <div
       className='window-node'
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
       style={{
         width: windowWidth,
-        height: renderCloseButton ? windowHeight + 20 : windowHeight,
+        height: windowHeight,
         position: 'relative',
         display: 'flex',
         flexDirection: 'column',
       }}>
-      {renderCloseButton && (
+      {renderCloseButton && !locked && (
         <div
           style={{
             height: '20px',
             width: '100%',
+            position: 'absolute',
+            zIndex: 1000,
             backgroundColor: colorPaper,
             borderRadius: '8px 8px 0 0',
             display: 'flex',
             justifyContent: 'flex-end',
             padding: '0 4px 0 4px',
+            gap: '8px',
+            opacity: isHovered && !locked ? 1 : 0,
+            transition: 'opacity 0.15s ease-in-out',
           }}>
           <OctagonMinus
             style={{ width: '20px', height: '20px' }}
             className='clickable'
             onClick={() => onMinimize(characterWindow.id)}
           />
-        </div>
-      )}
-      {renderCloseButton && (
-        <div
-          style={{
-            height: '20px',
-            width: '100%',
-            backgroundColor: colorPaper,
-            borderRadius: '8px 8px 0 0',
-            display: 'flex',
-            justifyContent: 'flex-end',
-            padding: '0 4px 0 4px',
-          }}>
           <OctagonX
             style={{ width: '20px', height: '20px' }}
             className='clickable'

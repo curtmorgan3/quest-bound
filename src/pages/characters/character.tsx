@@ -5,11 +5,7 @@ import { useParams } from 'react-router-dom';
 export const CharacterPage = () => {
   const { characterId } = useParams<{ characterId: string }>();
   const { character } = useCharacter(characterId);
-  const { windows, updateCharacterWindow, deleteCharacterWindow } = useCharacterWindows(
-    character?.id,
-  );
-
-  console.log('Character name:', character?.name, windows);
+  const { updateCharacterWindow, deleteCharacterWindow } = useCharacterWindows(character?.id);
 
   const handleUpdateWindow = (update: CharacterWindowUpdate) => {
     updateCharacterWindow(update.id, update);

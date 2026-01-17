@@ -1,7 +1,8 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useCharacterWindows, useWindows } from '@/lib/compass-api';
+import { colorPrimary } from '@/palette';
 import type { CharacterWindow, Window } from '@/types';
-import { Plus } from 'lucide-react';
+import { Lock, Plus } from 'lucide-react';
 import { useState } from 'react';
 
 interface WindowsTabsProps {
@@ -9,6 +10,8 @@ interface WindowsTabsProps {
   windows: CharacterWindow[];
   toggleWindow: (id: string) => void;
   openWindows: Set<string>;
+  locked?: boolean;
+  onToggleLock: () => void;
 }
 
 export const WindowsTabs = ({
@@ -16,6 +19,8 @@ export const WindowsTabs = ({
   windows,
   toggleWindow,
   openWindows,
+  locked = false,
+  onToggleLock,
 }: WindowsTabsProps) => {
   const { windows: rulesetWindows } = useWindows();
   const { createCharacterWindow } = useCharacterWindows(characterId);
@@ -53,13 +58,13 @@ export const WindowsTabs = ({
           overflowX: 'auto',
         }}>
         <button
-          onClick={() => setIsModalOpen(true)}
+          onClick={onToggleLock}
           style={{
             height: '30px',
             width: '30px',
             minWidth: '30px',
             backgroundColor: '#333',
-            color: '#fff',
+            color: locked ? colorPrimary : '#fff',
             border: '1px solid #555',
             borderRadius: 4,
             cursor: 'pointer',
@@ -68,8 +73,28 @@ export const WindowsTabs = ({
             justifyContent: 'center',
           }}
           title='Add window'>
-          <Plus size={16} />
+          <Lock size={16} />
         </button>
+        {!locked && (
+          <button
+            onClick={() => setIsModalOpen(true)}
+            style={{
+              height: '30px',
+              width: '30px',
+              minWidth: '30px',
+              backgroundColor: '#333',
+              color: '#fff',
+              border: '1px solid #555',
+              borderRadius: 4,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+            title='Add window'>
+            <Plus size={16} />
+          </button>
+        )}
         {windows.map((window) => (
           <button
             key={window.id}
