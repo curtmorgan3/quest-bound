@@ -1,20 +1,21 @@
 import { useComponents } from '@/lib/compass-api';
 import { colorPaper } from '@/palette';
-import type { Window } from '@/types';
+import type { CharacterWindow } from '@/types';
 import '@xyflow/react/dist/style.css';
-import { OctagonX } from 'lucide-react';
+import { OctagonMinus, OctagonX } from 'lucide-react';
 import { useMemo } from 'react';
 import { renderViewComponent } from '../nodes';
 
 interface WindowNodeData {
-  window: Window;
+  characterWindow: CharacterWindow;
   onClose: (id: string) => void;
+  onMinimize: (id: string) => void;
   renderCloseButton: boolean;
 }
 
 export const WindowNode = ({ data }: { data: WindowNodeData }) => {
-  const { window, onClose, renderCloseButton } = data;
-  const { components } = useComponents(window.id);
+  const { characterWindow, onClose, onMinimize, renderCloseButton } = data;
+  const { components } = useComponents(characterWindow.windowId);
 
   // Calculate offsets based on leftmost and topmost components
   const minX = useMemo(() => {
@@ -61,10 +62,28 @@ export const WindowNode = ({ data }: { data: WindowNodeData }) => {
             justifyContent: 'flex-end',
             padding: '0 4px 0 4px',
           }}>
+          <OctagonMinus
+            style={{ width: '20px', height: '20px' }}
+            className='clickable'
+            onClick={() => onMinimize(characterWindow.id)}
+          />
+        </div>
+      )}
+      {renderCloseButton && (
+        <div
+          style={{
+            height: '20px',
+            width: '100%',
+            backgroundColor: colorPaper,
+            borderRadius: '8px 8px 0 0',
+            display: 'flex',
+            justifyContent: 'flex-end',
+            padding: '0 4px 0 4px',
+          }}>
           <OctagonX
             style={{ width: '20px', height: '20px' }}
             className='clickable'
-            onClick={() => onClose(window.id)}
+            onClick={() => onClose(characterWindow.id)}
           />
         </div>
       )}

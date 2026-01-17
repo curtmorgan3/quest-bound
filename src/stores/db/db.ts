@@ -4,6 +4,7 @@ import type {
   Attribute,
   Character,
   CharacterInventory,
+  CharacterWindow,
   Chart,
   Component,
   Inventory,
@@ -33,6 +34,7 @@ const db = new Dexie('qbdb') as Dexie & {
   components: EntityTable<Component, 'id'>;
   characters: EntityTable<Character, 'id'>;
   characterInventories: EntityTable<CharacterInventory, 'id'>;
+  characterWindows: EntityTable<CharacterWindow, 'id'>;
   inventories: EntityTable<Inventory, 'id'>;
   inventoryItems: EntityTable<InventoryItem, 'id'>;
   inventoryActions: EntityTable<InventoryAction, 'id'>;
@@ -56,6 +58,7 @@ db.version(1).stores({
   inventoryItems: `${common}, inventoryId, itemId, quantity, &[inventoryId+itemId]`,
   inventoryActions: `${common}, inventoryId, actionId, &[inventoryId+actionId]`,
   characterInventories: `${common}, inventoryId, characterId, &[inventoryId+characterId]`,
+  characterWindows: `${common}, characterId, windowId, title, x, y, isCollapsed, &[characterId+windowId]`,
 });
 
 // Cache assets for reference in the asset injector middleware

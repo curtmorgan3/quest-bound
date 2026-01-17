@@ -1,12 +1,23 @@
-import type { Window } from '@/types';
+import { useCharacterWindows } from '@/lib/compass-api';
+import type { CharacterWindow } from '@/types';
 
 interface WindowsTabsProps {
-  windows: Window[];
+  characterId?: string;
+  windows: CharacterWindow[];
   toggleWindow: (id: string) => void;
   openWindows: Set<string>;
 }
 
-export const WindowsTabs = ({ windows, toggleWindow, openWindows }: WindowsTabsProps) => {
+export const WindowsTabs = ({
+  characterId,
+  windows,
+  toggleWindow,
+  openWindows,
+}: WindowsTabsProps) => {
+  const { createCharacterWindow } = useCharacterWindows(characterId);
+
+  const handleCreateWindow = () => {};
+
   return (
     <div
       className='window-tabs'

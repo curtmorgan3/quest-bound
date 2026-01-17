@@ -159,6 +159,7 @@ export type Character = BaseDetails & {
 };
 
 export type CharacterWindow = BaseDetails & {
+  title: string;
   characterId: string;
   windowId: string;
   x: number;

@@ -1,5 +1,5 @@
-import { useWindows } from '@/lib/compass-api';
-import type { Window } from '@/types';
+import { useCharacterWindows, type CharacterWindowUpdate } from '@/lib/compass-api';
+import type { CharacterWindow } from '@/types';
 import type { Node, NodeChange } from '@xyflow/react';
 import { applyNodeChanges } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
@@ -13,13 +13,21 @@ const windowNodeTypes = {
 };
 
 interface SheetViewerProps {
-  windowIds: string[];
+  characterId?: string;
+  windowIds?: string[];
   testMode?: boolean;
+  onWindowUpdated?: (update: CharacterWindowUpdate) => void;
+  onWindowDeleted?: (id: string) => void;
 }
 
-export const SheetViewer = ({ windowIds, testMode }: SheetViewerProps) => {
-  const { windows: allWindows } = useWindows();
-  const windows = allWindows.filter((w) => windowIds.includes(w.id));
+export const SheetViewer = ({
+  characterId,
+  onWindowUpdated,
+  onWindowDeleted,
+  testMode,
+}: SheetViewerProps) => {
+  const { windows: characterWindows } = useCharacterWindows(characterId);
+
   const windowsOpenedByDefault = useRef<boolean>(false);
 
   // State for which windows are open (not minimized)
@@ -37,9 +45,9 @@ export const SheetViewer = ({ windowIds, testMode }: SheetViewerProps) => {
     });
   };
 
-  function convertWindowsToNode(windows: Window[]): Node[] {
+  function convertWindowsToNode(windows: CharacterWindow[]): Node[] {
     return windows.map((window, index) => {
-      const position = { x: 250, y: 250 };
+      const position = { x: window.x, y: window.y };
 
       return {
         id: `window-${window.id}`,
@@ -49,9 +57,13 @@ export const SheetViewer = ({ windowIds, testMode }: SheetViewerProps) => {
         selectable: false,
         zIndex: index, // Render the lastest one open on top
         data: {
-          window,
-          onClose: (id: string) => {
+          characterWindow: window,
+          onMinimize: (id: string) => {
+            onWindowUpdated?.({ id, isCollapsed: !openWindows.has(id) });
             toggleWindow(id);
+          },
+          onClose: (id: string) => {
+            onWindowDeleted?.(id);
           },
           renderCloseButton: !testMode,
         },
@@ -59,17 +71,17 @@ export const SheetViewer = ({ windowIds, testMode }: SheetViewerProps) => {
     });
   }
 
-  const [nodes, setNodes] = useState<Node[]>(convertWindowsToNode(windows));
+  const [nodes, setNodes] = useState<Node[]>(convertWindowsToNode(characterWindows));
 
   useEffect(() => {
-    setNodes(convertWindowsToNode(windows.filter((w) => openWindows.has(w.id))));
+    setNodes(convertWindowsToNode(characterWindows.filter((w) => openWindows.has(w.id))));
 
-    if (testMode && windows.length > 0 && !windowsOpenedByDefault.current) {
+    if (testMode && characterWindows.length > 0 && !windowsOpenedByDefault.current) {
       // Open all windows by default by default
-      setOpenWindows(new Set(windows.map((w) => w.id)));
+      setOpenWindows(new Set(characterWindows.map((w) => w.id)));
       windowsOpenedByDefault.current = true;
     }
-  }, [openWindows, testMode, windows.length]);
+  }, [openWindows, testMode, characterWindows.length]);
 
   const onNodesChange = (changes: NodeChange[]) => {
     setNodes((prev) => applyNodeChanges(changes, prev));
@@ -88,7 +100,12 @@ export const SheetViewer = ({ windowIds, testMode }: SheetViewerProps) => {
         zoomOnScroll={false}
       />
       {!testMode && (
-        <WindowsTabs windows={windows} toggleWindow={toggleWindow} openWindows={openWindows} />
+        <WindowsTabs
+          characterId={characterId}
+          windows={characterWindows}
+          toggleWindow={toggleWindow}
+          openWindows={openWindows}
+        />
       )}
     </div>
   );
