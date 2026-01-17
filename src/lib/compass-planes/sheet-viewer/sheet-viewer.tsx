@@ -14,21 +14,20 @@ const windowNodeTypes = {
 
 interface SheetViewerProps {
   characterId?: string;
-  windowIds?: string[];
-  testMode?: boolean;
   onWindowUpdated?: (update: CharacterWindowUpdate) => void;
   onWindowDeleted?: (id: string) => void;
+  lockByDefault?: boolean;
 }
 
 export const SheetViewer = ({
   characterId,
   onWindowUpdated,
   onWindowDeleted,
-  testMode,
+  lockByDefault,
 }: SheetViewerProps) => {
   const { windows: characterWindows } = useCharacterWindows(characterId);
   const openWindows = new Set(characterWindows.filter((cw) => !cw.isCollapsed).map((cw) => cw.id));
-  const [locked, setLocked] = useState<boolean>(false);
+  const [locked, setLocked] = useState<boolean>(lockByDefault ?? false);
 
   function convertWindowsToNode(windows: CharacterWindow[]): Node[] {
     return windows.map((window, index) => {
@@ -50,7 +49,6 @@ export const SheetViewer = ({
           onClose: (id: string) => {
             onWindowDeleted?.(id);
           },
-          renderCloseButton: !testMode,
         },
       };
     });
@@ -102,16 +100,14 @@ export const SheetViewer = ({
         zoomOnScroll={false}
         nodesDraggable={!locked}
       />
-      {!testMode && (
-        <WindowsTabs
-          characterId={characterId}
-          windows={characterWindows}
-          openWindows={openWindows}
-          toggleWindow={(id: string) => onWindowUpdated?.({ id, isCollapsed: openWindows.has(id) })}
-          locked={locked}
-          onToggleLock={() => setLocked((prev) => !prev)}
-        />
-      )}
+      <WindowsTabs
+        characterId={characterId}
+        windows={characterWindows}
+        openWindows={openWindows}
+        toggleWindow={(id: string) => onWindowUpdated?.({ id, isCollapsed: openWindows.has(id) })}
+        locked={locked}
+        onToggleLock={() => setLocked((prev) => !prev)}
+      />
     </div>
   );
 };

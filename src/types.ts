@@ -156,6 +156,7 @@ export type Character = BaseDetails & {
   name: string;
   assetId: string | null;
   image: string | null;
+  isTestCharacter: boolean;
 };
 
 export type CharacterWindow = BaseDetails & {

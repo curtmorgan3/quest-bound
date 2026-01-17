@@ -1,5 +1,6 @@
-import { useComponents, type ComponentUpdate } from '@/lib/compass-api';
-import { SheetEditor, SheetViewer } from '@/lib/compass-planes';
+import { useComponents, useRulesets, type ComponentUpdate } from '@/lib/compass-api';
+import { SheetEditor } from '@/lib/compass-planes';
+import { CharacterPage } from '@/pages/characters';
 import { colorPrimary, colorWhite } from '@/palette';
 import { WindowEditorProvider } from '@/stores';
 import type { Component } from '@/types';
@@ -15,6 +16,8 @@ export const WindowEditor = () => {
   const { windowId } = useParams();
   const { components, createComponent, updateComponents, updateComponent, deleteComponent } =
     useComponents(windowId);
+
+  const { testCharacter } = useRulesets();
 
   const [viewMode, setViewMode] = useState<boolean>(false);
   const getComponent = (id: string) => components.find((c) => c.id === id) ?? null;
@@ -47,7 +50,7 @@ export const WindowEditor = () => {
     <WindowEditorProvider value={{ viewMode, components, getComponent, updateComponent }}>
       <div className='flex flex-col' style={{ overflow: 'hidden' }}>
         {viewMode ? (
-          <SheetViewer windowIds={[windowId]} testMode />
+          <CharacterPage id={testCharacter?.id} />
         ) : (
           <SheetEditor
             components={components}
@@ -63,7 +66,7 @@ export const WindowEditor = () => {
         style={{
           position: 'absolute',
           left: 65,
-          bottom: 30,
+          bottom: 60,
           color: viewMode ? colorPrimary : colorWhite,
         }}
       />

@@ -2,9 +2,10 @@ import { useCharacter, useCharacterWindows, type CharacterWindowUpdate } from '@
 import { SheetViewer } from '@/lib/compass-planes';
 import { useParams } from 'react-router-dom';
 
-export const CharacterPage = () => {
+export const CharacterPage = ({ id, lockByDefault }: { id?: string; lockByDefault?: boolean }) => {
   const { characterId } = useParams<{ characterId: string }>();
-  const { character } = useCharacter(characterId);
+
+  const { character } = useCharacter(id ?? characterId);
   const { updateCharacterWindow, deleteCharacterWindow } = useCharacterWindows(character?.id);
 
   const handleUpdateWindow = (update: CharacterWindowUpdate) => {
@@ -18,6 +19,7 @@ export const CharacterPage = () => {
   return (
     <SheetViewer
       characterId={character?.id}
+      lockByDefault={lockByDefault ?? false}
       onWindowUpdated={handleUpdateWindow}
       onWindowDeleted={handleDeleteWindow}
     />

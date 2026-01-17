@@ -26,6 +26,8 @@ export const Characters = () => {
   const { rulesets } = useRulesets();
   const { assets, deleteAsset } = useAssets();
 
+  const selectableCharacters = characters.filter((c) => !c.isTestCharacter);
+
   const [name, setName] = useState('');
   const [rulesetId, setRulesetId] = useState('');
   const [assetId, setAssetId] = useState<string | null>(null);
@@ -176,7 +178,7 @@ export const Characters = () => {
       </div>
 
       <div className='flex flex-row gap-2 flex-wrap'>
-        {characters.map((character) => (
+        {selectableCharacters.map((character) => (
           <Card
             key={character.id}
             className='p-4 w-[350px] h-[200px] flex flex-col justify-between'
@@ -217,7 +219,7 @@ export const Characters = () => {
         ))}
       </div>
 
-      {characters.length === 0 && (
+      {selectableCharacters.length === 0 && (
         <div className='flex flex-col items-center justify-center py-12 text-muted-foreground'>
           <p className='text-lg'>No characters yet</p>
           <p className='text-sm'>Create your first character to get started</p>

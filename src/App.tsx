@@ -26,7 +26,7 @@ function CompassRoutes() {
             <Route path={`/rulesets/:rulesetId/windows/:windowId`} element={<WindowEditor />} />
 
             <Route path={`/characters`} element={<Characters />} />
-            <Route path={`/characters/:characterId`} element={<CharacterPage />} />
+            <Route path={`/characters/:characterId`} element={<CharacterPage lockByDefault />} />
 
             <Route path='*' element={<ErrorPage type='404' />} />
           </Route>

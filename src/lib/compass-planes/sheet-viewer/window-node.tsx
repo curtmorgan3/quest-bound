@@ -10,12 +10,11 @@ interface WindowNodeData {
   characterWindow: CharacterWindow;
   onClose: (id: string) => void;
   onMinimize: (id: string) => void;
-  renderCloseButton: boolean;
   locked: boolean;
 }
 
 export const WindowNode = ({ data }: { data: WindowNodeData }) => {
-  const { characterWindow, onClose, onMinimize, renderCloseButton, locked } = data;
+  const { characterWindow, onClose, onMinimize, locked } = data;
   const { components } = useComponents(characterWindow.windowId);
 
   // Calculate offsets based on leftmost and topmost components
@@ -56,7 +55,7 @@ export const WindowNode = ({ data }: { data: WindowNodeData }) => {
         display: 'flex',
         flexDirection: 'column',
       }}>
-      {renderCloseButton && !locked && (
+      {!locked && (
         <div
           style={{
             height: '20px',

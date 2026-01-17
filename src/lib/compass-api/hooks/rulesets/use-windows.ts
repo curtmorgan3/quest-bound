@@ -5,7 +5,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { useRulesets } from './use-rulesets';
 
 export const useWindows = () => {
-  const { activeRuleset } = useRulesets();
+  const { activeRuleset, testCharacter } = useRulesets();
   const { handleError } = useErrorHandler();
 
   const windows = useLiveQuery(
@@ -23,13 +23,28 @@ export const useWindows = () => {
     if (!activeRuleset) return;
     const now = new Date().toISOString();
     try {
-      await db.windows.add({
+      const id = await db.windows.add({
         ...data,
         id: crypto.randomUUID(),
         rulesetId: activeRuleset.id,
         createdAt: now,
         updatedAt: now,
       });
+
+      // Add all new windows to test character
+      if (testCharacter) {
+        await db.characterWindows.add({
+          id: crypto.randomUUID(),
+          createdAt: now,
+          updatedAt: now,
+          characterId: testCharacter.id,
+          windowId: id,
+          title: data.title,
+          x: 100,
+          y: 100,
+          isCollapsed: true,
+        });
+      }
     } catch (e) {
       handleError(e as Error, {
         component: 'useWindows/createWindow',
@@ -57,6 +72,9 @@ export const useWindows = () => {
     try {
       const components = await db.components.where({ windowId: id }).toArray();
       await db.components.bulkDelete(components.map((c) => c.id));
+
+      const characterWindows = await db.characterWindows.where({ windowId: id }).toArray();
+      await db.characterWindows.bulkDelete(characterWindows.map((c) => c.id));
 
       await db.windows.delete(id);
     } catch (e) {

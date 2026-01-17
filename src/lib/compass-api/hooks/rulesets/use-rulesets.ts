@@ -10,6 +10,7 @@ import { useCharacter } from '../characters';
 export const useRulesets = () => {
   const { currentUser } = useCurrentUser();
   const { deleteAsset } = useAssets();
+  const { createCharacter, characters } = useCharacter();
   const [loading, setLoading] = useState(false);
   const _rulesets = useLiveQuery(() => db.rulesets.toArray(), []);
   const rulesets = _rulesets?.filter((r) => currentUser?.rulesets?.includes(r.id)) || [];
@@ -29,6 +30,10 @@ export const useRulesets = () => {
         : lastEditedRulesetId;
 
   const activeRuleset = rulesetIdToUse ? rulesets?.find((r) => r.id === rulesetIdToUse) : null;
+  // There should only be one test character
+  const testCharacter = characters.find(
+    (c) => c.rulesetId === activeRuleset?.id && c.isTestCharacter,
+  );
 
   const createRuleset = async (data: Partial<Ruleset>) => {
     setLoading(true);
@@ -52,6 +57,14 @@ export const useRulesets = () => {
         const updatedRulesetIds = Array.from(new Set([...(currentUser.rulesets || []), id]));
         await db.users.update(currentUser.id, { rulesets: updatedRulesetIds });
       }
+
+      // Create a test character for this ruleset
+      await createCharacter({
+        isTestCharacter: true,
+        name: 'Test Character',
+        rulesetId: id,
+      });
+
       return id;
     } catch (e) {
       handleError(e as Error, {
@@ -117,6 +130,7 @@ export const useRulesets = () => {
   return {
     rulesets,
     activeRuleset,
+    testCharacter,
     loading,
     createRuleset,
     deleteRuleset,

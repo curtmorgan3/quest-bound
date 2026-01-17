@@ -38,6 +38,7 @@ export const useCharacter = (_id?: string) => {
         userId: currentUser.id,
         createdAt: now,
         updatedAt: now,
+        isTestCharacter: data.isTestCharacter ?? false,
       } as Character);
     } catch (e) {
       handleError(e as Error, {
