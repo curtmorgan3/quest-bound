@@ -2,13 +2,15 @@ import { useErrorHandler } from '@/hooks';
 import { db, useCurrentUser } from '@/stores';
 import type { Character, Inventory } from '@/types';
 import { useLiveQuery } from 'dexie-react-hooks';
+import { useParams } from 'react-router-dom';
 import { useAssets } from '../assets';
 
 export type CharacterWithInventories = Character & {
   inventories: Inventory[];
 };
 
-export const useCharacter = (id?: string) => {
+export const useCharacter = (_id?: string) => {
+  const { characterId } = useParams();
   const { currentUser } = useCurrentUser();
   const { handleError } = useErrorHandler();
   const { deleteAsset } = useAssets();
@@ -21,6 +23,8 @@ export const useCharacter = (id?: string) => {
         .toArray(),
     [currentUser],
   );
+
+  const id = _id ?? characterId;
 
   const character = characters?.find((c) => c.id === id);
 

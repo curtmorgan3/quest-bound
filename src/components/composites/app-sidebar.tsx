@@ -25,7 +25,7 @@ import {
   SidebarTrigger,
   useSidebar,
 } from '@/components/ui/sidebar';
-import { useRulesets, useUsers } from '@/lib/compass-api';
+import { useCharacter, useRulesets, useUsers } from '@/lib/compass-api';
 import { DevTools, Settings } from '@/pages';
 import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
@@ -39,10 +39,10 @@ import { AssetManagerModal } from './asset-manager-modal';
 export function AppSidebar() {
   const { currentUser, signOut } = useUsers();
   const { activeRuleset } = useRulesets();
+  const { character } = useCharacter();
   const { open, setOpen } = useSidebar();
   const location = useLocation();
-  const isHomepage =
-    location.pathname === '/rulesets' || location.pathname === '/characters';
+  const isHomepage = location.pathname === '/rulesets' || location.pathname === '/characters';
   const [drawerContent, setDrawerContent] = useState<'settings' | 'dev-tools'>('settings');
 
   useEffect(() => {
@@ -95,13 +95,17 @@ export function AppSidebar() {
         },
       ];
 
+  const items = character ? [] : rulesetItems;
+
   return (
     <Drawer direction='bottom'>
       <Sidebar collapsible='icon'>
         <SidebarContent>
           <SidebarGroup>
             <div className='flex items-center justify-left'>
-              <SidebarGroupLabel>{activeRuleset?.title ?? 'Quest Bound'}</SidebarGroupLabel>
+              <SidebarGroupLabel>
+                {character?.name ?? activeRuleset?.title ?? 'Quest Bound'}
+              </SidebarGroupLabel>
               {open && (
                 <SidebarTrigger
                   onClick={() => localStorage.setItem('qb.sidebarCollapsed', 'true')}
@@ -119,7 +123,7 @@ export function AppSidebar() {
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 )}
-                {rulesetItems.map((item) => (
+                {items.map((item) => (
                   <SidebarMenuItem
                     key={item.title}
                     className={`${location.pathname.includes(item.title.toLowerCase()) ? 'text-primary' : ''}`}>
