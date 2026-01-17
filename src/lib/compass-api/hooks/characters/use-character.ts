@@ -8,7 +8,7 @@ export type CharacterWithInventories = Character & {
   inventories: Inventory[];
 };
 
-export const useCharacter = () => {
+export const useCharacter = (id?: string) => {
   const { currentUser } = useCurrentUser();
   const { handleError } = useErrorHandler();
   const { deleteAsset } = useAssets();
@@ -21,6 +21,8 @@ export const useCharacter = () => {
         .toArray(),
     [currentUser],
   );
+
+  const character = characters?.find((c) => c.id === id);
 
   const createCharacter = async (data: Partial<Character>) => {
     if (!data.rulesetId || !currentUser) return;
@@ -107,6 +109,7 @@ export const useCharacter = () => {
 
   return {
     characters: characters ?? [],
+    character,
     createCharacter,
     updateCharacter,
     deleteCharacter,

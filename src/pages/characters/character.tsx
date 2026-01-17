@@ -1,24 +1,13 @@
-import { useCharacter } from '@/lib/compass-api';
-import { useEffect } from 'react';
+import { useCharacter, useCharacterWindows } from '@/lib/compass-api';
+import { SheetViewer } from '@/lib/compass-planes';
 import { useParams } from 'react-router-dom';
 
-export const Character = () => {
+export const CharacterPage = () => {
   const { id } = useParams<{ id: string }>();
-  const { getCharacter } = useCharacter();
+  const { character } = useCharacter(id);
+  const { windows } = useCharacterWindows(character?.id);
 
-  useEffect(() => {
-    const fetchCharacter = async () => {
-      if (!id) return;
+  console.log('Character name:', character?.name, windows);
 
-      const character = await getCharacter(id);
-      if (character) {
-        console.log('Character name:', character.name);
-        console.log('Character inventories:', character.inventories);
-      }
-    };
-
-    fetchCharacter();
-  }, [id, getCharacter]);
-
-  return <p>Character</p>;
+  return <SheetViewer windowIds={[]} />;
 };

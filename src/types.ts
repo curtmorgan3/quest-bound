@@ -158,6 +158,14 @@ export type Character = BaseDetails & {
   image: string | null;
 };
 
+export type CharacterWindow = BaseDetails & {
+  characterId: string;
+  windowId: string;
+  x: number;
+  y: number;
+  isCollapsed: boolean;
+};
+
 export type CharacterInventory = BaseDetails & {
   characterId: string;
   inventoryId: string;

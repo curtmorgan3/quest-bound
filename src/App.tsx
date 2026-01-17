@@ -1,4 +1,4 @@
-import { Character, Characters, ErrorPage, Ruleset, Rulesets } from '@/pages';
+import { CharacterPage, Characters, ErrorPage, Ruleset, Rulesets } from '@/pages';
 import { HashRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { ErrorBoundary } from './components';
 import { Layout } from './components/layout';
@@ -10,7 +10,7 @@ function CompassRoutes() {
       <HashRouter>
         <Routes>
           <Route element={<Layout />}>
-            <Route index element={<Navigate to="/rulesets" replace />} />
+            <Route index element={<Navigate to='/rulesets' replace />} />
             <Route path={`/rulesets`} element={<Rulesets />} />
             <Route path={`/rulesets/:rulesetId`} element={<Ruleset />} />
             <Route
@@ -26,7 +26,7 @@ function CompassRoutes() {
             <Route path={`/rulesets/:rulesetId/windows/:windowId`} element={<WindowEditor />} />
 
             <Route path={`/characters`} element={<Characters />} />
-            <Route path={`/characters/:id`} element={<Character />} />
+            <Route path={`/characters/:id`} element={<CharacterPage />} />
 
             <Route path='*' element={<ErrorPage type='404' />} />
           </Route>
