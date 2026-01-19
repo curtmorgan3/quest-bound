@@ -93,7 +93,7 @@ export const TextEdit = ({ components, handleUpdate }: Props) => {
                   Custom Fonts
                 </div>
                 {rulesetFonts.map((font) => (
-                  <SelectItem key={font.id} value={font.label}>
+                  <SelectItem key={font.id} value={font.label} style={{ fontFamily: font.label }}>
                     {font.label}
                   </SelectItem>
                 ))}

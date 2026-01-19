@@ -84,7 +84,7 @@ export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
   return (
     <div
       className='w-[240px] h-[100vh] flex flex-col gap-2 items-center p-2'
-      style={{ position: 'absolute', right: 0, backgroundColor: colorBlack }}>
+      style={{ position: 'absolute', right: 0, backgroundColor: colorBlack, overflow: 'auto' }}>
       {selectedComponents.length > 0 ? (
         <Tabs defaultValue='style' className='w-full flex flex-col'>
           <TabsList className='w-full'>
