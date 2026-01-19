@@ -8,6 +8,7 @@ import {
 } from '@/components/ui/select';
 import { Toggle } from '@/components/ui/toggle';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { useFonts } from '@/lib/compass-api';
 import type { Component } from '@/types';
 import {
   AlignCenter,
@@ -23,7 +24,7 @@ import {
 import { EditPanelInput } from './component-edit-panel-input';
 import { parseValue, valueIfAllAreEqual } from './utils';
 
-const FONT_FAMILIES = [
+const SYSTEM_FONTS = [
   'Arial',
   'Arial Black',
   'Book Antiqua',
@@ -58,6 +59,8 @@ interface Props {
 const MIXED_VALUE_LABEL = '-';
 
 export const TextEdit = ({ components, handleUpdate }: Props) => {
+  const { fonts: rulesetFonts } = useFonts();
+
   const fontFamily = valueIfAllAreEqual(components, 'fontFamily');
   const fontSize = valueIfAllAreEqual(components, 'fontSize');
   const fontWeight = valueIfAllAreEqual(components, 'fontWeight');
@@ -84,7 +87,22 @@ export const TextEdit = ({ components, handleUpdate }: Props) => {
             <SelectValue placeholder='Select font' />
           </SelectTrigger>
           <SelectContent>
-            {FONT_FAMILIES.map((font) => (
+            {rulesetFonts.length > 0 && (
+              <>
+                <div className='px-2 py-1.5 text-xs font-semibold text-muted-foreground'>
+                  Custom Fonts
+                </div>
+                {rulesetFonts.map((font) => (
+                  <SelectItem key={font.id} value={font.label}>
+                    {font.label}
+                  </SelectItem>
+                ))}
+                <div className='px-2 py-1.5 text-xs font-semibold text-muted-foreground'>
+                  System Fonts
+                </div>
+              </>
+            )}
+            {SYSTEM_FONTS.map((font) => (
               <SelectItem key={font} value={font} style={{ fontFamily: font }}>
                 {font}
               </SelectItem>
