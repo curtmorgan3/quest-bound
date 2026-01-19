@@ -37,6 +37,7 @@ const DEFAULT_TEXT_STYLES: ComponentStyle = {
   fontSize: 16,
   fontWeight: 'normal',
   fontStyle: 'normal',
+  fontFamily: 'Roboto Condensed',
   textDecoration: 'none',
   textAlign: 'start',
   verticalAlign: 'start',

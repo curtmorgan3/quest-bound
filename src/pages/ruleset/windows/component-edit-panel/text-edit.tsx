@@ -1,4 +1,11 @@
 import { Label } from '@/components';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Toggle } from '@/components/ui/toggle';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import type { Component } from '@/types';
@@ -16,6 +23,33 @@ import {
 import { EditPanelInput } from './component-edit-panel-input';
 import { parseValue, valueIfAllAreEqual } from './utils';
 
+const FONT_FAMILIES = [
+  'Arial',
+  'Arial Black',
+  'Book Antiqua',
+  'Brush Script MT',
+  'Comic Sans MS',
+  'Courier',
+  'Courier New',
+  'Garamond',
+  'Georgia',
+  'Helvetica',
+  'Impact',
+  'Lucida Console',
+  'Lucida Sans Unicode',
+  'Palatino Linotype',
+  'Roboto Condensed',
+  'Tahoma',
+  'Times New Roman',
+  'Trebuchet MS',
+  'Verdana',
+  'cursive',
+  'fantasy',
+  'monospace',
+  'sans-serif',
+  'serif',
+];
+
 interface Props {
   components: Array<Component>;
   handleUpdate: (key: string, value: number | string | boolean | null) => void;
@@ -24,6 +58,7 @@ interface Props {
 const MIXED_VALUE_LABEL = '-';
 
 export const TextEdit = ({ components, handleUpdate }: Props) => {
+  const fontFamily = valueIfAllAreEqual(components, 'fontFamily');
   const fontSize = valueIfAllAreEqual(components, 'fontSize');
   const fontWeight = valueIfAllAreEqual(components, 'fontWeight');
   const fontStyle = valueIfAllAreEqual(components, 'fontStyle');
@@ -38,6 +73,25 @@ export const TextEdit = ({ components, handleUpdate }: Props) => {
   return (
     <div className='flex-col w-full flex flex-col gap-3 pb-2 border-b-1'>
       <p className='text-sm'>Text</p>
+
+      <div className='w-full flex flex-col gap-2'>
+        <Label className='text-xs'>Font Family</Label>
+        <Select
+          value={fontFamily !== MIXED_VALUE_LABEL ? (fontFamily as string) : undefined}
+          onValueChange={(value) => handleUpdate('fontFamily', value)}
+          disabled={fontFamily === MIXED_VALUE_LABEL}>
+          <SelectTrigger size='sm' className='w-full'>
+            <SelectValue placeholder='Select font' />
+          </SelectTrigger>
+          <SelectContent>
+            {FONT_FAMILIES.map((font) => (
+              <SelectItem key={font} value={font} style={{ fontFamily: font }}>
+                {font}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
 
       <div className='w-full flex flex-row gap-4 items-end'>
         <EditPanelInput
