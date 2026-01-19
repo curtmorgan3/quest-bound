@@ -7,6 +7,7 @@ import type {
   CharacterWindow,
   Chart,
   Component,
+  Font,
   Inventory,
   InventoryAction,
   InventoryItem,
@@ -30,6 +31,7 @@ const db = new Dexie('qbdb') as Dexie & {
   items: EntityTable<Item, 'id'>;
   charts: EntityTable<Chart, 'id'>;
   assets: EntityTable<Asset, 'id'>;
+  fonts: EntityTable<Font, 'id'>;
   windows: EntityTable<Window, 'id'>;
   components: EntityTable<Component, 'id'>;
   characters: EntityTable<Character, 'id'>;
@@ -47,6 +49,7 @@ db.version(1).stores({
   users: `${common}, username, assetId, image, preferences`,
   assets: `${common}, rulesetId, [directory+filename], data, type`,
   rulesets: `${common}, version, createdBy, title, description, details, assetId, image`,
+  fonts: `${common}, rulesetId, &[rulesetId+label], label, data`,
   attributes: `${common}, &[rulesetId+title], description, category, type, options, defaultValue, optionsChartRef, optionsChartColumnHeader, min, max`,
   actions: `${common}, &[rulesetId+title], description, category`,
   items: `${common}, &[rulesetId+title], description, category, weight, defaultQuantity, stackSize, isContainer, isStorable, isEquippable, isConsumable, inventoryWidth, inventoryHeight`,

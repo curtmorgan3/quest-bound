@@ -1,8 +1,8 @@
 import { Button, ImageUpload, Input, Label } from '@/components';
-import { useExportRuleset, useRulesets } from '@/lib/compass-api';
+import { useExportRuleset, useFonts, useRulesets } from '@/lib/compass-api';
 import type { Ruleset } from '@/types';
-import { Download } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { Download, Trash, Upload } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 
 interface RulesetSettingsProps {
   activeRuleset: Ruleset;
@@ -11,8 +11,11 @@ interface RulesetSettingsProps {
 export const RulesetSettings = ({ activeRuleset }: RulesetSettingsProps) => {
   const { updateRuleset } = useRulesets();
   const { exportRuleset } = useExportRuleset(activeRuleset.id);
+  const { fonts, createFont, deleteFont } = useFonts(activeRuleset.id);
 
   const [title, setTitle] = useState(activeRuleset.title);
+  const [fontLoading, setFontLoading] = useState(false);
+  const fontInputRef = useRef<HTMLInputElement>(null);
 
   const handleUpdate = async () => {
     await updateRuleset(activeRuleset.id, { title });
@@ -24,6 +27,23 @@ export const RulesetSettings = ({ activeRuleset }: RulesetSettingsProps) => {
       handleUpdate();
     }, 500);
   }, [title]);
+
+  const handleFontUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setFontLoading(true);
+      try {
+        await createFont(file);
+      } catch (error) {
+        console.error('Failed to upload font:', error);
+      } finally {
+        setFontLoading(false);
+        if (fontInputRef.current) {
+          fontInputRef.current.value = '';
+        }
+      }
+    }
+  };
 
   return (
     <div className='flex flex-col gap-6'>
@@ -45,6 +65,41 @@ export const RulesetSettings = ({ activeRuleset }: RulesetSettingsProps) => {
         onUpload={(assetId) => updateRuleset(activeRuleset.id, { assetId })}
         rulesetId={activeRuleset.id}
       />
+
+      <div className='flex flex-col gap-3'>
+        <Label>Fonts</Label>
+        <div className='flex flex-col gap-2'>
+          {fonts.map((font) => (
+            <div
+              key={font.id}
+              className='flex items-center justify-between bg-muted px-3 py-2 rounded-md'>
+              <span className='text-sm'>{font.label}</span>
+              <Button
+                variant='ghost'
+                size='sm'
+                onClick={() => deleteFont(font.id)}
+                className='h-8 w-8 p-0'>
+                <Trash className='h-4 w-4 text-destructive' />
+              </Button>
+            </div>
+          ))}
+        </div>
+        <Button
+          variant='outline'
+          className='gap-2 w-fit'
+          disabled={fontLoading}
+          onClick={() => fontInputRef.current?.click()}>
+          <Upload className='h-4 w-4' />
+          {fontLoading ? 'Uploading...' : 'Upload Font'}
+        </Button>
+        <input
+          ref={fontInputRef}
+          type='file'
+          accept='.ttf,.otf,.woff,.woff2'
+          className='hidden'
+          onChange={handleFontUpload}
+        />
+      </div>
     </div>
   );
 };

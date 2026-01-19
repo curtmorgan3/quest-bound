@@ -40,6 +40,12 @@ export type Ruleset = BaseDetails & {
   image: string | null;
 };
 
+export type Font = BaseDetails & {
+  rulesetId: string;
+  label: string;
+  data: string;
+};
+
 export type Attribute = BaseDetails & {
   rulesetId: string;
   title: string;
