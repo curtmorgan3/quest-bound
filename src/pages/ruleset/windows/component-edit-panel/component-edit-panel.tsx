@@ -7,6 +7,7 @@ import { useParams } from 'react-router-dom';
 import { ActionEdit } from './action-edit';
 import { PositionEdit } from './position-edit';
 import { StyleEdit } from './style-edit';
+import { TextEdit } from './text-edit';
 
 export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
   const { windowId } = useParams();
@@ -76,6 +77,10 @@ export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
     selectedComponents.length > 0 &&
     selectedComponents.every((c) => c.type === ComponentTypes.IMAGE);
 
+  const allAreText =
+    selectedComponents.length > 0 &&
+    selectedComponents.every((c) => c.type === ComponentTypes.TEXT);
+
   return (
     <div
       className='w-[240px] h-[100vh] flex flex-col gap-2 items-center p-2'
@@ -94,6 +99,9 @@ export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
             <ActionEdit components={selectedComponents} handleUpdate={handleUpdate} />
             <PositionEdit components={selectedComponents} handleUpdate={handleUpdate} />
             <StyleEdit components={selectedComponents} handleUpdate={handleStyleUpdate} />
+            {allAreText && (
+              <TextEdit components={selectedComponents} handleUpdate={handleStyleUpdate} />
+            )}
           </TabsContent>
           <TabsContent value='data' className='w-full flex flex-col gap-2 mt-2'>
             {allAreImages && (

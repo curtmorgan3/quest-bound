@@ -86,7 +86,7 @@ export type Chart = BaseDetails & {
   data: string;
 };
 
-export type ComponentStyle = {
+type BaseComponentStyle = {
   color: string;
   opacity: number;
   outline?: string;
@@ -97,12 +97,20 @@ export type ComponentStyle = {
   borderRadiusBottomRight: number;
   outlineWidth: number;
   outlineColor: string;
+};
+
+export type TextComponentStyle = {
   fontSize?: number;
   fontFamily?: string;
   fontWeight?: string;
-  textAlign?: 'left' | 'center' | 'right' | 'justify';
+  fontStyle?: string;
+  textDecoration?: string;
+  textAlign?: 'start' | 'center' | 'end';
+  verticalAlign?: 'start' | 'center' | 'end';
   lineHeight?: number;
 };
+
+export type ComponentStyle = BaseComponentStyle & TextComponentStyle;
 
 export type ComponentData = {
   conditionalRenderAttributeId?: string;

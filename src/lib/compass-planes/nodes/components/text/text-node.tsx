@@ -4,7 +4,7 @@ import {
   getComponentStyles,
 } from '@/lib/compass-planes/utils';
 import { WindowEditorContext } from '@/stores';
-import type { Component, TextComponentData } from '@/types';
+import type { Component, TextComponentData, TextComponentStyle } from '@/types';
 import { useNodeId } from '@xyflow/react';
 import { useContext, useEffect, useRef, useState } from 'react';
 import { ResizableNode } from '../../decorators';
@@ -26,7 +26,7 @@ export const EditTextNode = () => {
   if (!component) return null;
 
   const data = getComponentData(component) as TextComponentData;
-  const css = getComponentStyles(component);
+  const css = getComponentStyles(component) as TextComponentStyle;
 
   // Focus input when entering edit mode
   useEffect(() => {
@@ -80,43 +80,62 @@ export const EditTextNode = () => {
   return (
     <ResizableNode component={component}>
       {isEditing ? (
-        <input
-          ref={inputRef}
-          type='text'
-          defaultValue={data.value}
-          onKeyDown={handleKeyDown}
-          style={{
-            ...css,
-            background: 'transparent',
-            border: 'none',
-            outline: 'none',
-            padding: 0,
-            margin: 0,
-            width: '100%',
-            height: '100%',
-            font: 'inherit',
-            color: 'inherit',
-          }}
-        />
-      ) : (
         <section
           style={{
             height: component.height,
             width: component.width,
             display: 'flex',
+            justifyContent: css.textAlign ?? 'start',
+            alignItems: css.verticalAlign ?? 'start',
           }}>
-          <span onDoubleClick={handleDoubleClick} style={css}>
-            {data.value}
-          </span>
+          <input
+            ref={inputRef}
+            type='text'
+            defaultValue={data.value}
+            onKeyDown={handleKeyDown}
+            style={{
+              ...css,
+              background: 'transparent',
+              border: 'none',
+              outline: 'none',
+              padding: 0,
+              margin: 0,
+              width: '100%',
+              height: '100%',
+              font: 'inherit',
+              color: 'inherit',
+            }}
+          />
         </section>
+      ) : (
+        <ViewTextNode component={component} onDoubleClick={handleDoubleClick} />
       )}
     </ResizableNode>
   );
 };
 
-export const ViewTextNode = ({ component }: { component: Component }) => {
+export const ViewTextNode = ({
+  component,
+  onDoubleClick,
+}: {
+  component: Component;
+  onDoubleClick?: () => void;
+}) => {
   const data = getComponentData(component) as TextComponentData;
-  const css = getComponentStyles(component);
+  const css = getComponentStyles(component) as TextComponentStyle;
 
-  return <span style={css}>{data.value}</span>;
+  return (
+    <section
+      style={{
+        height: component.height,
+        width: component.width,
+        display: 'flex',
+        justifyContent: css.textAlign ?? 'start',
+        alignItems: css.verticalAlign ?? 'start',
+      }}>
+      <span onDoubleClick={onDoubleClick} style={css}>
+        {data.value}
+      </span>
+    </section>
+  );
 };

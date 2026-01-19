@@ -34,6 +34,12 @@ const DEFAULT_TEXT_STYLES: ComponentStyle = {
   outlineWidth: 0,
   outlineColor: '',
   outline: 'solid',
+  fontSize: 16,
+  fontWeight: 'normal',
+  fontStyle: 'normal',
+  textDecoration: 'none',
+  textAlign: 'start',
+  verticalAlign: 'start',
 };
 
 export const DEFAULT_TEXT: Partial<Component> = {

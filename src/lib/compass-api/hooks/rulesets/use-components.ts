@@ -25,12 +25,12 @@ export const useComponents = (windowId?: string) => {
     const now = new Date().toISOString();
     try {
       await db.components.add({
-        id: data.id || crypto.randomUUID(),
+        ...data,
+        id: data.id ?? crypto.randomUUID(),
         rulesetId: activeRuleset.id,
         windowId,
         createdAt: now,
         updatedAt: now,
-        ...data,
       } as Component);
     } catch (e) {
       handleError(e as Error, {
@@ -48,11 +48,11 @@ export const useComponents = (windowId?: string) => {
         data.map(
           (comp) =>
             ({
-              id: comp.id || crypto.randomUUID(),
+              ...comp,
+              id: comp.id ?? crypto.randomUUID(),
               rulesetId: activeRuleset.id,
               createdAt: now,
               updatedAt: now,
-              ...comp,
             }) as Component,
         ),
       );
