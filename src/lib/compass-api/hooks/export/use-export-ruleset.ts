@@ -36,16 +36,13 @@ export const useExportRuleset = (rulesetId: string) => {
     [rulesetId],
   );
 
-  const components = useLiveQuery(
-    async () => {
-      if (!rulesetId) return [];
-      const rulesetWindows = await db.windows.where('rulesetId').equals(rulesetId).toArray();
-      const windowIds = rulesetWindows.map((w) => w.id);
-      if (windowIds.length === 0) return [];
-      return db.components.where('windowId').anyOf(windowIds).toArray();
-    },
-    [rulesetId],
-  );
+  const components = useLiveQuery(async () => {
+    if (!rulesetId) return [];
+    const rulesetWindows = await db.windows.where('rulesetId').equals(rulesetId).toArray();
+    const windowIds = rulesetWindows.map((w) => w.id);
+    if (windowIds.length === 0) return [];
+    return db.components.where('windowId').anyOf(windowIds).toArray();
+  }, [rulesetId]);
 
   const assets = useLiveQuery(
     () => (rulesetId ? db.assets.where('rulesetId').equals(rulesetId).toArray() : []),
@@ -57,6 +54,13 @@ export const useExportRuleset = (rulesetId: string) => {
     [rulesetId],
   );
 
+  const characters = useLiveQuery(
+    () => (rulesetId ? db.characters.where('rulesetId').equals(rulesetId).toArray() : []),
+    [rulesetId],
+  );
+
+  const testCharacter = characters?.find((c) => c.isTestCharacter);
+
   const isLoading =
     ruleset === undefined ||
     attributes === undefined ||
@@ -66,7 +70,8 @@ export const useExportRuleset = (rulesetId: string) => {
     windows === undefined ||
     components === undefined ||
     assets === undefined ||
-    fonts === undefined;
+    fonts === undefined ||
+    testCharacter === undefined;
 
   const exportRuleset = async (): Promise<void> => {
     if (!ruleset || !rulesetId) {
@@ -114,6 +119,10 @@ export const useExportRuleset = (rulesetId: string) => {
 
       if (items && items.length > 0) {
         zip.file('items.json', JSON.stringify(items, null, 2));
+      }
+
+      if (testCharacter) {
+        zip.file('characters.json', JSON.stringify([testCharacter], null, 2));
       }
 
       if (charts && charts.length > 0) {

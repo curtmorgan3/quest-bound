@@ -4,6 +4,7 @@ import type {
   Action,
   Asset,
   Attribute,
+  Character,
   Chart,
   Component,
   Font,
@@ -24,6 +25,7 @@ export interface ImportRulesetResult {
     actions: number;
     items: number;
     charts: number;
+    characters: number;
     windows: number;
     components: number;
     assets: number;
@@ -54,6 +56,7 @@ interface ImportedMetadata {
     actions: number;
     items: number;
     charts: number;
+    characters: number;
     windows: number;
     components: number;
     assets: number;
@@ -96,6 +99,7 @@ export const useImportRuleset = () => {
       | 'actions'
       | 'items'
       | 'charts'
+      | 'characters'
       | 'windows'
       | 'components'
       | 'assets'
@@ -177,6 +181,15 @@ export const useImportRuleset = () => {
           }
           break;
 
+        case 'characters':
+          if (!item.name || typeof item.name !== 'string') {
+            errors.push(`Character ${index + 1}: name is required and must be a string`);
+          }
+          if (typeof item.isTestCharacter !== 'boolean') {
+            errors.push(`Character ${index + 1}: isTestCharacter must be a boolean`);
+          }
+          break;
+
         case 'windows':
           if (!item.title || typeof item.title !== 'string') {
             errors.push(`${type} ${index + 1}: title is required and must be a string`);
@@ -255,6 +268,7 @@ export const useImportRuleset = () => {
             actions: 0,
             items: 0,
             charts: 0,
+            characters: 0,
             windows: 0,
             components: 0,
             assets: 0,
@@ -278,6 +292,7 @@ export const useImportRuleset = () => {
             actions: 0,
             items: 0,
             charts: 0,
+            characters: 0,
             windows: 0,
             components: 0,
             assets: 0,
@@ -289,7 +304,8 @@ export const useImportRuleset = () => {
 
       // Create new ruleset
       const now = new Date().toISOString();
-      const newRulesetId = crypto.randomUUID();
+      // const newRulesetId = crypto.randomUUID();
+      const newRulesetId = metadata.ruleset.id;
 
       const newRuleset: Ruleset = {
         id: newRulesetId,
@@ -313,6 +329,7 @@ export const useImportRuleset = () => {
         actions: 0,
         items: 0,
         charts: 0,
+        characters: 0,
         windows: 0,
         components: 0,
         assets: 0,
@@ -437,6 +454,35 @@ export const useImportRuleset = () => {
         }
       }
 
+      // Import characters
+      const charactersFile = zipContent.file('characters.json');
+      if (charactersFile) {
+        try {
+          const charactersText = await charactersFile.async('text');
+          const characters: Character[] = JSON.parse(charactersText);
+
+          const validation = validateData(characters, 'characters');
+          if (validation.isValid) {
+            for (const character of characters) {
+              const newCharacter: Character = {
+                ...character,
+                rulesetId: newRulesetId,
+                createdAt: now,
+                updatedAt: now,
+              };
+              await db.characters.add(newCharacter);
+              importedCounts.characters++;
+            }
+          } else {
+            allErrors.push(...validation.errors);
+          }
+        } catch (error) {
+          allErrors.push(
+            `Failed to import characters: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          );
+        }
+      }
+
       // Import windows (must be imported before components since components reference windows)
       const windowsFile = zipContent.file('windows.json');
       if (windowsFile) {
@@ -557,6 +603,7 @@ export const useImportRuleset = () => {
         importedCounts.actions +
         importedCounts.items +
         importedCounts.charts +
+        importedCounts.characters +
         importedCounts.windows +
         importedCounts.components +
         importedCounts.assets +
@@ -583,6 +630,7 @@ export const useImportRuleset = () => {
           actions: 0,
           items: 0,
           charts: 0,
+          characters: 0,
           windows: 0,
           components: 0,
           assets: 0,

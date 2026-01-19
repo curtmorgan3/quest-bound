@@ -58,12 +58,14 @@ export const useRulesets = () => {
         await db.users.update(currentUser.id, { rulesets: updatedRulesetIds });
       }
 
-      // Create a test character for this ruleset
-      await createCharacter({
-        isTestCharacter: true,
-        name: 'Test Character',
-        rulesetId: id,
-      });
+      // data.id indicates this is an imported ruleset, which will already have a test character
+      if (!data.id) {
+        await createCharacter({
+          isTestCharacter: true,
+          name: 'Test Character',
+          rulesetId: id,
+        });
+      }
 
       return id;
     } catch (e) {
@@ -114,6 +116,11 @@ export const useRulesets = () => {
       await db.windows.where('rulesetId').equals(id).delete();
       await db.components.where('rulesetId').equals(id).delete();
       await db.fonts.where('rulesetId').equals(id).delete();
+      const testCharacters = await db.characters.where('rulesetId').equals(id).toArray();
+      const testCharacter = testCharacters.find((c) => c.isTestCharacter);
+      if (testCharacter) {
+        await db.characters.where('id').equals(testCharacter.id).delete();
+      }
 
       if (activeRuleset?.id === id) {
         localStorage.removeItem('qb.lastEditedRulesetId');
