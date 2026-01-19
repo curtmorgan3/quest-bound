@@ -52,6 +52,11 @@ export const useExportRuleset = (rulesetId: string) => {
     [rulesetId],
   );
 
+  const fonts = useLiveQuery(
+    () => (rulesetId ? db.fonts.where('rulesetId').equals(rulesetId).toArray() : []),
+    [rulesetId],
+  );
+
   const isLoading =
     ruleset === undefined ||
     attributes === undefined ||
@@ -60,7 +65,8 @@ export const useExportRuleset = (rulesetId: string) => {
     charts === undefined ||
     windows === undefined ||
     components === undefined ||
-    assets === undefined;
+    assets === undefined ||
+    fonts === undefined;
 
   const exportRuleset = async (): Promise<void> => {
     if (!ruleset || !rulesetId) {
@@ -91,6 +97,7 @@ export const useExportRuleset = (rulesetId: string) => {
           windows: windows?.length || 0,
           components: components?.length || 0,
           assets: assets?.length || 0,
+          fonts: fonts?.length || 0,
         },
       };
 
@@ -172,6 +179,10 @@ export const useExportRuleset = (rulesetId: string) => {
         }
       }
 
+      if (fonts && fonts.length > 0) {
+        zip.file('fonts.json', JSON.stringify(fonts, null, 2));
+      }
+
       // Create a README file with instructions
       const readme = `# ${ruleset.title} Export
 
@@ -188,6 +199,7 @@ This zip file contains a complete export of the "${ruleset.title}" ruleset from 
 - \`components.json\` - All components defined in this ruleset
 - \`assets.json\` - All assets metadata defined in this ruleset
 - \`assets/\` - Directory containing all asset files organized by their directory structure
+- \`fonts.json\` - All custom fonts defined in this ruleset
 
 ## Import Instructions
 

@@ -113,6 +113,7 @@ export const useRulesets = () => {
       await db.assets.where('rulesetId').equals(id).delete();
       await db.windows.where('rulesetId').equals(id).delete();
       await db.components.where('rulesetId').equals(id).delete();
+      await db.fonts.where('rulesetId').equals(id).delete();
 
       if (activeRuleset?.id === id) {
         localStorage.removeItem('qb.lastEditedRulesetId');

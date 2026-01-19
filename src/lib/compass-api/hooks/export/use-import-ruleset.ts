@@ -1,6 +1,16 @@
 import { useErrorHandler } from '@/hooks';
 import { db } from '@/stores';
-import type { Action, Asset, Attribute, Chart, Component, Item, Ruleset, Window } from '@/types';
+import type {
+  Action,
+  Asset,
+  Attribute,
+  Chart,
+  Component,
+  Font,
+  Item,
+  Ruleset,
+  Window,
+} from '@/types';
 import JSZip from 'jszip';
 import { useState } from 'react';
 import { useRulesets } from '../rulesets';
@@ -17,6 +27,7 @@ export interface ImportRulesetResult {
     windows: number;
     components: number;
     assets: number;
+    fonts: number;
   };
   errors: string[];
 }
@@ -46,6 +57,7 @@ interface ImportedMetadata {
     windows: number;
     components: number;
     assets: number;
+    fonts: number;
   };
 }
 
@@ -79,7 +91,15 @@ export const useImportRuleset = () => {
 
   const validateData = (
     data: any[],
-    type: 'attributes' | 'actions' | 'items' | 'charts' | 'windows' | 'components' | 'assets',
+    type:
+      | 'attributes'
+      | 'actions'
+      | 'items'
+      | 'charts'
+      | 'windows'
+      | 'components'
+      | 'assets'
+      | 'fonts',
   ): { isValid: boolean; errors: string[] } => {
     const errors: string[] = [];
 
@@ -201,6 +221,15 @@ export const useImportRuleset = () => {
             errors.push(`Asset ${index + 1}: filename is required and must be a string`);
           }
           break;
+
+        case 'fonts':
+          if (!item.label || typeof item.label !== 'string') {
+            errors.push(`Font ${index + 1}: label is required and must be a string`);
+          }
+          if (!item.data || typeof item.data !== 'string') {
+            errors.push(`Font ${index + 1}: data is required and must be a string`);
+          }
+          break;
       }
     });
 
@@ -229,6 +258,7 @@ export const useImportRuleset = () => {
             windows: 0,
             components: 0,
             assets: 0,
+            fonts: 0,
           },
           errors: ['metadata.json file is required'],
         };
@@ -251,6 +281,7 @@ export const useImportRuleset = () => {
             windows: 0,
             components: 0,
             assets: 0,
+            fonts: 0,
           },
           errors: metadataValidation.errors,
         };
@@ -285,6 +316,7 @@ export const useImportRuleset = () => {
         windows: 0,
         components: 0,
         assets: 0,
+        fonts: 0,
       };
 
       const allErrors: string[] = [];
@@ -491,6 +523,35 @@ export const useImportRuleset = () => {
         }
       }
 
+      // Import fonts
+      const fontsFile = zipContent.file('fonts.json');
+      if (fontsFile) {
+        try {
+          const fontsText = await fontsFile.async('text');
+          const fonts: Font[] = JSON.parse(fontsText);
+
+          const validation = validateData(fonts, 'fonts');
+          if (validation.isValid) {
+            for (const font of fonts) {
+              const newFont: Font = {
+                ...font,
+                rulesetId: newRulesetId,
+                createdAt: now,
+                updatedAt: now,
+              };
+              await db.fonts.add(newFont);
+              importedCounts.fonts++;
+            }
+          } else {
+            allErrors.push(...validation.errors);
+          }
+        } catch (error) {
+          allErrors.push(
+            `Failed to import fonts: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          );
+        }
+      }
+
       const totalImported =
         importedCounts.attributes +
         importedCounts.actions +
@@ -498,7 +559,8 @@ export const useImportRuleset = () => {
         importedCounts.charts +
         importedCounts.windows +
         importedCounts.components +
-        importedCounts.assets;
+        importedCounts.assets +
+        importedCounts.fonts;
 
       return {
         success: allErrors.length === 0,
@@ -524,6 +586,7 @@ export const useImportRuleset = () => {
           windows: 0,
           components: 0,
           assets: 0,
+          fonts: 0,
         },
         errors: [error instanceof Error ? error.message : 'Unknown error'],
       };
