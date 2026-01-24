@@ -1,3 +1,4 @@
+export * from './checkbox';
 export * from './common';
 export * from './image';
 export * from './input';

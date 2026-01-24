@@ -139,10 +139,19 @@ export type InputComponentData = {
   placeholder?: string;
 };
 
+export type CheckboxComponentData = {
+  label?: string;
+  checkedAssetId?: string;
+  checkedAassetUrl?: string;
+  uncheckedAssetId?: string;
+  uncheckedAassetUrl?: string;
+};
+
 export type ComponentData = ShapeComponentData &
   TextComponentData &
   ImageComponentData &
-  InputComponentData & {
+  InputComponentData &
+  CheckboxComponentData & {
     conditionalRenderAttributeId?: string;
     conditionalRenderInverse?: boolean;
   };
