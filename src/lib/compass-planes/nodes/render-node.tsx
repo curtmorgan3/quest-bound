@@ -1,6 +1,6 @@
 import type { Component } from '@/types';
 import { ComponentTypes } from '../nodes';
-import { ViewImageNode, ViewShapeNode, ViewTextNode } from '../nodes/components';
+import { ViewImageNode, ViewInputNode, ViewShapeNode, ViewTextNode } from '../nodes/components';
 
 export const renderViewComponent = (component: Component) => {
   switch (component.type) {
@@ -10,6 +10,8 @@ export const renderViewComponent = (component: Component) => {
       return <ViewShapeNode key={component.id} component={component} />;
     case ComponentTypes.IMAGE:
       return <ViewImageNode key={component.id} component={component} />;
+    case ComponentTypes.INPUT:
+      return <ViewInputNode key={component.id} component={component} />;
     default:
       console.warn(`Attempted to render an unregistered view component: `, component.type);
       return null;

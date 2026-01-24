@@ -51,6 +51,17 @@ html {
   overscroll-behavior: none !important;
 }
 
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Firefox */
+input[type='number'] {
+  -moz-appearance: textfield;
+}
+
 :root {
   --radius: 0.625rem;
   --background: oklch(1 0 0);

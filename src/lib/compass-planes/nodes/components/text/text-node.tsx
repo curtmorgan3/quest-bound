@@ -2,19 +2,13 @@ import {
   fireExternalComponentChangeEvent,
   getComponentData,
   getComponentStyles,
-  useComponentData,
+  useNodeData,
 } from '@/lib/compass-planes/utils';
 import { WindowEditorContext } from '@/stores';
 import type { Component, TextComponentData, TextComponentStyle } from '@/types';
 import { useNodeId } from '@xyflow/react';
 import { useContext, useEffect, useRef, useState } from 'react';
 import { ResizableNode } from '../../decorators';
-
-/*
-The EditTextNode should render a span within the ResizableNode wrapper. Resizing the node should scale the text.
-Double clicking the node should locked the component and replace the span with an input. The style of the input should be invisible, only showing the text content.
-While the node is an input, the enter key should update the component, switch back to the span and unlock the component.
-*/
 
 export const EditTextNode = () => {
   const { getComponent, updateComponent } = useContext(WindowEditorContext);
@@ -122,7 +116,7 @@ export const ViewTextNode = ({
   component: Component;
   onDoubleClick?: () => void;
 }) => {
-  const data = useComponentData(component) as TextComponentData | null;
+  const data = useNodeData(component);
   const css = getComponentStyles(component) as TextComponentStyle;
 
   return (

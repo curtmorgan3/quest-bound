@@ -16,6 +16,8 @@ export const CharacterPage = ({ id, lockByDefault }: { id?: string; lockByDefaul
   const { updateCharacterWindow, deleteCharacterWindow } = useCharacterWindows(character?.id);
   const { characterAttributes } = useCharacterAttributes(character?.id);
 
+  const { updateCharacterAttribute } = useCharacterAttributes();
+
   const handleUpdateWindow = (update: CharacterWindowUpdate) => {
     updateCharacterWindow(update.id, update);
   };
@@ -24,7 +26,9 @@ export const CharacterPage = ({ id, lockByDefault }: { id?: string; lockByDefaul
     deleteCharacterWindow(id);
   };
 
-  const handleUpdateCharacterAttribute = (update: Partial<CharacterAttribute>) => {};
+  const handleUpdateCharacterAttribute = (id: string, update: Partial<CharacterAttribute>) => {
+    updateCharacterAttribute(id, update);
+  };
 
   const getCharacterAttribute = (attributeId: string) => {
     return characterAttributes.find((attr) => attr.attributeId === attributeId) ?? null;

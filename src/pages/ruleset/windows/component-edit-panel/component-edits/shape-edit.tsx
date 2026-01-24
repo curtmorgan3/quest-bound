@@ -19,7 +19,7 @@ export const ShapeEdit = ({ components }: Props) => {
 
     const data = getComponentData(component) as ShapeComponentData;
     if (value === null) {
-      value = data.sides;
+      value = data.sides ?? 4;
     } else if (data.sides !== value) {
       value = MIXED_VALUE_LABEL;
     }

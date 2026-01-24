@@ -46,12 +46,14 @@ export type Font = BaseDetails & {
   data: string;
 };
 
+export type AttributeType = 'string' | 'number' | 'boolean' | 'enum';
+
 export type Attribute = BaseDetails & {
   rulesetId: string;
   title: string;
   description: string;
   category?: string;
-  type: 'string' | 'number' | 'boolean' | 'enum';
+  type: AttributeType;
   options?: string[];
   defaultValue: string | number | boolean;
   // When options are derived from a chart column
@@ -119,26 +121,31 @@ export type TextComponentStyle = BaseComponentStyle & {
 
 export type ComponentStyle = BaseComponentStyle & TextComponentStyle;
 
-export type ComponentData = {
-  conditionalRenderAttributeId?: string;
-  conditionalRenderInverse?: boolean;
-  actionId?: string;
-  pageId?: string | null;
-  announcementId?: string | null;
+// Component data types should only include optional properties.
+export type ShapeComponentData = {
+  sides?: number;
 };
 
-export type ShapeComponentData = ComponentData & {
-  sides: number;
+export type TextComponentData = {
+  value?: string;
 };
 
-export type TextComponentData = ComponentData & {
-  value: string;
-};
-
-export type ImageComponentData = ComponentData & {
+export type ImageComponentData = {
   assetId?: string;
   assetUrl?: string;
 };
+
+export type InputComponentData = {
+  placeholder?: string;
+};
+
+export type ComponentData = ShapeComponentData &
+  TextComponentData &
+  ImageComponentData &
+  InputComponentData & {
+    conditionalRenderAttributeId?: string;
+    conditionalRenderInverse?: boolean;
+  };
 
 export type Component = BaseDetails & {
   rulesetId: string;
