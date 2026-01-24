@@ -1,5 +1,5 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useComponents } from '@/lib/compass-api';
+import { AttributeLookup, useComponents } from '@/lib/compass-api';
 import { ComponentTypes } from '@/lib/compass-planes/nodes';
 import { ImageDataEdit } from '@/lib/compass-planes/nodes/components/image';
 import { colorBlack } from '@/palette';
@@ -42,6 +42,7 @@ export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
       updateComponents(updated);
     }
   };
+
   const handleStyleUpdate = (key: string | string[], value: number | string | boolean | null) => {
     const toUpdate = selectedComponents.filter((c) => (key === 'locked' ? true : !c.locked));
 
@@ -110,6 +111,13 @@ export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
             {allAreShapes && <ShapeEdit components={selectedComponents} />}
           </TabsContent>
           <TabsContent value='data' className='w-full flex flex-col gap-2 mt-2'>
+            {selectedComponents.length === 1 && (
+              <AttributeLookup
+                value={selectedComponents[0].attributeId}
+                onSelect={(attr) => handleUpdate('attributeId', attr.id)}
+                onDelete={() => handleUpdate('attributeId', null)}
+              />
+            )}
             {allAreImages && (
               <ImageDataEdit
                 components={selectedComponents}

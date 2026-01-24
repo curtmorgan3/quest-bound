@@ -25,8 +25,9 @@ export const CharacterPage = ({ id, lockByDefault }: { id?: string; lockByDefaul
   };
 
   const handleUpdateCharacterAttribute = (update: Partial<CharacterAttribute>) => {};
-  const getCharacterAttribute = (id: string) => {
-    return characterAttributes.find((attr) => attr.id === id) ?? null;
+
+  const getCharacterAttribute = (attributeId: string) => {
+    return characterAttributes.find((attr) => attr.attributeId === attributeId) ?? null;
   };
 
   if (!character) {

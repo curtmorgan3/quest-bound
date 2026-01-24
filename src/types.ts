@@ -155,7 +155,7 @@ export type Component = BaseDetails & {
   locked?: boolean;
   selected?: boolean;
   groupId?: string | null;
-  attributeId?: string;
+  attributeId?: string | null;
   actionId?: string;
 };
 

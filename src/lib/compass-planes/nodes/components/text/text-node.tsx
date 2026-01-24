@@ -122,10 +122,8 @@ export const ViewTextNode = ({
   component: Component;
   onDoubleClick?: () => void;
 }) => {
-  const _data = useComponentData(component);
-  console.log('data: ', _data);
-
-  const data = getComponentData(component) as TextComponentData;
+  const data = useComponentData(component) as TextComponentData;
+  console.log('data: ', data);
   const css = getComponentStyles(component) as TextComponentStyle;
 
   return (
@@ -150,7 +148,7 @@ export const ViewTextNode = ({
           outlineColor: 'unset',
           outlineWidth: 'unset',
         }}>
-        {data.value}
+        {data?.value}
       </span>
     </section>
   );

@@ -20,8 +20,9 @@ export const useComponentData = (component: Component) => {
     return getComponentData(component);
   }
 
+  const rulesetAttribute = attributes.find((attr) => attr.id === attributeId);
+
   if (!characterContext) {
-    const rulesetAttribute = attributes.find((attr) => attr.id === attributeId);
     return rulesetAttribute
       ? {
           name: rulesetAttribute.title,

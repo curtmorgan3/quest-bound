@@ -5,7 +5,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { useActiveRuleset } from './use-active-ruleset';
 
 export const useAttributes = () => {
-  const { activeRuleset } = useActiveRuleset();
+  const { activeRuleset, testCharacter } = useActiveRuleset();
   const { handleError } = useErrorHandler();
 
   const attributes = useLiveQuery(
@@ -21,13 +21,29 @@ export const useAttributes = () => {
     if (!activeRuleset) return;
     const now = new Date().toISOString();
     try {
-      await db.attributes.add({
+      const id = await db.attributes.add({
         ...data,
         id: crypto.randomUUID(),
         rulesetId: activeRuleset.id,
         createdAt: now,
         updatedAt: now,
       } as Attribute);
+
+      if (testCharacter) {
+        const attr = await db.attributes.get(id);
+        if (attr) {
+          await db.characterAttributes.add({
+            ...attr,
+            characterId: testCharacter.id,
+            attributeId: id,
+            id: crypto.randomUUID(),
+            rulesetId: activeRuleset.id,
+            createdAt: now,
+            updatedAt: now,
+            value: attr.defaultValue,
+          });
+        }
+      }
     } catch (e) {
       handleError(e as Error, {
         component: 'useAttributes/createAttribute',
@@ -69,6 +85,19 @@ export const useAttributes = () => {
         ...data,
         updatedAt: now,
       });
+
+      if (testCharacter) {
+        const characterAttribute = await db.characterAttributes.get({
+          characterId: testCharacter.id,
+          attributeId: id,
+        });
+        if (characterAttribute) {
+          await db.characterAttributes.update(characterAttribute.id, {
+            ...data,
+            updatedAt: now,
+          });
+        }
+      }
     } catch (e) {
       handleError(e as Error, {
         component: 'useAttributes/updateAttribute',
@@ -80,6 +109,16 @@ export const useAttributes = () => {
   const deleteAttribute = async (id: string) => {
     try {
       await db.attributes.delete(id);
+
+      if (testCharacter) {
+        const characterAttribute = await db.characterAttributes.get({
+          characterId: testCharacter.id,
+          attributeId: id,
+        });
+        if (characterAttribute) {
+          await db.characterAttributes.delete(characterAttribute.id);
+        }
+      }
     } catch (e) {
       handleError(e as Error, {
         component: 'useAttributes/deleteAttribute',

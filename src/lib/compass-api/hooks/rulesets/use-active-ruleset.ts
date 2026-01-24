@@ -1,5 +1,6 @@
 import { db, useCurrentUser } from '@/stores';
 import { useLiveQuery } from 'dexie-react-hooks';
+import { useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 
 export const useActiveRuleset = () => {
@@ -10,16 +11,9 @@ export const useActiveRuleset = () => {
 
   const _rulesets = useLiveQuery(() => db.rulesets.toArray(), []);
   const rulesets = _rulesets?.filter((r) => currentUser?.rulesets?.includes(r.id)) || [];
-  const characters = useLiveQuery(
-    () =>
-      db.characters
-        .where('userId')
-        .equals(characterId ?? 0)
-        .toArray(),
-    [characterId],
-  );
+  const characters = useLiveQuery(() => db.characters.toArray(), [characterId]);
 
-  const character = characters?.find((c) => c.id === characterId);
+  const character = useMemo(() => characters?.find((c) => c.id === characterId), [characters]);
 
   const rulesetIdToUse =
     rulesetId && rulesetId !== 'undefined'
@@ -30,7 +24,12 @@ export const useActiveRuleset = () => {
 
   const activeRuleset = rulesetIdToUse ? rulesets?.find((r) => r.id === rulesetIdToUse) : null;
 
+  const testCharacter = characters?.find(
+    (c) => c.rulesetId === activeRuleset?.id && c.isTestCharacter,
+  );
+
   return {
     activeRuleset,
+    testCharacter,
   };
 };

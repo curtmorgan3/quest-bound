@@ -4,7 +4,7 @@ import { createContext } from 'react';
 type CharacterContext = {
   character: Character;
   characterAttributes: CharacterAttribute[];
-  getCharacterAttribute: (id: string) => CharacterAttribute | null;
+  getCharacterAttribute: (attributeId: string) => CharacterAttribute | null;
   updateCharacterAttribute: (update: Partial<CharacterAttribute>) => void;
 };
 
