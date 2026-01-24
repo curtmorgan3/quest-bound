@@ -41,8 +41,6 @@ export const AttributeLookup = ({
   const [open, setOpen] = useState(false);
   const { attributes } = useAttributes();
 
-  console.log(value);
-
   const selectedAttribute = value ? attributes.find((attr) => attr.id === value) : undefined;
 
   // Group attributes by category

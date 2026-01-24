@@ -122,8 +122,7 @@ export const ViewTextNode = ({
   component: Component;
   onDoubleClick?: () => void;
 }) => {
-  const data = useComponentData(component) as TextComponentData;
-  console.log('data: ', data);
+  const data = useComponentData(component) as TextComponentData | null;
   const css = getComponentStyles(component) as TextComponentStyle;
 
   return (
