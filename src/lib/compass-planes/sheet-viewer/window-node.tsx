@@ -1,9 +1,10 @@
 import { useComponents } from '@/lib/compass-api';
 import { colorPaper } from '@/palette';
+import { CharacterContext } from '@/stores';
 import type { CharacterWindow } from '@/types';
 import '@xyflow/react/dist/style.css';
 import { OctagonMinus, OctagonX } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useContext, useMemo, useState } from 'react';
 import { renderViewComponent } from '../nodes';
 
 interface WindowNodeData {
@@ -14,6 +15,7 @@ interface WindowNodeData {
 }
 
 export const WindowNode = ({ data }: { data: WindowNodeData }) => {
+  const characterContext = useContext(CharacterContext);
   const { characterWindow, onClose, onMinimize, locked } = data;
   const { components } = useComponents(characterWindow.windowId);
 
@@ -102,7 +104,7 @@ export const WindowNode = ({ data }: { data: WindowNodeData }) => {
               zIndex: component.z,
               transform: `rotate(${component.rotation}deg)`,
             }}>
-            {renderViewComponent(component)}
+            {renderViewComponent(component, characterContext?.characterAttributes)}
           </div>
         ))}
       </div>

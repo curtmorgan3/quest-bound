@@ -10,7 +10,7 @@ import {
 import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
-import type { Attribute } from '@/types';
+import type { Attribute, AttributeType } from '@/types';
 import { Check, ChevronsUpDown } from 'lucide-react';
 import { useState } from 'react';
 import { useAttributes } from '../hooks/rulesets/use-attributes';
@@ -28,6 +28,9 @@ interface AttributeLookupProps {
   value?: string | null;
   /** Optional disabled state */
   disabled?: boolean;
+  /** Filter lookup by type */
+  filterType?: AttributeType;
+  label?: string;
 }
 
 export const AttributeLookup = ({
@@ -37,9 +40,14 @@ export const AttributeLookup = ({
   className,
   value,
   disabled = false,
+  filterType,
+  label = 'Attribute',
 }: AttributeLookupProps) => {
   const [open, setOpen] = useState(false);
-  const { attributes } = useAttributes();
+  const { attributes: allAttributes } = useAttributes();
+  const attributes = filterType
+    ? allAttributes.filter((a) => a.type === filterType)
+    : allAttributes;
 
   const selectedAttribute = value ? attributes.find((attr) => attr.id === value) : undefined;
 
@@ -63,7 +71,7 @@ export const AttributeLookup = ({
 
   return (
     <div className='flex flex-col gap-2'>
-      <Label>Attribute</Label>
+      <Label>{label}</Label>
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <Button

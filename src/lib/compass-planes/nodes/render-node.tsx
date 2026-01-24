@@ -1,4 +1,4 @@
-import type { Component } from '@/types';
+import type { CharacterAttribute, Component } from '@/types';
 import { ComponentTypes } from '../nodes';
 import {
   ViewCheckboxNode,
@@ -7,8 +7,23 @@ import {
   ViewShapeNode,
   ViewTextNode,
 } from '../nodes/components';
+import { getComponentData } from '../utils';
 
-export const renderViewComponent = (component: Component) => {
+export const renderViewComponent = (
+  component: Component,
+  characterAttributes?: CharacterAttribute[],
+) => {
+  const conditionalRenderId = getComponentData(component).conditionalRenderAttributeId;
+
+  if (characterAttributes && conditionalRenderId) {
+    const conditionAttribute = characterAttributes.find(
+      (attr) => attr.attributeId === conditionalRenderId,
+    );
+    if (conditionAttribute?.value === false) {
+      return null;
+    }
+  }
+
   switch (component.type) {
     case ComponentTypes.TEXT:
       return <ViewTextNode key={component.id} component={component} />;

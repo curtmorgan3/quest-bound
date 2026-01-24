@@ -152,7 +152,7 @@ export type ComponentData = ShapeComponentData &
   ImageComponentData &
   InputComponentData &
   CheckboxComponentData & {
-    conditionalRenderAttributeId?: string;
+    conditionalRenderAttributeId?: string | null;
     conditionalRenderInverse?: boolean;
   };
 

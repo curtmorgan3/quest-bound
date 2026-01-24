@@ -27,7 +27,6 @@ export const CharacterPage = ({ id, lockByDefault }: { id?: string; lockByDefaul
   };
 
   const handleUpdateCharacterAttribute = (id: string, update: Partial<CharacterAttribute>) => {
-    console.log(update);
     updateCharacterAttribute(id, update);
   };
 

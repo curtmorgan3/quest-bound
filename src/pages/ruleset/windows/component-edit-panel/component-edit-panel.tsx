@@ -3,6 +3,7 @@ import { AttributeLookup, useComponents } from '@/lib/compass-api';
 import { ComponentTypes } from '@/lib/compass-planes/nodes';
 import { CheckboxDataEdit } from '@/lib/compass-planes/nodes/components';
 import { ImageDataEdit } from '@/lib/compass-planes/nodes/components/image';
+import { getComponentData } from '@/lib/compass-planes/utils';
 import { colorBlack } from '@/palette';
 import { useParams } from 'react-router-dom';
 import { ActionEdit } from './action-edit';
@@ -73,6 +74,19 @@ export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
     }
   };
 
+  const setConditionalRenderAttributeId = (id: string | null) => {
+    const toUpdate = selectedComponents.filter((c) => !c.locked);
+    updateComponents(
+      toUpdate.map((c) => ({
+        id: c.id,
+        data: JSON.stringify({
+          ...JSON.parse(c.style),
+          conditionalRenderAttributeId: id,
+        }),
+      })),
+    );
+  };
+
   if (viewMode) return null;
 
   // Check if all selected components are image type
@@ -117,12 +131,22 @@ export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
             )}
             {allAreShapes && <ShapeEdit components={selectedComponents} />}
           </TabsContent>
-          <TabsContent value='data' className='w-full flex flex-col gap-2 mt-2'>
+          <TabsContent value='data' className='w-full flex flex-col gap-4 mt-2'>
             {selectedComponents.length === 1 && (
               <AttributeLookup
                 value={selectedComponents[0].attributeId}
                 onSelect={(attr) => handleUpdate('attributeId', attr.id)}
                 onDelete={() => handleUpdate('attributeId', null)}
+                filterType={allAreCheckboxes ? 'boolean' : undefined}
+              />
+            )}
+            {selectedComponents.length === 1 && (
+              <AttributeLookup
+                label='Conditional Render'
+                value={getComponentData(selectedComponents[0]).conditionalRenderAttributeId}
+                onSelect={(attr) => setConditionalRenderAttributeId(attr.id)}
+                onDelete={() => setConditionalRenderAttributeId(null)}
+                filterType={'boolean'}
               />
             )}
             {allAreImages && (
