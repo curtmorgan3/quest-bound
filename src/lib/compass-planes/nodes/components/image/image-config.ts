@@ -35,7 +35,7 @@ const DEFAULT_IMAGE_STYLES: ComponentStyle = {
 };
 
 export const DEFAULT_IMAGE: Partial<Component> = {
-  z: 1,
+  z: 2,
   height: 80,
   width: 80,
   rotation: 0,

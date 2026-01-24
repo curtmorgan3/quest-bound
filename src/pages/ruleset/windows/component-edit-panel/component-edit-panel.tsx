@@ -80,7 +80,7 @@ export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
       toUpdate.map((c) => ({
         id: c.id,
         data: JSON.stringify({
-          ...JSON.parse(c.style),
+          ...JSON.parse(c.data),
           conditionalRenderAttributeId: id,
         }),
       })),

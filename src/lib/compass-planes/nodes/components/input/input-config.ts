@@ -43,7 +43,7 @@ const DEFAULT_INPUT_STYLES: ComponentStyle = {
 };
 
 export const DEFAULT_INPUT: Partial<Component> = {
-  z: 1,
+  z: 2,
   height: DEFAULT_GRID_SIZE,
   width: DEFAULT_GRID_SIZE * 6,
   rotation: 0,
