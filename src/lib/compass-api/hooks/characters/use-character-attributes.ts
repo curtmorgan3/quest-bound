@@ -1,42 +1,44 @@
 import { useErrorHandler } from '@/hooks';
 import { db } from '@/stores';
-import type { Attribute } from '@/types';
+import type { CharacterAttribute } from '@/types';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { useActiveRuleset } from './use-active-ruleset';
+import { useCharacter } from './use-character';
 
-export const useAttributes = () => {
-  const { activeRuleset } = useActiveRuleset();
+export const useCharacterAttributes = (characterId?: string) => {
+  const { character } = useCharacter(characterId);
   const { handleError } = useErrorHandler();
 
-  const attributes = useLiveQuery(
+  const characterAttributes = useLiveQuery(
     () =>
-      db.attributes
-        .where('rulesetId')
-        .equals(activeRuleset?.id ?? 0)
+      db.characterAttributes
+        .where('characterId')
+        .equals(character?.id ?? 0)
         .toArray(),
-    [activeRuleset],
+    [character],
   );
 
-  const createAttribute = async (data: Partial<Attribute>) => {
-    if (!activeRuleset) return;
+  const createCharacterAttribute = async (
+    data: Omit<CharacterAttribute, 'id' | 'createdAt' | 'updatedAt'>,
+  ) => {
+    if (!character) return;
     const now = new Date().toISOString();
     try {
-      await db.attributes.add({
+      await db.characterAttributes.add({
         ...data,
         id: crypto.randomUUID(),
-        rulesetId: activeRuleset.id,
+        characterId: character.id,
         createdAt: now,
         updatedAt: now,
-      } as Attribute);
+      } as CharacterAttribute);
     } catch (e) {
       handleError(e as Error, {
-        component: 'useAttributes/createAttribute',
+        component: 'useCharacterAttributes/createCharacterAttribute',
         severity: 'medium',
       });
     }
   };
 
-  const updateAttribute = async (id: string, data: Partial<Attribute>) => {
+  const updateCharacterAttribute = async (id: string, data: Partial<CharacterAttribute>) => {
     const now = new Date().toISOString();
 
     const newMin = data.min;
@@ -65,28 +67,33 @@ export const useAttributes = () => {
     }
 
     try {
-      await db.attributes.update(id, {
+      await db.characterAttributes.update(id, {
         ...data,
         updatedAt: now,
       });
     } catch (e) {
       handleError(e as Error, {
-        component: 'useAttributes/updateAttribute',
+        component: 'useCharacterAttributes/updateCharacterAttribute',
         severity: 'medium',
       });
     }
   };
 
-  const deleteAttribute = async (id: string) => {
+  const deleteCharacterAttribute = async (id: string) => {
     try {
-      await db.attributes.delete(id);
+      await db.characterAttributes.delete(id);
     } catch (e) {
       handleError(e as Error, {
-        component: 'useAttributes/deleteAttribute',
+        component: 'useCharacterAttributes/deleteCharacterAttribute',
         severity: 'medium',
       });
     }
   };
 
-  return { attributes: attributes ?? [], createAttribute, updateAttribute, deleteAttribute };
+  return {
+    characterAttributes: characterAttributes ?? [],
+    createCharacterAttribute,
+    updateCharacterAttribute,
+    deleteCharacterAttribute,
+  };
 };

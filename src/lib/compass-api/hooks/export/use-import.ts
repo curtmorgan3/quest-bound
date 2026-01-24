@@ -1,4 +1,4 @@
-import { useRulesets } from '@/lib/compass-api';
+import { useActiveRuleset } from '@/lib/compass-api';
 import { db } from '@/stores';
 import type { Action, Attribute, Item } from '@/types';
 import { useState } from 'react';
@@ -11,7 +11,7 @@ export interface ImportResult {
 }
 
 export const useImport = (type: 'attributes' | 'items' | 'actions') => {
-  const { activeRuleset } = useRulesets();
+  const { activeRuleset } = useActiveRuleset();
   const [isLoading, setIsLoading] = useState(false);
 
   const validateData = (data: any[]): { isValid: boolean; errors: string[] } => {

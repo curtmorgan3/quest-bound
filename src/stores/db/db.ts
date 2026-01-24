@@ -3,6 +3,7 @@ import type {
   Asset,
   Attribute,
   Character,
+  CharacterAttribute,
   CharacterInventory,
   CharacterWindow,
   Chart,
@@ -35,6 +36,7 @@ const db = new Dexie('qbdb') as Dexie & {
   windows: EntityTable<Window, 'id'>;
   components: EntityTable<Component, 'id'>;
   characters: EntityTable<Character, 'id'>;
+  characterAttributes: EntityTable<CharacterAttribute, 'id'>;
   characterInventories: EntityTable<CharacterInventory, 'id'>;
   characterWindows: EntityTable<CharacterWindow, 'id'>;
   inventories: EntityTable<Inventory, 'id'>;
@@ -45,23 +47,24 @@ const db = new Dexie('qbdb') as Dexie & {
 const common = '++id, createdAt, updatedAt';
 
 // Schema declaration:
-db.version(1).stores({
+db.version(2).stores({
   users: `${common}, username, assetId, image, preferences`,
   assets: `${common}, rulesetId, [directory+filename], data, type`,
   rulesets: `${common}, version, createdBy, title, description, details, assetId, image`,
-  fonts: `${common}, rulesetId, &[rulesetId+label], label, data`,
-  attributes: `${common}, &[rulesetId+title], description, category, type, options, defaultValue, optionsChartRef, optionsChartColumnHeader, min, max`,
-  actions: `${common}, &[rulesetId+title], description, category`,
-  items: `${common}, &[rulesetId+title], description, category, weight, defaultQuantity, stackSize, isContainer, isStorable, isEquippable, isConsumable, inventoryWidth, inventoryHeight`,
-  charts: `${common}, &[rulesetId+title], description, category, data`,
-  windows: `${common}, &[rulesetId+title], category`,
-  components: `${common}, rulesetId, windowId, type, x, y, z, height, width, rotation, selected, assetId, assetId, assetUrl, groupId, attributeId, actionId, data, style`,
+  fonts: `${common}, rulesetId, label, data`,
+  attributes: `${common}, rulesetId, title, description, category, type, options, defaultValue, optionsChartRef, optionsChartColumnHeader, min, max`,
+  actions: `${common}, rulesetId, title, description, category`,
+  items: `${common}, rulesetId, title, description, category, weight, defaultQuantity, stackSize, isContainer, isStorable, isEquippable, isConsumable, inventoryWidth, inventoryHeight`,
+  charts: `${common}, rulesetId, title, description, category, data`,
+  windows: `${common}, rulesetId, title, category`,
+  components: `${common}, rulesetId, windowId, type, x, y, z, height, width, rotation, selected, assetId, assetUrl, groupId, attributeId, actionId, data, style`,
   characters: `${common}, rulesetId, userId, assetId, image`,
-  inventories: `${common}, &[rulesetId+title], category, type`,
+  inventories: `${common}, rulesetId, title, category, type`,
   inventoryItems: `${common}, inventoryId, itemId, quantity, &[inventoryId+itemId]`,
   inventoryActions: `${common}, inventoryId, actionId, &[inventoryId+actionId]`,
   characterInventories: `${common}, inventoryId, characterId, &[inventoryId+characterId]`,
   characterWindows: `${common}, characterId, windowId, title, x, y, isCollapsed, &[characterId+windowId]`,
+  characterAttributes: `${common}, characterId, attributeId, &[characterId+attributeId]`,
 });
 
 // Cache assets for reference in the asset injector middleware

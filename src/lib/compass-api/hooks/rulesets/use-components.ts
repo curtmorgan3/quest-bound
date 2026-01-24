@@ -3,13 +3,13 @@ import { getComponentData } from '@/lib/compass-planes/utils';
 import { db } from '@/stores';
 import type { Component, ImageComponentData } from '@/types';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { useRulesets } from './use-rulesets';
+import { useActiveRuleset } from './use-active-ruleset';
 
 export type ComponentUpdate = { id: string } & Partial<Component>;
 
 export const useComponents = (windowId?: string) => {
   const { handleError } = useErrorHandler();
-  const { activeRuleset } = useRulesets();
+  const { activeRuleset } = useActiveRuleset();
 
   const components = useLiveQuery(
     () =>

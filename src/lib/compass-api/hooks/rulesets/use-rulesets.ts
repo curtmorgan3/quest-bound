@@ -11,6 +11,7 @@ export const useRulesets = () => {
   const { currentUser } = useCurrentUser();
   const { deleteAsset } = useAssets();
   const { createCharacter, characters } = useCharacter();
+
   const [loading, setLoading] = useState(false);
   const _rulesets = useLiveQuery(() => db.rulesets.toArray(), []);
   const rulesets = _rulesets?.filter((r) => currentUser?.rulesets?.includes(r.id)) || [];

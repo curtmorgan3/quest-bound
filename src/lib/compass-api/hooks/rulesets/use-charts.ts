@@ -2,10 +2,10 @@ import { useErrorHandler } from '@/hooks/use-error-handler';
 import { db } from '@/stores';
 import type { Chart } from '@/types';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { useRulesets } from './use-rulesets';
+import { useActiveRuleset } from './use-active-ruleset';
 
 export const useCharts = () => {
-  const { activeRuleset } = useRulesets();
+  const { activeRuleset } = useActiveRuleset();
   const { handleError } = useErrorHandler();
 
   const charts = useLiveQuery(

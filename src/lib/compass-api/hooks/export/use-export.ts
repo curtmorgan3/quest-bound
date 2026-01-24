@@ -1,9 +1,9 @@
-import { useRulesets } from '@/lib/compass-api';
+import { useActiveRuleset } from '@/lib/compass-api';
 import { db } from '@/stores';
 import { useLiveQuery } from 'dexie-react-hooks';
 
 export const useExport = (type: 'attributes' | 'items' | 'actions') => {
-  const { activeRuleset } = useRulesets();
+  const { activeRuleset } = useActiveRuleset();
 
   const data = useLiveQuery(() => {
     if (!activeRuleset) return [];

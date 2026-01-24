@@ -1,9 +1,10 @@
 import { useErrorHandler } from '@/hooks';
 import { db, useCurrentUser } from '@/stores';
-import type { Character, Inventory } from '@/types';
+import type { Character, CharacterAttribute, Inventory } from '@/types';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useParams } from 'react-router-dom';
 import { useAssets } from '../assets';
+import { useAttributes } from '../rulesets';
 
 export type CharacterWithInventories = Character & {
   inventories: Inventory[];
@@ -11,6 +12,7 @@ export type CharacterWithInventories = Character & {
 
 export const useCharacter = (_id?: string) => {
   const { characterId } = useParams();
+  const { attributes } = useAttributes();
   const { currentUser } = useCurrentUser();
   const { handleError } = useErrorHandler();
   const { deleteAsset } = useAssets();
@@ -28,11 +30,34 @@ export const useCharacter = (_id?: string) => {
 
   const character = characters?.find((c) => c.id === id);
 
+  const bootstrapCharacterAttributes = async (characterId: string) => {
+    const characterAttributes: CharacterAttribute[] = [];
+    for (const attribute of attributes) {
+      characterAttributes.push({
+        ...attribute,
+        characterId,
+        attributeId: attribute.id,
+        value: attribute.defaultValue,
+      });
+    }
+
+    const now = new Date().toISOString();
+
+    await db.characterAttributes.bulkAdd(
+      characterAttributes.map((ca) => ({
+        ...ca,
+        id: crypto.randomUUID(),
+        createdAt: now,
+        updatedAt: now,
+      })),
+    );
+  };
+
   const createCharacter = async (data: Partial<Character>) => {
     if (!data.rulesetId || !currentUser) return;
     const now = new Date().toISOString();
     try {
-      await db.characters.add({
+      const id = await db.characters.add({
         ...data,
         id: crypto.randomUUID(),
         userId: currentUser.id,
@@ -40,6 +65,8 @@ export const useCharacter = (_id?: string) => {
         updatedAt: now,
         isTestCharacter: data.isTestCharacter ?? false,
       } as Character);
+
+      await bootstrapCharacterAttributes(id);
     } catch (e) {
       handleError(e as Error, {
         component: 'useCharacter/createCharacter',
@@ -74,9 +101,17 @@ export const useCharacter = (_id?: string) => {
   const deleteCharacter = async (id: string) => {
     try {
       const character = await db.characters.get(id);
-      if (character?.assetId) {
+      if (!character) return;
+
+      if (character.assetId) {
         await deleteAsset(character.assetId);
       }
+
+      const characterAttributes = await db.characterAttributes
+        .where({ characterId: character.id })
+        .toArray();
+      await db.characterAttributes.bulkDelete(characterAttributes.map((ca) => ca.id));
+
       await db.characters.delete(id);
     } catch (e) {
       handleError(e as Error, {

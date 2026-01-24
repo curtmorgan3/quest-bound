@@ -174,6 +174,12 @@ export type Character = BaseDetails & {
   isTestCharacter: boolean;
 };
 
+export type CharacterAttribute = Attribute & {
+  characterId: string;
+  attributeId: string;
+  value: string | number | boolean;
+};
+
 export type CharacterWindow = BaseDetails & {
   title: string;
   characterId: string;

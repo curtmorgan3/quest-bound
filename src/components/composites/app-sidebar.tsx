@@ -25,7 +25,7 @@ import {
   SidebarTrigger,
   useSidebar,
 } from '@/components/ui/sidebar';
-import { useCharacter, useRulesets, useUsers } from '@/lib/compass-api';
+import { useActiveRuleset, useCharacter, useUsers } from '@/lib/compass-api';
 import { DevTools, Settings } from '@/pages';
 import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
@@ -38,7 +38,7 @@ import { AssetManagerModal } from './asset-manager-modal';
 
 export function AppSidebar() {
   const { currentUser, signOut } = useUsers();
-  const { activeRuleset } = useRulesets();
+  const { activeRuleset } = useActiveRuleset();
   const { character } = useCharacter();
   const { open, setOpen } = useSidebar();
   const location = useLocation();

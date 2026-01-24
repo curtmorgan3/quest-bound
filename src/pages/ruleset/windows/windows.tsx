@@ -1,12 +1,12 @@
 import { Input } from '@/components';
-import { useRulesets, useWindows } from '@/lib/compass-api';
+import { useActiveRuleset, useWindows } from '@/lib/compass-api';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PreviewCard } from '../components';
 
 export const WindowSelect = () => {
   const { windows, deleteWindow, updateWindow } = useWindows();
-  const { activeRuleset } = useRulesets();
+  const { activeRuleset } = useActiveRuleset();
   const navigate = useNavigate();
   const [filterValue, setFilterValue] = useState('');
 

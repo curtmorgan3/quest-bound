@@ -5,7 +5,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from '@/components/ui/sidebar';
-import { useCharacter, useRulesets } from '@/lib/compass-api';
+import { useActiveRuleset, useCharacter } from '@/lib/compass-api';
 import { NotebookPen, User, UserRoundPen } from 'lucide-react';
 import { useState } from 'react';
 import { CharacterSettings } from './character-settings';
@@ -13,7 +13,7 @@ import { RulesetSettings } from './ruleset-settings';
 import { UserSettings } from './user-settings';
 
 export const Settings = () => {
-  const { activeRuleset } = useRulesets();
+  const { activeRuleset } = useActiveRuleset();
   const { character } = useCharacter();
 
   const [page, setPage] = useState<string>('user');

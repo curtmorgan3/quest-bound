@@ -13,7 +13,7 @@ import {
   Input,
   Label,
 } from '@/components';
-import { useCharacter, useRulesets } from '@/lib/compass-api';
+import { useActiveRuleset, useCharacter } from '@/lib/compass-api';
 import type { Character } from '@/types';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -24,7 +24,7 @@ interface CharacterSettingsProps {
 
 export const CharacterSettings = ({ character }: CharacterSettingsProps) => {
   const { updateCharacter, deleteCharacter } = useCharacter();
-  const { activeRuleset } = useRulesets();
+  const { activeRuleset } = useActiveRuleset();
   const navigate = useNavigate();
 
   const [name, setName] = useState(character.name);

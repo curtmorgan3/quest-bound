@@ -2,10 +2,10 @@ import { useErrorHandler } from '@/hooks';
 import { db } from '@/stores';
 import type { Action } from '@/types';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { useRulesets } from './use-rulesets';
+import { useActiveRuleset } from './use-active-ruleset';
 
 export const useActions = () => {
-  const { activeRuleset } = useRulesets();
+  const { activeRuleset } = useActiveRuleset();
   const { handleError } = useErrorHandler();
 
   const actions = useLiveQuery(

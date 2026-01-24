@@ -1,4 +1,5 @@
 export * from './use-actions';
+export * from './use-active-ruleset';
 export * from './use-attributes';
 export * from './use-charts';
 export * from './use-components';

@@ -6,7 +6,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components';
-import { useExportChart, useRulesets } from '@/lib/compass-api';
+import { useActiveRuleset, useExportChart } from '@/lib/compass-api';
 import { Download, Pencil } from 'lucide-react';
 import { useState } from 'react';
 import { Navigate, useSearchParams } from 'react-router-dom';
@@ -23,7 +23,7 @@ export const Ruleset = ({
 }: {
   page?: 'attributes' | 'items' | 'actions' | 'charts' | 'windows';
 }) => {
-  const { activeRuleset } = useRulesets();
+  const { activeRuleset } = useActiveRuleset();
   const [searchParams, setSearchParams] = useSearchParams();
   const [open, setOpen] = useState(false);
   const { exportChartAsCSV } = useExportChart();

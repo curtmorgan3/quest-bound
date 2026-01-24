@@ -9,7 +9,7 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useAssets, useRulesets } from '@/lib/compass-api';
+import { useActiveRuleset, useAssets } from '@/lib/compass-api';
 import { cn } from '@/lib/utils';
 import {
   ChevronDown,
@@ -36,7 +36,7 @@ interface AssetManagerModalProps {
 }
 
 export const AssetManagerModal = ({ children }: AssetManagerModalProps) => {
-  const { activeRuleset } = useRulesets();
+  const { activeRuleset } = useActiveRuleset();
   const { assets, createAsset, createDirectory, deleteAsset } = useAssets(activeRuleset?.id);
   const [isOpen, setIsOpen] = useState(false);
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
