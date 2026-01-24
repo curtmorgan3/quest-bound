@@ -24,7 +24,7 @@ const DEFAULT_SHAPE_DATA: ShapeComponentData = {
 };
 
 const DEFAULT_SHAPE_STYLES: ComponentStyle = {
-  color: '#42403D',
+  backgroundColor: '#42403D',
   opacity: 1,
   borderRadiusTopLeft: 0,
   borderRadiusTopRight: 0,

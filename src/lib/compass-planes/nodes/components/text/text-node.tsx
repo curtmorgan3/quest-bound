@@ -132,8 +132,20 @@ export const ViewTextNode = ({
         display: 'flex',
         justifyContent: css.textAlign ?? 'start',
         alignItems: css.verticalAlign ?? 'start',
+        backgroundColor: css.backgroundColor,
+        borderRadius: css.borderRadius,
+        outline: css.outline,
+        outlineColor: css.outlineColor,
+        outlineWidth: css.outlineWidth,
       }}>
-      <span onDoubleClick={onDoubleClick} style={css}>
+      <span
+        onDoubleClick={onDoubleClick}
+        style={{
+          ...css,
+          outline: 'none',
+          outlineColor: 'unset',
+          outlineWidth: 'unset',
+        }}>
         {data.value}
       </span>
     </section>

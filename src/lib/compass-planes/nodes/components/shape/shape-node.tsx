@@ -34,7 +34,6 @@ export const ViewShapeNode = ({ component }: { component: Component }) => {
           height: `${component.height}px`,
           width: `${component.width}px`,
           zIndex: component.z,
-          backgroundColor: css.color,
           ...css,
         }}
       />
@@ -46,7 +45,7 @@ export const ViewShapeNode = ({ component }: { component: Component }) => {
       key={JSON.stringify(css)}
       sides={numSides}
       diameter={component.width}
-      color={css.color}
+      color={css.backgroundColor}
       outlineWidth={outlineWidth}
       outlineColor={css.outlineColor}
       opacity={css.opacity}

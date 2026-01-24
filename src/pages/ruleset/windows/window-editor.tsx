@@ -47,7 +47,8 @@ export const WindowEditor = () => {
   if (!windowId) return null;
 
   return (
-    <WindowEditorProvider value={{ viewMode, components, getComponent, updateComponent }}>
+    <WindowEditorProvider
+      value={{ viewMode, components, getComponent, updateComponent, updateComponents }}>
       <div className='flex flex-col' style={{ overflow: 'hidden' }}>
         {viewMode ? (
           <CharacterPage id={testCharacter?.id} />

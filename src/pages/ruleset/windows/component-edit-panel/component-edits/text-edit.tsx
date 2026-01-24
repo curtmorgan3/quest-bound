@@ -1,4 +1,5 @@
 import { Label } from '@/components';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
   Select,
   SelectContent,
@@ -19,10 +20,12 @@ import {
   AlignVerticalJustifyStart,
   Bold,
   Italic,
+  Palette,
   Strikethrough,
 } from 'lucide-react';
-import { EditPanelInput } from './component-edit-panel-input';
-import { parseValue, valueIfAllAreEqual } from './utils';
+import { SketchPicker } from 'react-color';
+import { EditPanelInput } from '../component-edit-panel-input';
+import { parseValue, valueIfAllAreEqual } from '../utils';
 
 const SYSTEM_FONTS = [
   'Arial',
@@ -68,6 +71,7 @@ export const TextEdit = ({ components, handleUpdate }: Props) => {
   const textDecoration = valueIfAllAreEqual(components, 'textDecoration');
   const textAlign = valueIfAllAreEqual(components, 'textAlign');
   const verticalAlign = valueIfAllAreEqual(components, 'verticalAlign');
+  const color = valueIfAllAreEqual(components, 'color') as string;
 
   const isBold = fontWeight === 'bold' || fontWeight === 700;
   const isItalic = fontStyle === 'italic';
@@ -125,6 +129,23 @@ export const TextEdit = ({ components, handleUpdate }: Props) => {
         <button onClick={() => handleUpdate('fontSize', 32)}>L</button>
         <button onClick={() => handleUpdate('fontSize', 64)}>XL</button>
       </div>
+
+      <Popover>
+        <PopoverTrigger title='Background Color'>
+          <Palette
+            className={`text-xs h-[18px] w-[18px] cursor-${color !== MIXED_VALUE_LABEL ? 'pointer' : 'not-allowed'}`}
+            style={{ color: color }}
+          />
+        </PopoverTrigger>
+        <PopoverContent>
+          <SketchPicker
+            className='sketch-picker'
+            color={color}
+            onChange={(color) => handleUpdate('color', color.hex)}
+            presetColors={[]}
+          />
+        </PopoverContent>
+      </Popover>
 
       <div className='w-full flex flex-col gap-2'>
         <Label className='text-xs'>Style</Label>

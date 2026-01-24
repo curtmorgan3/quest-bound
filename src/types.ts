@@ -93,7 +93,7 @@ export type Chart = BaseDetails & {
 };
 
 type BaseComponentStyle = {
-  color: string;
+  backgroundColor: string;
   opacity: number;
   outline?: string;
   borderRadius?: string;
@@ -105,7 +105,8 @@ type BaseComponentStyle = {
   outlineColor: string;
 };
 
-export type TextComponentStyle = {
+export type TextComponentStyle = BaseComponentStyle & {
+  color?: string;
   fontSize?: number;
   fontFamily?: string;
   fontWeight?: string;

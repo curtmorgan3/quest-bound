@@ -5,9 +5,10 @@ import { ImageDataEdit } from '@/lib/compass-planes/nodes/components/image';
 import { colorBlack } from '@/palette';
 import { useParams } from 'react-router-dom';
 import { ActionEdit } from './action-edit';
+import { TextEdit } from './component-edits';
+import { ShapeEdit } from './component-edits/shape-edit';
 import { PositionEdit } from './position-edit';
 import { StyleEdit } from './style-edit';
-import { TextEdit } from './text-edit';
 
 export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
   const { windowId } = useParams();
@@ -81,6 +82,10 @@ export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
     selectedComponents.length > 0 &&
     selectedComponents.every((c) => c.type === ComponentTypes.TEXT);
 
+  const allAreShapes =
+    selectedComponents.length > 0 &&
+    selectedComponents.every((c) => c.type === ComponentTypes.SHAPE);
+
   return (
     <div
       className='w-[240px] h-[100vh] flex flex-col gap-2 items-center p-2'
@@ -102,6 +107,7 @@ export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
             {allAreText && (
               <TextEdit components={selectedComponents} handleUpdate={handleStyleUpdate} />
             )}
+            {allAreShapes && <ShapeEdit components={selectedComponents} />}
           </TabsContent>
           <TabsContent value='data' className='w-full flex flex-col gap-2 mt-2'>
             {allAreImages && (

@@ -8,6 +8,8 @@ interface Props {
   number?: boolean;
   disabled?: boolean;
   step?: number;
+  min?: number;
+  max?: number;
 }
 
 export const EditPanelInput = ({
@@ -18,6 +20,8 @@ export const EditPanelInput = ({
   number = false,
   disabled = false,
   step = 1,
+  min,
+  max,
 }: Props) => {
   return (
     <div className={`grid w-[${width}]`}>
@@ -33,6 +37,8 @@ export const EditPanelInput = ({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         step={step.toString()}
+        min={min}
+        max={max}
       />
     </div>
   );

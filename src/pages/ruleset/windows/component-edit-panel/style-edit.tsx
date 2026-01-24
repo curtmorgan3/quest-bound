@@ -17,7 +17,7 @@ const MIXED_VALUE_LABEL = '-';
 
 export const StyleEdit = ({ components, handleUpdate }: Props) => {
   const opacity = valueIfAllAreEqual(components, 'opacity');
-  const color = valueIfAllAreEqual(components, 'color') as string;
+  const backgroundColor = valueIfAllAreEqual(components, 'backgroundColor') as string;
   const borderRadiusTopLeft = valueIfAllAreEqual(components, 'borderRadiusTopLeft');
   const borderRadiusTopRight = valueIfAllAreEqual(components, 'borderRadiusTopRight');
   const borderRadiusBottomLeft = valueIfAllAreEqual(components, 'borderRadiusBottomLeft');
@@ -68,15 +68,15 @@ export const StyleEdit = ({ components, handleUpdate }: Props) => {
         <Popover>
           <PopoverTrigger title='Background Color'>
             <Palette
-              className={`text-xs h-[18px] w-[18px] cursor-${color !== MIXED_VALUE_LABEL ? 'pointer' : 'not-allowed'}`}
-              style={{ color }}
+              className={`text-xs h-[18px] w-[18px] cursor-${backgroundColor !== MIXED_VALUE_LABEL ? 'pointer' : 'not-allowed'}`}
+              style={{ color: backgroundColor }}
             />
           </PopoverTrigger>
           <PopoverContent>
             <SketchPicker
               className='sketch-picker'
-              color={color}
-              onChange={(color) => handleUpdate('color', color.hex)}
+              color={backgroundColor}
+              onChange={(color) => handleUpdate('backgroundColor', color.hex)}
               presetColors={[]}
             />
           </PopoverContent>

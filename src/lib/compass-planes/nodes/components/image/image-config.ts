@@ -23,7 +23,7 @@ const DEFAULT_IMAGE_DATA: ImageComponentData = {
 };
 
 const DEFAULT_IMAGE_STYLES: ComponentStyle = {
-  color: '#FFFFFF',
+  backgroundColor: '#FFFFFF',
   opacity: 1,
   borderRadiusTopLeft: 0,
   borderRadiusTopRight: 0,

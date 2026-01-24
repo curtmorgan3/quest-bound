@@ -26,6 +26,7 @@ const DEFAULT_TEXT_DATA: TextComponentData = {
 
 const DEFAULT_TEXT_STYLES: ComponentStyle = {
   color: colorWhite,
+  backgroundColor: 'transparent',
   opacity: 1,
   borderRadiusTopLeft: 0,
   borderRadiusTopRight: 0,
