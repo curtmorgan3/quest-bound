@@ -2,6 +2,7 @@ import {
   fireExternalComponentChangeEvent,
   getComponentData,
   getComponentStyles,
+  useComponentData,
 } from '@/lib/compass-planes/utils';
 import { WindowEditorContext } from '@/stores';
 import type { Component, TextComponentData, TextComponentStyle } from '@/types';
@@ -121,6 +122,9 @@ export const ViewTextNode = ({
   component: Component;
   onDoubleClick?: () => void;
 }) => {
+  const _data = useComponentData(component);
+  console.log('data: ', _data);
+
   const data = getComponentData(component) as TextComponentData;
   const css = getComponentStyles(component) as TextComponentStyle;
 
