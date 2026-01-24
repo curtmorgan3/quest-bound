@@ -86,7 +86,7 @@ export const EditTextNode = () => {
           <input
             ref={inputRef}
             type='text'
-            defaultValue={data.value}
+            defaultValue={data.value?.toString()}
             onKeyDown={handleKeyDown}
             style={{
               ...css,

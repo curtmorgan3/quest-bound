@@ -1,10 +1,10 @@
 import { useAttributes } from '@/lib/compass-api';
 import { CharacterContext } from '@/stores';
-import type { AttributeType, Component } from '@/types';
+import type { AttributeType, Component, ComponentData } from '@/types';
 import { useContext } from 'react';
 import { getComponentData } from './node-conversion';
 
-type NodeData = {
+type NodeData = ComponentData & {
   name: string;
   value: string | number | boolean;
   attributeType: AttributeType;

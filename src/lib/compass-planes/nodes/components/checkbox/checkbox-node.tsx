@@ -1,6 +1,7 @@
+import { useAssets } from '@/lib/compass-api';
 import { getComponentStyles, useNodeData } from '@/lib/compass-planes/utils';
 import { CharacterContext, WindowEditorContext } from '@/stores';
-import type { Component, TextComponentStyle } from '@/types';
+import type { Component, ComponentStyle } from '@/types';
 import { useNodeId } from '@xyflow/react';
 import { CheckIcon, SquareIcon } from 'lucide-react';
 import { useContext } from 'react';
@@ -28,12 +29,18 @@ export const ViewCheckboxNode = ({
   component: Component;
   editMode?: boolean;
 }) => {
-  const data = useNodeData(component);
-  const css = getComponentStyles(component) as TextComponentStyle;
-
   const characterContext = useContext(CharacterContext);
+  const data = useNodeData(component);
+  const css = getComponentStyles(component);
+  const { assets } = useAssets();
 
   const isChecked = editMode ? false : Boolean(data.value);
+
+  const checkedAsset = assets.find((a) => a.id === data.checkedAssetId);
+  const uncheckedAsset = assets.find((a) => a.id === data.uncheckedAssetId);
+
+  const checkedImageUrl = checkedAsset?.data ?? data.checkedAssetUrl;
+  const uncheckedImageUrl = uncheckedAsset?.data ?? data.uncheckedAssetUrl;
 
   const handleChange = () => {
     if (data.characterAttributeId && characterContext) {
@@ -61,22 +68,60 @@ export const ViewCheckboxNode = ({
         cursor: editMode ? 'default' : 'pointer',
       }}>
       {isChecked ? (
-        <CheckIcon
-          style={{
-            height: '100%',
-            width: '100%',
-            color: css.color,
-          }}
-        />
+        <Checked url={checkedImageUrl} css={css} />
       ) : (
-        <SquareIcon
-          style={{
-            height: '100%',
-            width: '100%',
-            color: css.color,
-          }}
-        />
+        <Unchecked url={uncheckedImageUrl} css={css} />
       )}
     </section>
   );
 };
+
+function Checked({ url, css }: { url?: string; css: ComponentStyle }) {
+  if (url) {
+    return (
+      <img
+        src={url}
+        style={{
+          height: '100%',
+          width: '100%',
+          color: css.color,
+        }}
+      />
+    );
+  }
+
+  return (
+    <CheckIcon
+      style={{
+        height: '100%',
+        width: '100%',
+        color: css.color,
+      }}
+    />
+  );
+}
+
+function Unchecked({ url, css }: { url?: string; css: ComponentStyle }) {
+  if (url) {
+    return (
+      <img
+        src={url}
+        style={{
+          height: '100%',
+          width: '100%',
+          color: css.color,
+        }}
+      />
+    );
+  }
+
+  return (
+    <SquareIcon
+      style={{
+        height: '100%',
+        width: '100%',
+        color: css.color,
+      }}
+    />
+  );
+}

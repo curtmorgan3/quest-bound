@@ -1,6 +1,7 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AttributeLookup, useComponents } from '@/lib/compass-api';
 import { ComponentTypes } from '@/lib/compass-planes/nodes';
+import { CheckboxDataEdit } from '@/lib/compass-planes/nodes/components';
 import { ImageDataEdit } from '@/lib/compass-planes/nodes/components/image';
 import { colorBlack } from '@/palette';
 import { useParams } from 'react-router-dom';
@@ -89,6 +90,10 @@ export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
     selectedComponents.length > 0 &&
     selectedComponents.every((c) => c.type === ComponentTypes.SHAPE);
 
+  const allAreCheckboxes =
+    selectedComponents.length > 0 &&
+    selectedComponents.every((c) => c.type === ComponentTypes.CHECKBOX);
+
   return (
     <div
       className='w-[240px] h-[100vh] flex flex-col gap-2 items-center p-2'
@@ -122,6 +127,14 @@ export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
             )}
             {allAreImages && (
               <ImageDataEdit
+                components={selectedComponents}
+                handleUpdate={handleUpdate}
+                updateComponents={updateComponents}
+              />
+            )}
+
+            {allAreCheckboxes && (
+              <CheckboxDataEdit
                 components={selectedComponents}
                 handleUpdate={handleUpdate}
                 updateComponents={updateComponents}

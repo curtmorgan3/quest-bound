@@ -127,7 +127,7 @@ export type ShapeComponentData = {
 };
 
 export type TextComponentData = {
-  value?: string;
+  value?: string | number | boolean;
 };
 
 export type ImageComponentData = {
@@ -142,9 +142,9 @@ export type InputComponentData = {
 export type CheckboxComponentData = {
   label?: string;
   checkedAssetId?: string;
-  checkedAassetUrl?: string;
+  checkedAssetUrl?: string;
   uncheckedAssetId?: string;
-  uncheckedAassetUrl?: string;
+  uncheckedAssetUrl?: string;
 };
 
 export type ComponentData = ShapeComponentData &
