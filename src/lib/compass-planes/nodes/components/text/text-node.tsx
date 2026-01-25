@@ -16,13 +16,6 @@ export const EditTextNode = () => {
   const [isEditing, setIsEditing] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  if (!id) return null;
-  const component = getComponent(id);
-  if (!component) return null;
-
-  const data = getComponentData(component) as TextComponentData;
-  const css = getComponentStyles(component) as TextComponentStyle;
-
   // Focus input when entering edit mode
   useEffect(() => {
     if (isEditing && inputRef.current) {
@@ -30,6 +23,13 @@ export const EditTextNode = () => {
       inputRef.current.select();
     }
   }, [isEditing]);
+
+  if (!id) return null;
+  const component = getComponent(id);
+  if (!component) return null;
+
+  const data = getComponentData(component) as TextComponentData;
+  const css = getComponentStyles(component) as TextComponentStyle;
 
   const handleDoubleClick = () => {
     if (!component.locked) {

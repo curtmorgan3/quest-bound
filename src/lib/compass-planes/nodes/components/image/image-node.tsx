@@ -32,6 +32,7 @@ export const EditImageNode = () => {
           alignItems: 'center',
           justifyContent: 'center',
           ...css,
+          backgroundColor: imageSrc ? 'transparent' : css.backgroundColor,
         }}>
         {imageSrc ? (
           <img
@@ -84,6 +85,7 @@ export const ViewImageNode = ({ component }: { component: Component }) => {
     <img
       src={imageSrc}
       alt=''
+      draggable={false}
       style={{
         height: `${component.height}px`,
         width: `${component.width}px`,
@@ -91,6 +93,7 @@ export const ViewImageNode = ({ component }: { component: Component }) => {
         maxHeight: '100%',
         objectFit: 'cover',
         ...css,
+        backgroundColor: imageSrc ? 'transparent' : css.backgroundColor,
       }}
     />
   );

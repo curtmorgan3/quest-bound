@@ -4,7 +4,6 @@ import {
   FileSpreadsheet,
   FolderOpen,
   HandFist,
-  Image,
   Settings as SettingsIcon,
   Sword,
   UserRoundPen,
@@ -34,7 +33,6 @@ import { Button } from '../ui/button';
 import { DialogDescription } from '../ui/dialog';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger } from '../ui/drawer';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
-import { AssetManagerModal } from './asset-manager-modal';
 
 export function AppSidebar() {
   const { currentUser, signOut } = useUsers();
@@ -136,7 +134,7 @@ export function AppSidebar() {
                   </SidebarMenuItem>
                 ))}
 
-                {!isHomepage && (
+                {/* {!isHomepage && (
                   <SidebarMenuItem>
                     <AssetManagerModal>
                       <SidebarMenuButton>
@@ -145,7 +143,7 @@ export function AppSidebar() {
                       </SidebarMenuButton>
                     </AssetManagerModal>
                   </SidebarMenuItem>
-                )}
+                )} */}
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>

@@ -42,7 +42,7 @@ export const SignIn = () => {
       <div className='flex flex-col gap-6 items-center justify-center'>
         <div className='flex gap-4 items-center'>
           <Select onValueChange={(value) => setSelectedUserId(value)} value={selectedUserId}>
-            <SelectTrigger className='w-[200px]' data-testid="user-select">
+            <SelectTrigger className='w-[200px]' data-testid='user-select'>
               <SelectValue placeholder='Select a user' />
             </SelectTrigger>
             <SelectContent>
@@ -62,14 +62,14 @@ export const SignIn = () => {
               placeholder='Username'
               value={newUsername}
               onChange={(e) => setNewUsername(e.target.value)}
-              data-testid="username-input"
+              data-testid='username-input'
             />
           )}
           <Button
             loading={loading}
             onClick={handleLogin}
             disabled={!selectedUserId || (selectedUserId === '_new' && !newUsername)}
-            data-testid="submit-button">
+            data-testid='submit-button'>
             Submit
           </Button>
         </div>
@@ -82,7 +82,7 @@ export const SignIn = () => {
           <Link href='https://docs.questbound.com' target='_blank'>
             Learn More
           </Link>
-          <a target='_blank' href='https://discord.gg/7QGV4muT39' data-testid='join-discord'>
+          <a target='_blank' href='https://discord.gg/Zx2jR5Q3zN' data-testid='join-discord'>
             <Button variant='ghost' className='cursor-pointer'>
               <img alt='Discord' src={DiscordImage} style={{ height: 30, width: 30 }} />
             </Button>

@@ -93,7 +93,13 @@ export const useAttributes = () => {
         });
         if (characterAttribute) {
           await db.characterAttributes.update(characterAttribute.id, {
-            ...data,
+            defaultValue: data.defaultValue,
+            type: data.type,
+            description: data.description,
+            min: data.min,
+            max: data.max,
+            options: data.options,
+            category: data.category,
             updatedAt: now,
           });
         }

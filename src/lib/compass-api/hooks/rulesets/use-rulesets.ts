@@ -122,6 +122,8 @@ export const useRulesets = () => {
       if (testCharacter) {
         await db.characters.where('id').equals(testCharacter.id).delete();
         await db.characterAttributes.where({ characterId: testCharacter.id }).delete();
+        await db.characterWindows.where({ characterId: testCharacter.id }).delete();
+        await db.characterInventories.where({ characterId: testCharacter.id }).delete();
       }
 
       if (activeRuleset?.id === id) {

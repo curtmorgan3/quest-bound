@@ -139,6 +139,12 @@ export const BaseCreate = ({ onCreate }: BaseCreateProps) => {
     onCreate?.(isEditMode);
   };
 
+  const handleKeySubmit = (e: React.KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      handleCreate();
+    }
+  };
+
   return (
     <div className='flex flex-col gap-4'>
       <div className='flex justify-around items-center gap-2 mb-4'>
@@ -179,6 +185,7 @@ export const BaseCreate = ({ onCreate }: BaseCreateProps) => {
               name='title'
               onChange={(e) => setTitle(e.target.value)}
               value={title}
+              onKeyDown={(e) => handleKeySubmit(e)}
             />
           </div>
           <div className='grid gap-3 w-[50%]'>
@@ -188,6 +195,7 @@ export const BaseCreate = ({ onCreate }: BaseCreateProps) => {
               name='category'
               onChange={(e) => setCategory(e.target.value)}
               value={category}
+              onKeyDown={(e) => handleKeySubmit(e)}
             />
           </div>
         </div>
@@ -203,6 +211,7 @@ export const BaseCreate = ({ onCreate }: BaseCreateProps) => {
               name='description'
               onChange={(e) => setDescription(e.target.value)}
               value={description}
+              onKeyDown={(e) => handleKeySubmit(e)}
             />
           </div>
         )}
