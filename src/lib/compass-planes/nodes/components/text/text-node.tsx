@@ -141,7 +141,7 @@ export const ViewTextNode = ({
           outlineColor: 'unset',
           outlineWidth: 'unset',
         }}>
-        {data?.value}
+        {data?.interpolatedValue}
       </span>
     </section>
   );

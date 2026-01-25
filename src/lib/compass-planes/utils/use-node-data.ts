@@ -1,6 +1,6 @@
 import { useAttributes } from '@/lib/compass-api';
 import { CharacterContext } from '@/stores';
-import type { AttributeType, Component, ComponentData } from '@/types';
+import type { AttributeType, Character, Component, ComponentData } from '@/types';
 import { useContext } from 'react';
 import { getComponentData } from './node-conversion';
 
@@ -10,6 +10,7 @@ type NodeData = ComponentData & {
   attributeType: AttributeType;
   characterAttributeId?: string;
   options: string[];
+  interpolatedValue: string | number | boolean;
 };
 
 export const useNodeData = (component: Component): NodeData => {
@@ -22,6 +23,9 @@ export const useNodeData = (component: Component): NodeData => {
   const characterAttribute =
     attributeId && characterContext ? characterContext.getCharacterAttribute(attributeId) : null;
 
+  const value =
+    characterAttribute?.value ?? rulesetAttribute?.defaultValue ?? componentData.value ?? '';
+
   return {
     ...componentData,
     name:
@@ -29,9 +33,19 @@ export const useNodeData = (component: Component): NodeData => {
       rulesetAttribute?.title ??
       componentData.placeholder ??
       component.type,
-    value: characterAttribute?.value ?? rulesetAttribute?.defaultValue ?? componentData.value ?? '',
+    value,
+    interpolatedValue: injectContextData(value, characterContext?.character),
     attributeType: rulesetAttribute?.type ?? 'string',
     characterAttributeId: characterAttribute?.id,
     options: rulesetAttribute?.options ?? [],
   };
 };
+
+function injectContextData(
+  text: string | number | boolean,
+  data?: Character,
+): string | number | boolean {
+  if (!data) return text;
+  if (typeof text !== 'string') return text;
+  return text.replace('{{this.name}}', data.name);
+}
