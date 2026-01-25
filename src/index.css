@@ -51,14 +51,14 @@ html {
   overscroll-behavior: none !important;
 }
 
-input::-webkit-outer-spin-button,
-input::-webkit-inner-spin-button {
+.editor-input::-webkit-outer-spin-button,
+.editor-input::-webkit-inner-spin-button {
   -webkit-appearance: none;
   margin: 0;
 }
 
 /* Firefox */
-input[type='number'] {
+.editor-input[type='number'] {
   -moz-appearance: textfield;
 }
 

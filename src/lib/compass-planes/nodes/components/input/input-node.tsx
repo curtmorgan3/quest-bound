@@ -40,41 +40,61 @@ export const ViewInputNode = ({
     }
   };
 
-  console.log(data);
+  const isListType = data.attributeType === 'list';
+
+  const sectionStyle = {
+    height: component.height,
+    width: component.width,
+    pointerEvents: editMode ? 'none' : undefined,
+    display: 'flex',
+    justifyContent: css.textAlign ?? 'start',
+    alignItems: css.verticalAlign ?? 'start',
+    backgroundColor: css.backgroundColor,
+    borderRadius: css.borderRadius,
+    outline: css.outline,
+    outlineColor: css.outlineColor,
+    outlineWidth: css.outlineWidth,
+  } as React.CSSProperties;
+
+  const inputStyle = {
+    height: '100%',
+    width: '100%',
+    color: css.color,
+    fontSize: css.fontSize,
+    fontFamily: css.fontFamily,
+    fontWeight: css.fontWeight,
+    fontStyle: css.fontStyle,
+    textAlign: css.textAlign,
+    border: 'none',
+    backgroundColor: 'transparent',
+  } as React.CSSProperties;
 
   return (
-    <section
-      style={{
-        height: component.height,
-        width: component.width,
-        pointerEvents: editMode ? 'none' : undefined,
-        display: 'flex',
-        justifyContent: css.textAlign ?? 'start',
-        alignItems: css.verticalAlign ?? 'start',
-        backgroundColor: css.backgroundColor,
-        borderRadius: css.borderRadius,
-        outline: css.outline,
-        outlineColor: css.outlineColor,
-        outlineWidth: css.outlineWidth,
-      }}>
-      <input
-        type={data.attributeType === 'string' ? 'text' : 'number'}
-        disabled={editMode}
-        placeholder={data?.name}
-        onChange={(e) => handleChange(e.target.value)}
-        value={editMode ? undefined : data.value.toString()}
-        style={{
-          height: '100%',
-          width: '100%',
-          color: css.color,
-          fontSize: css.fontSize,
-          fontFamily: css.fontFamily,
-          fontWeight: css.fontWeight,
-          fontStyle: css.fontStyle,
-          textAlign: css.textAlign,
-          border: 'none',
-        }}
-      />
+    <section style={sectionStyle}>
+      {isListType && !editMode ? (
+        <select
+          disabled={editMode}
+          onChange={(e) => handleChange(e.target.value)}
+          value={data.value.toString()}
+          style={inputStyle}>
+          <option value=''>{data.name}</option>
+          {data.options.map((option) => (
+            <option key={option} value={option}>
+              {option}
+            </option>
+          ))}
+        </select>
+      ) : (
+        <input
+          className='editor-input'
+          type={data.attributeType === 'string' ? 'text' : 'number'}
+          disabled={editMode}
+          placeholder={data?.name}
+          onChange={(e) => handleChange(e.target.value)}
+          value={editMode ? undefined : data.value.toString()}
+          style={inputStyle}
+        />
+      )}
     </section>
   );
 };
