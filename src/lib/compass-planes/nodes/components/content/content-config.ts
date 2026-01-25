@@ -45,10 +45,10 @@ const DEFAULT_CONTENT_STYLES: ComponentStyle = {
 };
 
 export const DEFAULT_CONTENT: Partial<Component> = {
-  z: 2,
-  height: DEFAULT_GRID_SIZE,
-  width: DEFAULT_GRID_SIZE * 6,
-  rotation: 0,
+  z: contentConfig.defaultLayer,
+  height: contentConfig.defaultHeight,
+  width: contentConfig.defaultWidth,
+  rotation: contentConfig.defaultRotation,
   data: JSON.stringify(DEFAULT_CONTENT_DATA),
   style: JSON.stringify(DEFAULT_CONTENT_STYLES),
 };
