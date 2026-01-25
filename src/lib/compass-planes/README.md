@@ -14,3 +14,5 @@ Add component type to `inject-defaults.ts`.
 
 In the component file, export two components. The `ViewNode` component should accept the component as props and render it. The `EditNode` component
 should use the `ResiableNode` wrapper and handle edit use cases.
+
+Add component to `render-node.tsx`

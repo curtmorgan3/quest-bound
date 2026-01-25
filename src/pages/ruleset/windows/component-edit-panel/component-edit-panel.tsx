@@ -97,7 +97,10 @@ export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
   const allAreText =
     selectedComponents.length > 0 &&
     selectedComponents.every(
-      (c) => c.type === ComponentTypes.TEXT || c.type === ComponentTypes.INPUT,
+      (c) =>
+        c.type === ComponentTypes.TEXT ||
+        c.type === ComponentTypes.INPUT ||
+        c.type === ComponentTypes.CONTENT,
     );
 
   const allAreShapes =

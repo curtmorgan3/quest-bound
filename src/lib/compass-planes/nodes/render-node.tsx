@@ -2,6 +2,7 @@ import type { CharacterAttribute, Component } from '@/types';
 import { ComponentTypes } from '../nodes';
 import {
   ViewCheckboxNode,
+  ViewContentNode,
   ViewImageNode,
   ViewInputNode,
   ViewShapeNode,
@@ -35,6 +36,8 @@ export const renderViewComponent = (
       return <ViewInputNode key={component.id} component={component} />;
     case ComponentTypes.CHECKBOX:
       return <ViewCheckboxNode key={component.id} component={component} />;
+    case ComponentTypes.CONTENT:
+      return <ViewContentNode key={component.id} component={component} />;
     default:
       console.warn(`Attempted to render an unregistered view component: `, component.type);
       return null;
