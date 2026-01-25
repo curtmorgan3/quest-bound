@@ -1,5 +1,6 @@
 export * from './checkbox';
 export * from './common';
+export * from './content';
 export * from './image';
 export * from './input';
 export * from './shape';

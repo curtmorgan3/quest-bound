@@ -130,6 +130,10 @@ export type TextComponentData = {
   value?: string | number | boolean;
 };
 
+export type ContentComponentData = {
+  value?: string;
+};
+
 export type ImageComponentData = {
   assetId?: string;
   assetUrl?: string;

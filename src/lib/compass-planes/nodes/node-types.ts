@@ -4,6 +4,7 @@ export enum ComponentTypes {
   IMAGE = 'image',
   INPUT = 'comp-input', // This cannot be called 'input' because it clashes with react-node CSS
   CHECKBOX = 'checkbox',
+  CONTENT = 'content',
 }
 
 export type SheetComponentType = {

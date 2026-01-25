@@ -2,6 +2,7 @@ import { ComponentTypes } from '@/lib/compass-planes/nodes';
 import type { Component } from '@/types';
 import {
   DEFAULT_CHECKBOX,
+  DEFAULT_CONTENT,
   DEFAULT_IMAGE,
   DEFAULT_INPUT,
   DEFAULT_SHAPE,
@@ -23,6 +24,7 @@ export function injectDefaultComponent(component: Partial<Component>) {
     [ComponentTypes.IMAGE, DEFAULT_IMAGE],
     [ComponentTypes.INPUT, DEFAULT_INPUT],
     [ComponentTypes.CHECKBOX, DEFAULT_CHECKBOX],
+    [ComponentTypes.CONTENT, DEFAULT_CONTENT],
   ]);
 
   const defaults = defaultMap.get(component.type as ComponentTypes);

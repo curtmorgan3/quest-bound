@@ -1,7 +1,9 @@
 import type { NodeTypes } from '@xyflow/react';
 import {
   checkboxConfig,
+  contentConfig,
   EditCheckboxNode,
+  EditContentNode,
   EditImageNode,
   EditInputNode,
   EditShapeNode,
@@ -19,6 +21,7 @@ export const sheetNodeTypes: NodeTypes = {
   [ComponentTypes.IMAGE]: EditImageNode,
   [ComponentTypes.INPUT]: EditInputNode,
   [ComponentTypes.CHECKBOX]: EditCheckboxNode,
+  [ComponentTypes.CONTENT]: EditContentNode,
 };
 
 export const baseComponentTypes: SheetComponentType[] = [
@@ -27,6 +30,7 @@ export const baseComponentTypes: SheetComponentType[] = [
   imageConfig,
   inputConfig,
   checkboxConfig,
+  contentConfig,
 ];
 
 export const componentTypes = [...baseComponentTypes];
