@@ -5,6 +5,9 @@ import type {
   Asset,
   Attribute,
   Character,
+  CharacterAttribute,
+  CharacterInventory,
+  CharacterWindow,
   Chart,
   Component,
   Font,
@@ -30,6 +33,9 @@ export interface ImportRulesetResult {
     components: number;
     assets: number;
     fonts: number;
+    characterAttributes: number;
+    characterInventories: number;
+    characterWindows: number;
   };
   errors: string[];
 }
@@ -61,6 +67,9 @@ interface ImportedMetadata {
     components: number;
     assets: number;
     fonts: number;
+    characterAttributes: number;
+    characterInventories: number;
+    characterWindows: number;
   };
 }
 
@@ -103,7 +112,10 @@ export const useImportRuleset = () => {
       | 'windows'
       | 'components'
       | 'assets'
-      | 'fonts',
+      | 'fonts'
+      | 'characterAttributes'
+      | 'characterInventories'
+      | 'characterWindows',
   ): { isValid: boolean; errors: string[] } => {
     const errors: string[] = [];
 
@@ -243,6 +255,43 @@ export const useImportRuleset = () => {
             errors.push(`Font ${index + 1}: data is required and must be a string`);
           }
           break;
+
+        case 'characterAttributes':
+          if (!item.characterId || typeof item.characterId !== 'string') {
+            errors.push(
+              `CharacterAttribute ${index + 1}: characterId is required and must be a string`,
+            );
+          }
+          if (!item.attributeId || typeof item.attributeId !== 'string') {
+            errors.push(
+              `CharacterAttribute ${index + 1}: attributeId is required and must be a string`,
+            );
+          }
+          break;
+
+        case 'characterInventories':
+          if (!item.characterId || typeof item.characterId !== 'string') {
+            errors.push(
+              `CharacterInventory ${index + 1}: characterId is required and must be a string`,
+            );
+          }
+          if (!item.inventoryId || typeof item.inventoryId !== 'string') {
+            errors.push(
+              `CharacterInventory ${index + 1}: inventoryId is required and must be a string`,
+            );
+          }
+          break;
+
+        case 'characterWindows':
+          if (!item.characterId || typeof item.characterId !== 'string') {
+            errors.push(
+              `CharacterWindow ${index + 1}: characterId is required and must be a string`,
+            );
+          }
+          if (!item.windowId || typeof item.windowId !== 'string') {
+            errors.push(`CharacterWindow ${index + 1}: windowId is required and must be a string`);
+          }
+          break;
       }
     });
 
@@ -273,6 +322,9 @@ export const useImportRuleset = () => {
             components: 0,
             assets: 0,
             fonts: 0,
+            characterAttributes: 0,
+            characterInventories: 0,
+            characterWindows: 0,
           },
           errors: ['metadata.json file is required'],
         };
@@ -297,6 +349,9 @@ export const useImportRuleset = () => {
             components: 0,
             assets: 0,
             fonts: 0,
+            characterAttributes: 0,
+            characterInventories: 0,
+            characterWindows: 0,
           },
           errors: metadataValidation.errors,
         };
@@ -334,6 +389,9 @@ export const useImportRuleset = () => {
         components: 0,
         assets: 0,
         fonts: 0,
+        characterAttributes: 0,
+        characterInventories: 0,
+        characterWindows: 0,
       };
 
       const allErrors: string[] = [];
@@ -598,6 +656,90 @@ export const useImportRuleset = () => {
         }
       }
 
+      // Import characterAttributes
+      const characterAttributesFile = zipContent.file('characterAttributes.json');
+      if (characterAttributesFile) {
+        try {
+          const characterAttributesText = await characterAttributesFile.async('text');
+          const characterAttributes: CharacterAttribute[] = JSON.parse(characterAttributesText);
+
+          const validation = validateData(characterAttributes, 'characterAttributes');
+          if (validation.isValid) {
+            for (const characterAttribute of characterAttributes) {
+              const newCharacterAttribute: CharacterAttribute = {
+                ...characterAttribute,
+                createdAt: now,
+                updatedAt: now,
+              };
+              await db.characterAttributes.add(newCharacterAttribute);
+              importedCounts.characterAttributes++;
+            }
+          } else {
+            allErrors.push(...validation.errors);
+          }
+        } catch (error) {
+          allErrors.push(
+            `Failed to import characterAttributes: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          );
+        }
+      }
+
+      // Import characterInventories
+      const characterInventoriesFile = zipContent.file('characterInventories.json');
+      if (characterInventoriesFile) {
+        try {
+          const characterInventoriesText = await characterInventoriesFile.async('text');
+          const characterInventories: CharacterInventory[] = JSON.parse(characterInventoriesText);
+
+          const validation = validateData(characterInventories, 'characterInventories');
+          if (validation.isValid) {
+            for (const characterInventory of characterInventories) {
+              const newCharacterInventory: CharacterInventory = {
+                ...characterInventory,
+                createdAt: now,
+                updatedAt: now,
+              };
+              await db.characterInventories.add(newCharacterInventory);
+              importedCounts.characterInventories++;
+            }
+          } else {
+            allErrors.push(...validation.errors);
+          }
+        } catch (error) {
+          allErrors.push(
+            `Failed to import characterInventories: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          );
+        }
+      }
+
+      // Import characterWindows
+      const characterWindowsFile = zipContent.file('characterWindows.json');
+      if (characterWindowsFile) {
+        try {
+          const characterWindowsText = await characterWindowsFile.async('text');
+          const characterWindows: CharacterWindow[] = JSON.parse(characterWindowsText);
+
+          const validation = validateData(characterWindows, 'characterWindows');
+          if (validation.isValid) {
+            for (const characterWindow of characterWindows) {
+              const newCharacterWindow: CharacterWindow = {
+                ...characterWindow,
+                createdAt: now,
+                updatedAt: now,
+              };
+              await db.characterWindows.add(newCharacterWindow);
+              importedCounts.characterWindows++;
+            }
+          } else {
+            allErrors.push(...validation.errors);
+          }
+        } catch (error) {
+          allErrors.push(
+            `Failed to import characterWindows: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          );
+        }
+      }
+
       const totalImported =
         importedCounts.attributes +
         importedCounts.actions +
@@ -607,7 +749,10 @@ export const useImportRuleset = () => {
         importedCounts.windows +
         importedCounts.components +
         importedCounts.assets +
-        importedCounts.fonts;
+        importedCounts.fonts +
+        importedCounts.characterAttributes +
+        importedCounts.characterInventories +
+        importedCounts.characterWindows;
 
       return {
         success: allErrors.length === 0,
@@ -635,6 +780,9 @@ export const useImportRuleset = () => {
           components: 0,
           assets: 0,
           fonts: 0,
+          characterAttributes: 0,
+          characterInventories: 0,
+          characterWindows: 0,
         },
         errors: [error instanceof Error ? error.message : 'Unknown error'],
       };

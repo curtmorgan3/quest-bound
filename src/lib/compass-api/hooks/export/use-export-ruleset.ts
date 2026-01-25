@@ -61,6 +61,30 @@ export const useExportRuleset = (rulesetId: string) => {
 
   const testCharacter = characters?.find((c) => c.isTestCharacter);
 
+  const characterAttributes = useLiveQuery(
+    () =>
+      testCharacter
+        ? db.characterAttributes.where('characterId').equals(testCharacter.id).toArray()
+        : [],
+    [testCharacter?.id],
+  );
+
+  const characterInventories = useLiveQuery(
+    () =>
+      testCharacter
+        ? db.characterInventories.where('characterId').equals(testCharacter.id).toArray()
+        : [],
+    [testCharacter?.id],
+  );
+
+  const characterWindows = useLiveQuery(
+    () =>
+      testCharacter
+        ? db.characterWindows.where('characterId').equals(testCharacter.id).toArray()
+        : [],
+    [testCharacter?.id],
+  );
+
   const isLoading =
     ruleset === undefined ||
     attributes === undefined ||
@@ -71,7 +95,10 @@ export const useExportRuleset = (rulesetId: string) => {
     components === undefined ||
     assets === undefined ||
     fonts === undefined ||
-    testCharacter === undefined;
+    testCharacter === undefined ||
+    characterAttributes === undefined ||
+    characterInventories === undefined ||
+    characterWindows === undefined;
 
   const exportRuleset = async (): Promise<void> => {
     if (!ruleset || !rulesetId) {
@@ -103,6 +130,9 @@ export const useExportRuleset = (rulesetId: string) => {
           components: components?.length || 0,
           assets: assets?.length || 0,
           fonts: fonts?.length || 0,
+          characterAttributes: characterAttributes?.length || 0,
+          characterInventories: characterInventories?.length || 0,
+          characterWindows: characterWindows?.length || 0,
         },
       };
 
@@ -192,6 +222,18 @@ export const useExportRuleset = (rulesetId: string) => {
         zip.file('fonts.json', JSON.stringify(fonts, null, 2));
       }
 
+      if (characterAttributes && characterAttributes.length > 0) {
+        zip.file('characterAttributes.json', JSON.stringify(characterAttributes, null, 2));
+      }
+
+      if (characterInventories && characterInventories.length > 0) {
+        zip.file('characterInventories.json', JSON.stringify(characterInventories, null, 2));
+      }
+
+      if (characterWindows && characterWindows.length > 0) {
+        zip.file('characterWindows.json', JSON.stringify(characterWindows, null, 2));
+      }
+
       // Create a README file with instructions
       const readme = `# ${ruleset.title} Export
 
@@ -209,6 +251,9 @@ This zip file contains a complete export of the "${ruleset.title}" ruleset from 
 - \`assets.json\` - All assets metadata defined in this ruleset
 - \`assets/\` - Directory containing all asset files organized by their directory structure
 - \`fonts.json\` - All custom fonts defined in this ruleset
+- \`characterAttributes.json\` - Test character attribute values
+- \`characterInventories.json\` - Test character inventory associations
+- \`characterWindows.json\` - Test character window positions
 
 ## Import Instructions
 
