@@ -117,8 +117,15 @@
     "title": "Character Class",
     "description": "Your specialized role and abilities in the haunted house. Each class has unique strengths and weaknesses against supernatural threats.",
     "category": "Character",
-    "type": "enum",
-    "options": ["Ghost Hunter", "Occult Scholar", "Brave Explorer", "Supernatural Detective", "Cursed Survivor", "Holy Warrior"],
+    "type": "list",
+    "options": [
+      "Ghost Hunter",
+      "Occult Scholar",
+      "Brave Explorer",
+      "Supernatural Detective",
+      "Cursed Survivor",
+      "Holy Warrior"
+    ],
     "defaultValue": "Brave Explorer",
     "optionsChartRef": null,
     "optionsChartColumnHeader": null,

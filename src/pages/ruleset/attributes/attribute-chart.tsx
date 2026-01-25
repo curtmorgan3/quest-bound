@@ -10,14 +10,14 @@ const typeLabels = {
   number: 'Number',
   string: 'Text',
   boolean: 'Boolean',
-  enum: 'List',
+  list: 'List',
 };
 
 const valueTypes = {
   Number: 'number',
   Text: 'string',
   Boolean: 'boolean',
-  List: 'enum',
+  List: 'list',
 };
 
 export const AttributeChart = () => {

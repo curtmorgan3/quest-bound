@@ -9,6 +9,7 @@ type NodeData = ComponentData & {
   value: string | number | boolean;
   attributeType: AttributeType;
   characterAttributeId?: string;
+  options: string[];
 };
 
 export const useNodeData = (component: Component): NodeData => {
@@ -31,5 +32,6 @@ export const useNodeData = (component: Component): NodeData => {
     value: characterAttribute?.value ?? rulesetAttribute?.defaultValue ?? componentData.value ?? '',
     attributeType: rulesetAttribute?.type ?? 'string',
     characterAttributeId: characterAttribute?.id,
+    options: rulesetAttribute?.options ?? [],
   };
 };

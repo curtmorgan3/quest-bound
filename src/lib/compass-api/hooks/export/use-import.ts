@@ -34,14 +34,14 @@ export const useImport = (type: 'attributes' | 'items' | 'actions') => {
       // Type-specific validation
       switch (type) {
         case 'attributes':
-          if (!item.type || !['string', 'number', 'boolean', 'enum'].includes(item.type)) {
-            errors.push(`Item ${index + 1}: type must be one of: string, number, boolean, enum`);
+          if (!item.type || !['string', 'number', 'boolean', 'list'].includes(item.type)) {
+            errors.push(`Item ${index + 1}: type must be one of: string, number, boolean, list`);
           }
           if (item.defaultValue === undefined || item.defaultValue === null) {
             errors.push(`Item ${index + 1}: defaultValue is required`);
           }
-          if (item.type === 'enum' && (!item.options || !Array.isArray(item.options))) {
-            errors.push(`Item ${index + 1}: options array is required for enum type`);
+          if (item.type === 'list' && (!item.options || !Array.isArray(item.options))) {
+            errors.push(`Item ${index + 1}: options array is required for list type`);
           }
           break;
 

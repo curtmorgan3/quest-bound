@@ -40,6 +40,8 @@ export const ViewInputNode = ({
     }
   };
 
+  console.log(data);
+
   return (
     <section
       style={{

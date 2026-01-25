@@ -46,7 +46,7 @@ export type Font = BaseDetails & {
   data: string;
 };
 
-export type AttributeType = 'string' | 'number' | 'boolean' | 'enum';
+export type AttributeType = 'string' | 'number' | 'boolean' | 'list';
 
 export type Attribute = BaseDetails & {
   rulesetId: string;

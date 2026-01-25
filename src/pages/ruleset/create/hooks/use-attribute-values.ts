@@ -70,14 +70,14 @@ export const useAttributeValues = ({
   };
 
   const attributeProperties: Partial<Attribute> = {
-    type: typeValue as 'string' | 'number' | 'boolean' | 'enum',
+    type: typeValue as 'string' | 'number' | 'boolean' | 'list',
     defaultValue:
       typeValue === 'boolean'
         ? defaultBoolean
         : typeValue === 'number'
           ? (defaultValue ?? 0)
           : defaultValue,
-    options: typeValue === 'enum' ? attributeListOptions : undefined,
+    options: typeValue === 'list' ? attributeListOptions : undefined,
     min: typeValue === 'number' ? min : undefined,
     max: typeValue === 'number' ? max : undefined,
   };

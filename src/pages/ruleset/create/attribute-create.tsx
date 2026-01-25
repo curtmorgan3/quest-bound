@@ -70,7 +70,7 @@ export const AttributeCreate = ({
               <SelectItem value='number'>Number</SelectItem>
               <SelectItem value='string'>Text</SelectItem>
               <SelectItem value='boolean'>Boolean</SelectItem>
-              <SelectItem value='enum'>List</SelectItem>
+              <SelectItem value='list'>List</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -81,7 +81,7 @@ export const AttributeCreate = ({
               checked={defaultBoolean}
               onCheckedChange={(checked) => setDefaultBoolean(!!checked)}
             />
-          ) : typeValue === 'enum' ? (
+          ) : typeValue === 'list' ? (
             <Select
               value={defaultValue.toString()}
               onValueChange={(value) => setDefaultValue(value)}>
@@ -142,7 +142,7 @@ export const AttributeCreate = ({
         </div>
       )}
 
-      {typeValue === 'enum' && (
+      {typeValue === 'list' && (
         <div className='w-full flex flex-row gap-4 items-end'>
           <div className='grid gap-3 w-[50%]'>
             <Label htmlFor='create-category'>List Option</Label>

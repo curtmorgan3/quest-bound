@@ -119,16 +119,16 @@ export const useImportRuleset = () => {
           if (!item.title || typeof item.title !== 'string') {
             errors.push(`${type} ${index + 1}: title is required and must be a string`);
           }
-          if (!item.type || !['string', 'number', 'boolean', 'enum'].includes(item.type)) {
+          if (!item.type || !['string', 'number', 'boolean', 'list'].includes(item.type)) {
             errors.push(
-              `Attribute ${index + 1}: type must be one of: string, number, boolean, enum`,
+              `Attribute ${index + 1}: type must be one of: string, number, boolean, list`,
             );
           }
           if (item.defaultValue === undefined || item.defaultValue === null) {
             errors.push(`Attribute ${index + 1}: defaultValue is required`);
           }
-          if (item.type === 'enum' && (!item.options || !Array.isArray(item.options))) {
-            errors.push(`Attribute ${index + 1}: options array is required for enum type`);
+          if (item.type === 'list' && (!item.options || !Array.isArray(item.options))) {
+            errors.push(`Attribute ${index + 1}: options array is required for list type`);
           }
           break;
 
