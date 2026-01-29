@@ -1,7 +1,6 @@
 describe('Action Management', () => {
   beforeEach(() => {
-    // Clear any existing data before each test
-    cy.clearUserData();
+    cy.setupTest();
   });
 
   it('should create a basic action', () => {

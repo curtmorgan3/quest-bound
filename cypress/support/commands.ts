@@ -121,6 +121,11 @@ Cypress.Commands.add('clearUserData', () => {
   return cy.wrap(null);
 });
 
+Cypress.Commands.add('setupTest', () => {
+  localStorage.setItem('qb.sidebarCollapsed', 'false');
+  return cy.wrap(null);
+});
+
 declare global {
   namespace Cypress {
     interface Chainable {
@@ -128,6 +133,7 @@ declare global {
       signInWithExistingUser(username: string): Chainable<string>;
       signOut(): Chainable<null>;
       clearUserData(): Chainable<null>;
+      setupTest(): Chainable<null>;
     }
   }
 }

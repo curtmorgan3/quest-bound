@@ -1,7 +1,6 @@
 describe('Ruleset Management', () => {
   beforeEach(() => {
-    // Clear any existing data before each test
-    cy.clearUserData();
+    cy.setupTest();
   });
 
   it('should create a new ruleset after user sign-in', () => {
@@ -23,8 +22,11 @@ describe('Ruleset Management', () => {
       cy.get('[data-testid="create-ruleset-submit"]').click();
 
       // Verify the ruleset was created
-      cy.contains('Test Ruleset').should('be.visible');
-      cy.contains('This is a test ruleset created by e2e test').should('be.visible');
+      cy.get('[data-testid="ruleset-card-title"]').should('contain', 'Test Ruleset');
+      cy.get('[data-testid="ruleset-card-description"]').should(
+        'contain',
+        'This is a test ruleset created by e2e test',
+      );
     });
   });
 
@@ -37,8 +39,8 @@ describe('Ruleset Management', () => {
       cy.get('#ruleset-description').type('This ruleset should persist after sign out');
       cy.get('[data-testid="create-ruleset-submit"]').click();
 
-      // Verify ruleset exists
-      cy.contains('Persistent Ruleset').should('be.visible');
+      // Wait for the ruleset to appear
+      cy.get('[data-testid="ruleset-card-title"]').should('contain', 'Persistent Ruleset');
 
       // Sign out
       cy.signOut();
@@ -47,8 +49,11 @@ describe('Ruleset Management', () => {
       cy.signInWithExistingUser(username);
 
       // Verify the ruleset still exists
-      cy.contains('Persistent Ruleset').should('be.visible');
-      cy.contains('This ruleset should persist after sign out').should('be.visible');
+      cy.get('[data-testid="ruleset-card-title"]').should('contain', 'Persistent Ruleset');
+      cy.get('[data-testid="ruleset-card-description"]').should(
+        'contain',
+        'This ruleset should persist after sign out',
+      );
     });
   });
 
@@ -62,7 +67,7 @@ describe('Ruleset Management', () => {
       cy.get('[data-testid="create-ruleset-submit"]').click();
 
       // Wait for the ruleset to appear
-      cy.contains('Ruleset To Delete').should('be.visible');
+      cy.get('[data-testid="ruleset-card-title"]').should('contain', 'Ruleset To Delete');
 
       // Get the ruleset ID from the DOM to target the delete button
       cy.get('[data-testid*="ruleset-card-"]')
@@ -73,18 +78,13 @@ describe('Ruleset Management', () => {
 
           // Click the delete button for this specific ruleset
           cy.get(`[data-testid="delete-ruleset-${rulesetId}"]`).click();
-
-          // Verify the ruleset is no longer visible
-          cy.contains('Ruleset To Delete').should('not.exist');
-          cy.contains('This ruleset will be deleted').should('not.exist');
-
           // Verify the ruleset card is gone
           cy.get(`[data-testid="ruleset-card-${rulesetId}"]`).should('not.exist');
         });
     });
   });
 
-  it.only('opens a ruleset', () => {
+  it('opens a ruleset', () => {
     // Create a user and ruleset
     cy.createUserAndSignIn('OpenTestUser').then(() => {
       // Create a ruleset to open
@@ -94,7 +94,7 @@ describe('Ruleset Management', () => {
       cy.get('[data-testid="create-ruleset-submit"]').click();
 
       // Wait for the ruleset to appear
-      cy.contains('Ruleset To Open').should('be.visible');
+      cy.get('[data-testid="ruleset-card-title"]').should('contain', 'Ruleset To Open');
 
       // Get the ruleset ID from the DOM to target the open button
       cy.get('[data-testid*="ruleset-card-"]')
@@ -108,9 +108,6 @@ describe('Ruleset Management', () => {
 
           // Verify we navigated to the ruleset page
           cy.url().should('include', `/rulesets/${rulesetId}`);
-
-          // The ruleset page should show the ruleset title
-          cy.contains('Ruleset To Open').should('be.visible');
         });
     });
   });

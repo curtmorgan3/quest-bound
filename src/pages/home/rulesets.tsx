@@ -190,9 +190,13 @@ export const Rulesets = () => {
                 : undefined
             }>
             <CardHeader>
-              <CardTitle className='text-lg'>{r.title}</CardTitle>
+              <CardTitle data-testid='ruleset-card-title' className='text-lg'>
+                {r.title}
+              </CardTitle>
             </CardHeader>
-            <CardDescription className='grow-1 max-h-[80px] overflow-y-auto'>
+            <CardDescription
+              data-testid='ruleset-card-description'
+              className='grow-1 max-h-[80px] overflow-y-auto'>
               {r.description}
             </CardDescription>
             <div className='flex gap-2 mt-2 bg-secondary rounded-md p-2 justify-between items-center'>
