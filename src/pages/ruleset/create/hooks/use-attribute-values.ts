@@ -1,4 +1,5 @@
 import { useAttributes } from '@/lib/compass-api/hooks/rulesets/use-attributes';
+import { useCharts } from '@/lib/compass-api/hooks/rulesets/use-charts';
 import type { Attribute } from '@/types';
 import { useEffect, useState } from 'react';
 
@@ -24,6 +25,7 @@ export const useAttributeValues = ({
   setCategory,
 }: UseAttributeValuesProps) => {
   const { attributes, createAttribute, updateAttribute } = useAttributes();
+  const { charts } = useCharts();
   const isEditMode = !!id;
 
   const activeAttribute = attributes.find((a) => a.id === id);
@@ -37,6 +39,10 @@ export const useAttributeValues = ({
       setAttributeListOptions(activeAttribute.options || []);
       setMin(activeAttribute.min);
       setMax(activeAttribute.max);
+      // Handle chart reference for list options
+      setUseChartForOptions(!!activeAttribute.optionsChartRef);
+      setOptionsChartId(activeAttribute.optionsChartRef?.toString() || '');
+      setOptionsChartColumnHeader(activeAttribute.optionsChartColumnHeader || '');
       // Handle default value based on type
       if (activeAttribute.type === 'boolean') {
         setDefaultBoolean(!!activeAttribute.defaultValue);
@@ -54,6 +60,9 @@ export const useAttributeValues = ({
   const [attributeListOptions, setAttributeListOptions] = useState<string[]>([]);
   const [min, setMin] = useState<number>();
   const [max, setMax] = useState<number>();
+  const [useChartForOptions, setUseChartForOptions] = useState(false);
+  const [optionsChartId, setOptionsChartId] = useState('');
+  const [optionsChartColumnHeader, setOptionsChartColumnHeader] = useState('');
 
   const addListOption = (opt: string) => {
     setAttributeListOptions((prev) => [...prev, opt]);
@@ -67,6 +76,9 @@ export const useAttributeValues = ({
     setDefaultBoolean(false);
     setDefaultValue('');
     setTypeValue('number');
+    setUseChartForOptions(false);
+    setOptionsChartId('');
+    setOptionsChartColumnHeader('');
   };
 
   const attributeProperties: Partial<Attribute> = {
@@ -77,7 +89,15 @@ export const useAttributeValues = ({
         : typeValue === 'number'
           ? (defaultValue ?? 0)
           : defaultValue,
-    options: typeValue === 'list' ? attributeListOptions : undefined,
+    options: typeValue === 'list' && !useChartForOptions ? attributeListOptions : undefined,
+    optionsChartRef:
+      typeValue === 'list' && useChartForOptions && optionsChartId
+        ? (optionsChartId as unknown as number)
+        : undefined,
+    optionsChartColumnHeader:
+      typeValue === 'list' && useChartForOptions && optionsChartColumnHeader
+        ? optionsChartColumnHeader
+        : undefined,
     min: typeValue === 'number' ? min : undefined,
     max: typeValue === 'number' ? max : undefined,
   };
@@ -102,6 +122,23 @@ export const useAttributeValues = ({
     onCreate?.();
   };
 
+  // Get column headers from selected chart
+  const selectedChart = charts.find((c) => c.id === optionsChartId);
+  const chartColumnHeaders: string[] = selectedChart?.data
+    ? (JSON.parse(selectedChart.data) as string[][])[0] || []
+    : [];
+
+  // Get list options from chart column when using chart reference
+  const chartListOptions: string[] =
+    useChartForOptions && selectedChart?.data && optionsChartColumnHeader
+      ? (() => {
+          const data = JSON.parse(selectedChart.data) as string[][];
+          const columnIndex = data[0]?.indexOf(optionsChartColumnHeader) ?? -1;
+          if (columnIndex === -1) return [];
+          return data.slice(1).map((row) => row[columnIndex] || '').filter(Boolean);
+        })()
+      : [];
+
   return {
     saveAttribute,
     defaultValue,
@@ -117,5 +154,14 @@ export const useAttributeValues = ({
     max,
     setMin,
     setMax,
+    useChartForOptions,
+    setUseChartForOptions,
+    optionsChartId,
+    setOptionsChartId,
+    optionsChartColumnHeader,
+    setOptionsChartColumnHeader,
+    charts,
+    chartColumnHeaders,
+    chartListOptions,
   };
 };

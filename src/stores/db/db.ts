@@ -19,6 +19,7 @@ import type {
 } from '@/types';
 import Dexie, { type EntityTable } from 'dexie';
 import { assetInjectorMiddleware } from './asset-injector-middleware';
+import { chartOptionsMiddleware, memoizedCharts } from './chart-options-middleware';
 import { memoizedAssets } from './memoization-cache';
 
 const db = new Dexie('qbdb') as Dexie & {
@@ -75,8 +76,45 @@ db.on('ready', async () => {
     .each((asset) => {
       memoizedAssets[asset.id] = asset.data;
     });
+
+  // Cache charts for reference in the chart options middleware
+  await db.charts
+    .where('id')
+    .above(0)
+    .each((chart) => {
+      try {
+        memoizedCharts[chart.id] = JSON.parse(chart.data);
+      } catch {
+        // Invalid JSON, skip
+      }
+    });
 });
 
 db.use(assetInjectorMiddleware);
+db.use(chartOptionsMiddleware);
+
+// Keep chart cache in sync when charts are modified
+db.charts.hook('creating', (_primKey, obj) => {
+  try {
+    memoizedCharts[obj.id] = JSON.parse(obj.data);
+  } catch {
+    // Invalid JSON, skip
+  }
+});
+
+db.charts.hook('updating', (modifications, primKey) => {
+  console.log('mods: ', modifications);
+  if ((modifications as any).data !== undefined) {
+    try {
+      memoizedCharts[primKey as string] = JSON.parse((modifications as any).data);
+    } catch {
+      delete memoizedCharts[primKey as string];
+    }
+  }
+});
+
+db.charts.hook('deleting', (primKey) => {
+  delete memoizedCharts[primKey as string];
+});
 
 export { db };
