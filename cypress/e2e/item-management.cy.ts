@@ -3,6 +3,10 @@ describe('Item Management', () => {
     cy.setupTest();
   });
 
+  afterEach(() => {
+    cy.clearUserData();
+  });
+
   it('should create a basic item with minimal properties', () => {
     cy.createUserAndSignIn('BasicItemUser').then(() => {
       // Create a ruleset first

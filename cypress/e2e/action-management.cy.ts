@@ -3,6 +3,10 @@ describe('Action Management', () => {
     cy.setupTest();
   });
 
+  afterEach(() => {
+    cy.clearUserData();
+  });
+
   it('should create a basic action', () => {
     cy.createUserAndSignIn('ActionTestUser').then(() => {
       // Create a ruleset first

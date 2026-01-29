@@ -21,6 +21,7 @@ export const WindowSelect = () => {
     <div className='flex flex-col gap-4'>
       <Input
         className='max-w-md'
+        data-testid='preview-filter'
         placeholder='Filter by title or category...'
         value={filterValue}
         onChange={(e) => setFilterValue(e.target.value)}

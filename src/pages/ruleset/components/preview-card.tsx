@@ -51,6 +51,7 @@ export const PreviewCard = ({ id, title, category, onDelete, onOpen, onEdit }: P
         {editingTitle ? (
           <Input
             value={newTitle}
+            data-testid='preview-card-title-input'
             onChange={(e) => setNewTitle(e.target.value)}
             autoFocus
             onKeyDown={(e) => handleKeyEvent(e as unknown as KeyboardEvent)}
@@ -58,6 +59,7 @@ export const PreviewCard = ({ id, title, category, onDelete, onOpen, onEdit }: P
         ) : (
           <CardTitle
             className='text-lg cursor-pointer'
+            data-testid='preview-card-title'
             onClick={(e) => {
               e.stopPropagation();
               setEditingTitle(true);
@@ -71,6 +73,7 @@ export const PreviewCard = ({ id, title, category, onDelete, onOpen, onEdit }: P
           {editingCategory ? (
             <Input
               value={newCategory}
+              data-testid='preview-card-description-input'
               onChange={(e) => setNewCategory(e.target.value)}
               autoFocus
               onKeyDown={(e) => handleKeyEvent(e as unknown as KeyboardEvent)}

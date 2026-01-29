@@ -3,6 +3,10 @@ describe('Ruleset Management', () => {
     cy.setupTest();
   });
 
+  afterEach(() => {
+    cy.clearUserData();
+  });
+
   it('should create a new ruleset after user sign-in', () => {
     // Use the reusable function to create a user and sign in
     cy.createUserAndSignIn().then((username) => {

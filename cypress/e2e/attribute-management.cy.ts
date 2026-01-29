@@ -3,6 +3,10 @@ describe('Attribute Management', () => {
     cy.setupTest();
   });
 
+  afterEach(() => {
+    cy.clearUserData();
+  });
+
   it('should create a number attribute', () => {
     cy.createUserAndSignIn('AttributeTestUser').then(() => {
       // Create a ruleset first
