@@ -1,18 +1,15 @@
-FROM node:23.5.0
-WORKDIR server/build
+FROM node:24.0.0
+WORKDIR /app
 COPY package*.json ./
 
-RUN npm install
-COPY . .
-RUN npm run build:docker
+RUN npm install --legacy-peer-deps
 COPY . .
 
+# Prisma generate needs DATABASE_URL at config load time, but doesn't actually connect.
+# Provide a dummy value for the build phase.
+RUN DATABASE_URL="postgresql://dummy:dummy@localhost:5432/dummy" npm run build:docker
 
-RUN mkdir ./dist/storage
-RUN mkdir ./dist/storage/images
-RUN mkdir ./dist/storage/charts
-RUN mkdir ./dist/storage/documents
-RUN mkdir ./dist/storage/uploads
+RUN mkdir -p ./dist/storage/images ./dist/storage/charts ./dist/storage/documents ./dist/storage/uploads
 
 EXPOSE 8000
 CMD ["npm", "run", "start:docker"]

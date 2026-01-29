@@ -4,8 +4,8 @@
   "description": "",
   "main": "app.js",
   "scripts": {
-    "bootstrap": "npm install && npm run bootstrap:env && npm run db:generate && npm run db:migrate:local && npm run build && npm run bootstrap:storage",
-    "build": "npx tsc && npm run gql:copySchema && npm run db:generate && tsc-alias && npm run bootstrap:storage",
+    "bootstrap": "npm install && npm run db:generate && npm run db:migrate:local && npm run gql:copySchema && npm run bootstrap:storage",
+    "build": "npm run db:generate && npx tsc && npm run gql:copySchema && tsc-alias && npm run bootstrap:storage",
     "build:docker": "npx tsc && npm run gql:copySchema && npm run db:generate && tsc-alias",
     "bootstrap:storage": "node dist/infrastructure/rest/services/storage/bootstrap-storage.js",
     "start:docker": "npm run db:migrate:local && npm run start",
