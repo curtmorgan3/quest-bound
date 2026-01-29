@@ -10,7 +10,7 @@ import { useCharacter } from '../characters';
 export const useRulesets = () => {
   const { currentUser } = useCurrentUser();
   const { deleteAsset } = useAssets();
-  const { createCharacter, characters } = useCharacter();
+  const { characters } = useCharacter();
 
   const [loading, setLoading] = useState(false);
   const _rulesets = useLiveQuery(() => db.rulesets.toArray(), []);
@@ -58,15 +58,7 @@ export const useRulesets = () => {
         const updatedRulesetIds = Array.from(new Set([...(currentUser.rulesets || []), id]));
         await db.users.update(currentUser.id, { rulesets: updatedRulesetIds });
       }
-
-      // data.id indicates this is an imported ruleset, which will already have a test character
-      if (!data.id) {
-        await createCharacter({
-          isTestCharacter: true,
-          name: 'Test Character',
-          rulesetId: id,
-        });
-      }
+      // Note: test character is created automatically via db hook
 
       return id;
     } catch (e) {
@@ -109,22 +101,7 @@ export const useRulesets = () => {
     setLoading(true);
     try {
       await db.rulesets.delete(id);
-      await db.attributes.where('rulesetId').equals(id).delete();
-      await db.items.where('rulesetId').equals(id).delete();
-      await db.actions.where('rulesetId').equals(id).delete();
-      await db.charts.where('rulesetId').equals(id).delete();
-      await db.assets.where('rulesetId').equals(id).delete();
-      await db.windows.where('rulesetId').equals(id).delete();
-      await db.components.where('rulesetId').equals(id).delete();
-      await db.fonts.where('rulesetId').equals(id).delete();
-      const testCharacters = await db.characters.where('rulesetId').equals(id).toArray();
-      const testCharacter = testCharacters.find((c) => c.isTestCharacter);
-      if (testCharacter) {
-        await db.characters.where('id').equals(testCharacter.id).delete();
-        await db.characterAttributes.where({ characterId: testCharacter.id }).delete();
-        await db.characterWindows.where({ characterId: testCharacter.id }).delete();
-        await db.characterInventories.where({ characterId: testCharacter.id }).delete();
-      }
+      // Note: associated entities and test character are deleted automatically via db hook
 
       if (activeRuleset?.id === id) {
         localStorage.removeItem('qb.lastEditedRulesetId');
