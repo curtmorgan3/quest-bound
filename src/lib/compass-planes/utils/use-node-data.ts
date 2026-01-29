@@ -23,6 +23,12 @@ export const useNodeData = (component: Component): NodeData => {
   const characterAttribute =
     attributeId && characterContext ? characterContext.getCharacterAttribute(attributeId) : null;
 
+  if (characterAttribute === null && rulesetAttribute && characterContext) {
+    console.warn(
+      `No character attribute found for ${characterContext?.character?.name}: ${rulesetAttribute?.title}`,
+    );
+  }
+
   const value =
     characterAttribute?.value ?? rulesetAttribute?.defaultValue ?? componentData.value ?? '';
 
