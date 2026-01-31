@@ -1,5 +1,5 @@
 import { getComponentData, getComponentStyles } from '@/lib/compass-planes/utils';
-import { WindowEditorContext } from '@/stores';
+import { CharacterContext, WindowEditorContext } from '@/stores';
 import type { Component, InventoryComponentData } from '@/types';
 import { useNodeId } from '@xyflow/react';
 import { useContext } from 'react';
@@ -21,6 +21,8 @@ export const EditInventoryNode = () => {
 };
 
 export const ViewInventoryNode = ({ component }: { component: Component }) => {
+  const characterContext = useContext(CharacterContext);
+
   const css = getComponentStyles(component);
   const data = getComponentData(component) as InventoryComponentData;
   const gridColor = css.color || '#ccc';
@@ -28,8 +30,21 @@ export const ViewInventoryNode = ({ component }: { component: Component }) => {
   const cellWidth = (data.cellWidth ?? 1) * 20;
   const cellHeight = (data.cellHeight ?? 1) * 20;
 
+  const handleOpenInventory = () => {
+    if (!characterContext) {
+      console.warn('No character context from ViewInventoryNode');
+      return;
+    }
+
+    characterContext.setInventoryPanelConfig({
+      open: true,
+      inventoryComponentId: component.id,
+    });
+  };
+
   return (
     <div
+      onClick={handleOpenInventory}
       style={{
         height: component.height,
         width: component.width,

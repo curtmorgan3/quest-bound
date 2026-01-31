@@ -4,14 +4,12 @@ import type {
   Attribute,
   Character,
   CharacterAttribute,
-  CharacterInventory,
   CharacterWindow,
   Chart,
   Component,
   Font,
   Inventory,
-  InventoryAction,
-  InventoryItem,
+  InventoryEntity,
   Item,
   Ruleset,
   User,
@@ -39,11 +37,9 @@ const db = new Dexie('qbdb') as Dexie & {
   components: EntityTable<Component, 'id'>;
   characters: EntityTable<Character, 'id'>;
   characterAttributes: EntityTable<CharacterAttribute, 'id'>;
-  characterInventories: EntityTable<CharacterInventory, 'id'>;
   characterWindows: EntityTable<CharacterWindow, 'id'>;
   inventories: EntityTable<Inventory, 'id'>;
-  inventoryItems: EntityTable<InventoryItem, 'id'>;
-  inventoryActions: EntityTable<InventoryAction, 'id'>;
+  inventoryEntities: EntityTable<InventoryEntity, 'id'>;
 };
 
 const common = '++id, createdAt, updatedAt';
@@ -62,9 +58,7 @@ db.version(2).stores({
   components: `${common}, rulesetId, windowId, type, x, y, z, height, width, rotation, selected, assetId, assetUrl, groupId, attributeId, actionId, data, style`,
   characters: `${common}, rulesetId, userId, assetId, image`,
   inventories: `${common}, rulesetId, title, category, type`,
-  inventoryItems: `${common}, inventoryId, itemId, quantity, &[inventoryId+itemId]`,
-  inventoryActions: `${common}, inventoryId, actionId, &[inventoryId+actionId]`,
-  characterInventories: `${common}, inventoryId, characterId, &[inventoryId+characterId]`,
+  inventoryEntities: `${common}, inventoryId, entityId, quantity, &[inventoryId+entityId]`,
   characterWindows: `${common}, characterId, windowId, title, x, y, isCollapsed, &[characterId+windowId]`,
   characterAttributes: `${common}, characterId, attributeId, &[characterId+attributeId]`,
 });

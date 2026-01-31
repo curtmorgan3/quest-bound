@@ -205,6 +205,7 @@ export type Window = BaseDetails & {
 export type Character = BaseDetails & {
   userId: string;
   rulesetId: string;
+  inventoryId: string;
   name: string;
   assetId: string | null;
   image: string | null;
@@ -227,25 +228,15 @@ export type CharacterWindow = BaseDetails & {
   isCollapsed: boolean;
 };
 
-export type CharacterInventory = BaseDetails & {
-  characterId: string;
-  inventoryId: string;
-};
-
 export type Inventory = BaseDetails & {
-  rulesetId: string;
-  title: string;
-  category?: string;
-  type: 'item' | 'action';
+  entities: InventoryEntity[];
 };
 
-export type InventoryItem = BaseDetails & {
-  inventoryId: string;
-  itemId: string;
+export type InventoryEntity = BaseDetails & {
+  entityId: string; // ref to ruleset item or action
+  inventoryId: string; // nested inventories
+  componentId: string;
   quantity: number;
-};
-
-export type InventoryAction = BaseDetails & {
-  inventoryId: string;
-  actionId: string;
+  x: number;
+  y: number;
 };
