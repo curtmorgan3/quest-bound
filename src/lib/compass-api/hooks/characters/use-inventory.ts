@@ -1,10 +1,13 @@
 import { useErrorHandler } from '@/hooks';
-import { db } from '@/stores';
+import { db, type InventoryItemWithData } from '@/stores';
 import type { Inventory, InventoryItem } from '@/types';
 import { useLiveQuery } from 'dexie-react-hooks';
+import { useActions, useItems } from '../rulesets';
 
 export const useInventory = (inventoryId: string) => {
   const { handleError } = useErrorHandler();
+  const { actions } = useActions();
+  const { items } = useItems();
 
   const inventory = useLiveQuery(() => db.inventories.get(inventoryId), [inventoryId]);
 
@@ -16,6 +19,19 @@ export const useInventory = (inventoryId: string) => {
         .toArray(),
     [inventory],
   );
+
+  const inventoryItemsWithImages: InventoryItemWithData[] = (inventoryItems ?? []).map((entity) => {
+    const itemRef = items.find((item) => item.id === entity.entityId);
+    const actionRef = actions.find((action) => action.id === entity.entityId);
+
+    return {
+      ...entity,
+      title: itemRef?.title ?? actionRef?.title ?? '',
+      image: itemRef?.image ?? actionRef?.image,
+      inventoryWidth: itemRef?.inventoryWidth ?? 2,
+      inventoryHeight: itemRef?.inventoryHeight ?? 2,
+    };
+  });
 
   const addInventoryItem = async (
     data: Omit<InventoryItem, 'id' | 'createdAt' | 'updatedAt' | 'inventoryId'>,
@@ -82,7 +98,7 @@ export const useInventory = (inventoryId: string) => {
 
   return {
     inventory: inventory ?? null,
-    inventoryItems: inventoryItems ?? [],
+    inventoryItems: inventoryItemsWithImages ?? [],
     addInventoryItem,
     updateInventoryItem,
     removeInventoryItem,

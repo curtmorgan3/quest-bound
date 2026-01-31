@@ -30,11 +30,9 @@ export const ViewInventoryNode = ({ component }: { component: Component }) => {
   const cellWidth = (data.cellWidth ?? 1) * 20;
   const cellHeight = (data.cellHeight ?? 1) * 20;
 
-  const items = (characterContext?.inventoryItems ?? []).filter(
+  const inventoryItems = (characterContext?.inventoryItems ?? []).filter(
     (item) => item.componentId === component.id,
   );
-
-  console.log('items: ', items);
 
   const handleOpenInventory = () => {
     if (!characterContext) {
@@ -52,6 +50,11 @@ export const ViewInventoryNode = ({ component }: { component: Component }) => {
     <div
       onClick={handleOpenInventory}
       style={{
+        display: 'flex',
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        // gap: '4px',
+        // padding: '4px',
         height: component.height,
         width: component.width,
         backgroundColor: css.backgroundColor,
@@ -64,7 +67,21 @@ export const ViewInventoryNode = ({ component }: { component: Component }) => {
           linear-gradient(to right, ${gridColor} 1px, transparent 1px),
           linear-gradient(to bottom, ${gridColor} 1px, transparent 1px)
         `,
-      }}
-    />
+      }}>
+      {inventoryItems.map((invItem) => {
+        return (
+          <img
+            key={invItem.id}
+            src={invItem.image ?? ''}
+            alt={invItem.title}
+            style={{
+              width: 20 * invItem.inventoryWidth,
+              height: 20 * invItem.inventoryHeight,
+              objectFit: 'contain',
+            }}
+          />
+        );
+      })}
+    </div>
   );
 };

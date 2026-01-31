@@ -6,11 +6,11 @@ import type {
   Attribute,
   Character,
   CharacterAttribute,
-  CharacterInventory,
   CharacterWindow,
   Chart,
   Component,
   Font,
+  Inventory,
   Item,
   Ruleset,
   Window,
@@ -34,7 +34,7 @@ export interface ImportRulesetResult {
     assets: number;
     fonts: number;
     characterAttributes: number;
-    characterInventories: number;
+    inventories: number;
     characterWindows: number;
   };
   errors: string[];
@@ -114,7 +114,7 @@ export const useImportRuleset = () => {
       | 'assets'
       | 'fonts'
       | 'characterAttributes'
-      | 'characterInventories'
+      | 'inventories'
       | 'characterWindows',
   ): { isValid: boolean; errors: string[] } => {
     const errors: string[] = [];
@@ -269,16 +269,12 @@ export const useImportRuleset = () => {
           }
           break;
 
-        case 'characterInventories':
+        case 'inventories':
           if (!item.characterId || typeof item.characterId !== 'string') {
-            errors.push(
-              `CharacterInventory ${index + 1}: characterId is required and must be a string`,
-            );
+            errors.push(`Inventory ${index + 1}: characterId is required and must be a string`);
           }
           if (!item.inventoryId || typeof item.inventoryId !== 'string') {
-            errors.push(
-              `CharacterInventory ${index + 1}: inventoryId is required and must be a string`,
-            );
+            errors.push(`Inventory ${index + 1}: inventoryId is required and must be a string`);
           }
           break;
 
@@ -323,7 +319,7 @@ export const useImportRuleset = () => {
             assets: 0,
             fonts: 0,
             characterAttributes: 0,
-            characterInventories: 0,
+            inventories: 0,
             characterWindows: 0,
           },
           errors: ['metadata.json file is required'],
@@ -350,7 +346,7 @@ export const useImportRuleset = () => {
             assets: 0,
             fonts: 0,
             characterAttributes: 0,
-            characterInventories: 0,
+            inventories: 0,
             characterWindows: 0,
           },
           errors: metadataValidation.errors,
@@ -385,7 +381,7 @@ export const useImportRuleset = () => {
         assets: 0,
         fonts: 0,
         characterAttributes: 0,
-        characterInventories: 0,
+        inventories: 0,
         characterWindows: 0,
       };
 
@@ -683,22 +679,22 @@ export const useImportRuleset = () => {
       }
 
       // Import characterInventories
-      const characterInventoriesFile = zipContent.file('characterInventories.json');
-      if (characterInventoriesFile) {
+      const inventories = zipContent.file('inventories.json');
+      if (inventories) {
         try {
-          const characterInventoriesText = await characterInventoriesFile.async('text');
-          const characterInventories: CharacterInventory[] = JSON.parse(characterInventoriesText);
+          const inventoriesText = await inventories.async('text');
+          const characterInventories: Inventory[] = JSON.parse(inventoriesText);
 
-          const validation = validateData(characterInventories, 'characterInventories');
+          const validation = validateData(characterInventories, 'inventories');
           if (validation.isValid) {
             for (const characterInventory of characterInventories) {
-              const newCharacterInventory: CharacterInventory = {
+              const newCharacterInventory: Inventory = {
                 ...characterInventory,
                 createdAt: now,
                 updatedAt: now,
               };
-              await db.characterInventories.add(newCharacterInventory);
-              importedCounts.characterInventories++;
+              await db.inventories.add(newCharacterInventory);
+              importedCounts.inventories++;
             }
           } else {
             allErrors.push(...validation.errors);
@@ -749,7 +745,7 @@ export const useImportRuleset = () => {
         importedCounts.assets +
         importedCounts.fonts +
         importedCounts.characterAttributes +
-        importedCounts.characterInventories +
+        importedCounts.inventories +
         importedCounts.characterWindows;
 
       return {
@@ -779,7 +775,7 @@ export const useImportRuleset = () => {
           assets: 0,
           fonts: 0,
           characterAttributes: 0,
-          characterInventories: 0,
+          inventories: 0,
           characterWindows: 0,
         },
         errors: [error instanceof Error ? error.message : 'Unknown error'],

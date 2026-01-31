@@ -69,11 +69,9 @@ export const useExportRuleset = (rulesetId: string) => {
     [testCharacter?.id],
   );
 
-  const characterInventories = useLiveQuery(
+  const inventories = useLiveQuery(
     () =>
-      testCharacter
-        ? db.characterInventories.where('characterId').equals(testCharacter.id).toArray()
-        : [],
+      testCharacter ? db.inventories.where('characterId').equals(testCharacter.id).toArray() : [],
     [testCharacter?.id],
   );
 
@@ -97,7 +95,7 @@ export const useExportRuleset = (rulesetId: string) => {
     fonts === undefined ||
     testCharacter === undefined ||
     characterAttributes === undefined ||
-    characterInventories === undefined ||
+    inventories === undefined ||
     characterWindows === undefined;
 
   const exportRuleset = async (): Promise<void> => {
@@ -131,7 +129,7 @@ export const useExportRuleset = (rulesetId: string) => {
           assets: assets?.length || 0,
           fonts: fonts?.length || 0,
           characterAttributes: characterAttributes?.length || 0,
-          characterInventories: characterInventories?.length || 0,
+          inventories: inventories?.length || 0,
           characterWindows: characterWindows?.length || 0,
         },
       };
@@ -226,8 +224,8 @@ export const useExportRuleset = (rulesetId: string) => {
         zip.file('characterAttributes.json', JSON.stringify(characterAttributes, null, 2));
       }
 
-      if (characterInventories && characterInventories.length > 0) {
-        zip.file('characterInventories.json', JSON.stringify(characterInventories, null, 2));
+      if (inventories && inventories.length > 0) {
+        zip.file('inventories.json', JSON.stringify(inventories, null, 2));
       }
 
       if (characterWindows && characterWindows.length > 0) {

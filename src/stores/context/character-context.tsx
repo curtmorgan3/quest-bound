@@ -9,6 +9,13 @@ export type InventoryPanelConfig = {
   inventoryComponentId?: string;
 };
 
+export type InventoryItemWithData = InventoryItem & {
+  image?: string | null;
+  title: string;
+  inventoryWidth: number;
+  inventoryHeight: number;
+};
+
 type CharacterContext = {
   character: Character;
   characterAttributes: CharacterAttribute[];
@@ -17,7 +24,7 @@ type CharacterContext = {
   updateCharacterComponentData: (id: string, value: string | boolean | number) => void;
   inventoryPanelConfig: InventoryPanelConfig;
   setInventoryPanelConfig: (config: InventoryPanelConfig) => void;
-  inventoryItems: InventoryItem[];
+  inventoryItems: InventoryItemWithData[];
 };
 
 export const CharacterContext = createContext<CharacterContext>(null!);
