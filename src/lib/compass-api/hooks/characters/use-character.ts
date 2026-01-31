@@ -6,7 +6,7 @@ import { useParams } from 'react-router-dom';
 import { useAssets } from '../assets';
 
 export type CharacterWithInventories = Character & {
-  inventories: Inventory[];
+  inventory: Inventory;
 };
 
 export const useCharacter = (_id?: string) => {
@@ -127,17 +127,11 @@ export const useCharacter = (_id?: string) => {
       const character = await db.characters.get(id);
       if (!character) return null;
 
-      const characterInventories = await db.characterInventories
-        .where('characterId')
-        .equals(id)
-        .toArray();
-
-      const inventoryIds = characterInventories.map((ci) => ci.inventoryId);
-      const inventories = await db.inventories.where('id').anyOf(inventoryIds).toArray();
+      const inventory = await db.inventories.where('characterId').equals(id).toArray();
 
       return {
         ...character,
-        inventories,
+        inventory: inventory[0],
       };
     } catch (e) {
       handleError(e as Error, {

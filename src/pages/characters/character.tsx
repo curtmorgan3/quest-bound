@@ -2,6 +2,7 @@ import {
   useCharacter,
   useCharacterAttributes,
   useCharacterWindows,
+  useInventory,
   type CharacterWindowUpdate,
 } from '@/lib/compass-api';
 import { SheetViewer } from '@/lib/compass-planes';
@@ -17,11 +18,26 @@ export const CharacterPage = ({ id, lockByDefault }: { id?: string; lockByDefaul
   const { character, updateCharacter } = useCharacter(id ?? characterId);
   const { updateCharacterWindow, deleteCharacterWindow } = useCharacterWindows(character?.id);
   const { characterAttributes, updateCharacterAttribute } = useCharacterAttributes(character?.id);
+  const { inventoryItems, addInventoryItem } = useInventory(character?.inventoryId ?? '');
 
   const [inventoryPanelConfig, setInventoryPanelConfig] = useState<InventoryPanelConfig>({});
 
   const handleSelectInventoryEntity = (entity: Action | Item, type: 'action' | 'item') => {
-    console.log('Add to char inventory: ', entity, type);
+    if (!inventoryPanelConfig.inventoryComponentId) {
+      console.warn('No component ID available when adding item to inventory.');
+      return;
+    }
+
+    addInventoryItem({
+      type,
+      entityId: entity.id,
+      componentId: inventoryPanelConfig.inventoryComponentId,
+      quantity: 1,
+      x: 0,
+      y: 0,
+    });
+
+    setInventoryPanelConfig({});
   };
 
   const handleUpdateWindow = (update: CharacterWindowUpdate) => {
@@ -64,6 +80,7 @@ export const CharacterPage = ({ id, lockByDefault }: { id?: string; lockByDefaul
         updateCharacterComponentData: handleCharacterComponentDataUpdate,
         inventoryPanelConfig,
         setInventoryPanelConfig,
+        inventoryItems,
       }}>
       <SheetViewer
         characterId={character?.id}

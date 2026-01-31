@@ -229,10 +229,12 @@ export type CharacterWindow = BaseDetails & {
 };
 
 export type Inventory = BaseDetails & {
-  entities: InventoryEntity[];
+  items: Item[];
 };
 
-export type InventoryEntity = BaseDetails & {
+export type InventoryItem = BaseDetails & {
+  id: string;
+  type: 'action' | 'item';
   entityId: string; // ref to ruleset item or action
   inventoryId: string; // nested inventories
   componentId: string;

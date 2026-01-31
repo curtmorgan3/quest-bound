@@ -30,6 +30,12 @@ export const ViewInventoryNode = ({ component }: { component: Component }) => {
   const cellWidth = (data.cellWidth ?? 1) * 20;
   const cellHeight = (data.cellHeight ?? 1) * 20;
 
+  const items = (characterContext?.inventoryItems ?? []).filter(
+    (item) => item.componentId === component.id,
+  );
+
+  console.log('items: ', items);
+
   const handleOpenInventory = () => {
     if (!characterContext) {
       console.warn('No character context from ViewInventoryNode');

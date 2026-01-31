@@ -9,7 +9,7 @@ import type {
   Component,
   Font,
   Inventory,
-  InventoryEntity,
+  InventoryItem,
   Item,
   Ruleset,
   User,
@@ -39,7 +39,7 @@ const db = new Dexie('qbdb') as Dexie & {
   characterAttributes: EntityTable<CharacterAttribute, 'id'>;
   characterWindows: EntityTable<CharacterWindow, 'id'>;
   inventories: EntityTable<Inventory, 'id'>;
-  inventoryEntities: EntityTable<InventoryEntity, 'id'>;
+  inventoryItems: EntityTable<InventoryItem, 'id'>;
 };
 
 const common = '++id, createdAt, updatedAt';
@@ -58,7 +58,7 @@ db.version(2).stores({
   components: `${common}, rulesetId, windowId, type, x, y, z, height, width, rotation, selected, assetId, assetUrl, groupId, attributeId, actionId, data, style`,
   characters: `${common}, rulesetId, userId, assetId, image`,
   inventories: `${common}, rulesetId, title, category, type`,
-  inventoryEntities: `${common}, inventoryId, entityId, quantity, &[inventoryId+entityId]`,
+  inventoryItems: `${common}, inventoryId, entityId, quantity, &[inventoryId+entityId]`,
   characterWindows: `${common}, characterId, windowId, title, x, y, isCollapsed, &[characterId+windowId]`,
   characterAttributes: `${common}, characterId, attributeId, &[characterId+attributeId]`,
 });

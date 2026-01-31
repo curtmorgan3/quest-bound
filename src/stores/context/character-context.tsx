@@ -1,4 +1,4 @@
-import type { Character, CharacterAttribute } from '@/types';
+import type { Character, CharacterAttribute, InventoryItem } from '@/types';
 import { createContext } from 'react';
 
 export type InventoryPanelConfig = {
@@ -17,6 +17,7 @@ type CharacterContext = {
   updateCharacterComponentData: (id: string, value: string | boolean | number) => void;
   inventoryPanelConfig: InventoryPanelConfig;
   setInventoryPanelConfig: (config: InventoryPanelConfig) => void;
+  inventoryItems: InventoryItem[];
 };
 
 export const CharacterContext = createContext<CharacterContext>(null!);

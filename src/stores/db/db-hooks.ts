@@ -14,7 +14,7 @@ type DB = Dexie & {
   fonts: Dexie.Table;
   characters: Dexie.Table;
   inventories: Dexie.Table;
-  inventoryEntities: Dexie.Table;
+  inventoryItems: Dexie.Table;
   characterAttributes: Dexie.Table;
   characterWindows: Dexie.Table;
 };
