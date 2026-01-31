@@ -15,11 +15,13 @@
     "cypress:run:component": "cypress run --component",
     "test:e2e": "start-server-and-test dev http://localhost:5173 cypress:run:e2e",
     "test:component": "cypress run --component",
-    "test:all": "npm run test:e2e && npm run test:component"
+    "test:all": "npm run test:e2e && npm run test:component",
+    "build:robots": "node build-robots.js"
   },
   "dependencies": {
     "@cypress/react": "^9.0.1",
     "@hookform/resolvers": "^5.2.1",
+    "@netlify/edge-functions": "^3.0.3",
     "@radix-ui/react-accordion": "^1.2.12",
     "@radix-ui/react-alert-dialog": "^1.1.15",
     "@radix-ui/react-aspect-ratio": "^1.1.7",
