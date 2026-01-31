@@ -19,7 +19,7 @@ let rules = [];
 agents.forEach((ua) => {
   rules.push(`User-agent: ${ua}\nDisallow: /`);
 });
-fs.writeFile('./www/robots.txt', rules.join('\n\n'), (err) => {
+fs.writeFile('./robots.txt', rules.join('\n\n'), (err) => {
   if (err) {
     console.error(err);
   } else {
