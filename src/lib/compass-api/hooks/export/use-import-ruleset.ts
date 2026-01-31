@@ -357,9 +357,7 @@ export const useImportRuleset = () => {
         };
       }
 
-      // Create new ruleset
       const now = new Date().toISOString();
-      // const newRulesetId = crypto.randomUUID();
       const newRulesetId = metadata.ruleset.id;
 
       const newRuleset: Ruleset = {
@@ -423,6 +421,35 @@ export const useImportRuleset = () => {
 
       // Create ruleset after importing characters so test character isn't duplicated
       await createRuleset(newRuleset);
+
+      // Import characterAttributes
+      const characterAttributesFile = zipContent.file('characterAttributes.json');
+      if (characterAttributesFile) {
+        try {
+          const characterAttributesText = await characterAttributesFile.async('text');
+          const characterAttributes: CharacterAttribute[] = JSON.parse(characterAttributesText);
+
+          const validation = validateData(characterAttributes, 'characterAttributes');
+          if (validation.isValid) {
+            for (const characterAttribute of characterAttributes) {
+              const newCharacterAttribute: CharacterAttribute = {
+                ...characterAttribute,
+                createdAt: now,
+                updatedAt: now,
+              };
+              console.log('attr: ', newCharacterAttribute);
+              await db.characterAttributes.add(newCharacterAttribute);
+              importedCounts.characterAttributes++;
+            }
+          } else {
+            allErrors.push(...validation.errors);
+          }
+        } catch (error) {
+          allErrors.push(
+            `Failed to import characterAttributes: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          );
+        }
+      }
 
       // Import attributes
       const attributesFile = zipContent.file('attributes.json');
@@ -651,34 +678,6 @@ export const useImportRuleset = () => {
         } catch (error) {
           allErrors.push(
             `Failed to import fonts: ${error instanceof Error ? error.message : 'Unknown error'}`,
-          );
-        }
-      }
-
-      // Import characterAttributes
-      const characterAttributesFile = zipContent.file('characterAttributes.json');
-      if (characterAttributesFile) {
-        try {
-          const characterAttributesText = await characterAttributesFile.async('text');
-          const characterAttributes: CharacterAttribute[] = JSON.parse(characterAttributesText);
-
-          const validation = validateData(characterAttributes, 'characterAttributes');
-          if (validation.isValid) {
-            for (const characterAttribute of characterAttributes) {
-              const newCharacterAttribute: CharacterAttribute = {
-                ...characterAttribute,
-                createdAt: now,
-                updatedAt: now,
-              };
-              await db.characterAttributes.add(newCharacterAttribute);
-              importedCounts.characterAttributes++;
-            }
-          } else {
-            allErrors.push(...validation.errors);
-          }
-        } catch (error) {
-          allErrors.push(
-            `Failed to import characterAttributes: ${error instanceof Error ? error.message : 'Unknown error'}`,
           );
         }
       }

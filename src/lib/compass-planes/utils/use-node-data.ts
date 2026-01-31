@@ -30,9 +30,13 @@ export const useNodeData = (component: Component): NodeData => {
     );
   }
 
+  const characterComponentDataValue = characterComponentData
+    ? characterComponentData[component.id]
+    : null;
+
   const value =
     characterAttribute?.value ??
-    characterComponentData?.get(component.id) ??
+    characterComponentDataValue ??
     rulesetAttribute?.defaultValue ??
     componentData.value ??
     '';

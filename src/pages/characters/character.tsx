@@ -34,10 +34,11 @@ export const CharacterPage = ({ id, lockByDefault }: { id?: string; lockByDefaul
 
   const handleCharacterComponentDataUpdate = (id: string, value: string | boolean | number) => {
     if (!character) return;
-    const update = new Map(character?.componentData);
-    update.set(id, value);
     updateCharacter(character.id, {
-      componentData: update,
+      componentData: {
+        ...character.componentData,
+        [id]: value,
+      },
     });
   };
 
