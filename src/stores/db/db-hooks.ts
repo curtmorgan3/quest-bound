@@ -149,8 +149,10 @@ export function registerDbHooks(db: DB) {
 
         if (!existingTestCharacter) {
           const now = new Date().toISOString();
+          const characterId = crypto.randomUUID();
+
           await db.characters.add({
-            id: crypto.randomUUID(),
+            id: characterId,
             rulesetId: obj.id,
             userId: obj.createdBy,
             name: 'Test Character',
@@ -164,6 +166,20 @@ export function registerDbHooks(db: DB) {
         }
       } catch (error) {
         console.error('Failed to create test character for ruleset:', error);
+      }
+    }, 0);
+  });
+
+  // Delete all associated entities when a character is deleted
+  db.characters.hook('deleting', (primKey) => {
+    setTimeout(async () => {
+      try {
+        const characterId = primKey as string;
+        await db.characterAttributes.where('characterId').equals(characterId).delete();
+        await db.characterWindows.where('characterId').equals(characterId).delete();
+        await db.characterInventories.where('characterId').equals(characterId).delete();
+      } catch (error) {
+        console.error('Failed to delete associated entities for character:', error);
       }
     }, 0);
   });

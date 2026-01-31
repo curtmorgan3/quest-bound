@@ -14,11 +14,7 @@ export const CharacterPage = ({ id, lockByDefault }: { id?: string; lockByDefaul
 
   const { character, updateCharacter } = useCharacter(id ?? characterId);
   const { updateCharacterWindow, deleteCharacterWindow } = useCharacterWindows(character?.id);
-  const { characterAttributes } = useCharacterAttributes(character?.id);
-
-  console.log('char: ', id, character);
-
-  const { updateCharacterAttribute } = useCharacterAttributes();
+  const { characterAttributes, updateCharacterAttribute } = useCharacterAttributes(character?.id);
 
   const handleUpdateWindow = (update: CharacterWindowUpdate) => {
     updateCharacterWindow(update.id, update);
@@ -36,7 +32,7 @@ export const CharacterPage = ({ id, lockByDefault }: { id?: string; lockByDefaul
     return characterAttributes.find((attr) => attr.attributeId === attributeId) ?? null;
   };
 
-  const handleCharacterComponentDataUpdate = (id: string, value: string | boolean) => {
+  const handleCharacterComponentDataUpdate = (id: string, value: string | boolean | number) => {
     if (!character) return;
     const update = new Map(character?.componentData);
     update.set(id, value);

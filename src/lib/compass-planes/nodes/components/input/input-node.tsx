@@ -33,10 +33,14 @@ export const ViewInputNode = ({
   const characterContext = useContext(CharacterContext);
 
   const handleChange = (value: string | number) => {
-    if (data.characterAttributeId && characterContext) {
+    if (!characterContext) return;
+
+    if (data.characterAttributeId) {
       characterContext.updateCharacterAttribute(data.characterAttributeId, {
         value,
       });
+    } else {
+      characterContext.updateCharacterComponentData(component.id, value);
     }
   };
 

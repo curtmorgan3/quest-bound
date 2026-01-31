@@ -27,7 +27,7 @@ export const useCharacter = (_id?: string) => {
 
   const id = _id ?? characterId;
 
-  const character = useLiveQuery(() => db.characters.get(id ?? ''), [currentUser]);
+  const character = useLiveQuery(() => db.characters.get(id ?? ''), [id]);
 
   const bootstrapCharacterAttributes = async (characterId: string, rulesetId: string) => {
     const rulesetAttributes = await db.attributes.where({ rulesetId }).toArray();
