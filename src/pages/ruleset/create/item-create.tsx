@@ -1,4 +1,5 @@
-import { Input, Label } from '@/components';
+import { ImageUpload, Input, Label } from '@/components';
+import { useAssets } from '@/lib/compass-api';
 import { Boxes, Drumstick, PackageOpen, Shirt } from 'lucide-react';
 import { type Dispatch, type SetStateAction } from 'react';
 
@@ -12,6 +13,8 @@ interface ItemCreateProps {
   defaultQuantity: number;
   inventoryWidth: number;
   inventoryHeight: number;
+  image: string | null;
+  assetId: string | null;
   setIsContainer: Dispatch<SetStateAction<boolean>>;
   setIsStorable: Dispatch<SetStateAction<boolean>>;
   setIsEquippable: Dispatch<SetStateAction<boolean>>;
@@ -21,6 +24,8 @@ interface ItemCreateProps {
   setDefaultQuantity: Dispatch<SetStateAction<number>>;
   setInventoryWidth: Dispatch<SetStateAction<number>>;
   setInventoryHeight: Dispatch<SetStateAction<number>>;
+  setImage: Dispatch<SetStateAction<string | null>>;
+  setAssetId: Dispatch<SetStateAction<string | null>>;
 }
 
 export const ItemCreate = ({
@@ -33,6 +38,8 @@ export const ItemCreate = ({
   defaultQuantity,
   inventoryWidth,
   inventoryHeight,
+  image,
+  assetId,
   setIsContainer,
   setIsStorable,
   setIsEquippable,
@@ -42,37 +49,81 @@ export const ItemCreate = ({
   setDefaultQuantity,
   setInventoryWidth,
   setInventoryHeight,
+  setImage,
+  setAssetId,
 }: ItemCreateProps) => {
+  const { assets, deleteAsset } = useAssets();
+
+  const getImageFromAssetId = (id: string | null) => {
+    if (!id) return null;
+    const asset = assets.find((a) => a.id === id);
+    return asset?.data ?? null;
+  };
+
+  const handleImageUpload = (uploadedAssetId: string) => {
+    setAssetId(uploadedAssetId);
+    // Get the image data from the newly uploaded asset
+    const imageData = getImageFromAssetId(uploadedAssetId);
+    if (imageData) {
+      setImage(imageData);
+    }
+  };
+
+  const handleImageRemove = async () => {
+    if (assetId) {
+      await deleteAsset(assetId);
+    }
+    setAssetId(null);
+    setImage(null);
+  };
+
+  // Use the image from props (edit mode) or look it up from assets (create mode)
+  const displayImage = image || getImageFromAssetId(assetId);
+
   return (
     <div className='flex flex-col gap-6'>
-      <div className='w-full flex flex-row justify-between'>
-        <div
-          className='flex flex-col gap-2 items-center cursor-pointer'
-          data-testid='item-create-container'
-          onClick={() => setIsContainer((prev) => !prev)}>
-          <PackageOpen className={isContainer ? 'text-primary' : ''} />
-          <Label htmlFor='is-container'>Container</Label>
+      <div className='flex flex-row gap-6'>
+        <div className='flex flex-col gap-2'>
+          <Label>Image</Label>
+          <ImageUpload
+            image={displayImage}
+            alt='Item image'
+            onUpload={handleImageUpload}
+            onRemove={handleImageRemove}
+          />
         </div>
-        <div
-          className='flex flex-col gap-2 items-center cursor-pointer'
-          data-testid='item-create-storable'
-          onClick={() => setIsStorable((prev) => !prev)}>
-          <Boxes className={isStorable ? 'text-primary' : ''} />
-          <Label htmlFor='is-storable'>Storable</Label>
-        </div>
-        <div
-          data-testid='item-create-equippable'
-          className='flex flex-col gap-2 items-center cursor-pointer'
-          onClick={() => setIsEquippable((prev) => !prev)}>
-          <Shirt className={isEquippable ? 'text-primary' : ''} />
-          <Label htmlFor='is-equippable'>Equippable</Label>
-        </div>
-        <div
-          data-testid='item-create-consumable'
-          className='flex flex-col gap-2 items-center cursor-pointer'
-          onClick={() => setIsConsumable((prev) => !prev)}>
-          <Drumstick className={isConsumable ? 'text-primary' : ''} />
-          <Label htmlFor='is-consumable'>Consumable</Label>
+        <div className='flex flex-col gap-2 flex-1'>
+          <Label className='text-muted-foreground'>Properties</Label>
+          <div className='w-full flex flex-row justify-between'>
+            <div
+              className='flex flex-col gap-2 items-center cursor-pointer'
+              data-testid='item-create-container'
+              onClick={() => setIsContainer((prev) => !prev)}>
+              <PackageOpen className={isContainer ? 'text-primary' : ''} />
+              <Label htmlFor='is-container'>Container</Label>
+            </div>
+            <div
+              className='flex flex-col gap-2 items-center cursor-pointer'
+              data-testid='item-create-storable'
+              onClick={() => setIsStorable((prev) => !prev)}>
+              <Boxes className={isStorable ? 'text-primary' : ''} />
+              <Label htmlFor='is-storable'>Storable</Label>
+            </div>
+            <div
+              data-testid='item-create-equippable'
+              className='flex flex-col gap-2 items-center cursor-pointer'
+              onClick={() => setIsEquippable((prev) => !prev)}>
+              <Shirt className={isEquippable ? 'text-primary' : ''} />
+              <Label htmlFor='is-equippable'>Equippable</Label>
+            </div>
+            <div
+              data-testid='item-create-consumable'
+              className='flex flex-col gap-2 items-center cursor-pointer'
+              onClick={() => setIsConsumable((prev) => !prev)}>
+              <Drumstick className={isConsumable ? 'text-primary' : ''} />
+              <Label htmlFor='is-consumable'>Consumable</Label>
+            </div>
+          </div>
         </div>
       </div>
 

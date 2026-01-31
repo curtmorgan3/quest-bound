@@ -2,6 +2,7 @@ import { Button, Input, Label, Textarea } from '@/components';
 import { AppWindow, FileSpreadsheet, HandFist, Sword, UserRoundPen } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useLocation, useSearchParams } from 'react-router-dom';
+import { ActionCreate } from './action-create';
 import { AttributeCreate } from './attribute-create';
 import { ChartCreate } from './chart-create';
 import {
@@ -48,7 +49,7 @@ export const BaseCreate = ({ onCreate }: BaseCreateProps) => {
     setCategory,
   });
 
-  const { saveAction } = useActionValues({
+  const { saveAction, ...actionProps } = useActionValues({
     id: editId || undefined,
     baseProperties,
     onCreate: () => {
@@ -200,6 +201,7 @@ export const BaseCreate = ({ onCreate }: BaseCreateProps) => {
           </div>
         </div>
         {activeType === 'attributes' && <AttributeCreate {...attributeProps} />}
+        {activeType === 'actions' && <ActionCreate {...actionProps} />}
         {activeType === 'items' && <ItemCreate {...itemProps} />}
         {activeType === 'charts' && <ChartCreate {...chartProps} />}
 

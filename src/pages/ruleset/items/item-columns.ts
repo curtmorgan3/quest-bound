@@ -11,6 +11,14 @@ export const itemChartColumns: GridColumn<Item>[] = [
     resizable: false,
   },
   {
+    field: 'image',
+    headerName: '',
+    editable: false,
+    sortIndex: 0,
+    width: 60,
+    resizable: false,
+  },
+  {
     field: 'title',
     headerName: 'Title',
     editable: true,

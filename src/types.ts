@@ -61,6 +61,9 @@ export type Attribute = BaseDetails & {
   optionsChartColumnHeader?: string;
   min?: number;
   max?: number;
+  // Not currently used.
+  assetId?: string | null;
+  image?: string | null;
 };
 
 export type Action = BaseDetails & {
@@ -68,6 +71,8 @@ export type Action = BaseDetails & {
   title: string;
   description: string;
   category?: string;
+  assetId?: string | null;
+  image?: string | null;
 };
 
 export type Item = BaseDetails & {
@@ -84,6 +89,8 @@ export type Item = BaseDetails & {
   isConsumable: boolean;
   inventoryWidth: number;
   inventoryHeight: number;
+  assetId?: string | null;
+  image?: string | null;
 };
 
 export type Chart = BaseDetails & {

@@ -43,6 +43,8 @@ export const useItemValues = ({
       setDefaultQuantity(activeItem.defaultQuantity);
       setInventoryWidth(activeItem.inventoryWidth);
       setInventoryHeight(activeItem.inventoryHeight);
+      setImage(activeItem.image ?? null);
+      setAssetId(activeItem.assetId ?? null);
     } else {
       resetAll();
     }
@@ -57,6 +59,8 @@ export const useItemValues = ({
   const [defaultQuantity, setDefaultQuantity] = useState(1);
   const [inventoryWidth, setInventoryWidth] = useState(1);
   const [inventoryHeight, setInventoryHeight] = useState(1);
+  const [image, setImage] = useState<string | null>(null);
+  const [assetId, setAssetId] = useState<string | null>(null);
 
   const resetAll = () => {
     setWeight(0);
@@ -64,6 +68,8 @@ export const useItemValues = ({
     setDefaultQuantity(1);
     setInventoryWidth(1);
     setInventoryHeight(1);
+    setImage(null);
+    setAssetId(null);
   };
 
   const itemProperties: Partial<Item> = {
@@ -76,6 +82,8 @@ export const useItemValues = ({
     defaultQuantity,
     inventoryWidth,
     inventoryHeight,
+    image,
+    assetId,
   };
 
   const saveItem = () => {
@@ -105,6 +113,8 @@ export const useItemValues = ({
     defaultQuantity,
     inventoryWidth,
     inventoryHeight,
+    image,
+    assetId,
     setIsContainer,
     setIsStorable,
     setIsEquippable,
@@ -114,5 +124,7 @@ export const useItemValues = ({
     setDefaultQuantity,
     setInventoryWidth,
     setInventoryHeight,
+    setImage,
+    setAssetId,
   };
 };
