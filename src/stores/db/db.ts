@@ -57,7 +57,7 @@ db.version(3).stores({
   windows: `${common}, rulesetId, title, category`,
   components: `${common}, rulesetId, windowId, type, x, y, z, height, width, rotation, selected, assetId, assetUrl, groupId, attributeId, actionId, data, style`,
   characters: `${common}, rulesetId, userId, assetId, image`,
-  inventories: `${common}, rulesetId, title, category, type`,
+  inventories: `${common}, rulesetId, characterId, title, category, type`,
   inventoryItems: `${common}, inventoryId, entityId, quantity`,
   characterWindows: `${common}, characterId, windowId, title, x, y, isCollapsed, &[characterId+windowId]`,
   characterAttributes: `${common}, characterId, attributeId, &[characterId+attributeId]`,
