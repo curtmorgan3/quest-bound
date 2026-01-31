@@ -41,6 +41,8 @@ export const useItemValues = ({
       setWeight(activeItem.weight);
       setStackSize(activeItem.stackSize);
       setDefaultQuantity(activeItem.defaultQuantity);
+      setInventoryWidth(activeItem.inventoryWidth);
+      setInventoryHeight(activeItem.inventoryHeight);
     } else {
       resetAll();
     }
@@ -53,11 +55,15 @@ export const useItemValues = ({
   const [weight, setWeight] = useState(0);
   const [stackSize, setStackSize] = useState(0);
   const [defaultQuantity, setDefaultQuantity] = useState(1);
+  const [inventoryWidth, setInventoryWidth] = useState(1);
+  const [inventoryHeight, setInventoryHeight] = useState(1);
 
   const resetAll = () => {
     setWeight(0);
     setStackSize(0);
     setDefaultQuantity(1);
+    setInventoryWidth(1);
+    setInventoryHeight(1);
   };
 
   const itemProperties: Partial<Item> = {
@@ -68,6 +74,8 @@ export const useItemValues = ({
     weight,
     stackSize,
     defaultQuantity,
+    inventoryWidth,
+    inventoryHeight,
   };
 
   const saveItem = () => {
@@ -95,6 +103,8 @@ export const useItemValues = ({
     weight,
     stackSize,
     defaultQuantity,
+    inventoryWidth,
+    inventoryHeight,
     setIsContainer,
     setIsStorable,
     setIsEquippable,
@@ -102,5 +112,7 @@ export const useItemValues = ({
     setWeight,
     setStackSize,
     setDefaultQuantity,
+    setInventoryWidth,
+    setInventoryHeight,
   };
 };

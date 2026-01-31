@@ -10,6 +10,8 @@ interface ItemCreateProps {
   weight: number;
   stackSize: number;
   defaultQuantity: number;
+  inventoryWidth: number;
+  inventoryHeight: number;
   setIsContainer: Dispatch<SetStateAction<boolean>>;
   setIsStorable: Dispatch<SetStateAction<boolean>>;
   setIsEquippable: Dispatch<SetStateAction<boolean>>;
@@ -17,6 +19,8 @@ interface ItemCreateProps {
   setWeight: Dispatch<SetStateAction<number>>;
   setStackSize: Dispatch<SetStateAction<number>>;
   setDefaultQuantity: Dispatch<SetStateAction<number>>;
+  setInventoryWidth: Dispatch<SetStateAction<number>>;
+  setInventoryHeight: Dispatch<SetStateAction<number>>;
 }
 
 export const ItemCreate = ({
@@ -27,6 +31,8 @@ export const ItemCreate = ({
   weight,
   stackSize,
   defaultQuantity,
+  inventoryWidth,
+  inventoryHeight,
   setIsContainer,
   setIsStorable,
   setIsEquippable,
@@ -34,6 +40,8 @@ export const ItemCreate = ({
   setWeight,
   setStackSize,
   setDefaultQuantity,
+  setInventoryWidth,
+  setInventoryHeight,
 }: ItemCreateProps) => {
   return (
     <div className='flex flex-col gap-6'>
@@ -92,6 +100,30 @@ export const ItemCreate = ({
             value={stackSize}
             onChange={(e) => setStackSize(parseFloat(e.target.value))}
           />
+        </div>
+      </div>
+
+      <div className='flex flex-col gap-2'>
+        <Label className='text-muted-foreground'>Inventory Size</Label>
+        <div className='flex gap-4'>
+          <div className='flex flex-col gap-4 w-full'>
+            <Label>Width</Label>
+            <Input
+              type='number'
+              min={1}
+              value={inventoryWidth}
+              onChange={(e) => setInventoryWidth(parseInt(e.target.value) || 1)}
+            />
+          </div>
+          <div className='flex flex-col gap-4 w-full'>
+            <Label>Height</Label>
+            <Input
+              type='number'
+              min={1}
+              value={inventoryHeight}
+              onChange={(e) => setInventoryHeight(parseInt(e.target.value) || 1)}
+            />
+          </div>
         </div>
       </div>
     </div>

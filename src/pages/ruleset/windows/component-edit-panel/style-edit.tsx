@@ -1,5 +1,6 @@
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Popover } from '@/components/ui/popover';
+import { colorWhite } from '@/palette';
 import type { Component } from '@/types';
 import { PopoverContent, PopoverTrigger } from '@radix-ui/react-popover';
 import { Palette, SquareRoundCorner } from 'lucide-react';
@@ -18,6 +19,7 @@ const MIXED_VALUE_LABEL = '-';
 export const StyleEdit = ({ components, handleUpdate }: Props) => {
   const opacity = valueIfAllAreEqual(components, 'opacity');
   const backgroundColor = valueIfAllAreEqual(components, 'backgroundColor') as string;
+  const color = valueIfAllAreEqual(components, 'color') as string;
   const borderRadiusTopLeft = valueIfAllAreEqual(components, 'borderRadiusTopLeft');
   const borderRadiusTopRight = valueIfAllAreEqual(components, 'borderRadiusTopRight');
   const borderRadiusBottomLeft = valueIfAllAreEqual(components, 'borderRadiusBottomLeft');
@@ -69,7 +71,7 @@ export const StyleEdit = ({ components, handleUpdate }: Props) => {
           <PopoverTrigger title='Background Color'>
             <Palette
               className={`text-xs h-[18px] w-[18px] cursor-${backgroundColor !== MIXED_VALUE_LABEL ? 'pointer' : 'not-allowed'}`}
-              style={{ color: backgroundColor }}
+              style={{ color: backgroundColor ?? colorWhite }}
             />
           </PopoverTrigger>
           <PopoverContent>
@@ -77,6 +79,22 @@ export const StyleEdit = ({ components, handleUpdate }: Props) => {
               className='sketch-picker'
               color={backgroundColor}
               onChange={(color) => handleUpdate('backgroundColor', color.hex)}
+              presetColors={[]}
+            />
+          </PopoverContent>
+        </Popover>
+        <Popover>
+          <PopoverTrigger title='Color'>
+            <Palette
+              className={`text-xs h-[18px] w-[18px] cursor-${color !== MIXED_VALUE_LABEL ? 'pointer' : 'not-allowed'}`}
+              style={{ color: color }}
+            />
+          </PopoverTrigger>
+          <PopoverContent>
+            <SketchPicker
+              className='sketch-picker'
+              color={color}
+              onChange={(color) => handleUpdate('color', color.hex)}
               presetColors={[]}
             />
           </PopoverContent>

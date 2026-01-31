@@ -139,14 +139,15 @@ export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
             {allAreShapes && <ShapeEdit components={selectedComponents} />}
           </TabsContent>
           <TabsContent value='data' className='w-full flex flex-col gap-4 mt-2'>
-            {selectedComponents.length === 1 && (
-              <AttributeLookup
-                value={selectedComponents[0].attributeId}
-                onSelect={(attr) => handleUpdate('attributeId', attr.id)}
-                onDelete={() => handleUpdate('attributeId', null)}
-                filterType={allAreCheckboxes ? 'boolean' : undefined}
-              />
-            )}
+            {selectedComponents.length === 1 &&
+              selectedComponents[0].type !== ComponentTypes.INVENTORY && (
+                <AttributeLookup
+                  value={selectedComponents[0].attributeId}
+                  onSelect={(attr) => handleUpdate('attributeId', attr.id)}
+                  onDelete={() => handleUpdate('attributeId', null)}
+                  filterType={allAreCheckboxes ? 'boolean' : undefined}
+                />
+              )}
             {selectedComponents.length === 1 && (
               <AttributeLookup
                 label='Conditional Render'

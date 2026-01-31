@@ -10,8 +10,8 @@ export const inventoryConfig: SheetComponentType = {
   minHeight: DEFAULT_GRID_SIZE,
   defaultWidth: 5 * DEFAULT_GRID_SIZE,
   defaultHeight: 5 * DEFAULT_GRID_SIZE,
-  maxHeight: 10 * DEFAULT_GRID_SIZE,
-  maxWidth: 10 * DEFAULT_GRID_SIZE,
+  maxHeight: 100 * DEFAULT_GRID_SIZE,
+  maxWidth: 100 * DEFAULT_GRID_SIZE,
   defaultRotation: 0,
   defaultLayer: 2,
   transparent: true,
@@ -19,7 +19,8 @@ export const inventoryConfig: SheetComponentType = {
 };
 
 const DEFAULT_DATA: InventoryComponentData = {
-  type: 'item',
+  cellHeight: 1,
+  cellWidth: 1,
 };
 
 const DEFAULT_STYLES: ComponentStyle = {
@@ -43,8 +44,8 @@ const DEFAULT_STYLES: ComponentStyle = {
 
 export const DEFAULT_INVENTORY: Partial<Component> = {
   z: inventoryConfig.defaultLayer,
-  height: DEFAULT_GRID_SIZE,
-  width: DEFAULT_GRID_SIZE,
+  height: inventoryConfig.defaultHeight,
+  width: inventoryConfig.defaultWidth,
   rotation: inventoryConfig.defaultRotation,
   data: JSON.stringify(DEFAULT_DATA),
   style: JSON.stringify(DEFAULT_STYLES),

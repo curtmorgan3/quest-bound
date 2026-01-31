@@ -132,6 +132,7 @@ export const ViewTextNode = ({
         outline: css.outline,
         outlineColor: css.outlineColor,
         outlineWidth: css.outlineWidth,
+        overflow: 'hidden',
       }}>
       <span
         onDoubleClick={onDoubleClick}
