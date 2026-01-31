@@ -29,6 +29,8 @@ export const SheetViewer = ({
   const openWindows = new Set(characterWindows.filter((cw) => !cw.isCollapsed).map((cw) => cw.id));
   const [locked, setLocked] = useState<boolean>(lockByDefault ?? false);
 
+  const openCharacterWindows = characterWindows.filter((w) => !w.isCollapsed);
+
   function convertWindowsToNode(windows: CharacterWindow[]): Node[] {
     return windows.map((window, index) => {
       const position = { x: window.x, y: window.y };
@@ -58,7 +60,7 @@ export const SheetViewer = ({
   const positionUpdateTimeouts = useRef<Map<string, NodeJS.Timeout>>(new Map());
 
   useEffect(() => {
-    setNodes(convertWindowsToNode(characterWindows.filter((w) => !w.isCollapsed)));
+    setNodes(convertWindowsToNode(openCharacterWindows));
   }, [characterWindows, locked]);
 
   const onNodesChange = (changes: NodeChange[]) => {
@@ -89,17 +91,41 @@ export const SheetViewer = ({
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', position: 'relative' }}>
-      <BaseEditor
-        nodes={nodes}
-        onNodesChange={onNodesChange}
-        nodeTypes={windowNodeTypes}
-        useGrid={false}
-        nodesConnectable={false}
-        selectNodesOnDrag={false}
-        panOnScroll={false}
-        zoomOnScroll={false}
-        nodesDraggable={!locked}
-      />
+      {locked ? (
+        <div style={{ position: 'relative', flex: 1, overflow: 'hidden' }}>
+          {openCharacterWindows.map((window, index) => (
+            <div
+              key={window.id}
+              style={{
+                position: 'absolute',
+                left: window.x,
+                top: window.y,
+                zIndex: index,
+              }}>
+              <WindowNode
+                data={{
+                  locked,
+                  characterWindow: window,
+                  onMinimize: (id: string) => onWindowUpdated?.({ id, isCollapsed: true }),
+                  onClose: (id: string) => onWindowDeleted?.(id),
+                }}
+              />
+            </div>
+          ))}
+        </div>
+      ) : (
+        <BaseEditor
+          nodes={nodes}
+          onNodesChange={onNodesChange}
+          nodeTypes={windowNodeTypes}
+          useGrid={false}
+          nodesConnectable={false}
+          selectNodesOnDrag={false}
+          panOnScroll={false}
+          zoomOnScroll={false}
+          nodesDraggable={!locked}
+        />
+      )}
       <WindowsTabs
         characterId={characterId}
         windows={characterWindows}

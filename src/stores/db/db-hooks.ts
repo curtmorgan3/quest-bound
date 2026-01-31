@@ -157,6 +157,7 @@ export function registerDbHooks(db: DB) {
             assetId: null,
             image: null,
             isTestCharacter: true,
+            componentData: new Map(),
             createdAt: now,
             updatedAt: now,
           });

@@ -12,9 +12,11 @@ import { useParams } from 'react-router-dom';
 export const CharacterPage = ({ id, lockByDefault }: { id?: string; lockByDefault?: boolean }) => {
   const { characterId } = useParams<{ characterId: string }>();
 
-  const { character } = useCharacter(id ?? characterId);
+  const { character, updateCharacter } = useCharacter(id ?? characterId);
   const { updateCharacterWindow, deleteCharacterWindow } = useCharacterWindows(character?.id);
   const { characterAttributes } = useCharacterAttributes(character?.id);
+
+  console.log('char: ', id, character);
 
   const { updateCharacterAttribute } = useCharacterAttributes();
 
@@ -34,6 +36,15 @@ export const CharacterPage = ({ id, lockByDefault }: { id?: string; lockByDefaul
     return characterAttributes.find((attr) => attr.attributeId === attributeId) ?? null;
   };
 
+  const handleCharacterComponentDataUpdate = (id: string, value: string | boolean) => {
+    if (!character) return;
+    const update = new Map(character?.componentData);
+    update.set(id, value);
+    updateCharacter(character.id, {
+      componentData: update,
+    });
+  };
+
   if (!character) {
     return null;
   }
@@ -45,6 +56,7 @@ export const CharacterPage = ({ id, lockByDefault }: { id?: string; lockByDefaul
         characterAttributes,
         getCharacterAttribute,
         updateCharacterAttribute: handleUpdateCharacterAttribute,
+        updateCharacterComponentData: handleCharacterComponentDataUpdate,
       }}>
       <SheetViewer
         characterId={character?.id}

@@ -192,6 +192,7 @@ export type Character = BaseDetails & {
   assetId: string | null;
   image: string | null;
   isTestCharacter: boolean;
+  componentData: Map<string, any>;
 };
 
 export type CharacterAttribute = Attribute & {

@@ -22,6 +22,9 @@ export const useNodeData = (component: Component): NodeData => {
   const rulesetAttribute = attributeId ? attributes.find((attr) => attr.id === attributeId) : null;
   const characterAttribute =
     attributeId && characterContext ? characterContext.getCharacterAttribute(attributeId) : null;
+  const characterComponentData = characterContext?.character?.componentData;
+
+  console.log(characterContext?.character);
 
   if (characterAttribute === null && rulesetAttribute && characterContext) {
     console.warn(
@@ -30,7 +33,11 @@ export const useNodeData = (component: Component): NodeData => {
   }
 
   const value =
-    characterAttribute?.value ?? rulesetAttribute?.defaultValue ?? componentData.value ?? '';
+    characterAttribute?.value ??
+    characterComponentData?.get(attributeId ?? '') ??
+    rulesetAttribute?.defaultValue ??
+    componentData.value ??
+    '';
 
   return {
     ...componentData,

@@ -4,7 +4,6 @@ import type { Character, CharacterAttribute, Inventory } from '@/types';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useParams } from 'react-router-dom';
 import { useAssets } from '../assets';
-import { useAttributes } from '../rulesets';
 
 export type CharacterWithInventories = Character & {
   inventories: Inventory[];
@@ -12,27 +11,28 @@ export type CharacterWithInventories = Character & {
 
 export const useCharacter = (_id?: string) => {
   const { characterId } = useParams();
-  const { attributes } = useAttributes();
   const { currentUser } = useCurrentUser();
   const { handleError } = useErrorHandler();
   const { deleteAsset } = useAssets();
 
-  const characters = useLiveQuery(
-    () =>
-      db.characters
-        .where('userId')
-        .equals(currentUser?.id ?? 0)
-        .toArray(),
-    [currentUser],
-  );
+  const characters =
+    useLiveQuery(
+      () =>
+        db.characters
+          .where('userId')
+          .equals(currentUser?.id ?? 0)
+          .toArray(),
+      [currentUser],
+    ) ?? [];
 
   const id = _id ?? characterId;
 
-  const character = characters?.find((c) => c.id === id);
+  const character = useLiveQuery(() => db.characters.get(id ?? ''), [currentUser]);
 
-  const bootstrapCharacterAttributes = async (characterId: string) => {
+  const bootstrapCharacterAttributes = async (characterId: string, rulesetId: string) => {
+    const rulesetAttributes = await db.attributes.where({ rulesetId }).toArray();
     const characterAttributes: CharacterAttribute[] = [];
-    for (const attribute of attributes) {
+    for (const attribute of rulesetAttributes) {
       characterAttributes.push({
         ...attribute,
         characterId,
@@ -64,9 +64,10 @@ export const useCharacter = (_id?: string) => {
         createdAt: now,
         updatedAt: now,
         isTestCharacter: data.isTestCharacter ?? false,
+        componentData: new Map(),
       } as Character);
 
-      await bootstrapCharacterAttributes(id);
+      await bootstrapCharacterAttributes(id, data.rulesetId);
     } catch (e) {
       handleError(e as Error, {
         component: 'useCharacter/createCharacter',

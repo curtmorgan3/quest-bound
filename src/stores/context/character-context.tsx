@@ -6,6 +6,7 @@ type CharacterContext = {
   characterAttributes: CharacterAttribute[];
   getCharacterAttribute: (attributeId: string) => CharacterAttribute | null;
   updateCharacterAttribute: (id: string, update: Partial<CharacterAttribute>) => void;
+  updateCharacterComponentData: (id: string, value: string | boolean) => void;
 };
 
 export const CharacterContext = createContext<CharacterContext>(null!);

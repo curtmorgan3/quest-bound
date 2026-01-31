@@ -43,10 +43,14 @@ export const ViewCheckboxNode = ({
   const uncheckedImageUrl = uncheckedAsset?.data ?? data.uncheckedAssetUrl;
 
   const handleChange = () => {
-    if (data.characterAttributeId && characterContext) {
+    if (!characterContext) return;
+
+    if (data.characterAttributeId) {
       characterContext.updateCharacterAttribute(data.characterAttributeId, {
         value: !isChecked,
       });
+    } else {
+      characterContext.updateCharacterComponentData(component.id, !isChecked);
     }
   };
 

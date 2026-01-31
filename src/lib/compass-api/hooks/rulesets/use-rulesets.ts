@@ -10,7 +10,6 @@ import { useCharacter } from '../characters';
 export const useRulesets = () => {
   const { currentUser } = useCurrentUser();
   const { deleteAsset } = useAssets();
-  const { characters } = useCharacter();
 
   const [loading, setLoading] = useState(false);
   const _rulesets = useLiveQuery(() => db.rulesets.toArray(), []);
@@ -31,10 +30,20 @@ export const useRulesets = () => {
         : lastEditedRulesetId;
 
   const activeRuleset = rulesetIdToUse ? rulesets?.find((r) => r.id === rulesetIdToUse) : null;
+
+  const testCharacters =
+    useLiveQuery(
+      () =>
+        db.characters
+          .where('rulesetId')
+          .equals(activeRuleset?.id ?? 0)
+          .and((char) => char.isTestCharacter)
+          .toArray(),
+      [activeRuleset],
+    ) ?? [];
+
   // There should only be one test character
-  const testCharacter = characters.find(
-    (c) => c.rulesetId === activeRuleset?.id && c.isTestCharacter,
-  );
+  const testCharacter = testCharacters[0];
 
   const createRuleset = async (data: Partial<Ruleset>) => {
     setLoading(true);

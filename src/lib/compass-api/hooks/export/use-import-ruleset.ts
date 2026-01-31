@@ -375,9 +375,6 @@ export const useImportRuleset = () => {
         updatedAt: now,
       };
 
-      // await db.rulesets.add(newRuleset);
-      await createRuleset(newRuleset);
-
       // Import content files
       const importedCounts = {
         attributes: 0,
@@ -395,6 +392,37 @@ export const useImportRuleset = () => {
       };
 
       const allErrors: string[] = [];
+
+      // Import characters
+      const charactersFile = zipContent.file('characters.json');
+      if (charactersFile) {
+        try {
+          const charactersText = await charactersFile.async('text');
+          const characters: Character[] = JSON.parse(charactersText);
+
+          const validation = validateData(characters, 'characters');
+          if (validation.isValid) {
+            for (const character of characters) {
+              const newCharacter: Character = {
+                ...character,
+                createdAt: now,
+                updatedAt: now,
+              };
+              await db.characters.add(newCharacter);
+              importedCounts.characters++;
+            }
+          } else {
+            allErrors.push(...validation.errors);
+          }
+        } catch (error) {
+          allErrors.push(
+            `Failed to import characters: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          );
+        }
+      }
+
+      // Create ruleset after importing characters so test character isn't duplicated
+      await createRuleset(newRuleset);
 
       // Import attributes
       const attributesFile = zipContent.file('attributes.json');
@@ -508,35 +536,6 @@ export const useImportRuleset = () => {
         } catch (error) {
           allErrors.push(
             `Failed to import charts: ${error instanceof Error ? error.message : 'Unknown error'}`,
-          );
-        }
-      }
-
-      // Import characters
-      const charactersFile = zipContent.file('characters.json');
-      if (charactersFile) {
-        try {
-          const charactersText = await charactersFile.async('text');
-          const characters: Character[] = JSON.parse(charactersText);
-
-          const validation = validateData(characters, 'characters');
-          if (validation.isValid) {
-            for (const character of characters) {
-              const newCharacter: Character = {
-                ...character,
-                rulesetId: newRulesetId,
-                createdAt: now,
-                updatedAt: now,
-              };
-              await db.characters.add(newCharacter);
-              importedCounts.characters++;
-            }
-          } else {
-            allErrors.push(...validation.errors);
-          }
-        } catch (error) {
-          allErrors.push(
-            `Failed to import characters: ${error instanceof Error ? error.message : 'Unknown error'}`,
           );
         }
       }
