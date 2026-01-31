@@ -5,6 +5,8 @@ export default async (request: Request) => {
   // Get the user agent string of the requester
   const ua = request.headers.get('user-agent');
 
+  console.log('user agent: ', ua);
+
   // Check against our list of known AI bots
   let isBot = false;
   agents.forEach((agent) => {
