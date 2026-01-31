@@ -3,5 +3,6 @@ export * from './common';
 export * from './content';
 export * from './image';
 export * from './input';
+export * from './inventory';
 export * from './shape';
 export * from './text';

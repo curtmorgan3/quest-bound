@@ -151,10 +151,15 @@ export type CheckboxComponentData = {
   uncheckedAssetUrl?: string;
 };
 
+export type InventoryComponentData = {
+  type: 'item' | 'action';
+};
+
 export type ComponentData = ShapeComponentData &
   TextComponentData &
   ImageComponentData &
   InputComponentData &
+  InventoryComponentData &
   CheckboxComponentData & {
     conditionalRenderAttributeId?: string | null;
     conditionalRenderInverse?: boolean;

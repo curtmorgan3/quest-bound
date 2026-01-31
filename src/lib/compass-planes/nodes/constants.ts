@@ -6,10 +6,12 @@ import {
   EditContentNode,
   EditImageNode,
   EditInputNode,
+  EditInventoryNode,
   EditShapeNode,
   EditTextNode,
   imageConfig,
   inputConfig,
+  inventoryConfig,
   shapeConfig,
   textConfig,
 } from './components';
@@ -22,6 +24,7 @@ export const sheetNodeTypes: NodeTypes = {
   [ComponentTypes.INPUT]: EditInputNode,
   [ComponentTypes.CHECKBOX]: EditCheckboxNode,
   [ComponentTypes.CONTENT]: EditContentNode,
+  [ComponentTypes.INVENTORY]: EditInventoryNode,
 };
 
 export const baseComponentTypes: SheetComponentType[] = [
@@ -31,6 +34,7 @@ export const baseComponentTypes: SheetComponentType[] = [
   inputConfig,
   checkboxConfig,
   contentConfig,
+  inventoryConfig,
 ];
 
 export const componentTypes = [...baseComponentTypes];

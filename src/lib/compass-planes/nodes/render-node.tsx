@@ -5,6 +5,7 @@ import {
   ViewContentNode,
   ViewImageNode,
   ViewInputNode,
+  ViewInventoryNode,
   ViewShapeNode,
   ViewTextNode,
 } from '../nodes/components';
@@ -38,6 +39,8 @@ export const renderViewComponent = (
       return <ViewCheckboxNode key={component.id} component={component} />;
     case ComponentTypes.CONTENT:
       return <ViewContentNode key={component.id} component={component} />;
+    case ComponentTypes.INVENTORY:
+      return <ViewInventoryNode key={component.id} component={component} />;
     default:
       console.warn(`Attempted to render an unregistered view component: `, component.type);
       return null;

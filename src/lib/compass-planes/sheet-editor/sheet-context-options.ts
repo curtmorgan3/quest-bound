@@ -7,6 +7,7 @@ const includedComponents = [
   ComponentTypes.INPUT,
   ComponentTypes.CHECKBOX,
   ComponentTypes.CONTENT,
+  ComponentTypes.INVENTORY,
 ];
 
 export const contextOptions: EditorMenuOption[] = includedComponents.map((component) => ({

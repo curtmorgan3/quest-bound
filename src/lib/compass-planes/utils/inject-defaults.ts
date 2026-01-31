@@ -5,6 +5,7 @@ import {
   DEFAULT_CONTENT,
   DEFAULT_IMAGE,
   DEFAULT_INPUT,
+  DEFAULT_INVENTORY,
   DEFAULT_SHAPE,
   DEFAULT_TEXT,
   REQUIRED_COMPONENT_FIELDS,
@@ -25,6 +26,7 @@ export function injectDefaultComponent(component: Partial<Component>) {
     [ComponentTypes.INPUT, DEFAULT_INPUT],
     [ComponentTypes.CHECKBOX, DEFAULT_CHECKBOX],
     [ComponentTypes.CONTENT, DEFAULT_CONTENT],
+    [ComponentTypes.INVENTORY, DEFAULT_INVENTORY],
   ]);
 
   const defaults = defaultMap.get(component.type as ComponentTypes);

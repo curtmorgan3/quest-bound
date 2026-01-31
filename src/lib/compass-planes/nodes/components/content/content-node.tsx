@@ -134,7 +134,6 @@ export const ViewContentNode = ({
           width: '100%',
           height: '100%',
           fontSize: '16px',
-          color: 'inherit',
           resize: 'none',
           overflow: 'auto',
         }}
