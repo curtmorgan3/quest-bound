@@ -52,9 +52,16 @@ export const ViewInventoryNode = ({ component }: { component: Component }) => {
       return;
     }
 
+    const gridCols = Math.floor(component.width / cellWidth);
+    const gridRows = Math.floor(component.height / cellHeight);
+
     characterContext.setInventoryPanelConfig({
       open: true,
       inventoryComponentId: component.id,
+      cellWidth,
+      cellHeight,
+      gridCols,
+      gridRows,
     });
   };
 
@@ -235,6 +242,7 @@ export const ViewInventoryNode = ({ component }: { component: Component }) => {
             src={invItem.image ?? ''}
             alt={invItem.title}
             draggable={false}
+            onDoubleClick={(e) => e.stopPropagation()}
             onPointerDown={(e) => handlePointerDown(e, invItem)}
             style={{
               position: 'absolute',
