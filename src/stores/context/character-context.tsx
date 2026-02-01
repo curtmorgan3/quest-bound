@@ -25,6 +25,7 @@ type CharacterContext = {
   inventoryPanelConfig: InventoryPanelConfig;
   setInventoryPanelConfig: (config: InventoryPanelConfig) => void;
   inventoryItems: InventoryItemWithData[];
+  updateInventoryItem: (id: string, data: Partial<InventoryItem>) => void;
 };
 
 export const CharacterContext = createContext<CharacterContext>(null!);
