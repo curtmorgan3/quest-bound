@@ -73,6 +73,7 @@ export const ViewInventoryNode = ({ component }: { component: Component }) => {
     itemWidthIn20px: number,
     itemHeightIn20px: number,
     excludeItemId?: string,
+    excludePosition?: { x: number; y: number },
   ): { x: number; y: number } | null => {
     const itemWidthInPixels = itemWidthIn20px * 20;
     const itemHeightInPixels = itemHeightIn20px * 20;
@@ -82,6 +83,7 @@ export const ViewInventoryNode = ({ component }: { component: Component }) => {
     const existingItems = inventoryItems.filter((item) => item.id !== excludeItemId);
 
     const hasCollision = (x: number, y: number): boolean => {
+      if (excludePosition?.x === x && excludePosition?.y === y) return true;
       for (const other of existingItems) {
         const otherWidthInPixels = other.inventoryWidth * 20;
         const otherHeightInPixels = other.inventoryHeight * 20;
@@ -149,7 +151,12 @@ export const ViewInventoryNode = ({ component }: { component: Component }) => {
     const remainingQuantity = item.quantity - splitAmount;
 
     // Find first empty slot for the new stack
-    const slot = findFirstEmptySlot(item.inventoryWidth, item.inventoryHeight, item.id);
+    // Exclude the item pos being split, since that will be removed. Otherwise, splitting from
+    // the first available position will cause the stacks to appear in the same slot.
+    const slot = findFirstEmptySlot(item.inventoryWidth, item.inventoryHeight, item.id, {
+      x: item.x,
+      y: item.y,
+    });
     if (!slot) {
       console.warn('No empty slot available for split stack');
       setContextMenu(null);

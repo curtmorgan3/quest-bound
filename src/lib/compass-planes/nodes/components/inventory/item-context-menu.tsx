@@ -93,28 +93,40 @@ export const ItemContextMenu = ({
         <label style={{ display: 'block', fontSize: 12, color: '#999', marginBottom: 4 }}>
           Quantity
         </label>
-        <input
-          type='number'
-          min={1}
-          max={item.stackSize}
-          value={quantity}
-          onPointerMove={(e) => {
-            e.preventDefault();
-            return;
-          }}
-          onChange={handleQuantityChange}
-          onBlur={handleQuantityBlur}
-          onKeyDown={(e) => e.key === 'Enter' && handleQuantityBlur()}
-          style={{
-            width: '100%',
-            padding: '6px 8px',
-            backgroundColor: '#2a2a2a',
-            border: '1px solid #444',
-            borderRadius: 4,
-            color: '#fff',
-            fontSize: 14,
-          }}
-        />
+        <div className='flex gap-2'>
+          <input
+            type='number'
+            min={1}
+            max={item.stackSize}
+            value={quantity}
+            onPointerMove={(e) => {
+              e.preventDefault();
+              return;
+            }}
+            onChange={handleQuantityChange}
+            onBlur={handleQuantityBlur}
+            onKeyDown={(e) => e.key === 'Enter' && handleQuantityBlur()}
+            style={{
+              width: '100%',
+              padding: '6px 8px',
+              backgroundColor: '#2a2a2a',
+              border: '1px solid #444',
+              borderRadius: 4,
+              color: '#fff',
+              fontSize: 14,
+            }}
+          />
+          <div className='flex flex-col'>
+            <button onClick={() => setQuantity((prev) => Math.min(prev + 1, maxQuantity))}>
+              ^
+            </button>
+            <button
+              onClick={() => setQuantity((prev) => Math.max(1, prev - 1))}
+              style={{ transform: 'rotate(180deg)' }}>
+              ^
+            </button>
+          </div>
+        </div>
       </div>
 
       {canSplit && (
