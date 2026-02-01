@@ -58,6 +58,38 @@ export const ViewInventoryNode = ({ component }: { component: Component }) => {
     });
   };
 
+  // Check if placing an item at (x, y) would collide with any other items
+  const checkCollision = (
+    movingItemId: string,
+    x: number,
+    y: number,
+    widthInCells: number,
+    heightInCells: number,
+  ): boolean => {
+    for (const other of inventoryItems) {
+      // Skip the item being moved
+      if (other.id === movingItemId) continue;
+
+      // Calculate other item's size in cells
+      const otherWidthInPixels = other.inventoryWidth * 20;
+      const otherHeightInPixels = other.inventoryHeight * 20;
+      const otherWidthInCells = Math.ceil(otherWidthInPixels / cellWidth);
+      const otherHeightInCells = Math.ceil(otherHeightInPixels / cellHeight);
+
+      // Check for rectangle overlap
+      const noOverlap =
+        x >= other.x + otherWidthInCells || // moving item is to the right
+        x + widthInCells <= other.x || // moving item is to the left
+        y >= other.y + otherHeightInCells || // moving item is below
+        y + heightInCells <= other.y; // moving item is above
+
+      if (!noOverlap) {
+        return true; // collision detected
+      }
+    }
+    return false;
+  };
+
   const handlePointerDown = (e: React.PointerEvent, item: InventoryItemWithData) => {
     e.stopPropagation();
     e.preventDefault();
@@ -138,8 +170,17 @@ export const ViewInventoryNode = ({ component }: { component: Component }) => {
     const clampedX = Math.max(0, Math.min(snappedX, maxX));
     const clampedY = Math.max(0, Math.min(snappedY, maxY));
 
-    // Update position if changed
-    if (clampedX !== dragState.startX || clampedY !== dragState.startY) {
+    // Check for collision with other items
+    const hasCollision = checkCollision(
+      dragState.itemId,
+      clampedX,
+      clampedY,
+      itemWidthInCells,
+      itemHeightInCells,
+    );
+
+    // Update position only if changed and no collision
+    if (!hasCollision && (clampedX !== dragState.startX || clampedY !== dragState.startY)) {
       characterContext.updateInventoryItem(dragState.itemId, {
         x: clampedX,
         y: clampedY,
