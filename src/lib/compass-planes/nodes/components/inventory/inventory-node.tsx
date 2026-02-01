@@ -118,6 +118,12 @@ export const ViewInventoryNode = ({ component }: { component: Component }) => {
       return;
     }
 
+    // Item dimensions are in 20px units, convert to pixels then to cells
+    const itemWidthInPixels = item.inventoryWidth * 20;
+    const itemHeightInPixels = item.inventoryHeight * 20;
+    const itemWidthInCells = Math.ceil(itemWidthInPixels / cellWidth);
+    const itemHeightInCells = Math.ceil(itemHeightInPixels / cellHeight);
+
     // Calculate grid dimensions
     const gridCols = Math.floor(component.width / cellWidth);
     const gridRows = Math.floor(component.height / cellHeight);
@@ -126,31 +132,11 @@ export const ViewInventoryNode = ({ component }: { component: Component }) => {
     const snappedX = Math.floor((dragState.currentX + cellWidth / 2) / cellWidth);
     const snappedY = Math.floor((dragState.currentY + cellHeight / 2) / cellHeight);
 
-    // Clamp to valid range: 0 to (gridSize - 1) for 1x1 items
-    // For larger items, max position ensures item stays within grid
-    const maxX = gridCols;
-    const maxY = gridRows;
+    // Clamp to valid range using item size in cells
+    const maxX = gridCols - itemWidthInCells;
+    const maxY = gridRows - itemHeightInCells;
     const clampedX = Math.max(0, Math.min(snappedX, maxX));
     const clampedY = Math.max(0, Math.min(snappedY, maxY));
-
-    console.log('Drop debug:', {
-      currentX: dragState.currentX,
-      currentY: dragState.currentY,
-      cellWidth,
-      cellHeight,
-      componentWidth: component.width,
-      componentHeight: component.height,
-      gridCols,
-      gridRows,
-      itemWidth: item.inventoryWidth,
-      itemHeight: item.inventoryHeight,
-      snappedX,
-      snappedY,
-      maxX,
-      maxY,
-      clampedX,
-      clampedY,
-    });
 
     // Update position if changed
     if (clampedX !== dragState.startX || clampedY !== dragState.startY) {
