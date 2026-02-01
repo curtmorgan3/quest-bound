@@ -19,6 +19,7 @@ export type InventoryItemWithData = InventoryItem & {
   title: string;
   inventoryWidth: number;
   inventoryHeight: number;
+  stackSize: number;
 };
 
 type CharacterContext = {
@@ -31,6 +32,7 @@ type CharacterContext = {
   setInventoryPanelConfig: (config: InventoryPanelConfig) => void;
   inventoryItems: InventoryItemWithData[];
   updateInventoryItem: (id: string, data: Partial<InventoryItem>) => void;
+  removeInventoryItem: (id: string) => void;
 };
 
 export const CharacterContext = createContext<CharacterContext>(null!);

@@ -30,6 +30,7 @@ export const useInventory = (inventoryId: string) => {
       image: itemRef?.image ?? actionRef?.image,
       inventoryWidth: itemRef?.inventoryWidth ?? 2,
       inventoryHeight: itemRef?.inventoryHeight ?? 2,
+      stackSize: itemRef?.stackSize ?? 1,
     };
   });
 

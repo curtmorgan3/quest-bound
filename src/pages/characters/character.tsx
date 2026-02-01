@@ -18,9 +18,8 @@ export const CharacterPage = ({ id, lockByDefault }: { id?: string; lockByDefaul
   const { character, updateCharacter } = useCharacter(id ?? characterId);
   const { updateCharacterWindow, deleteCharacterWindow } = useCharacterWindows(character?.id);
   const { characterAttributes, updateCharacterAttribute } = useCharacterAttributes(character?.id);
-  const { inventoryItems, addInventoryItem, updateInventoryItem } = useInventory(
-    character?.inventoryId ?? '',
-  );
+  const { inventoryItems, addInventoryItem, updateInventoryItem, removeInventoryItem } =
+    useInventory(character?.inventoryId ?? '');
 
   const [inventoryPanelConfig, setInventoryPanelConfig] = useState<InventoryPanelConfig>({});
 
@@ -153,6 +152,7 @@ export const CharacterPage = ({ id, lockByDefault }: { id?: string; lockByDefaul
         setInventoryPanelConfig,
         inventoryItems,
         updateInventoryItem,
+        removeInventoryItem,
       }}>
       <SheetViewer
         characterId={character?.id}

@@ -66,13 +66,14 @@ export const ViewInventoryNode = ({ component }: { component: Component }) => {
   };
 
   // Check if placing an item at (x, y) would collide with any other items
-  const checkCollision = (
+  // Returns the colliding item if found, or null if no collision
+  const findCollidingItem = (
     movingItemId: string,
     x: number,
     y: number,
     widthInCells: number,
     heightInCells: number,
-  ): boolean => {
+  ): InventoryItemWithData | null => {
     for (const other of inventoryItems) {
       // Skip the item being moved
       if (other.id === movingItemId) continue;
@@ -91,10 +92,10 @@ export const ViewInventoryNode = ({ component }: { component: Component }) => {
         y + heightInCells <= other.y; // moving item is above
 
       if (!noOverlap) {
-        return true; // collision detected
+        return other; // collision detected, return the colliding item
       }
     }
-    return false;
+    return null;
   };
 
   const handlePointerDown = (e: React.PointerEvent, item: InventoryItemWithData) => {
@@ -178,7 +179,7 @@ export const ViewInventoryNode = ({ component }: { component: Component }) => {
     const clampedY = Math.max(0, Math.min(snappedY, maxY));
 
     // Check for collision with other items
-    const hasCollision = checkCollision(
+    const collidingItem = findCollidingItem(
       dragState.itemId,
       clampedX,
       clampedY,
@@ -186,12 +187,43 @@ export const ViewInventoryNode = ({ component }: { component: Component }) => {
       itemHeightInCells,
     );
 
-    // Update position only if changed and no collision
-    if (!hasCollision && (clampedX !== dragState.startX || clampedY !== dragState.startY)) {
-      characterContext.updateInventoryItem(dragState.itemId, {
-        x: clampedX,
-        y: clampedY,
-      });
+    if (collidingItem) {
+      // Check if items can be stacked (same entityId and stackable)
+      const canStack =
+        collidingItem.entityId === item.entityId &&
+        collidingItem.stackSize > 1 &&
+        collidingItem.quantity < collidingItem.stackSize;
+
+      if (canStack) {
+        // Calculate how many can be added to the stack
+        const spaceInStack = collidingItem.stackSize - collidingItem.quantity;
+        const amountToAdd = Math.min(item.quantity, spaceInStack);
+        const remainder = item.quantity - amountToAdd;
+
+        // Update the existing stack's quantity
+        characterContext.updateInventoryItem(collidingItem.id, {
+          quantity: collidingItem.quantity + amountToAdd,
+        });
+
+        if (remainder > 0) {
+          // Update the dragged item with remaining quantity (stays in original position)
+          characterContext.updateInventoryItem(item.id, {
+            quantity: remainder,
+          });
+        } else {
+          // Remove the dragged item entirely
+          characterContext.removeInventoryItem(item.id);
+        }
+      }
+      // If collision but can't stack, item stays in original position (no update needed)
+    } else {
+      // No collision - update position if changed
+      if (clampedX !== dragState.startX || clampedY !== dragState.startY) {
+        characterContext.updateInventoryItem(dragState.itemId, {
+          x: clampedX,
+          y: clampedY,
+        });
+      }
     }
 
     setDragState(null);
@@ -237,11 +269,8 @@ export const ViewInventoryNode = ({ component }: { component: Component }) => {
         const isDragging = dragState?.itemId === invItem.id;
 
         return (
-          <img
+          <div
             key={invItem.id}
-            src={invItem.image ?? ''}
-            alt={invItem.title}
-            draggable={false}
             onDoubleClick={(e) => e.stopPropagation()}
             onPointerDown={(e) => handlePointerDown(e, invItem)}
             style={{
@@ -250,14 +279,45 @@ export const ViewInventoryNode = ({ component }: { component: Component }) => {
               top: pos.top,
               width: 20 * invItem.inventoryWidth,
               height: 20 * invItem.inventoryHeight,
-              objectFit: 'cover',
               cursor: isDragging ? 'grabbing' : 'grab',
               opacity: isDragging ? 0.8 : 1,
               zIndex: isDragging ? 10 : 1,
               touchAction: 'none',
               userSelect: 'none',
-            }}
-          />
+            }}>
+            <img
+              src={invItem.image ?? ''}
+              alt={invItem.title}
+              draggable={false}
+              style={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover',
+              }}
+            />
+            {invItem.quantity > 1 && (
+              <span
+                style={{
+                  position: 'absolute',
+                  top: 2,
+                  right: 2,
+                  minWidth: 16,
+                  height: 16,
+                  padding: '0 4px',
+                  backgroundColor: 'rgba(0, 0, 0, 0.75)',
+                  color: '#fff',
+                  fontSize: 11,
+                  fontWeight: 600,
+                  borderRadius: 8,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  lineHeight: 1,
+                }}>
+                {invItem.quantity}
+              </span>
+            )}
+          </div>
         );
       })}
     </div>
