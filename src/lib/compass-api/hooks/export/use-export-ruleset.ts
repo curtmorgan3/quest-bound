@@ -54,6 +54,11 @@ export const useExportRuleset = (rulesetId: string) => {
     [rulesetId],
   );
 
+  const documents = useLiveQuery(
+    () => (rulesetId ? db.documents.where('rulesetId').equals(rulesetId).toArray() : []),
+    [rulesetId],
+  );
+
   const characters = useLiveQuery(
     () => (rulesetId ? db.characters.where('rulesetId').equals(rulesetId).toArray() : []),
     [rulesetId],
@@ -93,6 +98,7 @@ export const useExportRuleset = (rulesetId: string) => {
     components === undefined ||
     assets === undefined ||
     fonts === undefined ||
+    documents === undefined ||
     testCharacter === undefined ||
     characterAttributes === undefined ||
     inventories === undefined ||
@@ -128,6 +134,7 @@ export const useExportRuleset = (rulesetId: string) => {
           components: components?.length || 0,
           assets: assets?.length || 0,
           fonts: fonts?.length || 0,
+          documents: documents?.length || 0,
           characterAttributes: characterAttributes?.length || 0,
           inventories: inventories?.length || 0,
           characterWindows: characterWindows?.length || 0,
@@ -220,6 +227,36 @@ export const useExportRuleset = (rulesetId: string) => {
         zip.file('fonts.json', JSON.stringify(fonts, null, 2));
       }
 
+      if (documents && documents.length > 0) {
+        // Store document metadata (without pdfData to avoid duplication)
+        const documentsMetadata = documents.map(({ pdfData, ...rest }) => rest);
+        zip.file('documents.json', JSON.stringify(documentsMetadata, null, 2));
+
+        // Store PDF files in a "documents" folder
+        const documentsFolder = zip.folder('documents');
+        if (documentsFolder) {
+          documents.forEach((doc) => {
+            if (doc.pdfData) {
+              // Convert Base64 data URL to binary data
+              const base64Data = doc.pdfData.split(',')[1]; // Remove data:application/pdf;base64, prefix
+              if (base64Data) {
+                const binaryData = atob(base64Data);
+                const uint8Array = new Uint8Array(binaryData.length);
+                for (let i = 0; i < binaryData.length; i++) {
+                  uint8Array[i] = binaryData.charCodeAt(i);
+                }
+
+                // Use the document title or ID for the filename
+                const safeTitle = doc.title.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+                const filename = `${safeTitle}_${doc.id}.pdf`;
+
+                documentsFolder.file(filename, uint8Array);
+              }
+            }
+          });
+        }
+      }
+
       if (characterAttributes && characterAttributes.length > 0) {
         zip.file('characterAttributes.json', JSON.stringify(characterAttributes, null, 2));
       }
@@ -249,6 +286,8 @@ This zip file contains a complete export of the "${ruleset.title}" ruleset from 
 - \`assets.json\` - All assets metadata defined in this ruleset
 - \`assets/\` - Directory containing all asset files organized by their directory structure
 - \`fonts.json\` - All custom fonts defined in this ruleset
+- \`documents.json\` - All document metadata defined in this ruleset
+- \`documents/\` - Directory containing all document PDF files
 - \`characterAttributes.json\` - Test character attribute values
 - \`characterInventories.json\` - Test character inventory associations
 - \`characterWindows.json\` - Test character window positions

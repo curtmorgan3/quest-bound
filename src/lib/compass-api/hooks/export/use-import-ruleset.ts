@@ -9,6 +9,7 @@ import type {
   CharacterWindow,
   Chart,
   Component,
+  Document,
   Font,
   Inventory,
   Item,
@@ -33,6 +34,7 @@ export interface ImportRulesetResult {
     components: number;
     assets: number;
     fonts: number;
+    documents: number;
     characterAttributes: number;
     inventories: number;
     characterWindows: number;
@@ -67,6 +69,7 @@ interface ImportedMetadata {
     components: number;
     assets: number;
     fonts: number;
+    documents: number;
     characterAttributes: number;
     characterInventories: number;
     characterWindows: number;
@@ -113,6 +116,7 @@ export const useImportRuleset = () => {
       | 'components'
       | 'assets'
       | 'fonts'
+      | 'documents'
       | 'characterAttributes'
       | 'inventories'
       | 'characterWindows',
@@ -256,6 +260,12 @@ export const useImportRuleset = () => {
           }
           break;
 
+        case 'documents':
+          if (!item.title || typeof item.title !== 'string') {
+            errors.push(`Document ${index + 1}: title is required and must be a string`);
+          }
+          break;
+
         case 'characterAttributes':
           if (!item.characterId || typeof item.characterId !== 'string') {
             errors.push(
@@ -318,6 +328,7 @@ export const useImportRuleset = () => {
             components: 0,
             assets: 0,
             fonts: 0,
+            documents: 0,
             characterAttributes: 0,
             inventories: 0,
             characterWindows: 0,
@@ -345,6 +356,7 @@ export const useImportRuleset = () => {
             components: 0,
             assets: 0,
             fonts: 0,
+            documents: 0,
             characterAttributes: 0,
             inventories: 0,
             characterWindows: 0,
@@ -380,6 +392,7 @@ export const useImportRuleset = () => {
         components: 0,
         assets: 0,
         fonts: 0,
+        documents: 0,
         characterAttributes: 0,
         inventories: 0,
         characterWindows: 0,
@@ -678,6 +691,59 @@ export const useImportRuleset = () => {
         }
       }
 
+      // Import documents
+      const documentsFile = zipContent.file('documents.json');
+      if (documentsFile) {
+        try {
+          const documentsText = await documentsFile.async('text');
+          const documents: Document[] = JSON.parse(documentsText);
+
+          const validation = validateData(documents, 'documents');
+          if (validation.isValid) {
+            // Get all PDF files from the documents folder
+            const documentsFolder = zipContent.folder('documents');
+            const pdfFiles: Record<string, string> = {};
+
+            if (documentsFolder) {
+              const pdfFileEntries = Object.entries(zipContent.files).filter(
+                ([path]) => path.startsWith('documents/') && path.endsWith('.pdf'),
+              );
+
+              for (const [path, file] of pdfFileEntries) {
+                // Extract document ID from filename (format: {title}_{id}.pdf)
+                const filename = path.replace('documents/', '');
+                const idMatch = filename.match(/_([^_]+)\.pdf$/);
+                if (idMatch) {
+                  const docId = idMatch[1];
+                  // Read PDF as base64
+                  const pdfData = await file.async('base64');
+                  pdfFiles[docId] = `data:application/pdf;base64,${pdfData}`;
+                }
+              }
+            }
+
+            for (const document of documents) {
+              const newDocument: Document = {
+                ...document,
+                rulesetId: newRulesetId,
+                // Restore pdfData from the PDF file if available
+                pdfData: pdfFiles[document.id] || null,
+                createdAt: now,
+                updatedAt: now,
+              };
+              await db.documents.add(newDocument);
+              importedCounts.documents++;
+            }
+          } else {
+            allErrors.push(...validation.errors);
+          }
+        } catch (error) {
+          allErrors.push(
+            `Failed to import documents: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          );
+        }
+      }
+
       // Import characterInventories
       const inventories = zipContent.file('inventories.json');
       if (inventories) {
@@ -744,6 +810,7 @@ export const useImportRuleset = () => {
         importedCounts.components +
         importedCounts.assets +
         importedCounts.fonts +
+        importedCounts.documents +
         importedCounts.characterAttributes +
         importedCounts.inventories +
         importedCounts.characterWindows;
@@ -774,6 +841,7 @@ export const useImportRuleset = () => {
           components: 0,
           assets: 0,
           fonts: 0,
+          documents: 0,
           characterAttributes: 0,
           inventories: 0,
           characterWindows: 0,
