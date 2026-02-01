@@ -31,7 +31,6 @@ export function registerDbHooks(db: DB) {
   });
 
   db.charts.hook('updating', (modifications, primKey) => {
-    console.log('mods: ', modifications);
     if ((modifications as any).data !== undefined) {
       try {
         memoizedCharts[primKey as string] = JSON.parse((modifications as any).data);

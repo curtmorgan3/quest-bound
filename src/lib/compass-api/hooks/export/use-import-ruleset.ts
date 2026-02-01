@@ -446,7 +446,6 @@ export const useImportRuleset = () => {
                 createdAt: now,
                 updatedAt: now,
               };
-              console.log('attr: ', newCharacterAttribute);
               await db.characterAttributes.add(newCharacterAttribute);
               importedCounts.characterAttributes++;
             }

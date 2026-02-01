@@ -7,13 +7,13 @@ import {
   DialogTrigger,
 } from '@/components';
 import { useActiveRuleset, useExportChart } from '@/lib/compass-api';
-import { Download, Pencil } from 'lucide-react';
+import { Download, Loader2, Pencil } from 'lucide-react';
 import { useState } from 'react';
 import { Navigate, useSearchParams } from 'react-router-dom';
 import { ActionChart } from './actions';
 import { AttributeChart } from './attributes/attribute-chart';
 import { ChartSelect } from './charts';
-import { Export, Import } from './components';
+import { ChartImport, Export, Import } from './components';
 import { BaseCreate } from './create';
 import { Documents } from './documents';
 import { ItemChart } from './items/item-chart';
@@ -27,7 +27,8 @@ export const Ruleset = ({
   const { activeRuleset } = useActiveRuleset();
   const [searchParams, setSearchParams] = useSearchParams();
   const [open, setOpen] = useState(false);
-  const { exportChartAsCSV } = useExportChart();
+  const [isImporting, setIsImporting] = useState(false);
+  const { exportChartAsTSV } = useExportChart();
 
   const chartId = searchParams.get('chart');
 
@@ -93,20 +94,28 @@ export const Ruleset = ({
                   <Pencil />
                 </Button>
               </DialogTrigger>
-              <Button onClick={() => exportChartAsCSV(chartId)} variant='outline'>
+              <Button onClick={() => exportChartAsTSV(chartId)} variant='outline' size='sm'>
                 <Download className='h-4 w-4' />
               </Button>
+              <ChartImport chartId={chartId} onLoadingChange={setIsImporting} />
             </div>
           )}
           {page !== 'charts' && page !== 'windows' && page !== 'documents' && (
             <Export type={page} />
           )}
           {page !== 'charts' && page !== 'windows' && page !== 'documents' && (
-            <Import type={page} />
+            <Import type={page} onLoadingChange={setIsImporting} />
           )}
         </div>
 
-        {renderChart()}
+        {isImporting ? (
+          <div className='flex items-center justify-center py-12'>
+            <Loader2 className='h-8 w-8 animate-spin text-muted-foreground' />
+            <span className='ml-3 text-muted-foreground'>Importing...</span>
+          </div>
+        ) : (
+          renderChart()
+        )}
 
         <DialogContent className='min-w-[600px] max-w-[80vw] min-h-[50vh]'>
           <DialogTitle className='hidden'>Quick Create</DialogTitle>

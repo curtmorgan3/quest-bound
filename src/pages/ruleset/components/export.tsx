@@ -10,21 +10,20 @@ export const Export = ({ type }: ExportProps) => {
   const { exportData, isLoading } = useExport(type);
 
   const handleExport = () => {
-    const data = exportData();
+    const tsvData = exportData();
 
-    if (!data) {
+    if (!tsvData) {
       console.warn(`No ${type} data to export`);
       return;
     }
 
-    // Create and download JSON file
-    const jsonString = JSON.stringify(data, null, 2);
-    const blob = new Blob([jsonString], { type: 'application/json' });
+    // Create and download TSV file
+    const blob = new Blob([tsvData], { type: 'text/tab-separated-values' });
     const url = URL.createObjectURL(blob);
 
     const link = document.createElement('a');
     link.href = url;
-    link.download = `${type}-export-${new Date().toISOString().split('T')[0]}.json`;
+    link.download = `${type}-export-${new Date().toISOString().split('T')[0]}.tsv`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);

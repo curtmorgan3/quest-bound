@@ -2,4 +2,5 @@ export * from './use-export';
 export * from './use-export-chart';
 export * from './use-export-ruleset';
 export * from './use-import';
+export * from './use-import-chart';
 export * from './use-import-ruleset';

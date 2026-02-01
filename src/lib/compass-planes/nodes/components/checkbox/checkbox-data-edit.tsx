@@ -187,7 +187,6 @@ export const CheckboxDataEdit = ({
   };
 
   const handleCheckedUrlBlur = async () => {
-    console.log(checkedUrlValue);
     if (editableComponents.length === 0) return;
 
     const urlToSave = checkedUrlValue.trim() || undefined;

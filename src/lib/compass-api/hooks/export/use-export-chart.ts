@@ -4,7 +4,7 @@ import { db } from '@/stores';
 export const useExportChart = () => {
   const { handleError } = useErrorHandler();
 
-  const exportChartAsCSV = async (chartId: string) => {
+  const exportChartAsTSV = async (chartId: string) => {
     try {
       // Fetch the chart from the database
       const chart = await db.charts.get(chartId);
@@ -23,80 +23,75 @@ export const useExportChart = () => {
         chartData = Array.isArray(chart.data) ? chart.data : [chart.data];
       }
 
-      // Convert data to CSV format
-      const csvContent = convertToCSV(chartData, chart.title);
+      // Convert data to TSV format
+      const tsvContent = convertToTSV(chartData, chart.title);
 
       // Create and download the file
-      downloadCSV(csvContent, `${chart.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.csv`);
+      downloadTSV(tsvContent, `${chart.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.tsv`);
     } catch (error) {
       handleError(error as Error, {
-        component: 'useExportChart/exportChartAsCSV',
+        component: 'useExportChart/exportChartAsTSV',
         severity: 'medium',
       });
     }
   };
 
   return {
-    exportChartAsCSV,
+    exportChartAsTSV,
   };
 };
 
 /**
- * Converts data array to CSV format
+ * Escapes a value for TSV format
+ * - Replaces tabs with spaces
+ * - Escapes newlines
  */
-const convertToCSV = (data: any[], chartTitle: string): string => {
+const escapeTsvValue = (value: unknown): string => {
+  if (value === undefined || value === null) {
+    return '';
+  }
+  const str = String(value);
+  return str.replace(/\t/g, '    ').replace(/\n/g, '\\n').replace(/\r/g, '');
+};
+
+/**
+ * Converts data array to TSV format
+ */
+const convertToTSV = (data: any[], chartTitle: string): string => {
   if (!data || data.length === 0) {
     return `Chart: ${chartTitle}\nNo data available`;
   }
 
   // Handle different data structures
+  const isArrayOfArrays = data.every((item) => Array.isArray(item));
+
+  if (isArrayOfArrays) {
+    // Data is already in 2D array format (header row + data rows)
+    return data.map((row) => row.map(escapeTsvValue).join('\t')).join('\n');
+  }
+
   const isArrayOfObjects = data.every((item) => typeof item === 'object' && item !== null);
 
   if (isArrayOfObjects) {
     // Extract headers from the first object
     const headers = Object.keys(data[0]);
-    const csvRows = [
-      headers.join(','),
-      ...data.map((row) =>
-        headers
-          .map((header) => {
-            const value = row[header];
-            // Escape CSV values that contain commas, quotes, or newlines
-            if (
-              typeof value === 'string' &&
-              (value.includes(',') || value.includes('"') || value.includes('\n'))
-            ) {
-              return `"${value.replace(/"/g, '""')}"`;
-            }
-            return value ?? '';
-          })
-          .join(','),
-      ),
+    const tsvRows = [
+      headers.join('\t'),
+      ...data.map((row) => headers.map((header) => escapeTsvValue(row[header])).join('\t')),
     ];
-    return csvRows.join('\n');
+    return tsvRows.join('\n');
   } else {
     // Handle array of primitive values
-    const csvRows = [
-      ...data.map((value) => {
-        if (
-          typeof value === 'string' &&
-          (value.includes(',') || value.includes('"') || value.includes('\n'))
-        ) {
-          return `"${value.replace(/"/g, '""')}"`;
-        }
-        return value ?? '';
-      }),
-    ];
-    return csvRows.join('\n');
+    return data.map(escapeTsvValue).join('\n');
   }
 };
 
 /**
- * Downloads CSV content as a file
+ * Downloads TSV content as a file
  */
-const downloadCSV = (csvContent: string, filename: string) => {
-  // Create a blob with the CSV content
-  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+const downloadTSV = (tsvContent: string, filename: string) => {
+  // Create a blob with the TSV content
+  const blob = new Blob([tsvContent], { type: 'text/tab-separated-values;charset=utf-8;' });
 
   // Create a download link
   const link = document.createElement('a');

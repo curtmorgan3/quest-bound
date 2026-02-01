@@ -1,18 +1,18 @@
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { useImport, type ImportResult } from '@/lib/compass-api';
+import { useImportChart, type ImportChartResult } from '@/lib/compass-api';
 import { AlertCircle, CheckCircle, Upload } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
-interface ImportProps {
-  type: 'attributes' | 'items' | 'actions';
-  onImportComplete?: (result: ImportResult) => void;
+interface ChartImportProps {
+  chartId: string;
+  onImportComplete?: (result: ImportChartResult) => void;
   onLoadingChange?: (isLoading: boolean) => void;
 }
 
-export const Import = ({ type, onImportComplete, onLoadingChange }: ImportProps) => {
-  const { importData, isLoading } = useImport(type);
-  const [result, setResult] = useState<ImportResult | null>(null);
+export const ChartImport = ({ chartId, onImportComplete, onLoadingChange }: ChartImportProps) => {
+  const { importChartData, isLoading } = useImportChart(chartId);
+  const [result, setResult] = useState<ImportChartResult | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -26,7 +26,7 @@ export const Import = ({ type, onImportComplete, onLoadingChange }: ImportProps)
     // Reset previous result
     setResult(null);
 
-    const importResult = await importData(file);
+    const importResult = await importChartData(file);
     setResult(importResult);
 
     if (onImportComplete) {
@@ -49,7 +49,7 @@ export const Import = ({ type, onImportComplete, onLoadingChange }: ImportProps)
         <div className='flex items-center gap-2'>
           <Input
             ref={fileInputRef}
-            id={`import-${type}`}
+            id={`import-chart-${chartId}`}
             type='file'
             accept='.tsv'
             onChange={handleFileSelect}
