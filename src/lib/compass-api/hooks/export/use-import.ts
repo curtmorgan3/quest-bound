@@ -104,7 +104,7 @@ function parseTsvValue(value: string, fieldType: FieldType): unknown {
  */
 function tsvToObjects(
   rows: string[][],
-  fieldTypes: Record<string, FieldType>
+  fieldTypes: Record<string, FieldType>,
 ): Record<string, unknown>[] {
   if (rows.length < 2) return []; // Need at least header + 1 data row
 
@@ -125,9 +125,7 @@ function tsvToObjects(
 /**
  * Converts the defaultValue based on the attribute type
  */
-function convertAttributeDefaultValue(
-  item: Record<string, unknown>
-): string | number | boolean {
+function convertAttributeDefaultValue(item: Record<string, unknown>): string | number | boolean {
   const attrType = item.type as string;
   const defaultValue = item.defaultValue;
 
@@ -167,7 +165,9 @@ export const useImport = (type: 'attributes' | 'items' | 'actions') => {
     }
   };
 
-  const validateData = (data: Record<string, unknown>[]): { isValid: boolean; errors: string[] } => {
+  const validateData = (
+    data: Record<string, unknown>[],
+  ): { isValid: boolean; errors: string[] } => {
     const errors: string[] = [];
 
     if (!Array.isArray(data)) {
@@ -187,10 +187,18 @@ export const useImport = (type: 'attributes' | 'items' | 'actions') => {
       // Type-specific validation
       switch (type) {
         case 'attributes':
-          if (!item.type || !['string', 'number', 'boolean', 'list'].includes(item.type as string)) {
+          if (
+            !item.type ||
+            !['string', 'number', 'boolean', 'list'].includes(item.type as string)
+          ) {
             errors.push(`Row ${index + 1}: type must be one of: string, number, boolean, list`);
           }
-          if (item.type === 'list' && (!item.options || !Array.isArray(item.options) || (item.options as unknown[]).length === 0)) {
+          if (
+            item.type === 'list' &&
+            (!item.options ||
+              !Array.isArray(item.options) ||
+              (item.options as unknown[]).length === 0)
+          ) {
             errors.push(`Row ${index + 1}: options array is required for list type`);
           }
           break;
@@ -293,7 +301,7 @@ export const useImport = (type: 'attributes' | 'items' | 'actions') => {
 
           if (existingRecord) {
             // Update existing record
-            const updateData: Record<string, unknown> = {
+            const updateData: any = {
               ...item,
               rulesetId: activeRuleset.id,
               updatedAt: now,
@@ -311,17 +319,20 @@ export const useImport = (type: 'attributes' | 'items' | 'actions') => {
               }
             });
 
-            switch (type) {
-              case 'attributes':
-                await db.attributes.update(id, updateData);
-                break;
-              case 'items':
-                await db.items.update(id, updateData);
-                break;
-              case 'actions':
-                await db.actions.update(id, updateData);
-                break;
+            if (id) {
+              switch (type) {
+                case 'attributes':
+                  await db.attributes.update(id, updateData);
+                  break;
+                case 'items':
+                  await db.items.update(id, updateData);
+                  break;
+                case 'actions':
+                  await db.actions.update(id, updateData);
+                  break;
+              }
             }
+
             updatedCount++;
           } else {
             // Create new record

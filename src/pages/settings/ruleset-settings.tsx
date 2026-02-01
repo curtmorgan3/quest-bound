@@ -14,19 +14,33 @@ export const RulesetSettings = ({ activeRuleset }: RulesetSettingsProps) => {
   const { fonts, createFont, deleteFont } = useFonts(activeRuleset.id);
 
   const [title, setTitle] = useState(activeRuleset.title);
+  const [version, setVersion] = useState(activeRuleset.version);
   const [fontLoading, setFontLoading] = useState(false);
   const fontInputRef = useRef<HTMLInputElement>(null);
 
-  const handleUpdate = async () => {
+  const handleUpdateTitle = async () => {
     await updateRuleset(activeRuleset.id, { title });
+  };
+
+  const handleUpdateVersion = async () => {
+    await updateRuleset(activeRuleset.id, { version });
   };
 
   useEffect(() => {
     if (title === activeRuleset.title) return;
-    setTimeout(() => {
-      handleUpdate();
+    const timeout = setTimeout(() => {
+      handleUpdateTitle();
     }, 500);
+    return () => clearTimeout(timeout);
   }, [title]);
+
+  useEffect(() => {
+    if (version === activeRuleset.version) return;
+    const timeout = setTimeout(() => {
+      handleUpdateVersion();
+    }, 500);
+    return () => clearTimeout(timeout);
+  }, [version]);
 
   const handleFontUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -51,6 +65,16 @@ export const RulesetSettings = ({ activeRuleset }: RulesetSettingsProps) => {
         <div className='flex flex-col gap-2 max-w-sm flex-1'>
           <Label htmlFor='ruleset-title'>Title</Label>
           <Input id='ruleset-title' value={title} onChange={(e) => setTitle(e.target.value)} />
+        </div>
+
+        <div className='flex flex-col gap-2 w-32'>
+          <Label htmlFor='ruleset-version'>Version</Label>
+          <Input
+            id='ruleset-version'
+            value={version}
+            onChange={(e) => setVersion(e.target.value)}
+            placeholder='1.0.0'
+          />
         </div>
 
         <Button className='gap-2 w-[50px]' variant='outline' onClick={exportRuleset}>

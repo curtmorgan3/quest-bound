@@ -20,6 +20,143 @@ import JSZip from 'jszip';
 import { useState } from 'react';
 import { useRulesets } from '../rulesets';
 
+// Field type definitions for parsing TSV values
+type FieldType = 'string' | 'number' | 'boolean' | 'array' | 'attributeType';
+
+const ATTRIBUTE_FIELD_TYPES: Record<string, FieldType> = {
+  id: 'string',
+  title: 'string',
+  description: 'string',
+  category: 'string',
+  type: 'attributeType',
+  options: 'array',
+  defaultValue: 'string',
+  optionsChartRef: 'number',
+  optionsChartColumnHeader: 'string',
+  min: 'number',
+  max: 'number',
+};
+
+const ITEM_FIELD_TYPES: Record<string, FieldType> = {
+  id: 'string',
+  title: 'string',
+  description: 'string',
+  category: 'string',
+  weight: 'number',
+  defaultQuantity: 'number',
+  stackSize: 'number',
+  isContainer: 'boolean',
+  isStorable: 'boolean',
+  isEquippable: 'boolean',
+  isConsumable: 'boolean',
+  inventoryWidth: 'number',
+  inventoryHeight: 'number',
+};
+
+const ACTION_FIELD_TYPES: Record<string, FieldType> = {
+  id: 'string',
+  title: 'string',
+  description: 'string',
+  category: 'string',
+};
+
+/**
+ * Parses a TSV string into an array of rows
+ */
+function parseTsv(tsvString: string): string[][] {
+  const lines = tsvString.split('\n');
+  return lines
+    .map((line) => line.replace(/\r/g, '').split('\t'))
+    .filter((row) => row.some((cell) => cell.trim() !== ''));
+}
+
+/**
+ * Converts a TSV value back to its proper type
+ */
+function parseTsvValue(value: string, fieldType: FieldType): unknown {
+  if (value === '' || value === undefined) {
+    switch (fieldType) {
+      case 'array':
+        return [];
+      case 'number':
+        return undefined;
+      case 'boolean':
+        return false;
+      default:
+        return undefined;
+    }
+  }
+
+  switch (fieldType) {
+    case 'number':
+      const num = Number(value);
+      return isNaN(num) ? undefined : num;
+    case 'boolean':
+      return value.toLowerCase() === 'true';
+    case 'array':
+      return value.split('|').filter((v) => v !== '');
+    case 'attributeType':
+      if (['string', 'number', 'boolean', 'list'].includes(value)) {
+        return value;
+      }
+      return 'string';
+    case 'string':
+    default:
+      return value.replace(/\\n/g, '\n');
+  }
+}
+
+/**
+ * Converts TSV rows into typed objects
+ */
+function tsvToObjects(
+  rows: string[][],
+  fieldTypes: Record<string, FieldType>,
+): Record<string, unknown>[] {
+  if (rows.length < 2) return [];
+
+  const headers = rows[0];
+  const dataRows = rows.slice(1);
+
+  return dataRows.map((row) => {
+    const obj: Record<string, unknown> = {};
+    headers.forEach((header, index) => {
+      const value = row[index] ?? '';
+      const fieldType = fieldTypes[header] ?? 'string';
+      obj[header] = parseTsvValue(value, fieldType);
+    });
+    return obj;
+  });
+}
+
+/**
+ * Converts the defaultValue based on the attribute type
+ */
+function convertAttributeDefaultValue(item: Record<string, unknown>): string | number | boolean {
+  const attrType = item.type as string;
+  const defaultValue = item.defaultValue;
+
+  if (defaultValue === undefined || defaultValue === null || defaultValue === '') {
+    switch (attrType) {
+      case 'number':
+        return 0;
+      case 'boolean':
+        return false;
+      default:
+        return '';
+    }
+  }
+
+  switch (attrType) {
+    case 'number':
+      return Number(defaultValue);
+    case 'boolean':
+      return String(defaultValue).toLowerCase() === 'true';
+    default:
+      return String(defaultValue);
+  }
+}
+
 export interface ImportRulesetResult {
   success: boolean;
   message: string;
@@ -312,12 +449,12 @@ export const useImportRuleset = () => {
       const zip = new JSZip();
       const zipContent = await zip.loadAsync(file);
 
-      // Extract metadata
-      const metadataFile = zipContent.file('metadata.json');
+      // Extract metadata from application data folder
+      const metadataFile = zipContent.file('application data/metadata.json');
       if (!metadataFile) {
         return {
           success: false,
-          message: 'Invalid zip file: metadata.json not found',
+          message: 'Invalid zip file: application data/metadata.json not found',
           importedCounts: {
             attributes: 0,
             actions: 0,
@@ -333,7 +470,7 @@ export const useImportRuleset = () => {
             inventories: 0,
             characterWindows: 0,
           },
-          errors: ['metadata.json file is required'],
+          errors: ['application data/metadata.json file is required'],
         };
       }
 
@@ -401,7 +538,7 @@ export const useImportRuleset = () => {
       const allErrors: string[] = [];
 
       // Import characters
-      const charactersFile = zipContent.file('characters.json');
+      const charactersFile = zipContent.file('application data/characters.json');
       if (charactersFile) {
         try {
           const charactersText = await charactersFile.async('text');
@@ -432,7 +569,7 @@ export const useImportRuleset = () => {
       await createRuleset(newRuleset);
 
       // Import characterAttributes
-      const characterAttributesFile = zipContent.file('characterAttributes.json');
+      const characterAttributesFile = zipContent.file('application data/characterAttributes.json');
       if (characterAttributesFile) {
         try {
           const characterAttributesText = await characterAttributesFile.async('text');
@@ -459,23 +596,36 @@ export const useImportRuleset = () => {
         }
       }
 
-      // Import attributes
-      const attributesFile = zipContent.file('attributes.json');
+      // Import attributes (TSV format)
+      const attributesFile = zipContent.file('attributes.tsv');
       if (attributesFile) {
         try {
           const attributesText = await attributesFile.async('text');
-          const attributes: Attribute[] = JSON.parse(attributesText);
+          const rows = parseTsv(attributesText);
+          const parsedAttributes = tsvToObjects(rows, ATTRIBUTE_FIELD_TYPES);
+
+          // Convert to proper Attribute objects
+          const attributes: Attribute[] = parsedAttributes.map((item) => ({
+            id: item.id as string,
+            title: item.title as string,
+            description: (item.description as string) ?? '',
+            category: item.category as string | undefined,
+            type: item.type as Attribute['type'],
+            options: item.options as string[] | undefined,
+            defaultValue: convertAttributeDefaultValue(item),
+            optionsChartRef: item.optionsChartRef as number | undefined,
+            optionsChartColumnHeader: item.optionsChartColumnHeader as string | undefined,
+            min: item.min as number | undefined,
+            max: item.max as number | undefined,
+            rulesetId: newRulesetId,
+            createdAt: now,
+            updatedAt: now,
+          }));
 
           const validation = validateData(attributes, 'attributes');
           if (validation.isValid) {
             for (const attribute of attributes) {
-              const newAttribute: Attribute = {
-                ...attribute,
-                rulesetId: newRulesetId,
-                createdAt: now,
-                updatedAt: now,
-              };
-              await db.attributes.add(newAttribute);
+              await db.attributes.add(attribute);
               importedCounts.attributes++;
             }
           } else {
@@ -488,23 +638,29 @@ export const useImportRuleset = () => {
         }
       }
 
-      // Import actions
-      const actionsFile = zipContent.file('actions.json');
+      // Import actions (TSV format)
+      const actionsFile = zipContent.file('actions.tsv');
       if (actionsFile) {
         try {
           const actionsText = await actionsFile.async('text');
-          const actions: Action[] = JSON.parse(actionsText);
+          const rows = parseTsv(actionsText);
+          const parsedActions = tsvToObjects(rows, ACTION_FIELD_TYPES);
+
+          // Convert to proper Action objects
+          const actions: Action[] = parsedActions.map((item) => ({
+            id: item.id as string,
+            title: item.title as string,
+            description: (item.description as string) ?? '',
+            category: item.category as string | undefined,
+            rulesetId: newRulesetId,
+            createdAt: now,
+            updatedAt: now,
+          }));
 
           const validation = validateData(actions, 'actions');
           if (validation.isValid) {
             for (const action of actions) {
-              const newAction: Action = {
-                ...action,
-                rulesetId: newRulesetId,
-                createdAt: now,
-                updatedAt: now,
-              };
-              await db.actions.add(newAction);
+              await db.actions.add(action);
               importedCounts.actions++;
             }
           } else {
@@ -517,23 +673,38 @@ export const useImportRuleset = () => {
         }
       }
 
-      // Import items
-      const itemsFile = zipContent.file('items.json');
+      // Import items (TSV format)
+      const itemsFile = zipContent.file('items.tsv');
       if (itemsFile) {
         try {
           const itemsText = await itemsFile.async('text');
-          const items: Item[] = JSON.parse(itemsText);
+          const rows = parseTsv(itemsText);
+          const parsedItems = tsvToObjects(rows, ITEM_FIELD_TYPES);
+
+          // Convert to proper Item objects with defaults
+          const items: Item[] = parsedItems.map((item) => ({
+            id: item.id as string,
+            title: item.title as string,
+            description: (item.description as string) ?? '',
+            category: item.category as string | undefined,
+            weight: (item.weight as number) ?? 0,
+            defaultQuantity: (item.defaultQuantity as number) ?? 1,
+            stackSize: (item.stackSize as number) ?? 1,
+            isContainer: (item.isContainer as boolean) ?? false,
+            isStorable: (item.isStorable as boolean) ?? true,
+            isEquippable: (item.isEquippable as boolean) ?? false,
+            isConsumable: (item.isConsumable as boolean) ?? false,
+            inventoryWidth: (item.inventoryWidth as number) ?? 1,
+            inventoryHeight: (item.inventoryHeight as number) ?? 1,
+            rulesetId: newRulesetId,
+            createdAt: now,
+            updatedAt: now,
+          }));
 
           const validation = validateData(items, 'items');
           if (validation.isValid) {
             for (const item of items) {
-              const newItem: Item = {
-                ...item,
-                rulesetId: newRulesetId,
-                createdAt: now,
-                updatedAt: now,
-              };
-              await db.items.add(newItem);
+              await db.items.add(item);
               importedCounts.items++;
             }
           } else {
@@ -546,12 +717,44 @@ export const useImportRuleset = () => {
         }
       }
 
-      // Import charts
-      const chartsFile = zipContent.file('charts.json');
+      // Import charts (metadata from JSON, data from TSV files in charts folder)
+      const chartsFile = zipContent.file('application data/charts.json');
       if (chartsFile) {
         try {
           const chartsText = await chartsFile.async('text');
-          const charts: Chart[] = JSON.parse(chartsText);
+          const chartsMetadata: Omit<Chart, 'data'>[] = JSON.parse(chartsText);
+
+          // Load chart data from TSV files in charts folder
+          const chartDataMap: Record<string, string> = {};
+          const chartsFolder = zipContent.folder('charts');
+
+          if (chartsFolder) {
+            const chartFiles = Object.entries(zipContent.files).filter(
+              ([path]) => path.startsWith('charts/') && path.endsWith('.tsv'),
+            );
+
+            for (const [path, file] of chartFiles) {
+              // Extract chart ID from filename (format: charts/{title}_{id}.tsv)
+              const filename = path.replace('charts/', '');
+              // Parse ID from curly braces: {title}_{id}.tsv
+              const idMatch = filename.match(/\{([^}]+)\}\.tsv$/);
+              if (!idMatch) continue;
+              const chartId = idMatch[1];
+
+              // Read TSV and convert back to JSON 2D array format
+              const tsvContent = await file.async('text');
+              const rows = tsvContent
+                .split('\n')
+                .map((line) => line.replace(/\r/g, '').split('\t'));
+              chartDataMap[chartId] = JSON.stringify(rows);
+            }
+          }
+
+          // Reconstruct charts with their data
+          const charts: Chart[] = chartsMetadata.map((metadata) => ({
+            ...metadata,
+            data: chartDataMap[metadata.id] || '[[]]',
+          }));
 
           const validation = validateData(charts, 'charts');
           if (validation.isValid) {
@@ -576,7 +779,7 @@ export const useImportRuleset = () => {
       }
 
       // Import windows (must be imported before components since components reference windows)
-      const windowsFile = zipContent.file('windows.json');
+      const windowsFile = zipContent.file('application data/windows.json');
       if (windowsFile) {
         try {
           const windowsText = await windowsFile.async('text');
@@ -605,7 +808,7 @@ export const useImportRuleset = () => {
       }
 
       // Import components (must be imported after windows to map windowIds)
-      const componentsFile = zipContent.file('components.json');
+      const componentsFile = zipContent.file('application data/components.json');
       if (componentsFile) {
         try {
           const componentsText = await componentsFile.async('text');
@@ -633,7 +836,7 @@ export const useImportRuleset = () => {
       }
 
       // Import assets
-      const assetsFile = zipContent.file('assets.json');
+      const assetsFile = zipContent.file('application data/assets.json');
       if (assetsFile) {
         try {
           const assetsText = await assetsFile.async('text');
@@ -661,12 +864,41 @@ export const useImportRuleset = () => {
         }
       }
 
-      // Import fonts
-      const fontsFile = zipContent.file('fonts.json');
+      // Import fonts (metadata from JSON, data from files in fonts folder)
+      const fontsFile = zipContent.file('application data/fonts.json');
       if (fontsFile) {
         try {
           const fontsText = await fontsFile.async('text');
-          const fonts: Font[] = JSON.parse(fontsText);
+          const fontsMetadata: Omit<Font, 'data'>[] = JSON.parse(fontsText);
+
+          // Load font data from files in fonts folder
+          const fontDataMap: Record<string, string> = {};
+          const fontsFolder = zipContent.folder('fonts');
+
+          if (fontsFolder) {
+            const fontFiles = Object.entries(zipContent.files).filter(
+              ([path]) => path.startsWith('fonts/') && path.endsWith('.ttf'),
+            );
+
+            for (const [path, file] of fontFiles) {
+              // Extract font ID from filename (format: fonts/{label}_{id}.ttf)
+              const filename = path.replace('fonts/', '');
+              // Parse ID from curly braces: {label}_{id}.ttf
+              const idMatch = filename.match(/\{([^}]+)\}\.ttf$/);
+              if (!idMatch) continue;
+              const fontId = idMatch[1];
+
+              // Read font as base64
+              const fontData = await file.async('base64');
+              fontDataMap[fontId] = `data:font/ttf;base64,${fontData}`;
+            }
+          }
+
+          // Reconstruct fonts with their data
+          const fonts: Font[] = fontsMetadata.map((metadata) => ({
+            ...metadata,
+            data: fontDataMap[metadata.id] || '',
+          }));
 
           const validation = validateData(fonts, 'fonts');
           if (validation.isValid) {
@@ -691,7 +923,7 @@ export const useImportRuleset = () => {
       }
 
       // Import documents
-      const documentsFile = zipContent.file('documents.json');
+      const documentsFile = zipContent.file('application data/documents.json');
       if (documentsFile) {
         try {
           const documentsText = await documentsFile.async('text');
@@ -744,7 +976,7 @@ export const useImportRuleset = () => {
       }
 
       // Import characterInventories
-      const inventories = zipContent.file('inventories.json');
+      const inventories = zipContent.file('application data/inventories.json');
       if (inventories) {
         try {
           const inventoriesText = await inventories.async('text');
@@ -772,7 +1004,7 @@ export const useImportRuleset = () => {
       }
 
       // Import characterWindows
-      const characterWindowsFile = zipContent.file('characterWindows.json');
+      const characterWindowsFile = zipContent.file('application data/characterWindows.json');
       if (characterWindowsFile) {
         try {
           const characterWindowsText = await characterWindowsFile.async('text');

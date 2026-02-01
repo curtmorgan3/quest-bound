@@ -1,8 +1,71 @@
 import { useErrorHandler } from '@/hooks';
 import { db } from '@/stores';
+import type { Action, Attribute, Item } from '@/types';
 import { useLiveQuery } from 'dexie-react-hooks';
 import JSZip from 'jszip';
 import { useState } from 'react';
+
+// Define the columns to export for each type (matching use-export.ts)
+const ATTRIBUTE_COLUMNS: (keyof Attribute)[] = [
+  'id',
+  'title',
+  'description',
+  'category',
+  'type',
+  'options',
+  'defaultValue',
+  'optionsChartRef',
+  'optionsChartColumnHeader',
+  'min',
+  'max',
+];
+
+const ITEM_COLUMNS: (keyof Item)[] = [
+  'id',
+  'title',
+  'description',
+  'category',
+  'weight',
+  'defaultQuantity',
+  'stackSize',
+  'isContainer',
+  'isStorable',
+  'isEquippable',
+  'isConsumable',
+  'inventoryWidth',
+  'inventoryHeight',
+];
+
+const ACTION_COLUMNS: (keyof Action)[] = ['id', 'title', 'description', 'category'];
+
+/**
+ * Escapes a value for TSV format.
+ */
+function escapeTsvValue(value: unknown): string {
+  if (value === undefined || value === null) {
+    return '';
+  }
+
+  if (Array.isArray(value)) {
+    return value.map((v) => String(v)).join('|');
+  }
+
+  if (typeof value === 'boolean') {
+    return value ? 'true' : 'false';
+  }
+
+  const str = String(value);
+  return str.replace(/\t/g, '    ').replace(/\n/g, '\\n').replace(/\r/g, '');
+}
+
+/**
+ * Converts an array of objects to TSV format
+ */
+function convertToTsv<T extends Record<string, unknown>>(data: T[], columns: (keyof T)[]): string {
+  const header = columns.join('\t');
+  const rows = data.map((item) => columns.map((col) => escapeTsvValue(item[col])).join('\t'));
+  return [header, ...rows].join('\n');
+}
 
 export const useExportRuleset = (rulesetId: string) => {
   const [isExporting, setIsExporting] = useState(false);
@@ -114,6 +177,12 @@ export const useExportRuleset = (rulesetId: string) => {
     try {
       const zip = new JSZip();
 
+      // Create application data folder for JSON files
+      const appDataFolder = zip.folder('application data');
+      if (!appDataFolder) {
+        throw new Error('Failed to create application data folder');
+      }
+
       // Create metadata file
       const metadata = {
         ruleset: {
@@ -141,41 +210,64 @@ export const useExportRuleset = (rulesetId: string) => {
         },
       };
 
-      zip.file('metadata.json', JSON.stringify(metadata, null, 2));
+      appDataFolder.file('metadata.json', JSON.stringify(metadata, null, 2));
 
-      // Create individual content files
+      // Create individual content files (attributes, actions, items as TSV at root level)
       if (attributes && attributes.length > 0) {
-        zip.file('attributes.json', JSON.stringify(attributes, null, 2));
+        zip.file('attributes.tsv', convertToTsv(attributes, ATTRIBUTE_COLUMNS));
       }
 
       if (actions && actions.length > 0) {
-        zip.file('actions.json', JSON.stringify(actions, null, 2));
+        zip.file('actions.tsv', convertToTsv(actions, ACTION_COLUMNS));
       }
 
       if (items && items.length > 0) {
-        zip.file('items.json', JSON.stringify(items, null, 2));
+        zip.file('items.tsv', convertToTsv(items, ITEM_COLUMNS));
       }
 
       if (testCharacter) {
-        zip.file('characters.json', JSON.stringify([testCharacter], null, 2));
+        appDataFolder.file('characters.json', JSON.stringify([testCharacter], null, 2));
       }
 
       if (charts && charts.length > 0) {
-        zip.file('charts.json', JSON.stringify(charts, null, 2));
+        // Store chart metadata without the data property
+        const chartsMetadata = charts.map(({ data, ...rest }) => rest);
+        appDataFolder.file('charts.json', JSON.stringify(chartsMetadata, null, 2));
+
+        // Store chart data as TSV files in a charts folder at root level
+        const chartsFolder = zip.folder('charts');
+        if (chartsFolder) {
+          charts.forEach((chart) => {
+            if (chart.data) {
+              try {
+                // Parse the JSON data (2D array) and convert to TSV
+                const chartData: string[][] = JSON.parse(chart.data);
+                const tsvContent = chartData.map((row) => row.join('\t')).join('\n');
+                // Use format: {title}_{id}.tsv with id in curly braces for parsing
+                const safeTitle = chart.title.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+                chartsFolder.file(`${safeTitle}_{${chart.id}}.tsv`, tsvContent);
+              } catch {
+                // If parsing fails, store raw data
+                const safeTitle = chart.title.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+                chartsFolder.file(`${safeTitle}_{${chart.id}}.tsv`, chart.data);
+              }
+            }
+          });
+        }
       }
 
       if (windows && windows.length > 0) {
-        zip.file('windows.json', JSON.stringify(windows, null, 2));
+        appDataFolder.file('windows.json', JSON.stringify(windows, null, 2));
       }
 
       if (components && components.length > 0) {
-        zip.file('components.json', JSON.stringify(components, null, 2));
+        appDataFolder.file('components.json', JSON.stringify(components, null, 2));
       }
 
       if (assets && assets.length > 0) {
-        zip.file('assets.json', JSON.stringify(assets, null, 2));
+        appDataFolder.file('assets.json', JSON.stringify(assets, null, 2));
 
-        // Also bundle assets as individual files in an "assets" folder
+        // Also bundle assets as individual files in an "assets" folder at root level
         const assetsFolder = zip.folder('assets');
         if (assetsFolder) {
           assets.forEach((asset) => {
@@ -224,13 +316,37 @@ export const useExportRuleset = (rulesetId: string) => {
       }
 
       if (fonts && fonts.length > 0) {
-        zip.file('fonts.json', JSON.stringify(fonts, null, 2));
+        // Store font metadata without the data property
+        const fontsMetadata = fonts.map(({ data, ...rest }) => rest);
+        appDataFolder.file('fonts.json', JSON.stringify(fontsMetadata, null, 2));
+
+        // Store font files in a "fonts" folder
+        const fontsFolder = zip.folder('fonts');
+        if (fontsFolder) {
+          fonts.forEach((font) => {
+            if (font.data) {
+              // Font data is typically a base64 data URL
+              const base64Data = font.data.split(',')[1];
+              if (base64Data) {
+                const binaryData = atob(base64Data);
+                const uint8Array = new Uint8Array(binaryData.length);
+                for (let i = 0; i < binaryData.length; i++) {
+                  uint8Array[i] = binaryData.charCodeAt(i);
+                }
+
+                // Use format: {label}_{id}.ttf with id in curly braces for parsing
+                const safeLabel = font.label.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+                fontsFolder.file(`${safeLabel}_{${font.id}}.ttf`, uint8Array);
+              }
+            }
+          });
+        }
       }
 
       if (documents && documents.length > 0) {
         // Store document metadata (without pdfData to avoid duplication)
         const documentsMetadata = documents.map(({ pdfData, ...rest }) => rest);
-        zip.file('documents.json', JSON.stringify(documentsMetadata, null, 2));
+        appDataFolder.file('documents.json', JSON.stringify(documentsMetadata, null, 2));
 
         // Store PDF files in a "documents" folder
         const documentsFolder = zip.folder('documents');
@@ -258,15 +374,15 @@ export const useExportRuleset = (rulesetId: string) => {
       }
 
       if (characterAttributes && characterAttributes.length > 0) {
-        zip.file('characterAttributes.json', JSON.stringify(characterAttributes, null, 2));
+        appDataFolder.file('characterAttributes.json', JSON.stringify(characterAttributes, null, 2));
       }
 
       if (inventories && inventories.length > 0) {
-        zip.file('inventories.json', JSON.stringify(inventories, null, 2));
+        appDataFolder.file('inventories.json', JSON.stringify(inventories, null, 2));
       }
 
       if (characterWindows && characterWindows.length > 0) {
-        zip.file('characterWindows.json', JSON.stringify(characterWindows, null, 2));
+        appDataFolder.file('characterWindows.json', JSON.stringify(characterWindows, null, 2));
       }
 
       // Create a README file with instructions
@@ -276,28 +392,36 @@ This zip file contains a complete export of the "${ruleset.title}" ruleset from 
 
 ## Contents
 
-- \`metadata.json\` - Ruleset metadata and export information
-- \`attributes.json\` - All attributes defined in this ruleset
-- \`actions.json\` - All actions defined in this ruleset  
-- \`items.json\` - All items defined in this ruleset
-- \`charts.json\` - All charts defined in this ruleset
-- \`windows.json\` - All windows defined in this ruleset
-- \`components.json\` - All components defined in this ruleset
-- \`assets.json\` - All assets metadata defined in this ruleset
+### TSV Files (Editable)
+- \`attributes.tsv\` - All attributes defined in this ruleset
+- \`actions.tsv\` - All actions defined in this ruleset
+- \`items.tsv\` - All items defined in this ruleset
+- \`charts/\` - Directory containing chart data as TSV files (named as \`{title}_{id}.tsv\`)
+
+### Binary Files
 - \`assets/\` - Directory containing all asset files organized by their directory structure
-- \`fonts.json\` - All custom fonts defined in this ruleset
-- \`documents.json\` - All document metadata defined in this ruleset
+- \`fonts/\` - Directory containing font files (named as \`{label}_{id}.ttf\`)
 - \`documents/\` - Directory containing all document PDF files
-- \`characterAttributes.json\` - Test character attribute values
-- \`characterInventories.json\` - Test character inventory associations
-- \`characterWindows.json\` - Test character window positions
+
+### Application Data (JSON)
+- \`application data/metadata.json\` - Ruleset metadata and export information
+- \`application data/charts.json\` - Chart metadata (links to TSV files in charts/)
+- \`application data/windows.json\` - All windows defined in this ruleset
+- \`application data/components.json\` - All components defined in this ruleset
+- \`application data/assets.json\` - All assets metadata
+- \`application data/fonts.json\` - All custom fonts
+- \`application data/documents.json\` - All document metadata
+- \`application data/characters.json\` - Test character data
+- \`application data/characterAttributes.json\` - Test character attribute values
+- \`application data/inventories.json\` - Test character inventory associations
+- \`application data/characterWindows.json\` - Test character window positions
 
 ## Import Instructions
 
 To import this ruleset back into Quest Bound:
 
 1. Use the Import feature in Quest Bound
-2. Select the appropriate JSON files for the content you want to import
+2. Select the zip file to import the complete ruleset
 3. Follow the import wizard to complete the process
 
 ## Version Information

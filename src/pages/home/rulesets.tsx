@@ -189,7 +189,10 @@ export const Rulesets = () => {
                   }
                 : undefined
             }>
-            <CardHeader>
+            <CardHeader className='relative'>
+              <span className='absolute top-0 right-0 text-xs text-muted-foreground'>
+                v{r.version}
+              </span>
               <CardTitle data-testid='ruleset-card-title' className='text-lg'>
                 {r.title}
               </CardTitle>
