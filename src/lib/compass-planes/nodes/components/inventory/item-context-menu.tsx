@@ -28,6 +28,7 @@ export const ItemContextMenu = ({
   const [quantity, setQuantity] = useState(item.quantity);
   const [splitAmount, setSplitAmount] = useState(Math.floor(item.quantity / 2));
   const menuRef = useRef<HTMLDivElement>(null);
+  const maxQuantity = item.stackSize;
 
   useKeyListeners({
     onKeyDown: (e) => {
@@ -51,7 +52,7 @@ export const ItemContextMenu = ({
   const handleQuantityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = parseInt(e.target.value, 10);
     if (!isNaN(value) && value >= 1) {
-      setQuantity(value);
+      setQuantity(Math.max(1, Math.min(value, maxQuantity)));
     }
   };
 
@@ -95,7 +96,12 @@ export const ItemContextMenu = ({
         <input
           type='number'
           min={1}
+          max={item.stackSize}
           value={quantity}
+          onPointerMove={(e) => {
+            e.preventDefault();
+            return;
+          }}
           onChange={handleQuantityChange}
           onBlur={handleQuantityBlur}
           onKeyDown={(e) => e.key === 'Enter' && handleQuantityBlur()}

@@ -57,8 +57,18 @@ html {
   margin: 0;
 }
 
+#item-context-menu input::-webkit-outer-spin-button,
+#item-context-menu input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
 /* Firefox */
 .editor-input[type='number'] {
+  -moz-appearance: textfield;
+}
+
+#item-context-menu input[type='number'] {
   -moz-appearance: textfield;
 }
 
