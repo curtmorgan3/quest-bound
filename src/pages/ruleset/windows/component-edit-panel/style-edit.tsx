@@ -5,13 +5,16 @@ import type { Component } from '@/types';
 import { PopoverContent, PopoverTrigger } from '@radix-ui/react-popover';
 import { Palette, SquareRoundCorner } from 'lucide-react';
 import { useState } from 'react';
-import { SketchPicker } from 'react-color';
+import { SketchPicker, type RGBColor } from 'react-color';
 import { EditPanelInput } from './component-edit-panel-input';
 import { parseValue, valueIfAllAreEqual } from './utils';
 
 interface Props {
   components: Array<Component>;
-  handleUpdate: (key: string | string[], value: number | string | boolean | null) => void;
+  handleUpdate: (
+    key: string | string[],
+    value: number | string | boolean | null | RGBColor,
+  ) => void;
 }
 
 const MIXED_VALUE_LABEL = '-';
@@ -71,14 +74,14 @@ export const StyleEdit = ({ components, handleUpdate }: Props) => {
           <PopoverTrigger title='Background Color'>
             <Palette
               className={`text-xs h-[18px] w-[18px] cursor-${backgroundColor !== MIXED_VALUE_LABEL ? 'pointer' : 'not-allowed'}`}
-              style={{ color: backgroundColor ?? colorWhite }}
+              color={colorWhite}
             />
           </PopoverTrigger>
           <PopoverContent>
             <SketchPicker
               className='sketch-picker'
               color={backgroundColor}
-              onChange={(color) => handleUpdate('backgroundColor', color.hex)}
+              onChange={(color) => handleUpdate('backgroundColor', color.rgb)}
               presetColors={[]}
             />
           </PopoverContent>
@@ -87,14 +90,14 @@ export const StyleEdit = ({ components, handleUpdate }: Props) => {
           <PopoverTrigger title='Color'>
             <Palette
               className={`text-xs h-[18px] w-[18px] cursor-${color !== MIXED_VALUE_LABEL ? 'pointer' : 'not-allowed'}`}
-              style={{ color: color }}
+              color={colorWhite}
             />
           </PopoverTrigger>
           <PopoverContent>
             <SketchPicker
               className='sketch-picker'
               color={color}
-              onChange={(color) => handleUpdate('color', color.hex)}
+              onChange={(color) => handleUpdate('color', color.rgb)}
               presetColors={[]}
             />
           </PopoverContent>
@@ -128,13 +131,13 @@ export const StyleEdit = ({ components, handleUpdate }: Props) => {
             <PopoverTrigger title='Border Color'>
               <Palette
                 className={`text-xs h-[18px] w-[18px] cursor-${outlineColor !== MIXED_VALUE_LABEL ? 'pointer' : 'not-allowed'}`}
-                color={outlineColor !== MIXED_VALUE_LABEL ? outlineColor : '#ccc'}
+                color={colorWhite}
               />
             </PopoverTrigger>
             <PopoverContent>
               <SketchPicker
                 color={outlineColor !== MIXED_VALUE_LABEL ? outlineColor : '#000000'}
-                onChange={(color) => handleUpdate('outlineColor', color.hex)}
+                onChange={(color) => handleUpdate('outlineColor', color.rgb)}
                 presetColors={[]}
               />
             </PopoverContent>

@@ -5,6 +5,7 @@ import { CheckboxDataEdit, InventoryDataEdit } from '@/lib/compass-planes/nodes/
 import { ImageDataEdit } from '@/lib/compass-planes/nodes/components/image';
 import { getComponentData } from '@/lib/compass-planes/utils';
 import { colorBlack } from '@/palette';
+import type { RGBColor } from 'react-color';
 import { useParams } from 'react-router-dom';
 import { ActionEdit } from './action-edit';
 import { TextEdit } from './component-edits';
@@ -45,8 +46,16 @@ export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
     }
   };
 
-  const handleStyleUpdate = (key: string | string[], value: number | string | boolean | null) => {
+  const handleStyleUpdate = (
+    key: string | string[],
+    value: number | string | boolean | null | RGBColor,
+  ) => {
     const toUpdate = selectedComponents.filter((c) => (key === 'locked' ? true : !c.locked));
+
+    if (Object.hasOwn(value as any, 'r')) {
+      const color = { ...(value as any) } as RGBColor;
+      value = `rgba(${color.r}, ${color.g}, ${color.b}, ${color.a})`;
+    }
 
     if (typeof key === 'string') {
       updateComponents(
