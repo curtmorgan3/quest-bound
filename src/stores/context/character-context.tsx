@@ -33,6 +33,9 @@ type CharacterContext = {
   inventoryItems: InventoryItemWithData[];
   updateInventoryItem: (id: string, data: Partial<InventoryItem>) => void;
   removeInventoryItem: (id: string) => void;
+  addInventoryItem: (
+    data: Omit<InventoryItem, 'id' | 'createdAt' | 'updatedAt' | 'inventoryId'>,
+  ) => void;
 };
 
 export const CharacterContext = createContext<CharacterContext>(null!);

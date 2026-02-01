@@ -153,6 +153,7 @@ export const CharacterPage = ({ id, lockByDefault }: { id?: string; lockByDefaul
         inventoryItems,
         updateInventoryItem,
         removeInventoryItem,
+        addInventoryItem,
       }}>
       <SheetViewer
         characterId={character?.id}

@@ -124,6 +124,7 @@ export const SheetViewer = ({
           panOnScroll={false}
           zoomOnScroll={false}
           nodesDraggable={!locked}
+          renderContextMenu={false}
         />
       )}
       <WindowsTabs
