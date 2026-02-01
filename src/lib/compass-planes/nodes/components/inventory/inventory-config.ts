@@ -1,4 +1,5 @@
 import { DEFAULT_GRID_SIZE } from '@/lib/compass-planes/editor-config';
+import { colorWhite } from '@/palette';
 import type { Component, ComponentStyle, InventoryComponentData } from '@/types';
 import { ComponentTypes, type SheetComponentType } from '../../node-types';
 
@@ -24,14 +25,15 @@ const DEFAULT_DATA: InventoryComponentData = {
 };
 
 const DEFAULT_STYLES: ComponentStyle = {
-  backgroundColor: 'transparent',
+  backgroundColor: 'rgba(0,0,0,0)',
+  color: colorWhite,
   opacity: 1,
   borderRadiusTopLeft: 0,
   borderRadiusTopRight: 0,
   borderRadiusBottomLeft: 0,
   borderRadiusBottomRight: 0,
-  outlineWidth: 1,
-  outlineColor: 'transparent',
+  outlineWidth: 0,
+  outlineColor: colorWhite,
   outline: 'solid',
   fontSize: 16,
   fontWeight: 'normal',

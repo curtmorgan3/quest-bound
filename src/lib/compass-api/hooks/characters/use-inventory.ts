@@ -27,6 +27,7 @@ export const useInventory = (inventoryId: string) => {
     return {
       ...entity,
       title: itemRef?.title ?? actionRef?.title ?? '',
+      description: itemRef?.description ?? actionRef?.description ?? '',
       image: itemRef?.image ?? actionRef?.image,
       inventoryWidth: itemRef?.inventoryWidth ?? 2,
       inventoryHeight: itemRef?.inventoryHeight ?? 2,

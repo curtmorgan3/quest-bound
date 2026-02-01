@@ -17,6 +17,7 @@ export type InventoryPanelConfig = {
 export type InventoryItemWithData = InventoryItem & {
   image?: string | null;
   title: string;
+  description?: string;
   inventoryWidth: number;
   inventoryHeight: number;
   stackSize: number;

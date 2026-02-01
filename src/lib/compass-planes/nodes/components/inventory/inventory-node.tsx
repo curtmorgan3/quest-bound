@@ -14,9 +14,32 @@ export const EditInventoryNode = () => {
   const component = getComponent(id);
   if (!component) return null;
 
+  const css = getComponentStyles(component);
+  const data = getComponentData(component) as InventoryComponentData;
+  const gridColor = css.color || '#ccc';
+
+  const cellWidth = (data.cellWidth ?? 1) * 20;
+  const cellHeight = (data.cellHeight ?? 1) * 20;
+
   return (
     <ResizableNode component={component}>
       <ViewInventoryNode component={component} />
+      <div
+        style={{
+          height: '100%',
+          width: '100%',
+          backgroundColor: css.backgroundColor,
+          borderRadius: css.borderRadius,
+          outline: css.outline,
+          outlineColor: css.outlineColor,
+          outlineWidth: css.outlineWidth,
+          backgroundSize: `${cellWidth}px ${cellHeight}px`,
+          backgroundImage: `
+            linear-gradient(to right, ${gridColor} 1px, transparent 1px),
+            linear-gradient(to bottom, ${gridColor} 1px, transparent 1px)
+          `,
+          overflow: 'hidden',
+        }}></div>
     </ResizableNode>
   );
 };

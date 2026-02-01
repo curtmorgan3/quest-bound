@@ -1,6 +1,7 @@
 import { type InventoryItemWithData } from '@/stores';
 import { useKeyListeners } from '@/utils';
-import { useEffect, useRef, useState } from 'react';
+import { X } from 'lucide-react';
+import { useRef, useState } from 'react';
 
 export type ContextMenuState = {
   item: InventoryItemWithData;
@@ -33,21 +34,15 @@ export const ItemContextMenu = ({
   useKeyListeners({
     onKeyDown: (e) => {
       if (e.key === 'Escape') {
-        onClose();
+        handleClose();
       }
     },
   });
 
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-        handleQuantityBlur();
-        onClose();
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [onClose]);
+  const handleClose = () => {
+    handleQuantityBlur();
+    onClose();
+  };
 
   const handleQuantityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = parseInt(e.target.value, 10);
@@ -86,48 +81,86 @@ export const ItemContextMenu = ({
         minWidth: 200,
         zIndex: 1000,
         boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)',
-      }}>
-      <div style={{ marginBottom: 12, fontWeight: 600, color: '#fff' }}>{item.title}</div>
+      }}
+      className='relative'>
+      <button
+        onClick={handleClose}
+        style={{
+          position: 'absolute',
+          top: 8,
+          right: 8,
+          background: 'transparent',
+          border: 'none',
+          color: '#999',
+          cursor: 'pointer',
+          padding: 4,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          borderRadius: 4,
+        }}
+        onMouseEnter={(e) => (e.currentTarget.style.color = '#fff')}
+        onMouseLeave={(e) => (e.currentTarget.style.color = '#999')}>
+        <X size={16} />
+      </button>
 
-      <div style={{ marginBottom: 12 }}>
-        <label style={{ display: 'block', fontSize: 12, color: '#999', marginBottom: 4 }}>
-          Quantity
-        </label>
-        <div className='flex gap-2'>
-          <input
-            type='number'
-            min={1}
-            max={item.stackSize}
-            value={quantity}
-            onPointerMove={(e) => {
-              e.preventDefault();
-              return;
-            }}
-            onChange={handleQuantityChange}
-            onBlur={handleQuantityBlur}
-            onKeyDown={(e) => e.key === 'Enter' && handleQuantityBlur()}
-            style={{
-              width: '100%',
-              padding: '6px 8px',
-              backgroundColor: '#2a2a2a',
-              border: '1px solid #444',
-              borderRadius: 4,
-              color: '#fff',
-              fontSize: 14,
-            }}
-          />
-          <div className='flex flex-col'>
-            <button onClick={() => setQuantity((prev) => Math.min(prev + 1, maxQuantity))}>
-              ^
-            </button>
-            <button
-              onClick={() => setQuantity((prev) => Math.max(1, prev - 1))}
-              style={{ transform: 'rotate(180deg)' }}>
-              ^
-            </button>
+      <div style={{ marginBottom: 12, fontWeight: 600, color: '#fff', paddingRight: 24 }}>
+        {item.title}
+      </div>
+
+      {item.description && (
+        <div
+          style={{
+            marginBottom: 12,
+            fontSize: 12,
+            color: '#aaa',
+            lineHeight: 1.4,
+          }}>
+          {item.description}
+        </div>
+      )}
+
+      {maxQuantity > 1 && (
+        <div style={{ marginBottom: 12 }}>
+          <label style={{ display: 'block', fontSize: 12, color: '#999', marginBottom: 4 }}>
+            Quantity
+          </label>
+          <div className='flex gap-2'>
+            <input
+              type='number'
+              min={1}
+              max={item.stackSize}
+              value={quantity}
+              onPointerMove={(e) => {
+                e.preventDefault();
+                return;
+              }}
+              onChange={handleQuantityChange}
+              onBlur={handleQuantityBlur}
+              onKeyDown={(e) => e.key === 'Enter' && handleQuantityBlur()}
+              style={{
+                width: '100%',
+                padding: '6px 8px',
+                backgroundColor: '#2a2a2a',
+                border: '1px solid #444',
+                borderRadius: 4,
+                color: '#fff',
+                fontSize: 14,
+              }}
+            />
+            <div className='flex flex-col'>
+              <button onClick={() => setQuantity((prev) => Math.min(prev + 1, maxQuantity))}>
+                ^
+              </button>
+              <button
+                onClick={() => setQuantity((prev) => Math.max(1, prev - 1))}
+                style={{ transform: 'rotate(180deg)' }}>
+                ^
+              </button>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {canSplit && (
         <div style={{ marginBottom: 12 }}>
