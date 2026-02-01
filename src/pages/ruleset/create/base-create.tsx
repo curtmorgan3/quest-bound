@@ -1,14 +1,16 @@
 import { Button, Input, Label, Textarea } from '@/components';
-import { AppWindow, FileSpreadsheet, HandFist, Sword, UserRoundPen } from 'lucide-react';
+import { AppWindow, FileSpreadsheet, HandFist, Newspaper, Sword, UserRoundPen } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useLocation, useSearchParams } from 'react-router-dom';
 import { ActionCreate } from './action-create';
 import { AttributeCreate } from './attribute-create';
 import { ChartCreate } from './chart-create';
+import { DocumentCreate } from './document-create';
 import {
   useActionValues,
   useAttributeValues,
   useChartValues,
+  useDocumentValues,
   useItemValues,
   useWindowValues,
 } from './hooks';
@@ -19,6 +21,7 @@ const iconset = {
   actions: HandFist,
   items: Sword,
   charts: FileSpreadsheet,
+  documents: Newspaper,
   windows: AppWindow,
 };
 
@@ -92,14 +95,26 @@ export const BaseCreate = ({ onCreate }: BaseCreateProps) => {
     setCategory,
   });
 
+  const { saveDocument, ...documentProps } = useDocumentValues({
+    id: editId || undefined,
+    baseProperties,
+    onCreate: () => {
+      document.getElementById('create-title')?.focus();
+    },
+    setTitle,
+    setDescription,
+    setCategory,
+  });
+
   const initialType = pathname.split('/').pop() as
     | 'attributes'
     | 'items'
     | 'actions'
     | 'charts'
+    | 'documents'
     | 'windows';
   const [activeType, setActiveType] = useState<
-    'attributes' | 'items' | 'actions' | 'charts' | 'windows'
+    'attributes' | 'items' | 'actions' | 'charts' | 'documents' | 'windows'
   >(initialType || 'attributes');
 
   useEffect(() => {
@@ -126,6 +141,9 @@ export const BaseCreate = ({ onCreate }: BaseCreateProps) => {
         break;
       case 'charts':
         saveChart();
+        break;
+      case 'documents':
+        saveDocument();
         break;
       case 'windows':
         saveWindow();
@@ -170,6 +188,11 @@ export const BaseCreate = ({ onCreate }: BaseCreateProps) => {
           <iconset.charts />
         </Button>
         <Button
+          variant={activeType === 'documents' ? 'default' : 'outline'}
+          onClick={() => setActiveType('documents')}>
+          <iconset.documents />
+        </Button>
+        <Button
           variant={activeType === 'windows' ? 'default' : 'outline'}
           onClick={() => setActiveType('windows')}>
           <iconset.windows />
@@ -204,6 +227,7 @@ export const BaseCreate = ({ onCreate }: BaseCreateProps) => {
         {activeType === 'actions' && <ActionCreate {...actionProps} />}
         {activeType === 'items' && <ItemCreate {...itemProps} />}
         {activeType === 'charts' && <ChartCreate {...chartProps} />}
+        {activeType === 'documents' && <DocumentCreate {...documentProps} />}
 
         {activeType !== 'windows' && (
           <div className='grid gap-3'>

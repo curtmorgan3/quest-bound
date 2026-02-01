@@ -4,6 +4,7 @@ import {
   FileSpreadsheet,
   FolderOpen,
   HandFist,
+  Newspaper,
   Settings as SettingsIcon,
   Sword,
   UserRoundPen,
@@ -85,6 +86,11 @@ export function AppSidebar() {
           title: 'Charts',
           url: `/rulesets/${activeRuleset?.id}/charts`,
           icon: FileSpreadsheet,
+        },
+        {
+          title: 'Documents',
+          url: `/rulesets/${activeRuleset?.id}/documents`,
+          icon: Newspaper,
         },
         {
           title: 'Windows',

@@ -101,6 +101,17 @@ export type Chart = BaseDetails & {
   data: string;
 };
 
+export type Document = BaseDetails & {
+  rulesetId: string;
+  title: string;
+  description: string;
+  category?: string;
+  assetId?: string | null;
+  image?: string | null;
+  pdfAssetId?: string | null;
+  pdfData?: string | null;
+};
+
 type BaseComponentStyle = {
   backgroundColor: string;
   opacity: number;

@@ -2,6 +2,7 @@ import { CharacterPage, Characters, ErrorPage, Ruleset, Rulesets } from '@/pages
 import { HashRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { ErrorBoundary } from './components';
 import { Layout } from './components/layout';
+import { DocumentViewer } from './pages/ruleset/documents';
 import { WindowEditor } from './pages/ruleset/windows/window-editor';
 
 function CompassRoutes() {
@@ -20,6 +21,14 @@ function CompassRoutes() {
             <Route path={`/rulesets/:rulesetId/items`} element={<Ruleset page='items' />} />
             <Route path={`/rulesets/:rulesetId/actions`} element={<Ruleset page='actions' />} />
             <Route path={`/rulesets/:rulesetId/charts`} element={<Ruleset page='charts' />} />
+            <Route
+              path={`/rulesets/:rulesetId/documents`}
+              element={<Ruleset page='documents' />}
+            />
+            <Route
+              path={`/rulesets/:rulesetId/documents/:documentId`}
+              element={<DocumentViewer />}
+            />
 
             <Route path={`/rulesets/:rulesetId/windows`} element={<Ruleset page='windows' />} />
 

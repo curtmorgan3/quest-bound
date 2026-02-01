@@ -15,13 +15,14 @@ import { AttributeChart } from './attributes/attribute-chart';
 import { ChartSelect } from './charts';
 import { Export, Import } from './components';
 import { BaseCreate } from './create';
+import { Documents } from './documents';
 import { ItemChart } from './items/item-chart';
 import { WindowSelect } from './windows';
 
 export const Ruleset = ({
   page,
 }: {
-  page?: 'attributes' | 'items' | 'actions' | 'charts' | 'windows';
+  page?: 'attributes' | 'items' | 'actions' | 'charts' | 'documents' | 'windows';
 }) => {
   const { activeRuleset } = useActiveRuleset();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -44,6 +45,16 @@ export const Ruleset = ({
         return <ActionChart />;
       case 'charts':
         return <ChartSelect />;
+      case 'documents':
+        return (
+          <Documents
+            onEditDetails={(id) => {
+              searchParams.set('edit', id);
+              setSearchParams(searchParams);
+              setOpen(true);
+            }}
+          />
+        );
       case 'windows':
         return <WindowSelect />;
       default:
@@ -87,8 +98,12 @@ export const Ruleset = ({
               </Button>
             </div>
           )}
-          {page !== 'charts' && page !== 'windows' && <Export type={page} />}
-          {page !== 'charts' && page !== 'windows' && <Import type={page} />}
+          {page !== 'charts' && page !== 'windows' && page !== 'documents' && (
+            <Export type={page} />
+          )}
+          {page !== 'charts' && page !== 'windows' && page !== 'documents' && (
+            <Import type={page} />
+          )}
         </div>
 
         {renderChart()}

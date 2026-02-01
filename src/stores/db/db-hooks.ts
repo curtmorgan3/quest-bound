@@ -17,6 +17,7 @@ type DB = Dexie & {
   inventoryItems: Dexie.Table;
   characterAttributes: Dexie.Table;
   characterWindows: Dexie.Table;
+  documents: Dexie.Table;
 };
 
 export function registerDbHooks(db: DB) {
@@ -229,6 +230,7 @@ export function registerDbHooks(db: DB) {
         await db.windows.where('rulesetId').equals(rulesetId).delete();
         await db.components.where('rulesetId').equals(rulesetId).delete();
         await db.fonts.where('rulesetId').equals(rulesetId).delete();
+        await db.documents.where('rulesetId').equals(rulesetId).delete();
 
         // Find and delete only the test character (not regular characters)
         const testCharacter = await db.characters

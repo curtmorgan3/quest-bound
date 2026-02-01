@@ -3,6 +3,7 @@ export * from './use-active-ruleset';
 export * from './use-attributes';
 export * from './use-charts';
 export * from './use-components';
+export * from './use-documents';
 export * from './use-items';
 export * from './use-rulesets';
 export * from './use-windows';

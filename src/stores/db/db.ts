@@ -7,6 +7,7 @@ import type {
   CharacterWindow,
   Chart,
   Component,
+  Document,
   Font,
   Inventory,
   InventoryItem,
@@ -31,6 +32,7 @@ const db = new Dexie('qbdb') as Dexie & {
   actions: EntityTable<Action, 'id'>;
   items: EntityTable<Item, 'id'>;
   charts: EntityTable<Chart, 'id'>;
+  documents: EntityTable<Document, 'id'>;
   assets: EntityTable<Asset, 'id'>;
   fonts: EntityTable<Font, 'id'>;
   windows: EntityTable<Window, 'id'>;
@@ -45,7 +47,7 @@ const db = new Dexie('qbdb') as Dexie & {
 const common = '++id, createdAt, updatedAt';
 
 // Schema declaration:
-db.version(3).stores({
+db.version(4).stores({
   users: `${common}, username, assetId, image, preferences`,
   assets: `${common}, rulesetId, [directory+filename], data, type`,
   rulesets: `${common}, version, createdBy, title, description, details, assetId, image`,
@@ -54,6 +56,7 @@ db.version(3).stores({
   actions: `${common}, rulesetId, title, description, category`,
   items: `${common}, rulesetId, title, description, category, weight, defaultQuantity, stackSize, isContainer, isStorable, isEquippable, isConsumable, inventoryWidth, inventoryHeight`,
   charts: `${common}, rulesetId, title, description, category, data`,
+  documents: `${common}, rulesetId, title, description, category, assetId, image, pdfAssetId, pdfData`,
   windows: `${common}, rulesetId, title, category`,
   components: `${common}, rulesetId, windowId, type, x, y, z, height, width, rotation, selected, assetId, assetUrl, groupId, attributeId, actionId, data, style`,
   characters: `${common}, rulesetId, userId, assetId, image`,
