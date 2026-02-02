@@ -14,11 +14,7 @@ interface MobileDocumentViewerProps {
   onDownload: () => void;
 }
 
-export const MobileDocumentViewer = ({
-  pdfData,
-  title,
-  onDownload,
-}: MobileDocumentViewerProps) => {
+export const MobileDocumentViewer = ({ pdfData, title, onDownload }: MobileDocumentViewerProps) => {
   const [numPages, setNumPages] = useState<number | null>(null);
   const [pageNumber, setPageNumber] = useState(1);
   const [scale, setScale] = useState(1.0);
@@ -58,6 +54,7 @@ export const MobileDocumentViewer = ({
     if (value === '') {
       return;
     }
+
     const page = parseInt(value, 10);
     if (!isNaN(page) && page >= 1 && page <= (numPages || 1)) {
       setPageNumber(page);
@@ -96,32 +93,26 @@ export const MobileDocumentViewer = ({
             size='icon'
             onClick={goToPreviousPage}
             disabled={pageNumber <= 1}
-            className='h-8 w-8'
-          >
+            className='h-8 w-8'>
             <ChevronLeft className='h-4 w-4' />
           </Button>
           <div className='flex items-center gap-1'>
             <Input
               type='number'
-              min={1}
-              max={numPages || 1}
               value={pageNumber}
               onChange={handlePageInputChange}
               onBlur={handlePageInputBlur}
               className='w-12 h-7 text-center text-sm p-1 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none'
               disabled={!numPages}
             />
-            <span className='text-sm text-muted-foreground'>
-              / {numPages || '...'}
-            </span>
+            <span className='text-sm text-muted-foreground'>/ {numPages || '...'}</span>
           </div>
           <Button
             variant='ghost'
             size='icon'
             onClick={goToNextPage}
             disabled={!numPages || pageNumber >= numPages}
-            className='h-8 w-8'
-          >
+            className='h-8 w-8'>
             <ChevronRight className='h-4 w-4' />
           </Button>
         </div>
@@ -133,20 +124,16 @@ export const MobileDocumentViewer = ({
             size='icon'
             onClick={zoomOut}
             disabled={scale <= 0.5}
-            className='h-8 w-8'
-          >
+            className='h-8 w-8'>
             <ZoomOut className='h-4 w-4' />
           </Button>
-          <span className='text-sm min-w-[50px] text-center'>
-            {Math.round(scale * 100)}%
-          </span>
+          <span className='text-sm min-w-[50px] text-center'>{Math.round(scale * 100)}%</span>
           <Button
             variant='ghost'
             size='icon'
             onClick={zoomIn}
             disabled={scale >= 3.0}
-            className='h-8 w-8'
-          >
+            className='h-8 w-8'>
             <ZoomIn className='h-4 w-4' />
           </Button>
         </div>
@@ -174,8 +161,7 @@ export const MobileDocumentViewer = ({
                 <Loader2 className='h-8 w-8 animate-spin text-muted-foreground' />
               </div>
             }
-            className='max-w-full'
-          >
+            className='max-w-full'>
             <Page
               pageNumber={pageNumber}
               scale={scale}
