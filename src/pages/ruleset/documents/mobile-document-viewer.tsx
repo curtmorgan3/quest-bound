@@ -65,7 +65,7 @@ export const MobileDocumentViewer = ({ pdfData, title, onDownload }: MobileDocum
     const value = e.target.value;
     const page = parseInt(value, 10);
     // Reset to current page if invalid
-    if (isNaN(page)) {
+    if (isNaN(page) || page < 1 || page > (numPages || 1)) {
       e.target.value = String(pageNumber);
     }
   };
@@ -99,7 +99,6 @@ export const MobileDocumentViewer = ({ pdfData, title, onDownload }: MobileDocum
           <div className='flex items-center gap-1'>
             <Input
               type='number'
-              value={pageNumber}
               onChange={handlePageInputChange}
               onBlur={handlePageInputBlur}
               className='w-12 h-7 text-center text-sm p-1 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none'
