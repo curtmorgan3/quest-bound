@@ -16,4 +16,5 @@ export type DB = Dexie & {
   characterAttributes: Dexie.Table;
   characterWindows: Dexie.Table;
   documents: Dexie.Table;
+  users: Dexie.Table;
 };

@@ -1,20 +1,32 @@
 import type { DB } from './types';
 
 export function registerAssetDbHooks(db: DB) {
-  // Prevent deletion if an attribute references this asset
+  // Prevent deletion if any entity references this asset
   db.assets.hook('deleting', (primKey, obj) => {
     setTimeout(async () => {
       try {
-        const itemCount = await db.items.filter((item) => item.assetId === primKey).count();
+        const [itemCount, documentCount, actionCount, userCount, attributeCount, characterCount] =
+          await Promise.all([
+            db.items.filter((item) => item.assetId === primKey).count(),
+            db.documents
+              .filter((doc) => doc.assetId === primKey || doc.pdfAssetId === primKey)
+              .count(),
+            db.actions.filter((action) => action.assetId === primKey).count(),
+            db.users.filter((user) => user.assetId === primKey).count(),
+            db.attributes.filter((attr) => attr.assetId === primKey).count(),
+            db.characters.filter((char) => char.assetId === primKey).count(),
+          ]);
 
-        if (itemCount > 0) {
+        const totalCount =
+          itemCount + documentCount + actionCount + userCount + attributeCount + characterCount;
+
+        if (totalCount > 0) {
           // Re-add used asset
-
           db.assets.add(obj);
           return;
         }
       } catch (error) {
-        console.error('Failed to delete asset for item:', error);
+        console.error('Failed to delete asset:', error);
       }
     }, 0);
   });
