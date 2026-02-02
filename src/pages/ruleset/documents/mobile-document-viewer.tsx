@@ -1,4 +1,4 @@
-import { Button } from '@/components';
+import { Button, Input } from '@/components';
 import { ChevronLeft, ChevronRight, Download, Loader2, ZoomIn, ZoomOut } from 'lucide-react';
 import { useState } from 'react';
 import { Document, Page, pdfjs } from 'react-pdf';
@@ -52,6 +52,27 @@ export const MobileDocumentViewer = ({
     setScale((prev) => Math.max(prev - 0.25, 0.5));
   };
 
+  const handlePageInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    // Allow empty input for typing
+    if (value === '') {
+      return;
+    }
+    const page = parseInt(value, 10);
+    if (!isNaN(page) && page >= 1 && page <= (numPages || 1)) {
+      setPageNumber(page);
+    }
+  };
+
+  const handlePageInputBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    const page = parseInt(value, 10);
+    // Reset to current page if invalid
+    if (isNaN(page) || page < 1 || page > (numPages || 1)) {
+      e.target.value = String(pageNumber);
+    }
+  };
+
   if (error) {
     return (
       <div className='flex flex-col items-center justify-center h-full gap-4 p-4'>
@@ -79,9 +100,21 @@ export const MobileDocumentViewer = ({
           >
             <ChevronLeft className='h-4 w-4' />
           </Button>
-          <span className='text-sm min-w-[60px] text-center'>
-            {numPages ? `${pageNumber} / ${numPages}` : '...'}
-          </span>
+          <div className='flex items-center gap-1'>
+            <Input
+              type='number'
+              min={1}
+              max={numPages || 1}
+              value={pageNumber}
+              onChange={handlePageInputChange}
+              onBlur={handlePageInputBlur}
+              className='w-12 h-7 text-center text-sm p-1 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none'
+              disabled={!numPages}
+            />
+            <span className='text-sm text-muted-foreground'>
+              / {numPages || '...'}
+            </span>
+          </div>
           <Button
             variant='ghost'
             size='icon'
