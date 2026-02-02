@@ -1,8 +1,10 @@
 import { Button } from '@/components';
+import { useIsMobileDevice } from '@/hooks/use-mobile-device';
 import { useCharacter, useDocuments } from '@/lib/compass-api';
 import { ArrowLeft, Download } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { MobileDocumentViewer } from './mobile-document-viewer';
 
 // Convert base64 data URL to Blob URL for PDF rendering
 const base64ToBlobUrl = (base64Data: string): string | null => {
@@ -34,6 +36,7 @@ export const DocumentViewer = () => {
   const { documents } = useDocuments(character?.rulesetId);
   const navigate = useNavigate();
   const [blobUrl, setBlobUrl] = useState<string | null>(null);
+  const isMobileDevice = useIsMobileDevice();
 
   const document = documents.find((d) => d.id === documentId);
 
@@ -76,6 +79,43 @@ export const DocumentViewer = () => {
     link.click();
     window.document.body.removeChild(link);
   };
+
+  // On mobile/tablet devices, use react-pdf based viewer for better compatibility
+  if (isMobileDevice && document.pdfData) {
+    return (
+      <div className='flex flex-col h-[calc(100vh-2rem)]'>
+        {/* Header */}
+        <div className='flex items-center gap-4 p-4 border-b'>
+          <Button variant='ghost' size='sm' onClick={() => navigate(-1)}>
+            <ArrowLeft className='h-4 w-4' />
+          </Button>
+          <div className='flex-1 min-w-0'>
+            <h1 className='text-lg font-semibold truncate'>{document.title}</h1>
+            {document.category && (
+              <p className='text-sm text-muted-foreground'>{document.category}</p>
+            )}
+          </div>
+        </div>
+
+        {/* Mobile PDF Viewer */}
+        <div className='flex-1 min-h-0'>
+          <MobileDocumentViewer
+            pdfData={document.pdfData}
+            title={document.title}
+            onDownload={handleDownload}
+          />
+        </div>
+
+        {/* Description */}
+        {document.description && (
+          <div className='p-4 border-t'>
+            <h2 className='text-sm font-medium mb-2'>Description</h2>
+            <p className='text-sm text-muted-foreground'>{document.description}</p>
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className='flex flex-col h-[calc(100vh-2rem)]'>
