@@ -1,5 +1,6 @@
 import type Dexie from 'dexie';
 import { registerActionDbHooks } from './action-hooks';
+import { registerAssetDbHooks } from './asset-hooks';
 import { registerAttributeDbHooks } from './attribute-hooks';
 import { registerCharacterDbHooks } from './character-hooks';
 import { registerChartDbHooks } from './chart-hooks';
@@ -33,4 +34,5 @@ export function registerDbHooks(db: DB) {
   registerItemDbHooks(db);
   registerActionDbHooks(db);
   registerDocumentDbHooks(db);
+  registerAssetDbHooks(db);
 }
