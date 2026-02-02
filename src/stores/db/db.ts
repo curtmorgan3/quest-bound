@@ -19,7 +19,7 @@ import type {
 import Dexie, { type EntityTable } from 'dexie';
 import { assetInjectorMiddleware } from './asset-injector-middleware';
 import { chartOptionsMiddleware, memoizedCharts } from './chart-options-middleware';
-import { registerDbHooks } from './db-hooks';
+import { registerDbHooks } from './hooks/db-hooks';
 import { memoizedAssets } from './memoization-cache';
 
 const db = new Dexie('qbdb') as Dexie & {
