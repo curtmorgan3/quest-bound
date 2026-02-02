@@ -1,3 +1,4 @@
+import { useNotifications } from '@/hooks';
 import { db } from '@/stores';
 import type { Asset } from '@/types';
 import { useLiveQuery } from 'dexie-react-hooks';
@@ -7,6 +8,7 @@ import { useParams } from 'react-router-dom';
 export const useAssets = (_rulesetId?: string) => {
   const { rulesetId: paramRulesetId } = useParams();
   const rulesetId = _rulesetId ?? paramRulesetId;
+  const { addNotification } = useNotifications();
 
   const query = useCallback(() => {
     if (rulesetId) {
@@ -24,6 +26,28 @@ export const useAssets = (_rulesetId?: string) => {
     directory?: string,
     overrideRulesetId?: string,
   ): Promise<string> => {
+    const targetRulesetId = rulesetId || overrideRulesetId || null;
+
+    // Check for duplicate filename in the same directory and ruleset
+    const assetsQuery = targetRulesetId
+      ? db.assets.where('rulesetId').equals(targetRulesetId)
+      : db.assets.filter((asset) => !asset.rulesetId);
+
+    const existingAsset = await assetsQuery
+      .filter(
+        (asset) =>
+          asset.filename === file.name &&
+          (asset.directory || undefined) === (directory || undefined),
+      )
+      .first();
+
+    if (existingAsset) {
+      addNotification(`An asset named "${file.name}" already exists. Using that instead.`, {
+        type: 'info',
+      });
+      return existingAsset.id;
+    }
+
     const reader = new FileReader();
     return new Promise<string>((resolve, reject) => {
       reader.onloadend = async () => {
@@ -37,7 +61,7 @@ export const useAssets = (_rulesetId?: string) => {
             directory: directory || undefined,
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
-            rulesetId: rulesetId || overrideRulesetId || null,
+            rulesetId: targetRulesetId,
           });
 
           resolve(id);

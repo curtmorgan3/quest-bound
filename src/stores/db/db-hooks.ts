@@ -214,6 +214,101 @@ export function registerDbHooks(db: DB) {
     }, 0);
   });
 
+  // Delete associated asset when an item is deleted
+  db.items.hook('deleting', (_primKey, obj) => {
+    if (obj?.assetId) {
+      setTimeout(async () => {
+        try {
+          await db.assets.delete(obj.assetId);
+        } catch (error) {
+          console.error('Failed to delete asset for item:', error);
+        }
+      }, 0);
+    }
+  });
+
+  // Delete old asset when an item's asset is removed
+  db.items.hook('updating', (modifications, _primKey, obj) => {
+    const mods = modifications as { assetId?: string | null };
+    // Check if assetId is being set to null/undefined and there was a previous asset
+    if ('assetId' in mods && !mods.assetId && obj?.assetId) {
+      setTimeout(async () => {
+        try {
+          await db.assets.delete(obj.assetId);
+        } catch (error) {
+          console.error('Failed to delete old asset for item:', error);
+        }
+      }, 0);
+    }
+  });
+
+  // Delete associated asset when an action is deleted
+  db.actions.hook('deleting', (_primKey, obj) => {
+    if (obj?.assetId) {
+      setTimeout(async () => {
+        try {
+          await db.assets.delete(obj.assetId);
+        } catch (error) {
+          console.error('Failed to delete asset for action:', error);
+        }
+      }, 0);
+    }
+  });
+
+  // Delete old asset when an action's asset is removed
+  db.actions.hook('updating', (modifications, _primKey, obj) => {
+    const mods = modifications as { assetId?: string | null };
+    // Check if assetId is being set to null/undefined and there was a previous asset
+    if ('assetId' in mods && !mods.assetId && obj?.assetId) {
+      setTimeout(async () => {
+        try {
+          await db.assets.delete(obj.assetId);
+        } catch (error) {
+          console.error('Failed to delete old asset for action:', error);
+        }
+      }, 0);
+    }
+  });
+
+  // Delete associated assets when a document is deleted
+  db.documents.hook('deleting', (_primKey, obj) => {
+    const assetIds = [obj?.assetId, obj?.pdfAssetId].filter(Boolean);
+    if (assetIds.length > 0) {
+      setTimeout(async () => {
+        try {
+          await Promise.all(assetIds.map((id) => db.assets.delete(id)));
+        } catch (error) {
+          console.error('Failed to delete assets for document:', error);
+        }
+      }, 0);
+    }
+  });
+
+  // Delete old assets when a document's assets are removed
+  db.documents.hook('updating', (modifications, _primKey, obj) => {
+    const mods = modifications as { assetId?: string | null; pdfAssetId?: string | null };
+    const assetsToDelete: string[] = [];
+
+    // Check if assetId is being set to null/undefined and there was a previous asset
+    if ('assetId' in mods && !mods.assetId && obj?.assetId) {
+      assetsToDelete.push(obj.assetId);
+    }
+    // Check if pdfAssetId is being set to null/undefined and there was a previous pdfAsset
+    if ('pdfAssetId' in mods && !mods.pdfAssetId && obj?.pdfAssetId) {
+      assetsToDelete.push(obj.pdfAssetId);
+    }
+
+    if (assetsToDelete.length > 0) {
+      setTimeout(async () => {
+        try {
+          await Promise.all(assetsToDelete.map((id) => db.assets.delete(id)));
+        } catch (error) {
+          console.error('Failed to delete old assets for document:', error);
+        }
+      }, 0);
+    }
+  });
+
   // Delete all associated entities when a ruleset is deleted
   db.rulesets.hook('deleting', (primKey) => {
     setTimeout(async () => {

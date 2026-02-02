@@ -31,6 +31,8 @@ export const ImageUpload = ({
       onUpload?.(assetId);
       setLoading(false);
     }
+    // Reset input value so the same file can be selected again
+    e.target.value = '';
   };
 
   return (
