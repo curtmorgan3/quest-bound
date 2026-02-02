@@ -1,5 +1,5 @@
 import { Button } from '@/components';
-import { useDocuments } from '@/lib/compass-api';
+import { useCharacter, useDocuments } from '@/lib/compass-api';
 import { ArrowLeft, Download } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -28,8 +28,10 @@ const base64ToBlobUrl = (base64Data: string): string | null => {
 };
 
 export const DocumentViewer = () => {
-  const { documentId } = useParams();
-  const { documents } = useDocuments();
+  const { documentId, characterId } = useParams();
+  const { character } = useCharacter(characterId);
+  // Use character's rulesetId if viewing from character path, otherwise use activeRuleset
+  const { documents } = useDocuments(character?.rulesetId);
   const navigate = useNavigate();
   const [blobUrl, setBlobUrl] = useState<string | null>(null);
 

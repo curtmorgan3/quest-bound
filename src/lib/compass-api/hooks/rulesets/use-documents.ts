@@ -4,17 +4,19 @@ import type { Document } from '@/types';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useActiveRuleset } from './use-active-ruleset';
 
-export const useDocuments = () => {
+export const useDocuments = (rulesetId?: string) => {
   const { activeRuleset } = useActiveRuleset();
   const { handleError } = useErrorHandler();
+
+  const effectiveRulesetId = rulesetId ?? activeRuleset?.id;
 
   const documents = useLiveQuery(
     () =>
       db.documents
         .where('rulesetId')
-        .equals(activeRuleset?.id ?? 0)
+        .equals(effectiveRulesetId ?? 0)
         .toArray(),
-    [activeRuleset],
+    [effectiveRulesetId],
   );
 
   const createDocument = async (data: Partial<Document>) => {

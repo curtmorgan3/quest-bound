@@ -19,32 +19,34 @@ export const Settings = () => {
   const [page, setPage] = useState<string>('user');
 
   useEffect(() => {
-    if (activeRuleset) {
+    if (character) {
+      setPage('character');
+    } else if (activeRuleset) {
       setPage('ruleset');
     }
-  }, [activeRuleset, setPage]);
+  }, [activeRuleset, character, setPage]);
 
   return (
     <div className='p-4 min-h-[90vh]'>
       <Sidebar>
         <SidebarContent className='w-[200px] p-4'>
           <SidebarMenu>
-            {activeRuleset && (
-              <SidebarMenuItem className={`${page === 'ruleset' ? 'text-primary' : ''}`}>
-                <SidebarMenuButton asChild onClick={() => setPage('ruleset')}>
-                  <div>
-                    <NotebookPen />
-                    <span>{activeRuleset.title}</span>
-                  </div>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            )}
             {character && (
               <SidebarMenuItem className={`${page === 'character' ? 'text-primary' : ''}`}>
                 <SidebarMenuButton asChild onClick={() => setPage('character')}>
                   <div>
                     <UserRoundPen />
                     <span>{character.name}</span>
+                  </div>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            )}
+            {activeRuleset && (
+              <SidebarMenuItem className={`${page === 'ruleset' ? 'text-primary' : ''}`}>
+                <SidebarMenuButton asChild onClick={() => setPage('ruleset')}>
+                  <div>
+                    <NotebookPen />
+                    <span>{activeRuleset.title}</span>
                   </div>
                 </SidebarMenuButton>
               </SidebarMenuItem>

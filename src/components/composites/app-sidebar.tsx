@@ -1,7 +1,9 @@
 import {
   AppWindow,
+  ArrowLeft,
   BookOpen,
   FileSpreadsheet,
+  FileText,
   FolderOpen,
   HandFist,
   Newspaper,
@@ -25,10 +27,10 @@ import {
   SidebarTrigger,
   useSidebar,
 } from '@/components/ui/sidebar';
-import { useActiveRuleset, useCharacter, useUsers } from '@/lib/compass-api';
+import { useActiveRuleset, useCharacter, useDocuments, useUsers } from '@/lib/compass-api';
 import { DevTools, Settings } from '@/pages';
 import { useEffect, useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useParams } from 'react-router-dom';
 import { Avatar, AvatarImage } from '../ui/avatar';
 import { Button } from '../ui/button';
 import { DialogDescription } from '../ui/dialog';
@@ -39,9 +41,12 @@ export function AppSidebar() {
   const { currentUser, signOut } = useUsers();
   const { activeRuleset } = useActiveRuleset();
   const { character } = useCharacter();
+  const { documents } = useDocuments(character?.rulesetId);
   const { open, setOpen } = useSidebar();
   const location = useLocation();
+  const { documentId } = useParams<{ documentId: string }>();
   const isHomepage = location.pathname === '/rulesets' || location.pathname === '/characters';
+  const isViewingDocument = !!documentId && location.pathname.includes('/documents/');
   const [drawerContent, setDrawerContent] = useState<'settings' | 'dev-tools'>('settings');
 
   useEffect(() => {
@@ -101,6 +106,8 @@ export function AppSidebar() {
 
   const items = character ? [] : rulesetItems;
 
+  const sortedDocuments = [...documents].sort((a, b) => a.title.localeCompare(b.title));
+
   return (
     <Drawer direction='bottom'>
       <Sidebar collapsible='icon'>
@@ -139,6 +146,44 @@ export function AppSidebar() {
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 ))}
+
+                {character && isViewingDocument && (
+                  <SidebarMenuItem>
+                    <SidebarMenuButton asChild>
+                      <Link to={`/characters/${character.id}`} data-testid='nav-back-to-character'>
+                        <ArrowLeft className='w-4 h-4' />
+                        <span>Back to Character</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                )}
+
+                {character && sortedDocuments.length > 0 && (
+                  <>
+                    {sortedDocuments.map((doc) => (
+                      <SidebarMenuItem
+                        key={doc.id}
+                        className={documentId === doc.id ? 'text-primary' : ''}>
+                        <SidebarMenuButton asChild>
+                          <Link
+                            to={`/characters/${character.id}/documents/${doc.id}`}
+                            data-testid={`nav-document-${doc.id}`}>
+                            {doc.image ? (
+                              <img
+                                src={doc.image}
+                                alt={doc.title}
+                                className='w-4 h-4 rounded-sm object-cover'
+                              />
+                            ) : (
+                              <FileText className='w-4 h-4' />
+                            )}
+                            <span>{doc.title}</span>
+                          </Link>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    ))}
+                  </>
+                )}
 
                 {/* {!isHomepage && (
                   <SidebarMenuItem>
