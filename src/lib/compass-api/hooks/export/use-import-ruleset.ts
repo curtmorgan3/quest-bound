@@ -51,6 +51,7 @@ const ITEM_FIELD_TYPES: Record<string, FieldType> = {
   isConsumable: 'boolean',
   inventoryWidth: 'number',
   inventoryHeight: 'number',
+  assetFilename: 'string',
 };
 
 const ACTION_FIELD_TYPES: Record<string, FieldType> = {
@@ -58,6 +59,7 @@ const ACTION_FIELD_TYPES: Record<string, FieldType> = {
   title: 'string',
   description: 'string',
   category: 'string',
+  assetFilename: 'string',
 };
 
 /**
@@ -537,6 +539,33 @@ export const useImportRuleset = () => {
 
       const allErrors: string[] = [];
 
+      // Build filename -> assetId map for resolving asset references in actions/items
+      // Read asset metadata early (before importing) to build the map
+      const assetFilenameToIdMap: Record<string, string> = {};
+      const assetsMetadataFile = zipContent.file('application data/assets.json');
+      if (assetsMetadataFile) {
+        try {
+          const assetsMetadataText = await assetsMetadataFile.async('text');
+          const assetsMetadataForMap: Array<{ id: string; filename: string; directory?: string }> =
+            JSON.parse(assetsMetadataText);
+
+          for (const assetMeta of assetsMetadataForMap) {
+            // Build the full path (directory + filename) as the key
+            let fullPath = assetMeta.filename;
+            if (assetMeta.directory) {
+              const directoryPath = assetMeta.directory.replace(/^\/+|\/+$/g, '');
+              if (directoryPath) {
+                fullPath = `${directoryPath}/${assetMeta.filename}`;
+              }
+            }
+            assetFilenameToIdMap[fullPath] = assetMeta.id;
+          }
+        } catch {
+          // If we can't read asset metadata, continue without the map
+          // Asset references in actions/items will just be undefined
+        }
+      }
+
       // Import characters
       const charactersFile = zipContent.file('application data/characters.json');
       if (charactersFile) {
@@ -646,16 +675,22 @@ export const useImportRuleset = () => {
           const rows = parseTsv(actionsText);
           const parsedActions = tsvToObjects(rows, ACTION_FIELD_TYPES);
 
-          // Convert to proper Action objects
-          const actions: Action[] = parsedActions.map((item) => ({
-            id: item.id as string,
-            title: item.title as string,
-            description: (item.description as string) ?? '',
-            category: item.category as string | undefined,
-            rulesetId: newRulesetId,
-            createdAt: now,
-            updatedAt: now,
-          }));
+          // Convert to proper Action objects, resolving assetFilename to assetId
+          const actions: Action[] = parsedActions.map((item) => {
+            const assetFilename = item.assetFilename as string | undefined;
+            const assetId = assetFilename ? assetFilenameToIdMap[assetFilename] : undefined;
+
+            return {
+              id: item.id as string,
+              title: item.title as string,
+              description: (item.description as string) ?? '',
+              category: item.category as string | undefined,
+              assetId: assetId || null,
+              rulesetId: newRulesetId,
+              createdAt: now,
+              updatedAt: now,
+            };
+          });
 
           const validation = validateData(actions, 'actions');
           if (validation.isValid) {
@@ -681,25 +716,31 @@ export const useImportRuleset = () => {
           const rows = parseTsv(itemsText);
           const parsedItems = tsvToObjects(rows, ITEM_FIELD_TYPES);
 
-          // Convert to proper Item objects with defaults
-          const items: Item[] = parsedItems.map((item) => ({
-            id: item.id as string,
-            title: item.title as string,
-            description: (item.description as string) ?? '',
-            category: item.category as string | undefined,
-            weight: (item.weight as number) ?? 0,
-            defaultQuantity: (item.defaultQuantity as number) ?? 1,
-            stackSize: (item.stackSize as number) ?? 1,
-            isContainer: (item.isContainer as boolean) ?? false,
-            isStorable: (item.isStorable as boolean) ?? true,
-            isEquippable: (item.isEquippable as boolean) ?? false,
-            isConsumable: (item.isConsumable as boolean) ?? false,
-            inventoryWidth: (item.inventoryWidth as number) ?? 1,
-            inventoryHeight: (item.inventoryHeight as number) ?? 1,
-            rulesetId: newRulesetId,
-            createdAt: now,
-            updatedAt: now,
-          }));
+          // Convert to proper Item objects with defaults, resolving assetFilename to assetId
+          const items: Item[] = parsedItems.map((item) => {
+            const assetFilename = item.assetFilename as string | undefined;
+            const assetId = assetFilename ? assetFilenameToIdMap[assetFilename] : undefined;
+
+            return {
+              id: item.id as string,
+              title: item.title as string,
+              description: (item.description as string) ?? '',
+              category: item.category as string | undefined,
+              weight: (item.weight as number) ?? 0,
+              defaultQuantity: (item.defaultQuantity as number) ?? 1,
+              stackSize: (item.stackSize as number) ?? 1,
+              isContainer: (item.isContainer as boolean) ?? false,
+              isStorable: (item.isStorable as boolean) ?? true,
+              isEquippable: (item.isEquippable as boolean) ?? false,
+              isConsumable: (item.isConsumable as boolean) ?? false,
+              inventoryWidth: (item.inventoryWidth as number) ?? 1,
+              inventoryHeight: (item.inventoryHeight as number) ?? 1,
+              assetId: assetId || null,
+              rulesetId: newRulesetId,
+              createdAt: now,
+              updatedAt: now,
+            };
+          });
 
           const validation = validateData(items, 'items');
           if (validation.isValid) {
@@ -835,12 +876,49 @@ export const useImportRuleset = () => {
         }
       }
 
-      // Import assets
+      // Import assets (metadata from JSON, data from files in assets folder)
       const assetsFile = zipContent.file('application data/assets.json');
       if (assetsFile) {
         try {
           const assetsText = await assetsFile.async('text');
-          const assets: Asset[] = JSON.parse(assetsText);
+          const assetsMetadata: Omit<Asset, 'data'>[] = JSON.parse(assetsText);
+
+          // Load asset data from files in assets folder
+          const assetDataMap: Record<string, string> = {};
+
+          // Build a map of all asset files by their paths relative to assets/
+          const assetFiles = Object.entries(zipContent.files).filter(
+            ([path]) => path.startsWith('assets/') && !path.endsWith('/'),
+          );
+
+          for (const [path, file] of assetFiles) {
+            // Read file as base64
+            const fileData = await file.async('base64');
+            // Get relative path within assets folder (e.g., "subdir/image.png" or "image.png")
+            const relativePath = path.replace('assets/', '');
+            assetDataMap[relativePath] = fileData;
+          }
+
+          // Reconstruct assets with their data
+          const assets: Asset[] = assetsMetadata.map((metadata) => {
+            // Build the expected path based on directory and filename
+            let assetPath = metadata.filename;
+            if (metadata.directory) {
+              const directoryPath = metadata.directory.replace(/^\/+|\/+$/g, '');
+              if (directoryPath) {
+                assetPath = `${directoryPath}/${metadata.filename}`;
+              }
+            }
+
+            // Get the base64 data and reconstruct the data URL
+            const base64Data = assetDataMap[assetPath];
+            const dataUrl = base64Data ? `data:${metadata.type};base64,${base64Data}` : '';
+
+            return {
+              ...metadata,
+              data: dataUrl,
+            };
+          });
 
           const validation = validateData(assets, 'assets');
           if (validation.isValid) {

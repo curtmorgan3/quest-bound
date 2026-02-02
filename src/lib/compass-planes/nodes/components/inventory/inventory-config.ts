@@ -20,8 +20,8 @@ export const inventoryConfig: SheetComponentType = {
 };
 
 const DEFAULT_DATA: InventoryComponentData = {
-  cellHeight: 1,
-  cellWidth: 1,
+  cellHeight: 2,
+  cellWidth: 2,
 };
 
 const DEFAULT_STYLES: ComponentStyle = {

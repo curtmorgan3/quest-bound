@@ -66,8 +66,8 @@ export const WindowEditor = () => {
         onClick={() => setViewMode((prev) => !prev)}
         style={{
           position: 'absolute',
-          left: 65,
-          bottom: 60,
+          right: 20,
+          bottom: 50,
           color: viewMode ? colorPrimary : colorWhite,
         }}
       />

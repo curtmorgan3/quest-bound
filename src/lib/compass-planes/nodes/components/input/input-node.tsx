@@ -97,6 +97,8 @@ export const ViewInputNode = ({
           onChange={(e) => handleChange(e.target.value)}
           value={editMode ? undefined : data.value.toString()}
           style={inputStyle}
+          min={data.min}
+          max={data.max}
         />
       )}
     </section>

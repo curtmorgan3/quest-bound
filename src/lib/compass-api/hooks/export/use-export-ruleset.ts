@@ -1,6 +1,6 @@
 import { useErrorHandler } from '@/hooks';
 import { db } from '@/stores';
-import type { Action, Attribute, Item } from '@/types';
+import type { Action, Asset, Attribute, Item } from '@/types';
 import { useLiveQuery } from 'dexie-react-hooks';
 import JSZip from 'jszip';
 import { useState } from 'react';
@@ -20,7 +20,11 @@ const ATTRIBUTE_COLUMNS: (keyof Attribute)[] = [
   'max',
 ];
 
-const ITEM_COLUMNS: (keyof Item)[] = [
+// Extended types that include assetFilename for export
+type ItemWithAssetFilename = Item & { assetFilename?: string };
+type ActionWithAssetFilename = Action & { assetFilename?: string };
+
+const ITEM_COLUMNS: (keyof ItemWithAssetFilename)[] = [
   'id',
   'title',
   'description',
@@ -34,9 +38,34 @@ const ITEM_COLUMNS: (keyof Item)[] = [
   'isConsumable',
   'inventoryWidth',
   'inventoryHeight',
+  'assetFilename',
 ];
 
-const ACTION_COLUMNS: (keyof Action)[] = ['id', 'title', 'description', 'category'];
+const ACTION_COLUMNS: (keyof ActionWithAssetFilename)[] = [
+  'id',
+  'title',
+  'description',
+  'category',
+  'assetFilename',
+];
+
+/**
+ * Helper to build a map of asset IDs to filenames (with directory path)
+ */
+function buildAssetFilenameMap(assets: Asset[]): Record<string, string> {
+  const map: Record<string, string> = {};
+  for (const asset of assets) {
+    let fullPath = asset.filename;
+    if (asset.directory) {
+      const directoryPath = asset.directory.replace(/^\/+|\/+$/g, '');
+      if (directoryPath) {
+        fullPath = `${directoryPath}/${asset.filename}`;
+      }
+    }
+    map[asset.id] = fullPath;
+  }
+  return map;
+}
 
 /**
  * Escapes a value for TSV format.
@@ -212,17 +241,30 @@ export const useExportRuleset = (rulesetId: string) => {
 
       appDataFolder.file('metadata.json', JSON.stringify(metadata, null, 2));
 
+      // Build asset filename map for resolving assetIds to filenames
+      const assetFilenameMap = buildAssetFilenameMap(assets || []);
+
       // Create individual content files (attributes, actions, items as TSV at root level)
       if (attributes && attributes.length > 0) {
         zip.file('attributes.tsv', convertToTsv(attributes, ATTRIBUTE_COLUMNS));
       }
 
       if (actions && actions.length > 0) {
-        zip.file('actions.tsv', convertToTsv(actions, ACTION_COLUMNS));
+        // Add assetFilename to each action
+        const actionsWithFilenames: ActionWithAssetFilename[] = actions.map((action) => ({
+          ...action,
+          assetFilename: action.assetId ? assetFilenameMap[action.assetId] : undefined,
+        }));
+        zip.file('actions.tsv', convertToTsv(actionsWithFilenames, ACTION_COLUMNS));
       }
 
       if (items && items.length > 0) {
-        zip.file('items.tsv', convertToTsv(items, ITEM_COLUMNS));
+        // Add assetFilename to each item
+        const itemsWithFilenames: ItemWithAssetFilename[] = items.map((item) => ({
+          ...item,
+          assetFilename: item.assetId ? assetFilenameMap[item.assetId] : undefined,
+        }));
+        zip.file('items.tsv', convertToTsv(itemsWithFilenames, ITEM_COLUMNS));
       }
 
       if (testCharacter) {
@@ -265,9 +307,11 @@ export const useExportRuleset = (rulesetId: string) => {
       }
 
       if (assets && assets.length > 0) {
-        appDataFolder.file('assets.json', JSON.stringify(assets, null, 2));
+        // Store asset metadata without the data property (data is stored as files in assets folder)
+        const assetsMetadata = assets.map(({ data, ...rest }) => rest);
+        appDataFolder.file('assets.json', JSON.stringify(assetsMetadata, null, 2));
 
-        // Also bundle assets as individual files in an "assets" folder at root level
+        // Bundle assets as individual files in an "assets" folder at root level
         const assetsFolder = zip.folder('assets');
         if (assetsFolder) {
           assets.forEach((asset) => {

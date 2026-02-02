@@ -61,7 +61,7 @@ export const ChartCreate = ({ chartData, setChartData }: ChartCreateProps) => {
       />
 
       {!!chartData && (
-        <div className='flex flex-col w-full justify-center overflow-x-auto'>
+        <div className='flex flex-col w-full justify-center overflow-x-auto max-w-[380px]'>
           <div className='flex gap-2'>
             <span>Headers: </span>
             {headers.map((header, i) => (

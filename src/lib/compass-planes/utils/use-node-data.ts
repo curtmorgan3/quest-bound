@@ -11,6 +11,8 @@ type NodeData = ComponentData & {
   characterAttributeId?: string;
   options: string[];
   interpolatedValue: string | number | boolean;
+  min?: number;
+  max?: number;
 };
 
 export const useNodeData = (component: Component): NodeData => {
@@ -53,6 +55,8 @@ export const useNodeData = (component: Component): NodeData => {
     attributeType: rulesetAttribute?.type ?? 'string',
     characterAttributeId: characterAttribute?.id,
     options: rulesetAttribute?.options ?? [],
+    min: characterAttribute?.min ?? rulesetAttribute?.min,
+    max: characterAttribute?.max ?? rulesetAttribute?.max,
   };
 };
 

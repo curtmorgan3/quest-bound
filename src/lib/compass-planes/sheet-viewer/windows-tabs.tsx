@@ -26,6 +26,9 @@ export const WindowsTabs = ({
   const { createCharacterWindow } = useCharacterWindows(characterId);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
+  const sortedRulesetWindows = [...rulesetWindows].sort((a, b) => a.title.localeCompare(b.title));
+  const sortedWindows = [...windows].sort((a, b) => a.title.localeCompare(b.title));
+
   const handleCreateWindow = async (rulesetWindow: Window) => {
     if (!characterId) return;
 
@@ -95,7 +98,7 @@ export const WindowsTabs = ({
             <Plus size={16} />
           </button>
         )}
-        {windows.map((window) => (
+        {sortedWindows.map((window) => (
           <button
             key={window.id}
             onClick={() => toggleWindow(window.id)}
@@ -133,7 +136,7 @@ export const WindowsTabs = ({
                 No windows available in this ruleset.
               </p>
             ) : (
-              rulesetWindows.map((rulesetWindow) => (
+              sortedRulesetWindows.map((rulesetWindow) => (
                 <button
                   key={rulesetWindow.id}
                   disabled={windows.some((cw) => cw.windowId === rulesetWindow.id)}
