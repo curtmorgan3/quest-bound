@@ -90,10 +90,50 @@ export const useCharacterAttributes = (characterId?: string) => {
     }
   };
 
+  const syncWithRuleset = async (): Promise<number> => {
+    if (!character?.rulesetId) return 0;
+
+    try {
+      const rulesetAttributes = await db.attributes
+        .where({ rulesetId: character.rulesetId })
+        .toArray();
+      const existingAttributeIds = new Set((characterAttributes ?? []).map((ca) => ca.attributeId));
+
+      const missingAttributes = rulesetAttributes.filter(
+        (attr) => !existingAttributeIds.has(attr.id),
+      );
+
+      if (missingAttributes.length === 0) return 0;
+
+      const now = new Date().toISOString();
+
+      await db.characterAttributes.bulkAdd(
+        missingAttributes.map((attr) => ({
+          ...attr,
+          id: crypto.randomUUID(),
+          characterId: character.id,
+          attributeId: attr.id,
+          value: attr.defaultValue,
+          createdAt: now,
+          updatedAt: now,
+        })),
+      );
+
+      return missingAttributes.length;
+    } catch (e) {
+      handleError(e as Error, {
+        component: 'useCharacterAttributes/syncWithRuleset',
+        severity: 'medium',
+      });
+      return 0;
+    }
+  };
+
   return {
     characterAttributes: characterAttributes ?? [],
     createCharacterAttribute,
     updateCharacterAttribute,
     deleteCharacterAttribute,
+    syncWithRuleset,
   };
 };

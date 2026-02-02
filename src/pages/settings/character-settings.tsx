@@ -13,7 +13,8 @@ import {
   Input,
   Label,
 } from '@/components';
-import { useActiveRuleset, useCharacter } from '@/lib/compass-api';
+import { useNotifications } from '@/hooks';
+import { useActiveRuleset, useCharacter, useCharacterAttributes } from '@/lib/compass-api';
 import type { Character } from '@/types';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -25,6 +26,8 @@ interface CharacterSettingsProps {
 export const CharacterSettings = ({ character }: CharacterSettingsProps) => {
   const { updateCharacter, deleteCharacter } = useCharacter();
   const { activeRuleset } = useActiveRuleset();
+  const { syncWithRuleset } = useCharacterAttributes(character.id);
+  const { addNotification } = useNotifications();
   const navigate = useNavigate();
 
   const [name, setName] = useState(character.name);
@@ -45,6 +48,15 @@ export const CharacterSettings = ({ character }: CharacterSettingsProps) => {
     navigate('/characters');
   };
 
+  const handleSyncWithRuleset = async () => {
+    const count = await syncWithRuleset();
+    if (count > 0) {
+      addNotification(`Added ${count} attribute${count === 1 ? '' : 's'}`, { type: 'success' });
+    } else {
+      addNotification('All attributes are already synced', { type: 'info' });
+    }
+  };
+
   return (
     <div className='flex flex-col gap-6'>
       <div className='flex flex-col gap-2 max-w-sm'>
@@ -59,6 +71,16 @@ export const CharacterSettings = ({ character }: CharacterSettingsProps) => {
         onUpload={(assetId) => updateCharacter(character.id, { assetId })}
         rulesetId={activeRuleset?.id}
       />
+
+      <div className='flex flex-col gap-2'>
+        <Label>Sync Attributes</Label>
+        <p className='text-sm text-muted-foreground'>
+          Add any missing attributes from the ruleset to this character.
+        </p>
+        <Button className='w-[150px]' variant='secondary' onClick={handleSyncWithRuleset}>
+          Sync with Ruleset
+        </Button>
+      </div>
 
       <AlertDialog>
         <AlertDialogTrigger asChild>
