@@ -97,8 +97,6 @@ export const EditTextNode = () => {
               margin: 0,
               width: '100%',
               height: '100%',
-              font: 'inherit',
-              color: 'inherit',
             }}
           />
         </section>

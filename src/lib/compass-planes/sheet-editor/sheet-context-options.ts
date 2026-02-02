@@ -2,8 +2,8 @@ import { ComponentTypes, getComponentType, type EditorMenuOption } from '../node
 
 const includedComponents = [
   ComponentTypes.SHAPE,
-  ComponentTypes.TEXT,
   ComponentTypes.IMAGE,
+  ComponentTypes.TEXT,
   ComponentTypes.INPUT,
   ComponentTypes.CHECKBOX,
   ComponentTypes.CONTENT,

@@ -1,3 +1,4 @@
+import { useSidebar } from '@/components/ui/sidebar';
 import { useComponents, useRulesets, type ComponentUpdate } from '@/lib/compass-api';
 import { SheetEditor } from '@/lib/compass-planes';
 import { CharacterPage } from '@/pages/characters';
@@ -14,6 +15,7 @@ const { log } = debugLog('pages', 'editor');
 
 export const WindowEditor = () => {
   const { windowId } = useParams();
+  const { open } = useSidebar();
   const { components, createComponent, updateComponents, updateComponent, deleteComponent } =
     useComponents(windowId);
 
@@ -66,7 +68,7 @@ export const WindowEditor = () => {
         onClick={() => setViewMode((prev) => !prev)}
         style={{
           position: 'absolute',
-          right: 20,
+          left: open ? 265 : 65,
           bottom: 50,
           color: viewMode ? colorPrimary : colorWhite,
         }}

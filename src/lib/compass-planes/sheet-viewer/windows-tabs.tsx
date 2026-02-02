@@ -25,9 +25,18 @@ export const WindowsTabs = ({
   const { windows: rulesetWindows } = useWindows();
   const { createCharacterWindow } = useCharacterWindows(characterId);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [filterText, setFilterText] = useState('');
 
   const sortedRulesetWindows = [...rulesetWindows].sort((a, b) => a.title.localeCompare(b.title));
   const sortedWindows = [...windows].sort((a, b) => a.title.localeCompare(b.title));
+
+  const filteredRulesetWindows = sortedRulesetWindows.filter((w) => {
+    const searchTerm = filterText.toLowerCase();
+    return (
+      w.title.toLowerCase().includes(searchTerm) ||
+      (w.category && w.category.toLowerCase().includes(searchTerm))
+    );
+  });
 
   const handleCreateWindow = async (rulesetWindow: Window) => {
     if (!characterId) return;
@@ -118,11 +127,32 @@ export const WindowsTabs = ({
         ))}
       </div>
 
-      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+      <Dialog
+        open={isModalOpen}
+        onOpenChange={(open) => {
+          setIsModalOpen(open);
+          if (!open) setFilterText('');
+        }}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Add Window</DialogTitle>
           </DialogHeader>
+          <input
+            type='text'
+            placeholder='Filter by name or category...'
+            value={filterText}
+            onChange={(e) => setFilterText(e.target.value)}
+            style={{
+              padding: '8px 12px',
+              backgroundColor: '#333',
+              color: '#fff',
+              border: '1px solid #555',
+              borderRadius: 4,
+              outline: 'none',
+              width: '100%',
+              marginBottom: 8,
+            }}
+          />
           <div
             style={{
               display: 'flex',
@@ -135,8 +165,12 @@ export const WindowsTabs = ({
               <p style={{ color: '#888', textAlign: 'center', padding: '16px' }}>
                 No windows available in this ruleset.
               </p>
+            ) : filteredRulesetWindows.length === 0 ? (
+              <p style={{ color: '#888', textAlign: 'center', padding: '16px' }}>
+                No windows match your filter.
+              </p>
             ) : (
-              sortedRulesetWindows.map((rulesetWindow) => (
+              filteredRulesetWindows.map((rulesetWindow) => (
                 <button
                   key={rulesetWindow.id}
                   disabled={windows.some((cw) => cw.windowId === rulesetWindow.id)}

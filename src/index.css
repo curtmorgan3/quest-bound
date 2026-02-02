@@ -125,6 +125,11 @@ code {
   text-decoration: underline;
 }
 
+.react-flow__attribution a {
+  color: #000;
+  opacity: 0.4;
+}
+
 :root {
   --radius: 0.625rem;
   --background: oklch(1 0 0);
