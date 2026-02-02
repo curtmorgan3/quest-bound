@@ -65,7 +65,7 @@ export const MobileDocumentViewer = ({ pdfData, title, onDownload }: MobileDocum
     const value = e.target.value;
     const page = parseInt(value, 10);
     // Reset to current page if invalid
-    if (isNaN(page) || page < 1 || page > (numPages || 1)) {
+    if (isNaN(page)) {
       e.target.value = String(pageNumber);
     }
   };
@@ -163,7 +163,7 @@ export const MobileDocumentViewer = ({ pdfData, title, onDownload }: MobileDocum
             }
             className='max-w-full'>
             <Page
-              pageNumber={pageNumber}
+              pageNumber={Math.max(1, Math.min(pageNumber, numPages ?? 1))}
               scale={scale}
               renderTextLayer={true}
               renderAnnotationLayer={true}
