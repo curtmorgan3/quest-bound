@@ -61,6 +61,10 @@ export const MobileDocumentViewer = ({ pdfData, title, onDownload }: MobileDocum
     }
   };
 
+  const handlePageInputFocus = (e: React.FocusEvent<HTMLInputElement>) => {
+    e.target.select();
+  };
+
   const handlePageInputBlur = (e: React.FocusEvent<HTMLInputElement>) => {
     const value = e.target.value;
     const page = parseInt(value, 10);
@@ -99,7 +103,9 @@ export const MobileDocumentViewer = ({ pdfData, title, onDownload }: MobileDocum
           <div className='flex items-center gap-1'>
             <Input
               type='number'
+              value={pageNumber}
               onChange={handlePageInputChange}
+              onFocus={handlePageInputFocus}
               onBlur={handlePageInputBlur}
               className='w-12 h-7 text-center text-sm p-1 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none'
               disabled={!numPages}
