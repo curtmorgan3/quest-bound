@@ -42,9 +42,12 @@ export const useAssets = (_rulesetId?: string) => {
       .first();
 
     if (existingAsset) {
-      addNotification(`An asset named "${file.name}" already exists. Using that instead.`, {
-        type: 'info',
-      });
+      addNotification(
+        `An asset named "${file.name}" already exists. Referencing that asset instead.`,
+        {
+          type: 'info',
+        },
+      );
       return existingAsset.id;
     }
 
