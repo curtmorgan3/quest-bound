@@ -4,10 +4,14 @@ import { LogType, useEventLog } from '../event-log-store';
 type DiceContext = {
   dicePanelOpen: boolean;
   setDicePanelOpen: (open: boolean) => void;
-  roll: (value: string) => Promise<DiceResult>;
+  rollDice: (value: string, opts?: DiceRollOpts) => Promise<DiceResult>;
   isRolling: boolean;
   lastResult: DiceResult | null;
   reset: () => void;
+};
+
+type DiceRollOpts = {
+  openPanel?: boolean;
 };
 
 /** A single dice term (e.g. 2d6) or modifier term (+4, -1) in order */
@@ -77,7 +81,8 @@ const DICE_EXPRESSION_IN_TEXT_REGEX = /\d+\s*d\s*\d+(?:\s*[+-]\s*\d+)*/gi;
  * Ex: Restores 1d6+4 of Hit Points and 2d12 of Armor
  * => ["1d6+4", "2d12"]
  */
-export function parseTextForDiceRolls(text: string): string[] {
+export function parseTextForDiceRolls(text?: string): string[] {
+  if (!text) return [];
   const matches = [...text.matchAll(DICE_EXPRESSION_IN_TEXT_REGEX)].map((m) =>
     m[0].replace(/\s/g, ''),
   );
@@ -94,7 +99,11 @@ export const useDiceState = (): DiceContext => {
   } | null>(null);
   const [isRolling, setIsRolling] = useState(false);
 
-  const roll = async (roll: string) => {
+  const rollDice = async (roll: string, opts?: DiceRollOpts) => {
+    if (opts?.openPanel) {
+      setDicePanelOpen(true);
+    }
+
     const trimmed = roll.trim();
     const tokenGroups = parseDiceExpression(trimmed);
 
@@ -166,7 +175,7 @@ export const useDiceState = (): DiceContext => {
   return {
     dicePanelOpen,
     setDicePanelOpen,
-    roll,
+    rollDice,
     lastResult,
     isRolling,
     reset,

@@ -9,17 +9,12 @@ import type { DiceRoll } from '@/types';
 import { Dice6, Trash } from 'lucide-react';
 import { useContext, useEffect, useState } from 'react';
 
-type DicePanelProps = {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-};
-
-export const DicePanel = ({ open, onOpenChange }: DicePanelProps) => {
+export const DicePanel = () => {
+  const { rollDice, isRolling, lastResult, reset, dicePanelOpen, setDicePanelOpen } =
+    useContext(DiceContext);
   const { diceRolls, createDiceRoll, deleteDiceRoll } = useDiceRolls();
   const [label, setLabel] = useState('');
   const [value, setValue] = useState('');
-
-  const { roll, isRolling, lastResult, reset } = useContext(DiceContext);
 
   useEffect(() => {
     if (value || !lastResult?.notation) return;
@@ -28,14 +23,14 @@ export const DicePanel = ({ open, onOpenChange }: DicePanelProps) => {
   }, [lastResult, value]);
 
   useEffect(() => {
-    if (!open) {
+    if (!dicePanelOpen) {
       setValue('');
       reset();
     }
-  }, [open]);
+  }, [dicePanelOpen]);
 
   const handleRoll = (rollValue: string) => {
-    roll(rollValue);
+    rollDice(rollValue);
   };
 
   const handleSaveAndRoll = async () => {
@@ -44,7 +39,7 @@ export const DicePanel = ({ open, onOpenChange }: DicePanelProps) => {
   };
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
+    <Sheet open={dicePanelOpen} onOpenChange={setDicePanelOpen}>
       <SheetContent side='right' className='flex flex-col p-[8px]'>
         <SheetHeader>
           <SheetTitle>Dice Roller</SheetTitle>

@@ -4,7 +4,12 @@ import {
   getComponentStyles,
   useNodeData,
 } from '@/lib/compass-planes/utils';
-import { CharacterContext, WindowEditorContext } from '@/stores';
+import {
+  CharacterContext,
+  DiceContext,
+  parseTextForDiceRolls,
+  WindowEditorContext,
+} from '@/stores';
 import type { Component, ContentComponentData, TextComponentStyle } from '@/types';
 import { useNodeId } from '@xyflow/react';
 import { useContext, useEffect, useRef, useState } from 'react';
@@ -74,6 +79,14 @@ export const ViewContentNode = ({
   const data = useNodeData(component);
   const css = getComponentStyles(component) as TextComponentStyle;
   const characterContext = useContext(CharacterContext);
+  const { rollDice } = useContext(DiceContext);
+
+  const diceRolls = parseTextForDiceRolls(data?.interpolatedValue?.toString());
+
+  const handleClick = () => {
+    if (!diceRolls.length || windowEditorMode) return;
+    rollDice(diceRolls.join(','), { openPanel: true });
+  };
 
   const { characterAttributeId } = data;
 
@@ -165,7 +178,8 @@ export const ViewContentNode = ({
           width: '100%',
           height: '100%',
         }}
-        className='prose prose-invert max-w-none editor-content'>
+        onClick={handleClick}
+        className={`prose prose-invert max-w-none editor-content ${diceRolls.length ? 'clickable' : ''}`}>
         <Markdown>{data?.interpolatedValue?.toString() ?? ''}</Markdown>
       </div>
     </section>

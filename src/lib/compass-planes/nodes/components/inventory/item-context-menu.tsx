@@ -28,15 +28,15 @@ export const ItemContextMenu = ({
 }: ItemContextMenuProps) => {
   const [quantity, setQuantity] = useState(item.quantity);
   const [splitAmount, setSplitAmount] = useState(Math.floor(item.quantity / 2));
-  const { roll, setDicePanelOpen } = useContext(DiceContext);
+  const { rollDice } = useContext(DiceContext);
   const menuRef = useRef<HTMLDivElement>(null);
   const maxQuantity = item.stackSize;
 
   const diceRolls = parseTextForDiceRolls(item.description ?? '');
 
-  const handleRoll = (value: string) => {
-    setDicePanelOpen(true);
-    roll(value);
+  const handleRoll = () => {
+    if (!diceRolls.length) return;
+    rollDice(diceRolls.join(','), { openPanel: true });
   };
 
   useKeyListeners({
@@ -118,6 +118,8 @@ export const ItemContextMenu = ({
 
       {item.description && (
         <div
+          onClick={handleRoll}
+          className={diceRolls.length ? 'clickable' : undefined}
           style={{
             marginBottom: 12,
             fontSize: 12,
@@ -125,17 +127,6 @@ export const ItemContextMenu = ({
             lineHeight: 1.4,
           }}>
           {item.description}
-          <div className='flex flex-col gap-1'>
-            {diceRolls.map((roll, i) => (
-              <span
-                className='clickable'
-                key={i}
-                style={{ textDecoration: 'underline' }}
-                onClick={() => handleRoll(roll)}>
-                {roll}
-              </span>
-            ))}
-          </div>
         </div>
       )}
 

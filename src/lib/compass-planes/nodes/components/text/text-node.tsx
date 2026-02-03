@@ -4,7 +4,7 @@ import {
   getComponentStyles,
   useNodeData,
 } from '@/lib/compass-planes/utils';
-import { WindowEditorContext } from '@/stores';
+import { DiceContext, parseTextForDiceRolls, WindowEditorContext } from '@/stores';
 import type { Component, TextComponentData, TextComponentStyle } from '@/types';
 import { useNodeId } from '@xyflow/react';
 import { useContext, useEffect, useRef, useState } from 'react';
@@ -116,6 +116,14 @@ export const ViewTextNode = ({
 }) => {
   const data = useNodeData(component);
   const css = getComponentStyles(component) as TextComponentStyle;
+  const { rollDice } = useContext(DiceContext);
+
+  const diceRolls = parseTextForDiceRolls(data?.interpolatedValue?.toString());
+
+  const handleClick = () => {
+    if (!diceRolls.length || !!onDoubleClick) return;
+    rollDice(diceRolls.join(','), { openPanel: true });
+  };
 
   return (
     <section
@@ -134,6 +142,8 @@ export const ViewTextNode = ({
       }}>
       <span
         onDoubleClick={onDoubleClick}
+        onClick={handleClick}
+        className={diceRolls.length ? 'clickable' : undefined}
         style={{
           ...css,
           outline: 'none',

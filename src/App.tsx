@@ -49,12 +49,10 @@ function CompassRoutes() {
 }
 
 function App() {
-  const diceState = useDiceState();
-
   return (
-    <DiceProvider value={diceState}>
+    <DiceProvider value={useDiceState()}>
       <CompassRoutes />;
-      <DicePanel open={diceState.dicePanelOpen} onOpenChange={diceState.setDicePanelOpen} />
+      <DicePanel />
     </DiceProvider>
   );
 }
