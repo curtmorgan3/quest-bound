@@ -1,15 +1,11 @@
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetFooter,
-  SheetHeader,
-  SheetTitle,
-} from '@/components/ui/sheet';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Sheet, SheetContent, SheetFooter, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { useDiceRolls } from '@/lib/compass-api';
+import type { DiceRoll } from '@/types';
+import { Trash } from 'lucide-react';
 import { useState } from 'react';
 
 type DicePanelProps = {
@@ -18,7 +14,7 @@ type DicePanelProps = {
 };
 
 export const DicePanel = ({ open, onOpenChange }: DicePanelProps) => {
-  const { createDiceRoll } = useDiceRolls();
+  const { diceRolls, createDiceRoll, deleteDiceRoll } = useDiceRolls();
   const [label, setLabel] = useState('');
   const [value, setValue] = useState('');
 
@@ -36,10 +32,9 @@ export const DicePanel = ({ open, onOpenChange }: DicePanelProps) => {
       <SheetContent side='right' className='flex flex-col p-[8px]'>
         <SheetHeader>
           <SheetTitle>Dice Roller</SheetTitle>
-          <SheetDescription>Enter a dice notation to roll.</SheetDescription>
         </SheetHeader>
 
-        <div className='flex flex-col gap-4 py-4'>
+        <div className='flex flex-1 flex-col gap-4 overflow-hidden py-4'>
           <div className='flex flex-col gap-2'>
             <Label htmlFor='label'>Label</Label>
             <Input
@@ -59,15 +54,62 @@ export const DicePanel = ({ open, onOpenChange }: DicePanelProps) => {
               onChange={(e) => setValue(e.target.value)}
             />
           </div>
-        </div>
 
-        <SheetFooter>
           <Button variant='outline' onClick={handleRoll}>
             Roll
           </Button>
-          <Button onClick={handleSaveAndRoll}>Save and Roll</Button>
-        </SheetFooter>
+          <Button disabled={!label} onClick={handleSaveAndRoll}>
+            Save and Roll
+          </Button>
+          <div className='flex min-h-0 flex-1 flex-col gap-2'>
+            <Label>Saved rolls</Label>
+            <ScrollArea className='flex-1 rounded-md border'>
+              <ul className='flex flex-col p-2'>
+                {diceRolls.length === 0 ? (
+                  <li className='py-4 text-center text-muted-foreground text-sm'>
+                    No saved rolls yet.
+                  </li>
+                ) : (
+                  diceRolls.map((roll: DiceRoll) => (
+                    <DiceRollRow
+                      key={roll.id}
+                      roll={roll}
+                      onDelete={() => deleteDiceRoll(roll.id)}
+                    />
+                  ))
+                )}
+              </ul>
+            </ScrollArea>
+          </div>
+        </div>
+
+        <SheetFooter></SheetFooter>
       </SheetContent>
     </Sheet>
   );
 };
+
+function DiceRollRow({ roll, onDelete }: { roll: DiceRoll; onDelete: () => void }) {
+  return (
+    <li className='flex items-center justify-between gap-2 rounded-md px-2 py-1.5 hover:bg-muted/50'>
+      <span className='min-w-0 flex-1 truncate text-sm'>
+        {roll.label ? (
+          <>
+            <span className='font-medium'>{roll.label}</span>
+            <span className='text-muted-foreground'> — {roll.value}</span>
+          </>
+        ) : (
+          <span className='text-muted-foreground'>{roll.value}</span>
+        )}
+      </span>
+      <Button
+        variant='ghost'
+        size='icon'
+        className='size-8 shrink-0'
+        onClick={onDelete}
+        aria-label={`Delete ${roll.label || roll.value}`}>
+        <Trash className='size-4' />
+      </Button>
+    </li>
+  );
+}
