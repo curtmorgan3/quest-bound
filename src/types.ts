@@ -253,3 +253,10 @@ export type InventoryItem = BaseDetails & {
   x: number;
   y: number;
 };
+
+export type DiceRoll = BaseDetails & {
+  rulesetId: string;
+  userId: string;
+  value: string;
+  label: string;
+};

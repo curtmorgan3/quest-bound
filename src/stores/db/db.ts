@@ -7,6 +7,7 @@ import type {
   CharacterWindow,
   Chart,
   Component,
+  DiceRoll,
   Document,
   Font,
   Inventory,
@@ -42,12 +43,13 @@ const db = new Dexie('qbdb') as Dexie & {
   characterWindows: EntityTable<CharacterWindow, 'id'>;
   inventories: EntityTable<Inventory, 'id'>;
   inventoryItems: EntityTable<InventoryItem, 'id'>;
+  diceRolls: EntityTable<DiceRoll, 'id'>;
 };
 
 const common = '++id, createdAt, updatedAt';
 
 // Schema declaration:
-db.version(4).stores({
+db.version(5).stores({
   users: `${common}, username, assetId, image, preferences`,
   assets: `${common}, rulesetId, [directory+filename], data, type`,
   rulesets: `${common}, version, createdBy, title, description, details, assetId, image`,
@@ -64,6 +66,7 @@ db.version(4).stores({
   inventoryItems: `${common}, inventoryId, entityId, quantity`,
   characterWindows: `${common}, characterId, windowId, title, x, y, isCollapsed, &[characterId+windowId]`,
   characterAttributes: `${common}, characterId, attributeId, &[characterId+attributeId]`,
+  diceRolls: `${common}, rulesetId, userId, value, label`,
 });
 
 // Cache assets for reference in the asset injector middleware
