@@ -9,8 +9,10 @@ type DiceContext = {
   lastResult: DiceResult | null;
 };
 
-/** Parsed segment of dice notation, e.g. 2d6+3 → { count: 2, sides: 6, modifier: 3 } */
-type DiceSegment = { count: number; sides: number; modifier: number };
+/** A single dice term (e.g. 2d6) or modifier term (+4, -1) in order */
+type DiceToken =
+  | { type: 'dice'; count: number; sides: number }
+  | { type: 'modifier'; value: number };
 
 /** Result of rolling one segment, with individual die values and total for that segment */
 type SegmentResult = {
@@ -26,27 +28,32 @@ type DiceResult = {
   segments: SegmentResult[];
 };
 
-const DICE_NOTATION_REGEX = /(\d+)\s*d\s*(\d+)\s*([+-]\s*\d+)?/gi;
+/** Matches dice (e.g. 2d6) or modifiers (+4, -1) in order */
+const DICE_OR_MODIFIER_REGEX = /(\d+)\s*d\s*(\d+)|([+-])\s*(\d+)/gi;
 
-function parseDiceNotation(roll: string): DiceSegment[] {
-  const segments: DiceSegment[] = [];
-  const parts = roll
+function parseDiceExpression(roll: string): DiceToken[][] {
+  const partStrings = roll
     .split(',')
     .map((p) => p.trim())
     .filter(Boolean);
-  for (const part of parts) {
-    const match = part.matchAll(DICE_NOTATION_REGEX).next().value;
-    if (!match) continue;
-    const count = Math.max(0, parseInt(match[1], 10));
-    const sides = Math.max(1, parseInt(match[2], 10));
-    let modifier = 0;
-    if (match[3]) {
-      const modStr = match[3].replace(/\s/g, '');
-      modifier = parseInt(modStr, 10);
+  const allTokens: DiceToken[][] = [];
+  for (const part of partStrings) {
+    const tokens: DiceToken[] = [];
+    let match: RegExpExecArray | null;
+    const re = new RegExp(DICE_OR_MODIFIER_REGEX.source, 'gi');
+    while ((match = re.exec(part)) !== null) {
+      if (match[1] !== undefined) {
+        const count = Math.max(0, parseInt(match[1], 10));
+        const sides = Math.max(1, parseInt(match[2], 10));
+        tokens.push({ type: 'dice', count, sides });
+      } else {
+        const sign = match[3] === '+' ? 1 : -1;
+        tokens.push({ type: 'modifier', value: sign * parseInt(match[4], 10) });
+      }
     }
-    segments.push({ count, sides, modifier });
+    if (tokens.length) allTokens.push(tokens);
   }
-  return segments;
+  return allTokens;
 }
 
 function rollDie(sides: number): number {
@@ -54,9 +61,13 @@ function rollDie(sides: number): number {
 }
 
 export function formatSegmentResult(s: SegmentResult): string {
-  const dicePart = s.rolls.join(', ');
-  const modPart = s.modifier !== 0 ? ` ${s.modifier >= 0 ? '+' : ''}${s.modifier}` : '';
-  return `${s.notation}: [${dicePart}]${modPart} = ${s.segmentTotal}`;
+  const dicePart =
+    s.rolls.length > 0 ? ` [${s.rolls.join(', ')}]` : '';
+  const modPart =
+    s.rolls.length > 0 && s.modifier !== 0
+      ? ` ${s.modifier >= 0 ? '+' : ''}${s.modifier}`
+      : '';
+  return `${s.notation}:${dicePart}${modPart} = ${s.segmentTotal}`;
 }
 
 export const useDiceState = (): DiceContext => {
@@ -71,30 +82,51 @@ export const useDiceState = (): DiceContext => {
 
   const roll = async (roll: string) => {
     const trimmed = roll.trim();
-    const segments = parseDiceNotation(trimmed);
+    const tokenGroups = parseDiceExpression(trimmed);
 
     setIsRolling(true);
     setLastResult(null);
 
-    // Collate into list of dice and sides; generate random numbers for each
     const segmentResults: SegmentResult[] = [];
     let total = 0;
-    for (const seg of segments) {
-      const modStr =
-        seg.modifier !== 0 ? (seg.modifier >= 0 ? `+${seg.modifier}` : `${seg.modifier}`) : '';
-      const notation = `${seg.count}d${seg.sides}${modStr}`;
-      const rolls: number[] = [];
-      for (let i = 0; i < seg.count; i++) {
-        rolls.push(rollDie(seg.sides));
+
+    for (const tokens of tokenGroups) {
+      let modifierSum = 0;
+      const modifierNotationParts: string[] = [];
+
+      for (const token of tokens) {
+        if (token.type === 'dice') {
+          const notation = `${token.count}d${token.sides}`;
+          const rolls: number[] = [];
+          for (let i = 0; i < token.count; i++) {
+            rolls.push(rollDie(token.sides));
+          }
+          const segmentTotal = rolls.reduce((a, b) => a + b, 0);
+          segmentResults.push({
+            notation,
+            rolls,
+            modifier: 0,
+            segmentTotal,
+          });
+          total += segmentTotal;
+        } else {
+          modifierSum += token.value;
+          modifierNotationParts.push(
+            token.value >= 0 ? `+${token.value}` : `${token.value}`,
+          );
+        }
       }
-      const sum = rolls.reduce((a, b) => a + b, 0) + seg.modifier;
-      segmentResults.push({
-        notation,
-        rolls,
-        modifier: seg.modifier,
-        segmentTotal: sum,
-      });
-      total += sum;
+
+      if (modifierNotationParts.length > 0) {
+        const notation = modifierNotationParts.join('');
+        segmentResults.push({
+          notation,
+          rolls: [],
+          modifier: modifierSum,
+          segmentTotal: modifierSum,
+        });
+        total += modifierSum;
+      }
     }
 
     // Wait 2 seconds
