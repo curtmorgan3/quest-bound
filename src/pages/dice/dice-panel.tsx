@@ -7,7 +7,7 @@ import { useDiceRolls } from '@/lib/compass-api';
 import { DiceContext, formatSegmentResult } from '@/stores';
 import type { DiceRoll } from '@/types';
 import { Dice6, Trash } from 'lucide-react';
-import { useContext, useState } from 'react';
+import { useContext, useEffect, useState } from 'react';
 
 type DicePanelProps = {
   open: boolean;
@@ -19,7 +19,20 @@ export const DicePanel = ({ open, onOpenChange }: DicePanelProps) => {
   const [label, setLabel] = useState('');
   const [value, setValue] = useState('');
 
-  const { roll, isRolling, lastResult } = useContext(DiceContext);
+  const { roll, isRolling, lastResult, reset } = useContext(DiceContext);
+
+  useEffect(() => {
+    if (value || !lastResult?.notation) return;
+
+    setValue(lastResult.notation);
+  }, [lastResult, value]);
+
+  useEffect(() => {
+    if (!open) {
+      setValue('');
+      reset();
+    }
+  }, [open]);
 
   const handleRoll = (rollValue: string) => {
     roll(rollValue);

@@ -1,7 +1,7 @@
-import { type InventoryItemWithData } from '@/stores';
+import { DiceContext, parseTextForDiceRolls, type InventoryItemWithData } from '@/stores';
 import { useKeyListeners } from '@/utils';
 import { X } from 'lucide-react';
-import { useRef, useState } from 'react';
+import { useContext, useRef, useState } from 'react';
 
 export type ContextMenuState = {
   item: InventoryItemWithData;
@@ -28,8 +28,16 @@ export const ItemContextMenu = ({
 }: ItemContextMenuProps) => {
   const [quantity, setQuantity] = useState(item.quantity);
   const [splitAmount, setSplitAmount] = useState(Math.floor(item.quantity / 2));
+  const { roll, setDicePanelOpen } = useContext(DiceContext);
   const menuRef = useRef<HTMLDivElement>(null);
   const maxQuantity = item.stackSize;
+
+  const diceRolls = parseTextForDiceRolls(item.description ?? '');
+
+  const handleRoll = (value: string) => {
+    setDicePanelOpen(true);
+    roll(value);
+  };
 
   useKeyListeners({
     onKeyDown: (e) => {
@@ -117,6 +125,17 @@ export const ItemContextMenu = ({
             lineHeight: 1.4,
           }}>
           {item.description}
+          <div className='flex flex-col gap-1'>
+            {diceRolls.map((roll, i) => (
+              <span
+                className='clickable'
+                key={i}
+                style={{ textDecoration: 'underline' }}
+                onClick={() => handleRoll(roll)}>
+                {roll}
+              </span>
+            ))}
+          </div>
         </div>
       )}
 

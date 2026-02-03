@@ -7,6 +7,7 @@ type DiceContext = {
   roll: (value: string) => Promise<DiceResult>;
   isRolling: boolean;
   lastResult: DiceResult | null;
+  reset: () => void;
 };
 
 /** A single dice term (e.g. 2d6) or modifier term (+4, -1) in order */
@@ -61,13 +62,26 @@ function rollDie(sides: number): number {
 }
 
 export function formatSegmentResult(s: SegmentResult): string {
-  const dicePart =
-    s.rolls.length > 0 ? ` [${s.rolls.join(', ')}]` : '';
+  const dicePart = s.rolls.length > 0 ? ` [${s.rolls.join(', ')}]` : '';
   const modPart =
-    s.rolls.length > 0 && s.modifier !== 0
-      ? ` ${s.modifier >= 0 ? '+' : ''}${s.modifier}`
-      : '';
+    s.rolls.length > 0 && s.modifier !== 0 ? ` ${s.modifier >= 0 ? '+' : ''}${s.modifier}` : '';
   return `${s.notation}:${dicePart}${modPart} = ${s.segmentTotal}`;
+}
+
+/** Matches a full dice expression: NdM optionally followed by +N/-N modifiers */
+const DICE_EXPRESSION_IN_TEXT_REGEX = /\d+\s*d\s*\d+(?:\s*[+-]\s*\d+)*/gi;
+
+/**
+ * Given a string, returns an array of dice rolls if found.
+ *
+ * Ex: Restores 1d6+4 of Hit Points and 2d12 of Armor
+ * => ["1d6+4", "2d12"]
+ */
+export function parseTextForDiceRolls(text: string): string[] {
+  const matches = [...text.matchAll(DICE_EXPRESSION_IN_TEXT_REGEX)].map((m) =>
+    m[0].replace(/\s/g, ''),
+  );
+  return matches;
 }
 
 export const useDiceState = (): DiceContext => {
@@ -111,9 +125,7 @@ export const useDiceState = (): DiceContext => {
           total += segmentTotal;
         } else {
           modifierSum += token.value;
-          modifierNotationParts.push(
-            token.value >= 0 ? `+${token.value}` : `${token.value}`,
-          );
+          modifierNotationParts.push(token.value >= 0 ? `+${token.value}` : `${token.value}`);
         }
       }
 
@@ -147,12 +159,17 @@ export const useDiceState = (): DiceContext => {
     return result;
   };
 
+  const reset = () => {
+    setLastResult(null);
+  };
+
   return {
     dicePanelOpen,
     setDicePanelOpen,
     roll,
     lastResult,
     isRolling,
+    reset,
   };
 };
 
