@@ -4,9 +4,10 @@ import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Sheet, SheetContent, SheetFooter, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { useDiceRolls } from '@/lib/compass-api';
+import { DiceContext, formatSegmentResult } from '@/stores';
 import type { DiceRoll } from '@/types';
 import { Dice6, Trash } from 'lucide-react';
-import { useState } from 'react';
+import { useContext, useState } from 'react';
 
 type DicePanelProps = {
   open: boolean;
@@ -18,9 +19,10 @@ export const DicePanel = ({ open, onOpenChange }: DicePanelProps) => {
   const [label, setLabel] = useState('');
   const [value, setValue] = useState('');
 
-  const handleRoll = (roll: string) => {
-    // TODO: Implement roll logic
-    console.log('Rolling ', roll);
+  const { roll, isRolling, lastResult } = useContext(DiceContext);
+
+  const handleRoll = (rollValue: string) => {
+    roll(rollValue);
   };
 
   const handleSaveAndRoll = async () => {
@@ -34,6 +36,19 @@ export const DicePanel = ({ open, onOpenChange }: DicePanelProps) => {
         <SheetHeader>
           <SheetTitle>Dice Roller</SheetTitle>
         </SheetHeader>
+        <div className='w-full flex flex-col gap-2 items-center'>
+          {isRolling && <h2>Rolling...</h2>}
+          {lastResult && <h2 className='text-xl'>{lastResult.total}</h2>}
+          {lastResult && (
+            <div className='rounded-md border bg-muted/30 p-3 text-sm'>
+              <ul className='mt-1 list-inside list-disc text-muted-foreground'>
+                {lastResult.segments.map((s, i) => (
+                  <li key={i}>{formatSegmentResult(s)}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
 
         <div className='flex flex-1 flex-col gap-4 overflow-hidden py-4'>
           <div className='flex flex-col gap-2'>
@@ -56,12 +71,16 @@ export const DicePanel = ({ open, onOpenChange }: DicePanelProps) => {
             />
           </div>
 
-          <Button variant='outline' onClick={() => handleRoll(value)}>
-            Roll
+          <Button
+            variant='outline'
+            onClick={() => handleRoll(value)}
+            disabled={isRolling || !value.trim()}>
+            {isRolling ? 'Rolling…' : 'Roll'}
           </Button>
-          <Button disabled={!label} onClick={handleSaveAndRoll}>
+          <Button disabled={!label.trim() || isRolling} onClick={handleSaveAndRoll}>
             Save and Roll
           </Button>
+
           <div className='flex min-h-0 flex-1 flex-col gap-2'>
             <Label>Saved rolls</Label>
             <ScrollArea className='flex-1 rounded-md border'>
