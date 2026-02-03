@@ -2,6 +2,7 @@ import {
   AppWindow,
   ArrowLeft,
   BookOpen,
+  Dices,
   FileSpreadsheet,
   FileText,
   FolderOpen,
@@ -29,7 +30,8 @@ import {
 } from '@/components/ui/sidebar';
 import { useActiveRuleset, useCharacter, useDocuments, useUsers } from '@/lib/compass-api';
 import { DevTools, Settings } from '@/pages';
-import { useEffect, useState } from 'react';
+import { DiceContext } from '@/stores';
+import { useContext, useEffect, useState } from 'react';
 import { Link, useLocation, useParams } from 'react-router-dom';
 import { Avatar, AvatarImage } from '../ui/avatar';
 import { Button } from '../ui/button';
@@ -48,6 +50,7 @@ export function AppSidebar() {
   const isHomepage = location.pathname === '/rulesets' || location.pathname === '/characters';
   const isViewingDocument = !!documentId && location.pathname.includes('/documents/');
   const [drawerContent, setDrawerContent] = useState<'settings' | 'dev-tools'>('settings');
+  const { setDicePanelOpen } = useContext(DiceContext);
 
   useEffect(() => {
     const storedState = localStorage.getItem('qb.sidebarCollapsed');
@@ -202,14 +205,22 @@ export function AppSidebar() {
         <SidebarFooter>
           <SidebarMenu>
             {!isHomepage && (
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild>
-                  <Link to='/rulesets'>
-                    <FolderOpen />
-                    <span>Open</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
+              <>
+                <SidebarMenuItem>
+                  <SidebarMenuButton onClick={() => setDicePanelOpen(true)}>
+                    <Dices />
+                    <span>Dice</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild>
+                    <Link to='/rulesets'>
+                      <FolderOpen />
+                      <span>Open</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </>
             )}
             <SidebarMenuItem>
               <DrawerTrigger asChild>

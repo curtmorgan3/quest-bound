@@ -1,9 +1,12 @@
 import { CharacterPage, Characters, ErrorPage, Ruleset, Rulesets } from '@/pages';
+import { useState } from 'react';
 import { HashRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { ErrorBoundary } from './components';
 import { Layout } from './components/layout';
+import { DicePanel } from './pages/dice';
 import { DocumentViewer } from './pages/ruleset/documents';
 import { WindowEditor } from './pages/ruleset/windows/window-editor';
+import { DiceProvider } from './stores';
 
 function CompassRoutes() {
   return (
@@ -21,10 +24,7 @@ function CompassRoutes() {
             <Route path={`/rulesets/:rulesetId/items`} element={<Ruleset page='items' />} />
             <Route path={`/rulesets/:rulesetId/actions`} element={<Ruleset page='actions' />} />
             <Route path={`/rulesets/:rulesetId/charts`} element={<Ruleset page='charts' />} />
-            <Route
-              path={`/rulesets/:rulesetId/documents`}
-              element={<Ruleset page='documents' />}
-            />
+            <Route path={`/rulesets/:rulesetId/documents`} element={<Ruleset page='documents' />} />
             <Route
               path={`/rulesets/:rulesetId/documents/:documentId`}
               element={<DocumentViewer />}
@@ -50,7 +50,14 @@ function CompassRoutes() {
 }
 
 function App() {
-  return <CompassRoutes />;
+  const [dicePanelOpen, setDicePanelOpen] = useState(false);
+
+  return (
+    <DiceProvider value={{ dicePanelOpen, setDicePanelOpen }}>
+      <CompassRoutes />;
+      <DicePanel open={dicePanelOpen} onOpenChange={setDicePanelOpen} />
+    </DiceProvider>
+  );
 }
 
 export default App;
