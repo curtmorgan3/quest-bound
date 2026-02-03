@@ -5,7 +5,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Sheet, SheetContent, SheetFooter, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { useDiceRolls } from '@/lib/compass-api';
 import type { DiceRoll } from '@/types';
-import { Trash } from 'lucide-react';
+import { Dice6, Trash } from 'lucide-react';
 import { useState } from 'react';
 
 type DicePanelProps = {
@@ -18,13 +18,14 @@ export const DicePanel = ({ open, onOpenChange }: DicePanelProps) => {
   const [label, setLabel] = useState('');
   const [value, setValue] = useState('');
 
-  const handleRoll = () => {
+  const handleRoll = (roll: string) => {
     // TODO: Implement roll logic
+    console.log('Rolling ', roll);
   };
 
   const handleSaveAndRoll = async () => {
     await createDiceRoll({ label, value });
-    handleRoll();
+    handleRoll(value);
   };
 
   return (
@@ -55,7 +56,7 @@ export const DicePanel = ({ open, onOpenChange }: DicePanelProps) => {
             />
           </div>
 
-          <Button variant='outline' onClick={handleRoll}>
+          <Button variant='outline' onClick={() => handleRoll(value)}>
             Roll
           </Button>
           <Button disabled={!label} onClick={handleSaveAndRoll}>
@@ -74,6 +75,7 @@ export const DicePanel = ({ open, onOpenChange }: DicePanelProps) => {
                     <DiceRollRow
                       key={roll.id}
                       roll={roll}
+                      onRoll={handleRoll}
                       onDelete={() => deleteDiceRoll(roll.id)}
                     />
                   ))
@@ -89,7 +91,15 @@ export const DicePanel = ({ open, onOpenChange }: DicePanelProps) => {
   );
 };
 
-function DiceRollRow({ roll, onDelete }: { roll: DiceRoll; onDelete: () => void }) {
+function DiceRollRow({
+  roll,
+  onDelete,
+  onRoll,
+}: {
+  roll: DiceRoll;
+  onDelete: () => void;
+  onRoll: (roll: string) => void;
+}) {
   return (
     <li className='flex items-center justify-between gap-2 rounded-md px-2 py-1.5 hover:bg-muted/50'>
       <span className='min-w-0 flex-1 truncate text-sm'>
@@ -105,6 +115,15 @@ function DiceRollRow({ roll, onDelete }: { roll: DiceRoll; onDelete: () => void 
       <Button
         variant='ghost'
         size='icon'
+        className='size-8 shrink-0'
+        onClick={() => onRoll(roll.value)}
+        aria-label={`Roll ${roll.label || roll.value}`}>
+        <Dice6 className='size-4' />
+      </Button>
+      <Button
+        variant='ghost'
+        size='icon'
+        title='Delete'
         className='size-8 shrink-0'
         onClick={onDelete}
         aria-label={`Delete ${roll.label || roll.value}`}>
