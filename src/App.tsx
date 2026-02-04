@@ -51,7 +51,7 @@ function CompassRoutes() {
 function App() {
   return (
     <DiceProvider value={useDiceState()}>
-      <CompassRoutes />;
+      <CompassRoutes />
       <DicePanel />
     </DiceProvider>
   );
