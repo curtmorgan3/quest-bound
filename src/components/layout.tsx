@@ -14,7 +14,10 @@ export function Layout() {
   return loading ? (
     <Loading />
   ) : !currentUser ? (
-    <SignIn />
+    <>
+      <SignIn />
+      <Toaster />
+    </>
   ) : (
     <SidebarProvider defaultOpen={false}>
       <AppSidebar />

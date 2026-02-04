@@ -7,16 +7,27 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { useUsers } from '@/lib/compass-api';
+import { useRegisterEmail, useUsers } from '@/lib/compass-api';
 import { motion } from 'framer-motion';
 import { useState } from 'react';
 import DiscordImage from './discord-icon.png';
 
 export const SignIn = () => {
   const { users, createUser, setCurrentUserById, loading } = useUsers();
+  const {
+    email,
+    setEmail,
+    registerEmail,
+    emailRegistered,
+    loading: emailLoading,
+  } = useRegisterEmail();
 
   const [selectedUserId, setSelectedUserId] = useState<string>('');
   const [newUsername, setNewUsername] = useState<string>('');
+
+  const handleEmailSubmit = () => {
+    registerEmail();
+  };
 
   const handleLogin = async () => {
     try {
@@ -40,39 +51,72 @@ export const SignIn = () => {
       </video>
 
       <div className='flex flex-col gap-6 items-center justify-center'>
-        <div className='flex gap-4 items-center'>
-          <Select onValueChange={(value) => setSelectedUserId(value)} value={selectedUserId}>
-            <SelectTrigger className='w-[200px]' data-testid='user-select'>
-              <SelectValue placeholder='Select a user' />
-            </SelectTrigger>
-            <SelectContent>
-              {users?.map((user) => (
-                <SelectItem className='w-[200px]' key={user.id} value={user.id}>
-                  {user.username}
+        {!emailRegistered && (
+          <div className='flex flex-col gap-2 items-center'>
+            <div className='flex gap-2 items-center'>
+              <Input
+                type='email'
+                className='w-[200px]'
+                placeholder='Email'
+                value={email ?? ''}
+                onChange={(e) => setEmail(e.target.value)}
+                data-testid='email-input'
+              />
+              <Button
+                loading={emailLoading}
+                onClick={handleEmailSubmit}
+                disabled={!email?.trim()}
+                data-testid='register-email-button'>
+                Register email
+              </Button>
+            </div>
+            <p className='text-sm'>
+              You must register your email address to use app.questbound.com
+            </p>
+            <a
+              target='_blank'
+              href='https://github.com/curtmorgan3/quest-bound'
+              style={{ textDecoration: 'underline' }}
+              className='text-sm'>
+              Download the source code to run Quest Bound locally
+            </a>
+          </div>
+        )}
+        {emailRegistered && (
+          <div className='flex gap-4 items-center'>
+            <Select onValueChange={(value) => setSelectedUserId(value)} value={selectedUserId}>
+              <SelectTrigger className='w-[200px]' data-testid='user-select'>
+                <SelectValue placeholder='Select a user' />
+              </SelectTrigger>
+              <SelectContent>
+                {users?.map((user) => (
+                  <SelectItem className='w-[200px]' key={user.id} value={user.id}>
+                    {user.username}
+                  </SelectItem>
+                ))}
+                <SelectItem className='w-[200px]' value='_new'>
+                  New User
                 </SelectItem>
-              ))}
-              <SelectItem className='w-[200px]' value='_new'>
-                New User
-              </SelectItem>
-            </SelectContent>
-          </Select>
-          {selectedUserId === '_new' && (
-            <Input
-              className='w-[200px]'
-              placeholder='Username'
-              value={newUsername}
-              onChange={(e) => setNewUsername(e.target.value)}
-              data-testid='username-input'
-            />
-          )}
-          <Button
-            loading={loading}
-            onClick={handleLogin}
-            disabled={!selectedUserId || (selectedUserId === '_new' && !newUsername)}
-            data-testid='submit-button'>
-            Submit
-          </Button>
-        </div>
+              </SelectContent>
+            </Select>
+            {selectedUserId === '_new' && (
+              <Input
+                className='w-[200px]'
+                placeholder='Username'
+                value={newUsername}
+                onChange={(e) => setNewUsername(e.target.value)}
+                data-testid='username-input'
+              />
+            )}
+            <Button
+              loading={loading}
+              onClick={handleLogin}
+              disabled={!selectedUserId || (selectedUserId === '_new' && !newUsername)}
+              data-testid='submit-button'>
+              Submit
+            </Button>
+          </div>
+        )}
       </div>
       <motion.div
         initial={{ opacity: 0 }}
