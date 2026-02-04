@@ -31,15 +31,14 @@ export const useUndoRedo = ({
   onComponentsRestored,
 }: UseUndoRedoOptions): UndoRedoActions => {
   const componentsRef = useRef(components);
-  const [undoStack, setUndoStack] = useState<Component[][]>([]);
-  const [redoStack, setRedoStack] = useState<Component[][]>([]);
+  const undoStackRef = useRef<Component[][]>([]);
+  const redoStackRef = useRef<Component[][]>([]);
   const pendingSnapshotRef = useRef<Component[] | null>(null);
   const pushTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  console.log('undo: ', undoStack.length);
-  console.log('redo: ', redoStack.length);
-
   const actionIsUndoRedo = useRef<boolean>(false);
+
+  const [, setVersion] = useState(0);
+  const triggerRender = useCallback(() => setVersion((v) => v + 1), []);
 
   useEffect(() => {
     componentsRef.current = components;
@@ -59,17 +58,15 @@ export const useUndoRedo = ({
     const snapshot = pendingSnapshotRef.current;
     pendingSnapshotRef.current = null;
 
-    console.log('snap');
-
     if (snapshot) {
-      setUndoStack((prev) => [...prev, snapshot].slice(-MAX_HISTORY));
-      setRedoStack([]);
+      undoStackRef.current = [...undoStackRef.current, snapshot].slice(-MAX_HISTORY);
+      redoStackRef.current = [];
+      triggerRender();
     }
-  }, []);
+  }, [triggerRender]);
 
   const pushUndoSnapshot = useCallback(() => {
     if (actionIsUndoRedo.current) {
-      // Don't register action if in the undo/redo buffer
       actionIsUndoRedo.current = false;
       return;
     }
@@ -83,39 +80,35 @@ export const useUndoRedo = ({
 
   const undo = useCallback(() => {
     if (!onComponentsRestored) return;
+    const stack = undoStackRef.current;
+    if (stack.length === 0) return;
     actionIsUndoRedo.current = true;
-    console.log('undo!!');
-    setUndoStack((prev) => {
-      if (prev.length === 0) return prev;
-      console.log('set udno stack');
-      const snapshot = prev[prev.length - 1];
-      const current = deepCopyComponents(componentsRef.current);
-      setRedoStack((r) => [...r, current].slice(-MAX_HISTORY));
-      queueMicrotask(() => onComponentsRestored(snapshot));
-      return prev.slice(0, -1);
-    });
-  }, [onComponentsRestored]);
+    const snapshot = stack[stack.length - 1];
+    const current = deepCopyComponents(componentsRef.current);
+    undoStackRef.current = stack.slice(0, -1);
+    redoStackRef.current = [...redoStackRef.current, current].slice(-MAX_HISTORY);
+    triggerRender();
+    queueMicrotask(() => onComponentsRestored(snapshot));
+  }, [onComponentsRestored, triggerRender]);
 
   const redo = useCallback(() => {
     if (!onComponentsRestored) return;
+    const stack = redoStackRef.current;
+    if (stack.length === 0) return;
     actionIsUndoRedo.current = true;
-    console.log('redo!!');
-    setRedoStack((prev) => {
-      if (prev.length === 0) return prev;
-      console.log('set redo stack');
-      const snapshot = prev[prev.length - 1];
-      const current = deepCopyComponents(componentsRef.current);
-      setUndoStack((u) => [...u, current].slice(-MAX_HISTORY));
-      queueMicrotask(() => onComponentsRestored(snapshot));
-      return prev.slice(0, -1);
-    });
-  }, [onComponentsRestored]);
+    const snapshot = stack[stack.length - 1];
+    const current = deepCopyComponents(componentsRef.current);
+    redoStackRef.current = stack.slice(0, -1);
+    undoStackRef.current = [...undoStackRef.current, current].slice(-MAX_HISTORY);
+    triggerRender();
+    queueMicrotask(() => onComponentsRestored(snapshot));
+  }, [onComponentsRestored, triggerRender]);
 
   return {
     pushUndoSnapshot,
     undo,
     redo,
-    canUndo: undoStack.length > 0,
-    canRedo: redoStack.length > 0,
+    canUndo: undoStackRef.current.length > 0,
+    canRedo: redoStackRef.current.length > 0,
   };
 };
