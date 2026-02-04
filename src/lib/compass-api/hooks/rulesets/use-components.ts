@@ -116,6 +116,21 @@ export const useComponents = (windowId?: string) => {
     }
   };
 
+  const replaceComponents = async (newComponents: Component[]) => {
+    if (!windowId) return;
+    try {
+      await db.components.where('windowId').equals(windowId).delete();
+      if (newComponents.length > 0) {
+        await db.components.bulkPut(newComponents);
+      }
+    } catch (e) {
+      handleError(e as Error, {
+        component: 'useComponents/replaceComponents',
+        severity: 'medium',
+      });
+    }
+  };
+
   return {
     components: components ?? [],
     createComponent,
@@ -123,5 +138,6 @@ export const useComponents = (windowId?: string) => {
     updateComponent,
     updateComponents,
     deleteComponent,
+    replaceComponents,
   };
 };

@@ -15,6 +15,7 @@ export type UtilKeyEvent = {
   meta?: boolean;
   control?: boolean;
   shift?: boolean;
+  preventDefault?: () => void;
 };
 
 export const useKeyListeners = ({
@@ -41,7 +42,13 @@ export const useKeyListeners = ({
       if (e.key === 'Delete' && !disabled) onDelete?.();
 
       if (!disabled) {
-        onKeyDown?.({ key: e.key, meta: e.metaKey, shift: e.shiftKey, control: e.ctrlKey });
+        onKeyDown?.({
+          key: e.key,
+          meta: e.metaKey,
+          shift: e.shiftKey,
+          control: e.ctrlKey,
+          preventDefault: () => e.preventDefault(),
+        });
       }
     };
 

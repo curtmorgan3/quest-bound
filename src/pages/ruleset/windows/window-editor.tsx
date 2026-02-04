@@ -16,8 +16,14 @@ const { log } = debugLog('pages', 'editor');
 export const WindowEditor = () => {
   const { windowId } = useParams();
   const { open } = useSidebar();
-  const { components, createComponent, updateComponents, updateComponent, deleteComponent } =
-    useComponents(windowId);
+  const {
+    components,
+    createComponent,
+    updateComponents,
+    updateComponent,
+    deleteComponent,
+    replaceComponents,
+  } = useComponents(windowId);
 
   const { testCharacter } = useRulesets();
 
@@ -46,6 +52,11 @@ export const WindowEditor = () => {
     }
   };
 
+  const onComponentsRestored = (restored: Component[]) => {
+    log('components restored (undo/redo)', restored.length);
+    replaceComponents(restored);
+  };
+
   if (!windowId) return null;
 
   return (
@@ -59,6 +70,7 @@ export const WindowEditor = () => {
             components={components}
             onComponentsCreated={onComponentsCreated}
             onComponentsDeleted={onComponentsDeleted}
+            onComponentsRestored={onComponentsRestored}
             onComponentsUpdated={onComponentsUpdated}
           />
         )}

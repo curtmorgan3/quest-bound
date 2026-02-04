@@ -9,6 +9,8 @@ interface UseKeyboardControls {
   onComponentsUpdated: (updates: Array<ComponentUpdate>) => void;
   onComponentsCreated: (updates: Array<Partial<Component>>) => void;
   onComponentsDeleted: (ids: Array<string>) => void;
+  undo: () => void;
+  redo: () => void;
 }
 
 export const useKeyboardControls = ({
@@ -16,6 +18,8 @@ export const useKeyboardControls = ({
   onComponentsCreated,
   onComponentsDeleted,
   onComponentsUpdated,
+  undo,
+  redo,
 }: UseKeyboardControls) => {
   const selectedComponents = components.filter((c) => c.selected);
   const [copiedComponents, setCopiedComponents] = useState<Component[]>([]);
@@ -62,7 +66,20 @@ export const useKeyboardControls = ({
 
   useKeyListeners({
     onKeyDown: (e) => {
-      if (e.key === 'c' && (e.meta || e.control)) {
+      const isShortcut = (e.meta || e.control) && ['z', 'y', 'c', 'x', 'v'].includes(e.key);
+      const isLockShortcut = (e.meta || e.control) && e.shift && e.key === 'l';
+      if (isShortcut || isLockShortcut) {
+        e.preventDefault?.();
+      }
+      if (e.key === 'z' && (e.meta || e.control)) {
+        if (e.shift) {
+          redo();
+        } else {
+          undo();
+        }
+      } else if (e.key === 'y' && (e.meta || e.control)) {
+        redo();
+      } else if (e.key === 'c' && (e.meta || e.control)) {
         copy();
       } else if (e.key === 'x' && (e.meta || e.control)) {
         copy(true);
