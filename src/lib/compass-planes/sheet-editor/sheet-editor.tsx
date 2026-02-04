@@ -2,7 +2,7 @@ import type { ComponentUpdate } from '@/lib/compass-api';
 import { WindowEditorContext } from '@/stores';
 import type { Component, Coordinates } from '@/types';
 import { type Node } from '@xyflow/react';
-import { useCallback, useContext, useState } from 'react';
+import { useCallback, useContext, useRef, useState } from 'react';
 import { BaseEditor } from '../base-editor';
 import { sheetNodeTypes, type EditorMenuOption } from '../nodes';
 import {
@@ -34,13 +34,19 @@ export const SheetEditor = ({
   const { getComponent } = useContext(WindowEditorContext);
   const [nodes, setNodes] = useState<Node[]>(convertComponentsToNodes(components));
 
+  const shouldRestoreFromSnapshot = useRef<boolean>(false);
+
   const { pushUndoSnapshot, undo, redo } = useUndoRedo({
     components,
-    onComponentsRestored,
+    onComponentsRestored: (snapshot: Component[]) => {
+      shouldRestoreFromSnapshot.current = true;
+      onComponentsRestored?.(snapshot);
+    },
   });
 
   const wrappedOnComponentsUpdated = useCallback(
     (updates: Array<ComponentUpdate>) => {
+      shouldRestoreFromSnapshot.current = false;
       pushUndoSnapshot();
       onComponentsUpdated(updates);
     },
@@ -49,6 +55,7 @@ export const SheetEditor = ({
 
   const wrappedOnComponentsCreated = useCallback(
     (updates: Array<Partial<Component>>) => {
+      shouldRestoreFromSnapshot.current = false;
       pushUndoSnapshot();
       onComponentsCreated(updates);
     },
@@ -57,6 +64,7 @@ export const SheetEditor = ({
 
   const wrappedOnComponentsDeleted = useCallback(
     (ids: Array<string>) => {
+      shouldRestoreFromSnapshot.current = false;
       pushUndoSnapshot();
       onComponentsDeleted(ids);
     },
@@ -67,6 +75,7 @@ export const SheetEditor = ({
     components,
     nodes,
     setNodes,
+    shouldRecreateNodes: shouldRestoreFromSnapshot.current,
   });
 
   useSubscribeExteriorComponentChanges(onComponentsChangedExternally);

@@ -2,6 +2,7 @@ import type { ComponentUpdate } from '@/lib/compass-api';
 import type { Component } from '@/types';
 import type { Node } from '@xyflow/react';
 import { applyNodeChanges } from '@xyflow/react';
+import { useRef } from 'react';
 
 interface UseMoveNodesProps {
   getComponent: (id: string) => Component | null;
@@ -19,6 +20,8 @@ export const useHandleNodeChange = ({
   onDeleteNodes,
   getComponent,
 }: UseMoveNodesProps) => {
+  const initialized = useRef<boolean>(false);
+
   const onNodesChange = (_changes: Array<any>) => {
     // Filter out locked components
     const changes = _changes.filter((change: any) => {
@@ -41,7 +44,12 @@ export const useHandleNodeChange = ({
     );
 
     if (changes.length > 0) {
-      onChange(convertNodeChangesToComponentUpdates(toUpdate));
+      // Ignore the first change when loaded. Caused by nodes rendering and triggering a dimension change.
+      if (initialized.current) {
+        onChange(convertNodeChangesToComponentUpdates(toUpdate));
+      } else {
+        initialized.current = true;
+      }
     }
 
     setNodes((nodes) => {

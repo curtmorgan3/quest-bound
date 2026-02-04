@@ -7,16 +7,22 @@ interface UseSyncNodes {
   nodes: Node[];
   setNodes: Dispatch<SetStateAction<Node[]>>;
   components: Component[];
+  shouldRecreateNodes: boolean;
 }
 
 /**
  * Update Node state when components are created or when initial component array is hydrated.
  */
-export const useSyncNodes = ({ nodes, setNodes, components }: UseSyncNodes) => {
+export const useSyncNodes = ({
+  nodes,
+  setNodes,
+  components,
+  shouldRecreateNodes,
+}: UseSyncNodes) => {
   const componentLengthRef = useRef<number>(0);
 
   useEffect(() => {
-    if (!nodes.length) {
+    if (!nodes.length || shouldRecreateNodes) {
       setNodes(convertComponentsToNodes(components));
       componentLengthRef.current = components.length;
     }
