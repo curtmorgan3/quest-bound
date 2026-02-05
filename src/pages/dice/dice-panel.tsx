@@ -147,18 +147,20 @@ export const DicePanel = () => {
           </SheetFooter>
         </SheetContent>
       </Sheet>
-      <canvas
-        id='threeddice'
-        ref={ref}
-        style={{
-          position: 'fixed',
-          top: 5,
-          bottom: 5,
-          left: 5,
-          height: '95vh',
-          width: '95vw',
-          maxWidth: 'calc(100vw - 500px)',
-        }}></canvas>
+      {dicePanelOpen && (
+        <canvas
+          id='threeddice'
+          ref={ref}
+          style={{
+            position: 'fixed',
+            top: 5,
+            bottom: 5,
+            left: 5,
+            height: '95vh',
+            width: '95vw',
+            maxWidth: 'calc(100vw - 500px)',
+          }}></canvas>
+      )}
     </>
   );
 };
