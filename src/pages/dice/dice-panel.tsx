@@ -2,13 +2,21 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Sheet, SheetContent, SheetFooter, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet';
 import { useDiceRolls } from '@/lib/compass-api';
 import { DiceContext, formatSegmentResult, type RollResult } from '@/stores';
 import type { DiceRoll } from '@/types';
 import { Dice6, Trash } from 'lucide-react';
 import { useContext, useEffect, useRef, useState } from 'react';
 import { DddiceAuthModal, DiceThemes, useDddice } from './dddice';
+import { RoomSelect } from './dddice/room-select';
 
 export const DicePanel = () => {
   const { rollDice, isRolling, lastResult, setLastResult, reset, dicePanelOpen, setDicePanelOpen } =
@@ -23,10 +31,24 @@ export const DicePanel = () => {
   const ref = useRef<HTMLCanvasElement>(null);
 
   const { diceRolls, createDiceRoll, deleteDiceRoll } = useDiceRolls();
-  const { createAuthCode, pollForAuth, clearPoll, username, logout, roll, setTheme, getThemes } =
-    useDddice({
-      canvasRef: ref,
-    });
+  const {
+    createAuthCode,
+    pollForAuth,
+    clearPoll,
+    username,
+    logout,
+    roll,
+    setTheme,
+    getThemes,
+    roomName,
+    roomSlug,
+    roomPasscode,
+    joinRoom,
+    swapRooms,
+    availableRooms,
+  } = useDddice({
+    canvasRef: ref,
+  });
 
   useEffect(() => {
     if (value || !lastResult?.notation) return;
@@ -42,6 +64,8 @@ export const DicePanel = () => {
 
     if (ref?.current) {
       // Adjusting the width or display causes issues with ThreeDDice
+      // Conditionally rendering the canvas will cause the ref to be lost and ThreeDDice will
+      // need to be reinstantiated
       ref.current.style.top = dicePanelOpen ? '0' : '10000px';
     }
   }, [dicePanelOpen]);
@@ -71,7 +95,7 @@ export const DicePanel = () => {
     <>
       <Sheet open={dicePanelOpen} onOpenChange={setDicePanelOpen}>
         <SheetContent aria-description='Dice Panel' side='right' className='flex flex-col p-[8px]'>
-          <SheetHeader>
+          <SheetHeader style={{ paddingBottom: 0 }}>
             <SheetTitle>
               <DddiceAuthModal
                 createAuthCode={createAuthCode}
@@ -81,20 +105,8 @@ export const DicePanel = () => {
                 username={username}
               />
             </SheetTitle>
+            <SheetDescription style={{ opacity: 0, height: 0 }}>Dice Panel</SheetDescription>
           </SheetHeader>
-          <div className='w-full flex flex-col gap-2 items-center'>
-            {isRolling && <h2>Rolling...</h2>}
-            {lastResult && <h2 className='text-xl'>{lastResult.total}</h2>}
-            {lastResult && (
-              <div className='rounded-md border bg-muted/30 p-3 text-sm'>
-                <ul className='mt-1 list-inside list-disc text-muted-foreground'>
-                  {lastResult.segments.map((s, i) => (
-                    <li key={i}>{formatSegmentResult(s)}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </div>
 
           <div className='flex flex-1 flex-col gap-4 overflow-hidden py-4'>
             <div className='flex flex-col gap-2'>
@@ -117,15 +129,35 @@ export const DicePanel = () => {
               />
             </div>
 
-            <Button
-              variant='outline'
-              onClick={() => handleRoll(value)}
-              disabled={rolling || !value.trim()}>
-              {rolling ? 'Rolling…' : 'Roll'}
-            </Button>
-            <Button disabled={!label.trim() || rolling} onClick={handleSaveAndRoll}>
-              Save and Roll
-            </Button>
+            <div className='w-full flex flex-col gap-2 items-center'>
+              {isRolling && (
+                <div className='flex justify-center items-center' style={{ height: '85px' }}>
+                  <h2>Rolling...</h2>
+                </div>
+              )}
+              {lastResult && <h2 className='text-xl'>{lastResult.total}</h2>}
+              {lastResult && (
+                <div className='rounded-md border bg-muted/30 p-3 text-sm'>
+                  <ul className='mt-1 list-inside list-disc text-muted-foreground'>
+                    {lastResult.segments.map((s, i) => (
+                      <li key={i}>{formatSegmentResult(s)}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+
+            <div className='flex gap-8'>
+              <Button
+                variant='outline'
+                onClick={() => handleRoll(value)}
+                disabled={rolling || !value.trim()}>
+                {rolling ? 'Rolling…' : 'Roll'}
+              </Button>
+              <Button disabled={!label.trim() || rolling} onClick={handleSaveAndRoll}>
+                Save and Roll
+              </Button>
+            </div>
 
             <div className='flex min-h-0 flex-1 flex-col gap-2'>
               <Label>Saved rolls</Label>
@@ -152,8 +184,17 @@ export const DicePanel = () => {
 
           <SheetFooter>
             {username && (
-              <div className='flex flex-col gap-2 w-full justify-between'>
+              <div className='flex flex-col gap-4 w-full'>
                 <DiceThemes setTheme={setTheme} getThemes={getThemes} />
+                <RoomSelect
+                  username={username}
+                  roomName={roomName}
+                  roomSlug={roomSlug}
+                  roomPasscode={roomPasscode}
+                  joinRoom={joinRoom}
+                  swapRooms={swapRooms}
+                  availableRooms={availableRooms}
+                />
               </div>
             )}
           </SheetFooter>
@@ -168,7 +209,6 @@ export const DicePanel = () => {
           top: 0,
           left: 50,
           height: '95vh',
-          backgroundColor: 'orange',
           width: '100vw',
           maxWidth: 'calc(100vw - 400px)',
         }}></canvas>

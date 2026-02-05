@@ -8,6 +8,7 @@ import {
 } from '@/components/ui/dialog';
 import { Link } from '@/components/ui/link';
 import { Text } from '@/components/ui/text';
+import { colorWhite } from '@/palette';
 import { Loader2Icon, LogOut } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import dddiceImg from '../../../assets/dddice.png';
@@ -66,7 +67,11 @@ export const DddiceAuthModal = ({
             </Button>
           </div>
         ) : (
-          <Button variant='link' className='p-0 h-auto font-normal underline' onClick={handleOpen}>
+          <Button
+            variant='link'
+            className='p-0 h-auto font-normal underline'
+            style={{ color: colorWhite }}
+            onClick={handleOpen}>
             Login to dddice
           </Button>
         )}

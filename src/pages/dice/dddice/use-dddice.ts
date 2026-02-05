@@ -1,7 +1,7 @@
 import { useNotifications } from '@/hooks';
-import { DiceContext, useCurrentUser } from '@/stores';
+import { useCurrentUser } from '@/stores';
 import { ThreeDDice, ThreeDDiceRollEvent, type IRoll } from 'dddice-js';
-import { useContext, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   authenticateDddiceUser,
   createAuthCode,
@@ -19,7 +19,6 @@ interface Props {
 }
 
 export const useDddice = ({ canvasRef }: Props): UseDice => {
-  const { dicePanelOpen } = useContext(DiceContext);
   const dddiceRef = useRef<ThreeDDice | null>(null);
 
   const { currentUser } = useCurrentUser();

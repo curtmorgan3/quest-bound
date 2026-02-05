@@ -2,6 +2,7 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Text } from '@/components/ui/text';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { colorWhite } from '@/palette';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
 import { useState } from 'react';
 import type { DiceTheme } from './types';
@@ -37,9 +38,10 @@ export const DiceThemes = ({ setTheme, getThemes }: Props) => {
   };
 
   return (
-    <div className='flex w-full flex-col items-center gap-2'>
+    <div className='flex w-full flex-col items-start gap-2'>
       <Button
         variant='link'
+        style={{ color: colorWhite }}
         className='h-auto p-0 font-normal underline'
         onClick={() => {
           setThemesOpen((prev) => !prev);
