@@ -4,17 +4,25 @@ import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Sheet, SheetContent, SheetFooter, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { useDiceRolls } from '@/lib/compass-api';
-import { DiceContext, formatSegmentResult } from '@/stores';
+import { DiceContext, formatSegmentResult, type RollResult } from '@/stores';
 import type { DiceRoll } from '@/types';
 import { Dice6, Trash } from 'lucide-react';
-import { useContext, useEffect, useState } from 'react';
+import { useContext, useEffect, useRef, useState } from 'react';
+import { DddiceAuthModal, useDddice } from './dddice';
 
 export const DicePanel = () => {
-  const { rollDice, isRolling, lastResult, reset, dicePanelOpen, setDicePanelOpen } =
+  const { rollDice, isRolling, lastResult, setLastResult, reset, dicePanelOpen, setDicePanelOpen } =
     useContext(DiceContext);
-  const { diceRolls, createDiceRoll, deleteDiceRoll } = useDiceRolls();
+
   const [label, setLabel] = useState('');
   const [value, setValue] = useState('');
+
+  const ref = useRef<HTMLCanvasElement>(null);
+
+  const { diceRolls, createDiceRoll, deleteDiceRoll } = useDiceRolls();
+  const { createAuthCode, pollForAuth, clearPoll, username, logout, roll } = useDddice({
+    canvasRef: ref,
+  });
 
   useEffect(() => {
     if (value || !lastResult?.notation) return;
@@ -29,8 +37,17 @@ export const DicePanel = () => {
     }
   }, [dicePanelOpen]);
 
-  const handleRoll = (rollValue: string) => {
-    rollDice(rollValue);
+  const handleRoll = async (rollValue: string) => {
+    const result = rollDice(rollValue, { autoShowResult: !username, delay: 2000 });
+
+    if (username) {
+      const diceRollSegments = result.segments.filter((segment) => segment.notation.includes('d'));
+      const diceRolls: RollResult[] = diceRollSegments.flatMap((segment) => segment.rolls);
+      await roll(diceRolls);
+      setTimeout(() => {
+        setLastResult(result);
+      }, 2000);
+    }
   };
 
   const handleSaveAndRoll = async () => {
@@ -39,82 +56,104 @@ export const DicePanel = () => {
   };
 
   return (
-    <Sheet open={dicePanelOpen} onOpenChange={setDicePanelOpen}>
-      <SheetContent side='right' className='flex flex-col p-[8px]'>
-        <SheetHeader>
-          <SheetTitle>Dice Roller</SheetTitle>
-        </SheetHeader>
-        <div className='w-full flex flex-col gap-2 items-center'>
-          {isRolling && <h2>Rolling...</h2>}
-          {lastResult && <h2 className='text-xl'>{lastResult.total}</h2>}
-          {lastResult && (
-            <div className='rounded-md border bg-muted/30 p-3 text-sm'>
-              <ul className='mt-1 list-inside list-disc text-muted-foreground'>
-                {lastResult.segments.map((s, i) => (
-                  <li key={i}>{formatSegmentResult(s)}</li>
-                ))}
-              </ul>
+    <>
+      <Sheet open={dicePanelOpen} onOpenChange={setDicePanelOpen}>
+        <SheetContent side='right' className='flex flex-col p-[8px]'>
+          <SheetHeader>
+            <SheetTitle>Dice Roller</SheetTitle>
+          </SheetHeader>
+          <div className='w-full flex flex-col gap-2 items-center'>
+            {isRolling && <h2>Rolling...</h2>}
+            {lastResult && <h2 className='text-xl'>{lastResult.total}</h2>}
+            {lastResult && (
+              <div className='rounded-md border bg-muted/30 p-3 text-sm'>
+                <ul className='mt-1 list-inside list-disc text-muted-foreground'>
+                  {lastResult.segments.map((s, i) => (
+                    <li key={i}>{formatSegmentResult(s)}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+
+          <div className='flex flex-1 flex-col gap-4 overflow-hidden py-4'>
+            <div className='flex flex-col gap-2'>
+              <Label htmlFor='label'>Label</Label>
+              <Input
+                id='label'
+                placeholder='Attack roll, Damage, etc.'
+                value={label}
+                onChange={(e) => setLabel(e.target.value)}
+              />
             </div>
-          )}
-        </div>
 
-        <div className='flex flex-1 flex-col gap-4 overflow-hidden py-4'>
-          <div className='flex flex-col gap-2'>
-            <Label htmlFor='label'>Label</Label>
-            <Input
-              id='label'
-              placeholder='Attack roll, Damage, etc.'
-              value={label}
-              onChange={(e) => setLabel(e.target.value)}
+            <div className='flex flex-col gap-2'>
+              <Label htmlFor='value'>Roll Value</Label>
+              <Input
+                id='value'
+                placeholder='2d6+3'
+                value={value}
+                onChange={(e) => setValue(e.target.value)}
+              />
+            </div>
+
+            <Button
+              variant='outline'
+              onClick={() => handleRoll(value)}
+              disabled={isRolling || !value.trim()}>
+              {isRolling ? 'Rolling…' : 'Roll'}
+            </Button>
+            <Button disabled={!label.trim() || isRolling} onClick={handleSaveAndRoll}>
+              Save and Roll
+            </Button>
+
+            <div className='flex min-h-0 flex-1 flex-col gap-2'>
+              <Label>Saved rolls</Label>
+              <ScrollArea className='flex-1 rounded-md border'>
+                <ul className='flex flex-col p-2'>
+                  {diceRolls.length === 0 ? (
+                    <li className='py-4 text-center text-muted-foreground text-sm'>
+                      No saved rolls yet.
+                    </li>
+                  ) : (
+                    diceRolls.map((roll: DiceRoll) => (
+                      <DiceRollRow
+                        key={roll.id}
+                        roll={roll}
+                        onRoll={handleRoll}
+                        onDelete={() => deleteDiceRoll(roll.id)}
+                      />
+                    ))
+                  )}
+                </ul>
+              </ScrollArea>
+            </div>
+          </div>
+
+          <SheetFooter>
+            <DddiceAuthModal
+              createAuthCode={createAuthCode}
+              pollForAuth={pollForAuth}
+              clearPoll={clearPoll}
+              logout={logout}
+              username={username}
             />
-          </div>
-
-          <div className='flex flex-col gap-2'>
-            <Label htmlFor='value'>Roll Value</Label>
-            <Input
-              id='value'
-              placeholder='2d6+3'
-              value={value}
-              onChange={(e) => setValue(e.target.value)}
-            />
-          </div>
-
-          <Button
-            variant='outline'
-            onClick={() => handleRoll(value)}
-            disabled={isRolling || !value.trim()}>
-            {isRolling ? 'Rolling…' : 'Roll'}
-          </Button>
-          <Button disabled={!label.trim() || isRolling} onClick={handleSaveAndRoll}>
-            Save and Roll
-          </Button>
-
-          <div className='flex min-h-0 flex-1 flex-col gap-2'>
-            <Label>Saved rolls</Label>
-            <ScrollArea className='flex-1 rounded-md border'>
-              <ul className='flex flex-col p-2'>
-                {diceRolls.length === 0 ? (
-                  <li className='py-4 text-center text-muted-foreground text-sm'>
-                    No saved rolls yet.
-                  </li>
-                ) : (
-                  diceRolls.map((roll: DiceRoll) => (
-                    <DiceRollRow
-                      key={roll.id}
-                      roll={roll}
-                      onRoll={handleRoll}
-                      onDelete={() => deleteDiceRoll(roll.id)}
-                    />
-                  ))
-                )}
-              </ul>
-            </ScrollArea>
-          </div>
-        </div>
-
-        <SheetFooter></SheetFooter>
-      </SheetContent>
-    </Sheet>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
+      <canvas
+        id='threeddice'
+        ref={ref}
+        style={{
+          position: 'fixed',
+          top: 5,
+          bottom: 5,
+          left: 5,
+          height: '95vh',
+          width: '95vw',
+          maxWidth: 'calc(100vw - 500px)',
+        }}></canvas>
+    </>
   );
 };
 

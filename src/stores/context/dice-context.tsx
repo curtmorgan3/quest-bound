@@ -4,14 +4,17 @@ import { LogType, useEventLog } from '../event-log-store';
 type DiceContext = {
   dicePanelOpen: boolean;
   setDicePanelOpen: (open: boolean) => void;
-  rollDice: (value: string, opts?: DiceRollOpts) => Promise<DiceResult>;
+  rollDice: (value: string, opts?: DiceRollOpts) => DiceResult;
   isRolling: boolean;
   lastResult: DiceResult | null;
+  setLastResult: (result: DiceResult) => void;
   reset: () => void;
 };
 
 type DiceRollOpts = {
   openPanel?: boolean;
+  delay?: number;
+  autoShowResult?: boolean;
 };
 
 /** A single dice term (e.g. 2d6) or modifier term (+4, -1) in order */
@@ -19,10 +22,15 @@ type DiceToken =
   | { type: 'dice'; count: number; sides: number }
   | { type: 'modifier'; value: number };
 
+export type RollResult = {
+  type: string;
+  value: number;
+};
+
 /** Result of rolling one segment, with individual die values and total for that segment */
 type SegmentResult = {
   notation: string;
-  rolls: number[];
+  rolls: RollResult[];
   modifier: number;
   segmentTotal: number;
 };
@@ -66,7 +74,7 @@ function rollDie(sides: number): number {
 }
 
 export function formatSegmentResult(s: SegmentResult): string {
-  const dicePart = s.rolls.length > 0 ? ` [${s.rolls.join(', ')}]` : '';
+  const dicePart = s.rolls.length > 0 ? ` [${s.rolls.map((r) => r.value).join(', ')}]` : '';
   const modPart =
     s.rolls.length > 0 && s.modifier !== 0 ? ` ${s.modifier >= 0 ? '+' : ''}${s.modifier}` : '';
   return `${s.notation}:${dicePart}${modPart} = ${s.segmentTotal}`;
@@ -99,7 +107,7 @@ export const useDiceState = (): DiceContext => {
   } | null>(null);
   const [isRolling, setIsRolling] = useState(false);
 
-  const rollDice = async (roll: string, opts?: DiceRollOpts) => {
+  const rollDice = (roll: string, opts?: DiceRollOpts) => {
     if (opts?.openPanel) {
       setDicePanelOpen(true);
     }
@@ -107,7 +115,6 @@ export const useDiceState = (): DiceContext => {
     const trimmed = roll.trim();
     const tokenGroups = parseDiceExpression(trimmed);
 
-    setIsRolling(true);
     setLastResult(null);
 
     const segmentResults: SegmentResult[] = [];
@@ -120,11 +127,15 @@ export const useDiceState = (): DiceContext => {
       for (const token of tokens) {
         if (token.type === 'dice') {
           const notation = `${token.count}d${token.sides}`;
-          const rolls: number[] = [];
+          const type = `d${token.sides}`;
+          const rolls: RollResult[] = [];
           for (let i = 0; i < token.count; i++) {
-            rolls.push(rollDie(token.sides));
+            rolls.push({
+              type,
+              value: rollDie(token.sides),
+            });
           }
-          const segmentTotal = rolls.reduce((a, b) => a + b, 0);
+          const segmentTotal = rolls.map((r) => r.value).reduce((a, b) => a + b, 0);
           segmentResults.push({
             notation,
             rolls,
@@ -150,12 +161,15 @@ export const useDiceState = (): DiceContext => {
       }
     }
 
-    // Wait 2 seconds
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-
-    setIsRolling(false);
     const result: DiceResult = { total, segments: segmentResults, notation: trimmed };
-    setLastResult(result);
+
+    if (opts?.autoShowResult) {
+      setIsRolling(true);
+      setTimeout(() => {
+        setLastResult(result);
+        setIsRolling(false);
+      }, opts?.delay ?? 0);
+    }
 
     // Display: log total and breakdown
     const breakdown = segmentResults.map(formatSegmentResult).join('; ');
@@ -177,6 +191,7 @@ export const useDiceState = (): DiceContext => {
     setDicePanelOpen,
     rollDice,
     lastResult,
+    setLastResult,
     isRolling,
     reset,
   };
