@@ -157,7 +157,6 @@ const getLastRoom = async (token: string): Promise<Room & { rooms: Room[] }> => 
 };
 
 const getUser = async (token: string) => {
-  console.log('get user');
   const res = await fetch('https://dddice.com/api/1.0/user', {
     headers: {
       Authorization: `Bearer ${token}`,

@@ -26,8 +26,6 @@ export const useDddice = ({ canvasRef }: Props): UseDice => {
 
   const { addNotification } = useNotifications();
 
-  console.log(canvasRef?.current);
-
   const dddice = dddiceRef.current;
   const dddiceRoomRef = useRef<string | null>(null);
 
@@ -52,7 +50,7 @@ export const useDddice = ({ canvasRef }: Props): UseDice => {
     if (!dddiceRef.current) {
       instantiateDddice();
     }
-  }, [canvasRef, dicePanelOpen]);
+  }, []);
 
   useEffect(() => {
     return () => {
@@ -134,8 +132,6 @@ export const useDddice = ({ canvasRef }: Props): UseDice => {
       setLoading(true);
       setDisplayingRoll(false);
       const diceToRoll = dice.filter((die) => !die.staticValue);
-
-      console.log(diceToRoll);
 
       const res = await dddice?.roll(
         diceToRoll.map((die) => ({

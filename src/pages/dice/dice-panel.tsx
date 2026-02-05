@@ -39,6 +39,11 @@ export const DicePanel = () => {
       setValue('');
       reset();
     }
+
+    if (ref?.current) {
+      // Adjusting the width or display causes issues with ThreeDDice
+      ref.current.style.top = dicePanelOpen ? '0' : '10000px';
+    }
   }, [dicePanelOpen]);
 
   const handleRoll = async (rollValue: string) => {
@@ -154,16 +159,17 @@ export const DicePanel = () => {
           </SheetFooter>
         </SheetContent>
       </Sheet>
+
       <canvas
         id='threeddice'
         ref={ref}
         style={{
           position: 'fixed',
-          top: 5,
-          bottom: 5,
-          left: 5,
+          top: 0,
+          left: 50,
           height: '95vh',
-          width: dicePanelOpen ? '100vw' : '0px',
+          backgroundColor: 'orange',
+          width: '100vw',
           maxWidth: 'calc(100vw - 400px)',
         }}></canvas>
     </>
