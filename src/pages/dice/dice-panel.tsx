@@ -139,9 +139,11 @@ export const DicePanel = () => {
           </div>
 
           <SheetFooter>
-            <div className='flex flex-col gap-2 w-full justify-between'>
-              <DiceThemes setTheme={setTheme} getThemes={getThemes} />
-            </div>
+            {username && (
+              <div className='flex flex-col gap-2 w-full justify-between'>
+                <DiceThemes setTheme={setTheme} getThemes={getThemes} />
+              </div>
+            )}
           </SheetFooter>
         </SheetContent>
       </Sheet>
