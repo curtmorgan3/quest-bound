@@ -120,6 +120,8 @@ export const disconnect = async (roomSlug: string, token: string) => {
   });
 };
 
+let creatingRoom = false;
+
 const getLastRoom = async (token: string): Promise<Room & { rooms: Room[] }> => {
   const rooms = await getRooms(token);
   const prevSlug = localStorage.getItem('dddice-room');
@@ -132,18 +134,30 @@ const getLastRoom = async (token: string): Promise<Room & { rooms: Room[] }> => 
       };
     }
   }
-  const { slug, name } = await createRoom(token);
-  const roomsWithNew = await getRooms(token);
 
-  localStorage.setItem('dddice-room', slug);
+  if (!creatingRoom) {
+    creatingRoom = true;
+    const { slug, name } = await createRoom(token);
+    const roomsWithNew = await getRooms(token);
+
+    localStorage.setItem('dddice-room', slug);
+    creatingRoom = false;
+    return {
+      slug,
+      name,
+      rooms: roomsWithNew,
+    };
+  }
+
   return {
-    slug,
-    name,
-    rooms: roomsWithNew,
+    rooms: [],
+    name: '',
+    slug: '',
   };
 };
 
 const getUser = async (token: string) => {
+  console.log('get user');
   const res = await fetch('https://dddice.com/api/1.0/user', {
     headers: {
       Authorization: `Bearer ${token}`,

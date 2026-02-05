@@ -26,6 +26,8 @@ export const useDddice = ({ canvasRef }: Props): UseDice => {
 
   const { addNotification } = useNotifications();
 
+  console.log(canvasRef?.current);
+
   const dddice = dddiceRef.current;
   const dddiceRoomRef = useRef<string | null>(null);
 
@@ -62,7 +64,7 @@ export const useDddice = ({ canvasRef }: Props): UseDice => {
 
   const instantiateDddice = async (overrideToken?: string) => {
     try {
-      // if (!canvasRef?.current) return;
+      if (!canvasRef?.current) return;
 
       setUserLoading(true);
 
@@ -113,7 +115,9 @@ export const useDddice = ({ canvasRef }: Props): UseDice => {
         setLoading(false);
       });
 
-      dddiceRef.current?.connect(roomSlug);
+      if (roomSlug) {
+        dddiceRef.current?.connect(roomSlug);
+      }
       setError(false);
     } catch (e: any) {
       addNotification('Failed to connect to dddice', {
@@ -130,6 +134,8 @@ export const useDddice = ({ canvasRef }: Props): UseDice => {
       setLoading(true);
       setDisplayingRoll(false);
       const diceToRoll = dice.filter((die) => !die.staticValue);
+
+      console.log(diceToRoll);
 
       const res = await dddice?.roll(
         diceToRoll.map((die) => ({

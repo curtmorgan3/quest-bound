@@ -2,7 +2,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Sheet, SheetContent, SheetFooter, SheetHeader } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetFooter, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { useDiceRolls } from '@/lib/compass-api';
 import { DiceContext, formatSegmentResult, type RollResult } from '@/stores';
 import type { DiceRoll } from '@/types';
@@ -16,6 +16,9 @@ export const DicePanel = () => {
 
   const [label, setLabel] = useState('');
   const [value, setValue] = useState('');
+  const [dddiceRolling, setDddiceRolling] = useState<boolean>(false);
+
+  const rolling = isRolling || dddiceRolling;
 
   const ref = useRef<HTMLCanvasElement>(null);
 
@@ -44,10 +47,12 @@ export const DicePanel = () => {
     if (username) {
       const diceRollSegments = result.segments.filter((segment) => segment.notation.includes('d'));
       const diceRolls: RollResult[] = diceRollSegments.flatMap((segment) => segment.rolls);
+      setDddiceRolling(true);
       await roll(diceRolls);
 
       setTimeout(() => {
         setLastResult(result);
+        setDddiceRolling(false);
       }, 2000);
     }
   };
@@ -60,15 +65,17 @@ export const DicePanel = () => {
   return (
     <>
       <Sheet open={dicePanelOpen} onOpenChange={setDicePanelOpen}>
-        <SheetContent side='right' className='flex flex-col p-[8px]'>
+        <SheetContent aria-description='Dice Panel' side='right' className='flex flex-col p-[8px]'>
           <SheetHeader>
-            <DddiceAuthModal
-              createAuthCode={createAuthCode}
-              pollForAuth={pollForAuth}
-              clearPoll={clearPoll}
-              logout={logout}
-              username={username}
-            />
+            <SheetTitle>
+              <DddiceAuthModal
+                createAuthCode={createAuthCode}
+                pollForAuth={pollForAuth}
+                clearPoll={clearPoll}
+                logout={logout}
+                username={username}
+              />
+            </SheetTitle>
           </SheetHeader>
           <div className='w-full flex flex-col gap-2 items-center'>
             {isRolling && <h2>Rolling...</h2>}
@@ -108,10 +115,10 @@ export const DicePanel = () => {
             <Button
               variant='outline'
               onClick={() => handleRoll(value)}
-              disabled={isRolling || !value.trim()}>
-              {isRolling ? 'Rolling…' : 'Roll'}
+              disabled={rolling || !value.trim()}>
+              {rolling ? 'Rolling…' : 'Roll'}
             </Button>
-            <Button disabled={!label.trim() || isRolling} onClick={handleSaveAndRoll}>
+            <Button disabled={!label.trim() || rolling} onClick={handleSaveAndRoll}>
               Save and Roll
             </Button>
 
@@ -147,20 +154,18 @@ export const DicePanel = () => {
           </SheetFooter>
         </SheetContent>
       </Sheet>
-      {dicePanelOpen && (
-        <canvas
-          id='threeddice'
-          ref={ref}
-          style={{
-            position: 'fixed',
-            top: 5,
-            bottom: 5,
-            left: 5,
-            height: '95vh',
-            width: '95vw',
-            maxWidth: 'calc(100vw - 500px)',
-          }}></canvas>
-      )}
+      <canvas
+        id='threeddice'
+        ref={ref}
+        style={{
+          position: 'fixed',
+          top: 5,
+          bottom: 5,
+          left: 5,
+          height: '95vh',
+          width: dicePanelOpen ? '100vw' : '0px',
+          maxWidth: 'calc(100vw - 400px)',
+        }}></canvas>
     </>
   );
 };
