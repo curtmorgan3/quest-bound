@@ -122,7 +122,7 @@ export const ViewTextNode = ({
 
   const handleClick = () => {
     if (!diceRolls.length || !!onDoubleClick) return;
-    rollDice(diceRolls.join(','), { openPanel: true });
+    rollDice(diceRolls.join(','));
   };
 
   return (

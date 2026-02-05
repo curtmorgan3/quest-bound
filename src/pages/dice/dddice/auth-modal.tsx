@@ -9,25 +9,14 @@ import {
 import { Link } from '@/components/ui/link';
 import { Text } from '@/components/ui/text';
 import { colorWhite } from '@/palette';
+import { DiceContext } from '@/stores';
 import { Loader2Icon, LogOut } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useContext, useEffect, useState } from 'react';
 import dddiceImg from '../../../assets/dddice.png';
 
-interface Props {
-  createAuthCode: () => Promise<string>;
-  pollForAuth: (code: string) => void;
-  clearPoll: () => void;
-  username?: string;
-  logout: () => void;
-}
+export const DddiceAuthModal = () => {
+  const { createAuthCode, pollForAuth, clearPoll, username, logout } = useContext(DiceContext);
 
-export const DddiceAuthModal = ({
-  createAuthCode,
-  pollForAuth,
-  clearPoll,
-  username,
-  logout,
-}: Props) => {
   const [open, setOpen] = useState(false);
   const [code, setCode] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);

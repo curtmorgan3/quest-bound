@@ -9,28 +9,14 @@ import {
 } from '@/components/ui/select';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useNotifications } from '@/hooks';
+import { DiceContext } from '@/stores';
 import { Link2Icon, Loader2Icon } from 'lucide-react';
-import React, { useEffect, useRef } from 'react';
-import type { Room } from './types';
+import React, { useContext, useEffect, useRef } from 'react';
 
-interface Props {
-  joinRoom: (roomId: string, passcode?: string) => Promise<boolean>;
-  swapRooms: (roomId: string) => void;
-  roomName: string;
-  roomSlug: string;
-  roomPasscode?: string;
-  availableRooms: Room[];
-  username?: string;
-}
+export const RoomSelect = () => {
+  const { roomSlug, availableRooms, joinRoom, swapRooms, roomPasscode, username } =
+    useContext(DiceContext);
 
-export const RoomSelect = ({
-  roomSlug,
-  availableRooms,
-  joinRoom,
-  swapRooms,
-  roomPasscode,
-  username,
-}: Props) => {
   const [open, setOpen] = React.useState(false);
   const [loading, setLoading] = React.useState(false);
   const [roomId, setRoomId] = React.useState<string | null>(null);

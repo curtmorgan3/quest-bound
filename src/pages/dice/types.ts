@@ -1,5 +1,47 @@
 import { ThreeDDice } from 'dddice-js';
 
+export type IDiceContext = UseThreeDDice & LocalDiceContext;
+
+export type LocalDiceContext = {
+  dicePanelOpen: boolean;
+  setDicePanelOpen: (open: boolean) => void;
+  rollDice: (value: string, opts?: DiceRollOpts) => Promise<DiceResult>;
+  isRolling: boolean;
+  lastResult: DiceResult | null;
+  setLastResult: (result: DiceResult) => void;
+  reset: () => void;
+};
+
+export type DiceRollOpts = {
+  openPanel?: boolean;
+  delay?: number;
+  autoShowResult?: boolean;
+};
+
+/** A single dice term (e.g. 2d6) or modifier term (+4, -1) in order */
+export type DiceToken =
+  | { type: 'dice'; count: number; sides: number }
+  | { type: 'modifier'; value: number };
+
+export type RollResult = {
+  type: string;
+  value: number;
+};
+
+/** Result of rolling one segment, with individual die values and total for that segment */
+export type SegmentResult = {
+  notation: string;
+  rolls: RollResult[];
+  modifier: number;
+  segmentTotal: number;
+};
+
+export type DiceResult = {
+  total: number;
+  notation: string;
+  segments: SegmentResult[];
+};
+
 export type AvailableDiceObject = {
   type: string;
   notation: string;
@@ -70,10 +112,10 @@ export const standardTheme: DiceTheme = {
   id: 'dddice-bees',
 };
 
-export interface UseDice {
+export interface UseThreeDDice {
   dddice: ThreeDDice | null;
   displayingRoll: boolean;
-  roll: (dice: Dice[]) => Promise<Dice[]>;
+  rollThreeDDice: (dice: Dice[]) => Promise<Dice[]>;
   removeDice: () => void;
   setDisplayingRoll: React.Dispatch<React.SetStateAction<boolean>>;
   getThemes: () => Promise<any>;

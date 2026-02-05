@@ -2,10 +2,8 @@ import { CharacterPage, Characters, ErrorPage, Ruleset, Rulesets } from '@/pages
 import { HashRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { ErrorBoundary } from './components';
 import { Layout } from './components/layout';
-import { DicePanel } from './pages/dice';
 import { DocumentViewer } from './pages/ruleset/documents';
 import { WindowEditor } from './pages/ruleset/windows/window-editor';
-import { DiceProvider, useDiceState } from './stores';
 
 function CompassRoutes() {
   return (
@@ -49,12 +47,7 @@ function CompassRoutes() {
 }
 
 function App() {
-  return (
-    <DiceProvider value={useDiceState()}>
-      <CompassRoutes />
-      <DicePanel />
-    </DiceProvider>
-  );
+  return <CompassRoutes />;
 }
 
 export default App;

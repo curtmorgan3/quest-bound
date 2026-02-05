@@ -1,4 +1,4 @@
-import type { Arguments, DiceTheme, DiceUser, Room } from './types';
+import type { Arguments, DiceTheme, DiceUser, Room } from '../types';
 
 const TOKEN_COOKIE_NAME = 'dddice-user-token';
 const TOKEN_COOKIE_MAX_AGE = 60 * 60 * 24 * 365; // 1 year

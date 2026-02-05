@@ -85,7 +85,7 @@ export const ViewContentNode = ({
 
   const handleClick = () => {
     if (!diceRolls.length || windowEditorMode) return;
-    rollDice(diceRolls.join(','), { openPanel: true });
+    rollDice(diceRolls.join(','));
   };
 
   const { characterAttributeId } = data;

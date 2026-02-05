@@ -2,6 +2,7 @@ import { useNotifications } from '@/hooks';
 import { useCurrentUser } from '@/stores';
 import { ThreeDDice, ThreeDDiceRollEvent, type IRoll } from 'dddice-js';
 import { useEffect, useRef, useState } from 'react';
+import { standardTheme, type Dice, type DiceTheme, type Room, type UseThreeDDice } from '../types';
 import {
   authenticateDddiceUser,
   createAuthCode,
@@ -12,13 +13,12 @@ import {
   logout,
   setToken,
 } from './helpers';
-import { standardTheme, type Dice, type DiceTheme, type Room, type UseDice } from './types';
 
 interface Props {
   canvasRef?: React.RefObject<HTMLCanvasElement | null>;
 }
 
-export const useDddice = ({ canvasRef }: Props): UseDice => {
+export const useDddice = ({ canvasRef }: Props): UseThreeDDice => {
   const dddiceRef = useRef<ThreeDDice | null>(null);
 
   const { currentUser } = useCurrentUser();
@@ -46,10 +46,11 @@ export const useDddice = ({ canvasRef }: Props): UseDice => {
   const usernameRef = useRef<string | null>(null);
 
   useEffect(() => {
+    if (!currentUser) return;
     if (!dddiceRef.current) {
       instantiateDddice();
     }
-  }, []);
+  }, [currentUser]);
 
   useEffect(() => {
     return () => {
@@ -126,7 +127,7 @@ export const useDddice = ({ canvasRef }: Props): UseDice => {
     }
   };
 
-  const roll = async (dice: Dice[]): Promise<Dice[]> => {
+  const rollThreeDDice = async (dice: Dice[]): Promise<Dice[]> => {
     try {
       setLoading(true);
       setDisplayingRoll(false);
@@ -268,7 +269,7 @@ export const useDddice = ({ canvasRef }: Props): UseDice => {
     getThemes: handeGetThemes,
     joinRoom: handleJoinRoom,
     pollForAuth,
-    roll,
+    rollThreeDDice,
     removeDice,
     clearPoll,
     displayingRoll,

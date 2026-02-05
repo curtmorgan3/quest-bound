@@ -1,45 +1,14 @@
+import { useDddice } from '@/pages/dice';
+import type {
+  DiceResult,
+  DiceRollOpts,
+  DiceToken,
+  IDiceContext,
+  RollResult,
+  SegmentResult,
+} from '@/pages/dice/types';
 import { createContext, useState } from 'react';
 import { LogType, useEventLog } from '../event-log-store';
-
-type DiceContext = {
-  dicePanelOpen: boolean;
-  setDicePanelOpen: (open: boolean) => void;
-  rollDice: (value: string, opts?: DiceRollOpts) => DiceResult;
-  isRolling: boolean;
-  lastResult: DiceResult | null;
-  setLastResult: (result: DiceResult) => void;
-  reset: () => void;
-};
-
-type DiceRollOpts = {
-  openPanel?: boolean;
-  delay?: number;
-  autoShowResult?: boolean;
-};
-
-/** A single dice term (e.g. 2d6) or modifier term (+4, -1) in order */
-type DiceToken =
-  | { type: 'dice'; count: number; sides: number }
-  | { type: 'modifier'; value: number };
-
-export type RollResult = {
-  type: string;
-  value: number;
-};
-
-/** Result of rolling one segment, with individual die values and total for that segment */
-type SegmentResult = {
-  notation: string;
-  rolls: RollResult[];
-  modifier: number;
-  segmentTotal: number;
-};
-
-type DiceResult = {
-  total: number;
-  notation: string;
-  segments: SegmentResult[];
-};
 
 /** Matches dice (e.g. 2d6) or modifiers (+4, -1) in order */
 const DICE_OR_MODIFIER_REGEX = /(\d+)\s*d\s*(\d+)|([+-])\s*(\d+)/gi;
@@ -97,7 +66,11 @@ export function parseTextForDiceRolls(text?: string): string[] {
   return matches;
 }
 
-export const useDiceState = (): DiceContext => {
+interface DiceStateProps {
+  canvasRef?: React.RefObject<HTMLCanvasElement | null>;
+}
+
+export const useDiceState = ({ canvasRef }: DiceStateProps): IDiceContext => {
   const [dicePanelOpen, setDicePanelOpen] = useState(false);
   const { logEvent } = useEventLog();
   const [lastResult, setLastResult] = useState<{
@@ -106,11 +79,21 @@ export const useDiceState = (): DiceContext => {
     notation: string;
   } | null>(null);
   const [isRolling, setIsRolling] = useState(false);
+  const [dddiceRolling, setDddiceRolling] = useState<boolean>(false);
 
-  const rollDice = (roll: string, opts?: DiceRollOpts) => {
-    if (opts?.openPanel) {
+  const rolling = isRolling || dddiceRolling;
+
+  const dddiceState = useDddice({
+    canvasRef,
+  });
+
+  const rollDice = async (roll: string, opts?: DiceRollOpts) => {
+    setIsRolling(true);
+    if (opts?.openPanel !== false) {
       setDicePanelOpen(true);
     }
+
+    const delay = opts?.delay ?? 2000;
 
     const trimmed = roll.trim();
     const tokenGroups = parseDiceExpression(trimmed);
@@ -163,12 +146,22 @@ export const useDiceState = (): DiceContext => {
 
     const result: DiceResult = { total, segments: segmentResults, notation: trimmed };
 
-    if (opts?.autoShowResult) {
-      setIsRolling(true);
+    if (dddiceState.username) {
+      setDddiceRolling(true);
+      const diceRollSegments = result.segments.filter((segment) => segment.notation.includes('d'));
+      const diceRolls: RollResult[] = diceRollSegments.flatMap((segment) => segment.rolls);
+      await dddiceState.rollThreeDDice(diceRolls);
+
       setTimeout(() => {
         setLastResult(result);
         setIsRolling(false);
-      }, opts?.delay ?? 0);
+        setDddiceRolling(false);
+      }, 2000);
+    } else {
+      setTimeout(() => {
+        setLastResult(result);
+        setIsRolling(false);
+      }, delay);
     }
 
     // Display: log total and breakdown
@@ -192,10 +185,11 @@ export const useDiceState = (): DiceContext => {
     rollDice,
     lastResult,
     setLastResult,
-    isRolling,
+    isRolling: rolling,
     reset,
+    ...dddiceState,
   };
 };
 
-export const DiceContext = createContext<DiceContext>(null!);
+export const DiceContext = createContext<IDiceContext>(null!);
 export const DiceProvider = DiceContext.Provider;

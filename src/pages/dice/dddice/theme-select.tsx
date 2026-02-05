@@ -3,16 +3,14 @@ import { Progress } from '@/components/ui/progress';
 import { Text } from '@/components/ui/text';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { colorWhite } from '@/palette';
+import { DiceContext } from '@/stores';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
-import { useState } from 'react';
-import type { DiceTheme } from './types';
+import { useContext, useState } from 'react';
+import type { DiceTheme } from '../types';
 
-interface Props {
-  setTheme: (theme: DiceTheme) => void;
-  getThemes: () => Promise<any>;
-}
+export const DiceThemes = () => {
+  const { setTheme, getThemes } = useContext(DiceContext);
 
-export const DiceThemes = ({ setTheme, getThemes }: Props) => {
   const [themes, setThemes] = useState<DiceTheme[]>([]);
   const [page, setPage] = useState<number>(0);
   const [loading, setLoading] = useState<boolean>(false);

@@ -11,44 +11,21 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet';
 import { useDiceRolls } from '@/lib/compass-api';
-import { DiceContext, formatSegmentResult, type RollResult } from '@/stores';
+import { DiceContext, formatSegmentResult } from '@/stores';
 import type { DiceRoll } from '@/types';
 import { Dice6, Trash } from 'lucide-react';
-import { useContext, useEffect, useRef, useState } from 'react';
-import { DddiceAuthModal, DiceThemes, useDddice } from './dddice';
+import { useContext, useEffect, useState } from 'react';
+import { DddiceAuthModal, DiceThemes } from './dddice';
 import { RoomSelect } from './dddice/room-select';
 
 export const DicePanel = () => {
-  const { rollDice, isRolling, lastResult, setLastResult, reset, dicePanelOpen, setDicePanelOpen } =
+  const { rollDice, isRolling, lastResult, reset, dicePanelOpen, setDicePanelOpen, username } =
     useContext(DiceContext);
 
   const [label, setLabel] = useState('');
   const [value, setValue] = useState('');
-  const [dddiceRolling, setDddiceRolling] = useState<boolean>(false);
-
-  const rolling = isRolling || dddiceRolling;
-
-  const ref = useRef<HTMLCanvasElement>(null);
 
   const { diceRolls, createDiceRoll, deleteDiceRoll } = useDiceRolls();
-  const {
-    createAuthCode,
-    pollForAuth,
-    clearPoll,
-    username,
-    logout,
-    roll,
-    setTheme,
-    getThemes,
-    roomName,
-    roomSlug,
-    roomPasscode,
-    joinRoom,
-    swapRooms,
-    availableRooms,
-  } = useDddice({
-    canvasRef: ref,
-  });
 
   useEffect(() => {
     if (value || !lastResult?.notation) return;
@@ -61,29 +38,10 @@ export const DicePanel = () => {
       setValue('');
       reset();
     }
-
-    if (ref?.current) {
-      // Adjusting the width or display causes issues with ThreeDDice
-      // Conditionally rendering the canvas will cause the ref to be lost and ThreeDDice will
-      // need to be reinstantiated
-      ref.current.style.top = dicePanelOpen ? '0' : '10000px';
-    }
   }, [dicePanelOpen]);
 
-  const handleRoll = async (rollValue: string) => {
-    const result = rollDice(rollValue, { autoShowResult: !username, delay: 2000 });
-
-    if (username) {
-      const diceRollSegments = result.segments.filter((segment) => segment.notation.includes('d'));
-      const diceRolls: RollResult[] = diceRollSegments.flatMap((segment) => segment.rolls);
-      setDddiceRolling(true);
-      await roll(diceRolls);
-
-      setTimeout(() => {
-        setLastResult(result);
-        setDddiceRolling(false);
-      }, 2000);
-    }
+  const handleRoll = (rollValue: string) => {
+    rollDice(rollValue, { autoShowResult: !username, delay: 2000 });
   };
 
   const handleSaveAndRoll = async () => {
@@ -97,13 +55,7 @@ export const DicePanel = () => {
         <SheetContent aria-description='Dice Panel' side='right' className='flex flex-col p-[8px]'>
           <SheetHeader style={{ paddingBottom: 0 }}>
             <SheetTitle>
-              <DddiceAuthModal
-                createAuthCode={createAuthCode}
-                pollForAuth={pollForAuth}
-                clearPoll={clearPoll}
-                logout={logout}
-                username={username}
-              />
+              <DddiceAuthModal />
             </SheetTitle>
             <SheetDescription style={{ opacity: 0, height: 0 }}>Dice Panel</SheetDescription>
           </SheetHeader>
@@ -151,10 +103,10 @@ export const DicePanel = () => {
               <Button
                 variant='outline'
                 onClick={() => handleRoll(value)}
-                disabled={rolling || !value.trim()}>
-                {rolling ? 'Rolling…' : 'Roll'}
+                disabled={isRolling || !value.trim()}>
+                {isRolling ? 'Rolling…' : 'Roll'}
               </Button>
-              <Button disabled={!label.trim() || rolling} onClick={handleSaveAndRoll}>
+              <Button disabled={!label.trim() || isRolling} onClick={handleSaveAndRoll}>
                 Save and Roll
               </Button>
             </div>
@@ -185,33 +137,13 @@ export const DicePanel = () => {
           <SheetFooter>
             {username && (
               <div className='flex flex-col gap-4 w-full'>
-                <DiceThemes setTheme={setTheme} getThemes={getThemes} />
-                <RoomSelect
-                  username={username}
-                  roomName={roomName}
-                  roomSlug={roomSlug}
-                  roomPasscode={roomPasscode}
-                  joinRoom={joinRoom}
-                  swapRooms={swapRooms}
-                  availableRooms={availableRooms}
-                />
+                <DiceThemes />
+                <RoomSelect />
               </div>
             )}
           </SheetFooter>
         </SheetContent>
       </Sheet>
-
-      <canvas
-        id='threeddice'
-        ref={ref}
-        style={{
-          position: 'fixed',
-          top: 0,
-          left: 50,
-          height: '95vh',
-          width: '100vw',
-          maxWidth: 'calc(100vw - 400px)',
-        }}></canvas>
     </>
   );
 };

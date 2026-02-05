@@ -36,7 +36,7 @@ export const ItemContextMenu = ({
 
   const handleRoll = () => {
     if (!diceRolls.length) return;
-    rollDice(diceRolls.join(','), { openPanel: true });
+    rollDice(diceRolls.join(','));
   };
 
   useKeyListeners({
