@@ -2,13 +2,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Sheet, SheetContent, SheetFooter, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetFooter, SheetHeader } from '@/components/ui/sheet';
 import { useDiceRolls } from '@/lib/compass-api';
 import { DiceContext, formatSegmentResult, type RollResult } from '@/stores';
 import type { DiceRoll } from '@/types';
 import { Dice6, Trash } from 'lucide-react';
 import { useContext, useEffect, useRef, useState } from 'react';
-import { DddiceAuthModal, useDddice } from './dddice';
+import { DddiceAuthModal, DiceThemes, useDddice } from './dddice';
 
 export const DicePanel = () => {
   const { rollDice, isRolling, lastResult, setLastResult, reset, dicePanelOpen, setDicePanelOpen } =
@@ -20,9 +20,10 @@ export const DicePanel = () => {
   const ref = useRef<HTMLCanvasElement>(null);
 
   const { diceRolls, createDiceRoll, deleteDiceRoll } = useDiceRolls();
-  const { createAuthCode, pollForAuth, clearPoll, username, logout, roll } = useDddice({
-    canvasRef: ref,
-  });
+  const { createAuthCode, pollForAuth, clearPoll, username, logout, roll, setTheme, getThemes } =
+    useDddice({
+      canvasRef: ref,
+    });
 
   useEffect(() => {
     if (value || !lastResult?.notation) return;
@@ -44,6 +45,7 @@ export const DicePanel = () => {
       const diceRollSegments = result.segments.filter((segment) => segment.notation.includes('d'));
       const diceRolls: RollResult[] = diceRollSegments.flatMap((segment) => segment.rolls);
       await roll(diceRolls);
+
       setTimeout(() => {
         setLastResult(result);
       }, 2000);
@@ -60,7 +62,13 @@ export const DicePanel = () => {
       <Sheet open={dicePanelOpen} onOpenChange={setDicePanelOpen}>
         <SheetContent side='right' className='flex flex-col p-[8px]'>
           <SheetHeader>
-            <SheetTitle>Dice Roller</SheetTitle>
+            <DddiceAuthModal
+              createAuthCode={createAuthCode}
+              pollForAuth={pollForAuth}
+              clearPoll={clearPoll}
+              logout={logout}
+              username={username}
+            />
           </SheetHeader>
           <div className='w-full flex flex-col gap-2 items-center'>
             {isRolling && <h2>Rolling...</h2>}
@@ -131,13 +139,9 @@ export const DicePanel = () => {
           </div>
 
           <SheetFooter>
-            <DddiceAuthModal
-              createAuthCode={createAuthCode}
-              pollForAuth={pollForAuth}
-              clearPoll={clearPoll}
-              logout={logout}
-              username={username}
-            />
+            <div className='flex flex-col gap-2 w-full justify-between'>
+              <DiceThemes setTheme={setTheme} getThemes={getThemes} />
+            </div>
           </SheetFooter>
         </SheetContent>
       </Sheet>

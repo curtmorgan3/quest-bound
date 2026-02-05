@@ -164,10 +164,9 @@ export const useDddice = ({ canvasRef }: Props): UseDice => {
       ];
 
       return finalResults;
-    } catch (e) {
+    } catch (e: any) {
       setLoading(false);
-      console.error(e);
-      addNotification('Failed to roll dice.', {
+      addNotification('Failed to roll dddice.', {
         type: 'error',
       });
       return [];
