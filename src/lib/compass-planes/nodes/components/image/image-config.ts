@@ -20,6 +20,7 @@ export const imageConfig: SheetComponentType = {
 
 const DEFAULT_IMAGE_DATA: ImageComponentData = {
   assetId: undefined,
+  useCharacterImage: false,
 };
 
 const DEFAULT_IMAGE_STYLES: ComponentStyle = {

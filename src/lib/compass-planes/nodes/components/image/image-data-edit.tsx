@@ -1,4 +1,5 @@
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { useAssets, type ComponentUpdate } from '@/lib/compass-api';
 import {
@@ -154,10 +155,42 @@ export const ImageDataEdit = ({
   const hasAsset = editableComponents.some(
     (c) => (getComponentData(c) as ImageComponentData).assetId,
   );
+  const useCharacterImage = firstComponentData?.useCharacterImage ?? false;
+
+  const handleUseCharacterImageChange = async (checked: boolean) => {
+    if (editableComponents.length === 0) return;
+    const updates = editableComponents.map((component) => ({
+      id: component.id,
+      data: updateComponentData(component.data, { useCharacterImage: checked }),
+    }));
+    await updateComponents(updates);
+    fireExternalComponentChangeEvent({ updates });
+  };
 
   return (
     <div className='flex-col w-full flex flex-col gap-3 pb-2 border-b-1'>
       <p className='text-sm'>Image Asset</p>
+
+      <div className='flex items-center gap-2'>
+        <Checkbox
+          id='use-character-image'
+          checked={useCharacterImage}
+          onCheckedChange={(checked) => handleUseCharacterImageChange(checked === true)}
+          disabled={editableComponents.length === 0}
+          onKeyDown={(e) => e.stopPropagation()}
+        />
+        <label
+          htmlFor='use-character-image'
+          className='text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70'>
+          Use character image in view mode
+        </label>
+      </div>
+      {useCharacterImage && (
+        <p className='text-xs text-muted-foreground'>
+          When enabled, the character&apos;s image is shown in view mode; the image below is used as
+          fallback when no character image is set.
+        </p>
+      )}
 
       {currentAsset && (
         <div className='w-full mb-2 relative'>
