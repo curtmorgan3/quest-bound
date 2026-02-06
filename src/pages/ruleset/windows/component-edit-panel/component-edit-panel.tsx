@@ -1,7 +1,11 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AttributeLookup, useComponents } from '@/lib/compass-api';
 import { ComponentTypes } from '@/lib/compass-planes/nodes';
-import { CheckboxDataEdit, InventoryDataEdit } from '@/lib/compass-planes/nodes/components';
+import {
+  CheckboxDataEdit,
+  GraphDataEdit,
+  InventoryDataEdit,
+} from '@/lib/compass-planes/nodes/components';
 import { ImageDataEdit } from '@/lib/compass-planes/nodes/components/image';
 import { getComponentData } from '@/lib/compass-planes/utils';
 import { colorBlack } from '@/palette';
@@ -124,6 +128,10 @@ export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
     selectedComponents.length > 0 &&
     selectedComponents.every((c) => c.type === ComponentTypes.INVENTORY);
 
+  const allAreGraphs =
+    selectedComponents.length > 0 &&
+    selectedComponents.every((c) => c.type === ComponentTypes.GRAPH);
+
   return (
     <div
       className='w-[240px] h-[100vh] flex flex-col gap-2 items-center p-2'
@@ -149,7 +157,8 @@ export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
           </TabsContent>
           <TabsContent value='data' className='w-full flex flex-col gap-4 mt-2'>
             {selectedComponents.length === 1 &&
-              selectedComponents[0].type !== ComponentTypes.INVENTORY && (
+              selectedComponents[0].type !== ComponentTypes.INVENTORY &&
+              selectedComponents[0].type !== ComponentTypes.GRAPH && (
                 <AttributeLookup
                   value={selectedComponents[0].attributeId}
                   onSelect={(attr) => handleUpdate('attributeId', attr.id)}
@@ -184,6 +193,13 @@ export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
 
             {allAreInventories && (
               <InventoryDataEdit
+                components={selectedComponents}
+                updateComponents={updateComponents}
+              />
+            )}
+
+            {allAreGraphs && (
+              <GraphDataEdit
                 components={selectedComponents}
                 updateComponents={updateComponents}
               />

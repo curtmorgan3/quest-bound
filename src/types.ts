@@ -178,12 +178,21 @@ export type InventoryComponentData = {
   actionRestrictionRef?: string;
 };
 
+export type GraphVariant = 'horizontal-linear' | 'vertical-linear' | 'circular';
+
+export type GraphComponentData = {
+  graphVariant?: GraphVariant;
+  numeratorAttributeId?: string | null;
+  denominatorAttributeId?: string | null;
+};
+
 export type ComponentData = ShapeComponentData &
   TextComponentData &
   ImageComponentData &
   InputComponentData &
   InventoryComponentData &
-  CheckboxComponentData & {
+  CheckboxComponentData &
+  GraphComponentData & {
     conditionalRenderAttributeId?: string | null;
     conditionalRenderInverse?: boolean;
   };

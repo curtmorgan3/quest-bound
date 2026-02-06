@@ -6,6 +6,7 @@ export enum ComponentTypes {
   CHECKBOX = 'checkbox',
   CONTENT = 'content',
   INVENTORY = 'inventory',
+  GRAPH = 'graph',
 }
 
 export type SheetComponentType = {
