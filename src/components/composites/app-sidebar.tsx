@@ -28,7 +28,7 @@ import {
   SidebarTrigger,
   useSidebar,
 } from '@/components/ui/sidebar';
-import { useActiveRuleset, useCharacter, useDocuments, useUsers } from '@/lib/compass-api';
+import { useActiveRuleset, useCharacter, useCharts, useDocuments, useUsers } from '@/lib/compass-api';
 import { DevTools, Settings } from '@/pages';
 import { DiceContext } from '@/stores';
 import { useContext, useEffect, useState } from 'react';
@@ -44,11 +44,13 @@ export function AppSidebar() {
   const { activeRuleset } = useActiveRuleset();
   const { character } = useCharacter();
   const { documents } = useDocuments(character?.rulesetId);
+  const { charts } = useCharts(character?.rulesetId);
   const { open, setOpen } = useSidebar();
   const location = useLocation();
-  const { documentId } = useParams<{ documentId: string }>();
+  const { documentId, chartId } = useParams<{ documentId?: string; chartId?: string }>();
   const isHomepage = location.pathname === '/rulesets' || location.pathname === '/characters';
   const isViewingDocument = !!documentId && location.pathname.includes('/documents/');
+  const isViewingChart = !!chartId && location.pathname.includes('/chart/');
   const [drawerContent, setDrawerContent] = useState<'settings' | 'dev-tools'>('settings');
   const { setDicePanelOpen } = useContext(DiceContext);
 
@@ -110,6 +112,7 @@ export function AppSidebar() {
   const items = character ? [] : rulesetItems;
 
   const sortedDocuments = [...documents].sort((a, b) => a.title.localeCompare(b.title));
+  const sortedCharts = [...charts].sort((a, b) => a.title.localeCompare(b.title));
 
   return (
     <Drawer direction='bottom'>
@@ -150,7 +153,7 @@ export function AppSidebar() {
                   </SidebarMenuItem>
                 ))}
 
-                {character && isViewingDocument && (
+                {character && (isViewingDocument || isViewingChart) && (
                   <SidebarMenuItem>
                     <SidebarMenuButton asChild>
                       <Link to={`/characters/${character.id}`} data-testid='nav-back-to-character'>
@@ -160,47 +163,93 @@ export function AppSidebar() {
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 )}
-
-                {character && sortedDocuments.length > 0 && (
-                  <>
-                    {sortedDocuments.map((doc) => (
-                      <SidebarMenuItem
-                        key={doc.id}
-                        className={documentId === doc.id ? 'text-primary' : ''}>
-                        <SidebarMenuButton asChild>
-                          <Link
-                            to={`/characters/${character.id}/documents/${doc.id}`}
-                            data-testid={`nav-document-${doc.id}`}>
-                            {doc.image ? (
-                              <img
-                                src={doc.image}
-                                alt={doc.title}
-                                className='w-4 h-4 rounded-sm object-cover'
-                              />
-                            ) : (
-                              <FileText className='w-4 h-4' />
-                            )}
-                            <span>{doc.title}</span>
-                          </Link>
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
-                    ))}
-                  </>
-                )}
-
-                {/* {!isHomepage && (
-                  <SidebarMenuItem>
-                    <AssetManagerModal>
-                      <SidebarMenuButton>
-                        <Image />
-                        <span>Assets</span>
-                      </SidebarMenuButton>
-                    </AssetManagerModal>
-                  </SidebarMenuItem>
-                )} */}
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
+
+          {character && (
+            <>
+              <SidebarGroup>
+                <SidebarGroupLabel>Documents</SidebarGroupLabel>
+                <SidebarGroupContent
+                  className='max-h-[min(200px,40vh)] min-h-0 overflow-y-auto overflow-x-hidden'>
+                  <SidebarMenu>
+                    {sortedDocuments.length === 0 ? (
+                      <SidebarMenuItem>
+                        <span className='px-2 py-1.5 text-xs text-muted-foreground'>
+                          No documents
+                        </span>
+                      </SidebarMenuItem>
+                    ) : (
+                      sortedDocuments.map((doc) => (
+                        <SidebarMenuItem
+                          key={doc.id}
+                          className={documentId === doc.id ? 'text-primary' : ''}>
+                          <SidebarMenuButton asChild>
+                            <Link
+                              to={`/characters/${character.id}/documents/${doc.id}`}
+                              data-testid={`nav-document-${doc.id}`}>
+                              {doc.image ? (
+                                <img
+                                  src={doc.image}
+                                  alt={doc.title}
+                                  className='w-4 h-4 rounded-sm object-cover shrink-0'
+                                />
+                              ) : (
+                                <FileText className='w-4 h-4 shrink-0' />
+                              )}
+                              <span className='truncate'>{doc.title}</span>
+                            </Link>
+                          </SidebarMenuButton>
+                        </SidebarMenuItem>
+                      ))
+                    )}
+                  </SidebarMenu>
+                </SidebarGroupContent>
+              </SidebarGroup>
+              <SidebarGroup>
+                <SidebarGroupLabel>Charts</SidebarGroupLabel>
+                <SidebarGroupContent
+                  className='max-h-[min(200px,40vh)] min-h-0 overflow-y-auto overflow-x-hidden'>
+                  <SidebarMenu>
+                    {sortedCharts.length === 0 ? (
+                      <SidebarMenuItem>
+                        <span className='px-2 py-1.5 text-xs text-muted-foreground'>
+                          No charts
+                        </span>
+                      </SidebarMenuItem>
+                    ) : (
+                      sortedCharts.map((chart) => (
+                        <SidebarMenuItem
+                          key={chart.id}
+                          className={chartId === chart.id ? 'text-primary' : ''}>
+                          <SidebarMenuButton asChild>
+                            <Link
+                              to={`/characters/${character.id}/chart/${chart.id}`}
+                              data-testid={`nav-chart-${chart.id}`}>
+                              <FileSpreadsheet className='w-4 h-4 shrink-0' />
+                              <span className='truncate'>{chart.title}</span>
+                            </Link>
+                          </SidebarMenuButton>
+                        </SidebarMenuItem>
+                      ))
+                    )}
+                  </SidebarMenu>
+                </SidebarGroupContent>
+              </SidebarGroup>
+            </>
+          )}
+
+          {/* {!isHomepage && (
+            <SidebarMenuItem>
+              <AssetManagerModal>
+                <SidebarMenuButton>
+                  <Image />
+                  <span>Assets</span>
+                </SidebarMenuButton>
+              </AssetManagerModal>
+            </SidebarMenuItem>
+          )} */}
         </SidebarContent>
         <SidebarFooter>
           <SidebarMenu>

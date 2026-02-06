@@ -1,4 +1,4 @@
-import { CharacterPage, Characters, ErrorPage, Ruleset, Rulesets } from '@/pages';
+import { CharacterChartViewer, CharacterPage, Characters, ErrorPage, Ruleset, Rulesets } from '@/pages';
 import { HashRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { ErrorBoundary } from './components';
 import { Layout } from './components/layout';
@@ -36,6 +36,10 @@ function CompassRoutes() {
             <Route
               path={`/characters/:characterId/documents/:documentId`}
               element={<DocumentViewer />}
+            />
+            <Route
+              path={`/characters/:characterId/chart/:chartId`}
+              element={<CharacterChartViewer />}
             />
 
             <Route path='*' element={<ErrorPage type='404' />} />

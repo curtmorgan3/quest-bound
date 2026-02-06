@@ -4,17 +4,19 @@ import type { Chart } from '@/types';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useActiveRuleset } from './use-active-ruleset';
 
-export const useCharts = () => {
+export const useCharts = (rulesetId?: string) => {
   const { activeRuleset } = useActiveRuleset();
   const { handleError } = useErrorHandler();
+
+  const effectiveRulesetId = rulesetId ?? activeRuleset?.id;
 
   const charts = useLiveQuery(
     () =>
       db.charts
         .where('rulesetId')
-        .equals(activeRuleset?.id ?? 0)
+        .equals(effectiveRulesetId ?? 0)
         .toArray(),
-    [activeRuleset],
+    [effectiveRulesetId],
   );
 
   const createChart = async (data: Partial<Chart>) => {

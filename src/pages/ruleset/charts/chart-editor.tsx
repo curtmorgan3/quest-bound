@@ -3,14 +3,18 @@ import { useCharts } from '@/lib/compass-api';
 
 interface ChartEditorProps {
   chartId: string;
+  /** When true, chart is view-only (e.g. on character chart route). */
+  readOnly?: boolean;
+  /** Optional ruleset id to load charts from (e.g. character's ruleset when viewing on character page). */
+  rulesetId?: string;
 }
 
 function normalizeFieldName(name: string) {
   return name.trim().replace(/ /g, '-').toLowerCase();
 }
 
-export const ChartEditor = ({ chartId }: ChartEditorProps) => {
-  const { charts, updateChart } = useCharts();
+export const ChartEditor = ({ chartId, readOnly = false, rulesetId }: ChartEditorProps) => {
+  const { charts, updateChart } = useCharts(rulesetId);
 
   const chart = charts.find((c) => c.id === chartId);
   if (!chart) return null;
@@ -32,23 +36,24 @@ export const ChartEditor = ({ chartId }: ChartEditorProps) => {
     };
   });
 
-  const columns: GridColumn<any>[] = [
-    {
+  const columns: GridColumn<any>[] = [];
+  if (!readOnly) {
+    columns.push({
       field: 'controls',
       headerName: '',
       editable: false,
       sortIndex: 0,
       width: 100,
       resizable: false,
-    },
-  ];
+    });
+  }
 
   for (const header of headerRow) {
     columns.push({
       field: normalizeFieldName(header),
       headerName: header,
-      editable: true,
-      resizable: true,
+      editable: !readOnly,
+      resizable: !readOnly,
       filter: true,
     });
   }
@@ -82,5 +87,11 @@ export const ChartEditor = ({ chartId }: ChartEditorProps) => {
     });
   };
 
-  return <Grid rowData={rows} colDefs={columns} onCellValueChanged={handleUpdate} />;
+  return (
+    <Grid
+      rowData={rows}
+      colDefs={columns}
+      onCellValueChanged={readOnly ? undefined : handleUpdate}
+    />
+  );
 };
