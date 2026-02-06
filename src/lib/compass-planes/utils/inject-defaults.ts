@@ -3,6 +3,7 @@ import type { Component } from '@/types';
 import {
   DEFAULT_CHECKBOX,
   DEFAULT_CONTENT,
+  DEFAULT_FRAME,
   DEFAULT_GRAPH,
   DEFAULT_IMAGE,
   DEFAULT_INPUT,
@@ -29,6 +30,7 @@ export function injectDefaultComponent(component: Partial<Component>) {
     [ComponentTypes.CONTENT, DEFAULT_CONTENT],
     [ComponentTypes.INVENTORY, DEFAULT_INVENTORY],
     [ComponentTypes.GRAPH, DEFAULT_GRAPH],
+    [ComponentTypes.FRAME, DEFAULT_FRAME],
   ]);
 
   const defaults = defaultMap.get(component.type as ComponentTypes);

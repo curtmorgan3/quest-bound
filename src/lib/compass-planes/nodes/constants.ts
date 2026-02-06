@@ -4,12 +4,14 @@ import {
   contentConfig,
   EditCheckboxNode,
   EditContentNode,
+  EditFrameNode,
   EditGraphNode,
   EditImageNode,
   EditInputNode,
   EditInventoryNode,
   EditShapeNode,
   EditTextNode,
+  frameConfig,
   graphConfig,
   imageConfig,
   inputConfig,
@@ -28,6 +30,7 @@ export const sheetNodeTypes: NodeTypes = {
   [ComponentTypes.CONTENT]: EditContentNode,
   [ComponentTypes.INVENTORY]: EditInventoryNode,
   [ComponentTypes.GRAPH]: EditGraphNode,
+  [ComponentTypes.FRAME]: EditFrameNode,
 };
 
 export const baseComponentTypes: SheetComponentType[] = [
@@ -39,6 +42,7 @@ export const baseComponentTypes: SheetComponentType[] = [
   contentConfig,
   inventoryConfig,
   graphConfig,
+  frameConfig,
 ];
 
 export const componentTypes = [...baseComponentTypes];

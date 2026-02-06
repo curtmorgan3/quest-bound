@@ -9,6 +9,7 @@ const includedComponents = [
   ComponentTypes.CONTENT,
   ComponentTypes.INVENTORY,
   ComponentTypes.GRAPH,
+  ComponentTypes.FRAME,
 ];
 
 export const contextOptions: EditorMenuOption[] = includedComponents.map((component) => ({

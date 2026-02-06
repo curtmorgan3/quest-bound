@@ -188,13 +188,18 @@ export type GraphComponentData = {
   animationDebounceSeconds?: number;
 };
 
+export type FrameComponentData = {
+  url?: string;
+};
+
 export type ComponentData = ShapeComponentData &
   TextComponentData &
   ImageComponentData &
   InputComponentData &
   InventoryComponentData &
   CheckboxComponentData &
-  GraphComponentData & {
+  GraphComponentData &
+  FrameComponentData & {
     conditionalRenderAttributeId?: string | null;
     conditionalRenderInverse?: boolean;
   };

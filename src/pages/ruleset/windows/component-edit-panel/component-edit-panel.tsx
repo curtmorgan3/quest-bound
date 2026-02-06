@@ -4,6 +4,7 @@ import { ComponentTypes } from '@/lib/compass-planes/nodes';
 import {
   CheckboxDataEdit,
   GraphDataEdit,
+  FrameDataEdit,
   InventoryDataEdit,
 } from '@/lib/compass-planes/nodes/components';
 import { ImageDataEdit } from '@/lib/compass-planes/nodes/components/image';
@@ -132,6 +133,10 @@ export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
     selectedComponents.length > 0 &&
     selectedComponents.every((c) => c.type === ComponentTypes.GRAPH);
 
+  const allAreFrames =
+    selectedComponents.length > 0 &&
+    selectedComponents.every((c) => c.type === ComponentTypes.FRAME);
+
   return (
     <div
       className='w-[240px] h-[100vh] flex flex-col gap-2 items-center p-2'
@@ -158,7 +163,8 @@ export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
           <TabsContent value='data' className='w-full flex flex-col gap-4 mt-2'>
             {selectedComponents.length === 1 &&
               selectedComponents[0].type !== ComponentTypes.INVENTORY &&
-              selectedComponents[0].type !== ComponentTypes.GRAPH && (
+              selectedComponents[0].type !== ComponentTypes.GRAPH &&
+              selectedComponents[0].type !== ComponentTypes.FRAME && (
                 <AttributeLookup
                   value={selectedComponents[0].attributeId}
                   onSelect={(attr) => handleUpdate('attributeId', attr.id)}
@@ -200,6 +206,13 @@ export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
 
             {allAreGraphs && (
               <GraphDataEdit
+                components={selectedComponents}
+                updateComponents={updateComponents}
+              />
+            )}
+
+            {allAreFrames && (
+              <FrameDataEdit
                 components={selectedComponents}
                 updateComponents={updateComponents}
               />

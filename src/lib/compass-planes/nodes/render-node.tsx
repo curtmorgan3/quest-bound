@@ -3,6 +3,7 @@ import { ComponentTypes } from '../nodes';
 import {
   ViewCheckboxNode,
   ViewContentNode,
+  ViewFrameNode,
   ViewGraphNode,
   ViewImageNode,
   ViewInputNode,
@@ -44,6 +45,8 @@ export const renderViewComponent = (
       return <ViewInventoryNode key={component.id} component={component} />;
     case ComponentTypes.GRAPH:
       return <ViewGraphNode key={component.id} component={component} />;
+    case ComponentTypes.FRAME:
+      return <ViewFrameNode key={component.id} component={component} />;
     default:
       console.warn(`Attempted to render an unregistered view component: `, component.type);
       return null;
