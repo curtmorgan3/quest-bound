@@ -10,7 +10,11 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
-import { useImportRuleset, useRulesets, type ImportRulesetResult } from '@/lib/compass-api';
+import {
+  useImportRuleset,
+  useRulesets,
+  type ImportRulesetResult,
+} from '@/lib/compass-api';
 import { AlertCircle, CheckCircle, Upload } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -22,6 +26,9 @@ export const Rulesets = () => {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [importResult, setImportResult] = useState<ImportRulesetResult | null>(null);
+  const [replaceConfirmOpen, setReplaceConfirmOpen] = useState(false);
+  const [pendingReplaceFile, setPendingReplaceFile] = useState<File | null>(null);
+  const [pendingReplaceResult, setPendingReplaceResult] = useState<ImportRulesetResult | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
@@ -41,19 +48,47 @@ export const Rulesets = () => {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    // Reset previous result
     setImportResult(null);
+    setPendingReplaceFile(null);
+    setPendingReplaceResult(null);
+    setReplaceConfirmOpen(false);
 
     try {
       const result = await importRuleset(file);
-      setImportResult(result);
+      if (result.needsReplaceConfirmation) {
+        setPendingReplaceFile(file);
+        setPendingReplaceResult(result);
+        setReplaceConfirmOpen(true);
+      } else {
+        setImportResult(result);
+      }
 
-      // Clear the file input
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
     } catch (error) {
       console.error('Import failed:', error);
+    }
+  };
+
+  const handleConfirmReplace = async () => {
+    if (!pendingReplaceFile) return;
+    setReplaceConfirmOpen(false);
+    try {
+      const result = await importRuleset(pendingReplaceFile, { replaceIfNewer: true });
+      setImportResult(result);
+    } finally {
+      setPendingReplaceFile(null);
+      setPendingReplaceResult(null);
+    }
+  };
+
+  const handleCancelReplace = () => {
+    setReplaceConfirmOpen(false);
+    setPendingReplaceFile(null);
+    setPendingReplaceResult(null);
+    if (pendingReplaceResult) {
+      setImportResult(pendingReplaceResult);
     }
   };
 
@@ -171,6 +206,25 @@ export const Rulesets = () => {
               )}
             </div>
           )}
+
+          <Dialog open={replaceConfirmOpen} onOpenChange={setReplaceConfirmOpen}>
+            <DialogContent className='sm:max-w-[425px]'>
+              <DialogHeader>
+                <DialogTitle>Replace existing ruleset?</DialogTitle>
+              </DialogHeader>
+              <p className='text-sm text-muted-foreground'>
+                {pendingReplaceResult?.message}
+              </p>
+              <DialogFooter>
+                <Button variant='outline' onClick={handleCancelReplace}>
+                  Cancel
+                </Button>
+                <Button onClick={handleConfirmReplace} disabled={isImporting}>
+                  {isImporting ? 'Replacing…' : 'Replace'}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
 

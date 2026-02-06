@@ -159,9 +159,34 @@ function convertAttributeDefaultValue(item: Record<string, unknown>): string | n
   }
 }
 
+/**
+ * Compare two version strings (e.g. "1.2.3"). Returns -1 if a < b, 0 if equal, 1 if a > b.
+ * Falls back to string comparison for non-semver strings.
+ */
+function compareVersion(a: string, b: string): number {
+  const parse = (v: string) => v.split('.').map((n) => (Number.isNaN(Number(n)) ? 0 : Number(n)));
+  const partsA = parse(a);
+  const partsB = parse(b);
+  const len = Math.max(partsA.length, partsB.length);
+  for (let i = 0; i < len; i++) {
+    const na = partsA[i] ?? 0;
+    const nb = partsB[i] ?? 0;
+    if (na !== nb) return na < nb ? -1 : 1;
+  }
+  return 0;
+}
+
+export interface ImportRulesetOptions {
+  /** When true, replace an existing ruleset with the same id if the uploaded version is higher */
+  replaceIfNewer?: boolean;
+}
+
 export interface ImportRulesetResult {
   success: boolean;
   message: string;
+  /** When the uploaded ruleset has the same id but higher version; caller should prompt and re-call with replaceIfNewer: true */
+  needsReplaceConfirmation?: boolean;
+  existingRuleset?: Ruleset;
   importedRuleset?: Ruleset;
   importedCounts: {
     attributes: number;
@@ -443,7 +468,32 @@ export const useImportRuleset = () => {
     return { isValid: errors.length === 0, errors };
   };
 
-  const importRuleset = async (file: File): Promise<ImportRulesetResult> => {
+  /** Delete all data for a ruleset so it can be replaced by an import */
+  const deleteRulesetAndRelatedData = async (rulesetId: string): Promise<void> => {
+    const characters = await db.characters.where('rulesetId').equals(rulesetId).toArray();
+    const characterIds = characters.map((c) => c.id);
+    for (const cid of characterIds) {
+      await db.characterAttributes.where('characterId').equals(cid).delete();
+      await db.inventories.where('characterId').equals(cid).delete();
+      await db.characterWindows.where('characterId').equals(cid).delete();
+    }
+    await db.characters.where('rulesetId').equals(rulesetId).delete();
+    const windowIds = (await db.windows.where('rulesetId').equals(rulesetId).toArray()).map((w) => w.id);
+    if (windowIds.length > 0) {
+      await db.components.where('windowId').anyOf(windowIds).delete();
+    }
+    await db.attributes.where('rulesetId').equals(rulesetId).delete();
+    await db.items.where('rulesetId').equals(rulesetId).delete();
+    await db.actions.where('rulesetId').equals(rulesetId).delete();
+    await db.charts.where('rulesetId').equals(rulesetId).delete();
+    await db.assets.where('rulesetId').equals(rulesetId).delete();
+    await db.windows.where('rulesetId').equals(rulesetId).delete();
+    await db.fonts.where('rulesetId').equals(rulesetId).delete();
+    await db.documents.where('rulesetId').equals(rulesetId).delete();
+    await db.rulesets.delete(rulesetId);
+  };
+
+  const importRuleset = async (file: File, options?: ImportRulesetOptions): Promise<ImportRulesetResult> => {
     setIsImporting(true);
 
     try {
@@ -519,6 +569,84 @@ export const useImportRuleset = () => {
         createdAt: now,
         updatedAt: now,
       };
+
+      // Check for existing ruleset with same id
+      const existingRuleset = await db.rulesets.get(newRulesetId);
+      if (existingRuleset) {
+        if (existingRuleset.version === newRuleset.version) {
+          return {
+            success: false,
+            message: `A ruleset with the same id and version already exists ("${newRuleset.title}" v${newRuleset.version}). Import would duplicate the ruleset. Export with a new version or update the existing ruleset instead.`,
+            importedCounts: {
+              attributes: 0,
+              actions: 0,
+              items: 0,
+              charts: 0,
+              characters: 0,
+              windows: 0,
+              components: 0,
+              assets: 0,
+              fonts: 0,
+              documents: 0,
+              characterAttributes: 0,
+              inventories: 0,
+              characterWindows: 0,
+            },
+            errors: ['Duplicate ruleset: same id and version as an existing ruleset'],
+          };
+        }
+        if (compareVersion(newRuleset.version, existingRuleset.version) > 0) {
+          // Uploaded version is higher: prompt to replace unless already confirmed
+          if (!options?.replaceIfNewer) {
+            return {
+              success: false,
+              message: `A ruleset "${existingRuleset.title}" (v${existingRuleset.version}) already exists with the same id. The uploaded file is a newer version (v${newRuleset.version}). Replacing will remove the existing ruleset and all its data, and replace it with the uploaded version.`,
+              needsReplaceConfirmation: true,
+              existingRuleset,
+              importedRuleset: newRuleset,
+              importedCounts: {
+                attributes: 0,
+                actions: 0,
+                items: 0,
+                charts: 0,
+                characters: 0,
+                windows: 0,
+                components: 0,
+                assets: 0,
+                fonts: 0,
+                documents: 0,
+                characterAttributes: 0,
+                inventories: 0,
+                characterWindows: 0,
+              },
+              errors: [],
+            };
+          }
+          await deleteRulesetAndRelatedData(newRulesetId);
+        } else {
+          // Uploaded version is lower or equal (same already handled above): reject
+          return {
+            success: false,
+            message: `A ruleset "${existingRuleset.title}" (v${existingRuleset.version}) already exists with the same id. The uploaded file is an older or same version (v${newRuleset.version}). Import aborted.`,
+            importedCounts: {
+              attributes: 0,
+              actions: 0,
+              items: 0,
+              charts: 0,
+              characters: 0,
+              windows: 0,
+              components: 0,
+              assets: 0,
+              fonts: 0,
+              documents: 0,
+              characterAttributes: 0,
+              inventories: 0,
+              characterWindows: 0,
+            },
+            errors: ['Existing ruleset has same or newer version'],
+          };
+        }
+      }
 
       // Import content files
       const importedCounts = {
