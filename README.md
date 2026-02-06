@@ -1,23 +1,74 @@
-# Quest Bound v2
+# Quest Bound
 
-This is a ground-up, total rebuild of Quest Bound. I’m recapturing my original vision and building it with its open source use in mind. My intention is to make it simpler, more performant and (eventually) more feature rich.
+Quest Bound is a free and open source engine for creating digital tabletop role playing games. This repo contains all of its source code, its open source license and terms of use.
 
-## Why v2?
+<img width="3240" height="842" alt="qb" src="https://github.com/user-attachments/assets/bb9a241d-9d17-4e03-8f58-56d4802e1552" />
 
-QB was originally designed to be a distributed, cloud-based web app where many users connect to the same server. Since open sourcing it, the way people actually use it is more similar to a desktop application. To do so, you have to download the source code and run three separate servers with unnecessary infrastructure either through Docker or native services.
+---------
 
-v2 is a single progressive web app that runs everything in your browser. You have the option to use it online, or install it as a browser app with 100% offline capabilities. All you have to do is visit https://app.questbound.com. You can do this right now.
+Join our [Discord Server](https://discord.gg/Zx2jR5Q3zN) to share ideas and troubleshoot issues.
 
-## Is it still free and open source?
+Contribute to the documentation [here](https://github.com/curtmorgan3/quest-bound-docs).
 
-Yes. All the code for v2 is on a feature branch called `v2`. Once v2 reaches feature parity with v1, it will become the main branch and the current version will be moved to a `v1` branch. v1 will continue to be available, but I won’t contribute to it any further.
+---------
 
-## What to expect
+## License
+Quest Bound is free and open source under a strong copy left license. That means you can use and share Quest Bound freely.
 
-I’ve laid out a roadmap for v2’s development. This is my high level vision, but things can always change. As always, your feedback is welcome. I do not have an estimate for how long this will take.
+You **may** (and should!)
+- Freely download and use Quest Bound on your personal computer
+- Freely use Quest Bound on [https://app.questbound.com](https://app.questbound.com)
+- Share Quest Bound's source code or links to this site with friends
 
-## Contributions
+You **may not**
+- Include Quest Bound's source code in your application unlesss that application has the same free and open source license and gives proper attribution
+- Share content, including PDFs of games you've purchased, as Quest Bound rulesets
 
-The most important way you can help is try to use it. Report bugs in the bug channel and make feature requests in the feature channel. I may eventually get our fancy reporting system back up and running, but for now we’ll use Discord.
+Quest Bound lets you build automated tools for your games and includes the ability to upload PDFs for quick reference. Refer to the license of the game you purchases to understand
+your limitations on digitally reporducing and sharing that game.
 
-Join the [Quest Bound Discord Server](https://discord.gg/7QGV4muT39)
+You can find Quest Bound's full license on the right hand side of this page, or in the root directory of the source code.
+
+## Installing
+
+### Install Online
+The easiest and recommended way to use Quest Bound is by navigating to [https://app.questbound.com](https://app.questbound.com). Using QB online is free and only requires you to register your email address.
+
+Quest Bound is a *progressive web app* that can be optionally installed on your computer. You'll see an option on the sign in page to install it.
+
+<img width="425" height="168" alt="Screenshot 2026-02-06 at 7 28 47 AM" src="https://github.com/user-attachments/assets/4179a132-bc29-4aca-ad86-4206ed28c920" />
+
+Installing QB will let you launch it as a native application on your laptop or tablet. This is the recommended way to use it. Whether you install it or not, using Quest Bound does *not require an internet connection to work*. If you don't install it, you'll need the internet to initially connect to `app.questbound.com`, but may be disconnected after it loads in your browser. 
+
+### Run from Source
+Alternatively, you may download the source code and run a local web server on your computer. To do so, you must have [Node v >= 22](https://nodejs.org/en/download) installed. 
+
+Download and unzip or use git to clone the source code in this repo. From the root, run
+
+```
+npm install && npm run build
+```
+
+You only need to run that command once to set up Quest Bound. After that, stat it with
+
+```
+npm run start
+```
+
+To get the latest updates, redownload the zip file and repeat the process or, if you have git installed, run 
+
+```
+git pull && npm install && npm run build
+```
+
+You will not lose your content after updating.
+
+## Providing Feedback
+Please report bugs, feature requests and general feedback on the [issues page](https://github.com/curtmorgan3/quest-bound/issues).
+
+You can find a help channel on our [Discord server](https://discord.gg/Zx2jR5Q3zN).
+
+## Legacy Version
+You can find the original version of Quest Bound on the `legacy` branch of this repo. This version requires you to run separate applications for its server and client, as well as have PostgreSQL, Node and Redis available on your computer. Alternatively, the legacy version can be run through Docker. 
+
+The legacy version will remain availble indefinitely, but it will not be developed any further. It's recommended you use this version of Quest Bound instead. 
