@@ -64,7 +64,9 @@ export const EditGraphNode = () => {
   );
 };
 
-// Edit mode: simple shape placeholder based on variant
+const EDIT_FILL_RATIO = 0.1;
+
+// Edit mode: simple shape placeholder based on variant (10% fill so both colors show)
 function GraphEditPlaceholder({
   component,
   variant,
@@ -73,52 +75,80 @@ function GraphEditPlaceholder({
   variant: GraphVariant;
 }) {
   const css = getComponentStyles(component);
+  const fillColor = (css as { color?: string }).color ?? '#7BA3C7';
   const w = component.width;
   const h = component.height;
 
+  const commonContainer = {
+    width: w,
+    height: h,
+    backgroundColor: css.backgroundColor,
+    borderRadius: css.borderRadius,
+    border: '1px solid ' + (css.outlineColor || 'transparent'),
+    overflow: 'hidden' as const,
+  };
+
   if (variant === 'circular') {
-    const r = Math.min(w, h) / 2;
+    // Match view geometry: path radius r, stroke 2r → visible radius min(w,h)/2, centered
+    const r = Math.min(w, h) / 4;
     const cx = w / 2;
     const cy = h / 2;
+    const circumference = 2 * Math.PI * r;
+    const strokeDashoffset = circumference * (1 - EDIT_FILL_RATIO);
     return (
-      <svg width={w} height={h} style={{ display: 'block' }}>
-        <circle
-          cx={cx}
-          cy={cy}
-          r={r}
-          fill={css.backgroundColor}
-          stroke={css.outlineColor || css.backgroundColor}
-          strokeWidth={1}
-        />
-      </svg>
+      <div style={{ width: w, height: h, borderRadius: css.borderRadius, overflow: 'hidden' }}>
+        <svg width={w} height={h} style={{ display: 'block', transform: 'rotate(-90deg)' }}>
+          <circle
+            cx={cx}
+            cy={cy}
+            r={r}
+            fill={css.backgroundColor}
+            stroke={css.outlineColor || css.backgroundColor}
+            strokeWidth={1}
+          />
+          <circle
+            cx={cx}
+            cy={cy}
+            r={r}
+            fill='none'
+            stroke={fillColor}
+            strokeWidth={r * 2}
+            strokeDasharray={circumference}
+            strokeDashoffset={strokeDashoffset}
+          />
+        </svg>
+      </div>
     );
   }
 
   if (variant === 'vertical-linear') {
     return (
-      <div
-        style={{
-          width: w,
-          height: h,
-          backgroundColor: css.backgroundColor,
-          borderRadius: css.borderRadius,
-          border: '1px solid ' + (css.outlineColor || 'transparent'),
-        }}
-      />
+      <div style={{ ...commonContainer, position: 'relative' }}>
+        <div
+          style={{
+            position: 'absolute',
+            bottom: 0,
+            left: 0,
+            right: 0,
+            height: `${EDIT_FILL_RATIO * 100}%`,
+            backgroundColor: fillColor,
+          }}
+        />
+      </div>
     );
   }
 
   // horizontal-linear (default)
   return (
-    <div
-      style={{
-        width: w,
-        height: h,
-        backgroundColor: css.backgroundColor,
-        borderRadius: css.borderRadius,
-        border: '1px solid ' + (css.outlineColor || 'transparent'),
-      }}
-    />
+    <div style={commonContainer}>
+      <div
+        style={{
+          height: '100%',
+          width: `${EDIT_FILL_RATIO * 100}%`,
+          backgroundColor: fillColor,
+        }}
+      />
+    </div>
   );
 }
 
@@ -191,8 +221,8 @@ function ViewGraphNodeLive({
     );
   }
 
-  // circular
-  const r = Math.min(w, h) / 2;
+  // circular: path radius r so that stroke (width 2r) fills center to edge = visible radius min(w,h)/2
+  const r = Math.min(w, h) / 4;
   const cx = w / 2;
   const cy = h / 2;
   const circumference = 2 * Math.PI * r;
