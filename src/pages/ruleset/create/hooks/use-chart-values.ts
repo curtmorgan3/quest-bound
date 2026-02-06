@@ -1,7 +1,7 @@
 import { useCharts } from '@/lib/compass-api';
 import { useEffect, useState } from 'react';
 
-interface UseActionValueProps {
+interface UseChartValueProps {
   id?: string;
   baseProperties: {
     title: string;
@@ -21,7 +21,7 @@ export const useChartValues = ({
   setTitle,
   setDescription,
   setCategory,
-}: UseActionValueProps) => {
+}: UseChartValueProps) => {
   const { charts, createChart, updateChart } = useCharts();
   const isEditMode = !!id;
 
@@ -32,10 +32,21 @@ export const useChartValues = ({
       setTitle(activeChart.title);
       setDescription(activeChart.description);
       setCategory(activeChart.category || '');
+      setImage(activeChart.image ?? null);
+      setAssetId(activeChart.assetId ?? null);
+    } else {
+      resetAll();
     }
   }, [activeChart]);
 
   const [chartData, setChartData] = useState<string[][] | null>(null);
+  const [image, setImage] = useState<string | null>(null);
+  const [assetId, setAssetId] = useState<string | null>(null);
+
+  const resetAll = () => {
+    setImage(null);
+    setAssetId(null);
+  };
 
   const saveChart = () => {
     const updatedChartData = chartData
@@ -47,12 +58,15 @@ export const useChartValues = ({
     const data = {
       ...baseProperties,
       data: updatedChartData,
+      image,
+      assetId,
     };
 
     if (isEditMode) {
       updateChart(id, data);
     } else {
       createChart(data);
+      resetAll();
     }
 
     onCreate?.();
@@ -62,5 +76,9 @@ export const useChartValues = ({
     saveChart,
     chartData,
     setChartData,
+    image,
+    assetId,
+    setImage,
+    setAssetId,
   };
 };

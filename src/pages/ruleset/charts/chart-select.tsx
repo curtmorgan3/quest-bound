@@ -5,7 +5,11 @@ import { useSearchParams } from 'react-router-dom';
 import { PreviewCard } from '../components';
 import { ChartEditor } from './chart-editor';
 
-export const ChartSelect = () => {
+interface ChartSelectProps {
+  onEditDetails?: (id: string) => void;
+}
+
+export const ChartSelect = ({ onEditDetails }: ChartSelectProps) => {
   const { charts, deleteChart, updateChart } = useCharts();
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -40,6 +44,7 @@ export const ChartSelect = () => {
             onDelete={() => deleteChart(c.id)}
             onOpen={() => setSearchParams({ chart: c.id })}
             onEdit={(title, category) => updateChart(c.id, { title, category })}
+            onEditDetails={onEditDetails ? () => onEditDetails(c.id) : undefined}
           />
         ))}
       </div>

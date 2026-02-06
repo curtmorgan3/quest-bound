@@ -69,6 +69,10 @@ db.version(5).stores({
   diceRolls: `${common}, rulesetId, userId, value, label`,
 });
 
+db.version(6).stores({
+  charts: `${common}, rulesetId, title, description, category, data, assetId, image`,
+});
+
 // Cache assets for reference in the asset injector middleware
 db.on('ready', async () => {
   await db.assets

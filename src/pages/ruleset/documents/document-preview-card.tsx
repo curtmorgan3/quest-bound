@@ -56,7 +56,7 @@ export const DocumentPreviewCard = ({
   return (
     <Card
       key={id}
-      className='p-4 w-[300px] h-[280px] flex flex-col justify-between'
+      className='p-4 w-[300px] h-[240px] flex flex-col justify-between'
       onClick={handleSave}
       style={
         image

@@ -45,7 +45,15 @@ export const Ruleset = ({
       case 'actions':
         return <ActionChart />;
       case 'charts':
-        return <ChartSelect />;
+        return (
+          <ChartSelect
+            onEditDetails={(id) => {
+              searchParams.set('edit', id);
+              setSearchParams(searchParams);
+              setOpen(true);
+            }}
+          />
+        );
       case 'documents':
         return (
           <Documents

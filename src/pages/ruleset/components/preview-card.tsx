@@ -7,18 +7,30 @@ import {
   CardTitle,
   Input,
 } from '@/components';
+import { Pencil } from 'lucide-react';
 import { useState } from 'react';
 
 interface Props {
   id: string;
   title: string;
   category?: string;
+  image?: string | null;
   onDelete: (id: string) => void;
   onOpen: (id: string) => void;
   onEdit: (title: string, category?: string) => void;
+  onEditDetails?: () => void;
 }
 
-export const PreviewCard = ({ id, title, category, onDelete, onOpen, onEdit }: Props) => {
+export const PreviewCard = ({
+  id,
+  title,
+  category,
+  image,
+  onDelete,
+  onOpen,
+  onEdit,
+  onEditDetails,
+}: Props) => {
   const [editingTitle, setEditingTitle] = useState(false);
   const [newTitle, setNewTitle] = useState(title);
 
@@ -45,8 +57,17 @@ export const PreviewCard = ({ id, title, category, onDelete, onOpen, onEdit }: P
   return (
     <Card
       key={id}
-      className='p-4 w-[300px] h-[240px] flex flex-col justify-between'
-      onClick={handleSave}>
+      className={`p-4 w-[300px] flex flex-col justify-between h-[240px]`}
+      onClick={handleSave}
+      style={
+        image
+          ? {
+              background: `url(${image})`,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+            }
+          : undefined
+      }>
       <CardHeader>
         {editingTitle ? (
           <Input
@@ -95,9 +116,16 @@ export const PreviewCard = ({ id, title, category, onDelete, onOpen, onEdit }: P
           Delete
         </Button>
         <CardAction>
-          <Button variant='link' onClick={() => onOpen(id)}>
-            Open
-          </Button>
+          <div className='flex gap-1'>
+            {onEditDetails && (
+              <Button variant='ghost' size='sm' onClick={onEditDetails}>
+                <Pencil className='h-4 w-4' />
+              </Button>
+            )}
+            <Button variant='link' onClick={() => onOpen(id)}>
+              Open
+            </Button>
+          </div>
         </CardAction>
       </div>
     </Card>

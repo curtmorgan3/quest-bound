@@ -99,6 +99,8 @@ export type Chart = BaseDetails & {
   description: string;
   category?: string;
   data: string;
+  assetId?: string | null;
+  image?: string | null;
 };
 
 export type Document = BaseDetails & {
