@@ -5,6 +5,7 @@ import {
   updateComponentData,
 } from '@/lib/compass-planes/utils';
 import type { Component, GraphComponentData, GraphVariant } from '@/types';
+import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
   Select,
@@ -60,6 +61,16 @@ export const GraphDataEdit = ({
     fireExternalComponentChangeEvent({ updates: updates as any });
   };
 
+  const setAnimationDebounceSeconds = (seconds: number) => {
+    const value = Math.max(0, Number(seconds));
+    const updates = editableComponents.map((c) => ({
+      id: c.id,
+      data: updateComponentData(c.data, { animationDebounceSeconds: value }),
+    }));
+    updateComponents(updates);
+    fireExternalComponentChangeEvent({ updates: updates as any });
+  };
+
   if (editableComponents.length === 0) return null;
 
   return (
@@ -80,6 +91,25 @@ export const GraphDataEdit = ({
             ))}
           </SelectContent>
         </Select>
+      </div>
+      <div className="flex flex-col gap-2">
+        <Label htmlFor="graph-animation-debounce">Animation delay (seconds)</Label>
+        <Input
+          id="graph-animation-debounce"
+          type="number"
+          min={0}
+          step={0.1}
+          value={
+            typeof firstData?.animationDebounceSeconds === 'number'
+              ? firstData.animationDebounceSeconds
+              : 0.15
+          }
+          onChange={(e) => {
+            const v = parseFloat(e.target.value);
+            if (!Number.isNaN(v)) setAnimationDebounceSeconds(v);
+          }}
+          className="h-9"
+        />
       </div>
       <AttributeLookup
         label="Numerator (number)"

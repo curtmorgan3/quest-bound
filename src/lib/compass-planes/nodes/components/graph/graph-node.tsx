@@ -102,9 +102,9 @@ function GraphEditPlaceholder({
             cx={cx}
             cy={cy}
             r={r}
-            fill={css.backgroundColor}
-            stroke={css.outlineColor || css.backgroundColor}
-            strokeWidth={1}
+            fill='none'
+            stroke={css.backgroundColor}
+            strokeWidth={r * 2}
           />
           <circle
             cx={cx}
@@ -152,28 +152,38 @@ function GraphEditPlaceholder({
   );
 }
 
+const DEFAULT_DEBOUNCE_SECONDS = 0.15;
+const FILL_TRANSITION_MS = 400;
+
 export const ViewGraphNode = ({ component }: { component: Component }) => {
   const data = getComponentData(component) as GraphComponentData;
   const css = getComponentStyles(component);
   const variant = data.graphVariant ?? 'horizontal-linear';
+  const debounceMs = Math.max(0, (data.animationDebounceSeconds ?? DEFAULT_DEBOUNCE_SECONDS) * 1000);
 
-  return <ViewGraphNodeLive component={component} variant={variant} css={css} />;
+  return (
+    <ViewGraphNodeLive
+      component={component}
+      variant={variant}
+      css={css}
+      debounceMs={debounceMs}
+    />
+  );
 };
-
-const DEBOUNCE_MS = 150;
-const FILL_TRANSITION_MS = 400;
 
 function ViewGraphNodeLive({
   component,
   variant,
   css,
+  debounceMs,
 }: {
   component: Component;
   variant: GraphVariant;
   css: ReturnType<typeof getComponentStyles>;
+  debounceMs: number;
 }) {
   const ratio = useGraphRatio(component);
-  const debouncedRatio = useDebouncedRatio(ratio, DEBOUNCE_MS);
+  const debouncedRatio = useDebouncedRatio(ratio, debounceMs);
   const bg = css.backgroundColor;
   const fillColor = (css as { color?: string }).color ?? '#7BA3C7';
 

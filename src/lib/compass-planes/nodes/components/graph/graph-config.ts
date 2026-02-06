@@ -21,6 +21,7 @@ export const graphConfig: SheetComponentType = {
 
 const DEFAULT_GRAPH_DATA: GraphComponentData = {
   graphVariant: 'horizontal-linear',
+  animationDebounceSeconds: 0.15,
 };
 
 const DEFAULT_GRAPH_STYLES: ComponentStyle = {
