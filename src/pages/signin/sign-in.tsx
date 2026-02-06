@@ -8,6 +8,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useRegisterEmail, useUsers } from '@/lib/compass-api';
+import { isRunningLocally } from '@/utils';
 import { motion } from 'framer-motion';
 import { useState } from 'react';
 import DiscordImage from './discord-icon.png';
@@ -51,7 +52,7 @@ export const SignIn = () => {
       </video>
 
       <div className='flex flex-col gap-6 items-center justify-center'>
-        {!emailRegistered && (
+        {!emailRegistered && !isRunningLocally() && (
           <div className='flex flex-col gap-2 items-center'>
             <div className='flex gap-2 items-center'>
               <Input
@@ -82,7 +83,7 @@ export const SignIn = () => {
             </a>
           </div>
         )}
-        {emailRegistered && (
+        {(emailRegistered || isRunningLocally()) && (
           <div className='flex gap-4 items-center'>
             <Select onValueChange={(value) => setSelectedUserId(value)} value={selectedUserId}>
               <SelectTrigger className='w-[200px]' data-testid='user-select'>

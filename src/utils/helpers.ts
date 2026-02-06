@@ -7,3 +7,7 @@ export function generateId(context?: string): string {
   const id = v4();
   return context ? `${context}-${id}` : id;
 }
+
+export function isRunningLocally(): boolean {
+  return window.location.href.includes('localhost');
+}
