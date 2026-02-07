@@ -7,6 +7,7 @@ import {
   FileText,
   FolderOpen,
   HandFist,
+  HelpCircle,
   Newspaper,
   Settings as SettingsIcon,
   Sword,
@@ -28,7 +29,13 @@ import {
   SidebarTrigger,
   useSidebar,
 } from '@/components/ui/sidebar';
-import { useActiveRuleset, useCharacter, useCharts, useDocuments, useUsers } from '@/lib/compass-api';
+import {
+  useActiveRuleset,
+  useCharacter,
+  useCharts,
+  useDocuments,
+  useUsers,
+} from '@/lib/compass-api';
 import { DevTools, Settings } from '@/pages';
 import { DiceContext } from '@/stores';
 import { useContext, useEffect, useState } from 'react';
@@ -114,6 +121,26 @@ export function AppSidebar() {
   const sortedDocuments = [...documents].sort((a, b) => a.title.localeCompare(b.title));
   const sortedCharts = [...charts].sort((a, b) => a.title.localeCompare(b.title));
 
+  const docsPageFromRoute = (): string => {
+    const path = location.pathname;
+    if (path.includes('/rulesets') && !path.includes('/characters')) {
+      if (path.includes('/attributes')) return 'attributes';
+      if (path.includes('/actions')) return 'actions';
+      if (path.includes('/items')) return 'items';
+      if (path.includes('/documents')) return 'documents';
+      if (path.includes('/charts')) return 'charts';
+      return 'rulesets';
+    }
+    if (path.includes('/characters')) {
+      if (path.includes('/documents') || path.includes('/chart/'))
+        return path.includes('/chart/') ? 'charts' : 'documents';
+      return 'characters';
+    }
+    return 'rulesets';
+  };
+
+  const helpDocsUrl = `https://v2.docs.questbound.com/docs/${docsPageFromRoute()}`;
+
   return (
     <Drawer direction='bottom'>
       <Sidebar collapsible='icon'>
@@ -171,8 +198,7 @@ export function AppSidebar() {
             <>
               <SidebarGroup>
                 <SidebarGroupLabel>Documents</SidebarGroupLabel>
-                <SidebarGroupContent
-                  className='max-h-[min(200px,40vh)] min-h-0 overflow-y-auto overflow-x-hidden'>
+                <SidebarGroupContent className='max-h-[min(200px,40vh)] min-h-0 overflow-y-auto overflow-x-hidden'>
                   <SidebarMenu>
                     {sortedDocuments.length === 0 ? (
                       <SidebarMenuItem>
@@ -209,14 +235,11 @@ export function AppSidebar() {
               </SidebarGroup>
               <SidebarGroup>
                 <SidebarGroupLabel>Charts</SidebarGroupLabel>
-                <SidebarGroupContent
-                  className='max-h-[min(200px,40vh)] min-h-0 overflow-y-auto overflow-x-hidden'>
+                <SidebarGroupContent className='max-h-[min(200px,40vh)] min-h-0 overflow-y-auto overflow-x-hidden'>
                   <SidebarMenu>
                     {sortedCharts.length === 0 ? (
                       <SidebarMenuItem>
-                        <span className='px-2 py-1.5 text-xs text-muted-foreground'>
-                          No charts
-                        </span>
+                        <span className='px-2 py-1.5 text-xs text-muted-foreground'>No charts</span>
                       </SidebarMenuItem>
                     ) : (
                       sortedCharts.map((chart) => (
@@ -278,6 +301,18 @@ export function AppSidebar() {
                   <span>Settings</span>
                 </SidebarMenuButton>
               </DrawerTrigger>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <SidebarMenuButton asChild>
+                <a
+                  href={helpDocsUrl}
+                  target='_blank'
+                  rel='noopener noreferrer'
+                  data-testid='nav-help'>
+                  <HelpCircle />
+                  <span>Help</span>
+                </a>
+              </SidebarMenuButton>
             </SidebarMenuItem>
             {localStorage.getItem('debug.tools') === 'true' && (
               <SidebarMenuItem>
