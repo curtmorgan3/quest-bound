@@ -24,6 +24,8 @@ export const AttributeChart = () => {
   const { attributes, deleteAttribute, updateAttribute } = useAttributes();
   const [, setSearchParams] = useSearchParams();
 
+  console.log(attributes);
+
   const rows: Partial<Attribute>[] = useMemo(
     () =>
       attributes.map((a) => {
@@ -38,17 +40,32 @@ export const AttributeChart = () => {
 
   const columns: GridColumn<Attribute>[] = [...attributeChartColumns]
     .map((c) => {
-      if (c.field !== 'controls') return c;
-      return {
-        ...c,
-        cellRenderer: (params: CellRendererProps<Attribute>) => (
-          <ChartControls
-            id={params.data.id}
-            handleDelete={handleDelete}
-            handleEdit={(id) => setSearchParams({ edit: id })}
-          />
-        ),
-      };
+      if (c.field === 'controls') {
+        return {
+          ...c,
+          cellRenderer: (params: CellRendererProps<Attribute>) => (
+            <ChartControls
+              id={params.data.id}
+              handleDelete={handleDelete}
+              handleEdit={(id) => setSearchParams({ edit: id })}
+            />
+          ),
+        };
+      }
+      if (c.field === 'image') {
+        return {
+          ...c,
+          cellRenderer: (params: CellRendererProps<Attribute>) =>
+            params.data.image ? (
+              <img
+                src={params.data.image}
+                alt={params.data.title}
+                className='w-10 h-10 object-cover rounded'
+              />
+            ) : null,
+        };
+      }
+      return c;
     })
     .sort((a, b) => (a.sortIndex ?? 0) - (b.sortIndex ?? 0));
 

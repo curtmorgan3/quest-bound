@@ -11,11 +11,19 @@ export const attributeChartColumns: GridColumn<Attribute>[] = [
     resizable: false,
   },
   {
+    field: 'image',
+    headerName: '',
+    editable: false,
+    sortIndex: 1,
+    width: 60,
+    resizable: false,
+  },
+  {
     field: 'title',
     headerName: 'Title',
     editable: true,
     filter: true,
-    sortIndex: 1,
+    sortIndex: 2,
   },
   {
     field: 'category',
@@ -23,7 +31,7 @@ export const attributeChartColumns: GridColumn<Attribute>[] = [
     editable: true,
     filter: true,
     width: 150,
-    sortIndex: 2,
+    sortIndex: 3,
   },
   {
     field: 'type',
@@ -35,7 +43,7 @@ export const attributeChartColumns: GridColumn<Attribute>[] = [
     cellEditorParams: {
       values: ['Number', 'Text', 'Boolean', 'List'],
     },
-    sortIndex: 3,
+    sortIndex: 4,
   },
   {
     field: 'defaultValue',
@@ -44,7 +52,7 @@ export const attributeChartColumns: GridColumn<Attribute>[] = [
     editable: true,
     filter: true,
     width: 100,
-    sortIndex: 4,
+    sortIndex: 5,
     cellRendererSelector: (params) => {
       if (params.data.type === 'Boolean') {
         return { component: 'agCheckboxCellRenderer' };
@@ -58,7 +66,7 @@ export const attributeChartColumns: GridColumn<Attribute>[] = [
     editable: true,
     filter: true,
     width: 100,
-    sortIndex: 5,
+    sortIndex: 6,
   },
   {
     field: 'max',
@@ -66,7 +74,7 @@ export const attributeChartColumns: GridColumn<Attribute>[] = [
     editable: true,
     filter: true,
     width: 100,
-    sortIndex: 6,
+    sortIndex: 7,
   },
   {
     field: 'description',
@@ -74,7 +82,7 @@ export const attributeChartColumns: GridColumn<Attribute>[] = [
     editable: true,
     cellEditor: 'agLargeTextCellEditor',
     cellEditorPopup: true,
-    sortIndex: 7,
+    sortIndex: 8,
     flex: 1,
     minWidth: 80,
   },

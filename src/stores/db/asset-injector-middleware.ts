@@ -36,6 +36,7 @@ export const assetInjectorMiddleware: Middleware<DBCore> = {
             'actions',
             'assets',
             'documents',
+            'attributes',
           ].indexOf(tableName) === -1
         ) {
           return downlevelTable;

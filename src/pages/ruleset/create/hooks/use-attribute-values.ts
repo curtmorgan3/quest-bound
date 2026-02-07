@@ -30,6 +30,18 @@ export const useAttributeValues = ({
 
   const activeAttribute = attributes.find((a) => a.id === id);
 
+  const [defaultValue, setDefaultValue] = useState<string | number>('');
+  const [typeValue, setTypeValue] = useState('number');
+  const [defaultBoolean, setDefaultBoolean] = useState(false);
+  const [attributeListOptions, setAttributeListOptions] = useState<string[]>([]);
+  const [min, setMin] = useState<number>();
+  const [max, setMax] = useState<number>();
+  const [useChartForOptions, setUseChartForOptions] = useState(false);
+  const [optionsChartId, setOptionsChartId] = useState('');
+  const [optionsChartColumnHeader, setOptionsChartColumnHeader] = useState('');
+  const [image, setImage] = useState<string | null>(null);
+  const [assetId, setAssetId] = useState<string | null>(null);
+
   useEffect(() => {
     if (isEditMode && activeAttribute) {
       setTitle(activeAttribute.title);
@@ -39,6 +51,8 @@ export const useAttributeValues = ({
       setAttributeListOptions(activeAttribute.options || []);
       setMin(activeAttribute.min);
       setMax(activeAttribute.max);
+      setImage(activeAttribute.image ?? null);
+      setAssetId(activeAttribute.assetId ?? null);
       // Handle chart reference for list options
       setUseChartForOptions(!!activeAttribute.optionsChartRef);
       setOptionsChartId(activeAttribute.optionsChartRef?.toString() || '');
@@ -54,15 +68,6 @@ export const useAttributeValues = ({
     }
   }, [activeAttribute]);
 
-  const [defaultValue, setDefaultValue] = useState<string | number>('');
-  const [typeValue, setTypeValue] = useState('number');
-  const [defaultBoolean, setDefaultBoolean] = useState(false);
-  const [attributeListOptions, setAttributeListOptions] = useState<string[]>([]);
-  const [min, setMin] = useState<number>();
-  const [max, setMax] = useState<number>();
-  const [useChartForOptions, setUseChartForOptions] = useState(false);
-  const [optionsChartId, setOptionsChartId] = useState('');
-  const [optionsChartColumnHeader, setOptionsChartColumnHeader] = useState('');
 
   const addListOption = (opt: string) => {
     setAttributeListOptions((prev) => [...prev, opt]);
@@ -79,10 +84,14 @@ export const useAttributeValues = ({
     setUseChartForOptions(false);
     setOptionsChartId('');
     setOptionsChartColumnHeader('');
+    setImage(null);
+    setAssetId(null);
   };
 
   const attributeProperties: Partial<Attribute> = {
     type: typeValue as 'string' | 'number' | 'boolean' | 'list',
+    image,
+    assetId,
     defaultValue:
       typeValue === 'boolean'
         ? defaultBoolean
@@ -163,5 +172,9 @@ export const useAttributeValues = ({
     charts,
     chartColumnHeaders,
     chartListOptions,
+    image,
+    assetId,
+    setImage,
+    setAssetId,
   };
 };

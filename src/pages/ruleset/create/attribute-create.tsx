@@ -2,6 +2,7 @@ import {
   Button,
   Checkbox,
   Input,
+  ImageUpload,
   Label,
   Select,
   SelectContent,
@@ -9,6 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components';
+import { useAssets } from '@/lib/compass-api';
 import type { Chart } from '@/types';
 import { Plus, Trash } from 'lucide-react';
 import { useEffect, useState, type Dispatch, type SetStateAction } from 'react';
@@ -36,6 +38,10 @@ interface AttributeCreateProps {
   charts: Chart[];
   chartColumnHeaders: string[];
   chartListOptions: string[];
+  image: string | null;
+  assetId: string | null;
+  setImage: Dispatch<SetStateAction<string | null>>;
+  setAssetId: Dispatch<SetStateAction<string | null>>;
 }
 
 export const AttributeCreate = ({
@@ -61,8 +67,42 @@ export const AttributeCreate = ({
   charts,
   chartColumnHeaders,
   chartListOptions,
+  image,
+  assetId,
+  setImage,
+  setAssetId,
 }: AttributeCreateProps) => {
   const [optionInput, setOptionInput] = useState('');
+  const { assets, deleteAsset } = useAssets();
+
+  const getImageFromAssetId = (id: string | null) => {
+    if (!id) return null;
+    const asset = assets.find((a) => a.id === id);
+    return asset?.data ?? null;
+  };
+
+  const handleImageUpload = (uploadedAssetId: string) => {
+    setAssetId(uploadedAssetId);
+    const imageData = getImageFromAssetId(uploadedAssetId);
+    if (imageData) {
+      setImage(imageData);
+    }
+  };
+
+  const handleSetUrl = (url: string) => {
+    setAssetId(null);
+    setImage(url);
+  };
+
+  const handleImageRemove = async () => {
+    if (assetId) {
+      await deleteAsset(assetId);
+    }
+    setAssetId(null);
+    setImage(null);
+  };
+
+  const displayImage = image || getImageFromAssetId(assetId);
 
   const optionsReversed = [...attributeListOptions].reverse();
   
@@ -81,6 +121,16 @@ export const AttributeCreate = ({
 
   return (
     <div className='flex flex-col gap-4'>
+      <div className='flex flex-col gap-2'>
+        <Label>Image</Label>
+        <ImageUpload
+          image={displayImage}
+          alt='Attribute image'
+          onUpload={handleImageUpload}
+          onRemove={handleImageRemove}
+          onSetUrl={handleSetUrl}
+        />
+      </div>
       <div className='w-full flex flex-row gap-4'>
         <div className='grid gap-3 w-[50%]'>
           <Label htmlFor='create-type'>Type</Label>
