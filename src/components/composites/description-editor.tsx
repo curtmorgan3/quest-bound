@@ -65,12 +65,18 @@ export const DescriptionEditor = ({
 export const DescriptionViewer = ({
   value,
   placeholder,
+  className,
+  onClick,
 }: {
   value?: string;
   placeholder?: string;
+  className?: string;
+  onClick?: () => void;
 }) => {
   return (
-    <div className='border-input min-h-24 max-h-[200px] w-full overflow-y-auto rounded-md border bg-transparent px-3 py-2 text-base shadow-xs md:text-sm'>
+    <div
+      onClick={onClick}
+      className={` md-content border-input min-h-24 max-h-[200px] w-full overflow-y-auto rounded-md border bg-transparent px-3 py-2 text-base shadow-xs md:text-sm ${className ?? ''}`}>
       {value ? (
         <Markdown>{value}</Markdown>
       ) : (

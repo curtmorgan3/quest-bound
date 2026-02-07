@@ -1,3 +1,4 @@
+import { DescriptionViewer } from '@/components';
 import { DiceContext, parseTextForDiceRolls, type InventoryItemWithData } from '@/stores';
 import { useKeyListeners } from '@/utils';
 import { X } from 'lucide-react';
@@ -86,9 +87,12 @@ export const ItemContextMenu = ({
         border: '1px solid #333',
         borderRadius: 8,
         padding: 12,
-        minWidth: 200,
+        minWidth: 300,
         zIndex: 1000,
         boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '8px',
       }}
       className='relative'>
       <button
@@ -117,17 +121,11 @@ export const ItemContextMenu = ({
       </div>
 
       {item.description && (
-        <div
+        <DescriptionViewer
           onClick={handleRoll}
           className={diceRolls.length ? 'clickable' : undefined}
-          style={{
-            marginBottom: 12,
-            fontSize: 12,
-            color: '#aaa',
-            lineHeight: 1.4,
-          }}>
-          {item.description}
-        </div>
+          value={item.description}
+        />
       )}
 
       {maxQuantity > 1 && (
