@@ -7,7 +7,7 @@ import {
 } from '@/lib/compass-api';
 import { SheetViewer } from '@/lib/compass-planes';
 import { CharacterProvider, type InventoryPanelConfig } from '@/stores';
-import { type Action, type CharacterAttribute, type Item } from '@/types';
+import { type Action, type Attribute, type CharacterAttribute, type Item } from '@/types';
 import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { InventoryPanel } from './inventory-panel';
@@ -75,15 +75,26 @@ export const CharacterPage = ({ id, lockByDefault }: { id?: string; lockByDefaul
     return null;
   };
 
-  const handleSelectInventoryEntity = (entity: Action | Item, type: 'action' | 'item') => {
+  const handleSelectInventoryEntity = (
+    entity: Action | Item | Attribute,
+    type: 'action' | 'item' | 'attribute',
+  ) => {
     if (!inventoryPanelConfig.inventoryComponentId) {
       console.warn('No component ID available when adding item to inventory.');
       return;
     }
 
-    // Get the item's inventory dimensions (default to 2x2 if not specified)
-    const itemWidth = (entity as Item).inventoryWidth ?? 2;
-    const itemHeight = (entity as Item).inventoryHeight ?? 2;
+    // Get the entity's inventory dimensions (default to 2x2 if not specified)
+    const itemWidth =
+      (entity as Item).inventoryWidth ??
+      (entity as Action).inventoryWidth ??
+      (entity as Attribute).inventoryWidth ??
+      2;
+    const itemHeight =
+      (entity as Item).inventoryHeight ??
+      (entity as Action).inventoryHeight ??
+      (entity as Attribute).inventoryHeight ??
+      2;
 
     // Find the first empty slot
     const slot = findFirstEmptySlot(

@@ -2,12 +2,13 @@ import { useErrorHandler } from '@/hooks';
 import { db, type InventoryItemWithData } from '@/stores';
 import type { Inventory, InventoryItem } from '@/types';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { useActions, useItems } from '../rulesets';
+import { useActions, useAttributes, useItems } from '../rulesets';
 
 export const useInventory = (inventoryId: string) => {
   const { handleError } = useErrorHandler();
   const { actions } = useActions();
   const { items } = useItems();
+  const { attributes } = useAttributes();
 
   const inventory = useLiveQuery(() => db.inventories.get(inventoryId), [inventoryId]);
 
@@ -23,14 +24,29 @@ export const useInventory = (inventoryId: string) => {
   const inventoryItemsWithImages: InventoryItemWithData[] = (inventoryItems ?? []).map((entity) => {
     const itemRef = items.find((item) => item.id === entity.entityId);
     const actionRef = actions.find((action) => action.id === entity.entityId);
+    const attributeRef = attributes.find((attr) => attr.id === entity.entityId);
 
     return {
       ...entity,
-      title: itemRef?.title ?? actionRef?.title ?? '',
-      description: itemRef?.description ?? actionRef?.description ?? '',
-      image: itemRef?.image ?? actionRef?.image,
-      inventoryWidth: itemRef?.inventoryWidth ?? 2,
-      inventoryHeight: itemRef?.inventoryHeight ?? 2,
+      title:
+        itemRef?.title ?? actionRef?.title ?? attributeRef?.title ?? '',
+      description:
+        itemRef?.description ??
+        actionRef?.description ??
+        attributeRef?.description ??
+        '',
+      image:
+        itemRef?.image ?? actionRef?.image ?? attributeRef?.image ?? undefined,
+      inventoryWidth:
+        itemRef?.inventoryWidth ??
+        actionRef?.inventoryWidth ??
+        attributeRef?.inventoryWidth ??
+        2,
+      inventoryHeight:
+        itemRef?.inventoryHeight ??
+        actionRef?.inventoryHeight ??
+        attributeRef?.inventoryHeight ??
+        2,
       stackSize: itemRef?.stackSize ?? 1,
     };
   });

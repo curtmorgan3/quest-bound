@@ -3,7 +3,7 @@ import { createContext } from 'react';
 
 export type InventoryPanelConfig = {
   open?: boolean;
-  type?: 'item' | 'action';
+  type?: 'item' | 'action' | 'attribute';
   includeIds?: string[];
   excludeIds?: string[];
   inventoryComponentId?: string;

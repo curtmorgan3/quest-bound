@@ -8,22 +8,22 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet';
-import { useActions, useAssets, useItems } from '@/lib/compass-api';
+import { useActions, useAssets, useAttributes, useItems } from '@/lib/compass-api';
 import { CharacterContext } from '@/stores';
-import type { Action, Item } from '@/types';
-import { PackageIcon, SearchIcon, ZapIcon } from 'lucide-react';
+import type { Action, Attribute, Item } from '@/types';
+import { GaugeIcon, PackageIcon, SearchIcon, ZapIcon } from 'lucide-react';
 import { useCallback, useContext, useMemo, useState } from 'react';
 
 type InventoryPanelProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  type?: 'item' | 'action';
+  type?: 'item' | 'action' | 'attribute';
   includeIds?: string[];
   excludeIds?: string[];
-  onSelect?: (item: Item | Action, type: 'item' | 'action') => void;
+  onSelect?: (item: Item | Action | Attribute, type: 'item' | 'action' | 'attribute') => void;
 };
 
-type GroupedItems = Record<string, (Item | Action)[]>;
+type GroupedItems = Record<string, (Item | Action | Attribute)[]>;
 
 export const InventoryPanel = ({
   open,
@@ -35,6 +35,7 @@ export const InventoryPanel = ({
 }: InventoryPanelProps) => {
   const { items } = useItems();
   const { actions } = useActions();
+  const { attributes } = useAttributes();
   const { assets } = useAssets();
   const [search, setSearch] = useState('');
 
@@ -42,7 +43,7 @@ export const InventoryPanel = ({
   const typeRestriction = inventoryPanelConfig?.typeRestriction;
 
   const getImage = useCallback(
-    (entry: Item | Action): string | null => {
+    (entry: Item | Action | Attribute): string | null => {
       // Use the image property directly if available
       if (entry.image) return entry.image;
       // Otherwise look up from assets
@@ -59,7 +60,7 @@ export const InventoryPanel = ({
     const searchLower = search.toLowerCase();
 
     // Filter items based on props
-    const filterEntries = <T extends Item | Action>(
+    const filterEntries = <T extends Item | Action | Attribute>(
       entries: T[],
       entryType: 'item' | 'action' | 'attribute',
     ): T[] => {
@@ -96,11 +97,13 @@ export const InventoryPanel = ({
 
     const filteredItems = filterEntries(items, 'item');
     const filteredActions = filterEntries(actions, 'action');
+    const filteredAttributes = filterEntries(attributes, 'attribute');
 
     // Group by category
-    const grouped: { items: GroupedItems; actions: GroupedItems } = {
+    const grouped: { items: GroupedItems; actions: GroupedItems; attributes: GroupedItems } = {
       items: {},
       actions: {},
+      attributes: {},
     };
 
     // Group items
@@ -121,6 +124,15 @@ export const InventoryPanel = ({
       grouped.actions[category].push(action);
     });
 
+    // Group attributes
+    filteredAttributes.forEach((attribute) => {
+      const category = attribute.category || 'Uncategorized';
+      if (!grouped.attributes[category]) {
+        grouped.attributes[category] = [];
+      }
+      grouped.attributes[category].push(attribute);
+    });
+
     // Sort items within each category alphabetically
     Object.values(grouped.items).forEach((categoryItems) => {
       categoryItems.sort((a, b) => a.title.localeCompare(b.title));
@@ -128,15 +140,22 @@ export const InventoryPanel = ({
     Object.values(grouped.actions).forEach((categoryActions) => {
       categoryActions.sort((a, b) => a.title.localeCompare(b.title));
     });
+    Object.values(grouped.attributes).forEach((categoryAttributes) => {
+      categoryAttributes.sort((a, b) => a.title.localeCompare(b.title));
+    });
 
     return grouped;
-  }, [items, actions, type, includeIds, excludeIds, search, typeRestriction]);
+  }, [items, actions, attributes, type, includeIds, excludeIds, search, typeRestriction]);
 
   // Get sorted category names
   const itemCategories = Object.keys(filteredAndGrouped.items).sort();
   const actionCategories = Object.keys(filteredAndGrouped.actions).sort();
+  const attributeCategories = Object.keys(filteredAndGrouped.attributes).sort();
 
-  const handleItemClick = (entry: Item | Action, entryType: 'item' | 'action') => {
+  const handleItemClick = (
+    entry: Item | Action | Attribute,
+    entryType: 'item' | 'action' | 'attribute',
+  ) => {
     onSelect?.(entry, entryType);
   };
 
@@ -145,12 +164,24 @@ export const InventoryPanel = ({
       <SheetContent side='right' className='flex flex-col p-[8px]'>
         <SheetHeader>
           <SheetTitle>
-            {type === 'item' ? 'Items' : type === 'action' ? 'Actions' : 'Items & Actions'}
+            {type === 'item'
+              ? 'Items'
+              : type === 'action'
+                ? 'Actions'
+                : type === 'attribute'
+                  ? 'Attributes'
+                  : 'Items, Actions & Attributes'}
           </SheetTitle>
           <SheetDescription>
             Browse and select{' '}
-            {type === 'item' ? 'items' : type === 'action' ? 'actions' : 'items and actions'} from
-            the ruleset.
+            {type === 'item'
+              ? 'items'
+              : type === 'action'
+                ? 'actions'
+                : type === 'attribute'
+                  ? 'attributes'
+                  : 'items, actions and attributes'}{' '}
+            from the ruleset.
           </SheetDescription>
         </SheetHeader>
 
@@ -169,11 +200,12 @@ export const InventoryPanel = ({
             {/* Items Section */}
             {itemCategories.length > 0 && (
               <div className='space-y-4'>
-                {(!type || type === 'item') && actionCategories.length > 0 && (
-                  <h3 className='text-sm font-semibold text-muted-foreground uppercase tracking-wide'>
-                    Items
-                  </h3>
-                )}
+                {(!type || type === 'item') &&
+                  (actionCategories.length > 0 || attributeCategories.length > 0) && (
+                    <h3 className='text-sm font-semibold text-muted-foreground uppercase tracking-wide'>
+                      Items
+                    </h3>
+                  )}
                 {itemCategories.map((category) => (
                   <div key={`item-${category}`} className='space-y-1'>
                     <h4 className='text-sm font-medium text-foreground'>{category}</h4>
@@ -218,11 +250,12 @@ export const InventoryPanel = ({
             {/* Actions Section */}
             {actionCategories.length > 0 && (
               <div className='space-y-4'>
-                {(!type || type === 'action') && itemCategories.length > 0 && (
-                  <h3 className='text-sm font-semibold text-muted-foreground uppercase tracking-wide'>
-                    Actions
-                  </h3>
-                )}
+                {(!type || type === 'action') &&
+                  (itemCategories.length > 0 || attributeCategories.length > 0) && (
+                    <h3 className='text-sm font-semibold text-muted-foreground uppercase tracking-wide'>
+                      Actions
+                    </h3>
+                  )}
                 {actionCategories.map((category) => (
                   <div key={`action-${category}`} className='space-y-1'>
                     <h4 className='text-sm font-medium text-foreground'>{category}</h4>
@@ -264,20 +297,78 @@ export const InventoryPanel = ({
               </div>
             )}
 
-            {/* Empty state */}
-            {itemCategories.length === 0 && actionCategories.length === 0 && (
-              <div className='text-center py-8 text-muted-foreground'>
-                {search ? (
-                  <p>No results found for "{search}"</p>
-                ) : (
-                  <p>
-                    No{' '}
-                    {type === 'item' ? 'items' : type === 'action' ? 'actions' : 'items or actions'}{' '}
-                    available.
-                  </p>
-                )}
+            {/* Attributes Section */}
+            {attributeCategories.length > 0 && (
+              <div className='space-y-4'>
+                {(!type || type === 'attribute') &&
+                  (itemCategories.length > 0 || actionCategories.length > 0) && (
+                    <h3 className='text-sm font-semibold text-muted-foreground uppercase tracking-wide'>
+                      Attributes
+                    </h3>
+                  )}
+                {attributeCategories.map((category) => (
+                  <div key={`attribute-${category}`} className='space-y-1'>
+                    <h4 className='text-sm font-medium text-foreground'>{category}</h4>
+                    <div className='space-y-0.5'>
+                      {filteredAndGrouped.attributes[category].map((attribute) => {
+                        const image = getImage(attribute);
+                        return (
+                          <button
+                            key={attribute.id}
+                            onClick={() => handleItemClick(attribute, 'attribute')}
+                            className='w-full text-left px-2 py-1.5 rounded-md text-sm hover:bg-accent hover:text-accent-foreground transition-colors flex items-center gap-2'>
+                            <Avatar className='h-8 w-8 rounded-md shrink-0'>
+                              {image ? (
+                                <AvatarImage
+                                  src={image}
+                                  alt={attribute.title}
+                                  className='object-cover'
+                                />
+                              ) : (
+                                <AvatarFallback className='rounded-md bg-muted'>
+                                  <GaugeIcon className='h-4 w-4 text-muted-foreground' />
+                                </AvatarFallback>
+                              )}
+                            </Avatar>
+                            <div className='min-w-0 flex-1'>
+                              <span className='font-medium'>{attribute.title}</span>
+                              {attribute.description && (
+                                <p className='text-xs text-muted-foreground line-clamp-1'>
+                                  {attribute.description}
+                                </p>
+                              )}
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
+
+            {/* Empty state */}
+            {itemCategories.length === 0 &&
+              actionCategories.length === 0 &&
+              attributeCategories.length === 0 && (
+                <div className='text-center py-8 text-muted-foreground'>
+                  {search ? (
+                    <p>No results found for "{search}"</p>
+                  ) : (
+                    <p>
+                      No{' '}
+                      {type === 'item'
+                        ? 'items'
+                        : type === 'action'
+                          ? 'actions'
+                          : type === 'attribute'
+                            ? 'attributes'
+                            : 'items, actions or attributes'}{' '}
+                      available.
+                    </p>
+                  )}
+                </div>
+              )}
           </div>
         </ScrollArea>
       </SheetContent>

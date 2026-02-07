@@ -269,8 +269,8 @@ export type Inventory = BaseDetails & {
 
 export type InventoryItem = BaseDetails & {
   id: string;
-  type: 'action' | 'item';
-  entityId: string; // ref to ruleset item or action
+  type: 'item' | 'action' | 'attribute';
+  entityId: string; // ref to ruleset item, action, or attribute
   inventoryId: string; // nested inventories
   componentId: string;
   quantity: number;
