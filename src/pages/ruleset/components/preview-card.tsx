@@ -57,60 +57,110 @@ export const PreviewCard = ({
   return (
     <Card
       key={id}
-      className={`p-4 w-[300px] flex flex-col justify-between h-[240px]`}
+      className={`p-4 w-[320px] flex flex-col justify-between h-[240px]`}
       onClick={handleSave}
       style={
         image
           ? {
-              background: `url(${image})`,
+              background: `linear-gradient(rgba(0,0,0,0.35), rgba(0,0,0,0.35)), url(${image})`,
               backgroundSize: 'cover',
               backgroundPosition: 'center',
             }
           : undefined
       }>
-      <CardHeader>
-        {editingTitle ? (
-          <Input
-            value={newTitle}
-            data-testid='preview-card-title-input'
-            onChange={(e) => setNewTitle(e.target.value)}
-            autoFocus
-            onKeyDown={(e) => handleKeyEvent(e as unknown as KeyboardEvent)}
-          />
-        ) : (
-          <CardTitle
-            className='text-lg cursor-pointer'
-            data-testid='preview-card-title'
-            onClick={(e) => {
-              e.stopPropagation();
-              setEditingTitle(true);
-            }}>
-            {title}
-          </CardTitle>
-        )}
-      </CardHeader>
-      <CardDescription className='grow-1 max-h-[200px] overflow-y-auto'>
-        <div className='flex flex-col gap-2'>
-          {editingCategory ? (
-            <Input
-              value={newCategory}
-              data-testid='preview-card-description-input'
-              onChange={(e) => setNewCategory(e.target.value)}
-              autoFocus
-              onKeyDown={(e) => handleKeyEvent(e as unknown as KeyboardEvent)}
-            />
-          ) : (
-            <p
-              className='cursor-pointer'
-              onClick={(e) => {
-                e.stopPropagation();
-                setEditingCategory(true);
-              }}>
-              {category || 'Set category'}
-            </p>
-          )}
+      {image ? (
+        <div className='rounded-md bg-black/30 px-3 py-2 -mx-1'>
+          <CardHeader className='p-0'>
+            {editingTitle ? (
+              <Input
+                value={newTitle}
+                data-testid='preview-card-title-input'
+                onChange={(e) => setNewTitle(e.target.value)}
+                autoFocus
+                onKeyDown={(e) => handleKeyEvent(e as unknown as KeyboardEvent)}
+              />
+            ) : (
+              <CardTitle
+                className='text-lg cursor-pointer'
+                data-testid='preview-card-title'
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setEditingTitle(true);
+                }}>
+                {title}
+              </CardTitle>
+            )}
+          </CardHeader>
+          <CardDescription className='grow-1 max-h-[200px] overflow-y-auto mt-1'>
+            <div className='flex flex-col gap-2'>
+              {editingCategory ? (
+                <Input
+                  value={newCategory}
+                  data-testid='preview-card-description-input'
+                  onChange={(e) => setNewCategory(e.target.value)}
+                  autoFocus
+                  onKeyDown={(e) => handleKeyEvent(e as unknown as KeyboardEvent)}
+                />
+              ) : (
+                <p
+                  className='cursor-pointer'
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setEditingCategory(true);
+                  }}>
+                  {category || 'Set category'}
+                </p>
+              )}
+            </div>
+          </CardDescription>
         </div>
-      </CardDescription>
+      ) : (
+        <>
+          <CardHeader>
+            {editingTitle ? (
+              <Input
+                value={newTitle}
+                data-testid='preview-card-title-input'
+                onChange={(e) => setNewTitle(e.target.value)}
+                autoFocus
+                onKeyDown={(e) => handleKeyEvent(e as unknown as KeyboardEvent)}
+              />
+            ) : (
+              <CardTitle
+                className='text-lg cursor-pointer'
+                data-testid='preview-card-title'
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setEditingTitle(true);
+                }}>
+                {title}
+              </CardTitle>
+            )}
+          </CardHeader>
+          <CardDescription className='grow-1 max-h-[200px] overflow-y-auto'>
+            <div className='flex flex-col gap-2'>
+              {editingCategory ? (
+                <Input
+                  value={newCategory}
+                  data-testid='preview-card-description-input'
+                  onChange={(e) => setNewCategory(e.target.value)}
+                  autoFocus
+                  onKeyDown={(e) => handleKeyEvent(e as unknown as KeyboardEvent)}
+                />
+              ) : (
+                <p
+                  className='cursor-pointer'
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setEditingCategory(true);
+                  }}>
+                  {category || 'Set category'}
+                </p>
+              )}
+            </div>
+          </CardDescription>
+        </>
+      )}
       <div className='flex gap-2 mt-2 bg-secondary rounded-md p-2 justify-between items-center'>
         <Button variant='ghost' onClick={() => onDelete(id)} className='text-red-500'>
           Delete

@@ -82,7 +82,7 @@ export function PWAInstallPrompt({ ignoreDismissed = false }: { ignoreDismissed?
           <div className='space-y-1'>
             <h3 className='font-semibold text-sm'>Install Quest Bound</h3>
             <p className='text-xs text-muted-foreground'>
-              Install this app on your device for quick access and offline support.
+              Install this app on your device to use offline.
             </p>
           </div>
           {/* <Button variant='ghost' size='sm' onClick={handleDismiss} className='h-6 w-6 p-0'>

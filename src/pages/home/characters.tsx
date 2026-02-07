@@ -181,7 +181,7 @@ export const Characters = () => {
         {selectableCharacters.map((character) => (
           <Card
             key={character.id}
-            className='p-4 w-[350px] h-[200px] flex flex-col justify-between'
+            className='p-4 w-[320px] h-[200px] flex flex-col justify-between'
             data-testid={`character-card-${character.id}`}
             style={
               character.image

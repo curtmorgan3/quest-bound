@@ -11,6 +11,7 @@ import {
   Newspaper,
   Settings as SettingsIcon,
   Sword,
+  User,
   UserRoundPen,
   Users,
   Wrench,
@@ -40,7 +41,7 @@ import { DevTools, Settings } from '@/pages';
 import { DiceContext } from '@/stores';
 import { useContext, useEffect, useState } from 'react';
 import { Link, useLocation, useParams } from 'react-router-dom';
-import { Avatar, AvatarImage } from '../ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { Button } from '../ui/button';
 import { DialogDescription } from '../ui/dialog';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger } from '../ui/drawer';
@@ -335,6 +336,9 @@ export function AppSidebar() {
                 data-testid='user-menu'>
                 <Avatar className={open ? 'rounded-lg' : 'rounded-sm'}>
                   <AvatarImage src={currentUser?.image ?? ''} alt={currentUser?.username} />
+                  <AvatarFallback>
+                    <User className='size-4 text-muted-foreground' />
+                  </AvatarFallback>
                 </Avatar>
                 {open && <p>{currentUser?.username}</p>}
               </div>

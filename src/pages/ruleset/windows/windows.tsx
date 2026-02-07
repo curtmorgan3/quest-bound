@@ -11,11 +11,13 @@ export const WindowSelect = () => {
   const [filterValue, setFilterValue] = useState('');
 
   const sortedWindows = [...windows].sort((a, b) => a.title.localeCompare(b.title));
-  const filteredCharts = sortedWindows.filter(
-    (c) =>
-      c.title.toLowerCase().includes(filterValue.toLowerCase()) ||
-      c.category?.toLowerCase().includes(filterValue.toLowerCase()),
-  );
+  const filteredWindows = sortedWindows
+    .filter(
+      (c) =>
+        c.title.toLowerCase().includes(filterValue.toLowerCase()) ||
+        c.category?.toLowerCase().includes(filterValue.toLowerCase()),
+    )
+    .sort((a, b) => a.title.localeCompare(b.title));
 
   return (
     <div className='flex flex-col gap-4'>
@@ -27,7 +29,7 @@ export const WindowSelect = () => {
         onChange={(e) => setFilterValue(e.target.value)}
       />
       <div className='flex gap-2 flex-wrap'>
-        {filteredCharts.map((c) => (
+        {filteredWindows.map((c) => (
           <PreviewCard
             {...c}
             key={c.id}

@@ -10,11 +10,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
-import {
-  useImportRuleset,
-  useRulesets,
-  type ImportRulesetResult,
-} from '@/lib/compass-api';
+import { useImportRuleset, useRulesets, type ImportRulesetResult } from '@/lib/compass-api';
 import { AlertCircle, CheckCircle, Upload } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -23,12 +19,16 @@ export const Rulesets = () => {
   const { rulesets, createRuleset, deleteRuleset } = useRulesets();
   const { importRuleset, isImporting } = useImportRuleset();
 
+  const sortedRulesets = [...rulesets].sort((a, b) => a.title.localeCompare(b.title));
+
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [importResult, setImportResult] = useState<ImportRulesetResult | null>(null);
   const [replaceConfirmOpen, setReplaceConfirmOpen] = useState(false);
   const [pendingReplaceFile, setPendingReplaceFile] = useState<File | null>(null);
-  const [pendingReplaceResult, setPendingReplaceResult] = useState<ImportRulesetResult | null>(null);
+  const [pendingReplaceResult, setPendingReplaceResult] = useState<ImportRulesetResult | null>(
+    null,
+  );
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
@@ -212,9 +212,7 @@ export const Rulesets = () => {
               <DialogHeader>
                 <DialogTitle>Replace existing ruleset?</DialogTitle>
               </DialogHeader>
-              <p className='text-sm text-muted-foreground'>
-                {pendingReplaceResult?.message}
-              </p>
+              <p className='text-sm text-muted-foreground'>{pendingReplaceResult?.message}</p>
               <DialogFooter>
                 <Button variant='outline' onClick={handleCancelReplace}>
                   Cancel
@@ -229,33 +227,53 @@ export const Rulesets = () => {
       </div>
 
       <div className='flex flex-row gap-2 flex-wrap'>
-        {rulesets?.map((r) => (
+        {sortedRulesets?.map((r) => (
           <Card
             key={r.id}
-            className='p-4 w-[350px] h-[280px] flex flex-col justify-between'
+            className='p-4 w-[320px] h-[280px] flex flex-col justify-between'
             data-testid={`ruleset-card-${r.id}`}
             style={
               r.image
                 ? {
-                    background: `url(${r.image})`,
+                    background: `linear-gradient(rgba(0,0,0,0.35), rgba(0,0,0,0.35)), url(${r.image})`,
                     backgroundSize: 'cover',
                     backgroundPosition: 'center',
                   }
                 : undefined
             }>
-            <CardHeader className='relative'>
-              <span className='absolute top-0 right-0 text-xs text-muted-foreground'>
-                v{r.version}
-              </span>
-              <CardTitle data-testid='ruleset-card-title' className='text-lg'>
-                {r.title}
-              </CardTitle>
-            </CardHeader>
-            <CardDescription
-              data-testid='ruleset-card-description'
-              className='grow-1 max-h-[80px] overflow-y-auto'>
-              {r.description}
-            </CardDescription>
+            {r.image ? (
+              <div className='rounded-md bg-black/30 px-3 py-2 -mx-1'>
+                <CardHeader className='relative p-0'>
+                  <span className='absolute top-0 right-0 text-xs text-muted-foreground'>
+                    v{r.version}
+                  </span>
+                  <CardTitle data-testid='ruleset-card-title' className='text-lg'>
+                    {r.title}
+                  </CardTitle>
+                </CardHeader>
+                <CardDescription
+                  data-testid='ruleset-card-description'
+                  className='grow-1 max-h-[80px] overflow-y-auto mt-1'>
+                  {r.description}
+                </CardDescription>
+              </div>
+            ) : (
+              <>
+                <CardHeader className='relative'>
+                  <span className='absolute top-0 right-0 text-xs text-muted-foreground'>
+                    v{r.version}
+                  </span>
+                  <CardTitle data-testid='ruleset-card-title' className='text-lg'>
+                    {r.title}
+                  </CardTitle>
+                </CardHeader>
+                <CardDescription
+                  data-testid='ruleset-card-description'
+                  className='grow-1 max-h-[80px] overflow-y-auto'>
+                  {r.description}
+                </CardDescription>
+              </>
+            )}
             <div className='flex gap-2 mt-2 bg-secondary rounded-md p-2 justify-between items-center'>
               <Button
                 variant='ghost'

@@ -76,7 +76,7 @@ export const SignIn = () => {
             </p>
             <a
               target='_blank'
-              href='https://github.com/curtmorgan3/quest-bound'
+              href='https://github.com/curtmorgan3/quest-bound/tree/v2'
               style={{ textDecoration: 'underline' }}
               className='text-sm'>
               Download the source code to run Quest Bound locally
@@ -124,7 +124,7 @@ export const SignIn = () => {
         animate={{ opacity: 1 }}
         transition={{ duration: 1, delay: 2.5 }}>
         <div className='flex flex-col gap-4 items-center'>
-          <Link href='https://docs.questbound.com' target='_blank'>
+          <Link href='https://v2.docs.questbound.com' target='_blank'>
             Learn More
           </Link>
           <a target='_blank' href='https://discord.gg/Zx2jR5Q3zN' data-testid='join-discord'>
