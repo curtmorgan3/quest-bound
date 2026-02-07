@@ -1,5 +1,5 @@
-import type { DBCore, Middleware } from 'dexie';
 import type { Attribute } from '@/types';
+import type { DBCore, Middleware } from 'dexie';
 
 // Cache for parsed chart data - populated on db ready and kept in sync via hooks
 // Key is chart ID, value is parsed 2D array of chart data
@@ -45,7 +45,7 @@ export const chartOptionsMiddleware: Middleware<DBCore> = {
         const downlevelTable = downlevelDatabase.table(tableName);
 
         // Only apply to attributes table
-        if (tableName !== 'attributes') {
+        if (tableName !== 'attributes' && tableName !== 'characterAttributes') {
           return downlevelTable;
         }
 

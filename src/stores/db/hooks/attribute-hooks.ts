@@ -50,16 +50,17 @@ export function registerAttributeDbHooks(db: DB) {
             const now = new Date().toISOString();
             const mods = modifications as Partial<Attribute>;
             await db.characterAttributes.update(characterAttribute.id, {
-              title: mods.title,
-              defaultValue: mods.defaultValue,
-              type: mods.type,
-              description: mods.description,
-              min: mods.min,
-              max: mods.max,
-              options: mods.options,
-              optionsChartRef: mods.optionsChartRef,
-              optionsChartColumnHeader: mods.optionsChartColumnHeader,
-              category: mods.category,
+              title: mods.title ?? obj.title,
+              defaultValue: mods.defaultValue ?? obj.defaultValue,
+              type: mods.type ?? obj.type,
+              description: mods.description ?? obj.description,
+              min: mods.min ?? obj.min,
+              max: mods.max ?? obj.max,
+              options: mods.options ?? obj.options,
+              optionsChartRef: mods.optionsChartRef ?? obj.optionsChartRef,
+              optionsChartColumnHeader:
+                mods.optionsChartColumnHeader ?? obj.optionsChartColumnHeader,
+              category: mods.category ?? obj.category,
               updatedAt: now,
             });
           }

@@ -1,5 +1,11 @@
 import { DescriptionViewer } from '@/components';
-import { DiceContext, parseTextForDiceRolls, type InventoryItemWithData } from '@/stores';
+import { useCharacterAttributes } from '@/lib/compass-api';
+import {
+  CharacterContext,
+  DiceContext,
+  parseTextForDiceRolls,
+  type InventoryItemWithData,
+} from '@/stores';
 import { useKeyListeners } from '@/utils';
 import { X } from 'lucide-react';
 import { useContext, useRef, useState } from 'react';
@@ -27,6 +33,13 @@ export const ItemContextMenu = ({
   onRemove,
   onSplit,
 }: ItemContextMenuProps) => {
+  const characterContext = useContext(CharacterContext);
+  const { characterAttributes, updateCharacterAttribute } = useCharacterAttributes(
+    characterContext?.character?.id,
+  );
+
+  const inventoryAttribute = characterAttributes.find((attr) => attr.attributeId === item.entityId);
+
   const [quantity, setQuantity] = useState(item.quantity);
   const [splitAmount, setSplitAmount] = useState(Math.floor(item.quantity / 2));
   const { rollDice } = useContext(DiceContext);
@@ -198,6 +211,100 @@ export const ItemContextMenu = ({
             }}>
             Split Stack
           </button>
+        </div>
+      )}
+
+      {inventoryAttribute && (
+        <div style={{ marginBottom: 12 }}>
+          <label style={{ display: 'block', fontSize: 12, color: '#999', marginBottom: 4 }}>
+            {inventoryAttribute.title}
+          </label>
+          {inventoryAttribute.type === 'boolean' ? (
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+              <input
+                type='checkbox'
+                checked={Boolean(inventoryAttribute.value)}
+                onChange={(e) =>
+                  updateCharacterAttribute(inventoryAttribute.id, {
+                    value: e.target.checked,
+                  })
+                }
+                onPointerDown={(e) => e.stopPropagation()}
+                style={{ width: 16, height: 16 }}
+              />
+              <span style={{ color: '#fff', fontSize: 14 }}>
+                {inventoryAttribute.value ? 'True' : 'False'}
+              </span>
+            </label>
+          ) : inventoryAttribute.type === 'number' ? (
+            <input
+              type='number'
+              value={Number(inventoryAttribute.value)}
+              min={inventoryAttribute.min}
+              max={inventoryAttribute.max}
+              onChange={(e) => {
+                const raw = e.target.value;
+                const num = raw === '' ? (inventoryAttribute.min ?? 0) : parseFloat(raw);
+                if (!Number.isNaN(num)) {
+                  updateCharacterAttribute(inventoryAttribute.id, { value: num });
+                }
+              }}
+              onPointerDown={(e) => e.stopPropagation()}
+              style={{
+                width: '100%',
+                padding: '6px 8px',
+                backgroundColor: '#2a2a2a',
+                border: '1px solid #444',
+                borderRadius: 4,
+                color: '#fff',
+                fontSize: 14,
+              }}
+            />
+          ) : inventoryAttribute.type === 'list' && inventoryAttribute.options?.length ? (
+            <select
+              value={String(inventoryAttribute.value)}
+              onChange={(e) =>
+                updateCharacterAttribute(inventoryAttribute.id, {
+                  value: e.target.value,
+                })
+              }
+              onPointerDown={(e) => e.stopPropagation()}
+              style={{
+                width: '100%',
+                padding: '6px 8px',
+                backgroundColor: '#2a2a2a',
+                border: '1px solid #444',
+                borderRadius: 4,
+                color: '#fff',
+                fontSize: 14,
+              }}>
+              {inventoryAttribute.options.map((opt) => (
+                <option key={opt} value={opt}>
+                  {opt}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <input
+              type='text'
+              value={String(inventoryAttribute.value ?? '')}
+              onChange={(e) =>
+                updateCharacterAttribute(inventoryAttribute.id, {
+                  value: e.target.value,
+                })
+              }
+              onPointerDown={(e) => e.stopPropagation()}
+              style={{
+                width: '100%',
+                padding: '6px 8px',
+                backgroundColor: '#2a2a2a',
+                border: '1px solid #444',
+                borderRadius: 4,
+                color: '#fff',
+                fontSize: 14,
+              }}
+            />
+          )}
         </div>
       )}
 
