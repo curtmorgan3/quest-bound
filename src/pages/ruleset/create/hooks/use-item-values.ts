@@ -57,8 +57,8 @@ export const useItemValues = ({
   const [weight, setWeight] = useState(0);
   const [stackSize, setStackSize] = useState(0);
   const [defaultQuantity, setDefaultQuantity] = useState(1);
-  const [inventoryWidth, setInventoryWidth] = useState(1);
-  const [inventoryHeight, setInventoryHeight] = useState(1);
+  const [inventoryWidth, setInventoryWidth] = useState(2);
+  const [inventoryHeight, setInventoryHeight] = useState(2);
   const [image, setImage] = useState<string | null>(null);
   const [assetId, setAssetId] = useState<string | null>(null);
 
@@ -66,8 +66,8 @@ export const useItemValues = ({
     setWeight(0);
     setStackSize(0);
     setDefaultQuantity(1);
-    setInventoryWidth(1);
-    setInventoryHeight(1);
+    setInventoryWidth(2);
+    setInventoryHeight(2);
     setImage(null);
     setAssetId(null);
   };

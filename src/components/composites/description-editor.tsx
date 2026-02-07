@@ -76,7 +76,7 @@ export const DescriptionViewer = ({
   return (
     <div
       onClick={onClick}
-      className={` md-content border-input min-h-24 max-h-[200px] w-full overflow-y-auto rounded-md border bg-transparent px-3 py-2 text-base shadow-xs md:text-sm ${className ?? ''}`}>
+      className={` md-content min-h-24 max-h-[200px] w-full overflow-y-auto bg-transparent px-3 py-2 text-base shadow-xs md:text-sm ${className ?? ''}`}>
       {value ? (
         <Markdown>{value}</Markdown>
       ) : (

@@ -1,1 +1,1 @@
-export * from './chart-select';
+export * from './charts';

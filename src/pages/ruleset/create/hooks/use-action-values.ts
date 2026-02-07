@@ -30,6 +30,8 @@ export const useActionValues = ({
 
   const [image, setImage] = useState<string | null>(null);
   const [assetId, setAssetId] = useState<string | null>(null);
+  const [inventoryWidth, setInventoryWidth] = useState(2);
+  const [inventoryHeight, setInventoryHeight] = useState(2);
 
   useEffect(() => {
     if (isEditMode && activeAction) {
@@ -38,6 +40,8 @@ export const useActionValues = ({
       setCategory(activeAction.category || '');
       setImage(activeAction.image ?? null);
       setAssetId(activeAction.assetId ?? null);
+      setInventoryHeight(activeAction.inventoryHeight ?? 2);
+      setInventoryWidth(activeAction.inventoryWidth ?? 2);
     } else {
       resetAll();
     }
@@ -46,11 +50,15 @@ export const useActionValues = ({
   const resetAll = () => {
     setImage(null);
     setAssetId(null);
+    setInventoryWidth(2);
+    setInventoryHeight(2);
   };
 
   const actionProperties: Partial<Action> = {
     image,
     assetId,
+    inventoryHeight,
+    inventoryWidth,
   };
 
   const saveAction = () => {
@@ -73,7 +81,11 @@ export const useActionValues = ({
     saveAction,
     image,
     assetId,
+    inventoryHeight,
+    inventoryWidth,
     setImage,
     setAssetId,
+    setInventoryWidth,
+    setInventoryHeight,
   };
 };

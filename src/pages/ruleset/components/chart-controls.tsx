@@ -1,4 +1,4 @@
-import { Button, Checkbox, DialogTrigger, Label } from '@/components';
+import { Checkbox, DialogTrigger, Label } from '@/components';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -21,21 +21,20 @@ export const ChartControls = ({ id, handleDelete, handleEdit }: ChartControlsPro
   const doNotAsk = localStorage.getItem('qb.confirmOnDelete') === 'false';
 
   return (
-    <div className='flex items-center justify-end gap-2'>
+    <div className='flex items-center justify-end gap-4 w-full h-full'>
       {doNotAsk ? (
-        <Button
-          variant='ghost'
-          size='icon'
+        <Trash
           onClick={() => handleDelete(id)}
-          data-testid='chart-controls-delete'>
-          <Trash className='text-neutral-400' />
-        </Button>
+          data-testid='chart-controls-delete'
+          className='text-neutral-400 h-[18px] w-[18px] clickable'
+        />
       ) : (
         <AlertDialog>
           <AlertDialogTrigger>
-            <Button variant='ghost' size='icon' data-testid='chart-controls-delete'>
-              <Trash className='text-neutral-400' />
-            </Button>
+            <Trash
+              className='text-neutral-400 h-[18px] w-[18px] clickable'
+              data-testid='chart-controls-delete'
+            />
           </AlertDialogTrigger>
           <AlertDialogContent>
             <AlertDialogHeader>
@@ -62,13 +61,10 @@ export const ChartControls = ({ id, handleDelete, handleEdit }: ChartControlsPro
         </AlertDialog>
       )}
       <DialogTrigger asChild>
-        <Button
-          variant='ghost'
-          size='icon'
+        <Pencil
           onClick={() => handleEdit(id)}
-          data-testid='chart-controls-edit'>
-          <Pencil className='text-neutral-400' />
-        </Button>
+          className='text-neutral-400 h-[18px] w-[18px] clickable'
+        />
       </DialogTrigger>
     </div>
   );

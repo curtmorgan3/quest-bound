@@ -63,6 +63,8 @@ export type Attribute = BaseDetails & {
   max?: number;
   assetId?: string | null;
   image?: string | null;
+  inventoryWidth?: number;
+  inventoryHeight?: number;
 };
 
 export type Action = BaseDetails & {
@@ -72,6 +74,8 @@ export type Action = BaseDetails & {
   category?: string;
   assetId?: string | null;
   image?: string | null;
+  inventoryWidth?: number;
+  inventoryHeight?: number;
 };
 
 export type Item = BaseDetails & {

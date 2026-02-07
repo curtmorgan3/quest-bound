@@ -163,7 +163,7 @@ export const ItemCreate = ({
       </div>
 
       <div className='flex flex-col gap-2'>
-        <Label className='text-muted-foreground'>Inventory Size</Label>
+        <Label className='text-muted-foreground'>Inventory Size (20px units)</Label>
         <div className='flex gap-4'>
           <div className='flex flex-col gap-4 w-full'>
             <Label>Width</Label>

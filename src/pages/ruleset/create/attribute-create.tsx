@@ -1,8 +1,8 @@
 import {
   Button,
   Checkbox,
-  Input,
   ImageUpload,
+  Input,
   Label,
   Select,
   SelectContent,
@@ -40,8 +40,12 @@ interface AttributeCreateProps {
   chartListOptions: string[];
   image: string | null;
   assetId: string | null;
+  inventoryWidth: number;
+  inventoryHeight: number;
   setImage: Dispatch<SetStateAction<string | null>>;
   setAssetId: Dispatch<SetStateAction<string | null>>;
+  setInventoryWidth: Dispatch<SetStateAction<number>>;
+  setInventoryHeight: Dispatch<SetStateAction<number>>;
 }
 
 export const AttributeCreate = ({
@@ -71,6 +75,10 @@ export const AttributeCreate = ({
   assetId,
   setImage,
   setAssetId,
+  inventoryHeight,
+  inventoryWidth,
+  setInventoryHeight,
+  setInventoryWidth,
 }: AttributeCreateProps) => {
   const [optionInput, setOptionInput] = useState('');
   const { assets, deleteAsset } = useAssets();
@@ -105,7 +113,7 @@ export const AttributeCreate = ({
   const displayImage = image || getImageFromAssetId(assetId);
 
   const optionsReversed = [...attributeListOptions].reverse();
-  
+
   // Options to display in the default value dropdown
   const displayOptions = useChartForOptions ? chartListOptions : attributeListOptions;
 
@@ -121,15 +129,40 @@ export const AttributeCreate = ({
 
   return (
     <div className='flex flex-col gap-4'>
-      <div className='flex flex-col gap-2'>
-        <Label>Image</Label>
-        <ImageUpload
-          image={displayImage}
-          alt='Attribute image'
-          onUpload={handleImageUpload}
-          onRemove={handleImageRemove}
-          onSetUrl={handleSetUrl}
-        />
+      <div className='flex justify-between'>
+        <div className='flex flex-col gap-2 w-[50%]'>
+          <Label>Image</Label>
+          <ImageUpload
+            image={displayImage}
+            alt='Attribute image'
+            onUpload={handleImageUpload}
+            onRemove={handleImageRemove}
+            onSetUrl={handleSetUrl}
+          />
+        </div>
+        <div className='flex flex-col gap-2 w-[50%]'>
+          <Label className='text-muted-foreground'>Inventory Size (20px units)</Label>
+          <div className='flex flex-col gap-2'>
+            <div className='flex flex-col gap-4 w-full'>
+              <Label>Width</Label>
+              <Input
+                type='number'
+                min={1}
+                value={inventoryWidth}
+                onChange={(e) => setInventoryWidth(parseInt(e.target.value) || 1)}
+              />
+            </div>
+            <div className='flex flex-col gap-4 w-full'>
+              <Label>Height</Label>
+              <Input
+                type='number'
+                min={1}
+                value={inventoryHeight}
+                onChange={(e) => setInventoryHeight(parseInt(e.target.value) || 1)}
+              />
+            </div>
+          </div>
+        </div>
       </div>
       <div className='w-full flex flex-row gap-4'>
         <div className='grid gap-3 w-[50%]'>
@@ -300,7 +333,10 @@ export const AttributeCreate = ({
                     {optionsReversed.map((option) => (
                       <div key={option} className='flex justify-between items-center'>
                         <span>{option}</span>
-                        <Button onClick={() => removeListOption(option)} variant='ghost' size='icon'>
+                        <Button
+                          onClick={() => removeListOption(option)}
+                          variant='ghost'
+                          size='icon'>
                           <Trash />
                         </Button>
                       </div>
@@ -313,7 +349,9 @@ export const AttributeCreate = ({
 
           {useChartForOptions && chartListOptions.length > 0 && (
             <div className='flex flex-col gap-2 max-h-[100px] w-full overflow-y-auto p-2 border rounded-md bg-secondary'>
-              <Label className='text-muted-foreground text-xs'>Preview ({chartListOptions.length} options)</Label>
+              <Label className='text-muted-foreground text-xs'>
+                Preview ({chartListOptions.length} options)
+              </Label>
               <div className='flex flex-wrap gap-1'>
                 {chartListOptions.slice(0, 10).map((option, idx) => (
                   <span key={idx} className='text-sm bg-background px-2 py-0.5 rounded'>
@@ -321,7 +359,9 @@ export const AttributeCreate = ({
                   </span>
                 ))}
                 {chartListOptions.length > 10 && (
-                  <span className='text-sm text-muted-foreground'>+{chartListOptions.length - 10} more</span>
+                  <span className='text-sm text-muted-foreground'>
+                    +{chartListOptions.length - 10} more
+                  </span>
                 )}
               </div>
             </div>

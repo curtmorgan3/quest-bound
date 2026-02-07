@@ -41,6 +41,8 @@ export const useAttributeValues = ({
   const [optionsChartColumnHeader, setOptionsChartColumnHeader] = useState('');
   const [image, setImage] = useState<string | null>(null);
   const [assetId, setAssetId] = useState<string | null>(null);
+  const [inventoryWidth, setInventoryWidth] = useState(2);
+  const [inventoryHeight, setInventoryHeight] = useState(2);
 
   useEffect(() => {
     if (isEditMode && activeAttribute) {
@@ -53,6 +55,8 @@ export const useAttributeValues = ({
       setMax(activeAttribute.max);
       setImage(activeAttribute.image ?? null);
       setAssetId(activeAttribute.assetId ?? null);
+      setInventoryHeight(activeAttribute.inventoryHeight ?? 2);
+      setInventoryWidth(activeAttribute.inventoryWidth ?? 2);
       // Handle chart reference for list options
       setUseChartForOptions(!!activeAttribute.optionsChartRef);
       setOptionsChartId(activeAttribute.optionsChartRef?.toString() || '');
@@ -67,7 +71,6 @@ export const useAttributeValues = ({
       resetAll();
     }
   }, [activeAttribute]);
-
 
   const addListOption = (opt: string) => {
     setAttributeListOptions((prev) => [...prev, opt]);
@@ -86,6 +89,8 @@ export const useAttributeValues = ({
     setOptionsChartColumnHeader('');
     setImage(null);
     setAssetId(null);
+    setInventoryHeight(2);
+    setInventoryWidth(2);
   };
 
   const attributeProperties: Partial<Attribute> = {
@@ -109,6 +114,8 @@ export const useAttributeValues = ({
         : undefined,
     min: typeValue === 'number' ? min : undefined,
     max: typeValue === 'number' ? max : undefined,
+    inventoryHeight,
+    inventoryWidth,
   };
 
   const saveAttribute = () => {
@@ -144,7 +151,10 @@ export const useAttributeValues = ({
           const data = JSON.parse(selectedChart.data) as string[][];
           const columnIndex = data[0]?.indexOf(optionsChartColumnHeader) ?? -1;
           if (columnIndex === -1) return [];
-          return data.slice(1).map((row) => row[columnIndex] || '').filter(Boolean);
+          return data
+            .slice(1)
+            .map((row) => row[columnIndex] || '')
+            .filter(Boolean);
         })()
       : [];
 
@@ -176,5 +186,9 @@ export const useAttributeValues = ({
     assetId,
     setImage,
     setAssetId,
+    inventoryWidth,
+    inventoryHeight,
+    setInventoryWidth,
+    setInventoryHeight,
   };
 };
