@@ -7,6 +7,7 @@ export type InventoryPanelConfig = {
   includeIds?: string[];
   excludeIds?: string[];
   inventoryComponentId?: string;
+  typeRestriction?: 'action' | 'item' | 'attribute';
   // Grid info for calculating item placement
   cellWidth?: number;
   cellHeight?: number;

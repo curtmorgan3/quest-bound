@@ -3,8 +3,8 @@ import { AttributeLookup, useComponents } from '@/lib/compass-api';
 import { ComponentTypes } from '@/lib/compass-planes/nodes';
 import {
   CheckboxDataEdit,
-  GraphDataEdit,
   FrameDataEdit,
+  GraphDataEdit,
   InventoryDataEdit,
 } from '@/lib/compass-planes/nodes/components';
 import { ImageDataEdit } from '@/lib/compass-planes/nodes/components/image';
@@ -114,7 +114,8 @@ export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
       (c) =>
         c.type === ComponentTypes.TEXT ||
         c.type === ComponentTypes.INPUT ||
-        c.type === ComponentTypes.CONTENT,
+        c.type === ComponentTypes.CONTENT ||
+        c.type === ComponentTypes.INVENTORY,
     );
 
   const allAreShapes =
@@ -205,17 +206,11 @@ export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
             )}
 
             {allAreGraphs && (
-              <GraphDataEdit
-                components={selectedComponents}
-                updateComponents={updateComponents}
-              />
+              <GraphDataEdit components={selectedComponents} updateComponents={updateComponents} />
             )}
 
             {allAreFrames && (
-              <FrameDataEdit
-                components={selectedComponents}
-                updateComponents={updateComponents}
-              />
+              <FrameDataEdit components={selectedComponents} updateComponents={updateComponents} />
             )}
           </TabsContent>
         </Tabs>

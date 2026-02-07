@@ -179,7 +179,7 @@ export type CheckboxComponentData = {
 export type InventoryComponentData = {
   cellHeight: number;
   cellWidth: number;
-  typeRestriction?: 'item' | 'action';
+  typeRestriction?: 'item' | 'action' | 'attribute';
   categoryRestriction?: string;
   itemRestrictionRef?: string;
   actionRestrictionRef?: string;

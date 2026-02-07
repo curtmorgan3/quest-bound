@@ -85,6 +85,7 @@ export const ViewInventoryNode = ({ component }: { component: Component }) => {
     characterContext.setInventoryPanelConfig({
       open: true,
       inventoryComponentId: component.id,
+      typeRestriction: data.typeRestriction,
       cellWidth,
       cellHeight,
       gridCols,
@@ -446,7 +447,17 @@ export const ViewInventoryNode = ({ component }: { component: Component }) => {
                   }}
                 />
               ) : (
-                <span className='text-xs'>{invItem.title}</span>
+                <span
+                  className='text-xs pl-[4px]'
+                  style={{
+                    color: css.color,
+                    fontFamily: css.fontFamily,
+                    fontSize: css.fontSize,
+                    fontStyle: css.fontStyle,
+                    fontWeight: css.fontWeight,
+                  }}>
+                  {invItem.title}
+                </span>
               )}
               {invItem.quantity > 1 && (
                 <span

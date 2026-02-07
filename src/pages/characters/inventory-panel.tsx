@@ -9,9 +9,10 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet';
 import { useActions, useAssets, useItems } from '@/lib/compass-api';
+import { CharacterContext } from '@/stores';
 import type { Action, Item } from '@/types';
 import { PackageIcon, SearchIcon, ZapIcon } from 'lucide-react';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useContext, useMemo, useState } from 'react';
 
 type InventoryPanelProps = {
   open: boolean;
@@ -37,6 +38,9 @@ export const InventoryPanel = ({
   const { assets } = useAssets();
   const [search, setSearch] = useState('');
 
+  const { inventoryPanelConfig } = useContext(CharacterContext);
+  const typeRestriction = inventoryPanelConfig?.typeRestriction;
+
   const getImage = useCallback(
     (entry: Item | Action): string | null => {
       // Use the image property directly if available
@@ -57,7 +61,7 @@ export const InventoryPanel = ({
     // Filter items based on props
     const filterEntries = <T extends Item | Action>(
       entries: T[],
-      entryType: 'item' | 'action',
+      entryType: 'item' | 'action' | 'attribute',
     ): T[] => {
       // If type is specified and doesn't match, return empty
       if (type && type !== entryType) return [];
@@ -70,6 +74,10 @@ export const InventoryPanel = ({
 
         // Check excludeIds
         if (excludeIds && excludeIds.includes(entry.id)) {
+          return false;
+        }
+
+        if (typeRestriction && entryType !== typeRestriction) {
           return false;
         }
 
@@ -122,7 +130,7 @@ export const InventoryPanel = ({
     });
 
     return grouped;
-  }, [items, actions, type, includeIds, excludeIds, search]);
+  }, [items, actions, type, includeIds, excludeIds, search, typeRestriction]);
 
   // Get sorted category names
   const itemCategories = Object.keys(filteredAndGrouped.items).sort();
@@ -179,7 +187,11 @@ export const InventoryPanel = ({
                             className='w-full text-left px-2 py-1.5 rounded-md text-sm hover:bg-accent hover:text-accent-foreground transition-colors flex items-center gap-2'>
                             <Avatar className='h-8 w-8 rounded-md shrink-0'>
                               {image ? (
-                                <AvatarImage src={image} alt={item.title} className='object-cover' />
+                                <AvatarImage
+                                  src={image}
+                                  alt={item.title}
+                                  className='object-cover'
+                                />
                               ) : (
                                 <AvatarFallback className='rounded-md bg-muted'>
                                   <PackageIcon className='h-4 w-4 text-muted-foreground' />
@@ -224,7 +236,11 @@ export const InventoryPanel = ({
                             className='w-full text-left px-2 py-1.5 rounded-md text-sm hover:bg-accent hover:text-accent-foreground transition-colors flex items-center gap-2'>
                             <Avatar className='h-8 w-8 rounded-md shrink-0'>
                               {image ? (
-                                <AvatarImage src={image} alt={action.title} className='object-cover' />
+                                <AvatarImage
+                                  src={image}
+                                  alt={action.title}
+                                  className='object-cover'
+                                />
                               ) : (
                                 <AvatarFallback className='rounded-md bg-muted'>
                                   <ZapIcon className='h-4 w-4 text-muted-foreground' />

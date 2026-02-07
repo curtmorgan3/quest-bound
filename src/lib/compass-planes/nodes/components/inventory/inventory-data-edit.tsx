@@ -143,6 +143,7 @@ export const InventoryDataEdit = ({ components, updateComponents }: InventoryDat
             <SelectItem value='none'>None</SelectItem>
             <SelectItem value='item'>Item</SelectItem>
             <SelectItem value='action'>Action</SelectItem>
+            <SelectItem value='attribute'>Attribute</SelectItem>
           </SelectContent>
         </Select>
       </div>
