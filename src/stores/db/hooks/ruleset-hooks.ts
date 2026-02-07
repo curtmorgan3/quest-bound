@@ -62,6 +62,7 @@ export function registerRulesetDbHooks(db: DB) {
         if (testCharacter) {
           await db.characters.where('id').equals(testCharacter.id).delete();
           await db.characterAttributes.where('characterId').equals(testCharacter.id).delete();
+          await db.characterPages.where('characterId').equals(testCharacter.id).delete();
           await db.characterWindows.where('characterId').equals(testCharacter.id).delete();
           await db.inventories.where('characterId').equals(testCharacter.id).delete();
         }

@@ -256,9 +256,15 @@ export type CharacterAttribute = Attribute & {
   value: string | number | boolean;
 };
 
+export type CharacterPage = BaseDetails & {
+  characterId: string;
+  label: string;
+};
+
 export type CharacterWindow = BaseDetails & {
   title: string;
   characterId: string;
+  characterPageId?: string | null;
   windowId: string;
   x: number;
   y: number;

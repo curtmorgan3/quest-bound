@@ -4,6 +4,7 @@ import type {
   Attribute,
   Character,
   CharacterAttribute,
+  CharacterPage,
   CharacterWindow,
   Chart,
   Component,
@@ -40,6 +41,7 @@ const db = new Dexie('qbdb') as Dexie & {
   components: EntityTable<Component, 'id'>;
   characters: EntityTable<Character, 'id'>;
   characterAttributes: EntityTable<CharacterAttribute, 'id'>;
+  characterPages: EntityTable<CharacterPage, 'id'>;
   characterWindows: EntityTable<CharacterWindow, 'id'>;
   inventories: EntityTable<Inventory, 'id'>;
   inventoryItems: EntityTable<InventoryItem, 'id'>;
@@ -64,13 +66,19 @@ db.version(5).stores({
   characters: `${common}, rulesetId, userId, assetId, image`,
   inventories: `${common}, rulesetId, characterId, title, category, type`,
   inventoryItems: `${common}, inventoryId, entityId, quantity`,
-  characterWindows: `${common}, characterId, windowId, title, x, y, isCollapsed, &[characterId+windowId]`,
+  characterPages: `${common}, characterId, label`,
+  characterWindows: `${common}, characterId, characterPageId, windowId, title, x, y, isCollapsed, &[characterId+windowId]`,
   characterAttributes: `${common}, characterId, attributeId, &[characterId+attributeId]`,
   diceRolls: `${common}, rulesetId, userId, value, label`,
 });
 
 db.version(6).stores({
   charts: `${common}, rulesetId, title, description, category, data, assetId, image`,
+});
+
+db.version(7).stores({
+  characterPages: `${common}, characterId, label`,
+  characterWindows: `${common}, characterId, characterPageId, windowId, title, x, y, isCollapsed, &[characterId+windowId]`,
 });
 
 // Cache assets for reference in the asset injector middleware
