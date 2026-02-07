@@ -30,13 +30,10 @@ export const EditInventoryNode = () => {
           width: '100%',
           backgroundColor: css.backgroundColor,
           borderRadius: css.borderRadius,
-          outline: css.outline,
-          outlineColor: css.outlineColor,
-          outlineWidth: css.outlineWidth,
           backgroundSize: `${cellWidth}px ${cellHeight}px`,
           backgroundImage: `
-            linear-gradient(to right, ${gridColor} 1px, transparent 1px),
-            linear-gradient(to bottom, ${gridColor} 1px, transparent 1px)
+            linear-gradient(to right, ${gridColor} ${css.outlineWidth}px, transparent ${css.outlineWidth}px),
+            linear-gradient(to bottom, ${gridColor} ${css.outlineWidth}px, transparent ${css.outlineWidth}px)
           `,
           overflow: 'hidden',
         }}></div>
@@ -71,6 +68,7 @@ export const ViewInventoryNode = ({ component }: { component: Component }) => {
   const cellHeight = (data.cellHeight ?? 1) * 20;
   const gridCols = Math.floor(component.width / cellWidth);
   const gridRows = Math.floor(component.height / cellHeight);
+  const showItemAs = data.showItemAs ?? 'image';
 
   const inventoryItems = (characterContext?.inventoryItems ?? []).filter(
     (item) => item.componentId === component.id,
@@ -403,13 +401,10 @@ export const ViewInventoryNode = ({ component }: { component: Component }) => {
           width: component.width,
           backgroundColor: css.backgroundColor,
           borderRadius: css.borderRadius,
-          outline: css.outline,
-          outlineColor: css.outlineColor,
-          outlineWidth: css.outlineWidth,
           backgroundSize: `${cellWidth}px ${cellHeight}px`,
           backgroundImage: `
-            linear-gradient(to right, ${gridColor} 1px, transparent 1px),
-            linear-gradient(to bottom, ${gridColor} 1px, transparent 1px)
+            linear-gradient(to right, ${gridColor} ${css.outlineWidth}px, transparent ${css.outlineWidth}px),
+            linear-gradient(to bottom, ${gridColor} ${css.outlineWidth}px, transparent ${css.outlineWidth}px)
           `,
           overflow: 'hidden',
         }}>
@@ -435,7 +430,7 @@ export const ViewInventoryNode = ({ component }: { component: Component }) => {
                 touchAction: 'none',
                 userSelect: 'none',
               }}>
-              {invItem.image ? (
+              {invItem.image && showItemAs === 'image' ? (
                 <img
                   src={invItem.image}
                   alt={invItem.title}
@@ -444,6 +439,7 @@ export const ViewInventoryNode = ({ component }: { component: Component }) => {
                     width: '100%',
                     height: '100%',
                     objectFit: 'cover',
+                    opacity: invItem.value === false ? 0.3 : 1,
                   }}
                 />
               ) : (
@@ -455,6 +451,7 @@ export const ViewInventoryNode = ({ component }: { component: Component }) => {
                     fontSize: css.fontSize,
                     fontStyle: css.fontStyle,
                     fontWeight: css.fontWeight,
+                    opacity: invItem.value === false ? 0.3 : 1,
                   }}>
                   {invItem.title}
                 </span>

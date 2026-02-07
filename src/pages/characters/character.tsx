@@ -19,7 +19,7 @@ export const CharacterPage = ({ id, lockByDefault }: { id?: string; lockByDefaul
   const { updateCharacterWindow, deleteCharacterWindow } = useCharacterWindows(character?.id);
   const { characterAttributes, updateCharacterAttribute } = useCharacterAttributes(character?.id);
   const { inventoryItems, addInventoryItem, updateInventoryItem, removeInventoryItem } =
-    useInventory(character?.inventoryId ?? '');
+    useInventory(character?.inventoryId ?? '', character?.id ?? '');
 
   const [inventoryPanelConfig, setInventoryPanelConfig] = useState<InventoryPanelConfig>({});
 

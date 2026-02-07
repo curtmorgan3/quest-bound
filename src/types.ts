@@ -183,6 +183,7 @@ export type InventoryComponentData = {
   categoryRestriction?: string;
   itemRestrictionRef?: string;
   actionRestrictionRef?: string;
+  showItemAs?: 'image' | 'title';
 };
 
 export type GraphVariant = 'horizontal-linear' | 'vertical-linear' | 'circular';
@@ -276,6 +277,7 @@ export type InventoryItem = BaseDetails & {
   quantity: number;
   x: number;
   y: number;
+  value?: string | number | boolean;
 };
 
 export type DiceRoll = BaseDetails & {

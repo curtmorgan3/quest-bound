@@ -3,12 +3,14 @@ import { db, type InventoryItemWithData } from '@/stores';
 import type { Inventory, InventoryItem } from '@/types';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useActions, useAttributes, useItems } from '../rulesets';
+import { useCharacterAttributes } from './use-character-attributes';
 
-export const useInventory = (inventoryId: string) => {
+export const useInventory = (inventoryId: string, characterId: string) => {
   const { handleError } = useErrorHandler();
   const { actions } = useActions();
   const { items } = useItems();
   const { attributes } = useAttributes();
+  const { characterAttributes } = useCharacterAttributes(characterId);
 
   const inventory = useLiveQuery(() => db.inventories.get(inventoryId), [inventoryId]);
 
@@ -26,28 +28,25 @@ export const useInventory = (inventoryId: string) => {
     const actionRef = actions.find((action) => action.id === entity.entityId);
     const attributeRef = attributes.find((attr) => attr.id === entity.entityId);
 
+    const characterAttributeRef = characterAttributes.find(
+      (attr) => attr.attributeId === entity.entityId,
+    );
+
     return {
       ...entity,
-      title:
-        itemRef?.title ?? actionRef?.title ?? attributeRef?.title ?? '',
+      title: itemRef?.title ?? actionRef?.title ?? attributeRef?.title ?? '',
       description:
-        itemRef?.description ??
-        actionRef?.description ??
-        attributeRef?.description ??
-        '',
-      image:
-        itemRef?.image ?? actionRef?.image ?? attributeRef?.image ?? undefined,
+        itemRef?.description ?? actionRef?.description ?? attributeRef?.description ?? '',
+      image: itemRef?.image ?? actionRef?.image ?? attributeRef?.image ?? undefined,
       inventoryWidth:
-        itemRef?.inventoryWidth ??
-        actionRef?.inventoryWidth ??
-        attributeRef?.inventoryWidth ??
-        2,
+        itemRef?.inventoryWidth ?? actionRef?.inventoryWidth ?? attributeRef?.inventoryWidth ?? 2,
       inventoryHeight:
         itemRef?.inventoryHeight ??
         actionRef?.inventoryHeight ??
         attributeRef?.inventoryHeight ??
         2,
       stackSize: itemRef?.stackSize ?? 1,
+      value: characterAttributeRef?.value,
     };
   });
 

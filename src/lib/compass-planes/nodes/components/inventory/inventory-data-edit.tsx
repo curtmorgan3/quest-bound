@@ -7,13 +7,12 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import type { ComponentUpdate } from '@/lib/compass-api';
-import { ActionLookup, ItemLookup } from '@/lib/compass-api/components';
 import {
   fireExternalComponentChangeEvent,
   getComponentData,
   updateComponentData,
 } from '@/lib/compass-planes/utils';
-import type { Action, Component, InventoryComponentData, Item } from '@/types';
+import type { Component, InventoryComponentData } from '@/types';
 
 interface InventoryDataEditProps {
   components: Array<Component>;
@@ -32,9 +31,8 @@ export const InventoryDataEdit = ({ components, updateComponents }: InventoryDat
   const currentType = firstComponentData?.typeRestriction;
   const cellWidth = firstComponentData?.cellWidth ?? 1;
   const cellHeight = firstComponentData?.cellHeight ?? 1;
-  const itemRestrictionRef = firstComponentData?.itemRestrictionRef;
-  const actionRestrictionRef = firstComponentData?.actionRestrictionRef;
   const categoryRestriction = firstComponentData?.categoryRestriction ?? '';
+  const showItemAs = firstComponentData?.showItemAs ?? 'image';
 
   const handleTypeChange = async (value: string) => {
     if (editableComponents.length === 0) return;
@@ -68,36 +66,26 @@ export const InventoryDataEdit = ({ components, updateComponents }: InventoryDat
     fireExternalComponentChangeEvent({ updates });
   };
 
-  const handleItemRestrictionChange = async (item: Item | null) => {
-    if (editableComponents.length === 0) return;
-
-    const updates = editableComponents.map((component) => ({
-      id: component.id,
-      data: updateComponentData(component.data, { itemRestrictionRef: item?.id }),
-    }));
-
-    await updateComponents(updates);
-    fireExternalComponentChangeEvent({ updates });
-  };
-
-  const handleActionRestrictionChange = async (action: Action | null) => {
-    if (editableComponents.length === 0) return;
-
-    const updates = editableComponents.map((component) => ({
-      id: component.id,
-      data: updateComponentData(component.data, { actionRestrictionRef: action?.id }),
-    }));
-
-    await updateComponents(updates);
-    fireExternalComponentChangeEvent({ updates });
-  };
-
   const handleCategoryRestrictionChange = async (value: string) => {
     if (editableComponents.length === 0) return;
 
     const updates = editableComponents.map((component) => ({
       id: component.id,
       data: updateComponentData(component.data, { categoryRestriction: value || undefined }),
+    }));
+
+    await updateComponents(updates);
+    fireExternalComponentChangeEvent({ updates });
+  };
+
+  const handleShowItemAsChange = async (value: string) => {
+    if (editableComponents.length === 0) return;
+
+    const showItemAsValue = value as 'image' | 'title';
+
+    const updates = editableComponents.map((component) => ({
+      id: component.id,
+      data: updateComponentData(component.data, { showItemAs: showItemAsValue }),
     }));
 
     await updateComponents(updates);
@@ -158,24 +146,22 @@ export const InventoryDataEdit = ({ components, updateComponents }: InventoryDat
           disabled={isDisabled}
         />
       </div>
-      <ItemLookup
-        label='Item Restriction'
-        placeholder='Select item to restrict...'
-        value={itemRestrictionRef}
-        onSelect={(item) => handleItemRestrictionChange(item)}
-        onDelete={() => handleItemRestrictionChange(null)}
-        disabled={isDisabled}
-        filterCategory={categoryRestriction || undefined}
-      />
-      <ActionLookup
-        label='Action Restriction'
-        placeholder='Select action to restrict...'
-        value={actionRestrictionRef}
-        onSelect={(action) => handleActionRestrictionChange(action)}
-        onDelete={() => handleActionRestrictionChange(null)}
-        disabled={isDisabled}
-        filterCategory={categoryRestriction || undefined}
-      />
+
+      <div className='flex flex-col gap-1'>
+        <label className='text-xs text-muted-foreground'>Show Item As</label>
+        <Select
+          value={showItemAs}
+          onValueChange={handleShowItemAsChange}
+          disabled={isDisabled}>
+          <SelectTrigger className='w-full'>
+            <SelectValue placeholder='Select display mode' />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value='image'>Image</SelectItem>
+            <SelectItem value='title'>Title</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
     </div>
   );
 };
