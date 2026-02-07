@@ -58,6 +58,16 @@ export const EditTextNode = () => {
     });
   };
 
+  const handleBlur = () => {
+    setIsEditing(false);
+    updateComponent(id, {
+      locked: false,
+    });
+    fireExternalComponentChangeEvent({
+      updates: [{ id, locked: false }],
+    });
+  };
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       const value = e.currentTarget.value;
@@ -88,6 +98,7 @@ export const EditTextNode = () => {
             type='text'
             defaultValue={data.value?.toString()}
             onKeyDown={handleKeyDown}
+            onBlur={handleBlur}
             style={{
               ...css,
               background: 'transparent',

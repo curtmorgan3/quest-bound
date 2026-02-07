@@ -1,10 +1,10 @@
-import { useComponents } from '@/lib/compass-api';
+import { useCharacterWindows, useComponents, useWindows } from '@/lib/compass-api';
 import { colorPaper } from '@/palette';
 import { CharacterContext } from '@/stores';
 import type { CharacterWindow } from '@/types';
 import '@xyflow/react/dist/style.css';
 import { OctagonMinus, OctagonX } from 'lucide-react';
-import { useContext, useMemo, useState } from 'react';
+import { useCallback, useContext, useMemo, useState } from 'react';
 import { renderViewComponent } from '../nodes';
 
 interface WindowNodeData {
@@ -18,6 +18,29 @@ export const WindowNode = ({ data }: { data: WindowNodeData }) => {
   const characterContext = useContext(CharacterContext);
   const { characterWindow, onClose, onMinimize, locked } = data;
   const { components } = useComponents(characterWindow.windowId);
+  const { windows: rulesetWindows } = useWindows();
+  const { windows: characterWindowsList, createCharacterWindow } = useCharacterWindows(
+    characterWindow.characterId,
+  );
+
+  const handleChildWindowClick = useCallback(
+    (childWindowId: string) => {
+      const alreadyOpen = characterWindowsList.some((cw) => cw.windowId === childWindowId);
+      if (alreadyOpen) return;
+      const childWindow = rulesetWindows.find((w) => w.id === childWindowId);
+      if (!childWindow) return;
+
+      createCharacterWindow({
+        windowId: childWindowId,
+        characterId: characterContext?.character?.id,
+        title: childWindow.title,
+        x: data.characterWindow.x + 200,
+        y: data.characterWindow.y + 150,
+        isCollapsed: false,
+      });
+    },
+    [characterWindowsList, rulesetWindows, createCharacterWindow],
+  );
 
   // Calculate offsets based on leftmost and topmost components
   const minX = useMemo(() => {
@@ -103,7 +126,16 @@ export const WindowNode = ({ data }: { data: WindowNodeData }) => {
               height: component.height,
               zIndex: component.z,
               transform: `rotate(${component.rotation}deg)`,
-            }}>
+              cursor: component.childWindowId ? 'pointer' : undefined,
+            }}
+            onClick={
+              component.childWindowId
+                ? (e) => {
+                    e.stopPropagation();
+                    handleChildWindowClick(component.childWindowId!);
+                  }
+                : undefined
+            }>
             {renderViewComponent(component, characterContext?.characterAttributes)}
           </div>
         ))}

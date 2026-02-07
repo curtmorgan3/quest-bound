@@ -229,6 +229,7 @@ export type Component = BaseDetails & {
   groupId?: string | null;
   attributeId?: string | null;
   actionId?: string;
+  childWindowId?: string;
 };
 
 export type Window = BaseDetails & {

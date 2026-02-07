@@ -1,5 +1,5 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { AttributeLookup, useComponents } from '@/lib/compass-api';
+import { AttributeLookup, useComponents, WindowLookup } from '@/lib/compass-api';
 import { ComponentTypes } from '@/lib/compass-planes/nodes';
 import {
   CheckboxDataEdit,
@@ -180,6 +180,15 @@ export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
                 onSelect={(attr) => setConditionalRenderAttributeId(attr.id)}
                 onDelete={() => setConditionalRenderAttributeId(null)}
                 filterType={'boolean'}
+              />
+            )}
+            {selectedComponents.length === 1 && windowId && (
+              <WindowLookup
+                label='Child Window'
+                value={selectedComponents[0].childWindowId}
+                onSelect={(win) => handleUpdate('childWindowId', win.id)}
+                onDelete={() => handleUpdate('childWindowId', null)}
+                excludeIds={[windowId]}
               />
             )}
             {allAreImages && (
