@@ -434,16 +434,20 @@ export const ViewInventoryNode = ({ component }: { component: Component }) => {
                 touchAction: 'none',
                 userSelect: 'none',
               }}>
-              <img
-                src={invItem.image ?? ''}
-                alt={invItem.title}
-                draggable={false}
-                style={{
-                  width: '100%',
-                  height: '100%',
-                  objectFit: 'cover',
-                }}
-              />
+              {invItem.image ? (
+                <img
+                  src={invItem.image}
+                  alt={invItem.title}
+                  draggable={false}
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'cover',
+                  }}
+                />
+              ) : (
+                <span className='text-xs'>{invItem.title}</span>
+              )}
               {invItem.quantity > 1 && (
                 <span
                   style={{

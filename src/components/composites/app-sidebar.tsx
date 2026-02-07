@@ -53,6 +53,7 @@ export function AppSidebar() {
   const { documents } = useDocuments(character?.rulesetId);
   const { charts } = useCharts(character?.rulesetId);
   const { open, setOpen } = useSidebar();
+  const { rulesetId, characterId } = useParams();
   const location = useLocation();
   const { documentId, chartId } = useParams<{ documentId?: string; chartId?: string }>();
   const isHomepage = location.pathname === '/rulesets' || location.pathname === '/characters';
@@ -140,6 +141,10 @@ export function AppSidebar() {
   };
 
   const helpDocsUrl = `https://v2.docs.questbound.com/docs/${docsPageFromRoute()}`;
+  const title =
+    (rulesetId ?? characterId)
+      ? (character?.name ?? activeRuleset?.title ?? 'Quest Bound')
+      : 'Quest Bound';
 
   return (
     <Drawer direction='bottom'>
@@ -147,9 +152,7 @@ export function AppSidebar() {
         <SidebarContent>
           <SidebarGroup>
             <div className='flex items-center justify-left'>
-              <SidebarGroupLabel>
-                {character?.name ?? activeRuleset?.title ?? 'Quest Bound'}
-              </SidebarGroupLabel>
+              <SidebarGroupLabel>{title}</SidebarGroupLabel>
               {open && (
                 <SidebarTrigger
                   onClick={() => localStorage.setItem('qb.sidebarCollapsed', 'true')}
