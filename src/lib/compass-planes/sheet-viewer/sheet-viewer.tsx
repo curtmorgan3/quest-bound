@@ -1,9 +1,13 @@
-import { useCharacterWindows, type CharacterWindowUpdate } from '@/lib/compass-api';
+import {
+  useCharacterPages,
+  useCharacterWindows,
+  type CharacterWindowUpdate,
+} from '@/lib/compass-api';
 import type { CharacterWindow } from '@/types';
 import type { Node, NodeChange, NodePositionChange } from '@xyflow/react';
 import { applyNodeChanges } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { BaseEditor } from '../base-editor';
 import { WindowNode } from './window-node';
 import { WindowsTabs } from './windows-tabs';
@@ -25,11 +29,35 @@ export const SheetViewer = ({
   onWindowDeleted,
   lockByDefault,
 }: SheetViewerProps) => {
+  const { characterPages } = useCharacterPages(characterId);
   const { windows: characterWindows } = useCharacterWindows(characterId);
-  const openWindows = new Set(characterWindows.filter((cw) => !cw.isCollapsed).map((cw) => cw.id));
+  const [currentPageId, setCurrentPageId] = useState<string | null>(null);
   const [locked, setLocked] = useState<boolean>(lockByDefault ?? false);
 
-  const openCharacterWindows = characterWindows.filter((w) => !w.isCollapsed);
+  const windowsForCurrentPage = useMemo(() => {
+    if (currentPageId === null) {
+      return characterWindows.filter((w) => !w.characterPageId);
+    }
+    return characterWindows.filter((w) => w.characterPageId === currentPageId);
+  }, [characterWindows, currentPageId]);
+
+  useEffect(() => {
+    if (characterPages.length === 0) {
+      setCurrentPageId(null);
+      return;
+    }
+    const currentStillExists = characterPages.some((p) => p.id === currentPageId);
+    if (!currentStillExists) {
+      setCurrentPageId(characterPages[0]?.id ?? null);
+    } else if (currentPageId === null) {
+      setCurrentPageId(characterPages[0]?.id ?? null);
+    }
+  }, [characterPages, currentPageId]);
+
+  const openWindows = new Set(
+    windowsForCurrentPage.filter((cw) => !cw.isCollapsed).map((cw) => cw.id),
+  );
+  const openCharacterWindows = windowsForCurrentPage.filter((w) => !w.isCollapsed);
 
   function convertWindowsToNode(windows: CharacterWindow[]): Node[] {
     return windows.map((window, index) => {
@@ -56,12 +84,12 @@ export const SheetViewer = ({
     });
   }
 
-  const [nodes, setNodes] = useState<Node[]>(convertWindowsToNode(characterWindows));
+  const [nodes, setNodes] = useState<Node[]>(convertWindowsToNode(windowsForCurrentPage));
   const positionUpdateTimeouts = useRef<Map<string, NodeJS.Timeout>>(new Map());
 
   useEffect(() => {
     setNodes(convertWindowsToNode(openCharacterWindows));
-  }, [characterWindows, locked]);
+  }, [windowsForCurrentPage, locked]);
 
   const onNodesChange = (changes: NodeChange[]) => {
     for (const change of changes) {
@@ -129,7 +157,10 @@ export const SheetViewer = ({
       )}
       <WindowsTabs
         characterId={characterId}
-        windows={characterWindows}
+        currentPageId={currentPageId}
+        onCurrentPageChange={setCurrentPageId}
+        characterPages={characterPages}
+        windows={windowsForCurrentPage}
         openWindows={openWindows}
         toggleWindow={(id: string) => onWindowUpdated?.({ id, isCollapsed: openWindows.has(id) })}
         locked={locked}

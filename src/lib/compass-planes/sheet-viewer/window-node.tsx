@@ -19,8 +19,11 @@ export const WindowNode = ({ data }: { data: WindowNodeData }) => {
   const { characterWindow, onClose, onMinimize, locked } = data;
   const { components } = useComponents(characterWindow.windowId);
   const { windows: rulesetWindows } = useWindows();
-  const { windows: characterWindowsList, createCharacterWindow, deleteCharacterWindow } =
-    useCharacterWindows(characterWindow.characterId);
+  const {
+    windows: characterWindowsList,
+    createCharacterWindow,
+    deleteCharacterWindow,
+  } = useCharacterWindows(characterWindow.characterId);
 
   const handleChildWindowClick = useCallback(
     (childWindowId: string) => {
@@ -35,6 +38,7 @@ export const WindowNode = ({ data }: { data: WindowNodeData }) => {
       createCharacterWindow({
         windowId: childWindowId,
         characterId: characterContext?.character?.id,
+        characterPageId: data.characterWindow.characterPageId,
         title: childWindow.title,
         x: data.characterWindow.x + 200,
         y: data.characterWindow.y + 150,

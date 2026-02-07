@@ -2,7 +2,6 @@ import { useErrorHandler } from '@/hooks';
 import { db } from '@/stores';
 import type { CharacterWindow } from '@/types';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { useCharacter } from './use-character';
 
 export type CharacterWindowUpdate = {
   id: string;
@@ -12,28 +11,27 @@ export type CharacterWindowUpdate = {
 };
 
 export const useCharacterWindows = (characterId?: string) => {
-  const { character } = useCharacter(characterId);
   const { handleError } = useErrorHandler();
 
   const windows = useLiveQuery(
     () =>
       db.characterWindows
         .where('characterId')
-        .equals(character?.id ?? 0)
+        .equals(characterId ?? 0)
         .toArray(),
-    [character],
+    [characterId],
   );
 
   const createCharacterWindow = async (
     data: Omit<CharacterWindow, 'id' | 'createdAt' | 'updatedAt' | 'rulesetId'>,
   ) => {
-    if (!character) return;
+    if (!characterId) return;
     const now = new Date().toISOString();
     try {
       await db.characterWindows.add({
         ...data,
         id: crypto.randomUUID(),
-        characterId: character.id,
+        characterId: characterId,
         createdAt: now,
         updatedAt: now,
       });

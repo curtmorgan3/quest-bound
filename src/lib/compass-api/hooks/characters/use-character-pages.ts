@@ -2,28 +2,26 @@ import { useErrorHandler } from '@/hooks';
 import { db } from '@/stores';
 import type { CharacterPage } from '@/types';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { useCharacter } from './use-character';
 
 export const useCharacterPages = (characterId?: string) => {
-  const { character } = useCharacter(characterId);
   const { handleError } = useErrorHandler();
 
   const characterPages = useLiveQuery(
     () =>
       db.characterPages
         .where('characterId')
-        .equals(character?.id ?? '')
+        .equals(characterId ?? '')
         .toArray(),
-    [character?.id],
+    [characterId],
   );
 
   const createCharacterPage = async (data: { label: string }) => {
-    if (!character) return;
+    if (!characterId) return;
     const now = new Date().toISOString();
     try {
       await db.characterPages.add({
         id: crypto.randomUUID(),
-        characterId: character.id,
+        characterId,
         label: data.label,
         createdAt: now,
         updatedAt: now,
@@ -36,10 +34,7 @@ export const useCharacterPages = (characterId?: string) => {
     }
   };
 
-  const updateCharacterPage = async (
-    id: string,
-    data: Partial<Pick<CharacterPage, 'label'>>,
-  ) => {
+  const updateCharacterPage = async (id: string, data: Partial<Pick<CharacterPage, 'label'>>) => {
     const now = new Date().toISOString();
     try {
       await db.characterPages.update(id, {
