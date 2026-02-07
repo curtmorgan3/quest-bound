@@ -2,11 +2,13 @@ import { useErrorHandler } from '@/hooks';
 import { db } from '@/stores';
 import type { Document } from '@/types';
 import { useLiveQuery } from 'dexie-react-hooks';
+import { useAssets } from '../assets';
 import { useActiveRuleset } from './use-active-ruleset';
 
 export const useDocuments = (rulesetId?: string) => {
   const { activeRuleset } = useActiveRuleset();
   const { handleError } = useErrorHandler();
+  const { deleteAsset } = useAssets();
 
   const effectiveRulesetId = rulesetId ?? activeRuleset?.id;
 
@@ -41,6 +43,16 @@ export const useDocuments = (rulesetId?: string) => {
   const updateDocument = async (id: string, data: Partial<Document>) => {
     const now = new Date().toISOString();
     try {
+      if (data.assetId === null) {
+        const original = await db.documents.get(id);
+        if (original?.assetId) {
+          await deleteAsset(original.assetId);
+        }
+
+        if (!data.image) {
+          data.image = null;
+        }
+      }
       await db.documents.update(id, {
         ...data,
         updatedAt: now,

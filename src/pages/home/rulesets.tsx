@@ -1,5 +1,4 @@
 import { Button, Input, Textarea } from '@/components';
-import { Card, CardAction, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Dialog,
   DialogClose,
@@ -14,9 +13,10 @@ import { useImportRuleset, useRulesets, type ImportRulesetResult } from '@/lib/c
 import { AlertCircle, CheckCircle, Upload } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { PreviewCard } from '../ruleset/components';
 
 export const Rulesets = () => {
-  const { rulesets, createRuleset, deleteRuleset } = useRulesets();
+  const { rulesets, createRuleset, deleteRuleset, updateRuleset } = useRulesets();
   const { importRuleset, isImporting } = useImportRuleset();
 
   const sortedRulesets = [...rulesets].sort((a, b) => a.title.localeCompare(b.title));
@@ -228,70 +228,17 @@ export const Rulesets = () => {
 
       <div className='flex flex-row gap-2 flex-wrap'>
         {sortedRulesets?.map((r) => (
-          <Card
+          <PreviewCard
             key={r.id}
-            className='p-4 w-[320px] h-[280px] flex flex-col justify-between'
-            data-testid={`ruleset-card-${r.id}`}
-            style={
-              r.image
-                ? {
-                    background: `linear-gradient(rgba(0,0,0,0.35), rgba(0,0,0,0.35)), url(${r.image})`,
-                    backgroundSize: 'cover',
-                    backgroundPosition: 'center',
-                  }
-                : undefined
-            }>
-            {r.image ? (
-              <div className='rounded-md bg-black/30 px-3 py-2 -mx-1'>
-                <CardHeader className='relative p-0'>
-                  <span className='absolute top-0 right-0 text-xs text-muted-foreground'>
-                    v{r.version}
-                  </span>
-                  <CardTitle data-testid='ruleset-card-title' className='text-lg'>
-                    {r.title}
-                  </CardTitle>
-                </CardHeader>
-                <CardDescription
-                  data-testid='ruleset-card-description'
-                  className='grow-1 max-h-[80px] overflow-y-auto mt-1'>
-                  {r.description}
-                </CardDescription>
-              </div>
-            ) : (
-              <>
-                <CardHeader className='relative'>
-                  <span className='absolute top-0 right-0 text-xs text-muted-foreground'>
-                    v{r.version}
-                  </span>
-                  <CardTitle data-testid='ruleset-card-title' className='text-lg'>
-                    {r.title}
-                  </CardTitle>
-                </CardHeader>
-                <CardDescription
-                  data-testid='ruleset-card-description'
-                  className='grow-1 max-h-[80px] overflow-y-auto'>
-                  {r.description}
-                </CardDescription>
-              </>
-            )}
-            <div className='flex gap-2 mt-2 bg-secondary rounded-md p-2 justify-between items-center'>
-              <Button
-                variant='ghost'
-                onClick={() => deleteRuleset(r.id)}
-                className='text-red-500'
-                data-testid={`delete-ruleset-${r.id}`}>
-                Delete
-              </Button>
-              <CardAction>
-                <Button
-                  variant='link'
-                  onClick={() => navigate(`/rulesets/${r.id}`)}
-                  data-testid={`open-ruleset-${r.id}`}>
-                  Open
-                </Button>
-              </CardAction>
-            </div>
-          </Card>
+            id={r.id}
+            title={r.title}
+            category={r.description}
+            image={r.image}
+            descriptionExtra={<span className='text-xs text-muted-foreground'>v{r.version}</span>}
+            onDelete={() => deleteRuleset(r.id)}
+            onOpen={() => navigate(`/rulesets/${r.id}`)}
+            onEdit={(title, description) => updateRuleset(r.id, { title, description })}
+          />
         ))}
       </div>
     </div>

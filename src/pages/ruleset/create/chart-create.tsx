@@ -51,6 +51,11 @@ export const ChartCreate = ({
     setImage(null);
   };
 
+  const handleSetUrl = (url: string) => {
+    setAssetId(null);
+    setImage(url);
+  };
+
   const headers = !chartData ? [] : chartData[0];
   const numRows = !chartData ? 0 : chartData.length - 1;
   const displayImage = image || getImageFromAssetId(assetId);
@@ -88,6 +93,7 @@ export const ChartCreate = ({
           alt='Chart image'
           onUpload={handleImageUpload}
           onRemove={handleImageRemove}
+          onSetUrl={handleSetUrl}
         />
       </div>
       <div className='flex w-full gap-4'>

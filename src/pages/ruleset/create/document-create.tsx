@@ -51,6 +51,11 @@ export const DocumentCreate = ({
     setImage(null);
   };
 
+  const handleSetUrl = (url: string) => {
+    setAssetId(null);
+    setImage(url);
+  };
+
   const handlePdfUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file && file.type === 'application/pdf') {
@@ -94,6 +99,7 @@ export const DocumentCreate = ({
             alt='Document cover image'
             onUpload={handleImageUpload}
             onRemove={handleImageRemove}
+            onSetUrl={handleSetUrl}
           />
         </div>
 

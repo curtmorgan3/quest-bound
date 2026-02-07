@@ -61,7 +61,6 @@ export type Attribute = BaseDetails & {
   optionsChartColumnHeader?: string;
   min?: number;
   max?: number;
-  // Not currently used.
   assetId?: string | null;
   image?: string | null;
 };

@@ -9,12 +9,7 @@ interface ActionCreateProps {
   setAssetId: Dispatch<SetStateAction<string | null>>;
 }
 
-export const ActionCreate = ({
-  image,
-  assetId,
-  setImage,
-  setAssetId,
-}: ActionCreateProps) => {
+export const ActionCreate = ({ image, assetId, setImage, setAssetId }: ActionCreateProps) => {
   const { assets, deleteAsset } = useAssets();
 
   const getImageFromAssetId = (id: string | null) => {
@@ -29,6 +24,11 @@ export const ActionCreate = ({
     if (imageData) {
       setImage(imageData);
     }
+  };
+
+  const handleSetUrl = (url: string) => {
+    setAssetId(null);
+    setImage(url);
   };
 
   const handleImageRemove = async () => {
@@ -49,6 +49,7 @@ export const ActionCreate = ({
         alt='Action image'
         onUpload={handleImageUpload}
         onRemove={handleImageRemove}
+        onSetUrl={handleSetUrl}
       />
     </div>
   );

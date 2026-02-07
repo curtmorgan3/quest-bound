@@ -1,5 +1,4 @@
 import { Button, ImageUpload, Input } from '@/components';
-import { Card, CardAction, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Dialog,
   DialogClose,
@@ -20,9 +19,10 @@ import {
 import { useAssets, useCharacter, useRulesets } from '@/lib/compass-api';
 import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { PreviewCard } from '../ruleset/components';
 
 export const Characters = () => {
-  const { characters, createCharacter, deleteCharacter } = useCharacter();
+  const { characters, createCharacter, deleteCharacter, updateCharacter } = useCharacter();
   const { rulesets } = useRulesets();
   const { assets, deleteAsset } = useAssets();
 
@@ -179,43 +179,21 @@ export const Characters = () => {
 
       <div className='flex flex-row gap-2 flex-wrap'>
         {selectableCharacters.map((character) => (
-          <Card
+          <PreviewCard
             key={character.id}
-            className='p-4 w-[320px] h-[200px] flex flex-col justify-between'
-            data-testid={`character-card-${character.id}`}
-            style={
-              character.image
-                ? {
-                    background: `url(${character.image})`,
-                    backgroundSize: 'cover',
-                    backgroundPosition: 'center',
-                  }
-                : undefined
-            }>
-            <CardHeader>
-              <CardTitle className='text-lg'>{character.name}</CardTitle>
-            </CardHeader>
-            <CardDescription className='text-sm text-muted-foreground'>
-              Ruleset: {getRulesetTitle(character.rulesetId)}
-            </CardDescription>
-            <div className='flex gap-2 mt-2 bg-secondary rounded-md p-2 justify-between items-center'>
-              <Button
-                variant='ghost'
-                onClick={() => deleteCharacter(character.id)}
-                className='text-red-500'
-                data-testid={`delete-character-${character.id}`}>
-                Delete
-              </Button>
-              <CardAction>
-                <Button
-                  variant='link'
-                  onClick={() => navigate(`/characters/${character.id}`)}
-                  data-testid={`open-character-${character.id}`}>
-                  Open
-                </Button>
-              </CardAction>
-            </div>
-          </Card>
+            id={character.id}
+            title={character.name}
+            category={getRulesetTitle(character.rulesetId)}
+            image={character.image}
+            descriptionExtra={
+              <span className='text-xs text-muted-foreground'>
+                {getRulesetTitle(character.rulesetId)}
+              </span>
+            }
+            onDelete={() => deleteCharacter(character.id)}
+            onOpen={() => navigate(`/characters/${character.id}`)}
+            onEdit={(name) => updateCharacter(character.id, { name })}
+          />
         ))}
       </div>
 

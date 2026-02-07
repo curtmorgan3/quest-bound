@@ -65,7 +65,15 @@ export const Ruleset = ({
           />
         );
       case 'windows':
-        return <WindowSelect />;
+        return (
+          <WindowSelect
+            onEditDetails={(id) => {
+              searchParams.set('edit', id);
+              setSearchParams(searchParams);
+              setOpen(true);
+            }}
+          />
+        );
       default:
         return <p>Not Found</p>;
     }

@@ -2,11 +2,13 @@ import { useErrorHandler } from '@/hooks/use-error-handler';
 import { db } from '@/stores';
 import type { Item } from '@/types';
 import { useLiveQuery } from 'dexie-react-hooks';
+import { useAssets } from '../assets';
 import { useActiveRuleset } from './use-active-ruleset';
 
 export const useItems = () => {
   const { activeRuleset } = useActiveRuleset();
   const { handleError } = useErrorHandler();
+  const { deleteAsset } = useAssets();
 
   const items = useLiveQuery(
     () =>
@@ -40,6 +42,17 @@ export const useItems = () => {
     const now = new Date().toISOString();
 
     try {
+      if (data.assetId === null) {
+        const original = await db.items.get(id);
+        if (original?.assetId) {
+          await deleteAsset(original.assetId);
+        }
+
+        if (!data.image) {
+          data.image = null;
+        }
+      }
+
       await db.items.update(id, {
         ...data,
         updatedAt: now,

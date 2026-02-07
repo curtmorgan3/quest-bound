@@ -2,11 +2,13 @@ import { useErrorHandler } from '@/hooks/use-error-handler';
 import { db } from '@/stores';
 import type { Chart } from '@/types';
 import { useLiveQuery } from 'dexie-react-hooks';
+import { useAssets } from '../assets';
 import { useActiveRuleset } from './use-active-ruleset';
 
 export const useCharts = (rulesetId?: string) => {
   const { activeRuleset } = useActiveRuleset();
   const { handleError } = useErrorHandler();
+  const { deleteAsset } = useAssets();
 
   const effectiveRulesetId = rulesetId ?? activeRuleset?.id;
 
@@ -41,6 +43,16 @@ export const useCharts = (rulesetId?: string) => {
   const updateChart = async (id: string, data: Partial<Chart>) => {
     const now = new Date().toISOString();
     try {
+      if (data.assetId === null) {
+        const original = await db.charts.get(id);
+        if (original?.assetId) {
+          await deleteAsset(original.assetId);
+        }
+
+        if (!data.image) {
+          data.image = null;
+        }
+      }
       await db.charts.update(id, {
         ...data,
         updatedAt: now,

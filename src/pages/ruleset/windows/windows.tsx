@@ -4,7 +4,11 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PreviewCard } from '../components';
 
-export const WindowSelect = () => {
+interface WindowSelectProps {
+  onEditDetails?: (id: string) => void;
+}
+
+export const WindowSelect = ({ onEditDetails }: WindowSelectProps) => {
   const { windows, deleteWindow, updateWindow } = useWindows();
   const { activeRuleset } = useActiveRuleset();
   const navigate = useNavigate();
@@ -33,9 +37,11 @@ export const WindowSelect = () => {
           <PreviewCard
             {...c}
             key={c.id}
+            type='windows'
             onDelete={() => deleteWindow(c.id)}
             onOpen={() => navigate(`/rulesets/${activeRuleset?.id}/windows/${c.id}`)}
             onEdit={(title, category) => updateWindow(c.id, { title, category })}
+            onEditDetails={onEditDetails ? () => onEditDetails(c.id) : undefined}
           />
         ))}
       </div>

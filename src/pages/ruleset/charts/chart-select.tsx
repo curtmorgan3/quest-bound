@@ -41,6 +41,7 @@ export const ChartSelect = ({ onEditDetails }: ChartSelectProps) => {
           <PreviewCard
             {...c}
             key={c.id}
+            type='charts'
             onDelete={() => deleteChart(c.id)}
             onOpen={() => setSearchParams({ chart: c.id })}
             onEdit={(title, category) => updateChart(c.id, { title, category })}

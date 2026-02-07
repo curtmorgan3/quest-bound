@@ -69,6 +69,11 @@ export const ItemCreate = ({
     }
   };
 
+  const handleSetUrl = (url: string) => {
+    setAssetId(null);
+    setImage(url);
+  };
+
   const handleImageRemove = async () => {
     if (assetId) {
       await deleteAsset(assetId);
@@ -90,6 +95,7 @@ export const ItemCreate = ({
             alt='Item image'
             onUpload={handleImageUpload}
             onRemove={handleImageRemove}
+            onSetUrl={handleSetUrl}
           />
         </div>
         <div className='flex flex-col gap-2 flex-1'>

@@ -84,11 +84,14 @@ export const useCharacter = (_id?: string) => {
         if (original?.assetId) {
           await deleteAsset(original.assetId);
         }
+
+        if (!data.image) {
+          data.image = null;
+        }
       }
 
       await db.characters.update(id, {
         ...data,
-        image: data.assetId === null && !data.image ? null : data.image,
         updatedAt: now,
       });
     } catch (e) {

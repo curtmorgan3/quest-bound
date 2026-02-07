@@ -8,13 +8,27 @@ import {
   Input,
 } from '@/components';
 import { Pencil } from 'lucide-react';
+import type { ReactNode } from 'react';
 import { useState } from 'react';
+
+export type PreviewCardType =
+  | 'attributes'
+  | 'items'
+  | 'actions'
+  | 'charts'
+  | 'documents'
+  | 'windows';
 
 interface Props {
   id: string;
   title: string;
+  type?: PreviewCardType;
   category?: string;
   image?: string | null;
+  /** Optional content shown in the description area (e.g. "PDF attached") */
+  descriptionExtra?: ReactNode;
+  /** When true, the Open button is disabled */
+  openDisabled?: boolean;
   onDelete: (id: string) => void;
   onOpen: (id: string) => void;
   onEdit: (title: string, category?: string) => void;
@@ -24,8 +38,11 @@ interface Props {
 export const PreviewCard = ({
   id,
   title,
+  type: _type,
   category,
   image,
+  descriptionExtra,
+  openDisabled,
   onDelete,
   onOpen,
   onEdit,
@@ -111,6 +128,7 @@ export const PreviewCard = ({
                   {category || 'Set category'}
                 </p>
               )}
+              {descriptionExtra}
             </div>
           </CardDescription>
         </div>
@@ -157,22 +175,35 @@ export const PreviewCard = ({
                   {category || 'Set category'}
                 </p>
               )}
+              {descriptionExtra}
             </div>
           </CardDescription>
         </>
       )}
       <div className='flex gap-2 mt-2 bg-secondary rounded-md p-2 justify-between items-center'>
-        <Button variant='ghost' onClick={() => onDelete(id)} className='text-red-500'>
+        <Button
+          variant='ghost'
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete(id);
+          }}
+          className='text-red-500'>
           Delete
         </Button>
         <CardAction>
           <div className='flex gap-1'>
-            {onEditDetails && (
+            {!!onEditDetails && (
               <Button variant='ghost' size='sm' onClick={onEditDetails}>
                 <Pencil className='h-4 w-4' />
               </Button>
             )}
-            <Button variant='link' onClick={() => onOpen(id)}>
+            <Button
+              variant='link'
+              onClick={(e) => {
+                e.stopPropagation();
+                onOpen(id);
+              }}
+              disabled={openDisabled}>
               Open
             </Button>
           </div>
