@@ -19,14 +19,16 @@ export const WindowNode = ({ data }: { data: WindowNodeData }) => {
   const { characterWindow, onClose, onMinimize, locked } = data;
   const { components } = useComponents(characterWindow.windowId);
   const { windows: rulesetWindows } = useWindows();
-  const { windows: characterWindowsList, createCharacterWindow } = useCharacterWindows(
-    characterWindow.characterId,
-  );
+  const { windows: characterWindowsList, createCharacterWindow, deleteCharacterWindow } =
+    useCharacterWindows(characterWindow.characterId);
 
   const handleChildWindowClick = useCallback(
     (childWindowId: string) => {
-      const alreadyOpen = characterWindowsList.some((cw) => cw.windowId === childWindowId);
-      if (alreadyOpen) return;
+      const existing = characterWindowsList.find((cw) => cw.windowId === childWindowId);
+      if (existing) {
+        deleteCharacterWindow(existing.id);
+        return;
+      }
       const childWindow = rulesetWindows.find((w) => w.id === childWindowId);
       if (!childWindow) return;
 
@@ -39,7 +41,7 @@ export const WindowNode = ({ data }: { data: WindowNodeData }) => {
         isCollapsed: false,
       });
     },
-    [characterWindowsList, rulesetWindows, createCharacterWindow],
+    [characterWindowsList, rulesetWindows, createCharacterWindow, deleteCharacterWindow],
   );
 
   // Calculate offsets based on leftmost and topmost components
