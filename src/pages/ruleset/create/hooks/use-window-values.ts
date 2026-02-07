@@ -10,6 +10,7 @@ interface UseActionValueProps {
   onCreate?: () => void;
   setTitle: (title: string) => void;
   setCategory: (category: string) => void;
+  setDescription: (description: string) => void;
 }
 
 export const useWindowValues = ({
@@ -18,6 +19,7 @@ export const useWindowValues = ({
   onCreate,
   setTitle,
   setCategory,
+  setDescription,
 }: UseActionValueProps) => {
   const { windows, createWindow, updateWindow } = useWindows();
   const isEditMode = !!id;
@@ -28,6 +30,7 @@ export const useWindowValues = ({
     if (isEditMode && active) {
       setTitle(active.title);
       setCategory(active.category || '');
+      setDescription(active.description || '');
     }
   }, [active]);
 

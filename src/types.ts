@@ -230,6 +230,7 @@ export type Window = BaseDetails & {
   rulesetId: string;
   title: string;
   category?: string;
+  description?: string;
 };
 
 export type Character = BaseDetails & {

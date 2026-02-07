@@ -5,8 +5,20 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
+  Checkbox,
   Input,
+  Label,
 } from '@/components';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { Pencil } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useState } from 'react';
@@ -53,6 +65,8 @@ export const PreviewCard = ({
 
   const [editingCategory, setEditingCategory] = useState(false);
   const [newCategory, setNewCategory] = useState(category);
+
+  const doNotAsk = localStorage.getItem('qb.confirmOnDelete') === 'false';
 
   const handleSave = () => {
     onEdit(newTitle, newCategory);
@@ -181,15 +195,55 @@ export const PreviewCard = ({
         </>
       )}
       <div className='flex gap-2 mt-2 bg-secondary rounded-md p-2 justify-between items-center'>
-        <Button
-          variant='ghost'
-          onClick={(e) => {
-            e.stopPropagation();
-            onDelete(id);
-          }}
-          className='text-red-500'>
-          Delete
-        </Button>
+        {doNotAsk ? (
+          <Button
+            variant='ghost'
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete(id);
+            }}
+            className='text-red-500'
+            data-testid='preview-card-delete'>
+            Delete
+          </Button>
+        ) : (
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button
+                variant='ghost'
+                onClick={(e) => e.stopPropagation()}
+                className='text-red-500'
+                data-testid='preview-card-delete'>
+                Delete
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent onClick={(e) => e.stopPropagation()}>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Permanently delete this content?</AlertDialogTitle>
+                <div className='flex gap-2'>
+                  <Label htmlFor='preview-card-do-not-ask-again'>Do not ask again</Label>
+                  <Checkbox
+                    id='preview-card-do-not-ask-again'
+                    onCheckedChange={(checked) =>
+                      localStorage.setItem('qb.confirmOnDelete', String(!checked))
+                    }
+                  />
+                </div>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  data-testid='preview-card-delete-confirm'
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDelete(id);
+                  }}>
+                  Delete
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        )}
         <CardAction>
           <div className='flex gap-1'>
             {!!onEditDetails && (

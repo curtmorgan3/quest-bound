@@ -1,4 +1,4 @@
-import { Button, Input, Label, Textarea } from '@/components';
+import { Button, DescriptionEditor, Input, Label } from '@/components';
 import { AppWindow, FileSpreadsheet, HandFist, Newspaper, Sword, UserRoundPen } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useLocation, useSearchParams } from 'react-router-dom';
@@ -93,6 +93,7 @@ export const BaseCreate = ({ onCreate }: BaseCreateProps) => {
     },
     setTitle,
     setCategory,
+    setDescription,
   });
 
   const { saveDocument, ...documentProps } = useDocumentValues({
@@ -229,18 +230,12 @@ export const BaseCreate = ({ onCreate }: BaseCreateProps) => {
         {activeType === 'charts' && <ChartCreate {...chartProps} />}
         {activeType === 'documents' && <DocumentCreate {...documentProps} />}
 
-        {activeType !== 'windows' && (
-          <div className='grid gap-3'>
-            <Label htmlFor='create-description'>Description</Label>
-            <Textarea
-              id='create-description'
-              name='description'
-              onChange={(e) => setDescription(e.target.value)}
-              value={description}
-              onKeyDown={(e) => handleKeySubmit(e)}
-            />
-          </div>
-        )}
+        <DescriptionEditor
+          id='create-description'
+          value={description}
+          onChange={(value) => setDescription(value)}
+          onSave={handleCreate}
+        />
       </div>
       <div className='flex justify-end items-end flex-grow'>
         <Button

@@ -72,39 +72,39 @@ html {
   -moz-appearance: textfield;
 }
 
-.editor-content h1 {
+.md-content h1 {
   font-size: 32px;
   font-weight: bold;
 }
 
-.editor-content h2 {
+.md-content h2 {
   font-size: 24px;
   font-weight: bold;
 }
 
-.editor-content h3 {
+.md-content h3 {
   font-size: 18px;
   font-weight: normal;
 }
 
-.editor-content h4 {
+.md-content h4 {
   font-size: 16px;
 }
 
-.editor-content h5 {
+.md-content h5 {
   font-size: 12px;
 }
 
-.editor-content h6 {
+.md-content h6 {
   font-size: 10px;
 }
 
-.editor-content pre,
+.md-content pre,
 code {
   background-color: grey;
 }
 
-.editor-content blockquote {
+.md-content blockquote {
   border-left: 4px solid #ccc;
   padding-left: 15px; /* Space between border and text */
   font-style: italic; /* Italicize the text */
@@ -112,16 +112,16 @@ code {
   margin: 20px 0; /* Add top/bottom margin */
 }
 
-.editor-content ul > li {
+.md-content ul > li {
   list-style: inside;
 }
 
-.editor-content ol > li {
+.md-content ol > li {
   list-style: inside;
   list-style-type: decimal;
 }
 
-.editor-content a {
+.md-content a {
   text-decoration: underline;
 }
 

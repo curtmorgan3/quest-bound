@@ -24,8 +24,6 @@ export const AttributeChart = () => {
   const { attributes, deleteAttribute, updateAttribute } = useAttributes();
   const [, setSearchParams] = useSearchParams();
 
-  console.log(attributes);
-
   const rows: Partial<Attribute>[] = useMemo(
     () =>
       attributes.map((a) => {

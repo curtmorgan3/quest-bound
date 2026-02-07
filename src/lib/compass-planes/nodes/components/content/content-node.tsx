@@ -179,7 +179,7 @@ export const ViewContentNode = ({
           height: '100%',
         }}
         onClick={handleClick}
-        className={`prose prose-invert max-w-none editor-content ${diceRolls.length ? 'clickable' : ''}`}>
+        className={`prose prose-invert max-w-none editor-content md-content ${diceRolls.length ? 'clickable' : ''}`}>
         <Markdown>{data?.interpolatedValue?.toString() ?? ''}</Markdown>
       </div>
     </section>
