@@ -56,13 +56,25 @@ export const DescriptionEditor = ({
           className='min-h-24 max-h-[200px] overflow-y-auto'
         />
       ) : (
-        <div className='border-input min-h-24 max-h-[200px] w-full overflow-y-auto rounded-md border bg-transparent px-3 py-2 text-base shadow-xs md:text-sm'>
-          {value ? (
-            <Markdown>{value}</Markdown>
-          ) : (
-            <span className='text-muted-foreground'>{placeholder || 'No description.'}</span>
-          )}
-        </div>
+        <DescriptionViewer value={value} placeholder={placeholder} />
+      )}
+    </div>
+  );
+};
+
+export const DescriptionViewer = ({
+  value,
+  placeholder,
+}: {
+  value?: string;
+  placeholder?: string;
+}) => {
+  return (
+    <div className='border-input min-h-24 max-h-[200px] w-full overflow-y-auto rounded-md border bg-transparent px-3 py-2 text-base shadow-xs md:text-sm'>
+      {value ? (
+        <Markdown>{value}</Markdown>
+      ) : (
+        <span className='text-muted-foreground'>{placeholder || 'No description.'}</span>
       )}
     </div>
   );

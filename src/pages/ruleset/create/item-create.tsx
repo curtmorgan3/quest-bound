@@ -98,65 +98,67 @@ export const ItemCreate = ({
             onSetUrl={handleSetUrl}
           />
         </div>
-        <div className='flex flex-col gap-2 flex-1'>
+        <div className='flex flex-col gap-4 flex-1 items-center'>
           <Label className='text-muted-foreground'>Properties</Label>
           <div className='w-full flex flex-row justify-between'>
             <div
               className='flex flex-col gap-2 items-center cursor-pointer'
               data-testid='item-create-container'
               onClick={() => setIsContainer((prev) => !prev)}>
-              <PackageOpen className={isContainer ? 'text-primary' : ''} />
               <Label htmlFor='is-container'>Container</Label>
+              <PackageOpen className={isContainer ? 'text-primary' : ''} />
             </div>
             <div
               className='flex flex-col gap-2 items-center cursor-pointer'
               data-testid='item-create-storable'
               onClick={() => setIsStorable((prev) => !prev)}>
-              <Boxes className={isStorable ? 'text-primary' : ''} />
               <Label htmlFor='is-storable'>Storable</Label>
+              <Boxes className={isStorable ? 'text-primary' : ''} />
             </div>
             <div
               data-testid='item-create-equippable'
               className='flex flex-col gap-2 items-center cursor-pointer'
               onClick={() => setIsEquippable((prev) => !prev)}>
-              <Shirt className={isEquippable ? 'text-primary' : ''} />
               <Label htmlFor='is-equippable'>Equippable</Label>
+              <Shirt className={isEquippable ? 'text-primary' : ''} />
             </div>
             <div
               data-testid='item-create-consumable'
               className='flex flex-col gap-2 items-center cursor-pointer'
               onClick={() => setIsConsumable((prev) => !prev)}>
-              <Drumstick className={isConsumable ? 'text-primary' : ''} />
               <Label htmlFor='is-consumable'>Consumable</Label>
+              <Drumstick className={isConsumable ? 'text-primary' : ''} />
             </div>
           </div>
-        </div>
-      </div>
-
-      <div className='flex gap-4'>
-        <div className='flex flex-col gap-4 w-full'>
-          <Label>Weight</Label>
-          <Input
-            type='number'
-            value={weight}
-            onChange={(e) => setWeight(parseFloat(e.target.value))}
-          />
-        </div>
-        <div className='flex flex-col gap-4 w-full'>
-          <Label>Default Quantity</Label>
-          <Input
-            type='number'
-            value={defaultQuantity}
-            onChange={(e) => setDefaultQuantity(parseFloat(e.target.value))}
-          />
-        </div>
-        <div className='flex flex-col gap-4 w-full'>
-          <Label>Stack Size</Label>
-          <Input
-            type='number'
-            value={stackSize}
-            onChange={(e) => setStackSize(parseFloat(e.target.value))}
-          />
+          <div className='flex gap-4'>
+            <div className='flex flex-col gap-4 w-[80px]'>
+              <Label>Weight</Label>
+              <Input
+                type='number'
+                value={weight}
+                className='w-[80px]'
+                onChange={(e) => setWeight(parseFloat(e.target.value))}
+              />
+            </div>
+            <div className='flex flex-col gap-4 w-[120px]'>
+              <Label>Default Quantity</Label>
+              <Input
+                type='number'
+                className='w-[120px]'
+                value={defaultQuantity}
+                onChange={(e) => setDefaultQuantity(parseFloat(e.target.value))}
+              />
+            </div>
+            <div className='flex flex-col gap-4 w-[80px]'>
+              <Label>Stack Size</Label>
+              <Input
+                type='number'
+                className='w-[80px]'
+                value={stackSize}
+                onChange={(e) => setStackSize(parseFloat(e.target.value))}
+              />
+            </div>
+          </div>
         </div>
       </div>
 
