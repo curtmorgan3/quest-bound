@@ -69,6 +69,7 @@ export const CharacterSettings = ({ character }: CharacterSettingsProps) => {
         alt={character.name}
         onRemove={() => updateCharacter(character.id, { assetId: null })}
         onUpload={(assetId) => updateCharacter(character.id, { assetId })}
+        onSetUrl={(url) => updateCharacter(character.id, { assetId: null, image: url })}
         rulesetId={activeRuleset?.id}
       />
 

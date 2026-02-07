@@ -24,8 +24,8 @@ export type Asset = BaseDetails & {
 
 export type User = BaseDetails & {
   username: string;
-  assetId: string | null;
-  image: string | null;
+  assetId?: string | null;
+  image?: string | null;
   preferences: Record<string, any>;
   rulesets: string[]; // Array of Ruleset IDs
 };

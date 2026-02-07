@@ -8,6 +8,7 @@ import { useRulesets } from '../rulesets';
 type UpdateUser = {
   username?: string;
   assetId?: string | null;
+  image?: string | null;
   preferences?: Record<string, any>;
   rulesets?: string[];
 };
@@ -90,7 +91,7 @@ export const useUsers = () => {
       const userUpdates = {
         ...user,
         ...updates,
-        image: null,
+        image: updates.assetId === null && !updates.image ? null : updates.image,
         updatedAt: new Date().toISOString(),
       };
       await db.users.put(userUpdates);

@@ -89,11 +89,11 @@ export const useRulesets = () => {
         if (original?.assetId) {
           await deleteAsset(original.assetId);
         }
-        updates.image = null;
       }
 
       await db.rulesets.update(id, {
         ...updates,
+        image: updates.assetId === null && !updates.image ? null : updates.image,
         updatedAt: new Date().toISOString(),
       });
     } catch (e) {
