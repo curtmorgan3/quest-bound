@@ -27,6 +27,8 @@ export function registerRulesetDbHooks(db: DB) {
             componentData: new Map(),
             pinnedSidebarDocuments: [],
             pinnedSidebarCharts: [],
+            lastViewedPageId: null,
+            sheetLocked: false,
             createdAt: now,
             updatedAt: now,
           });

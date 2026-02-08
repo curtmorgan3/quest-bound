@@ -1,6 +1,6 @@
 import { useErrorHandler } from '@/hooks';
 import { db, useCurrentUser } from '@/stores';
-import type { Character, CharacterAttribute, Inventory } from '@/types';
+import type { Character, CharacterAttribute, CharacterPage, CharacterWindow, Inventory } from '@/types';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useParams } from 'react-router-dom';
 import { useAssets } from '../assets';
@@ -53,6 +53,62 @@ export const useCharacter = (_id?: string) => {
     );
   };
 
+  const bootstrapCharacterPagesAndWindows = async (
+    newCharacterId: string,
+    rulesetId: string,
+  ) => {
+    const testCharacter = await db.characters
+      .where('rulesetId')
+      .equals(rulesetId)
+      .filter((c: Character) => c.isTestCharacter)
+      .first();
+
+    if (!testCharacter) return;
+
+    const testPages = await db.characterPages
+      .where('characterId')
+      .equals(testCharacter.id)
+      .sortBy('createdAt');
+
+    const pageIdMap = new Map<string, string>();
+    const now = new Date().toISOString();
+
+    for (const page of testPages) {
+      const newPageId = crypto.randomUUID();
+      pageIdMap.set(page.id, newPageId);
+      await db.characterPages.add({
+        id: newPageId,
+        characterId: newCharacterId,
+        label: page.label,
+        createdAt: now,
+        updatedAt: now,
+      } as CharacterPage);
+    }
+
+    const testWindows = await db.characterWindows
+      .where('characterId')
+      .equals(testCharacter.id)
+      .toArray();
+
+    for (const win of testWindows) {
+      const newCharacterPageId = win.characterPageId
+        ? pageIdMap.get(win.characterPageId) ?? null
+        : null;
+      await db.characterWindows.add({
+        id: crypto.randomUUID(),
+        characterId: newCharacterId,
+        characterPageId: newCharacterPageId,
+        windowId: win.windowId,
+        title: win.title,
+        x: win.x,
+        y: win.y,
+        isCollapsed: win.isCollapsed,
+        createdAt: now,
+        updatedAt: now,
+      } as CharacterWindow);
+    }
+  };
+
   const createCharacter = async (data: Partial<Character>) => {
     if (!data.rulesetId || !currentUser) return;
     const now = new Date().toISOString();
@@ -67,9 +123,12 @@ export const useCharacter = (_id?: string) => {
         componentData: new Map(),
         pinnedSidebarDocuments: data.pinnedSidebarDocuments ?? [],
         pinnedSidebarCharts: data.pinnedSidebarCharts ?? [],
+        lastViewedPageId: data.lastViewedPageId ?? null,
+        sheetLocked: data.sheetLocked ?? false,
       } as Character);
 
       await bootstrapCharacterAttributes(id, data.rulesetId);
+      await bootstrapCharacterPagesAndWindows(id, data.rulesetId);
     } catch (e) {
       handleError(e as Error, {
         component: 'useCharacter/createCharacter',

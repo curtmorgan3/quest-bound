@@ -8,7 +8,7 @@ import {
 import { SheetViewer } from '@/lib/compass-planes';
 import { CharacterProvider, type InventoryPanelConfig } from '@/stores';
 import { type Action, type Attribute, type CharacterAttribute, type Item } from '@/types';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { InventoryPanel } from './inventory-panel';
 
@@ -147,6 +147,24 @@ export const CharacterPage = ({ id, lockByDefault }: { id?: string; lockByDefaul
     });
   };
 
+  const sheetViewerPersistence = useMemo(() => {
+    if (!character) return undefined;
+    return {
+      onCurrentPageChange: (pageId: string | null) => {
+        updateCharacter(character.id, { lastViewedPageId: pageId });
+      },
+      onLockedChange: (locked: boolean) => {
+        updateCharacter(character.id, { sheetLocked: locked });
+      },
+    };
+  }, [
+    character?.id,
+    character?.lastViewedPageId,
+    character?.sheetLocked,
+    character,
+    updateCharacter,
+  ]);
+
   if (!character) {
     return null;
   }
@@ -167,8 +185,13 @@ export const CharacterPage = ({ id, lockByDefault }: { id?: string; lockByDefaul
         addInventoryItem,
       }}>
       <SheetViewer
-        characterId={character?.id}
+        key={character.id}
+        characterId={character.id}
         lockByDefault={lockByDefault ?? false}
+        initialCurrentPageId={character.lastViewedPageId ?? null}
+        initialLocked={character.sheetLocked}
+        onCurrentPageChange={sheetViewerPersistence?.onCurrentPageChange}
+        onLockedChange={sheetViewerPersistence?.onLockedChange}
         onWindowUpdated={handleUpdateWindow}
         onWindowDeleted={handleDeleteWindow}
       />

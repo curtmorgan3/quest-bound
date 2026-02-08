@@ -21,6 +21,14 @@ interface SheetViewerProps {
   onWindowUpdated?: (update: CharacterWindowUpdate) => void;
   onWindowDeleted?: (id: string) => void;
   lockByDefault?: boolean;
+  /** Initial current page (e.g. from localStorage). SheetViewer may still reset to first page if this id is invalid. */
+  initialCurrentPageId?: string | null;
+  /** Initial locked state (e.g. from localStorage). */
+  initialLocked?: boolean;
+  /** Called when the current page changes (e.g. to persist). */
+  onCurrentPageChange?: (pageId: string | null) => void;
+  /** Called when the locked state changes (e.g. to persist). */
+  onLockedChange?: (locked: boolean) => void;
 }
 
 export const SheetViewer = ({
@@ -28,11 +36,29 @@ export const SheetViewer = ({
   onWindowUpdated,
   onWindowDeleted,
   lockByDefault,
+  initialCurrentPageId,
+  initialLocked,
+  onCurrentPageChange,
+  onLockedChange,
 }: SheetViewerProps) => {
   const { characterPages } = useCharacterPages(characterId);
   const { windows: characterWindows } = useCharacterWindows(characterId);
-  const [currentPageId, setCurrentPageId] = useState<string | null>(null);
-  const [locked, setLocked] = useState<boolean>(lockByDefault ?? false);
+  const [currentPageId, setCurrentPageIdState] = useState<string | null>(
+    initialCurrentPageId ?? null,
+  );
+  const [locked, setLockedState] = useState<boolean>(initialLocked ?? lockByDefault ?? false);
+
+  const setCurrentPageId = (next: string | null) => {
+    setCurrentPageIdState(next);
+    onCurrentPageChange?.(next);
+  };
+  const setLocked = (next: boolean | ((prev: boolean) => boolean)) => {
+    setLockedState((prev) => {
+      const value = typeof next === 'function' ? next(prev) : next;
+      onLockedChange?.(value);
+      return value;
+    });
+  };
 
   const windowsForCurrentPage = useMemo(() => {
     if (currentPageId === null) {
@@ -46,13 +72,18 @@ export const SheetViewer = ({
       setCurrentPageId(null);
       return;
     }
+
+    const storedIdValid =
+      initialCurrentPageId != null && characterPages.some((p) => p.id === initialCurrentPageId);
+    const fallbackPageId = storedIdValid ? initialCurrentPageId : (characterPages[0]?.id ?? null);
+
     const currentStillExists = characterPages.some((p) => p.id === currentPageId);
     if (!currentStillExists) {
-      setCurrentPageId(characterPages[0]?.id ?? null);
+      setCurrentPageId(fallbackPageId);
     } else if (currentPageId === null) {
-      setCurrentPageId(characterPages[0]?.id ?? null);
+      setCurrentPageId(fallbackPageId);
     }
-  }, [characterPages, currentPageId]);
+  }, [characterPages, currentPageId, initialCurrentPageId]);
 
   const openWindows = new Set(
     windowsForCurrentPage.filter((cw) => !cw.isCollapsed).map((cw) => cw.id),
