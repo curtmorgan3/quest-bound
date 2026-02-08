@@ -54,12 +54,7 @@ function EntryRow({
   onSelect: (e: Item | Action | Attribute, t: 'item' | 'action' | 'attribute') => void;
 }) {
   const image = getImage(entry);
-  const Icon =
-    entryType === 'item'
-      ? PackageIcon
-      : entryType === 'action'
-        ? ZapIcon
-        : GaugeIcon;
+  const Icon = entryType === 'item' ? PackageIcon : entryType === 'action' ? ZapIcon : GaugeIcon;
   return (
     <button
       type='button'
@@ -67,11 +62,7 @@ function EntryRow({
       className='w-full text-left px-2 py-1.5 rounded-md text-sm hover:bg-accent hover:text-accent-foreground transition-colors flex items-center gap-2'>
       <Avatar className='h-8 w-8 rounded-md shrink-0'>
         {image ? (
-          <AvatarImage
-            src={image}
-            alt={entry.title}
-            className='object-cover'
-          />
+          <AvatarImage src={image} alt={entry.title} className='object-cover' />
         ) : (
           <AvatarFallback className='rounded-md bg-muted'>
             <Icon className='h-4 w-4 text-muted-foreground' />
@@ -81,9 +72,7 @@ function EntryRow({
       <div className='min-w-0 flex-1'>
         <span className='font-medium'>{entry.title}</span>
         {entry.description && (
-          <p className='text-xs text-muted-foreground line-clamp-1'>
-            {entry.description}
-          </p>
+          <p className='text-xs text-muted-foreground line-clamp-1'>{entry.description}</p>
         )}
       </div>
     </button>
@@ -127,9 +116,7 @@ export const InventoryPanel = ({
   const categoriesForType = useMemo((): string[] => {
     if (typeFilter === 'all') return [];
     const collect = (entries: (Item | Action | Attribute)[]) =>
-      Array.from(
-        new Set(entries.map((e) => e.category || 'Uncategorized')),
-      ).sort();
+      Array.from(new Set(entries.map((e) => e.category || 'Uncategorized'))).sort();
     if (typeFilter === 'item') return collect(items);
     if (typeFilter === 'action') return collect(actions);
     if (typeFilter === 'attribute') return collect(attributes);
@@ -327,13 +314,7 @@ export const InventoryPanel = ({
       }
     }
     return result;
-  }, [
-    filteredAndGrouped,
-    itemCategories,
-    actionCategories,
-    attributeCategories,
-    type,
-  ]);
+  }, [filteredAndGrouped, itemCategories, actionCategories, attributeCategories, type]);
 
   const parentRef = useRef<HTMLDivElement>(null);
   const virtualizer = useVirtualizer({
@@ -401,6 +382,7 @@ export const InventoryPanel = ({
         <div className='flex flex-col gap-2'>
           <Select
             value={typeFilter}
+            disabled={inventoryPanelConfig.addToDefaultInventory}
             onValueChange={(v) => setTypeFilter(v as 'all' | 'item' | 'action' | 'attribute')}>
             <SelectTrigger className='w-full'>
               <SelectValue placeholder='Filter by type' />
@@ -417,7 +399,9 @@ export const InventoryPanel = ({
             onValueChange={(v) => setCategoryFilter(v === '__all__' ? '' : v)}
             disabled={typeFilter === 'all'}>
             <SelectTrigger className='w-full' disabled={typeFilter === 'all'}>
-              <SelectValue placeholder={typeFilter === 'all' ? 'Choose a type first' : 'Filter by category'} />
+              <SelectValue
+                placeholder={typeFilter === 'all' ? 'Choose a type first' : 'Filter by category'}
+              />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value='__all__'>All categories</SelectItem>
@@ -485,9 +469,7 @@ export const InventoryPanel = ({
                       </h3>
                     )}
                     {row.type === 'category' && (
-                      <h4 className='text-sm font-medium text-foreground py-1'>
-                        {row.label}
-                      </h4>
+                      <h4 className='text-sm font-medium text-foreground py-1'>{row.label}</h4>
                     )}
                     {row.type === 'entry' && (
                       <EntryRow

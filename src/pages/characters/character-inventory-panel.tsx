@@ -1,4 +1,5 @@
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
 import {
   Select,
   SelectContent,
@@ -14,11 +15,11 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet';
 import { useCharacter, useInventory } from '@/lib/compass-api';
-import type { InventoryItemWithData } from '@/stores';
+import { CharacterContext, type InventoryItemWithData } from '@/stores';
 import { db } from '@/stores';
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { GaugeIcon, PackageIcon, ZapIcon } from 'lucide-react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { GaugeIcon, PackageIcon, Plus, ZapIcon } from 'lucide-react';
+import { useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 
 type CharacterInventoryPanelProps = {
@@ -61,11 +62,20 @@ function DefaultInventoryEntryRow({ item }: { item: InventoryItemWithData }) {
 
 export const CharacterInventoryPanel = ({ open, onOpenChange }: CharacterInventoryPanelProps) => {
   const { characterId } = useParams<{ characterId: string }>();
+  const { setInventoryPanelConfig } = useContext(CharacterContext);
   const { character, updateCharacter } = useCharacter(characterId);
   const { inventoryItems } = useInventory(character?.inventoryId ?? '', character?.id ?? '');
 
   const [typeFilter, setTypeFilter] = useState<InventoryItemType>('item');
   const parentRef = useRef<HTMLDivElement>(null);
+
+  const handleOpenInventoryPanel = () => {
+    setInventoryPanelConfig({
+      open: true,
+      addToDefaultInventory: true,
+      type: typeFilter,
+    });
+  };
 
   // Ensure default inventory exists when opening the panel
   useEffect(() => {
@@ -134,7 +144,7 @@ export const CharacterInventoryPanel = ({ open, onOpenChange }: CharacterInvento
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side='right' className='flex flex-col p-[8px]'>
+      <SheetContent side='left' className='flex flex-col p-[8px]'>
         <SheetHeader>
           <SheetTitle>Character Inventory</SheetTitle>
           <SheetDescription>
@@ -152,6 +162,11 @@ export const CharacterInventoryPanel = ({ open, onOpenChange }: CharacterInvento
             <SelectItem value='attribute'>Attributes</SelectItem>
           </SelectContent>
         </Select>
+
+        <Button variant='outline' className='w-full gap-2' onClick={handleOpenInventoryPanel}>
+          <Plus className='h-4 w-4' />
+          Add from ruleset
+        </Button>
 
         {defaultItems.length === 0 && (
           <div className='flex-1 flex items-center justify-center text-center py-8 text-muted-foreground'>

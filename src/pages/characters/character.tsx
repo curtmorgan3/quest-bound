@@ -81,6 +81,19 @@ export const CharacterPage = ({ id, lockByDefault }: { id?: string; lockByDefaul
     entity: Action | Item | Attribute,
     type: 'action' | 'item' | 'attribute',
   ) => {
+    if (inventoryPanelConfig.addToDefaultInventory) {
+      addInventoryItem({
+        type,
+        entityId: entity.id,
+        componentId: '',
+        quantity: 1,
+        x: 0,
+        y: 0,
+      });
+      setInventoryPanelConfig({});
+      return;
+    }
+
     if (!inventoryPanelConfig.inventoryComponentId) {
       console.warn('No component ID available when adding item to inventory.');
       return;
