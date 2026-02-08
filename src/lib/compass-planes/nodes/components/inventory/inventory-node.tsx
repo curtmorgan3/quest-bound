@@ -2,7 +2,7 @@ import { getComponentData, getComponentStyles } from '@/lib/compass-planes/utils
 import { CharacterContext, WindowEditorContext, type InventoryItemWithData } from '@/stores';
 import type { Component, InventoryComponentData } from '@/types';
 import { useNodeId } from '@xyflow/react';
-import { useContext, useRef, useState } from 'react';
+import { useContext, useEffect, useRef, useState } from 'react';
 import { ResizableNode } from '../../decorators';
 import { ItemContextMenu, type ContextMenuState } from './item-context-menu';
 
@@ -73,6 +73,20 @@ export const ViewInventoryNode = ({ component }: { component: Component }) => {
   const inventoryItems = (characterContext?.inventoryItems ?? []).filter(
     (item) => item.componentId === component.id,
   );
+
+  useEffect(() => {
+    if (!contextMenu) return;
+    const openedItem = inventoryItems.find((item) => item.id === contextMenu.item.id);
+    if (!openedItem) return;
+
+    if (JSON.stringify(openedItem) === JSON.stringify(contextMenu.item)) return;
+
+    setContextMenu((prev) => ({
+      x: prev?.x ?? 100,
+      y: prev?.y ?? 100,
+      item: openedItem,
+    }));
+  }, [JSON.stringify(inventoryItems), contextMenu, setContextMenu]);
 
   const handleOpenInventory = () => {
     if (!characterContext) {
@@ -490,6 +504,14 @@ export const ViewInventoryNode = ({ component }: { component: Component }) => {
           onUpdateQuantity={handleUpdateQuantity}
           onRemove={handleRemoveItem}
           onSplit={handleSplitStack}
+          onToggleEquipped={
+            characterContext
+              ? () =>
+                  characterContext.updateInventoryItem(contextMenu.item.id, {
+                    isEquipped: !contextMenu.item.isEquipped,
+                  })
+              : undefined
+          }
         />
       )}
     </>

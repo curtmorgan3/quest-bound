@@ -7,7 +7,7 @@ import {
   type InventoryItemWithData,
 } from '@/stores';
 import { useKeyListeners } from '@/utils';
-import { X } from 'lucide-react';
+import { Shirt, X } from 'lucide-react';
 import { useContext, useRef, useState } from 'react';
 
 export type ContextMenuState = {
@@ -23,6 +23,7 @@ type ItemContextMenuProps = {
   onUpdateQuantity: (quantity: number) => void;
   onRemove: () => void;
   onSplit: (splitAmount: number) => void;
+  onToggleEquipped?: () => void;
 };
 
 export const ItemContextMenu = ({
@@ -32,6 +33,7 @@ export const ItemContextMenu = ({
   onUpdateQuantity,
   onRemove,
   onSplit,
+  onToggleEquipped,
 }: ItemContextMenuProps) => {
   const characterContext = useContext(CharacterContext);
   const { characterAttributes, updateCharacterAttribute } = useCharacterAttributes(
@@ -211,6 +213,18 @@ export const ItemContextMenu = ({
             }}>
             Split Stack
           </button>
+        </div>
+      )}
+
+      {item.isEquippable && onToggleEquipped && (
+        <div style={{ marginBottom: 12 }}>
+          <Shirt
+            onClick={onToggleEquipped}
+            onPointerDown={(e) => e.stopPropagation()}
+            size={18}
+            className='clickable'
+            style={{ color: item.isEquipped ? 'var(--color-primary, #6a9)' : '#999' }}
+          />
         </div>
       )}
 

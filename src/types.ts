@@ -286,6 +286,7 @@ export type InventoryItem = BaseDetails & {
   x: number;
   y: number;
   value?: string | number | boolean;
+  isEquipped?: boolean;
 };
 
 export type DiceRoll = BaseDetails & {

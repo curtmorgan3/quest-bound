@@ -47,6 +47,7 @@ export const useInventory = (inventoryId: string, characterId: string) => {
         2,
       stackSize: itemRef?.stackSize ?? 1,
       value: characterAttributeRef?.value,
+      isEquippable: itemRef?.isEquippable ?? false,
     };
   });
 

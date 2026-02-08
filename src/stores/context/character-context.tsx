@@ -22,6 +22,7 @@ export type InventoryItemWithData = InventoryItem & {
   inventoryWidth: number;
   inventoryHeight: number;
   stackSize: number;
+  isEquippable: boolean;
 };
 
 type CharacterContext = {
