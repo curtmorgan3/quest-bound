@@ -123,8 +123,9 @@ export const InventoryPanel = ({
 
   const { inventoryPanelConfig } = useContext(CharacterContext);
 
-  // All categories for the selected type (from raw data, for the category dropdown)
+  // All categories for the selected type (only when a single type is chosen)
   const categoriesForType = useMemo((): string[] => {
+    if (typeFilter === 'all') return [];
     const collect = (entries: (Item | Action | Attribute)[]) =>
       Array.from(
         new Set(entries.map((e) => e.category || 'Uncategorized')),
@@ -132,7 +133,7 @@ export const InventoryPanel = ({
     if (typeFilter === 'item') return collect(items);
     if (typeFilter === 'action') return collect(actions);
     if (typeFilter === 'attribute') return collect(attributes);
-    return collect([...items, ...actions, ...attributes]);
+    return [];
   }, [typeFilter, items, actions, attributes]);
   const typeRestriction = inventoryPanelConfig?.typeRestriction;
 
@@ -413,9 +414,10 @@ export const InventoryPanel = ({
           </Select>
           <Select
             value={categoryFilter || '__all__'}
-            onValueChange={(v) => setCategoryFilter(v === '__all__' ? '' : v)}>
-            <SelectTrigger className='w-full'>
-              <SelectValue placeholder='Filter by category' />
+            onValueChange={(v) => setCategoryFilter(v === '__all__' ? '' : v)}
+            disabled={typeFilter === 'all'}>
+            <SelectTrigger className='w-full' disabled={typeFilter === 'all'}>
+              <SelectValue placeholder={typeFilter === 'all' ? 'Choose a type first' : 'Filter by category'} />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value='__all__'>All categories</SelectItem>
