@@ -136,11 +136,19 @@ export const ItemContextMenu = ({
       </div>
 
       {item.description && (
-        <DescriptionViewer
-          onClick={handleRoll}
-          className={diceRolls.length ? 'clickable' : undefined}
-          value={item.description}
-        />
+        <div
+          style={{
+            maxHeight: 200,
+            minHeight: 0,
+            overflowY: 'auto',
+            flexShrink: 1,
+          }}>
+          <DescriptionViewer
+            onClick={handleRoll}
+            className={diceRolls.length ? 'clickable' : undefined}
+            value={item.description}
+          />
+        </div>
       )}
 
       {maxQuantity > 1 && (
