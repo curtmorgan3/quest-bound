@@ -249,6 +249,8 @@ export type Character = BaseDetails & {
   image: string | null;
   isTestCharacter: boolean;
   componentData: Record<string, any>;
+  pinnedSidebarDocuments: string[];
+  pinnedSidebarCharts: string[];
 };
 
 export type CharacterAttribute = Attribute & {

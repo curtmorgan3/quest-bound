@@ -25,6 +25,8 @@ export function registerRulesetDbHooks(db: DB) {
             image: null,
             isTestCharacter: true,
             componentData: new Map(),
+            pinnedSidebarDocuments: [],
+            pinnedSidebarCharts: [],
             createdAt: now,
             updatedAt: now,
           });

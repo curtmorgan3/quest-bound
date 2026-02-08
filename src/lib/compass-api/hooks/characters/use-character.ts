@@ -65,6 +65,8 @@ export const useCharacter = (_id?: string) => {
         updatedAt: now,
         isTestCharacter: data.isTestCharacter ?? false,
         componentData: new Map(),
+        pinnedSidebarDocuments: data.pinnedSidebarDocuments ?? [],
+        pinnedSidebarCharts: data.pinnedSidebarCharts ?? [],
       } as Character);
 
       await bootstrapCharacterAttributes(id, data.rulesetId);
