@@ -19,7 +19,10 @@ export type ContextMenuState = {
 
 type ItemContextMenuProps = {
   item: InventoryItemWithData;
-  position: { x: number; y: number };
+  /** Required when inline is false (portal mode). Ignored when inline is true. */
+  position?: { x: number; y: number };
+  /** When true, render in place (no portal, no fixed position). When false, render via portal at position. */
+  inline?: boolean;
   onClose: () => void;
   onUpdateQuantity: (quantity: number) => void;
   onRemove: () => void;
@@ -29,7 +32,8 @@ type ItemContextMenuProps = {
 
 export const ItemContextMenu = ({
   item,
-  position,
+  position = { x: 0, y: 0 },
+  inline = false,
   onClose,
   onUpdateQuantity,
   onRemove,
@@ -90,12 +94,22 @@ export const ItemContextMenu = ({
 
   const canSplit = item.quantity > 1;
 
-  const menuContent = (
-    <div
-      id='item-context-menu'
-      ref={menuRef}
-      onPointerDown={(e) => e.stopPropagation()}
-      style={{
+  const menuStyle: React.CSSProperties = inline
+    ? {
+        backgroundColor: '#1a1a1a',
+        border: '1px solid #333',
+        borderRadius: 8,
+        padding: 12,
+        minWidth: 300,
+        maxWidth: 500,
+        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '8px',
+        width: '100%',
+        boxSizing: 'border-box',
+      }
+    : {
         position: 'fixed',
         left: position.x,
         top: position.y,
@@ -109,7 +123,14 @@ export const ItemContextMenu = ({
         display: 'flex',
         flexDirection: 'column',
         gap: '8px',
-      }}
+      };
+
+  const menuContent = (
+    <div
+      id='item-context-menu'
+      ref={menuRef}
+      onPointerDown={(e) => e.stopPropagation()}
+      style={menuStyle}
       className='relative'>
       <button
         onClick={handleClose}
@@ -348,5 +369,8 @@ export const ItemContextMenu = ({
     </div>
   );
 
+  if (inline) {
+    return menuContent;
+  }
   return createPortal(menuContent, document.body);
 };

@@ -1,5 +1,6 @@
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
@@ -15,10 +16,13 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet';
 import { useCharacter, useInventory } from '@/lib/compass-api';
-import { CharacterContext, type InventoryItemWithData } from '@/stores';
-import { db } from '@/stores';
+import {
+  ItemContextMenu,
+  type ContextMenuState,
+} from '@/lib/compass-planes/nodes/components/inventory/item-context-menu';
+import { CharacterContext, db, type InventoryItemWithData } from '@/stores';
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { GaugeIcon, PackageIcon, Plus, ZapIcon } from 'lucide-react';
+import { GaugeIcon, PackageIcon, Plus, SearchIcon, ZapIcon } from 'lucide-react';
 import { useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 
@@ -35,11 +39,20 @@ type ListRow = {
   estimatedSize: number;
 };
 
-function DefaultInventoryEntryRow({ item }: { item: InventoryItemWithData }) {
+function DefaultInventoryEntryRow({
+  item,
+  onItemClick,
+}: {
+  item: InventoryItemWithData;
+  onItemClick: (e: React.MouseEvent, item: InventoryItemWithData) => void;
+}) {
   const Icon = item.type === 'item' ? PackageIcon : item.type === 'action' ? ZapIcon : GaugeIcon;
   const image = item.image ?? null;
   return (
-    <div className='w-full text-left px-2 py-1.5 rounded-md text-sm flex items-center gap-2'>
+    <button
+      type='button'
+      onClick={(e) => onItemClick(e, item)}
+      className='w-full text-left px-2 py-1.5 rounded-md text-sm flex items-center gap-2 hover:bg-accent hover:text-accent-foreground transition-colors cursor-pointer'>
       <Avatar className='h-8 w-8 rounded-md shrink-0'>
         {image ? (
           <AvatarImage src={image} alt={item.title} className='object-cover' />
@@ -52,22 +65,57 @@ function DefaultInventoryEntryRow({ item }: { item: InventoryItemWithData }) {
       <div className='min-w-0 flex-1'>
         <span className='font-medium'>{item.title}</span>
         {item.quantity > 1 && <span className='text-muted-foreground ml-1'>×{item.quantity}</span>}
-        {item.description && (
-          <p className='text-xs text-muted-foreground line-clamp-1'>{item.description}</p>
-        )}
       </div>
-    </div>
+    </button>
   );
 }
 
 export const CharacterInventoryPanel = ({ open, onOpenChange }: CharacterInventoryPanelProps) => {
   const { characterId } = useParams<{ characterId: string }>();
-  const { setInventoryPanelConfig } = useContext(CharacterContext);
+  const { setInventoryPanelConfig, updateInventoryItem, removeInventoryItem, addInventoryItem } =
+    useContext(CharacterContext);
   const { character, updateCharacter } = useCharacter(characterId);
   const { inventoryItems } = useInventory(character?.inventoryId ?? '', character?.id ?? '');
 
   const [typeFilter, setTypeFilter] = useState<InventoryItemType>('item');
+  const [titleFilter, setTitleFilter] = useState('');
+  const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
   const parentRef = useRef<HTMLDivElement>(null);
+
+  const handleItemClick = (e: React.MouseEvent, item: InventoryItemWithData) => {
+    e.stopPropagation();
+    setContextMenu((prev) => (prev?.item.id === item.id ? null : { item, x: 0, y: 0 }));
+  };
+
+  const handleCloseContextMenu = () => setContextMenu(null);
+
+  const handleUpdateQuantity = (quantity: number) => {
+    if (!contextMenu) return;
+    updateInventoryItem(contextMenu.item.id, { quantity });
+    setContextMenu(null);
+  };
+
+  const handleRemoveItem = () => {
+    if (!contextMenu) return;
+    removeInventoryItem(contextMenu.item.id);
+    setContextMenu(null);
+  };
+
+  const handleSplitStack = (splitAmount: number) => {
+    if (!contextMenu) return;
+    const item = contextMenu.item;
+    const remainingQuantity = item.quantity - splitAmount;
+    updateInventoryItem(item.id, { quantity: remainingQuantity });
+    addInventoryItem({
+      type: item.type,
+      entityId: item.entityId,
+      componentId: '',
+      quantity: splitAmount,
+      x: 0,
+      y: 0,
+    });
+    setContextMenu(null);
+  };
 
   const handleOpenInventoryPanel = () => {
     setInventoryPanelConfig({
@@ -112,18 +160,33 @@ export const CharacterInventoryPanel = ({ open, onOpenChange }: CharacterInvento
     return inventoryItems.filter((item) => !item.componentId || item.componentId === '');
   }, [inventoryItems]);
 
+  // Close context menu when panel closes
+  useEffect(() => {
+    if (!open) setContextMenu(null);
+  }, [open]);
+
   const filteredItems = useMemo(() => {
-    const filtered = defaultItems.filter((item) => item.type === typeFilter);
+    const search = titleFilter.trim().toLowerCase();
+    const filtered = defaultItems.filter((item) => {
+      if (item.type !== typeFilter) return false;
+      if (search && !item.title.toLowerCase().includes(search)) return false;
+      return true;
+    });
     return [...filtered].sort((a, b) => a.title.localeCompare(b.title));
-  }, [defaultItems, typeFilter]);
+  }, [defaultItems, typeFilter, titleFilter]);
 
   const rows = useMemo((): ListRow[] => {
-    return filteredItems.map((entry) => ({
-      type: 'entry' as const,
-      entry,
-      estimatedSize: entry.description ? 56 : 40,
-    }));
-  }, [filteredItems]);
+    const openItemId = contextMenu?.item.id;
+    return filteredItems.map((entry) => {
+      const baseSize = entry.description ? 56 : 40;
+      const hasMenuOpen = openItemId === entry.id;
+      return {
+        type: 'entry' as const,
+        entry,
+        estimatedSize: hasMenuOpen ? 420 : baseSize,
+      };
+    });
+  }, [filteredItems, contextMenu?.item.id]);
 
   const virtualizer = useVirtualizer({
     count: rows.length,
@@ -148,7 +211,8 @@ export const CharacterInventoryPanel = ({ open, onOpenChange }: CharacterInvento
         <SheetHeader>
           <SheetTitle>Character Inventory</SheetTitle>
           <SheetDescription>
-            Items in this character&apos;s default inventory (not assigned to a sheet component).
+            Manage items from a default inventory, or add attributes and actions to control from
+            this panel.
           </SheetDescription>
         </SheetHeader>
 
@@ -163,6 +227,16 @@ export const CharacterInventoryPanel = ({ open, onOpenChange }: CharacterInvento
           </SelectContent>
         </Select>
 
+        <div className='relative'>
+          <SearchIcon className='absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground' />
+          <Input
+            placeholder='Filter by title...'
+            value={titleFilter}
+            onChange={(e) => setTitleFilter(e.target.value)}
+            className='pl-9'
+          />
+        </div>
+
         <Button variant='outline' className='w-full gap-2' onClick={handleOpenInventoryPanel}>
           <Plus className='h-4 w-4' />
           Add from ruleset
@@ -176,7 +250,11 @@ export const CharacterInventoryPanel = ({ open, onOpenChange }: CharacterInvento
 
         {defaultItems.length > 0 && rows.length === 0 && (
           <div className='flex-1 flex items-center justify-center text-center py-8 text-muted-foreground'>
-            <p>No {typeFilter}s in the default inventory.</p>
+            <p>
+              {titleFilter.trim()
+                ? `No ${typeFilter}s match "${titleFilter.trim()}".`
+                : `No ${typeFilter}s in the default inventory.`}
+            </p>
           </div>
         )}
 
@@ -194,6 +272,7 @@ export const CharacterInventoryPanel = ({ open, onOpenChange }: CharacterInvento
               {virtualizer.getVirtualItems().map((virtualRow) => {
                 const row = rows[virtualRow.index];
                 if (!row) return null;
+                const isMenuOpen = contextMenu?.item.id === row.entry.id;
                 return (
                   <div
                     key={virtualRow.key}
@@ -207,7 +286,27 @@ export const CharacterInventoryPanel = ({ open, onOpenChange }: CharacterInvento
                       transform: `translateY(${virtualRow.start}px)`,
                     }}
                     className='pb-0.5'>
-                    <DefaultInventoryEntryRow item={row.entry} />
+                    <DefaultInventoryEntryRow item={row.entry} onItemClick={handleItemClick} />
+                    {isMenuOpen && (
+                      <div className='mt-1'>
+                        <ItemContextMenu
+                          item={contextMenu.item}
+                          inline
+                          onClose={handleCloseContextMenu}
+                          onUpdateQuantity={handleUpdateQuantity}
+                          onRemove={handleRemoveItem}
+                          onSplit={handleSplitStack}
+                          onToggleEquipped={
+                            contextMenu.item.isEquippable
+                              ? () =>
+                                  updateInventoryItem(contextMenu.item.id, {
+                                    isEquipped: !contextMenu.item.isEquipped,
+                                  })
+                              : undefined
+                          }
+                        />
+                      </div>
+                    )}
                   </div>
                 );
               })}

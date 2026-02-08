@@ -71,9 +71,6 @@ function EntryRow({
       </Avatar>
       <div className='min-w-0 flex-1'>
         <span className='font-medium'>{entry.title}</span>
-        {entry.description && (
-          <p className='text-xs text-muted-foreground line-clamp-1'>{entry.description}</p>
-        )}
       </div>
     </button>
   );

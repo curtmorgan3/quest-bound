@@ -6,7 +6,11 @@ import {
   type CharacterWindowUpdate,
 } from '@/lib/compass-api';
 import { SheetViewer } from '@/lib/compass-planes';
-import { CharacterInventoryPanelContext, CharacterProvider, type InventoryPanelConfig } from '@/stores';
+import {
+  CharacterInventoryPanelContext,
+  CharacterProvider,
+  type InventoryPanelConfig,
+} from '@/stores';
 import { type Action, type Attribute, type CharacterAttribute, type Item } from '@/types';
 import { useContext, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
@@ -90,7 +94,6 @@ export const CharacterPage = ({ id, lockByDefault }: { id?: string; lockByDefaul
         x: 0,
         y: 0,
       });
-      setInventoryPanelConfig({});
       return;
     }
 
@@ -132,8 +135,6 @@ export const CharacterPage = ({ id, lockByDefault }: { id?: string; lockByDefaul
       x: slot.x,
       y: slot.y,
     });
-
-    setInventoryPanelConfig({});
   };
 
   const handleUpdateWindow = (update: CharacterWindowUpdate) => {

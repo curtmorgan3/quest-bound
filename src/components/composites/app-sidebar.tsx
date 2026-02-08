@@ -6,10 +6,10 @@ import {
   FileSpreadsheet,
   FileText,
   FolderOpen,
+  Handbag,
   HandFist,
   HelpCircle,
   Newspaper,
-  Package,
   Pin,
   PinOff,
   Settings as SettingsIcon,
@@ -136,9 +136,7 @@ export function AppSidebar() {
 
   const pinDocument = (docId: string) => {
     if (!character) return;
-    const next = pinnedDocIds.includes(docId)
-      ? pinnedDocIds
-      : [...pinnedDocIds, docId];
+    const next = pinnedDocIds.includes(docId) ? pinnedDocIds : [...pinnedDocIds, docId];
     updateCharacter(character.id, { pinnedSidebarDocuments: next });
   };
   const unpinDocument = (docId: string) => {
@@ -149,9 +147,7 @@ export function AppSidebar() {
   };
   const pinChart = (chartId: string) => {
     if (!character) return;
-    const next = pinnedChartIds.includes(chartId)
-      ? pinnedChartIds
-      : [...pinnedChartIds, chartId];
+    const next = pinnedChartIds.includes(chartId) ? pinnedChartIds : [...pinnedChartIds, chartId];
     updateCharacter(character.id, { pinnedSidebarCharts: next });
   };
   const unpinChart = (chartId: string) => {
@@ -232,16 +228,6 @@ export function AppSidebar() {
                         <ArrowLeft className='w-4 h-4' />
                         <span>Back to Character</span>
                       </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                )}
-                {character && characterInventoryPanel && (
-                  <SidebarMenuItem>
-                    <SidebarMenuButton
-                      onClick={() => characterInventoryPanel.setOpen(true)}
-                      data-testid='nav-character-inventory'>
-                      <Package className='w-4 h-4' />
-                      <span>Inventory</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 )}
@@ -383,7 +369,9 @@ export function AppSidebar() {
                       <SidebarMenu>
                         {sortedCharts.length === 0 ? (
                           <SidebarMenuItem>
-                            <span className='px-2 py-1.5 text-xs text-muted-foreground'>No charts</span>
+                            <span className='px-2 py-1.5 text-xs text-muted-foreground'>
+                              No charts
+                            </span>
                           </SidebarMenuItem>
                         ) : (
                           sortedCharts.map((chart) => {
@@ -428,17 +416,6 @@ export function AppSidebar() {
               )}
             </>
           )}
-
-          {/* {!isHomepage && (
-            <SidebarMenuItem>
-              <AssetManagerModal>
-                <SidebarMenuButton>
-                  <Image />
-                  <span>Assets</span>
-                </SidebarMenuButton>
-              </AssetManagerModal>
-            </SidebarMenuItem>
-          )} */}
         </SidebarContent>
         <SidebarFooter>
           <SidebarMenu>
@@ -450,6 +427,16 @@ export function AppSidebar() {
                     <span>Dice</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
+                {character && characterInventoryPanel && (
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      onClick={() => characterInventoryPanel.setOpen(true)}
+                      data-testid='nav-character-inventory'>
+                      <Handbag className='w-4 h-4' />
+                      <span>Inventory</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                )}
                 <SidebarMenuItem>
                   <SidebarMenuButton asChild>
                     <Link to='/rulesets'>
