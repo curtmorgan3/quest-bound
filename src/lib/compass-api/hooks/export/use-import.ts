@@ -14,6 +14,11 @@ export interface ImportResult {
 // Field type definitions for parsing TSV values
 type FieldType = 'string' | 'number' | 'boolean' | 'array' | 'attributeType';
 
+function isImageUrl(value: string | null | undefined): boolean {
+  if (!value || typeof value !== 'string') return false;
+  return value.startsWith('http://') || value.startsWith('https://');
+}
+
 const ATTRIBUTE_FIELD_TYPES: Record<string, FieldType> = {
   id: 'string',
   title: 'string',
@@ -28,6 +33,7 @@ const ATTRIBUTE_FIELD_TYPES: Record<string, FieldType> = {
   max: 'number',
   inventoryHeight: 'number',
   inventoryWidth: 'number',
+  image: 'string',
 };
 
 const ITEM_FIELD_TYPES: Record<string, FieldType> = {
@@ -44,6 +50,7 @@ const ITEM_FIELD_TYPES: Record<string, FieldType> = {
   isConsumable: 'boolean',
   inventoryWidth: 'number',
   inventoryHeight: 'number',
+  image: 'string',
 };
 
 const ACTION_FIELD_TYPES: Record<string, FieldType> = {
@@ -53,6 +60,7 @@ const ACTION_FIELD_TYPES: Record<string, FieldType> = {
   category: 'string',
   inventoryHeight: 'number',
   inventoryWidth: 'number',
+  image: 'string',
 };
 
 /**
@@ -317,6 +325,11 @@ export const useImport = (type: 'attributes' | 'items' | 'actions') => {
               updateData.defaultValue = convertAttributeDefaultValue(item);
             }
 
+            // Only keep image if it's a URL (exclude base64 data URLs etc.)
+            if (updateData.image !== undefined && !isImageUrl(updateData.image)) {
+              delete updateData.image;
+            }
+
             // Remove undefined values
             Object.keys(updateData).forEach((key) => {
               if (updateData[key] === undefined) {
@@ -365,6 +378,11 @@ export const useImport = (type: 'attributes' | 'items' | 'actions') => {
               newRecord.isConsumable = newRecord.isConsumable ?? false;
               newRecord.inventoryWidth = newRecord.inventoryWidth ?? 1;
               newRecord.inventoryHeight = newRecord.inventoryHeight ?? 1;
+            }
+
+            // Only keep image if it's a URL (exclude base64 data URLs etc.)
+            if (newRecord.image !== undefined && !isImageUrl(newRecord.image as string)) {
+              delete newRecord.image;
             }
 
             // Remove undefined values
