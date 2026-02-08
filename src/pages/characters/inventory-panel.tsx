@@ -1,6 +1,13 @@
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Input } from '@/components/ui/input';
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
   Sheet,
   SheetContent,
   SheetDescription,
@@ -96,8 +103,37 @@ export const InventoryPanel = ({
   const { attributes } = useAttributes();
   const { assets } = useAssets();
   const [search, setSearch] = useState('');
+  const [typeFilter, setTypeFilter] = useState<'all' | 'item' | 'action' | 'attribute'>(() =>
+    type === 'item' || type === 'action' || type === 'attribute' ? type : 'all',
+  );
+  const [categoryFilter, setCategoryFilter] = useState('');
+
+  // Sync type filter when parent passes a specific type (e.g. when opening panel)
+  useEffect(() => {
+    if (type === 'item' || type === 'action' || type === 'attribute') {
+      setTypeFilter(type);
+      setCategoryFilter('');
+    }
+  }, [type]);
+
+  // Reset category when type filter changes so we don't keep an invalid category
+  useEffect(() => {
+    setCategoryFilter('');
+  }, [typeFilter]);
 
   const { inventoryPanelConfig } = useContext(CharacterContext);
+
+  // All categories for the selected type (from raw data, for the category dropdown)
+  const categoriesForType = useMemo((): string[] => {
+    const collect = (entries: (Item | Action | Attribute)[]) =>
+      Array.from(
+        new Set(entries.map((e) => e.category || 'Uncategorized')),
+      ).sort();
+    if (typeFilter === 'item') return collect(items);
+    if (typeFilter === 'action') return collect(actions);
+    if (typeFilter === 'attribute') return collect(attributes);
+    return collect([...items, ...actions, ...attributes]);
+  }, [typeFilter, items, actions, attributes]);
   const typeRestriction = inventoryPanelConfig?.typeRestriction;
 
   const getImage = useCallback(
@@ -117,12 +153,14 @@ export const InventoryPanel = ({
   const filteredAndGrouped = useMemo(() => {
     const searchLower = search.toLowerCase();
 
-    // Filter items based on props
+    // Filter items based on props and dropdown filters
     const filterEntries = <T extends Item | Action | Attribute>(
       entries: T[],
       entryType: 'item' | 'action' | 'attribute',
     ): T[] => {
-      // If type is specified and doesn't match, return empty
+      // Type dropdown filter
+      if (typeFilter !== 'all' && typeFilter !== entryType) return [];
+      // Parent type prop (when set, further restricts)
       if (type && type !== entryType) return [];
 
       return entries.filter((entry) => {
@@ -138,6 +176,12 @@ export const InventoryPanel = ({
 
         if (typeRestriction && entryType !== typeRestriction) {
           return false;
+        }
+
+        // Category dropdown filter
+        if (categoryFilter) {
+          const entryCategory = entry.category || 'Uncategorized';
+          if (entryCategory !== categoryFilter) return false;
         }
 
         // Check search
@@ -203,7 +247,18 @@ export const InventoryPanel = ({
     });
 
     return grouped;
-  }, [items, actions, attributes, type, includeIds, excludeIds, search, typeRestriction]);
+  }, [
+    items,
+    actions,
+    attributes,
+    type,
+    typeFilter,
+    categoryFilter,
+    includeIds,
+    excludeIds,
+    search,
+    typeRestriction,
+  ]);
 
   // Get sorted category names
   const itemCategories = Object.keys(filteredAndGrouped.items).sort();
@@ -340,6 +395,37 @@ export const InventoryPanel = ({
             onChange={(e) => setSearch(e.target.value)}
             className='pl-9'
           />
+        </div>
+
+        <div className='flex flex-col gap-2'>
+          <Select
+            value={typeFilter}
+            onValueChange={(v) => setTypeFilter(v as 'all' | 'item' | 'action' | 'attribute')}>
+            <SelectTrigger className='w-full'>
+              <SelectValue placeholder='Filter by type' />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value='all'>All types</SelectItem>
+              <SelectItem value='item'>Items</SelectItem>
+              <SelectItem value='action'>Actions</SelectItem>
+              <SelectItem value='attribute'>Attributes</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select
+            value={categoryFilter || '__all__'}
+            onValueChange={(v) => setCategoryFilter(v === '__all__' ? '' : v)}>
+            <SelectTrigger className='w-full'>
+              <SelectValue placeholder='Filter by category' />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value='__all__'>All categories</SelectItem>
+              {categoriesForType.map((cat) => (
+                <SelectItem key={cat} value={cat}>
+                  {cat}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         {/* Empty state when no rows */}
