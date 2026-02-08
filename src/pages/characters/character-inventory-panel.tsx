@@ -66,6 +66,11 @@ function DefaultInventoryEntryRow({
         <span className='font-medium'>{item.title}</span>
         {item.quantity > 1 && <span className='text-muted-foreground ml-1'>×{item.quantity}</span>}
       </div>
+      {item.type === 'attribute' && (
+        <span className='shrink-0 ml-auto italic text-muted-foreground'>
+          {String(item.value ?? '')}
+        </span>
+      )}
     </button>
   );
 }

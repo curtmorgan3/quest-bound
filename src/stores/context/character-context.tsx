@@ -25,6 +25,8 @@ export type InventoryItemWithData = InventoryItem & {
   inventoryHeight: number;
   stackSize: number;
   isEquippable: boolean;
+  /** Present when type is 'attribute': the character's current value for this attribute. */
+  value?: string | number | boolean;
 };
 
 type CharacterContext = {
