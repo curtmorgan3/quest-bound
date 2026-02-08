@@ -44,6 +44,7 @@ export const useChartValues = ({
   const [assetId, setAssetId] = useState<string | null>(null);
 
   const resetAll = () => {
+    setChartData(null);
     setImage(null);
     setAssetId(null);
   };

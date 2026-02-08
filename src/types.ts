@@ -151,6 +151,7 @@ export type ShapeComponentData = {
 
 export type TextComponentData = {
   value?: string | number | boolean;
+  showSign?: boolean;
 };
 
 export type ContentComponentData = {

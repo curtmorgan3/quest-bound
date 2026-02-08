@@ -1,3 +1,5 @@
+import { Label } from '@/components';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AttributeLookup, useComponents, WindowLookup } from '@/lib/compass-api';
 import { ComponentTypes } from '@/lib/compass-planes/nodes';
@@ -10,6 +12,7 @@ import {
 import { ImageDataEdit } from '@/lib/compass-planes/nodes/components/image';
 import { getComponentData } from '@/lib/compass-planes/utils';
 import { colorBlack } from '@/palette';
+import { type TextComponentData } from '@/types';
 import type { RGBColor } from 'react-color';
 import { useParams } from 'react-router-dom';
 import { ActionEdit } from './action-edit';
@@ -101,6 +104,19 @@ export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
     );
   };
 
+  const setShowSign = (showSign: boolean) => {
+    const toUpdate = selectedComponents.filter((c) => !c.locked);
+    updateComponents(
+      toUpdate.map((c) => ({
+        id: c.id,
+        data: JSON.stringify({
+          ...JSON.parse(c.data),
+          showSign,
+        }),
+      })),
+    );
+  };
+
   if (viewMode) return null;
 
   // Check if all selected components are image type
@@ -183,6 +199,24 @@ export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
                   onDelete={() => handleUpdate('attributeId', null)}
                   filterType={allAreCheckboxes ? 'boolean' : undefined}
                 />
+              )}
+            {selectedComponents.every((c) => c.type === ComponentTypes.TEXT) &&
+              selectedComponents.length === 1 &&
+              selectedComponents[0].attributeId && (
+                <div className='flex items-center gap-2'>
+                  <Checkbox
+                    id='show-sign'
+                    checked={
+                      (getComponentData(selectedComponents[0]) as TextComponentData).showSign ??
+                      false
+                    }
+                    onCheckedChange={(checked) => setShowSign(checked === true)}
+                    onKeyDown={(e) => e.stopPropagation()}
+                  />
+                  <Label htmlFor='show-sign' className='text-sm leading-none'>
+                    Show sign
+                  </Label>
+                </div>
               )}
             {selectedComponents.length === 1 && (
               <AttributeLookup

@@ -2,6 +2,7 @@ import { useAttributes } from '@/lib/compass-api';
 import { CharacterContext } from '@/stores';
 import type { AttributeType, Character, Component, ComponentData } from '@/types';
 import { useContext } from 'react';
+import { ComponentTypes } from '../nodes';
 import { getComponentData } from './node-conversion';
 
 type NodeData = ComponentData & {
@@ -36,12 +37,22 @@ export const useNodeData = (component: Component): NodeData => {
     ? characterComponentData[component.id]
     : null;
 
-  const value =
+  let value =
     characterAttribute?.value ??
     characterComponentDataValue ??
     rulesetAttribute?.defaultValue ??
     componentData.value ??
     '';
+
+  if (componentData.showSign && component.type === ComponentTypes.TEXT) {
+    try {
+      const val = typeof value === 'string' ? parseFloat(value) : value;
+      const sign = val > 0 ? '+' : ''; //- is auto included
+      value = `${sign}${value}`;
+    } catch (e) {
+      console.warn('Unable to parse number for sign interpolation');
+    }
+  }
 
   return {
     ...componentData,

@@ -1,7 +1,7 @@
 import { Button, ImageUpload, Label } from '@/components';
 import { useAssets } from '@/lib/compass-api';
 import { FileText, Trash, Upload } from 'lucide-react';
-import { type Dispatch, type SetStateAction, useRef, useState } from 'react';
+import { type Dispatch, type SetStateAction, useEffect, useRef, useState } from 'react';
 
 interface ChartCreateProps {
   chartData: string[][] | null;
@@ -30,6 +30,11 @@ export const ChartCreate = ({
   const tsvInputRef = useRef<HTMLInputElement>(null);
   const [uploadingTsv, setUploadingTsv] = useState(false);
   const [tsvFilename, setTsvFilename] = useState<string | null>(null);
+
+  // Clear filename when chart data is cleared (e.g. after successful create)
+  useEffect(() => {
+    if (!chartData) setTsvFilename(null);
+  }, [chartData]);
 
   const getImageFromAssetId = (id: string | null) => {
     if (!id) return null;
