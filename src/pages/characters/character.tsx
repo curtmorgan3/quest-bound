@@ -6,14 +6,16 @@ import {
   type CharacterWindowUpdate,
 } from '@/lib/compass-api';
 import { SheetViewer } from '@/lib/compass-planes';
-import { CharacterProvider, type InventoryPanelConfig } from '@/stores';
+import { CharacterInventoryPanelContext, CharacterProvider, type InventoryPanelConfig } from '@/stores';
 import { type Action, type Attribute, type CharacterAttribute, type Item } from '@/types';
-import { useMemo, useState } from 'react';
+import { useContext, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
+import { CharacterInventoryPanel } from './character-inventory-panel';
 import { InventoryPanel } from './inventory-panel';
 
 export const CharacterPage = ({ id, lockByDefault }: { id?: string; lockByDefault?: boolean }) => {
   const { characterId } = useParams<{ characterId: string }>();
+  const characterInventoryPanel = useContext(CharacterInventoryPanelContext);
 
   const { character, updateCharacter } = useCharacter(id ?? characterId);
   const { updateCharacterWindow, deleteCharacterWindow } = useCharacterWindows(character?.id);
@@ -205,6 +207,12 @@ export const CharacterPage = ({ id, lockByDefault }: { id?: string; lockByDefaul
         excludeIds={inventoryPanelConfig.excludeIds}
         onSelect={handleSelectInventoryEntity}
       />
+      {characterInventoryPanel && (
+        <CharacterInventoryPanel
+          open={characterInventoryPanel.open}
+          onOpenChange={characterInventoryPanel.setOpen}
+        />
+      )}
     </CharacterProvider>
   );
 };

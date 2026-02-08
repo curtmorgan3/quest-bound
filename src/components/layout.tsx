@@ -2,8 +2,8 @@ import { AppSidebar, Loading } from '@/components';
 import { useFontLoader, useUsers } from '@/lib/compass-api';
 import { SignIn } from '@/pages';
 import { DicePanel } from '@/pages/dice';
-import { DiceProvider, useDiceState } from '@/stores';
-import { useEffect, useRef } from 'react';
+import { CharacterInventoryPanelContext, DiceProvider, useDiceState } from '@/stores';
+import { useEffect, useRef, useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import { SidebarProvider } from './ui/sidebar';
 import { Toaster } from './ui/sonner';
@@ -26,6 +26,8 @@ export function Layout() {
   // Load ruleset fonts into the browser
   useFontLoader();
 
+  const [characterInventoryPanelOpen, setCharacterInventoryPanelOpen] = useState(false);
+
   return loading ? (
     <Loading />
   ) : !currentUser ? (
@@ -35,8 +37,13 @@ export function Layout() {
     </>
   ) : (
     <SidebarProvider defaultOpen={false}>
-      <DiceProvider value={diceState}>
-        <AppSidebar />
+      <CharacterInventoryPanelContext.Provider
+        value={{
+          open: characterInventoryPanelOpen,
+          setOpen: setCharacterInventoryPanelOpen,
+        }}>
+        <DiceProvider value={diceState}>
+          <AppSidebar />
         <main
           style={{
             display: 'grid',
@@ -62,6 +69,7 @@ export function Layout() {
           }}></canvas>
         <Toaster />
       </DiceProvider>
+      </CharacterInventoryPanelContext.Provider>
     </SidebarProvider>
   );
 }

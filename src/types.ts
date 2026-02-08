@@ -280,6 +280,7 @@ export type CharacterWindow = BaseDetails & {
 
 export type Inventory = BaseDetails & {
   items: Item[];
+  characterId?: string;
 };
 
 export type InventoryItem = BaseDetails & {

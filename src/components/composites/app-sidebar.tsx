@@ -9,6 +9,7 @@ import {
   HandFist,
   HelpCircle,
   Newspaper,
+  Package,
   Pin,
   PinOff,
   Settings as SettingsIcon,
@@ -40,7 +41,7 @@ import {
   useUsers,
 } from '@/lib/compass-api';
 import { DevTools, Settings } from '@/pages';
-import { DiceContext } from '@/stores';
+import { CharacterInventoryPanelContext, DiceContext } from '@/stores';
 import { useContext, useEffect, useState } from 'react';
 import { Link, useLocation, useParams } from 'react-router-dom';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
@@ -58,6 +59,7 @@ export function AppSidebar() {
   const { open, setOpen } = useSidebar();
   const { rulesetId, characterId } = useParams();
   const location = useLocation();
+  const characterInventoryPanel = useContext(CharacterInventoryPanelContext);
   const { documentId, chartId } = useParams<{ documentId?: string; chartId?: string }>();
   const isHomepage = location.pathname === '/rulesets' || location.pathname === '/characters';
   const isViewingDocument = !!documentId && location.pathname.includes('/documents/');
@@ -230,6 +232,16 @@ export function AppSidebar() {
                         <ArrowLeft className='w-4 h-4' />
                         <span>Back to Character</span>
                       </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                )}
+                {character && characterInventoryPanel && (
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      onClick={() => characterInventoryPanel.setOpen(true)}
+                      data-testid='nav-character-inventory'>
+                      <Package className='w-4 h-4' />
+                      <span>Inventory</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 )}
