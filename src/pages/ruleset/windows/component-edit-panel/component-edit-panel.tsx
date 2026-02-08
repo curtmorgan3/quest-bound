@@ -118,6 +118,17 @@ export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
         c.type === ComponentTypes.INVENTORY,
     );
 
+  const allCanOpenChildWindow =
+    selectedComponents.length > 0 &&
+    selectedComponents.every(
+      (c) =>
+        c.type === ComponentTypes.TEXT ||
+        c.type === ComponentTypes.CONTENT ||
+        c.type === ComponentTypes.SHAPE ||
+        c.type === ComponentTypes.GRAPH ||
+        c.type === ComponentTypes.IMAGE,
+    );
+
   const allAreShapes =
     selectedComponents.length > 0 &&
     selectedComponents.every((c) => c.type === ComponentTypes.SHAPE);
@@ -182,7 +193,7 @@ export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
                 filterType={'boolean'}
               />
             )}
-            {selectedComponents.length === 1 && windowId && (
+            {selectedComponents.length === 1 && windowId && allCanOpenChildWindow && (
               <WindowLookup
                 label='Open Window'
                 value={selectedComponents[0].childWindowId}
