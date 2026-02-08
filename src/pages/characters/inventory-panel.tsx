@@ -1,6 +1,5 @@
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Input } from '@/components/ui/input';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Sheet,
   SheetContent,
@@ -11,8 +10,9 @@ import {
 import { useActions, useAssets, useAttributes, useItems } from '@/lib/compass-api';
 import { CharacterContext } from '@/stores';
 import type { Action, Attribute, Item } from '@/types';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import { GaugeIcon, PackageIcon, SearchIcon, ZapIcon } from 'lucide-react';
-import { useCallback, useContext, useMemo, useState } from 'react';
+import { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 
 type InventoryPanelProps = {
   open: boolean;
@@ -24,6 +24,64 @@ type InventoryPanelProps = {
 };
 
 type GroupedItems = Record<string, (Item | Action | Attribute)[]>;
+
+type ListRow =
+  | { type: 'section'; label: string; estimatedSize: number }
+  | { type: 'category'; label: string; estimatedSize: number }
+  | {
+      type: 'entry';
+      entry: Item | Action | Attribute;
+      entryType: 'item' | 'action' | 'attribute';
+      estimatedSize: number;
+    };
+
+function EntryRow({
+  entry,
+  entryType,
+  getImage,
+  onSelect,
+}: {
+  entry: Item | Action | Attribute;
+  entryType: 'item' | 'action' | 'attribute';
+  getImage: (e: Item | Action | Attribute) => string | null;
+  onSelect: (e: Item | Action | Attribute, t: 'item' | 'action' | 'attribute') => void;
+}) {
+  const image = getImage(entry);
+  const Icon =
+    entryType === 'item'
+      ? PackageIcon
+      : entryType === 'action'
+        ? ZapIcon
+        : GaugeIcon;
+  return (
+    <button
+      type='button'
+      onClick={() => onSelect(entry, entryType)}
+      className='w-full text-left px-2 py-1.5 rounded-md text-sm hover:bg-accent hover:text-accent-foreground transition-colors flex items-center gap-2'>
+      <Avatar className='h-8 w-8 rounded-md shrink-0'>
+        {image ? (
+          <AvatarImage
+            src={image}
+            alt={entry.title}
+            className='object-cover'
+          />
+        ) : (
+          <AvatarFallback className='rounded-md bg-muted'>
+            <Icon className='h-4 w-4 text-muted-foreground' />
+          </AvatarFallback>
+        )}
+      </Avatar>
+      <div className='min-w-0 flex-1'>
+        <span className='font-medium'>{entry.title}</span>
+        {entry.description && (
+          <p className='text-xs text-muted-foreground line-clamp-1'>
+            {entry.description}
+          </p>
+        )}
+      </div>
+    </button>
+  );
+}
 
 export const InventoryPanel = ({
   open,
@@ -152,6 +210,95 @@ export const InventoryPanel = ({
   const actionCategories = Object.keys(filteredAndGrouped.actions).sort();
   const attributeCategories = Object.keys(filteredAndGrouped.attributes).sort();
 
+  // Flatten into a single list of rows for virtualization
+  const rows = useMemo((): ListRow[] => {
+    const result: ListRow[] = [];
+    const typeCount =
+      (itemCategories.length > 0 ? 1 : 0) +
+      (actionCategories.length > 0 ? 1 : 0) +
+      (attributeCategories.length > 0 ? 1 : 0);
+    const hasMultipleTypes = typeCount >= 2;
+
+    if (itemCategories.length > 0) {
+      if (hasMultipleTypes) {
+        result.push({ type: 'section', label: 'Items', estimatedSize: 28 });
+      }
+      for (const category of itemCategories) {
+        result.push({ type: 'category', label: category, estimatedSize: 24 });
+        for (const item of filteredAndGrouped.items[category]) {
+          const hasDescription = Boolean(item.description);
+          result.push({
+            type: 'entry',
+            entry: item,
+            entryType: 'item',
+            estimatedSize: hasDescription ? 56 : 40,
+          });
+        }
+      }
+    }
+    if (actionCategories.length > 0) {
+      if (hasMultipleTypes) {
+        result.push({ type: 'section', label: 'Actions', estimatedSize: 28 });
+      }
+      for (const category of actionCategories) {
+        result.push({ type: 'category', label: category, estimatedSize: 24 });
+        for (const action of filteredAndGrouped.actions[category]) {
+          const hasDescription = Boolean(action.description);
+          result.push({
+            type: 'entry',
+            entry: action,
+            entryType: 'action',
+            estimatedSize: hasDescription ? 56 : 40,
+          });
+        }
+      }
+    }
+    if (attributeCategories.length > 0) {
+      if (hasMultipleTypes) {
+        result.push({ type: 'section', label: 'Attributes', estimatedSize: 28 });
+      }
+      for (const category of attributeCategories) {
+        result.push({ type: 'category', label: category, estimatedSize: 24 });
+        for (const attribute of filteredAndGrouped.attributes[category]) {
+          const hasDescription = Boolean(attribute.description);
+          result.push({
+            type: 'entry',
+            entry: attribute,
+            entryType: 'attribute',
+            estimatedSize: hasDescription ? 56 : 40,
+          });
+        }
+      }
+    }
+    return result;
+  }, [
+    filteredAndGrouped,
+    itemCategories,
+    actionCategories,
+    attributeCategories,
+    type,
+  ]);
+
+  const parentRef = useRef<HTMLDivElement>(null);
+  const virtualizer = useVirtualizer({
+    count: rows.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: (index) => rows[index]?.estimatedSize ?? 44,
+    overscan: 5,
+  });
+
+  // Re-measure when panel opens so the virtualizer sees the scroll container height
+  // (on first open the container may have 0 height until layout completes)
+  useEffect(() => {
+    if (!open || rows.length === 0) return;
+    const raf = requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        virtualizer.measure();
+      });
+    });
+    return () => cancelAnimationFrame(raf);
+  }, [open, rows.length, virtualizer]);
+
   const handleItemClick = (
     entry: Item | Action | Attribute,
     entryType: 'item' | 'action' | 'attribute',
@@ -195,182 +342,79 @@ export const InventoryPanel = ({
           />
         </div>
 
-        <ScrollArea className='flex-1 -mx-4 px-4'>
-          <div className='space-y-6 pb-4'>
-            {/* Items Section */}
-            {itemCategories.length > 0 && (
-              <div className='space-y-4'>
-                {(!type || type === 'item') &&
-                  (actionCategories.length > 0 || attributeCategories.length > 0) && (
-                    <h3 className='text-sm font-semibold text-muted-foreground uppercase tracking-wide'>
-                      Items
-                    </h3>
-                  )}
-                {itemCategories.map((category) => (
-                  <div key={`item-${category}`} className='space-y-1'>
-                    <h4 className='text-sm font-medium text-foreground'>{category}</h4>
-                    <div className='space-y-0.5'>
-                      {filteredAndGrouped.items[category].map((item) => {
-                        const image = getImage(item);
-                        return (
-                          <button
-                            key={item.id}
-                            onClick={() => handleItemClick(item, 'item')}
-                            className='w-full text-left px-2 py-1.5 rounded-md text-sm hover:bg-accent hover:text-accent-foreground transition-colors flex items-center gap-2'>
-                            <Avatar className='h-8 w-8 rounded-md shrink-0'>
-                              {image ? (
-                                <AvatarImage
-                                  src={image}
-                                  alt={item.title}
-                                  className='object-cover'
-                                />
-                              ) : (
-                                <AvatarFallback className='rounded-md bg-muted'>
-                                  <PackageIcon className='h-4 w-4 text-muted-foreground' />
-                                </AvatarFallback>
-                              )}
-                            </Avatar>
-                            <div className='min-w-0 flex-1'>
-                              <span className='font-medium'>{item.title}</span>
-                              {item.description && (
-                                <p className='text-xs text-muted-foreground line-clamp-1'>
-                                  {item.description}
-                                </p>
-                              )}
-                            </div>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                ))}
-              </div>
+        {/* Empty state when no rows */}
+        {rows.length === 0 && (
+          <div className='flex-1 flex items-center justify-center text-center py-8 text-muted-foreground'>
+            {search ? (
+              <p>No results found for "{search}"</p>
+            ) : (
+              <p>
+                No{' '}
+                {type === 'item'
+                  ? 'items'
+                  : type === 'action'
+                    ? 'actions'
+                    : type === 'attribute'
+                      ? 'attributes'
+                      : 'items, actions or attributes'}{' '}
+                available.
+              </p>
             )}
-
-            {/* Actions Section */}
-            {actionCategories.length > 0 && (
-              <div className='space-y-4'>
-                {(!type || type === 'action') &&
-                  (itemCategories.length > 0 || attributeCategories.length > 0) && (
-                    <h3 className='text-sm font-semibold text-muted-foreground uppercase tracking-wide'>
-                      Actions
-                    </h3>
-                  )}
-                {actionCategories.map((category) => (
-                  <div key={`action-${category}`} className='space-y-1'>
-                    <h4 className='text-sm font-medium text-foreground'>{category}</h4>
-                    <div className='space-y-0.5'>
-                      {filteredAndGrouped.actions[category].map((action) => {
-                        const image = getImage(action);
-                        return (
-                          <button
-                            key={action.id}
-                            onClick={() => handleItemClick(action, 'action')}
-                            className='w-full text-left px-2 py-1.5 rounded-md text-sm hover:bg-accent hover:text-accent-foreground transition-colors flex items-center gap-2'>
-                            <Avatar className='h-8 w-8 rounded-md shrink-0'>
-                              {image ? (
-                                <AvatarImage
-                                  src={image}
-                                  alt={action.title}
-                                  className='object-cover'
-                                />
-                              ) : (
-                                <AvatarFallback className='rounded-md bg-muted'>
-                                  <ZapIcon className='h-4 w-4 text-muted-foreground' />
-                                </AvatarFallback>
-                              )}
-                            </Avatar>
-                            <div className='min-w-0 flex-1'>
-                              <span className='font-medium'>{action.title}</span>
-                              {action.description && (
-                                <p className='text-xs text-muted-foreground line-clamp-1'>
-                                  {action.description}
-                                </p>
-                              )}
-                            </div>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* Attributes Section */}
-            {attributeCategories.length > 0 && (
-              <div className='space-y-4'>
-                {(!type || type === 'attribute') &&
-                  (itemCategories.length > 0 || actionCategories.length > 0) && (
-                    <h3 className='text-sm font-semibold text-muted-foreground uppercase tracking-wide'>
-                      Attributes
-                    </h3>
-                  )}
-                {attributeCategories.map((category) => (
-                  <div key={`attribute-${category}`} className='space-y-1'>
-                    <h4 className='text-sm font-medium text-foreground'>{category}</h4>
-                    <div className='space-y-0.5'>
-                      {filteredAndGrouped.attributes[category].map((attribute) => {
-                        const image = getImage(attribute);
-                        return (
-                          <button
-                            key={attribute.id}
-                            onClick={() => handleItemClick(attribute, 'attribute')}
-                            className='w-full text-left px-2 py-1.5 rounded-md text-sm hover:bg-accent hover:text-accent-foreground transition-colors flex items-center gap-2'>
-                            <Avatar className='h-8 w-8 rounded-md shrink-0'>
-                              {image ? (
-                                <AvatarImage
-                                  src={image}
-                                  alt={attribute.title}
-                                  className='object-cover'
-                                />
-                              ) : (
-                                <AvatarFallback className='rounded-md bg-muted'>
-                                  <GaugeIcon className='h-4 w-4 text-muted-foreground' />
-                                </AvatarFallback>
-                              )}
-                            </Avatar>
-                            <div className='min-w-0 flex-1'>
-                              <span className='font-medium'>{attribute.title}</span>
-                              {attribute.description && (
-                                <p className='text-xs text-muted-foreground line-clamp-1'>
-                                  {attribute.description}
-                                </p>
-                              )}
-                            </div>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* Empty state */}
-            {itemCategories.length === 0 &&
-              actionCategories.length === 0 &&
-              attributeCategories.length === 0 && (
-                <div className='text-center py-8 text-muted-foreground'>
-                  {search ? (
-                    <p>No results found for "{search}"</p>
-                  ) : (
-                    <p>
-                      No{' '}
-                      {type === 'item'
-                        ? 'items'
-                        : type === 'action'
-                          ? 'actions'
-                          : type === 'attribute'
-                            ? 'attributes'
-                            : 'items, actions or attributes'}{' '}
-                      available.
-                    </p>
-                  )}
-                </div>
-              )}
           </div>
-        </ScrollArea>
+        )}
+
+        {/* Virtualized scrollable list */}
+        {rows.length > 0 && (
+          <div
+            ref={parentRef}
+            className='flex-1 min-h-0 overflow-auto -mx-4 px-4'
+            style={{ contain: 'strict' }}>
+            <div
+              style={{
+                height: `${virtualizer.getTotalSize()}px`,
+                width: '100%',
+                position: 'relative',
+              }}>
+              {virtualizer.getVirtualItems().map((virtualRow) => {
+                const row = rows[virtualRow.index];
+                if (!row) return null;
+                return (
+                  <div
+                    key={virtualRow.key}
+                    data-index={virtualRow.index}
+                    ref={virtualizer.measureElement}
+                    style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      width: '100%',
+                      transform: `translateY(${virtualRow.start}px)`,
+                    }}
+                    className='pb-0.5'>
+                    {row.type === 'section' && (
+                      <h3 className='text-sm font-semibold text-muted-foreground uppercase tracking-wide py-1'>
+                        {row.label}
+                      </h3>
+                    )}
+                    {row.type === 'category' && (
+                      <h4 className='text-sm font-medium text-foreground py-1'>
+                        {row.label}
+                      </h4>
+                    )}
+                    {row.type === 'entry' && (
+                      <EntryRow
+                        entry={row.entry}
+                        entryType={row.entryType}
+                        getImage={getImage}
+                        onSelect={handleItemClick}
+                      />
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </SheetContent>
     </Sheet>
   );
