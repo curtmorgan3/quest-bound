@@ -26,6 +26,8 @@ const ATTRIBUTE_FIELD_TYPES: Record<string, FieldType> = {
   optionsChartColumnHeader: 'string',
   min: 'number',
   max: 'number',
+  inventoryHeight: 'number',
+  inventoryWidth: 'number',
 };
 
 const ITEM_FIELD_TYPES: Record<string, FieldType> = {
@@ -49,6 +51,8 @@ const ACTION_FIELD_TYPES: Record<string, FieldType> = {
   title: 'string',
   description: 'string',
   category: 'string',
+  inventoryHeight: 'number',
+  inventoryWidth: 'number',
 };
 
 /**
@@ -178,6 +182,7 @@ export const useImport = (type: 'attributes' | 'items' | 'actions') => {
     data.forEach((item, index) => {
       // Check required fields
       if (!item.title || typeof item.title !== 'string') {
+        console.log(item, typeof item.title);
         errors.push(`Row ${index + 1}: title is required and must be a string`);
       }
       if (item.description !== undefined && typeof item.description !== 'string') {
