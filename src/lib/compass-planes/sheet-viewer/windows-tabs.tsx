@@ -53,16 +53,21 @@ export const WindowsTabs = ({
   const [renameLabel, setRenameLabel] = useState('');
   const [newPageLabel, setNewPageLabel] = useState('');
   const [filterText, setFilterText] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('');
 
   const sortedRulesetWindows = [...rulesetWindows].sort((a, b) => a.title.localeCompare(b.title));
   const sortedWindows = [...windows].sort((a, b) => a.title.localeCompare(b.title));
 
+  const allCategories = [
+    ...new Set(
+      rulesetWindows.map((w) => w.category).filter((c): c is string => Boolean(c?.trim())),
+    ),
+  ].sort((a, b) => a.localeCompare(b));
+
   const filteredRulesetWindows = sortedRulesetWindows.filter((w) => {
+    if (selectedCategory && w.category !== selectedCategory) return false;
     const searchTerm = filterText.toLowerCase();
-    return (
-      w.title.toLowerCase().includes(searchTerm) ||
-      (w.category && w.category.toLowerCase().includes(searchTerm))
-    );
+    return w.title.toLowerCase().includes(searchTerm);
   });
 
   const handleCreateWindow = async (rulesetWindow: Window) => {
@@ -267,18 +272,41 @@ export const WindowsTabs = ({
         open={isAddWindowModalOpen}
         onOpenChange={(open) => {
           setIsAddWindowModalOpen(open);
-          if (!open) setFilterText('');
+          if (!open) {
+            setFilterText('');
+            setSelectedCategory('');
+          }
         }}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Add Window</DialogTitle>
           </DialogHeader>
-          <Input
-            placeholder='Filter by name or category...'
-            value={filterText}
-            onChange={(e) => setFilterText(e.target.value)}
-            className='mb-2 bg-[#333] border-[#555] text-white placeholder:text-[#888]'
-          />
+          <div className='flex flex-col gap-2 mb-2'>
+            <select
+              value={selectedCategory}
+              onChange={(e) => setSelectedCategory(e.target.value)}
+              title='Category'
+              className='h-9 rounded-md border border-[#555] bg-[#333] px-3 py-1 text-white text-sm cursor-pointer appearance-none focus:outline-none focus:ring-2 focus:ring-[#555]'
+              style={{
+                backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")`,
+                backgroundRepeat: 'no-repeat',
+                backgroundPosition: 'right 8px center',
+                paddingRight: 28,
+              }}>
+              <option value=''>All categories</option>
+              {allCategories.map((cat) => (
+                <option key={cat} value={cat}>
+                  {cat}
+                </option>
+              ))}
+            </select>
+            <Input
+              placeholder='Filter by name'
+              value={filterText}
+              onChange={(e) => setFilterText(e.target.value)}
+              className='bg-[#333] border-[#555] text-white placeholder:text-[#888]'
+            />
+          </div>
           <div
             style={{
               display: 'flex',

@@ -184,7 +184,7 @@ export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
             )}
             {selectedComponents.length === 1 && windowId && (
               <WindowLookup
-                label='Child Window'
+                label='Open Window'
                 value={selectedComponents[0].childWindowId}
                 onSelect={(win) => handleUpdate('childWindowId', win.id)}
                 onDelete={() => handleUpdate('childWindowId', null)}
