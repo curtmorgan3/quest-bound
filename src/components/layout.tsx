@@ -57,6 +57,7 @@ export function Layout() {
             left: 50,
             height: '95vh',
             width: '100vw',
+            zIndex: 1000,
             maxWidth: 'calc(100vw - 400px)',
           }}></canvas>
         <Toaster />

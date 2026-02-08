@@ -9,6 +9,7 @@ import {
 import { useKeyListeners } from '@/utils';
 import { Shirt, X } from 'lucide-react';
 import { useContext, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 
 export type ContextMenuState = {
   item: InventoryItemWithData;
@@ -89,21 +90,21 @@ export const ItemContextMenu = ({
 
   const canSplit = item.quantity > 1;
 
-  return (
+  const menuContent = (
     <div
       id='item-context-menu'
       ref={menuRef}
       onPointerDown={(e) => e.stopPropagation()}
       style={{
         position: 'fixed',
-        left: 40,
-        top: 40,
+        left: position.x,
+        top: position.y,
         backgroundColor: '#1a1a1a',
         border: '1px solid #333',
         borderRadius: 8,
         padding: 12,
         minWidth: 300,
-        zIndex: 1000,
+        maxWidth: 500,
         boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)',
         display: 'flex',
         flexDirection: 'column',
@@ -346,4 +347,6 @@ export const ItemContextMenu = ({
       </button>
     </div>
   );
+
+  return createPortal(menuContent, document.body);
 };
