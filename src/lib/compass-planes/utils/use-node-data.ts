@@ -1,6 +1,13 @@
 import { useAttributes } from '@/lib/compass-api';
 import { CharacterContext } from '@/stores';
-import type { AttributeType, Character, Component, ComponentData } from '@/types';
+import type {
+  Attribute,
+  AttributeType,
+  Character,
+  CharacterAttribute,
+  Component,
+  ComponentData,
+} from '@/types';
 import { useContext } from 'react';
 import { ComponentTypes } from '../nodes';
 import { getComponentData } from './node-conversion';
@@ -62,7 +69,12 @@ export const useNodeData = (component: Component): NodeData => {
       componentData.placeholder ??
       component.type,
     value,
-    interpolatedValue: injectContextData(value, characterContext?.character),
+    interpolatedValue: injectContextData({
+      value,
+      characterData: characterContext?.character,
+      attributes,
+      getCharacterAttribute: characterContext?.getCharacterAttribute,
+    }),
     attributeType: rulesetAttribute?.type ?? 'string',
     characterAttributeId: characterAttribute?.id,
     options: rulesetAttribute?.options ?? [],
@@ -71,11 +83,37 @@ export const useNodeData = (component: Component): NodeData => {
   };
 };
 
-function injectContextData(
-  text: string | number | boolean,
-  data?: Character,
-): string | number | boolean {
-  if (!data) return text;
-  if (typeof text !== 'string') return text;
-  return text.replace('{{this.name}}', data.name);
+interface InjectContextData {
+  value: string | number | boolean;
+  attributes: Attribute[];
+  getCharacterAttribute?: (attributeId: string) => CharacterAttribute | null;
+  characterData?: Character;
+}
+
+function injectContextData({
+  value,
+  attributes,
+  getCharacterAttribute,
+  characterData,
+}: InjectContextData): string | number | boolean {
+  if (typeof value !== 'string') return value;
+
+  // Replace all {{<attribute title>}} with that attribute's value for the character
+  return value.replace(/\{\{([^}]+)\}\}/g, (match, placeholder) => {
+    const key = placeholder.trim();
+    if (key === 'name') {
+      return characterData?.name ?? match;
+    }
+    const attribute = attributes.find(
+      (attr) => attr.title.toLowerCase() === key.toLowerCase(),
+    );
+    if (attribute && getCharacterAttribute) {
+      const characterAttribute = getCharacterAttribute(attribute.id);
+      const attrValue = characterAttribute?.value;
+      return attrValue !== undefined && attrValue !== null
+        ? String(attrValue)
+        : match;
+    }
+    return match;
+  });
 }
