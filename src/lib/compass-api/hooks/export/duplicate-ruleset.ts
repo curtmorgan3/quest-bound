@@ -1,6 +1,7 @@
 import { db } from '@/stores';
 import type {
   Action,
+  Asset,
   Attribute,
   Character,
   CharacterAttribute,
@@ -14,7 +15,6 @@ import type {
   InventoryItem,
   Item,
   Window,
-  Asset,
 } from '@/types';
 
 export interface DuplicateRulesetParams {
@@ -79,7 +79,10 @@ export async function duplicateRuleset({
   const windowIds = sourceWindows.map((w) => w.id);
   const sourceComponents =
     windowIds.length > 0
-      ? await db.components.where('windowId').anyOf(windowIds as string[]).toArray()
+      ? await db.components
+          .where('windowId')
+          .anyOf(windowIds as string[])
+          .toArray()
       : [];
 
   // Identify source test character (only clone the test character, not player characters)
@@ -113,7 +116,10 @@ export async function duplicateRuleset({
     const sourceInventoryIds = sourceInventories.map((inv: any) => inv.id);
     sourceInventoryItems =
       sourceInventoryIds.length > 0
-        ? await db.inventoryItems.where('inventoryId').anyOf(sourceInventoryIds as string[]).toArray()
+        ? await db.inventoryItems
+            .where('inventoryId')
+            .anyOf(sourceInventoryIds as string[])
+            .toArray()
         : [];
   }
 
@@ -185,7 +191,7 @@ export async function duplicateRuleset({
     chartIdMap.set(chart.id, newId);
 
     const { id, rulesetId, createdAt, updatedAt, assetId, ...rest } = chart;
-    const mappedAssetId = assetId ? assetIdMap.get(assetId) ?? assetId : assetId ?? null;
+    const mappedAssetId = assetId ? (assetIdMap.get(assetId) ?? assetId) : (assetId ?? null);
 
     await db.charts.add({
       ...rest,
@@ -205,7 +211,7 @@ export async function duplicateRuleset({
 
     const { id, rulesetId, createdAt, updatedAt, assetId, optionsChartRef, ...rest } = attribute;
 
-    const mappedAssetId = assetId ? assetIdMap.get(assetId) ?? assetId : assetId ?? null;
+    const mappedAssetId = assetId ? (assetIdMap.get(assetId) ?? assetId) : (assetId ?? null);
     let mappedOptionsChartRef = optionsChartRef;
     if (optionsChartRef != null) {
       const mappedChartId = chartIdMap.get(String(optionsChartRef));
@@ -232,7 +238,7 @@ export async function duplicateRuleset({
     actionIdMap.set(action.id, newId);
 
     const { id, rulesetId, createdAt, updatedAt, assetId, ...rest } = action;
-    const mappedAssetId = assetId ? assetIdMap.get(assetId) ?? assetId : assetId ?? null;
+    const mappedAssetId = assetId ? (assetIdMap.get(assetId) ?? assetId) : (assetId ?? null);
 
     await db.actions.add({
       ...rest,
@@ -251,7 +257,7 @@ export async function duplicateRuleset({
     itemIdMap.set(item.id, newId);
 
     const { id, rulesetId, createdAt, updatedAt, assetId, ...rest } = item;
-    const mappedAssetId = assetId ? assetIdMap.get(assetId) ?? assetId : assetId ?? null;
+    const mappedAssetId = assetId ? (assetIdMap.get(assetId) ?? assetId) : (assetId ?? null);
 
     await db.items.add({
       ...rest,
@@ -270,8 +276,10 @@ export async function duplicateRuleset({
     documentIdMap.set(document.id, newId);
 
     const { id, rulesetId, createdAt, updatedAt, assetId, pdfAssetId, ...rest } = document;
-    const mappedAssetId = assetId ? assetIdMap.get(assetId) ?? assetId : assetId ?? null;
-    const mappedPdfAssetId = pdfAssetId ? assetIdMap.get(pdfAssetId) ?? pdfAssetId : pdfAssetId ?? null;
+    const mappedAssetId = assetId ? (assetIdMap.get(assetId) ?? assetId) : (assetId ?? null);
+    const mappedPdfAssetId = pdfAssetId
+      ? (assetIdMap.get(pdfAssetId) ?? pdfAssetId)
+      : (pdfAssetId ?? null);
 
     await db.documents.add({
       ...rest,
@@ -320,10 +328,12 @@ export async function duplicateRuleset({
     } = component;
 
     const mappedWindowId = windowIdMap.get(windowId) ?? windowId;
-    const mappedAttributeId = attributeId ? attributeIdMap.get(attributeId) ?? attributeId : attributeId;
-    const mappedActionId = actionId ? actionIdMap.get(actionId) ?? actionId : actionId;
+    const mappedAttributeId = attributeId
+      ? (attributeIdMap.get(attributeId) ?? attributeId)
+      : attributeId;
+    const mappedActionId = actionId ? (actionIdMap.get(actionId) ?? actionId) : actionId;
     const mappedChildWindowId = childWindowId
-      ? windowIdMap.get(childWindowId) ?? childWindowId
+      ? (windowIdMap.get(childWindowId) ?? childWindowId)
       : childWindowId;
 
     await db.components.add({
@@ -447,7 +457,9 @@ export async function duplicateRuleset({
         mappedEntityId = actionIdMap.get(entityId) ?? entityId;
       }
 
-      const mappedComponentId = componentId ? componentIdMap.get(componentId) ?? componentId : componentId;
+      const mappedComponentId = componentId
+        ? (componentIdMap.get(componentId) ?? componentId)
+        : componentId;
 
       await db.inventoryItems.add({
         ...rest,
@@ -475,7 +487,7 @@ export async function duplicateRuleset({
 
       const newCaId = crypto.randomUUID();
       const mappedAttributeId = attributeIdMap.get(attributeId) ?? attributeId;
-      const mappedAssetId = assetId ? assetIdMap.get(assetId) ?? assetId : assetId ?? null;
+      const mappedAssetId = assetId ? (assetIdMap.get(assetId) ?? assetId) : (assetId ?? null);
 
       let mappedOptionsChartRef = optionsChartRef;
       if (optionsChartRef != null) {
@@ -501,18 +513,10 @@ export async function duplicateRuleset({
     // Character windows
     for (const cw of sourceCharacterWindows as CharacterWindow[]) {
       const newCwId = crypto.randomUUID();
-      const {
-        id,
-        createdAt,
-        updatedAt,
-        characterId,
-        characterPageId,
-        windowId,
-        ...rest
-      } = cw;
+      const { id, createdAt, updatedAt, characterId, characterPageId, windowId, ...rest } = cw;
 
       const mappedCharacterPageId = characterPageId
-        ? characterPageIdMap.get(characterPageId) ?? characterPageId
+        ? (characterPageIdMap.get(characterPageId) ?? characterPageId)
         : characterPageId;
       const mappedWindowId = windowIdMap.get(windowId) ?? windowId;
 
@@ -530,14 +534,20 @@ export async function duplicateRuleset({
   }
 
   // 11. Clean up the auto-created test character for the target ruleset (if different from cloned one)
-  if (autoTestCharacterId && (!sourceTestCharacter || autoTestCharacterId !== characterIdMap.get(sourceTestCharacter.id))) {
+  if (
+    autoTestCharacterId &&
+    (!sourceTestCharacter || autoTestCharacterId !== characterIdMap.get(sourceTestCharacter.id))
+  ) {
     const autoInventories = await db.inventories
       .where('characterId')
       .equals(autoTestCharacterId)
       .toArray();
     const autoInventoryIds = autoInventories.map((inv: any) => inv.id);
     if (autoInventoryIds.length > 0) {
-      await db.inventoryItems.where('inventoryId').anyOf(autoInventoryIds as string[]).delete();
+      await db.inventoryItems
+        .where('inventoryId')
+        .anyOf(autoInventoryIds as string[])
+        .delete();
     }
 
     await Promise.all([
@@ -551,4 +561,3 @@ export async function duplicateRuleset({
 
   return counts;
 }
-

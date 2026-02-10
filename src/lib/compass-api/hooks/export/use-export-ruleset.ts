@@ -137,7 +137,7 @@ export const useExportRuleset = (rulesetId: string) => {
         exportInfo: {
           exportedAt: new Date().toISOString(),
           exportedBy: 'Quest Bound',
-          version: '1.0.0',
+          version: '2.0.0',
         },
         counts: {
           attributes: attributes?.length || 0,
