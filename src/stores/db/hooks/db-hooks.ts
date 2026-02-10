@@ -6,6 +6,7 @@ import { registerChartDbHooks } from './chart-hooks';
 import { registerComponentDbHooks } from './component-hooks';
 import { registerDocumentDbHooks } from './document-hooks';
 import { registerItemDbHooks } from './item-hooks';
+import { registerInventoryDbHooks } from './inventory-hooks';
 import { registerRulesetDbHooks } from './ruleset-hooks';
 import type { DB } from './types';
 
@@ -15,6 +16,7 @@ export function registerDbHooks(db: DB) {
   registerAttributeDbHooks(db);
   registerCharacterDbHooks(db);
   registerItemDbHooks(db);
+  registerInventoryDbHooks(db);
   registerActionDbHooks(db);
   registerDocumentDbHooks(db);
   registerAssetDbHooks(db);

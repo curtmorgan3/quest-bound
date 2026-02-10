@@ -20,7 +20,7 @@ import {
   ItemContextMenu,
   type ContextMenuState,
 } from '@/lib/compass-planes/nodes/components/inventory/item-context-menu';
-import { CharacterContext, db, type InventoryItemWithData } from '@/stores';
+import { CharacterContext, type InventoryItemWithData } from '@/stores';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { GaugeIcon, PackageIcon, Plus, SearchIcon, ZapIcon } from 'lucide-react';
 import { useContext, useEffect, useMemo, useRef, useState } from 'react';
@@ -79,7 +79,7 @@ export const CharacterInventoryPanel = ({ open, onOpenChange }: CharacterInvento
   const { characterId } = useParams<{ characterId: string }>();
   const { setInventoryPanelConfig, updateInventoryItem, removeInventoryItem, addInventoryItem } =
     useContext(CharacterContext);
-  const { character, updateCharacter } = useCharacter(characterId);
+  const { character } = useCharacter(characterId);
   const { inventoryItems } = useInventory(character?.inventoryId ?? '', character?.id ?? '');
 
   const [typeFilter, setTypeFilter] = useState<InventoryItemType>('item');
@@ -131,45 +131,39 @@ export const CharacterInventoryPanel = ({ open, onOpenChange }: CharacterInvento
   };
 
   // Ensure default inventory exists when opening the panel
-  useEffect(() => {
-    if (!open || !character?.id || character.inventoryId) return;
-    const run = async () => {
-      try {
-        const now = new Date().toISOString();
-        const inventoryId = crypto.randomUUID();
-        await db.inventories.add({
-          id: inventoryId,
-          characterId: character.id,
-          items: [],
-          createdAt: now,
-          updatedAt: now,
-        });
-        await updateCharacter(character.id, { inventoryId });
-      } catch (e) {
-        console.error('Failed to create default inventory:', e);
-      }
-    };
-    run();
-  }, [
-    open,
-    character?.id,
-    character?.inventoryId,
-    character?.name,
-    character?.rulesetId,
-    updateCharacter,
-  ]);
-
-  // Default inventory = items without a component association (no componentId or empty)
-  const defaultItems = useMemo(() => {
-    if (!inventoryItems?.length) return [];
-    return inventoryItems.filter((item) => !item.componentId || item.componentId === '');
-  }, [inventoryItems]);
+  // useEffect(() => {
+  //   if (!open || !character?.id || character.inventoryId) return;
+  //   const run = async () => {
+  //     try {
+  //       const now = new Date().toISOString();
+  //       const inventoryId = crypto.randomUUID();
+  //       await db.inventories.add({
+  //         id: inventoryId,
+  //         characterId: character.id,
+  //         items: [],
+  //         createdAt: now,
+  //         updatedAt: now,
+  //       });
+  //       await updateCharacter(character.id, { inventoryId });
+  //     } catch (e) {
+  //       console.error('Failed to create default inventory:', e);
+  //     }
+  //   };
+  //   run();
+  // }, [
+  //   open,
+  //   character?.id,
+  //   character?.inventoryId,
+  //   character?.name,
+  //   character?.rulesetId,
+  //   updateCharacter,
+  // ]);
 
   // Keep the open context menu item in sync with live inventory data so
   // changes like equipped state are reflected in the virtualized row.
   useEffect(() => {
     if (!contextMenu) return;
-    const openedItem = defaultItems.find((item) => item.id === contextMenu.item.id);
+    const openedItem = inventoryItems.find((item) => item.id === contextMenu.item.id);
     if (!openedItem) return;
 
     if (JSON.stringify(openedItem) === JSON.stringify(contextMenu.item)) return;
@@ -183,7 +177,7 @@ export const CharacterInventoryPanel = ({ open, onOpenChange }: CharacterInvento
           }
         : prev,
     );
-  }, [JSON.stringify(defaultItems), contextMenu, setContextMenu]);
+  }, [JSON.stringify(inventoryItems), contextMenu, setContextMenu]);
 
   // Close context menu when panel closes
   useEffect(() => {
@@ -192,13 +186,13 @@ export const CharacterInventoryPanel = ({ open, onOpenChange }: CharacterInvento
 
   const filteredItems = useMemo(() => {
     const search = titleFilter.trim().toLowerCase();
-    const filtered = defaultItems.filter((item) => {
+    const filtered = inventoryItems.filter((item) => {
       if (item.type !== typeFilter) return false;
       if (search && !item.title.toLowerCase().includes(search)) return false;
       return true;
     });
     return [...filtered].sort((a, b) => a.title.localeCompare(b.title));
-  }, [defaultItems, typeFilter, titleFilter]);
+  }, [inventoryItems, typeFilter, titleFilter]);
 
   const rows = useMemo((): ListRow[] => {
     const openItemId = contextMenu?.item.id;
@@ -267,13 +261,13 @@ export const CharacterInventoryPanel = ({ open, onOpenChange }: CharacterInvento
           Add from ruleset
         </Button>
 
-        {defaultItems.length === 0 && (
+        {inventoryItems.length === 0 && (
           <div className='flex-1 flex items-center justify-center text-center py-8 text-muted-foreground'>
             <p>No items in the default inventory.</p>
           </div>
         )}
 
-        {defaultItems.length > 0 && rows.length === 0 && (
+        {inventoryItems.length > 0 && rows.length === 0 && (
           <div className='flex-1 flex items-center justify-center text-center py-8 text-muted-foreground'>
             <p>
               {titleFilter.trim()
