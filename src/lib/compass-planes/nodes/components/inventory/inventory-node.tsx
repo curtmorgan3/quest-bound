@@ -502,6 +502,10 @@ export const ViewInventoryNode = ({ component }: { component: Component }) => {
           position={{ x: contextMenu.x, y: contextMenu.y }}
           onClose={handleCloseContextMenu}
           onUpdateQuantity={handleUpdateQuantity}
+          onUpdateLabel={(label?: string) => {
+            if (!characterContext) return;
+            characterContext.updateInventoryItem(contextMenu.item.id, { label });
+          }}
           onRemove={handleRemoveItem}
           onSplit={handleSplitStack}
           onToggleEquipped={

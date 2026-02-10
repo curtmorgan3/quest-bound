@@ -8,7 +8,7 @@ import {
 } from '@/stores';
 import { useKeyListeners } from '@/utils';
 import { Shirt, X } from 'lucide-react';
-import { useContext, useRef, useState } from 'react';
+import { useContext, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 
 export type ContextMenuState = {
@@ -25,6 +25,7 @@ type ItemContextMenuProps = {
   inline?: boolean;
   onClose: () => void;
   onUpdateQuantity: (quantity: number) => void;
+  onUpdateLabel: (label?: string) => void;
   onRemove: () => void;
   onSplit: (splitAmount: number) => void;
   onToggleEquipped?: () => void;
@@ -36,6 +37,7 @@ export const ItemContextMenu = ({
   inline = false,
   onClose,
   onUpdateQuantity,
+  onUpdateLabel,
   onRemove,
   onSplit,
   onToggleEquipped,
@@ -55,6 +57,21 @@ export const ItemContextMenu = ({
 
   const diceRolls = parseTextForDiceRolls(item.description ?? '');
 
+  const [isEditingLabel, setIsEditingLabel] = useState(false);
+  const [labelValue, setLabelValue] = useState(item.label ?? item.title);
+  const labelInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    setLabelValue(item.label ?? item.title);
+  }, [item.id, item.label, item.title]);
+
+  useEffect(() => {
+    if (isEditingLabel && labelInputRef.current) {
+      labelInputRef.current.focus();
+      labelInputRef.current.select();
+    }
+  }, [isEditingLabel]);
+
   const handleRoll = () => {
     if (!diceRolls.length) return;
     rollDice(diceRolls.join(','));
@@ -69,8 +86,22 @@ export const ItemContextMenu = ({
   });
 
   const handleClose = () => {
+    setIsEditingLabel(false);
     handleQuantityBlur();
     onClose();
+  };
+
+  const handleLabelCommit = () => {
+    const trimmed = labelValue.trim();
+    const current = item.label ?? item.title;
+
+    if (trimmed === current) {
+      setIsEditingLabel(false);
+      return;
+    }
+
+    onUpdateLabel(trimmed || undefined);
+    setIsEditingLabel(false);
   };
 
   const handleQuantityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -153,8 +184,49 @@ export const ItemContextMenu = ({
         <X size={16} />
       </button>
 
-      <div style={{ marginBottom: 12, fontWeight: 600, color: '#fff', paddingRight: 24 }}>
-        {item.title}
+      <div
+        style={{
+          marginBottom: 12,
+          fontWeight: 600,
+          color: '#fff',
+          paddingRight: 24,
+          cursor: 'text',
+        }}
+        onClick={(e) => {
+          e.stopPropagation();
+          setIsEditingLabel(true);
+        }}>
+        {isEditingLabel ? (
+          <input
+            ref={labelInputRef}
+            type='text'
+            value={labelValue}
+            onChange={(e) => setLabelValue(e.target.value)}
+            onBlur={handleLabelCommit}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                handleLabelCommit();
+              } else if (e.key === 'Escape') {
+                e.preventDefault();
+                setIsEditingLabel(false);
+                setLabelValue(item.label ?? item.title);
+              }
+            }}
+            style={{
+              width: '100%',
+              padding: '4px 6px',
+              backgroundColor: '#2a2a2a',
+              border: '1px solid #444',
+              borderRadius: 4,
+              color: '#fff',
+              fontSize: 14,
+              fontWeight: 600,
+            }}
+          />
+        ) : (
+          item.label ?? item.title
+        )}
       </div>
 
       {item.description && (

@@ -292,6 +292,7 @@ export type InventoryItem = BaseDetails & {
   quantity: number;
   x: number;
   y: number;
+  label?: string; // User provided custom name
   value?: string | number | boolean;
   isEquipped?: boolean;
 };

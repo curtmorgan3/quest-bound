@@ -63,7 +63,7 @@ function DefaultInventoryEntryRow({
         )}
       </Avatar>
       <div className='min-w-0 flex-1'>
-        <span className='font-medium'>{item.title}</span>
+        <span className='font-medium'>{item.label ?? item.title}</span>
         {item.quantity > 1 && <span className='text-muted-foreground ml-1'>×{item.quantity}</span>}
       </div>
       {item.type === 'attribute' && (
@@ -106,6 +106,11 @@ export const CharacterInventoryPanel = ({ open, onOpenChange }: CharacterInvento
     if (!contextMenu) return;
     removeInventoryItem(contextMenu.item.id);
     setContextMenu(null);
+  };
+
+  const handleUpdateLabel = (label?: string) => {
+    if (!contextMenu) return;
+    updateInventoryItem(contextMenu.item.id, { label });
   };
 
   const handleSplitStack = (splitAmount: number) => {
@@ -289,6 +294,7 @@ export const CharacterInventoryPanel = ({ open, onOpenChange }: CharacterInvento
                           inline
                           onClose={handleCloseContextMenu}
                           onUpdateQuantity={handleUpdateQuantity}
+                          onUpdateLabel={handleUpdateLabel}
                           onRemove={handleRemoveItem}
                           onSplit={handleSplitStack}
                           onToggleEquipped={
