@@ -165,6 +165,26 @@ export const CharacterInventoryPanel = ({ open, onOpenChange }: CharacterInvento
     return inventoryItems.filter((item) => !item.componentId || item.componentId === '');
   }, [inventoryItems]);
 
+  // Keep the open context menu item in sync with live inventory data so
+  // changes like equipped state are reflected in the virtualized row.
+  useEffect(() => {
+    if (!contextMenu) return;
+    const openedItem = defaultItems.find((item) => item.id === contextMenu.item.id);
+    if (!openedItem) return;
+
+    if (JSON.stringify(openedItem) === JSON.stringify(contextMenu.item)) return;
+
+    setContextMenu((prev) =>
+      prev
+        ? {
+            x: prev.x,
+            y: prev.y,
+            item: openedItem,
+          }
+        : prev,
+    );
+  }, [JSON.stringify(defaultItems), contextMenu, setContextMenu]);
+
   // Close context menu when panel closes
   useEffect(() => {
     if (!open) setContextMenu(null);
