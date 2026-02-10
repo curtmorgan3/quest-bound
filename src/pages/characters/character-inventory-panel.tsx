@@ -82,6 +82,8 @@ export const CharacterInventoryPanel = ({ open, onOpenChange }: CharacterInvento
   const { character } = useCharacter(characterId);
   const { inventoryItems } = useInventory(character?.inventoryId ?? '', character?.id ?? '');
 
+  const totalInventoryWeight = inventoryItems.reduce((acc, current) => (acc += current.weight), 0);
+
   const [typeFilter, setTypeFilter] = useState<InventoryItemType>('item');
   const [titleFilter, setTitleFilter] = useState('');
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
@@ -129,35 +131,6 @@ export const CharacterInventoryPanel = ({ open, onOpenChange }: CharacterInvento
       type: typeFilter,
     });
   };
-
-  // Ensure default inventory exists when opening the panel
-  // useEffect(() => {
-  //   if (!open || !character?.id || character.inventoryId) return;
-  //   const run = async () => {
-  //     try {
-  //       const now = new Date().toISOString();
-  //       const inventoryId = crypto.randomUUID();
-  //       await db.inventories.add({
-  //         id: inventoryId,
-  //         characterId: character.id,
-  //         items: [],
-  //         createdAt: now,
-  //         updatedAt: now,
-  //       });
-  //       await updateCharacter(character.id, { inventoryId });
-  //     } catch (e) {
-  //       console.error('Failed to create default inventory:', e);
-  //     }
-  //   };
-  //   run();
-  // }, [
-  //   open,
-  //   character?.id,
-  //   character?.inventoryId,
-  //   character?.name,
-  //   character?.rulesetId,
-  //   updateCharacter,
-  // ]);
 
   // Keep the open context menu item in sync with live inventory data so
   // changes like equipped state are reflected in the virtualized row.
@@ -230,8 +203,7 @@ export const CharacterInventoryPanel = ({ open, onOpenChange }: CharacterInvento
         <SheetHeader>
           <SheetTitle>Character Inventory</SheetTitle>
           <SheetDescription>
-            Manage items from a default inventory, or add attributes and actions to control from
-            this panel.
+            Manage all items or add attributes and actions to control from this panel.
           </SheetDescription>
         </SheetHeader>
 
@@ -267,12 +239,16 @@ export const CharacterInventoryPanel = ({ open, onOpenChange }: CharacterInvento
           </div>
         )}
 
+        {typeFilter === 'item' && inventoryItems.length > 0 && (
+          <p className='text-sm italic'>{`Total Weight: ${totalInventoryWeight}`}</p>
+        )}
+
         {inventoryItems.length > 0 && rows.length === 0 && (
           <div className='flex-1 flex items-center justify-center text-center py-8 text-muted-foreground'>
             <p>
               {titleFilter.trim()
                 ? `No ${typeFilter}s match "${titleFilter.trim()}".`
-                : `No ${typeFilter}s in the default inventory.`}
+                : `No ${typeFilter}s have been added.`}
             </p>
           </div>
         )}
