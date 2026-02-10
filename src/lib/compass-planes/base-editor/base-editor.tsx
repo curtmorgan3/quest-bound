@@ -13,6 +13,8 @@ interface BaseEditorProps extends ReactFlowProps {
   menuOptions?: EditorMenuOption[];
   onSelectFromMenu?: (option: EditorMenuOption, coordinates: Coordinates) => void;
   useGrid?: boolean;
+  backgroundOpacity?: number;
+  backgroundImage?: string | null;
 }
 
 export function BaseEditor({
@@ -22,14 +24,19 @@ export function BaseEditor({
   menuOptions,
   onSelectFromMenu,
   useGrid = true,
+  backgroundOpacity = 0.1,
+  backgroundImage,
   ...props
 }: BaseEditorProps) {
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
+
+  const imageOpacity = backgroundImage != null ? (backgroundOpacity ?? 1) : undefined;
 
   return (
     <section
       id='base-editor'
       className='flex-grow-1'
+      style={{ position: 'relative' }}
       onContextMenu={(e) => {
         if (!renderContextMenu) return;
         e.preventDefault();
@@ -39,7 +46,24 @@ export function BaseEditor({
         });
         return false;
       }}>
+      {backgroundImage && (
+        <div
+          aria-hidden
+          style={{
+            position: 'absolute',
+            inset: 0,
+            zIndex: 0,
+            backgroundImage: `url(${backgroundImage})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            backgroundRepeat: 'no-repeat',
+            opacity: imageOpacity ?? 1,
+            pointerEvents: 'none',
+          }}
+        />
+      )}
       <ReactFlow
+        style={{ position: 'relative', zIndex: 1 }}
         nodes={nodes}
         onNodesChange={onNodesChange}
         minZoom={1}
@@ -70,7 +94,7 @@ export function BaseEditor({
             gap={20}
             size={1}
             style={{
-              opacity: 0.1,
+              opacity: backgroundOpacity,
             }}
           />
         )}

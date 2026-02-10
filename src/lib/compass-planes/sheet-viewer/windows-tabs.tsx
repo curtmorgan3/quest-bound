@@ -1,3 +1,4 @@
+import { ImageUpload } from '@/components/composites/image-upload';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -13,10 +14,11 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
-import { useCharacterPages, useCharacterWindows, useWindows } from '@/lib/compass-api';
+import { Label } from '@/components/ui/label';
+import { useAssets, useCharacterPages, useCharacterWindows, useWindows } from '@/lib/compass-api';
 import { colorPrimary } from '@/palette';
 import type { CharacterPage, CharacterWindow, Window } from '@/types';
-import { Lock, Pencil, Plus, Trash2 } from 'lucide-react';
+import { ImagePlus, Lock, Pencil, Plus, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 
 interface WindowsTabsProps {
@@ -47,6 +49,7 @@ export const WindowsTabs = ({
   const { createCharacterPage, updateCharacterPage, deleteCharacterPage } =
     useCharacterPages(characterId);
 
+  const { assets } = useAssets();
   const [isAddWindowModalOpen, setIsAddWindowModalOpen] = useState(false);
   const [isAddPageModalOpen, setIsAddPageModalOpen] = useState(false);
   const [renamePageId, setRenamePageId] = useState<string | null>(null);
@@ -54,6 +57,7 @@ export const WindowsTabs = ({
   const [newPageLabel, setNewPageLabel] = useState('');
   const [filterText, setFilterText] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
+  const [editPageId, setEditPageId] = useState<string | null>(null);
 
   const sortedRulesetWindows = [...rulesetWindows].sort((a, b) => a.title.localeCompare(b.title));
   const sortedWindows = [...windows].sort((a, b) => a.title.localeCompare(b.title));
@@ -63,6 +67,15 @@ export const WindowsTabs = ({
       rulesetWindows.map((w) => w.category).filter((c): c is string => Boolean(c?.trim())),
     ),
   ].sort((a, b) => a.localeCompare(b));
+
+  const page = characterPages.find((p) => p.id === editPageId);
+
+  let backgroundImage = page?.assetUrl ?? null;
+
+  if (!backgroundImage && page?.assetId) {
+    const asset = assets.find((a) => a.id === page.assetId);
+    backgroundImage = asset?.data ?? null;
+  }
 
   const filteredRulesetWindows = sortedRulesetWindows.filter((w) => {
     if (selectedCategory && w.category !== selectedCategory) return false;
@@ -226,6 +239,10 @@ export const WindowsTabs = ({
                 }}>
                 <Pencil size={14} />
                 Rename page
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => currentPageId && setEditPageId(currentPageId)}>
+                <ImagePlus size={14} />
+                Edit page background
               </DropdownMenuItem>
               <DropdownMenuItem
                 variant='destructive'
@@ -411,6 +428,74 @@ export const WindowsTabs = ({
             </Button>
             <Button onClick={handleRenamePage}>Save</Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={editPageId !== null} onOpenChange={(open) => !open && setEditPageId(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit page background</DialogTitle>
+          </DialogHeader>
+          {editPageId && page && (
+            <div className='flex flex-col gap-4'>
+              <div className='flex flex-col gap-2'>
+                <Label>Background image</Label>
+                <ImageUpload
+                  image={backgroundImage}
+                  alt='Page background'
+                  rulesetId={undefined}
+                  onUpload={(assetId) =>
+                    updateCharacterPage(editPageId, { assetId, assetUrl: undefined })
+                  }
+                  onSetUrl={(url) =>
+                    updateCharacterPage(editPageId, { assetUrl: url, assetId: undefined })
+                  }
+                  onRemove={() =>
+                    updateCharacterPage(editPageId, {
+                      assetId: undefined,
+                      assetUrl: undefined,
+                    })
+                  }
+                />
+              </div>
+              <div className='flex flex-col gap-2'>
+                <Label htmlFor='page-background-opacity'>
+                  Opacity ({Math.round((page.backgroundOpacity ?? 1) * 100)}%)
+                </Label>
+                <div className='flex items-center gap-2'>
+                  <input
+                    id='page-background-opacity'
+                    type='range'
+                    min={0}
+                    max={100}
+                    value={(page.backgroundOpacity ?? 1) * 100}
+                    onChange={(e) =>
+                      updateCharacterPage(editPageId, {
+                        backgroundOpacity: Number(e.target.value) / 100,
+                      })
+                    }
+                    className='flex-1 h-2 rounded-lg appearance-none cursor-pointer bg-[#333] accent-[#555]'
+                  />
+                  <Input
+                    type='number'
+                    min={0}
+                    max={100}
+                    className='w-16 bg-[#333] border-[#555] text-white text-sm h-8'
+                    value={Math.round((page.backgroundOpacity ?? 1) * 100)}
+                    onChange={(e) => {
+                      const n = Number(e.target.value);
+                      if (!Number.isNaN(n)) {
+                        const clamped = Math.min(100, Math.max(0, n));
+                        updateCharacterPage(editPageId, {
+                          backgroundOpacity: clamped / 100,
+                        });
+                      }
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </>

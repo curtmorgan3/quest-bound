@@ -266,6 +266,10 @@ export type CharacterAttribute = Attribute & {
 export type CharacterPage = BaseDetails & {
   characterId: string;
   label: string;
+  assetId?: string;
+  assetUrl?: string;
+  backgroundOpacity?: number;
+  image?: string | null;
 };
 
 export type CharacterWindow = BaseDetails & {

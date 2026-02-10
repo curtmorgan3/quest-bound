@@ -2,6 +2,13 @@ import type { DBCore, Middleware } from 'dexie';
 import { memoizedAssets } from './memoization-cache';
 
 function injectImageData(record: any) {
+  if (record?.assetUrl) {
+    return {
+      ...record,
+      image: record.assetUrl,
+    };
+  }
+
   if (!record?.assetId) return record;
 
   try {
@@ -25,7 +32,6 @@ export const assetInjectorMiddleware: Middleware<DBCore> = {
       table(tableName) {
         const downlevelTable = downlevelDatabase.table(tableName);
 
-        // Only apply asset replacement to users, rulesets, characters, items, actions, and assets tables
         if (
           [
             'users',
@@ -37,6 +43,7 @@ export const assetInjectorMiddleware: Middleware<DBCore> = {
             'assets',
             'documents',
             'attributes',
+            'characterPages',
           ].indexOf(tableName) === -1
         ) {
           return downlevelTable;

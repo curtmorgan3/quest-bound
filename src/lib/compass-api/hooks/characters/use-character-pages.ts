@@ -34,7 +34,10 @@ export const useCharacterPages = (characterId?: string) => {
     }
   };
 
-  const updateCharacterPage = async (id: string, data: Partial<Pick<CharacterPage, 'label'>>) => {
+  const updateCharacterPage = async (
+    id: string,
+    data: Partial<Pick<CharacterPage, 'label' | 'assetId' | 'assetUrl' | 'backgroundOpacity'>>,
+  ) => {
     const now = new Date().toISOString();
     try {
       await db.characterPages.update(id, {

@@ -48,6 +48,8 @@ export const SheetViewer = ({
   );
   const [locked, setLockedState] = useState<boolean>(initialLocked ?? lockByDefault ?? false);
 
+  const currentPage = characterPages.find((p) => p.id === currentPageId);
+
   const setCurrentPageId = (next: string | null) => {
     setCurrentPageIdState(next);
     onCurrentPageChange?.(next);
@@ -184,6 +186,8 @@ export const SheetViewer = ({
           zoomOnScroll={false}
           nodesDraggable={!locked}
           renderContextMenu={false}
+          backgroundImage={currentPage?.image}
+          backgroundOpacity={currentPage?.backgroundOpacity}
         />
       )}
       <WindowsTabs
