@@ -1,5 +1,4 @@
 import { useCharacterWindows, useComponents, useWindows } from '@/lib/compass-api';
-import { colorPaper } from '@/palette';
 import { CharacterContext } from '@/stores';
 import type { CharacterWindow } from '@/types';
 import '@xyflow/react/dist/style.css';
@@ -90,10 +89,11 @@ export const WindowNode = ({ data }: { data: WindowNodeData }) => {
         <div
           style={{
             height: '20px',
-            width: '100%',
             position: 'absolute',
+            right: 0,
+            top: -22,
             zIndex: 1000,
-            backgroundColor: colorPaper,
+            backgroundColor: 'transparent',
             borderRadius: '8px 8px 0 0',
             display: 'flex',
             justifyContent: 'flex-end',
