@@ -35,6 +35,7 @@ const ATTRIBUTE_FIELD_TYPES: Record<string, FieldType> = {
   optionsChartColumnHeader: 'string',
   min: 'number',
   max: 'number',
+  image: 'string',
 };
 
 const ITEM_FIELD_TYPES: Record<string, FieldType> = {
@@ -52,6 +53,7 @@ const ITEM_FIELD_TYPES: Record<string, FieldType> = {
   inventoryWidth: 'number',
   inventoryHeight: 'number',
   assetFilename: 'string',
+  image: 'string',
 };
 
 const ACTION_FIELD_TYPES: Record<string, FieldType> = {
@@ -60,6 +62,7 @@ const ACTION_FIELD_TYPES: Record<string, FieldType> = {
   description: 'string',
   category: 'string',
   assetFilename: 'string',
+  image: 'string',
 };
 
 /**
@@ -774,6 +777,7 @@ export const useImportRuleset = () => {
             optionsChartColumnHeader: item.optionsChartColumnHeader as string | undefined,
             min: item.min as number | undefined,
             max: item.max as number | undefined,
+            image: (item.image as string)?.trim() || null,
             rulesetId: newRulesetId,
             createdAt: now,
             updatedAt: now,
@@ -814,6 +818,7 @@ export const useImportRuleset = () => {
               description: (item.description as string) ?? '',
               category: item.category as string | undefined,
               assetId: assetId || null,
+              image: (item.image as string)?.trim() || null,
               rulesetId: newRulesetId,
               createdAt: now,
               updatedAt: now,
@@ -864,6 +869,7 @@ export const useImportRuleset = () => {
               inventoryWidth: (item.inventoryWidth as number) ?? 1,
               inventoryHeight: (item.inventoryHeight as number) ?? 1,
               assetId: assetId || null,
+              image: (item.image as string)?.trim() || null,
               rulesetId: newRulesetId,
               createdAt: now,
               updatedAt: now,
