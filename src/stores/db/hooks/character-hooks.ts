@@ -6,6 +6,13 @@ export function registerCharacterDbHooks(db: DB) {
     setTimeout(async () => {
       try {
         const now = new Date().toISOString();
+
+        // Imported characters already have inventories
+        if (obj.inventoryId) {
+          const existingInventory = await db.inventories.get(obj.inventoryId);
+          if (existingInventory) return;
+        }
+
         const inventoryId = crypto.randomUUID();
 
         await db.inventories.add({
@@ -35,15 +42,9 @@ export function registerCharacterDbHooks(db: DB) {
     setTimeout(async () => {
       try {
         const characterPageId = primKey as string;
-        await db.characterWindows
-          .where('characterPageId')
-          .equals(characterPageId)
-          .delete();
+        await db.characterWindows.where('characterPageId').equals(characterPageId).delete();
       } catch (error) {
-        console.error(
-          'Failed to delete character windows for character page:',
-          error,
-        );
+        console.error('Failed to delete character windows for character page:', error);
       }
     }, 0);
   });

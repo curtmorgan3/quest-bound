@@ -450,9 +450,6 @@ export const useImportRuleset = () => {
           if (!item.characterId || typeof item.characterId !== 'string') {
             errors.push(`Inventory ${index + 1}: characterId is required and must be a string`);
           }
-          if (!item.inventoryId || typeof item.inventoryId !== 'string') {
-            errors.push(`Inventory ${index + 1}: inventoryId is required and must be a string`);
-          }
           break;
 
         case 'characterWindows':
@@ -481,7 +478,9 @@ export const useImportRuleset = () => {
       await db.characterWindows.where('characterId').equals(cid).delete();
     }
     await db.characters.where('rulesetId').equals(rulesetId).delete();
-    const windowIds = (await db.windows.where('rulesetId').equals(rulesetId).toArray()).map((w) => w.id);
+    const windowIds = (await db.windows.where('rulesetId').equals(rulesetId).toArray()).map(
+      (w) => w.id,
+    );
     if (windowIds.length > 0) {
       await db.components.where('windowId').anyOf(windowIds).delete();
     }
@@ -496,7 +495,10 @@ export const useImportRuleset = () => {
     await db.rulesets.delete(rulesetId);
   };
 
-  const importRuleset = async (file: File, options?: ImportRulesetOptions): Promise<ImportRulesetResult> => {
+  const importRuleset = async (
+    file: File,
+    options?: ImportRulesetOptions,
+  ): Promise<ImportRulesetResult> => {
     setIsImporting(true);
 
     try {
