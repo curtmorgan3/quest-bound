@@ -98,6 +98,7 @@ export const ViewInventoryNode = ({ component }: { component: Component }) => {
       open: true,
       inventoryComponentId: component.id,
       typeRestriction: data.typeRestriction,
+      categoryRestriction: data.categoryRestriction,
       cellWidth,
       cellHeight,
       gridCols,

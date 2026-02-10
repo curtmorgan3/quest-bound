@@ -39,9 +39,13 @@ export const InventoryDataEdit = ({ components, updateComponents }: InventoryDat
 
     const typeRestriction = value === 'none' ? undefined : (value as 'item' | 'action');
 
+    const update: Record<any, any> = { typeRestriction };
+
+    if (!typeRestriction) update.categoryRestriction = '';
+
     const updates = editableComponents.map((component) => ({
       id: component.id,
-      data: updateComponentData(component.data, { typeRestriction }),
+      data: updateComponentData(component.data, update),
     }));
 
     await updateComponents(updates);
@@ -143,16 +147,13 @@ export const InventoryDataEdit = ({ components, updateComponents }: InventoryDat
           placeholder='Enter category...'
           value={categoryRestriction}
           onChange={(e) => handleCategoryRestrictionChange(e.target.value)}
-          disabled={isDisabled}
+          disabled={isDisabled || !currentType}
         />
       </div>
 
       <div className='flex flex-col gap-1'>
         <label className='text-xs text-muted-foreground'>Show Item As</label>
-        <Select
-          value={showItemAs}
-          onValueChange={handleShowItemAsChange}
-          disabled={isDisabled}>
+        <Select value={showItemAs} onValueChange={handleShowItemAsChange} disabled={isDisabled}>
           <SelectTrigger className='w-full'>
             <SelectValue placeholder='Select display mode' />
           </SelectTrigger>

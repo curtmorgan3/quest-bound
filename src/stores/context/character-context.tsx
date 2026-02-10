@@ -10,6 +10,7 @@ export type InventoryPanelConfig = {
   /** When true, selecting an item adds it to the character's default inventory (no component). */
   addToDefaultInventory?: boolean;
   typeRestriction?: 'action' | 'item' | 'attribute';
+  categoryRestriction?: string;
   // Grid info for calculating item placement
   cellWidth?: number;
   cellHeight?: number;

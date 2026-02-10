@@ -84,30 +84,34 @@ export const InventoryPanel = ({
   excludeIds,
   onSelect,
 }: InventoryPanelProps) => {
+  const { inventoryPanelConfig } = useContext(CharacterContext);
   const { items } = useItems();
   const { actions } = useActions();
   const { attributes } = useAttributes();
   const { assets } = useAssets();
   const [search, setSearch] = useState('');
-  const [typeFilter, setTypeFilter] = useState<'all' | 'item' | 'action' | 'attribute'>(() =>
-    type === 'item' || type === 'action' || type === 'attribute' ? type : 'all',
+  const typeRestriction = inventoryPanelConfig?.typeRestriction;
+  const categoryRestriction = inventoryPanelConfig?.categoryRestriction;
+
+  const effectiveTypeRestriction = type ?? typeRestriction;
+
+  const [typeFilter, setTypeFilter] = useState<'all' | 'item' | 'action' | 'attribute'>(
+    () => effectiveTypeRestriction ?? 'all',
   );
   const [categoryFilter, setCategoryFilter] = useState('');
 
-  // Sync type filter when parent passes a specific type (e.g. when opening panel)
+  // Sync type filter when a type restriction is provided (prop or config)
   useEffect(() => {
-    if (type === 'item' || type === 'action' || type === 'attribute') {
-      setTypeFilter(type);
-      setCategoryFilter('');
+    if (effectiveTypeRestriction) {
+      setTypeFilter(effectiveTypeRestriction);
+      setCategoryFilter(categoryRestriction ?? '');
     }
-  }, [type]);
+  }, [effectiveTypeRestriction, categoryRestriction]);
 
-  // Reset category when type filter changes so we don't keep an invalid category
+  // Reset category when type filter changes so we don't keep an invalid category (unless restricted)
   useEffect(() => {
-    setCategoryFilter('');
-  }, [typeFilter]);
-
-  const { inventoryPanelConfig } = useContext(CharacterContext);
+    setCategoryFilter(categoryRestriction ?? '');
+  }, [typeFilter, categoryRestriction]);
 
   // All categories for the selected type (only when a single type is chosen)
   const categoriesForType = useMemo((): string[] => {
@@ -119,7 +123,6 @@ export const InventoryPanel = ({
     if (typeFilter === 'attribute') return collect(attributes);
     return [];
   }, [typeFilter, items, actions, attributes]);
-  const typeRestriction = inventoryPanelConfig?.typeRestriction;
 
   const getImage = useCallback(
     (entry: Item | Action | Attribute): string | null => {
@@ -379,7 +382,7 @@ export const InventoryPanel = ({
         <div className='flex flex-col gap-2'>
           <Select
             value={typeFilter}
-            disabled={inventoryPanelConfig.addToDefaultInventory}
+            disabled={!!effectiveTypeRestriction || inventoryPanelConfig.addToDefaultInventory}
             onValueChange={(v) => setTypeFilter(v as 'all' | 'item' | 'action' | 'attribute')}>
             <SelectTrigger className='w-full'>
               <SelectValue placeholder='Filter by type' />
@@ -394,7 +397,7 @@ export const InventoryPanel = ({
           <Select
             value={categoryFilter || '__all__'}
             onValueChange={(v) => setCategoryFilter(v === '__all__' ? '' : v)}
-            disabled={typeFilter === 'all'}>
+            disabled={typeFilter === 'all' || !!categoryRestriction}>
             <SelectTrigger className='w-full' disabled={typeFilter === 'all'}>
               <SelectValue
                 placeholder={typeFilter === 'all' ? 'Choose a type first' : 'Filter by category'}
