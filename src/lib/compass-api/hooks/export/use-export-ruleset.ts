@@ -5,6 +5,11 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import JSZip from 'jszip';
 import { useState } from 'react';
 
+function isImageUrl(value: string | null | undefined): boolean {
+  if (!value || typeof value !== 'string') return false;
+  return value.startsWith('http://') || value.startsWith('https://');
+}
+
 // Define the columns to export for each type (matching use-export.ts)
 const ATTRIBUTE_COLUMNS: (keyof Attribute)[] = [
   'id',
@@ -18,6 +23,7 @@ const ATTRIBUTE_COLUMNS: (keyof Attribute)[] = [
   'optionsChartColumnHeader',
   'min',
   'max',
+  'image',
 ];
 
 // Extended types that include assetFilename for export
@@ -39,6 +45,7 @@ const ITEM_COLUMNS: (keyof ItemWithAssetFilename)[] = [
   'inventoryWidth',
   'inventoryHeight',
   'assetFilename',
+  'image',
 ];
 
 const ACTION_COLUMNS: (keyof ActionWithAssetFilename)[] = [
@@ -47,6 +54,7 @@ const ACTION_COLUMNS: (keyof ActionWithAssetFilename)[] = [
   'description',
   'category',
   'assetFilename',
+  'image',
 ];
 
 /**
@@ -88,11 +96,26 @@ function escapeTsvValue(value: unknown): string {
 }
 
 /**
- * Converts an array of objects to TSV format
+ * Converts an array of objects to TSV format.
+ * For the 'image' column, only includes the value when it is a URL (http/https).
  */
-function convertToTsv<T extends Record<string, unknown>>(data: T[], columns: (keyof T)[]): string {
+function convertToTsv<T extends Record<string, unknown>>(
+  data: T[],
+  columns: (keyof T)[],
+  imageColumn: keyof T = 'image',
+): string {
   const header = columns.join('\t');
-  const rows = data.map((item) => columns.map((col) => escapeTsvValue(item[col])).join('\t'));
+  const rows = data.map((item) =>
+    columns
+      .map((col) => {
+        const value = item[col];
+        if (col === imageColumn && columns.includes(imageColumn)) {
+          return isImageUrl(value as string) ? escapeTsvValue(value) : '';
+        }
+        return escapeTsvValue(value);
+      })
+      .join('\t'),
+  );
   return [header, ...rows].join('\n');
 }
 
