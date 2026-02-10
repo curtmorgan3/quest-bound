@@ -154,6 +154,22 @@ export const SheetViewer = ({
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', position: 'relative' }}>
       {locked ? (
         <div style={{ position: 'relative', flex: 1, overflow: 'hidden' }}>
+          {currentPage?.image && (
+            <div
+              aria-hidden
+              style={{
+                position: 'absolute',
+                inset: 0,
+                zIndex: 0,
+                backgroundImage: `url(${currentPage.image})`,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+                backgroundRepeat: 'no-repeat',
+                opacity: currentPage.backgroundOpacity ?? 1,
+                pointerEvents: 'none',
+              }}
+            />
+          )}
           {openCharacterWindows.map((window, index) => (
             <div
               key={window.id}
@@ -161,7 +177,7 @@ export const SheetViewer = ({
                 position: 'absolute',
                 left: window.x,
                 top: window.y,
-                zIndex: index,
+                zIndex: index + 1,
               }}>
               <WindowNode
                 data={{
