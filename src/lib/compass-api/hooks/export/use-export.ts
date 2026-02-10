@@ -115,7 +115,7 @@ export const useExport = (type: 'attributes' | 'items' | 'actions') => {
   }, [activeRuleset, type]);
 
   const exportData = (): string | null => {
-    if (!data || data.length === 0) {
+    if (!data) {
       return null;
     }
 
