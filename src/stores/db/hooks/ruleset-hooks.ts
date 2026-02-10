@@ -55,6 +55,7 @@ export function registerRulesetDbHooks(db: DB) {
         await db.components.where('rulesetId').equals(rulesetId).delete();
         await db.fonts.where('rulesetId').equals(rulesetId).delete();
         await db.documents.where('rulesetId').equals(rulesetId).delete();
+        await db.diceRolls.where('rulesetId').equals(rulesetId).delete();
 
         // Find and delete only the test character (not regular characters)
         const testCharacter = await db.characters

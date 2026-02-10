@@ -29,6 +29,12 @@ export const Rulesets = () => {
   const [pendingReplaceResult, setPendingReplaceResult] = useState<ImportRulesetResult | null>(
     null,
   );
+  const [duplicateConfirmOpen, setDuplicateConfirmOpen] = useState(false);
+  const [pendingDuplicateFile, setPendingDuplicateFile] = useState<File | null>(null);
+  const [pendingDuplicateResult, setPendingDuplicateResult] =
+    useState<ImportRulesetResult | null>(null);
+  const [duplicateTitle, setDuplicateTitle] = useState('');
+  const [duplicateVersion, setDuplicateVersion] = useState('');
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
@@ -52,6 +58,9 @@ export const Rulesets = () => {
     setPendingReplaceFile(null);
     setPendingReplaceResult(null);
     setReplaceConfirmOpen(false);
+    setPendingDuplicateFile(null);
+    setPendingDuplicateResult(null);
+    setDuplicateConfirmOpen(false);
 
     try {
       const result = await importRuleset(file);
@@ -59,6 +68,12 @@ export const Rulesets = () => {
         setPendingReplaceFile(file);
         setPendingReplaceResult(result);
         setReplaceConfirmOpen(true);
+      } else if (result.needsDuplicateConfirmation) {
+        setPendingDuplicateFile(file);
+        setPendingDuplicateResult(result);
+        setDuplicateTitle(result.importedRuleset?.title || '');
+        setDuplicateVersion(result.importedRuleset?.version || '');
+        setDuplicateConfirmOpen(true);
       } else {
         setImportResult(result);
       }
@@ -89,6 +104,35 @@ export const Rulesets = () => {
     setPendingReplaceResult(null);
     if (pendingReplaceResult) {
       setImportResult(pendingReplaceResult);
+    }
+  };
+
+  const handleConfirmDuplicate = async () => {
+    if (!pendingDuplicateFile) return;
+    setDuplicateConfirmOpen(false);
+    try {
+      const result = await importRuleset(pendingDuplicateFile, {
+        duplicateAsNew: true,
+        duplicateTitle: duplicateTitle || pendingDuplicateResult?.importedRuleset?.title,
+        duplicateVersion: duplicateVersion || pendingDuplicateResult?.importedRuleset?.version,
+      });
+      setImportResult(result);
+    } finally {
+      setPendingDuplicateFile(null);
+      setPendingDuplicateResult(null);
+      setDuplicateTitle('');
+      setDuplicateVersion('');
+    }
+  };
+
+  const handleCancelDuplicate = () => {
+    setDuplicateConfirmOpen(false);
+    setPendingDuplicateFile(null);
+    setPendingDuplicateResult(null);
+    setDuplicateTitle('');
+    setDuplicateVersion('');
+    if (pendingDuplicateResult) {
+      setImportResult(pendingDuplicateResult);
     }
   };
 
@@ -219,6 +263,45 @@ export const Rulesets = () => {
                 </Button>
                 <Button onClick={handleConfirmReplace} disabled={isImporting}>
                   {isImporting ? 'Replacing…' : 'Replace'}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          <Dialog open={duplicateConfirmOpen} onOpenChange={setDuplicateConfirmOpen}>
+            <DialogContent className='sm:max-w-[425px]'>
+              <DialogHeader>
+                <DialogTitle>Save as new ruleset?</DialogTitle>
+              </DialogHeader>
+              <p className='text-sm text-muted-foreground'>
+                {pendingDuplicateResult?.message}
+              </p>
+              <div className='mt-4 grid gap-4'>
+                <div className='grid gap-2'>
+                  <Label htmlFor='duplicate-title'>Title</Label>
+                  <Input
+                    id='duplicate-title'
+                    value={duplicateTitle}
+                    onChange={(e) => setDuplicateTitle(e.target.value)}
+                    placeholder={pendingDuplicateResult?.importedRuleset?.title}
+                  />
+                </div>
+                <div className='grid gap-2'>
+                  <Label htmlFor='duplicate-version'>Version</Label>
+                  <Input
+                    id='duplicate-version'
+                    value={duplicateVersion}
+                    onChange={(e) => setDuplicateVersion(e.target.value)}
+                    placeholder={pendingDuplicateResult?.importedRuleset?.version}
+                  />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant='outline' onClick={handleCancelDuplicate}>
+                  Cancel
+                </Button>
+                <Button onClick={handleConfirmDuplicate} disabled={isImporting}>
+                  {isImporting ? 'Creating…' : 'Create copy'}
                 </Button>
               </DialogFooter>
             </DialogContent>

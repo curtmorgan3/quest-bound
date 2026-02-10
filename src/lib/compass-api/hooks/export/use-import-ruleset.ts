@@ -19,6 +19,7 @@ import type {
 import JSZip from 'jszip';
 import { useState } from 'react';
 import { useRulesets } from '../rulesets';
+import { duplicateRuleset } from './duplicate-ruleset';
 
 // Field type definitions for parsing TSV values
 type FieldType = 'string' | 'number' | 'boolean' | 'array' | 'attributeType';
@@ -182,6 +183,12 @@ function compareVersion(a: string, b: string): number {
 export interface ImportRulesetOptions {
   /** When true, replace an existing ruleset with the same id if the uploaded version is higher */
   replaceIfNewer?: boolean;
+  /** When true, and the uploaded ruleset matches an existing ruleset id+version, create a new ruleset by duplicating the existing one */
+  duplicateAsNew?: boolean;
+  /** Optional new title to use when creating a duplicate ruleset */
+  duplicateTitle?: string;
+  /** Optional new version to use when creating a duplicate ruleset */
+  duplicateVersion?: string;
 }
 
 export interface ImportRulesetResult {
@@ -189,6 +196,8 @@ export interface ImportRulesetResult {
   message: string;
   /** When the uploaded ruleset has the same id but higher version; caller should prompt and re-call with replaceIfNewer: true */
   needsReplaceConfirmation?: boolean;
+  /** When the uploaded ruleset has the same id and same version; caller should prompt for duplicate-as-new */
+  needsDuplicateConfirmation?: boolean;
   existingRuleset?: Ruleset;
   importedRuleset?: Ruleset;
   importedCounts: {
@@ -579,9 +588,46 @@ export const useImportRuleset = () => {
       const existingRuleset = await db.rulesets.get(newRulesetId);
       if (existingRuleset) {
         if (existingRuleset.version === newRuleset.version) {
+          // Same id and version: either request duplicate-as-new confirmation or perform duplication
+          if (options?.duplicateAsNew) {
+            const duplicateTitle =
+              options.duplicateTitle?.trim() || `${newRuleset.title} (copy)`;
+            const duplicateVersion =
+              options.duplicateVersion?.trim() || newRuleset.version;
+
+            // Create the new ruleset record
+            const newId = await createRuleset({
+              title: duplicateTitle,
+              description: newRuleset.description,
+              version: duplicateVersion,
+              details: newRuleset.details || {},
+              image: newRuleset.image,
+              createdBy: newRuleset.createdBy,
+            });
+
+            // Duplicate all entities from the existing ruleset into the new one
+            const duplicationCounts = await duplicateRuleset({
+              sourceRulesetId: existingRuleset.id,
+              targetRulesetId: newId,
+            });
+
+            const duplicatedRuleset = await db.rulesets.get(newId);
+
+            return {
+              success: true,
+              message: `Created duplicate ruleset "${duplicatedRuleset?.title ?? duplicateTitle}" (v${duplicatedRuleset?.version ?? duplicateVersion}).`,
+              importedRuleset: duplicatedRuleset ?? undefined,
+              importedCounts: duplicationCounts,
+              errors: [],
+            };
+          }
+
           return {
             success: false,
-            message: `A ruleset with the same id and version already exists ("${newRuleset.title}" v${newRuleset.version}). Import would duplicate the ruleset. Export with a new version or update the existing ruleset instead.`,
+            message: `A ruleset "${existingRuleset.title}" (v${existingRuleset.version}) already exists with the same id and version. You can create a new copy with a different title and version.`,
+            needsDuplicateConfirmation: true,
+            existingRuleset,
+            importedRuleset: newRuleset,
             importedCounts: {
               attributes: 0,
               actions: 0,
