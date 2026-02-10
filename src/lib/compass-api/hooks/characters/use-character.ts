@@ -1,6 +1,12 @@
 import { useErrorHandler } from '@/hooks';
 import { db, useCurrentUser } from '@/stores';
-import type { Character, CharacterAttribute, CharacterPage, CharacterWindow, Inventory } from '@/types';
+import type {
+  Character,
+  CharacterAttribute,
+  CharacterPage,
+  CharacterWindow,
+  Inventory,
+} from '@/types';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useParams } from 'react-router-dom';
 import { useAssets } from '../assets';
@@ -53,10 +59,7 @@ export const useCharacter = (_id?: string) => {
     );
   };
 
-  const bootstrapCharacterPagesAndWindows = async (
-    newCharacterId: string,
-    rulesetId: string,
-  ) => {
+  const bootstrapCharacterPagesAndWindows = async (newCharacterId: string, rulesetId: string) => {
     const testCharacter = await db.characters
       .where('rulesetId')
       .equals(rulesetId)
@@ -92,7 +95,7 @@ export const useCharacter = (_id?: string) => {
 
     for (const win of testWindows) {
       const newCharacterPageId = win.characterPageId
-        ? pageIdMap.get(win.characterPageId) ?? null
+        ? (pageIdMap.get(win.characterPageId) ?? null)
         : null;
       await db.characterWindows.add({
         id: crypto.randomUUID(),
