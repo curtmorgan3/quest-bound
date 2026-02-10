@@ -441,7 +441,10 @@ export const useExportRuleset = (rulesetId: string) => {
       }
 
       if (characterAttributes && characterAttributes.length > 0) {
-        appDataFolder.file('characterAttributes.json', JSON.stringify(characterAttributes, null, 2));
+        appDataFolder.file(
+          'characterAttributes.json',
+          JSON.stringify(characterAttributes, null, 2),
+        );
       }
 
       if (inventories && inventories.length > 0) {
@@ -451,6 +454,13 @@ export const useExportRuleset = (rulesetId: string) => {
       if (characterWindows && characterWindows.length > 0) {
         appDataFolder.file('characterWindows.json', JSON.stringify(characterWindows, null, 2));
       }
+
+      // Create a markdown file named after the ruleset title containing only the description
+      const safeRulesetTitle = ruleset.title
+        ? ruleset.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()
+        : 'ruleset';
+
+      zip.file(`${safeRulesetTitle}.md`, ruleset.description ?? '');
 
       // Create a README file with instructions
       const readme = `# ${ruleset.title} Export
@@ -495,7 +505,7 @@ To import this ruleset back into Quest Bound:
 
 - Ruleset Version: ${ruleset.version}
 - Exported: ${new Date().toISOString()}
-- Quest Bound Version: 1.0.0
+- Quest Bound Version: 2.0.0
 
 For more information about Quest Bound, visit the application documentation.
 `;
@@ -509,7 +519,9 @@ For more information about Quest Bound, visit the application documentation.
       const url = URL.createObjectURL(zipBlob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `${ruleset.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_export_${new Date().toISOString().split('T')[0]}.zip`;
+      link.download = `${ruleset.title
+        .replace(/[^a-z0-9]/gi, '_')
+        .toLowerCase()}_${ruleset.version}.zip`;
 
       // Trigger download
       document.body.appendChild(link);
