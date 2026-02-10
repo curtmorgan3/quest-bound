@@ -1,123 +1,16 @@
 import { useErrorHandler } from '@/hooks';
 import { db } from '@/stores';
-import type { Action, Asset, Attribute, Item } from '@/types';
 import { useLiveQuery } from 'dexie-react-hooks';
 import JSZip from 'jszip';
 import { useState } from 'react';
-
-function isImageUrl(value: string | null | undefined): boolean {
-  if (!value || typeof value !== 'string') return false;
-  return value.startsWith('http://') || value.startsWith('https://');
-}
-
-// Define the columns to export for each type (matching use-export.ts)
-const ATTRIBUTE_COLUMNS: (keyof Attribute)[] = [
-  'id',
-  'title',
-  'description',
-  'category',
-  'type',
-  'options',
-  'defaultValue',
-  'optionsChartRef',
-  'optionsChartColumnHeader',
-  'min',
-  'max',
-  'image',
-];
-
-// Extended types that include assetFilename for export
-type ItemWithAssetFilename = Item & { assetFilename?: string };
-type ActionWithAssetFilename = Action & { assetFilename?: string };
-
-const ITEM_COLUMNS: (keyof ItemWithAssetFilename)[] = [
-  'id',
-  'title',
-  'description',
-  'category',
-  'weight',
-  'defaultQuantity',
-  'stackSize',
-  'isContainer',
-  'isStorable',
-  'isEquippable',
-  'isConsumable',
-  'inventoryWidth',
-  'inventoryHeight',
-  'assetFilename',
-  'image',
-];
-
-const ACTION_COLUMNS: (keyof ActionWithAssetFilename)[] = [
-  'id',
-  'title',
-  'description',
-  'category',
-  'assetFilename',
-  'image',
-];
-
-/**
- * Helper to build a map of asset IDs to filenames (with directory path)
- */
-function buildAssetFilenameMap(assets: Asset[]): Record<string, string> {
-  const map: Record<string, string> = {};
-  for (const asset of assets) {
-    let fullPath = asset.filename;
-    if (asset.directory) {
-      const directoryPath = asset.directory.replace(/^\/+|\/+$/g, '');
-      if (directoryPath) {
-        fullPath = `${directoryPath}/${asset.filename}`;
-      }
-    }
-    map[asset.id] = fullPath;
-  }
-  return map;
-}
-
-/**
- * Escapes a value for TSV format.
- */
-function escapeTsvValue(value: unknown): string {
-  if (value === undefined || value === null) {
-    return '';
-  }
-
-  if (Array.isArray(value)) {
-    return value.map((v) => String(v)).join('|');
-  }
-
-  if (typeof value === 'boolean') {
-    return value ? 'true' : 'false';
-  }
-
-  const str = String(value);
-  return str.replace(/\t/g, '    ').replace(/\n/g, '\\n').replace(/\r/g, '');
-}
-
-/**
- * Converts an array of objects to TSV format.
- * For the 'image' column, only includes the value when it is a URL (http/https).
- */
-function convertToTsv<T extends Record<string, unknown>>(
-  data: T[],
-  columns: (keyof T)[],
-  imageColumn: keyof T = 'image',
-): string {
-  const header = columns.join('\t');
-  const rows = data.map((item) =>
-    columns
-      .map((col) => {
-        const value = item[col];
-        if (col === imageColumn && columns.includes(imageColumn)) {
-          return isImageUrl(value as string) ? escapeTsvValue(value) : '';
-        }
-        return escapeTsvValue(value);
-      })
-      .join('\t'),
-  );
-  return [header, ...rows].join('\n');
-}
+import {
+  ACTION_COLUMNS,
+  ATTRIBUTE_COLUMNS,
+  ITEM_COLUMNS,
+  type ActionWithAssetFilename,
+  type ItemWithAssetFilename,
+} from './types';
+import { buildAssetFilenameMap, convertToTsv } from './utils';
 
 export const useExportRuleset = (rulesetId: string) => {
   const [isExporting, setIsExporting] = useState(false);

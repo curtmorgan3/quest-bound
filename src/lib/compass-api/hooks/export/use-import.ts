@@ -2,6 +2,13 @@ import { useActiveRuleset } from '@/lib/compass-api';
 import { db } from '@/stores';
 import type { Action, Attribute, Item } from '@/types';
 import { useState } from 'react';
+import {
+  ACTION_FIELD_TYPES,
+  ATTRIBUTE_FIELD_TYPES,
+  ITEM_FIELD_TYPES,
+  type FieldType,
+} from './types';
+import { convertAttributeDefaultValue, isImageUrl, parseTsv, tsvToObjects } from './utils';
 
 export interface ImportResult {
   success: boolean;
@@ -9,157 +16,6 @@ export interface ImportResult {
   importedCount: number;
   updatedCount: number;
   errors: string[];
-}
-
-// Field type definitions for parsing TSV values
-type FieldType = 'string' | 'number' | 'boolean' | 'array' | 'attributeType';
-
-function isImageUrl(value: string | null | undefined): boolean {
-  if (!value || typeof value !== 'string') return false;
-  return value.startsWith('http://') || value.startsWith('https://');
-}
-
-const ATTRIBUTE_FIELD_TYPES: Record<string, FieldType> = {
-  id: 'string',
-  title: 'string',
-  description: 'string',
-  category: 'string',
-  type: 'attributeType',
-  options: 'array',
-  defaultValue: 'string', // Will be converted based on attribute type
-  optionsChartRef: 'number',
-  optionsChartColumnHeader: 'string',
-  min: 'number',
-  max: 'number',
-  inventoryHeight: 'number',
-  inventoryWidth: 'number',
-  image: 'string',
-};
-
-const ITEM_FIELD_TYPES: Record<string, FieldType> = {
-  id: 'string',
-  title: 'string',
-  description: 'string',
-  category: 'string',
-  weight: 'number',
-  defaultQuantity: 'number',
-  stackSize: 'number',
-  isContainer: 'boolean',
-  isStorable: 'boolean',
-  isEquippable: 'boolean',
-  isConsumable: 'boolean',
-  inventoryWidth: 'number',
-  inventoryHeight: 'number',
-  image: 'string',
-};
-
-const ACTION_FIELD_TYPES: Record<string, FieldType> = {
-  id: 'string',
-  title: 'string',
-  description: 'string',
-  category: 'string',
-  inventoryHeight: 'number',
-  inventoryWidth: 'number',
-  image: 'string',
-};
-
-/**
- * Parses a TSV string into an array of rows (each row is an array of cell values)
- */
-function parseTsv(tsvString: string): string[][] {
-  const lines = tsvString.split('\n');
-  return lines
-    .map((line) => line.replace(/\r/g, '').split('\t'))
-    .filter((row) => row.some((cell) => cell.trim() !== '')); // Filter out empty rows
-}
-
-/**
- * Converts a TSV value back to its proper type
- */
-function parseTsvValue(value: string, fieldType: FieldType): unknown {
-  // Handle empty values
-  if (value === '' || value === undefined) {
-    switch (fieldType) {
-      case 'array':
-        return [];
-      case 'number':
-        return undefined;
-      case 'boolean':
-        return false;
-      default:
-        return undefined;
-    }
-  }
-
-  switch (fieldType) {
-    case 'number':
-      const num = Number(value);
-      return isNaN(num) ? undefined : num;
-    case 'boolean':
-      return value.toLowerCase() === 'true';
-    case 'array':
-      return value.split('|').filter((v) => v !== '');
-    case 'attributeType':
-      if (['string', 'number', 'boolean', 'list'].includes(value)) {
-        return value;
-      }
-      return 'string';
-    case 'string':
-    default:
-      // Unescape newlines
-      return value.replace(/\\n/g, '\n');
-  }
-}
-
-/**
- * Converts TSV rows into typed objects
- */
-function tsvToObjects(
-  rows: string[][],
-  fieldTypes: Record<string, FieldType>,
-): Record<string, unknown>[] {
-  if (rows.length < 2) return []; // Need at least header + 1 data row
-
-  const headers = rows[0];
-  const dataRows = rows.slice(1);
-
-  return dataRows.map((row) => {
-    const obj: Record<string, unknown> = {};
-    headers.forEach((header, index) => {
-      const value = row[index] ?? '';
-      const fieldType = fieldTypes[header] ?? 'string';
-      obj[header] = parseTsvValue(value, fieldType);
-    });
-    return obj;
-  });
-}
-
-/**
- * Converts the defaultValue based on the attribute type
- */
-function convertAttributeDefaultValue(item: Record<string, unknown>): string | number | boolean {
-  const attrType = item.type as string;
-  const defaultValue = item.defaultValue;
-
-  if (defaultValue === undefined || defaultValue === null || defaultValue === '') {
-    switch (attrType) {
-      case 'number':
-        return 0;
-      case 'boolean':
-        return false;
-      default:
-        return '';
-    }
-  }
-
-  switch (attrType) {
-    case 'number':
-      return Number(defaultValue);
-    case 'boolean':
-      return String(defaultValue).toLowerCase() === 'true';
-    default:
-      return String(defaultValue);
-  }
 }
 
 export const useImport = (type: 'attributes' | 'items' | 'actions') => {
@@ -190,7 +46,6 @@ export const useImport = (type: 'attributes' | 'items' | 'actions') => {
     data.forEach((item, index) => {
       // Check required fields
       if (!item.title || typeof item.title !== 'string') {
-        console.log(item, typeof item.title);
         errors.push(`Row ${index + 1}: title is required and must be a string`);
       }
       if (item.description !== undefined && typeof item.description !== 'string') {
