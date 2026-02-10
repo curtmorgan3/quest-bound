@@ -1,4 +1,4 @@
-import { Button, ImageUpload, Input, Label } from '@/components';
+import { Button, DescriptionEditor, ImageUpload, Input, Label } from '@/components';
 import { useExportRuleset, useFonts, useRulesets } from '@/lib/compass-api';
 import type { Ruleset } from '@/types';
 import { Download, Trash, Upload } from 'lucide-react';
@@ -15,6 +15,7 @@ export const RulesetSettings = ({ activeRuleset }: RulesetSettingsProps) => {
 
   const [title, setTitle] = useState(activeRuleset.title);
   const [version, setVersion] = useState(activeRuleset.version);
+  const [description, setDescription] = useState(activeRuleset.description);
   const [fontLoading, setFontLoading] = useState(false);
   const fontInputRef = useRef<HTMLInputElement>(null);
 
@@ -24,6 +25,10 @@ export const RulesetSettings = ({ activeRuleset }: RulesetSettingsProps) => {
 
   const handleUpdateVersion = async () => {
     await updateRuleset(activeRuleset.id, { version });
+  };
+
+  const handleUpdateDescription = async () => {
+    await updateRuleset(activeRuleset.id, { description });
   };
 
   useEffect(() => {
@@ -41,6 +46,14 @@ export const RulesetSettings = ({ activeRuleset }: RulesetSettingsProps) => {
     }, 500);
     return () => clearTimeout(timeout);
   }, [version]);
+
+  useEffect(() => {
+    if (description === activeRuleset.description) return;
+    const timeout = setTimeout(() => {
+      handleUpdateDescription();
+    }, 500);
+    return () => clearTimeout(timeout);
+  }, [description]);
 
   const handleFontUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -82,15 +95,6 @@ export const RulesetSettings = ({ activeRuleset }: RulesetSettingsProps) => {
         </Button>
       </div>
 
-      <ImageUpload
-        image={activeRuleset.image}
-        alt={activeRuleset.title}
-        onRemove={() => updateRuleset(activeRuleset.id, { assetId: null })}
-        onUpload={(assetId) => updateRuleset(activeRuleset.id, { assetId })}
-        onSetUrl={(url) => updateRuleset(activeRuleset.id, { image: url, assetId: null })}
-        rulesetId={activeRuleset.id}
-      />
-
       <div className='flex flex-col gap-3'>
         <Label>Fonts</Label>
         <div className='flex flex-col gap-2'>
@@ -124,6 +128,19 @@ export const RulesetSettings = ({ activeRuleset }: RulesetSettingsProps) => {
           className='hidden'
           onChange={handleFontUpload}
         />
+      </div>
+
+      <div className='flex w-full justify-between gap-8'>
+        <ImageUpload
+          image={activeRuleset.image}
+          alt={activeRuleset.title}
+          onRemove={() => updateRuleset(activeRuleset.id, { assetId: null })}
+          onUpload={(assetId) => updateRuleset(activeRuleset.id, { assetId })}
+          onSetUrl={(url) => updateRuleset(activeRuleset.id, { image: url, assetId: null })}
+          rulesetId={activeRuleset.id}
+        />
+
+        <DescriptionEditor className='flex-1' value={description} onChange={setDescription} />
       </div>
     </div>
   );

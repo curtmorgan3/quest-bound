@@ -45,6 +45,7 @@ interface Props {
   onOpen: (id: string) => void;
   onEdit: (title: string, category?: string) => void;
   onEditDetails?: () => void;
+  categoryEditable?: boolean;
 }
 
 export const PreviewCard = ({
@@ -59,6 +60,7 @@ export const PreviewCard = ({
   onOpen,
   onEdit,
   onEditDetails,
+  categoryEditable = true,
 }: Props) => {
   const [editingTitle, setEditingTitle] = useState(false);
   const [newTitle, setNewTitle] = useState(title);
@@ -137,9 +139,11 @@ export const PreviewCard = ({
                   className='cursor-pointer'
                   onClick={(e) => {
                     e.stopPropagation();
-                    setEditingCategory(true);
+                    if (categoryEditable) {
+                      setEditingCategory(true);
+                    }
                   }}>
-                  {category || 'Set category'}
+                  {categoryEditable ? category || 'Set category' : ''}
                 </p>
               )}
               {descriptionExtra}

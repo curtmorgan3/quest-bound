@@ -11,6 +11,7 @@ interface DescriptionEditorProps {
   disabled?: boolean;
   id?: string;
   onSave?: () => void;
+  className?: string;
 }
 
 export const DescriptionEditor = ({
@@ -20,13 +21,14 @@ export const DescriptionEditor = ({
   placeholder = '',
   disabled = false,
   onSave,
+  className = '',
 }: DescriptionEditorProps) => {
   const [mode, setMode] = useState<'edit' | 'preview'>('edit');
 
   return (
     <div
       id={id}
-      className='flex flex-col gap-2 md-content'
+      className={`flex flex-col gap-2 md-content ${className}`}
       onKeyDown={(e) => {
         if (e.key === 'Enter' && !e.shiftKey) {
           onSave?.();

@@ -31,8 +31,9 @@ export const Rulesets = () => {
   );
   const [duplicateConfirmOpen, setDuplicateConfirmOpen] = useState(false);
   const [pendingDuplicateFile, setPendingDuplicateFile] = useState<File | null>(null);
-  const [pendingDuplicateResult, setPendingDuplicateResult] =
-    useState<ImportRulesetResult | null>(null);
+  const [pendingDuplicateResult, setPendingDuplicateResult] = useState<ImportRulesetResult | null>(
+    null,
+  );
   const [duplicateTitle, setDuplicateTitle] = useState('');
   const [duplicateVersion, setDuplicateVersion] = useState('');
 
@@ -273,9 +274,7 @@ export const Rulesets = () => {
               <DialogHeader>
                 <DialogTitle>Save as new ruleset?</DialogTitle>
               </DialogHeader>
-              <p className='text-sm text-muted-foreground'>
-                {pendingDuplicateResult?.message}
-              </p>
+              <p className='text-sm text-muted-foreground'>{pendingDuplicateResult?.message}</p>
               <div className='mt-4 grid gap-4'>
                 <div className='grid gap-2'>
                   <Label htmlFor='duplicate-title'>Title</Label>
@@ -315,8 +314,8 @@ export const Rulesets = () => {
             key={r.id}
             id={r.id}
             title={r.title}
-            category={r.description}
             image={r.image}
+            categoryEditable={false}
             descriptionExtra={<span className='text-xs text-muted-foreground'>v{r.version}</span>}
             onDelete={() => deleteRuleset(r.id)}
             onOpen={() => navigate(`/rulesets/${r.id}`)}
