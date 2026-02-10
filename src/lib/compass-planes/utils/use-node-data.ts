@@ -1,15 +1,9 @@
 import { useAttributes } from '@/lib/compass-api';
 import { CharacterContext } from '@/stores';
-import type {
-  Attribute,
-  AttributeType,
-  Character,
-  CharacterAttribute,
-  Component,
-  ComponentData,
-} from '@/types';
+import type { AttributeType, Component, ComponentData } from '@/types';
 import { useContext } from 'react';
 import { ComponentTypes } from '../nodes';
+import { injectCharacterData } from './inject-character-data';
 import { getComponentData } from './node-conversion';
 
 type NodeData = ComponentData & {
@@ -69,7 +63,7 @@ export const useNodeData = (component: Component): NodeData => {
       componentData.placeholder ??
       component.type,
     value,
-    interpolatedValue: injectContextData({
+    interpolatedValue: injectCharacterData({
       value,
       characterData: characterContext?.character,
       attributes,
@@ -82,38 +76,3 @@ export const useNodeData = (component: Component): NodeData => {
     max: characterAttribute?.max ?? rulesetAttribute?.max,
   };
 };
-
-interface InjectContextData {
-  value: string | number | boolean;
-  attributes: Attribute[];
-  getCharacterAttribute?: (attributeId: string) => CharacterAttribute | null;
-  characterData?: Character;
-}
-
-function injectContextData({
-  value,
-  attributes,
-  getCharacterAttribute,
-  characterData,
-}: InjectContextData): string | number | boolean {
-  if (typeof value !== 'string') return value;
-
-  // Replace all {{<attribute title>}} with that attribute's value for the character
-  return value.replace(/\{\{([^}]+)\}\}/g, (match, placeholder) => {
-    const key = placeholder.trim();
-    if (key === 'name') {
-      return characterData?.name ?? match;
-    }
-    const attribute = attributes.find(
-      (attr) => attr.title.toLowerCase() === key.toLowerCase(),
-    );
-    if (attribute && getCharacterAttribute) {
-      const characterAttribute = getCharacterAttribute(attribute.id);
-      const attrValue = characterAttribute?.value;
-      return attrValue !== undefined && attrValue !== null
-        ? String(attrValue)
-        : match;
-    }
-    return match;
-  });
-}

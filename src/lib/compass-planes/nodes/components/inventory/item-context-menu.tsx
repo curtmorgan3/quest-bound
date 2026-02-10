@@ -1,5 +1,6 @@
 import { DescriptionViewer } from '@/components';
-import { useCharacterAttributes } from '@/lib/compass-api';
+import { useAttributes, useCharacterAttributes } from '@/lib/compass-api';
+import { injectCharacterData } from '@/lib/compass-planes/utils';
 import {
   CharacterContext,
   DiceContext,
@@ -47,6 +48,8 @@ export const ItemContextMenu = ({
     characterContext?.character?.id,
   );
 
+  const { attributes } = useAttributes();
+
   const inventoryAttribute = characterAttributes.find((attr) => attr.attributeId === item.entityId);
 
   const [quantity, setQuantity] = useState(item.quantity);
@@ -55,11 +58,18 @@ export const ItemContextMenu = ({
   const menuRef = useRef<HTMLDivElement>(null);
   const maxQuantity = item.stackSize;
 
-  const diceRolls = parseTextForDiceRolls(item.description ?? '');
-
   const [isEditingLabel, setIsEditingLabel] = useState(false);
   const [labelValue, setLabelValue] = useState(item.label ?? item.title);
   const labelInputRef = useRef<HTMLInputElement>(null);
+
+  const renderedDescription = injectCharacterData({
+    value: item.description ?? '',
+    attributes,
+    characterData: characterContext?.character,
+    getCharacterAttribute: characterContext?.getCharacterAttribute,
+  });
+
+  const diceRolls = parseTextForDiceRolls(renderedDescription.toString() ?? '');
 
   useEffect(() => {
     setLabelValue(item.label ?? item.title);
@@ -225,7 +235,7 @@ export const ItemContextMenu = ({
             }}
           />
         ) : (
-          item.label ?? item.title
+          (item.label ?? item.title)
         )}
       </div>
 
@@ -240,7 +250,7 @@ export const ItemContextMenu = ({
           <DescriptionViewer
             onClick={handleRoll}
             className={diceRolls.length ? 'clickable' : undefined}
-            value={item.description}
+            value={renderedDescription.toString()}
           />
         </div>
       )}
