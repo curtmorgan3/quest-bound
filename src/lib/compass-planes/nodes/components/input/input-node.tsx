@@ -6,6 +6,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  NumberInput,
 } from '@/components';
 import { getComponentStyles, useNodeData } from '@/lib/compass-planes/utils';
 import { CharacterContext, WindowEditorContext } from '@/stores';
@@ -161,10 +162,20 @@ export const ViewInputNode = ({
             </option>
           ))}
         </select>
+      ) : data.type === 'number' ? (
+        <NumberInput
+          disabled={editMode}
+          placeholder={data?.name ?? data.type}
+          value={data.value as number}
+          onChange={(value) => handleChange(value)}
+          style={inputStyle}
+          inputMin={data.min}
+          inputMax={data.max}
+        />
       ) : (
         <input
           className='editor-input'
-          type={data.type ?? (data.attributeType === 'number' ? 'number' : 'text')}
+          type='text'
           disabled={editMode}
           placeholder={data?.name ?? data.type}
           onChange={(e) => handleChange(e.target.value)}

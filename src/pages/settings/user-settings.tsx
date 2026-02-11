@@ -12,7 +12,6 @@ import {
   ImageUpload,
   Input,
   Label,
-  NumberInput,
   PWAInstallPrompt,
 } from '@/components';
 import { useUsers } from '@/lib/compass-api';
@@ -73,8 +72,6 @@ export const UserSettings = () => {
     }
   };
 
-  const [num, setNum] = useState<number | ''>(0);
-
   if (!currentUser) return null;
 
   return (
@@ -93,8 +90,6 @@ export const UserSettings = () => {
         onUpload={(assetId) => updateUser(currentUser.id, { assetId })}
         onSetUrl={(url) => updateUser(currentUser.id, { assetId: null, image: url })}
       />
-
-      <NumberInput value={num} onChange={setNum} />
 
       <div className='flex flex-col gap-2'>
         <Button

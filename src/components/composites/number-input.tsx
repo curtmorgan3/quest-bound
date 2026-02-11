@@ -1,8 +1,8 @@
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Minus, Plus } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 
 export interface NumberInputProps {
   value: number | '';
@@ -13,6 +13,10 @@ export interface NumberInputProps {
   label?: string;
   className?: string;
   disabled?: boolean;
+  style?: CSSProperties;
+  inputMin?: number;
+  inputMax?: number;
+  placeholder?: string;
 }
 
 export const NumberInput = ({
@@ -20,10 +24,14 @@ export const NumberInput = ({
   onChange,
   wheelMin,
   wheelMax,
+  inputMin,
+  inputMax,
   step = 1,
   label,
   className,
   disabled,
+  style,
+  placeholder,
 }: NumberInputProps) => {
   const [open, setOpen] = useState(false);
 
@@ -105,7 +113,7 @@ export const NumberInput = ({
       if (delta === 0) return;
 
       // Move exactly one step per wheel event for finer control
-      const direction = delta > 0 ? 2 : -2;
+      const direction = delta > 0 ? 1 : -1;
 
       const currentIndex = numbers.indexOf(wheelValue);
       const safeIndex = currentIndex === -1 ? 0 : currentIndex;
@@ -151,13 +159,17 @@ export const NumberInput = ({
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Input
+        <input
           type='number'
           value={displayValue}
+          style={style}
           onChange={handleInputChange}
           onClick={() => !disabled && setOpen(true)}
-          className={className}
+          className={`${className} editor-input`}
           disabled={disabled}
+          min={inputMin}
+          max={inputMax}
+          placeholder={placeholder}
         />
       </PopoverTrigger>
       <PopoverContent side='bottom' align='center' className='w-64 p-3'>
@@ -165,7 +177,6 @@ export const NumberInput = ({
         <div className='relative '>
           <div
             ref={containerRef}
-            style={{ scrollbarGutter: 'stable' }}
             className='relative h-40 overflow-y-auto number-wheel-input scroll-smooth snap-y snap-mandatory py-2'
             onWheel={handleWheel}>
             {numbers.map((n, index) => {
@@ -199,16 +210,23 @@ export const NumberInput = ({
           <Button
             type='button'
             variant='outline'
-            size='sm'
+            size='icon'
             onClick={handleSubtract}
-            disabled={disabled}>
-            Subtract
+            disabled={disabled}
+            aria-label='Subtract'>
+            <Minus className='size-4' aria-hidden='true' />
           </Button>
           <Button type='button' size='sm' onClick={handleSet} disabled={disabled}>
             Set
           </Button>
-          <Button type='button' variant='outline' size='sm' onClick={handleAdd} disabled={disabled}>
-            Add
+          <Button
+            type='button'
+            variant='outline'
+            size='icon'
+            onClick={handleAdd}
+            disabled={disabled}
+            aria-label='Add'>
+            <Plus className='size-4' aria-hidden='true' />
           </Button>
         </div>
       </PopoverContent>
