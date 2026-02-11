@@ -231,8 +231,15 @@ export const NumberInput = ({
           <div
             ref={containerRef}
             className='relative h-40 overflow-y-auto overflow-x-hidden number-wheel-input scroll-smooth snap-y snap-mandatory py-2'
-            onScroll={handleScroll}
-          >
+            onScroll={handleScroll}>
+            <div
+              key={'start-one'}
+              className='flex h-8 items-center justify-center snap-center text-lg transition-all text-muted-foreground scale-95'
+            />
+            <div
+              key={'start-two'}
+              className='flex h-8 items-center justify-center snap-center text-lg transition-all text-muted-foreground scale-95'
+            />
             {numbers.map((n, index) => {
               const isActive = n === wheelValue;
               return (
@@ -255,6 +262,14 @@ export const NumberInput = ({
                 </div>
               );
             })}
+            <div
+              key={'end-one'}
+              className='flex h-8 items-center justify-center snap-center text-lg transition-all text-muted-foreground scale-95'
+            />
+            <div
+              key={'end-two'}
+              className='flex h-8 items-center justify-center snap-center text-lg transition-all text-muted-foreground scale-95'
+            />
           </div>
           <div className='pointer-events-none absolute inset-x-0 top-0 h-6 bg-gradient-to-b from-background to-transparent' />
           <div className='pointer-events-none absolute inset-x-0 bottom-0 h-6 bg-gradient-to-t from-background to-transparent' />
