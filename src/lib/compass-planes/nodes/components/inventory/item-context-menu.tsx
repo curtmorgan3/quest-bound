@@ -7,6 +7,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  NumberInput,
 } from '@/components';
 import { useAttributes, useCharacterAttributes } from '@/lib/compass-api';
 import { injectCharacterData } from '@/lib/compass-planes/utils';
@@ -178,13 +179,6 @@ export const ItemContextMenu = ({
     setIsEditingLabel(false);
   };
 
-  const handleQuantityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = parseInt(e.target.value, 10);
-    if (!isNaN(value) && value >= 1) {
-      setQuantity(Math.max(1, Math.min(value, maxQuantity)));
-    }
-  };
-
   const handleQuantityBlur = () => {
     if (quantity !== item.quantity && quantity >= 1) {
       onUpdateQuantity(quantity);
@@ -346,40 +340,26 @@ export const ItemContextMenu = ({
           <label style={{ display: 'block', fontSize: 12, color: '#999', marginBottom: 4 }}>
             Quantity
           </label>
-          <div className='flex gap-2'>
-            <input
-              type='number'
-              min={1}
-              max={item.stackSize}
-              value={quantity}
-              onPointerMove={(e) => {
-                e.preventDefault();
-                return;
-              }}
-              onChange={handleQuantityChange}
-              onBlur={handleQuantityBlur}
-              onKeyDown={(e) => e.key === 'Enter' && handleQuantityBlur()}
-              style={{
-                width: '100%',
-                padding: '6px 8px',
-                backgroundColor: '#2a2a2a',
-                border: '1px solid #444',
-                borderRadius: 4,
-                color: '#fff',
-                fontSize: 14,
-              }}
-            />
-            <div className='flex flex-col'>
-              <button onClick={() => setQuantity((prev) => Math.min(prev + 1, maxQuantity))}>
-                ^
-              </button>
-              <button
-                onClick={() => setQuantity((prev) => Math.max(1, prev - 1))}
-                style={{ transform: 'rotate(180deg)' }}>
-                ^
-              </button>
-            </div>
-          </div>
+          <NumberInput
+            value={quantity}
+            onChange={(value) => {
+              if (typeof value === 'number' && value >= 1) {
+                setQuantity(Math.max(1, Math.min(value, maxQuantity)));
+              }
+            }}
+            onBlur={handleQuantityBlur}
+            inputMin={1}
+            inputMax={item.stackSize}
+            style={{
+              width: '100%',
+              padding: '6px 8px',
+              backgroundColor: '#2a2a2a',
+              border: '1px solid #444',
+              borderRadius: 4,
+              color: '#fff',
+              fontSize: 14,
+            }}
+          />
         </div>
       )}
 
@@ -449,19 +429,13 @@ export const ItemContextMenu = ({
               </span>
             </label>
           ) : inventoryAttribute.type === 'number' ? (
-            <input
-              type='number'
+            <NumberInput
               value={Number(inventoryAttribute.value)}
-              min={inventoryAttribute.min}
-              max={inventoryAttribute.max}
-              onChange={(e) => {
-                const raw = e.target.value;
-                const num = raw === '' ? (inventoryAttribute.min ?? 0) : parseFloat(raw);
-                if (!Number.isNaN(num)) {
-                  updateCharacterAttribute(inventoryAttribute.id, { value: num });
-                }
+              onChange={(value) => {
+                updateCharacterAttribute(inventoryAttribute.id, { value });
               }}
-              onPointerDown={(e) => e.stopPropagation()}
+              inputMin={inventoryAttribute.min}
+              inputMax={inventoryAttribute.max}
               style={{
                 width: '100%',
                 padding: '6px 8px',

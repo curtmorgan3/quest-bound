@@ -9,6 +9,7 @@ import type {
 } from '@/pages/dice/types';
 import { createContext, useState } from 'react';
 import { LogType, useEventLog } from '../event-log-store';
+import { diceRollLogger } from '@/lib/dice-roll-logger';
 
 /** Matches dice (e.g. 2d6) or modifiers (+4, -1) in order */
 const DICE_OR_MODIFIER_REGEX = /(\d+)\s*d\s*(\d+)|([+-])\s*(\d+)/gi;
@@ -145,6 +146,11 @@ export const useDiceState = ({ canvasRef }: DiceStateProps): IDiceContext => {
     }
 
     const result: DiceResult = { total, segments: segmentResults, notation: trimmed };
+
+    // Log the dice roll to IndexedDB
+    await diceRollLogger.logRoll(result, {
+      source: 'Dice Panel',
+    });
 
     if (dddiceState.username) {
       setDddiceRolling(true);

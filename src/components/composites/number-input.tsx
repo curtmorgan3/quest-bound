@@ -1,5 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { diceRollLogger } from '@/lib/dice-roll-logger';
 import { cn } from '@/lib/utils';
 import { Minus, Plus } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
@@ -17,6 +18,7 @@ export interface NumberInputProps {
   inputMin?: number;
   inputMax?: number;
   placeholder?: string;
+  onBlur?: () => void;
 }
 
 export const NumberInput = ({
@@ -32,8 +34,10 @@ export const NumberInput = ({
   disabled,
   style,
   placeholder,
+  onBlur,
 }: NumberInputProps) => {
   const [open, setOpen] = useState(false);
+  const [lastRollTotal, setLastRollTotal] = useState<number | null>(null);
 
   const actualMin = wheelMin ?? 0;
   const actualMax = wheelMax ?? 100;
@@ -95,6 +99,16 @@ export const NumberInput = ({
       scrollToValue(wheelValue);
     }
   }, [open, wheelValue, scrollToValue]);
+
+  useEffect(() => {
+    const fetchLastRoll = async () => {
+      const logs = await diceRollLogger.getRollLogs(1);
+      if (logs.length > 0) {
+        setLastRollTotal(logs[0].total);
+      }
+    };
+    fetchLastRoll();
+  }, [open]);
 
   const handleWheel = useCallback(
     (event: React.WheelEvent<HTMLDivElement>) => {
@@ -170,14 +184,34 @@ export const NumberInput = ({
           min={inputMin}
           max={inputMax}
           placeholder={placeholder}
+          onBlur={onBlur}
         />
       </PopoverTrigger>
       <PopoverContent side='bottom' align='center' className='w-64 p-3'>
         {label && <div className='mb-2 text-xs font-medium text-muted-foreground'>{label}</div>}
-        <div className='relative '>
+        <div className='flex items-center justify-between gap-1 mb-2 pl-4 pr-4'>
+          {[1, 3, 5, lastRollTotal ?? 10].map((preset, i) => (
+            <Button
+              key={i}
+              type='button'
+              variant='outline'
+              size='sm'
+              onClick={() => {
+                const clamped = clampToRange(preset);
+                setWheelValue(clamped);
+                scrollToValue(clamped);
+              }}
+              disabled={disabled}
+              className='h-6 px-2 text-xs'>
+              {preset}
+            </Button>
+          ))}
+          {lastRollTotal && <span className='text-xs max-w-[20px]'>Last Roll</span>}
+        </div>
+        <div className='relative overflow-x-hidden'>
           <div
             ref={containerRef}
-            className='relative h-40 overflow-y-auto number-wheel-input scroll-smooth snap-y snap-mandatory py-2'
+            className='relative h-40 overflow-y-auto overflow-x-hidden number-wheel-input scroll-smooth snap-y snap-mandatory py-2'
             onWheel={handleWheel}>
             {numbers.map((n, index) => {
               const isActive = n === wheelValue;
