@@ -105,10 +105,14 @@ export const ViewContentNode = ({
     if (textareaRef.current) {
       if (windowEditorMode) {
         handleComponentUpdate?.(textareaRef.current.value);
-      } else if (characterAttributeId) {
-        characterContext.updateCharacterAttribute(characterAttributeId, {
-          value: textareaRef.current.value,
-        });
+      } else if (characterContext) {
+        if (characterAttributeId) {
+          characterContext.updateCharacterAttribute(characterAttributeId, {
+            value: textareaRef.current.value,
+          });
+        } else {
+          characterContext.updateCharacterComponentData(component.id, textareaRef.current.value);
+        }
       }
     }
 
@@ -155,7 +159,7 @@ export const ViewContentNode = ({
   ) : (
     <section
       onDoubleClick={() => {
-        if (!windowEditorMode && !characterAttributeId) return;
+        if (!windowEditorMode && !characterContext) return;
         setIsEditing(true);
         handleDoubleClick?.();
       }}
