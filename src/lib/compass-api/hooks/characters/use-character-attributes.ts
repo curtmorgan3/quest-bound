@@ -107,6 +107,8 @@ export const useCharacterAttributes = (characterId?: string) => {
 
       const now = new Date().toISOString();
 
+      // Should handle edits as well
+
       await db.characterAttributes.bulkAdd(
         missingAttributes.map((attr) => ({
           ...attr,

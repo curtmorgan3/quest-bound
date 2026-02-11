@@ -1,4 +1,13 @@
-import { DescriptionViewer } from '@/components';
+import {
+  Button,
+  Checkbox,
+  DescriptionViewer,
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components';
 import { useAttributes, useCharacterAttributes } from '@/lib/compass-api';
 import { injectCharacterData } from '@/lib/compass-planes/utils';
 import {
@@ -61,6 +70,41 @@ export const ItemContextMenu = ({
   const [isEditingLabel, setIsEditingLabel] = useState(false);
   const [labelValue, setLabelValue] = useState(item.label ?? item.title);
   const labelInputRef = useRef<HTMLInputElement>(null);
+
+  const isMultiSelectList =
+    inventoryAttribute?.type === 'list' &&
+    inventoryAttribute?.allowMultiSelect &&
+    (inventoryAttribute?.options?.length ?? 0) > 0;
+
+  const multiSelectValue =
+    isMultiSelectList && inventoryAttribute?.value
+      ? String(inventoryAttribute.value)
+          .split(';;')
+          .map((s) => s.trim())
+          .filter(Boolean)
+      : [];
+  const [multiSelectDialogOpen, setMultiSelectDialogOpen] = useState(false);
+  const [pendingSelection, setPendingSelection] = useState<string[]>([]);
+
+  const openMultiSelectDialog = () => {
+    if (!inventoryAttribute) return;
+    setPendingSelection([...multiSelectValue]);
+    setMultiSelectDialogOpen(true);
+  };
+
+  const toggleMultiSelectOption = (option: string) => {
+    setPendingSelection((prev) =>
+      prev.includes(option) ? prev.filter((o) => o !== option) : [...prev, option],
+    );
+  };
+
+  const applyMultiSelect = () => {
+    if (!inventoryAttribute) return;
+    updateCharacterAttribute(inventoryAttribute.id, {
+      value: pendingSelection.join(';;'),
+    });
+    setMultiSelectDialogOpen(false);
+  };
 
   const renderedDescription = injectCharacterData({
     value: item.description ?? '',
@@ -386,6 +430,51 @@ export const ItemContextMenu = ({
                 fontSize: 14,
               }}
             />
+          ) : isMultiSelectList ? (
+            <>
+              <button
+                type='button'
+                onClick={openMultiSelectDialog}
+                onPointerDown={(e) => e.stopPropagation()}
+                style={{
+                  width: '100%',
+                  padding: '6px 8px',
+                  backgroundColor: '#2a2a2a',
+                  border: '1px solid #444',
+                  borderRadius: 4,
+                  color: '#fff',
+                  fontSize: 14,
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                }}>
+                {multiSelectValue.length > 0
+                  ? multiSelectValue.join(', ')
+                  : (inventoryAttribute.title ?? 'Select…')}
+              </button>
+              <Dialog open={multiSelectDialogOpen} onOpenChange={setMultiSelectDialogOpen}>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>{inventoryAttribute.title ?? 'Select options'}</DialogTitle>
+                  </DialogHeader>
+                  <div className='flex flex-col gap-2 max-h-[60vh] overflow-y-auto py-2'>
+                    {inventoryAttribute.options?.map((option) => (
+                      <label
+                        key={option}
+                        className='flex items-center gap-2 cursor-pointer rounded-sm px-2 py-1.5 hover:bg-muted/50'>
+                        <Checkbox
+                          checked={pendingSelection.includes(option)}
+                          onCheckedChange={() => toggleMultiSelectOption(option)}
+                        />
+                        <span>{option}</span>
+                      </label>
+                    ))}
+                  </div>
+                  <DialogFooter>
+                    <Button onClick={applyMultiSelect}>Done</Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            </>
           ) : inventoryAttribute.type === 'list' && inventoryAttribute.options?.length ? (
             <select
               value={String(inventoryAttribute.value)}

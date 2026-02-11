@@ -61,6 +61,7 @@ export function registerAttributeDbHooks(db: DB) {
               optionsChartColumnHeader:
                 mods.optionsChartColumnHeader ?? obj.optionsChartColumnHeader,
               category: mods.category ?? obj.category,
+              allowMultiSelect: mods.allowMultiSelect ?? obj.allowMultiSelect,
               updatedAt: now,
             });
           }
