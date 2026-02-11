@@ -15,6 +15,7 @@ type NodeData = ComponentData & {
   interpolatedValue: string | number | boolean;
   min?: number;
   max?: number;
+  allowMultiSelect?: boolean;
 };
 
 export const useNodeData = (component: Component): NodeData => {
@@ -27,12 +28,6 @@ export const useNodeData = (component: Component): NodeData => {
   const characterAttribute =
     attributeId && characterContext ? characterContext.getCharacterAttribute(attributeId) : null;
   const characterComponentData = characterContext?.character?.componentData;
-
-  if (characterAttribute === null && rulesetAttribute && characterContext) {
-    console.warn(
-      `No character attribute found for ${characterContext?.character?.name}: ${rulesetAttribute?.title}`,
-    );
-  }
 
   const characterComponentDataValue = characterComponentData
     ? characterComponentData[component.id]
@@ -74,5 +69,6 @@ export const useNodeData = (component: Component): NodeData => {
     options: rulesetAttribute?.options ?? [],
     min: characterAttribute?.min ?? rulesetAttribute?.min,
     max: characterAttribute?.max ?? rulesetAttribute?.max,
+    allowMultiSelect: rulesetAttribute?.allowMultiSelect,
   };
 };

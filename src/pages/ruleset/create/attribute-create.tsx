@@ -35,6 +35,8 @@ interface AttributeCreateProps {
   setOptionsChartId: Dispatch<SetStateAction<string>>;
   optionsChartColumnHeader: string;
   setOptionsChartColumnHeader: Dispatch<SetStateAction<string>>;
+  allowMultiSelect: boolean;
+  setAllowMultiSelect: Dispatch<SetStateAction<boolean>>;
   charts: Chart[];
   chartColumnHeaders: string[];
   chartListOptions: string[];
@@ -68,6 +70,8 @@ export const AttributeCreate = ({
   setOptionsChartId,
   optionsChartColumnHeader,
   setOptionsChartColumnHeader,
+  allowMultiSelect,
+  setAllowMultiSelect,
   charts,
   chartColumnHeaders,
   chartListOptions,
@@ -256,6 +260,14 @@ export const AttributeCreate = ({
               onCheckedChange={(checked) => setUseChartForOptions(!!checked)}
             />
             <Label htmlFor='use-chart-options'>Read options from chart</Label>
+          </div>
+          <div className='flex items-center gap-2'>
+            <Checkbox
+              id='allow-multi-select'
+              checked={allowMultiSelect}
+              onCheckedChange={(checked) => setAllowMultiSelect(!!checked)}
+            />
+            <Label htmlFor='allow-multi-select'>Allow multi-select</Label>
           </div>
 
           {useChartForOptions ? (

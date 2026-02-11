@@ -39,6 +39,7 @@ export const useAttributeValues = ({
   const [useChartForOptions, setUseChartForOptions] = useState(false);
   const [optionsChartId, setOptionsChartId] = useState('');
   const [optionsChartColumnHeader, setOptionsChartColumnHeader] = useState('');
+  const [allowMultiSelect, setAllowMultiSelect] = useState(false);
   const [image, setImage] = useState<string | null>(null);
   const [assetId, setAssetId] = useState<string | null>(null);
   const [inventoryWidth, setInventoryWidth] = useState(2);
@@ -61,6 +62,7 @@ export const useAttributeValues = ({
       setUseChartForOptions(!!activeAttribute.optionsChartRef);
       setOptionsChartId(activeAttribute.optionsChartRef?.toString() || '');
       setOptionsChartColumnHeader(activeAttribute.optionsChartColumnHeader || '');
+      setAllowMultiSelect(!!activeAttribute.allowMultiSelect);
       // Handle default value based on type
       if (activeAttribute.type === 'boolean') {
         setDefaultBoolean(!!activeAttribute.defaultValue);
@@ -87,6 +89,7 @@ export const useAttributeValues = ({
     setUseChartForOptions(false);
     setOptionsChartId('');
     setOptionsChartColumnHeader('');
+    setAllowMultiSelect(false);
     setImage(null);
     setAssetId(null);
     setInventoryHeight(2);
@@ -112,6 +115,8 @@ export const useAttributeValues = ({
       typeValue === 'list' && useChartForOptions && optionsChartColumnHeader
         ? optionsChartColumnHeader
         : undefined,
+    allowMultiSelect:
+      typeValue === 'list' && allowMultiSelect ? true : undefined,
     min: typeValue === 'number' ? min : undefined,
     max: typeValue === 'number' ? max : undefined,
     inventoryHeight,
@@ -179,6 +184,8 @@ export const useAttributeValues = ({
     setOptionsChartId,
     optionsChartColumnHeader,
     setOptionsChartColumnHeader,
+    allowMultiSelect,
+    setAllowMultiSelect,
     charts,
     chartColumnHeaders,
     chartListOptions,

@@ -59,6 +59,7 @@ export type Attribute = BaseDetails & {
   // When options are derived from a chart column
   optionsChartRef?: number;
   optionsChartColumnHeader?: string;
+  allowMultiSelect?: boolean;
   min?: number;
   max?: number;
   assetId?: string | null;

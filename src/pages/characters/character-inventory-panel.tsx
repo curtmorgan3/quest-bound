@@ -48,6 +48,13 @@ function DefaultInventoryEntryRow({
 }) {
   const Icon = item.type === 'item' ? PackageIcon : item.type === 'action' ? ZapIcon : GaugeIcon;
   const image = item.image ?? null;
+
+  let value = item.value ?? '';
+  if (item.type === 'attribute' && typeof value === 'string') {
+    // Multi-select list attributes
+    value = value.replace(';;', ', ');
+  }
+
   return (
     <button
       type='button'
@@ -67,9 +74,7 @@ function DefaultInventoryEntryRow({
         {item.quantity > 1 && <span className='text-muted-foreground ml-1'>×{item.quantity}</span>}
       </div>
       {item.type === 'attribute' && (
-        <span className='shrink-0 ml-auto italic text-muted-foreground'>
-          {String(item.value ?? '')}
-        </span>
+        <span className='shrink-0 ml-auto italic text-muted-foreground'>{String(value)}</span>
       )}
     </button>
   );

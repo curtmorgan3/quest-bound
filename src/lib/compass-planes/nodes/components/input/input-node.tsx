@@ -1,8 +1,17 @@
+import {
+  Button,
+  Checkbox,
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components';
 import { getComponentStyles, useNodeData } from '@/lib/compass-planes/utils';
 import { CharacterContext, WindowEditorContext } from '@/stores';
 import type { Component, TextComponentStyle } from '@/types';
 import { useNodeId } from '@xyflow/react';
-import { useContext } from 'react';
+import { useContext, useState } from 'react';
 import { ResizableNode } from '../../decorators';
 
 export const EditInputNode = () => {
@@ -45,6 +54,36 @@ export const ViewInputNode = ({
   };
 
   const isListType = data.attributeType === 'list';
+  const isMultiSelectList = isListType && data.allowMultiSelect;
+
+  // For multi-select list, value is stored as comma-separated string
+  const multiSelectValue =
+    isMultiSelectList && data.value
+      ? data.value
+          .toString()
+          .split(';;')
+          .map((s) => s.trim())
+          .filter(Boolean)
+      : [];
+
+  const [multiSelectDialogOpen, setMultiSelectDialogOpen] = useState(false);
+  const [pendingSelection, setPendingSelection] = useState<string[]>([]);
+
+  const openMultiSelectDialog = () => {
+    setPendingSelection([...multiSelectValue]);
+    setMultiSelectDialogOpen(true);
+  };
+
+  const toggleMultiSelectOption = (option: string) => {
+    setPendingSelection((prev) =>
+      prev.includes(option) ? prev.filter((o) => o !== option) : [...prev, option],
+    );
+  };
+
+  const applyMultiSelect = () => {
+    handleChange(pendingSelection.join(';;'));
+    setMultiSelectDialogOpen(false);
+  };
 
   const sectionStyle = {
     height: component.height,
@@ -71,11 +110,45 @@ export const ViewInputNode = ({
     textAlign: css.textAlign,
     border: 'none',
     backgroundColor: 'transparent',
+    overflow: 'hidden',
   } as React.CSSProperties;
 
   return (
     <section style={sectionStyle}>
-      {isListType && !editMode ? (
+      {isMultiSelectList && !editMode ? (
+        <>
+          <button
+            type='button'
+            onClick={openMultiSelectDialog}
+            style={inputStyle}
+            className='cursor-pointer text-left'>
+            {multiSelectValue.length > 0 ? multiSelectValue.join(', ') : (data.name ?? 'Select…')}
+          </button>
+          <Dialog open={multiSelectDialogOpen} onOpenChange={setMultiSelectDialogOpen}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>{data.name ?? 'Select options'}</DialogTitle>
+              </DialogHeader>
+              <div className='flex flex-col gap-2 max-h-[400px] overflow-y-auto py-2'>
+                {data.options?.map((option) => (
+                  <label
+                    key={option}
+                    className='flex items-center gap-2 cursor-pointer rounded-sm px-2 py-1.5 hover:bg-muted/50'>
+                    <Checkbox
+                      checked={pendingSelection.includes(option)}
+                      onCheckedChange={() => toggleMultiSelectOption(option)}
+                    />
+                    <span>{option}</span>
+                  </label>
+                ))}
+              </div>
+              <DialogFooter>
+                <Button onClick={applyMultiSelect}>Done</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </>
+      ) : isListType && !editMode ? (
         <select
           disabled={editMode}
           onChange={(e) => handleChange(e.target.value)}
