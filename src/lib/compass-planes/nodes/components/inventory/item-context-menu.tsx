@@ -66,6 +66,7 @@ export const ItemContextMenu = ({
   const { rollDice } = useContext(DiceContext);
   const menuRef = useRef<HTMLDivElement>(null);
   const maxQuantity = item.stackSize;
+  const [computedPosition, setComputedPosition] = useState(position);
 
   const [isEditingLabel, setIsEditingLabel] = useState(false);
   const [labelValue, setLabelValue] = useState(item.label ?? item.title);
@@ -126,6 +127,31 @@ export const ItemContextMenu = ({
     }
   }, [isEditingLabel]);
 
+  const handleClose = () => {
+    setIsEditingLabel(false);
+    handleQuantityBlur();
+    onClose();
+  };
+
+  useEffect(() => {
+    if (inline) return;
+
+    const handlePointerDown = (event: PointerEvent) => {
+      const menuEl = menuRef.current;
+      if (!menuEl) return;
+
+      if (!menuEl.contains(event.target as Node)) {
+        handleClose();
+      }
+    };
+
+    document.addEventListener('pointerdown', handlePointerDown, true);
+
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDown, true);
+    };
+  }, [inline, handleClose]);
+
   const handleRoll = () => {
     if (!diceRolls.length) return;
     rollDice(diceRolls.join(','));
@@ -138,12 +164,6 @@ export const ItemContextMenu = ({
       }
     },
   });
-
-  const handleClose = () => {
-    setIsEditingLabel(false);
-    handleQuantityBlur();
-    onClose();
-  };
 
   const handleLabelCommit = () => {
     const trimmed = labelValue.trim();
@@ -179,6 +199,27 @@ export const ItemContextMenu = ({
 
   const canSplit = item.quantity > 1;
 
+  useEffect(() => {
+    if (inline) return;
+    const menuEl = menuRef.current;
+    if (!menuEl || typeof window === 'undefined') return;
+
+    const rect = menuEl.getBoundingClientRect();
+    const viewportWidth = window.innerWidth;
+
+    let newX = position.x;
+
+    // If the menu would overflow off the right edge, shift it left so it stays on-screen.
+    if (position.x + rect.width > viewportWidth) {
+      const padding = 8;
+      newX = Math.max(padding, viewportWidth - rect.width - padding);
+    }
+
+    setComputedPosition((prev) =>
+      prev.x === newX && prev.y === position.y ? prev : { x: newX, y: position.y },
+    );
+  }, [inline, position.x, position.y]);
+
   const menuStyle: React.CSSProperties = inline
     ? {
         backgroundColor: '#1a1a1a',
@@ -196,8 +237,8 @@ export const ItemContextMenu = ({
       }
     : {
         position: 'fixed',
-        left: position.x,
-        top: position.y,
+        left: computedPosition.x,
+        top: computedPosition.y,
         backgroundColor: '#1a1a1a',
         border: '1px solid #333',
         borderRadius: 8,
@@ -208,6 +249,7 @@ export const ItemContextMenu = ({
         display: 'flex',
         flexDirection: 'column',
         gap: '8px',
+        zIndex: 100,
       };
 
   const menuContent = (
@@ -232,7 +274,6 @@ export const ItemContextMenu = ({
           alignItems: 'center',
           justifyContent: 'center',
           borderRadius: 4,
-          zIndex: 100,
         }}
         onMouseEnter={(e) => (e.currentTarget.style.color = '#fff')}
         onMouseLeave={(e) => (e.currentTarget.style.color = '#999')}>

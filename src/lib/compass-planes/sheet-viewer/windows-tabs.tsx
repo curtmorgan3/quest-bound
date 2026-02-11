@@ -61,6 +61,7 @@ export const WindowsTabs = ({
 
   const sortedRulesetWindows = [...rulesetWindows].sort((a, b) => a.title.localeCompare(b.title));
   const sortedWindows = [...windows].sort((a, b) => a.title.localeCompare(b.title));
+  const sortedPages = [...characterPages].sort((a, b) => a.label.localeCompare(b.label));
 
   const allCategories = [
     ...new Set(
@@ -210,7 +211,7 @@ export const WindowsTabs = ({
           <option value='' disabled>
             {characterPages.length === 0 ? 'No pages' : 'Select page'}
           </option>
-          {characterPages.map((page) => (
+          {sortedPages.map((page) => (
             <option key={page.id} value={page.id}>
               {page.label}
             </option>
