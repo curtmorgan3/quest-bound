@@ -50,13 +50,17 @@ export const useNodeData = (component: Component): NodeData => {
     }
   }
 
+  let name = characterAttribute?.title ?? rulesetAttribute?.title;
+
+  if (component.type === ComponentTypes.INPUT && !component?.attributeId) {
+    if (componentData?.placeholder === 'Input' && !!componentData?.type) {
+      name = `${componentData.type} input`;
+    }
+  }
+
   return {
     ...componentData,
-    name:
-      characterAttribute?.title ??
-      rulesetAttribute?.title ??
-      componentData.placeholder ??
-      component.type,
+    name: name ?? component.type,
     value,
     interpolatedValue: injectCharacterData({
       value,

@@ -174,6 +174,7 @@ export type ImageComponentData = {
 
 export type InputComponentData = {
   placeholder?: string;
+  type?: 'text' | 'number';
 };
 
 export type CheckboxComponentData = {

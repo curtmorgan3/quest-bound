@@ -7,6 +7,7 @@ import {
   CheckboxDataEdit,
   FrameDataEdit,
   GraphDataEdit,
+  InputDataEdit,
   InventoryDataEdit,
 } from '@/lib/compass-planes/nodes/components';
 import { ImageDataEdit } from '@/lib/compass-planes/nodes/components/image';
@@ -153,6 +154,10 @@ export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
     selectedComponents.length > 0 &&
     selectedComponents.every((c) => c.type === ComponentTypes.CHECKBOX);
 
+  const allAreInputs =
+    selectedComponents.length > 0 &&
+    selectedComponents.every((c) => c.type === ComponentTypes.INPUT);
+
   const allAreInventories =
     selectedComponents.length > 0 &&
     selectedComponents.every((c) => c.type === ComponentTypes.INVENTORY);
@@ -238,6 +243,14 @@ export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
             )}
             {allAreImages && (
               <ImageDataEdit
+                components={selectedComponents}
+                handleUpdate={handleUpdate}
+                updateComponents={updateComponents}
+              />
+            )}
+
+            {allAreInputs && (
+              <InputDataEdit
                 components={selectedComponents}
                 handleUpdate={handleUpdate}
                 updateComponents={updateComponents}

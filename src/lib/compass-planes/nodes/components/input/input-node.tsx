@@ -164,9 +164,9 @@ export const ViewInputNode = ({
       ) : (
         <input
           className='editor-input'
-          type={data.attributeType === 'string' ? 'text' : 'number'}
+          type={data.type ?? (data.attributeType === 'number' ? 'number' : 'text')}
           disabled={editMode}
-          placeholder={data?.name}
+          placeholder={data?.name ?? data.type}
           onChange={(e) => handleChange(e.target.value)}
           value={editMode ? undefined : data.value.toString()}
           style={inputStyle}
