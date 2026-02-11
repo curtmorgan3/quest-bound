@@ -71,7 +71,7 @@ export const NumberInput = ({
 
   const containerRef = useRef<HTMLDivElement | null>(null);
   const itemRefs = useRef<HTMLDivElement[]>([]);
-  const wheelThrottleRef = useRef(false);
+  const scrollDebounceRef = useRef<NodeJS.Timeout | null>(null);
 
   const scrollToValue = useCallback(
     (target: number) => {
@@ -110,34 +110,53 @@ export const NumberInput = ({
     fetchLastRoll();
   }, [open]);
 
-  const handleWheel = useCallback(
-    (event: React.WheelEvent<HTMLDivElement>) => {
-      if (!numbers.length) return;
-
-      // Simple throttle so we don't queue a ton of updates
-      if (wheelThrottleRef.current) {
-        return;
+  useEffect(() => {
+    return () => {
+      if (scrollDebounceRef.current) {
+        clearTimeout(scrollDebounceRef.current);
       }
-      wheelThrottleRef.current = true;
-      window.setTimeout(() => {
-        wheelThrottleRef.current = false;
-      }, 120);
+    };
+  }, []);
 
-      const delta = event.deltaY;
-      if (delta === 0) return;
+  const handleScroll = useCallback(() => {
+    if (!numbers.length) return;
 
-      // Move exactly one step per wheel event for finer control
-      const direction = delta > 0 ? 1 : -1;
+    // Clear existing debounce timer
+    if (scrollDebounceRef.current) {
+      clearTimeout(scrollDebounceRef.current);
+    }
 
-      const currentIndex = numbers.indexOf(wheelValue);
-      const safeIndex = currentIndex === -1 ? 0 : currentIndex;
-      const nextIndex = Math.min(Math.max(safeIndex + direction * 1, 0), numbers.length - 1);
-      const next = numbers[nextIndex];
-      setWheelValue(next);
-      scrollToValue(next);
-    },
-    [numbers, wheelValue, scrollToValue],
-  );
+    // Set new debounce timer
+    scrollDebounceRef.current = setTimeout(() => {
+      const container = containerRef.current;
+      if (!container) return;
+
+      const containerHeight = container.clientHeight;
+      const containerScrollTop = container.scrollTop;
+      const containerCenter = containerScrollTop + containerHeight / 2;
+
+      // Find the number closest to the center
+      let closestIndex = 0;
+      let closestDistance = Infinity;
+
+      itemRefs.current.forEach((item, index) => {
+        if (!item) return;
+
+        const itemOffsetTop = item.offsetTop;
+        const itemHeight = item.offsetHeight;
+        const itemCenter = itemOffsetTop + itemHeight / 2;
+        const distance = Math.abs(itemCenter - containerCenter);
+
+        if (distance < closestDistance) {
+          closestDistance = distance;
+          closestIndex = index;
+        }
+      });
+
+      const centerNumber = numbers[closestIndex];
+      setWheelValue(centerNumber);
+    }, 200);
+  }, [numbers]);
 
   const applyChange = (next: number) => {
     onChange(next);
@@ -212,7 +231,8 @@ export const NumberInput = ({
           <div
             ref={containerRef}
             className='relative h-40 overflow-y-auto overflow-x-hidden number-wheel-input scroll-smooth snap-y snap-mandatory py-2'
-            onWheel={handleWheel}>
+            onScroll={handleScroll}
+          >
             {numbers.map((n, index) => {
               const isActive = n === wheelValue;
               return (
