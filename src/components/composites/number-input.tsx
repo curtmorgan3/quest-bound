@@ -5,10 +5,10 @@ import { cn } from '@/lib/utils';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 export interface NumberInputProps {
-  value: number;
-  onChange: (value: number) => void;
-  min?: number;
-  max?: number;
+  value: number | '';
+  onChange: (value: number | '') => void;
+  wheelMin?: number;
+  wheelMax?: number;
   step?: number;
   label?: string;
   className?: string;
@@ -18,8 +18,8 @@ export interface NumberInputProps {
 export const NumberInput = ({
   value,
   onChange,
-  min,
-  max,
+  wheelMin,
+  wheelMax,
   step = 1,
   label,
   className,
@@ -27,9 +27,10 @@ export const NumberInput = ({
 }: NumberInputProps) => {
   const [open, setOpen] = useState(false);
 
-  const actualMin = min ?? 0;
-  const actualMax = max ?? 100;
+  const actualMin = wheelMin ?? 0;
+  const actualMax = wheelMax ?? 100;
   const actualStep = step > 0 ? step : 1;
+  const actualValue = value === '' ? 0 : value;
 
   const clampToRange = useCallback(
     (raw: number): number => {
@@ -54,42 +55,31 @@ export const NumberInput = ({
     return result;
   }, [actualMin, actualMax, actualStep]);
 
-  const [wheelValue, setWheelValue] = useState(() => clampToRange(value));
-
-  useEffect(() => {
-    setWheelValue(clampToRange(value));
-  }, [value, clampToRange]);
+  const [wheelValue, setWheelValue] = useState(() => clampToRange(actualValue));
 
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const firstItemRef = useRef<HTMLDivElement | null>(null);
-  const [itemHeight, setItemHeight] = useState<number | null>(null);
-  const [containerHeight, setContainerHeight] = useState<number | null>(null);
-
-  useEffect(() => {
-    if (firstItemRef.current) {
-      const rect = firstItemRef.current.getBoundingClientRect();
-      if (rect.height) {
-        setItemHeight(rect.height);
-      }
-    }
-    if (containerRef.current) {
-      const rect = containerRef.current.getBoundingClientRect();
-      if (rect.height) {
-        setContainerHeight(rect.height);
-      }
-    }
-  }, [numbers.length, open]);
+  const itemRefs = useRef<HTMLDivElement[]>([]);
+  const wheelThrottleRef = useRef(false);
 
   const scrollToValue = useCallback(
     (target: number) => {
-      if (!containerRef.current || itemHeight == null || containerHeight == null) return;
+      const container = containerRef.current;
+      if (!container) return;
+
       const index = numbers.indexOf(target);
       if (index === -1) return;
-      const centerOffset = containerHeight / 2 - itemHeight / 2;
-      const scrollTop = index * itemHeight - centerOffset;
-      containerRef.current.scrollTo({ top: scrollTop, behavior: 'smooth' });
+
+      const item = itemRefs.current[index];
+      if (!item) return;
+
+      const itemOffsetTop = item.offsetTop;
+      const itemHeight = item.offsetHeight;
+      const containerHeight = container.clientHeight;
+
+      const targetScrollTop = itemOffsetTop - (containerHeight / 2 - itemHeight / 2);
+      container.scrollTo({ top: targetScrollTop, behavior: 'smooth' });
     },
-    [containerHeight, itemHeight, numbers],
+    [numbers],
   );
 
   useEffect(() => {
@@ -102,13 +92,20 @@ export const NumberInput = ({
     (event: React.WheelEvent<HTMLDivElement>) => {
       if (!numbers.length) return;
 
+      // Simple throttle so we don't queue a ton of updates
+      if (wheelThrottleRef.current) {
+        return;
+      }
+      wheelThrottleRef.current = true;
+      window.setTimeout(() => {
+        wheelThrottleRef.current = false;
+      }, 120);
+
       const delta = event.deltaY;
       if (delta === 0) return;
 
-      console.log(delta);
-
       // Move exactly one step per wheel event for finer control
-      const direction = delta > 0 ? 1 : -1;
+      const direction = delta > 0 ? 2 : -2;
 
       const currentIndex = numbers.indexOf(wheelValue);
       const safeIndex = currentIndex === -1 ? 0 : currentIndex;
@@ -121,8 +118,7 @@ export const NumberInput = ({
   );
 
   const applyChange = (next: number) => {
-    const clamped = clampToRange(next);
-    onChange(clamped);
+    onChange(next);
   };
 
   const handleSet = () => {
@@ -131,17 +127,17 @@ export const NumberInput = ({
   };
 
   const handleAdd = () => {
-    applyChange(value + wheelValue);
+    applyChange(actualValue + wheelValue);
   };
 
   const handleSubtract = () => {
-    applyChange(value - wheelValue);
+    applyChange(actualValue - wheelValue);
   };
 
   const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const raw = event.target.value;
     if (raw === '') {
-      onChange(actualMin);
+      onChange('');
       return;
     }
     const parsed = Number(raw);
@@ -159,26 +155,29 @@ export const NumberInput = ({
           type='number'
           value={displayValue}
           onChange={handleInputChange}
-          onFocus={() => !disabled && setOpen(true)}
+          onClick={() => !disabled && setOpen(true)}
           className={className}
           disabled={disabled}
         />
       </PopoverTrigger>
       <PopoverContent side='bottom' align='center' className='w-64 p-3'>
         {label && <div className='mb-2 text-xs font-medium text-muted-foreground'>{label}</div>}
-        <div className='relative'>
+        <div className='relative '>
           <div
             ref={containerRef}
-            className='relative h-40 overflow-y-auto scroll-smooth snap-y snap-mandatory py-2'
+            style={{ scrollbarGutter: 'stable' }}
+            className='relative h-40 overflow-y-auto number-wheel-input scroll-smooth snap-y snap-mandatory py-2'
             onWheel={handleWheel}>
             {numbers.map((n, index) => {
               const isActive = n === wheelValue;
               return (
                 <div
                   key={n}
-                  ref={index === 0 ? firstItemRef : undefined}
+                  ref={(el) => {
+                    if (el) itemRefs.current[index] = el;
+                  }}
                   className={cn(
-                    'flex h-8 items-center justify-center snap-center text-sm transition-all',
+                    'flex h-8 items-center justify-center snap-center text-lg transition-all',
                     isActive
                       ? 'text-primary font-semibold scale-110'
                       : 'text-muted-foreground scale-95',
@@ -205,11 +204,11 @@ export const NumberInput = ({
             disabled={disabled}>
             Subtract
           </Button>
-          <Button type='button' variant='outline' size='sm' onClick={handleAdd} disabled={disabled}>
-            Add
-          </Button>
           <Button type='button' size='sm' onClick={handleSet} disabled={disabled}>
             Set
+          </Button>
+          <Button type='button' variant='outline' size='sm' onClick={handleAdd} disabled={disabled}>
+            Add
           </Button>
         </div>
       </PopoverContent>

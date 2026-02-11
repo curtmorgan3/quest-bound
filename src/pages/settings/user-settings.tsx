@@ -73,7 +73,7 @@ export const UserSettings = () => {
     }
   };
 
-  const [num, setNum] = useState(0);
+  const [num, setNum] = useState<number | ''>(0);
 
   if (!currentUser) return null;
 
