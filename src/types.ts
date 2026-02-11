@@ -68,6 +68,12 @@ export type Attribute = BaseDetails & {
   inventoryHeight?: number;
 };
 
+export type CharacterAttribute = Attribute & {
+  characterId: string;
+  attributeId: string;
+  value: string | number | boolean;
+};
+
 export type Action = BaseDetails & {
   rulesetId: string;
   title: string;
@@ -256,12 +262,6 @@ export type Character = BaseDetails & {
   lastViewedPageId?: string | null;
   /** Whether the sheet viewer is locked (windows not draggable). */
   sheetLocked?: boolean;
-};
-
-export type CharacterAttribute = Attribute & {
-  characterId: string;
-  attributeId: string;
-  value: string | number | boolean;
 };
 
 export type CharacterPage = BaseDetails & {

@@ -97,31 +97,57 @@ export const useCharacterAttributes = (characterId?: string) => {
       const rulesetAttributes = await db.attributes
         .where({ rulesetId: character.rulesetId })
         .toArray();
-      const existingAttributeIds = new Set((characterAttributes ?? []).map((ca) => ca.attributeId));
-
-      const missingAttributes = rulesetAttributes.filter(
-        (attr) => !existingAttributeIds.has(attr.id),
+      const existingByAttributeId = new Map(
+        (characterAttributes ?? []).map((ca) => [ca.attributeId, ca]),
       );
-
-      if (missingAttributes.length === 0) return 0;
 
       const now = new Date().toISOString();
+      const toAdd: CharacterAttribute[] = [];
+      const toUpdate: { id: string; data: Partial<CharacterAttribute> }[] = [];
 
-      // Should handle edits as well
+      for (const attr of rulesetAttributes) {
+        const existing = existingByAttributeId.get(attr.id);
 
-      await db.characterAttributes.bulkAdd(
-        missingAttributes.map((attr) => ({
-          ...attr,
-          id: crypto.randomUUID(),
-          characterId: character.id,
-          attributeId: attr.id,
-          value: attr.defaultValue,
-          createdAt: now,
-          updatedAt: now,
-        })),
-      );
+        if (!existing) {
+          toAdd.push({
+            ...attr,
+            id: crypto.randomUUID(),
+            characterId: character.id,
+            attributeId: attr.id,
+            value: attr.defaultValue,
+            createdAt: now,
+            updatedAt: now,
+          } as CharacterAttribute);
+        } else {
+          toUpdate.push({
+            id: existing.id,
+            data: {
+              title: attr.title,
+              defaultValue: attr.defaultValue,
+              type: attr.type,
+              description: attr.description,
+              min: attr.min,
+              max: attr.max,
+              options: attr.options,
+              optionsChartRef: attr.optionsChartRef,
+              optionsChartColumnHeader: attr.optionsChartColumnHeader,
+              category: attr.category,
+              allowMultiSelect: attr.allowMultiSelect,
+              updatedAt: now,
+            },
+          });
+        }
+      }
 
-      return missingAttributes.length;
+      if (toAdd.length > 0) {
+        await db.characterAttributes.bulkAdd(toAdd);
+      }
+
+      for (const { id, data } of toUpdate) {
+        await db.characterAttributes.update(id, data);
+      }
+
+      return toAdd.length + toUpdate.length;
     } catch (e) {
       handleError(e as Error, {
         component: 'useCharacterAttributes/syncWithRuleset',

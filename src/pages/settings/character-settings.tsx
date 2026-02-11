@@ -51,7 +51,7 @@ export const CharacterSettings = ({ character }: CharacterSettingsProps) => {
   const handleSyncWithRuleset = async () => {
     const count = await syncWithRuleset();
     if (count > 0) {
-      addNotification(`Added ${count} attribute${count === 1 ? '' : 's'}`, { type: 'success' });
+      addNotification(`Updated ${count} attribute${count === 1 ? '' : 's'}`, { type: 'success' });
     } else {
       addNotification('All attributes are already synced', { type: 'info' });
     }
