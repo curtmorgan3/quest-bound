@@ -6,12 +6,14 @@ import type {
   Attribute,
   Character,
   CharacterAttribute,
+  CharacterPage,
   CharacterWindow,
   Chart,
   Component,
   Document,
   Font,
   Inventory,
+  InventoryItem,
   Item,
   Ruleset,
   Window,
@@ -57,6 +59,8 @@ export interface ImportRulesetResult {
     characterAttributes: number;
     inventories: number;
     characterWindows: number;
+    characterPages: number;
+    inventoryItems: number;
   };
   errors: string[];
 }
@@ -92,6 +96,8 @@ interface ImportedMetadata {
     characterAttributes: number;
     characterInventories: number;
     characterWindows: number;
+    characterPages?: number;
+    inventoryItems?: number;
   };
 }
 
@@ -138,7 +144,9 @@ export const useImportRuleset = () => {
       | 'documents'
       | 'characterAttributes'
       | 'inventories'
-      | 'characterWindows',
+      | 'characterWindows'
+      | 'characterPages'
+      | 'inventoryItems',
   ): { isValid: boolean; errors: string[] } => {
     const errors: string[] = [];
 
@@ -314,6 +322,27 @@ export const useImportRuleset = () => {
             errors.push(`CharacterWindow ${index + 1}: windowId is required and must be a string`);
           }
           break;
+
+        case 'characterPages':
+          if (!item.characterId || typeof item.characterId !== 'string') {
+            errors.push(`CharacterPage ${index + 1}: characterId is required and must be a string`);
+          }
+          if (!item.label || typeof item.label !== 'string') {
+            errors.push(`CharacterPage ${index + 1}: label is required and must be a string`);
+          }
+          break;
+
+        case 'inventoryItems':
+          if (!item.inventoryId || typeof item.inventoryId !== 'string') {
+            errors.push(`InventoryItem ${index + 1}: inventoryId is required and must be a string`);
+          }
+          if (!item.entityId || typeof item.entityId !== 'string') {
+            errors.push(`InventoryItem ${index + 1}: entityId is required and must be a string`);
+          }
+          if (typeof item.quantity !== 'number') {
+            errors.push(`InventoryItem ${index + 1}: quantity must be a number`);
+          }
+          break;
       }
     });
 
@@ -325,9 +354,15 @@ export const useImportRuleset = () => {
     const characters = await db.characters.where('rulesetId').equals(rulesetId).toArray();
     const characterIds = characters.map((c) => c.id);
     for (const cid of characterIds) {
+      const characterInventories = await db.inventories.where('characterId').equals(cid).toArray();
+      const inventoryIds = characterInventories.map((inv) => inv.id);
+      if (inventoryIds.length > 0) {
+        await db.inventoryItems.where('inventoryId').anyOf(inventoryIds).delete();
+      }
       await db.characterAttributes.where('characterId').equals(cid).delete();
       await db.inventories.where('characterId').equals(cid).delete();
       await db.characterWindows.where('characterId').equals(cid).delete();
+      await db.characterPages.where('characterId').equals(cid).delete();
     }
     await db.characters.where('rulesetId').equals(rulesetId).delete();
     const windowIds = (await db.windows.where('rulesetId').equals(rulesetId).toArray()).map(
@@ -378,6 +413,8 @@ export const useImportRuleset = () => {
             characterAttributes: 0,
             inventories: 0,
             characterWindows: 0,
+            characterPages: 0,
+            inventoryItems: 0,
           },
           errors: ['application data/metadata.json file is required'],
         };
@@ -406,6 +443,8 @@ export const useImportRuleset = () => {
             characterAttributes: 0,
             inventories: 0,
             characterWindows: 0,
+            characterPages: 0,
+            inventoryItems: 0,
           },
           errors: metadataValidation.errors,
         };
@@ -483,6 +522,8 @@ export const useImportRuleset = () => {
               characterAttributes: 0,
               inventories: 0,
               characterWindows: 0,
+              characterPages: 0,
+              inventoryItems: 0,
             },
             errors: ['Duplicate ruleset: same id and version as an existing ruleset'],
           };
@@ -510,6 +551,8 @@ export const useImportRuleset = () => {
                 characterAttributes: 0,
                 inventories: 0,
                 characterWindows: 0,
+                characterPages: 0,
+                inventoryItems: 0,
               },
               errors: [],
             };
@@ -534,6 +577,8 @@ export const useImportRuleset = () => {
               characterAttributes: 0,
               inventories: 0,
               characterWindows: 0,
+              characterPages: 0,
+              inventoryItems: 0,
             },
             errors: ['Existing ruleset has same or newer version'],
           };
@@ -555,6 +600,8 @@ export const useImportRuleset = () => {
         characterAttributes: 0,
         inventories: 0,
         characterWindows: 0,
+        characterPages: 0,
+        inventoryItems: 0,
       };
 
       const allErrors: string[] = [];
@@ -585,37 +632,6 @@ export const useImportRuleset = () => {
           // Asset references in actions/items will just be undefined
         }
       }
-
-      // Import characters
-      const charactersFile = zipContent.file('application data/characters.json');
-      if (charactersFile) {
-        try {
-          const charactersText = await charactersFile.async('text');
-          const characters: Character[] = JSON.parse(charactersText);
-
-          const validation = validateData(characters, 'characters');
-          if (validation.isValid) {
-            for (const character of characters) {
-              const newCharacter: Character = {
-                ...character,
-                createdAt: now,
-                updatedAt: now,
-              };
-              await db.characters.add(newCharacter);
-              importedCounts.characters++;
-            }
-          } else {
-            allErrors.push(...validation.errors);
-          }
-        } catch (error) {
-          allErrors.push(
-            `Failed to import characters: ${error instanceof Error ? error.message : 'Unknown error'}`,
-          );
-        }
-      }
-
-      // Create ruleset after importing characters so test character isn't duplicated
-      await createRuleset(newRuleset);
 
       // Import characterAttributes
       const characterAttributesFile = zipContent.file('application data/characterAttributes.json');
@@ -1132,6 +1148,93 @@ export const useImportRuleset = () => {
         }
       }
 
+      // Import characterPages
+      const characterPagesFile = zipContent.file('application data/characterPages.json');
+      if (characterPagesFile) {
+        try {
+          const characterPagesText = await characterPagesFile.async('text');
+          const characterPages: CharacterPage[] = JSON.parse(characterPagesText);
+
+          const validation = validateData(characterPages, 'characterPages');
+          if (validation.isValid) {
+            for (const characterPage of characterPages) {
+              const newCharacterPage: CharacterPage = {
+                ...characterPage,
+                createdAt: now,
+                updatedAt: now,
+              };
+              await db.characterPages.add(newCharacterPage);
+              importedCounts.characterPages++;
+            }
+          } else {
+            allErrors.push(...validation.errors);
+          }
+        } catch (error) {
+          allErrors.push(
+            `Failed to import characterPages: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          );
+        }
+      }
+
+      // Import inventoryItems (must be after inventories since they reference inventoryId)
+      const inventoryItemsFile = zipContent.file('application data/inventoryItems.json');
+      if (inventoryItemsFile) {
+        try {
+          const inventoryItemsText = await inventoryItemsFile.async('text');
+          const inventoryItems: InventoryItem[] = JSON.parse(inventoryItemsText);
+
+          const validation = validateData(inventoryItems, 'inventoryItems');
+          if (validation.isValid) {
+            for (const inventoryItem of inventoryItems) {
+              const newInventoryItem: InventoryItem = {
+                ...inventoryItem,
+                createdAt: now,
+                updatedAt: now,
+              };
+              await db.inventoryItems.add(newInventoryItem);
+              importedCounts.inventoryItems++;
+            }
+          } else {
+            allErrors.push(...validation.errors);
+          }
+        } catch (error) {
+          allErrors.push(
+            `Failed to import inventoryItems: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          );
+        }
+      }
+
+      // Import characters
+      const charactersFile = zipContent.file('application data/characters.json');
+      if (charactersFile) {
+        try {
+          const charactersText = await charactersFile.async('text');
+          const characters: Character[] = JSON.parse(charactersText);
+
+          const validation = validateData(characters, 'characters');
+          if (validation.isValid) {
+            for (const character of characters) {
+              const newCharacter: Character = {
+                ...character,
+                createdAt: now,
+                updatedAt: now,
+              };
+              await db.characters.add(newCharacter);
+              importedCounts.characters++;
+            }
+          } else {
+            allErrors.push(...validation.errors);
+          }
+        } catch (error) {
+          allErrors.push(
+            `Failed to import characters: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          );
+        }
+      }
+
+      // Create ruleset after importing characters so test character isn't duplicated
+      await createRuleset(newRuleset);
+
       const totalImported =
         importedCounts.attributes +
         importedCounts.actions +
@@ -1145,7 +1248,9 @@ export const useImportRuleset = () => {
         importedCounts.documents +
         importedCounts.characterAttributes +
         importedCounts.inventories +
-        importedCounts.characterWindows;
+        importedCounts.characterWindows +
+        importedCounts.characterPages +
+        importedCounts.inventoryItems;
 
       return {
         success: allErrors.length === 0,
@@ -1177,6 +1282,8 @@ export const useImportRuleset = () => {
           characterAttributes: 0,
           inventories: 0,
           characterWindows: 0,
+          characterPages: 0,
+          inventoryItems: 0,
         },
         errors: [error instanceof Error ? error.message : 'Unknown error'],
       };

@@ -36,7 +36,10 @@ export function registerCharacterDbHooks(db: DB) {
         const testCharacter = await db.characters
           .where('rulesetId')
           .equals(obj.rulesetId)
-          .filter((c: { isTestCharacter: boolean; id: string; inventoryId?: string }) => c.isTestCharacter)
+          .filter(
+            (c: { isTestCharacter: boolean; id: string; inventoryId?: string }) =>
+              c.isTestCharacter,
+          )
           .first();
 
         if (

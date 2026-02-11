@@ -80,9 +80,9 @@ export const useCharacter = (_id?: string) => {
       const newPageId = crypto.randomUUID();
       pageIdMap.set(page.id, newPageId);
       await db.characterPages.add({
+        ...page,
         id: newPageId,
         characterId: newCharacterId,
-        label: page.label,
         createdAt: now,
         updatedAt: now,
       } as CharacterPage);

@@ -232,6 +232,7 @@ export const ItemContextMenu = ({
           alignItems: 'center',
           justifyContent: 'center',
           borderRadius: 4,
+          zIndex: 100,
         }}
         onMouseEnter={(e) => (e.currentTarget.style.color = '#fff')}
         onMouseLeave={(e) => (e.currentTarget.style.color = '#999')}>

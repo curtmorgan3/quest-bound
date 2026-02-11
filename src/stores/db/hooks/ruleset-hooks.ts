@@ -70,6 +70,7 @@ export function registerRulesetDbHooks(db: DB) {
           await db.characterPages.where('characterId').equals(testCharacter.id).delete();
           await db.characterWindows.where('characterId').equals(testCharacter.id).delete();
           await db.inventories.where('characterId').equals(testCharacter.id).delete();
+          await db.inventoryItems.where('characterId').equals(testCharacter.id).delete();
         }
       } catch (error) {
         console.error('Failed to delete associated entities for ruleset:', error);

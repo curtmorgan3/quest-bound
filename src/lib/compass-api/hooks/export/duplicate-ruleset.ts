@@ -38,6 +38,8 @@ export interface RulesetDuplicationCounts {
   characterAttributes: number;
   inventories: number;
   characterWindows: number;
+  characterPages: number;
+  inventoryItems: number;
 }
 
 /**
@@ -151,6 +153,8 @@ export async function duplicateRuleset({
     characterAttributes: 0,
     inventories: 0,
     characterWindows: 0,
+    characterPages: 0,
+    inventoryItems: 0,
   };
 
   // 1. Assets
@@ -399,6 +403,7 @@ export async function duplicateRuleset({
         createdAt: now,
         updatedAt: now,
       } as CharacterPage);
+      counts.characterPages++;
     }
 
     // Inventories for the test character
@@ -470,6 +475,7 @@ export async function duplicateRuleset({
         createdAt: now,
         updatedAt: now,
       } as InventoryItem);
+      counts.inventoryItems++;
     }
 
     // Character attributes
