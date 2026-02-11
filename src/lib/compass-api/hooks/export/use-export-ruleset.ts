@@ -96,6 +96,20 @@ export const useExportRuleset = (rulesetId: string) => {
     [testCharacter?.id],
   );
 
+  const characterPages = useLiveQuery(
+    () =>
+      testCharacter
+        ? db.characterPages.where('characterId').equals(testCharacter.id).toArray()
+        : [],
+    [testCharacter?.id],
+  );
+
+  const inventoryItems = useLiveQuery(async () => {
+    if (!testCharacter || !inventories || inventories.length === 0) return [];
+    const inventoryIds = inventories.map((inv) => inv.id);
+    return db.inventoryItems.where('inventoryId').anyOf(inventoryIds).toArray();
+  }, [testCharacter?.id, inventories]);
+
   const isLoading =
     ruleset === undefined ||
     attributes === undefined ||
@@ -110,7 +124,9 @@ export const useExportRuleset = (rulesetId: string) => {
     testCharacter === undefined ||
     characterAttributes === undefined ||
     inventories === undefined ||
-    characterWindows === undefined;
+    characterWindows === undefined ||
+    characterPages === undefined ||
+    inventoryItems === undefined;
 
   const exportRuleset = async (): Promise<void> => {
     if (!ruleset || !rulesetId) {
@@ -152,6 +168,8 @@ export const useExportRuleset = (rulesetId: string) => {
           characterAttributes: characterAttributes?.length || 0,
           inventories: inventories?.length || 0,
           characterWindows: characterWindows?.length || 0,
+          characterPages: characterPages?.length || 0,
+          inventoryItems: inventoryItems?.length || 0,
         },
       };
 
@@ -348,6 +366,14 @@ export const useExportRuleset = (rulesetId: string) => {
         appDataFolder.file('characterWindows.json', JSON.stringify(characterWindows, null, 2));
       }
 
+      if (characterPages && characterPages.length > 0) {
+        appDataFolder.file('characterPages.json', JSON.stringify(characterPages, null, 2));
+      }
+
+      if (inventoryItems && inventoryItems.length > 0) {
+        appDataFolder.file('inventoryItems.json', JSON.stringify(inventoryItems, null, 2));
+      }
+
       // Create a markdown file named after the ruleset title containing only the description
       const safeRulesetTitle = ruleset.title
         ? ruleset.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()
@@ -385,6 +411,8 @@ This zip file contains a complete export of the "${ruleset.title}" ruleset from 
 - \`application data/characterAttributes.json\` - Test character attribute values
 - \`application data/inventories.json\` - Test character inventory associations
 - \`application data/characterWindows.json\` - Test character window positions
+- \`application data/characterPages.json\` - Test character sheet pages
+- \`application data/inventoryItems.json\` - Test character inventory items
 
 ## Import Instructions
 
