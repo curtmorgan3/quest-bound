@@ -1,0 +1,243 @@
+# Quest Bound - Cursor Rules
+
+## Directory
+
+- Adding nodes to compass-planes: src/libs/compass-planes/README.md
+
+## Project Overview
+
+Quest Bound is a free and open-source engine for creating digital tabletop role-playing games. It's a progressive web app (PWA) built with React, TypeScript, and Vite that works offline and can be installed as a native application.
+
+## Tech Stack
+
+- **Framework**: React 19 with TypeScript
+- **Build Tool**: Vite 7
+- **Routing**: React Router v7
+- **State Management**: Zustand
+- **UI Components**: Radix UI primitives with custom components
+- **Styling**: Tailwind CSS v4
+- **Forms**: React Hook Form with Zod validation
+- **Database**: Dexie (IndexedDB wrapper) for offline-first storage
+- **Testing**: Cypress (E2E and component tests)
+- **Animation**: Framer Motion
+- **Icons**: Lucide React
+
+## Code Style & Conventions
+
+### TypeScript
+
+- Use TypeScript for all new files
+- Prefer explicit types over `any`
+- Define interfaces for component props
+
+### React Components
+
+- Use functional components with hooks
+- Prefer named exports for components
+- Use `.tsx` extension for components
+- Component file names should be kebab-case (e.g., `component-name.tsx`)
+- Keep components focused and single-purpose
+- Extract complex logic into custom hooks
+
+### File Structure
+
+- Components: `src/components/` (UI primitives in `ui/`, composites in `composites/`)
+- Pages: `src/pages/` organized by feature
+- Hooks: `src/hooks/`
+- Utils: `src/utils/`
+- Types: `src/types/`
+- Stores: `src/stores/` (Zustand state management)
+- Libraries: `src/lib/` (internal libraries like compass-planes)
+
+### Import Paths
+
+- Use `@/` alias for imports from `src/` directory
+- Example: `import { Button } from '@/components/ui/button'`
+- Organize imports: external packages first, then internal modules
+
+### Styling
+
+- Use Tailwind CSS utility classes
+- Follow the existing design system in `src/components/ui/`
+- Use `cn()` utility from `@/lib/utils` for conditional classes
+- Leverage Radix UI for accessible component primitives
+- Use CSS variables for theming (defined in `index.css`)
+
+### State Management
+
+- Use Zustand for global state
+- Keep state close to where it's used when possible
+- Use React Context for feature-specific state (see `src/stores/context/`)
+- Prefer local component state for UI-only state
+
+### Data Persistence
+
+- Use Dexie for IndexedDB operations
+- Follow offline-first principles
+- All data should be stored locally
+- Use `idb-keyval` for simple key-value storage
+
+### Forms
+
+- Leverage existing form components from `src/components/ui/`
+
+### Testing
+
+- Write Cypress tests for critical user flows
+- Component tests in Cypress for complex UI components
+- Test files should be in `cypress/` directory
+- Run tests with `npm run test` or `npm run test:e2e`
+
+## Best Practices
+
+### Performance
+
+- Use React.memo() and React.callback() only when they are needed to improve performance
+- Prefer readability over premature optimization
+- Implement virtualization for long lists (using @tanstack/react-virtual)
+- Lazy load routes and heavy components
+
+### Accessibility
+
+- Use semantic HTML
+- Leverage Radix UI's built-in accessibility features
+- Ensure keyboard navigation works
+- Add ARIA labels where needed
+
+### Error Handling
+
+- Use error boundaries for component errors
+- Log errors appropriately
+- Handle async errors in try-catch blocks
+
+### Code Quality
+
+- Follow ESLint rules (configured in `eslint.config.js`)
+- Use Prettier for formatting (configured in `.prettierrc.cjs`)
+- Write self-documenting code with clear variable names
+- Add comments for complex logic only
+- Keep functions small and focused
+- Prefer to keep helper and utility functions outside of component files
+
+## Project-Specific Guidelines
+
+### Compass Planes
+
+- The `src/lib/compass-planes/` directory contains the visual editor system
+- Nodes are the building blocks (text, image, input, inventory, etc.)
+- Sheet editor and viewer are separate concerns
+- Follow existing node patterns when adding new node types
+
+### Ruleset System
+
+- Rulesets contain attributes, actions, items, charts, documents, and windows
+- All ruleset data is stored locally in IndexedDB
+- Support import/export functionality for sharing rulesets
+
+### Character System
+
+- Characters are separate models that refer to rulesets
+- Character data is separate from ruleset definitions
+- Support inventory management and character sheets
+
+### Offline-First
+
+- All features must work offline
+- Use service workers (via vite-plugin-pwa)
+- Cache assets appropriately
+- Handle sync conflicts gracefully
+
+## Common Patterns
+
+### Custom Hooks
+
+```typescript
+// Use custom hooks for reusable logic
+export function useCustomHook() {
+  // Hook implementation
+  return { data, loading, error };
+}
+```
+
+### Component Pattern
+
+```typescript
+import { cn } from '@/lib/utils';
+
+interface ComponentProps {
+  className?: string;
+  children?: React.ReactNode;
+}
+
+export function Component({ className, children }: ComponentProps) {
+  return (
+    <div className={cn('base-classes', className)}>
+      {children}
+    </div>
+  );
+}
+```
+
+### Store Pattern (Zustand)
+
+```typescript
+import { create } from 'zustand';
+
+interface StoreState {
+  data: string;
+  setData: (data: string) => void;
+}
+
+export const useStore = create<StoreState>((set) => ({
+  data: '',
+  setData: (data) => set({ data }),
+}));
+```
+
+### Contenxt Pattern (React Context)
+
+```typescript
+import { createContext } from 'react';
+
+type ContextType = {
+  data: string;
+  setData: (data: string) => void;
+};
+
+export const MyContext = createContext<ContextType>(null!);
+export const MyContextProvider = MyContext.Provider;
+
+interface UseMyContext {
+  props: any;
+}
+
+export const useMyContext = (props: UseMyContext): ContextType => {
+  const [data, setData] = useState('');
+  return {
+    data,
+    setData,
+  };
+};
+```
+
+## Build & Deployment
+
+- Build command: `npm run build`
+- Preview: `npm run preview`
+- Deployed on Netlify
+- PWA manifest and service worker generated automatically
+- Copy `robots.txt` to dist during build
+
+## License
+
+- Strong copyleft license (see LICENSE file)
+- Open source and free to use
+- Attribution required for derivative works
+- Cannot share purchased game content as rulesets
+
+## Resources
+
+- Discord: https://discord.gg/Zx2jR5Q3zN
+- Documentation: https://v2.docs.questbound.com
+- Live App: https://app.questbound.com
+- Issues: https://github.com/curtmorgan3/quest-bound/issues
