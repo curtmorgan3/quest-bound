@@ -19,6 +19,7 @@ export interface NumberInputProps {
   inputMax?: number;
   placeholder?: string;
   onBlur?: () => void;
+  onOpenChange?: (open: boolean) => void;
 }
 
 export const NumberInput = ({
@@ -35,6 +36,7 @@ export const NumberInput = ({
   style,
   placeholder,
   onBlur,
+  onOpenChange,
 }: NumberInputProps) => {
   const [open, setOpen] = useState(false);
   const [lastRollTotal, setLastRollTotal] = useState<number | null>(null);
@@ -165,6 +167,7 @@ export const NumberInput = ({
   const handleSet = () => {
     applyChange(wheelValue);
     setOpen(false);
+    onOpenChange?.(false);
   };
 
   const handleAdd = () => {
@@ -190,7 +193,12 @@ export const NumberInput = ({
   const displayValue = Number.isFinite(value) ? value : '';
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover
+      open={open}
+      onOpenChange={(open) => {
+        setOpen(open);
+        onOpenChange?.(open);
+      }}>
       <PopoverTrigger asChild>
         <input
           type='number'
