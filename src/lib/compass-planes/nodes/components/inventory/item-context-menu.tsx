@@ -18,7 +18,7 @@ import {
   type InventoryItemWithData,
 } from '@/stores';
 import { useKeyListeners } from '@/utils';
-import { Shirt, X } from 'lucide-react';
+import { Check, Shirt } from 'lucide-react';
 import { useContext, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 
@@ -130,28 +130,9 @@ export const ItemContextMenu = ({
 
   const handleClose = () => {
     setIsEditingLabel(false);
-    handleQuantityBlur();
+    onUpdateQuantity(quantity);
     onClose();
   };
-
-  useEffect(() => {
-    if (inline) return;
-
-    const handlePointerDown = (event: PointerEvent) => {
-      const menuEl = menuRef.current;
-      if (!menuEl) return;
-
-      if (!menuEl.contains(event.target as Node)) {
-        handleClose();
-      }
-    };
-
-    document.addEventListener('pointerdown', handlePointerDown, true);
-
-    return () => {
-      document.removeEventListener('pointerdown', handlePointerDown, true);
-    };
-  }, [inline, handleClose]);
 
   const handleRoll = () => {
     if (!diceRolls.length) return;
@@ -177,12 +158,6 @@ export const ItemContextMenu = ({
 
     onUpdateLabel(trimmed || undefined);
     setIsEditingLabel(false);
-  };
-
-  const handleQuantityBlur = () => {
-    if (quantity !== item.quantity && quantity >= 1) {
-      onUpdateQuantity(quantity);
-    }
   };
 
   const handleSplit = () => {
@@ -271,7 +246,7 @@ export const ItemContextMenu = ({
         }}
         onMouseEnter={(e) => (e.currentTarget.style.color = '#fff')}
         onMouseLeave={(e) => (e.currentTarget.style.color = '#999')}>
-        <X size={16} />
+        <Check size={16} />
       </button>
 
       <div
@@ -347,7 +322,6 @@ export const ItemContextMenu = ({
                 setQuantity(Math.max(1, Math.min(value, maxQuantity)));
               }
             }}
-            onBlur={handleQuantityBlur}
             inputMin={1}
             inputMax={item.stackSize}
             style={{

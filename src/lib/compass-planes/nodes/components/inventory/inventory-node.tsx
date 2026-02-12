@@ -49,6 +49,8 @@ type DragState = {
   offsetY: number;
   currentX: number;
   currentY: number;
+  committedX?: number;
+  committedY?: number;
 };
 
 export const ViewInventoryNode = ({ component }: { component: Component }) => {
@@ -87,6 +89,23 @@ export const ViewInventoryNode = ({ component }: { component: Component }) => {
       item: openedItem,
     }));
   }, [JSON.stringify(inventoryItems), contextMenu, setContextMenu]);
+
+  // Clear drag state once the database update has propagated
+  useEffect(() => {
+    if (!dragState || dragState.committedX === undefined || dragState.committedY === undefined) return;
+
+    const item = inventoryItems.find((i) => i.id === dragState.itemId);
+    if (!item) {
+      // Item was removed (e.g., fully stacked), clear drag state
+      setDragState(null);
+      return;
+    }
+
+    // Check if the item's position matches the committed position
+    if (item.x === dragState.committedX && item.y === dragState.committedY) {
+      setDragState(null);
+    }
+  }, [dragState, inventoryItems]);
 
   const handleOpenInventory = () => {
     if (!characterContext) {
@@ -370,12 +389,23 @@ export const ViewInventoryNode = ({ component }: { component: Component }) => {
           characterContext.updateInventoryItem(item.id, {
             quantity: remainder,
           });
+          // Set committed position to original position for optimistic UI
+          setDragState((prev) =>
+            prev ? { ...prev, committedX: dragState.startX, committedY: dragState.startY } : null,
+          );
         } else {
           // Remove the dragged item entirely
           characterContext.removeInventoryItem(item.id);
+          // Clear drag state immediately since item is removed
+          setDragState(null);
         }
+      } else {
+        // If collision but can't stack, item stays in original position
+        // Set committed position to original position for optimistic UI
+        setDragState((prev) =>
+          prev ? { ...prev, committedX: dragState.startX, committedY: dragState.startY } : null,
+        );
       }
-      // If collision but can't stack, item stays in original position (no update needed)
     } else {
       // No collision - update position if changed
       if (clampedX !== dragState.startX || clampedY !== dragState.startY) {
@@ -383,14 +413,25 @@ export const ViewInventoryNode = ({ component }: { component: Component }) => {
           x: clampedX,
           y: clampedY,
         });
+        // Set committed position for optimistic UI
+        setDragState((prev) => (prev ? { ...prev, committedX: clampedX, committedY: clampedY } : null));
+      } else {
+        // Position didn't change, just clear drag state
+        setDragState(null);
       }
     }
-
-    setDragState(null);
   };
 
   const getItemPosition = (item: InventoryItemWithData) => {
     if (dragState?.itemId === item.id) {
+      // If we have a committed position, use that (item is dropped but waiting for DB update)
+      if (dragState.committedX !== undefined && dragState.committedY !== undefined) {
+        return {
+          left: dragState.committedX * cellWidth,
+          top: dragState.committedY * cellHeight,
+        };
+      }
+      // Otherwise use the current drag position
       return {
         left: dragState.currentX,
         top: dragState.currentY,
@@ -407,7 +448,6 @@ export const ViewInventoryNode = ({ component }: { component: Component }) => {
       <div
         ref={containerRef}
         onDoubleClick={handleOpenInventory}
-        onClick={() => setContextMenu(null)}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
         style={{

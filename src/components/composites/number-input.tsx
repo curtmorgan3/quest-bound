@@ -206,7 +206,7 @@ export const NumberInput = ({
           onBlur={onBlur}
         />
       </PopoverTrigger>
-      <PopoverContent side='bottom' align='center' className='w-64 p-3'>
+      <PopoverContent side='bottom' align='center' className='w-64 p-3 z-500'>
         {label && <div className='mb-2 text-xs font-medium text-muted-foreground'>{label}</div>}
         <div className='flex items-center justify-between gap-1 mb-2 pl-4 pr-4'>
           {[1, 3, 5, lastRollTotal ?? 10].map((preset, i) => (
@@ -278,6 +278,7 @@ export const NumberInput = ({
         <div className='mt-3 flex items-center justify-between gap-2'>
           <Button
             type='button'
+            className='number-input-subtract'
             variant='outline'
             size='icon'
             onClick={handleSubtract}
@@ -285,10 +286,16 @@ export const NumberInput = ({
             aria-label='Subtract'>
             <Minus className='size-4' aria-hidden='true' />
           </Button>
-          <Button type='button' size='sm' onClick={handleSet} disabled={disabled}>
+          <Button
+            type='button'
+            size='sm'
+            onClick={handleSet}
+            disabled={disabled}
+            className='number-input-set'>
             Set
           </Button>
           <Button
+            className='number-input-add'
             type='button'
             variant='outline'
             size='icon'
