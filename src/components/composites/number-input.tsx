@@ -214,7 +214,7 @@ export const NumberInput = ({
           onBlur={onBlur}
         />
       </PopoverTrigger>
-      <PopoverContent side='bottom' align='center' className='w-64 p-3 z-500'>
+      <PopoverContent side='bottom' align='center' className='w-64 p-3' style={{ zIndex: 9999 }}>
         {label && <div className='mb-2 text-xs font-medium text-muted-foreground'>{label}</div>}
         <div className='flex items-center justify-between gap-1 mb-2 pl-4 pr-4'>
           {[1, 3, 5, lastRollTotal ?? 10].map((preset, i) => (
@@ -239,7 +239,8 @@ export const NumberInput = ({
           <div
             ref={containerRef}
             className='relative h-40 overflow-y-auto overflow-x-hidden number-wheel-input scroll-smooth snap-y snap-mandatory py-2'
-            onScroll={handleScroll}>
+            onScroll={handleScroll}
+            onWheel={(e) => e.stopPropagation()}>
             <div
               key={'start-one'}
               className='flex h-8 items-center justify-center snap-center text-lg transition-all text-muted-foreground scale-95'
