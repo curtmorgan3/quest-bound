@@ -1,4 +1,4 @@
-import { SignIn } from './sign-in';
+import { SignIn } from '@/pages';
 
 describe('SignIn Component', () => {
   it('should render sign in form', () => {

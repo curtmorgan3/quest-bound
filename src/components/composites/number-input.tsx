@@ -1,7 +1,7 @@
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { diceRollLogger } from '@/lib/dice-roll-logger';
 import { cn } from '@/lib/utils';
+import { diceRollLogger } from '@/stores';
 import { Minus, Plus } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 

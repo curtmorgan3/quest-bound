@@ -1,4 +1,4 @@
-import { errorLogger } from '@/lib/error-logger';
+import { errorLogger } from '@/stores';
 import { AlertTriangle, Home, RefreshCw } from 'lucide-react';
 import React, { Component, type ErrorInfo, type ReactNode } from 'react';
 import { Button } from './ui/button';

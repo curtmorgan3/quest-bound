@@ -1,5 +1,6 @@
 export * from './characters';
 export * from './dev-tools';
+export * from './dice';
 export * from './error';
 export * from './home';
 export * from './ruleset';

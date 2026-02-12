@@ -4,8 +4,9 @@ import {
   getComponentStyles,
   useNodeData,
 } from '@/lib/compass-planes/utils';
-import { DiceContext, parseTextForDiceRolls, WindowEditorContext } from '@/stores';
+import { DiceContext, WindowEditorContext } from '@/stores';
 import type { Component, TextComponentData, TextComponentStyle } from '@/types';
+import { parseTextForDiceRolls } from '@/utils';
 import { useNodeId } from '@xyflow/react';
 import { useContext, useEffect, useRef, useState } from 'react';
 import { ResizableNode } from '../../decorators';

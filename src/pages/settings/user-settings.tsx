@@ -15,7 +15,7 @@ import {
   PWAInstallPrompt,
 } from '@/components';
 import { useUsers } from '@/lib/compass-api';
-import { errorLogger } from '@/lib/error-logger';
+import { errorLogger } from '@/stores';
 import { Download } from 'lucide-react';
 import { useEffect, useState } from 'react';
 

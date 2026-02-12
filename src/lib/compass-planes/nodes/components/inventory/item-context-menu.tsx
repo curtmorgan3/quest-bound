@@ -11,13 +11,8 @@ import {
 } from '@/components';
 import { useAttributes, useCharacterAttributes } from '@/lib/compass-api';
 import { injectCharacterData } from '@/lib/compass-planes/utils';
-import {
-  CharacterContext,
-  DiceContext,
-  parseTextForDiceRolls,
-  type InventoryItemWithData,
-} from '@/stores';
-import { useKeyListeners } from '@/utils';
+import { CharacterContext, DiceContext, type InventoryItemWithData } from '@/stores';
+import { parseTextForDiceRolls, useKeyListeners } from '@/utils';
 import { Check, Shirt } from 'lucide-react';
 import { useContext, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';

@@ -11,8 +11,9 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet';
 import { useDiceRolls } from '@/lib/compass-api';
-import { DiceContext, formatSegmentResult } from '@/stores';
+import { DiceContext } from '@/stores';
 import type { DiceRoll } from '@/types';
+import { formatSegmentResult } from '@/utils';
 import { Dice6, Trash } from 'lucide-react';
 import { useContext, useEffect, useState } from 'react';
 import { DddiceAuthModal, DiceThemes } from './dddice';

@@ -4,9 +4,9 @@ import { Text } from '@/components/ui/text';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { colorWhite } from '@/palette';
 import { DiceContext } from '@/stores';
+import type { DiceTheme } from '@/types';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
 import { useContext, useState } from 'react';
-import type { DiceTheme } from '../types';
 
 export const DiceThemes = () => {
   const { setTheme, getThemes } = useContext(DiceContext);

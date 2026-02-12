@@ -1,8 +1,8 @@
 import { useNotifications } from '@/hooks';
 import { useCurrentUser } from '@/stores';
+import { standardTheme, type Dice, type DiceTheme, type Room, type UseThreeDDice } from '@/types';
 import { ThreeDDice, ThreeDDiceRollEvent, type IRoll } from 'dddice-js';
 import { useEffect, useRef, useState } from 'react';
-import { standardTheme, type Dice, type DiceTheme, type Room, type UseThreeDDice } from '../types';
 import {
   authenticateDddiceUser,
   createAuthCode,

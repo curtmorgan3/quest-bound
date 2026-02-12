@@ -4,13 +4,9 @@ import {
   getComponentStyles,
   useNodeData,
 } from '@/lib/compass-planes/utils';
-import {
-  CharacterContext,
-  DiceContext,
-  parseTextForDiceRolls,
-  WindowEditorContext,
-} from '@/stores';
+import { CharacterContext, DiceContext, WindowEditorContext } from '@/stores';
 import type { Component, ContentComponentData, TextComponentStyle } from '@/types';
+import { parseTextForDiceRolls } from '@/utils';
 import { useNodeId } from '@xyflow/react';
 import { useContext, useEffect, useRef, useState } from 'react';
 import Markdown from 'react-markdown';

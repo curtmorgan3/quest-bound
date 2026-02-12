@@ -1,4 +1,4 @@
-import type { DiceResult, SegmentResult } from '@/pages/dice/types';
+import type { DiceResult, SegmentResult } from '@/types';
 import { get, set } from 'idb-keyval';
 
 export interface DiceRollLogEntry {

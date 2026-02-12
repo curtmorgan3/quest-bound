@@ -1,4 +1,4 @@
-import { errorLogger, type ErrorLogEntry } from '@/lib/error-logger';
+import { errorLogger, type ErrorLogEntry } from '@/stores';
 import { useCallback } from 'react';
 import { useNotifications } from './use-notifications';
 

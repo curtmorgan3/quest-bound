@@ -1,3 +1,4 @@
+import DiscordImage from '@/assets/discord-icon.png';
 import videoSrc from '@/assets/logo-animation.mp4';
 import { Button, Input, Link, PWAInstallPrompt } from '@/components';
 import {
@@ -11,7 +12,6 @@ import { useRegisterEmail, useUsers } from '@/lib/compass-api';
 import { isRunningLocally } from '@/utils';
 import { motion } from 'framer-motion';
 import { useState } from 'react';
-import DiscordImage from './discord-icon.png';
 
 export const SignIn = () => {
   const { users, createUser, setCurrentUserById, loading } = useUsers();
