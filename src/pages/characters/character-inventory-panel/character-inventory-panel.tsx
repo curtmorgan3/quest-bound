@@ -15,10 +15,7 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet';
 import { useCharacter, useInventory } from '@/lib/compass-api';
-import {
-  ItemContextMenu,
-  type ContextMenuState,
-} from '@/lib/compass-planes/nodes/components/inventory/item-context-menu';
+import { ItemContextMenu } from '@/lib/compass-planes/nodes/components/inventory/item-context-menu';
 import type { InventoryItemType } from '@/types';
 import { Plus, SearchIcon } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
@@ -39,12 +36,13 @@ export const CharacterInventoryPanel = ({ open, onOpenChange }: CharacterInvento
 
   const [typeFilter, setTypeFilter] = useState<InventoryItemType>('item');
   const [titleFilter, setTitleFilter] = useState('');
-  const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
 
   const totalInventoryWeight = inventoryItems.reduce((acc, current) => (acc += current.weight), 0);
   const parentRef = useRef<HTMLDivElement>(null);
 
   const {
+    contextMenu,
+    setContextMenu,
     handleCloseContextMenu,
     handleItemClick,
     handleOpenInventoryPanel,
