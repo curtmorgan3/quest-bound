@@ -7,6 +7,7 @@ You are implementing Phase 1 of the Quest Bound testing strategy. This phase foc
 ## Objective
 
 Set up Vitest for unit testing and write comprehensive unit tests for pure TypeScript utility functions. These are the highest priority tests because they:
+
 - Cover critical game logic (dice rolling)
 - Are pure functions (easy to test, no dependencies)
 - Provide immediate value and quick wins
@@ -15,7 +16,8 @@ Set up Vitest for unit testing and write comprehensive unit tests for pure TypeS
 ## Prerequisites
 
 Read these files first to understand the codebase:
-- `agents/test-strategy.md` - Overall testing strategy
+
+- `agent/test-stategy/test-strategy.md` - Overall testing strategy
 - `src/utils/dice-utils.ts` - Dice rolling utilities to test
 - `src/utils/helpers.ts` - Helper utilities to test
 - `src/lib/compass-planes/utils/node-conversion.ts` - Node conversion utilities
@@ -38,6 +40,7 @@ npm install -D vitest @vitest/coverage-v8 @testing-library/jest-dom
 ### 2. Create Vitest Configuration
 
 Create `vitest.config.ts` in the project root with:
+
 - React plugin support
 - TypeScript path aliases (use vite-tsconfig-paths)
 - jsdom environment
@@ -46,17 +49,18 @@ Create `vitest.config.ts` in the project root with:
   - tests/
   - cypress/
   - dist/
-  - **/*.test.ts
-  - **/*.test.tsx
-  - **/*.config.ts
-  - **/types/
-  - src/components/ui/** (Radix primitives)
+  - \*_/_.test.ts
+  - \*_/_.test.tsx
+  - \*_/_.config.ts
+  - \*\*/types/
+  - src/components/ui/\*\* (Radix primitives)
 - Setup file reference
 - Global test utilities
 
 ### 3. Create Test Setup File
 
 Create `tests/setup.ts` with:
+
 - Import @testing-library/jest-dom for extended matchers
 - Any global test utilities
 - Mock configurations if needed
@@ -64,6 +68,7 @@ Create `tests/setup.ts` with:
 ### 4. Create Directory Structure
 
 Create the following directory structure:
+
 ```
 tests/
 └── unit/
@@ -83,6 +88,7 @@ Create comprehensive unit tests for each utility file:
 Test the following functions from `src/utils/dice-utils.ts`:
 
 **`parseDiceExpression(roll: string): DiceToken[][]`**
+
 - Test cases:
   - Simple dice: "2d6" → tokens with count=2, sides=6
   - Dice with modifier: "1d20+5" → dice token + modifier token
@@ -93,6 +99,7 @@ Test the following functions from `src/utils/dice-utils.ts`:
   - Whitespace handling: "2 d 6 + 4"
 
 **`rollDie(sides: number): number`**
+
 - Test cases:
   - Returns value between 1 and sides (inclusive)
   - Test with various side counts: d4, d6, d8, d10, d12, d20, d100
@@ -100,6 +107,7 @@ Test the following functions from `src/utils/dice-utils.ts`:
   - Run multiple times to verify range (use loops)
 
 **`formatSegmentResult(s: SegmentResult): string`**
+
 - Test cases:
   - Format with rolls and no modifier
   - Format with rolls and positive modifier
@@ -108,6 +116,7 @@ Test the following functions from `src/utils/dice-utils.ts`:
   - Verify output format matches expected pattern
 
 **`parseTextForDiceRolls(text?: string): string[]`**
+
 - Test cases:
   - Text with single dice expression: "Restores 1d6 HP" → ["1d6"]
   - Text with multiple dice: "Deals 2d6+4 damage and 1d4 fire" → ["2d6+4", "1d4"]
@@ -121,6 +130,7 @@ Test the following functions from `src/utils/dice-utils.ts`:
 Test the following functions from `src/utils/helpers.ts`:
 
 **`generateId(context?: string): string`**
+
 - Test cases:
   - Without context: returns valid UUID format
   - With context: returns "context-uuid" format
@@ -128,6 +138,7 @@ Test the following functions from `src/utils/helpers.ts`:
   - UUID format validation (regex check)
 
 **`isRunningLocally(): boolean`**
+
 - Test cases:
   - Mock window.location.href with "localhost" → returns true
   - Mock window.location.href without "localhost" → returns false
@@ -136,6 +147,7 @@ Test the following functions from `src/utils/helpers.ts`:
 #### C. Node Conversion Utilities (`tests/unit/lib/compass-planes/utils/node-conversion.test.ts`)
 
 Read `src/lib/compass-planes/utils/node-conversion.ts` and test all exported functions:
+
 - Component to node conversion
 - Node to component conversion
 - Data transformation logic
@@ -146,6 +158,7 @@ Read `src/lib/compass-planes/utils/node-conversion.ts` and test all exported fun
 #### D. Character Data Injection (`tests/unit/lib/compass-planes/utils/inject-character-data.test.ts`)
 
 Read `src/lib/compass-planes/utils/inject-character-data.ts` and test the data injection logic:
+
 - Template interpolation: "{{attribute_name}}" replacement
 - Special tokens: "{{name}}" for character name
 - Missing attributes: should handle gracefully
@@ -156,6 +169,7 @@ Read `src/lib/compass-planes/utils/inject-character-data.ts` and test the data i
 #### E. Default Value Injection (`tests/unit/lib/compass-planes/utils/inject-defaults.test.ts`)
 
 Read `src/lib/compass-planes/utils/inject-defaults.ts` and test the default value logic:
+
 - Default value application for different attribute types
 - Type-specific defaults (string, number, boolean, list)
 - Attribute initialization
@@ -194,7 +208,9 @@ npm run test:unit:watch
 ## Test Writing Guidelines
 
 ### Structure
+
 Use the Arrange-Act-Assert pattern:
+
 ```typescript
 import { describe, it, expect } from 'vitest';
 
@@ -202,10 +218,10 @@ describe('functionName', () => {
   it('should do something specific', () => {
     // Arrange - Set up test data
     const input = 'test';
-    
+
     // Act - Execute the function
     const result = functionName(input);
-    
+
     // Assert - Verify the result
     expect(result).toBe('expected');
   });
@@ -213,17 +229,20 @@ describe('functionName', () => {
 ```
 
 ### Naming
+
 - Use descriptive test names that explain the behavior
 - Format: "should [expected behavior] when [condition]"
 - Group related tests in describe blocks
 
 ### Coverage
+
 - Test happy paths (normal usage)
 - Test edge cases (empty, null, undefined, boundary values)
 - Test error conditions (invalid input)
 - Test all code branches
 
 ### Best Practices
+
 - Keep tests independent (no shared state)
 - Use beforeEach/afterEach for setup/cleanup
 - Mock external dependencies (window, localStorage, etc.)
@@ -233,6 +252,7 @@ describe('functionName', () => {
 ## Success Criteria
 
 Phase 1 is complete when:
+
 - ✅ Vitest is configured and running successfully
 - ✅ All 5 utility files have comprehensive unit tests
 - ✅ Tests cover happy paths, edge cases, and error conditions
@@ -265,6 +285,7 @@ Phase 1 is complete when:
 ## After Completion
 
 Once Phase 1 is complete:
+
 1. Review test coverage report
 2. Document any patterns or utilities created
 3. Prepare for Phase 2 (Component Tests)
