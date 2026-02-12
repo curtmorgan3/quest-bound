@@ -21,7 +21,8 @@
     "test:component": "cypress run --component",
     "test:component:open": "cypress open --component",
     "test:all": "npm run test:e2e && npm run test:component",
-    "build:robots": "node build-robots.js"
+    "build:robots": "node build-robots.js",
+    "qbs": "tsx src/lib/compass-logic/interpreter/cli.ts"
   },
   "dependencies": {
     "@cypress/react": "^9.0.1",
@@ -117,6 +118,7 @@
     "prettier-plugin-organize-imports": "^4.2.0",
     "sharp": "^0.34.4",
     "start-server-and-test": "^2.1.0",
+    "tsx": "^4.21.0",
     "tw-animate-css": "^1.3.8",
     "typescript": "~5.8.3",
     "typescript-eslint": "^8.39.1",
