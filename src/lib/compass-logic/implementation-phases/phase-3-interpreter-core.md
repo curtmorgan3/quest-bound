@@ -551,14 +551,6 @@ class RuntimeError extends Error {
 - [ ] Variable scoping
 - [ ] Error handling
 
-### Integration Tests
-
-- [ ] Execute complete scripts
-- [ ] Nested control flow
-- [ ] Recursive functions
-- [ ] Complex expressions
-- [ ] Error scenarios
-
 ## Performance Considerations
 
 - Efficient tokenization (single pass)
