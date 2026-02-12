@@ -657,3 +657,90 @@ export * from './scripts';
 - Use `useErrorHandler` for consistent error handling
 - Database hooks run automatically on CRUD operations
 - Cascade deletion prevents orphaned records
+
+---
+
+## Implementation Prompt
+
+**Use this prompt when ready to implement Phase 1:**
+
+```
+I need you to implement Phase 1 of the QBScript system as specified in 
+@src/lib/compass-logic/implementation-phases/phase-1-data-model.md
+
+This phase adds database tables and React hooks for storing and managing QBScript scripts.
+
+CRITICAL REQUIREMENTS:
+1. Follow the EXACT file structure and locations specified in the document
+2. Use the EXACT patterns from existing files (use-attributes.ts, use-actions.ts)
+3. Work through the Implementation Checklist in order
+4. Test each section before moving to the next
+
+WORKFLOW:
+Step 1: Type Definitions
+- Read @src/types/data-model-types.ts to understand the existing pattern
+- Add Script and ScriptError types exactly as specified
+- Modify Attribute, Action, Item, and CharacterAttribute types
+- Verify types compile with no errors
+
+Step 2: Database Schema
+- Read @src/stores/db/db.ts to understand the current schema (v11)
+- Import the new types
+- Add scripts and scriptErrors to the db type definition
+- Update db.version(11) to db.version(12)
+- Add the two new tables with proper indexes
+- Update existing tables (attributes, actions, items, characterAttributes) with new fields
+- Verify the database schema compiles
+
+Step 3: Database Hooks
+- Create new file @src/stores/db/hooks/script-hooks.ts
+- Implement registerScriptHooks() following the pattern in the document
+- Add all cascade deletion logic (entity→script, script→entity, ruleset→scripts)
+- Update @src/stores/db/hooks/db-hooks.ts to register the new hooks
+- Verify hooks are called by checking db.ts
+
+Step 4: React Hooks
+- Create new directory @src/lib/compass-api/hooks/scripts/
+- Create use-scripts.ts following the EXACT pattern from use-attributes.ts
+  - Use useLiveQuery for reactive queries
+  - Use useErrorHandler for error handling
+  - Use crypto.randomUUID() for IDs
+  - Use new Date().toISOString() for timestamps
+  - Implement createScript, updateScript, deleteScript, getScriptByEntity
+  - Handle entity scriptId updates when creating scripts
+- Create use-script-errors.ts for error logging
+  - Implement logScriptError, clearErrors, dismissError
+  - Use limit parameter (default 100)
+  - Use reverse() for most recent first
+- Create index.ts to export both hooks
+- Update @src/lib/compass-api/hooks/index.ts to export scripts hooks
+
+Step 5: Verification
+- Read all the files you created/modified
+- Check for TypeScript errors
+- Verify all imports are correct
+- Verify the pattern matches existing files
+- Run through the checklist to ensure nothing was missed
+
+IMPORTANT PATTERNS TO FOLLOW:
+- Look at use-attributes.ts for the exact structure of CRUD operations
+- Look at use-actions.ts for error handling patterns
+- Match the coding style (spacing, naming, comments)
+- Use the same error handling approach
+- Use the same query patterns
+
+DO NOT:
+- Skip any items in the checklist
+- Deviate from the specified file locations
+- Use different patterns than existing code
+- Add features not in the spec
+- Write tests yet (that comes after verification)
+
+After implementation, show me:
+1. A summary of files created/modified
+2. Any TypeScript errors encountered
+3. The next steps (testing)
+
+Begin with Step 1 (Type Definitions). Read the existing data-model-types.ts file first, 
+then make the changes exactly as specified in the phase document.
+```
