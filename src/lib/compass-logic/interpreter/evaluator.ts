@@ -61,7 +61,7 @@ export class Environment {
 }
 
 export class Evaluator {
-  private globalEnv: Environment;
+  public globalEnv: Environment;
   private currentEnv: Environment;
   private announceMessages: string[];
   private logMessages: any[][];
@@ -102,6 +102,9 @@ export class Evaluator {
 
       case 'FunctionCall':
         return this.evalFunctionCall(node);
+
+      case 'MethodCall':
+        return this.evalMethodCall(node);
 
       case 'FunctionDef':
         return this.evalFunctionDef(node);
@@ -258,6 +261,25 @@ export class Evaluator {
     }
 
     throw new RuntimeError(`'${node.name}' is not a function`);
+  }
+
+  private evalMethodCall(node: any): any {
+    const object = this.eval(node.object);
+    
+    if (object === null || object === undefined) {
+      throw new RuntimeError(`Cannot call method '${node.method}' on ${object}`);
+    }
+
+    const method = object[node.method];
+    
+    if (typeof method !== 'function') {
+      throw new RuntimeError(`'${node.method}' is not a method of ${object}`);
+    }
+
+    const args = node.arguments.map((arg: ASTNode) => this.eval(arg));
+    
+    // Call the method with the object as 'this' context
+    return method.apply(object, args);
   }
 
   private evalFunctionDef(node: any): void {

@@ -19,6 +19,7 @@ import type {
   ArrayLiteral,
   ArrayAccess,
   MemberAccess,
+  MethodCall,
 } from '@/lib/compass-logic/interpreter/ast';
 
 function parse(source: string): Program {
@@ -274,17 +275,22 @@ describe('Parser', () => {
 
     it('should parse method call', () => {
       const ast = parse('Owner.Attribute("HP")');
-      const stmt = ast.statements[0] as FunctionCall;
-      expect(stmt.type).toBe('FunctionCall');
-      expect(stmt.name).toBe('Owner.Attribute');
+      const stmt = ast.statements[0] as MethodCall;
+      expect(stmt.type).toBe('MethodCall');
+      expect((stmt.object as Identifier).name).toBe('Owner');
+      expect(stmt.method).toBe('Attribute');
       expect(stmt.arguments).toHaveLength(1);
       expect((stmt.arguments[0] as StringLiteral).value).toBe('HP');
     });
 
     it('should parse chained method calls', () => {
       const ast = parse('Owner.Attribute("HP").add(10)');
-      const stmt = ast.statements[0] as FunctionCall;
-      expect(stmt.name).toBe('Owner.Attribute.add');
+      const stmt = ast.statements[0] as MethodCall;
+      expect(stmt.type).toBe('MethodCall');
+      expect(stmt.method).toBe('add');
+      // The object should be another MethodCall
+      expect((stmt.object as MethodCall).type).toBe('MethodCall');
+      expect((stmt.object as MethodCall).method).toBe('Attribute');
     });
   });
 
@@ -553,14 +559,17 @@ else:
 
     it('should parse member access with method call', () => {
       const ast = parse('Owner.Attribute("HP").add(10)');
-      const stmt = ast.statements[0] as FunctionCall;
-      expect(stmt.name).toBe('Owner.Attribute.add');
+      const stmt = ast.statements[0] as MethodCall;
+      expect(stmt.type).toBe('MethodCall');
+      expect(stmt.method).toBe('add');
     });
 
     it('should parse array method call', () => {
       const ast = parse('items.count()');
-      const stmt = ast.statements[0] as FunctionCall;
-      expect(stmt.name).toBe('items.count');
+      const stmt = ast.statements[0] as MethodCall;
+      expect(stmt.type).toBe('MethodCall');
+      expect(stmt.method).toBe('count');
+      expect((stmt.object as Identifier).name).toBe('items');
     });
   });
 
@@ -612,7 +621,8 @@ return base + con + level`;
       const ast = parse(source);
       const loop = ast.statements[0] as ForLoop;
       expect(loop.type).toBe('ForLoop');
-      expect((loop.body[0] as FunctionCall).name).toBe('arrow.consume');
+      expect((loop.body[0] as MethodCall).type).toBe('MethodCall');
+      expect((loop.body[0] as MethodCall).method).toBe('consume');
     });
 
     it('should parse nested control flow', () => {

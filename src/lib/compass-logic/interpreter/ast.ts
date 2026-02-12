@@ -9,6 +9,7 @@ export type ASTNode =
   | UnaryOp
   | Assignment
   | FunctionCall
+  | MethodCall
   | FunctionDef
   | IfStatement
   | ForLoop
@@ -75,6 +76,13 @@ export interface Assignment {
 export interface FunctionCall {
   type: 'FunctionCall';
   name: string;
+  arguments: ASTNode[];
+}
+
+export interface MethodCall {
+  type: 'MethodCall';
+  object: ASTNode;
+  method: string;
   arguments: ASTNode[];
 }
 

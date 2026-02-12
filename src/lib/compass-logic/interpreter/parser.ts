@@ -12,6 +12,7 @@ import type {
   BinaryOp,
   UnaryOp,
   FunctionCall,
+  MethodCall,
   MemberAccess,
   ArrayAccess,
   ArrayLiteral,
@@ -420,43 +421,20 @@ export class Parser {
 
         this.consume(TokenType.RPAREN, "Expected ')' after method arguments");
 
-        // Convert MemberAccess to FunctionCall with dotted name
+        // Create a MethodCall node to support chaining
         const memberAccess = expr as MemberAccess;
-        let fullName = '';
-
-        // Build the full method name (e.g., "Owner.Attribute")
-        if (memberAccess.object.type === 'Identifier') {
-          fullName = `${(memberAccess.object as Identifier).name}.${memberAccess.property}`;
-        } else {
-          // For nested member access, we need to handle it recursively
-          fullName = this.buildMemberPath(memberAccess);
-        }
-
         expr = {
-          type: 'FunctionCall',
-          name: fullName,
+          type: 'MethodCall',
+          object: memberAccess.object,
+          method: memberAccess.property,
           arguments: args,
-        } as FunctionCall;
+        } as MethodCall;
       } else {
         break;
       }
     }
 
     return expr;
-  }
-
-  private buildMemberPath(node: ASTNode): string {
-    if (node.type === 'Identifier') {
-      return (node as Identifier).name;
-    } else if (node.type === 'MemberAccess') {
-      const memberAccess = node as MemberAccess;
-      return `${this.buildMemberPath(memberAccess.object)}.${memberAccess.property}`;
-    } else if (node.type === 'FunctionCall') {
-      // Handle chained method calls like Owner.Attribute("HP").add(10)
-      const funcCall = node as FunctionCall;
-      return funcCall.name;
-    }
-    throw this.error('Invalid member access');
   }
 
   private primary(): ASTNode {

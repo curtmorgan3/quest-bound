@@ -53,6 +53,7 @@ list = []
 arrows = Owner.Items('Arrow')
 
 // Array methods (all use parentheses)
+arrows.length       // Returns the size of the array
 arrows.count()      // Returns number of items
 arrows.first()      // Returns first item
 arrows.last()       // Returns last item
