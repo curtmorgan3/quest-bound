@@ -1,41 +1,57 @@
 [
   {
     "id": "item-basic-1",
-    "rulesetId": "test-ruleset-1",
-    "title": "Health Potion",
-    "description": "Restores 2d4+2 hit points",
-    "category": "Consumables",
-    "assetId": null,
-    "image": null,
-    "inventoryWidth": 1,
-    "inventoryHeight": 1,
-    "createdAt": "2024-01-01T00:00:00.000Z",
-    "updatedAt": "2024-01-01T00:00:00.000Z"
+    "name": "Health Potion",
+    "type": "item",
+    "category": "consumable",
+    "description": "Restores 50 HP",
+    "quantity": 3,
+    "weight": 0.5,
+    "value": 50
   },
   {
     "id": "item-equippable-1",
-    "rulesetId": "test-ruleset-1",
-    "title": "Longsword",
-    "description": "A versatile weapon. Deals 1d8 slashing damage",
-    "category": "Weapons",
-    "assetId": null,
-    "image": null,
-    "inventoryWidth": 1,
-    "inventoryHeight": 2,
-    "createdAt": "2024-01-01T00:00:00.000Z",
-    "updatedAt": "2024-01-01T00:00:00.000Z"
+    "name": "Iron Sword",
+    "type": "item",
+    "category": "weapon",
+    "description": "A sturdy iron sword",
+    "quantity": 1,
+    "weight": 5,
+    "value": 100,
+    "equipped": true,
+    "damageBonus": 5
   },
   {
-    "id": "item-large-1",
-    "rulesetId": "test-ruleset-1",
-    "title": "Tower Shield",
-    "description": "A large shield providing +2 AC",
-    "category": "Armor",
-    "assetId": null,
-    "image": null,
-    "inventoryWidth": 2,
-    "inventoryHeight": 3,
-    "createdAt": "2024-01-01T00:00:00.000Z",
-    "updatedAt": "2024-01-01T00:00:00.000Z"
+    "id": "item-equippable-2",
+    "name": "Leather Armor",
+    "type": "item",
+    "category": "armor",
+    "description": "Basic leather armor",
+    "quantity": 1,
+    "weight": 10,
+    "value": 150,
+    "equipped": true,
+    "armorClass": 3
+  },
+  {
+    "id": "item-consumable-1",
+    "name": "Mana Potion",
+    "type": "item",
+    "category": "consumable",
+    "description": "Restores 30 MP",
+    "quantity": 5,
+    "weight": 0.3,
+    "value": 30
+  },
+  {
+    "id": "item-container-1",
+    "name": "Backpack",
+    "type": "item",
+    "category": "container",
+    "description": "A sturdy backpack",
+    "quantity": 1,
+    "weight": 2,
+    "value": 25,
+    "capacity": 50
   }
 ]

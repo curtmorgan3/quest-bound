@@ -1,53 +1,66 @@
 [
   {
     "id": "input-text-1",
-    "rulesetId": "test-ruleset-1",
-    "windowId": "test-window-1",
-    "type": "comp-input",
-    "x": 100,
-    "y": 100,
-    "z": 1,
-    "height": 40,
-    "width": 200,
-    "rotation": 0,
-    "attributeId": "attr-string-1",
-    "data": "{}",
-    "style": "{\"fontSize\":14,\"color\":\"#000000\"}",
-    "createdAt": "2024-01-01T00:00:00.000Z",
-    "updatedAt": "2024-01-01T00:00:00.000Z"
+    "type": "input",
+    "data": {
+      "type": "text",
+      "name": "Character Name",
+      "value": "Test Hero",
+      "characterAttributeId": "attr-string-1"
+    },
+    "style": {
+      "fontSize": 14,
+      "color": "#000000"
+    }
   },
   {
     "id": "input-number-1",
-    "rulesetId": "test-ruleset-1",
-    "windowId": "test-window-1",
-    "type": "comp-input",
-    "x": 100,
-    "y": 200,
-    "z": 1,
-    "height": 40,
-    "width": 150,
-    "rotation": 0,
-    "attributeId": "attr-number-1",
-    "data": "{}",
-    "style": "{\"fontSize\":14,\"color\":\"#000000\"}",
-    "createdAt": "2024-01-01T00:00:00.000Z",
-    "updatedAt": "2024-01-01T00:00:00.000Z"
+    "type": "input",
+    "data": {
+      "type": "number",
+      "name": "Health Points",
+      "value": 50,
+      "min": 0,
+      "max": 100,
+      "characterAttributeId": "attr-number-1"
+    },
+    "style": {
+      "fontSize": 14,
+      "color": "#000000"
+    }
   },
   {
     "id": "input-select-1",
-    "rulesetId": "test-ruleset-1",
-    "windowId": "test-window-1",
-    "type": "comp-input",
-    "x": 100,
-    "y": 300,
-    "z": 1,
-    "height": 40,
-    "width": 200,
-    "rotation": 0,
-    "attributeId": "attr-list-single-1",
-    "data": "{}",
-    "style": "{\"fontSize\":14,\"color\":\"#000000\"}",
-    "createdAt": "2024-01-01T00:00:00.000Z",
-    "updatedAt": "2024-01-01T00:00:00.000Z"
+    "type": "input",
+    "data": {
+      "type": "list",
+      "name": "Character Class",
+      "value": "Warrior",
+      "options": ["Warrior", "Mage", "Rogue", "Cleric"],
+      "attributeType": "list",
+      "allowMultiSelect": false,
+      "characterAttributeId": "attr-list-single-1"
+    },
+    "style": {
+      "fontSize": 14,
+      "color": "#000000"
+    }
+  },
+  {
+    "id": "input-multiselect-1",
+    "type": "input",
+    "data": {
+      "type": "list",
+      "name": "Skills",
+      "value": "Swordsmanship;;Shield Bash",
+      "options": ["Swordsmanship", "Shield Bash", "Battle Cry", "Intimidation"],
+      "attributeType": "list",
+      "allowMultiSelect": true,
+      "characterAttributeId": "attr-list-multi-1"
+    },
+    "style": {
+      "fontSize": 14,
+      "color": "#000000"
+    }
   }
 ]

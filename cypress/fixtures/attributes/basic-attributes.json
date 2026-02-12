@@ -1,76 +1,61 @@
 [
   {
     "id": "attr-string-1",
-    "rulesetId": "test-ruleset-1",
-    "title": "Character Name",
-    "description": "The character's name",
-    "category": "Basic",
+    "name": "Character Name",
     "type": "string",
-    "defaultValue": "Unnamed",
-    "createdAt": "2024-01-01T00:00:00.000Z",
-    "updatedAt": "2024-01-01T00:00:00.000Z"
+    "value": "Test Hero",
+    "characterId": "test-char-1"
   },
   {
     "id": "attr-number-1",
-    "rulesetId": "test-ruleset-1",
-    "title": "Strength",
-    "description": "Physical strength attribute",
-    "category": "Attributes",
+    "name": "Health Points",
     "type": "number",
-    "defaultValue": 10,
-    "min": 1,
-    "max": 20,
-    "createdAt": "2024-01-01T00:00:00.000Z",
-    "updatedAt": "2024-01-01T00:00:00.000Z"
+    "value": 50,
+    "min": 0,
+    "max": 100,
+    "characterId": "test-char-1"
   },
   {
     "id": "attr-number-2",
-    "rulesetId": "test-ruleset-1",
-    "title": "Hit Points",
-    "description": "Current hit points",
-    "category": "Combat",
+    "name": "Max Health",
     "type": "number",
-    "defaultValue": 25,
+    "value": 100,
     "min": 0,
-    "max": 100,
-    "createdAt": "2024-01-01T00:00:00.000Z",
-    "updatedAt": "2024-01-01T00:00:00.000Z"
+    "max": 200,
+    "characterId": "test-char-1"
   },
   {
     "id": "attr-boolean-1",
-    "rulesetId": "test-ruleset-1",
-    "title": "Is Proficient",
-    "description": "Whether the character is proficient",
-    "category": "Skills",
+    "name": "Is Alive",
     "type": "boolean",
-    "defaultValue": false,
-    "createdAt": "2024-01-01T00:00:00.000Z",
-    "updatedAt": "2024-01-01T00:00:00.000Z"
+    "value": true,
+    "characterId": "test-char-1"
   },
   {
     "id": "attr-list-single-1",
-    "rulesetId": "test-ruleset-1",
-    "title": "Character Class",
-    "description": "The character's class",
-    "category": "Basic",
+    "name": "Character Class",
     "type": "list",
-    "defaultValue": "Fighter",
-    "options": ["Fighter", "Wizard", "Rogue", "Cleric"],
+    "value": "Warrior",
+    "options": ["Warrior", "Mage", "Rogue", "Cleric"],
     "allowMultiSelect": false,
-    "createdAt": "2024-01-01T00:00:00.000Z",
-    "updatedAt": "2024-01-01T00:00:00.000Z"
+    "characterId": "test-char-1"
   },
   {
     "id": "attr-list-multi-1",
-    "rulesetId": "test-ruleset-1",
-    "title": "Skills",
-    "description": "Character skills",
-    "category": "Skills",
+    "name": "Skills",
     "type": "list",
-    "defaultValue": [],
-    "options": ["Athletics", "Acrobatics", "Stealth", "Perception", "Investigation"],
+    "value": "Swordsmanship;;Shield Bash",
+    "options": ["Swordsmanship", "Shield Bash", "Battle Cry", "Intimidation"],
     "allowMultiSelect": true,
-    "createdAt": "2024-01-01T00:00:00.000Z",
-    "updatedAt": "2024-01-01T00:00:00.000Z"
+    "characterId": "test-char-1"
+  },
+  {
+    "id": "attr-number-3",
+    "name": "Strength",
+    "type": "number",
+    "value": 18,
+    "min": 1,
+    "max": 20,
+    "characterId": "test-char-1"
   }
 ]

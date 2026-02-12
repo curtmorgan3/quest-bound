@@ -38,6 +38,57 @@ const mountWithProviders = (component: ReactNode, providers: ReactNode[] = [], o
   return mount(<BrowserRouter>{wrappedComponent}</BrowserRouter>, options);
 };
 
+// Helper to create mock component with default structure
+export const createMockComponent = (overrides: Partial<any> = {}) => {
+  return {
+    id: 'test-component-1',
+    type: 'text',
+    x: 0,
+    y: 0,
+    width: 200,
+    height: 100,
+    data: '{}',
+    style: '{}',
+    locked: false,
+    ...overrides,
+  };
+};
+
+// Helper to create mock character context
+export const createMockCharacterContext = (overrides: Partial<any> = {}) => {
+  return {
+    character: {
+      id: 'test-char-1',
+      name: 'Test Character',
+      rulesetId: 'test-ruleset-1',
+      userId: 'test-user-1',
+    },
+    characterAttributes: [],
+    inventoryItems: [],
+    getCharacterAttribute: cy.stub(),
+    updateCharacterAttribute: cy.stub(),
+    updateCharacterComponentData: cy.stub(),
+    updateInventoryItem: cy.stub(),
+    removeInventoryItem: cy.stub(),
+    addInventoryItem: cy.stub(),
+    setInventoryPanelConfig: cy.stub(),
+    ...overrides,
+  };
+};
+
+// Helper to create mock window editor context
+export const createMockWindowEditorContext = (components: any[] = []) => {
+  const componentsMap = new Map(components.map(c => [c.id, c]));
+  
+  return {
+    components,
+    getComponent: (id: string) => componentsMap.get(id),
+    updateComponent: cy.stub(),
+    addComponent: cy.stub(),
+    deleteComponent: cy.stub(),
+  };
+};
+
 // Type definitions are handled in component.d.ts
 
 Cypress.Commands.add('mount', mountWithRouter);
