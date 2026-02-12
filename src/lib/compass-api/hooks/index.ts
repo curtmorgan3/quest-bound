@@ -4,5 +4,6 @@ export * from './dice-rolls';
 export * from './export';
 export * from './fonts';
 export * from './rulesets';
+export * from './scripts';
 export * from './use-register-email';
 export * from './user';

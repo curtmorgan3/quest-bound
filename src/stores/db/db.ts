@@ -17,6 +17,8 @@ import type {
   Ruleset,
   User,
   Window,
+  Script,
+  ScriptError,
 } from '@/types';
 import Dexie, { type EntityTable } from 'dexie';
 import { assetInjectorMiddleware } from './asset-injector-middleware';
@@ -46,19 +48,21 @@ const db = new Dexie('qbdb') as Dexie & {
   inventories: EntityTable<Inventory, 'id'>;
   inventoryItems: EntityTable<InventoryItem, 'id'>;
   diceRolls: EntityTable<DiceRoll, 'id'>;
+  scripts: EntityTable<Script, 'id'>;
+  scriptErrors: EntityTable<ScriptError, 'id'>;
 };
 
 const common = '++id, createdAt, updatedAt';
 
 // Schema declaration:
-db.version(11).stores({
+db.version(12).stores({
   users: `${common}, username, assetId, image, preferences`,
   assets: `${common}, rulesetId, [directory+filename], data, type`,
   rulesets: `${common}, version, createdBy, title, description, details, assetId, image`,
   fonts: `${common}, rulesetId, label, data`,
-  attributes: `${common}, rulesetId, title, description, category, type, options, defaultValue, optionsChartRef, optionsChartColumnHeader, min, max`,
-  actions: `${common}, rulesetId, title, description, category`,
-  items: `${common}, rulesetId, title, description, category, weight, defaultQuantity, stackSize, isContainer, isStorable, isEquippable, isConsumable, inventoryWidth, inventoryHeight`,
+  attributes: `${common}, rulesetId, title, description, category, type, options, defaultValue, optionsChartRef, optionsChartColumnHeader, min, max, scriptId`,
+  actions: `${common}, rulesetId, title, description, category, scriptId`,
+  items: `${common}, rulesetId, title, description, category, weight, defaultQuantity, stackSize, isContainer, isStorable, isEquippable, isConsumable, inventoryWidth, inventoryHeight, scriptId`,
   charts: `${common}, rulesetId, title, description, category, data, assetId, image`,
   documents: `${common}, rulesetId, title, description, category, assetId, image, pdfAssetId, pdfData`,
   windows: `${common}, rulesetId, title, category`,
@@ -68,8 +72,10 @@ db.version(11).stores({
   inventoryItems: `${common}, characterId, inventoryId, entityId, quantity`,
   characterPages: `${common}, characterId, label`,
   characterWindows: `${common}, characterId, characterPageId, windowId, title, x, y, isCollapsed`,
-  characterAttributes: `${common}, characterId, attributeId, [characterId+attributeId]`,
+  characterAttributes: `${common}, characterId, attributeId, [characterId+attributeId], scriptDisabled`,
   diceRolls: `${common}, rulesetId, userId, value, label`,
+  scripts: `${common}, rulesetId, name, entityType, entityId, isGlobal, enabled`,
+  scriptErrors: `${common}, rulesetId, scriptId, characterId, timestamp`,
 });
 
 // Cache assets for reference in the asset injector middleware

@@ -9,6 +9,7 @@ export type Action = BaseDetails & {
   image?: string | null;
   inventoryWidth?: number;
   inventoryHeight?: number;
+  scriptId?: string | null;          // NEW: Associated script
 };
 
 export type Asset = BaseDetails & {
@@ -39,6 +40,7 @@ export type Attribute = BaseDetails & {
   image?: string | null;
   inventoryWidth?: number;
   inventoryHeight?: number;
+  scriptId?: string | null;          // NEW: Associated script
 };
 
 export type Chart = BaseDetails & {
@@ -72,6 +74,7 @@ export type CharacterAttribute = Attribute & {
   characterId: string;
   attributeId: string;
   value: string | number | boolean;
+  scriptDisabled?: boolean;          // NEW: Player has overridden the computed value
 };
 
 export type CharacterPage = BaseDetails & {
@@ -153,6 +156,8 @@ export type Item = BaseDetails & {
   inventoryHeight: number;
   assetId?: string | null;
   image?: string | null;
+  scriptId?: string | null;          // NEW: Associated script
+  customProperties?: Record<string, string | number | boolean>; // NEW: Custom properties for scripts
 };
 
 export type Inventory = BaseDetails & {
@@ -197,4 +202,25 @@ export type Window = BaseDetails & {
   title: string;
   category?: string;
   description?: string;
+};
+
+export type Script = BaseDetails & {
+  rulesetId: string;           // Which ruleset this script belongs to
+  name: string;                // Script name (e.g., "hit_points", "cast_fireball")
+  sourceCode: string;          // Full QBScript source code
+  entityType: 'attribute' | 'action' | 'item' | 'global';
+  entityId: string | null;     // ID of associated entity (null for global scripts)
+  isGlobal: boolean;           // Whether this is a global utility script
+  enabled: boolean;            // Allow disabling scripts without deleting
+};
+
+export type ScriptError = BaseDetails & {
+  rulesetId: string;
+  scriptId: string;            // Which script caused the error
+  characterId: string | null;  // Which character was executing (null for non-character scripts)
+  errorMessage: string;        // Human-readable error message
+  lineNumber: number | null;   // Where the error occurred
+  stackTrace: string | null;   // Detailed stack trace
+  context: string;             // What triggered the script (e.g., "on_load", "attribute_change")
+  timestamp: number;           // When the error occurred
 };

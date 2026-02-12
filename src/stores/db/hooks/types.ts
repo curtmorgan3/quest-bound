@@ -19,4 +19,6 @@ export type DB = Dexie & {
   documents: Dexie.Table;
   users: Dexie.Table;
   diceRolls: Dexie.Table;
+  scripts: Dexie.Table;
+  scriptErrors: Dexie.Table;
 };
