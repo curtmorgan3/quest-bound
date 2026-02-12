@@ -14,19 +14,18 @@ import { useDiceRolls } from '@/lib/compass-api';
 import { DiceContext } from '@/stores';
 import type { DiceRoll } from '@/types';
 import { formatSegmentResult } from '@/utils';
-import { Dice6, Trash } from 'lucide-react';
 import { useContext, useEffect, useState } from 'react';
 import { DddiceAuthModal, DiceThemes } from './dddice';
 import { RoomSelect } from './dddice/room-select';
+import { DiceRollRow } from './dice-roll-row';
 
 export const DicePanel = () => {
   const { rollDice, isRolling, lastResult, reset, dicePanelOpen, setDicePanelOpen, username } =
     useContext(DiceContext);
+  const { diceRolls, createDiceRoll, deleteDiceRoll } = useDiceRolls();
 
   const [label, setLabel] = useState('');
   const [value, setValue] = useState('');
-
-  const { diceRolls, createDiceRoll, deleteDiceRoll } = useDiceRolls();
 
   useEffect(() => {
     if (value || !lastResult?.notation) return;
@@ -148,45 +147,3 @@ export const DicePanel = () => {
     </>
   );
 };
-
-function DiceRollRow({
-  roll,
-  onDelete,
-  onRoll,
-}: {
-  roll: DiceRoll;
-  onDelete: () => void;
-  onRoll: (roll: string) => void;
-}) {
-  return (
-    <li className='flex items-center justify-between gap-2 rounded-md px-2 py-1.5 hover:bg-muted/50'>
-      <span className='min-w-0 flex-1 truncate text-sm'>
-        {roll.label ? (
-          <>
-            <span className='font-medium'>{roll.label}</span>
-            <span className='text-muted-foreground'> — {roll.value}</span>
-          </>
-        ) : (
-          <span className='text-muted-foreground'>{roll.value}</span>
-        )}
-      </span>
-      <Button
-        variant='ghost'
-        size='icon'
-        className='size-8 shrink-0'
-        onClick={() => onRoll(roll.value)}
-        aria-label={`Roll ${roll.label || roll.value}`}>
-        <Dice6 className='size-4' />
-      </Button>
-      <Button
-        variant='ghost'
-        size='icon'
-        title='Delete'
-        className='size-8 shrink-0'
-        onClick={onDelete}
-        aria-label={`Delete ${roll.label || roll.value}`}>
-        <Trash className='size-4' />
-      </Button>
-    </li>
-  );
-}
