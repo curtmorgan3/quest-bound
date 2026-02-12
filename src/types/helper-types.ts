@@ -1,3 +1,5 @@
+import type { InventoryItemWithData } from '@/stores';
+
 export type BaseDetails = {
   id: string;
   createdAt: string;
@@ -12,4 +14,12 @@ export type Coordinates = {
 export type Dimensions = {
   height: number;
   width: number;
+};
+
+export type InventoryItemType = 'item' | 'action' | 'attribute';
+
+export type InventoryListRow = {
+  type: 'entry';
+  entry: InventoryItemWithData;
+  estimatedSize: number;
 };

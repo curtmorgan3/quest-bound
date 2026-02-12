@@ -1,4 +1,3 @@
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -20,127 +19,51 @@ import {
   ItemContextMenu,
   type ContextMenuState,
 } from '@/lib/compass-planes/nodes/components/inventory/item-context-menu';
-import { CharacterContext, type InventoryItemWithData } from '@/stores';
-import { useVirtualizer } from '@tanstack/react-virtual';
-import { GaugeIcon, PackageIcon, Plus, SearchIcon, ZapIcon } from 'lucide-react';
-import { useContext, useEffect, useMemo, useRef, useState } from 'react';
+import type { InventoryItemType } from '@/types';
+import { Plus, SearchIcon } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
+import { DefaultInventoryEntryRow } from './default-inventory-row';
+import { useCharacterInventoryItems } from './use-character-inventory-items';
+import { useCharacterInventoryMethods } from './use-character-inventory-methods';
 
 type CharacterInventoryPanelProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 };
 
-type InventoryItemType = 'item' | 'action' | 'attribute';
-
-type ListRow = {
-  type: 'entry';
-  entry: InventoryItemWithData;
-  estimatedSize: number;
-};
-
-function DefaultInventoryEntryRow({
-  item,
-  onItemClick,
-}: {
-  item: InventoryItemWithData;
-  onItemClick: (e: React.MouseEvent, item: InventoryItemWithData) => void;
-}) {
-  const Icon = item.type === 'item' ? PackageIcon : item.type === 'action' ? ZapIcon : GaugeIcon;
-  const image = item.image ?? null;
-
-  let value = item.value ?? '';
-  if (item.type === 'attribute' && typeof value === 'string') {
-    // Multi-select list attributes
-    value = value.replace(';;', ', ');
-  }
-
-  return (
-    <button
-      type='button'
-      onClick={(e) => onItemClick(e, item)}
-      className='w-full text-left px-2 py-1.5 rounded-md text-sm flex items-center gap-2 hover:bg-accent hover:text-accent-foreground transition-colors cursor-pointer'>
-      <Avatar className='h-8 w-8 rounded-md shrink-0'>
-        {image ? (
-          <AvatarImage src={image} alt={item.title} className='object-cover' />
-        ) : (
-          <AvatarFallback className='rounded-md bg-muted'>
-            <Icon className='h-4 w-4 text-muted-foreground' />
-          </AvatarFallback>
-        )}
-      </Avatar>
-      <div className='min-w-0 flex-1'>
-        <span className='font-medium'>{item.label ?? item.title}</span>
-        {item.quantity > 1 && <span className='text-muted-foreground ml-1'>×{item.quantity}</span>}
-      </div>
-      {item.type === 'attribute' && (
-        <span className='shrink-0 ml-auto italic text-muted-foreground'>{String(value)}</span>
-      )}
-    </button>
-  );
-}
-
 export const CharacterInventoryPanel = ({ open, onOpenChange }: CharacterInventoryPanelProps) => {
   const { characterId } = useParams<{ characterId: string }>();
-  const { setInventoryPanelConfig, updateInventoryItem, removeInventoryItem, addInventoryItem } =
-    useContext(CharacterContext);
   const { character } = useCharacter(characterId);
   const { inventoryItems } = useInventory(character?.inventoryId ?? '', character?.id ?? '');
-
-  const totalInventoryWeight = inventoryItems.reduce((acc, current) => (acc += current.weight), 0);
 
   const [typeFilter, setTypeFilter] = useState<InventoryItemType>('item');
   const [titleFilter, setTitleFilter] = useState('');
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
+
+  const totalInventoryWeight = inventoryItems.reduce((acc, current) => (acc += current.weight), 0);
   const parentRef = useRef<HTMLDivElement>(null);
 
-  const handleItemClick = (e: React.MouseEvent, item: InventoryItemWithData) => {
-    e.stopPropagation();
-    setContextMenu((prev) => (prev?.item.id === item.id ? null : { item, x: 0, y: 0 }));
-  };
+  const {
+    handleCloseContextMenu,
+    handleItemClick,
+    handleOpenInventoryPanel,
+    handleRemoveItem,
+    handleSplitStack,
+    handleUpdateLabel,
+    handleUpdateQuantity,
+    handleUpdateEquipped,
+  } = useCharacterInventoryMethods({
+    typeFilter,
+  });
 
-  const handleCloseContextMenu = () => setContextMenu(null);
-
-  const handleUpdateQuantity = (quantity: number) => {
-    if (!contextMenu) return;
-    updateInventoryItem(contextMenu.item.id, { quantity });
-    setContextMenu(null);
-  };
-
-  const handleRemoveItem = () => {
-    if (!contextMenu) return;
-    removeInventoryItem(contextMenu.item.id);
-    setContextMenu(null);
-  };
-
-  const handleUpdateLabel = (label?: string) => {
-    if (!contextMenu) return;
-    updateInventoryItem(contextMenu.item.id, { label });
-  };
-
-  const handleSplitStack = (splitAmount: number) => {
-    if (!contextMenu) return;
-    const item = contextMenu.item;
-    const remainingQuantity = item.quantity - splitAmount;
-    updateInventoryItem(item.id, { quantity: remainingQuantity });
-    addInventoryItem({
-      type: item.type,
-      entityId: item.entityId,
-      componentId: '',
-      quantity: splitAmount,
-      x: 0,
-      y: 0,
-    });
-    setContextMenu(null);
-  };
-
-  const handleOpenInventoryPanel = () => {
-    setInventoryPanelConfig({
-      open: true,
-      addToDefaultInventory: true,
-      type: typeFilter,
-    });
-  };
+  const { rows, virtualizer } = useCharacterInventoryItems({
+    inventoryItems,
+    titleFilter,
+    typeFilter,
+    parentRef,
+    contextMenu,
+  });
 
   // Keep the open context menu item in sync with live inventory data so
   // changes like equipped state are reflected in the virtualized row.
@@ -166,36 +89,6 @@ export const CharacterInventoryPanel = ({ open, onOpenChange }: CharacterInvento
   useEffect(() => {
     if (!open) setContextMenu(null);
   }, [open]);
-
-  const filteredItems = useMemo(() => {
-    const search = titleFilter.trim().toLowerCase();
-    const filtered = inventoryItems.filter((item) => {
-      if (item.type !== typeFilter) return false;
-      if (search && !item.title.toLowerCase().includes(search)) return false;
-      return true;
-    });
-    return [...filtered].sort((a, b) => a.title.localeCompare(b.title));
-  }, [inventoryItems, typeFilter, titleFilter]);
-
-  const rows = useMemo((): ListRow[] => {
-    const openItemId = contextMenu?.item.id;
-    return filteredItems.map((entry) => {
-      const baseSize = entry.description ? 56 : 40;
-      const hasMenuOpen = openItemId === entry.id;
-      return {
-        type: 'entry' as const,
-        entry,
-        estimatedSize: hasMenuOpen ? 420 : baseSize,
-      };
-    });
-  }, [filteredItems, contextMenu?.item.id]);
-
-  const virtualizer = useVirtualizer({
-    count: rows.length,
-    getScrollElement: () => parentRef.current,
-    estimateSize: (index) => rows[index]?.estimatedSize ?? 44,
-    overscan: 5,
-  });
 
   useEffect(() => {
     if (!open || rows.length === 0) return;
@@ -304,10 +197,7 @@ export const CharacterInventoryPanel = ({ open, onOpenChange }: CharacterInvento
                           onSplit={handleSplitStack}
                           onToggleEquipped={
                             contextMenu.item.isEquippable
-                              ? () =>
-                                  updateInventoryItem(contextMenu.item.id, {
-                                    isEquipped: !contextMenu.item.isEquipped,
-                                  })
+                              ? () => handleUpdateEquipped(!contextMenu.item.isEquipped)
                               : undefined
                           }
                         />
