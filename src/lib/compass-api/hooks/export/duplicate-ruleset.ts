@@ -15,6 +15,7 @@ import type {
   InventoryItem,
   Item,
   Window,
+  Script,
 } from '@/types';
 
 export interface DuplicateRulesetParams {
@@ -40,13 +41,14 @@ export interface RulesetDuplicationCounts {
   characterWindows: number;
   characterPages: number;
   inventoryItems: number;
+  scripts: number;
 }
 
 /**
  * Duplicate a ruleset and its associated entities into an already-created target ruleset.
  *
  * This function:
- * - Clones ruleset-level entities (assets, fonts, charts, attributes, actions, items, documents, windows, components)
+ * - Clones ruleset-level entities (assets, fonts, charts, attributes, actions, items, documents, windows, components, scripts)
  * - Clones the test character for the ruleset (if present) and its related entities
  * - Generates new IDs for all cloned entities and remaps cross-entity references
  * - Removes the auto-created test character for the target ruleset (created by Dexie hook)
@@ -67,6 +69,7 @@ export async function duplicateRuleset({
     sourceWindows,
     sourceAssets,
     sourceFonts,
+    sourceScripts,
   ] = await Promise.all([
     db.attributes.where('rulesetId').equals(sourceRulesetId).toArray(),
     db.actions.where('rulesetId').equals(sourceRulesetId).toArray(),
@@ -76,6 +79,7 @@ export async function duplicateRuleset({
     db.windows.where('rulesetId').equals(sourceRulesetId).toArray(),
     db.assets.where('rulesetId').equals(sourceRulesetId).toArray(),
     db.fonts.where('rulesetId').equals(sourceRulesetId).toArray(),
+    db.scripts.where('rulesetId').equals(sourceRulesetId).toArray(),
   ]);
 
   const windowIds = sourceWindows.map((w) => w.id);
@@ -155,6 +159,7 @@ export async function duplicateRuleset({
     characterWindows: 0,
     characterPages: 0,
     inventoryItems: 0,
+    scripts: 0,
   };
 
   // 1. Assets
@@ -297,7 +302,41 @@ export async function duplicateRuleset({
     counts.documents++;
   }
 
-  // 8. Windows
+  // 8. Scripts (map entityId based on entityType)
+  for (const script of sourceScripts as Script[]) {
+    const newId = crypto.randomUUID();
+
+    const { id, rulesetId, createdAt, updatedAt, entityId, entityType, ...rest } = script;
+
+    // Remap entityId based on entityType
+    let mappedEntityId = entityId;
+    if (entityId && !script.isGlobal) {
+      switch (entityType) {
+        case 'attribute':
+          mappedEntityId = attributeIdMap.get(entityId) ?? entityId;
+          break;
+        case 'action':
+          mappedEntityId = actionIdMap.get(entityId) ?? entityId;
+          break;
+        case 'item':
+          mappedEntityId = itemIdMap.get(entityId) ?? entityId;
+          break;
+      }
+    }
+
+    await db.scripts.add({
+      ...rest,
+      id: newId,
+      rulesetId: targetRulesetId,
+      entityId: mappedEntityId,
+      entityType,
+      createdAt: now,
+      updatedAt: now,
+    } as Script);
+    counts.scripts++;
+  }
+
+  // 9. Windows
   for (const window of sourceWindows as Window[]) {
     const newId = crypto.randomUUID();
     windowIdMap.set(window.id, newId);
@@ -314,7 +353,7 @@ export async function duplicateRuleset({
     counts.windows++;
   }
 
-  // 9. Components (map windowId, attributeId, actionId, childWindowId, assetId)
+  // 10. Components (map windowId, attributeId, actionId, childWindowId, assetId)
   for (const component of sourceComponents as Component[]) {
     const newId = crypto.randomUUID();
     componentIdMap.set(component.id, newId);
@@ -354,7 +393,7 @@ export async function duplicateRuleset({
     counts.components++;
   }
 
-  // 10. Test character and related entities
+  // 11. Test character and related entities
   if (sourceTestCharacter) {
     const newCharacterId = crypto.randomUUID();
     characterIdMap.set(sourceTestCharacter.id, newCharacterId);
@@ -539,7 +578,7 @@ export async function duplicateRuleset({
     }
   }
 
-  // 11. Clean up the auto-created test character for the target ruleset (if different from cloned one)
+  // 12. Clean up the auto-created test character for the target ruleset (if different from cloned one)
   if (
     autoTestCharacterId &&
     (!sourceTestCharacter || autoTestCharacterId !== characterIdMap.get(sourceTestCharacter.id))

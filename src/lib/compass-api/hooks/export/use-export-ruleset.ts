@@ -11,6 +11,7 @@ import {
   type ItemWithAssetFilename,
 } from './types';
 import { buildAssetFilenameMap, convertToTsv } from './utils';
+import { exportScripts } from './script-export';
 
 export const useExportRuleset = (rulesetId: string) => {
   const [isExporting, setIsExporting] = useState(false);
@@ -144,6 +145,9 @@ export const useExportRuleset = (rulesetId: string) => {
         throw new Error('Failed to create application data folder');
       }
 
+      // Export scripts
+      const scriptExportResult = await exportScripts(rulesetId);
+
       // Create metadata file
       const metadata = {
         ruleset: {
@@ -170,10 +174,25 @@ export const useExportRuleset = (rulesetId: string) => {
           characterWindows: characterWindows?.length || 0,
           characterPages: characterPages?.length || 0,
           inventoryItems: inventoryItems?.length || 0,
+          scripts: scriptExportResult.files.length,
         },
+        scripts: scriptExportResult.metadata,
       };
 
       appDataFolder.file('metadata.json', JSON.stringify(metadata, null, 2));
+
+      // Add script files to zip
+      for (const scriptFile of scriptExportResult.files) {
+        zip.file(scriptFile.path, scriptFile.content);
+      }
+
+      // Log any script export warnings
+      if (scriptExportResult.warnings.length > 0) {
+        console.warn('Script export warnings:', scriptExportResult.warnings);
+      }
+      if (scriptExportResult.errors.length > 0) {
+        console.error('Script export errors:', scriptExportResult.errors);
+      }
 
       // Build asset filename map for resolving assetIds to filenames
       const assetFilenameMap = buildAssetFilenameMap(assets || []);
@@ -394,13 +413,22 @@ This zip file contains a complete export of the "${ruleset.title}" ruleset from 
 - \`items.tsv\` - All items defined in this ruleset
 - \`charts/\` - Directory containing chart data as TSV files (named as \`{title}_{id}.tsv\`)
 
+### Script Files (Editable)
+- \`scripts/\` - Directory containing QBScript files organized by entity type
+  - \`scripts/global/\` - Global utility scripts
+  - \`scripts/attributes/\` - Scripts associated with attributes
+  - \`scripts/actions/\` - Scripts associated with actions
+  - \`scripts/items/\` - Scripts associated with items
+- Script metadata is stored in \`application data/metadata.json\` under the \`scripts\` array
+- Scripts can be edited externally and will be re-imported when the ruleset is imported
+
 ### Binary Files
 - \`assets/\` - Directory containing all asset files organized by their directory structure
 - \`fonts/\` - Directory containing font files (named as \`{label}_{id}.ttf\`)
 - \`documents/\` - Directory containing all document PDF files
 
 ### Application Data (JSON)
-- \`application data/metadata.json\` - Ruleset metadata and export information
+- \`application data/metadata.json\` - Ruleset metadata, export information, and script metadata
 - \`application data/charts.json\` - Chart metadata (links to TSV files in charts/)
 - \`application data/windows.json\` - All windows defined in this ruleset
 - \`application data/components.json\` - All components defined in this ruleset
@@ -422,11 +450,20 @@ To import this ruleset back into Quest Bound:
 2. Select the zip file to import the complete ruleset
 3. Follow the import wizard to complete the process
 
+## External Editing
+
+You can edit the following files externally:
+- TSV files (attributes, actions, items, charts)
+- QBScript files (.qbs files in the scripts/ directory)
+
+When you re-import the ruleset, your changes will be preserved.
+
 ## Version Information
 
 - Ruleset Version: ${ruleset.version}
 - Exported: ${new Date().toISOString()}
 - Quest Bound Version: 2.0.0
+- Scripts Exported: ${scriptExportResult.files.length}
 
 For more information about Quest Bound, visit the application documentation.
 `;

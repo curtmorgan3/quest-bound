@@ -24,6 +24,8 @@ import { useRulesets } from '../rulesets';
 import { duplicateRuleset } from './duplicate-ruleset';
 import { ACTION_FIELD_TYPES, ATTRIBUTE_FIELD_TYPES, ITEM_FIELD_TYPES } from './types';
 import { compareVersion, convertAttributeDefaultValue, parseTsv, tsvToObjects } from './utils';
+import { extractScriptFiles, importScripts } from './script-import';
+import type { ScriptMetadata } from './script-export';
 
 export interface ImportRulesetOptions {
   /** When true, replace an existing ruleset with the same id if the uploaded version is higher */
@@ -61,6 +63,7 @@ export interface ImportRulesetResult {
     characterWindows: number;
     characterPages: number;
     inventoryItems: number;
+    scripts: number;
   };
   errors: string[];
 }
@@ -98,7 +101,9 @@ interface ImportedMetadata {
     characterWindows: number;
     characterPages?: number;
     inventoryItems?: number;
+    scripts?: number;
   };
+  scripts?: ScriptMetadata[];
 }
 
 export const useImportRuleset = () => {
@@ -379,6 +384,8 @@ export const useImportRuleset = () => {
     await db.windows.where('rulesetId').equals(rulesetId).delete();
     await db.fonts.where('rulesetId').equals(rulesetId).delete();
     await db.documents.where('rulesetId').equals(rulesetId).delete();
+    await db.scripts.where('rulesetId').equals(rulesetId).delete();
+    await db.scriptErrors.where('rulesetId').equals(rulesetId).delete();
     await db.rulesets.delete(rulesetId);
   };
 
@@ -415,6 +422,7 @@ export const useImportRuleset = () => {
             characterWindows: 0,
             characterPages: 0,
             inventoryItems: 0,
+            scripts: 0,
           },
           errors: ['application data/metadata.json file is required'],
         };
@@ -445,6 +453,7 @@ export const useImportRuleset = () => {
             characterWindows: 0,
             characterPages: 0,
             inventoryItems: 0,
+            scripts: 0,
           },
           errors: metadataValidation.errors,
         };
@@ -524,6 +533,7 @@ export const useImportRuleset = () => {
               characterWindows: 0,
               characterPages: 0,
               inventoryItems: 0,
+              scripts: 0,
             },
             errors: ['Duplicate ruleset: same id and version as an existing ruleset'],
           };
@@ -553,6 +563,7 @@ export const useImportRuleset = () => {
                 characterWindows: 0,
                 characterPages: 0,
                 inventoryItems: 0,
+                scripts: 0,
               },
               errors: [],
             };
@@ -579,6 +590,7 @@ export const useImportRuleset = () => {
               characterWindows: 0,
               characterPages: 0,
               inventoryItems: 0,
+              scripts: 0,
             },
             errors: ['Existing ruleset has same or newer version'],
           };
@@ -602,6 +614,7 @@ export const useImportRuleset = () => {
         characterWindows: 0,
         characterPages: 0,
         inventoryItems: 0,
+        scripts: 0,
       };
 
       const allErrors: string[] = [];
@@ -1235,6 +1248,34 @@ export const useImportRuleset = () => {
       // Create ruleset after importing characters so test character isn't duplicated
       await createRuleset(newRuleset);
 
+      // Import scripts after all entities are created (so we can link scripts to entities)
+      try {
+        const scriptFiles = await extractScriptFiles(zipContent);
+        const scriptMetadata = metadata.scripts || [];
+
+        if (scriptFiles.length > 0) {
+          const scriptImportResult = await importScripts(
+            newRulesetId,
+            scriptFiles,
+            scriptMetadata,
+          );
+
+          importedCounts.scripts = scriptImportResult.importedCount;
+
+          // Add script import warnings and errors to the overall result
+          if (scriptImportResult.warnings.length > 0) {
+            allErrors.push(...scriptImportResult.warnings.map((w) => `Script warning: ${w}`));
+          }
+          if (scriptImportResult.errors.length > 0) {
+            allErrors.push(...scriptImportResult.errors.map((e) => `Script error: ${e}`));
+          }
+        }
+      } catch (error) {
+        allErrors.push(
+          `Failed to import scripts: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        );
+      }
+
       const totalImported =
         importedCounts.attributes +
         importedCounts.actions +
@@ -1250,7 +1291,8 @@ export const useImportRuleset = () => {
         importedCounts.inventories +
         importedCounts.characterWindows +
         importedCounts.characterPages +
-        importedCounts.inventoryItems;
+        importedCounts.inventoryItems +
+        importedCounts.scripts;
 
       return {
         success: allErrors.length === 0,
@@ -1284,6 +1326,7 @@ export const useImportRuleset = () => {
           characterWindows: 0,
           characterPages: 0,
           inventoryItems: 0,
+          scripts: 0,
         },
         errors: [error instanceof Error ? error.message : 'Unknown error'],
       };
