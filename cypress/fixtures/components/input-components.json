@@ -1,0 +1,53 @@
+[
+  {
+    "id": "input-text-1",
+    "rulesetId": "test-ruleset-1",
+    "windowId": "test-window-1",
+    "type": "comp-input",
+    "x": 100,
+    "y": 100,
+    "z": 1,
+    "height": 40,
+    "width": 200,
+    "rotation": 0,
+    "attributeId": "attr-string-1",
+    "data": "{}",
+    "style": "{\"fontSize\":14,\"color\":\"#000000\"}",
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "updatedAt": "2024-01-01T00:00:00.000Z"
+  },
+  {
+    "id": "input-number-1",
+    "rulesetId": "test-ruleset-1",
+    "windowId": "test-window-1",
+    "type": "comp-input",
+    "x": 100,
+    "y": 200,
+    "z": 1,
+    "height": 40,
+    "width": 150,
+    "rotation": 0,
+    "attributeId": "attr-number-1",
+    "data": "{}",
+    "style": "{\"fontSize\":14,\"color\":\"#000000\"}",
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "updatedAt": "2024-01-01T00:00:00.000Z"
+  },
+  {
+    "id": "input-select-1",
+    "rulesetId": "test-ruleset-1",
+    "windowId": "test-window-1",
+    "type": "comp-input",
+    "x": 100,
+    "y": 300,
+    "z": 1,
+    "height": 40,
+    "width": 200,
+    "rotation": 0,
+    "attributeId": "attr-list-single-1",
+    "data": "{}",
+    "style": "{\"fontSize\":14,\"color\":\"#000000\"}",
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "updatedAt": "2024-01-01T00:00:00.000Z"
+  }
+]

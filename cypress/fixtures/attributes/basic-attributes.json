@@ -1,0 +1,76 @@
+[
+  {
+    "id": "attr-string-1",
+    "rulesetId": "test-ruleset-1",
+    "title": "Character Name",
+    "description": "The character's name",
+    "category": "Basic",
+    "type": "string",
+    "defaultValue": "Unnamed",
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "updatedAt": "2024-01-01T00:00:00.000Z"
+  },
+  {
+    "id": "attr-number-1",
+    "rulesetId": "test-ruleset-1",
+    "title": "Strength",
+    "description": "Physical strength attribute",
+    "category": "Attributes",
+    "type": "number",
+    "defaultValue": 10,
+    "min": 1,
+    "max": 20,
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "updatedAt": "2024-01-01T00:00:00.000Z"
+  },
+  {
+    "id": "attr-number-2",
+    "rulesetId": "test-ruleset-1",
+    "title": "Hit Points",
+    "description": "Current hit points",
+    "category": "Combat",
+    "type": "number",
+    "defaultValue": 25,
+    "min": 0,
+    "max": 100,
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "updatedAt": "2024-01-01T00:00:00.000Z"
+  },
+  {
+    "id": "attr-boolean-1",
+    "rulesetId": "test-ruleset-1",
+    "title": "Is Proficient",
+    "description": "Whether the character is proficient",
+    "category": "Skills",
+    "type": "boolean",
+    "defaultValue": false,
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "updatedAt": "2024-01-01T00:00:00.000Z"
+  },
+  {
+    "id": "attr-list-single-1",
+    "rulesetId": "test-ruleset-1",
+    "title": "Character Class",
+    "description": "The character's class",
+    "category": "Basic",
+    "type": "list",
+    "defaultValue": "Fighter",
+    "options": ["Fighter", "Wizard", "Rogue", "Cleric"],
+    "allowMultiSelect": false,
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "updatedAt": "2024-01-01T00:00:00.000Z"
+  },
+  {
+    "id": "attr-list-multi-1",
+    "rulesetId": "test-ruleset-1",
+    "title": "Skills",
+    "description": "Character skills",
+    "category": "Skills",
+    "type": "list",
+    "defaultValue": [],
+    "options": ["Athletics", "Acrobatics", "Stealth", "Perception", "Investigation"],
+    "allowMultiSelect": true,
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "updatedAt": "2024-01-01T00:00:00.000Z"
+  }
+]

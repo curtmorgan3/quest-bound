@@ -19,6 +19,7 @@
     "cypress:run:component": "cypress run --component",
     "test:e2e": "start-server-and-test dev http://localhost:5173 cypress:run:e2e",
     "test:component": "cypress run --component",
+    "test:component:open": "cypress open --component",
     "test:all": "npm run test:e2e && npm run test:component",
     "build:robots": "node build-robots.js"
   },
@@ -97,6 +98,8 @@
     "@cypress/vite-dev-server": "^7.0.0",
     "@eslint/js": "^9.33.0",
     "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.1",
     "@types/lodash.debounce": "^4.0.9",
     "@types/mocha": "^10.0.10",
     "@types/node": "^24.3.1",

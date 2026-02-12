@@ -1,0 +1,41 @@
+[
+  {
+    "id": "item-basic-1",
+    "rulesetId": "test-ruleset-1",
+    "title": "Health Potion",
+    "description": "Restores 2d4+2 hit points",
+    "category": "Consumables",
+    "assetId": null,
+    "image": null,
+    "inventoryWidth": 1,
+    "inventoryHeight": 1,
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "updatedAt": "2024-01-01T00:00:00.000Z"
+  },
+  {
+    "id": "item-equippable-1",
+    "rulesetId": "test-ruleset-1",
+    "title": "Longsword",
+    "description": "A versatile weapon. Deals 1d8 slashing damage",
+    "category": "Weapons",
+    "assetId": null,
+    "image": null,
+    "inventoryWidth": 1,
+    "inventoryHeight": 2,
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "updatedAt": "2024-01-01T00:00:00.000Z"
+  },
+  {
+    "id": "item-large-1",
+    "rulesetId": "test-ruleset-1",
+    "title": "Tower Shield",
+    "description": "A large shield providing +2 AC",
+    "category": "Armor",
+    "assetId": null,
+    "image": null,
+    "inventoryWidth": 2,
+    "inventoryHeight": 3,
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "updatedAt": "2024-01-01T00:00:00.000Z"
+  }
+]

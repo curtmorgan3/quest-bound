@@ -9,7 +9,7 @@ export default defineConfig({
       framework: "react",
       bundler: "vite",
     },
-    specPattern: "src/**/*.test.{js,jsx,ts,tsx}",
+    specPattern: "cypress/component/**/*.test.{js,jsx,ts,tsx}",
     supportFile: "cypress/support/component.tsx",
   },
 

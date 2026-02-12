@@ -1,0 +1,12 @@
+{
+  "id": "test-window-1",
+  "rulesetId": "test-ruleset-1",
+  "title": "Test Window",
+  "description": "A test window for component testing",
+  "category": "Test",
+  "assetId": null,
+  "image": null,
+  "backgroundOpacity": 1,
+  "createdAt": "2024-01-01T00:00:00.000Z",
+  "updatedAt": "2024-01-01T00:00:00.000Z"
+}

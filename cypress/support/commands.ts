@@ -144,6 +144,18 @@ declare global {
       signOut(): Chainable<null>;
       clearUserData(): Chainable<null>;
       setupTest(): Chainable<null>;
+      /**
+       * Mounts a component with optional context providers
+       * @param component - The React component to mount
+       * @param providers - Array of provider components to wrap the component with
+       * @param options - Optional mount options
+       * @returns Chainable
+       */
+      mountWithProviders(
+        component: React.ReactNode,
+        providers?: React.ReactNode[],
+        options?: any
+      ): Chainable<any>;
     }
   }
 }

@@ -26,9 +26,22 @@ const mountWithRouter = (component: ReactNode, options?: any) => {
   return mount(<BrowserRouter>{component}</BrowserRouter>, options);
 };
 
+// Helper function to mount with providers (for components that need context)
+const mountWithProviders = (component: ReactNode, providers: ReactNode[] = [], options?: any) => {
+  let wrappedComponent = component;
+  
+  // Wrap with providers in reverse order (innermost first)
+  providers.reverse().forEach(provider => {
+    wrappedComponent = <>{provider}{wrappedComponent}</>;
+  });
+  
+  return mount(<BrowserRouter>{wrappedComponent}</BrowserRouter>, options);
+};
+
 // Type definitions are handled in component.d.ts
 
 Cypress.Commands.add('mount', mountWithRouter);
+Cypress.Commands.add('mountWithProviders', mountWithProviders);
 
 before(() => {
   localStorage.setItem('qb.env', 'test');
@@ -36,3 +49,4 @@ before(() => {
 
 // Example use:
 // cy.mount(<MyComponent />)
+// cy.mountWithProviders(<MyComponent />, [<SomeProvider />])

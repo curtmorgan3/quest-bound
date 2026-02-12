@@ -1,0 +1,10 @@
+{
+  "id": "test-ruleset-1",
+  "userId": "test-user-1",
+  "title": "Test Ruleset",
+  "description": "A test ruleset for component testing",
+  "assetId": null,
+  "image": null,
+  "createdAt": "2024-01-01T00:00:00.000Z",
+  "updatedAt": "2024-01-01T00:00:00.000Z"
+}
