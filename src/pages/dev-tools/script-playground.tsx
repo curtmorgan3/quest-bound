@@ -1,7 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
 import { Evaluator } from '@/lib/compass-logic/interpreter/evaluator';
@@ -118,7 +117,7 @@ roll("2d6+4")`,
   };
 
   return (
-    <div className='p-4 space-y-4 h-[1000px]'>
+    <div className='p-4 space-y-4'>
       <div>
         <Label htmlFor='script-editor' className='text-base font-semibold'>
           QBScript Editor
@@ -149,7 +148,7 @@ roll("2d6+4")`,
             <CardTitle className='text-base'>Output</CardTitle>
             <CardDescription>Executed in {lastResult.duration.toFixed(2)}ms</CardDescription>
           </CardHeader>
-          <ScrollArea className='max-h-[400px]'>
+          <div className='max-h-[200px] overflow-y-auto mb-[24px]'>
             <CardContent className='space-y-4'>
               {lastResult.error ? (
                 <div className='p-3 bg-destructive/10 border border-destructive rounded-md'>
@@ -204,29 +203,33 @@ roll("2d6+4")`,
                 </>
               )}
             </CardContent>
-          </ScrollArea>
+          </div>
         </Card>
       )}
 
-      <Separator />
-
-      <div className='text-xs text-muted-foreground space-y-1'>
-        <p className='font-semibold'>Quick Examples:</p>
-        <ul className='list-disc list-inside space-y-1 ml-2'>
-          <li>
-            <code className='bg-muted px-1 rounded'>roll("2d6+4")</code> - Roll dice
-          </li>
-          <li>
-            <code className='bg-muted px-1 rounded'>floor((PlayerHP - 10) / 2)</code> - Math
-          </li>
-          <li>
-            <code className='bg-muted px-1 rounded'>announce("Hello!")</code> - Display message
-          </li>
-          <li>
-            <code className='bg-muted px-1 rounded'>log("debug", PlayerLevel)</code> - Debug output
-          </li>
-        </ul>
-      </div>
+      {!lastResult && (
+        <>
+          <Separator />
+          <div className='text-xs text-muted-foreground space-y-1'>
+            <p className='font-semibold'>Quick Examples:</p>
+            <ul className='list-disc list-inside space-y-1 ml-2'>
+              <li>
+                <code className='bg-muted px-1 rounded'>roll("2d6+4")</code> - Roll dice
+              </li>
+              <li>
+                <code className='bg-muted px-1 rounded'>floor((PlayerHP - 10) / 2)</code> - Math
+              </li>
+              <li>
+                <code className='bg-muted px-1 rounded'>announce("Hello!")</code> - Display message
+              </li>
+              <li>
+                <code className='bg-muted px-1 rounded'>log("debug", PlayerLevel)</code> - Debug
+                output
+              </li>
+            </ul>
+          </div>
+        </>
+      )}
     </div>
   );
 }

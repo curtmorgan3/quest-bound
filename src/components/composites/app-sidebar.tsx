@@ -40,9 +40,9 @@ import {
   useDocuments,
   useUsers,
 } from '@/lib/compass-api';
-import { DevTools, Settings } from '@/pages';
+import { Settings } from '@/pages';
 import { CharacterInventoryPanelContext, DiceContext } from '@/stores';
-import { useContext, useEffect, useState } from 'react';
+import { useContext, useEffect } from 'react';
 import { Link, useLocation, useParams } from 'react-router-dom';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { Button } from '../ui/button';
@@ -64,7 +64,6 @@ export function AppSidebar() {
   const isHomepage = location.pathname === '/rulesets' || location.pathname === '/characters';
   const isViewingDocument = !!documentId && location.pathname.includes('/documents/');
   const isViewingChart = !!chartId && location.pathname.includes('/chart/');
-  const [drawerContent, setDrawerContent] = useState<'settings' | 'dev-tools'>('settings');
   const { setDicePanelOpen } = useContext(DiceContext);
 
   useEffect(() => {
@@ -449,7 +448,7 @@ export function AppSidebar() {
             )}
             <SidebarMenuItem>
               <DrawerTrigger asChild>
-                <SidebarMenuButton onClick={() => setDrawerContent('settings')}>
+                <SidebarMenuButton>
                   <SettingsIcon />
                   <span>Settings</span>
                 </SidebarMenuButton>
@@ -469,12 +468,12 @@ export function AppSidebar() {
             </SidebarMenuItem>
             {localStorage.getItem('dev.tools') === 'true' && (
               <SidebarMenuItem>
-                <DrawerTrigger asChild>
-                  <SidebarMenuButton onClick={() => setDrawerContent('dev-tools')}>
+                <SidebarMenuButton asChild>
+                  <Link to='/dev-tools'>
                     <Wrench />
                     <span>Dev Tools</span>
-                  </SidebarMenuButton>
-                </DrawerTrigger>
+                  </Link>
+                </SidebarMenuButton>
               </SidebarMenuItem>
             )}
           </SidebarMenu>
@@ -504,15 +503,11 @@ export function AppSidebar() {
       </Sidebar>
 
       <DrawerContent className='w-[100vw]'>
-        <DialogDescription className='hidden'>
-          {drawerContent === 'settings' ? 'Settings' : 'Dev Tools'}
-        </DialogDescription>
+        <DialogDescription className='hidden'>Settings</DialogDescription>
         <DrawerHeader>
-          <DrawerTitle className='mb-4 text-lg font-medium'>
-            {drawerContent === 'settings' ? 'Settings' : 'Dev Tools'}
-          </DrawerTitle>
+          <DrawerTitle className='mb-4 text-lg font-medium'>Settings</DrawerTitle>
         </DrawerHeader>
-        {drawerContent === 'settings' ? <Settings /> : <DevTools />}
+        <Settings />
       </DrawerContent>
     </Drawer>
   );
