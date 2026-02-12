@@ -1,9 +1,11 @@
 # Phase 3: Interpreter Core
 
 ## Overview
+
 Build the QBScript interpreter that can execute script source code. This is the heart of the scripting system - a lexer, parser, and evaluator that can run QBScript in the main thread.
 
 ## Goals
+
 - Tokenize QBScript source code (Lexer)
 - Parse tokens into Abstract Syntax Tree (Parser)
 - Execute AST (Evaluator)
@@ -15,11 +17,13 @@ Build the QBScript interpreter that can execute script source code. This is the 
 ## Architecture
 
 ### Three-Stage Pipeline
+
 ```
 Source Code → Lexer → Tokens → Parser → AST → Evaluator → Result
 ```
 
 ### Components
+
 1. **Lexer** - Converts source code string into tokens
 2. **Parser** - Converts tokens into Abstract Syntax Tree (AST)
 3. **Evaluator** - Executes AST and returns result
@@ -27,16 +31,17 @@ Source Code → Lexer → Tokens → Parser → AST → Evaluator → Result
 ## Lexer (Tokenizer)
 
 ### Token Types
+
 ```typescript
 enum TokenType {
   // Literals
   NUMBER = 'NUMBER',
   STRING = 'STRING',
   BOOLEAN = 'BOOLEAN',
-  
+
   // Identifiers
   IDENTIFIER = 'IDENTIFIER',
-  
+
   // Keywords
   IF = 'IF',
   ELSE = 'ELSE',
@@ -44,40 +49,40 @@ enum TokenType {
   IN = 'IN',
   RETURN = 'RETURN',
   SUBSCRIBE = 'SUBSCRIBE',
-  
+
   // Operators
-  PLUS = 'PLUS',           // +
-  MINUS = 'MINUS',         // -
-  MULTIPLY = 'MULTIPLY',   // *
-  DIVIDE = 'DIVIDE',       // /
-  POWER = 'POWER',         // **
-  MODULO = 'MODULO',       // %
-  
+  PLUS = 'PLUS', // +
+  MINUS = 'MINUS', // -
+  MULTIPLY = 'MULTIPLY', // *
+  DIVIDE = 'DIVIDE', // /
+  POWER = 'POWER', // **
+  MODULO = 'MODULO', // %
+
   // Comparison
-  EQUAL = 'EQUAL',         // ==
+  EQUAL = 'EQUAL', // ==
   NOT_EQUAL = 'NOT_EQUAL', // !=
-  GREATER = 'GREATER',     // >
-  LESS = 'LESS',           // <
+  GREATER = 'GREATER', // >
+  LESS = 'LESS', // <
   GREATER_EQ = 'GREATER_EQ', // >=
-  LESS_EQ = 'LESS_EQ',     // <=
-  
+  LESS_EQ = 'LESS_EQ', // <=
+
   // Boolean
-  AND = 'AND',             // &&
-  OR = 'OR',               // ||
-  NOT = 'NOT',             // !
-  
+  AND = 'AND', // &&
+  OR = 'OR', // ||
+  NOT = 'NOT', // !
+
   // Assignment
-  ASSIGN = 'ASSIGN',       // =
-  
+  ASSIGN = 'ASSIGN', // =
+
   // Delimiters
-  LPAREN = 'LPAREN',       // (
-  RPAREN = 'RPAREN',       // )
-  LBRACKET = 'LBRACKET',   // [
-  RBRACKET = 'RBRACKET',   // ]
-  COMMA = 'COMMA',         // ,
-  COLON = 'COLON',         // :
-  DOT = 'DOT',             // .
-  
+  LPAREN = 'LPAREN', // (
+  RPAREN = 'RPAREN', // )
+  LBRACKET = 'LBRACKET', // [
+  RBRACKET = 'RBRACKET', // ]
+  COMMA = 'COMMA', // ,
+  COLON = 'COLON', // :
+  DOT = 'DOT', // .
+
   // Special
   NEWLINE = 'NEWLINE',
   INDENT = 'INDENT',
@@ -95,42 +100,43 @@ interface Token {
 ```
 
 ### Lexer Implementation
+
 ```typescript
 class Lexer {
   private source: string;
   private position: number;
   private line: number;
   private column: number;
-  
+
   constructor(source: string) {
     this.source = source;
     this.position = 0;
     this.line = 1;
     this.column = 1;
   }
-  
+
   tokenize(): Token[] {
     const tokens: Token[] = [];
-    
+
     while (!this.isAtEnd()) {
       this.skipWhitespace();
       if (this.isAtEnd()) break;
-      
+
       const token = this.nextToken();
       if (token.type !== TokenType.COMMENT) {
         tokens.push(token);
       }
     }
-    
+
     tokens.push({ type: TokenType.EOF, value: null, line: this.line, column: this.column });
     return tokens;
   }
-  
+
   private nextToken(): Token {
     // Implementation for each token type
     // Handle numbers, strings, identifiers, operators, etc.
   }
-  
+
   private handleIndentation(): Token[] {
     // Track indentation levels for Python-style blocks
     // Return INDENT/DEDENT tokens
@@ -139,12 +145,14 @@ class Lexer {
 ```
 
 ### Indentation Handling
+
 - Track indentation level stack
 - Generate INDENT token when indentation increases
 - Generate DEDENT token when indentation decreases
 - Handle multiple dedents at once
 
 ### String Interpolation
+
 - Detect `{{variable}}` patterns in strings
 - Convert to concatenation or special AST node
 - Example: `'HP: {{hp}}'` → `'HP: ' + hp`
@@ -152,8 +160,9 @@ class Lexer {
 ## Parser
 
 ### AST Node Types
+
 ```typescript
-type ASTNode = 
+type ASTNode =
   | NumberLiteral
   | StringLiteral
   | BooleanLiteral
@@ -179,7 +188,21 @@ interface NumberLiteral {
 
 interface BinaryOp {
   type: 'BinaryOp';
-  operator: '+' | '-' | '*' | '/' | '**' | '%' | '==' | '!=' | '>' | '<' | '>=' | '<=' | '&&' | '||';
+  operator:
+    | '+'
+    | '-'
+    | '*'
+    | '/'
+    | '**'
+    | '%'
+    | '=='
+    | '!='
+    | '>'
+    | '<'
+    | '>='
+    | '<='
+    | '&&'
+    | '||';
   left: ASTNode;
   right: ASTNode;
 }
@@ -202,35 +225,36 @@ interface IfStatement {
 ```
 
 ### Parser Implementation
+
 ```typescript
 class Parser {
   private tokens: Token[];
   private current: number;
-  
+
   constructor(tokens: Token[]) {
     this.tokens = tokens;
     this.current = 0;
   }
-  
+
   parse(): Program {
     const statements: ASTNode[] = [];
-    
+
     while (!this.isAtEnd()) {
       statements.push(this.statement());
     }
-    
+
     return { type: 'Program', statements };
   }
-  
+
   private statement(): ASTNode {
     // Parse different statement types
     // if, for, return, assignment, function call, etc.
   }
-  
+
   private expression(): ASTNode {
     // Parse expressions using precedence climbing
   }
-  
+
   private parseBinaryOp(precedence: number): ASTNode {
     // Operator precedence parsing
   }
@@ -238,6 +262,7 @@ class Parser {
 ```
 
 ### Operator Precedence
+
 ```
 1. || (OR)
 2. && (AND)
@@ -255,11 +280,12 @@ class Parser {
 ## Evaluator
 
 ### Execution Environment
+
 ```typescript
 interface Environment {
   variables: Map<string, any>;
   parent: Environment | null;
-  
+
   get(name: string): any;
   set(name: string, value: any): void;
   define(name: string, value: any): void;
@@ -268,24 +294,29 @@ interface Environment {
 class Evaluator {
   private globalEnv: Environment;
   private currentEnv: Environment;
-  
+
   constructor() {
     this.globalEnv = new Environment(null);
     this.currentEnv = this.globalEnv;
     this.registerBuiltins();
   }
-  
+
   eval(node: ASTNode): any {
     switch (node.type) {
-      case 'NumberLiteral': return node.value;
-      case 'StringLiteral': return this.interpolateString(node.value);
-      case 'BinaryOp': return this.evalBinaryOp(node);
-      case 'FunctionCall': return this.evalFunctionCall(node);
-      case 'IfStatement': return this.evalIfStatement(node);
+      case 'NumberLiteral':
+        return node.value;
+      case 'StringLiteral':
+        return this.interpolateString(node.value);
+      case 'BinaryOp':
+        return this.evalBinaryOp(node);
+      case 'FunctionCall':
+        return this.evalFunctionCall(node);
+      case 'IfStatement':
+        return this.evalIfStatement(node);
       // ... other node types
     }
   }
-  
+
   private registerBuiltins(): void {
     // Register built-in functions
     this.globalEnv.define('roll', this.builtinRoll);
@@ -301,15 +332,16 @@ class Evaluator {
 ### Built-in Functions
 
 #### roll()
+
 ```typescript
 function builtinRoll(expression: string): number {
   // Parse dice expression (e.g., '2d6+4')
   // Use existing dice-utils.ts
   // Return rolled result
-  
+
   const tokens = parseDiceExpression(expression);
   let total = 0;
-  
+
   for (const segment of tokens) {
     for (const token of segment) {
       if (token.type === 'dice') {
@@ -321,17 +353,19 @@ function builtinRoll(expression: string): number {
       }
     }
   }
-  
+
   return total;
 }
 ```
 
 #### floor(), ceil(), round()
+
 ```typescript
 // Use Math.floor, Math.ceil, Math.round directly
 ```
 
 #### announce()
+
 ```typescript
 function builtinAnnounce(message: string): void {
   // Store message for display to player
@@ -340,7 +374,8 @@ function builtinAnnounce(message: string): void {
 }
 ```
 
-#### console.log()
+#### log()
+
 ```typescript
 function builtinConsoleLog(...args: any[]): void {
   // Store log for debug console
@@ -350,6 +385,7 @@ function builtinConsoleLog(...args: any[]): void {
 ```
 
 ### String Interpolation
+
 ```typescript
 function interpolateString(str: string, env: Environment): string {
   return str.replace(/\{\{([^}]+)\}\}/g, (match, varName) => {
@@ -362,29 +398,31 @@ function interpolateString(str: string, env: Environment): string {
 ### Control Flow
 
 #### If/Else
+
 ```typescript
 function evalIfStatement(node: IfStatement): any {
   const condition = this.eval(node.condition);
-  
+
   if (this.isTruthy(condition)) {
     return this.evalBlock(node.thenBlock);
   }
-  
+
   for (const elseIf of node.elseIfBlocks) {
     if (this.isTruthy(this.eval(elseIf.condition))) {
       return this.evalBlock(elseIf.block);
     }
   }
-  
+
   if (node.elseBlock) {
     return this.evalBlock(node.elseBlock);
   }
-  
+
   return null;
 }
 ```
 
 #### For Loop
+
 ```typescript
 function evalForLoop(node: ForLoop): any {
   if (node.iterableType === 'range') {
@@ -406,6 +444,7 @@ function evalForLoop(node: ForLoop): any {
 ```
 
 ### Function Definitions
+
 ```typescript
 function evalFunctionDef(node: FunctionDef): void {
   // Store function in environment
@@ -419,26 +458,26 @@ function evalFunctionDef(node: FunctionDef): void {
 
 function evalFunctionCall(node: FunctionCall): any {
   const func = this.currentEnv.get(node.name);
-  
+
   if (typeof func === 'function') {
     // Built-in function
-    const args = node.arguments.map(arg => this.eval(arg));
+    const args = node.arguments.map((arg) => this.eval(arg));
     return func(...args);
   } else if (func.type === 'function') {
     // User-defined function
     const newEnv = new Environment(func.closure);
-    
+
     // Bind parameters
     for (let i = 0; i < func.params.length; i++) {
       newEnv.define(func.params[i], this.eval(node.arguments[i]));
     }
-    
+
     // Execute function body
     const prevEnv = this.currentEnv;
     this.currentEnv = newEnv;
     const result = this.evalBlock(func.body);
     this.currentEnv = prevEnv;
-    
+
     return result;
   }
 }
@@ -447,11 +486,12 @@ function evalFunctionCall(node: FunctionCall): any {
 ## Error Handling
 
 ### Runtime Errors
+
 ```typescript
 class RuntimeError extends Error {
   line: number;
   column: number;
-  
+
   constructor(message: string, line: number, column: number) {
     super(message);
     this.line = line;
@@ -461,12 +501,14 @@ class RuntimeError extends Error {
 ```
 
 ### Error Recovery
+
 - Catch errors during evaluation
 - Include line/column information
 - Provide helpful error messages
 - Don't crash - return error object
 
 ### Common Errors
+
 - Division by zero
 - Undefined variable
 - Invalid function call
@@ -476,6 +518,7 @@ class RuntimeError extends Error {
 ## Testing
 
 ### Unit Tests - Lexer
+
 - [ ] Tokenize numbers, strings, booleans
 - [ ] Tokenize operators
 - [ ] Tokenize keywords
@@ -484,6 +527,7 @@ class RuntimeError extends Error {
 - [ ] Line/column tracking
 
 ### Unit Tests - Parser
+
 - [ ] Parse literals
 - [ ] Parse binary operations
 - [ ] Parse function calls
@@ -495,6 +539,7 @@ class RuntimeError extends Error {
 - [ ] Parse member access
 
 ### Unit Tests - Evaluator
+
 - [ ] Evaluate arithmetic
 - [ ] Evaluate comparisons
 - [ ] Evaluate boolean logic
@@ -507,6 +552,7 @@ class RuntimeError extends Error {
 - [ ] Error handling
 
 ### Integration Tests
+
 - [ ] Execute complete scripts
 - [ ] Nested control flow
 - [ ] Recursive functions
@@ -514,16 +560,19 @@ class RuntimeError extends Error {
 - [ ] Error scenarios
 
 ## Performance Considerations
+
 - Efficient tokenization (single pass)
 - AST caching for repeated execution
 - Avoid unnecessary object creation
 - Benchmark against target performance (< 100ms for typical scripts)
 
 ## Dependencies
+
 - Phase 1 (Data Model) - Script entity
 - Existing `dice-utils.ts` for dice rolling
 
 ## Deliverables
+
 - [ ] Lexer implementation
 - [ ] Parser implementation
 - [ ] Evaluator implementation
@@ -534,6 +583,7 @@ class RuntimeError extends Error {
 - [ ] Performance benchmarks
 
 ## Notes
+
 - This phase runs interpreter in main thread
 - No Owner/Target/Ruleset APIs yet (Phase 4)
 - Can test with simple scripts (math, logic, functions)
