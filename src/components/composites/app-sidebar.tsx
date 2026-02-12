@@ -467,7 +467,7 @@ export function AppSidebar() {
                 </a>
               </SidebarMenuButton>
             </SidebarMenuItem>
-            {localStorage.getItem('debug.tools') === 'true' && (
+            {localStorage.getItem('dev.tools') === 'true' && (
               <SidebarMenuItem>
                 <DrawerTrigger asChild>
                   <SidebarMenuButton onClick={() => setDrawerContent('dev-tools')}>
