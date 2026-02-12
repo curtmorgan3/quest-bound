@@ -124,7 +124,7 @@ round(3.5)               // Returns 4
 
 // UI
 announce('message')      // Shows message to player
-console.log('debug')     // Logs to debug console
+log('debug')     // Logs to debug console
 
 // ===== ENTITY PROPERTIES =====
 // All Entities
@@ -403,20 +403,20 @@ on_activate(Target):
   attack_roll = roll('1d20')
   attack_power = Owner.Attribute('Attack Bonus').value
   defense = Target.Attribute('Armor Class').value
-  
+
   hit = (attack_roll + attack_power) >= defense
-  
+
   if hit:
     // Calculate damage
     str = Owner.Attribute('Strength').value
     str_modifier = floor((str - 10) / 2)
     damage = roll('1d6') + str_modifier
-    
+
     Target.Attribute('Hit Points').subtract(damage)
     announce('Hit {{Target.title}} for {{damage}} damage!')
   else:
     announce('Attack missed!')
-  
+
   return
 
 
@@ -425,18 +425,18 @@ on_activate(Target):
   // Check mana
   current_mana = Owner.Attribute('Mana').value
   mana_cost = 5
-  
+
   if current_mana < mana_cost:
     announce('Not enough mana!')
     return
-  
+
   // Spend mana
   Owner.Attribute('Mana').subtract(mana_cost)
-  
+
   // Deal damage
   damage = roll('8d6')
   Target.Attribute('Hit Points').subtract(damage)
-  
+
   announce('Fireball hits {{Target.title}} for {{damage}} damage!')
   return
 
@@ -447,10 +447,10 @@ on_activate(Target):
   level = Owner.Attribute('Level').value
   base_healing = Ruleset.Chart('Spell Effects').where('Spell', 'Heal', 'Base Healing')
   bonus = roll('{{level}}d4')
-  
+
   total_healing = base_healing + bonus
   Target.Attribute('Hit Points').add(total_healing)
-  
+
   announce('Healed {{Target.title}} for {{total_healing}} HP!')
   return
 
@@ -460,7 +460,7 @@ on_activate():
   Owner.Attribute('Hit Points').max()
   Owner.Attribute('Mana').max()
   Owner.Attribute('Hunger').max()
-  
+
   announce('You feel fully rested.')
   return
 
@@ -470,7 +470,7 @@ on_activate():
   Owner.Attribute('Strength').add(4)
   Owner.Attribute('Defense').subtract(2)
   Owner.Attribute('Rage Duration').set(10)
-  
+
   announce('You enter a rage!')
   return
 
@@ -478,7 +478,7 @@ on_deactivate():
   Owner.Attribute('Strength').subtract(4)
   Owner.Attribute('Defense').add(2)
   Owner.Attribute('Rage Duration').set(0)
-  
+
   announce('Your rage subsides.')
   return
 ```
@@ -498,7 +498,7 @@ calculateModifier(score):
 rollAdvantage(dice_expression):
   roll1 = roll(dice_expression)
   roll2 = roll(dice_expression)
-  
+
   if roll1 > roll2:
     return roll1
   else:
@@ -508,7 +508,7 @@ rollAdvantage(dice_expression):
 rollDisadvantage(dice_expression):
   roll1 = roll(dice_expression)
   roll2 = roll(dice_expression)
-  
+
   if roll1 < roll2:
     return roll1
   else:
@@ -523,10 +523,10 @@ isAlive(character):
 getTotalWeight(character):
   total = 0
   all_items = character.Items('*')  // Get all items
-  
+
   for item in all_items:
     total = total + (item.weight * item.quantity)
-  
+
   return total
 
 // Clamp value between min and max
@@ -559,14 +559,14 @@ on_activate(Target):
   // Use global function for advantage roll
   attack = rollAdvantage('1d20')
   attack_bonus = Owner.Attribute('Attack Bonus').value
-  
+
   if (attack + attack_bonus) >= Target.Attribute('Armor Class').value:
     damage = roll('1d8')
     Target.Attribute('Hit Points').subtract(damage)
     announce('Hit for {{damage}} damage!')
   else:
     announce('Miss!')
-  
+
   return
 ```
 
@@ -575,6 +575,7 @@ on_activate(Target):
 This example shows how QBScript can implement D&D 5e mechanics across multiple scripts.
 
 ### Global Utilities (utils.qbs)
+
 ```javascript
 // Global utility functions available to all scripts
 
@@ -599,14 +600,16 @@ rollDisadvantage(dice):
 ### Attribute Scripts
 
 **strength_modifier.qbs** (Attribute: Strength Modifier)
-```javascript
-subscribe('Strength')
 
-str = Owner.Attribute('Strength').value
-return calculateModifier(str)
+```javascript
+subscribe('Strength');
+
+str = Owner.Attribute('Strength').value;
+return calculateModifier(str);
 ```
 
 **armor_class.qbs** (Attribute: Armor Class)
+
 ```javascript
 subscribe('Dexterity', 'Armor Type')
 
@@ -642,31 +645,33 @@ return base_ac + dex_mod
 ```
 
 **max_hp.qbs** (Attribute: Max Hit Points)
-```javascript
-subscribe('Constitution', 'Level', 'Class')
 
-con = Owner.Attribute('Constitution').value
-con_mod = calculateModifier(con)
-level = Owner.Attribute('Level').value
-class_name = Owner.Attribute('Class').value
+```javascript
+subscribe('Constitution', 'Level', 'Class');
+
+con = Owner.Attribute('Constitution').value;
+con_mod = calculateModifier(con);
+level = Owner.Attribute('Level').value;
+class_name = Owner.Attribute('Class').value;
 
 // Get hit die from chart
-hit_die = Ruleset.Chart('Classes').where('Class', class_name, 'Hit Die')
+hit_die = Ruleset.Chart('Classes').where('Class', class_name, 'Hit Die');
 
 // First level gets max + con mod
 // Each additional level gets average + con mod
-first_level_hp = hit_die + con_mod
-additional_levels = level - 1
-avg_per_level = floor(hit_die / 2) + 1 + con_mod
+first_level_hp = hit_die + con_mod;
+additional_levels = level - 1;
+avg_per_level = floor(hit_die / 2) + 1 + con_mod;
 
-total = first_level_hp + (additional_levels * avg_per_level)
+total = first_level_hp + additional_levels * avg_per_level;
 
-return total
+return total;
 ```
 
 ### Action Scripts
 
 **melee_attack.qbs** (Action: Melee Attack)
+
 ```javascript
 on_activate(Target):
   // Roll attack
@@ -674,10 +679,10 @@ on_activate(Target):
   str = Owner.Attribute('Strength').value
   prof = Owner.Attribute('Proficiency Bonus').value
   str_mod = calculateModifier(str)
-  
+
   attack_total = attack_roll + str_mod + prof
   target_ac = Target.Attribute('Armor Class').value
-  
+
   // Check for critical hit
   if attack_roll == 20:
     // Critical hit - double damage dice
@@ -685,12 +690,12 @@ on_activate(Target):
     Target.Attribute('Hit Points').subtract(damage)
     announce('CRITICAL HIT! {{damage}} damage to {{Target.title}}!')
     return
-  
+
   // Check for critical miss
   if attack_roll == 1:
     announce('Critical miss!')
     return
-  
+
   // Normal hit check
   if attack_total >= target_ac:
     damage = roll('1d8') + str_mod
@@ -698,30 +703,31 @@ on_activate(Target):
     announce('Hit {{Target.title}} for {{damage}} damage!')
   else:
     announce('Attack missed {{Target.title}}.')
-  
+
   return
 ```
 
 **cast_spell.qbs** (Action: Cast Spell)
+
 ```javascript
 on_activate(Target):
   // Get spell details from chart
   spell_name = Owner.Attribute('Selected Spell').value
   spell_level = Ruleset.Chart('Spells').where('Spell', spell_name, 'Level')
   mana_cost = spell_level * 2
-  
+
   // Check if enough spell slots
   current_mana = Owner.Attribute('Mana').value
   if current_mana < mana_cost:
     announce('Not enough mana!')
     return
-  
+
   // Spend mana
   Owner.Attribute('Mana').subtract(mana_cost)
-  
+
   // Get spell effect
   spell_type = Ruleset.Chart('Spells').where('Spell', spell_name, 'Type')
-  
+
   if spell_type == 'Damage':
     damage_dice = Ruleset.Chart('Spells').where('Spell', spell_name, 'Dice')
     int_mod = calculateModifier(Owner.Attribute('Intelligence').value)
@@ -733,19 +739,20 @@ on_activate(Target):
     healing = roll(healing_dice)
     Target.Attribute('Hit Points').add(healing)
     announce('{{spell_name}} heals {{Target.title}} for {{healing}} HP!')
-  
+
   return
 ```
 
 ### Item Scripts
 
 **health_potion.qbs** (Item: Health Potion)
+
 ```javascript
 on_consume():
   healing = roll('2d4+2')
   current_hp = Owner.Attribute('Hit Points').value
   max_hp = Owner.Attribute('Max Hit Points').value
-  
+
   // Don't overheal
   new_hp = current_hp + healing
   if new_hp > max_hp:
@@ -755,11 +762,12 @@ on_consume():
   else:
     Owner.Attribute('Hit Points').add(healing)
     announce('Healed {{healing}} HP')
-  
+
   return
 ```
 
 **plate_armor.qbs** (Item: Plate Armor)
+
 ```javascript
 on_equip():
   Owner.Attribute('Armor Type').set('Heavy')
@@ -773,6 +781,7 @@ on_unequip():
 ```
 
 This example demonstrates:
+
 - Global utility functions
 - Reactive attribute calculations
 - Complex conditional logic
