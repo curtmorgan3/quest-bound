@@ -273,7 +273,13 @@ export const ViewInventoryNode = ({ component }: { component: Component }) => {
     e.preventDefault();
 
     const target = e.currentTarget as HTMLElement;
-    target.setPointerCapture(e.pointerId);
+    
+    // Ensure pointer capture is set immediately for touch devices
+    try {
+      target.setPointerCapture(e.pointerId);
+    } catch (error) {
+      console.warn('Failed to set pointer capture:', error);
+    }
 
     const rect = containerRef.current?.getBoundingClientRect();
     if (!rect) return;
@@ -462,6 +468,7 @@ export const ViewInventoryNode = ({ component }: { component: Component }) => {
             linear-gradient(to bottom, ${gridColor} ${css.outlineWidth}px, transparent ${css.outlineWidth}px)
           `,
           overflow: 'hidden',
+          touchAction: 'none',
         }}>
         {inventoryItems.map((invItem) => {
           const pos = getItemPosition(invItem);
@@ -473,6 +480,9 @@ export const ViewInventoryNode = ({ component }: { component: Component }) => {
               onDoubleClick={(e) => e.stopPropagation()}
               onClick={(e) => handleItemClick(e, invItem)}
               onPointerDown={(e) => handlePointerDown(e, invItem)}
+              tabIndex={0}
+              role="button"
+              aria-label={`${invItem.title} - drag to move`}
               style={{
                 position: 'absolute',
                 left: pos.left,
@@ -484,6 +494,7 @@ export const ViewInventoryNode = ({ component }: { component: Component }) => {
                 zIndex: isDragging ? 10 : 1,
                 touchAction: 'none',
                 userSelect: 'none',
+                outline: 'none',
               }}>
               {invItem.image && showItemAs === 'image' ? (
                 <img

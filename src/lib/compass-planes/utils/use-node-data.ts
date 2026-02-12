@@ -54,7 +54,9 @@ export const useNodeData = (component: Component): NodeData => {
 
   if (component.type === ComponentTypes.INPUT && !component?.attributeId) {
     if (componentData?.placeholder === 'Input' && !!componentData?.type) {
-      name = `${componentData.type} input`;
+      name = `${componentData.type}`;
+    } else {
+      name = 'Input';
     }
   }
 
