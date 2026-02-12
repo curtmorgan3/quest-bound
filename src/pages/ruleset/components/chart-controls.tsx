@@ -63,6 +63,7 @@ export const ChartControls = ({ id, handleDelete, handleEdit }: ChartControlsPro
       <DialogTrigger asChild>
         <Pencil
           onClick={() => handleEdit(id)}
+          data-testid='chart-controls-edit'
           className='text-neutral-400 h-[18px] w-[18px] clickable'
         />
       </DialogTrigger>

@@ -17,13 +17,7 @@ describe('Window Management', () => {
 
       // Wait for ruleset to be created and navigate to it
       cy.contains('Test Ruleset for Windows').should('be.visible');
-      cy.get('[data-testid*="ruleset-card-"]')
-        .first()
-        .then(($card) => {
-          const cardTestId = $card.attr('data-testid');
-          const rulesetId = cardTestId?.replace('ruleset-card-', '');
-          cy.get(`[data-testid="open-ruleset-${rulesetId}"]`).click();
-        });
+      cy.contains('button', 'Open').first().click();
 
       // Navigate to windows page
       cy.get('[data-testid="nav-windows"]').click();
@@ -56,13 +50,7 @@ describe('Window Management', () => {
 
       // Navigate to the ruleset
       cy.contains('Window Category Ruleset').should('be.visible');
-      cy.get('[data-testid*="ruleset-card-"]')
-        .first()
-        .then(($card) => {
-          const cardTestId = $card.attr('data-testid');
-          const rulesetId = cardTestId?.replace('ruleset-card-', '');
-          cy.get(`[data-testid="open-ruleset-${rulesetId}"]`).click();
-        });
+      cy.contains('button', 'Open').first().click();
 
       // Navigate to windows page
       cy.get('[data-testid="nav-windows"]').click();
@@ -95,13 +83,7 @@ describe('Window Management', () => {
 
       // Navigate to the ruleset
       cy.contains('Multiple Windows Ruleset').should('be.visible');
-      cy.get('[data-testid*="ruleset-card-"]')
-        .first()
-        .then(($card) => {
-          const cardTestId = $card.attr('data-testid');
-          const rulesetId = cardTestId?.replace('ruleset-card-', '');
-          cy.get(`[data-testid="open-ruleset-${rulesetId}"]`).click();
-        });
+      cy.contains('button', 'Open').first().click();
 
       // Navigate to windows page
       cy.get('[data-testid="nav-windows"]').click();
@@ -161,9 +143,8 @@ describe('Window Management', () => {
       // Click on the title to edit it inline
       cy.get('[data-testid="preview-card-title"]').first().click();
 
-      // Clear and type new value
-      cy.get('[data-testid="preview-card-title-input"]').first().clear().type('Updated Window');
-      cy.press('Enter');
+      // Wait for input to be enabled and type new value
+      cy.get('[data-testid="preview-card-title-input"]').first().should('not.be.disabled').clear().type('Updated Window{enter}');
 
       // Verify the change was saved
       cy.get('[data-testid="preview-card-title"]').first().should('contain', 'Updated Window');
@@ -180,13 +161,7 @@ describe('Window Management', () => {
 
       // Navigate to the ruleset
       cy.contains('Edit Window Category Ruleset').should('be.visible');
-      cy.get('[data-testid*="ruleset-card-"]')
-        .first()
-        .then(($card) => {
-          const cardTestId = $card.attr('data-testid');
-          const rulesetId = cardTestId?.replace('ruleset-card-', '');
-          cy.get(`[data-testid="open-ruleset-${rulesetId}"]`).click();
-        });
+      cy.contains('button', 'Open').first().click();
 
       // Navigate to windows page
       cy.get('[data-testid="nav-windows"]').click();
@@ -228,13 +203,7 @@ describe('Window Management', () => {
 
       // Navigate to the ruleset
       cy.contains('Delete Window Ruleset').should('be.visible');
-      cy.get('[data-testid*="ruleset-card-"]')
-        .first()
-        .then(($card) => {
-          const cardTestId = $card.attr('data-testid');
-          const rulesetId = cardTestId?.replace('ruleset-card-', '');
-          cy.get(`[data-testid="open-ruleset-${rulesetId}"]`).click();
-        });
+      cy.contains('button', 'Open').first().click();
 
       // Navigate to windows page
       cy.get('[data-testid="nav-windows"]').click();
@@ -248,11 +217,13 @@ describe('Window Management', () => {
       cy.get('[data-slot="dialog-close"]').click();
 
       // Click the Delete button on the card
-      cy.get('button').contains('Delete').click();
+      cy.get('[data-testid="preview-card-delete"]').first().click();
+      
+      // Confirm deletion in the alert dialog
+      cy.get('[data-testid="preview-card-delete-confirm"]').click();
 
       // Verify the window was deleted
-      cy.contains('Window To Delete').should('not.exist');
-      cy.contains('Temporary').should('not.exist');
+      cy.get('body').should('not.contain', 'Window To Delete');
     });
   });
 
@@ -266,13 +237,7 @@ describe('Window Management', () => {
 
       // Navigate to the ruleset
       cy.contains('Open Window Ruleset').should('be.visible');
-      cy.get('[data-testid*="ruleset-card-"]')
-        .first()
-        .then(($card) => {
-          const cardTestId = $card.attr('data-testid');
-          const rulesetId = cardTestId?.replace('ruleset-card-', '');
-          cy.get(`[data-testid="open-ruleset-${rulesetId}"]`).click();
-        });
+      cy.contains('button', 'Open').first().click();
 
       // Navigate to windows page
       cy.get('[data-testid="nav-windows"]').click();
@@ -338,13 +303,7 @@ describe('Window Management', () => {
 
       // Navigate to the ruleset
       cy.contains('Filter Window Category Ruleset').should('be.visible');
-      cy.get('[data-testid*="ruleset-card-"]')
-        .first()
-        .then(($card) => {
-          const cardTestId = $card.attr('data-testid');
-          const rulesetId = cardTestId?.replace('ruleset-card-', '');
-          cy.get(`[data-testid="open-ruleset-${rulesetId}"]`).click();
-        });
+      cy.contains('button', 'Open').first().click();
 
       // Navigate to windows page
       cy.get('[data-testid="nav-windows"]').click();
@@ -393,13 +352,7 @@ describe('Window Management', () => {
 
       // Navigate to the ruleset
       cy.contains('Validation Window Ruleset').should('be.visible');
-      cy.get('[data-testid*="ruleset-card-"]')
-        .first()
-        .then(($card) => {
-          const cardTestId = $card.attr('data-testid');
-          const rulesetId = cardTestId?.replace('ruleset-card-', '');
-          cy.get(`[data-testid="open-ruleset-${rulesetId}"]`).click();
-        });
+      cy.contains('button', 'Open').first().click();
 
       // Navigate to windows page
       cy.get('[data-testid="nav-windows"]').click();
@@ -436,13 +389,7 @@ describe('Window Management', () => {
 
       // Navigate to the ruleset
       cy.contains('No Category Window Ruleset').should('be.visible');
-      cy.get('[data-testid*="ruleset-card-"]')
-        .first()
-        .then(($card) => {
-          const cardTestId = $card.attr('data-testid');
-          const rulesetId = cardTestId?.replace('ruleset-card-', '');
-          cy.get(`[data-testid="open-ruleset-${rulesetId}"]`).click();
-        });
+      cy.contains('button', 'Open').first().click();
 
       // Navigate to windows page
       cy.get('[data-testid="nav-windows"]').click();

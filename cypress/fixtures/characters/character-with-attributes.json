@@ -1,0 +1,39 @@
+{
+  "character": {
+    "id": "test-char-full-1",
+    "userId": "test-user-1",
+    "rulesetId": "test-ruleset-1",
+    "inventoryId": "test-inventory-1",
+    "name": "Aragorn Elessar",
+    "assetId": null,
+    "image": null,
+    "isTestCharacter": true,
+    "componentData": {},
+    "pinnedSidebarDocuments": [],
+    "pinnedSidebarCharts": [],
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "updatedAt": "2024-01-01T00:00:00.000Z"
+  },
+  "attributes": [
+    {
+      "characterId": "test-char-full-1",
+      "attributeId": "attr-strength",
+      "value": 18
+    },
+    {
+      "characterId": "test-char-full-1",
+      "attributeId": "attr-dexterity",
+      "value": 14
+    },
+    {
+      "characterId": "test-char-full-1",
+      "attributeId": "attr-hp",
+      "value": 45
+    },
+    {
+      "characterId": "test-char-full-1",
+      "attributeId": "attr-class",
+      "value": "Ranger"
+    }
+  ]
+}
