@@ -239,8 +239,8 @@ export const NumberInput = ({
           <div
             ref={containerRef}
             className='relative h-40 overflow-y-auto overflow-x-hidden number-wheel-input scroll-smooth snap-y snap-mandatory py-2'
-            onScroll={handleScroll}
-            onWheel={(e) => e.stopPropagation()}>
+            style={{ touchAction: 'pan-y' }}
+            onScroll={handleScroll}>
             <div
               key={'start-one'}
               className='flex h-8 items-center justify-center snap-center text-lg transition-all text-muted-foreground scale-95'

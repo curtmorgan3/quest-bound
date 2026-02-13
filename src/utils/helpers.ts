@@ -9,5 +9,7 @@ export function generateId(context?: string): string {
 }
 
 export function isRunningLocally(): boolean {
-  return window.location.href.includes('localhost');
+  return (
+    window.location.href.includes('localhost') || window.location.href.includes('192.168.1.208')
+  );
 }

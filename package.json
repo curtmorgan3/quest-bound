@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:https-setup": "tsx scripts/dev-https-setup.ts",
     "build": "tsc -b && vite build && cp ./robots.txt ./dist/robots.txt",
     "lint": "eslint .",
     "preview": "vite preview",

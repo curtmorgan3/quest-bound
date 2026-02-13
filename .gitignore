@@ -8,6 +8,7 @@ pnpm-debug.log*
 lerna-debug.log*
 
 .env
+.cert
 node_modules
 dist
 dist-ssr

@@ -1,15 +1,16 @@
+import fs from 'node:fs';
+import path from 'node:path';
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
-import path from 'path';
 import { defineConfig } from 'vite';
-import tsconfigPaths from 'vite-tsconfig-paths';
 import { VitePWA } from 'vite-plugin-pwa';
+import tsconfigPaths from 'vite-tsconfig-paths';
 
 // https://vite.dev/config/
 export const viteConfig = defineConfig({
   plugins: [
-    react(), 
-    tailwindcss(), 
+    react(),
+    tailwindcss(),
     tsconfigPaths(),
     VitePWA({
       registerType: 'autoUpdate',
@@ -28,14 +29,14 @@ export const viteConfig = defineConfig({
           {
             src: '/icons/icon-192x192.png',
             sizes: '192x192',
-            type: 'image/png'
+            type: 'image/png',
           },
           {
             src: '/icons/icon-512x512.png',
             sizes: '512x512',
-            type: 'image/png'
-          }
-        ]
+            type: 'image/png',
+          },
+        ],
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2,mp4}'],
@@ -49,9 +50,9 @@ export const viteConfig = defineConfig({
               cacheName: 'google-fonts-cache',
               expiration: {
                 maxEntries: 10,
-                maxAgeSeconds: 60 * 60 * 24 * 365 // <== 365 days
-              }
-            }
+                maxAgeSeconds: 60 * 60 * 24 * 365, // <== 365 days
+              },
+            },
           },
           {
             urlPattern: /^https:\/\/fonts\.gstatic\.com\/.*/i,
@@ -60,23 +61,37 @@ export const viteConfig = defineConfig({
               cacheName: 'gstatic-fonts-cache',
               expiration: {
                 maxEntries: 10,
-                maxAgeSeconds: 60 * 60 * 24 * 365 // <== 365 days
-              }
-            }
-          }
-        ]
-      }
-    })
+                maxAgeSeconds: 60 * 60 * 24 * 365, // <== 365 days
+              },
+            },
+          },
+        ],
+      },
+    }),
   ],
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
     },
   },
-  server: {
-    port: 5173,
-    host: true,
-  },
+  server: (() => {
+    const certDir = path.resolve(process.cwd(), '.cert');
+    const keyPath = path.join(certDir, 'key.pem');
+    const certPath = path.join(certDir, 'cert.pem');
+    const useHttps =
+      fs.existsSync(keyPath) && fs.existsSync(certPath);
+
+    return {
+      port: 5173,
+      host: true,
+      ...(useHttps && {
+        https: {
+          key: fs.readFileSync(keyPath),
+          cert: fs.readFileSync(certPath),
+        },
+      }),
+    };
+  })(),
 });
 
 export default viteConfig;
