@@ -3,11 +3,7 @@
  * Syntax highlighting via StreamLanguage.
  */
 
-import {
-  HighlightStyle,
-  StreamLanguage,
-  syntaxHighlighting,
-} from '@codemirror/language';
+import { HighlightStyle, StreamLanguage, syntaxHighlighting } from '@codemirror/language';
 import { tags } from '@lezer/highlight';
 
 interface QBScriptState {
@@ -46,11 +42,7 @@ const qbscriptParser = StreamLanguage.define<QBScriptState>({
     }
 
     // Built-in functions
-    if (
-      stream.match(
-        /\b(roll|floor|ceil|round|announce|log)\b/,
-      )
-    ) {
+    if (stream.match(/\b(roll|floor|ceil|round|announce|log)\b/)) {
       return 'builtin';
     }
     // console.log
@@ -127,17 +119,20 @@ const qbscriptParser = StreamLanguage.define<QBScriptState>({
   },
 });
 
+// One Dark Pro theme colors
 const qbscriptHighlightStyle = HighlightStyle.define([
-  { tag: tags.keyword, color: '#708' },
-  { tag: tags.controlKeyword, color: '#708' },
-  { tag: tags.atom, color: '#219' },
-  { tag: tags.number, color: '#164' },
-  { tag: tags.string, color: '#a11' },
-  { tag: tags.comment, color: '#940', fontStyle: 'italic' },
-  { tag: tags.operator, color: '#708' },
-  { tag: tags.variableName, color: '#30a' },
-  { tag: tags.definition(tags.variableName), color: '#00f' },
-  { tag: tags.invalid, color: '#f00' },
+  { tag: tags.variableName, color: '#e06c75' },
+  { tag: tags.string, color: '#98c379' },
+  { tag: tags.keyword, color: '#c678dd' },
+  { tag: tags.controlKeyword, color: '#c678dd' },
+  { tag: tags.atom, color: '#56b6c2' },
+  { tag: tags.number, color: '#d19a66' },
+  { tag: tags.comment, color: '#5c6370', fontStyle: 'italic' },
+  { tag: tags.operator, color: '#56b6c2' },
+  { tag: tags.definition(tags.variableName), color: '#61afef' },
+  { tag: tags.special(tags.variableName), color: '#e5c07b' },
+  { tag: tags.function(tags.variableName), color: '#61afef' },
+  { tag: tags.invalid, color: '#e06c75' },
 ]);
 
 export const qbscriptLanguage = qbscriptParser;

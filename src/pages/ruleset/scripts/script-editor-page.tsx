@@ -208,39 +208,39 @@ export function ScriptEditorPage() {
         </div>
       </div>
 
-      {/* Editor + panels */}
-      <div className='flex-1 flex flex-col min-h-0 p-4 gap-4'>
-        {/* Validation */}
-        {hasErrors && (
-          <Alert variant='destructive'>
-            <AlertCircle className='h-4 w-4' />
-            <AlertTitle>Validation errors</AlertTitle>
-            <AlertDescription>
-              <ul className='list-disc list-inside text-sm mt-1'>
-                {validationErrors.map((e, i) => (
-                  <li key={i}>
-                    {e.line != null && e.column != null
-                      ? `Line ${e.line}: ${e.message}`
-                      : e.message}
-                  </li>
-                ))}
-              </ul>
-            </AlertDescription>
-          </Alert>
-        )}
+      <div className='flex-1 flex flex-col min-h-0 gap-4'>
+        <div className='flex flex-col gap-2 flex-1 min-h-0 p-2'>
+          <Label>Source</Label>
+          <CodeMirrorEditor
+            key={scriptId ?? 'new'}
+            value={sourceCode}
+            onChange={setSourceCode}
+            onSave={handleSave}
+            height='320px'
+            className='rounded-md border overflow-hidden'
+          />
+        </div>
 
-        <div className='flex-1 flex flex-col min-h-0 gap-4'>
-          <div className='flex flex-col gap-2 flex-1 min-h-0'>
-            <Label>Source</Label>
-            <CodeMirrorEditor
-              key={scriptId ?? 'new'}
-              value={sourceCode}
-              onChange={setSourceCode}
-              onSave={handleSave}
-              height='320px'
-              className='rounded-md border overflow-hidden'
-            />
-          </div>
+        {/* Editor + panels */}
+        <div className='flex-1 flex flex-col min-h-0 p-4 gap-4'>
+          {/* Validation */}
+          {hasErrors && (
+            <Alert variant='destructive'>
+              <AlertCircle className='h-4 w-4' />
+              <AlertTitle>Validation errors</AlertTitle>
+              <AlertDescription>
+                <ul className='list-disc list-inside text-sm mt-1'>
+                  {validationErrors.map((e, i) => (
+                    <li key={i}>
+                      {e.line != null && e.column != null
+                        ? `Line ${e.line}: ${e.message}`
+                        : e.message}
+                    </li>
+                  ))}
+                </ul>
+              </AlertDescription>
+            </Alert>
+          )}
 
           {/* Console + Error log tabs */}
           <Tabs defaultValue='console' className='flex-1 flex flex-col min-h-0'>

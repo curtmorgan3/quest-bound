@@ -2,7 +2,12 @@
  * CodeMirror 6 wrapper for QBScript editing
  */
 
-import { defaultKeymap, history, historyKeymap } from '@codemirror/commands';
+import {
+  defaultKeymap,
+  history,
+  historyKeymap,
+  indentWithTab,
+} from '@codemirror/commands';
 import { EditorState } from '@codemirror/state';
 import { EditorView, keymap } from '@codemirror/view';
 import { useEffect, useRef } from 'react';
@@ -47,7 +52,7 @@ export function CodeMirrorEditor({
       qbscriptAutocomplete,
       history(),
       keymap.of(defaultKeymap),
-      keymap.of(historyKeymap),
+      keymap.of([...historyKeymap, indentWithTab]),
       EditorView.updateListener.of((update) => {
         if (update.docChanged) {
           onChangeRef.current(update.state.doc.toString());
@@ -87,5 +92,23 @@ export function CodeMirrorEditor({
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps -- intentional: only mount once to avoid losing focus on every keystroke
 
-  return <div ref={containerRef} className={className} style={{ minHeight: height }} />;
+  // Sync value from parent into the view when it changes (e.g. script loaded from DB after mount).
+  useEffect(() => {
+    const view = viewRef.current;
+    if (!view) return;
+    const current = view.state.doc.toString();
+    if (current !== value) {
+      view.dispatch({
+        changes: { from: 0, to: current.length, insert: value },
+      });
+    }
+  }, [value]);
+
+  return (
+    <div
+      ref={containerRef}
+      className={className}
+      style={{ minHeight: height, backgroundColor: '#282c34' }}
+    />
+  );
 }
