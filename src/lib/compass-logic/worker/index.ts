@@ -6,7 +6,12 @@
 
 // Client
 export { QBScriptClient, getQBScriptClient, terminateQBScriptClient } from './client';
-export type { ScriptExecutionOptions, AttributeChangeOptions, ValidationResult } from './client';
+export type {
+  ScriptExecutionOptions,
+  AttributeChangeOptions,
+  ValidationResult,
+  WorkerSignalHandler,
+} from './client';
 
 // Hooks
 export {

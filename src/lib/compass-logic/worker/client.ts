@@ -59,11 +59,14 @@ export interface ValidationResult {
 // QBScript Client
 // ============================================================================
 
+export type WorkerSignalHandler = (signal: WorkerToMainSignal) => void;
+
 export class QBScriptClient {
   private worker: Worker | null = null;
   private pendingRequests: Map<string, PendingRequest> = new Map();
   private isReady = false;
   private readyCallbacks: Array<() => void> = [];
+  private signalHandlers: Set<WorkerSignalHandler> = new Set();
 
   constructor() {
     this.initWorker();
@@ -107,6 +110,15 @@ export class QBScriptClient {
    * Handle signals from the worker
    */
   private handleWorkerSignal(signal: WorkerToMainSignal): void {
+    // Notify subscribers first (e.g. Console panel)
+    this.signalHandlers.forEach((handler) => {
+      try {
+        handler(signal);
+      } catch (e) {
+        console.error('QBScript signal handler error:', e);
+      }
+    });
+
     switch (signal.type) {
       case 'WORKER_READY':
         this.isReady = true;
@@ -446,6 +458,23 @@ export class QBScriptClient {
    */
   get ready(): boolean {
     return this.isReady;
+  }
+
+  /**
+   * Subscribe to worker signals (e.g. for Console panel to collect CONSOLE_LOG).
+   */
+  onSignal(handler: WorkerSignalHandler): () => void {
+    this.signalHandlers.add(handler);
+    return () => {
+      this.signalHandlers.delete(handler);
+    };
+  }
+
+  /**
+   * Unsubscribe from worker signals.
+   */
+  offSignal(handler: WorkerSignalHandler): void {
+    this.signalHandlers.delete(handler);
   }
 }
 

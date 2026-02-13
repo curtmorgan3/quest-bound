@@ -26,8 +26,14 @@
     "qbs": "tsx src/lib/compass-logic/interpreter/cli.ts"
   },
   "dependencies": {
+    "@codemirror/autocomplete": "^6.20.0",
+    "@codemirror/commands": "^6.10.2",
+    "@codemirror/language": "^6.12.1",
+    "@codemirror/state": "^6.5.4",
+    "@codemirror/view": "^6.39.14",
     "@cypress/react": "^9.0.1",
     "@hookform/resolvers": "^5.2.1",
+    "@lezer/highlight": "^1.2.3",
     "@netlify/edge-functions": "^3.0.3",
     "@radix-ui/react-accordion": "^1.2.12",
     "@radix-ui/react-alert-dialog": "^1.1.15",

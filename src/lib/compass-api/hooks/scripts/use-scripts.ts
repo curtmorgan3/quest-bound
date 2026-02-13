@@ -21,6 +21,7 @@ export const useScripts = () => {
     if (!activeRuleset) return;
     const now = new Date().toISOString();
     try {
+      console.log(data);
       const scriptId = crypto.randomUUID();
       await db.scripts.add({
         ...data,
@@ -29,16 +30,19 @@ export const useScripts = () => {
         createdAt: now,
         updatedAt: now,
       } as Script);
-      
+
       // If associated with an entity, update the entity's scriptId
       if (data.entityId && data.entityType && data.entityType !== 'global') {
-        const table = data.entityType === 'attribute' ? db.attributes
-          : data.entityType === 'action' ? db.actions
-          : db.items;
-        
+        const table =
+          data.entityType === 'attribute'
+            ? db.attributes
+            : data.entityType === 'action'
+              ? db.actions
+              : db.items;
+
         await table.update(data.entityId, { scriptId });
       }
-      
+
       return scriptId;
     } catch (e) {
       handleError(e as Error, {
@@ -77,9 +81,7 @@ export const useScripts = () => {
 
   const getScriptByEntity = async (entityType: string, entityId: string) => {
     try {
-      return await db.scripts
-        .where({ entityType, entityId })
-        .first();
+      return await db.scripts.where({ entityType, entityId }).first();
     } catch (e) {
       handleError(e as Error, {
         component: 'useScripts/getScriptByEntity',
@@ -89,13 +91,13 @@ export const useScripts = () => {
     }
   };
 
-  const globalScripts = scripts?.filter(s => s.isGlobal) ?? [];
+  const globalScripts = scripts?.filter((s) => s.isGlobal) ?? [];
 
-  return { 
-    scripts: scripts ?? [], 
+  return {
+    scripts: scripts ?? [],
     globalScripts,
-    createScript, 
-    updateScript, 
+    createScript,
+    updateScript,
     deleteScript,
     getScriptByEntity,
   };

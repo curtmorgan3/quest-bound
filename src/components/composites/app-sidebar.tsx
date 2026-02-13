@@ -3,6 +3,7 @@ import {
   ArrowLeft,
   BookOpen,
   Dices,
+  FileCode,
   FileSpreadsheet,
   FileText,
   FolderOpen,
@@ -119,6 +120,11 @@ export function AppSidebar() {
           url: `/rulesets/${activeRuleset?.id}/windows`,
           icon: AppWindow,
         },
+        {
+          title: 'Scripts',
+          url: `/rulesets/${activeRuleset?.id}/scripts`,
+          icon: FileCode,
+        },
       ];
 
   const items = character ? [] : rulesetItems;
@@ -167,6 +173,7 @@ export function AppSidebar() {
       if (path.includes('/items')) return 'items';
       if (path.includes('/documents')) return 'documents';
       if (path.includes('/charts')) return 'charts';
+      if (path.includes('/scripts')) return 'scripts';
       return 'rulesets';
     }
     if (path.includes('/characters')) {

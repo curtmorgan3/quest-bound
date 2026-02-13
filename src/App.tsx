@@ -1,4 +1,14 @@
-import { CharacterChartViewer, CharacterPage, Characters, DevTools, ErrorPage, Ruleset, Rulesets } from '@/pages';
+import {
+  CharacterChartViewer,
+  CharacterPage,
+  Characters,
+  DevTools,
+  ErrorPage,
+  Ruleset,
+  Rulesets,
+  ScriptEditorPage,
+  ScriptsIndex,
+} from '@/pages';
 import { HashRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { ErrorBoundary } from './components';
 import { Layout } from './components/layout';
@@ -30,6 +40,10 @@ function CompassRoutes() {
             <Route path={`/rulesets/:rulesetId/windows`} element={<Ruleset page='windows' />} />
 
             <Route path={`/rulesets/:rulesetId/windows/:windowId`} element={<WindowEditor />} />
+
+            <Route path={`/rulesets/:rulesetId/scripts`} element={<ScriptsIndex />} />
+
+            <Route path={`/rulesets/:rulesetId/scripts/:scriptId`} element={<ScriptEditorPage />} />
 
             <Route path={`/characters`} element={<Characters />} />
             <Route path={`/characters/:characterId`} element={<CharacterPage lockByDefault />} />
