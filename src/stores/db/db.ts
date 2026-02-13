@@ -57,7 +57,7 @@ const db = new Dexie('qbdb') as Dexie & {
 const common = '++id, createdAt, updatedAt';
 
 // Schema declaration:
-db.version(13).stores({
+db.version(14).stores({
   users: `${common}, username, assetId, image, preferences`,
   assets: `${common}, rulesetId, [directory+filename], data, type`,
   rulesets: `${common}, version, createdBy, title, description, details, assetId, image`,
@@ -74,7 +74,7 @@ db.version(13).stores({
   inventoryItems: `${common}, characterId, inventoryId, entityId, quantity`,
   characterPages: `${common}, characterId, label`,
   characterWindows: `${common}, characterId, characterPageId, windowId, title, x, y, isCollapsed`,
-  characterAttributes: `${common}, characterId, attributeId, [characterId+attributeId], scriptDisabled`,
+  characterAttributes: `${common}, characterId, attributeId, &[characterId+attributeId], scriptDisabled`,
   diceRolls: `${common}, rulesetId, userId, value, label`,
   scripts: `${common}, rulesetId, name, entityType, entityId, isGlobal, enabled`,
   scriptErrors: `${common}, rulesetId, scriptId, characterId, timestamp`,

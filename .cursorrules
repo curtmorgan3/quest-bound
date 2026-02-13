@@ -1,5 +1,7 @@
 # Quest Bound - Cursor Rules
 
+Store any note you make in ./agents in markdown files.
+
 ## Directory
 
 - Adding nodes to compass-planes: src/libs/compass-planes/README.md
