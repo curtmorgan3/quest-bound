@@ -16,7 +16,7 @@ import { useScripts } from '@/lib/compass-api/hooks/scripts/use-scripts';
 import { CodeMirrorEditor } from '@/lib/compass-logic/editor';
 import { useScriptValidation } from '@/lib/compass-logic/worker';
 import type { Action, Attribute, Item, Script } from '@/types';
-import { AlertCircle, Loader2, Trash2 } from 'lucide-react';
+import { AlertCircle, Trash2 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ConsolePanel } from './console-panel';
@@ -193,10 +193,9 @@ export function ScriptEditorPage() {
             />
           </div>
         )}
-        <div className='flex gap-2'>
+        <div className='flex gap-2 justify-center min-w-[225px]'>
           <Button onClick={handleSave} disabled={hasErrors || isValidating} variant='default'>
-            {isValidating ? <Loader2 className='h-4 w-4 animate-spin mr-2' /> : null}
-            Save
+            {isValidating ? '...' : 'Save'}
           </Button>
           <Button variant='outline' onClick={handleCancel}>
             Cancel

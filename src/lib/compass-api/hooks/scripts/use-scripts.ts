@@ -21,7 +21,6 @@ export const useScripts = () => {
     if (!activeRuleset) return;
     const now = new Date().toISOString();
     try {
-      console.log(data);
       const scriptId = crypto.randomUUID();
       await db.scripts.add({
         ...data,
