@@ -65,12 +65,17 @@ export class Evaluator {
   private currentEnv: Environment;
   private announceMessages: string[];
   private logMessages: any[][];
+  private isWorkerContext: boolean;
 
   constructor() {
     this.globalEnv = new Environment(null);
     this.currentEnv = this.globalEnv;
     this.announceMessages = [];
     this.logMessages = [];
+    // Detect if we're running in a worker context
+    this.isWorkerContext = typeof self !== 'undefined' && 
+                          typeof (self as any).WorkerGlobalScope !== 'undefined' && 
+                          self instanceof (self as any).WorkerGlobalScope;
     this.registerBuiltins();
   }
 
@@ -442,10 +447,26 @@ export class Evaluator {
     this.globalEnv.define('announce', (...args: any[]): void => {
       const message = args.map((arg) => String(arg)).join(' ');
       this.announceMessages.push(message);
+
+      // If in worker context, send signal to main thread
+      if (this.isWorkerContext) {
+        self.postMessage({
+          type: 'ANNOUNCE',
+          payload: { message },
+        });
+      }
     });
 
     this.globalEnv.define('log', (...args: any[]): void => {
       this.logMessages.push(args);
+
+      // If in worker context, send signal to main thread
+      if (this.isWorkerContext) {
+        self.postMessage({
+          type: 'CONSOLE_LOG',
+          payload: { args },
+        });
+      }
     });
 
     // Reactive system function
