@@ -227,19 +227,26 @@ export async function importScripts(
 /**
  * Extracts script files from a JSZip instance.
  * Returns an array of ScriptImport objects.
+ * @param pathPrefix - Optional root path (e.g. "MyFolder/") when zip was created by compressing a folder
  */
-export async function extractScriptFiles(zipContent: any): Promise<ScriptImport[]> {
+export async function extractScriptFiles(
+  zipContent: any,
+  pathPrefix = '',
+): Promise<ScriptImport[]> {
   const scriptFiles: ScriptImport[] = [];
 
   // Find all .qbs files in the scripts/ folder
+  const scriptsPrefix = pathPrefix + 'scripts/';
   const scriptFileEntries = Object.entries(zipContent.files).filter(
-    ([path]) => path.startsWith('scripts/') && path.endsWith('.qbs'),
+    ([path]) => path.startsWith(scriptsPrefix) && path.endsWith('.qbs'),
   );
 
   for (const [path, file] of scriptFileEntries as [string, any][]) {
     try {
       const content = await file.async('text');
-      scriptFiles.push({ path, content });
+      // Store logical path (scripts/...) for metadata matching and parseScriptPath
+      const logicalPath = pathPrefix ? path.slice(pathPrefix.length) : path;
+      scriptFiles.push({ path: logicalPath, content });
     } catch (error) {
       console.error(`Failed to read script file ${path}:`, error);
     }

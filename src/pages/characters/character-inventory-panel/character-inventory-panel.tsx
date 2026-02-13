@@ -39,7 +39,9 @@ export const CharacterInventoryPanel = ({ open, onOpenChange }: CharacterInvento
   const [typeFilter, setTypeFilter] = useState<InventoryItemType>('item');
   const [titleFilter, setTitleFilter] = useState('');
 
-  const totalInventoryWeight = inventoryItems.reduce((acc, current) => (acc += current.weight), 0);
+  const totalInventoryWeight = Number(
+    inventoryItems.reduce((acc, current) => (acc += current.weight), 0).toFixed(2),
+  );
   const parentRef = useRef<HTMLDivElement>(null);
 
   const {

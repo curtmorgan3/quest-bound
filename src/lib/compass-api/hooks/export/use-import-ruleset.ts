@@ -400,12 +400,26 @@ export const useImportRuleset = () => {
       const zip = new JSZip();
       const zipContent = await zip.loadAsync(file);
 
-      // Extract metadata from application data folder
-      const metadataFile = zipContent.file('application data/metadata.json');
+      // Detect optional root folder: QB export has paths at zip root (e.g. "application data/metadata.json").
+      // Manually zipping a folder yields paths under that folder (e.g. "MyFolder/application data/metadata.json").
+      const METADATA_PATH = 'application data/metadata.json';
+      let pathPrefix = '';
+      let metadataFile = zipContent.file(METADATA_PATH);
+      if (!metadataFile) {
+        const key = Object.keys(zipContent.files).find((p) => p.endsWith(METADATA_PATH));
+        if (key) {
+          pathPrefix = key.slice(0, -METADATA_PATH.length);
+          metadataFile = zipContent.file(key) ?? null;
+        }
+      }
+      const getZipFile = (path: string) =>
+        zipContent.file(path) ?? (pathPrefix ? zipContent.file(pathPrefix + path) : null);
+
       if (!metadataFile) {
         return {
           success: false,
-          message: 'Invalid zip file: application data/metadata.json not found',
+          message:
+            'Invalid zip file: application data/metadata.json not found. If you zipped a folder manually, zip the folder contents (so "application data" is at the root of the archive) rather than the folder itself.',
           importedCounts: {
             attributes: 0,
             actions: 0,
@@ -424,7 +438,9 @@ export const useImportRuleset = () => {
             inventoryItems: 0,
             scripts: 0,
           },
-          errors: ['application data/metadata.json file is required'],
+          errors: [
+            'application data/metadata.json file is required. When manually zipping, compress the contents of the export folder so that "application data" appears at the root of the zip.',
+          ],
         };
       }
 
@@ -622,7 +638,7 @@ export const useImportRuleset = () => {
       // Build filename -> assetId map for resolving asset references in actions/items
       // Read asset metadata early (before importing) to build the map
       const assetFilenameToIdMap: Record<string, string> = {};
-      const assetsMetadataFile = zipContent.file('application data/assets.json');
+      const assetsMetadataFile = getZipFile('application data/assets.json');
       if (assetsMetadataFile) {
         try {
           const assetsMetadataText = await assetsMetadataFile.async('text');
@@ -647,7 +663,7 @@ export const useImportRuleset = () => {
       }
 
       // Import characterAttributes
-      const characterAttributesFile = zipContent.file('application data/characterAttributes.json');
+      const characterAttributesFile = getZipFile('application data/characterAttributes.json');
       if (characterAttributesFile) {
         try {
           const characterAttributesText = await characterAttributesFile.async('text');
@@ -675,7 +691,7 @@ export const useImportRuleset = () => {
       }
 
       // Import attributes (TSV format)
-      const attributesFile = zipContent.file('attributes.tsv');
+      const attributesFile = getZipFile('attributes.tsv');
       if (attributesFile) {
         try {
           const attributesText = await attributesFile.async('text');
@@ -718,7 +734,7 @@ export const useImportRuleset = () => {
       }
 
       // Import actions (TSV format)
-      const actionsFile = zipContent.file('actions.tsv');
+      const actionsFile = getZipFile('actions.tsv');
       if (actionsFile) {
         try {
           const actionsText = await actionsFile.async('text');
@@ -760,7 +776,7 @@ export const useImportRuleset = () => {
       }
 
       // Import items (TSV format)
-      const itemsFile = zipContent.file('items.tsv');
+      const itemsFile = getZipFile('items.tsv');
       if (itemsFile) {
         try {
           const itemsText = await itemsFile.async('text');
@@ -811,7 +827,7 @@ export const useImportRuleset = () => {
       }
 
       // Import charts (metadata from JSON, data from TSV files in charts folder)
-      const chartsFile = zipContent.file('application data/charts.json');
+      const chartsFile = getZipFile('application data/charts.json');
       if (chartsFile) {
         try {
           const chartsText = await chartsFile.async('text');
@@ -822,13 +838,14 @@ export const useImportRuleset = () => {
           const chartsFolder = zipContent.folder('charts');
 
           if (chartsFolder) {
+            const chartsPrefix = pathPrefix + 'charts/';
             const chartFiles = Object.entries(zipContent.files).filter(
-              ([path]) => path.startsWith('charts/') && path.endsWith('.tsv'),
+              ([path]) => path.startsWith(chartsPrefix) && path.endsWith('.tsv'),
             );
 
             for (const [path, file] of chartFiles) {
               // Extract chart ID from filename (format: charts/{title}_{id}.tsv)
-              const filename = path.replace('charts/', '');
+              const filename = path.replace(chartsPrefix, '');
               // Parse ID from curly braces: {title}_{id}.tsv
               const idMatch = filename.match(/\{([^}]+)\}\.tsv$/);
               if (!idMatch) continue;
@@ -872,7 +889,7 @@ export const useImportRuleset = () => {
       }
 
       // Import windows (must be imported before components since components reference windows)
-      const windowsFile = zipContent.file('application data/windows.json');
+      const windowsFile = getZipFile('application data/windows.json');
       if (windowsFile) {
         try {
           const windowsText = await windowsFile.async('text');
@@ -901,7 +918,7 @@ export const useImportRuleset = () => {
       }
 
       // Import components (must be imported after windows to map windowIds)
-      const componentsFile = zipContent.file('application data/components.json');
+      const componentsFile = getZipFile('application data/components.json');
       if (componentsFile) {
         try {
           const componentsText = await componentsFile.async('text');
@@ -929,7 +946,7 @@ export const useImportRuleset = () => {
       }
 
       // Import assets (metadata from JSON, data from files in assets folder)
-      const assetsFile = zipContent.file('application data/assets.json');
+      const assetsFile = getZipFile('application data/assets.json');
       if (assetsFile) {
         try {
           const assetsText = await assetsFile.async('text');
@@ -939,15 +956,16 @@ export const useImportRuleset = () => {
           const assetDataMap: Record<string, string> = {};
 
           // Build a map of all asset files by their paths relative to assets/
+          const assetsPrefix = pathPrefix + 'assets/';
           const assetFiles = Object.entries(zipContent.files).filter(
-            ([path]) => path.startsWith('assets/') && !path.endsWith('/'),
+            ([path]) => path.startsWith(assetsPrefix) && !path.endsWith('/'),
           );
 
           for (const [path, file] of assetFiles) {
             // Read file as base64
             const fileData = await file.async('base64');
             // Get relative path within assets folder (e.g., "subdir/image.png" or "image.png")
-            const relativePath = path.replace('assets/', '');
+            const relativePath = path.replace(assetsPrefix, '');
             assetDataMap[relativePath] = fileData;
           }
 
@@ -995,7 +1013,7 @@ export const useImportRuleset = () => {
       }
 
       // Import fonts (metadata from JSON, data from files in fonts folder)
-      const fontsFile = zipContent.file('application data/fonts.json');
+      const fontsFile = getZipFile('application data/fonts.json');
       if (fontsFile) {
         try {
           const fontsText = await fontsFile.async('text');
@@ -1006,13 +1024,14 @@ export const useImportRuleset = () => {
           const fontsFolder = zipContent.folder('fonts');
 
           if (fontsFolder) {
+            const fontsPrefix = pathPrefix + 'fonts/';
             const fontFiles = Object.entries(zipContent.files).filter(
-              ([path]) => path.startsWith('fonts/') && path.endsWith('.ttf'),
+              ([path]) => path.startsWith(fontsPrefix) && path.endsWith('.ttf'),
             );
 
             for (const [path, file] of fontFiles) {
               // Extract font ID from filename (format: fonts/{label}_{id}.ttf)
-              const filename = path.replace('fonts/', '');
+              const filename = path.replace(fontsPrefix, '');
               // Parse ID from curly braces: {label}_{id}.ttf
               const idMatch = filename.match(/\{([^}]+)\}\.ttf$/);
               if (!idMatch) continue;
@@ -1053,7 +1072,7 @@ export const useImportRuleset = () => {
       }
 
       // Import documents
-      const documentsFile = zipContent.file('application data/documents.json');
+      const documentsFile = getZipFile('application data/documents.json');
       if (documentsFile) {
         try {
           const documentsText = await documentsFile.async('text');
@@ -1066,13 +1085,14 @@ export const useImportRuleset = () => {
             const pdfFiles: Record<string, string> = {};
 
             if (documentsFolder) {
+              const documentsPrefix = pathPrefix + 'documents/';
               const pdfFileEntries = Object.entries(zipContent.files).filter(
-                ([path]) => path.startsWith('documents/') && path.endsWith('.pdf'),
+                ([path]) => path.startsWith(documentsPrefix) && path.endsWith('.pdf'),
               );
 
               for (const [path, file] of pdfFileEntries) {
                 // Extract document ID from filename (format: {title}_{id}.pdf)
-                const filename = path.replace('documents/', '');
+                const filename = path.replace(documentsPrefix, '');
                 const idMatch = filename.match(/_([^_]+)\.pdf$/);
                 if (idMatch) {
                   const docId = idMatch[1];
@@ -1106,7 +1126,7 @@ export const useImportRuleset = () => {
       }
 
       // Import characterInventories
-      const inventories = zipContent.file('application data/inventories.json');
+      const inventories = getZipFile('application data/inventories.json');
       if (inventories) {
         try {
           const inventoriesText = await inventories.async('text');
@@ -1134,7 +1154,7 @@ export const useImportRuleset = () => {
       }
 
       // Import characterWindows
-      const characterWindowsFile = zipContent.file('application data/characterWindows.json');
+      const characterWindowsFile = getZipFile('application data/characterWindows.json');
       if (characterWindowsFile) {
         try {
           const characterWindowsText = await characterWindowsFile.async('text');
@@ -1162,7 +1182,7 @@ export const useImportRuleset = () => {
       }
 
       // Import characterPages
-      const characterPagesFile = zipContent.file('application data/characterPages.json');
+      const characterPagesFile = getZipFile('application data/characterPages.json');
       if (characterPagesFile) {
         try {
           const characterPagesText = await characterPagesFile.async('text');
@@ -1190,7 +1210,7 @@ export const useImportRuleset = () => {
       }
 
       // Import inventoryItems (must be after inventories since they reference inventoryId)
-      const inventoryItemsFile = zipContent.file('application data/inventoryItems.json');
+      const inventoryItemsFile = getZipFile('application data/inventoryItems.json');
       if (inventoryItemsFile) {
         try {
           const inventoryItemsText = await inventoryItemsFile.async('text');
@@ -1218,7 +1238,7 @@ export const useImportRuleset = () => {
       }
 
       // Import characters
-      const charactersFile = zipContent.file('application data/characters.json');
+      const charactersFile = getZipFile('application data/characters.json');
       if (charactersFile) {
         try {
           const charactersText = await charactersFile.async('text');
@@ -1250,7 +1270,7 @@ export const useImportRuleset = () => {
 
       // Import scripts after all entities are created (so we can link scripts to entities)
       try {
-        const scriptFiles = await extractScriptFiles(zipContent);
+        const scriptFiles = await extractScriptFiles(zipContent, pathPrefix);
         const scriptMetadata = metadata.scripts || [];
 
         if (scriptFiles.length > 0) {
