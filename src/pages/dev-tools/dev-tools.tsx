@@ -5,12 +5,15 @@ import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ChevronDown, ChevronRight, Trash2 } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { Bug, ChevronDown, ChevronRight, Code2, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { ScriptPlayground } from './script-playground';
 
+type ViewMode = 'script' | 'debug';
+
 export const DevTools = () => {
+  const [viewMode, setViewMode] = useState<ViewMode>('script');
   const [inputValue, setInputValue] = useState('');
   const [debugVars, setDebugVars] = useState<Array<{ key: string; value: string }>>([]);
   const [openSections, setOpenSections] = useState<Set<string>>(new Set());
@@ -105,117 +108,135 @@ export const DevTools = () => {
   };
 
   return (
-    <div className='container mx-auto py-6 max-w-6xl'>
-      <div className='mb-6'>
-        <h1 className='text-3xl font-bold'>Dev Tools</h1>
-        <p className='text-muted-foreground mt-2'>
-          Development utilities for debugging and testing QBScript
-        </p>
-      </div>
-
-      <Tabs defaultValue='script' className='w-full'>
-        <TabsList className='w-full'>
-          <TabsTrigger value='script' className='flex-1'>
-            Script Playground
-          </TabsTrigger>
-          <TabsTrigger value='debug' className='flex-1'>
-            Debug Variables
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value='script'>
+    <div className='relative h-screen w-full overflow-hidden bg-background'>
+      {/* Main Content Area */}
+      <div className='h-full w-full'>
+        {viewMode === 'script' ? (
           <ScriptPlayground />
-        </TabsContent>
+        ) : (
+          <div className='h-full overflow-auto p-6'>
+            <div className='max-w-4xl mx-auto space-y-4'>
+              <div>
+                <h2 className='text-2xl font-bold'>Debug Variables</h2>
+                <p className='text-sm text-muted-foreground mt-1'>
+                  Manage localStorage debug flags
+                </p>
+              </div>
 
-        <TabsContent value='debug' className='p-4 space-y-4'>
-          <div className='space-y-2'>
-            <Label htmlFor='debug-input'>Add Debug Variable</Label>
-            <div className='flex gap-2'>
-              <Input
-                id='debug-input'
-                placeholder='Enter debug variable name...'
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                onKeyPress={handleKeyPress}
-              />
-              <Button onClick={handleAdd} disabled={!inputValue.trim()}>
-                Add
-              </Button>
-            </div>
-          </div>
+              <div className='space-y-2'>
+                <Label htmlFor='debug-input'>Add Debug Variable</Label>
+                <div className='flex gap-2'>
+                  <Input
+                    id='debug-input'
+                    placeholder='Enter debug variable name...'
+                    value={inputValue}
+                    onChange={(e) => setInputValue(e.target.value)}
+                    onKeyPress={handleKeyPress}
+                  />
+                  <Button onClick={handleAdd} disabled={!inputValue.trim()}>
+                    Add
+                  </Button>
+                </div>
+              </div>
 
-          <Separator />
+              <Separator />
 
-          <div className='space-y-2'>
-            <Label>Debug Variables</Label>
-            <ScrollArea className='h-64 w-full border rounded-md'>
-              <div className='p-2 space-y-2'>
-                {debugVars.length === 0 ? (
-                  <p className='text-muted-foreground text-sm'>No debug variables found</p>
-                ) : (
-                  Object.entries(groupVariablesByPrefix()).map(([prefix, variables]) => (
-                    <Collapsible
-                      key={prefix}
-                      open={openSections.has(prefix)}
-                      onOpenChange={() => toggleSection(prefix)}>
-                      <CollapsibleTrigger asChild>
-                        <Button
-                          variant='ghost'
-                          className='w-full justify-between p-2 h-auto font-medium'>
-                          <div className='flex items-center gap-2'>
-                            {openSections.has(prefix) ? (
-                              <ChevronDown className='h-4 w-4' />
-                            ) : (
-                              <ChevronRight className='h-4 w-4' />
-                            )}
-                            <span>{prefix}</span>
-                            <span className='text-xs text-muted-foreground'>
-                              ({variables.length} variable{variables.length !== 1 ? 's' : ''})
-                            </span>
-                          </div>
-                        </Button>
-                      </CollapsibleTrigger>
-                      <CollapsibleContent className='space-y-1 ml-4'>
-                        {variables.map(({ key, value }) => (
-                          <div
-                            key={key}
-                            className='flex items-center justify-between p-2 bg-muted rounded-md'>
-                            <div className='flex-1 min-w-0'>
-                              <p className='text-sm font-medium truncate'>
-                                {key.replace(`${prefix}.`, '')}
-                              </p>
-                              <p className='text-xs text-muted-foreground truncate'>{value}</p>
-                            </div>
-                            <div className='flex items-center gap-2 ml-2'>
+              <div className='space-y-2'>
+                <Label>Debug Variables</Label>
+                <ScrollArea className='h-[calc(100vh-300px)] w-full border rounded-md'>
+                  <div className='p-2 space-y-2'>
+                    {debugVars.length === 0 ? (
+                      <p className='text-muted-foreground text-sm'>No debug variables found</p>
+                    ) : (
+                      Object.entries(groupVariablesByPrefix()).map(([prefix, variables]) => (
+                        <Collapsible
+                          key={prefix}
+                          open={openSections.has(prefix)}
+                          onOpenChange={() => toggleSection(prefix)}>
+                          <CollapsibleTrigger asChild>
+                            <Button
+                              variant='ghost'
+                              className='w-full justify-between p-2 h-auto font-medium'>
                               <div className='flex items-center gap-2'>
-                                <Switch
-                                  checked={value === 'true'}
-                                  onCheckedChange={() => handleToggle(key, value)}
-                                  className='data-[state=checked]:bg-primary'
-                                />
+                                {openSections.has(prefix) ? (
+                                  <ChevronDown className='h-4 w-4' />
+                                ) : (
+                                  <ChevronRight className='h-4 w-4' />
+                                )}
+                                <span>{prefix}</span>
                                 <span className='text-xs text-muted-foreground'>
-                                  {value === 'true' ? 'ON' : 'OFF'}
+                                  ({variables.length} variable{variables.length !== 1 ? 's' : ''})
                                 </span>
                               </div>
-                              <Button
-                                variant='ghost'
-                                size='sm'
-                                onClick={() => handleRemove(key)}
-                                className='h-8 w-8 p-0 text-destructive hover:text-destructive'>
-                                <Trash2 className='h-4 w-4' />
-                              </Button>
-                            </div>
-                          </div>
-                        ))}
-                      </CollapsibleContent>
-                    </Collapsible>
-                  ))
-                )}
+                            </Button>
+                          </CollapsibleTrigger>
+                          <CollapsibleContent className='space-y-1 ml-4'>
+                            {variables.map(({ key, value }) => (
+                              <div
+                                key={key}
+                                className='flex items-center justify-between p-2 bg-muted rounded-md'>
+                                <div className='flex-1 min-w-0'>
+                                  <p className='text-sm font-medium truncate'>
+                                    {key.replace(`${prefix}.`, '')}
+                                  </p>
+                                  <p className='text-xs text-muted-foreground truncate'>{value}</p>
+                                </div>
+                                <div className='flex items-center gap-2 ml-2'>
+                                  <div className='flex items-center gap-2'>
+                                    <Switch
+                                      checked={value === 'true'}
+                                      onCheckedChange={() => handleToggle(key, value)}
+                                      className='data-[state=checked]:bg-primary'
+                                    />
+                                    <span className='text-xs text-muted-foreground'>
+                                      {value === 'true' ? 'ON' : 'OFF'}
+                                    </span>
+                                  </div>
+                                  <Button
+                                    variant='ghost'
+                                    size='sm'
+                                    onClick={() => handleRemove(key)}
+                                    className='h-8 w-8 p-0 text-destructive hover:text-destructive'>
+                                    <Trash2 className='h-4 w-4' />
+                                  </Button>
+                                </div>
+                              </div>
+                            ))}
+                          </CollapsibleContent>
+                        </Collapsible>
+                      ))
+                    )}
+                  </div>
+                </ScrollArea>
               </div>
-            </ScrollArea>
+            </div>
           </div>
-        </TabsContent>
-      </Tabs>
+        )}
+      </div>
+
+      {/* Bottom Left Toggle */}
+      <div className='fixed bottom-4 right-8 z-50'>
+        <div className='flex gap-1 bg-background border rounded-lg shadow-lg p-1'>
+          <Button
+            variant={viewMode === 'script' ? 'default' : 'ghost'}
+            size='sm'
+            onClick={() => setViewMode('script')}
+            className={cn('gap-2', viewMode === 'script' && 'shadow-sm')}
+            title='Script Playground'>
+            <Code2 className='h-4 w-4' />
+            <span className='hidden sm:inline'>Script</span>
+          </Button>
+          <Button
+            variant={viewMode === 'debug' ? 'default' : 'ghost'}
+            size='sm'
+            onClick={() => setViewMode('debug')}
+            className={cn('gap-2', viewMode === 'debug' && 'shadow-sm')}
+            title='Debug Variables'>
+            <Bug className='h-4 w-4' />
+            <span className='hidden sm:inline'>Debug</span>
+          </Button>
+        </div>
+      </div>
     </div>
   );
 };
