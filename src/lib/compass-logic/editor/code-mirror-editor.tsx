@@ -2,12 +2,7 @@
  * CodeMirror 6 wrapper for QBScript editing
  */
 
-import {
-  defaultKeymap,
-  history,
-  historyKeymap,
-  indentWithTab,
-} from '@codemirror/commands';
+import { defaultKeymap, history, historyKeymap, indentWithTab } from '@codemirror/commands';
 import { EditorState } from '@codemirror/state';
 import { EditorView, keymap } from '@codemirror/view';
 import { useEffect, useRef } from 'react';
@@ -48,6 +43,11 @@ export function CodeMirrorEditor({
     if (!container) return;
 
     const extensions = [
+      // Fill container height and scroll content (instead of editor growing with content)
+      EditorView.theme({
+        '&': { height: '100%' },
+        '.cm-scroller': { overflow: 'auto', minHeight: '100%' },
+      }),
       qbscript(),
       qbscriptAutocomplete,
       history(),
@@ -108,7 +108,11 @@ export function CodeMirrorEditor({
     <div
       ref={containerRef}
       className={className}
-      style={{ minHeight: height, backgroundColor: '#282c34' }}
+      style={{
+        height: '100%',
+        minHeight: height,
+        backgroundColor: '#282c34',
+      }}
     />
   );
 }

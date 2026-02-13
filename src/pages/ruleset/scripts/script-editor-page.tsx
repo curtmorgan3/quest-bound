@@ -217,7 +217,7 @@ export function ScriptEditorPage() {
             onChange={setSourceCode}
             onSave={handleSave}
             height='320px'
-            className='rounded-md border overflow-hidden'
+            className='flex-1 min-h-0 rounded-md border overflow-hidden'
           />
         </div>
 
