@@ -131,7 +131,11 @@ export class AttributeProxy {
    * Throws an error if the attribute is not a list type.
    */
   random(): any {
-    if (this.attribute.type !== 'list' || !this.attribute.options || this.attribute.options.length === 0) {
+    if (
+      this.attribute.type !== 'list' ||
+      !this.attribute.options ||
+      this.attribute.options.length === 0
+    ) {
       throw new Error(`Attribute '${this.attribute.title}' is not a list or has no options`);
     }
     const randomIndex = Math.floor(Math.random() * this.attribute.options.length);
@@ -146,7 +150,11 @@ export class AttributeProxy {
    * Throws an error if the attribute is not a list type.
    */
   next(): any {
-    if (this.attribute.type !== 'list' || !this.attribute.options || this.attribute.options.length === 0) {
+    if (
+      this.attribute.type !== 'list' ||
+      !this.attribute.options ||
+      this.attribute.options.length === 0
+    ) {
       throw new Error(`Attribute '${this.attribute.title}' is not a list or has no options`);
     }
     const currentIndex = this.attribute.options.indexOf(this.value);
@@ -162,11 +170,16 @@ export class AttributeProxy {
    * Throws an error if the attribute is not a list type.
    */
   prev(): any {
-    if (this.attribute.type !== 'list' || !this.attribute.options || this.attribute.options.length === 0) {
+    if (
+      this.attribute.type !== 'list' ||
+      !this.attribute.options ||
+      this.attribute.options.length === 0
+    ) {
       throw new Error(`Attribute '${this.attribute.title}' is not a list or has no options`);
     }
     const currentIndex = this.attribute.options.indexOf(this.value);
-    const prevIndex = (currentIndex - 1 + this.attribute.options.length) % this.attribute.options.length;
+    const prevIndex =
+      (currentIndex - 1 + this.attribute.options.length) % this.attribute.options.length;
     const prevValue = this.attribute.options[prevIndex];
     this.set(prevValue);
     return prevValue;

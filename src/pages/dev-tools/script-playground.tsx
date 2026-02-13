@@ -3,11 +3,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
-import { Evaluator } from '@/lib/compass-logic/interpreter/evaluator';
-import { Lexer } from '@/lib/compass-logic/interpreter/lexer';
-import { Parser } from '@/lib/compass-logic/interpreter/parser';
+import { ScriptRunner } from '@/lib/compass-logic/runtime/script-runner';
+import { db } from '@/stores';
+import type { Character, Ruleset } from '@/types';
 import { Play } from 'lucide-react';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 interface ScriptResult {
   value: any;
@@ -20,72 +20,124 @@ interface ScriptResult {
 export function useScriptExecutor() {
   const [isExecuting, setIsExecuting] = useState(false);
   const [lastResult, setLastResult] = useState<ScriptResult | null>(null);
+  const [ruleset, setRuleset] = useState<Ruleset | null>(null);
+  const [testCharacter, setTestCharacter] = useState<Character | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const execute = useCallback((source: string, context?: Record<string, any>): ScriptResult => {
-    setIsExecuting(true);
-    const startTime = performance.now();
+  // Load ruleset and test character from localStorage
+  useEffect(() => {
+    const loadRulesetAndCharacter = async () => {
+      setIsLoading(true);
+      try {
+        const lastEditedRulesetId = localStorage.getItem('qb.lastEditedRulesetId');
 
-    try {
-      const lexer = new Lexer(source);
-      const tokens = lexer.tokenize();
-      const parser = new Parser(tokens);
-      const ast = parser.parse();
-      const evaluator = new Evaluator();
+        if (!lastEditedRulesetId) {
+          setRuleset(null);
+          setTestCharacter(null);
+          return;
+        }
 
-      // Inject context variables
-      if (context) {
-        Object.entries(context).forEach(([key, val]) => {
-          evaluator['globalEnv'].define(key, val);
-        });
+        // Fetch the ruleset
+        const fetchedRuleset = await db.rulesets.get(lastEditedRulesetId);
+        setRuleset(fetchedRuleset || null);
+
+        if (!fetchedRuleset) {
+          setTestCharacter(null);
+          return;
+        }
+
+        // Fetch the test character for this ruleset
+        const characters = await db.characters
+          .where('rulesetId')
+          .equals(lastEditedRulesetId)
+          .toArray();
+
+        const testChar = characters.find((c) => c.isTestCharacter);
+        setTestCharacter(testChar || null);
+      } catch (error) {
+        console.error('Error loading ruleset and test character:', error);
+        setRuleset(null);
+        setTestCharacter(null);
+      } finally {
+        setIsLoading(false);
       }
+    };
 
-      const value = evaluator.eval(ast);
-      const duration = performance.now() - startTime;
-
-      const result: ScriptResult = {
-        value,
-        announcements: evaluator.getAnnounceMessages(),
-        logs: evaluator.getLogMessages(),
-        error: null,
-        duration,
-      };
-
-      setLastResult(result);
-      return result;
-    } catch (err: any) {
-      const duration = performance.now() - startTime;
-      const result: ScriptResult = {
-        value: null,
-        announcements: [],
-        logs: [],
-        error: err.message,
-        duration,
-      };
-
-      setLastResult(result);
-      return result;
-    } finally {
-      setIsExecuting(false);
-    }
+    loadRulesetAndCharacter();
   }, []);
 
-  return { execute, isExecuting, lastResult };
+  const execute = useCallback(
+    async (source: string): Promise<ScriptResult> => {
+      setIsExecuting(true);
+      const startTime = performance.now();
+
+      try {
+        if (!ruleset) {
+          throw new Error('No ruleset found. Please select a ruleset first.');
+        }
+
+        if (!testCharacter) {
+          throw new Error('No test character found for the ruleset.');
+        }
+
+        // Create and run script using ScriptRunner
+        const runner = new ScriptRunner({
+          ownerId: testCharacter.id,
+          targetId: testCharacter.id, // Use test character as both owner and target
+          rulesetId: ruleset.id,
+          db,
+          scriptId: 'script-playground',
+          triggerType: 'load',
+        });
+
+        const executionResult = await runner.run(source);
+        const duration = performance.now() - startTime;
+
+        const result: ScriptResult = {
+          value: executionResult.value,
+          announcements: executionResult.announceMessages,
+          logs: executionResult.logMessages,
+          error: executionResult.error ? executionResult.error.message : null,
+          duration,
+        };
+
+        setLastResult(result);
+        return result;
+      } catch (err: any) {
+        const duration = performance.now() - startTime;
+        const result: ScriptResult = {
+          value: null,
+          announcements: [],
+          logs: [],
+          error: err.message,
+          duration,
+        };
+
+        setLastResult(result);
+        return result;
+      } finally {
+        setIsExecuting(false);
+      }
+    },
+    [ruleset, testCharacter],
+  );
+
+  return { execute, isExecuting, lastResult, ruleset, testCharacter, isLoading };
 }
 
 export function ScriptPlayground() {
-  const { execute, isExecuting, lastResult } = useScriptExecutor();
+  const { execute, isExecuting, lastResult, ruleset, testCharacter, isLoading } =
+    useScriptExecutor();
   const [source, setSource] = useState(
-    `// Try some QBScript!
+    `// Try some QBScript with Owner, Target, and Ruleset accessors!
+// Example: Owner.HP
+// Example: Target.Strength
+// Example: Ruleset.attribute("HP")
 roll("2d6+4")`,
   );
 
-  const handleRun = () => {
-    execute(source, {
-      // Provide example game context
-      PlayerHP: 50,
-      PlayerLevel: 5,
-      Constitution: 14,
-    });
+  const handleRun = async () => {
+    await execute(source);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -118,13 +170,49 @@ roll("2d6+4")`,
 
   return (
     <div className='p-4 space-y-4'>
+      {isLoading && (
+        <Card className='border-blue-500 bg-blue-50 dark:bg-blue-950'>
+          <CardContent className='pt-6'>
+            <p className='text-sm text-blue-800 dark:text-blue-200'>
+              Loading ruleset and test character...
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
+      {!isLoading && !ruleset && (
+        <Card className='border-yellow-500 bg-yellow-50 dark:bg-yellow-950'>
+          <CardContent className='pt-6'>
+            <p className='text-sm text-yellow-800 dark:text-yellow-200'>
+              No ruleset found. Please select a ruleset to use the script playground.
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
+      {!isLoading && ruleset && !testCharacter && (
+        <Card className='border-yellow-500 bg-yellow-50 dark:bg-yellow-950'>
+          <CardContent className='pt-6'>
+            <p className='text-sm text-yellow-800 dark:text-yellow-200'>
+              No test character found for the ruleset. A test character should be created
+              automatically.
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
       <div>
         <Label htmlFor='script-editor' className='text-base font-semibold'>
           QBScript Editor
         </Label>
         <p className='text-sm text-muted-foreground mb-2'>
-          Write and test QBScript code. Press Shift+Enter to run. Available variables: PlayerHP,
-          PlayerLevel, Constitution
+          Write and test QBScript code. Press Shift+Enter to run.
+          {testCharacter && (
+            <>
+              {' '}
+              Using test character: <strong>{testCharacter.name}</strong>
+            </>
+          )}
         </p>
         <Textarea
           id='script-editor'
@@ -132,12 +220,15 @@ roll("2d6+4")`,
           onChange={(e) => setSource(e.target.value)}
           onKeyDown={handleKeyDown}
           className='font-mono text-sm min-h-[200px]'
-          disabled={isExecuting}
+          disabled={isExecuting || isLoading || !ruleset || !testCharacter}
           placeholder='Enter QBScript code...'
         />
       </div>
 
-      <Button onClick={handleRun} disabled={isExecuting} className='w-full'>
+      <Button
+        onClick={handleRun}
+        disabled={isExecuting || isLoading || !ruleset || !testCharacter}
+        className='w-full'>
         <Play className='h-4 w-4 mr-2' />
         {isExecuting ? 'Running...' : 'Run Script'}
       </Button>
@@ -217,14 +308,21 @@ roll("2d6+4")`,
                 <code className='bg-muted px-1 rounded'>roll("2d6+4")</code> - Roll dice
               </li>
               <li>
-                <code className='bg-muted px-1 rounded'>floor((PlayerHP - 10) / 2)</code> - Math
+                <code className='bg-muted px-1 rounded'>Owner.HP</code> - Access owner attribute
+              </li>
+              <li>
+                <code className='bg-muted px-1 rounded'>Target.Strength</code> - Access target
+                attribute
+              </li>
+              <li>
+                <code className='bg-muted px-1 rounded'>Ruleset.attribute("HP")</code> - Get
+                attribute definition
               </li>
               <li>
                 <code className='bg-muted px-1 rounded'>announce("Hello!")</code> - Display message
               </li>
               <li>
-                <code className='bg-muted px-1 rounded'>log("debug", PlayerLevel)</code> - Debug
-                output
+                <code className='bg-muted px-1 rounded'>log("debug", Owner.HP)</code> - Debug output
               </li>
             </ul>
           </div>
