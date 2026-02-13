@@ -2,9 +2,10 @@
  * CodeMirror 6 wrapper for QBScript editing
  */
 
+import { colorWhite } from '@/palette';
 import { defaultKeymap, history, historyKeymap, indentWithTab } from '@codemirror/commands';
 import { indentUnit } from '@codemirror/language';
-import { EditorState } from '@codemirror/state';
+import { Compartment, EditorState } from '@codemirror/state';
 import { EditorView, keymap } from '@codemirror/view';
 import { useEffect, useRef } from 'react';
 import { qbscript } from './qbscript-language';
@@ -27,13 +28,16 @@ export function CodeMirrorEditor({
   height = '400px',
   readOnly = false,
   className,
-  caretColor = '#ffffff',
+  caretColor = colorWhite,
 }: CodeMirrorEditorProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
+  const readOnlyCompartmentRef = useRef<Compartment | null>(null);
   const onChangeRef = useRef(onChange);
   const onSaveRef = useRef(onSave);
   const readOnlyRef = useRef(readOnly);
+  /** Tracks last value we synced from parent. Undefined = haven't synced yet (always run first sync so script load works). */
+  const lastValueFromParentRef = useRef<string | undefined>(undefined);
 
   onChangeRef.current = onChange;
   onSaveRef.current = onSave;
@@ -52,9 +56,12 @@ export function CodeMirrorEditor({
         '.cm-scroller': { overflow: 'auto', minHeight: '100%' },
         '.cm-content': { caretColor },
       }),
+      (readOnlyCompartmentRef.current = new Compartment()).of([
+        EditorView.editable.of(!readOnlyRef.current),
+        EditorState.readOnly.of(readOnlyRef.current),
+      ]),
       indentUnit.of('    '), // Tab inserts 4 spaces
       qbscript(),
-      // qbscriptAutocomplete,
       history(),
       keymap.of(defaultKeymap),
       keymap.of([...historyKeymap, indentWithTab]),
@@ -64,7 +71,6 @@ export function CodeMirrorEditor({
         }
       }),
       EditorView.lineWrapping,
-      EditorState.readOnly.of(readOnlyRef.current),
       keymap.of([
         {
           key: 'Mod-s',
@@ -97,17 +103,36 @@ export function CodeMirrorEditor({
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps -- intentional: only mount once to avoid losing focus on every keystroke
 
-  // Sync value from parent into the view when it changes (e.g. script loaded from DB after mount).
+  // Sync value from parent into the view when the value *prop* actually changed (e.g. script loaded).
+  // We always run at least once (ref undefined) so initial load works. Then we only sync when value
+  // changes from what we last synced, so we don't overwrite with stale state after the user types.
   useEffect(() => {
+    if (lastValueFromParentRef.current !== undefined && value === lastValueFromParentRef.current)
+      return;
+    lastValueFromParentRef.current = value;
     const view = viewRef.current;
     if (!view) return;
     const current = view.state.doc.toString();
-    if (current !== value) {
+    const next = typeof value === 'string' ? value : '';
+    if (current !== next) {
       view.dispatch({
-        changes: { from: 0, to: current.length, insert: value },
+        changes: { from: 0, to: current.length, insert: next },
       });
     }
   }, [value]);
+
+  // Update read-only/editable when the prop changes (e.g. test character loads after mount).
+  useEffect(() => {
+    const view = viewRef.current;
+    const compartment = readOnlyCompartmentRef.current;
+    if (!view || !compartment) return;
+    view.dispatch({
+      effects: compartment.reconfigure([
+        EditorView.editable.of(!readOnly),
+        EditorState.readOnly.of(readOnly),
+      ]),
+    });
+  }, [readOnly]);
 
   return (
     <div
