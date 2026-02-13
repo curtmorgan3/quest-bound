@@ -16,6 +16,7 @@ import {
 } from '@/components/ui/sheet';
 import { useCharacter, useInventory } from '@/lib/compass-api';
 import { ItemContextMenu } from '@/lib/compass-planes/nodes/components/inventory/item-context-menu';
+import { PopoverScrollContainerContext } from '@/stores';
 import type { InventoryItemType } from '@/types';
 import { Plus, SearchIcon } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
@@ -33,6 +34,7 @@ export const CharacterInventoryPanel = ({ open, onOpenChange }: CharacterInvento
   const { characterId } = useParams<{ characterId: string }>();
   const { character } = useCharacter(characterId);
   const { inventoryItems } = useInventory(character?.inventoryId ?? '', character?.id ?? '');
+  const sheetContentRef = useRef<HTMLDivElement>(null);
 
   const [typeFilter, setTypeFilter] = useState<InventoryItemType>('item');
   const [titleFilter, setTitleFilter] = useState('');
@@ -100,113 +102,115 @@ export const CharacterInventoryPanel = ({ open, onOpenChange }: CharacterInvento
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side='left' className='flex flex-col p-[8px]'>
-        <SheetHeader>
-          <SheetTitle>Character Inventory</SheetTitle>
-          <SheetDescription>
-            Manage all items or add attributes and actions to control from this panel.
-          </SheetDescription>
-        </SheetHeader>
+      <SheetContent ref={sheetContentRef} side='left' className='flex flex-col p-[8px]'>
+        <PopoverScrollContainerContext.Provider value={sheetContentRef}>
+          <SheetHeader>
+            <SheetTitle>Character Inventory</SheetTitle>
+            <SheetDescription>
+              Manage all items or add attributes and actions to control from this panel.
+            </SheetDescription>
+          </SheetHeader>
 
-        <Select value={typeFilter} onValueChange={(v) => setTypeFilter(v as InventoryItemType)}>
-          <SelectTrigger className='w-full'>
-            <SelectValue placeholder='Filter by type' />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value='item'>Items</SelectItem>
-            <SelectItem value='action'>Actions</SelectItem>
-            <SelectItem value='attribute'>Attributes</SelectItem>
-          </SelectContent>
-        </Select>
+          <Select value={typeFilter} onValueChange={(v) => setTypeFilter(v as InventoryItemType)}>
+            <SelectTrigger className='w-full'>
+              <SelectValue placeholder='Filter by type' />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value='item'>Items</SelectItem>
+              <SelectItem value='action'>Actions</SelectItem>
+              <SelectItem value='attribute'>Attributes</SelectItem>
+            </SelectContent>
+          </Select>
 
-        <div className='relative'>
-          <SearchIcon className='absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground' />
-          <Input
-            placeholder='Filter by title...'
-            value={titleFilter}
-            onChange={(e) => setTitleFilter(e.target.value)}
-            className='pl-9'
-          />
-        </div>
-
-        <Button variant='outline' className='w-full gap-2' onClick={handleOpenInventoryPanel}>
-          <Plus className='h-4 w-4' />
-          Add from ruleset
-        </Button>
-
-        {inventoryItems.length === 0 && (
-          <div className='flex-1 flex items-center justify-center text-center py-8 text-muted-foreground'>
-            <p>No items in the default inventory.</p>
+          <div className='relative'>
+            <SearchIcon className='absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground' />
+            <Input
+              placeholder='Filter by title...'
+              value={titleFilter}
+              onChange={(e) => setTitleFilter(e.target.value)}
+              className='pl-9'
+            />
           </div>
-        )}
 
-        {typeFilter === 'item' && inventoryItems.length > 0 && (
-          <p className='text-sm italic'>{`Total Weight: ${totalInventoryWeight}`}</p>
-        )}
+          <Button variant='outline' className='w-full gap-2' onClick={handleOpenInventoryPanel}>
+            <Plus className='h-4 w-4' />
+            Add from ruleset
+          </Button>
 
-        {inventoryItems.length > 0 && rows.length === 0 && (
-          <div className='flex-1 flex items-center justify-center text-center py-8 text-muted-foreground'>
-            <p>
-              {titleFilter.trim()
-                ? `No ${typeFilter}s match "${titleFilter.trim()}".`
-                : `No ${typeFilter}s have been added.`}
-            </p>
-          </div>
-        )}
-
-        {rows.length > 0 && (
-          <div
-            ref={parentRef}
-            className='flex-1 min-h-0 overflow-auto -mx-4 px-4'
-            style={{ contain: 'strict' }}>
-            <div
-              style={{
-                height: `${virtualizer.getTotalSize()}px`,
-                width: '100%',
-                position: 'relative',
-              }}>
-              {virtualizer.getVirtualItems().map((virtualRow) => {
-                const row = rows[virtualRow.index];
-                if (!row) return null;
-                const isMenuOpen = contextMenu?.item.id === row.entry.id;
-                return (
-                  <div
-                    key={virtualRow.key}
-                    data-index={virtualRow.index}
-                    ref={virtualizer.measureElement}
-                    style={{
-                      position: 'absolute',
-                      top: 0,
-                      left: 0,
-                      width: '100%',
-                      transform: `translateY(${virtualRow.start}px)`,
-                    }}
-                    className='pb-0.5'>
-                    <DefaultInventoryEntryRow item={row.entry} onItemClick={handleItemClick} />
-                    {isMenuOpen && (
-                      <div className='mt-1'>
-                        <ItemContextMenu
-                          item={contextMenu.item}
-                          inline
-                          onClose={handleCloseContextMenu}
-                          onUpdateQuantity={handleUpdateQuantity}
-                          onUpdateLabel={handleUpdateLabel}
-                          onRemove={handleRemoveItem}
-                          onSplit={handleSplitStack}
-                          onToggleEquipped={
-                            contextMenu.item.isEquippable
-                              ? () => handleUpdateEquipped(!contextMenu.item.isEquipped)
-                              : undefined
-                          }
-                        />
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
+          {inventoryItems.length === 0 && (
+            <div className='flex-1 flex items-center justify-center text-center py-8 text-muted-foreground'>
+              <p>No items in the default inventory.</p>
             </div>
-          </div>
-        )}
+          )}
+
+          {typeFilter === 'item' && inventoryItems.length > 0 && (
+            <p className='text-sm italic'>{`Total Weight: ${totalInventoryWeight}`}</p>
+          )}
+
+          {inventoryItems.length > 0 && rows.length === 0 && (
+            <div className='flex-1 flex items-center justify-center text-center py-8 text-muted-foreground'>
+              <p>
+                {titleFilter.trim()
+                  ? `No ${typeFilter}s match "${titleFilter.trim()}".`
+                  : `No ${typeFilter}s have been added.`}
+              </p>
+            </div>
+          )}
+
+          {rows.length > 0 && (
+            <div
+              ref={parentRef}
+              className='flex-1 min-h-0 overflow-auto -mx-4 px-4'
+              style={{ contain: 'strict' }}>
+              <div
+                style={{
+                  height: `${virtualizer.getTotalSize()}px`,
+                  width: '100%',
+                  position: 'relative',
+                }}>
+                {virtualizer.getVirtualItems().map((virtualRow) => {
+                  const row = rows[virtualRow.index];
+                  if (!row) return null;
+                  const isMenuOpen = contextMenu?.item.id === row.entry.id;
+                  return (
+                    <div
+                      key={virtualRow.key}
+                      data-index={virtualRow.index}
+                      ref={virtualizer.measureElement}
+                      style={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        width: '100%',
+                        transform: `translateY(${virtualRow.start}px)`,
+                      }}
+                      className='pb-0.5'>
+                      <DefaultInventoryEntryRow item={row.entry} onItemClick={handleItemClick} />
+                      {isMenuOpen && (
+                        <div className='mt-1'>
+                          <ItemContextMenu
+                            item={contextMenu.item}
+                            inline
+                            onClose={handleCloseContextMenu}
+                            onUpdateQuantity={handleUpdateQuantity}
+                            onUpdateLabel={handleUpdateLabel}
+                            onRemove={handleRemoveItem}
+                            onSplit={handleSplitStack}
+                            onToggleEquipped={
+                              contextMenu.item.isEquippable
+                                ? () => handleUpdateEquipped(!contextMenu.item.isEquipped)
+                                : undefined
+                            }
+                          />
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </PopoverScrollContainerContext.Provider>
       </SheetContent>
     </Sheet>
   );

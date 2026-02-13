@@ -1,9 +1,9 @@
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
-import { diceRollLogger } from '@/stores';
+import { diceRollLogger, PopoverScrollContainerContext } from '@/stores';
 import { Minus, Plus } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
+import { useCallback, useContext, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 
 export interface NumberInputProps {
   value: number | '';
@@ -74,6 +74,7 @@ export const NumberInput = ({
   const containerRef = useRef<HTMLDivElement | null>(null);
   const itemRefs = useRef<HTMLDivElement[]>([]);
   const scrollDebounceRef = useRef<NodeJS.Timeout | null>(null);
+  const scrollContainerRef = useContext(PopoverScrollContainerContext);
 
   const scrollToValue = useCallback(
     (target: number) => {
@@ -214,7 +215,12 @@ export const NumberInput = ({
           onBlur={onBlur}
         />
       </PopoverTrigger>
-      <PopoverContent side='bottom' align='center' className='w-64 p-3' style={{ zIndex: 9999 }}>
+      <PopoverContent
+        container={scrollContainerRef?.current ?? undefined}
+        side='bottom'
+        align='center'
+        className='w-64 p-3'
+        style={{ zIndex: 9999 }}>
         {label && <div className='mb-2 text-xs font-medium text-muted-foreground'>{label}</div>}
         <div className='flex items-center justify-between gap-1 mb-2 pl-4 pr-4'>
           {[1, 3, 5, lastRollTotal ?? 10].map((preset, i) => (
