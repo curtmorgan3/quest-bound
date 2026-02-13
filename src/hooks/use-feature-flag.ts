@@ -1,10 +1,5 @@
-import {
-  getFeatureFlag,
-  getFeatureFlagKey,
-  listFeatureFlags,
-} from '@/utils/feature-flags';
-import { useEffect, useState } from 'react';
-import { useSyncExternalStore } from 'react';
+import { getFeatureFlag, listFeatureFlags } from '@/utils/feature-flags';
+import { useEffect, useState, useSyncExternalStore } from 'react';
 
 function getFeatureFlagSnapshot(flagName: string): boolean {
   return getFeatureFlag(flagName);
@@ -27,7 +22,7 @@ export function useFeatureFlag(flagName: string): boolean {
   return useSyncExternalStore(
     (callback) => subscribeToFeatureFlag(flagName, callback),
     () => getFeatureFlagSnapshot(flagName),
-    () => getFeatureFlagSnapshot(flagName)
+    () => getFeatureFlagSnapshot(flagName),
   );
 }
 

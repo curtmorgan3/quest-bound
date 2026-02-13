@@ -20,7 +20,6 @@ import type { Action, Attribute, Item, Script } from '@/types';
 import { AlertCircle, Trash2, Zap } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ConsolePanel } from './console-panel';
 import { ScriptErrorLog } from './error-log';
 
 const ENTITY_TYPES = [
@@ -294,7 +293,7 @@ export function ScriptEditorPage() {
               <TabsTrigger value='errors'>Script errors</TabsTrigger>
             </TabsList>
             <TabsContent value='console' className='flex-1 min-h-0 mt-2 flex flex-col gap-4'>
-              {/* Last run output (same pattern as script-playground) */}
+              {/* Last run output: logs, announcements, and result in order of occurrence */}
               {(workerHook.executionTime !== null || workerHook.error) && (
                 <div className='rounded-md border bg-muted/20 flex flex-col'>
                   <div className='flex items-center justify-between px-3 py-2 border-b'>
@@ -306,7 +305,7 @@ export function ScriptEditorPage() {
                     )}
                   </div>
                   <ScrollArea className='h-48'>
-                    <div className='space-y-3 p-3'>
+                    <div className='space-y-2 p-3'>
                       {workerHook.error ? (
                         <div className='p-3 bg-destructive/10 border border-destructive rounded-md'>
                           <p className='text-sm font-semibold text-destructive mb-1'>Error</p>
@@ -316,42 +315,34 @@ export function ScriptEditorPage() {
                         </div>
                       ) : (
                         <>
+                          {workerHook.logMessages.map((args, i) => (
+                            <div
+                              key={`log-${i}`}
+                              className='p-2 bg-background border rounded-md text-sm font-mono flex items-start gap-2'>
+                              <span className='text-muted-foreground shrink-0' aria-hidden>
+                                🔍
+                              </span>
+                              <span>{args.map((arg) => JSON.stringify(arg)).join(' ')}</span>
+                            </div>
+                          ))}
+                          {workerHook.announceMessages.map((msg, i) => (
+                            <div
+                              key={`announce-${i}`}
+                              className='p-2 bg-primary/10 rounded-md text-sm flex items-start gap-2'>
+                              <span className='text-muted-foreground shrink-0' aria-hidden>
+                                📢
+                              </span>
+                              <span>{msg}</span>
+                            </div>
+                          ))}
                           {workerHook.result !== null && workerHook.result !== undefined && (
-                            <div>
-                              <Label className='text-sm font-semibold mb-2 block'>Result</Label>
-                              <div className='p-3 bg-background border rounded-md'>
-                                <pre className='text-sm font-mono whitespace-pre-wrap'>
-                                  {JSON.stringify(workerHook.result, null, 2)}
-                                </pre>
-                              </div>
-                            </div>
-                          )}
-                          {workerHook.announceMessages.length > 0 && (
-                            <div>
-                              <Label className='text-sm font-semibold mb-2 block'>
-                                Announcements
-                              </Label>
-                              <div className='space-y-2'>
-                                {workerHook.announceMessages.map((msg, i) => (
-                                  <div key={i} className='p-2 bg-primary/10 rounded-md text-sm'>
-                                    📢 {msg}
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                          {workerHook.logMessages.length > 0 && (
-                            <div>
-                              <Label className='text-sm font-semibold mb-2 block'>Logs</Label>
-                              <div className='space-y-1'>
-                                {workerHook.logMessages.map((args, i) => (
-                                  <div
-                                    key={i}
-                                    className='p-2 bg-background border rounded-md text-sm font-mono'>
-                                    🔍 {args.map((arg) => JSON.stringify(arg)).join(' ')}
-                                  </div>
-                                ))}
-                              </div>
+                            <div className='p-3 bg-background border rounded-md'>
+                              <span className='text-xs font-semibold text-muted-foreground uppercase tracking-wide block mb-1'>
+                                Result
+                              </span>
+                              <pre className='text-sm font-mono whitespace-pre-wrap'>
+                                {JSON.stringify(workerHook.result, null, 2)}
+                              </pre>
                             </div>
                           )}
                           {!workerHook.error &&
@@ -366,7 +357,7 @@ export function ScriptEditorPage() {
                   </ScrollArea>
                 </div>
               )}
-              <ConsolePanel />
+              {/* <ConsolePanel /> */}
             </TabsContent>
             <TabsContent value='errors' className='flex-1 min-h-0 mt-2'>
               <ScriptErrorLog errors={scriptErrors} onDismiss={dismissError} />
