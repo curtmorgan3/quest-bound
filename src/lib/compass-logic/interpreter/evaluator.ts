@@ -447,6 +447,14 @@ export class Evaluator {
     this.globalEnv.define('log', (...args: any[]): void => {
       this.logMessages.push(args);
     });
+
+    // Reactive system function
+    // Note: subscribe() is mainly used for static analysis
+    // The actual subscription registration happens via DependencyGraph
+    this.globalEnv.define('subscribe', (...attributeNames: any[]): void => {
+      // In runtime, this is a no-op since subscriptions are handled by static analysis
+      // But we define it so scripts can call it without errors
+    });
   }
 
   // Getters for messages (useful for testing and Phase 6)

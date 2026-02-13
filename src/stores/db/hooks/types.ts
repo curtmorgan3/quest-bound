@@ -21,4 +21,5 @@ export type DB = Dexie & {
   diceRolls: Dexie.Table;
   scripts: Dexie.Table;
   scriptErrors: Dexie.Table;
+  dependencyGraphNodes: Dexie.Table;
 };

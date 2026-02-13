@@ -19,6 +19,7 @@ import type {
   Window,
   Script,
   ScriptError,
+  DependencyGraphNode,
 } from '@/types';
 import Dexie, { type EntityTable } from 'dexie';
 import { assetInjectorMiddleware } from './asset-injector-middleware';
@@ -50,12 +51,13 @@ const db = new Dexie('qbdb') as Dexie & {
   diceRolls: EntityTable<DiceRoll, 'id'>;
   scripts: EntityTable<Script, 'id'>;
   scriptErrors: EntityTable<ScriptError, 'id'>;
+  dependencyGraphNodes: EntityTable<DependencyGraphNode, 'id'>;
 };
 
 const common = '++id, createdAt, updatedAt';
 
 // Schema declaration:
-db.version(12).stores({
+db.version(13).stores({
   users: `${common}, username, assetId, image, preferences`,
   assets: `${common}, rulesetId, [directory+filename], data, type`,
   rulesets: `${common}, version, createdBy, title, description, details, assetId, image`,
@@ -76,6 +78,7 @@ db.version(12).stores({
   diceRolls: `${common}, rulesetId, userId, value, label`,
   scripts: `${common}, rulesetId, name, entityType, entityId, isGlobal, enabled`,
   scriptErrors: `${common}, rulesetId, scriptId, characterId, timestamp`,
+  dependencyGraphNodes: `${common}, rulesetId, scriptId, entityType, entityId`,
 });
 
 // Cache assets for reference in the asset injector middleware
