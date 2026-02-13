@@ -41,8 +41,10 @@ const qbscriptParser = StreamLanguage.define<QBScriptState>({
       return 'atom';
     }
 
-    // Built-in functions
+    // Built-in functions (when not in call position; call position is handled below)
     if (stream.match(/\b(roll|floor|ceil|round|announce|log)\b/)) {
+      stream.eatSpace();
+      if (stream.peek() === '(') return 'function';
       return 'builtin';
     }
     // console.log
@@ -53,9 +55,18 @@ const qbscriptParser = StreamLanguage.define<QBScriptState>({
       return 'builtin';
     }
 
-    // Accessors
+    // Accessors (Owner, Target, Ruleset - only when not followed by ()
     if (stream.match(/\b(Owner|Target|Ruleset)\b/)) {
+      stream.eatSpace();
+      if (stream.peek() === '(') return 'function';
       return 'variable-2';
+    }
+
+    // Function call or definition: identifier followed by ( (per parser/lexer specs)
+    if (stream.match(/\w+/)) {
+      stream.eatSpace();
+      if (stream.peek() === '(') return 'function';
+      return 'variableName';
     }
 
     // Numbers
@@ -116,6 +127,9 @@ const qbscriptParser = StreamLanguage.define<QBScriptState>({
   },
   copyState(state: QBScriptState) {
     return { indentUnit: state.indentUnit };
+  },
+  tokenTable: {
+    function: tags.function(tags.variableName),
   },
 });
 
