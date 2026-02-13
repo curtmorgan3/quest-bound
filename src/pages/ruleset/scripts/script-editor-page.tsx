@@ -110,7 +110,6 @@ export function ScriptEditorPage() {
     };
     if (isNew) {
       const id = await createScript(payload);
-      console.log('id: ', id);
       if (id) {
         localStorage.removeItem(DRAFT_KEY('new'));
         navigate(`/rulesets/${rulesetId}/scripts/${id}`, { replace: true });
