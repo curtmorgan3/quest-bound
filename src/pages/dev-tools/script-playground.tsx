@@ -3,11 +3,12 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Textarea } from '@/components/ui/textarea';
+import { useCharacterAttributes } from '@/lib/compass-api';
 import { useExecuteScript } from '@/lib/compass-logic/worker';
 import { db } from '@/stores';
 import type { Character, Ruleset } from '@/types';
 import { Zap } from 'lucide-react';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 interface ScriptResult {
   value: any;
@@ -155,16 +156,23 @@ export function useScriptExecutor() {
 }
 
 export function ScriptPlayground() {
-  const {
-    execute,
-    isExecuting,
-    lastResult,
-    ruleset,
-    testCharacter,
-    characterAttributes,
-    isLoading,
-  } = useScriptExecutor();
+  const { execute, isExecuting, lastResult, ruleset, testCharacter, isLoading } =
+    useScriptExecutor();
   const [source, setSource] = useState(``);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const { characterAttributes } = useCharacterAttributes(testCharacter?.id);
+
+  const executingRef = useRef(true);
+
+  useEffect(() => {
+    if (isExecuting && !executingRef.current) {
+      executingRef.current = true;
+    } else if (!isExecuting && executingRef.current) {
+      textareaRef.current?.focus();
+      executingRef.current = false;
+    }
+  }, [isExecuting]);
 
   const handleRun = async () => {
     await execute(source);
@@ -239,8 +247,9 @@ export function ScriptPlayground() {
       )}
 
       {/* Editor Area - fills remaining space */}
-      <div className='flex-1 flex flex-col min-h-0 p-4'>
-        <div className='flex-1 flex flex-col min-h-0'>
+      <div className='flex-1 flex gap-4 min-h-0 p-4'>
+        {/* Editor - 70% width */}
+        <div className='flex-1 flex flex-col min-h-0' style={{ flexBasis: '70%' }}>
           <div className='mb-2'>
             <Label htmlFor='script-editor' className='text-base font-semibold'>
               QBScript Editor
@@ -262,6 +271,7 @@ export function ScriptPlayground() {
 
           <Textarea
             id='script-editor'
+            ref={textareaRef}
             value={source}
             onChange={(e) => setSource(e.target.value)}
             onKeyDown={handleKeyDown}
@@ -279,6 +289,47 @@ export function ScriptPlayground() {
               {isExecuting ? 'Running in Worker...' : 'Run Script (Web Worker)'}
             </Button>
           </div>
+        </div>
+
+        {/* Character Attributes - 30% width */}
+        <div className='flex flex-col min-h-0 border-l pl-4' style={{ flexBasis: '30%' }}>
+          <div className='mb-2'>
+            <Label className='text-base font-semibold'>Character Attributes</Label>
+          </div>
+          <ScrollArea className='flex-1'>
+            {characterAttributes.length > 0 ? (
+              <div className='space-y-2 pr-4'>
+                {characterAttributes.map((attr, index) => (
+                  <div key={index} className='text-xs'>
+                    <div className='font-medium text-foreground'>{attr.title}</div>
+                    <div className='text-muted-foreground text-xs break-words'>
+                      {typeof attr.value === 'object'
+                        ? JSON.stringify(attr.value)
+                        : String(attr.value ?? 'null')}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className='text-xs text-muted-foreground space-y-1'>
+                <p className='font-semibold'>Quick Examples:</p>
+                <ul className='list-disc list-inside space-y-1 ml-2'>
+                  <li>
+                    <code className='bg-background px-1 rounded border'>roll("2d6+4")</code> - Roll
+                    dice
+                  </li>
+                  <li>
+                    <code className='bg-background px-1 rounded border'>Owner.HP</code> - Access
+                    owner attribute
+                  </li>
+                  <li>
+                    <code className='bg-background px-1 rounded border'>announce("Hello!")</code> -
+                    Display message
+                  </li>
+                </ul>
+              </div>
+            )}
+          </ScrollArea>
         </div>
       </div>
 
@@ -358,42 +409,8 @@ export function ScriptPlayground() {
             </ScrollArea>
           </div>
         ) : (
-          <div className='p-4 h-[300px]'>
-            {characterAttributes.length > 0 ? (
-              <div className='text-xs text-muted-foreground space-y-1 h-[400px]'>
-                <p className='font-semibold mb-2'>Character Attributes:</p>
-                <div className='grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-4 gap-y-1'>
-                  {characterAttributes.map((attr, index) => (
-                    <div key={index} className='truncate'>
-                      <span className='font-medium'>{attr.name}:</span>{' '}
-                      <span className='text-muted-foreground/80'>
-                        {typeof attr.value === 'object'
-                          ? JSON.stringify(attr.value)
-                          : String(attr.value ?? 'null')}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ) : (
-              <div className='text-xs text-muted-foreground space-y-1'>
-                <p className='font-semibold'>Quick Examples:</p>
-                <ul className='list-disc list-inside space-y-1 ml-2'>
-                  <li>
-                    <code className='bg-background px-1 rounded border'>roll("2d6+4")</code> - Roll
-                    dice
-                  </li>
-                  <li>
-                    <code className='bg-background px-1 rounded border'>Owner.HP</code> - Access
-                    owner attribute
-                  </li>
-                  <li>
-                    <code className='bg-background px-1 rounded border'>announce("Hello!")</code> -
-                    Display message
-                  </li>
-                </ul>
-              </div>
-            )}
+          <div className='p-4 h-[300px] flex items-center justify-center'>
+            <p className='text-sm text-muted-foreground italic'>Run a script to see output here</p>
           </div>
         )}
       </div>
