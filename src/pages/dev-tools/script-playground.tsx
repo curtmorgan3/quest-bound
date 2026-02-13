@@ -11,16 +11,7 @@ import type { Character, Ruleset } from '@/types';
 import { Zap } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-interface ScriptResult {
-  value: any;
-  announcements: string[];
-  logs: any[][];
-  error: string | null;
-  duration: number;
-}
-
 export function useScriptExecutor() {
-  const [lastResult, setLastResult] = useState<ScriptResult | null>(null);
   const [ruleset, setRuleset] = useState<Ruleset | null>(null);
   const [testCharacter, setTestCharacter] = useState<Character | null>(null);
 
@@ -74,57 +65,36 @@ export function useScriptExecutor() {
   }, []);
 
   const execute = useCallback(
-    async (source: string): Promise<ScriptResult> => {
-      try {
-        if (!ruleset) {
-          throw new Error('No ruleset found. Please select a ruleset first.');
-        }
-
-        if (!testCharacter) {
-          throw new Error('No test character found for the ruleset.');
-        }
-
-        // Execute script using worker
-        await workerHook.execute({
-          scriptId: 'script-playground',
-          sourceCode: source,
-          characterId: testCharacter.id,
-          targetId: testCharacter.id, // Use test character as both owner and target
-          rulesetId: ruleset.id,
-          triggerType: 'load',
-        });
-
-        // Convert worker result to our format
-        const result: ScriptResult = {
-          value: workerHook.result,
-          announcements: workerHook.announceMessages,
-          logs: workerHook.logMessages,
-          error: workerHook.error ? workerHook.error.message : null,
-          duration: workerHook.executionTime || 0,
-        };
-
-        setLastResult(result);
-        return result;
-      } catch (err: any) {
-        const result: ScriptResult = {
-          value: null,
-          announcements: [],
-          logs: [],
-          error: err.message,
-          duration: 0,
-        };
-
-        setLastResult(result);
-        return result;
+    async (source: string) => {
+      if (!ruleset) {
+        throw new Error('No ruleset found. Please select a ruleset first.');
       }
+
+      if (!testCharacter) {
+        throw new Error('No test character found for the ruleset.');
+      }
+
+      // Execute script using worker - the hook's state will update automatically
+      await workerHook.execute({
+        scriptId: 'script-playground',
+        sourceCode: source,
+        characterId: testCharacter.id,
+        targetId: testCharacter.id, // Use test character as both owner and target
+        rulesetId: ruleset.id,
+        triggerType: 'load',
+      });
     },
-    [ruleset, testCharacter, workerHook],
+    [ruleset, testCharacter, workerHook.execute],
   );
 
   return {
     execute,
     isExecuting: workerHook.isExecuting,
-    lastResult,
+    result: workerHook.result,
+    announceMessages: workerHook.announceMessages,
+    logMessages: workerHook.logMessages,
+    error: workerHook.error,
+    executionTime: workerHook.executionTime,
     ruleset,
     testCharacter,
     characterAttributes,
@@ -133,10 +103,18 @@ export function useScriptExecutor() {
 }
 
 export function ScriptPlayground() {
-  const { execute, isExecuting, lastResult, ruleset, testCharacter, isLoading } =
-    useScriptExecutor();
-
-  console.log('res: ', lastResult?.logs);
+  const {
+    execute,
+    isExecuting,
+    result,
+    announceMessages,
+    logMessages,
+    error,
+    executionTime,
+    ruleset,
+    testCharacter,
+    isLoading,
+  } = useScriptExecutor();
 
   // Load script content from localStorage on mount
   const [source, setSource] = useState(() => {
@@ -426,7 +404,7 @@ export function ScriptPlayground() {
 
       {/* Output Panel - scrollable */}
       <div className='border-t bg-muted/30'>
-        {lastResult ? (
+        {executionTime !== null || error ? (
           <div className='p-4'>
             <div className='flex items-center justify-between mb-3'>
               <div className='flex items-center gap-2'>
@@ -435,36 +413,38 @@ export function ScriptPlayground() {
                   Non-blocking execution
                 </span>
               </div>
-              <p className='text-xs text-muted-foreground'>
-                Executed in {lastResult.duration.toFixed(2)}ms
-              </p>
+              {executionTime !== null && (
+                <p className='text-xs text-muted-foreground'>
+                  Executed in {executionTime.toFixed(2)}ms
+                </p>
+              )}
             </div>
 
             <ScrollArea className='h-64'>
               <div className='space-y-3 pr-4'>
-                {lastResult.error ? (
+                {error ? (
                   <div className='p-3 bg-destructive/10 border border-destructive rounded-md'>
                     <p className='text-sm font-semibold text-destructive mb-1'>Error</p>
-                    <p className='text-sm font-mono text-destructive'>{lastResult.error}</p>
+                    <p className='text-sm font-mono text-destructive'>{error.message}</p>
                   </div>
                 ) : (
                   <>
-                    {lastResult.value !== null && lastResult.value !== undefined && (
+                    {result !== null && result !== undefined && (
                       <div>
                         <Label className='text-sm font-semibold mb-2 block'>Result</Label>
                         <div className='p-3 bg-background border rounded-md'>
                           <pre className='text-sm font-mono whitespace-pre-wrap'>
-                            {JSON.stringify(lastResult.value, null, 2)}
+                            {JSON.stringify(result, null, 2)}
                           </pre>
                         </div>
                       </div>
                     )}
 
-                    {lastResult.announcements.length > 0 && (
+                    {announceMessages.length > 0 && (
                       <div>
                         <Label className='text-sm font-semibold mb-2 block'>Announcements</Label>
                         <div className='space-y-2'>
-                          {lastResult.announcements.map((msg, i) => (
+                          {announceMessages.map((msg, i) => (
                             <div key={i} className='p-2 bg-primary/10 rounded-md text-sm'>
                               📢 {msg}
                             </div>
@@ -473,11 +453,11 @@ export function ScriptPlayground() {
                       </div>
                     )}
 
-                    {lastResult.logs.length > 0 && (
+                    {logMessages.length > 0 && (
                       <div>
                         <Label className='text-sm font-semibold mb-2 block'>Logs</Label>
                         <div className='space-y-1'>
-                          {lastResult.logs.map((args, i) => (
+                          {logMessages.map((args, i) => (
                             <div
                               key={i}
                               className='p-2 bg-background border rounded-md text-sm font-mono'>
@@ -488,10 +468,10 @@ export function ScriptPlayground() {
                       </div>
                     )}
 
-                    {!lastResult.error &&
-                      lastResult.announcements.length === 0 &&
-                      lastResult.logs.length === 0 &&
-                      lastResult.value === null && (
+                    {!error &&
+                      announceMessages.length === 0 &&
+                      logMessages.length === 0 &&
+                      result === null && (
                         <p className='text-sm text-muted-foreground italic'>No output</p>
                       )}
                   </>
