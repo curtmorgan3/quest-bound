@@ -44,31 +44,31 @@ export function Layout() {
         }}>
         <DiceProvider value={diceState}>
           <AppSidebar />
-        <main
-          style={{
-            display: 'grid',
-            height: '100vh',
-            width: '100vw',
-            gridTemplateColumns: '1fr',
-            gridTemplateRows: '1fr',
-          }}>
-          <Outlet />
-        </main>
-        <DicePanel />
-        <canvas
-          id='threeddice'
-          ref={diceRef}
-          style={{
-            position: 'fixed',
-            top: '10000px',
-            left: 50,
-            height: '95vh',
-            width: '100vw',
-            zIndex: 1000,
-            maxWidth: 'calc(100vw - 400px)',
-          }}></canvas>
-        <Toaster />
-      </DiceProvider>
+          <main
+            style={{
+              display: 'grid',
+              height: '100dvh',
+              width: '100dvw',
+              gridTemplateColumns: '1fr',
+              gridTemplateRows: '1fr',
+            }}>
+            <Outlet />
+          </main>
+          <DicePanel />
+          <canvas
+            id='threeddice'
+            ref={diceRef}
+            style={{
+              position: 'fixed',
+              top: '10000px',
+              left: 50,
+              height: '95dvh',
+              width: '100dvw',
+              zIndex: 1000,
+              maxWidth: 'calc(100vw - 400px)',
+            }}></canvas>
+          <Toaster />
+        </DiceProvider>
       </CharacterInventoryPanelContext.Provider>
     </SidebarProvider>
   );
