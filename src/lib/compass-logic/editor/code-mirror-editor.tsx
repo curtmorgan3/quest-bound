@@ -3,10 +3,10 @@
  */
 
 import { defaultKeymap, history, historyKeymap, indentWithTab } from '@codemirror/commands';
+import { indentUnit } from '@codemirror/language';
 import { EditorState } from '@codemirror/state';
 import { EditorView, keymap } from '@codemirror/view';
 import { useEffect, useRef } from 'react';
-import { qbscriptAutocomplete } from './qbscript-autocomplete';
 import { qbscript } from './qbscript-language';
 
 export interface CodeMirrorEditorProps {
@@ -16,6 +16,8 @@ export interface CodeMirrorEditorProps {
   height?: string;
   readOnly?: boolean;
   className?: string;
+  /** CSS color for the text cursor (caret). Defaults to white for the dark editor background. */
+  caretColor?: string;
 }
 
 export function CodeMirrorEditor({
@@ -25,6 +27,7 @@ export function CodeMirrorEditor({
   height = '400px',
   readOnly = false,
   className,
+  caretColor = '#ffffff',
 }: CodeMirrorEditorProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
@@ -47,9 +50,11 @@ export function CodeMirrorEditor({
       EditorView.theme({
         '&': { height: '100%' },
         '.cm-scroller': { overflow: 'auto', minHeight: '100%' },
+        '.cm-content': { caretColor },
       }),
+      indentUnit.of('    '), // Tab inserts 4 spaces
       qbscript(),
-      qbscriptAutocomplete,
+      // qbscriptAutocomplete,
       history(),
       keymap.of(defaultKeymap),
       keymap.of([...historyKeymap, indentWithTab]),
