@@ -5,9 +5,9 @@
 import { defaultKeymap, history, historyKeymap } from '@codemirror/commands';
 import { EditorState } from '@codemirror/state';
 import { EditorView, keymap } from '@codemirror/view';
-import { useCallback, useEffect, useRef } from 'react';
-import { qbscript } from './qbscript-language';
+import { useEffect, useRef } from 'react';
 import { qbscriptAutocomplete } from './qbscript-autocomplete';
+import { qbscript } from './qbscript-language';
 
 export interface CodeMirrorEditorProps {
   value: string;
@@ -30,20 +30,14 @@ export function CodeMirrorEditor({
   const viewRef = useRef<EditorView | null>(null);
   const onChangeRef = useRef(onChange);
   const onSaveRef = useRef(onSave);
-  const initialValueRef = useRef(value);
+  const readOnlyRef = useRef(readOnly);
 
   onChangeRef.current = onChange;
   onSaveRef.current = onSave;
-  initialValueRef.current = value;
+  readOnlyRef.current = readOnly;
 
-  const handleSave = useCallback(() => {
-    if (viewRef.current && onSaveRef.current) {
-      onSaveRef.current();
-      return true;
-    }
-    return false;
-  }, []);
-
+  // Mount effect: run once so we don't destroy/recreate the view on parent re-renders.
+  // Parent should use key={scriptId} when switching scripts so the editor remounts with the right value.
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
@@ -60,25 +54,23 @@ export function CodeMirrorEditor({
         }
       }),
       EditorView.lineWrapping,
-      EditorState.readOnly.of(readOnly),
+      EditorState.readOnly.of(readOnlyRef.current),
+      keymap.of([
+        {
+          key: 'Mod-s',
+          run: () => {
+            if (viewRef.current && onSaveRef.current) {
+              onSaveRef.current();
+              return true;
+            }
+            return false;
+          },
+        },
+      ]),
     ];
 
-    if (onSave) {
-      extensions.push(
-        keymap.of([
-          {
-            key: 'Mod-s',
-            run: () => {
-              handleSave();
-              return true;
-            },
-          },
-        ]),
-      );
-    }
-
     const state = EditorState.create({
-      doc: initialValueRef.current,
+      doc: value,
       extensions,
     });
 
@@ -93,25 +85,7 @@ export function CodeMirrorEditor({
       view.destroy();
       viewRef.current = null;
     };
-  }, [readOnly, onSave, handleSave]);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps -- intentional: only mount once to avoid losing focus on every keystroke
 
-  // When value prop changes externally (e.g. switching script), update the doc
-  useEffect(() => {
-    const view = viewRef.current;
-    if (!view) return;
-    const current = view.state.doc.toString();
-    if (value !== current) {
-      view.dispatch({
-        changes: { from: 0, to: current.length, insert: value },
-      });
-    }
-  }, [value]);
-
-  return (
-    <div
-      ref={containerRef}
-      className={className}
-      style={{ minHeight: height }}
-    />
-  );
+  return <div ref={containerRef} className={className} style={{ minHeight: height }} />;
 }

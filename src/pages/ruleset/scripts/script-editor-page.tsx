@@ -233,6 +233,7 @@ export function ScriptEditorPage() {
           <div className='flex flex-col gap-2 flex-1 min-h-0'>
             <Label>Source</Label>
             <CodeMirrorEditor
+              key={scriptId ?? 'new'}
               value={sourceCode}
               onChange={setSourceCode}
               onSave={handleSave}
