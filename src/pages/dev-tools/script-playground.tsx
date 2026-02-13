@@ -1,5 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Textarea } from '@/components/ui/textarea';
@@ -22,9 +23,9 @@ export function useScriptExecutor() {
   const [lastResult, setLastResult] = useState<ScriptResult | null>(null);
   const [ruleset, setRuleset] = useState<Ruleset | null>(null);
   const [testCharacter, setTestCharacter] = useState<Character | null>(null);
-  const [characterAttributes, setCharacterAttributes] = useState<
-    Array<{ name: string; value: any }>
-  >([]);
+
+  const { characterAttributes } = useCharacterAttributes(testCharacter?.id);
+
   const [isLoading, setIsLoading] = useState(true);
 
   // Use the worker-based execution hook
@@ -60,34 +61,10 @@ export function useScriptExecutor() {
 
         const testChar = characters.find((c) => c.isTestCharacter);
         setTestCharacter(testChar || null);
-
-        // Load character attributes if test character exists
-        if (testChar) {
-          const charAttrs = await db.characterAttributes
-            .where({ characterId: testChar.id })
-            .toArray();
-
-          // Get attribute definitions to get names
-          const attrIds = charAttrs.map((ca) => ca.attributeId);
-          const attrDefs = await db.attributes.bulkGet(attrIds);
-
-          // Combine character attributes with their names
-          const attributesWithNames = charAttrs
-            .map((charAttr, index) => ({
-              name: attrDefs[index]?.title || 'Unknown',
-              value: charAttr.value,
-            }))
-            .sort((a, b) => a.name.localeCompare(b.name));
-
-          setCharacterAttributes(attributesWithNames);
-        } else {
-          setCharacterAttributes([]);
-        }
       } catch (error) {
         console.error('Error loading ruleset and test character:', error);
         setRuleset(null);
         setTestCharacter(null);
-        setCharacterAttributes([]);
       } finally {
         setIsLoading(false);
       }
@@ -158,10 +135,34 @@ export function useScriptExecutor() {
 export function ScriptPlayground() {
   const { execute, isExecuting, lastResult, ruleset, testCharacter, isLoading } =
     useScriptExecutor();
-  const [source, setSource] = useState(``);
+
+  console.log('res: ', lastResult?.logs);
+
+  // Load script content from localStorage on mount
+  const [source, setSource] = useState(() => {
+    const stored = localStorage.getItem('qb.scriptPlayground.source');
+    return stored || '';
+  });
+
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const { characterAttributes } = useCharacterAttributes(testCharacter?.id);
+  const { characterAttributes, updateCharacterAttribute } = useCharacterAttributes(
+    testCharacter?.id,
+  );
+
+  // State for pinned attributes
+  const [pinnedAttributeTitles, setPinnedAttributeTitles] = useState<Set<string>>(() => {
+    const stored = localStorage.getItem('qb.scriptPlayground.pinnedAttributes');
+    return stored ? new Set(JSON.parse(stored)) : new Set();
+  });
+
+  // Persist pinned attributes to localStorage
+  useEffect(() => {
+    localStorage.setItem(
+      'qb.scriptPlayground.pinnedAttributes',
+      JSON.stringify(Array.from(pinnedAttributeTitles)),
+    );
+  }, [pinnedAttributeTitles]);
 
   const executingRef = useRef(true);
 
@@ -175,6 +176,8 @@ export function ScriptPlayground() {
   }, [isExecuting]);
 
   const handleRun = async () => {
+    // Save script content to localStorage before executing
+    localStorage.setItem('qb.scriptPlayground.source', source);
     await execute(source);
   };
 
@@ -205,6 +208,55 @@ export function ScriptPlayground() {
       }, 0);
     }
   };
+
+  const togglePinAttribute = (attributeTitle: string) => {
+    setPinnedAttributeTitles((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(attributeTitle)) {
+        newSet.delete(attributeTitle);
+      } else {
+        newSet.add(attributeTitle);
+      }
+      return newSet;
+    });
+  };
+
+  const handleAttributeValueChange = async (attributeId: string, newValue: string) => {
+    // Parse the value appropriately
+    let parsedValue: any = newValue;
+
+    // Try to parse as number if it looks like a number
+    if (newValue !== '' && !isNaN(Number(newValue))) {
+      parsedValue = Number(newValue);
+    }
+    // Try to parse as JSON if it starts with { or [
+    else if (newValue.startsWith('{') || newValue.startsWith('[')) {
+      try {
+        parsedValue = JSON.parse(newValue);
+      } catch {
+        // Keep as string if JSON parse fails
+      }
+    }
+    // Handle boolean values
+    else if (newValue === 'true') {
+      parsedValue = true;
+    } else if (newValue === 'false') {
+      parsedValue = false;
+    } else if (newValue === 'null') {
+      parsedValue = null;
+    }
+
+    // Update using the hook
+    await updateCharacterAttribute(attributeId, { value: parsedValue });
+  };
+
+  // Separate pinned and unpinned attributes, alphabetized
+  const pinnedAttributes = characterAttributes
+    .filter((attr) => pinnedAttributeTitles.has(attr.title))
+    .sort((a, b) => a.title.localeCompare(b.title));
+  const unpinnedAttributes = characterAttributes
+    .filter((attr) => !pinnedAttributeTitles.has(attr.title))
+    .sort((a, b) => a.title.localeCompare(b.title));
 
   return (
     <div className='h-full flex flex-col'>
@@ -295,18 +347,57 @@ export function ScriptPlayground() {
         <div className='flex flex-col min-h-0 border-l pl-4' style={{ flexBasis: '30%' }}>
           <div className='mb-2'>
             <Label className='text-base font-semibold'>Character Attributes</Label>
+            <p className='text-xs text-muted-foreground'>Click to pin/unpin</p>
           </div>
           <ScrollArea className='flex-1'>
             {characterAttributes.length > 0 ? (
               <div className='space-y-2 pr-4'>
-                {characterAttributes.map((attr, index) => (
-                  <div key={index} className='text-xs'>
-                    <div className='font-medium text-foreground'>{attr.title}</div>
-                    <div className='text-muted-foreground text-xs break-words'>
-                      {typeof attr.value === 'object'
-                        ? JSON.stringify(attr.value)
-                        : String(attr.value ?? 'null')}
+                {/* Pinned Attributes */}
+                {pinnedAttributes.map((attr, index) => (
+                  <div
+                    key={`pinned-${index}`}
+                    className='text-xs p-2 rounded-md border border-primary/20 bg-primary/5'>
+                    <div
+                      onClick={() => togglePinAttribute(attr.title)}
+                      className='font-medium text-foreground mb-1 cursor-pointer hover:text-primary transition-colors'>
+                      {attr.title}
                     </div>
+                    <Input
+                      value={
+                        typeof attr.value === 'object'
+                          ? JSON.stringify(attr.value)
+                          : String(attr.value ?? '')
+                      }
+                      onChange={(e) => handleAttributeValueChange(attr.id, e.target.value)}
+                      className='h-7 text-xs'
+                      placeholder='Value'
+                    />
+                  </div>
+                ))}
+
+                {/* Divider between pinned and unpinned */}
+                {pinnedAttributes.length > 0 && unpinnedAttributes.length > 0 && (
+                  <div className='my-3 border-t border-border' />
+                )}
+
+                {/* Unpinned Attributes */}
+                {unpinnedAttributes.map((attr, index) => (
+                  <div key={`unpinned-${index}`} className='text-xs p-2 rounded-md'>
+                    <div
+                      onClick={() => togglePinAttribute(attr.title)}
+                      className='font-medium text-foreground mb-1 cursor-pointer hover:text-primary transition-colors'>
+                      {attr.title}
+                    </div>
+                    <Input
+                      value={
+                        typeof attr.value === 'object'
+                          ? JSON.stringify(attr.value)
+                          : String(attr.value ?? '')
+                      }
+                      onChange={(e) => handleAttributeValueChange(attr.id, e.target.value)}
+                      className='h-7 text-xs'
+                      placeholder='Value'
+                    />
                   </div>
                 ))}
               </div>
