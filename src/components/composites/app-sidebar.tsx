@@ -34,6 +34,7 @@ import {
   SidebarTrigger,
   useSidebar,
 } from '@/components/ui/sidebar';
+import { useFeatureFlag } from '@/hooks/use-feature-flag';
 import {
   useActiveRuleset,
   useCharacter,
@@ -52,6 +53,7 @@ import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger } from 
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 
 export function AppSidebar() {
+  const scriptingEnabled = useFeatureFlag('scripting');
   const { currentUser, signOut } = useUsers();
   const { activeRuleset } = useActiveRuleset();
   const { character, updateCharacter } = useCharacter();
@@ -120,11 +122,15 @@ export function AppSidebar() {
           url: `/rulesets/${activeRuleset?.id}/windows`,
           icon: AppWindow,
         },
-        {
-          title: 'Scripts',
-          url: `/rulesets/${activeRuleset?.id}/scripts`,
-          icon: FileCode,
-        },
+        ...(scriptingEnabled
+          ? [
+              {
+                title: 'Scripts',
+                url: `/rulesets/${activeRuleset?.id}/scripts`,
+                icon: FileCode,
+              },
+            ]
+          : []),
       ];
 
   const items = character ? [] : rulesetItems;

@@ -11,7 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 import type { Item } from '@/types';
-import { Check, ChevronsUpDown } from 'lucide-react';
+import { Check, ChevronsUpDown, XIcon } from 'lucide-react';
 import { useState } from 'react';
 import { useItems } from '../hooks/rulesets/use-items';
 
@@ -70,57 +70,66 @@ export const ItemLookup = ({
   return (
     <div className='flex flex-col gap-2'>
       <Label>{label}</Label>
-      <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger asChild>
-          <Button
-            variant='outline'
-            role='combobox'
-            aria-expanded={open}
-            className={cn('w-full justify-between', className)}
-            disabled={disabled}>
-            {selectedItem ? selectedItem.title : placeholder}
-            <ChevronsUpDown className='ml-2 h-4 w-4 shrink-0 opacity-50' />
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className='w-[300px] p-0' align='start'>
-          <Command>
-            <CommandInput placeholder={placeholder} />
-            <CommandList>
-              <CommandEmpty>No items found.</CommandEmpty>
-              {Object.entries(groupedItems).map(([category, categoryItems]) => (
-                <CommandGroup key={category} heading={category}>
-                  {categoryItems.map((item) => (
-                    <CommandItem
-                      key={item.id}
-                      value={`${item.title} ${item.description}`}
-                      onSelect={() => handleSelect(item)}>
-                      <Check
-                        className={cn(
-                          'mr-2 h-4 w-4',
-                          selectedItem?.id === item.id ? 'opacity-100' : 'opacity-0',
-                        )}
-                      />
-                      <div className='flex flex-col'>
-                        <span>{item.title}</span>
-                        {item.description && (
-                          <span className='text-xs text-muted-foreground truncate max-w-[220px]'>
-                            {item.description}
-                          </span>
-                        )}
-                      </div>
-                    </CommandItem>
-                  ))}
-                </CommandGroup>
-              ))}
-            </CommandList>
-          </Command>
-        </PopoverContent>
-      </Popover>
-      {value && onDelete && (
-        <Button variant='outline' onClick={onDelete} disabled={disabled}>
-          Remove
-        </Button>
-      )}
+      <div className='flex gap-2'>
+        <Popover open={open} onOpenChange={setOpen}>
+          <PopoverTrigger asChild>
+            <Button
+              variant='outline'
+              role='combobox'
+              aria-expanded={open}
+              className={cn('w-full justify-between', className)}
+              disabled={disabled}>
+              {selectedItem ? selectedItem.title : placeholder}
+              <>
+                {selectedItem && (
+                  <div
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDelete?.();
+                    }}
+                    style={{ flexGrow: 1, display: 'flex', justifyContent: 'end' }}>
+                    <XIcon className='clickable' fontSize={12} />
+                  </div>
+                )}
+                <ChevronsUpDown className='ml-2 h-4 w-4 shrink-0 opacity-50' />
+              </>
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className='w-[300px] p-0' align='start'>
+            <Command>
+              <CommandInput placeholder={placeholder} />
+              <CommandList>
+                <CommandEmpty>No items found.</CommandEmpty>
+                {Object.entries(groupedItems).map(([category, categoryItems]) => (
+                  <CommandGroup key={category} heading={category}>
+                    {categoryItems.map((item) => (
+                      <CommandItem
+                        key={item.id}
+                        value={`${item.title} ${item.description}`}
+                        onSelect={() => handleSelect(item)}>
+                        <Check
+                          className={cn(
+                            'mr-2 h-4 w-4',
+                            selectedItem?.id === item.id ? 'opacity-100' : 'opacity-0',
+                          )}
+                        />
+                        <div className='flex flex-col'>
+                          <span>{item.title}</span>
+                          {item.description && (
+                            <span className='text-xs text-muted-foreground truncate max-w-[220px]'>
+                              {item.description}
+                            </span>
+                          )}
+                        </div>
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                ))}
+              </CommandList>
+            </Command>
+          </PopoverContent>
+        </Popover>
+      </div>
     </div>
   );
 };

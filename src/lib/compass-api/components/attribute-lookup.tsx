@@ -11,7 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 import type { Attribute, AttributeType } from '@/types';
-import { Check, ChevronsUpDown } from 'lucide-react';
+import { Check, ChevronsUpDown, XIcon } from 'lucide-react';
 import { useState } from 'react';
 import { useAttributes } from '../hooks/rulesets/use-attributes';
 
@@ -72,57 +72,66 @@ export const AttributeLookup = ({
   return (
     <div className='flex flex-col gap-2'>
       <Label>{label}</Label>
-      <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger asChild>
-          <Button
-            variant='outline'
-            role='combobox'
-            aria-expanded={open}
-            className={cn('w-full justify-between', className)}
-            disabled={disabled}>
-            {selectedAttribute ? selectedAttribute.title : placeholder}
-            <ChevronsUpDown className='ml-2 h-4 w-4 shrink-0 opacity-50' />
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className='w-[300px] p-0' align='start'>
-          <Command>
-            <CommandInput placeholder={placeholder} />
-            <CommandList>
-              <CommandEmpty>No attributes found.</CommandEmpty>
-              {Object.entries(groupedAttributes).map(([category, attrs]) => (
-                <CommandGroup key={category} heading={category}>
-                  {attrs.map((attribute) => (
-                    <CommandItem
-                      key={attribute.id}
-                      value={`${attribute.title} ${attribute.description}`}
-                      onSelect={() => handleSelect(attribute)}>
-                      <Check
-                        className={cn(
-                          'mr-2 h-4 w-4',
-                          selectedAttribute?.id === attribute.id ? 'opacity-100' : 'opacity-0',
-                        )}
-                      />
-                      <div className='flex flex-col'>
-                        <span>{attribute.title}</span>
-                        {attribute.description && (
-                          <span className='text-xs text-muted-foreground truncate max-w-[220px]'>
-                            {attribute.description}
-                          </span>
-                        )}
-                      </div>
-                    </CommandItem>
-                  ))}
-                </CommandGroup>
-              ))}
-            </CommandList>
-          </Command>
-        </PopoverContent>
-      </Popover>
-      {value && onDelete && (
-        <Button variant='outline' onClick={onDelete} disabled={disabled}>
-          Remove
-        </Button>
-      )}
+      <div className={`flex gap-2`}>
+        <Popover open={open} onOpenChange={setOpen}>
+          <PopoverTrigger asChild>
+            <Button
+              variant='outline'
+              role='combobox'
+              aria-expanded={open}
+              className={cn('w-full justify-between', className)}
+              disabled={disabled}>
+              {selectedAttribute ? selectedAttribute.title : placeholder}
+              <>
+                {selectedAttribute && (
+                  <div
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDelete?.();
+                    }}
+                    style={{ flexGrow: 1, display: 'flex', justifyContent: 'end' }}>
+                    <XIcon className='clickable' fontSize={12} />
+                  </div>
+                )}
+                <ChevronsUpDown className='ml-2 h-4 w-4 shrink-0 opacity-50' />
+              </>
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className='w-[300px] p-0' align='start'>
+            <Command>
+              <CommandInput placeholder={placeholder} />
+              <CommandList>
+                <CommandEmpty>No attributes found.</CommandEmpty>
+                {Object.entries(groupedAttributes).map(([category, attrs]) => (
+                  <CommandGroup key={category} heading={category}>
+                    {attrs.map((attribute) => (
+                      <CommandItem
+                        key={attribute.id}
+                        value={`${attribute.title} ${attribute.description}`}
+                        onSelect={() => handleSelect(attribute)}>
+                        <Check
+                          className={cn(
+                            'mr-2 h-4 w-4',
+                            selectedAttribute?.id === attribute.id ? 'opacity-100' : 'opacity-0',
+                          )}
+                        />
+                        <div className='flex flex-col'>
+                          <span>{attribute.title}</span>
+                          {attribute.description && (
+                            <span className='text-xs text-muted-foreground truncate max-w-[220px]'>
+                              {attribute.description}
+                            </span>
+                          )}
+                        </div>
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                ))}
+              </CommandList>
+            </Command>
+          </PopoverContent>
+        </Popover>
+      </div>
     </div>
   );
 };

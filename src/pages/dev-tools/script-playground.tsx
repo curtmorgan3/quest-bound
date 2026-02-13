@@ -3,13 +3,13 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Textarea } from '@/components/ui/textarea';
+import { CodeMirrorEditor } from '@/lib/compass-logic/editor';
 import { useCharacterAttributes } from '@/lib/compass-api';
 import { useExecuteScript } from '@/lib/compass-logic/worker';
 import { db } from '@/stores';
 import type { Character, Ruleset } from '@/types';
 import { Zap } from 'lucide-react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 export function useScriptExecutor() {
   const [ruleset, setRuleset] = useState<Ruleset | null>(null);
@@ -122,8 +122,6 @@ export function ScriptPlayground() {
     return stored || '';
   });
 
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-
   const { characterAttributes, updateCharacterAttribute } = useCharacterAttributes(
     testCharacter?.id,
   );
@@ -142,49 +140,10 @@ export function ScriptPlayground() {
     );
   }, [pinnedAttributeTitles]);
 
-  const executingRef = useRef(true);
-
-  useEffect(() => {
-    if (isExecuting && !executingRef.current) {
-      executingRef.current = true;
-    } else if (!isExecuting && executingRef.current) {
-      textareaRef.current?.focus();
-      executingRef.current = false;
-    }
-  }, [isExecuting]);
-
   const handleRun = async () => {
     // Save script content to localStorage before executing
     localStorage.setItem('qb.scriptPlayground.source', source);
     await execute(source);
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    // Run script on Shift+Enter
-    if (e.key === 'Enter' && e.shiftKey) {
-      e.preventDefault();
-      handleRun();
-      return;
-    }
-
-    // Allow tab key for indentation
-    if (e.key === 'Tab') {
-      e.preventDefault();
-      e.stopPropagation();
-
-      const target = e.currentTarget;
-      const start = target.selectionStart;
-      const end = target.selectionEnd;
-
-      // Insert 4 spaces at cursor position
-      const newValue = source.substring(0, start) + '    ' + source.substring(end);
-      setSource(newValue);
-
-      // Move cursor after the inserted spaces
-      setTimeout(() => {
-        target.selectionStart = target.selectionEnd = start + 4;
-      }, 0);
-    }
   };
 
   const togglePinAttribute = (attributeTitle: string) => {
@@ -285,7 +244,7 @@ export function ScriptPlayground() {
               QBScript Editor
             </Label>
             <p className='text-sm text-muted-foreground'>
-              Write and test QBScript code. Press Shift+Enter to run.
+              Write and test QBScript code. Cmd/Ctrl-S to run.
               {testCharacter && (
                 <>
                   {' '}
@@ -299,15 +258,13 @@ export function ScriptPlayground() {
             </p>
           </div>
 
-          <Textarea
-            id='script-editor'
-            ref={textareaRef}
+          <CodeMirrorEditor
             value={source}
-            onChange={(e) => setSource(e.target.value)}
-            onKeyDown={handleKeyDown}
-            className='font-mono text-sm flex-1 resize-none'
-            disabled={isExecuting || isLoading || !ruleset || !testCharacter}
-            placeholder='Enter QBScript code...'
+            onChange={setSource}
+            onSave={handleRun}
+            height='320px'
+            readOnly={isExecuting || isLoading || !ruleset || !testCharacter}
+            className='flex-1 min-h-0 rounded-md border overflow-hidden'
           />
 
           <div className='mt-3'>

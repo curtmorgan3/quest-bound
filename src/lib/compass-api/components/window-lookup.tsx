@@ -11,7 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 import type { Window } from '@/types';
-import { Check, ChevronsUpDown } from 'lucide-react';
+import { Check, ChevronsUpDown, XIcon } from 'lucide-react';
 import { useState } from 'react';
 import { useWindows } from '../hooks/rulesets/use-windows';
 
@@ -78,57 +78,66 @@ export const WindowLookup = ({
   return (
     <div className='flex flex-col gap-2'>
       <Label>{label}</Label>
-      <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger asChild>
-          <Button
-            variant='outline'
-            role='combobox'
-            aria-expanded={open}
-            className={cn('w-full justify-between', className)}
-            disabled={disabled}>
-            {selectedWindow ? selectedWindow.title : placeholder}
-            <ChevronsUpDown className='ml-2 h-4 w-4 shrink-0 opacity-50' />
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className='w-[300px] p-0' align='start'>
-          <Command>
-            <CommandInput placeholder={placeholder} />
-            <CommandList>
-              <CommandEmpty>No windows found.</CommandEmpty>
-              {Object.entries(groupedWindows).map(([category, categoryWindows]) => (
-                <CommandGroup key={category} heading={category}>
-                  {categoryWindows.map((window) => (
-                    <CommandItem
-                      key={window.id}
-                      value={`${window.title} ${window.description ?? ''}`}
-                      onSelect={() => handleSelect(window)}>
-                      <Check
-                        className={cn(
-                          'mr-2 h-4 w-4',
-                          selectedWindow?.id === window.id ? 'opacity-100' : 'opacity-0',
-                        )}
-                      />
-                      <div className='flex flex-col'>
-                        <span>{window.title}</span>
-                        {window.description && (
-                          <span className='text-xs text-muted-foreground truncate max-w-[220px]'>
-                            {window.description}
-                          </span>
-                        )}
-                      </div>
-                    </CommandItem>
-                  ))}
-                </CommandGroup>
-              ))}
-            </CommandList>
-          </Command>
-        </PopoverContent>
-      </Popover>
-      {value && onDelete && (
-        <Button variant='outline' onClick={onDelete} disabled={disabled}>
-          Remove
-        </Button>
-      )}
+      <div className='flex gap-2'>
+        <Popover open={open} onOpenChange={setOpen}>
+          <PopoverTrigger asChild>
+            <Button
+              variant='outline'
+              role='combobox'
+              aria-expanded={open}
+              className={cn('w-full justify-between', className)}
+              disabled={disabled}>
+              {selectedWindow ? selectedWindow.title : placeholder}
+              <>
+                {selectedWindow && (
+                  <div
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDelete?.();
+                    }}
+                    style={{ flexGrow: 1, display: 'flex', justifyContent: 'end' }}>
+                    <XIcon className='clickable' fontSize={12} />
+                  </div>
+                )}
+                <ChevronsUpDown className='ml-2 h-4 w-4 shrink-0 opacity-50' />
+              </>
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className='w-[300px] p-0' align='start'>
+            <Command>
+              <CommandInput placeholder={placeholder} />
+              <CommandList>
+                <CommandEmpty>No windows found.</CommandEmpty>
+                {Object.entries(groupedWindows).map(([category, categoryWindows]) => (
+                  <CommandGroup key={category} heading={category}>
+                    {categoryWindows.map((window) => (
+                      <CommandItem
+                        key={window.id}
+                        value={`${window.title} ${window.description ?? ''}`}
+                        onSelect={() => handleSelect(window)}>
+                        <Check
+                          className={cn(
+                            'mr-2 h-4 w-4',
+                            selectedWindow?.id === window.id ? 'opacity-100' : 'opacity-0',
+                          )}
+                        />
+                        <div className='flex flex-col'>
+                          <span>{window.title}</span>
+                          {window.description && (
+                            <span className='text-xs text-muted-foreground truncate max-w-[220px]'>
+                              {window.description}
+                            </span>
+                          )}
+                        </div>
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                ))}
+              </CommandList>
+            </Command>
+          </PopoverContent>
+        </Popover>
+      </div>
     </div>
   );
 };

@@ -5,12 +5,14 @@ import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
+import { useFeatureFlagList } from '@/hooks/use-feature-flag';
 import { cn } from '@/lib/utils';
-import { Bug, ChevronDown, ChevronRight, Code2, Trash2 } from 'lucide-react';
+import { removeFeatureFlag, setFeatureFlag } from '@/utils/feature-flags';
+import { Bug, ChevronDown, ChevronRight, Code2, Flag, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { ScriptPlayground } from './script-playground';
 
-type ViewMode = 'script' | 'debug';
+type ViewMode = 'script' | 'debug' | 'flags';
 
 export const DevTools = () => {
   const [viewMode, setViewMode] = useState<ViewMode>('script');
@@ -113,6 +115,8 @@ export const DevTools = () => {
       <div className='h-full w-full'>
         {viewMode === 'script' ? (
           <ScriptPlayground />
+        ) : viewMode === 'flags' ? (
+          <FeatureFlagsSection />
         ) : (
           <div className='h-full overflow-auto p-6'>
             <div className='max-w-4xl mx-auto space-y-4'>
@@ -235,8 +239,110 @@ export const DevTools = () => {
             <Bug className='h-4 w-4' />
             <span className='hidden sm:inline'>Debug</span>
           </Button>
+          <Button
+            variant={viewMode === 'flags' ? 'default' : 'ghost'}
+            size='sm'
+            onClick={() => setViewMode('flags')}
+            className={cn('gap-2', viewMode === 'flags' && 'shadow-sm')}
+            title='Feature Flags'>
+            <Flag className='h-4 w-4' />
+            <span className='hidden sm:inline'>Flags</span>
+          </Button>
         </div>
       </div>
     </div>
   );
 };
+
+function FeatureFlagsSection() {
+  const flags = useFeatureFlagList();
+  const [inputValue, setInputValue] = useState('');
+
+  const handleAdd = () => {
+    const name = inputValue.trim();
+    if (name) {
+      setFeatureFlag(name, true);
+      setInputValue('');
+    }
+  };
+
+  const handleToggle = (name: string, enabled: boolean) => {
+    setFeatureFlag(name, !enabled);
+  };
+
+  const handleRemove = (name: string) => {
+    removeFeatureFlag(name);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') handleAdd();
+  };
+
+  return (
+    <div className='h-full overflow-auto p-6'>
+      <div className='max-w-4xl mx-auto space-y-4'>
+        <div>
+          <h2 className='text-2xl font-bold'>Feature Flags</h2>
+          <p className='text-sm text-muted-foreground mt-1'>
+            Toggle features via localStorage. Use <code className='text-xs bg-muted px-1 rounded'>useFeatureFlag(name)</code> in code.
+          </p>
+        </div>
+
+        <div className='space-y-2'>
+          <Label htmlFor='flag-input'>Add feature flag</Label>
+          <div className='flex gap-2'>
+            <Input
+              id='flag-input'
+              placeholder='e.g. newEditor'
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              onKeyDown={handleKeyDown}
+            />
+            <Button onClick={handleAdd} disabled={!inputValue.trim()}>
+              Add
+            </Button>
+          </div>
+        </div>
+
+        <Separator />
+
+        <div className='space-y-2'>
+          <Label>Flags</Label>
+          <ScrollArea className='h-[calc(100vh-300px)] w-full border rounded-md'>
+            <div className='p-2 space-y-2'>
+              {flags.length === 0 ? (
+                <p className='text-muted-foreground text-sm'>No feature flags. Add one above.</p>
+              ) : (
+                flags.map(({ name, enabled }) => (
+                  <div
+                    key={name}
+                    className='flex items-center justify-between p-2 bg-muted rounded-md'>
+                    <p className='text-sm font-medium'>{name}</p>
+                    <div className='flex items-center gap-2'>
+                      <Switch
+                        checked={enabled}
+                        onCheckedChange={() => handleToggle(name, enabled)}
+                        className='data-[state=checked]:bg-primary'
+                      />
+                      <span className='text-xs text-muted-foreground w-8'>
+                        {enabled ? 'ON' : 'OFF'}
+                      </span>
+                      <Button
+                        variant='ghost'
+                        size='sm'
+                        onClick={() => handleRemove(name)}
+                        className='h-8 w-8 p-0 text-destructive hover:text-destructive'
+                        aria-label={`Remove ${name}`}>
+                        <Trash2 className='h-4 w-4' />
+                      </Button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </ScrollArea>
+        </div>
+      </div>
+    </div>
+  );
+}
