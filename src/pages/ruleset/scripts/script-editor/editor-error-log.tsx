@@ -1,21 +1,10 @@
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { useScriptErrors } from '@/lib/compass-api';
 
-// --- Error log ---
-interface ScriptErrorLogProps {
-  errors: Array<{
-    id: string;
-    errorMessage: string;
-    lineNumber: number | null;
-    stackTrace: string | null;
-    timestamp: number;
-    scriptId: string;
-    characterId: string | null;
-  }>;
-  onDismiss: (id: string) => void;
-}
+export function ScriptErrorLog() {
+  const { errors, dismissError: onDismiss } = useScriptErrors();
 
-export function ScriptErrorLog({ errors, onDismiss }: ScriptErrorLogProps) {
   return (
     <div className='rounded-md border bg-muted/20 flex flex-col h-[220px]'>
       <div className='px-3 py-2 border-b'>
