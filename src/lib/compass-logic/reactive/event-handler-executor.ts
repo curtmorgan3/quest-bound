@@ -1,6 +1,7 @@
 import type { DB } from '@/stores/db/hooks/types';
 import type { ASTNode } from '../interpreter/ast';
 import { functionDefToExecutableSource } from '../interpreter/ast-to-source';
+import type { RollFn } from '../interpreter/evaluator';
 import { Lexer } from '../interpreter/lexer';
 import { Parser } from '../interpreter/parser';
 import type { ScriptExecutionContext } from '../runtime/script-runner';
@@ -122,6 +123,7 @@ export class EventHandlerExecutor {
    * @param characterId - ID of the character
    * @param targetId - Optional ID of target character
    * @param eventType - Type of event (on_activate, on_deactivate)
+   * @param roll - Function to handle dice rolling
    * @returns Execution result
    */
   async executeActionEvent(
@@ -129,6 +131,7 @@ export class EventHandlerExecutor {
     characterId: string,
     targetId: string | null,
     eventType: 'on_activate' | 'on_deactivate',
+    roll?: RollFn,
   ): Promise<EventHandlerResult> {
     // Get action
     const action = await this.db.actions.get(actionId);
@@ -183,6 +186,7 @@ export class EventHandlerExecutor {
       db: this.db,
       scriptId: script.id,
       triggerType: 'action_click',
+      roll,
     };
 
     const runner = new ScriptRunner(context);
@@ -324,6 +328,7 @@ export async function executeItemEvent(
  * @param characterId - ID of the character
  * @param targetId - Optional ID of target character
  * @param eventType - Type of event
+ * @param roll - Function to handle dice rolls
  * @returns Execution result
  */
 export async function executeActionEvent(
@@ -332,7 +337,8 @@ export async function executeActionEvent(
   characterId: string,
   targetId: string | null,
   eventType: 'on_activate' | 'on_deactivate',
+  roll?: RollFn,
 ): Promise<EventHandlerResult> {
   const executor = new EventHandlerExecutor(db);
-  return executor.executeActionEvent(actionId, characterId, targetId, eventType);
+  return executor.executeActionEvent(actionId, characterId, targetId, eventType, roll);
 }

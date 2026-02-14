@@ -1,5 +1,6 @@
 import type { DB } from '@/stores/db/hooks/types';
 import type { Attribute, CharacterAttribute, Chart, Script } from '@/types';
+import type { RollFn } from '../interpreter/evaluator';
 import { Evaluator } from '../interpreter/evaluator';
 import { Lexer } from '../interpreter/lexer';
 import { Parser } from '../interpreter/parser';
@@ -19,6 +20,8 @@ export interface ScriptExecutionContext {
   entityType?: string;
   /** When script is attached to an entity, the entity id. For attribute scripts, 'Self' = Owner.Attribute(attributeTitle). */
   entityId?: string;
+  /** Optional roll function for script built-in roll(). When set, used instead of default local roll (e.g. from useDiceState). */
+  roll?: RollFn;
 }
 
 /**
@@ -47,7 +50,7 @@ export class ScriptRunner {
 
   constructor(context: ScriptExecutionContext) {
     this.context = context;
-    this.evaluator = new Evaluator();
+    this.evaluator = new Evaluator({ roll: context.roll });
     this.pendingUpdates = new Map();
     this.characterAttributesCache = new Map();
     this.attributesCache = new Map();
@@ -177,7 +180,7 @@ export class ScriptRunner {
     for (const script of toRun) {
       const tokens = new Lexer(script.sourceCode).tokenize();
       const ast = new Parser(tokens).parse();
-      this.evaluator.eval(ast);
+      await this.evaluator.eval(ast);
     }
   }
 
@@ -201,7 +204,7 @@ export class ScriptRunner {
       // Parse and execute the main script
       const tokens = new Lexer(sourceCode).tokenize();
       const ast = new Parser(tokens).parse();
-      const value = this.evaluator.eval(ast);
+      const value = await this.evaluator.eval(ast);
 
       // Flush changes to database
       await this.flushCache();

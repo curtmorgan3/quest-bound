@@ -95,16 +95,26 @@ export const useDiceState = ({ canvasRef }: DiceStateProps): IDiceContext => {
       const diceRolls: RollResult[] = diceRollSegments.flatMap((segment) => segment.rolls);
       await dddiceState.rollThreeDDice(diceRolls);
 
-      setTimeout(() => {
-        setLastResult(result);
-        setIsRolling(false);
-        setDddiceRolling(false);
-      }, 2000);
+      await new Promise((res) => {
+        const resolve = () => {
+          setLastResult(result);
+          setIsRolling(false);
+          setDddiceRolling(false);
+          return res;
+        };
+
+        setTimeout(resolve(), 2000);
+      });
     } else {
-      setTimeout(() => {
-        setLastResult(result);
-        setIsRolling(false);
-      }, delay);
+      await new Promise((res) => {
+        const resolve = () => {
+          setLastResult(result);
+          setIsRolling(false);
+          return res;
+        };
+
+        setTimeout(resolve(), delay);
+      });
     }
 
     // Display: log total and breakdown

@@ -12,6 +12,7 @@ import {
   CharacterInventoryPanelContext,
   CharacterProvider,
   db,
+  DiceContext,
   type InventoryPanelConfig,
 } from '@/stores';
 import { type Action, type Attribute, type CharacterAttribute, type Item } from '@/types';
@@ -23,6 +24,7 @@ import { InventoryPanel } from './inventory-panel';
 export const CharacterPage = ({ id, lockByDefault }: { id?: string; lockByDefault?: boolean }) => {
   const { characterId } = useParams<{ characterId: string }>();
   const characterInventoryPanel = useContext(CharacterInventoryPanelContext);
+  const { rollDice } = useContext(DiceContext);
 
   const { character, updateCharacter } = useCharacter(id ?? characterId);
   const { updateCharacterWindow, deleteCharacterWindow } = useCharacterWindows(character?.id);
@@ -150,7 +152,8 @@ export const CharacterPage = ({ id, lockByDefault }: { id?: string; lockByDefaul
 
   const fireAction = async (actionId: string) => {
     if (!character) return;
-    const res = await executeActionEvent(db, actionId, character.id, null, 'on_activate');
+    const rollFn = async (diceString: string) => rollDice(diceString).then((res) => res.total);
+    const res = await executeActionEvent(db, actionId, character.id, null, 'on_activate', rollFn);
     setEventAnnouncements(res.announceMessages);
   };
 

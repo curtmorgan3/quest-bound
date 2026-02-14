@@ -1,5 +1,13 @@
-import type { ASTNode } from './ast';
 import { parseDiceExpression, rollDie } from '@/utils/dice-utils';
+import type { ASTNode } from './ast';
+
+/** Roll function usable in scripts: takes dice expression (e.g. "2d6+3"), returns total (sync or async). */
+export type RollFn = (expression: string) => number | Promise<number>;
+
+export interface EvaluatorOptions {
+  /** When set, used as the script built-in roll() instead of the default local roll. */
+  roll?: RollFn;
+}
 
 export class RuntimeError extends Error {
   constructor(
@@ -66,20 +74,23 @@ export class Evaluator {
   private announceMessages: string[];
   private logMessages: any[][];
   private isWorkerContext: boolean;
+  private rollFn: RollFn | undefined;
 
-  constructor() {
+  constructor(options?: EvaluatorOptions) {
     this.globalEnv = new Environment(null);
     this.currentEnv = this.globalEnv;
     this.announceMessages = [];
     this.logMessages = [];
+    this.rollFn = options?.roll;
     // Detect if we're running in a worker context
-    this.isWorkerContext = typeof self !== 'undefined' && 
-                          typeof (self as any).WorkerGlobalScope !== 'undefined' && 
-                          self instanceof (self as any).WorkerGlobalScope;
+    this.isWorkerContext =
+      typeof self !== 'undefined' &&
+      typeof (self as any).WorkerGlobalScope !== 'undefined' &&
+      self instanceof (self as any).WorkerGlobalScope;
     this.registerBuiltins();
   }
 
-  eval(node: ASTNode): any {
+  async eval(node: ASTNode): Promise<any> {
     switch (node.type) {
       case 'Program':
         return this.evalProgram(node);
@@ -88,7 +99,7 @@ export class Evaluator {
         return node.value;
 
       case 'StringLiteral':
-        return this.interpolateString(node.value);
+        return node.value;
 
       case 'BooleanLiteral':
         return node.value;
@@ -140,11 +151,11 @@ export class Evaluator {
     }
   }
 
-  private evalProgram(node: any): any {
+  private async evalProgram(node: any): Promise<any> {
     let result = null;
     for (const statement of node.statements) {
       try {
-        result = this.eval(statement);
+        result = await this.eval(statement);
       } catch (e) {
         if (e instanceof ReturnValue) {
           return e.value;
@@ -155,9 +166,9 @@ export class Evaluator {
     return result;
   }
 
-  private evalBinaryOp(node: any): any {
-    const left = this.eval(node.left);
-    const right = this.eval(node.right);
+  private async evalBinaryOp(node: any): Promise<any> {
+    const left = await this.eval(node.left);
+    const right = await this.eval(node.right);
 
     switch (node.operator) {
       case '+':
@@ -199,8 +210,8 @@ export class Evaluator {
     }
   }
 
-  private evalUnaryOp(node: any): any {
-    const operand = this.eval(node.operand);
+  private async evalUnaryOp(node: any): Promise<any> {
+    const operand = await this.eval(node.operand);
 
     switch (node.operator) {
       case '-':
@@ -212,9 +223,9 @@ export class Evaluator {
     }
   }
 
-  private evalAssignment(node: any): any {
-    const value = this.eval(node.value);
-    
+  private async evalAssignment(node: any): Promise<any> {
+    const value = await this.eval(node.value);
+
     // If variable exists in current scope or parent, update it
     // Otherwise, define it in current scope
     if (this.currentEnv.has(node.name)) {
@@ -222,17 +233,18 @@ export class Evaluator {
     } else {
       this.currentEnv.define(node.name, value);
     }
-    
+
     return value;
   }
 
-  private evalFunctionCall(node: any): any {
+  private async evalFunctionCall(node: any): Promise<any> {
     const func = this.currentEnv.get(node.name);
 
-    // Built-in function (JavaScript function)
+    // Built-in function (JavaScript function); may return Promise (e.g. injected roll)
     if (typeof func === 'function') {
-      const args = node.arguments.map((arg: ASTNode) => this.eval(arg));
-      return func(...args);
+      const args = await Promise.all(node.arguments.map((arg: ASTNode) => this.eval(arg)));
+      const result = func(...args);
+      return Promise.resolve(result);
     }
 
     // User-defined function
@@ -241,7 +253,8 @@ export class Evaluator {
 
       // Bind parameters
       for (let i = 0; i < func.params.length; i++) {
-        const paramValue = i < node.arguments.length ? this.eval(node.arguments[i]) : undefined;
+        const paramValue =
+          i < node.arguments.length ? await this.eval(node.arguments[i]) : undefined;
         newEnv.define(func.params[i], paramValue);
       }
 
@@ -252,7 +265,7 @@ export class Evaluator {
       try {
         let result = null;
         for (const stmt of func.body) {
-          result = this.eval(stmt);
+          result = await this.eval(stmt);
         }
         this.currentEnv = prevEnv;
         return result;
@@ -268,21 +281,21 @@ export class Evaluator {
     throw new RuntimeError(`'${node.name}' is not a function`);
   }
 
-  private evalMethodCall(node: any): any {
-    const object = this.eval(node.object);
-    
+  private async evalMethodCall(node: any): Promise<any> {
+    const object = await this.eval(node.object);
+
     if (object === null || object === undefined) {
       throw new RuntimeError(`Cannot call method '${node.method}' on ${object}`);
     }
 
     const method = object[node.method];
-    
+
     if (typeof method !== 'function') {
       throw new RuntimeError(`'${node.method}' is not a method of ${object}`);
     }
 
-    const args = node.arguments.map((arg: ASTNode) => this.eval(arg));
-    
+    const args = await Promise.all(node.arguments.map((arg: ASTNode) => this.eval(arg)));
+
     // Call the method with the object as 'this' context
     return method.apply(object, args);
   }
@@ -297,8 +310,8 @@ export class Evaluator {
     });
   }
 
-  private evalIfStatement(node: any): any {
-    const condition = this.eval(node.condition);
+  private async evalIfStatement(node: any): Promise<any> {
+    const condition = await this.eval(node.condition);
 
     if (this.isTruthy(condition)) {
       return this.evalBlock(node.thenBlock);
@@ -306,7 +319,7 @@ export class Evaluator {
 
     // Check else if blocks
     for (const elseIf of node.elseIfBlocks) {
-      if (this.isTruthy(this.eval(elseIf.condition))) {
+      if (this.isTruthy(await this.eval(elseIf.condition))) {
         return this.evalBlock(elseIf.block);
       }
     }
@@ -319,22 +332,22 @@ export class Evaluator {
     return null;
   }
 
-  private evalForLoop(node: any): any {
-    const iterable = this.eval(node.iterable);
+  private async evalForLoop(node: any): Promise<any> {
+    const iterable = await this.eval(node.iterable);
     let result = null;
 
     // For-in range (e.g., for i in 10)
     if (typeof iterable === 'number') {
       for (let i = 0; i < iterable; i++) {
         this.currentEnv.define(node.variable, i);
-        result = this.evalBlock(node.body);
+        result = await this.evalBlock(node.body);
       }
     }
     // For-in array
     else if (Array.isArray(iterable)) {
       for (const item of iterable) {
         this.currentEnv.define(node.variable, item);
-        result = this.evalBlock(node.body);
+        result = await this.evalBlock(node.body);
       }
     } else {
       throw new RuntimeError(`Cannot iterate over ${typeof iterable}`);
@@ -343,24 +356,24 @@ export class Evaluator {
     return result;
   }
 
-  private evalReturnStatement(node: any): never {
-    const value = node.value ? this.eval(node.value) : null;
+  private async evalReturnStatement(node: any): Promise<never> {
+    const value = node.value ? await this.eval(node.value) : null;
     throw new ReturnValue(value);
   }
 
-  private evalSubscribeCall(node: any): any {
+  private async evalSubscribeCall(node: any): Promise<any> {
     // For now, just evaluate arguments (in Phase 4 this will register subscriptions)
-    const args = node.arguments.map((arg: ASTNode) => this.eval(arg));
+    const args = await Promise.all(node.arguments.map((arg: ASTNode) => this.eval(arg)));
     return args;
   }
 
-  private evalArrayLiteral(node: any): any[] {
-    return node.elements.map((element: ASTNode) => this.eval(element));
+  private async evalArrayLiteral(node: any): Promise<any[]> {
+    return Promise.all(node.elements.map((element: ASTNode) => this.eval(element)));
   }
 
-  private evalArrayAccess(node: any): any {
-    const array = this.eval(node.object);
-    const index = this.eval(node.index);
+  private async evalArrayAccess(node: any): Promise<any> {
+    const array = await this.eval(node.object);
+    const index = await this.eval(node.index);
 
     if (!Array.isArray(array)) {
       throw new RuntimeError('Cannot index non-array');
@@ -377,9 +390,9 @@ export class Evaluator {
     return array[index];
   }
 
-  private evalMemberAccess(node: any): any {
-    const object = this.eval(node.object);
-    
+  private async evalMemberAccess(node: any): Promise<any> {
+    const object = await this.eval(node.object);
+
     if (object === null || object === undefined) {
       throw new RuntimeError(`Cannot access property '${node.property}' of ${object}`);
     }
@@ -387,10 +400,10 @@ export class Evaluator {
     return object[node.property];
   }
 
-  private evalBlock(statements: ASTNode[]): any {
+  private async evalBlock(statements: ASTNode[]): Promise<any> {
     let result = null;
     for (const stmt of statements) {
-      result = this.eval(stmt);
+      result = await this.eval(stmt);
     }
     return result;
   }
@@ -415,8 +428,12 @@ export class Evaluator {
   }
 
   private registerBuiltins(): void {
-    // Dice rolling
-    this.globalEnv.define('roll', (expression: string): number => {
+    // Dice rolling: use injected roll when provided, otherwise default local implementation
+    this.globalEnv.define('roll', async (expression: string): Promise<number> => {
+      if (this.rollFn) {
+        const result = await this.rollFn(expression);
+        return result;
+      }
       const segments = parseDiceExpression(expression);
       let total = 0;
 

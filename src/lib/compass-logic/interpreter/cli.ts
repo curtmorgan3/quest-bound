@@ -92,7 +92,7 @@ function formatValue(value: any): string {
   return String(value);
 }
 
-function runScript(filePath: string, options: CliOptions) {
+async function runScript(filePath: string, options: CliOptions) {
   // Read file
   if (!fs.existsSync(filePath)) {
     console.error(`Error: File not found: ${filePath}`);
@@ -144,7 +144,7 @@ function runScript(filePath: string, options: CliOptions) {
     // Evaluator
     const evalStart = performance.now();
     const evaluator = new Evaluator();
-    const result = evaluator.eval(ast);
+    const result = await evaluator.eval(ast);
     const evalTime = performance.now() - evalStart;
 
     // Print announce messages
@@ -203,7 +203,7 @@ function runScript(filePath: string, options: CliOptions) {
   }
 }
 
-function main() {
+async function main() {
   const args = process.argv.slice(2);
 
   if (args.length === 0) {
@@ -219,10 +219,10 @@ function main() {
     process.exit(1);
   }
 
-  runScript(options.file, options);
+  await runScript(options.file, options);
 }
 
 // Run main if this is the entry point
-main();
+void main();
 
 export { parseArgs, runScript };
