@@ -70,6 +70,9 @@ export const EditorTopBar = ({
       triggerType: 'load',
       // If this is an attribute script, trigger reactive updates for dependent scripts
       reactiveAttributeId: entityType === 'attribute' ? (entityId ?? undefined) : undefined,
+      // So attribute scripts get 'Self' = Owner.Attribute(attributeTitle)
+      entityType,
+      entityId: entityId ?? undefined,
     });
   }, [
     activeRuleset,

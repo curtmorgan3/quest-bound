@@ -29,6 +29,7 @@ Scripts can be attached to:
 Owner      // The character that initiated the script
 Target     // A character reference (required if in function signature)
 Ruleset    // Access to ruleset-level entities
+Self       // (Attribute scripts only) This attribute — same as Owner.Attribute('<this attribute>')
 
 // ===== GETTERS =====
 <Accessor>.Attribute('attribute name')  // Get attribute reference

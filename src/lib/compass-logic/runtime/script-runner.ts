@@ -15,6 +15,10 @@ export interface ScriptExecutionContext {
   db: DB; // Database access
   scriptId?: string; // Which script is executing (for error logging)
   triggerType?: 'load' | 'attribute_change' | 'action_click' | 'item_event';
+  /** When script is attached to an entity (e.g. attribute), the entity type. Enables 'Self' for attribute scripts. */
+  entityType?: string;
+  /** When script is attached to an entity, the entity id. For attribute scripts, 'Self' = Owner.Attribute(attributeTitle). */
+  entityId?: string;
 }
 
 /**
@@ -140,6 +144,14 @@ export class ScriptRunner {
     this.evaluator.globalEnv.define('Owner', owner);
     this.evaluator.globalEnv.define('Target', target);
     this.evaluator.globalEnv.define('Ruleset', ruleset);
+
+    // For attribute scripts, 'Self' refers to Owner.Attribute(<this attribute's title>)
+    if (this.context.entityType === 'attribute' && this.context.entityId) {
+      const attribute = this.attributesCache.get(this.context.entityId);
+      if (attribute) {
+        this.evaluator.globalEnv.define('Self', owner.Attribute(attribute.title));
+      }
+    }
   }
 
   /**

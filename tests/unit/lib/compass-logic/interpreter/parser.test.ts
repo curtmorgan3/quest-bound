@@ -78,6 +78,24 @@ describe('Parser', () => {
         name: 'variable',
       } as Identifier);
     });
+
+    it('should parse Self keyword as identifier (owner attribute reference)', () => {
+      const ast = parse('Self');
+      expect(ast.statements[0]).toEqual({
+        type: 'Identifier',
+        name: 'Self',
+      } as Identifier);
+    });
+
+    it('should parse Self.value as member access', () => {
+      const ast = parse('Self.value');
+      expect(ast.statements[0]).toMatchObject({
+        type: 'MemberAccess',
+        property: 'value',
+      });
+      const stmt = ast.statements[0] as MemberAccess;
+      expect(stmt.object).toEqual({ type: 'Identifier', name: 'Self' });
+    });
   });
 
   describe('Binary Operations', () => {

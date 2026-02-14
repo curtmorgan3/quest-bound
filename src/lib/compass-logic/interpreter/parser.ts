@@ -453,6 +453,11 @@ export class Parser {
       return { type: 'StringLiteral', value: this.previous().value } as StringLiteral;
     }
 
+    // Self keyword (refers to Owner.Attribute for the script's attribute)
+    if (this.match(TokenType.SELF)) {
+      return { type: 'Identifier', name: 'Self' } as Identifier;
+    }
+
     // Identifiers
     if (this.match(TokenType.IDENTIFIER)) {
       return { type: 'Identifier', name: this.previous().value } as Identifier;

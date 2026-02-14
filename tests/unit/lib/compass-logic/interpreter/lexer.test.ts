@@ -230,6 +230,15 @@ describe('Lexer', () => {
       const tokens = lexer.tokenize();
       expect(tokens[0].type).toBe(TokenType.SUBSCRIBE);
     });
+
+    it('should tokenize Self keyword', () => {
+      const lexer = new Lexer('Self');
+      const tokens = lexer.tokenize();
+      expect(tokens[0]).toMatchObject({
+        type: TokenType.SELF,
+        value: 'Self',
+      });
+    });
   });
 
   describe('Operators', () => {

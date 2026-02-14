@@ -33,6 +33,9 @@ export interface ScriptExecutionOptions {
   rulesetId: string;
   triggerType?: 'load' | 'attribute_change' | 'action_click' | 'item_event';
   timeout?: number; // in milliseconds
+  /** For attribute scripts, enables defining 'Self' as Owner.Attribute(attributeTitle). */
+  entityType?: string;
+  entityId?: string;
 }
 
 export interface AttributeChangeOptions {
@@ -298,6 +301,8 @@ export class QBScriptClient {
       rulesetId: options.rulesetId,
       triggerType: options.triggerType || 'action_click',
       requestId,
+      entityType: options.entityType,
+      entityId: options.entityId,
     };
 
     return this.sendSignal(

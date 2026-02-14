@@ -14,6 +14,7 @@ export enum TokenType {
   IN = 'IN',
   RETURN = 'RETURN',
   SUBSCRIBE = 'SUBSCRIBE',
+  SELF = 'SELF',
 
   // Operators
   PLUS = 'PLUS', // +
@@ -70,6 +71,7 @@ const KEYWORDS: Record<string, TokenType> = {
   in: TokenType.IN,
   return: TokenType.RETURN,
   subscribe: TokenType.SUBSCRIBE,
+  Self: TokenType.SELF,
   true: TokenType.BOOLEAN,
   false: TokenType.BOOLEAN,
 };

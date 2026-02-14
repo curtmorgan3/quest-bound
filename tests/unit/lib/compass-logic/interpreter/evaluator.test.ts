@@ -33,6 +33,26 @@ describe('Evaluator', () => {
     it('should evaluate boolean false', () => {
       expect(evaluate('false')).toBe(false);
     });
+
+    it('should evaluate Self when defined in environment (attribute script)', () => {
+      const evaluator = new Evaluator();
+      const mockAttribute = { value: 42, title: 'Hit Points' };
+      evaluator.globalEnv.define('Self', mockAttribute);
+      const ast = new Parser(new Lexer('Self').tokenize()).parse();
+      expect(evaluator.eval(ast)).toBe(mockAttribute);
+    });
+
+    it('should evaluate Self.value when Self is Owner.Attribute proxy', () => {
+      const evaluator = new Evaluator();
+      const mockAttribute = { value: 50, title: 'Hit Points', add() {}, subtract() {}, set() {} };
+      evaluator.globalEnv.define('Self', mockAttribute);
+      const ast = new Parser(new Lexer('Self.value').tokenize()).parse();
+      expect(evaluator.eval(ast)).toBe(50);
+    });
+
+    it('should throw when Self is not defined (e.g. non-attribute script)', () => {
+      expect(() => evaluate('Self')).toThrow("Undefined variable 'Self'");
+    });
   });
 
   describe('Arithmetic Operations', () => {

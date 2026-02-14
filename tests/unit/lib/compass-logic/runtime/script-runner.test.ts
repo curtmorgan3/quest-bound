@@ -131,6 +131,67 @@ Target.Attribute("HP").value
 
       expect(() => evaluator.eval(ast)).toThrow('Cannot call method');
     });
+
+    it('should evaluate Self as Owner.Attribute when defined (attribute script)', () => {
+      const evaluator = new Evaluator();
+
+      const mockAttribute = {
+        value: 25,
+        title: 'Hit Points',
+        add(amount: number) {
+          this.value += amount;
+        },
+        subtract(amount: number) {
+          this.value -= amount;
+        },
+        set(val: number) {
+          this.value = val;
+        },
+      };
+
+      const mockOwner = {
+        Attribute: (name: string) => (name === 'Hit Points' ? mockAttribute : null),
+      };
+
+      evaluator.globalEnv.define('Owner', mockOwner);
+      evaluator.globalEnv.define('Self', mockOwner.Attribute('Hit Points'));
+
+      const script = `
+Self.value
+`;
+
+      const tokens = new Lexer(script).tokenize();
+      const ast = new Parser(tokens).parse();
+      const result = evaluator.eval(ast);
+
+      expect(result).toBe(25);
+    });
+
+    it('should allow Self.add() and Self.value (Self same as Owner.Attribute)', () => {
+      const evaluator = new Evaluator();
+
+      const mockAttribute = {
+        value: 10,
+        add(amount: number) {
+          this.value += amount;
+        },
+      };
+
+      const mockOwner = { Attribute: (title: string) => mockAttribute };
+      evaluator.globalEnv.define('Owner', mockOwner);
+      evaluator.globalEnv.define('Self', mockOwner.Attribute('Hit Points'));
+
+      const script = `
+Self.add(5)
+Self.value
+`;
+
+      const tokens = new Lexer(script).tokenize();
+      const ast = new Parser(tokens).parse();
+      const result = evaluator.eval(ast);
+
+      expect(result).toBe(15);
+    });
   });
 
   describe('accessor object functionality', () => {

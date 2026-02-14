@@ -138,6 +138,8 @@ async function handleExecuteScript(payload: ExecuteScriptPayload): Promise<void>
       db,
       scriptId: payload.scriptId,
       triggerType: payload.triggerType,
+      entityType: payload.entityType,
+      entityId: payload.entityId,
     };
 
     const runner = new ScriptRunner(context);

@@ -161,6 +161,9 @@ export interface ExecuteScriptPayload {
   rulesetId: string;
   triggerType: 'load' | 'attribute_change' | 'action_click' | 'item_event';
   requestId: string;
+  /** For attribute scripts, enables defining 'Self' as Owner.Attribute(attributeTitle). */
+  entityType?: string;
+  entityId?: string;
 }
 
 export interface AttributeChangedPayload {

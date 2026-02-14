@@ -56,7 +56,7 @@ const qbscriptParser = StreamLanguage.define<QBScriptState>({
     }
 
     // Accessors (Owner, Target, Ruleset - only when not followed by ()
-    if (stream.match(/\b(Owner|Target|Ruleset)\b/)) {
+    if (stream.match(/\b(Owner|Target|Ruleset|Self)\b/)) {
       stream.eatSpace();
       if (stream.peek() === '(') return 'function';
       return 'variable-2';

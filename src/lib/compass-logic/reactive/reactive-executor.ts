@@ -192,6 +192,8 @@ export class ReactiveExecutor {
         db: this.db,
         scriptId,
         triggerType: 'attribute_change',
+        entityType: script.entityType,
+        entityId: script.entityId ?? undefined,
       };
 
       const runner = new ScriptRunner(context);
