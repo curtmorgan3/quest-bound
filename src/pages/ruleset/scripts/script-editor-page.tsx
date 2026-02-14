@@ -2,8 +2,8 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Label } from '@/components/ui/label';
 import { useRulesets } from '@/lib/compass-api';
 import { useScripts } from '@/lib/compass-api/hooks/scripts/use-scripts';
+import { useExecuteScript, useScriptValidation } from '@/lib/compass-logic';
 import { CodeMirrorEditor } from '@/lib/compass-logic/editor';
-import { useExecuteScript, useScriptValidation } from '@/lib/compass-logic/worker';
 import { db } from '@/stores';
 import type { Script } from '@/types';
 import { useLiveQuery } from 'dexie-react-hooks';
@@ -41,6 +41,8 @@ export function ScriptEditorPage() {
     [scriptId],
   );
   const scriptAttributeIds = dependencyGraphNode?.dependencies ?? [];
+
+  const associatedAttributeId = entityType === 'attribute' ? entityId : null;
 
   // Initalize script data
   useEffect(() => {
@@ -93,7 +95,10 @@ export function ScriptEditorPage() {
               className='flex-1 min-h-0 rounded-md border overflow-hidden'
             />
 
-            <AttributeControls scriptAttributeIds={scriptAttributeIds} />
+            <AttributeControls
+              scriptAttributeIds={scriptAttributeIds}
+              associatedAttributeId={associatedAttributeId}
+            />
           </div>
         </div>
 
