@@ -6,11 +6,12 @@ import {
   useInventory,
   type CharacterWindowUpdate,
 } from '@/lib/compass-api';
-import { useScriptAnnouncements } from '@/lib/compass-logic';
+import { executeActionEvent, useScriptAnnouncements } from '@/lib/compass-logic';
 import { SheetViewer } from '@/lib/compass-planes';
 import {
   CharacterInventoryPanelContext,
   CharacterProvider,
+  db,
   type InventoryPanelConfig,
 } from '@/stores';
 import { type Action, type Attribute, type CharacterAttribute, type Item } from '@/types';
@@ -138,6 +139,11 @@ export const CharacterPage = ({ id, lockByDefault }: { id?: string; lockByDefaul
     updateCharacter,
   ]);
 
+  const fireAction = (actionId: string) => {
+    if (!character) return;
+    executeActionEvent(db, actionId, character.id, null, 'on_activate');
+  };
+
   if (!character) {
     return null;
   }
@@ -156,6 +162,7 @@ export const CharacterPage = ({ id, lockByDefault }: { id?: string; lockByDefaul
         updateInventoryItem,
         removeInventoryItem,
         addInventoryItem,
+        fireAction,
       }}>
       <SheetViewer
         key={character.id}

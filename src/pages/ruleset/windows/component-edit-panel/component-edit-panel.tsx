@@ -1,7 +1,7 @@
 import { Label } from '@/components';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { AttributeLookup, useComponents, WindowLookup } from '@/lib/compass-api';
+import { ActionLookup, AttributeLookup, useComponents, WindowLookup } from '@/lib/compass-api';
 import { ComponentTypes } from '@/lib/compass-planes/nodes';
 import {
   CheckboxDataEdit,
@@ -198,12 +198,20 @@ export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
               selectedComponents[0].type !== ComponentTypes.INVENTORY &&
               selectedComponents[0].type !== ComponentTypes.GRAPH &&
               selectedComponents[0].type !== ComponentTypes.FRAME && (
-                <AttributeLookup
-                  value={selectedComponents[0].attributeId}
-                  onSelect={(attr) => handleUpdate('attributeId', attr.id)}
-                  onDelete={() => handleUpdate('attributeId', null)}
-                  filterType={allAreCheckboxes ? 'boolean' : undefined}
-                />
+                <>
+                  <AttributeLookup
+                    value={selectedComponents[0].attributeId}
+                    onSelect={(attr) => handleUpdate('attributeId', attr.id)}
+                    onDelete={() => handleUpdate('attributeId', null)}
+                    filterType={allAreCheckboxes ? 'boolean' : undefined}
+                  />
+
+                  <ActionLookup
+                    value={selectedComponents[0].actionId}
+                    onSelect={(attr) => handleUpdate('actionId', attr.id)}
+                    onDelete={() => handleUpdate('actionId', null)}
+                  />
+                </>
               )}
             {selectedComponents.every((c) => c.type === ComponentTypes.TEXT) &&
               selectedComponents.length === 1 &&

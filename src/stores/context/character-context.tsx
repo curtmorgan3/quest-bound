@@ -45,6 +45,7 @@ type CharacterContext = {
   addInventoryItem: (
     data: Omit<InventoryItem, 'id' | 'createdAt' | 'updatedAt' | 'inventoryId'>,
   ) => void;
+  fireAction: (actionId: string) => void;
 };
 
 export const CharacterContext = createContext<CharacterContext>(null!);

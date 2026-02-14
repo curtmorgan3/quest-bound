@@ -1,4 +1,5 @@
 import type { CharacterAttribute, Component } from '@/types';
+import type { ReactNode } from 'react';
 import { ComponentTypes } from '../nodes';
 import {
   ViewCheckboxNode,
@@ -12,6 +13,7 @@ import {
   ViewTextNode,
 } from '../nodes/components';
 import { getComponentData } from '../utils';
+import { NodeActionCaller } from './decorators';
 
 export const renderViewComponent = (
   component: Component,
@@ -30,25 +32,66 @@ export const renderViewComponent = (
 
   switch (component.type) {
     case ComponentTypes.TEXT:
-      return <ViewTextNode key={component.id} component={component} />;
+      return (
+        <WrapDecorators key={component.id} component={component}>
+          <ViewTextNode key={component.id} component={component} />
+        </WrapDecorators>
+      );
     case ComponentTypes.SHAPE:
-      return <ViewShapeNode key={component.id} component={component} />;
+      return (
+        <WrapDecorators key={component.id} component={component}>
+          <ViewShapeNode component={component} />
+        </WrapDecorators>
+      );
     case ComponentTypes.IMAGE:
-      return <ViewImageNode key={component.id} component={component} />;
+      return (
+        <WrapDecorators key={component.id} component={component}>
+          <ViewImageNode key={component.id} component={component} />
+        </WrapDecorators>
+      );
     case ComponentTypes.INPUT:
-      return <ViewInputNode key={component.id} component={component} />;
+      return (
+        <WrapDecorators key={component.id} component={component}>
+          <ViewInputNode key={component.id} component={component} />
+        </WrapDecorators>
+      );
     case ComponentTypes.CHECKBOX:
-      return <ViewCheckboxNode key={component.id} component={component} />;
+      return (
+        <WrapDecorators key={component.id} component={component}>
+          <ViewCheckboxNode key={component.id} component={component} />
+        </WrapDecorators>
+      );
+
     case ComponentTypes.CONTENT:
-      return <ViewContentNode key={component.id} component={component} />;
+      return (
+        <WrapDecorators key={component.id} component={component}>
+          <ViewContentNode key={component.id} component={component} />
+        </WrapDecorators>
+      );
     case ComponentTypes.INVENTORY:
-      return <ViewInventoryNode key={component.id} component={component} />;
+      return (
+        <WrapDecorators key={component.id} component={component}>
+          <ViewInventoryNode key={component.id} component={component} />
+        </WrapDecorators>
+      );
     case ComponentTypes.GRAPH:
-      return <ViewGraphNode key={component.id} component={component} />;
+      return (
+        <WrapDecorators key={component.id} component={component}>
+          <ViewGraphNode key={component.id} component={component} />
+        </WrapDecorators>
+      );
     case ComponentTypes.FRAME:
-      return <ViewFrameNode key={component.id} component={component} />;
+      return (
+        <WrapDecorators key={component.id} component={component}>
+          <ViewFrameNode key={component.id} component={component} />
+        </WrapDecorators>
+      );
     default:
       console.warn(`Attempted to render an unregistered view component: `, component.type);
       return null;
   }
 };
+
+function WrapDecorators({ children, component }: { children: ReactNode; component: Component }) {
+  return <NodeActionCaller component={component}>{children}</NodeActionCaller>;
+}
