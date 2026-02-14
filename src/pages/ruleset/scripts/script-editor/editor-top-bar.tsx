@@ -15,13 +15,10 @@ import {
   useRulesets,
   useScripts,
 } from '@/lib/compass-api';
-import { executeActionEvent } from '@/lib/compass-logic/reactive/event-handler-executor';
-import { type UseReactiveScriptExecutionResult } from '@/lib/compass-logic/worker';
+import { type UseReactiveScriptExecutionResult } from '@/lib/compass-logic';
 import type { Action, Attribute, Item, Script } from '@/types';
-import { db } from '@/stores';
-import { useNotifications } from '@/hooks/use-notifications';
 import { Play, Trash2, X, Zap } from 'lucide-react';
-import { useCallback, useState, type Dispatch, type SetStateAction } from 'react';
+import { useCallback, type Dispatch, type SetStateAction } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
 const ENTITY_TYPES = [
@@ -41,6 +38,7 @@ interface EditorTopBar {
   sourceCode: string;
   saveDisabled?: boolean;
   scriptExecutionHook: UseReactiveScriptExecutionResult;
+  handleFireOnActivate: () => void;
 }
 
 export const EditorTopBar = ({
@@ -53,41 +51,15 @@ export const EditorTopBar = ({
   sourceCode,
   saveDisabled,
   scriptExecutionHook,
+  handleFireOnActivate,
 }: EditorTopBar) => {
   const navigate = useNavigate();
   const { rulesetId, scriptId } = useParams<{ rulesetId: string; scriptId: string }>();
   const { scripts, createScript, updateScript, deleteScript } = useScripts();
   const { activeRuleset, testCharacter } = useRulesets();
-  const { addNotification } = useNotifications();
-  const [isFiringOnActivate, setIsFiringOnActivate] = useState(false);
 
   const isNew = scriptId === 'new';
   const script = isNew ? null : (scripts.find((s) => s.id === scriptId) ?? null);
-
-  const handleFireOnActivate = useCallback(async () => {
-    if (!entityId || !testCharacter) return;
-    setIsFiringOnActivate(true);
-    try {
-      const result = await executeActionEvent(
-        db,
-        entityId,
-        testCharacter.id,
-        null,
-        'on_activate',
-      );
-      if (result.error) {
-        addNotification(result.error.message, { type: 'error' });
-      } else {
-        addNotification('on_activate ran successfully', { type: 'success' });
-      }
-    } catch (err) {
-      addNotification(err instanceof Error ? err.message : 'Failed to run on_activate', {
-        type: 'error',
-      });
-    } finally {
-      setIsFiringOnActivate(false);
-    }
-  }, [entityId, testCharacter, addNotification]);
 
   const handleRun = useCallback(async () => {
     if (!activeRuleset) throw new Error('No ruleset found.');
@@ -145,7 +117,7 @@ export const EditorTopBar = ({
   };
 
   return (
-    <div className='border-b p-4 flex flex-wrap items-end gap-4'>
+    <div className='border-b p-4 flex flex-wrap items-start gap-4'>
       <div className='flex flex-col gap-2 flex-1 min-w-[200px] max-w-[400px]'>
         <Label htmlFor='script-name'>Name</Label>
         <Input
@@ -206,37 +178,49 @@ export const EditorTopBar = ({
         </div>
       )}
       <div className='flex justify-end flex-1'>
-        <div className='flex gap-2 justify-center min-w-[225px]'>
-          {entityType === 'action' && entityId && (
-            <Button
-              onClick={handleFireOnActivate}
-              disabled={isFiringOnActivate || !testCharacter}
-              variant='outline'
-              title='Run this script’s on_activate function as the test character'>
-              <Play className='h-4 w-4 mr-2' />
-              {isFiringOnActivate ? '...' : 'Fire on_activate'}
-            </Button>
-          )}
-          <Button
-            onClick={handleRun}
-            disabled={
-              scriptExecutionHook.isExecuting || !activeRuleset || !testCharacter || saveDisabled
-            }
-            variant='secondary'>
-            <Zap className='h-4 w-4 mr-2' />
-            {scriptExecutionHook.isExecuting ? '...' : 'Run'}
-          </Button>
-          <Button onClick={handleSave} disabled={saveDisabled} variant='default'>
-            Save
-          </Button>
-          <Button variant='outline' onClick={handleCancel}>
-            <X className='h-4 w-4' />
-          </Button>
-          {!isNew && script && (
-            <Button variant='destructive' onClick={handleDelete}>
-              <Trash2 className='h-4 w-4' />
-            </Button>
-          )}
+        <div className='flex gap-2 justify-end min-w-[225px]'>
+          <div className='flex flex-col gap-2'>
+            <div className='flex gap-2 justify-end'>
+              <Button onClick={handleSave} disabled={saveDisabled} variant='default'>
+                Save
+              </Button>
+              <Button variant='outline' onClick={handleCancel}>
+                <X className='h-4 w-4' />
+              </Button>
+              {!isNew && script && (
+                <Button variant='destructive' onClick={handleDelete}>
+                  <Trash2 className='h-4 w-4' />
+                </Button>
+              )}
+            </div>
+
+            <div className='flex gap-2'>
+              <Button
+                onClick={handleRun}
+                disabled={
+                  scriptExecutionHook.isExecuting ||
+                  !activeRuleset ||
+                  !testCharacter ||
+                  saveDisabled
+                }
+                variant='secondary'>
+                <Zap className='h-4 w-4' />
+                Run
+              </Button>
+
+              {entityType === 'action' && entityId && (
+                <Button
+                  className='w-[160px]'
+                  onClick={handleFireOnActivate}
+                  disabled={!testCharacter}
+                  variant='outline'
+                  title='Run this script’s on_activate function as the test character'>
+                  <Play className='h-4 w-4' />
+                  on_activate
+                </Button>
+              )}
+            </div>
+          </div>
         </div>
       </div>
     </div>

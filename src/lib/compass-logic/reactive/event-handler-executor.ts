@@ -83,10 +83,9 @@ export class EventHandlerExecutor {
       };
     }
 
-    // Extract event handler
-    const handlerCode = this.extractEventHandler(script.sourceCode, eventType);
-    if (!handlerCode) {
-      // No handler defined for this event
+    // Check that the event handler exists
+    const hasHandler = this.extractEventHandler(script.sourceCode, eventType) !== null;
+    if (!hasHandler) {
       return {
         success: true,
         value: null,
@@ -95,7 +94,8 @@ export class EventHandlerExecutor {
       };
     }
 
-    // Execute handler
+    // Run full script so all definitions are in scope, then call the handler
+    const scriptToRun = this.buildScriptWithHandlerCall(script.sourceCode, eventType);
     const context: ScriptExecutionContext = {
       ownerId: characterId,
       rulesetId: item.rulesetId,
@@ -105,7 +105,7 @@ export class EventHandlerExecutor {
     };
 
     const runner = new ScriptRunner(context);
-    const result = await runner.run(handlerCode);
+    const result = await runner.run(scriptToRun);
 
     return {
       success: !result.error,
@@ -163,11 +163,9 @@ export class EventHandlerExecutor {
       };
     }
 
-    // Extract event handler
-    const handlerCode = this.extractEventHandler(script.sourceCode, eventType);
-    console.log(handlerCode);
-    if (!handlerCode) {
-      // No handler defined for this event
+    // Check that the event handler exists
+    const hasHandler = this.extractEventHandler(script.sourceCode, eventType) !== null;
+    if (!hasHandler) {
       return {
         success: true,
         value: null,
@@ -176,7 +174,8 @@ export class EventHandlerExecutor {
       };
     }
 
-    // Execute handler
+    // Run full script so all definitions are in scope, then call the handler
+    const scriptToRun = this.buildScriptWithHandlerCall(script.sourceCode, eventType);
     const context: ScriptExecutionContext = {
       ownerId: characterId,
       targetId: targetId,
@@ -187,7 +186,7 @@ export class EventHandlerExecutor {
     };
 
     const runner = new ScriptRunner(context);
-    const result = await runner.run(handlerCode);
+    const result = await runner.run(scriptToRun);
 
     return {
       success: !result.error,
@@ -196,6 +195,13 @@ export class EventHandlerExecutor {
       logMessages: result.logMessages,
       error: result.error,
     };
+  }
+
+  /**
+   * Build script that runs the full source (so the whole script is in scope) then calls the handler.
+   */
+  private buildScriptWithHandlerCall(sourceCode: string, eventType: EventHandlerType): string {
+    return `${sourceCode}\n${eventType}()`;
   }
 
   /**
