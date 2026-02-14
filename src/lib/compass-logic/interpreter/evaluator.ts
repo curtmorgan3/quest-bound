@@ -99,7 +99,7 @@ export class Evaluator {
         return node.value;
 
       case 'StringLiteral':
-        return node.value;
+        return this.interpolateString(node.value);
 
       case 'BooleanLiteral':
         return node.value;

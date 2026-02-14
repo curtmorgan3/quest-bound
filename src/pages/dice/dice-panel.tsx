@@ -52,7 +52,10 @@ export const DicePanel = () => {
   return (
     <>
       <Sheet open={dicePanelOpen} onOpenChange={setDicePanelOpen}>
-        <SheetContent aria-description='Dice Panel' side='right' className='flex flex-col p-[8px]'>
+        <SheetContent
+          aria-description='Dice Panel'
+          side='right'
+          className='flex flex-col p-[8px] z-[1000]'>
           <SheetHeader style={{ paddingBottom: 0 }}>
             <SheetTitle>
               <DddiceAuthModal />

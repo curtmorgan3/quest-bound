@@ -95,29 +95,25 @@ export const useDiceState = ({ canvasRef }: DiceStateProps): IDiceContext => {
       const diceRolls: RollResult[] = diceRollSegments.flatMap((segment) => segment.rolls);
       await dddiceState.rollThreeDDice(diceRolls);
 
-      await new Promise((res) => {
-        const resolve = () => {
-          setLastResult(result);
-          setIsRolling(false);
-          setDddiceRolling(false);
-          return res;
-        };
+      // We need to await a promise so the script evaluator can delay its execution
+      // Separetly, setState does better in a timeout. These don't need to sync. Prefer to delay
+      // result text for 3D dice result for a better UX.
+      setTimeout(() => {
+        setLastResult(result);
+        setIsRolling(false);
+        setDddiceRolling(false);
+        console.log('resolve');
+      }, 3000);
 
-        setTimeout(resolve(), 2000);
-      });
+      await new Promise((res) => setTimeout(res, 2000));
     } else {
-      await new Promise((res) => {
-        const resolve = () => {
-          setLastResult(result);
-          setIsRolling(false);
-          return res;
-        };
-
-        setTimeout(resolve(), delay);
-      });
+      setTimeout(() => {
+        setLastResult(result);
+        setIsRolling(false);
+      }, delay);
+      await new Promise((res) => setTimeout(res, 2000));
     }
 
-    // Display: log total and breakdown
     const breakdown = segmentResults.map(formatSegmentResult).join('; ');
     logEvent({
       type: LogType.DICE,
