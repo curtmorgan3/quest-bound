@@ -1,5 +1,4 @@
 import { useErrorHandler } from '@/hooks';
-import { getQBScriptClient } from '@/lib/compass-logic/worker';
 import { db } from '@/stores';
 import type { CharacterAttribute } from '@/types';
 import { useLiveQuery } from 'dexie-react-hooks';
@@ -72,22 +71,6 @@ export const useCharacterAttributes = (characterId?: string) => {
         ...data,
         updatedAt: now,
       });
-
-      // Execute dependent scripts when value changes
-      if (data.value !== undefined && character?.rulesetId) {
-        const charAttr = await db.characterAttributes.get(id);
-        if (charAttr?.attributeId) {
-          const client = getQBScriptClient();
-          client.onAttributeChange({
-            attributeId: charAttr.attributeId,
-            characterId: character.id,
-            rulesetId: character.rulesetId,
-          }).catch((err) => {
-            // Log but don't fail the update if reactive execution fails
-            console.warn('Reactive script execution failed:', err);
-          });
-        }
-      }
     } catch (e) {
       handleError(e as Error, {
         component: 'useCharacterAttributes/updateCharacterAttribute',

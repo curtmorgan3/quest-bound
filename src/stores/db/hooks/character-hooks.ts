@@ -1,6 +1,35 @@
+import { getQBScriptClient } from '@/lib/compass-logic/worker';
 import type { DB } from './types';
 
 export function registerCharacterDbHooks(db: DB) {
+  // Fire script client onAttributeChange when a character attribute's value is updated
+  db.characterAttributes.hook('updating', (modifications, _primKey, obj) => {
+    const mods = modifications as { value?: unknown };
+    if (mods.value === undefined) return;
+    const characterId = (obj as { characterId?: string })?.characterId;
+    const attributeId = (obj as { attributeId?: string })?.attributeId;
+    if (!characterId || !attributeId) return;
+    setTimeout(async () => {
+      try {
+        const character = obj;
+        const rulesetId = (character as { rulesetId?: string } | undefined)?.rulesetId;
+        if (!rulesetId) return;
+        const client = getQBScriptClient();
+        client
+          .onAttributeChange({
+            attributeId,
+            characterId,
+            rulesetId,
+          })
+          .catch((err) => {
+            console.warn('Reactive script execution failed:', err);
+          });
+      } catch (error) {
+        console.warn('Reactive script execution failed:', error);
+      }
+    }, 0);
+  });
+
   // Create an inventory when a character is created
   db.characters.hook('creating', (_primKey, obj) => {
     setTimeout(async () => {
