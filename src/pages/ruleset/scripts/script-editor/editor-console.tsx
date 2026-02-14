@@ -65,8 +65,8 @@ export const EditorConsole = ({
               ) : (
                 <>
                   {logs.map((args, i) => (
-                    <div key={`log-${i}`} className='text-xs font-mono flex items-start gap-2'>
-                      <span className='text-muted-foreground shrink-0' aria-hidden>
+                    <div key={`log-${i}`} className='text-xs flex items-start gap-2'>
+                      <span className='text-muted-foreground font-mono shrink-0' aria-hidden>
                         [log]
                       </span>
                       <span>{args.map((arg) => JSON.stringify(arg)).join(' ')}</span>

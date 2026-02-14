@@ -18,6 +18,7 @@ import { useParams } from 'react-router-dom';
 import { AttributeControls } from './script-editor/attribute-controls';
 import { EditorConsole } from './script-editor/editor-console';
 import { EditorTopBar } from './script-editor/editor-top-bar';
+import { EventControls } from './script-editor/event-controls';
 
 export function ScriptEditorPage() {
   const { scriptId } = useParams<{ rulesetId: string; scriptId: string }>();
@@ -91,7 +92,6 @@ export function ScriptEditorPage() {
       <EditorTopBar
         sourceCode={sourceCode}
         scriptExecutionHook={workerHook}
-        handleFireOnActivate={handleFireOnActivate}
         {...{ name, setName, entityId, setEntityId, entityType, setEntityType }}
       />
 
@@ -115,10 +115,16 @@ export function ScriptEditorPage() {
               className='flex-1 min-h-0 rounded-md border overflow-hidden'
             />
 
-            <AttributeControls
-              scriptAttributeIds={scriptAttributeIds}
-              associatedAttributeId={associatedAttributeId}
-            />
+            {entityType === 'attribute' && (
+              <AttributeControls
+                scriptAttributeIds={scriptAttributeIds}
+                associatedAttributeId={associatedAttributeId}
+              />
+            )}
+
+            {entityType === 'action' && (
+              <EventControls handleFireOnActivate={handleFireOnActivate} />
+            )}
           </div>
         </div>
 
