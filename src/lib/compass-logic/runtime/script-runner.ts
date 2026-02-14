@@ -1,5 +1,5 @@
 import type { DB } from '@/stores/db/hooks/types';
-import type { Attribute, CharacterAttribute, Chart } from '@/types';
+import type { Attribute, CharacterAttribute, Chart, Script } from '@/types';
 import { Evaluator } from '../interpreter/evaluator';
 import { Lexer } from '../interpreter/lexer';
 import { Parser } from '../interpreter/parser';
@@ -155,7 +155,35 @@ export class ScriptRunner {
   }
 
   /**
+   * Load and execute all enabled global scripts for the ruleset so their
+   * functions and variables are available in the environment for the main script.
+   * Excludes the script with context.scriptId when it is a global (avoids running it twice).
+   */
+  private async loadAndRunGlobalScripts(): Promise<void> {
+    const { db, rulesetId, scriptId } = this.context;
+
+    const globalScripts = (await db.scripts
+      .where({ rulesetId })
+      // Dexie can't use booleans in a query key
+      .filter((script) => script.enabled && script.isGlobal)
+      .toArray()) as Script[];
+
+    // Exclude the current script if it's a global (we'll run it as the main script)
+    const toRun = scriptId ? globalScripts.filter((s) => s.id !== scriptId) : globalScripts;
+
+    // Deterministic order so global scripts can depend on earlier ones by name
+    toRun.sort((a, b) => a.name.localeCompare(b.name, 'en'));
+
+    for (const script of toRun) {
+      const tokens = new Lexer(script.sourceCode).tokenize();
+      const ast = new Parser(tokens).parse();
+      this.evaluator.eval(ast);
+    }
+  }
+
+  /**
    * Execute a script with full game entity integration.
+   * Global scripts are run first so their functions and variables are in scope.
    * @param sourceCode - The QBScript source code to execute
    * @returns ScriptExecutionResult with the result value, messages, and any error
    */
@@ -167,7 +195,10 @@ export class ScriptRunner {
       // Set up accessor objects
       this.setupAccessors();
 
-      // Parse and execute
+      // Run global scripts so their definitions are in the environment
+      await this.loadAndRunGlobalScripts();
+
+      // Parse and execute the main script
       const tokens = new Lexer(sourceCode).tokenize();
       const ast = new Parser(tokens).parse();
       const value = this.evaluator.eval(ast);

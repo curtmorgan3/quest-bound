@@ -22,10 +22,6 @@ import type {
   Window,
 } from '@/types';
 import Dexie, { type EntityTable } from 'dexie';
-import { assetInjectorMiddleware } from './asset-injector-middleware';
-import { chartOptionsMiddleware, memoizedCharts } from './chart-options-middleware';
-import { registerDbHooks } from './hooks/db-hooks';
-import { memoizedAssets } from './memoization-cache';
 
 const db = new Dexie('qbdb') as Dexie & {
   users: EntityTable<
@@ -80,31 +76,5 @@ db.version(17).stores({
   scriptErrors: `${common}, rulesetId, scriptId, characterId, timestamp`,
   dependencyGraphNodes: `${common}, rulesetId, scriptId, entityType, entityId`,
 });
-
-// Cache assets for reference in the asset injector middleware
-db.on('ready', async () => {
-  await db.assets
-    .where('id')
-    .above(0)
-    .each((asset) => {
-      memoizedAssets[asset.id] = asset.data;
-    });
-
-  // Cache charts for reference in the chart options middleware
-  await db.charts
-    .where('id')
-    .above(0)
-    .each((chart) => {
-      try {
-        memoizedCharts[chart.id] = JSON.parse(chart.data);
-      } catch {
-        // Invalid JSON, skip
-      }
-    });
-});
-
-db.use(assetInjectorMiddleware);
-db.use(chartOptionsMiddleware);
-registerDbHooks(db);
 
 export { db };

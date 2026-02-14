@@ -1,22 +1,22 @@
 /**
  * QBScript Web Worker
- * 
+ *
  * Handles script execution in a separate thread to keep the UI responsive.
  * Communicates with the main thread via a signal-based message protocol.
  */
 
-import Dexie from 'dexie';
 import type { DB } from '@/stores/db/hooks/types';
-import { ScriptRunner, type ScriptExecutionContext } from '../runtime/script-runner';
-import { ReactiveExecutor } from '../reactive/reactive-executor';
-import type {
-  MainToWorkerSignal,
-  WorkerToMainSignal,
-  ExecuteScriptPayload,
-  AttributeChangedPayload,
-} from './signals';
+import Dexie from 'dexie';
 import { Lexer } from '../interpreter/lexer';
 import { Parser } from '../interpreter/parser';
+import { ReactiveExecutor } from '../reactive/reactive-executor';
+import { ScriptRunner, type ScriptExecutionContext } from '../runtime/script-runner';
+import type {
+  AttributeChangedPayload,
+  ExecuteScriptPayload,
+  MainToWorkerSignal,
+  WorkerToMainSignal,
+} from './signals';
 
 // ============================================================================
 // Database Setup
@@ -28,7 +28,7 @@ const db = new Dexie('qbdb') as DB;
 
 const common = '++id, createdAt, updatedAt';
 
-db.version(13).stores({
+db.version(17).stores({
   users: `${common}, username, assetId, image, preferences`,
   assets: `${common}, rulesetId, [directory+filename], data, type`,
   rulesets: `${common}, version, createdBy, title, description, details, assetId, image`,
@@ -374,9 +374,7 @@ async function handleExecuteItemEvent(payload: {
     }
 
     // Get script for this item event
-    const script = await db.scripts
-      .where({ entityId: payload.itemId, entityType: 'item' })
-      .first();
+    const script = await db.scripts.where({ entityId: payload.itemId, entityType: 'item' }).first();
 
     if (!script) {
       throw new Error(`No script found for item: ${payload.itemId}`);
