@@ -1,59 +1,6 @@
-import type {
-  Action,
-  Asset,
-  Attribute,
-  Character,
-  CharacterAttribute,
-  CharacterPage,
-  CharacterWindow,
-  Chart,
-  Component,
-  DependencyGraphNode,
-  DiceRoll,
-  Document,
-  Font,
-  Inventory,
-  InventoryItem,
-  Item,
-  Ruleset,
-  Script,
-  ScriptError,
-  User,
-  Window,
-} from '@/types';
-import Dexie, { type EntityTable } from 'dexie';
-
-const db = new Dexie('qbdb') as Dexie & {
-  users: EntityTable<
-    User,
-    'id' // primary key "id" (for the typings only)
-  >;
-  rulesets: EntityTable<Ruleset, 'id'>;
-  attributes: EntityTable<Attribute, 'id'>;
-  actions: EntityTable<Action, 'id'>;
-  items: EntityTable<Item, 'id'>;
-  charts: EntityTable<Chart, 'id'>;
-  documents: EntityTable<Document, 'id'>;
-  assets: EntityTable<Asset, 'id'>;
-  fonts: EntityTable<Font, 'id'>;
-  windows: EntityTable<Window, 'id'>;
-  components: EntityTable<Component, 'id'>;
-  characters: EntityTable<Character, 'id'>;
-  characterAttributes: EntityTable<CharacterAttribute, 'id'>;
-  characterPages: EntityTable<CharacterPage, 'id'>;
-  characterWindows: EntityTable<CharacterWindow, 'id'>;
-  inventories: EntityTable<Inventory, 'id'>;
-  inventoryItems: EntityTable<InventoryItem, 'id'>;
-  diceRolls: EntityTable<DiceRoll, 'id'>;
-  scripts: EntityTable<Script, 'id'>;
-  scriptErrors: EntityTable<ScriptError, 'id'>;
-  dependencyGraphNodes: EntityTable<DependencyGraphNode, 'id'>;
-};
-
 const common = '++id, createdAt, updatedAt';
 
-// Schema declaration:
-db.version(17).stores({
+export const dbSchema = {
   users: `${common}, username, assetId, image, preferences`,
   assets: `${common}, rulesetId, [directory+filename], data, type`,
   rulesets: `${common}, version, createdBy, title, description, details, assetId, image`,
@@ -75,6 +22,7 @@ db.version(17).stores({
   scripts: `${common}, rulesetId, name, entityType, entityId, isGlobal, enabled`,
   scriptErrors: `${common}, rulesetId, scriptId, characterId, timestamp`,
   dependencyGraphNodes: `${common}, rulesetId, scriptId, entityType, entityId`,
-});
+};
 
-export { db };
+// Increment on every schema change
+export const dbSchemaVersion = 18;

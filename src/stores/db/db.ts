@@ -26,6 +26,7 @@ import { assetInjectorMiddleware } from './asset-injector-middleware';
 import { chartOptionsMiddleware, memoizedCharts } from './chart-options-middleware';
 import { registerDbHooks } from './hooks/db-hooks';
 import { memoizedAssets } from './memoization-cache';
+import { dbSchema, dbSchemaVersion } from './schema';
 
 const db = new Dexie('qbdb') as Dexie & {
   users: EntityTable<
@@ -54,32 +55,7 @@ const db = new Dexie('qbdb') as Dexie & {
   dependencyGraphNodes: EntityTable<DependencyGraphNode, 'id'>;
 };
 
-const common = '++id, createdAt, updatedAt';
-
-// Schema declaration:
-db.version(17).stores({
-  users: `${common}, username, assetId, image, preferences`,
-  assets: `${common}, rulesetId, [directory+filename], data, type`,
-  rulesets: `${common}, version, createdBy, title, description, details, assetId, image`,
-  fonts: `${common}, rulesetId, label, data`,
-  attributes: `${common}, rulesetId, title, description, category, type, options, defaultValue, optionsChartRef, optionsChartColumnHeader, min, max, scriptId`,
-  actions: `${common}, rulesetId, title, description, category, scriptId`,
-  items: `${common}, rulesetId, title, description, category, weight, defaultQuantity, stackSize, isContainer, isStorable, isEquippable, isConsumable, inventoryWidth, inventoryHeight, scriptId`,
-  charts: `${common}, rulesetId, title, description, category, data, assetId, image`,
-  documents: `${common}, rulesetId, title, description, category, assetId, image, pdfAssetId, pdfData`,
-  windows: `${common}, rulesetId, title, category`,
-  components: `${common}, rulesetId, windowId, type, x, y, z, height, width, rotation, selected, assetId, assetUrl, groupId, attributeId, actionId, data, style`,
-  characters: `${common}, rulesetId, userId, assetId, image`,
-  inventories: `${common}, rulesetId, characterId, title, category, type`,
-  inventoryItems: `${common}, characterId, inventoryId, entityId, quantity`,
-  characterPages: `${common}, characterId, label`,
-  characterWindows: `${common}, characterId, characterPageId, windowId, title, x, y, isCollapsed`,
-  characterAttributes: `${common}, characterId, attributeId, &[characterId+attributeId], scriptDisabled`,
-  diceRolls: `${common}, rulesetId, userId, value, label`,
-  scripts: `${common}, rulesetId, name, entityType, entityId, isGlobal, enabled`,
-  scriptErrors: `${common}, rulesetId, scriptId, characterId, timestamp`,
-  dependencyGraphNodes: `${common}, rulesetId, scriptId, entityType, entityId`,
-});
+db.version(dbSchemaVersion).stores(dbSchema);
 
 // Cache assets for reference in the asset injector middleware
 db.on('ready', async () => {
