@@ -8,6 +8,7 @@ import type {
   CharacterWindow,
   Chart,
   Component,
+  DependencyGraphNode,
   DiceRoll,
   Document,
   Font,
@@ -15,11 +16,10 @@ import type {
   InventoryItem,
   Item,
   Ruleset,
-  User,
-  Window,
   Script,
   ScriptError,
-  DependencyGraphNode,
+  User,
+  Window,
 } from '@/types';
 import Dexie, { type EntityTable } from 'dexie';
 import { assetInjectorMiddleware } from './asset-injector-middleware';
@@ -57,7 +57,7 @@ const db = new Dexie('qbdb') as Dexie & {
 const common = '++id, createdAt, updatedAt';
 
 // Schema declaration:
-db.version(14).stores({
+db.version(15).stores({
   users: `${common}, username, assetId, image, preferences`,
   assets: `${common}, rulesetId, [directory+filename], data, type`,
   rulesets: `${common}, version, createdBy, title, description, details, assetId, image`,
