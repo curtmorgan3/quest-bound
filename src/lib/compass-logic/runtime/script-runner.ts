@@ -201,9 +201,7 @@ export class ScriptRunner {
       // Parse and execute the main script
       const tokens = new Lexer(sourceCode).tokenize();
       const ast = new Parser(tokens).parse();
-      console.log('tokens: ', ast);
       const value = this.evaluator.eval(ast);
-      console.log('val: ', value);
 
       // Flush changes to database
       await this.flushCache();

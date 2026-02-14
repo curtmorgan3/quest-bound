@@ -1,23 +1,23 @@
 import type {
   ASTNode,
+  ArrayAccess,
+  ArrayLiteral,
   Assignment,
   BinaryOp,
   BooleanLiteral,
   ForLoop,
   FunctionCall,
   FunctionDef,
+  Identifier,
   IfStatement,
   MemberAccess,
   MethodCall,
   NumberLiteral,
+  Program,
   ReturnStatement,
   StringLiteral,
   SubscribeCall,
   UnaryOp,
-  ArrayLiteral,
-  ArrayAccess,
-  Identifier,
-  Program,
 } from './ast';
 
 /** Default: script lexer expects indentation in multiples of 4 spaces. */
@@ -33,7 +33,10 @@ export function astToSource(
   indentLevel = 0,
   indentPerLevel: string = DEFAULT_INDENT,
 ): string {
-  const prefix = indentPerLevel.repeat(indentLevel);
+  const safeIndent = indentPerLevel?.length ? indentPerLevel : DEFAULT_INDENT;
+  const safeLevel =
+    typeof indentLevel === 'number' && !Number.isNaN(indentLevel) ? Math.max(0, indentLevel) : 0;
+  const prefix = safeIndent.repeat(safeLevel);
 
   switch (node.type) {
     case 'NumberLiteral':
@@ -101,33 +104,33 @@ export function astToSource(
     case 'IfStatement': {
       const ifNode = node as IfStatement;
       let out = `${prefix}if ${exprToSource(ifNode.condition)}:\n`;
-      out += blockToSource(ifNode.thenBlock, indentLevel + 1, indentPerLevel);
+      out += blockToSource(ifNode.thenBlock, safeLevel + 1, safeIndent);
       for (const elseif of ifNode.elseIfBlocks) {
         out += `${prefix}else if ${exprToSource(elseif.condition)}:\n`;
-        out += blockToSource(elseif.block, indentLevel + 1, indentPerLevel);
+        out += blockToSource(elseif.block, safeLevel + 1, safeIndent);
       }
       if (ifNode.elseBlock !== null && ifNode.elseBlock.length > 0) {
         out += `${prefix}else:\n`;
-        out += blockToSource(ifNode.elseBlock, indentLevel + 1, indentPerLevel);
+        out += blockToSource(ifNode.elseBlock, safeLevel + 1, safeIndent);
       }
       return out;
     }
     case 'ForLoop': {
       const forNode = node as ForLoop;
       let out = `${prefix}for ${forNode.variable} in ${exprToSource(forNode.iterable)}:\n`;
-      out += blockToSource(forNode.body, indentLevel + 1, indentPerLevel);
+      out += blockToSource(forNode.body, safeLevel + 1, safeIndent);
       return out;
     }
     case 'FunctionDef': {
       const fn = node as FunctionDef;
       const params = fn.params.join(', ');
       let out = `${prefix}${fn.name}(${params}):\n`;
-      out += blockToSource(fn.body, indentLevel + 1, indentPerLevel);
+      out += blockToSource(fn.body, safeLevel + 1, safeIndent);
       return out;
     }
     case 'Program': {
       const prog = node as Program;
-      return blockToSource(prog.statements, indentLevel, indentPerLevel);
+      return blockToSource(prog.statements, safeLevel, safeIndent);
     }
     default:
       // Expression statement (standalone expression)
@@ -191,42 +194,21 @@ function blockToSource(
   indentLevel: number,
   indentPerLevel: string = DEFAULT_INDENT,
 ): string {
+  const safeIndent = indentPerLevel?.length ? indentPerLevel : DEFAULT_INDENT;
+  const safeLevel =
+    typeof indentLevel === 'number' && !Number.isNaN(indentLevel) ? Math.max(0, indentLevel) : 0;
   if (statements.length === 0) {
     // Parser expects at least one indented line so the lexer emits INDENT
-    const prefix = indentPerLevel.repeat(indentLevel);
+    const prefix = safeIndent.repeat(safeLevel);
     return `${prefix}0\n`;
   }
-  return (
-    statements.map((stmt) => astToSource(stmt, indentLevel, indentPerLevel)).join('\n') + '\n'
-  );
+  return statements.map((stmt) => astToSource(stmt, safeLevel, safeIndent)).join('\n') + '\n';
 }
 
 /**
- * Reconstruct executable source for an event handler function.
- * Returns the full function definition followed by a call, so that
- * running the returned script defines and invokes the handler.
- * @param indentPerLevel - One level of indent (e.g. '\t' or '    ') to match original source.
+ * Return the body of an event handler as executable source.
+ * The body is serialized at top level (indent 0) so the script runner can execute it directly.
  */
-export function functionDefToExecutableSource(
-  funcNode: FunctionDef,
-  indentPerLevel: string = DEFAULT_INDENT,
-): string {
-  const fnSource = astToSource(funcNode, 0, indentPerLevel);
-  return `${fnSource}\n${funcNode.name}()`;
-}
-
-/**
- * Detect indent style from source: tab or 4 spaces per level.
- * Uses the first line that has leading whitespace.
- */
-export function detectIndentFromSource(sourceCode: string): string {
-  const lines = sourceCode.split('\n');
-  for (const line of lines) {
-    const match = line.match(/^(\s+)/);
-    if (match) {
-      const indent = match[1];
-      return indent.includes('\t') ? '\t' : DEFAULT_INDENT;
-    }
-  }
-  return DEFAULT_INDENT;
+export function functionDefToExecutableSource(funcNode: FunctionDef): string {
+  return blockToSource(funcNode.body, 0, DEFAULT_INDENT);
 }

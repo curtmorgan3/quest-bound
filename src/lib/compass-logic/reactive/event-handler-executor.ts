@@ -1,9 +1,6 @@
 import type { DB } from '@/stores/db/hooks/types';
 import type { ASTNode } from '../interpreter/ast';
-import {
-  detectIndentFromSource,
-  functionDefToExecutableSource,
-} from '../interpreter/ast-to-source';
+import { functionDefToExecutableSource } from '../interpreter/ast-to-source';
 import { Lexer } from '../interpreter/lexer';
 import { Parser } from '../interpreter/parser';
 import type { ScriptExecutionContext } from '../runtime/script-runner';
@@ -237,8 +234,7 @@ export class EventHandlerExecutor {
         return null;
       }
 
-      const indentPerLevel = detectIndentFromSource(sourceCode);
-      return this.reconstructHandlerCode(handlerNode, indentPerLevel);
+      return this.reconstructHandlerCode(handlerNode);
     } catch (error) {
       console.error('Failed to extract event handler:', error);
       return null;
@@ -247,23 +243,17 @@ export class EventHandlerExecutor {
 
   /**
    * Reconstruct executable code from a function definition node.
-   * Converts the full function AST (including body) back to source, then appends
-   * a call so that running the script defines and invokes the handler.
-   * Preserves the original indent style (tabs or spaces) from the source.
+   * Returns only the body of the handler as top-level executable source.
    * @param funcNode - The function definition AST node
-   * @param indentPerLevel - One level of indent (e.g. '\t' or '    ') from original source
-   * @returns Executable source code
+   * @returns Executable source code (handler body only)
    */
-  private reconstructHandlerCode(
-    funcNode: {
-      type: 'FunctionDef';
-      name: string;
-      params: string[];
-      body: ASTNode[];
-    },
-    indentPerLevel: string,
-  ): string {
-    return functionDefToExecutableSource(funcNode, indentPerLevel);
+  private reconstructHandlerCode(funcNode: {
+    type: 'FunctionDef';
+    name: string;
+    params: string[];
+    body: ASTNode[];
+  }): string {
+    return functionDefToExecutableSource(funcNode);
   }
 
   /**
