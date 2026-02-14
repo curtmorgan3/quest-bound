@@ -40,8 +40,10 @@ export const CharacterPage = ({ id, lockByDefault }: { id?: string; lockByDefaul
   });
 
   useEffect(() => {
+    if (!eventAnnouncements.length) return;
     eventAnnouncements.map((msg) => {
       addNotification(msg);
+      setEventAnnouncements([]);
     });
   }, [eventAnnouncements, addNotification]);
 
