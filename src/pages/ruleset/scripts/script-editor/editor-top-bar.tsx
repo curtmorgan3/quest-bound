@@ -15,9 +15,9 @@ import {
   useRulesets,
   useScripts,
 } from '@/lib/compass-api';
-import { type UseExecuteScriptResult } from '@/lib/compass-logic/worker';
+import { type UseReactiveScriptExecutionResult } from '@/lib/compass-logic/worker';
 import type { Action, Attribute, Item, Script } from '@/types';
-import { Trash2, Zap } from 'lucide-react';
+import { Trash2, X, Zap } from 'lucide-react';
 import { useCallback, type Dispatch, type SetStateAction } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
@@ -37,7 +37,7 @@ interface EditorTopBar {
   setEntityId: (id: string | null) => void;
   sourceCode: string;
   saveDisabled?: boolean;
-  scriptExecutionHook: UseExecuteScriptResult;
+  scriptExecutionHook: UseReactiveScriptExecutionResult;
 }
 
 export const EditorTopBar = ({
@@ -63,14 +63,23 @@ export const EditorTopBar = ({
     if (!activeRuleset) throw new Error('No ruleset found.');
     if (!testCharacter) throw new Error('No test character found for the ruleset.');
     await scriptExecutionHook.execute({
+      rulesetId: activeRuleset.id,
       scriptId: script?.id ?? 'script-editor-run',
       sourceCode,
       characterId: testCharacter.id,
-      targetId: testCharacter.id,
-      rulesetId: activeRuleset.id,
       triggerType: 'load',
+      // If this is an attribute script, trigger reactive updates for dependent scripts
+      reactiveAttributeId: entityType === 'attribute' ? (entityId ?? undefined) : undefined,
     });
-  }, [activeRuleset, testCharacter, script?.id, sourceCode, scriptExecutionHook.execute]);
+  }, [
+    activeRuleset,
+    testCharacter,
+    script?.id,
+    sourceCode,
+    scriptExecutionHook.execute,
+    entityType,
+    entityId,
+  ]);
 
   const handleSave = async () => {
     if (!rulesetId) return;
@@ -178,7 +187,7 @@ export const EditorTopBar = ({
             Save
           </Button>
           <Button variant='outline' onClick={handleCancel}>
-            Cancel
+            <X className='h-4 w-4' />
           </Button>
           {!isNew && script && (
             <Button variant='destructive' onClick={handleDelete}>

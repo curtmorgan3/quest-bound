@@ -1,13 +1,15 @@
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import type { UseExecuteScriptResult } from '@/lib/compass-logic/worker';
+import type { UseReactiveScriptExecutionResult } from '@/lib/compass-logic/worker';
 import { ScriptErrorLog } from './editor-error-log';
 
 interface EditorConsole {
-  scriptExecutionHook: UseExecuteScriptResult;
+  scriptExecutionHook: UseReactiveScriptExecutionResult;
 }
 
 export const EditorConsole = ({ scriptExecutionHook }: EditorConsole) => {
+  const hasReactiveExecution = scriptExecutionHook.reactiveExecutionCount > 0;
+
   return (
     <Tabs defaultValue='console' className='flex-1 flex flex-col min-h-0'>
       <TabsList>
@@ -21,11 +23,21 @@ export const EditorConsole = ({ scriptExecutionHook }: EditorConsole) => {
           <div className='rounded-md border bg-muted/20 flex flex-col'>
             <div className='flex items-center justify-between px-3 py-2 border-b'>
               <h3 className='text-sm font-semibold'>Last run</h3>
-              {scriptExecutionHook.executionTime !== null && (
-                <p className='text-xs text-muted-foreground'>
-                  Executed in {scriptExecutionHook.executionTime.toFixed(2)}ms
-                </p>
-              )}
+              <div className='flex items-center gap-3'>
+                {hasReactiveExecution && (
+                  <p className='text-xs text-muted-foreground'>
+                    <span style={{ color: '#c678dd' }}>
+                      {scriptExecutionHook.reactiveExecutionCount} reactive script
+                      {scriptExecutionHook.reactiveExecutionCount !== 1 ? 's' : ''} triggered
+                    </span>
+                  </p>
+                )}
+                {scriptExecutionHook.executionTime !== null && (
+                  <p className='text-xs text-muted-foreground'>
+                    Executed in {scriptExecutionHook.executionTime.toFixed(2)}ms
+                  </p>
+                )}
+              </div>
             </div>
             <ScrollArea className='h-48'>
               <div className='space-y-2 p-3'>
@@ -70,10 +82,30 @@ export const EditorConsole = ({ scriptExecutionHook }: EditorConsole) => {
                           </pre>
                         </div>
                       )}
+                    {hasReactiveExecution && (
+                      <div className='text-xs flex items-start gap-2 mt-2 pt-2 border-t'>
+                        <span
+                          style={{ color: '#c678dd' }}
+                          className='text-muted-foreground font-mono shrink-0'
+                          aria-hidden>
+                          [reactive]
+                        </span>
+                        <span className='text-muted-foreground'>
+                          Triggered {scriptExecutionHook.reactiveExecutionCount} dependent script
+                          {scriptExecutionHook.reactiveExecutionCount !== 1 ? 's' : ''}
+                          {scriptExecutionHook.reactiveScriptsExecuted.length > 0 && (
+                            <span className='font-mono text-xs'>
+                              : {scriptExecutionHook.reactiveScriptsExecuted.join(', ')}
+                            </span>
+                          )}
+                        </span>
+                      </div>
+                    )}
                     {!scriptExecutionHook.error &&
                       scriptExecutionHook.announceMessages.length === 0 &&
                       scriptExecutionHook.logMessages.length === 0 &&
-                      scriptExecutionHook.result === null && (
+                      scriptExecutionHook.result === null &&
+                      !hasReactiveExecution && (
                         <p className='text-sm text-muted-foreground italic'>No output</p>
                       )}
                   </>

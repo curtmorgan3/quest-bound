@@ -22,6 +22,7 @@ export {
   useScriptValidation,
   useScriptAnnouncements,
   useDependencyGraph,
+  useReactiveScriptExecution,
 } from './hooks';
 export type {
   UseExecuteScriptResult,
@@ -29,6 +30,8 @@ export type {
   UseAttributeChangeResult,
   UseScriptValidationResult,
   UseDependencyGraphResult,
+  UseReactiveScriptExecutionResult,
+  ReactiveScriptExecutionOptions,
 } from './hooks';
 
 // Signals

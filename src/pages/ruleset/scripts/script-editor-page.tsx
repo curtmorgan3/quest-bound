@@ -2,7 +2,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Label } from '@/components/ui/label';
 import { useRulesets } from '@/lib/compass-api';
 import { useScripts } from '@/lib/compass-api/hooks/scripts/use-scripts';
-import { useExecuteScript, useScriptValidation } from '@/lib/compass-logic';
+import { useReactiveScriptExecution, useScriptValidation } from '@/lib/compass-logic';
 import { CodeMirrorEditor } from '@/lib/compass-logic/editor';
 import { db } from '@/stores';
 import type { Script } from '@/types';
@@ -30,7 +30,7 @@ export function ScriptEditorPage() {
   const [entityId, setEntityId] = useState<string | null>(null);
   const [sourceCode, setSourceCode] = useState('');
 
-  const workerHook = useExecuteScript();
+  const workerHook = useReactiveScriptExecution();
 
   // Get attribute IDs from the dependency graph for this script
   const dependencyGraphNode = useLiveQuery(

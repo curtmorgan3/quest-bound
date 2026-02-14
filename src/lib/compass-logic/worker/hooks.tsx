@@ -263,6 +263,130 @@ export function useScriptAnnouncements(
 }
 
 // ============================================================================
+// useReactiveScriptExecution - Execute scripts with reactive triggering
+// ============================================================================
+
+export interface ReactiveScriptExecutionOptions {
+  scriptId?: string;
+  sourceCode: string;
+  characterId: string;
+  targetId?: string;
+  rulesetId: string;
+  triggerType?: 'load' | 'attribute_change' | 'action_click' | 'item_event';
+  /** Attribute ID to trigger reactive updates for after execution */
+  reactiveAttributeId?: string;
+}
+
+export interface UseReactiveScriptExecutionResult {
+  execute: (options: ReactiveScriptExecutionOptions) => Promise<void>;
+  result: any;
+  announceMessages: string[];
+  logMessages: any[][];
+  executionTime: number | null;
+  isExecuting: boolean;
+  error: Error | null;
+  reset: () => void;
+  /** Scripts that were executed reactively after the main script */
+  reactiveScriptsExecuted: string[];
+  /** Total number of reactive script executions */
+  reactiveExecutionCount: number;
+}
+
+/**
+ * Hook for executing scripts with automatic reactive triggering.
+ * After the main script executes, if a reactiveAttributeId is provided,
+ * it will trigger all dependent scripts for that attribute.
+ */
+export function useReactiveScriptExecution(timeout = 10000): UseReactiveScriptExecutionResult {
+  const client = useQBScriptClient();
+  const [isExecuting, setIsExecuting] = useState(false);
+  const [result, setResult] = useState<any>(null);
+  const [announceMessages, setAnnounceMessages] = useState<string[]>([]);
+  const [logMessages, setLogMessages] = useState<any[][]>([]);
+  const [executionTime, setExecutionTime] = useState<number | null>(null);
+  const [error, setError] = useState<Error | null>(null);
+  const [reactiveScriptsExecuted, setReactiveScriptsExecuted] = useState<string[]>([]);
+  const [reactiveExecutionCount, setReactiveExecutionCount] = useState(0);
+
+  const execute = useCallback(
+    async (options: ReactiveScriptExecutionOptions) => {
+      setIsExecuting(true);
+      setError(null);
+      setReactiveScriptsExecuted([]);
+      setReactiveExecutionCount(0);
+
+      try {
+        // Execute the main script
+        const response = await client.executeScript({
+          scriptId: options.scriptId,
+          sourceCode: options.sourceCode,
+          characterId: options.characterId,
+          targetId: options.targetId,
+          rulesetId: options.rulesetId,
+          triggerType: options.triggerType,
+          timeout,
+        });
+
+        setResult(response.value);
+        setAnnounceMessages(response.announceMessages);
+        setLogMessages(response.logMessages);
+        setExecutionTime(response.executionTime);
+
+        // If a reactive attribute ID is provided, trigger reactive updates
+        if (options.reactiveAttributeId) {
+          try {
+            const reactiveResult = await client.onAttributeChange({
+              attributeId: options.reactiveAttributeId,
+              characterId: options.characterId,
+              rulesetId: options.rulesetId,
+              timeout,
+            });
+
+            setReactiveScriptsExecuted(reactiveResult.scriptsExecuted);
+            setReactiveExecutionCount(reactiveResult.executionCount);
+          } catch (reactiveError) {
+            // Log reactive error but don't fail the main execution
+            console.warn('Reactive script execution error:', reactiveError);
+          }
+        }
+      } catch (err) {
+        setError(err instanceof Error ? err : new Error(String(err)));
+        setResult(null);
+        setAnnounceMessages([]);
+        setLogMessages([]);
+        setExecutionTime(null);
+      } finally {
+        setIsExecuting(false);
+      }
+    },
+    [client, timeout]
+  );
+
+  const reset = useCallback(() => {
+    setResult(null);
+    setAnnounceMessages([]);
+    setLogMessages([]);
+    setExecutionTime(null);
+    setError(null);
+    setReactiveScriptsExecuted([]);
+    setReactiveExecutionCount(0);
+  }, []);
+
+  return {
+    execute,
+    result,
+    announceMessages,
+    logMessages,
+    executionTime,
+    isExecuting,
+    error,
+    reset,
+    reactiveScriptsExecuted,
+    reactiveExecutionCount,
+  };
+}
+
+// ============================================================================
 // useDependencyGraph - Manage dependency graph
 // ============================================================================
 
