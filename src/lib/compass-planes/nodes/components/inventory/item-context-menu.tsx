@@ -13,7 +13,7 @@ import { useAttributes, useCharacterAttributes } from '@/lib/compass-api';
 import { injectCharacterData } from '@/lib/compass-planes/utils';
 import { CharacterContext, DiceContext, type InventoryItemWithData } from '@/stores';
 import { parseTextForDiceRolls, useKeyListeners } from '@/utils';
-import { Check, Shirt } from 'lucide-react';
+import { Check, Shirt, Trash, Zap } from 'lucide-react';
 import { useContext, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 
@@ -52,6 +52,8 @@ export const ItemContextMenu = ({
   const { characterAttributes, updateCharacterAttribute } = useCharacterAttributes(
     characterContext?.character?.id,
   );
+
+  const fireAction = characterContext?.fireAction;
 
   const { attributes } = useAttributes();
 
@@ -158,6 +160,12 @@ export const ItemContextMenu = ({
   const handleSplit = () => {
     if (splitAmount >= 1 && splitAmount < item.quantity) {
       onSplit(splitAmount);
+    }
+  };
+
+  const handleFireAction = () => {
+    if (item.type === 'action' && fireAction) {
+      fireAction(item.entityId);
     }
   };
 
@@ -508,20 +516,45 @@ export const ItemContextMenu = ({
         </div>
       )}
 
-      <button
-        onClick={onRemove}
-        style={{
-          width: '100%',
-          padding: '6px 12px',
-          backgroundColor: '#4a2a2a',
-          border: '1px solid #633',
-          borderRadius: 4,
-          color: '#ff8888',
-          fontSize: 13,
-          cursor: 'pointer',
-        }}>
-        Remove Item
-      </button>
+      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+        <button
+          onClick={onRemove}
+          style={{
+            width: '32px',
+            display: 'flex',
+            padding: '8px',
+            justifyContent: 'center',
+            backgroundColor: '#4a2a2a',
+            border: '1px solid #633',
+            borderRadius: 4,
+            color: '#ff8888',
+            fontSize: 13,
+            cursor: 'pointer',
+          }}>
+          <Trash size={16} />
+        </button>
+        {item.type === 'action' && !!fireAction && (
+          <button
+            type='button'
+            onClick={handleFireAction}
+            onPointerDown={(e) => e.stopPropagation()}
+            style={{
+              width: '32px',
+              display: 'flex',
+              padding: '8px',
+              justifyContent: 'center',
+              alignItems: 'center',
+              backgroundColor: '#2a4a2a',
+              border: '1px solid #363',
+              borderRadius: 4,
+              color: '#8f8',
+              fontSize: 13,
+              cursor: 'pointer',
+            }}>
+            <Zap size={16} />
+          </button>
+        )}
+      </div>
     </div>
   );
 
