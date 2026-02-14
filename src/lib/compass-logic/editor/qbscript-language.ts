@@ -8,6 +8,8 @@ import { tags } from '@lezer/highlight';
 
 interface QBScriptState {
   indentUnit: number;
+  /** True when we're inside a block comment that started on a previous line. */
+  inBlockComment?: boolean;
 }
 
 const qbscriptParser = StreamLanguage.define<QBScriptState>({
@@ -15,15 +17,28 @@ const qbscriptParser = StreamLanguage.define<QBScriptState>({
   startState() {
     return { indentUnit: 4 };
   },
-  token(stream) {
+  token(stream, state) {
+    // Continuation of block comment from previous line (stream is line-based, so we use state)
+    if (state.inBlockComment) {
+      if (stream.match(/\*\//)) {
+        state.inBlockComment = false;
+        return 'comment';
+      }
+      stream.skipToEnd();
+      return 'comment';
+    }
+
     // Comments - single line
     if (stream.match(/\/\/.*/)) {
       return 'comment';
     }
-    // Comments - block
+    // Comments - block start (may span lines)
     if (stream.match(/\/\*/)) {
-      while (!stream.eol()) {
-        if (stream.match(/\*\//)) break;
+      while (!stream.match(/\*\//)) {
+        if (stream.eol()) {
+          state.inBlockComment = true;
+          break;
+        }
         stream.next();
       }
       return 'comment';
@@ -126,7 +141,7 @@ const qbscriptParser = StreamLanguage.define<QBScriptState>({
     return null;
   },
   copyState(state: QBScriptState) {
-    return { indentUnit: state.indentUnit };
+    return { indentUnit: state.indentUnit, inBlockComment: state.inBlockComment };
   },
   tokenTable: {
     function: tags.function(tags.variableName),
