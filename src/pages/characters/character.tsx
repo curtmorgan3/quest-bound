@@ -19,6 +19,7 @@ import { type Action, type Attribute, type CharacterAttribute, type Item } from 
 import { useContext, useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { CharacterInventoryPanel, findFirstEmptySlot } from './character-inventory-panel';
+import { GameLog } from './game-log';
 import { InventoryPanel } from './inventory-panel';
 
 export const CharacterPage = ({ id, lockByDefault }: { id?: string; lockByDefault?: boolean }) => {
@@ -35,8 +36,6 @@ export const CharacterPage = ({ id, lockByDefault }: { id?: string; lockByDefaul
   const [inventoryPanelConfig, setInventoryPanelConfig] = useState<InventoryPanelConfig>({});
   const [eventAnnouncements, setEventAnnouncements] = useState<string[]>([]);
   const [gameLogs, setGameLogs] = useState<string[]>([]);
-
-  console.log(gameLogs);
 
   const { addNotification } = useNotifications();
 
@@ -193,6 +192,7 @@ export const CharacterPage = ({ id, lockByDefault }: { id?: string; lockByDefaul
         onWindowUpdated={handleUpdateWindow}
         onWindowDeleted={handleDeleteWindow}
       />
+      <GameLog logs={gameLogs} className='fixed bottom-[50px] left-12 z-30' />
       <InventoryPanel
         open={inventoryPanelConfig.open ?? false}
         onOpenChange={(open: boolean) => {

@@ -1,7 +1,7 @@
-import fs from 'node:fs';
-import path from 'node:path';
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
+import fs from 'node:fs';
+import path from 'node:path';
 import { defineConfig } from 'vite';
 import { VitePWA } from 'vite-plugin-pwa';
 import tsconfigPaths from 'vite-tsconfig-paths';
@@ -41,7 +41,7 @@ export const viteConfig = defineConfig({
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2,mp4}'],
         navigateFallback: '/offline.html',
-        maximumFileSizeToCacheInBytes: 6 * 1024 * 1024, // 6 MiB
+        maximumFileSizeToCacheInBytes: 8 * 1024 * 1024, // 6 MiB
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
@@ -78,8 +78,7 @@ export const viteConfig = defineConfig({
     const certDir = path.resolve(process.cwd(), '.cert');
     const keyPath = path.join(certDir, 'key.pem');
     const certPath = path.join(certDir, 'cert.pem');
-    const useHttps =
-      fs.existsSync(keyPath) && fs.existsSync(certPath);
+    const useHttps = fs.existsSync(keyPath) && fs.existsSync(certPath);
 
     return {
       port: 5173,
