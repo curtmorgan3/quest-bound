@@ -15,7 +15,7 @@ import {
   type InventoryPanelConfig,
 } from '@/stores';
 import { type Action, type Attribute, type CharacterAttribute, type Item } from '@/types';
-import { useContext, useMemo, useState } from 'react';
+import { useContext, useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { CharacterInventoryPanel, findFirstEmptySlot } from './character-inventory-panel';
 import { InventoryPanel } from './inventory-panel';
@@ -31,12 +31,19 @@ export const CharacterPage = ({ id, lockByDefault }: { id?: string; lockByDefaul
     useInventory(character?.inventoryId ?? '', character?.id ?? '');
 
   const [inventoryPanelConfig, setInventoryPanelConfig] = useState<InventoryPanelConfig>({});
+  const [eventAnnouncements, setEventAnnouncements] = useState<string[]>([]);
 
   const { addNotification } = useNotifications();
 
   useScriptAnnouncements((msg: string) => {
     addNotification(msg);
   });
+
+  useEffect(() => {
+    eventAnnouncements.map((msg) => {
+      addNotification(msg);
+    });
+  }, [eventAnnouncements, addNotification]);
 
   const handleSelectInventoryEntity = (
     entity: Action | Item | Attribute,
@@ -139,9 +146,10 @@ export const CharacterPage = ({ id, lockByDefault }: { id?: string; lockByDefaul
     updateCharacter,
   ]);
 
-  const fireAction = (actionId: string) => {
+  const fireAction = async (actionId: string) => {
     if (!character) return;
-    executeActionEvent(db, actionId, character.id, null, 'on_activate');
+    const res = await executeActionEvent(db, actionId, character.id, null, 'on_activate');
+    setEventAnnouncements(res.announceMessages);
   };
 
   if (!character) {
