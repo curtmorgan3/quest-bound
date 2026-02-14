@@ -1,7 +1,14 @@
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useCharacterAttributes, useRulesets } from '@/lib/compass-api';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { useAttributes, useCharacterAttributes, useRulesets } from '@/lib/compass-api';
 import { colorPrimary } from '@/palette';
 import type { CharacterAttribute } from '@/types';
 
@@ -18,6 +25,8 @@ export const AttributeControls = ({
   const { characterAttributes, updateCharacterAttribute } = useCharacterAttributes(
     testCharacter?.id,
   );
+
+  const { attributes: rulesetAttributes } = useAttributes();
 
   const usedAttributes = [
     ...characterAttributes.filter((attr) => scriptAttributeIds.includes(attr.attributeId)),
@@ -70,8 +79,32 @@ export const AttributeControls = ({
           </div>
         );
 
+      case 'list': {
+        const listOptions = rulesetAttributes.find((r) => r.id === attr.attributeId)?.options ?? [];
+        return (
+          <div className='flex flex-col gap-1'>
+            <Label htmlFor={id} className='text-sm' style={style}>
+              {attr.title}
+            </Label>
+            <Select
+              value={(attr.value as string) ?? ''}
+              onValueChange={(value) => handleValueChange(attr, value)}>
+              <SelectTrigger id={id} className='h-8 w-full'>
+                <SelectValue placeholder='Select…' />
+              </SelectTrigger>
+              <SelectContent>
+                {listOptions.map((option) => (
+                  <SelectItem key={option} value={option}>
+                    {option}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        );
+      }
+
       case 'string':
-      case 'list':
       default:
         return (
           <div className='flex flex-col gap-1'>

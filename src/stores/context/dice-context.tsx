@@ -102,7 +102,6 @@ export const useDiceState = ({ canvasRef }: DiceStateProps): IDiceContext => {
         setLastResult(result);
         setIsRolling(false);
         setDddiceRolling(false);
-        console.log('resolve');
       }, 3000);
 
       await new Promise((res) => setTimeout(res, 2000));

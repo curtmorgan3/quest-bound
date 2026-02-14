@@ -34,6 +34,9 @@ export const CharacterPage = ({ id, lockByDefault }: { id?: string; lockByDefaul
 
   const [inventoryPanelConfig, setInventoryPanelConfig] = useState<InventoryPanelConfig>({});
   const [eventAnnouncements, setEventAnnouncements] = useState<string[]>([]);
+  const [gameLogs, setGameLogs] = useState<string[]>([]);
+
+  console.log(gameLogs);
 
   const { addNotification } = useNotifications();
 
@@ -155,6 +158,7 @@ export const CharacterPage = ({ id, lockByDefault }: { id?: string; lockByDefaul
     const rollFn = async (diceString: string) => rollDice(diceString).then((res) => res.total);
     const res = await executeActionEvent(db, actionId, character.id, null, 'on_activate', rollFn);
     setEventAnnouncements(res.announceMessages);
+    setGameLogs((prev) => [...prev, ...res.logMessages.map((log) => log[0])]);
   };
 
   if (!character) {
@@ -176,6 +180,7 @@ export const CharacterPage = ({ id, lockByDefault }: { id?: string; lockByDefaul
         removeInventoryItem,
         addInventoryItem,
         fireAction,
+        gameLogs,
       }}>
       <SheetViewer
         key={character.id}

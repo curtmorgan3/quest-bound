@@ -46,6 +46,7 @@ type CharacterContext = {
     data: Omit<InventoryItem, 'id' | 'createdAt' | 'updatedAt' | 'inventoryId'>,
   ) => void;
   fireAction: (actionId: string) => void;
+  gameLogs: string[];
 };
 
 export const CharacterContext = createContext<CharacterContext>(null!);
