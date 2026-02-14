@@ -1,6 +1,6 @@
 import { Grid, type CellRendererProps, type GridColumn } from '@/components';
 import { useItems } from '@/lib/compass-api';
-import type { Attribute, Item } from '@/types';
+import type { Item } from '@/types';
 import { useSearchParams } from 'react-router-dom';
 import { ChartControls } from '../components';
 import { itemChartColumns } from './item-columns';
@@ -14,7 +14,7 @@ export const ItemChart = () => {
       if (c.field === 'controls') {
         return {
           ...c,
-          cellRenderer: (params: CellRendererProps<Attribute>) => (
+          cellRenderer: (params: CellRendererProps<Item>) => (
             <ChartControls
               id={params.data.id}
               handleDelete={handleDelete}

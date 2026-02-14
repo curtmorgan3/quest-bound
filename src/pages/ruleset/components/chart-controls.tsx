@@ -9,7 +9,9 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { Pencil, Trash } from 'lucide-react';
+import { useScripts } from '@/lib/compass-api';
+import { FileCode, Pencil, Trash } from 'lucide-react';
+import { Link, useParams } from 'react-router-dom';
 
 interface ChartControlsProps {
   id: string;
@@ -18,10 +20,13 @@ interface ChartControlsProps {
 }
 
 export const ChartControls = ({ id, handleDelete, handleEdit }: ChartControlsProps) => {
+  const { rulesetId } = useParams<{ rulesetId: string }>();
+  const { getScriptIdForEntity } = useScripts();
+  const scriptId = getScriptIdForEntity(id);
   const doNotAsk = localStorage.getItem('qb.confirmOnDelete') === 'false';
 
   return (
-    <div className='flex items-center justify-end gap-4 w-full h-full'>
+    <div className='flex items-center justify-start gap-4 w-full h-full'>
       {doNotAsk ? (
         <Trash
           onClick={() => handleDelete(id)}
@@ -67,6 +72,11 @@ export const ChartControls = ({ id, handleDelete, handleEdit }: ChartControlsPro
           className='text-neutral-400 h-[18px] w-[18px] clickable'
         />
       </DialogTrigger>
+      {scriptId && (
+        <Link to={`/rulesets/${rulesetId}/scripts/${scriptId}`}>
+          <FileCode className='text-neutral-400 h-[18px] w-[18px] clickable' />
+        </Link>
+      )}
     </div>
   );
 };

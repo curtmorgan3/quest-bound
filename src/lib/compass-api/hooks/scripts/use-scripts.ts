@@ -2,6 +2,7 @@ import { useErrorHandler } from '@/hooks';
 import { db } from '@/stores';
 import type { Script } from '@/types';
 import { useLiveQuery } from 'dexie-react-hooks';
+import { useCallback, useMemo, useRef } from 'react';
 import { useActiveRuleset } from '../rulesets/use-active-ruleset';
 
 export const useScripts = () => {
@@ -92,6 +93,41 @@ export const useScripts = () => {
 
   const globalScripts = scripts?.filter((s) => s.isGlobal) ?? [];
 
+  // Build a map of entityId -> scriptId, memoized on scripts array
+  const entityToScriptMap = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const script of scripts ?? []) {
+      if (script.entityId) {
+        map.set(script.entityId, script.id);
+      }
+    }
+    return map;
+  }, [scripts]);
+
+  // Cache for lookups to avoid repeated map access for the same entityId
+  const lookupCacheRef = useRef<Map<string, string | undefined>>(new Map());
+
+  // Reset cache when the map changes
+  const prevMapRef = useRef(entityToScriptMap);
+  if (prevMapRef.current !== entityToScriptMap) {
+    lookupCacheRef.current.clear();
+    prevMapRef.current = entityToScriptMap;
+  }
+
+  // Memoized lookup function that caches results per entityId
+  const getScriptIdForEntity = useCallback(
+    (entityId: string): string | undefined => {
+      const cache = lookupCacheRef.current;
+      if (cache.has(entityId)) {
+        return cache.get(entityId);
+      }
+      const scriptId = entityToScriptMap.get(entityId);
+      cache.set(entityId, scriptId);
+      return scriptId;
+    },
+    [entityToScriptMap],
+  );
+
   return {
     scripts: scripts ?? [],
     globalScripts,
@@ -99,5 +135,6 @@ export const useScripts = () => {
     updateScript,
     deleteScript,
     getScriptByEntity,
+    getScriptIdForEntity,
   };
 };
