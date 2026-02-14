@@ -4,7 +4,9 @@ import { useRulesets } from '@/lib/compass-api';
 import { useScripts } from '@/lib/compass-api/hooks/scripts/use-scripts';
 import { CodeMirrorEditor } from '@/lib/compass-logic/editor';
 import { useExecuteScript, useScriptValidation } from '@/lib/compass-logic/worker';
+import { db } from '@/stores';
 import type { Script } from '@/types';
+import { useLiveQuery } from 'dexie-react-hooks';
 import { AlertCircle } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
@@ -29,6 +31,16 @@ export function ScriptEditorPage() {
   const [sourceCode, setSourceCode] = useState('');
 
   const workerHook = useExecuteScript();
+
+  // Get attribute IDs from the dependency graph for this script
+  const dependencyGraphNode = useLiveQuery(
+    () =>
+      scriptId && scriptId !== 'new'
+        ? db.dependencyGraphNodes.where({ scriptId }).first()
+        : undefined,
+    [scriptId],
+  );
+  const scriptAttributeIds = dependencyGraphNode?.dependencies ?? [];
 
   // Initalize script data
   useEffect(() => {
@@ -81,7 +93,7 @@ export function ScriptEditorPage() {
               className='flex-1 min-h-0 rounded-md border overflow-hidden'
             />
 
-            <AttributeControls scriptAttributeIds={[]} />
+            <AttributeControls scriptAttributeIds={scriptAttributeIds} />
           </div>
         </div>
 
