@@ -1,3 +1,4 @@
+import { useNotifications } from '@/hooks';
 import {
   useCharacter,
   useCharacterAttributes,
@@ -5,6 +6,7 @@ import {
   useInventory,
   type CharacterWindowUpdate,
 } from '@/lib/compass-api';
+import { useScriptAnnouncements } from '@/lib/compass-logic';
 import { SheetViewer } from '@/lib/compass-planes';
 import {
   CharacterInventoryPanelContext,
@@ -28,6 +30,12 @@ export const CharacterPage = ({ id, lockByDefault }: { id?: string; lockByDefaul
     useInventory(character?.inventoryId ?? '', character?.id ?? '');
 
   const [inventoryPanelConfig, setInventoryPanelConfig] = useState<InventoryPanelConfig>({});
+
+  const { addNotification } = useNotifications();
+
+  useScriptAnnouncements((msg: string) => {
+    addNotification(msg);
+  });
 
   const handleSelectInventoryEntity = (
     entity: Action | Item | Attribute,
