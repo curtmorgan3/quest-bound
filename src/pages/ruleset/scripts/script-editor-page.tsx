@@ -8,6 +8,7 @@ import type { Script } from '@/types';
 import { AlertCircle } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
+import { AttributeControls } from './script-editor/attribute-controls';
 import { EditorConsole } from './script-editor/editor-console';
 import { EditorTopBar } from './script-editor/editor-top-bar';
 
@@ -70,14 +71,18 @@ export function ScriptEditorPage() {
               </p>
             )}
           </div>
-          <CodeMirrorEditor
-            key={scriptId ?? 'new'}
-            value={sourceCode}
-            onChange={setSourceCode}
-            height='320px'
-            readOnly={!activeRuleset || !testCharacter}
-            className='flex-1 min-h-0 rounded-md border overflow-hidden'
-          />
+          <div className='flex gap-2'>
+            <CodeMirrorEditor
+              key={scriptId ?? 'new'}
+              value={sourceCode}
+              onChange={setSourceCode}
+              height='320px'
+              readOnly={!activeRuleset || !testCharacter}
+              className='flex-1 min-h-0 rounded-md border overflow-hidden'
+            />
+
+            <AttributeControls scriptAttributeIds={[]} />
+          </div>
         </div>
 
         {/* Editor + panels */}

@@ -14,7 +14,9 @@ export const EditorConsole = ({ scriptExecutionHook }: EditorConsole) => {
         <TabsTrigger value='console'>Console</TabsTrigger>
         <TabsTrigger value='errors'>Script errors</TabsTrigger>
       </TabsList>
-      <TabsContent value='console' className='flex-1 min-h-0 mt-2 flex flex-col gap-4'>
+      <TabsContent
+        value='console'
+        className='flex-1 min-h-0 mt-2 flex flex-col gap-4 rounded-md border bg-muted/20'>
         {(scriptExecutionHook.executionTime !== null || scriptExecutionHook.error) && (
           <div className='rounded-md border bg-muted/20 flex flex-col'>
             <div className='flex items-center justify-between px-3 py-2 border-b'>

@@ -6,14 +6,11 @@ export function ScriptErrorLog() {
   const { errors, dismissError: onDismiss } = useScriptErrors();
 
   return (
-    <div className='rounded-md border bg-muted/20 flex flex-col h-[220px]'>
-      <div className='px-3 py-2 border-b'>
-        <span className='text-sm font-medium'>Script errors</span>
-      </div>
+    <div className='rounded-md border bg-muted/20 flex flex-col h-[100%]'>
       <ScrollArea className='flex-1 p-2'>
         <div className='space-y-3'>
           {errors.length === 0 ? (
-            <p className='text-sm text-muted-foreground italic'>No recorded errors.</p>
+            <p className='text-sm text-muted-foreground italic'>No recorded errors</p>
           ) : (
             errors.map((err) => (
               <div

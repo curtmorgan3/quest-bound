@@ -104,7 +104,7 @@ export const EditorTopBar = ({
 
   return (
     <div className='border-b p-4 flex flex-wrap items-end gap-4'>
-      <div className='flex flex-col gap-2 flex-1 min-w-[200px]'>
+      <div className='flex flex-col gap-2 flex-1 min-w-[200px] max-w-[400px]'>
         <Label htmlFor='script-name'>Name</Label>
         <Input
           id='script-name'
@@ -163,27 +163,29 @@ export const EditorTopBar = ({
           />
         </div>
       )}
-      <div className='flex gap-2 justify-center min-w-[225px]'>
-        <Button
-          onClick={handleRun}
-          disabled={
-            scriptExecutionHook.isExecuting || !activeRuleset || !testCharacter || saveDisabled
-          }
-          variant='secondary'>
-          <Zap className='h-4 w-4 mr-2' />
-          {scriptExecutionHook.isExecuting ? '...' : 'Run'}
-        </Button>
-        <Button onClick={handleSave} disabled={saveDisabled} variant='default'>
-          Save
-        </Button>
-        <Button variant='outline' onClick={handleCancel}>
-          Cancel
-        </Button>
-        {!isNew && script && (
-          <Button variant='destructive' onClick={handleDelete}>
-            <Trash2 className='h-4 w-4' />
+      <div className='flex justify-end flex-1'>
+        <div className='flex gap-2 justify-center min-w-[225px]'>
+          <Button
+            onClick={handleRun}
+            disabled={
+              scriptExecutionHook.isExecuting || !activeRuleset || !testCharacter || saveDisabled
+            }
+            variant='secondary'>
+            <Zap className='h-4 w-4 mr-2' />
+            {scriptExecutionHook.isExecuting ? '...' : 'Run'}
           </Button>
-        )}
+          <Button onClick={handleSave} disabled={saveDisabled} variant='default'>
+            Save
+          </Button>
+          <Button variant='outline' onClick={handleCancel}>
+            Cancel
+          </Button>
+          {!isNew && script && (
+            <Button variant='destructive' onClick={handleDelete}>
+              <Trash2 className='h-4 w-4' />
+            </Button>
+          )}
+        </div>
       </div>
     </div>
   );
