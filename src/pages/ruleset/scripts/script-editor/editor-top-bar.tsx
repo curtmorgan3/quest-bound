@@ -15,10 +15,13 @@ import {
   useRulesets,
   useScripts,
 } from '@/lib/compass-api';
+import { executeActionEvent } from '@/lib/compass-logic/reactive/event-handler-executor';
 import { type UseReactiveScriptExecutionResult } from '@/lib/compass-logic/worker';
 import type { Action, Attribute, Item, Script } from '@/types';
-import { Trash2, X, Zap } from 'lucide-react';
-import { useCallback, type Dispatch, type SetStateAction } from 'react';
+import { db } from '@/stores';
+import { useNotifications } from '@/hooks/use-notifications';
+import { Play, Trash2, X, Zap } from 'lucide-react';
+import { useCallback, useState, type Dispatch, type SetStateAction } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
 const ENTITY_TYPES = [
@@ -55,9 +58,36 @@ export const EditorTopBar = ({
   const { rulesetId, scriptId } = useParams<{ rulesetId: string; scriptId: string }>();
   const { scripts, createScript, updateScript, deleteScript } = useScripts();
   const { activeRuleset, testCharacter } = useRulesets();
+  const { addNotification } = useNotifications();
+  const [isFiringOnActivate, setIsFiringOnActivate] = useState(false);
 
   const isNew = scriptId === 'new';
   const script = isNew ? null : (scripts.find((s) => s.id === scriptId) ?? null);
+
+  const handleFireOnActivate = useCallback(async () => {
+    if (!entityId || !testCharacter) return;
+    setIsFiringOnActivate(true);
+    try {
+      const result = await executeActionEvent(
+        db,
+        entityId,
+        testCharacter.id,
+        null,
+        'on_activate',
+      );
+      if (result.error) {
+        addNotification(result.error.message, { type: 'error' });
+      } else {
+        addNotification('on_activate ran successfully', { type: 'success' });
+      }
+    } catch (err) {
+      addNotification(err instanceof Error ? err.message : 'Failed to run on_activate', {
+        type: 'error',
+      });
+    } finally {
+      setIsFiringOnActivate(false);
+    }
+  }, [entityId, testCharacter, addNotification]);
 
   const handleRun = useCallback(async () => {
     if (!activeRuleset) throw new Error('No ruleset found.');
@@ -177,6 +207,16 @@ export const EditorTopBar = ({
       )}
       <div className='flex justify-end flex-1'>
         <div className='flex gap-2 justify-center min-w-[225px]'>
+          {entityType === 'action' && entityId && (
+            <Button
+              onClick={handleFireOnActivate}
+              disabled={isFiringOnActivate || !testCharacter}
+              variant='outline'
+              title='Run this script’s on_activate function as the test character'>
+              <Play className='h-4 w-4 mr-2' />
+              {isFiringOnActivate ? '...' : 'Fire on_activate'}
+            </Button>
+          )}
           <Button
             onClick={handleRun}
             disabled={

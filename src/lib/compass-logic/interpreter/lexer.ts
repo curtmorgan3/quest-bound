@@ -240,12 +240,21 @@ export class Lexer {
 
   private handleIndentation(): Token[] {
     const tokens: Token[] = [];
-    let indentLevel = 0;
+    let spaceCount = 0;
+    let tabCount = 0;
 
-    // Count spaces at the start of the line
-    while (this.peek() === ' ') {
-      indentLevel++;
-      this.advance();
+    // Count spaces and tabs at the start of the line (only one style per line)
+    const first = this.peek();
+    if (first === ' ') {
+      while (this.peek() === ' ') {
+        spaceCount++;
+        this.advance();
+      }
+    } else if (first === '\t') {
+      while (this.peek() === '\t') {
+        tabCount++;
+        this.advance();
+      }
     }
 
     // Skip empty lines and comment lines
@@ -253,27 +262,44 @@ export class Lexer {
       return tokens;
     }
 
-    // Check if indentation is a multiple of 4
-    if (indentLevel % 4 !== 0) {
-      throw new Error(`Invalid indentation at line ${this.line}: expected multiple of 4 spaces, got ${indentLevel}`);
+    // Convert to logical indent level: 4 spaces = 1 level, 1 tab = 1 level
+    let indentLevel: number;
+    if (tabCount > 0) {
+      if (spaceCount > 0) {
+        throw new Error(
+          `Invalid indentation at line ${this.line}: cannot mix tabs and spaces`,
+        );
+      }
+      indentLevel = tabCount;
+    } else if (spaceCount > 0) {
+      if (spaceCount % 4 !== 0) {
+        throw new Error(
+          `Invalid indentation at line ${this.line}: expected multiple of 4 spaces, got ${spaceCount}`,
+        );
+      }
+      indentLevel = spaceCount / 4;
+    } else {
+      indentLevel = 0;
     }
 
     const currentIndent = this.indentStack[this.indentStack.length - 1];
 
     if (indentLevel > currentIndent) {
-      // Indent
       this.indentStack.push(indentLevel);
       tokens.push(this.makeToken(TokenType.INDENT, null));
     } else if (indentLevel < currentIndent) {
-      // Dedent (possibly multiple levels)
-      while (this.indentStack.length > 1 && this.indentStack[this.indentStack.length - 1] > indentLevel) {
+      while (
+        this.indentStack.length > 1 &&
+        this.indentStack[this.indentStack.length - 1] > indentLevel
+      ) {
         this.indentStack.pop();
         tokens.push(this.makeToken(TokenType.DEDENT, null));
       }
 
-      // Check if we landed on a valid indentation level
       if (this.indentStack[this.indentStack.length - 1] !== indentLevel) {
-        throw new Error(`Invalid dedentation at line ${this.line}: indentation does not match any outer level`);
+        throw new Error(
+          `Invalid dedentation at line ${this.line}: indentation does not match any outer level`,
+        );
       }
     }
 

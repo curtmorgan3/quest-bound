@@ -1,5 +1,9 @@
 import type { DB } from '@/stores/db/hooks/types';
 import type { ASTNode } from '../interpreter/ast';
+import {
+  detectIndentFromSource,
+  functionDefToExecutableSource,
+} from '../interpreter/ast-to-source';
 import { Lexer } from '../interpreter/lexer';
 import { Parser } from '../interpreter/parser';
 import type { ScriptExecutionContext } from '../runtime/script-runner';
@@ -8,7 +12,12 @@ import { ScriptRunner } from '../runtime/script-runner';
 /**
  * Type of event handler.
  */
-export type EventHandlerType = 'on_equip' | 'on_unequip' | 'on_consume' | 'on_activate' | 'on_deactivate';
+export type EventHandlerType =
+  | 'on_equip'
+  | 'on_unequip'
+  | 'on_consume'
+  | 'on_activate'
+  | 'on_deactivate';
 
 /**
  * Result of event handler execution.
@@ -159,6 +168,7 @@ export class EventHandlerExecutor {
 
     // Extract event handler
     const handlerCode = this.extractEventHandler(script.sourceCode, eventType);
+    console.log(handlerCode);
     if (!handlerCode) {
       // No handler defined for this event
       return {
@@ -197,10 +207,7 @@ export class EventHandlerExecutor {
    * @param eventType - Type of event handler to extract
    * @returns Source code of the event handler, or null if not found
    */
-  private extractEventHandler(
-    sourceCode: string,
-    eventType: EventHandlerType,
-  ): string | null {
+  private extractEventHandler(sourceCode: string, eventType: EventHandlerType): string | null {
     try {
       const tokens = new Lexer(sourceCode).tokenize();
       const ast = new Parser(tokens).parse();
@@ -230,8 +237,8 @@ export class EventHandlerExecutor {
         return null;
       }
 
-      // Reconstruct the handler body as executable code
-      return this.reconstructHandlerCode(handlerNode);
+      const indentPerLevel = detectIndentFromSource(sourceCode);
+      return this.reconstructHandlerCode(handlerNode, indentPerLevel);
     } catch (error) {
       console.error('Failed to extract event handler:', error);
       return null;
@@ -240,22 +247,23 @@ export class EventHandlerExecutor {
 
   /**
    * Reconstruct executable code from a function definition node.
-   * For now, we extract the body statements and execute them directly.
+   * Converts the full function AST (including body) back to source, then appends
+   * a call so that running the script defines and invokes the handler.
+   * Preserves the original indent style (tabs or spaces) from the source.
    * @param funcNode - The function definition AST node
+   * @param indentPerLevel - One level of indent (e.g. '\t' or '    ') from original source
    * @returns Executable source code
    */
-  private reconstructHandlerCode(funcNode: any): string {
-    // For simplicity, we'll execute the function body directly
-    // In a more sophisticated implementation, we might want to preserve
-    // the original source code ranges and extract them directly
-
-    // The function body is an array of statements
-    // We'll need to convert them back to source code
-    // For now, we return a marker that tells us to execute the function
-    
-    // A better approach is to execute the entire script and then call the function
-    // But for now, we'll just mark that the handler exists
-    return `${funcNode.name}()`;
+  private reconstructHandlerCode(
+    funcNode: {
+      type: 'FunctionDef';
+      name: string;
+      params: string[];
+      body: ASTNode[];
+    },
+    indentPerLevel: string,
+  ): string {
+    return functionDefToExecutableSource(funcNode, indentPerLevel);
   }
 
   /**
