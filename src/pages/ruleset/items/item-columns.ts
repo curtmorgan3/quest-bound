@@ -7,7 +7,7 @@ export const itemChartColumns: GridColumn<Item>[] = [
     headerName: '',
     editable: false,
     sortIndex: 0,
-    width: 100,
+    width: 120,
     resizable: false,
   },
   {

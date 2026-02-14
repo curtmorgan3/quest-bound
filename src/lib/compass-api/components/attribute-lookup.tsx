@@ -2,7 +2,6 @@ import { Button } from '@/components/ui/button';
 import {
   Command,
   CommandEmpty,
-  CommandGroup,
   CommandInput,
   CommandItem,
   CommandList,
@@ -11,9 +10,14 @@ import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 import type { Attribute, AttributeType } from '@/types';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import { Check, ChevronsUpDown, XIcon } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useAttributes } from '../hooks/rulesets/use-attributes';
+
+type ListRow =
+  | { type: 'category'; label: string; estimatedSize: number }
+  | { type: 'entry'; entry: Attribute; estimatedSize: number };
 
 interface AttributeLookupProps {
   /** Callback fired when an attribute is selected */
@@ -44,6 +48,8 @@ export const AttributeLookup = ({
   label = 'Attribute',
 }: AttributeLookupProps) => {
   const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState('');
+  const parentRef = useRef<HTMLDivElement>(null);
   const { attributes: allAttributes } = useAttributes();
   const attributes = filterType
     ? allAttributes.filter((a) => a.type === filterType)
@@ -51,18 +57,68 @@ export const AttributeLookup = ({
 
   const selectedAttribute = value ? attributes.find((attr) => attr.id === value) : undefined;
 
-  // Group attributes by category
-  const groupedAttributes = attributes.reduce(
-    (acc, attr) => {
-      const category = attr.category || 'Uncategorized';
-      if (!acc[category]) {
-        acc[category] = [];
+  const searchLower = search.toLowerCase().trim();
+  const groupedAttributes = useMemo(() => {
+    const filtered = searchLower
+      ? attributes.filter(
+          (attr) =>
+            attr.title.toLowerCase().includes(searchLower) ||
+            (attr.description ?? '').toLowerCase().includes(searchLower) ||
+            (attr.category ?? 'Uncategorized').toLowerCase().includes(searchLower),
+        )
+      : attributes;
+
+    return filtered.reduce(
+      (acc, attr) => {
+        const category = attr.category || 'Uncategorized';
+        if (!acc[category]) {
+          acc[category] = [];
+        }
+        acc[category].push(attr);
+        return acc;
+      },
+      {} as Record<string, Attribute[]>,
+    );
+  }, [attributes, searchLower]);
+
+  const rows = useMemo((): ListRow[] => {
+    const result: ListRow[] = [];
+    const categories = Object.keys(groupedAttributes).sort();
+    for (const category of categories) {
+      result.push({ type: 'category', label: category, estimatedSize: 24 });
+      for (const attr of groupedAttributes[category]) {
+        const hasDescription = Boolean(attr.description);
+        result.push({
+          type: 'entry',
+          entry: attr,
+          estimatedSize: hasDescription ? 56 : 40,
+        });
       }
-      acc[category].push(attr);
-      return acc;
-    },
-    {} as Record<string, Attribute[]>,
-  );
+    }
+    return result;
+  }, [groupedAttributes]);
+
+  const virtualizer = useVirtualizer({
+    count: rows.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: (index) => rows[index]?.estimatedSize ?? 44,
+    overscan: 5,
+  });
+
+  // Reset search when popover opens so the list isn't cleared by stale/cmdk-driven filter state
+  useEffect(() => {
+    if (open) setSearch('');
+  }, [open]);
+
+  useEffect(() => {
+    if (!open || rows.length === 0) return;
+    const raf = requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        virtualizer.measure();
+      });
+    });
+    return () => cancelAnimationFrame(raf);
+  }, [open, rows.length, virtualizer]);
 
   const handleSelect = (attribute: Attribute) => {
     onSelect(attribute);
@@ -98,35 +154,70 @@ export const AttributeLookup = ({
             </Button>
           </PopoverTrigger>
           <PopoverContent className='w-[300px] p-0' align='start'>
-            <Command>
-              <CommandInput placeholder={placeholder} />
+            <Command shouldFilter={false}>
+              <CommandInput placeholder={placeholder} value={search} onValueChange={setSearch} />
               <CommandList>
                 <CommandEmpty>No attributes found.</CommandEmpty>
-                {Object.entries(groupedAttributes).map(([category, attrs]) => (
-                  <CommandGroup key={category} heading={category}>
-                    {attrs.map((attribute) => (
-                      <CommandItem
-                        key={attribute.id}
-                        value={`${attribute.title} ${attribute.description}`}
-                        onSelect={() => handleSelect(attribute)}>
-                        <Check
-                          className={cn(
-                            'mr-2 h-4 w-4',
-                            selectedAttribute?.id === attribute.id ? 'opacity-100' : 'opacity-0',
-                          )}
-                        />
-                        <div className='flex flex-col'>
-                          <span>{attribute.title}</span>
-                          {attribute.description && (
-                            <span className='text-xs text-muted-foreground truncate max-w-[220px]'>
-                              {attribute.description}
-                            </span>
-                          )}
-                        </div>
-                      </CommandItem>
-                    ))}
-                  </CommandGroup>
-                ))}
+                {rows.length > 0 && (
+                  <div
+                    ref={parentRef}
+                    className='h-[300px] overflow-auto'
+                    style={{ contain: 'strict' }}>
+                    <div
+                      style={{
+                        height: `${virtualizer.getTotalSize()}px`,
+                        width: '100%',
+                        position: 'relative',
+                      }}>
+                      {virtualizer.getVirtualItems().map((virtualRow) => {
+                        const row = rows[virtualRow.index];
+                        if (!row) return null;
+                        return (
+                          <div
+                            key={virtualRow.key}
+                            data-index={virtualRow.index}
+                            ref={virtualizer.measureElement}
+                            style={{
+                              position: 'absolute',
+                              top: 0,
+                              left: 0,
+                              width: '100%',
+                              transform: `translateY(${virtualRow.start}px)`,
+                            }}
+                            className='pb-0.5'>
+                            {row.type === 'category' && (
+                              <div className='text-muted-foreground px-2 py-1.5 text-xs font-medium'>
+                                {row.label}
+                              </div>
+                            )}
+                            {row.type === 'entry' && (
+                              <CommandItem
+                                value={`${row.entry.title} ${row.entry.description ?? ''}`}
+                                onSelect={() => handleSelect(row.entry)}>
+                                <Check
+                                  className={cn(
+                                    'mr-2 h-4 w-4',
+                                    selectedAttribute?.id === row.entry.id
+                                      ? 'opacity-100'
+                                      : 'opacity-0',
+                                  )}
+                                />
+                                <div className='flex flex-col'>
+                                  <span>{row.entry.title}</span>
+                                  {row.entry.description && (
+                                    <span className='text-xs text-muted-foreground truncate max-w-[220px]'>
+                                      {row.entry.description}
+                                    </span>
+                                  )}
+                                </div>
+                              </CommandItem>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
               </CommandList>
             </Command>
           </PopoverContent>
