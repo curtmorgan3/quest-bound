@@ -6,6 +6,7 @@
  */
 
 import type { RollFn } from '@/types';
+import { defaultScriptDiceRoller } from '@/utils/dice-utils';
 import type {
   AttributeChangedPayload,
   ExecuteScriptPayload,
@@ -426,9 +427,7 @@ export class QBScriptClient {
     executionTime: number;
   }> {
     const requestId = generateRequestId();
-    if (roll) {
-      this.pendingRollHandlers.set(requestId, roll);
-    }
+    this.pendingRollHandlers.set(requestId, roll ?? defaultScriptDiceRoller);
     try {
       return await this.sendSignal(
         {
@@ -460,9 +459,7 @@ export class QBScriptClient {
     executionTime: number;
   }> {
     const requestId = generateRequestId();
-    if (roll) {
-      this.pendingRollHandlers.set(requestId, roll);
-    }
+    this.pendingRollHandlers.set(requestId, roll ?? defaultScriptDiceRoller);
     try {
       return await this.sendSignal(
         {

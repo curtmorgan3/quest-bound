@@ -2,7 +2,7 @@ import { useDddice } from '@/pages';
 import { diceRollLogger, LogType, useEventLog } from '@/stores';
 import type { DiceResult, DiceRollOpts, IDiceContext, RollResult, SegmentResult } from '@/types';
 import { createContext, useState } from 'react';
-import { formatSegmentResult, parseDiceExpression, rollDie } from '../../utils';
+import { formatSegmentResult, rollDiceExpression } from '../../utils';
 
 interface DiceStateProps {
   canvasRef?: React.RefObject<HTMLCanvasElement | null>;
@@ -33,56 +33,11 @@ export const useDiceState = ({ canvasRef }: DiceStateProps): IDiceContext => {
 
     const delay = opts?.delay ?? 2000;
 
-    const trimmed = roll.trim();
-    const tokenGroups = parseDiceExpression(trimmed);
-
     setLastResult(null);
 
-    const segmentResults: SegmentResult[] = [];
-    let total = 0;
+    const { total, segmentResults } = rollDiceExpression(roll);
 
-    for (const tokens of tokenGroups) {
-      let modifierSum = 0;
-      const modifierNotationParts: string[] = [];
-
-      for (const token of tokens) {
-        if (token.type === 'dice') {
-          const notation = `${token.count}d${token.sides}`;
-          const type = `d${token.sides}`;
-          const rolls: RollResult[] = [];
-          for (let i = 0; i < token.count; i++) {
-            rolls.push({
-              type,
-              value: rollDie(token.sides),
-            });
-          }
-          const segmentTotal = rolls.map((r) => r.value).reduce((a, b) => a + b, 0);
-          segmentResults.push({
-            notation,
-            rolls,
-            modifier: 0,
-            segmentTotal,
-          });
-          total += segmentTotal;
-        } else {
-          modifierSum += token.value;
-          modifierNotationParts.push(token.value >= 0 ? `+${token.value}` : `${token.value}`);
-        }
-      }
-
-      if (modifierNotationParts.length > 0) {
-        const notation = modifierNotationParts.join('');
-        segmentResults.push({
-          notation,
-          rolls: [],
-          modifier: modifierSum,
-          segmentTotal: modifierSum,
-        });
-        total += modifierSum;
-      }
-    }
-
-    const result: DiceResult = { total, segments: segmentResults, notation: trimmed };
+    const result: DiceResult = { total, segments: segmentResults, notation: roll.trim() };
 
     // Log the dice roll to IndexedDB
     await diceRollLogger.logRoll(result, {

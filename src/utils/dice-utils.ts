@@ -1,4 +1,4 @@
-import type { DiceToken, SegmentResult } from '@/types';
+import type { DiceToken, RollResult, SegmentResult } from '@/types';
 
 /** Matches dice (e.g. 2d6) or modifiers (+4, -1) in order */
 export const DICE_OR_MODIFIER_REGEX = /(\d+)\s*d\s*(\d+)|([+-])\s*(\d+)/gi;
@@ -54,4 +54,61 @@ export function parseTextForDiceRolls(text?: string): string[] {
     m[0].replace(/\s/g, ''),
   );
   return matches;
+}
+
+export function rollDiceExpression(roll: string) {
+  const trimmed = roll.trim();
+  const tokenGroups = parseDiceExpression(trimmed);
+  const segmentResults: SegmentResult[] = [];
+  let total = 0;
+
+  for (const tokens of tokenGroups) {
+    let modifierSum = 0;
+    const modifierNotationParts: string[] = [];
+
+    for (const token of tokens) {
+      if (token.type === 'dice') {
+        const notation = `${token.count}d${token.sides}`;
+        const type = `d${token.sides}`;
+        const rolls: RollResult[] = [];
+        for (let i = 0; i < token.count; i++) {
+          rolls.push({
+            type,
+            value: rollDie(token.sides),
+          });
+        }
+        const segmentTotal = rolls.map((r) => r.value).reduce((a, b) => a + b, 0);
+        segmentResults.push({
+          notation,
+          rolls,
+          modifier: 0,
+          segmentTotal,
+        });
+        total += segmentTotal;
+      } else {
+        modifierSum += token.value;
+        modifierNotationParts.push(token.value >= 0 ? `+${token.value}` : `${token.value}`);
+      }
+    }
+
+    if (modifierNotationParts.length > 0) {
+      const notation = modifierNotationParts.join('');
+      segmentResults.push({
+        notation,
+        rolls: [],
+        modifier: modifierSum,
+        segmentTotal: modifierSum,
+      });
+      total += modifierSum;
+    }
+  }
+
+  return {
+    segmentResults,
+    total,
+  };
+}
+
+export function defaultScriptDiceRoller(roll: string) {
+  return rollDiceExpression(roll).total;
 }
