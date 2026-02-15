@@ -20,28 +20,11 @@ Scripts can be attached to:
 - **Built-in game APIs** - Native access to attributes, items, actions, and charts
 - **String interpolation** - Embed variables in strings with `{{variable}}`
 - **Dice rolling** - Built-in `roll()` function for dice notation
-- **Service Worker execution** - Non-blocking, efficient interpreter
+- **Multi-threaded** - Non-blocking, efficient interpreter
 
 ## Syntax
 
-```txt
-// ===== ACCESSORS =====
-Owner      // The character that initiated the script
-Target     // A character reference (required if in function signature)
-Ruleset    // Access to ruleset-level entities
-Self       // (Attribute scripts only) This attribute — same as Owner.Attribute('<this attribute>')
-
-// ===== GETTERS =====
-<Accessor>.Attribute('attribute name')  // Get attribute reference
-<Accessor>.Action('action name')        // Get action reference
-<Accessor>.Item('item name')            // Get first matching item
-<Accessor>.Items('item name')           // Get array of matching items
-Ruleset.Chart('chart name')             // Get chart reference
-
-// Examples:
-Owner.Attribute('Hit Points')      // Returns CharacterAttribute record
-Target.Attribute('Armor Class')    // Returns target's CharacterAttribute record
-Ruleset.Attribute('Strength')      // Returns Attribute definition record
+### Variables
 
 // ===== VARIABLES =====
 // No keyword needed - assignment creates or updates
@@ -49,56 +32,95 @@ hit_points = Owner.Attribute('Hit Points')
 damage = 10
 name = 'Fireball'
 
-// ===== ARRAYS =====
-list = []
-arrows = Owner.Items('Arrow')
-
-// Array methods (all use parentheses)
-arrows.length       // Returns the size of the array
-arrows.count()      // Returns number of items
-arrows.first()      // Returns first item
-arrows.last()       // Returns last item
-arrows.push(item)   // Adds item to end
-arrows.pop()        // Removes and returns last item
-arrows[index]       // Access by zero-based index
-
-// ===== LOOPS =====
-// For-in loop (iterate over array)
-for arrow in arrows:
-  arrow.consume()
-
-// For-in loop (iterate N times, 0 to N-1)
-for i in 10:
-  do_something()
-
-// ===== FUNCTIONS =====
-// No keyword needed - just name and parameters
-calculateModifier(score):
-  return (score - 10) / 2
-
-getMaxHP(con, level):
-  base = 10
-  return base + (con * 2) + (level * 5)
+### String Interpolation
 
 // ===== STRING INTERPOLATION =====
 // Works in all string contexts
 message = 'You have {{hp}} health'
 announce('Damage: {{damage}}')
 
+### Comments
+
+// ===== COMMENTS =====
+// Single-line comment
+
+/_
+Multi-line
+comment
+_/
+
+### Operators
+
 // ===== OPERATORS =====
 // Math
-+ - * / **    // ** is exponentiation (e.g., 2**3 = 8)
-%             // modulo
+
+- - - / ** // ** is exponentiation (e.g., 2\*\*3 = 8)
+      % // modulo
 
 // Comparison
+
 > < >= <= == !=
 
 // Boolean
-&&    // and
-||    // or
-!     // not
+&& // and
+|| // or
+! // not
 
-// ===== DICE ROLLING =====
+### Arrays
+
+// ===== ARRAYS =====
+list = []
+arrows = Owner.Items('Arrow')
+
+// Array methods (all use parentheses)
+arrows.length // Returns the size of the array
+arrows.count() // Returns number of items
+arrows.first() // Returns first item
+arrows.last() // Returns last item
+arrows.push(item) // Adds item to end
+arrows.pop() // Removes and returns last item
+arrows[index] // Access by zero-based index
+
+### Loops
+
+// ===== LOOPS =====
+// For-in loop (iterate over array)
+for arrow in arrows:
+arrow.consume()
+
+// For-in loop (iterate N times, 0 to N-1)
+for i in 10:
+do_something()
+
+### Control Flow
+
+// ===== CONTROL FLOW =====
+// If/else if/else (indentation-based, no 'end' keyword)
+if condition:
+// body
+else if other_condition:
+// body
+else:
+// body
+// Parenthesis wrapping condition are optional
+if (condition):
+
+### Functions
+
+// ===== FUNCTIONS =====
+// No keyword needed - just name and parameters
+calculateModifier(score):
+return (score - 10) / 2
+
+getMaxHP(con, level):
+base = 10
+return base + (con _ 2) + (level _ 5)
+
+### Built-ins
+
+// ===== BUILT-IN FUNCTIONS =====
+// Dice
+roll('1d8') // Rolls dice, returns number
 // Use roll() function with string argument
 roll('1d8')
 roll('2d6+4')
@@ -106,34 +128,60 @@ roll('{{Owner.Attribute('Level').value}}d4')
 
 damage = roll('1d8')
 
-// ===== CONTROL FLOW =====
-// If/else if/else (indentation-based, no 'end' keyword)
-if condition:
-  // body
-else if other_condition:
-  // body
-else:
-  // body
-// Parenthesis wrapping condition are optional
-if (condition):
-
-// ===== BUILT-IN FUNCTIONS =====
-// Dice
-roll('1d8')              // Rolls dice, returns number
-
 // Math
-floor(3.7)               // Returns 3
-ceil(3.2)                // Returns 4
-round(3.5)               // Returns 4
+floor(3.7) // Returns 3
+ceil(3.2) // Returns 4
+round(3.5) // Returns 4
 
 // UI
-announce('message')      // Shows message to player
-log('debug')     // Logs to debug console
+announce('message') // Shows message to player
+log('debug') // Logs to debug console and game log
 
-// ===== ENTITY PROPERTIES =====
-// All Entities
-.description    // Entity description
-.title          // Entity title
+### Accessing Data
+
+// ===== ACCESSORS =====
+Owner // The character that initiated the script
+Target // A character reference (required if in function signature)
+Ruleset // Access to ruleset-level entities
+Self // (Attribute scripts only) This attribute — same as Owner.Attribute('<this attribute>')
+
+// ===== GETTERS =====
+<Accessor>.Attribute('attribute name') // Get attribute reference
+<Accessor>.Action('action name') // Get action reference
+<Accessor>.Item('item name') // Get first matching item
+<Accessor>.Items('item name') // Get array of matching items
+Ruleset.Chart('chart name') // Get chart reference
+
+// Examples:
+Owner.Attribute('Hit Points') // Returns CharacterAttribute record
+Target.Attribute('Armor Class') // Returns target's CharacterAttribute record
+Ruleset.Attribute('Strength') // Returns Attribute definition record
+
+### Attribute Subscriptions
+
+// ===== SUBSCRIPTIONS =====
+// Only for attribute scripts - fires when dependencies change
+// Supports string literals or variable references
+subscribe('attribute one', 'attribute two') // Re-run when these attributes change
+subscribe('action name') // Re-run when action.activate() fires
+
+// Variable reference example
+attr_name = 'Constitution'
+subscribe(attr_name, 'Level')
+
+#### Charts
+
+// ===== CHART METHODS =====
+chart = Ruleset.Chart('Spell List')
+
+chart.get('column name') // Returns array of all values in column
+chart.where('source column', source_value, 'target column') // Finds row where source column equals source_value, returns target column value (or empty string if not found)
+
+// Examples:
+spell_damage = Ruleset.Chart('Spells').where('Spell Name', 'Fireball', 'Damage')
+xp_needed = Ruleset.Chart('Level Table').where('Level', 5, 'XP Required')
+
+## Ruleset
 
 // ===== RULESET METHODS =====
 Ruleset.Chart('chart name')
@@ -141,84 +189,27 @@ Ruleset.Attribute('attribute name')
 Ruleset.Item('item name')
 Ruleset.Action('action name')
 
-// ===== CHARACTER METHODS (Owner, Target) =====
-Owner.hasItem('item name')              // Returns boolean
-Owner.addItem('item name', quantity)    // Adds items to inventory
-Owner.removeItem('item name', quantity) // Removes items from inventory
-Owner.Attribute('attribute name')       // Gets CharacterAttribute
-Owner.Item('item name')                 // Gets first matching item
-Owner.Items('item name')                // Gets array of matching items
+## Object APIs
+
+### Attributes
+
+Attribute scripts are reactive - they re-run when subscribed dependencies change. They must `return` a value to set the attribute's value.
 
 // ===== ATTRIBUTE METHODS =====
 attr = Owner.Attribute('Hit Points')
 
-attr.value              // Read current value (use in expressions)
-attr.set(100)           // Set value to 100
-attr.add(10)            // Add 10 to current value
-attr.subtract(5)        // Subtract 5 from current value
-attr.multiply(2)        // Multiply current value by 2
-attr.divide(2)          // Divide current value by 2
-attr.max()              // Set to attribute's max property
-attr.min()              // Set to attribute's min property
-attr.flip()             // Toggle boolean attribute
-attr.random()           // Set to random option (list attributes)
-attr.next()             // Set to next option (list attributes)
-attr.prev()             // Set to previous option (list attributes)
-
-// ===== ITEM METHODS =====
-item = Owner.Item('Sword')
-items = Owner.Items('Arrow')
-
-items.count()           // Returns number of items
-items.first()           // Returns first item
-items.last()            // Returns last item
-items.push(item)        // Adds item to array
-items.pop()             // Removes and returns last item
-items[0]                // Access by index
-
-// Item custom properties (defined on Item record)
-armor = Owner.Item('Plate Mail')
-armor.armor_value       // Access custom property
-
-// ===== ACTION METHODS =====
-action = Owner.Action('Mage Armor')
-
-action.activate()       // Triggers on_activate() handler
-action.deactivate()     // Triggers on_deactivate() handler
-
-// ===== CHART METHODS =====
-chart = Ruleset.Chart('Spell List')
-
-chart.get('column name')                              // Returns array of all values in column
-chart.where('source column', source_value, 'target column')  // Finds row where source column equals source_value, returns target column value (or empty string if not found)
-
-// Examples:
-spell_damage = Ruleset.Chart('Spells').where('Spell Name', 'Fireball', 'Damage')
-xp_needed = Ruleset.Chart('Level Table').where('Level', 5, 'XP Required')
-
-// ===== SUBSCRIPTIONS =====
-// Only for attribute scripts - fires when dependencies change
-// Supports string literals or variable references
-subscribe('attribute one', 'attribute two')  // Re-run when these attributes change
-subscribe('action name')                      // Re-run when action.activate() fires
-
-// Variable reference example
-attr_name = 'Constitution'
-subscribe(attr_name, 'Level')
-
-// ===== COMMENTS =====
-// Single-line comment
-
-/*
-  Multi-line
-  comment
-*/
-
-```
-
-## Attribute Scripts
-
-Attribute scripts are reactive - they re-run when subscribed dependencies change. They must `return` a value to set the attribute's value.
+attr.value // Read current value (use in expressions)
+attr.set(100) // Set value to 100
+attr.add(10) // Add 10 to current value
+attr.subtract(5) // Subtract 5 from current value
+attr.multiply(2) // Multiply current value by 2
+attr.divide(2) // Divide current value by 2
+attr.max() // Set to attribute's max property
+attr.min() // Set to attribute's min property
+attr.flip() // Toggle boolean attribute
+attr.random() // Set to random option (list attributes)
+attr.next() // Set to next option (list attributes)
+attr.prev() // Set to previous option (list attributes)
 
 ```javascript
 // Max Hit Points (computed attribute)
@@ -292,9 +283,34 @@ for i in 20:
 return current_level
 ```
 
-## Item Scripts
+### Character
+
+// ===== CHARACTER METHODS (Owner, Target) =====
+Owner.hasItem('item name') // Returns boolean
+Owner.addItem('item name', quantity) // Adds items to inventory
+Owner.removeItem('item name', quantity) // Removes items from inventory
+Owner.Attribute('attribute name') // Gets CharacterAttribute
+Owner.Item('item name') // Gets first matching item
+Owner.Items('item name') // Gets array of matching items
+
+### Items
 
 Item scripts use event handlers that fire when players interact with items through the UI. All handlers should end with `return` (even though they don't return values).
+
+// ===== ITEM METHODS =====
+item = Owner.Item('Sword')
+items = Owner.Items('Arrow')
+
+items.count() // Returns number of items
+items.first() // Returns first item
+items.last() // Returns last item
+items.push(item) // Adds item to array
+items.pop() // Removes and returns last item
+items[0] // Access by index
+
+// Item custom properties (defined on Item record)
+armor = Owner.Item('Plate Mail')
+armor.armor_value // Access custom property
 
 ```javascript
 // Ring of Armor - activates spell effect when equipped
@@ -369,9 +385,15 @@ on_consume():
   return
 ```
 
-## Action Scripts
+### Actions
 
 Action scripts execute when triggered through UI. They can have `on_activate()` and `on_deactivate()` handlers. If `Target` is in the signature, the UI will prompt the user to select a character.
+
+// ===== ACTION METHODS =====
+action = Owner.Action('Mage Armor')
+
+action.activate() // Triggers on_activate() handler
+action.deactivate() // Triggers on_deactivate() handler
 
 ```javascript
 // Mage Armor - buff that can be toggled on/off
@@ -487,7 +509,7 @@ on_deactivate():
   return
 ```
 
-## Global Scripts
+### Global Scripts
 
 Global scripts are not associated with any specific entity. They are marked as "global" and serve as utility modules. All variables and functions declared in global scripts are available to all other scripts in the ruleset.
 
@@ -563,224 +585,3 @@ on_activate(Target):
 
   return
 ```
-
-## Complete Example: D&D-Style Character
-
-This example shows how QBScript can implement D&D 5e mechanics across multiple scripts.
-
-### Global Utilities (utils.qbs)
-
-```javascript
-// Global utility functions available to all scripts
-
-calculateModifier(score):
-  return floor((score - 10) / 2)
-
-rollAdvantage(dice):
-  roll1 = roll(dice)
-  roll2 = roll(dice)
-  if roll1 > roll2:
-    return roll1
-  return roll2
-
-rollDisadvantage(dice):
-  roll1 = roll(dice)
-  roll2 = roll(dice)
-  if roll1 < roll2:
-    return roll1
-  return roll2
-```
-
-### Attribute Scripts
-
-**strength_modifier.qbs** (Attribute: Strength Modifier)
-
-```javascript
-subscribe('Strength');
-
-str = Owner.Attribute('Strength').value;
-return calculateModifier(str);
-```
-
-**armor_class.qbs** (Attribute: Armor Class)
-
-```javascript
-subscribe('Dexterity', 'Armor Type')
-
-base_ac = 10
-dex = Owner.Attribute('Dexterity').value
-dex_mod = calculateModifier(dex)
-
-armor_type = Owner.Attribute('Armor Type').value
-
-if armor_type == 'None':
-  return base_ac + dex_mod
-else if armor_type == 'Light':
-  armor = Owner.Item('Equipped Armor')
-  if armor:
-    return armor.base_ac + dex_mod
-  return base_ac + dex_mod
-else if armor_type == 'Medium':
-  armor = Owner.Item('Equipped Armor')
-  if armor:
-    // Medium armor caps dex bonus at +2
-    capped_dex_mod = dex_mod
-    if capped_dex_mod > 2:
-      capped_dex_mod = 2
-    return armor.base_ac + capped_dex_mod
-  return base_ac + dex_mod
-else if armor_type == 'Heavy':
-  armor = Owner.Item('Equipped Armor')
-  if armor:
-    return armor.base_ac
-  return base_ac
-
-return base_ac + dex_mod
-```
-
-**max_hp.qbs** (Attribute: Max Hit Points)
-
-```javascript
-subscribe('Constitution', 'Level', 'Class');
-
-con = Owner.Attribute('Constitution').value;
-con_mod = calculateModifier(con);
-level = Owner.Attribute('Level').value;
-class_name = Owner.Attribute('Class').value;
-
-// Get hit die from chart
-hit_die = Ruleset.Chart('Classes').where('Class', class_name, 'Hit Die');
-
-// First level gets max + con mod
-// Each additional level gets average + con mod
-first_level_hp = hit_die + con_mod;
-additional_levels = level - 1;
-avg_per_level = floor(hit_die / 2) + 1 + con_mod;
-
-total = first_level_hp + additional_levels * avg_per_level;
-
-return total;
-```
-
-### Action Scripts
-
-**melee_attack.qbs** (Action: Melee Attack)
-
-```javascript
-on_activate(Target):
-  // Roll attack
-  attack_roll = roll('1d20')
-  str = Owner.Attribute('Strength').value
-  prof = Owner.Attribute('Proficiency Bonus').value
-  str_mod = calculateModifier(str)
-
-  attack_total = attack_roll + str_mod + prof
-  target_ac = Target.Attribute('Armor Class').value
-
-  // Check for critical hit
-  if attack_roll == 20:
-    // Critical hit - double damage dice
-    damage = roll('2d8') + str_mod
-    Target.Attribute('Hit Points').subtract(damage)
-    announce('CRITICAL HIT! {{damage}} damage to {{Target.title}}!')
-    return
-
-  // Check for critical miss
-  if attack_roll == 1:
-    announce('Critical miss!')
-    return
-
-  // Normal hit check
-  if attack_total >= target_ac:
-    damage = roll('1d8') + str_mod
-    Target.Attribute('Hit Points').subtract(damage)
-    announce('Hit {{Target.title}} for {{damage}} damage!')
-  else:
-    announce('Attack missed {{Target.title}}.')
-
-  return
-```
-
-**cast_spell.qbs** (Action: Cast Spell)
-
-```javascript
-on_activate(Target):
-  // Get spell details from chart
-  spell_name = Owner.Attribute('Selected Spell').value
-  spell_level = Ruleset.Chart('Spells').where('Spell', spell_name, 'Level')
-  mana_cost = spell_level * 2
-
-  // Check if enough spell slots
-  current_mana = Owner.Attribute('Mana').value
-  if current_mana < mana_cost:
-    announce('Not enough mana!')
-    return
-
-  // Spend mana
-  Owner.Attribute('Mana').subtract(mana_cost)
-
-  // Get spell effect
-  spell_type = Ruleset.Chart('Spells').where('Spell', spell_name, 'Type')
-
-  if spell_type == 'Damage':
-    damage_dice = Ruleset.Chart('Spells').where('Spell', spell_name, 'Dice')
-    int_mod = calculateModifier(Owner.Attribute('Intelligence').value)
-    damage = roll(damage_dice) + int_mod
-    Target.Attribute('Hit Points').subtract(damage)
-    announce('{{spell_name}} hits {{Target.title}} for {{damage}} damage!')
-  else if spell_type == 'Heal':
-    healing_dice = Ruleset.Chart('Spells').where('Spell', spell_name, 'Dice')
-    healing = roll(healing_dice)
-    Target.Attribute('Hit Points').add(healing)
-    announce('{{spell_name}} heals {{Target.title}} for {{healing}} HP!')
-
-  return
-```
-
-### Item Scripts
-
-**health_potion.qbs** (Item: Health Potion)
-
-```javascript
-on_consume():
-  healing = roll('2d4+2')
-  current_hp = Owner.Attribute('Hit Points').value
-  max_hp = Owner.Attribute('Max Hit Points').value
-
-  // Don't overheal
-  new_hp = current_hp + healing
-  if new_hp > max_hp:
-    actual_healing = max_hp - current_hp
-    Owner.Attribute('Hit Points').set(max_hp)
-    announce('Healed {{actual_healing}} HP (full health)')
-  else:
-    Owner.Attribute('Hit Points').add(healing)
-    announce('Healed {{healing}} HP')
-
-  return
-```
-
-**plate_armor.qbs** (Item: Plate Armor)
-
-```javascript
-on_equip():
-  Owner.Attribute('Armor Type').set('Heavy')
-  announce('You don the heavy plate armor.')
-  return
-
-on_unequip():
-  Owner.Attribute('Armor Type').set('None')
-  announce('You remove the plate armor.')
-  return
-```
-
-This example demonstrates:
-
-- Global utility functions
-- Reactive attribute calculations
-- Complex conditional logic
-- Chart lookups for game data
-- Dice rolling with modifiers
-- Cross-character interactions (Target)
-- Item event handlers
-- String interpolation in messages
