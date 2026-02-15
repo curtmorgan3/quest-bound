@@ -1,19 +1,21 @@
-import type { Attribute, CharacterAttribute } from '@/types';
+import type { Attribute, CharacterAttribute, InventoryItem, Item } from '@/types';
 import type Dexie from 'dexie';
-import { AttributeProxy } from '../proxies';
+import { AttributeProxy, createItemInstanceProxy, ItemListProxy } from '../proxies';
 
 /**
  * Accessor object representing the character executing the script (Owner).
- * Provides access to the character's attributes and other properties.
+ * Provides access to the character's attributes, items, and other properties.
  */
 export class OwnerAccessor {
   protected characterId: string;
   protected db: Dexie;
   protected pendingUpdates: Map<string, any>;
-  
+
   // Cached data
   protected characterAttributesCache: Map<string, CharacterAttribute>;
   protected attributesCache: Map<string, Attribute>;
+  protected itemsCache: Map<string, Item>;
+  protected inventoryItems: InventoryItem[];
 
   constructor(
     characterId: string,
@@ -21,12 +23,16 @@ export class OwnerAccessor {
     pendingUpdates: Map<string, any>,
     characterAttributesCache: Map<string, CharacterAttribute>,
     attributesCache: Map<string, Attribute>,
+    itemsCache: Map<string, Item>,
+    inventoryItems: InventoryItem[],
   ) {
     this.characterId = characterId;
     this.db = db;
     this.pendingUpdates = pendingUpdates;
     this.characterAttributesCache = characterAttributesCache;
     this.attributesCache = attributesCache;
+    this.itemsCache = itemsCache;
+    this.inventoryItems = inventoryItems;
   }
 
   /**
@@ -55,6 +61,41 @@ export class OwnerAccessor {
     }
 
     return new AttributeProxy(characterAttribute, attribute, this.pendingUpdates);
+  }
+
+  /**
+   * Get the first inventory item matching the given item name (by ruleset item title).
+   * Only matches entries of type 'item' (ruleset items), not actions or attributes.
+   * @param name - The title/name of the ruleset item
+   * @returns Item instance proxy for the first matching inventory entry, or undefined if none
+   */
+  Item(name: string): ReturnType<typeof createItemInstanceProxy> | undefined {
+    const item = Array.from(this.itemsCache.values()).find((i) => i.title === name);
+    if (!item) return undefined;
+
+    const inventoryItem = this.inventoryItems.find(
+      (inv) => inv.entityId === item.id && inv.type === 'item',
+    );
+    if (!inventoryItem) return undefined;
+
+    return createItemInstanceProxy(inventoryItem, item);
+  }
+
+  /**
+   * Get all inventory items matching the given item name (by ruleset item title).
+   * Only matches entries of type 'item'.
+   * @param name - The title/name of the ruleset item
+   * @returns ItemListProxy with count(), first(), last(), and index access
+   */
+  Items(name: string): ItemListProxy {
+    const item = Array.from(this.itemsCache.values()).find((i) => i.title === name);
+    if (!item) return new ItemListProxy([]);
+
+    const matching = this.inventoryItems.filter(
+      (inv) => inv.entityId === item.id && inv.type === 'item',
+    );
+    const proxies = matching.map((inv) => createItemInstanceProxy(inv, item));
+    return new ItemListProxy(proxies);
   }
 
   /**

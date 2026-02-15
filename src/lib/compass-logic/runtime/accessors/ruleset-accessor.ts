@@ -1,4 +1,4 @@
-import type { Attribute, Chart } from '@/types';
+import type { Attribute, Chart, Item } from '@/types';
 import { ChartProxy } from '../proxies';
 
 /**
@@ -42,24 +42,67 @@ export class AttributeDefinitionProxy {
 }
 
 /**
+ * Proxy for item definitions (ruleset-level, not character inventory instances).
+ * Provides access to item metadata like title, description, customProperties, etc.
+ */
+export class ItemDefinitionProxy {
+  private item: Item;
+
+  constructor(item: Item) {
+    this.item = item;
+  }
+
+  get description(): string {
+    return this.item.description;
+  }
+
+  get title(): string {
+    return this.item.title;
+  }
+
+  get customProperties(): Record<string, string | number | boolean> | undefined {
+    return this.item.customProperties;
+  }
+
+  get weight(): number {
+    return this.item.weight;
+  }
+
+  get stackSize(): number {
+    return this.item.stackSize;
+  }
+
+  get isEquippable(): boolean {
+    return this.item.isEquippable;
+  }
+
+  get isConsumable(): boolean {
+    return this.item.isConsumable;
+  }
+}
+
+/**
  * Accessor object for ruleset-level definitions.
- * Provides access to attribute definitions, charts, etc.
+ * Provides access to attribute definitions, charts, item definitions, etc.
  */
 export class RulesetAccessor {
   private rulesetId: string;
-  
+
   // Cached data
   private attributesCache: Map<string, Attribute>;
   private chartsCache: Map<string, Chart>;
+  private itemsCache: Map<string, Item>;
 
   constructor(
     rulesetId: string,
     attributesCache: Map<string, Attribute>,
     chartsCache: Map<string, Chart>,
+    itemsCache: Map<string, Item>,
   ) {
     this.rulesetId = rulesetId;
     this.attributesCache = attributesCache;
     this.chartsCache = chartsCache;
+    this.itemsCache = itemsCache;
   }
 
   /**
@@ -96,5 +139,23 @@ export class RulesetAccessor {
     }
 
     return new ChartProxy(chart);
+  }
+
+  /**
+   * Get an item definition proxy.
+   * @param name - The title/name of the item
+   * @returns ItemDefinitionProxy for the item
+   * @throws Error if item not found
+   */
+  Item(name: string): ItemDefinitionProxy {
+    const item = Array.from(this.itemsCache.values()).find(
+      (i) => i.title === name && i.rulesetId === this.rulesetId,
+    );
+
+    if (!item) {
+      throw new Error(`Item definition '${name}' not found in ruleset`);
+    }
+
+    return new ItemDefinitionProxy(item);
   }
 }

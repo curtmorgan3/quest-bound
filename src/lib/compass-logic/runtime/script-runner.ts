@@ -1,5 +1,12 @@
 import type { DB } from '@/stores/db/hooks/types';
-import type { Attribute, CharacterAttribute, Chart, Script } from '@/types';
+import type {
+  Attribute,
+  CharacterAttribute,
+  Chart,
+  InventoryItem,
+  Item,
+  Script,
+} from '@/types';
 import type { RollFn } from '../interpreter/evaluator';
 import { Evaluator } from '../interpreter/evaluator';
 import { Lexer } from '../interpreter/lexer';
@@ -47,6 +54,9 @@ export class ScriptRunner {
   private characterAttributesCache: Map<string, CharacterAttribute>;
   private attributesCache: Map<string, Attribute>;
   private chartsCache: Map<string, Chart>;
+  private itemsCache: Map<string, Item>;
+  private ownerInventoryItems: InventoryItem[];
+  private targetInventoryItems: InventoryItem[] | null;
 
   constructor(context: ScriptExecutionContext) {
     this.context = context;
@@ -55,6 +65,9 @@ export class ScriptRunner {
     this.characterAttributesCache = new Map();
     this.attributesCache = new Map();
     this.chartsCache = new Map();
+    this.itemsCache = new Map();
+    this.ownerInventoryItems = [];
+    this.targetInventoryItems = null;
   }
 
   /**
@@ -74,6 +87,32 @@ export class ScriptRunner {
     const charts = await db.charts.where({ rulesetId }).toArray();
     for (const chart of charts) {
       this.chartsCache.set(chart.id, chart);
+    }
+
+    // Load all items for this ruleset
+    const items = await db.items.where({ rulesetId }).toArray();
+    for (const item of items) {
+      this.itemsCache.set(item.id, item);
+    }
+
+    // Load owner character and inventory items
+    const ownerCharacter = await db.characters.get(ownerId);
+    if (ownerCharacter?.inventoryId) {
+      this.ownerInventoryItems = await db.inventoryItems
+        .where('inventoryId')
+        .equals(ownerCharacter.inventoryId)
+        .toArray();
+    }
+
+    // Load target character and inventory items (if any)
+    if (targetId) {
+      const targetCharacter = await db.characters.get(targetId);
+      if (targetCharacter?.inventoryId) {
+        this.targetInventoryItems = await db.inventoryItems
+          .where('inventoryId')
+          .equals(targetCharacter.inventoryId)
+          .toArray();
+      }
     }
 
     // Load character attributes for owner
@@ -126,6 +165,8 @@ export class ScriptRunner {
       this.pendingUpdates,
       this.characterAttributesCache,
       this.attributesCache,
+      this.itemsCache,
+      this.ownerInventoryItems,
     );
 
     // Create Target accessor (null if no target)
@@ -137,11 +178,18 @@ export class ScriptRunner {
         this.pendingUpdates,
         this.characterAttributesCache,
         this.attributesCache,
+        this.itemsCache,
+        this.targetInventoryItems ?? [],
       );
     }
 
     // Create Ruleset accessor
-    const ruleset = new RulesetAccessor(rulesetId, this.attributesCache, this.chartsCache);
+    const ruleset = new RulesetAccessor(
+      rulesetId,
+      this.attributesCache,
+      this.chartsCache,
+      this.itemsCache,
+    );
 
     // Inject into interpreter environment
     this.evaluator.globalEnv.define('Owner', owner);

@@ -139,7 +139,7 @@ export function CodeMirrorEditor({
       ref={containerRef}
       className={className}
       style={{
-        height: '100%',
+        height: '355px',
         minHeight: height,
         backgroundColor: '#282c34',
       }}

@@ -114,6 +114,8 @@ else if other_condition:
   // body
 else:
   // body
+// Parenthesis wrapping condition are optional
+if (condition):
 
 // ===== BUILT-IN FUNCTIONS =====
 // Dice
@@ -520,16 +522,6 @@ rollDisadvantage(dice_expression):
 isAlive(character):
   hp = character.Attribute('Hit Points').value
   return hp > 0
-
-// Get total weight of inventory
-getTotalWeight(character):
-  total = 0
-  all_items = character.Items('*')  // Get all items
-
-  for item in all_items:
-    total = total + (item.weight * item.quantity)
-
-  return total
 
 // Clamp value between min and max
 clamp(value, min_val, max_val):

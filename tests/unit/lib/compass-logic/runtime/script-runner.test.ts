@@ -2,7 +2,7 @@ import { Evaluator } from '@/lib/compass-logic/interpreter/evaluator';
 import { Lexer } from '@/lib/compass-logic/interpreter/lexer';
 import { Parser } from '@/lib/compass-logic/interpreter/parser';
 import { OwnerAccessor, RulesetAccessor } from '@/lib/compass-logic/runtime/accessors';
-import type { Attribute, CharacterAttribute, Chart } from '@/types';
+import type { Attribute, CharacterAttribute, Chart, Item } from '@/types';
 import { describe, expect, it } from 'vitest';
 
 /**
@@ -230,6 +230,8 @@ Self.value
         pendingUpdates,
         characterAttributesCache,
         attributesCache,
+        new Map<string, Item>(),
+        [],
       );
 
       const attrProxy = owner.Attribute('HP');
@@ -273,6 +275,8 @@ Self.value
         pendingUpdates,
         characterAttributesCache,
         attributesCache,
+        new Map<string, Item>(),
+        [],
       );
 
       const attrProxy = owner.Attribute('HP');
@@ -302,7 +306,12 @@ Self.value
 
       chartsCache.set('chart_levels', levelChart);
 
-      const ruleset = new RulesetAccessor('ruleset1', attributesCache, chartsCache);
+      const ruleset = new RulesetAccessor(
+        'ruleset1',
+        attributesCache,
+        chartsCache,
+        new Map<string, Item>(),
+      );
 
       const chart = ruleset.Chart('Level Table');
       const hpBonus = chart.where('Level', 5, 'HP Bonus');
