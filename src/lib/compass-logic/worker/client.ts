@@ -1,17 +1,18 @@
 /**
  * QBScript Client
- * 
+ *
  * Manages communication between the main thread and the QBScript Web Worker.
  * Provides a clean async API for script execution and reactive updates.
  */
 
+import type { RollFn } from '../interpreter/evaluator';
 import type {
-  MainToWorkerSignal,
-  WorkerToMainSignal,
-  ExecuteScriptPayload,
   AttributeChangedPayload,
-  ScriptResultPayload,
+  ExecuteScriptPayload,
+  MainToWorkerSignal,
   ScriptErrorPayload,
+  ScriptResultPayload,
+  WorkerToMainSignal,
 } from './signals';
 import { generateRequestId } from './signals';
 
@@ -80,13 +81,14 @@ export class QBScriptClient {
    */
   private initWorker(): void {
     try {
+      console.log('init worker');
       // Use Vite's native Web Worker support
-      this.worker = new Worker(
-        new URL('./qbscript-worker.ts', import.meta.url),
-        { type: 'module' }
-      );
+      this.worker = new Worker(new URL('./qbscript-worker.ts', import.meta.url), {
+        type: 'module',
+      });
 
       this.worker.onmessage = (event: MessageEvent<WorkerToMainSignal>) => {
+        console.log('on message: ', event);
         this.handleWorkerSignal(event.data);
       };
 
@@ -148,7 +150,7 @@ export class QBScriptClient {
         window.dispatchEvent(
           new CustomEvent('qbscript:announce', {
             detail: { message: signal.payload.message },
-          })
+          }),
         );
         break;
 
@@ -189,7 +191,7 @@ export class QBScriptClient {
         window.dispatchEvent(
           new CustomEvent('qbscript:announce', {
             detail: { message },
-          })
+          }),
         );
       });
 
@@ -256,7 +258,7 @@ export class QBScriptClient {
   private async sendSignal<T = any>(
     signal: MainToWorkerSignal,
     requestId: string,
-    timeoutMs = 10000
+    timeoutMs = 10000,
   ): Promise<T> {
     await this.waitForReady();
 
@@ -305,11 +307,7 @@ export class QBScriptClient {
       entityId: options.entityId,
     };
 
-    return this.sendSignal(
-      { type: 'EXECUTE_SCRIPT', payload },
-      requestId,
-      options.timeout
-    );
+    return this.sendSignal({ type: 'EXECUTE_SCRIPT', payload }, requestId, options.timeout);
   }
 
   /**
@@ -337,7 +335,7 @@ export class QBScriptClient {
     const result = await this.sendSignal<{ value: any }>(
       { type: 'ATTRIBUTE_CHANGED', payload },
       requestId,
-      options.timeout
+      options.timeout,
     );
 
     return result.value;
@@ -350,7 +348,7 @@ export class QBScriptClient {
     actionId: string,
     characterId: string,
     targetId?: string,
-    timeout = 10000
+    timeout = 10000,
   ): Promise<{
     value: any;
     announceMessages: string[];
@@ -365,7 +363,38 @@ export class QBScriptClient {
         payload: { actionId, characterId, targetId, requestId },
       },
       requestId,
-      timeout
+      timeout,
+    );
+  }
+
+  /**
+   * Execute an action event handler (on_activate, on_deactivate).
+   * Uses EventHandlerExecutor to run only the specified handler within the action script.
+   */
+  async executeActionEvent(
+    actionId: string,
+    characterId: string,
+    targetId: string | null,
+    eventType: 'on_activate' | 'on_deactivate',
+    roll?: RollFn,
+    timeout = 10000,
+  ): Promise<{
+    value: any;
+    announceMessages: string[];
+    logMessages: any[][];
+    executionTime: number;
+  }> {
+    const requestId = generateRequestId();
+
+    console.log('send signal');
+
+    return this.sendSignal(
+      {
+        type: 'EXECUTE_ACTION_EVENT',
+        payload: { actionId, characterId, targetId, eventType, requestId, roll },
+      },
+      requestId,
+      timeout,
     );
   }
 
@@ -376,7 +405,7 @@ export class QBScriptClient {
     itemId: string,
     characterId: string,
     eventType: string,
-    timeout = 10000
+    timeout = 10000,
   ): Promise<{
     value: any;
     announceMessages: string[];
@@ -391,7 +420,7 @@ export class QBScriptClient {
         payload: { itemId, characterId, eventType, requestId },
       },
       requestId,
-      timeout
+      timeout,
     );
   }
 
@@ -401,7 +430,7 @@ export class QBScriptClient {
   async validateScript(
     scriptId: string,
     sourceCode: string,
-    timeout = 5000
+    timeout = 5000,
   ): Promise<ValidationResult> {
     const requestId = generateRequestId();
 
@@ -411,7 +440,7 @@ export class QBScriptClient {
         payload: { scriptId, sourceCode, requestId },
       },
       requestId,
-      timeout
+      timeout,
     );
   }
 
@@ -420,7 +449,7 @@ export class QBScriptClient {
    */
   async buildDependencyGraph(
     rulesetId: string,
-    timeout = 30000
+    timeout = 30000,
   ): Promise<{ success: boolean; nodeCount?: number; edgeCount?: number }> {
     const requestId = generateRequestId();
 
@@ -430,7 +459,7 @@ export class QBScriptClient {
         payload: { rulesetId, requestId },
       },
       requestId,
-      timeout
+      timeout,
     );
   }
 

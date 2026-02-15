@@ -203,6 +203,14 @@ export class ReactiveExecutor {
         throw result.error;
       }
 
+      await this.persistScriptLogs(
+        rulesetId,
+        scriptId,
+        characterId,
+        result.logMessages,
+        'attribute_change',
+      );
+
       // Check if this execution triggered more changes
       // If so, we would recursively execute those scripts
       // For now, we rely on the topological sort to handle this
@@ -243,6 +251,44 @@ export class ReactiveExecutor {
           });
         }
       }
+    }
+  }
+
+  /**
+   * Persist script log messages to database.
+   */
+  private async persistScriptLogs(
+    rulesetId: string,
+    scriptId: string,
+    characterId: string,
+    logMessages: any[][],
+    context: string,
+  ): Promise<void> {
+    if (logMessages.length === 0) return;
+    const now = new Date().toISOString();
+    const timestamp = Date.now();
+    try {
+      for (const args of logMessages) {
+        let argsJson: string;
+        try {
+          argsJson = JSON.stringify(args);
+        } catch {
+          argsJson = JSON.stringify(args.map((a) => String(a)));
+        }
+        await this.db.scriptLogs.add({
+          id: crypto.randomUUID(),
+          rulesetId,
+          scriptId,
+          characterId,
+          argsJson,
+          timestamp,
+          context,
+          createdAt: now,
+          updatedAt: now,
+        } as any);
+      }
+    } catch (e) {
+      console.warn('[QBScript] Failed to persist script logs:', e);
     }
   }
 

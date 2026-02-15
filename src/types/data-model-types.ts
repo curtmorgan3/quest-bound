@@ -225,6 +225,15 @@ export type ScriptError = BaseDetails & {
   timestamp: number;           // When the error occurred
 };
 
+export type ScriptLog = BaseDetails & {
+  rulesetId: string;
+  scriptId: string;
+  characterId: string | null;
+  argsJson: string;            // JSON.stringify of the log arguments array (any[])
+  timestamp: number;
+  context?: string;            // e.g. "load" | "attribute_change" | "action_click" | "item_event"
+};
+
 export type DependencyGraphNode = BaseDetails & {
   rulesetId: string;           // Which ruleset this node belongs to
   scriptId: string;            // Script that this node represents

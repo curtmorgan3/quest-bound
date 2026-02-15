@@ -8,11 +8,13 @@
 import type { DB } from '@/stores/db/hooks/types';
 import { dbSchema, dbSchemaVersion } from '@/stores/db/schema';
 import Dexie from 'dexie';
+import type { RollFn } from '../interpreter/evaluator';
 import { Lexer } from '../interpreter/lexer';
 import { Parser } from '../interpreter/parser';
+import { EventHandlerExecutor } from '../reactive/event-handler-executor';
 import { ReactiveExecutor } from '../reactive/reactive-executor';
-import { prepareForStructuredClone } from '../runtime/structured-clone-safe';
 import { ScriptRunner, type ScriptExecutionContext } from '../runtime/script-runner';
+import { prepareForStructuredClone } from '../runtime/structured-clone-safe';
 import type {
   AttributeChangedPayload,
   ExecuteScriptPayload,
@@ -78,6 +80,10 @@ async function handleSignal(signal: MainToWorkerSignal): Promise<void> {
         await handleExecuteAction(signal.payload);
         break;
 
+      case 'EXECUTE_ACTION_EVENT':
+        await handleExecuteActionEvent(signal.payload);
+        break;
+
       case 'EXECUTE_ITEM_EVENT':
         await handleExecuteItemEvent(signal.payload);
         break;
@@ -98,6 +104,45 @@ async function handleSignal(signal: MainToWorkerSignal): Promise<void> {
         stackTrace: error instanceof Error ? error.stack : undefined,
       },
     });
+  }
+}
+
+// ============================================================================
+// Script log persistence
+// ============================================================================
+
+async function persistScriptLogs(
+  rulesetId: string,
+  scriptId: string,
+  characterId: string,
+  logMessages: any[][],
+  context: string,
+): Promise<void> {
+  if (logMessages.length === 0) return;
+  const now = new Date().toISOString();
+  const timestamp = Date.now();
+  try {
+    for (const args of logMessages) {
+      let argsJson: string;
+      try {
+        argsJson = JSON.stringify(args);
+      } catch {
+        argsJson = JSON.stringify(args.map((a) => String(a)));
+      }
+      await db.scriptLogs.add({
+        id: crypto.randomUUID(),
+        rulesetId,
+        scriptId,
+        characterId,
+        argsJson,
+        timestamp,
+        context,
+        createdAt: now,
+        updatedAt: now,
+      });
+    }
+  } catch (e) {
+    console.warn('[QBScript] Failed to persist script logs:', e);
   }
 }
 
@@ -124,6 +169,15 @@ async function handleExecuteScript(payload: ExecuteScriptPayload): Promise<void>
     const result = await runner.run(payload.sourceCode);
 
     const executionTime = performance.now() - startTime;
+
+    const contextLabel = payload.triggerType ?? 'load';
+    await persistScriptLogs(
+      payload.rulesetId,
+      payload.scriptId,
+      payload.characterId,
+      result.logMessages,
+      contextLabel,
+    );
 
     if (result.error) {
       sendSignal({
@@ -324,6 +378,82 @@ async function handleExecuteAction(payload: {
       triggerType: 'action_click',
       requestId: payload.requestId,
     });
+  } catch (error) {
+    sendSignal({
+      type: 'SCRIPT_ERROR',
+      payload: {
+        requestId: payload.requestId,
+        error: {
+          message: error instanceof Error ? error.message : String(error),
+          stackTrace: error instanceof Error ? error.stack : undefined,
+        },
+      },
+    });
+  }
+}
+
+/** Execute an action event (on_activate, on_deactivate) via EventHandlerExecutor. */
+async function handleExecuteActionEvent(payload: {
+  actionId: string;
+  characterId: string;
+  targetId: string | null;
+  eventType: 'on_activate' | 'on_deactivate';
+  requestId: string;
+  roll?: RollFn;
+}): Promise<void> {
+  try {
+    console.log('worker handle event');
+    const action = await db.actions.get(payload.actionId);
+    if (!action) {
+      throw new Error(`Action not found: ${payload.actionId}`);
+    }
+
+    const executor = new EventHandlerExecutor(db);
+    const result = await executor.executeActionEvent(
+      payload.actionId,
+      payload.characterId,
+      payload.targetId,
+      payload.eventType,
+      payload.roll,
+    );
+
+    const script = await db.scripts
+      .where({ entityId: payload.actionId, entityType: 'action' })
+      .first();
+    const scriptId = script?.id ?? payload.actionId;
+
+    await persistScriptLogs(
+      action.rulesetId,
+      scriptId,
+      payload.characterId,
+      result.logMessages,
+      'action_event',
+    );
+
+    if (result.error || !result.success) {
+      sendSignal({
+        type: 'SCRIPT_ERROR',
+        payload: {
+          requestId: payload.requestId,
+          error: {
+            message: result.error?.message ?? 'Action event failed',
+            stackTrace: result.error?.stack,
+          },
+          logMessages: result.logMessages.map((args) => prepareForStructuredClone(args)),
+        },
+      });
+    } else {
+      sendSignal({
+        type: 'SCRIPT_RESULT',
+        payload: {
+          requestId: payload.requestId,
+          result: prepareForStructuredClone(result.value),
+          announceMessages: result.announceMessages,
+          logMessages: result.logMessages.map((args) => prepareForStructuredClone(args)),
+          executionTime: 0,
+        },
+      });
+    }
   } catch (error) {
     sendSignal({
       type: 'SCRIPT_ERROR',

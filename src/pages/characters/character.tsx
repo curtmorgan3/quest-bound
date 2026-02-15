@@ -6,12 +6,11 @@ import {
   useCharacterWindows,
   type CharacterWindowUpdate,
 } from '@/lib/compass-api';
-import { executeActionEvent, useScriptAnnouncements } from '@/lib/compass-logic';
+import { useExecuteActionEvent, useScriptAnnouncements } from '@/lib/compass-logic';
 import { SheetViewer } from '@/lib/compass-planes';
 import {
   CharacterInventoryPanelContext,
   CharacterProvider,
-  db,
   DiceContext,
   type InventoryPanelConfig,
 } from '@/stores';
@@ -29,6 +28,8 @@ export const CharacterPage = ({ id, lockByDefault }: { id?: string; lockByDefaul
   const { rollDice } = useContext(DiceContext);
   const { open } = useSidebar();
 
+  const { executeActionEvent, announceMessages } = useExecuteActionEvent();
+
   const { character, updateCharacter } = useCharacter(id ?? characterId);
   const { updateCharacterWindow, deleteCharacterWindow } = useCharacterWindows(character?.id);
   const { characterAttributes, updateCharacterAttribute } = useCharacterAttributes(character?.id);
@@ -42,8 +43,6 @@ export const CharacterPage = ({ id, lockByDefault }: { id?: string; lockByDefaul
   } = useInventoryUpdateWrappers({ character });
 
   const [inventoryPanelConfig, setInventoryPanelConfig] = useState<InventoryPanelConfig>({});
-  const [eventAnnouncements, setEventAnnouncements] = useState<string[]>([]);
-  const [gameLogs, setGameLogs] = useState<string[]>([]);
 
   const { addNotification } = useNotifications();
 
@@ -52,12 +51,11 @@ export const CharacterPage = ({ id, lockByDefault }: { id?: string; lockByDefaul
   });
 
   useEffect(() => {
-    if (!eventAnnouncements.length) return;
-    eventAnnouncements.map((msg) => {
+    if (!announceMessages.length) return;
+    announceMessages.map((msg) => {
       addNotification(msg);
-      setEventAnnouncements([]);
     });
-  }, [eventAnnouncements, addNotification]);
+  }, [announceMessages, addNotification]);
 
   const handleSelectInventoryEntity = (
     entity: Action | Item | Attribute,
@@ -163,9 +161,8 @@ export const CharacterPage = ({ id, lockByDefault }: { id?: string; lockByDefaul
   const fireAction = async (actionId: string) => {
     if (!character) return;
     const rollFn = async (diceString: string) => rollDice(diceString).then((res) => res.total);
-    const res = await executeActionEvent(db, actionId, character.id, null, 'on_activate', rollFn);
-    setEventAnnouncements(res.announceMessages);
-    setGameLogs((prev) => [...prev, ...res.logMessages.map((log) => log[0])]);
+    console.log('fire ', actionId);
+    executeActionEvent(actionId, character.id, null, 'on_activate', rollFn);
   };
 
   if (!character) {
@@ -188,7 +185,6 @@ export const CharacterPage = ({ id, lockByDefault }: { id?: string; lockByDefaul
         removeInventoryItem: removeItemAndFireEvent,
         fireAction,
         consumeItem,
-        gameLogs,
       }}>
       <SheetViewer
         key={character.id}
@@ -201,7 +197,7 @@ export const CharacterPage = ({ id, lockByDefault }: { id?: string; lockByDefaul
         onWindowUpdated={handleUpdateWindow}
         onWindowDeleted={handleDeleteWindow}
       />
-      <GameLog logs={gameLogs} className={`fixed bottom-[50px] left-${open ? '265' : '65'} z-30`} />
+      <GameLog className={`fixed bottom-[50px] left-${open ? '265' : '65'} z-30`} />
       <InventoryPanel
         open={inventoryPanelConfig.open ?? false}
         onOpenChange={(open: boolean) => {

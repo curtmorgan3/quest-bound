@@ -27,7 +27,7 @@ export const useInventoryUpdateWrappers = ({ character }: UseInventoryUpdateWrap
   const fireItemEvent = async (itemId: string, event: ItemEvent) => {
     if (!character) return;
     const res = await executeItemEvent(db, itemId, character.id, event);
-    console.log(res);
+    console.log(res.logMessages[0]);
   };
 
   const addItemAndFireEvent = async (

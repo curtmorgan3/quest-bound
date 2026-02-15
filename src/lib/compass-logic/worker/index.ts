@@ -18,6 +18,8 @@ export {
   useQBScriptClient,
   useExecuteScript,
   useExecuteAction,
+  useExecuteActionEvent,
+  useExecuteItemEvent,
   useAttributeChange,
   useScriptValidation,
   useScriptAnnouncements,
@@ -27,6 +29,8 @@ export {
 export type {
   UseExecuteScriptResult,
   UseExecuteActionResult,
+  UseExecuteActionEventResult,
+  UseExecuteItemEventResult,
   UseAttributeChangeResult,
   UseScriptValidationResult,
   UseDependencyGraphResult,

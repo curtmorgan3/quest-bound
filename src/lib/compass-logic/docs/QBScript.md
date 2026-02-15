@@ -333,11 +333,11 @@ armor = Owner.Item('Plate Mail')
 armor.armor_value // Access custom property
 
 // ===== ITEM EVENTS =====
-on_equip
+on_equip // Fires when the player equips an item
 
-on_unquip
+on_unquip // Fires when the player unequips an item
 
-on_consume
+on_consume // Fires when the player consumes an item
 
 ```javascript
 // Ring of Armor - activates spell effect when equipped

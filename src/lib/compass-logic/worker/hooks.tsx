@@ -1,12 +1,13 @@
 /**
  * React Hooks for QBScript Worker Integration
- * 
+ *
  * Provides easy-to-use hooks for executing scripts from React components.
  */
 
-import { useCallback, useEffect, useState, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import type { RollFn } from '../interpreter/evaluator';
+import type { AttributeChangeOptions, ScriptExecutionOptions } from './client';
 import { getQBScriptClient } from './client';
-import type { ScriptExecutionOptions, AttributeChangeOptions } from './client';
 
 // ============================================================================
 // useQBScriptClient - Access the client directly
@@ -62,7 +63,7 @@ export function useExecuteScript(timeout = 10000): UseExecuteScriptResult {
         setIsExecuting(false);
       }
     },
-    [client, timeout]
+    [client, timeout],
   );
 
   const reset = useCallback(() => {
@@ -90,15 +91,14 @@ export function useExecuteScript(timeout = 10000): UseExecuteScriptResult {
 // ============================================================================
 
 export interface UseExecuteActionResult {
-  executeAction: (
-    actionId: string,
-    characterId: string,
-    targetId?: string
-  ) => Promise<void>;
+  executeAction: (actionId: string, characterId: string, targetId?: string) => Promise<void>;
   result: any;
   announceMessages: string[];
+  logMessages: any[][];
+  executionTime: number | null;
   isExecuting: boolean;
   error: Error | null;
+  reset: () => void;
 }
 
 export function useExecuteAction(timeout = 10000): UseExecuteActionResult {
@@ -106,6 +106,8 @@ export function useExecuteAction(timeout = 10000): UseExecuteActionResult {
   const [isExecuting, setIsExecuting] = useState(false);
   const [result, setResult] = useState<any>(null);
   const [announceMessages, setAnnounceMessages] = useState<string[]>([]);
+  const [logMessages, setLogMessages] = useState<any[][]>([]);
+  const [executionTime, setExecutionTime] = useState<number | null>(null);
   const [error, setError] = useState<Error | null>(null);
 
   const executeAction = useCallback(
@@ -114,31 +116,199 @@ export function useExecuteAction(timeout = 10000): UseExecuteActionResult {
       setError(null);
 
       try {
-        const response = await client.executeAction(
-          actionId,
-          characterId,
-          targetId,
-          timeout
-        );
+        const response = await client.executeAction(actionId, characterId, targetId, timeout);
         setResult(response.value);
         setAnnounceMessages(response.announceMessages);
+        setLogMessages(response.logMessages);
+        setExecutionTime(response.executionTime);
       } catch (err) {
         setError(err instanceof Error ? err : new Error(String(err)));
         setResult(null);
         setAnnounceMessages([]);
+        setLogMessages([]);
+        setExecutionTime(null);
       } finally {
         setIsExecuting(false);
       }
     },
-    [client, timeout]
+    [client, timeout],
   );
+
+  const reset = useCallback(() => {
+    setResult(null);
+    setAnnounceMessages([]);
+    setLogMessages([]);
+    setExecutionTime(null);
+    setError(null);
+  }, []);
 
   return {
     executeAction,
     result,
     announceMessages,
+    logMessages,
+    executionTime,
     isExecuting,
     error,
+    reset,
+  };
+}
+
+// ============================================================================
+// useExecuteActionEvent - Execute action event handlers (on_activate, on_deactivate)
+// ============================================================================
+
+export interface UseExecuteActionEventResult {
+  executeActionEvent: (
+    actionId: string,
+    characterId: string,
+    targetId: string | null,
+    eventType: 'on_activate' | 'on_deactivate',
+    roll?: RollFn,
+  ) => Promise<void>;
+  result: any;
+  announceMessages: string[];
+  logMessages: any[][];
+  executionTime: number | null;
+  isExecuting: boolean;
+  error: Error | null;
+  reset: () => void;
+}
+
+export function useExecuteActionEvent(timeout = 10000): UseExecuteActionEventResult {
+  const client = useQBScriptClient();
+  const [isExecuting, setIsExecuting] = useState(false);
+  const [result, setResult] = useState<any>(null);
+  const [announceMessages, setAnnounceMessages] = useState<string[]>([]);
+  const [logMessages, setLogMessages] = useState<any[][]>([]);
+  const [executionTime, setExecutionTime] = useState<number | null>(null);
+  const [error, setError] = useState<Error | null>(null);
+
+  const executeActionEvent = useCallback(
+    async (
+      actionId: string,
+      characterId: string,
+      targetId: string | null,
+      eventType: 'on_activate' | 'on_deactivate',
+      roll?: RollFn,
+    ) => {
+      setIsExecuting(true);
+      setError(null);
+
+      console.log('executeActionEvent');
+
+      try {
+        const response = await client.executeActionEvent(
+          actionId,
+          characterId,
+          targetId,
+          eventType,
+          undefined, //roll
+          timeout,
+        );
+        console.log('executeActionEvent: ', response);
+        setResult(response.value);
+        setAnnounceMessages(response.announceMessages);
+        setLogMessages(response.logMessages);
+        setExecutionTime(response.executionTime);
+      } catch (err) {
+        setError(err instanceof Error ? err : new Error(String(err)));
+        setResult(null);
+        setAnnounceMessages([]);
+        setLogMessages([]);
+        setExecutionTime(null);
+      } finally {
+        setIsExecuting(false);
+      }
+    },
+    [client, timeout],
+  );
+
+  const reset = useCallback(() => {
+    setResult(null);
+    setAnnounceMessages([]);
+    setLogMessages([]);
+    setExecutionTime(null);
+    setError(null);
+  }, []);
+
+  return {
+    executeActionEvent,
+    result,
+    announceMessages,
+    logMessages,
+    executionTime,
+    isExecuting,
+    error,
+    reset,
+  };
+}
+
+// ============================================================================
+// useExecuteItemEvent - Execute item event scripts
+// ============================================================================
+
+export interface UseExecuteItemEventResult {
+  executeItemEvent: (itemId: string, characterId: string, eventType: string) => Promise<void>;
+  result: any;
+  announceMessages: string[];
+  logMessages: any[][];
+  executionTime: number | null;
+  isExecuting: boolean;
+  error: Error | null;
+  reset: () => void;
+}
+
+export function useExecuteItemEvent(timeout = 10000): UseExecuteItemEventResult {
+  const client = useQBScriptClient();
+  const [isExecuting, setIsExecuting] = useState(false);
+  const [result, setResult] = useState<any>(null);
+  const [announceMessages, setAnnounceMessages] = useState<string[]>([]);
+  const [logMessages, setLogMessages] = useState<any[][]>([]);
+  const [executionTime, setExecutionTime] = useState<number | null>(null);
+  const [error, setError] = useState<Error | null>(null);
+
+  const executeItemEvent = useCallback(
+    async (itemId: string, characterId: string, eventType: string) => {
+      setIsExecuting(true);
+      setError(null);
+
+      try {
+        const response = await client.executeItemEvent(itemId, characterId, eventType, timeout);
+        setResult(response.value);
+        setAnnounceMessages(response.announceMessages);
+        setLogMessages(response.logMessages);
+        setExecutionTime(response.executionTime);
+      } catch (err) {
+        setError(err instanceof Error ? err : new Error(String(err)));
+        setResult(null);
+        setAnnounceMessages([]);
+        setLogMessages([]);
+        setExecutionTime(null);
+      } finally {
+        setIsExecuting(false);
+      }
+    },
+    [client, timeout],
+  );
+
+  const reset = useCallback(() => {
+    setResult(null);
+    setAnnounceMessages([]);
+    setLogMessages([]);
+    setExecutionTime(null);
+    setError(null);
+  }, []);
+
+  return {
+    executeItemEvent,
+    result,
+    announceMessages,
+    logMessages,
+    executionTime,
+    isExecuting,
+    error,
+    reset,
   };
 }
 
@@ -178,7 +348,7 @@ export function useAttributeChange(timeout = 10000): UseAttributeChangeResult {
         setIsProcessing(false);
       }
     },
-    [client, timeout]
+    [client, timeout],
   );
 
   return {
@@ -205,9 +375,9 @@ export function useScriptValidation(timeout = 5000): UseScriptValidationResult {
   const client = useQBScriptClient();
   const [isValidating, setIsValidating] = useState(false);
   const [isValid, setIsValid] = useState<boolean | null>(null);
-  const [errors, setErrors] = useState<
-    Array<{ message: string; line?: number; column?: number }>
-  >([]);
+  const [errors, setErrors] = useState<Array<{ message: string; line?: number; column?: number }>>(
+    [],
+  );
 
   const validate = useCallback(
     async (scriptId: string, sourceCode: string) => {
@@ -228,7 +398,7 @@ export function useScriptValidation(timeout = 5000): UseScriptValidationResult {
         setIsValidating(false);
       }
     },
-    [client, timeout]
+    [client, timeout],
   );
 
   return {
@@ -243,9 +413,7 @@ export function useScriptValidation(timeout = 5000): UseScriptValidationResult {
 // useScriptAnnouncements - Listen for announcements
 // ============================================================================
 
-export function useScriptAnnouncements(
-  onAnnounce?: (message: string) => void
-): void {
+export function useScriptAnnouncements(onAnnounce?: (message: string) => void): void {
   useEffect(() => {
     const handleAnnounce = (event: Event) => {
       const customEvent = event as CustomEvent<{ message: string }>;
@@ -364,7 +532,7 @@ export function useReactiveScriptExecution(timeout = 10000): UseReactiveScriptEx
         setIsExecuting(false);
       }
     },
-    [client, timeout]
+    [client, timeout],
   );
 
   const reset = useCallback(() => {
@@ -432,7 +600,7 @@ export function useDependencyGraph(timeout = 30000): UseDependencyGraphResult {
         setIsBuilding(false);
       }
     },
-    [client, timeout]
+    [client, timeout],
   );
 
   const clear = useCallback(
@@ -443,7 +611,7 @@ export function useDependencyGraph(timeout = 30000): UseDependencyGraphResult {
       setEdgeCount(null);
       setError(null);
     },
-    [client]
+    [client],
   );
 
   return {

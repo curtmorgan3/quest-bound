@@ -18,6 +18,7 @@ import type {
   Ruleset,
   Script,
   ScriptError,
+  ScriptLog,
   User,
   Window,
 } from '@/types';
@@ -52,6 +53,7 @@ const db = new Dexie('qbdb') as Dexie & {
   diceRolls: EntityTable<DiceRoll, 'id'>;
   scripts: EntityTable<Script, 'id'>;
   scriptErrors: EntityTable<ScriptError, 'id'>;
+  scriptLogs: EntityTable<ScriptLog, 'id'>;
   dependencyGraphNodes: EntityTable<DependencyGraphNode, 'id'>;
 };
 

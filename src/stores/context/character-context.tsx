@@ -48,7 +48,6 @@ type CharacterContext = {
   ) => void;
   fireAction: (actionId: string) => void;
   consumeItem: (id: string) => void;
-  gameLogs: string[];
 };
 
 export const CharacterContext = createContext<CharacterContext>(null!);

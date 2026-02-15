@@ -45,7 +45,7 @@ export function registerScriptHooks(db: DB) {
     await db.actions.where({ scriptId }).modify({ scriptId: null });
     await db.items.where({ scriptId }).modify({ scriptId: null });
 
-    // Delete associated errors
+    // Delete associated errors and logs
     await db.scriptErrors.where({ scriptId }).delete();
 
     // Delete dependency graph nodes for this script
@@ -93,6 +93,7 @@ export function registerScriptHooks(db: DB) {
     const rulesetId = primKey as string;
     await db.scripts.where({ rulesetId }).delete();
     await db.scriptErrors.where({ rulesetId }).delete();
+    await db.scriptLogs.where({ rulesetId }).delete();
     await db.dependencyGraphNodes.where({ rulesetId }).delete();
   });
 }

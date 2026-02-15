@@ -1,9 +1,11 @@
 /**
  * Signal Protocol for QBScript Worker Communication
- * 
+ *
  * This defines the message format for bidirectional communication
  * between the main thread and the QBScript Web Worker.
  */
+
+import type { RollFn } from '../interpreter/evaluator';
 
 // ============================================================================
 // Main Thread → Worker Signals
@@ -15,6 +17,7 @@ export type MainToWorkerSignal =
   | ValidateScriptSignal
   | AttributeChangedSignal
   | ExecuteActionSignal
+  | ExecuteActionEventSignal
   | ExecuteItemEventSignal
   | ClearGraphSignal;
 
@@ -52,6 +55,19 @@ export interface ExecuteActionSignal {
     characterId: string;
     targetId?: string;
     requestId: string;
+  };
+}
+
+/** Runs an action event handler (on_activate, on_deactivate) via EventHandlerExecutor. */
+export interface ExecuteActionEventSignal {
+  type: 'EXECUTE_ACTION_EVENT';
+  payload: {
+    actionId: string;
+    characterId: string;
+    targetId: string | null;
+    eventType: 'on_activate' | 'on_deactivate';
+    requestId: string;
+    roll?: RollFn;
   };
 }
 

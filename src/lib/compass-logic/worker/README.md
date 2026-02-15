@@ -40,7 +40,66 @@ function MyComponent() {
 Execute arbitrary scripts with full control.
 
 ### `useExecuteAction()`
-Execute action scripts by action ID.
+Execute action scripts by action ID (runs the full script, e.g. when the user clicks the action).
+
+### `useExecuteActionEvent()`
+Execute action **event** handlers (`on_activate`, `on_deactivate`) in the worker. Uses `EventHandlerExecutor` so only the chosen handler runs.
+
+**Example: fire an action event from a React component (runs in worker thread)**
+
+```tsx
+import { useExecuteActionEvent } from '@/lib/compass-logic/worker';
+
+function ActionSheetPanel({
+  actionId,
+  characterId,
+  targetId,
+}: {
+  actionId: string;
+  characterId: string;
+  targetId: string | null;
+}) {
+  const {
+    executeActionEvent,
+    result,
+    logMessages,
+    isExecuting,
+    error,
+    reset,
+  } = useExecuteActionEvent(10000);
+
+  // Run on_activate when this panel opens (e.g. in useEffect or on mount)
+  const handleActivate = () => {
+    executeActionEvent(actionId, characterId, targetId ?? null, 'on_activate');
+  };
+
+  const handleDeactivate = () => {
+    executeActionEvent(actionId, characterId, targetId ?? null, 'on_deactivate');
+  };
+
+  return (
+    <div>
+      <button onClick={handleActivate} disabled={isExecuting}>
+        Activate
+      </button>
+      <button onClick={handleDeactivate} disabled={isExecuting}>
+        Deactivate
+      </button>
+      {error && <p role="alert">{error.message}</p>}
+      {logMessages.length > 0 && (
+        <ul>
+          {logMessages.map((args, i) => (
+            <li key={i}>{args.map(String).join(' ')}</li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+```
+
+### `useExecuteItemEvent()`
+Execute item event handlers (`on_equip`, `on_unequip`, `on_consume`).
 
 ### `useAttributeChange()`
 Notify worker of attribute changes (triggers reactive scripts).

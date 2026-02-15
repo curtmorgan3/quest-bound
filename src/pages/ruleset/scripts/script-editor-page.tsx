@@ -29,7 +29,6 @@ export function ScriptEditorPage() {
 
   const isNew = scriptId === 'new';
   const script = isNew ? null : (scripts.find((s) => s.id === scriptId) ?? null);
-  console.log(script);
 
   const [name, setName] = useState('');
   const [entityType, setEntityType] = useState<Script['entityType']>('attribute');

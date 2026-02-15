@@ -1,14 +1,17 @@
 import { Button } from '@/components/ui/button';
+import { useScriptLogs } from '@/lib/compass-api';
 import { ScrollText, X } from 'lucide-react';
 import { useState } from 'react';
 
 interface GameLogProps {
-  logs: string[];
   className?: string;
 }
 
-export const GameLog = ({ logs, className }: GameLogProps) => {
+export const GameLog = ({ className }: GameLogProps) => {
+  const { logs: scriptLogs } = useScriptLogs(250);
   const [open, setOpen] = useState(false);
+
+  const logs = scriptLogs.map((l) => l.argsJson);
 
   return (
     <>
