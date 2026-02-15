@@ -99,7 +99,7 @@ function ActionSheetPanel({
 ```
 
 ### `useExecuteItemEvent()`
-Execute item event handlers (`on_equip`, `on_unequip`, `on_consume`).
+Execute item event handlers (`on_equip`, `on_unequip`, `on_consume`) in the worker. Optional `roll` works the same as `useExecuteActionEvent` (round-trip to main thread).
 
 ### `useAttributeChange()`
 Notify worker of attribute changes (triggers reactive scripts).

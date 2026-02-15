@@ -1,7 +1,7 @@
 import type { DB } from '@/stores/db/hooks/types';
+import type { RollFn } from '@/types';
 import type { ASTNode } from '../interpreter/ast';
 import { functionDefToExecutableSource } from '../interpreter/ast-to-source';
-import type { RollFn } from '../interpreter/evaluator';
 import { Lexer } from '../interpreter/lexer';
 import { Parser } from '../interpreter/parser';
 import type { ScriptExecutionContext } from '../runtime/script-runner';
@@ -44,12 +44,14 @@ export class EventHandlerExecutor {
    * @param itemId - ID of the item
    * @param characterId - ID of the character
    * @param eventType - Type of event (on_equip, on_unequip, on_consume)
+   * @param roll - Optional function to handle dice rolling
    * @returns Execution result
    */
   async executeItemEvent(
     itemId: string,
     characterId: string,
     eventType: 'on_equip' | 'on_unequip' | 'on_consume',
+    roll?: RollFn,
   ): Promise<EventHandlerResult> {
     // Get item
     const item = await this.db.items.get(itemId);
@@ -103,6 +105,7 @@ export class EventHandlerExecutor {
       db: this.db,
       scriptId: script.id,
       triggerType: 'item_event',
+      roll,
     };
 
     const runner = new ScriptRunner(context);
@@ -309,6 +312,7 @@ end
  * @param itemId - ID of the item
  * @param characterId - ID of the character
  * @param eventType - Type of event
+ * @param roll - Optional function to handle dice rolls
  * @returns Execution result
  */
 export async function executeItemEvent(
@@ -316,9 +320,10 @@ export async function executeItemEvent(
   itemId: string,
   characterId: string,
   eventType: 'on_equip' | 'on_unequip' | 'on_consume',
+  roll?: RollFn,
 ): Promise<EventHandlerResult> {
   const executor = new EventHandlerExecutor(db);
-  return executor.executeItemEvent(itemId, characterId, eventType);
+  return executor.executeItemEvent(itemId, characterId, eventType, roll);
 }
 
 /**

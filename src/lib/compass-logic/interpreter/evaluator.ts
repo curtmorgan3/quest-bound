@@ -1,10 +1,8 @@
+import type { RollFn } from '@/types';
 import { parseDiceExpression, rollDie } from '@/utils/dice-utils';
 import { prepareForStructuredClone } from '../runtime/structured-clone-safe';
 import type { ASTNode } from './ast';
 import { isBuiltInArrayMethod, registerArrayMethod } from './built-ins';
-
-/** Roll function usable in scripts: takes dice expression (e.g. "2d6+3"), returns total (sync or async). */
-export type RollFn = (expression: string) => number | Promise<number>;
 
 export interface EvaluatorOptions {
   /** When set, used as the script built-in roll() instead of the default local roll. */

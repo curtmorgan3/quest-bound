@@ -1,11 +1,6 @@
 import { useSidebar } from '@/components/ui/sidebar';
 import { useNotifications } from '@/hooks';
-import {
-  useCharacter,
-  useCharacterAttributes,
-  useCharacterWindows,
-  type CharacterWindowUpdate,
-} from '@/lib/compass-api';
+import { useCharacter, useCharacterAttributes } from '@/lib/compass-api';
 import { useExecuteActionEvent, useScriptAnnouncements } from '@/lib/compass-logic';
 import { SheetViewer } from '@/lib/compass-planes';
 import {
@@ -14,25 +9,37 @@ import {
   DiceContext,
   type InventoryPanelConfig,
 } from '@/stores';
-import { type Action, type Attribute, type CharacterAttribute, type Item } from '@/types';
-import { useContext, useEffect, useMemo, useState } from 'react';
+import { type CharacterAttribute } from '@/types';
+import { useContext, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { CharacterInventoryPanel, findFirstEmptySlot } from './character-inventory-panel';
+import { CharacterInventoryPanel } from './character-inventory-panel';
 import { GameLog } from './game-log';
+import {
+  useCharacterInventoryHandlers,
+  useCharacterWindowHandlers,
+  useSheetPersistence,
+} from './hooks';
 import { InventoryPanel } from './inventory-panel';
-import { useInventoryUpdateWrappers } from './use-inventory-update-wrappers';
 
 export const CharacterPage = ({ id, lockByDefault }: { id?: string; lockByDefault?: boolean }) => {
-  const { characterId } = useParams<{ characterId: string }>();
-  const characterInventoryPanel = useContext(CharacterInventoryPanelContext);
-  const { rollDice } = useContext(DiceContext);
   const { open } = useSidebar();
+  const { characterId } = useParams<{ characterId: string }>();
+  const { addNotification } = useNotifications();
+  const characterInventoryPanel = useContext(CharacterInventoryPanelContext);
 
-  const { executeActionEvent, announceMessages } = useExecuteActionEvent();
+  const { rollDice } = useContext(DiceContext);
+  const roll = async (diceString: string) => rollDice(diceString).then((res) => res.total);
 
   const { character, updateCharacter } = useCharacter(id ?? characterId);
-  const { updateCharacterWindow, deleteCharacterWindow } = useCharacterWindows(character?.id);
   const { characterAttributes, updateCharacterAttribute } = useCharacterAttributes(character?.id);
+  const { handleUpdateWindow, handleDeleteWindow } = useCharacterWindowHandlers(
+    character?.id ?? '',
+  );
+  const { sheetViewerPersistence } = useSheetPersistence(character?.id);
+
+  const [inventoryPanelConfig, setInventoryPanelConfig] = useState<InventoryPanelConfig>({});
+
+  const { executeActionEvent } = useExecuteActionEvent();
 
   const {
     inventoryItems,
@@ -40,87 +47,17 @@ export const CharacterPage = ({ id, lockByDefault }: { id?: string; lockByDefaul
     updateItemAndFireEvent,
     removeItemAndFireEvent,
     consumeItem,
-  } = useInventoryUpdateWrappers({ character });
-
-  const [inventoryPanelConfig, setInventoryPanelConfig] = useState<InventoryPanelConfig>({});
-
-  const { addNotification } = useNotifications();
+    handleSelectInventoryEntity,
+  } = useCharacterInventoryHandlers({
+    character,
+    roll,
+    inventoryPanelConfig,
+    setInventoryPanelConfig,
+  });
 
   useScriptAnnouncements((msg: string) => {
     addNotification(msg);
   });
-
-  useEffect(() => {
-    if (!announceMessages.length) return;
-    announceMessages.map((msg) => {
-      addNotification(msg);
-    });
-  }, [announceMessages, addNotification]);
-
-  const handleSelectInventoryEntity = (
-    entity: Action | Item | Attribute,
-    type: 'action' | 'item' | 'attribute',
-  ) => {
-    if (inventoryPanelConfig.addToDefaultInventory) {
-      addItemAndFireEvent({
-        type,
-        entityId: entity.id,
-        componentId: '',
-        quantity: 1,
-        x: 0,
-        y: 0,
-      });
-      return;
-    }
-
-    if (!inventoryPanelConfig.inventoryComponentId) {
-      console.warn('No component ID available when adding item to inventory.');
-      return;
-    }
-
-    // Get the entity's inventory dimensions (default to 2x2 if not specified)
-    const itemWidth =
-      (entity as Item).inventoryWidth ??
-      (entity as Action).inventoryWidth ??
-      (entity as Attribute).inventoryWidth ??
-      2;
-    const itemHeight =
-      (entity as Item).inventoryHeight ??
-      (entity as Action).inventoryHeight ??
-      (entity as Attribute).inventoryHeight ??
-      2;
-
-    // Find the first empty slot
-    const slot = findFirstEmptySlot({
-      inventoryItems,
-      inventoryPanelConfig,
-      itemHeightIn20px: itemHeight,
-      itemWidthIn20px: itemWidth,
-    });
-
-    if (!slot) {
-      console.warn('No empty slot available in inventory.');
-      setInventoryPanelConfig({});
-      return;
-    }
-
-    addItemAndFireEvent({
-      type,
-      entityId: entity.id,
-      componentId: inventoryPanelConfig.inventoryComponentId,
-      quantity: 1,
-      x: slot.x,
-      y: slot.y,
-    });
-  };
-
-  const handleUpdateWindow = (update: CharacterWindowUpdate) => {
-    updateCharacterWindow(update.id, update);
-  };
-
-  const handleDeleteWindow = (id: string) => {
-    deleteCharacterWindow(id);
-  };
 
   const handleUpdateCharacterAttribute = (id: string, update: Partial<CharacterAttribute>) => {
     updateCharacterAttribute(id, update);
@@ -140,29 +77,9 @@ export const CharacterPage = ({ id, lockByDefault }: { id?: string; lockByDefaul
     });
   };
 
-  const sheetViewerPersistence = useMemo(() => {
-    if (!character) return undefined;
-    return {
-      onCurrentPageChange: (pageId: string | null) => {
-        updateCharacter(character.id, { lastViewedPageId: pageId });
-      },
-      onLockedChange: (locked: boolean) => {
-        updateCharacter(character.id, { sheetLocked: locked });
-      },
-    };
-  }, [
-    character?.id,
-    character?.lastViewedPageId,
-    character?.sheetLocked,
-    character,
-    updateCharacter,
-  ]);
-
   const fireAction = async (actionId: string) => {
     if (!character) return;
-    const rollFn = async (diceString: string) => rollDice(diceString).then((res) => res.total);
-    console.log('fire ', actionId);
-    executeActionEvent(actionId, character.id, null, 'on_activate', rollFn);
+    executeActionEvent(actionId, character.id, null, 'on_activate', roll);
   };
 
   if (!character) {

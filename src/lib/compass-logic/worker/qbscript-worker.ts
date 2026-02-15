@@ -7,8 +7,8 @@
 
 import type { DB } from '@/stores/db/hooks/types';
 import { dbSchema, dbSchemaVersion } from '@/stores/db/schema';
+import type { RollFn } from '@/types';
 import Dexie from 'dexie';
-import type { RollFn } from '../interpreter/evaluator';
 import { Lexer } from '../interpreter/lexer';
 import { Parser } from '../interpreter/parser';
 import { EventHandlerExecutor } from '../reactive/event-handler-executor';
@@ -44,10 +44,7 @@ let messagePort: MessagePort | null = null;
 // ============================================================================
 
 const rollBridge = {
-  pending: new Map<
-    string,
-    { resolve: (value: number) => void; reject: (err: Error) => void }
-  >(),
+  pending: new Map<string, { resolve: (value: number) => void; reject: (err: Error) => void }>(),
   requestRoll(expression: string, executionRequestId: string): Promise<number> {
     const rollRequestId = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
     return new Promise<number>((resolve, reject) => {
@@ -515,28 +512,57 @@ async function handleExecuteItemEvent(payload: {
   requestId: string;
 }): Promise<void> {
   try {
-    // Get the item from database
     const item = await db.items.get(payload.itemId);
     if (!item) {
       throw new Error(`Item not found: ${payload.itemId}`);
     }
 
-    // Get script for this item event
+    const rollFn: RollFn = (expression: string) =>
+      rollBridge.requestRoll(expression, payload.requestId);
+
+    const executor = new EventHandlerExecutor(db);
+    const result = await executor.executeItemEvent(
+      payload.itemId,
+      payload.characterId,
+      payload.eventType as 'on_equip' | 'on_unequip' | 'on_consume',
+      rollFn,
+    );
+
     const script = await db.scripts.where({ entityId: payload.itemId, entityType: 'item' }).first();
+    const scriptId = script?.id ?? payload.itemId;
 
-    if (!script) {
-      throw new Error(`No script found for item: ${payload.itemId}`);
+    await persistScriptLogs(
+      item.rulesetId,
+      scriptId,
+      payload.characterId,
+      result.logMessages,
+      'item_event',
+    );
+
+    if (result.error || !result.success) {
+      sendSignal({
+        type: 'SCRIPT_ERROR',
+        payload: {
+          requestId: payload.requestId,
+          error: {
+            message: result.error?.message ?? 'Item event failed',
+            stackTrace: result.error?.stack,
+          },
+          logMessages: result.logMessages.map((args) => prepareForStructuredClone(args)),
+        },
+      });
+    } else {
+      sendSignal({
+        type: 'SCRIPT_RESULT',
+        payload: {
+          requestId: payload.requestId,
+          result: prepareForStructuredClone(result.value),
+          announceMessages: result.announceMessages,
+          logMessages: result.logMessages.map((args) => prepareForStructuredClone(args)),
+          executionTime: 0,
+        },
+      });
     }
-
-    // Execute the script
-    await handleExecuteScript({
-      scriptId: script.id,
-      sourceCode: script.sourceCode,
-      characterId: payload.characterId,
-      rulesetId: item.rulesetId,
-      triggerType: 'item_event',
-      requestId: payload.requestId,
-    });
   } catch (error) {
     sendSignal({
       type: 'SCRIPT_ERROR',

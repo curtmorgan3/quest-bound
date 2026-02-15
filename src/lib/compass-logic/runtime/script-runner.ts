@@ -5,9 +5,9 @@ import type {
   Chart,
   InventoryItem,
   Item,
+  RollFn,
   Script,
 } from '@/types';
-import type { RollFn } from '../interpreter/evaluator';
 import { Evaluator } from '../interpreter/evaluator';
 import { Lexer } from '../interpreter/lexer';
 import { Parser } from '../interpreter/parser';

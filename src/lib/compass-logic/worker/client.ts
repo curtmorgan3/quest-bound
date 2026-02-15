@@ -5,7 +5,7 @@
  * Provides a clean async API for script execution and reactive updates.
  */
 
-import type { RollFn } from '../interpreter/evaluator';
+import type { RollFn } from '@/types';
 import type {
   AttributeChangedPayload,
   ExecuteScriptPayload,
@@ -445,12 +445,14 @@ export class QBScriptClient {
   }
 
   /**
-   * Execute an item event script
+   * Execute an item event script (on_equip, on_unequip, on_consume).
+   * Uses EventHandlerExecutor. Pass optional roll so scripts can call roll() via the same round-trip as action events.
    */
   async executeItemEvent(
     itemId: string,
     characterId: string,
     eventType: string,
+    roll?: RollFn,
     timeout = 10000,
   ): Promise<{
     value: any;
@@ -459,15 +461,21 @@ export class QBScriptClient {
     executionTime: number;
   }> {
     const requestId = generateRequestId();
-
-    return this.sendSignal(
-      {
-        type: 'EXECUTE_ITEM_EVENT',
-        payload: { itemId, characterId, eventType, requestId },
-      },
-      requestId,
-      timeout,
-    );
+    if (roll) {
+      this.pendingRollHandlers.set(requestId, roll);
+    }
+    try {
+      return await this.sendSignal(
+        {
+          type: 'EXECUTE_ITEM_EVENT',
+          payload: { itemId, characterId, eventType, requestId },
+        },
+        requestId,
+        timeout,
+      );
+    } finally {
+      this.pendingRollHandlers.delete(requestId);
+    }
   }
 
   /**

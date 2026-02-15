@@ -4,8 +4,8 @@
  * Provides easy-to-use hooks for executing scripts from React components.
  */
 
+import type { RollFn } from '@/types';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { RollFn } from '../interpreter/evaluator';
 import type { AttributeChangeOptions, ScriptExecutionOptions } from './client';
 import { getQBScriptClient } from './client';
 
@@ -246,7 +246,12 @@ export function useExecuteActionEvent(timeout = 10000): UseExecuteActionEventRes
 // ============================================================================
 
 export interface UseExecuteItemEventResult {
-  executeItemEvent: (itemId: string, characterId: string, eventType: string) => Promise<void>;
+  executeItemEvent: (
+    itemId: string,
+    characterId: string,
+    eventType: string,
+    roll?: RollFn,
+  ) => Promise<void>;
   result: any;
   announceMessages: string[];
   logMessages: any[][];
@@ -266,12 +271,18 @@ export function useExecuteItemEvent(timeout = 10000): UseExecuteItemEventResult 
   const [error, setError] = useState<Error | null>(null);
 
   const executeItemEvent = useCallback(
-    async (itemId: string, characterId: string, eventType: string) => {
+    async (itemId: string, characterId: string, eventType: string, roll?: RollFn) => {
       setIsExecuting(true);
       setError(null);
 
       try {
-        const response = await client.executeItemEvent(itemId, characterId, eventType, timeout);
+        const response = await client.executeItemEvent(
+          itemId,
+          characterId,
+          eventType,
+          roll,
+          timeout,
+        );
         setResult(response.value);
         setAnnounceMessages(response.announceMessages);
         setLogMessages(response.logMessages);

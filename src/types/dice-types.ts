@@ -18,6 +18,9 @@ export type DiceRollOpts = {
   autoShowResult?: boolean;
 };
 
+/** Roll function usable in scripts: takes dice expression (e.g. "2d6+3"), returns total (sync or async). */
+export type RollFn = (expression: string) => number | Promise<number>;
+
 /** A single dice term (e.g. 2d6) or modifier term (+4, -1) in order */
 export type DiceToken =
   | { type: 'dice'; count: number; sides: number }
