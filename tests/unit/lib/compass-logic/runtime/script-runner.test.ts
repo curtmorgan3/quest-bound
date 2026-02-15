@@ -2,7 +2,7 @@ import { Evaluator } from '@/lib/compass-logic/interpreter/evaluator';
 import { Lexer } from '@/lib/compass-logic/interpreter/lexer';
 import { Parser } from '@/lib/compass-logic/interpreter/parser';
 import { OwnerAccessor, RulesetAccessor } from '@/lib/compass-logic/runtime/accessors';
-import type { Attribute, CharacterAttribute, Chart, Item } from '@/types';
+import type { Attribute, CharacterAttribute, Chart, InventoryItem, Item } from '@/types';
 import { describe, expect, it } from 'vitest';
 
 /**
@@ -12,7 +12,7 @@ import { describe, expect, it } from 'vitest';
  */
 describe('ScriptRunner Integration Tests', () => {
   describe('parser and evaluator with method calls', () => {
-    it('should parse and evaluate chained method calls', () => {
+    it('should parse and evaluate chained method calls', async () => {
       const evaluator = new Evaluator();
 
       // Create a simple mock object with chainable methods
@@ -40,12 +40,12 @@ Owner.Attribute("HP").value
 
       const tokens = new Lexer(script).tokenize();
       const ast = new Parser(tokens).parse();
-      const result = evaluator.eval(ast);
+      const result = await evaluator.eval(ast);
 
       expect(result).toBe(30); // (10 + 5) * 2 = 30
     });
 
-    it('should handle member access on returned objects', () => {
+    it('should handle member access on returned objects', async () => {
       const evaluator = new Evaluator();
 
       const mockRuleset = {
@@ -64,12 +64,12 @@ attr.description
 
       const tokens = new Lexer(script).tokenize();
       const ast = new Parser(tokens).parse();
-      const result = evaluator.eval(ast);
+      const result = await evaluator.eval(ast);
 
       expect(result).toBe('Description of HP');
     });
 
-    it('should work with method calls that return values', () => {
+    it('should work with method calls that return values', async () => {
       const evaluator = new Evaluator();
 
       const mockChart = {
@@ -95,12 +95,12 @@ hp
 
       const tokens = new Lexer(script).tokenize();
       const ast = new Parser(tokens).parse();
-      const result = evaluator.eval(ast);
+      const result = await evaluator.eval(ast);
 
       expect(result).toBe(100);
     });
 
-    it('should handle null target gracefully', () => {
+    it('should handle null target gracefully', async () => {
       const evaluator = new Evaluator();
 
       evaluator.globalEnv.define('Target', null);
@@ -112,12 +112,12 @@ hasTarget
 
       const tokens = new Lexer(script).tokenize();
       const ast = new Parser(tokens).parse();
-      const result = evaluator.eval(ast);
+      const result = await evaluator.eval(ast);
 
       expect(result).toBe(null);
     });
 
-    it('should throw error when calling methods on null', () => {
+    it('should throw error when calling methods on null', async () => {
       const evaluator = new Evaluator();
 
       evaluator.globalEnv.define('Target', null);
@@ -129,10 +129,10 @@ Target.Attribute("HP").value
       const tokens = new Lexer(script).tokenize();
       const ast = new Parser(tokens).parse();
 
-      expect(() => evaluator.eval(ast)).toThrow('Cannot call method');
+      await expect(evaluator.eval(ast)).rejects.toThrow('Cannot call method');
     });
 
-    it('should evaluate Self as Owner.Attribute when defined (attribute script)', () => {
+    it('should evaluate Self as Owner.Attribute when defined (attribute script)', async () => {
       const evaluator = new Evaluator();
 
       const mockAttribute = {
@@ -162,12 +162,12 @@ Self.value
 
       const tokens = new Lexer(script).tokenize();
       const ast = new Parser(tokens).parse();
-      const result = evaluator.eval(ast);
+      const result = await evaluator.eval(ast);
 
       expect(result).toBe(25);
     });
 
-    it('should allow Self.add() and Self.value (Self same as Owner.Attribute)', () => {
+    it('should allow Self.add() and Self.value (Self same as Owner.Attribute)', async () => {
       const evaluator = new Evaluator();
 
       const mockAttribute = {
@@ -188,7 +188,7 @@ Self.value
 
       const tokens = new Lexer(script).tokenize();
       const ast = new Parser(tokens).parse();
-      const result = evaluator.eval(ast);
+      const result = await evaluator.eval(ast);
 
       expect(result).toBe(15);
     });
@@ -200,6 +200,7 @@ Self.value
       const pendingUpdates = new Map<string, any>();
       const characterAttributesCache = new Map<string, CharacterAttribute>();
       const attributesCache = new Map<string, Attribute>();
+      const itemsCache = new Map<string, Item>();
 
       const hpAttribute: Attribute = {
         id: 'attr_hp',
@@ -226,11 +227,13 @@ Self.value
 
       const owner = new OwnerAccessor(
         'char1',
+        'Test Character',
+        'inv1',
         null as any,
         pendingUpdates,
         characterAttributesCache,
         attributesCache,
-        new Map<string, Item>(),
+        itemsCache,
         [],
       );
 
@@ -244,6 +247,7 @@ Self.value
       const pendingUpdates = new Map<string, any>();
       const characterAttributesCache = new Map<string, CharacterAttribute>();
       const attributesCache = new Map<string, Attribute>();
+      const itemsCache = new Map<string, Item>();
 
       const hpAttribute: Attribute = {
         id: 'attr_hp',
@@ -271,11 +275,13 @@ Self.value
 
       const owner = new OwnerAccessor(
         'char1',
+        'Test Character',
+        'inv1',
         null as any,
         pendingUpdates,
         characterAttributesCache,
         attributesCache,
-        new Map<string, Item>(),
+        itemsCache,
         [],
       );
 
@@ -317,6 +323,166 @@ Self.value
       const hpBonus = chart.where('Level', 5, 'HP Bonus');
 
       expect(hpBonus).toBe(20);
+    });
+  });
+
+  describe('owner accessor items', () => {
+    const potionItem: Item = {
+      id: 'item_potion',
+      rulesetId: 'ruleset1',
+      title: 'Potion',
+      description: 'Restores HP',
+      weight: 0,
+      defaultQuantity: 1,
+      stackSize: 10,
+      isContainer: false,
+      isStorable: true,
+      isEquippable: false,
+      isConsumable: true,
+      inventoryWidth: 1,
+      inventoryHeight: 1,
+      createdAt: '2024-01-01',
+      updatedAt: '2024-01-01',
+    };
+
+    it('should return undefined for Owner.Item when character has none', () => {
+      const itemsCache = new Map<string, Item>();
+      itemsCache.set('item_potion', potionItem);
+      const owner = new OwnerAccessor(
+        'char1',
+        'Test',
+        'inv1',
+        null as any,
+        new Map(),
+        new Map(),
+        new Map(),
+        itemsCache,
+        [],
+      );
+      expect(owner.Item('Potion')).toBeUndefined();
+    });
+
+    it('should return proxy for Owner.Item when character has one', () => {
+      const itemsCache = new Map<string, Item>();
+      itemsCache.set('item_potion', potionItem);
+      const invEntry: InventoryItem = {
+        id: 'inv_1',
+        type: 'item',
+        entityId: 'item_potion',
+        inventoryId: 'inv1',
+        componentId: '',
+        quantity: 2,
+        x: 0,
+        y: 0,
+        createdAt: '2024-01-01',
+        updatedAt: '2024-01-01',
+      };
+      const owner = new OwnerAccessor(
+        'char1',
+        'Test',
+        'inv1',
+        null as any,
+        new Map(),
+        new Map(),
+        new Map(),
+        itemsCache,
+        [invEntry],
+      );
+      const proxy = owner.Item('Potion');
+      expect(proxy).toBeDefined();
+      expect(proxy?.title).toBe('Potion');
+      expect(proxy?.quantity).toBe(2);
+    });
+
+    it('should return array from Owner.Items and support hasItem', () => {
+      const itemsCache = new Map<string, Item>();
+      itemsCache.set('item_potion', potionItem);
+      const invEntry: InventoryItem = {
+        id: 'inv_1',
+        type: 'item',
+        entityId: 'item_potion',
+        inventoryId: 'inv1',
+        componentId: '',
+        quantity: 3,
+        x: 0,
+        y: 0,
+        createdAt: '2024-01-01',
+        updatedAt: '2024-01-01',
+      };
+      const owner = new OwnerAccessor(
+        'char1',
+        'Test',
+        'inv1',
+        null as any,
+        new Map(),
+        new Map(),
+        new Map(),
+        itemsCache,
+        [invEntry],
+      );
+      expect(owner.hasItem('Potion')).toBe(true);
+      expect(owner.hasItem('Unknown')).toBe(false);
+      const items = owner.Items('Potion');
+      expect(items).toHaveLength(1);
+      expect(items[0].title).toBe('Potion');
+      expect(items[0].quantity).toBe(3);
+    });
+
+    it('should add item via Owner.addItem and record in pendingUpdates', () => {
+      const pendingUpdates = new Map<string, any>();
+      const itemsCache = new Map<string, Item>();
+      itemsCache.set('item_potion', potionItem);
+      const owner = new OwnerAccessor(
+        'char1',
+        'Test',
+        'inv1',
+        null as any,
+        pendingUpdates,
+        new Map(),
+        new Map(),
+        itemsCache,
+        [],
+      );
+      owner.addItem('Potion', 2);
+      expect(owner.hasItem('Potion')).toBe(true);
+      expect(owner.Items('Potion')[0].quantity).toBe(2);
+      const added = pendingUpdates.get('inventoryAdd') as InventoryItem[];
+      expect(added).toHaveLength(1);
+      expect(added[0].entityId).toBe('item_potion');
+      expect(added[0].quantity).toBe(2);
+    });
+
+    it('should setItem to target quantity and removeItem', () => {
+      const pendingUpdates = new Map<string, any>();
+      const itemsCache = new Map<string, Item>();
+      itemsCache.set('item_potion', potionItem);
+      const invEntry: InventoryItem = {
+        id: 'inv_1',
+        type: 'item',
+        entityId: 'item_potion',
+        inventoryId: 'inv1',
+        componentId: '',
+        quantity: 5,
+        x: 0,
+        y: 0,
+        createdAt: '2024-01-01',
+        updatedAt: '2024-01-01',
+      };
+      const owner = new OwnerAccessor(
+        'char1',
+        'Test',
+        'inv1',
+        null as any,
+        pendingUpdates,
+        new Map(),
+        new Map(),
+        itemsCache,
+        [invEntry],
+      );
+      owner.setItem('Potion', 3);
+      expect(owner.Items('Potion').reduce((sum, i) => sum + i.quantity, 0)).toBe(3);
+      owner.removeItem('Potion', 2);
+      expect(owner.Items('Potion').reduce((sum, i) => sum + i.quantity, 0)).toBe(1);
     });
   });
 });

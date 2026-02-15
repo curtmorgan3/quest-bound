@@ -3,19 +3,19 @@ import { Lexer } from '@/lib/compass-logic/interpreter/lexer';
 import { Parser } from '@/lib/compass-logic/interpreter/parser';
 import { Evaluator } from '@/lib/compass-logic/interpreter/evaluator';
 
-function executeScript(source: string): { result: any; duration: number } {
+async function executeScript(source: string): Promise<{ result: any; duration: number }> {
   const start = performance.now();
-  
+
   const lexer = new Lexer(source);
   const tokens = lexer.tokenize();
   const parser = new Parser(tokens);
   const ast = parser.parse();
   const evaluator = new Evaluator();
-  const result = evaluator.eval(ast);
-  
+  const result = await evaluator.eval(ast);
+
   const end = performance.now();
   const duration = end - start;
-  
+
   return { result, duration };
 }
 
@@ -49,26 +49,26 @@ z = y + 10`;
     expect(duration).toBeLessThan(10);
   });
 
-  it('should execute simple arithmetic in < 100ms', () => {
+  it('should execute simple arithmetic in < 100ms', async () => {
     const source = `x = 2 + 3 * 4
 y = x ** 2
 z = y / 2`;
-    
-    const { duration } = executeScript(source);
+
+    const { duration } = await executeScript(source);
     expect(duration).toBeLessThan(100);
   });
 
-  it('should execute function definition and call in < 100ms', () => {
+  it('should execute function definition and call in < 100ms', async () => {
     const source = `calculateModifier(score):
     return floor((score - 10) / 2)
 
 result = calculateModifier(16)`;
-    
-    const { duration } = executeScript(source);
+
+    const { duration } = await executeScript(source);
     expect(duration).toBeLessThan(100);
   });
 
-  it('should execute if/else logic in < 100ms', () => {
+  it('should execute if/else logic in < 100ms', async () => {
     const source = `x = 75
 if x > 50:
     status = "Healthy"
@@ -76,21 +76,21 @@ else if x > 0:
     status = "Injured"
 else:
     status = "Dead"`;
-    
-    const { duration } = executeScript(source);
+
+    const { duration } = await executeScript(source);
     expect(duration).toBeLessThan(100);
   });
 
-  it('should execute for loop in < 100ms', () => {
+  it('should execute for loop in < 100ms', async () => {
     const source = `total = 0
 for i in 100:
     total = total + i`;
-    
-    const { duration } = executeScript(source);
+
+    const { duration } = await executeScript(source);
     expect(duration).toBeLessThan(100);
   });
 
-  it('should execute typical attribute script in < 100ms', () => {
+  it('should execute typical attribute script in < 100ms', async () => {
     const source = `subscribe("Constitution", "Level")
 
 base = 10
@@ -100,12 +100,12 @@ con_bonus = con * 2
 level_bonus = level * 5
 
 return base + con_bonus + level_bonus`;
-    
-    const { duration } = executeScript(source);
+
+    const { duration } = await executeScript(source);
     expect(duration).toBeLessThan(100);
   });
 
-  it('should execute complex script with multiple features in < 100ms', () => {
+  it('should execute complex script with multiple features in < 100ms', async () => {
     const source = `calculateDamage(base, modifier):
     roll_result = 10
     total = base + roll_result + modifier
@@ -125,44 +125,44 @@ for i in 10:
     total = total + i
 
 final = damage + total`;
-    
-    const { duration, result } = executeScript(source);
+
+    const { duration, result } = await executeScript(source);
     expect(duration).toBeLessThan(100);
     expect(result).toBe(66); // 21 + 45
   });
 
-  it('should execute recursive function in < 100ms', () => {
+  it('should execute recursive function in < 100ms', async () => {
     const source = `factorial(n):
     if n <= 1:
         return 1
     return n * factorial(n - 1)
 
 result = factorial(10)`;
-    
-    const { duration, result } = executeScript(source);
+
+    const { duration, result } = await executeScript(source);
     expect(duration).toBeLessThan(100);
     expect(result).toBe(3628800);
   });
 
-  it('should handle nested loops efficiently', () => {
+  it('should handle nested loops efficiently', async () => {
     const source = `count = 0
 for i in 10:
     for j in 10:
         count = count + 1`;
-    
-    const { duration, result } = executeScript(source);
+
+    const { duration, result } = await executeScript(source);
     expect(duration).toBeLessThan(100);
     expect(result).toBe(100);
   });
 
-  it('should execute array operations in < 100ms', () => {
+  it('should execute array operations in < 100ms', async () => {
     const source = `arr = [1, 2, 3, 4, 5]
 sum = 0
 for item in arr:
     sum = sum + item
 result = sum * 2`;
-    
-    const { duration, result } = executeScript(source);
+
+    const { duration, result } = await executeScript(source);
     expect(duration).toBeLessThan(100);
     expect(result).toBe(30);
   });

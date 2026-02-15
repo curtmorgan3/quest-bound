@@ -1,4 +1,6 @@
 import { useInventory } from '@/lib/compass-api';
+import { executeItemEvent } from '@/lib/compass-logic';
+import { db } from '@/stores';
 import type { Character, InventoryItem } from '@/types';
 
 type ItemEvent = 'on_equip' | 'on_unequip' | 'on_consume';
@@ -12,7 +14,9 @@ export const useInventoryUpdateWrappers = ({ character }: UseInventoryUpdateWrap
     useInventory(character?.inventoryId ?? '', character?.id ?? '');
 
   const fireItemEvent = async (itemId: string, event: ItemEvent) => {
+    if (!character) return;
     console.log('fire: ', event, itemId);
+    const res = await executeItemEvent(db, itemId, character.id, event);
   };
 
   const addItemAndFireEvent = async (
