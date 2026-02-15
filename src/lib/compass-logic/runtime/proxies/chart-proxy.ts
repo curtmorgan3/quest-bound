@@ -38,9 +38,43 @@ export class ChartProxy {
   }
 
   /**
+   * Get all values of a random column of the chart
+   * @returns An array of values in a random chart column excluding the header row
+   */
+  randomColumn(): any {
+    if (!this.data || this.data.length === 0) {
+      throw new Error(`Chart '${this.chart.title}' has no data`);
+    }
+    const headers = this.data[0];
+    const randomHeader = headers[Math.floor(Math.random() * headers.length)];
+
+    return this.get(randomHeader);
+  }
+
+  /**
+   * Get the value of a random cell of the chart
+   * @returns A single value in that chart excluding the header row
+   */
+  randomCell(): any {
+    const column = this.randomColumn();
+    return column[Math.floor(Math.random() * column.length)];
+  }
+
+  /**
+   * Get the value of a random non-empty cell of the chart
+   * @returns A single non-empty value in that chart excluding the header row
+   */
+  randomNonEmptyCell(): any {
+    const column = this.randomColumn().filter(
+      (val: any) => val !== '' && val !== null && val !== undefined,
+    );
+    return column[Math.floor(Math.random() * column.length)];
+  }
+
+  /**
    * Find a value in the chart using a lookup.
    * Searches for sourceValue in sourceColumn and returns the corresponding value from targetColumn.
-   * 
+   *
    * @param sourceColumn - Column to search in
    * @param sourceValue - Value to search for
    * @param targetColumn - Column to return value from

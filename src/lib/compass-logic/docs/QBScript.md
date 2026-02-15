@@ -181,6 +181,9 @@ subscribe(attr_name, 'Level')
 chart = Ruleset.Chart('Spell List')
 
 chart.get('column name') // Returns array of all values in column
+chart.randomColumn() // Returns an array of all values in a random column
+chart.randomCell() // Returns the value of a random cell in the chart
+chart.randomNonEmptyCell() // Returns the value of a non-empty ('', null) random cell in the chart
 chart.where('source column', source_value, 'target column') // Finds row where source column equals source_value, returns target column value (or empty string if not found)
 
 // Examples:
