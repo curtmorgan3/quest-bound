@@ -20,8 +20,11 @@ export const EditorConsole = ({
 }: EditorConsole) => {
   const hasReactiveExecution = scriptExecutionHook.reactiveExecutionCount > 0;
 
-  const logs = logMessages ?? scriptExecutionHook.logMessages;
-  const announcements = announceMessages ?? scriptExecutionHook.announceMessages;
+  const logs = [...(logMessages ?? []), ...(scriptExecutionHook.logMessages ?? [])];
+  const announcements = [
+    ...(announceMessages ?? []),
+    ...(scriptExecutionHook.announceMessages ?? []),
+  ];
   const executionError = error ?? scriptExecutionHook.error;
   const finalResult = result ?? scriptExecutionHook.result;
 
