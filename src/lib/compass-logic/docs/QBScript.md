@@ -24,6 +24,17 @@ Scripts can be attached to:
 
 ## Syntax
 
+### Strings
+
+// ===== STRING METHODS =====
+.toUpperCase() // returns the string in all upper case letters
+.toLowerCase() // returns the string in all lower case letters
+
+// ===== STRING INTERPOLATION =====
+// Works in all string contexts
+message = 'You have {{hp}} health'
+announce('Damage: {{damage}}')
+
 ### Variables
 
 // ===== VARIABLES =====
@@ -31,13 +42,6 @@ Scripts can be attached to:
 hit_points = Owner.Attribute('Hit Points')
 damage = 10
 name = 'Fireball'
-
-### String Interpolation
-
-// ===== STRING INTERPOLATION =====
-// Works in all string contexts
-message = 'You have {{hp}} health'
-announce('Damage: {{damage}}')
 
 ### Comments
 
@@ -70,16 +74,17 @@ _/
 
 // ===== ARRAYS =====
 list = []
-arrows = Owner.Items('Arrow')
 
-// Array methods (all use parentheses)
-arrows.length // Returns the size of the array
-arrows.count() // Returns number of items
-arrows.first() // Returns first item
-arrows.last() // Returns last item
-arrows.push(item) // Adds item to end
-arrows.pop() // Removes and returns last item
-arrows[index] // Access by zero-based index
+// Array methods
+list.count() // Returns number of items
+list.first() // Returns first item
+list.last() // Returns last item
+list.push(item) // Adds item to end
+list.pop() // Removes and returns last item
+list.random() // Returns a random value in the array
+list.filter() // Returns a copy of the array filtered for truthy values
+list.filterEmpty() // Returns a copy of the array filtered for non-empty values ('', null)
+list[index] // Access by zero-based index
 
 ### Loops
 
@@ -136,6 +141,7 @@ round(3.5) // Returns 4
 // UI
 announce('message') // Shows message to player
 log('debug') // Logs to debug console and game log
+// Log messages will wrap their output in "" if it is a string type
 
 ### Accessing Data
 

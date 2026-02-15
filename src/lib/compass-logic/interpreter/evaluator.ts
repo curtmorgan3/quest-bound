@@ -1,6 +1,7 @@
 import { parseDiceExpression, rollDie } from '@/utils/dice-utils';
 import { prepareForStructuredClone } from '../runtime/structured-clone-safe';
 import type { ASTNode } from './ast';
+import { isBuiltInArrayMethod, registerArrayMethod } from './built-ins';
 
 /** Roll function usable in scripts: takes dice expression (e.g. "2d6+3"), returns total (sync or async). */
 export type RollFn = (expression: string) => number | Promise<number>;
@@ -291,15 +292,9 @@ export class Evaluator {
 
     // Array-like (e.g. Owner.Items('Arrow')): support .count(), .first(), .last() so
     // plain arrays remain structured-cloneable when sent via postMessage from the worker.
-    const isArrayLike =
-      Array.isArray(object) || (object && typeof object.length === 'number');
-    if (
-      isArrayLike &&
-      (node.method === 'count' || node.method === 'first' || node.method === 'last')
-    ) {
-      if (node.method === 'count') return object.length;
-      if (node.method === 'first') return object[0];
-      if (node.method === 'last') return object[object.length - 1];
+    const isArrayLike = Array.isArray(object) || (object && typeof object.length === 'number');
+    if (isArrayLike && isBuiltInArrayMethod(node.method)) {
+      return registerArrayMethod(node.method, object);
     }
 
     const method = object[node.method];
