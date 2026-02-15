@@ -288,6 +288,19 @@ export class Evaluator {
       throw new RuntimeError(`Cannot call method '${node.method}' on ${object}`);
     }
 
+    // Array-like (e.g. Owner.Items('Arrow')): support .count(), .first(), .last() so
+    // plain arrays remain structured-cloneable when sent via postMessage from the worker.
+    const isArrayLike =
+      Array.isArray(object) || (object && typeof object.length === 'number');
+    if (
+      isArrayLike &&
+      (node.method === 'count' || node.method === 'first' || node.method === 'last')
+    ) {
+      if (node.method === 'count') return object.length;
+      if (node.method === 'first') return object[0];
+      if (node.method === 'last') return object[object.length - 1];
+    }
+
     const method = object[node.method];
 
     if (typeof method !== 'function') {

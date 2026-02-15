@@ -33,7 +33,7 @@ export const EditorConsole = ({
       </TabsList>
       <TabsContent
         value='console'
-        className='h-[100%] flex-1 min-h-0 mt-2 flex flex-col gap-4 rounded-md border bg-muted/20'>
+        className='h-[100%] flex-1 min-h-0 mt-2 flex flex-col gap-4 rounded-md border bg-muted/20 max-w-[95dvw]'>
         <div className='rounded-md border bg-muted/20 flex flex-col h-[100%]'>
           <div className='flex items-center justify-between px-3 py-2 border-b'>
             <h3 className='text-sm font-semibold'>Last run</h3>
@@ -127,7 +127,7 @@ export const EditorConsole = ({
           </ScrollArea>
         </div>
       </TabsContent>
-      <TabsContent value='errors' className='flex-1 min-h-0 mt-2'>
+      <TabsContent value='errors' className='flex-1 min-h-0 mt-2 max-w-[95dvw]'>
         <ScriptErrorLog />
       </TabsContent>
     </Tabs>

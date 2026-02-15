@@ -1,3 +1,4 @@
+import { useSidebar } from '@/components/ui/sidebar';
 import { useNotifications } from '@/hooks';
 import {
   useCharacter,
@@ -26,6 +27,7 @@ export const CharacterPage = ({ id, lockByDefault }: { id?: string; lockByDefaul
   const { characterId } = useParams<{ characterId: string }>();
   const characterInventoryPanel = useContext(CharacterInventoryPanelContext);
   const { rollDice } = useContext(DiceContext);
+  const { open } = useSidebar();
 
   const { character, updateCharacter } = useCharacter(id ?? characterId);
   const { updateCharacterWindow, deleteCharacterWindow } = useCharacterWindows(character?.id);
@@ -192,7 +194,7 @@ export const CharacterPage = ({ id, lockByDefault }: { id?: string; lockByDefaul
         onWindowUpdated={handleUpdateWindow}
         onWindowDeleted={handleDeleteWindow}
       />
-      <GameLog logs={gameLogs} className='fixed bottom-[50px] left-12 z-30' />
+      <GameLog logs={gameLogs} className={`fixed bottom-[50px] left-${open ? '265' : '65'} z-30`} />
       <InventoryPanel
         open={inventoryPanelConfig.open ?? false}
         onOpenChange={(open: boolean) => {

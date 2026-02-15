@@ -57,6 +57,11 @@ export const WindowEditor = () => {
     replaceComponents(restored);
   };
 
+  let eyeLeft = open ? 265 : 65;
+  if (viewMode) {
+    eyeLeft = open ? 295 : 85;
+  }
+
   if (!windowId) return null;
 
   return (
@@ -80,8 +85,8 @@ export const WindowEditor = () => {
         onClick={() => setViewMode((prev) => !prev)}
         style={{
           position: 'absolute',
-          left: open ? 265 : 65,
-          bottom: 50,
+          left: eyeLeft,
+          bottom: 55,
           color: viewMode ? colorPrimary : colorWhite,
         }}
       />

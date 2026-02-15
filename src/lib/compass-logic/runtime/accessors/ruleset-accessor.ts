@@ -79,6 +79,10 @@ export class ItemDefinitionProxy {
   get isConsumable(): boolean {
     return this.item.isConsumable;
   }
+
+  get isContainer(): boolean {
+    return this.item.isContainer;
+  }
 }
 
 /**

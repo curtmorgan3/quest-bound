@@ -1,59 +1,34 @@
 import type { InventoryItem, Item } from '@/types';
 
 /**
- * Proxy for a single character inventory item instance.
- * Wraps an InventoryItem and its ruleset Item definition.
- * Exposes title, quantity, isEquipped, and custom properties from the item definition
- * (e.g. armor.armor_value in scripts).
+ * Plain object shape for a character inventory item instance.
+ * Used so script results can be passed across the worker boundary (postMessage
+ * structured clone). Exposes title, quantity, isEquipped, and custom properties
+ * from the item definition (e.g. armor.armor_value in scripts).
  */
-export class ItemInstanceProxy {
-  readonly inventoryItem: InventoryItem;
-  readonly item: Item;
-
-  constructor(inventoryItem: InventoryItem, item: Item) {
-    this.inventoryItem = inventoryItem;
-    this.item = item;
-  }
-
-  get title(): string {
-    return this.item.title;
-  }
-
-  get description(): string {
-    return this.item.description;
-  }
-
-  get quantity(): number {
-    return this.inventoryItem.quantity;
-  }
-
-  get isEquipped(): boolean {
-    return this.inventoryItem.isEquipped ?? false;
-  }
-
-  /**
-   * Get a custom property from the item definition (for script access like armor.armor_value).
-   */
-  getCustomProperty(name: string): string | number | boolean | undefined {
-    return this.item.customProperties?.[name];
-  }
-}
+export type ItemInstancePlain = {
+  title: string;
+  description: string;
+  quantity: number;
+  isEquipped: boolean;
+  [key: string]: string | number | boolean | undefined;
+};
 
 /**
- * Returns an ItemInstanceProxy wrapped in a Proxy so that property access for
- * unknown keys (e.g. armor_value) is forwarded to the item's customProperties.
+ * Returns a plain object for a single inventory item instance.
+ * Plain objects are structured-cloneable, so they can be sent via postMessage
+ * from the script worker to the main thread (e.g. in SCRIPT_RESULT or CONSOLE_LOG).
  */
 export function createItemInstanceProxy(
   inventoryItem: InventoryItem,
   item: Item,
-): ItemInstanceProxy & Record<string, string | number | boolean | undefined> {
-  const proxy = new ItemInstanceProxy(inventoryItem, item);
-  return new Proxy(proxy, {
-    get(target, prop: string) {
-      if (prop in target) {
-        return (target as unknown as Record<string, unknown>)[prop];
-      }
-      return target.getCustomProperty(prop);
-    },
-  }) as ItemInstanceProxy & Record<string, string | number | boolean | undefined>;
+): ItemInstancePlain {
+  const base: ItemInstancePlain = {
+    title: item.title,
+    description: item.description,
+    quantity: inventoryItem.quantity,
+    isEquipped: inventoryItem.isEquipped ?? false,
+  };
+  const custom = item.customProperties ?? {};
+  return { ...base, ...custom };
 }
