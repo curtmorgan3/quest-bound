@@ -26,6 +26,13 @@ Scripts can be attached to:
 
 ### Strings
 
+// Use single or double quotes
+column_key = 'Spells'
+chart_name = "Wizard Spells"
+
+// Use double quotes to wrap text with quote characters
+shop_name = "Tabby's Tavern"
+
 // ===== STRING METHODS =====
 .toUpperCase() // returns the string in all upper case letters
 .toLowerCase() // returns the string in all lower case letters
@@ -295,6 +302,7 @@ return current_level
 ### Character
 
 // ===== CHARACTER METHODS (Owner, Target) =====
+Owner.name // Returns character's name
 Owner.hasItem('item name') // Returns boolean
 Owner.addItem('item name', quantity) // Adds items to inventory
 Owner.removeItem('item name', quantity) // Removes items from inventory
@@ -307,15 +315,12 @@ Owner.Items('item name') // Gets array of matching items
 Item scripts use event handlers that fire when players interact with items through the UI. All handlers should end with `return` (even though they don't return values).
 
 // ===== ITEM METHODS =====
-item = Owner.Item('Sword')
-items = Owner.Items('Arrow')
+item = Owner.Item('Sword') // Single item
+items = Owner.Items('Arrow') // Array of items
 
-items.count() // Returns number of items
-items.first() // Returns first item
-items.last() // Returns last item
-items.push(item) // Adds item to array
-items.pop() // Removes and returns last item
-items[0] // Access by index
+item.count() // Quantity of item
+item.description // Item description
+item.title // Item title
 
 // Item custom properties (defined on Item record)
 armor = Owner.Item('Plate Mail')

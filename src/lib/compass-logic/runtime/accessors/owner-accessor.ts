@@ -8,6 +8,8 @@ import { AttributeProxy, createItemInstanceProxy, type ItemInstancePlain } from 
  */
 export class OwnerAccessor {
   protected characterId: string;
+  protected characterName: string;
+  protected inventoryId: string;
   protected db: Dexie;
   protected pendingUpdates: Map<string, any>;
 
@@ -19,6 +21,8 @@ export class OwnerAccessor {
 
   constructor(
     characterId: string,
+    characterName: string,
+    inventoryId: string,
     db: Dexie,
     pendingUpdates: Map<string, any>,
     characterAttributesCache: Map<string, CharacterAttribute>,
@@ -27,6 +31,8 @@ export class OwnerAccessor {
     inventoryItems: InventoryItem[],
   ) {
     this.characterId = characterId;
+    this.characterName = characterName;
+    this.inventoryId = inventoryId;
     this.db = db;
     this.pendingUpdates = pendingUpdates;
     this.characterAttributesCache = characterAttributesCache;
@@ -99,11 +105,124 @@ export class OwnerAccessor {
   }
 
   /**
-   * Get the character's name/title.
+   * Get the character's name.
+   */
+  get name(): string {
+    return this.characterName;
+  }
+
+  /**
+   * Get the character's name/title (alias for name).
    */
   get title(): string {
-    // This will be implemented when we add character data to the cache
-    // For now, return a placeholder
-    return 'Character';
+    return this.characterName;
+  }
+
+  /**
+   * Check whether the character has at least one of the given item (by ruleset item title).
+   */
+  hasItem(name: string): boolean {
+    return this.Items(name).length > 0;
+  }
+
+  /**
+   * Add items to the character's inventory.
+   * @param name - The title/name of the ruleset item
+   * @param quantity - Number to add (default 1)
+   */
+  addItem(name: string, quantity: number = 1): void {
+    if (quantity < 1) return;
+    const item = Array.from(this.itemsCache.values()).find((i) => i.title === name);
+    if (!item) {
+      throw new Error(`Item '${name}' not found`);
+    }
+    if (!this.inventoryId) {
+      throw new Error('Character has no inventory');
+    }
+    const now = new Date().toISOString();
+    const newEntry: InventoryItem = {
+      id: crypto.randomUUID(),
+      type: 'item',
+      entityId: item.id,
+      inventoryId: this.inventoryId,
+      componentId: '',
+      quantity,
+      x: 0,
+      y: 0,
+      createdAt: now,
+      updatedAt: now,
+    };
+    this.inventoryItems.push(newEntry);
+    const key = 'inventoryAdd';
+    const existing = this.pendingUpdates.get(key) as InventoryItem[] | undefined;
+    this.pendingUpdates.set(key, existing ? [...existing, newEntry] : [newEntry]);
+  }
+
+  /**
+   * Set the total quantity of the given item (by ruleset item title).
+   * Consolidates to a single stack. If quantity is 0, removes all.
+   * @param name - The title/name of the ruleset item
+   * @param quantity - Target total quantity (default 0)
+   */
+  setItem(name: string, quantity: number = 0): void {
+    const item = Array.from(this.itemsCache.values()).find((i) => i.title === name);
+    if (!item) {
+      throw new Error(`Item '${name}' not found`);
+    }
+    const matching = this.inventoryItems.filter(
+      (inv) => inv.entityId === item.id && inv.type === 'item',
+    );
+    const currentTotal = matching.reduce((sum, inv) => sum + inv.quantity, 0);
+    if (currentTotal === quantity) return;
+
+    if (quantity === 0) {
+      this.removeItem(name, currentTotal);
+      return;
+    }
+
+    if (quantity > currentTotal) {
+      this.addItem(name, quantity - currentTotal);
+      return;
+    }
+
+    // quantity < currentTotal: remove all matching, then add one stack of target quantity
+    const idsToDelete = new Set(matching.map((inv) => inv.id));
+    for (const id of idsToDelete) {
+      this.pendingUpdates.set(`inventoryDelete:${id}`, true);
+    }
+    this.inventoryItems = this.inventoryItems.filter((inv) => !idsToDelete.has(inv.id));
+    this.addItem(name, quantity);
+  }
+
+  /**
+   * Remove items from the character's inventory.
+   * @param name - The title/name of the ruleset item
+   * @param quantity - Number to remove (default 1). Removes from first matching stacks.
+   */
+  removeItem(name: string, quantity: number = 1): void {
+    if (quantity < 1) return;
+    const item = Array.from(this.itemsCache.values()).find((i) => i.title === name);
+    if (!item) {
+      throw new Error(`Item '${name}' not found`);
+    }
+    const matching = this.inventoryItems.filter(
+      (inv) => inv.entityId === item.id && inv.type === 'item',
+    );
+    let toRemove = quantity;
+    const idsToDelete = new Set<string>();
+    for (const inv of matching) {
+      if (toRemove <= 0) break;
+      if (inv.quantity <= toRemove) {
+        toRemove -= inv.quantity;
+        idsToDelete.add(inv.id);
+        this.pendingUpdates.set(`inventoryDelete:${inv.id}`, true);
+      } else {
+        inv.quantity -= toRemove;
+        inv.updatedAt = new Date().toISOString();
+        this.pendingUpdates.set(`inventoryUpdate:${inv.id}`, { quantity: inv.quantity });
+        toRemove = 0;
+      }
+    }
+    this.inventoryItems = this.inventoryItems.filter((inv) => !idsToDelete.has(inv.id));
   }
 }

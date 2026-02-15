@@ -40,6 +40,10 @@ export class ItemInstanceProxy implements StructuredCloneSafe {
     return this.inventoryItem.quantity;
   }
 
+  count(): number {
+    return this.quantity;
+  }
+
   get isEquipped(): boolean {
     return this.inventoryItem.isEquipped ?? false;
   }

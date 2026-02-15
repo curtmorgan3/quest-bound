@@ -57,6 +57,10 @@ export class ScriptRunner {
   private itemsCache: Map<string, Item>;
   private ownerInventoryItems: InventoryItem[];
   private targetInventoryItems: InventoryItem[] | null;
+  private ownerCharacterName: string;
+  private ownerInventoryId: string;
+  private targetCharacterName: string;
+  private targetInventoryId: string;
 
   constructor(context: ScriptExecutionContext) {
     this.context = context;
@@ -68,6 +72,10 @@ export class ScriptRunner {
     this.itemsCache = new Map();
     this.ownerInventoryItems = [];
     this.targetInventoryItems = null;
+    this.ownerCharacterName = 'Character';
+    this.ownerInventoryId = '';
+    this.targetCharacterName = 'Character';
+    this.targetInventoryId = '';
   }
 
   /**
@@ -97,6 +105,8 @@ export class ScriptRunner {
 
     // Load owner character and inventory items
     const ownerCharacter = await db.characters.get(ownerId);
+    this.ownerCharacterName = ownerCharacter?.name ?? 'Character';
+    this.ownerInventoryId = ownerCharacter?.inventoryId ?? '';
     if (ownerCharacter?.inventoryId) {
       this.ownerInventoryItems = await db.inventoryItems
         .where('inventoryId')
@@ -107,6 +117,8 @@ export class ScriptRunner {
     // Load target character and inventory items (if any)
     if (targetId) {
       const targetCharacter = await db.characters.get(targetId);
+      this.targetCharacterName = targetCharacter?.name ?? 'Character';
+      this.targetInventoryId = targetCharacter?.inventoryId ?? '';
       if (targetCharacter?.inventoryId) {
         this.targetInventoryItems = await db.inventoryItems
           .where('inventoryId')
@@ -144,8 +156,17 @@ export class ScriptRunner {
 
       if (type === 'characterAttribute') {
         await db.characterAttributes.update(id, { value });
+      } else if (type === 'inventoryAdd') {
+        const items = value as InventoryItem[];
+        for (const item of items) {
+          await db.inventoryItems.add(item);
+        }
+      } else if (type === 'inventoryUpdate') {
+        const now = new Date().toISOString();
+        await db.inventoryItems.update(id, { ...value, updatedAt: now });
+      } else if (type === 'inventoryDelete') {
+        await db.inventoryItems.delete(id);
       }
-      // Add more types as needed (items, etc.)
     }
 
     // Clear pending updates
@@ -161,6 +182,8 @@ export class ScriptRunner {
     // Create Owner accessor
     const owner = new OwnerAccessor(
       ownerId,
+      this.ownerCharacterName,
+      this.ownerInventoryId,
       db,
       this.pendingUpdates,
       this.characterAttributesCache,
@@ -174,6 +197,8 @@ export class ScriptRunner {
     if (targetId) {
       target = new TargetAccessor(
         targetId,
+        this.targetCharacterName,
+        this.targetInventoryId,
         db,
         this.pendingUpdates,
         this.characterAttributesCache,
