@@ -65,18 +65,18 @@ export class OwnerAccessor {
   /**
    * Get the first inventory item matching the given item name (by ruleset item title).
    * Only matches entries of type 'item' (ruleset items), not actions or attributes.
-   * Returns a plain object so it can be passed across the worker boundary (postMessage).
+   * Returns a proxy (like AttributeProxy); serialized at the worker boundary when sent via postMessage.
    * @param name - The title/name of the ruleset item
-   * @returns Plain item object for the first matching inventory entry, or undefined if none
+   * @returns ItemInstanceProxy for the first matching inventory entry, or undefined if none
    */
-  Item(name: string): ItemInstancePlain | null {
+  Item(name: string): ReturnType<typeof createItemInstanceProxy> | undefined {
     const item = Array.from(this.itemsCache.values()).find((i) => i.title === name);
-    if (!item) return null;
+    if (!item) return undefined;
 
     const inventoryItem = this.inventoryItems.find(
       (inv) => inv.entityId === item.id && inv.type === 'item',
     );
-    if (!inventoryItem) return null;
+    if (!inventoryItem) return undefined;
 
     return createItemInstanceProxy(inventoryItem, item);
   }

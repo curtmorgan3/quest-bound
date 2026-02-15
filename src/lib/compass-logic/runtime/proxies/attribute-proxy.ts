@@ -1,10 +1,12 @@
 import type { Attribute, CharacterAttribute } from '@/types';
+import type { StructuredCloneSafe } from '../structured-clone-safe';
 
 /**
  * Proxy object for character attributes, providing methods to read and modify attribute values.
  * Changes are queued and written to the database when the script execution completes.
+ * Implements toStructuredCloneSafe() so the worker can send it to the main thread (e.g. log or return).
  */
-export class AttributeProxy {
+export class AttributeProxy implements StructuredCloneSafe {
   private characterAttribute: CharacterAttribute;
   private attribute: Attribute;
   private pendingUpdates: Map<string, any>;
@@ -197,5 +199,17 @@ export class AttributeProxy {
    */
   get title(): string {
     return this.attribute.title;
+  }
+
+  /**
+   * Return a plain object for postMessage (structured clone).
+   * Called at the worker boundary when script returns or logs an AttributeProxy.
+   */
+  toStructuredCloneSafe(): { title: string; description: string; value: unknown } {
+    return {
+      title: this.attribute.title,
+      description: this.attribute.description,
+      value: this.value,
+    };
   }
 }

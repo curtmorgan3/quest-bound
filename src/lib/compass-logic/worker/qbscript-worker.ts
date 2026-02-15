@@ -11,6 +11,7 @@ import Dexie from 'dexie';
 import { Lexer } from '../interpreter/lexer';
 import { Parser } from '../interpreter/parser';
 import { ReactiveExecutor } from '../reactive/reactive-executor';
+import { prepareForStructuredClone } from '../runtime/structured-clone-safe';
 import { ScriptRunner, type ScriptExecutionContext } from '../runtime/script-runner';
 import type {
   AttributeChangedPayload,
@@ -136,7 +137,7 @@ async function handleExecuteScript(payload: ExecuteScriptPayload): Promise<void>
             stackTrace: result.error.stack,
           },
           announceMessages: result.announceMessages,
-          logMessages: result.logMessages,
+          logMessages: result.logMessages.map((args) => prepareForStructuredClone(args)),
         },
       });
     } else {
@@ -144,9 +145,9 @@ async function handleExecuteScript(payload: ExecuteScriptPayload): Promise<void>
         type: 'SCRIPT_RESULT',
         payload: {
           requestId: payload.requestId,
-          result: result.value,
+          result: prepareForStructuredClone(result.value),
           announceMessages: result.announceMessages,
-          logMessages: result.logMessages,
+          logMessages: result.logMessages.map((args) => prepareForStructuredClone(args)),
           executionTime,
         },
       });

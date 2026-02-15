@@ -1,4 +1,5 @@
 import { parseDiceExpression, rollDie } from '@/utils/dice-utils';
+import { prepareForStructuredClone } from '../runtime/structured-clone-safe';
 import type { ASTNode } from './ast';
 
 /** Roll function usable in scripts: takes dice expression (e.g. "2d6+3"), returns total (sync or async). */
@@ -490,11 +491,11 @@ export class Evaluator {
     this.globalEnv.define('log', (...args: any[]): void => {
       this.logMessages.push(args);
 
-      // If in worker context, send signal to main thread
+      // If in worker context, send signal to main thread (serialize so proxies are cloneable)
       if (this.isWorkerContext) {
         self.postMessage({
           type: 'CONSOLE_LOG',
-          payload: { args },
+          payload: { args: prepareForStructuredClone(args) },
         });
       }
     });
