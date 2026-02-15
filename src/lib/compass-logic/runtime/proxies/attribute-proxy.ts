@@ -38,9 +38,17 @@ export class AttributeProxy implements StructuredCloneSafe {
    */
   set(newValue: any): void {
     const key = `characterAttribute:${this.characterAttribute.id}`;
-    this.pendingUpdates.set(key, newValue);
+    // When set programmatically from a chart, numbers and bools can be passed as strings
+    let typedValue = newValue;
+    if (this.characterAttribute.type === 'number' && typeof typedValue === 'string') {
+      typedValue = parseFloat(typedValue);
+    } else if (this.characterAttribute.type === 'boolean' && typeof typedValue === 'string') {
+      typedValue = typedValue.toLowerCase() === 'true';
+    }
+
+    this.pendingUpdates.set(key, typedValue);
     // Update local copy for immediate reads
-    this.characterAttribute.value = newValue;
+    this.characterAttribute.value = typedValue;
   }
 
   /**
