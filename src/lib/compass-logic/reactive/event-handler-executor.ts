@@ -53,6 +53,7 @@ export class EventHandlerExecutor {
   ): Promise<EventHandlerResult> {
     // Get item
     const item = await this.db.items.get(itemId);
+    console.log('item: ', item);
     if (!item) {
       return {
         success: false,
@@ -62,6 +63,8 @@ export class EventHandlerExecutor {
         error: new Error(`Item not found: ${itemId}`),
       };
     }
+
+    console.log('item script id: ', item.scriptId);
 
     // Check if item has a script
     if (!item.scriptId) {
@@ -83,6 +86,8 @@ export class EventHandlerExecutor {
         logMessages: [],
       };
     }
+
+    console.log('script: ', script);
 
     // Check that the event handler exists
     const hasHandler = this.extractEventHandler(script.sourceCode, eventType) !== null;

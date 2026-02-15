@@ -5,6 +5,15 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { useCallback, useMemo, useRef } from 'react';
 import { useActiveRuleset } from '../rulesets/use-active-ruleset';
 
+function getEntityTable(entityType: 'attribute' | 'action' | 'item' | 'global') {
+  if (entityType === 'global') return;
+  return entityType === 'attribute'
+    ? db.attributes
+    : entityType === 'action'
+      ? db.actions
+      : db.items;
+}
+
 export const useScripts = () => {
   const { activeRuleset } = useActiveRuleset();
   const { handleError } = useErrorHandler();
@@ -33,14 +42,7 @@ export const useScripts = () => {
 
       // If associated with an entity, update the entity's scriptId
       if (data.entityId && data.entityType && data.entityType !== 'global') {
-        const table =
-          data.entityType === 'attribute'
-            ? db.attributes
-            : data.entityType === 'action'
-              ? db.actions
-              : db.items;
-
-        await table.update(data.entityId, { scriptId });
+        await getEntityTable(data.entityType)?.update(data.entityId, { scriptId });
       }
 
       return scriptId;
@@ -55,10 +57,38 @@ export const useScripts = () => {
   const updateScript = async (id: string, data: Partial<Script>) => {
     const now = new Date().toISOString();
     try {
+      const existing = await db.scripts.get(id);
+      if (!existing) return;
+
       await db.scripts.update(id, {
         ...data,
         updatedAt: now,
       });
+
+      const newEntityType = data.entityType ?? existing.entityType;
+      const newEntityId =
+        newEntityType === 'global'
+          ? null
+          : data.entityId !== undefined
+            ? data.entityId
+            : existing.entityId;
+
+      const oldEntityId = existing.entityType !== 'global' ? existing.entityId : null;
+      const oldEntityType = existing.entityType;
+
+      // Clear scriptId on the previous entity if the association changed
+      if (oldEntityId && (oldEntityId !== newEntityId || oldEntityType !== newEntityType)) {
+        const oldTable = getEntityTable(oldEntityType);
+        const oldEntity = await oldTable?.get(oldEntityId);
+        if (oldEntity?.scriptId === id) {
+          await oldTable?.update(oldEntityId, { scriptId: null });
+        }
+      }
+
+      // Set scriptId on the new entity when associated with this script
+      if (newEntityId && newEntityType !== 'global') {
+        await getEntityTable(newEntityType)?.update(newEntityId, { scriptId: id });
+      }
     } catch (e) {
       handleError(e as Error, {
         component: 'useScripts/updateScript',
