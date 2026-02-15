@@ -90,7 +90,6 @@ export class QBScriptClient {
       });
 
       this.worker.onmessage = (event: MessageEvent<WorkerToMainSignal>) => {
-        console.log('on message: ', event);
         this.handleWorkerSignal(event.data);
       };
 

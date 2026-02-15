@@ -7,7 +7,7 @@ interface EditorConsole {
   scriptExecutionHook: UseReactiveScriptExecutionResult;
   logMessages?: any[][];
   announceMessages?: string[];
-  error?: Error;
+  error?: Error | null;
   result?: any;
 }
 

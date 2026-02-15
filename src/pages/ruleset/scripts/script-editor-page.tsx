@@ -2,10 +2,10 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useRulesets } from '@/lib/compass-api';
 import { useScripts } from '@/lib/compass-api/hooks/scripts/use-scripts';
 import {
-  executeActionEvent,
+  useExecuteActionEvent,
+  useExecuteItemEvent,
   useReactiveScriptExecution,
   useScriptValidation,
-  type EventHandlerResult,
 } from '@/lib/compass-logic';
 import { CodeMirrorEditor } from '@/lib/compass-logic/editor';
 import { colorPrimary } from '@/palette';
@@ -13,7 +13,7 @@ import { db } from '@/stores';
 import type { Script } from '@/types';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { AlertCircle } from 'lucide-react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { AttributeControls } from './script-editor/attribute-controls';
 import { EditorConsole } from './script-editor/editor-console';
@@ -25,7 +25,22 @@ export function ScriptEditorPage() {
   const { activeRuleset, testCharacter } = useRulesets();
   const { scripts } = useScripts();
   const { errors: validationErrors, validate } = useScriptValidation();
+  const {
+    executeActionEvent,
+    logMessages: actionEventLogs,
+    announceMessages: actionEventAnnouncements,
+    error: actionEventError,
+  } = useExecuteActionEvent();
+  const {
+    executeItemEvent,
+    logMessages: itemEventLogs,
+    announceMessages: itemEventAnnouncements,
+    error: itemEventError,
+  } = useExecuteItemEvent();
   const hasErrors = validationErrors.length > 0;
+
+  const consoleLogs = [...actionEventLogs, ...itemEventLogs];
+  const announcements = [...actionEventAnnouncements, ...itemEventAnnouncements];
 
   const isNew = scriptId === 'new';
   const script = isNew ? null : (scripts.find((s) => s.id === scriptId) ?? null);
@@ -35,14 +50,6 @@ export function ScriptEditorPage() {
 
   const [entityId, setEntityId] = useState<string | null>(null);
   const [sourceCode, setSourceCode] = useState('');
-
-  const [eventResult, setEventResult] = useState<EventHandlerResult>();
-  const consoleOutputOverrides = {
-    logMessages: eventResult?.logMessages,
-    announceMessages: eventResult?.announceMessages,
-    result: eventResult?.value,
-    error: eventResult?.error,
-  };
 
   const workerHook = useReactiveScriptExecution();
 
@@ -81,12 +88,6 @@ export function ScriptEditorPage() {
     };
   }, [sourceCode, scriptId, validate]);
 
-  const handleFireOnActivate = useCallback(async () => {
-    if (!entityId || !testCharacter) return;
-    const result = await executeActionEvent(db, entityId, testCharacter.id, null, 'on_activate');
-    setEventResult(result);
-  }, [entityId, testCharacter, setEventResult]);
-
   return (
     <div className='flex flex-col h-full min-h-0'>
       <EditorTopBar
@@ -120,9 +121,15 @@ export function ScriptEditorPage() {
               />
             )}
 
-            {entityType === 'action' && (
-              <EventControls handleFireOnActivate={handleFireOnActivate} />
-            )}
+            {entityType === 'action' ||
+              (entityType === 'item' && (
+                <EventControls
+                  entityType={entityType}
+                  entityId={entityId}
+                  executeItemEvent={executeItemEvent}
+                  executeActionEvent={executeActionEvent}
+                />
+              ))}
           </div>
         </div>
 
@@ -159,7 +166,12 @@ export function ScriptEditorPage() {
             </Alert>
           )}
 
-          <EditorConsole scriptExecutionHook={workerHook} {...consoleOutputOverrides} />
+          <EditorConsole
+            scriptExecutionHook={workerHook}
+            logMessages={consoleLogs}
+            announceMessages={announcements}
+            error={actionEventError ?? itemEventError}
+          />
         </div>
       </div>
     </div>
