@@ -9,7 +9,7 @@ import {
   DialogTitle,
   NumberInput,
 } from '@/components';
-import { useAttributes, useCharacterAttributes } from '@/lib/compass-api';
+import { useActions, useAttributes, useCharacterAttributes } from '@/lib/compass-api';
 import { injectCharacterData } from '@/lib/compass-planes/utils';
 import { CharacterContext, DiceContext, type InventoryItemWithData } from '@/stores';
 import { parseTextForDiceRolls, useKeyListeners } from '@/utils';
@@ -58,8 +58,11 @@ export const ItemContextMenu = ({
   const fireAction = characterContext?.fireAction;
 
   const { attributes } = useAttributes();
+  const { actions } = useActions();
 
   const inventoryAttribute = characterAttributes.find((attr) => attr.attributeId === item.entityId);
+  const actionAttribute = actions.find((action) => action.id === item.entityId);
+  const isActionAndHasScript = actionAttribute?.scriptId;
 
   const [quantity, setQuantity] = useState(item.quantity);
 
@@ -558,7 +561,7 @@ export const ItemContextMenu = ({
           }}>
           <Trash size={16} />
         </button>
-        {item.type === 'action' && !!fireAction && (
+        {isActionAndHasScript && !!fireAction && (
           <button
             type='button'
             onClick={handleFireAction}
