@@ -4,7 +4,6 @@ import {
   useCharacter,
   useCharacterAttributes,
   useCharacterWindows,
-  useInventory,
   type CharacterWindowUpdate,
 } from '@/lib/compass-api';
 import { executeActionEvent, useScriptAnnouncements } from '@/lib/compass-logic';
@@ -22,6 +21,7 @@ import { useParams } from 'react-router-dom';
 import { CharacterInventoryPanel, findFirstEmptySlot } from './character-inventory-panel';
 import { GameLog } from './game-log';
 import { InventoryPanel } from './inventory-panel';
+import { useInventoryUpdateWrappers } from './use-inventory-update-wrappers';
 
 export const CharacterPage = ({ id, lockByDefault }: { id?: string; lockByDefault?: boolean }) => {
   const { characterId } = useParams<{ characterId: string }>();
@@ -32,8 +32,14 @@ export const CharacterPage = ({ id, lockByDefault }: { id?: string; lockByDefaul
   const { character, updateCharacter } = useCharacter(id ?? characterId);
   const { updateCharacterWindow, deleteCharacterWindow } = useCharacterWindows(character?.id);
   const { characterAttributes, updateCharacterAttribute } = useCharacterAttributes(character?.id);
-  const { inventoryItems, addInventoryItem, updateInventoryItem, removeInventoryItem } =
-    useInventory(character?.inventoryId ?? '', character?.id ?? '');
+
+  const {
+    inventoryItems,
+    addItemAndFireEvent,
+    updateItemAndFireEvent,
+    removeItemAndFireEvent,
+    consumeItem,
+  } = useInventoryUpdateWrappers({ character });
 
   const [inventoryPanelConfig, setInventoryPanelConfig] = useState<InventoryPanelConfig>({});
   const [eventAnnouncements, setEventAnnouncements] = useState<string[]>([]);
@@ -58,7 +64,7 @@ export const CharacterPage = ({ id, lockByDefault }: { id?: string; lockByDefaul
     type: 'action' | 'item' | 'attribute',
   ) => {
     if (inventoryPanelConfig.addToDefaultInventory) {
-      addInventoryItem({
+      addItemAndFireEvent({
         type,
         entityId: entity.id,
         componentId: '',
@@ -100,7 +106,7 @@ export const CharacterPage = ({ id, lockByDefault }: { id?: string; lockByDefaul
       return;
     }
 
-    addInventoryItem({
+    addItemAndFireEvent({
       type,
       entityId: entity.id,
       componentId: inventoryPanelConfig.inventoryComponentId,
@@ -177,10 +183,11 @@ export const CharacterPage = ({ id, lockByDefault }: { id?: string; lockByDefaul
         inventoryPanelConfig,
         setInventoryPanelConfig,
         inventoryItems,
-        updateInventoryItem,
-        removeInventoryItem,
-        addInventoryItem,
+        addInventoryItem: addItemAndFireEvent,
+        updateInventoryItem: updateItemAndFireEvent,
+        removeInventoryItem: removeItemAndFireEvent,
         fireAction,
+        consumeItem,
         gameLogs,
       }}>
       <SheetViewer

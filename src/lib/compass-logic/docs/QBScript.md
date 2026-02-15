@@ -303,12 +303,18 @@ return current_level
 
 // ===== CHARACTER METHODS (Owner, Target) =====
 Owner.name // Returns character's name
+
+// Character Items
+Owner.Item('item name') // Gets first matching item
+Owner.Items('item name') // Gets array of matching items
+
 Owner.hasItem('item name') // Returns boolean
 Owner.addItem('item name', quantity) // Adds items to inventory
 Owner.removeItem('item name', quantity) // Removes items from inventory
+Owner.setItem('item name', quantity) // Sets the quantity of that item, consolidated to a single stack
+
+// Character attributes
 Owner.Attribute('attribute name') // Gets CharacterAttribute
-Owner.Item('item name') // Gets first matching item
-Owner.Items('item name') // Gets array of matching items
 
 ### Items
 
@@ -318,13 +324,20 @@ Item scripts use event handlers that fire when players interact with items throu
 item = Owner.Item('Sword') // Single item
 items = Owner.Items('Arrow') // Array of items
 
-item.count() // Quantity of item
-item.description // Item description
 item.title // Item title
+item.description // Item description
+item.count() // Quantity of item
 
 // Item custom properties (defined on Item record)
 armor = Owner.Item('Plate Mail')
 armor.armor_value // Access custom property
+
+// ===== ITEM EVENTS =====
+on_equip
+
+on_unquip
+
+on_consume
 
 ```javascript
 // Ring of Armor - activates spell effect when equipped

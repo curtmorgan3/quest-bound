@@ -26,6 +26,7 @@ export type InventoryItemWithData = InventoryItem & {
   inventoryHeight: number;
   stackSize: number;
   isEquippable: boolean;
+  isConsumable: boolean;
   weight: number;
   /** Present when type is 'attribute': the character's current value for this attribute. */
   value?: string | number | boolean;
@@ -46,6 +47,7 @@ type CharacterContext = {
     data: Omit<InventoryItem, 'id' | 'createdAt' | 'updatedAt' | 'inventoryId'>,
   ) => void;
   fireAction: (actionId: string) => void;
+  consumeItem: (id: string) => void;
   gameLogs: string[];
 };
 

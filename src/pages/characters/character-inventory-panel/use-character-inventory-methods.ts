@@ -8,8 +8,13 @@ interface UseCharacterInventoryMethods {
 }
 
 export const useCharacterInventoryMethods = ({ typeFilter }: UseCharacterInventoryMethods) => {
-  const { setInventoryPanelConfig, updateInventoryItem, removeInventoryItem, addInventoryItem } =
-    useContext(CharacterContext);
+  const {
+    consumeItem,
+    setInventoryPanelConfig,
+    updateInventoryItem,
+    removeInventoryItem,
+    addInventoryItem,
+  } = useContext(CharacterContext);
 
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
 
@@ -67,6 +72,13 @@ export const useCharacterInventoryMethods = ({ typeFilter }: UseCharacterInvento
     });
   };
 
+  const handleConsumeItem = () => {
+    if (!contextMenu) return;
+    const item = contextMenu.item;
+    consumeItem(item.id);
+    setContextMenu(null);
+  };
+
   return {
     contextMenu,
     setContextMenu,
@@ -78,5 +90,6 @@ export const useCharacterInventoryMethods = ({ typeFilter }: UseCharacterInvento
     handleSplitStack,
     handleUpdateLabel,
     handleUpdateEquipped,
+    handleConsumeItem,
   };
 };

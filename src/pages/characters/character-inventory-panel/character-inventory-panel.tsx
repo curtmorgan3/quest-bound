@@ -55,6 +55,7 @@ export const CharacterInventoryPanel = ({ open, onOpenChange }: CharacterInvento
     handleUpdateLabel,
     handleUpdateQuantity,
     handleUpdateEquipped,
+    handleConsumeItem,
   } = useCharacterInventoryMethods({
     typeFilter,
   });
@@ -198,6 +199,7 @@ export const CharacterInventoryPanel = ({ open, onOpenChange }: CharacterInvento
                             onUpdateLabel={handleUpdateLabel}
                             onRemove={handleRemoveItem}
                             onSplit={handleSplitStack}
+                            onConsume={handleConsumeItem}
                             onToggleEquipped={
                               contextMenu.item.isEquippable
                                 ? () => handleUpdateEquipped(!contextMenu.item.isEquipped)

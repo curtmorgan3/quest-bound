@@ -13,7 +13,7 @@ import { useAttributes, useCharacterAttributes } from '@/lib/compass-api';
 import { injectCharacterData } from '@/lib/compass-planes/utils';
 import { CharacterContext, DiceContext, type InventoryItemWithData } from '@/stores';
 import { parseTextForDiceRolls, useKeyListeners } from '@/utils';
-import { Check, Shirt, Trash, Zap } from 'lucide-react';
+import { Check, Drumstick, Shirt, Trash, Zap } from 'lucide-react';
 import { useContext, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 
@@ -35,6 +35,7 @@ type ItemContextMenuProps = {
   onRemove: () => void;
   onSplit: (splitAmount: number) => void;
   onToggleEquipped?: () => void;
+  onConsume?: () => void;
 };
 
 export const ItemContextMenu = ({
@@ -47,6 +48,7 @@ export const ItemContextMenu = ({
   onRemove,
   onSplit,
   onToggleEquipped,
+  onConsume,
 }: ItemContextMenuProps) => {
   const characterContext = useContext(CharacterContext);
   const { characterAttributes, updateCharacterAttribute } = useCharacterAttributes(
@@ -60,6 +62,7 @@ export const ItemContextMenu = ({
   const inventoryAttribute = characterAttributes.find((attr) => attr.attributeId === item.entityId);
 
   const [quantity, setQuantity] = useState(item.quantity);
+
   const [splitAmount, setSplitAmount] = useState(Math.floor(item.quantity / 2));
   const { rollDice } = useContext(DiceContext);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -167,6 +170,14 @@ export const ItemContextMenu = ({
     if (item.type === 'action' && fireAction) {
       fireAction(item.entityId);
     }
+  };
+
+  const handleConsume = () => {
+    if (!onConsume) return;
+    // Consume is a built-in that always reduces qty by one
+    // Do this to keep state in sync here
+    setQuantity((prev) => prev - 1);
+    onConsume();
   };
 
   const canSplit = item.quantity > 1;
@@ -316,7 +327,7 @@ export const ItemContextMenu = ({
       {maxQuantity > 1 && (
         <div style={{ marginBottom: 12 }}>
           <label style={{ display: 'block', fontSize: 12, color: '#999', marginBottom: 4 }}>
-            Quantity
+            {`Quantity (max: ${maxQuantity})`}
           </label>
           <NumberInput
             value={quantity}
@@ -371,17 +382,31 @@ export const ItemContextMenu = ({
         </div>
       )}
 
-      {item.isEquippable && onToggleEquipped && (
-        <div style={{ marginBottom: 12 }}>
-          <Shirt
-            onClick={onToggleEquipped}
-            onPointerDown={(e) => e.stopPropagation()}
-            size={18}
-            className='clickable'
-            style={{ color: item.isEquipped ? 'var(--color-primary, #6a9)' : '#999' }}
-          />
-        </div>
-      )}
+      <div className='flex gap-2'>
+        {item.isEquippable && !!onToggleEquipped && (
+          <div style={{ marginBottom: 12 }}>
+            <Shirt
+              onClick={onToggleEquipped}
+              onPointerDown={(e) => e.stopPropagation()}
+              size={18}
+              className='clickable'
+              style={{ color: item.isEquipped ? 'var(--color-primary, #6a9)' : '#999' }}
+            />
+          </div>
+        )}
+
+        {item.isConsumable && !!onConsume && (
+          <div style={{ marginBottom: 12 }}>
+            <Drumstick
+              onClick={handleConsume}
+              onPointerDown={(e) => e.stopPropagation()}
+              size={18}
+              className='clickable'
+              style={{ color: '#999' }}
+            />
+          </div>
+        )}
+      </div>
 
       {inventoryAttribute && (
         <div style={{ marginBottom: 12 }}>

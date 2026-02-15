@@ -92,7 +92,8 @@ export const ViewInventoryNode = ({ component }: { component: Component }) => {
 
   // Clear drag state once the database update has propagated
   useEffect(() => {
-    if (!dragState || dragState.committedX === undefined || dragState.committedY === undefined) return;
+    if (!dragState || dragState.committedX === undefined || dragState.committedY === undefined)
+      return;
 
     const item = inventoryItems.find((i) => i.id === dragState.itemId);
     if (!item) {
@@ -200,6 +201,15 @@ export const ViewInventoryNode = ({ component }: { component: Component }) => {
     setContextMenu(null);
   };
 
+  const handleConsumeItem = () => {
+    if (!characterContext || !contextMenu) return;
+    characterContext.consumeItem(contextMenu.item.id);
+
+    if (contextMenu.item.quantity <= 1) {
+      setContextMenu(null);
+    }
+  };
+
   const handleSplitStack = (splitAmount: number) => {
     if (!characterContext || !contextMenu) return;
 
@@ -273,7 +283,7 @@ export const ViewInventoryNode = ({ component }: { component: Component }) => {
     e.preventDefault();
 
     const target = e.currentTarget as HTMLElement;
-    
+
     // Ensure pointer capture is set immediately for touch devices
     try {
       target.setPointerCapture(e.pointerId);
@@ -420,7 +430,9 @@ export const ViewInventoryNode = ({ component }: { component: Component }) => {
           y: clampedY,
         });
         // Set committed position for optimistic UI
-        setDragState((prev) => (prev ? { ...prev, committedX: clampedX, committedY: clampedY } : null));
+        setDragState((prev) =>
+          prev ? { ...prev, committedX: clampedX, committedY: clampedY } : null,
+        );
       } else {
         // Position didn't change, just clear drag state
         setDragState(null);
@@ -481,7 +493,7 @@ export const ViewInventoryNode = ({ component }: { component: Component }) => {
               onClick={(e) => handleItemClick(e, invItem)}
               onPointerDown={(e) => handlePointerDown(e, invItem)}
               tabIndex={0}
-              role="button"
+              role='button'
               aria-label={`${invItem.title} - drag to move`}
               style={{
                 position: 'absolute',
@@ -560,6 +572,7 @@ export const ViewInventoryNode = ({ component }: { component: Component }) => {
           }}
           onRemove={handleRemoveItem}
           onSplit={handleSplitStack}
+          onConsume={handleConsumeItem}
           onToggleEquipped={
             characterContext
               ? () =>
