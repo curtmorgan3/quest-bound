@@ -80,6 +80,8 @@ export function ScriptEditorPage() {
     }
   }, [scriptId, script, isNew]);
 
+  const usesEvents = entityType === 'action' || entityType === 'item';
+
   return (
     <div className='flex flex-col h-full min-h-0'>
       <EditorTopBar
@@ -113,15 +115,14 @@ export function ScriptEditorPage() {
               />
             )}
 
-            {entityType === 'action' ||
-              (entityType === 'item' && (
-                <EventControls
-                  entityType={entityType}
-                  entityId={entityId}
-                  executeItemEvent={executeItemEvent}
-                  executeActionEvent={executeActionEvent}
-                />
-              ))}
+            {usesEvents && (
+              <EventControls
+                entityType={entityType}
+                entityId={entityId}
+                executeItemEvent={executeItemEvent}
+                executeActionEvent={executeActionEvent}
+              />
+            )}
           </div>
         </div>
 
