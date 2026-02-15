@@ -1,5 +1,4 @@
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Label } from '@/components/ui/label';
 import { useRulesets } from '@/lib/compass-api';
 import { useScripts } from '@/lib/compass-api/hooks/scripts/use-scripts';
 import {
@@ -9,6 +8,7 @@ import {
   type EventHandlerResult,
 } from '@/lib/compass-logic';
 import { CodeMirrorEditor } from '@/lib/compass-logic/editor';
+import { colorPrimary } from '@/palette';
 import { db } from '@/stores';
 import type { Script } from '@/types';
 import { useLiveQuery } from 'dexie-react-hooks';
@@ -98,12 +98,10 @@ export function ScriptEditorPage() {
       <div className='flex-1 flex flex-col min-h-0 gap-4'>
         <div className='flex flex-col gap-2 flex-1 min-h-0 p-2'>
           <div>
-            <Label>Source</Label>
-            {testCharacter && (
-              <p className='text-sm text-muted-foreground'>
-                Run uses test character: <strong>{testCharacter.name}</strong>
-              </p>
-            )}
+            <span style={{ fontSize: '18px', fontFamily: 'CygniRoMonoPro', color: colorPrimary }}>
+              QB
+            </span>
+            <span style={{ fontSize: '18px', fontFamily: 'CygniRoMonoPro' }}>Script</span>
           </div>
           <div className='flex gap-2'>
             <CodeMirrorEditor
