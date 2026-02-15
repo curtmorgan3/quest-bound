@@ -5,7 +5,6 @@ import {
   useExecuteActionEvent,
   useExecuteItemEvent,
   useReactiveScriptExecution,
-  useScriptValidation,
 } from '@/lib/compass-logic';
 import { CodeMirrorEditor } from '@/lib/compass-logic/editor';
 import { colorPrimary } from '@/palette';
@@ -13,18 +12,21 @@ import { db } from '@/stores';
 import type { Script } from '@/types';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { AlertCircle } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { AttributeControls } from './script-editor/attribute-controls';
 import { EditorConsole } from './script-editor/editor-console';
 import { EditorTopBar } from './script-editor/editor-top-bar';
 import { EventControls } from './script-editor/event-controls';
+import { useAutoSave } from './use-auto-save';
 
 export function ScriptEditorPage() {
   const { scriptId } = useParams<{ rulesetId: string; scriptId: string }>();
-  const { activeRuleset, testCharacter } = useRulesets();
+  const isNew = scriptId === 'new';
   const { scripts } = useScripts();
-  const { errors: validationErrors, validate } = useScriptValidation();
+  const script = isNew ? null : (scripts.find((s) => s.id === scriptId) ?? null);
+
+  const { activeRuleset, testCharacter } = useRulesets();
   const {
     executeActionEvent,
     logMessages: actionEventLogs,
@@ -37,19 +39,22 @@ export function ScriptEditorPage() {
     announceMessages: itemEventAnnouncements,
     error: itemEventError,
   } = useExecuteItemEvent();
-  const hasErrors = validationErrors.length > 0;
 
   const consoleLogs = [...actionEventLogs, ...itemEventLogs];
   const announcements = [...actionEventAnnouncements, ...itemEventAnnouncements];
-
-  const isNew = scriptId === 'new';
-  const script = isNew ? null : (scripts.find((s) => s.id === scriptId) ?? null);
 
   const [name, setName] = useState('');
   const [entityType, setEntityType] = useState<Script['entityType']>('attribute');
 
   const [entityId, setEntityId] = useState<string | null>(null);
   const [sourceCode, setSourceCode] = useState('');
+
+  const { validationErrors } = useAutoSave({
+    sourceCode,
+    script,
+  });
+
+  const hasErrors = validationErrors.length > 0;
 
   const workerHook = useReactiveScriptExecution();
 
@@ -74,19 +79,6 @@ export function ScriptEditorPage() {
       setSourceCode(script.sourceCode);
     }
   }, [scriptId, script, isNew]);
-
-  // Debounced validation
-  const validateTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  useEffect(() => {
-    const id = scriptId ?? 'new';
-    if (validateTimeoutRef.current) clearTimeout(validateTimeoutRef.current);
-    validateTimeoutRef.current = setTimeout(() => {
-      validate(id, sourceCode);
-    }, 1000);
-    return () => {
-      if (validateTimeoutRef.current) clearTimeout(validateTimeoutRef.current);
-    };
-  }, [sourceCode, scriptId, validate]);
 
   return (
     <div className='flex flex-col h-full min-h-0'>
