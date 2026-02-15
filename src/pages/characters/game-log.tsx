@@ -1,6 +1,7 @@
 import { Button } from '@/components/ui/button';
 import { useScriptLogs } from '@/lib/compass-api';
-import { ScrollText, X } from 'lucide-react';
+import { format } from 'date-fns';
+import { CircleOff, ScrollText, X } from 'lucide-react';
 import { useState } from 'react';
 
 interface GameLogProps {
@@ -8,10 +9,18 @@ interface GameLogProps {
 }
 
 export const GameLog = ({ className }: GameLogProps) => {
-  const { logs: scriptLogs } = useScriptLogs(250);
+  const { logs: scriptLogs, clearLogs } = useScriptLogs(250);
   const [open, setOpen] = useState(false);
 
-  const logs = scriptLogs.map((l) => l.argsJson);
+  const logs: { msg: string; time: string }[] = scriptLogs
+    .map((l) => {
+      const logArray = JSON.parse(l.argsJson) as any[];
+      return {
+        msg: logArray.join(', '),
+        time: format(new Date(l.timestamp), 'MM/dd HH:mm'),
+      };
+    })
+    .filter((log) => !!log.msg);
 
   return (
     <>
@@ -31,14 +40,24 @@ export const GameLog = ({ className }: GameLogProps) => {
             aria-label='Game log'>
             <div className='flex items-center justify-between border-b px-3 py-2'>
               <span className='text-sm font-medium'>Game log</span>
-              <Button
-                variant='ghost'
-                size='icon'
-                onClick={() => setOpen(false)}
-                aria-label='Close game log'
-                className='size-7'>
-                <X className='size-3.5' />
-              </Button>
+              <div className='flex gap-2'>
+                <Button
+                  variant='ghost'
+                  size='icon'
+                  onClick={clearLogs}
+                  aria-label='Clear game log'
+                  className='size-7'>
+                  <CircleOff className='size-3.5' />
+                </Button>
+                <Button
+                  variant='ghost'
+                  size='icon'
+                  onClick={() => setOpen(false)}
+                  aria-label='Close game log'
+                  className='size-7'>
+                  <X className='size-3.5' />
+                </Button>
+              </div>
             </div>
             <div className='max-h-64 overflow-y-auto p-2'>
               {logs.length === 0 ? (
@@ -47,7 +66,8 @@ export const GameLog = ({ className }: GameLogProps) => {
                 <div className='flex flex-col gap-0.5 font-mono text-xs'>
                   {logs.map((log, i) => (
                     <div key={i} className='break-words'>
-                      {log}
+                      <span style={{ color: 'grey' }}>{`[${log.time}]: `}</span>
+                      <span>{log.msg}</span>
                     </div>
                   ))}
                 </div>
