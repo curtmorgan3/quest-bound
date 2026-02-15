@@ -5,8 +5,6 @@
  * between the main thread and the QBScript Web Worker.
  */
 
-import type { RollFn } from '../interpreter/evaluator';
-
 // ============================================================================
 // Main Thread → Worker Signals
 // ============================================================================
@@ -19,6 +17,7 @@ export type MainToWorkerSignal =
   | ExecuteActionSignal
   | ExecuteActionEventSignal
   | ExecuteItemEventSignal
+  | RollResponseSignal
   | ClearGraphSignal;
 
 export interface ExecuteScriptSignal {
@@ -67,7 +66,6 @@ export interface ExecuteActionEventSignal {
     targetId: string | null;
     eventType: 'on_activate' | 'on_deactivate';
     requestId: string;
-    roll?: RollFn;
   };
 }
 
@@ -79,6 +77,11 @@ export interface ExecuteItemEventSignal {
     eventType: string;
     requestId: string;
   };
+}
+
+export interface RollResponseSignal {
+  type: 'ROLL_RESPONSE';
+  payload: { rollRequestId: string; value?: number; error?: string };
 }
 
 export interface ClearGraphSignal {
@@ -100,7 +103,13 @@ export type WorkerToMainSignal =
   | DependencyGraphBuiltSignal
   | ValidationResultSignal
   | WorkerErrorSignal
-  | WorkerReadySignal;
+  | WorkerReadySignal
+  | RollRequestSignal;
+
+export interface RollRequestSignal {
+  type: 'ROLL_REQUEST';
+  payload: { executionRequestId: string; rollRequestId: string; expression: string };
+}
 
 export interface ScriptResultSignal {
   type: 'SCRIPT_RESULT';

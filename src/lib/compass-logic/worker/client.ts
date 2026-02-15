@@ -68,6 +68,8 @@ export type WorkerSignalHandler = (signal: WorkerToMainSignal) => void;
 export class QBScriptClient {
   private worker: Worker | null = null;
   private pendingRequests: Map<string, PendingRequest> = new Map();
+  /** Roll handler per execution request (for action events that need roll in worker) */
+  private pendingRollHandlers: Map<string, RollFn> = new Map();
   private isReady = false;
   private readyCallbacks: Array<() => void> = [];
   private signalHandlers: Set<WorkerSignalHandler> = new Set();
@@ -169,8 +171,46 @@ export class QBScriptClient {
         }
         break;
 
+      case 'ROLL_REQUEST':
+        this.handleRollRequest(signal.payload);
+        break;
+
       default:
         console.warn('Unknown signal type:', (signal as any).type);
+    }
+  }
+
+  private async handleRollRequest(payload: {
+    executionRequestId: string;
+    rollRequestId: string;
+    expression: string;
+  }): Promise<void> {
+    const rollFn = this.pendingRollHandlers.get(payload.executionRequestId);
+    if (!this.worker) return;
+    if (!rollFn) {
+      this.worker.postMessage({
+        type: 'ROLL_RESPONSE',
+        payload: {
+          rollRequestId: payload.rollRequestId,
+          error: 'No roll handler registered for this execution',
+        },
+      });
+      return;
+    }
+    try {
+      const value = await Promise.resolve(rollFn(payload.expression));
+      this.worker.postMessage({
+        type: 'ROLL_RESPONSE',
+        payload: { rollRequestId: payload.rollRequestId, value },
+      });
+    } catch (err) {
+      this.worker.postMessage({
+        type: 'ROLL_RESPONSE',
+        payload: {
+          rollRequestId: payload.rollRequestId,
+          error: err instanceof Error ? err.message : String(err),
+        },
+      });
     }
   }
 
@@ -203,6 +243,7 @@ export class QBScriptClient {
       });
 
       this.pendingRequests.delete(payload.requestId);
+      this.pendingRollHandlers.delete(payload.requestId);
     }
   }
 
@@ -220,6 +261,7 @@ export class QBScriptClient {
 
       pending.reject(error);
       this.pendingRequests.delete(payload.requestId);
+      this.pendingRollHandlers.delete(payload.requestId);
     }
   }
 
@@ -385,17 +427,21 @@ export class QBScriptClient {
     executionTime: number;
   }> {
     const requestId = generateRequestId();
-
-    console.log('send signal');
-
-    return this.sendSignal(
-      {
-        type: 'EXECUTE_ACTION_EVENT',
-        payload: { actionId, characterId, targetId, eventType, requestId, roll },
-      },
-      requestId,
-      timeout,
-    );
+    if (roll) {
+      this.pendingRollHandlers.set(requestId, roll);
+    }
+    try {
+      return await this.sendSignal(
+        {
+          type: 'EXECUTE_ACTION_EVENT',
+          payload: { actionId, characterId, targetId, eventType, requestId },
+        },
+        requestId,
+        timeout,
+      );
+    } finally {
+      this.pendingRollHandlers.delete(requestId);
+    }
   }
 
   /**

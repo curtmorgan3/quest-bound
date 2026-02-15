@@ -195,18 +195,15 @@ export function useExecuteActionEvent(timeout = 10000): UseExecuteActionEventRes
       setIsExecuting(true);
       setError(null);
 
-      console.log('executeActionEvent');
-
       try {
         const response = await client.executeActionEvent(
           actionId,
           characterId,
           targetId,
           eventType,
-          undefined, //roll
+          roll,
           timeout,
         );
-        console.log('executeActionEvent: ', response);
         setResult(response.value);
         setAnnounceMessages(response.announceMessages);
         setLogMessages(response.logMessages);

@@ -43,7 +43,7 @@ Execute arbitrary scripts with full control.
 Execute action scripts by action ID (runs the full script, e.g. when the user clicks the action).
 
 ### `useExecuteActionEvent()`
-Execute action **event** handlers (`on_activate`, `on_deactivate`) in the worker. Uses `EventHandlerExecutor` so only the chosen handler runs.
+Execute action **event** handlers (`on_activate`, `on_deactivate`) in the worker. Uses `EventHandlerExecutor` so only the chosen handler runs. You can pass an optional `roll` function so scripts can call `roll()` in the worker: the worker sends a `ROLL_REQUEST` to the main thread, the main thread runs your `roll(expression)` and sends `ROLL_RESPONSE` back (functions can't be sent via `postMessage`, so this round-trip is used instead).
 
 **Example: fire an action event from a React component (runs in worker thread)**
 

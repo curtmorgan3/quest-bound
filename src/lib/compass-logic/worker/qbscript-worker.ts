@@ -40,6 +40,37 @@ let reactiveExecutor: ReactiveExecutor | null = null;
 let messagePort: MessagePort | null = null;
 
 // ============================================================================
+// Roll bridge (worker requests roll from main thread; main thread responds)
+// ============================================================================
+
+const rollBridge = {
+  pending: new Map<
+    string,
+    { resolve: (value: number) => void; reject: (err: Error) => void }
+  >(),
+  requestRoll(expression: string, executionRequestId: string): Promise<number> {
+    const rollRequestId = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+    return new Promise<number>((resolve, reject) => {
+      this.pending.set(rollRequestId, { resolve, reject });
+      sendSignal({
+        type: 'ROLL_REQUEST',
+        payload: { executionRequestId, rollRequestId, expression },
+      });
+    });
+  },
+  resolveRoll(rollRequestId: string, value?: number, error?: string): void {
+    const entry = this.pending.get(rollRequestId);
+    if (!entry) return;
+    this.pending.delete(rollRequestId);
+    if (error != null) {
+      entry.reject(new Error(error));
+    } else {
+      entry.resolve(value ?? 0);
+    }
+  },
+};
+
+// ============================================================================
 // Message Handling
 // ============================================================================
 
@@ -91,6 +122,12 @@ async function handleSignal(signal: MainToWorkerSignal): Promise<void> {
       case 'CLEAR_GRAPH':
         handleClearGraph(signal.payload);
         break;
+
+      case 'ROLL_RESPONSE': {
+        const { rollRequestId, value, error } = signal.payload;
+        rollBridge.resolveRoll(rollRequestId, value, error);
+        break;
+      }
 
       default:
         console.error('Unknown signal type:', (signal as any).type);
@@ -408,13 +445,16 @@ async function handleExecuteActionEvent(payload: {
       throw new Error(`Action not found: ${payload.actionId}`);
     }
 
+    const rollFn: RollFn = (expression: string) =>
+      rollBridge.requestRoll(expression, payload.requestId);
+
     const executor = new EventHandlerExecutor(db);
     const result = await executor.executeActionEvent(
       payload.actionId,
       payload.characterId,
       payload.targetId,
       payload.eventType,
-      payload.roll,
+      rollFn,
     );
 
     const script = await db.scripts
