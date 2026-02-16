@@ -29,6 +29,11 @@ export const useItems = () => {
         rulesetId: activeRuleset.id,
         createdAt: now,
         updatedAt: now,
+        customProperties: {
+          durability: 10,
+          isValuable: true,
+          origina: 'draconic',
+        },
       } as Item);
     } catch (e) {
       handleError(e as Error, {

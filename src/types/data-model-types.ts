@@ -177,6 +177,8 @@ export type InventoryItem = BaseDetails & {
   label?: string; // User provided custom name
   value?: string | number | boolean;
   isEquipped?: boolean;
+  /** Per-instance overrides for item definition custom properties (e.g. armor_value). */
+  customProperties?: Record<string, string | number | boolean>;
 };
 
 export type Ruleset = BaseDetails & {

@@ -28,6 +28,7 @@ export type InventoryItemWithData = InventoryItem & {
   isEquippable: boolean;
   isConsumable: boolean;
   weight: number;
+  customProperties: Record<any, any>;
   /** Present when type is 'attribute': the character's current value for this attribute. */
   value?: string | number | boolean;
 };

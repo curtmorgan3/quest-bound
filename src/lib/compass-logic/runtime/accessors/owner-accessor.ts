@@ -5,7 +5,6 @@ import {
   ActionProxy,
   AttributeProxy,
   createItemInstanceProxy,
-  type ItemInstancePlain,
 } from '../proxies';
 import type { StructuredCloneSafe } from '../structured-clone-safe';
 
@@ -116,24 +115,40 @@ export class OwnerAccessor implements StructuredCloneSafe {
     );
     if (!inventoryItem) return undefined;
 
-    return createItemInstanceProxy(inventoryItem, item);
+    const onSetCustomProperty = (propName: string, value: string | number | boolean) => {
+      if (!inventoryItem.customProperties) inventoryItem.customProperties = {};
+      inventoryItem.customProperties[propName] = value;
+      this.pendingUpdates.set(`inventoryUpdate:${inventoryItem.id}`, {
+        customProperties: inventoryItem.customProperties,
+      });
+    };
+    return createItemInstanceProxy(inventoryItem, item, onSetCustomProperty);
   }
 
   /**
    * Get all inventory items matching the given item name (by ruleset item title).
-   * Only matches entries of type 'item'. Returns a plain array (cloneable).
+   * Only matches entries of type 'item'. Returns array of item instance proxies (cloneable when sent across worker).
    * Use .length, [index], and in the evaluator .count(), .first(), .last() on the result.
    * @param name - The title/name of the ruleset item
-   * @returns Array of plain item objects
+   * @returns Array of item instance proxies
    */
-  Items(name: string): ItemInstancePlain[] {
+  Items(name: string): ReturnType<typeof createItemInstanceProxy>[] {
     const item = Array.from(this.itemsCache.values()).find((i) => i.title === name);
     if (!item) return [];
 
     const matching = this.inventoryItems.filter(
       (inv) => inv.entityId === item.id && inv.type === 'item',
     );
-    return matching.map((inv) => createItemInstanceProxy(inv, item));
+    return matching.map((inv) => {
+      const onSetCustomProperty = (propName: string, value: string | number | boolean) => {
+        if (!inv.customProperties) inv.customProperties = {};
+        inv.customProperties[propName] = value;
+        this.pendingUpdates.set(`inventoryUpdate:${inv.id}`, {
+          customProperties: inv.customProperties,
+        });
+      };
+      return createItemInstanceProxy(inv, item, onSetCustomProperty);
+    });
   }
 
   /**
