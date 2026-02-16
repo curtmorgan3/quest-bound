@@ -9,6 +9,7 @@ import type { Node, NodeChange, NodePositionChange } from '@xyflow/react';
 import { applyNodeChanges } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { BaseEditor } from '../base-editor';
 import { WindowNode } from './window-node';
 import { WindowsTabs } from './windows-tabs';
@@ -26,8 +27,6 @@ interface SheetViewerProps {
   initialCurrentPageId?: string | null;
   /** Initial locked state (e.g. from localStorage). */
   initialLocked?: boolean;
-  /** Called when the current page changes (e.g. to persist). */
-  onCurrentPageChange?: (pageId: string | null) => void;
   /** Called when the locked state changes (e.g. to persist). */
   onLockedChange?: (locked: boolean) => void;
 }
@@ -39,7 +38,6 @@ export const SheetViewer = ({
   lockByDefault,
   initialCurrentPageId,
   initialLocked,
-  onCurrentPageChange,
   onLockedChange,
 }: SheetViewerProps) => {
   const { characterPages } = useCharacterPages(characterId);
@@ -49,17 +47,13 @@ export const SheetViewer = ({
     deleteCharacterWindow,
   } = useCharacterWindows(characterId);
   const { windows: rulesetWindowDefs } = useWindows();
-  const [currentPageId, setCurrentPageIdState] = useState<string | null>(
-    initialCurrentPageId ?? null,
-  );
+  const [searchParams] = useSearchParams();
+  const currentPageId = searchParams.get('pageId') ?? initialCurrentPageId;
+
   const [locked, setLockedState] = useState<boolean>(initialLocked ?? lockByDefault ?? false);
 
   const currentPage = characterPages.find((p) => p.id === currentPageId);
 
-  const setCurrentPageId = (next: string | null) => {
-    setCurrentPageIdState(next);
-    onCurrentPageChange?.(next);
-  };
   const setLocked = (next: boolean | ((prev: boolean) => boolean)) => {
     setLockedState((prev) => {
       const value = typeof next === 'function' ? next(prev) : next;
@@ -75,31 +69,17 @@ export const SheetViewer = ({
     return characterWindows.filter((w) => w.characterPageId === currentPageId);
   }, [characterWindows, currentPageId]);
 
-  useEffect(() => {
-    if (characterPages.length === 0) {
-      setCurrentPageId(null);
-      return;
-    }
-
-    const storedIdValid =
-      initialCurrentPageId != null && characterPages.some((p) => p.id === initialCurrentPageId);
-    const fallbackPageId = storedIdValid ? initialCurrentPageId : (characterPages[0]?.id ?? null);
-
-    const currentStillExists = characterPages.some((p) => p.id === currentPageId);
-    if (!currentStillExists) {
-      setCurrentPageId(fallbackPageId);
-    } else if (currentPageId === null) {
-      setCurrentPageId(fallbackPageId);
-    }
-  }, [characterPages, currentPageId, initialCurrentPageId]);
-
   const openWindows = new Set(
     windowsForCurrentPage.filter((cw) => !cw.isCollapsed).map((cw) => cw.id),
   );
   const openCharacterWindows = windowsForCurrentPage.filter((w) => !w.isCollapsed);
 
   const handleChildWindowClick = useCallback(
-    (childWindowId: string, parentWindow: { x: number; y: number }, characterWindow: CharacterWindow) => {
+    (
+      childWindowId: string,
+      parentWindow: { x: number; y: number },
+      characterWindow: CharacterWindow,
+    ) => {
       const existing = windowsForCurrentPage.find((cw) => cw.windowId === childWindowId);
       if (existing) {
         deleteCharacterWindow(existing.id);
@@ -260,8 +240,6 @@ export const SheetViewer = ({
       )}
       <WindowsTabs
         characterId={characterId}
-        currentPageId={currentPageId}
-        onCurrentPageChange={setCurrentPageId}
         characterPages={characterPages}
         windows={windowsForCurrentPage}
         openWindows={openWindows}

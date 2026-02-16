@@ -111,7 +111,6 @@ export const CharacterPage = ({ id, lockByDefault }: { id?: string; lockByDefaul
         lockByDefault={lockByDefault ?? false}
         initialCurrentPageId={character.lastViewedPageId ?? null}
         initialLocked={character.sheetLocked}
-        onCurrentPageChange={sheetViewerPersistence?.onCurrentPageChange}
         onLockedChange={sheetViewerPersistence?.onLockedChange}
         onWindowUpdated={handleUpdateWindow}
         onWindowDeleted={handleDeleteWindow}

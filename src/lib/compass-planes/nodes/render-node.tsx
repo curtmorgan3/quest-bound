@@ -13,7 +13,7 @@ import {
   ViewTextNode,
 } from '../nodes/components';
 import { getComponentData } from '../utils';
-import { NodeActionCaller } from './decorators';
+import { NodeActionCaller, NodePageRouter } from './decorators';
 
 export const renderViewComponent = (
   component: Component,
@@ -93,5 +93,9 @@ export const renderViewComponent = (
 };
 
 function WrapDecorators({ children, component }: { children: ReactNode; component: Component }) {
-  return <NodeActionCaller component={component}>{children}</NodeActionCaller>;
+  return (
+    <NodePageRouter component={component}>
+      <NodeActionCaller component={component}>{children}</NodeActionCaller>
+    </NodePageRouter>
+  );
 }

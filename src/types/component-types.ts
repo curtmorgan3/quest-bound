@@ -93,4 +93,6 @@ export type ComponentData = ShapeComponentData &
   FrameComponentData & {
     conditionalRenderAttributeId?: string | null;
     conditionalRenderInverse?: boolean;
+    pageId?: string;
+    href?: string;
   };

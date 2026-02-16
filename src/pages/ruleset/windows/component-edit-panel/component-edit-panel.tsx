@@ -1,7 +1,13 @@
-import { Label } from '@/components';
+import { Input, Label } from '@/components';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ActionLookup, AttributeLookup, useComponents, WindowLookup } from '@/lib/compass-api';
+import {
+  ActionLookup,
+  AttributeLookup,
+  PageLookup,
+  useComponents,
+  WindowLookup,
+} from '@/lib/compass-api';
 import { ComponentTypes } from '@/lib/compass-planes/nodes';
 import {
   CheckboxDataEdit,
@@ -100,6 +106,32 @@ export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
         data: JSON.stringify({
           ...JSON.parse(c.data),
           conditionalRenderAttributeId: id,
+        }),
+      })),
+    );
+  };
+
+  const setPageId = (pageId: string | null) => {
+    const toUpdate = selectedComponents.filter((c) => !c.locked);
+    updateComponents(
+      toUpdate.map((c) => ({
+        id: c.id,
+        data: JSON.stringify({
+          ...JSON.parse(c.data),
+          pageId: pageId ?? undefined,
+        }),
+      })),
+    );
+  };
+
+  const setHref = (href: string) => {
+    const toUpdate = selectedComponents.filter((c) => !c.locked);
+    updateComponents(
+      toUpdate.map((c) => ({
+        id: c.id,
+        data: JSON.stringify({
+          ...JSON.parse(c.data),
+          href: href || undefined,
         }),
       })),
     );
@@ -248,6 +280,27 @@ export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
                 onDelete={() => handleUpdate('childWindowId', null)}
                 excludeIds={[windowId]}
               />
+            )}
+            {selectedComponents.length === 1 && (
+              <>
+                <PageLookup
+                  label='Open Page'
+                  value={getComponentData(selectedComponents[0]).pageId ?? null}
+                  onSelect={(page) => setPageId(page.id)}
+                  onDelete={() => setPageId(null)}
+                />
+                <div className='flex flex-col gap-2'>
+                  <Label htmlFor='component-edit-href'>Link</Label>
+                  <Input
+                    id='component-edit-href'
+                    className='h-8 rounded-[4px]'
+                    disabled={!!getComponentData(selectedComponents[0]).pageId}
+                    placeholder='https://...'
+                    value={getComponentData(selectedComponents[0]).href ?? ''}
+                    onChange={(e) => setHref(e.target.value)}
+                  />
+                </div>
+              </>
             )}
             {allAreImages && (
               <ImageDataEdit

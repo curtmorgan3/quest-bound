@@ -26,11 +26,12 @@ export function BaseEditor({
   onSelectFromMenu,
   useGrid = true,
   backgroundColor,
-  backgroundOpacity = 1,
+  backgroundOpacity,
   backgroundImage,
   ...props
 }: BaseEditorProps) {
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
+  const opacity = !backgroundColor && !backgroundImage ? 0.1 : (backgroundOpacity ?? 0.1);
 
   return (
     <section
@@ -54,7 +55,7 @@ export function BaseEditor({
             inset: 0,
             zIndex: 0,
             backgroundColor,
-            opacity: backgroundOpacity,
+            opacity,
             pointerEvents: 'none',
           }}
         />
@@ -70,7 +71,7 @@ export function BaseEditor({
             backgroundSize: 'cover',
             backgroundPosition: 'center',
             backgroundRepeat: 'no-repeat',
-            opacity: backgroundOpacity,
+            opacity,
             pointerEvents: 'none',
           }}
         />
@@ -107,7 +108,7 @@ export function BaseEditor({
             gap={20}
             size={1}
             style={{
-              opacity: backgroundOpacity,
+              opacity,
             }}
           />
         )}

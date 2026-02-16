@@ -28,11 +28,10 @@ import { colorPrimary } from '@/palette';
 import type { CharacterWindow, Window } from '@/types';
 import { Lock, Pencil, Plus, Trash2 } from 'lucide-react';
 import { useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 
 interface WindowsTabsProps {
   characterId?: string;
-  currentPageId: string | null;
-  onCurrentPageChange: (pageId: string | null) => void;
   characterPages: CharacterPageWithPage[];
   windows: CharacterWindow[];
   toggleWindow: (id: string) => void;
@@ -43,8 +42,6 @@ interface WindowsTabsProps {
 
 export const WindowsTabs = ({
   characterId,
-  currentPageId,
-  onCurrentPageChange,
   characterPages,
   windows,
   toggleWindow,
@@ -58,6 +55,9 @@ export const WindowsTabs = ({
   const { createCharacterWindow } = useCharacterWindows(characterId);
   const { createCharacterPage, updateCharacterPage, deleteCharacterPage } =
     useCharacterPages(characterId);
+
+  const [searchParams, setSearchParams] = useSearchParams();
+  const currentPageId = searchParams.get('pageId') ?? '';
 
   const { assets } = useAssets();
   const [isAddWindowModalOpen, setIsAddWindowModalOpen] = useState(false);
@@ -108,25 +108,34 @@ export const WindowsTabs = ({
     setIsAddWindowModalOpen(false);
   };
 
+  const handleNavigate = (pageId: string) => {
+    const next = new URLSearchParams(searchParams);
+    next.set('pageId', pageId);
+    setSearchParams(next);
+  };
+
   const handleAddPage = async () => {
     const label = newPageLabel.trim() || 'Untitled';
     const newId = await createCharacterPage({ label });
     setNewPageLabel('');
     setIsAddPageModalOpen(false);
-    if (newId) onCurrentPageChange(newId);
+    if (newId) {
+      handleNavigate(newId);
+    }
   };
 
   const handleAddPageFromTemplate = async (rulesetPageId: string) => {
     const newId = await createCharacterPage({ fromRulesetPageId: rulesetPageId });
     setIsAddPageModalOpen(false);
-    if (newId) onCurrentPageChange(newId);
+    if (newId) {
+      handleNavigate(newId);
+    }
   };
-
 
   const handleDeletePage = async (pageId: string) => {
     const remaining = characterPages.filter((p) => p.id !== pageId);
     await deleteCharacterPage(pageId);
-    onCurrentPageChange(remaining[0]?.id ?? null);
+    handleNavigate(remaining[0]?.id ?? '');
   };
 
   const tabBarStyle = {
@@ -196,7 +205,9 @@ export const WindowsTabs = ({
           value={currentPageId ?? ''}
           onChange={(e) => {
             const next = e.target.value || null;
-            if (next !== currentPageId) onCurrentPageChange(next);
+            if (next !== currentPageId && next !== null) {
+              handleNavigate(next);
+            }
           }}
           disabled={characterPages.length === 0}
           title='Current page'
