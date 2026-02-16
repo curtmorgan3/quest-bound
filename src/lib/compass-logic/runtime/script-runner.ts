@@ -1,5 +1,6 @@
 import type { DB } from '@/stores/db/hooks/types';
 import type {
+  Action,
   Attribute,
   CharacterAttribute,
   Chart,
@@ -12,6 +13,7 @@ import { Evaluator } from '../interpreter/evaluator';
 import { Lexer } from '../interpreter/lexer';
 import { Parser } from '../interpreter/parser';
 import { OwnerAccessor, RulesetAccessor, TargetAccessor } from './accessors';
+import type { ExecuteActionEventFn } from './proxies';
 
 /**
  * Context for script execution.
@@ -29,6 +31,8 @@ export interface ScriptExecutionContext {
   entityId?: string;
   /** Optional roll function for script built-in roll(). When set, used instead of default local roll (e.g. from useDiceState). */
   roll?: RollFn;
+  /** When set, Owner.Action('name').activate() / .deactivate() can run action event handlers (e.g. from worker or EventHandlerExecutor). */
+  executeActionEvent?: ExecuteActionEventFn;
 }
 
 /**
@@ -53,6 +57,7 @@ export class ScriptRunner {
   // Cached data loaded before execution
   private characterAttributesCache: Map<string, CharacterAttribute>;
   private attributesCache: Map<string, Attribute>;
+  private actionsCache: Map<string, Action>;
   private chartsCache: Map<string, Chart>;
   private itemsCache: Map<string, Item>;
   private ownerInventoryItems: InventoryItem[];
@@ -68,6 +73,7 @@ export class ScriptRunner {
     this.pendingUpdates = new Map();
     this.characterAttributesCache = new Map();
     this.attributesCache = new Map();
+    this.actionsCache = new Map();
     this.chartsCache = new Map();
     this.itemsCache = new Map();
     this.ownerInventoryItems = [];
@@ -101,6 +107,12 @@ export class ScriptRunner {
     const items = await db.items.where({ rulesetId }).toArray();
     for (const item of items) {
       this.itemsCache.set(item.id, item);
+    }
+
+    // Load all actions for this ruleset (for Owner.Action('name'))
+    const actions = await db.actions.where({ rulesetId }).toArray();
+    for (const action of actions) {
+      this.actionsCache.set(action.id, action);
     }
 
     // Load owner character and inventory items
@@ -188,8 +200,11 @@ export class ScriptRunner {
       this.pendingUpdates,
       this.characterAttributesCache,
       this.attributesCache,
+      this.actionsCache,
       this.itemsCache,
       this.ownerInventoryItems,
+      targetId ?? null,
+      this.context.executeActionEvent,
     );
 
     // Create Target accessor (null if no target)
@@ -203,8 +218,11 @@ export class ScriptRunner {
         this.pendingUpdates,
         this.characterAttributesCache,
         this.attributesCache,
+        this.actionsCache,
         this.itemsCache,
         this.targetInventoryItems ?? [],
+        null, // Target's Action() has no second target
+        this.context.executeActionEvent,
       );
     }
 
@@ -270,6 +288,8 @@ export class ScriptRunner {
 
       // Set up accessor objects
       this.setupAccessors();
+
+      console.log('setup accessors');
 
       // Run global scripts so their definitions are in the environment
       await this.loadAndRunGlobalScripts();

@@ -233,6 +233,7 @@ Self.value
         pendingUpdates,
         characterAttributesCache,
         attributesCache,
+        new Map(),
         itemsCache,
         [],
       );
@@ -281,6 +282,7 @@ Self.value
         pendingUpdates,
         characterAttributesCache,
         attributesCache,
+        new Map(),
         itemsCache,
         [],
       );
@@ -356,6 +358,7 @@ Self.value
         new Map(),
         new Map(),
         new Map(),
+        new Map(),
         itemsCache,
         [],
       );
@@ -382,6 +385,7 @@ Self.value
         'Test',
         'inv1',
         null as any,
+        new Map(),
         new Map(),
         new Map(),
         new Map(),
@@ -417,6 +421,7 @@ Self.value
         new Map(),
         new Map(),
         new Map(),
+        new Map(),
         itemsCache,
         [invEntry],
       );
@@ -438,6 +443,7 @@ Self.value
         'inv1',
         null as any,
         pendingUpdates,
+        new Map(),
         new Map(),
         new Map(),
         itemsCache,
@@ -474,6 +480,7 @@ Self.value
         'inv1',
         null as any,
         pendingUpdates,
+        new Map(),
         new Map(),
         new Map(),
         itemsCache,

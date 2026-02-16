@@ -106,6 +106,8 @@ export class EventHandlerExecutor {
       scriptId: script.id,
       triggerType: 'item_event',
       roll,
+      executeActionEvent: (actionId, ownerId, targetIdForAction, eventTypeForAction) =>
+        this.executeActionEvent(actionId, ownerId, targetIdForAction, eventTypeForAction, roll),
     };
 
     const runner = new ScriptRunner(context);
@@ -190,6 +192,8 @@ export class EventHandlerExecutor {
       scriptId: script.id,
       triggerType: 'action_click',
       roll,
+      executeActionEvent: (actionId, ownerId, targetIdForAction, eventTypeForAction) =>
+        this.executeActionEvent(actionId, ownerId, targetIdForAction, eventTypeForAction, roll),
     };
 
     const runner = new ScriptRunner(context);

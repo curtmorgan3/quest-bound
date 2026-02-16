@@ -1,4 +1,6 @@
+import type { RollFn } from '@/types';
 import type { DB } from '@/stores/db/hooks/types';
+import type { ExecuteActionEventFn } from '../runtime/proxies';
 import type { ScriptExecutionContext } from '../runtime/script-runner';
 import { ScriptRunner } from '../runtime/script-runner';
 import { DependencyGraph, loadDependencyGraph } from './dependency-graph';
@@ -17,6 +19,10 @@ export interface ReactiveExecutionOptions {
   maxPerScript?: number;
   /** Time limit in milliseconds (default: 5000) */
   timeLimit?: number;
+  /** When set, scripts can call Owner.Action('name').activate() / .deactivate() (e.g. from worker). */
+  executeActionEvent?: ExecuteActionEventFn;
+  /** Optional roll function for script built-in roll(). */
+  roll?: RollFn;
 }
 
 /**
@@ -122,7 +128,7 @@ export class ReactiveExecutor {
 
     try {
       // Execute script chain
-      await this.executeScriptChain(scriptIds, characterId, rulesetId, executionId);
+      await this.executeScriptChain(scriptIds, characterId, rulesetId, executionId, options);
 
       // Commit transaction
       this.transactionManager.commit(executionId);
@@ -174,6 +180,7 @@ export class ReactiveExecutor {
     characterId: string,
     rulesetId: string,
     executionId: string,
+    options: ReactiveExecutionOptions = {},
   ): Promise<void> {
     for (const scriptId of scriptIds) {
       // Record execution
@@ -194,6 +201,8 @@ export class ReactiveExecutor {
         triggerType: 'attribute_change',
         entityType: script.entityType,
         entityId: script.entityId ?? undefined,
+        executeActionEvent: options.executeActionEvent,
+        roll: options.roll,
       };
 
       const runner = new ScriptRunner(context);

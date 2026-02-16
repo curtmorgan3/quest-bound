@@ -1,6 +1,12 @@
-import type { Attribute, CharacterAttribute, InventoryItem, Item } from '@/types';
+import type { Action, Attribute, CharacterAttribute, InventoryItem, Item } from '@/types';
 import type Dexie from 'dexie';
-import { AttributeProxy, createItemInstanceProxy, type ItemInstancePlain } from '../proxies';
+import type { ExecuteActionEventFn } from '../proxies';
+import {
+  ActionProxy,
+  AttributeProxy,
+  createItemInstanceProxy,
+  type ItemInstancePlain,
+} from '../proxies';
 
 /**
  * Accessor object representing the character executing the script (Owner).
@@ -16,8 +22,11 @@ export class OwnerAccessor {
   // Cached data
   protected characterAttributesCache: Map<string, CharacterAttribute>;
   protected attributesCache: Map<string, Attribute>;
+  protected actionsCache: Map<string, Action>;
   protected itemsCache: Map<string, Item>;
   protected inventoryItems: InventoryItem[];
+  protected targetId: string | null;
+  protected executeActionEvent: ExecuteActionEventFn | undefined;
 
   constructor(
     characterId: string,
@@ -27,8 +36,11 @@ export class OwnerAccessor {
     pendingUpdates: Map<string, any>,
     characterAttributesCache: Map<string, CharacterAttribute>,
     attributesCache: Map<string, Attribute>,
+    actionsCache: Map<string, Action>,
     itemsCache: Map<string, Item>,
     inventoryItems: InventoryItem[],
+    targetId: string | null = null,
+    executeActionEvent?: ExecuteActionEventFn,
   ) {
     this.characterId = characterId;
     this.characterName = characterName;
@@ -37,8 +49,31 @@ export class OwnerAccessor {
     this.pendingUpdates = pendingUpdates;
     this.characterAttributesCache = characterAttributesCache;
     this.attributesCache = attributesCache;
+    this.actionsCache = actionsCache;
     this.itemsCache = itemsCache;
     this.inventoryItems = inventoryItems;
+    this.targetId = targetId;
+    this.executeActionEvent = executeActionEvent;
+  }
+
+  /**
+   * Get an action reference by title. Returns a proxy with async activate() and deactivate()
+   * that run the action's event handlers using the current execution's Owner and Target.
+   * @param name - The title/name of the ruleset action
+   * @returns ActionProxy for the action
+   * @throws Error if action not found
+   */
+  Action(name: string): ActionProxy {
+    const action = Array.from(this.actionsCache.values()).find((a) => a.title === name);
+    if (!action) {
+      throw new Error(`Action '${name}' not found`);
+    }
+    return new ActionProxy(
+      action.id,
+      this.characterId,
+      this.targetId,
+      this.executeActionEvent,
+    );
   }
 
   /**

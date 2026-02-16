@@ -10,6 +10,7 @@ const qbscriptCompletions = [
   { label: 'Owner.Attribute', type: 'function', info: "Get owner's attribute by name" },
   { label: 'Owner.Item', type: 'function', info: "Get owner's item by name" },
   { label: 'Owner.Items', type: 'function', info: "Get owner's items array by name" },
+  { label: 'Owner.Action', type: 'function', info: "Get action reference by name; use .activate() / .deactivate() (async)" },
   { label: 'Target', type: 'variable', info: 'Target character (when in scope)' },
   { label: 'Target.Attribute', type: 'function', info: "Get target's attribute by name" },
   { label: 'Ruleset', type: 'variable', info: 'Ruleset-level entities' },

@@ -419,8 +419,11 @@ Action scripts execute when triggered through UI. They can have `on_activate()` 
 // ===== ACTION METHODS =====
 action = Owner.Action('Mage Armor')
 
-action.activate() // Triggers on_activate() handler
-action.deactivate() // Triggers on_deactivate() handler
+action.activate()   // Async. Triggers on_activate() handler; uses current execution's Target if any
+action.deactivate() // Async. Triggers on_deactivate() handler; uses current execution's Target if any
+
+// ===== ACTION EVENTS =====
+on_activate()
 
 ```javascript
 // Mage Armor - buff that can be toggled on/off

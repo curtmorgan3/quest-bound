@@ -186,6 +186,9 @@ async function persistScriptLogs(
 
 async function handleExecuteScript(payload: ExecuteScriptPayload): Promise<void> {
   const startTime = performance.now();
+  const executor = new EventHandlerExecutor(db);
+  const rollFn: RollFn = (expression: string) =>
+    rollBridge.requestRoll(expression, payload.requestId);
 
   try {
     const context: ScriptExecutionContext = {
@@ -197,6 +200,9 @@ async function handleExecuteScript(payload: ExecuteScriptPayload): Promise<void>
       triggerType: payload.triggerType,
       entityType: payload.entityType,
       entityId: payload.entityId,
+      roll: rollFn,
+      executeActionEvent: (actionId, characterId, targetId, eventType) =>
+        executor.executeActionEvent(actionId, characterId, targetId, eventType, rollFn),
     };
 
     const runner = new ScriptRunner(context);
@@ -333,11 +339,20 @@ async function handleAttributeChanged(payload: AttributeChangedPayload): Promise
       reactiveExecutor = new ReactiveExecutor(db);
     }
 
+    const executor = new EventHandlerExecutor(db);
+    const rollFn: RollFn = (expression: string) =>
+      rollBridge.requestRoll(expression, payload.requestId);
+
     const result = await reactiveExecutor.onAttributeChange(
       payload.attributeId,
       payload.characterId,
       payload.rulesetId,
-      payload.options || {},
+      {
+        ...(payload.options || {}),
+        executeActionEvent: (actionId, characterId, targetId, eventType) =>
+          executor.executeActionEvent(actionId, characterId, targetId, eventType, rollFn),
+        roll: rollFn,
+      },
     );
 
     if (result.success) {
@@ -436,7 +451,6 @@ async function handleExecuteActionEvent(payload: {
   roll?: RollFn;
 }): Promise<void> {
   try {
-    console.log('worker handle event');
     const action = await db.actions.get(payload.actionId);
     if (!action) {
       throw new Error(`Action not found: ${payload.actionId}`);
@@ -527,6 +541,7 @@ async function handleExecuteItemEvent(payload: {
       payload.eventType as 'on_equip' | 'on_unequip' | 'on_consume',
       rollFn,
     );
+    console.log('item event: ', result);
 
     const script = await db.scripts.where({ entityId: payload.itemId, entityType: 'item' }).first();
     const scriptId = script?.id ?? payload.itemId;
