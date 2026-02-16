@@ -1,3 +1,5 @@
+import type { StructuredCloneSafe } from '../structured-clone-safe';
+
 /**
  * Result shape for action event execution (avoids importing from reactive).
  */
@@ -20,8 +22,9 @@ export type ExecuteActionEventFn = (
  * Proxy object for script-side action references from Owner.Action('name').
  * Exposes async activate() and deactivate() that run the action's event handlers
  * using the current execution's Owner and Target.
+ * Implements toStructuredCloneSafe() so the worker can send it to the main thread (e.g. log or return).
  */
-export class ActionProxy {
+export class ActionProxy implements StructuredCloneSafe {
   private actionId: string;
   private characterId: string;
   private targetId: string | null;
@@ -67,5 +70,13 @@ export class ActionProxy {
       this.targetId,
       'on_deactivate',
     );
+  }
+
+  /**
+   * Return a plain object for postMessage (structured clone).
+   * Called at the worker boundary when script returns or logs an ActionProxy.
+   */
+  toStructuredCloneSafe(): { __type: 'ActionProxy'; actionId: string } {
+    return { __type: 'ActionProxy', actionId: this.actionId };
   }
 }

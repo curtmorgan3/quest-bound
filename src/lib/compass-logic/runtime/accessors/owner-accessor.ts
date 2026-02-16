@@ -7,12 +7,14 @@ import {
   createItemInstanceProxy,
   type ItemInstancePlain,
 } from '../proxies';
+import type { StructuredCloneSafe } from '../structured-clone-safe';
 
 /**
  * Accessor object representing the character executing the script (Owner).
  * Provides access to the character's attributes, items, and other properties.
+ * Implements toStructuredCloneSafe() so the worker can send it to the main thread (e.g. log or return).
  */
-export class OwnerAccessor {
+export class OwnerAccessor implements StructuredCloneSafe {
   protected characterId: string;
   protected characterName: string;
   protected inventoryId: string;
@@ -254,5 +256,13 @@ export class OwnerAccessor {
       }
     }
     this.inventoryItems = this.inventoryItems.filter((inv) => !idsToDelete.has(inv.id));
+  }
+
+  /**
+   * Return a plain object for postMessage (structured clone).
+   * Called at the worker boundary when script returns or logs Owner.
+   */
+  toStructuredCloneSafe(): { __type: 'Owner'; name: string } {
+    return { __type: 'Owner', name: this.characterName };
   }
 }

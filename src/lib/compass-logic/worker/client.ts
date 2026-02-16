@@ -459,7 +459,6 @@ export class QBScriptClient {
   }> {
     const requestId = generateRequestId();
     this.pendingRollHandlers.set(requestId, roll ?? defaultScriptDiceRoller);
-    console.log('client');
     try {
       return await this.sendSignal(
         {
