@@ -19,7 +19,7 @@ import {
 import { ImageDataEdit } from '@/lib/compass-planes/nodes/components/image';
 import { getComponentData } from '@/lib/compass-planes/utils';
 import { colorBlack } from '@/palette';
-import { type TextComponentData } from '@/types';
+import type { ConditionalRenderLogic, TextComponentData } from '@/types';
 import type { RGBColor } from 'react-color';
 import { useParams } from 'react-router-dom';
 import { ActionEdit } from './action-edit';
@@ -106,6 +106,19 @@ export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
         data: JSON.stringify({
           ...JSON.parse(c.data),
           conditionalRenderAttributeId: id,
+        }),
+      })),
+    );
+  };
+
+  const setConditionalRenderLogic = (logic: ConditionalRenderLogic | null) => {
+    const toUpdate = selectedComponents.filter((c) => !c.locked);
+    updateComponents(
+      toUpdate.map((c) => ({
+        id: c.id,
+        data: JSON.stringify({
+          ...JSON.parse(c.data),
+          conditionalRenderLogic: logic ?? undefined,
         }),
       })),
     );
@@ -225,7 +238,7 @@ export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
             )}
             {allAreShapes && <ShapeEdit components={selectedComponents} />}
           </TabsContent>
-          <TabsContent value='data' className='w-full flex flex-col gap-4 mt-2'>
+          <TabsContent value='data' className='w-full flex flex-col gap-4 mt-2 overflow-x-hidden'>
             {selectedComponents.length === 1 &&
               selectedComponents[0].type !== ComponentTypes.INVENTORY &&
               selectedComponents[0].type !== ComponentTypes.GRAPH &&
@@ -266,8 +279,12 @@ export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
             {selectedComponents.length === 1 && (
               <ConditionalRenderEdit
                 attributeId={getComponentData(selectedComponents[0]).conditionalRenderAttributeId}
+                conditionalRenderLogic={
+                  getComponentData(selectedComponents[0]).conditionalRenderLogic
+                }
                 onSelect={(attr) => setConditionalRenderAttributeId(attr?.id ?? null)}
                 onDelete={() => setConditionalRenderAttributeId(null)}
+                onLogicChange={setConditionalRenderLogic}
               />
             )}
             {selectedComponents.length === 1 && windowId && allCanOpenChildWindow && (

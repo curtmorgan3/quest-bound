@@ -87,6 +87,21 @@ export type FrameComponentData = {
   url?: string;
 };
 
+export type ConditionalRenderOperator =
+  | 'eq'
+  | 'neq'
+  | 'gt'
+  | 'gte'
+  | 'lt'
+  | 'lte'
+  | 'contains'
+  | 'notContains';
+
+export type ConditionalRenderLogic = {
+  operator: ConditionalRenderOperator;
+  value: string | number | boolean;
+};
+
 export type ComponentData = ShapeComponentData &
   TextComponentData &
   ImageComponentData &
@@ -97,6 +112,7 @@ export type ComponentData = ShapeComponentData &
   FrameComponentData & {
     conditionalRenderAttributeId?: string | null;
     conditionalRenderInverse?: boolean;
+    conditionalRenderLogic?: ConditionalRenderLogic | null;
     pageId?: string;
     href?: string;
   };

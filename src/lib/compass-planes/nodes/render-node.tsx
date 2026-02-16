@@ -12,77 +12,92 @@ import {
   ViewShapeNode,
   ViewTextNode,
 } from '../nodes/components';
-import { getComponentData } from '../utils';
-import { NodeActionCaller, NodePageRouter } from './decorators';
+import { NodeActionCaller, NodeConditionalRender, NodePageRouter } from './decorators';
 
 export const renderViewComponent = (
   component: Component,
   characterAttributes?: CharacterAttribute[],
 ) => {
-  const conditionalRenderId = getComponentData(component).conditionalRenderAttributeId;
-
-  if (characterAttributes && conditionalRenderId) {
-    const conditionAttribute = characterAttributes.find(
-      (attr) => attr.attributeId === conditionalRenderId,
-    );
-    if (conditionAttribute?.value === false) {
-      return null;
-    }
-  }
-
   switch (component.type) {
     case ComponentTypes.TEXT:
       return (
-        <WrapDecorators key={component.id} component={component}>
+        <WrapDecorators
+          key={component.id}
+          component={component}
+          characterAttributes={characterAttributes}>
           <ViewTextNode key={component.id} component={component} />
         </WrapDecorators>
       );
     case ComponentTypes.SHAPE:
       return (
-        <WrapDecorators key={component.id} component={component}>
+        <WrapDecorators
+          key={component.id}
+          component={component}
+          characterAttributes={characterAttributes}>
           <ViewShapeNode component={component} />
         </WrapDecorators>
       );
     case ComponentTypes.IMAGE:
       return (
-        <WrapDecorators key={component.id} component={component}>
+        <WrapDecorators
+          key={component.id}
+          component={component}
+          characterAttributes={characterAttributes}>
           <ViewImageNode key={component.id} component={component} />
         </WrapDecorators>
       );
     case ComponentTypes.INPUT:
       return (
-        <WrapDecorators key={component.id} component={component}>
+        <WrapDecorators
+          key={component.id}
+          component={component}
+          characterAttributes={characterAttributes}>
           <ViewInputNode key={component.id} component={component} />
         </WrapDecorators>
       );
     case ComponentTypes.CHECKBOX:
       return (
-        <WrapDecorators key={component.id} component={component}>
+        <WrapDecorators
+          key={component.id}
+          component={component}
+          characterAttributes={characterAttributes}>
           <ViewCheckboxNode key={component.id} component={component} />
         </WrapDecorators>
       );
 
     case ComponentTypes.CONTENT:
       return (
-        <WrapDecorators key={component.id} component={component}>
+        <WrapDecorators
+          key={component.id}
+          component={component}
+          characterAttributes={characterAttributes}>
           <ViewContentNode key={component.id} component={component} />
         </WrapDecorators>
       );
     case ComponentTypes.INVENTORY:
       return (
-        <WrapDecorators key={component.id} component={component}>
+        <WrapDecorators
+          key={component.id}
+          component={component}
+          characterAttributes={characterAttributes}>
           <ViewInventoryNode key={component.id} component={component} />
         </WrapDecorators>
       );
     case ComponentTypes.GRAPH:
       return (
-        <WrapDecorators key={component.id} component={component}>
+        <WrapDecorators
+          key={component.id}
+          component={component}
+          characterAttributes={characterAttributes}>
           <ViewGraphNode key={component.id} component={component} />
         </WrapDecorators>
       );
     case ComponentTypes.FRAME:
       return (
-        <WrapDecorators key={component.id} component={component}>
+        <WrapDecorators
+          key={component.id}
+          component={component}
+          characterAttributes={characterAttributes}>
           <ViewFrameNode key={component.id} component={component} />
         </WrapDecorators>
       );
@@ -92,10 +107,22 @@ export const renderViewComponent = (
   }
 };
 
-function WrapDecorators({ children, component }: { children: ReactNode; component: Component }) {
+function WrapDecorators({
+  children,
+  component,
+  characterAttributes,
+}: {
+  children: ReactNode;
+  component: Component;
+  characterAttributes?: CharacterAttribute[];
+}) {
   return (
-    <NodePageRouter component={component}>
-      <NodeActionCaller component={component}>{children}</NodeActionCaller>
-    </NodePageRouter>
+    <NodeConditionalRender
+      component={component}
+      characterAttributes={characterAttributes}>
+      <NodePageRouter component={component}>
+        <NodeActionCaller component={component}>{children}</NodeActionCaller>
+      </NodePageRouter>
+    </NodeConditionalRender>
   );
 }
