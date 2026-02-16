@@ -14,22 +14,31 @@ interface NodePageRouterProps {
  */
 export const NodePageRouter = ({ children, component }: NodePageRouterProps) => {
   const [searchParams, setSearchParams] = useSearchParams();
-  const pageId = getComponentData(component).pageId;
-
-  if (!pageId) {
-    return <>{children}</>;
-  }
+  const { pageId, href } = getComponentData(component);
 
   const handleClick = (e: React.MouseEvent) => {
+    if (!pageId) return;
     e.preventDefault();
     const next = new URLSearchParams(searchParams);
     next.set('pageId', pageId);
     setSearchParams(next);
   };
 
-  return (
-    <div onClick={handleClick} className='cursor-pointer'>
-      {children}
-    </div>
-  );
+  if (pageId) {
+    return (
+      <div onClick={handleClick} className='cursor-pointer'>
+        {children}
+      </div>
+    );
+  }
+
+  if (href) {
+    return (
+      <a target='_blank' href={href}>
+        {children}
+      </a>
+    );
+  }
+
+  return <>{children}</>;
 };
