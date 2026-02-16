@@ -15,8 +15,8 @@ import {
 import { useActions, useAttributes, useItems } from '@/lib/compass-api';
 import { useScripts } from '@/lib/compass-api/hooks/scripts/use-scripts';
 import { FileCode, Plus, Search } from 'lucide-react';
-import { useMemo, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { useMemo } from 'react';
+import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { ScriptListItem } from './script-list-item';
 
 const ENTITY_TYPE_OPTIONS = [
@@ -27,14 +27,59 @@ const ENTITY_TYPE_OPTIONS = [
   { value: 'global', label: 'Global' },
 ] as const;
 
+const VALID_TYPES = new Set(ENTITY_TYPE_OPTIONS.map((o) => o.value));
+
+function typeFromParams(searchParams: URLSearchParams): string {
+  const type = (searchParams.get('type') ?? 'all') as
+    | 'all'
+    | 'attribute'
+    | 'action'
+    | 'item'
+    | 'global';
+  return VALID_TYPES.has(type) ? type : 'all';
+}
+
+function nameFromParams(searchParams: URLSearchParams): string {
+  return searchParams.get('q') ?? '';
+}
+
 export function ScriptsIndex() {
   const { rulesetId } = useParams<{ rulesetId: string }>();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { scripts } = useScripts();
   const { attributes } = useAttributes();
   const { actions } = useActions();
   const { items } = useItems();
-  const [selectedType, setSelectedType] = useState<string>('all');
-  const [nameFilter, setNameFilter] = useState('');
+  const selectedType = typeFromParams(searchParams);
+  const setSelectedType = (value: string) => {
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        if (value === 'all') {
+          next.delete('type');
+        } else {
+          next.set('type', value);
+        }
+        return next;
+      },
+      { replace: true },
+    );
+  };
+  const nameFilter = nameFromParams(searchParams);
+  const setNameFilter = (value: string) => {
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        if (value.trim() === '') {
+          next.delete('q');
+        } else {
+          next.set('q', value);
+        }
+        return next;
+      },
+      { replace: true },
+    );
+  };
 
   const filteredScripts = useMemo(() => {
     let result = scripts;
