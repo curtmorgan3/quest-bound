@@ -23,7 +23,7 @@ import { type TextComponentData } from '@/types';
 import type { RGBColor } from 'react-color';
 import { useParams } from 'react-router-dom';
 import { ActionEdit } from './action-edit';
-import { TextEdit } from './component-edits';
+import { ConditionalRenderEdit, TextEdit } from './component-edits';
 import { ShapeEdit } from './component-edits/shape-edit';
 import { PositionEdit } from './position-edit';
 import { StyleEdit } from './style-edit';
@@ -264,12 +264,10 @@ export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
                 </div>
               )}
             {selectedComponents.length === 1 && (
-              <AttributeLookup
-                label='Conditional Render'
-                value={getComponentData(selectedComponents[0]).conditionalRenderAttributeId}
-                onSelect={(attr) => setConditionalRenderAttributeId(attr.id)}
+              <ConditionalRenderEdit
+                attributeId={getComponentData(selectedComponents[0]).conditionalRenderAttributeId}
+                onSelect={(attr) => setConditionalRenderAttributeId(attr?.id ?? null)}
                 onDelete={() => setConditionalRenderAttributeId(null)}
-                filterType={'boolean'}
               />
             )}
             {selectedComponents.length === 1 && windowId && allCanOpenChildWindow && (
