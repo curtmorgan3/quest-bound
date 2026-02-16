@@ -218,7 +218,7 @@ export function ScriptsIndex() {
             )}
             <div style={{ paddingTop: '4px', paddingBottom: '4px' }}>
               {uncategorized.map(({ scripts: categoryScripts }) => (
-                <ul className='list-none space-y-1 pl-1'>
+                <ul className='list-none space-y-1 pl-1' key='uncat'>
                   {categoryScripts.map((script) => (
                     <li key={script.id}>
                       <Link

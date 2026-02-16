@@ -1,8 +1,9 @@
 import { useErrorHandler } from '@/hooks';
 import { getComponentData } from '@/lib/compass-planes/utils';
-import { db } from '@/stores';
+import { db, useApiLoadingStore } from '@/stores';
 import type { Component, ImageComponentData } from '@/types';
 import { useLiveQuery } from 'dexie-react-hooks';
+import { useEffect } from 'react';
 import { useActiveRuleset } from './use-active-ruleset';
 
 export type ComponentUpdate = { id: string } & Partial<Component>;
@@ -19,6 +20,11 @@ export const useComponents = (windowId?: string) => {
         .toArray(),
     [windowId],
   );
+
+  const isLoading = components === undefined;
+  useEffect(() => {
+    useApiLoadingStore.getState().setLoading('components', isLoading);
+  }, [isLoading]);
 
   const createComponent = async (data: Partial<Component>) => {
     if (!windowId || !activeRuleset) return;
@@ -166,6 +172,7 @@ export const useComponents = (windowId?: string) => {
 
   return {
     components: components ?? [],
+    isLoading,
     createComponent,
     createComponents,
     updateComponent,

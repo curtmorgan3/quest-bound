@@ -1,8 +1,8 @@
 import { useErrorHandler } from '@/hooks';
-import { db } from '@/stores';
+import { db, useApiLoadingStore } from '@/stores';
 import type { Script } from '@/types';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { useCallback, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useActiveRuleset } from '../rulesets/use-active-ruleset';
 
 function getEntityTable(entityType: 'attribute' | 'action' | 'item' | 'global') {
@@ -26,6 +26,13 @@ export const useScripts = () => {
         .toArray(),
     [activeRuleset],
   );
+
+  /** True while the initial query or a dependency-driven re-query is in flight. */
+  const isLoading = scripts === undefined;
+
+  useEffect(() => {
+    useApiLoadingStore.getState().setLoading('scripts', isLoading);
+  }, [isLoading]);
 
   const createScript = async (data: Partial<Script>) => {
     if (!activeRuleset) return;
@@ -161,6 +168,7 @@ export const useScripts = () => {
   return {
     scripts: scripts ?? [],
     globalScripts,
+    isLoading,
     createScript,
     updateScript,
     deleteScript,

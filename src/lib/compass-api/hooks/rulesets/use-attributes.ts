@@ -1,7 +1,8 @@
 import { useErrorHandler } from '@/hooks';
-import { db } from '@/stores';
+import { db, useApiLoadingStore } from '@/stores';
 import type { Attribute } from '@/types';
 import { useLiveQuery } from 'dexie-react-hooks';
+import { useEffect } from 'react';
 import { useAssets } from '../assets';
 import { useActiveRuleset } from './use-active-ruleset';
 
@@ -18,6 +19,12 @@ export const useAttributes = () => {
         .toArray(),
     [activeRuleset],
   );
+
+  const isLoading = attributes === undefined;
+
+  useEffect(() => {
+    useApiLoadingStore.getState().setLoading('attributes', isLoading);
+  }, [isLoading]);
 
   const createAttribute = async (data: Partial<Attribute>) => {
     if (!activeRuleset) return;
@@ -104,5 +111,11 @@ export const useAttributes = () => {
     }
   };
 
-  return { attributes: attributes ?? [], createAttribute, updateAttribute, deleteAttribute };
+  return {
+    attributes: attributes ?? [],
+    isLoading,
+    createAttribute,
+    updateAttribute,
+    deleteAttribute,
+  };
 };

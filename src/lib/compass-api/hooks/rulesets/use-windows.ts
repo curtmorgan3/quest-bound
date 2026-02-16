@@ -1,7 +1,8 @@
 import { useErrorHandler } from '@/hooks';
-import { db } from '@/stores';
+import { db, useApiLoadingStore } from '@/stores';
 import type { Window } from '@/types';
 import { useLiveQuery } from 'dexie-react-hooks';
+import { useEffect } from 'react';
 import { useRulesets } from './use-rulesets';
 
 export const useWindows = () => {
@@ -16,6 +17,11 @@ export const useWindows = () => {
         .toArray(),
     [activeRuleset],
   );
+
+  const isLoading = windows === undefined;
+  useEffect(() => {
+    useApiLoadingStore.getState().setLoading('windows', isLoading);
+  }, [isLoading]);
 
   const createWindow = async (
     data: Omit<Window, 'id' | 'createdAt' | 'updatedAt' | 'rulesetId'>,
@@ -85,5 +91,11 @@ export const useWindows = () => {
     }
   };
 
-  return { windows: windows ?? [], createWindow, updateWindow, deleteWindow };
+  return {
+    windows: windows ?? [],
+    isLoading,
+    createWindow,
+    updateWindow,
+    deleteWindow,
+  };
 };

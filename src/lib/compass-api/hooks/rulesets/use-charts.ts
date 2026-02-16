@@ -1,7 +1,8 @@
 import { useErrorHandler } from '@/hooks/use-error-handler';
-import { db } from '@/stores';
+import { db, useApiLoadingStore } from '@/stores';
 import type { Chart } from '@/types';
 import { useLiveQuery } from 'dexie-react-hooks';
+import { useEffect } from 'react';
 import { useAssets } from '../assets';
 import { useActiveRuleset } from './use-active-ruleset';
 
@@ -20,6 +21,11 @@ export const useCharts = (rulesetId?: string) => {
         .toArray(),
     [effectiveRulesetId],
   );
+
+  const isLoading = charts === undefined;
+  useEffect(() => {
+    useApiLoadingStore.getState().setLoading('charts', isLoading);
+  }, [isLoading]);
 
   const createChart = async (data: Partial<Chart>) => {
     if (!activeRuleset) return;
@@ -76,5 +82,11 @@ export const useCharts = (rulesetId?: string) => {
     }
   };
 
-  return { charts: charts ?? [], createChart, updateChart, deleteChart };
+  return {
+    charts: charts ?? [],
+    isLoading,
+    createChart,
+    updateChart,
+    deleteChart,
+  };
 };

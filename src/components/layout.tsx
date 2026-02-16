@@ -1,4 +1,5 @@
 import { AppSidebar, Loading } from '@/components';
+import { GlobalLoadingOverlay } from '@/components/global-loading-overlay';
 import { useFontLoader, useUsers } from '@/lib/compass-api';
 import { SignIn } from '@/pages';
 import { DicePanel } from '@/pages/dice';
@@ -52,6 +53,7 @@ export function Layout() {
               gridTemplateColumns: '1fr',
               gridTemplateRows: '1fr',
             }}>
+            <GlobalLoadingOverlay />
             <Outlet />
           </main>
           <DicePanel />

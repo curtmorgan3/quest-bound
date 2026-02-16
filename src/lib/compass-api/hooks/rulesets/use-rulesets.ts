@@ -1,8 +1,8 @@
 import { useErrorHandler } from '@/hooks/use-error-handler';
-import { db, useCurrentUser } from '@/stores';
+import { db, useApiLoadingStore, useCurrentUser } from '@/stores';
 import type { Ruleset } from '@/types';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useAssets } from '../assets';
 import { useCharacter } from '../characters';
@@ -14,6 +14,11 @@ export const useRulesets = () => {
   const [loading, setLoading] = useState(false);
   const _rulesets = useLiveQuery(() => db.rulesets.toArray(), []);
   const rulesets = _rulesets?.filter((r) => currentUser?.rulesets?.includes(r.id)) || [];
+
+  const isLoading = _rulesets === undefined;
+  useEffect(() => {
+    useApiLoadingStore.getState().setLoading('rulesets', isLoading);
+  }, [isLoading]);
 
   const { handleError } = useErrorHandler();
 
@@ -133,6 +138,7 @@ export const useRulesets = () => {
     activeRuleset,
     testCharacter,
     loading,
+    isLoading,
     createRuleset,
     deleteRuleset,
     updateRuleset,
