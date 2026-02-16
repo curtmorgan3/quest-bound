@@ -130,6 +130,17 @@ code {
   opacity: 0.4;
 }
 
+.cm-tooltip-autocomplete {
+  background-color: #2a2a2a !important;
+  border-radius: 6px !important;
+  color: #faf7f2 !important;
+}
+
+.cm-completionInfo {
+  background-color: #2a2a2a !important;
+  font-size: 12px;
+}
+
 :root {
   --radius: 0.625rem;
   --background: oklch(1 0 0);

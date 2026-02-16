@@ -8,6 +8,7 @@ import { indentUnit } from '@codemirror/language';
 import { Compartment, EditorState } from '@codemirror/state';
 import { EditorView, keymap } from '@codemirror/view';
 import { useEffect, useRef } from 'react';
+import { qbscriptAutocomplete } from './qbscript-autocomplete';
 import { qbscript } from './qbscript-language';
 
 export interface CodeMirrorEditorProps {
@@ -62,6 +63,7 @@ export function CodeMirrorEditor({
       ]),
       indentUnit.of('    '), // Tab inserts 4 spaces
       qbscript(),
+      qbscriptAutocomplete,
       history(),
       keymap.of(defaultKeymap),
       keymap.of([...historyKeymap, indentWithTab]),
