@@ -1,6 +1,7 @@
 import { Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components';
-import { useRulesetPages } from '@/lib/compass-api';
+import { useActiveRuleset, useRulesetPages } from '@/lib/compass-api';
 import { useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { PreviewCard } from '../components';
 
 interface PageSelectProps {
@@ -11,6 +12,8 @@ const ALL_CATEGORIES = 'all';
 
 export const PageSelect = ({ onEditDetails }: PageSelectProps) => {
   const { pages, updatePage, removePageFromRuleset } = useRulesetPages();
+  const { activeRuleset } = useActiveRuleset();
+  const navigate = useNavigate();
   const [filterValue, setFilterValue] = useState('');
   const [categoryFilter, setCategoryFilter] = useState(ALL_CATEGORIES);
 
@@ -70,8 +73,7 @@ export const PageSelect = ({ onEditDetails }: PageSelectProps) => {
             category={p.category ?? undefined}
             image={p.image ?? undefined}
             onDelete={() => handleDelete(p.id)}
-            onOpen={() => {}}
-            openDisabled
+            onOpen={() => navigate(`/rulesets/${activeRuleset?.id}/pages/${p.id}`)}
             onEdit={(label, category) => updatePage(p.id, { label, category })}
             onEditDetails={onEditDetails ? () => onEditDetails(p.id) : undefined}
           />

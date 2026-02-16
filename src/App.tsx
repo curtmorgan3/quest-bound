@@ -6,6 +6,7 @@ import {
   ErrorPage,
   Ruleset,
   Rulesets,
+  RulesetPageEditorPage,
   ScriptEditorPage,
   ScriptsIndex,
 } from '@/pages';
@@ -42,6 +43,10 @@ function CompassRoutes() {
             <Route path={`/rulesets/:rulesetId/windows/:windowId`} element={<WindowEditor />} />
 
             <Route path={`/rulesets/:rulesetId/pages`} element={<Ruleset page='pages' />} />
+            <Route
+              path={`/rulesets/:rulesetId/pages/:pageId`}
+              element={<RulesetPageEditorPage />}
+            />
 
             <Route path={`/rulesets/:rulesetId/scripts`} element={<ScriptsIndex />} />
 

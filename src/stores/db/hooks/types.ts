@@ -8,6 +8,7 @@ export type DB = Dexie & {
   charts: Dexie.Table;
   assets: Dexie.Table;
   windows: Dexie.Table;
+   rulesetWindows: Dexie.Table;
   components: Dexie.Table;
   fonts: Dexie.Table;
   characters: Dexie.Table;

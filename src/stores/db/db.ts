@@ -18,6 +18,7 @@ import type {
   Page,
   Ruleset,
   RulesetPage,
+  RulesetWindow,
   Script,
   ScriptError,
   ScriptLog,
@@ -52,6 +53,7 @@ const db = new Dexie('qbdb') as Dexie & {
   rulesetPages: EntityTable<RulesetPage, 'id'>;
   characterPages: EntityTable<CharacterPage, 'id'>;
   characterWindows: EntityTable<CharacterWindow, 'id'>;
+  rulesetWindows: EntityTable<RulesetWindow, 'id'>;
   inventories: EntityTable<Inventory, 'id'>;
   inventoryItems: EntityTable<InventoryItem, 'id'>;
   diceRolls: EntityTable<DiceRoll, 'id'>;

@@ -19,6 +19,7 @@ export const dbSchema = {
   rulesetPages: `${common}, rulesetId, pageId, [rulesetId+pageId]`,
   characterPages: `${common}, characterId, pageId, [characterId+pageId]`,
   characterWindows: `${common}, characterId, characterPageId, windowId, title, x, y, isCollapsed`,
+  rulesetWindows: `${common}, rulesetId, rulesetPageId, windowId, title, x, y, isCollapsed`,
   characterAttributes: `${common}, characterId, attributeId, &[characterId+attributeId], scriptDisabled`,
   diceRolls: `${common}, rulesetId, userId, value, label`,
   scripts: `${common}, rulesetId, name, entityType, entityId, isGlobal, enabled, category, [entityId+entityType]`,
@@ -28,4 +29,4 @@ export const dbSchema = {
 };
 
 // Increment on every schema change
-export const dbSchemaVersion = 23;
+export const dbSchemaVersion = 24;

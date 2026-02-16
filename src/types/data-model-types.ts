@@ -108,6 +108,18 @@ export type CharacterWindow = BaseDetails & {
   isCollapsed: boolean;
 };
 
+/** Template window layout for a ruleset page (used as sheet template). */
+export type RulesetWindow = BaseDetails & {
+  title: string;
+  rulesetId: string;
+  /** Optional link to a specific ruleset-page join; null for windows not bound to a page. */
+  rulesetPageId?: string | null;
+  windowId: string;
+  x: number;
+  y: number;
+  isCollapsed: boolean;
+};
+
 export type Component = BaseDetails & {
   rulesetId: string;
   windowId: string;

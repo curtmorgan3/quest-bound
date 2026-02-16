@@ -7,5 +7,6 @@ export * from './use-documents';
 export * from './use-items';
 export * from './use-pages';
 export * from './use-ruleset-pages';
+export * from './use-ruleset-windows';
 export * from './use-rulesets';
 export * from './use-windows';
