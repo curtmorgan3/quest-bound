@@ -141,6 +141,11 @@ code {
   font-size: 12px;
 }
 
+.cm-scroller {
+  padding-bottom: 24px;
+  padding-left: 8px;
+}
+
 :root {
   --radius: 0.625rem;
   --background: oklch(1 0 0);
