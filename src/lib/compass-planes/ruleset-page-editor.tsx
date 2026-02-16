@@ -1,19 +1,13 @@
-import { ImageUpload } from '@/components/composites/image-upload';
 import { Button } from '@/components/ui/button';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import {
   useActiveRuleset,
   useRulesetPages,
   useRulesetWindows,
   useWindows,
 } from '@/lib/compass-api';
+import { PageDetailsForm } from '@/lib/compass-planes/page-details-form';
 import type { RulesetWindow as RulesetWindowType } from '@/types';
 import type { Node, NodeChange, NodePositionChange } from '@xyflow/react';
 import { applyNodeChanges } from '@xyflow/react';
@@ -165,6 +159,7 @@ export const RulesetPageEditor = ({ pageId }: RulesetPageEditorProps) => {
         zoomOnScroll={false}
         nodesDraggable
         renderContextMenu={false}
+        backgroundColor={currentPage?.backgroundColor}
         backgroundImage={currentPage?.image}
         backgroundOpacity={currentPage?.backgroundOpacity}
       />
@@ -209,95 +204,17 @@ export const RulesetPageEditor = ({ pageId }: RulesetPageEditorProps) => {
             <DialogTitle>Edit page details</DialogTitle>
           </DialogHeader>
           {currentPage && (
-            <div className='flex flex-col gap-4'>
-              <div className='flex flex-col gap-2'>
-                <Label htmlFor='page-label'>Name</Label>
-                <Input
-                  id='page-label'
-                  value={currentPage.label}
-                  onChange={(e) => updatePage(currentPage.id, { label: e.target.value })}
-                  className='bg-[#333] border-[#555] text-white'
-                />
-              </div>
-              <div className='flex flex-col gap-2'>
-                <Label>Background image</Label>
-                <ImageUpload
-                  image={currentPage.image ?? undefined}
-                  alt='Page background'
-                  rulesetId={activeRuleset?.id}
-                  onUpload={(assetId) =>
-                    updatePage(currentPage.id, { assetId, assetUrl: undefined })
-                  }
-                  onSetUrl={(url) =>
-                    updatePage(currentPage.id, { assetUrl: url, assetId: undefined })
-                  }
-                  onRemove={() =>
-                    updatePage(currentPage.id, {
-                      assetId: undefined,
-                      assetUrl: undefined,
-                    })
-                  }
-                />
-              </div>
-              <div className='flex flex-col gap-2'>
-                <Label htmlFor='page-bg-color'>Background color</Label>
-                <div className='flex items-center gap-2'>
-                  <input
-                    id='page-bg-color'
-                    type='color'
-                    value={currentPage.backgroundColor ?? '#000000'}
-                    onChange={(e) =>
-                      updatePage(currentPage.id, { backgroundColor: e.target.value })
-                    }
-                    className='h-8 w-12 cursor-pointer rounded border border-[#555] bg-[#333]'
-                  />
-                  <Input
-                    value={currentPage.backgroundColor ?? ''}
-                    onChange={(e) =>
-                      updatePage(currentPage.id, { backgroundColor: e.target.value })
-                    }
-                    placeholder='e.g. #1a1a2e'
-                    className='flex-1 bg-[#333] border-[#555] text-white'
-                  />
-                </div>
-              </div>
-              <div className='flex flex-col gap-2'>
-                <Label htmlFor='page-background-opacity'>
-                  Background opacity ({Math.round((currentPage.backgroundOpacity ?? 1) * 100)}%)
-                </Label>
-                <div className='flex items-center gap-2'>
-                  <input
-                    id='page-background-opacity'
-                    type='range'
-                    min={0}
-                    max={100}
-                    value={(currentPage.backgroundOpacity ?? 1) * 100}
-                    onChange={(e) =>
-                      updatePage(currentPage.id, {
-                        backgroundOpacity: Number(e.target.value) / 100,
-                      })
-                    }
-                    className='flex-1 h-2 rounded-lg appearance-none cursor-pointer bg-[#333] accent-[#555]'
-                  />
-                  <Input
-                    type='number'
-                    min={0}
-                    max={100}
-                    className='w-16 bg-[#333] border-[#555] text-white text-sm h-8'
-                    value={Math.round((currentPage.backgroundOpacity ?? 1) * 100)}
-                    onChange={(e) => {
-                      const n = Number(e.target.value);
-                      if (!Number.isNaN(n)) {
-                        const clamped = Math.min(100, Math.max(0, n));
-                        updatePage(currentPage.id, {
-                          backgroundOpacity: clamped / 100,
-                        });
-                      }
-                    }}
-                  />
-                </div>
-              </div>
-            </div>
+            <PageDetailsForm
+              value={{
+                label: currentPage.label,
+                image: currentPage.image,
+                backgroundColor: currentPage.backgroundColor,
+                backgroundOpacity: currentPage.backgroundOpacity,
+              }}
+              onUpdate={(data) => updatePage(currentPage.id, data)}
+              rulesetId={activeRuleset?.id}
+              showLabel
+            />
           )}
         </DialogContent>
       </Dialog>

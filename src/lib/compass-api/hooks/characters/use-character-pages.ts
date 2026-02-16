@@ -36,29 +36,70 @@ export const useCharacterPages = (characterId?: string) => {
     [characterId],
   );
 
-  const createCharacterPage = async (data: { label: string }) => {
-    if (!characterId) return;
+  const createCharacterPage = async (
+    data: { label: string } | { fromRulesetPageId: string },
+  ): Promise<string | undefined> => {
+    if (!characterId) return undefined;
     const now = new Date().toISOString();
     try {
-      const pageId = crypto.randomUUID();
-      await db.pages.add({
-        id: pageId,
-        label: data.label,
-        createdAt: now,
-        updatedAt: now,
-      });
+      let pageId: string;
+      if ('fromRulesetPageId' in data) {
+        const rulesetPageJoin = await db.rulesetPages.get(data.fromRulesetPageId);
+        if (!rulesetPageJoin) return undefined;
+        const sourcePage = await db.pages.get(rulesetPageJoin.pageId);
+        if (!sourcePage) return undefined;
+        pageId = crypto.randomUUID();
+        const { id: _id, createdAt: _c, updatedAt: _u, ...pageRest } = sourcePage;
+        await db.pages.add({
+          ...pageRest,
+          id: pageId,
+          createdAt: now,
+          updatedAt: now,
+        });
+      } else {
+        pageId = crypto.randomUUID();
+        await db.pages.add({
+          id: pageId,
+          label: data.label,
+          createdAt: now,
+          updatedAt: now,
+        });
+      }
+      const characterPageId = crypto.randomUUID();
       await db.characterPages.add({
-        id: crypto.randomUUID(),
+        id: characterPageId,
         characterId,
         pageId,
         createdAt: now,
         updatedAt: now,
       } as CharacterPage);
+      if ('fromRulesetPageId' in data) {
+        const rulesetWindows = await db.rulesetWindows
+          .where('rulesetPageId')
+          .equals(data.fromRulesetPageId)
+          .toArray();
+        for (const rw of rulesetWindows) {
+          await db.characterWindows.add({
+            id: crypto.randomUUID(),
+            characterId,
+            characterPageId,
+            windowId: rw.windowId,
+            title: rw.title,
+            x: rw.x,
+            y: rw.y,
+            isCollapsed: rw.isCollapsed,
+            createdAt: now,
+            updatedAt: now,
+          });
+        }
+      }
+      return characterPageId;
     } catch (e) {
       handleError(e as Error, {
         component: 'useCharacterPages/createCharacterPage',
         severity: 'medium',
       });
+      return undefined;
     }
   };
 

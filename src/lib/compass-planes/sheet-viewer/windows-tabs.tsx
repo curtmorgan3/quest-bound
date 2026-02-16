@@ -1,4 +1,3 @@
-import { ImageUpload } from '@/components/composites/image-upload';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -17,14 +16,17 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
   useAssets,
+  useCharacter,
   useCharacterPages,
   useCharacterWindows,
+  useRulesetPagesForRuleset,
   useWindows,
   type CharacterPageWithPage,
 } from '@/lib/compass-api';
+import { PageDetailsForm } from '@/lib/compass-planes/page-details-form';
 import { colorPrimary } from '@/palette';
 import type { CharacterWindow, Window } from '@/types';
-import { ImagePlus, Lock, Pencil, Plus, Trash2 } from 'lucide-react';
+import { Lock, Pencil, Plus, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 
 interface WindowsTabsProps {
@@ -50,6 +52,8 @@ export const WindowsTabs = ({
   locked = false,
   onToggleLock,
 }: WindowsTabsProps) => {
+  const { character } = useCharacter(characterId);
+  const rulesetPages = useRulesetPagesForRuleset(character?.rulesetId);
   const { windows: rulesetWindows } = useWindows();
   const { createCharacterWindow } = useCharacterWindows(characterId);
   const { createCharacterPage, updateCharacterPage, deleteCharacterPage } =
@@ -58,8 +62,6 @@ export const WindowsTabs = ({
   const { assets } = useAssets();
   const [isAddWindowModalOpen, setIsAddWindowModalOpen] = useState(false);
   const [isAddPageModalOpen, setIsAddPageModalOpen] = useState(false);
-  const [renamePageId, setRenamePageId] = useState<string | null>(null);
-  const [renameLabel, setRenameLabel] = useState('');
   const [newPageLabel, setNewPageLabel] = useState('');
   const [filterText, setFilterText] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
@@ -108,18 +110,18 @@ export const WindowsTabs = ({
 
   const handleAddPage = async () => {
     const label = newPageLabel.trim() || 'Untitled';
-    await createCharacterPage({ label });
+    const newId = await createCharacterPage({ label });
     setNewPageLabel('');
     setIsAddPageModalOpen(false);
+    if (newId) onCurrentPageChange(newId);
   };
 
-  const handleRenamePage = async () => {
-    if (renamePageId && renameLabel.trim()) {
-      await updateCharacterPage(renamePageId, { label: renameLabel.trim() });
-      setRenamePageId(null);
-      setRenameLabel('');
-    }
+  const handleAddPageFromTemplate = async (rulesetPageId: string) => {
+    const newId = await createCharacterPage({ fromRulesetPageId: rulesetPageId });
+    setIsAddPageModalOpen(false);
+    if (newId) onCurrentPageChange(newId);
   };
+
 
   const handleDeletePage = async (pageId: string) => {
     const remaining = characterPages.filter((p) => p.id !== pageId);
@@ -236,20 +238,9 @@ export const WindowsTabs = ({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align='start'>
-              <DropdownMenuItem
-                onClick={() => {
-                  const page = characterPages.find((p) => p.id === currentPageId);
-                  if (page) {
-                    setRenamePageId(page.id);
-                    setRenameLabel(page.label);
-                  }
-                }}>
-                <Pencil size={14} />
-                Rename page
-              </DropdownMenuItem>
               <DropdownMenuItem onClick={() => currentPageId && setEditPageId(currentPageId)}>
-                <ImagePlus size={14} />
-                Edit page background
+                <Pencil size={14} />
+                Edit page details
               </DropdownMenuItem>
               <DropdownMenuItem
                 variant='destructive'
@@ -384,13 +375,39 @@ export const WindowsTabs = ({
           <DialogHeader>
             <DialogTitle>Add Page</DialogTitle>
           </DialogHeader>
-          <Input
-            placeholder='Page label'
-            value={newPageLabel}
-            onChange={(e) => setNewPageLabel(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleAddPage()}
-            className='bg-[#333] border-[#555] text-white placeholder:text-[#888]'
-          />
+          {rulesetPages.length > 0 && (
+            <div className='flex flex-col gap-2'>
+              <Label className='text-muted-foreground text-xs'>From template</Label>
+              <div
+                className='flex flex-col gap-1 max-h-[200px] overflow-y-auto rounded-md border border-[#555] bg-[#333] p-1'
+                role='list'>
+                {rulesetPages.map((rp) => (
+                  <button
+                    key={rp.rulesetPageId}
+                    type='button'
+                    onClick={() => handleAddPageFromTemplate(rp.rulesetPageId)}
+                    className='text-left px-3 py-2 rounded text-sm text-white hover:bg-[#444] transition-colors'>
+                    {rp.label}
+                    {rp.category && (
+                      <span className='text-muted-foreground ml-1 text-xs'>({rp.category})</span>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+          <div className='flex flex-col gap-2'>
+            <Label className='text-muted-foreground text-xs'>
+              {rulesetPages.length > 0 ? 'Or create blank page' : 'Page label'}
+            </Label>
+            <Input
+              placeholder='Page label'
+              value={newPageLabel}
+              onChange={(e) => setNewPageLabel(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleAddPage()}
+              className='bg-[#333] border-[#555] text-white placeholder:text-[#888]'
+            />
+          </div>
           <DialogFooter>
             <Button
               variant='outline'
@@ -400,40 +417,7 @@ export const WindowsTabs = ({
               }}>
               Cancel
             </Button>
-            <Button onClick={handleAddPage}>Add</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog
-        open={renamePageId !== null}
-        onOpenChange={(open) => {
-          if (!open) {
-            setRenamePageId(null);
-            setRenameLabel('');
-          }
-        }}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Rename Page</DialogTitle>
-          </DialogHeader>
-          <Input
-            placeholder='Page label'
-            value={renameLabel}
-            onChange={(e) => setRenameLabel(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleRenamePage()}
-            className='bg-[#333] border-[#555] text-white placeholder:text-[#888]'
-          />
-          <DialogFooter>
-            <Button
-              variant='outline'
-              onClick={() => {
-                setRenamePageId(null);
-                setRenameLabel('');
-              }}>
-              Cancel
-            </Button>
-            <Button onClick={handleRenamePage}>Save</Button>
+            <Button onClick={handleAddPage}>Add blank page</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -441,67 +425,19 @@ export const WindowsTabs = ({
       <Dialog open={editPageId !== null} onOpenChange={(open) => !open && setEditPageId(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Edit page background</DialogTitle>
+            <DialogTitle>Edit page details</DialogTitle>
           </DialogHeader>
           {editPageId && page && (
-            <div className='flex flex-col gap-4'>
-              <div className='flex flex-col gap-2'>
-                <Label>Background image</Label>
-                <ImageUpload
-                  image={backgroundImage}
-                  alt='Page background'
-                  rulesetId={undefined}
-                  onUpload={(assetId) =>
-                    updateCharacterPage(editPageId, { assetId, assetUrl: undefined })
-                  }
-                  onSetUrl={(url) =>
-                    updateCharacterPage(editPageId, { assetUrl: url, assetId: undefined })
-                  }
-                  onRemove={() =>
-                    updateCharacterPage(editPageId, {
-                      assetId: undefined,
-                      assetUrl: undefined,
-                    })
-                  }
-                />
-              </div>
-              <div className='flex flex-col gap-2'>
-                <Label htmlFor='page-background-opacity'>
-                  Opacity ({Math.round((page.backgroundOpacity ?? 1) * 100)}%)
-                </Label>
-                <div className='flex items-center gap-2'>
-                  <input
-                    id='page-background-opacity'
-                    type='range'
-                    min={0}
-                    max={100}
-                    value={(page.backgroundOpacity ?? 1) * 100}
-                    onChange={(e) =>
-                      updateCharacterPage(editPageId, {
-                        backgroundOpacity: Number(e.target.value) / 100,
-                      })
-                    }
-                    className='flex-1 h-2 rounded-lg appearance-none cursor-pointer bg-[#333] accent-[#555]'
-                  />
-                  <Input
-                    type='number'
-                    min={0}
-                    max={100}
-                    className='w-16 bg-[#333] border-[#555] text-white text-sm h-8'
-                    value={Math.round((page.backgroundOpacity ?? 1) * 100)}
-                    onChange={(e) => {
-                      const n = Number(e.target.value);
-                      if (!Number.isNaN(n)) {
-                        const clamped = Math.min(100, Math.max(0, n));
-                        updateCharacterPage(editPageId, {
-                          backgroundOpacity: clamped / 100,
-                        });
-                      }
-                    }}
-                  />
-                </div>
-              </div>
-            </div>
+            <PageDetailsForm
+              value={{
+                label: page.label,
+                image: backgroundImage ?? undefined,
+                backgroundColor: page.backgroundColor,
+                backgroundOpacity: page.backgroundOpacity,
+              }}
+              onUpdate={(data) => updateCharacterPage(editPageId, data)}
+              showLabel
+            />
           )}
         </DialogContent>
       </Dialog>

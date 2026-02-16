@@ -13,6 +13,7 @@ interface BaseEditorProps extends ReactFlowProps {
   menuOptions?: EditorMenuOption[];
   onSelectFromMenu?: (option: EditorMenuOption, coordinates: Coordinates) => void;
   useGrid?: boolean;
+  backgroundColor?: string;
   backgroundOpacity?: number;
   backgroundImage?: string | null;
 }
@@ -24,13 +25,12 @@ export function BaseEditor({
   menuOptions,
   onSelectFromMenu,
   useGrid = true,
-  backgroundOpacity = 0.1,
+  backgroundColor,
+  backgroundOpacity = 1,
   backgroundImage,
   ...props
 }: BaseEditorProps) {
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
-
-  const imageOpacity = backgroundImage != null ? (backgroundOpacity ?? 1) : undefined;
 
   return (
     <section
@@ -46,7 +46,20 @@ export function BaseEditor({
         });
         return false;
       }}>
-      {backgroundImage && (
+      {backgroundColor != null && (
+        <div
+          aria-hidden
+          style={{
+            position: 'absolute',
+            inset: 0,
+            zIndex: 0,
+            backgroundColor,
+            opacity: backgroundOpacity,
+            pointerEvents: 'none',
+          }}
+        />
+      )}
+      {backgroundImage != null && (
         <div
           aria-hidden
           style={{
@@ -57,7 +70,7 @@ export function BaseEditor({
             backgroundSize: 'cover',
             backgroundPosition: 'center',
             backgroundRepeat: 'no-repeat',
-            opacity: imageOpacity ?? 1,
+            opacity: backgroundOpacity,
             pointerEvents: 'none',
           }}
         />

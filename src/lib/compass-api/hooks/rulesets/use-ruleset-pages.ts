@@ -8,6 +8,24 @@ import { useActiveRuleset } from './use-active-ruleset';
 /** Page with its ruleset join id (for remove operations). */
 export type RulesetPageWithPage = Page & { rulesetPageId: string };
 
+/** Returns ruleset pages (templates) for a given ruleset id. Use when not in active-ruleset context (e.g. character sheet). */
+export const useRulesetPagesForRuleset = (rulesetId?: string) => {
+  const pagesWithJoinId = useLiveQuery(
+    async (): Promise<RulesetPageWithPage[]> => {
+      if (!rulesetId) return [];
+      const joins = await db.rulesetPages.where('rulesetId').equals(rulesetId).toArray();
+      const result: RulesetPageWithPage[] = [];
+      for (const j of joins) {
+        const page = await db.pages.get(j.pageId);
+        if (page) result.push({ ...page, rulesetPageId: j.id });
+      }
+      return result;
+    },
+    [rulesetId],
+  );
+  return pagesWithJoinId ?? [];
+};
+
 export const useRulesetPages = () => {
   const { activeRuleset } = useActiveRuleset();
   const { handleError } = useErrorHandler();

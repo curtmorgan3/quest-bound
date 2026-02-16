@@ -240,6 +240,7 @@ export const SheetViewer = ({
           zoomOnScroll={false}
           nodesDraggable={!locked}
           renderContextMenu={false}
+          backgroundColor={currentPage?.backgroundColor}
           backgroundImage={currentPage?.image}
           backgroundOpacity={currentPage?.backgroundOpacity}
         />
