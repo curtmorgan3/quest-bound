@@ -62,6 +62,7 @@ export const useRulesets = () => {
         image: null,
         assetId: null,
         version: '0.1.0',
+        palette: [],
         createdBy: currentUser?.username || 'unknown',
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),

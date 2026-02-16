@@ -1,3 +1,4 @@
+import { RulesetColorPicker } from '@/components';
 import { ImageUpload } from '@/components/composites/image-upload';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -35,7 +36,6 @@ export function PageDetailsForm({
 }: PageDetailsFormProps) {
   const opacityPct = Math.round((value.backgroundOpacity ?? 1) * 100);
   const opacityId = useId();
-  const colorId = useId();
 
   return (
     <div className='flex flex-col gap-4'>
@@ -50,39 +50,30 @@ export function PageDetailsForm({
           />
         </div>
       )}
-      <div className='flex flex-col gap-2'>
-        <Label>Background image</Label>
-        <ImageUpload
-          image={value.image ?? undefined}
-          alt='Page background'
-          rulesetId={rulesetId}
-          onUpload={(assetId) => onUpdate({ assetId, assetUrl: undefined })}
-          onSetUrl={(url) => onUpdate({ assetUrl: url, assetId: undefined })}
-          onRemove={() => onUpdate({ assetId: undefined, assetUrl: undefined })}
-        />
-      </div>
-      <div className='flex flex-col gap-2'>
-        <Label htmlFor={colorId}>Background color</Label>
-        <div className='flex items-center gap-2'>
-          <input
-            id={colorId}
-            type='color'
-            value={value.backgroundColor ?? '#000000'}
-            onChange={(e) => onUpdate({ backgroundColor: e.target.value })}
-            className='h-8 w-12 cursor-pointer rounded border border-[#555] bg-[#333]'
-          />
-          <Input
-            value={value.backgroundColor ?? ''}
-            onChange={(e) => onUpdate({ backgroundColor: e.target.value })}
-            placeholder='e.g. #1a1a2e'
-            className='flex-1 bg-[#333] border-[#555] text-white'
+      <div className='w-full flex justify-between'>
+        <div className='flex flex-col gap-2'>
+          <Label>Background image</Label>
+          <ImageUpload
+            image={value.image ?? undefined}
+            alt='Page background'
+            rulesetId={rulesetId}
+            onUpload={(assetId) => onUpdate({ assetId, assetUrl: undefined })}
+            onSetUrl={(url) => onUpdate({ assetUrl: url, assetId: undefined })}
+            onRemove={() => onUpdate({ assetId: undefined, assetUrl: undefined })}
           />
         </div>
+
+        <RulesetColorPicker
+          label='Background Color'
+          color={value.backgroundColor}
+          onUpdate={(color) =>
+            onUpdate({ backgroundColor: `rgba(${color.r}, ${color.g}, ${color.g}, ${color.a})` })
+          }
+        />
       </div>
+
       <div className='flex flex-col gap-2'>
-        <Label htmlFor={opacityId}>
-          Background opacity ({opacityPct}%)
-        </Label>
+        <Label htmlFor={opacityId}>Background opacity ({opacityPct}%)</Label>
         <div className='flex items-center gap-2'>
           <input
             id={opacityId}
@@ -90,9 +81,7 @@ export function PageDetailsForm({
             min={0}
             max={100}
             value={opacityPct}
-            onChange={(e) =>
-              onUpdate({ backgroundOpacity: Number(e.target.value) / 100 })
-            }
+            onChange={(e) => onUpdate({ backgroundOpacity: Number(e.target.value) / 100 })}
             className='flex-1 h-2 rounded-lg appearance-none cursor-pointer bg-[#333] accent-[#555]'
           />
           <Input

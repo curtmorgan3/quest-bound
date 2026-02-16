@@ -11,6 +11,7 @@ interface RulesetColorPicker {
   asIcon?: boolean;
   disabled?: boolean;
   onUpdate: (color: RGBColor) => void;
+  disableAlpha?: boolean;
 }
 
 export const RulesetColorPicker = ({
@@ -19,9 +20,10 @@ export const RulesetColorPicker = ({
   asIcon,
   disabled,
   onUpdate,
+  disableAlpha,
 }: RulesetColorPicker) => {
   const { activeRuleset } = useActiveRuleset();
-  console.log(activeRuleset);
+  const palette = activeRuleset?.palette ?? [];
 
   if (asIcon) {
     return (
@@ -31,10 +33,11 @@ export const RulesetColorPicker = ({
         </PopoverTrigger>
         <PopoverContent>
           <SketchPicker
+            disableAlpha={disableAlpha}
             className='sketch-picker'
             color={color}
             onChange={(color) => onUpdate(color.rgb)}
-            presetColors={[]}
+            presetColors={palette}
           />
         </PopoverContent>
       </Popover>
@@ -43,10 +46,11 @@ export const RulesetColorPicker = ({
 
   return (
     <SketchPicker
+      disableAlpha={disableAlpha}
       className='sketch-picker'
       color={color}
       onChange={(color) => onUpdate(color.rgb)}
-      presetColors={[]}
+      presetColors={palette}
     />
   );
 };

@@ -23,10 +23,10 @@ import JSZip from 'jszip';
 import { useState } from 'react';
 import { useRulesets } from '../rulesets';
 import { duplicateRuleset } from './duplicate-ruleset';
+import type { ScriptMetadata } from './script-export';
+import { extractScriptFiles, importScripts } from './script-import';
 import { ACTION_FIELD_TYPES, ATTRIBUTE_FIELD_TYPES, ITEM_FIELD_TYPES } from './types';
 import { compareVersion, convertAttributeDefaultValue, parseTsv, tsvToObjects } from './utils';
-import { extractScriptFiles, importScripts } from './script-import';
-import type { ScriptMetadata } from './script-export';
 
 export interface ImportRulesetOptions {
   /** When true, replace an existing ruleset with the same id if the uploaded version is higher */
@@ -497,6 +497,7 @@ export const useImportRuleset = () => {
         assetId: null,
         createdAt: now,
         updatedAt: now,
+        palette: [],
       };
 
       // Check for existing ruleset with same id
@@ -1309,11 +1310,7 @@ export const useImportRuleset = () => {
         const scriptMetadata = metadata.scripts || [];
 
         if (scriptFiles.length > 0) {
-          const scriptImportResult = await importScripts(
-            newRulesetId,
-            scriptFiles,
-            scriptMetadata,
-          );
+          const scriptImportResult = await importScripts(newRulesetId, scriptFiles, scriptMetadata);
 
           importedCounts.scripts = scriptImportResult.importedCount;
 

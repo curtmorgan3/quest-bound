@@ -3,7 +3,7 @@ const common = '++id, createdAt, updatedAt';
 export const dbSchema = {
   users: `${common}, username, assetId, image, preferences`,
   assets: `${common}, rulesetId, [directory+filename], data, type`,
-  rulesets: `${common}, version, createdBy, title, description, details, assetId, image`,
+  rulesets: `${common}, version, createdBy, title, description, details, assetId, image, palette`,
   fonts: `${common}, rulesetId, label, data`,
   attributes: `${common}, rulesetId, title, description, category, type, options, defaultValue, optionsChartRef, optionsChartColumnHeader, min, max, scriptId`,
   actions: `${common}, rulesetId, title, description, category, scriptId`,
@@ -29,4 +29,4 @@ export const dbSchema = {
 };
 
 // Increment on every schema change
-export const dbSchemaVersion = 24;
+export const dbSchemaVersion = 25;
