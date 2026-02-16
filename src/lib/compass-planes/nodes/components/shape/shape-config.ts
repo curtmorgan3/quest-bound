@@ -33,6 +33,10 @@ const DEFAULT_SHAPE_STYLES: ComponentStyle = {
   outlineWidth: 0,
   outlineColor: '',
   outline: 'solid',
+  paddingTop: 0,
+  paddingBottom: 0,
+  paddingLeft: 0,
+  paddingRight: 0,
 };
 
 export const DEFAULT_SHAPE: Partial<Component> = {

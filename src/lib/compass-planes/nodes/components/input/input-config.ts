@@ -40,6 +40,10 @@ const DEFAULT_INPUT_STYLES: ComponentStyle = {
   textDecoration: 'none',
   textAlign: 'start',
   verticalAlign: 'center',
+  paddingTop: 0,
+  paddingBottom: 0,
+  paddingLeft: 0,
+  paddingRight: 0,
 };
 
 export const DEFAULT_INPUT: Partial<Component> = {

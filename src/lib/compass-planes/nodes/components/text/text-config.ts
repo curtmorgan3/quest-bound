@@ -42,6 +42,10 @@ const DEFAULT_TEXT_STYLES: ComponentStyle = {
   textDecoration: 'none',
   textAlign: 'start',
   verticalAlign: 'start',
+  paddingTop: 0,
+  paddingBottom: 0,
+  paddingLeft: 0,
+  paddingRight: 0,
 };
 
 export const DEFAULT_TEXT: Partial<Component> = {

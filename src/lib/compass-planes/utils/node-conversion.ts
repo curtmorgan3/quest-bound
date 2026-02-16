@@ -45,5 +45,10 @@ export function getComponentStyles(component: Component): ComponentStyle {
 
   styles.borderRadius = `${styles.borderRadiusTopLeft}px ${styles.borderRadiusTopRight}px ${styles.borderRadiusBottomRight}px ${styles.borderRadiusBottomLeft}px`;
 
+  if (!styles.paddingBottom) styles.paddingBottom = 0;
+  if (!styles.paddingTop) styles.paddingTop = 0;
+  if (!styles.paddingLeft) styles.paddingLeft = 0;
+  if (!styles.paddingRight) styles.paddingRight = 0;
+
   return styles;
 }

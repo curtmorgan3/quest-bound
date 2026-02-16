@@ -9,6 +9,10 @@ type BaseComponentStyle = {
   borderRadiusBottomRight: number;
   outlineWidth: number;
   outlineColor: string;
+  paddingRight?: number;
+  paddingLeft?: number;
+  paddingTop?: number;
+  paddingBottom?: number;
 };
 
 export type TextComponentStyle = BaseComponentStyle & {

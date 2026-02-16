@@ -34,6 +34,10 @@ const DEFAULT_GRAPH_STYLES: ComponentStyle = {
   outlineWidth: 0,
   outlineColor: '',
   outline: 'solid',
+  paddingTop: 0,
+  paddingBottom: 0,
+  paddingLeft: 0,
+  paddingRight: 0,
 };
 
 export const DEFAULT_GRAPH: Partial<Component> = {

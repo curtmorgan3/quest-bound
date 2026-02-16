@@ -1,3 +1,4 @@
+import { getComponentStyles } from '@/lib/compass-planes/utils';
 import type { Component } from '@/types';
 
 export function valueIfAllAreEqual(components: Array<Component>, key: string) {
@@ -8,8 +9,8 @@ export function valueIfAllAreEqual(components: Array<Component>, key: string) {
   let val = components[0][key as keyof (typeof components)[0]];
 
   if (val === undefined) {
-    const style = JSON.parse(components[0].style);
-    val = style[key];
+    const style = getComponentStyles(components[0]);
+    val = style[key as keyof typeof style];
   }
 
   if (val === undefined) return '-';
@@ -18,8 +19,8 @@ export function valueIfAllAreEqual(components: Array<Component>, key: string) {
     let comparedVal = component[key as keyof typeof component];
 
     if (comparedVal === undefined) {
-      const style = JSON.parse(component.style);
-      comparedVal = style[key];
+      const style = getComponentStyles(components[0]);
+      comparedVal = style[key as keyof typeof style];
     }
 
     if (val !== comparedVal) {
