@@ -25,9 +25,9 @@ export interface ScriptExecutionContext {
   db: DB; // Database access
   scriptId?: string; // Which script is executing (for error logging)
   triggerType?: 'load' | 'attribute_change' | 'action_click' | 'item_event';
-  /** When script is attached to an entity (e.g. attribute), the entity type. Enables 'Self' for attribute scripts. */
+  /** When script is attached to an entity (attribute, action, item), the entity type. Enables 'Self'. */
   entityType?: string;
-  /** When script is attached to an entity, the entity id. For attribute scripts, 'Self' = Owner.Attribute(attributeTitle). */
+  /** When script is attached to an entity, the entity id. Self = Owner.Attribute/Action/Item as appropriate. */
   entityId?: string;
   /** Optional roll function for script built-in roll(). When set, used instead of default local roll (e.g. from useDiceState). */
   roll?: RollFn;
@@ -239,11 +239,24 @@ export class ScriptRunner {
     this.evaluator.globalEnv.define('Target', target);
     this.evaluator.globalEnv.define('Ruleset', ruleset);
 
-    // For attribute scripts, 'Self' refers to Owner.Attribute(<this attribute's title>)
+    // 'Self' refers to the entity this script is attached to (attribute, action, or item)
     if (this.context.entityType === 'attribute' && this.context.entityId) {
       const attribute = this.attributesCache.get(this.context.entityId);
       if (attribute) {
         this.evaluator.globalEnv.define('Self', owner.Attribute(attribute.title));
+      }
+    } else if (this.context.entityType === 'action' && this.context.entityId) {
+      const action = this.actionsCache.get(this.context.entityId);
+      if (action) {
+        this.evaluator.globalEnv.define('Self', owner.Action(action.title));
+      }
+    } else if (this.context.entityType === 'item' && this.context.entityId) {
+      const item = this.itemsCache.get(this.context.entityId);
+      if (item) {
+        const itemRef = owner.Item(item.title);
+        if (itemRef !== undefined) {
+          this.evaluator.globalEnv.define('Self', itemRef);
+        }
       }
     }
   }

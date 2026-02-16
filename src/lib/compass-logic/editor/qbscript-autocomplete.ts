@@ -5,7 +5,11 @@
 import { autocompletion } from '@codemirror/autocomplete';
 
 const qbscriptCompletions = [
-  { label: 'Self', type: 'variable', info: "This attribute (same as Owner.Attribute for this script's attribute)" },
+  {
+    label: 'Self',
+    type: 'variable',
+    info: "The entity this script is attached to: Owner.Attribute(title), Owner.Action(title), or Owner.Item(title)",
+  },
   { label: 'Owner', type: 'variable', info: 'Character that initiated the script' },
   { label: 'Owner.Attribute', type: 'function', info: "Get owner's attribute by name" },
   { label: 'Owner.Item', type: 'function', info: "Get owner's item by name" },

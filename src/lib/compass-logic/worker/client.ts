@@ -35,7 +35,7 @@ export interface ScriptExecutionOptions {
   rulesetId: string;
   triggerType?: 'load' | 'attribute_change' | 'action_click' | 'item_event';
   timeout?: number; // in milliseconds
-  /** For attribute scripts, enables defining 'Self' as Owner.Attribute(attributeTitle). */
+  /** When script is attached to an entity (attribute, action, item), enables 'Self' in the script environment. */
   entityType?: string;
   entityId?: string;
 }

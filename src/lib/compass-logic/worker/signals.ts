@@ -186,7 +186,7 @@ export interface ExecuteScriptPayload {
   rulesetId: string;
   triggerType: 'load' | 'attribute_change' | 'action_click' | 'item_event';
   requestId: string;
-  /** For attribute scripts, enables defining 'Self' as Owner.Attribute(attributeTitle). */
+  /** When script is attached to an entity (attribute, action, item), enables 'Self' in the script environment. */
   entityType?: string;
   entityId?: string;
 }

@@ -452,7 +452,7 @@ export interface ReactiveScriptExecutionOptions {
   triggerType?: 'load' | 'attribute_change' | 'action_click' | 'item_event';
   /** Attribute ID to trigger reactive updates for after execution */
   reactiveAttributeId?: string;
-  /** For attribute scripts, enables defining 'Self' in the script environment. */
+  /** When script is attached to an entity (attribute, action, item), enables 'Self' in the script environment. */
   entityType?: string;
   entityId?: string;
 }

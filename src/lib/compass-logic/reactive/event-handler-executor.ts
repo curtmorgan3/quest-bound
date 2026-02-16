@@ -112,6 +112,8 @@ export class EventHandlerExecutor {
       db: this.db,
       scriptId: script.id,
       triggerType: 'item_event',
+      entityType: 'item',
+      entityId: item.id,
       roll,
       executeActionEvent: (actionId, ownerId, targetIdForAction, eventTypeForAction) =>
         this.executeActionEvent(actionId, ownerId, targetIdForAction, eventTypeForAction, roll),
@@ -201,6 +203,8 @@ export class EventHandlerExecutor {
         db: this.db,
         scriptId: script.id,
         triggerType: 'action_click',
+        entityType: 'action',
+        entityId: action.id,
         roll,
         // Only allow Owner.Action().activate() at top level to avoid infinite re-entrancy
         ...(actionEventDepth === 1 && {
