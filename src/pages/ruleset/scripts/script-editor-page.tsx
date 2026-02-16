@@ -18,6 +18,7 @@ import { AttributeControls } from './script-editor/attribute-controls';
 import { EditorConsole } from './script-editor/editor-console';
 import { EditorTopBar } from './script-editor/editor-top-bar';
 import { EventControls } from './script-editor/event-controls';
+import { SCRIPT_TEMPLATES } from './templates';
 import { useAutoSave } from './use-auto-save';
 
 export function ScriptEditorPage() {
@@ -70,15 +71,17 @@ export function ScriptEditorPage() {
 
   const associatedAttributeId = entityType === 'attribute' ? entityId : null;
 
-  // Initalize script data
+  // Initialize script data (existing script) or prepopulate from template (new script)
   useEffect(() => {
     if (script && !isNew) {
       setName(script.name);
       setEntityType(script.entityType);
       setEntityId(script.entityId);
       setSourceCode(script.sourceCode);
+    } else if (isNew) {
+      setSourceCode(SCRIPT_TEMPLATES[entityType]);
     }
-  }, [scriptId, script, isNew]);
+  }, [scriptId, script, isNew, entityType]);
 
   const usesEvents = entityType === 'action' || entityType === 'item';
 
