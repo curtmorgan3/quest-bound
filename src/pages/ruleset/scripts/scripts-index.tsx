@@ -1,7 +1,13 @@
 /**
- * Script library - list all scripts for the active ruleset
+ * Script library - list all scripts for the active ruleset, grouped by category
  */
 
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -12,12 +18,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { useActions, useAttributes, useItems } from '@/lib/compass-api';
 import { useScripts } from '@/lib/compass-api/hooks/scripts/use-scripts';
+import type { Script } from '@/types';
 import { FileCode, Plus, Search } from 'lucide-react';
 import { useMemo } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
-import { ScriptListItem } from './script-list-item';
 
 const ENTITY_TYPE_OPTIONS = [
   { value: 'all', label: 'All types' },
@@ -43,13 +48,34 @@ function nameFromParams(searchParams: URLSearchParams): string {
   return searchParams.get('q') ?? '';
 }
 
+const UNCATEGORIZED = 'Uncategorized';
+
+function groupScriptsByCategory(scripts: Script[]): { category: string; scripts: Script[] }[] {
+  const byCategory = new Map<string, Script[]>();
+  for (const script of scripts) {
+    const category = script.category?.trim() || UNCATEGORIZED;
+    const list = byCategory.get(category) ?? [];
+    list.push(script);
+    byCategory.set(category, list);
+  }
+  for (const list of byCategory.values()) {
+    list.sort((a, b) =>
+      (a.name ?? '').localeCompare(b.name ?? '', undefined, { sensitivity: 'base' }),
+    );
+  }
+  const categories = Array.from(byCategory.entries());
+  categories.sort(([a], [b]) => {
+    if (a === UNCATEGORIZED) return 1;
+    if (b === UNCATEGORIZED) return -1;
+    return a.localeCompare(b, undefined, { sensitivity: 'base' });
+  });
+  return categories.map(([category, scripts]) => ({ category, scripts }));
+}
+
 export function ScriptsIndex() {
   const { rulesetId } = useParams<{ rulesetId: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
   const { scripts } = useScripts();
-  const { attributes } = useAttributes();
-  const { actions } = useActions();
-  const { items } = useItems();
   const selectedType = typeFromParams(searchParams);
   const setSelectedType = (value: string) => {
     setSearchParams(
@@ -92,6 +118,14 @@ export function ScriptsIndex() {
     }
     return result;
   }, [scripts, selectedType, nameFilter]);
+
+  const scriptsByCategory = useMemo(
+    () => groupScriptsByCategory(filteredScripts),
+    [filteredScripts],
+  );
+
+  const uncategorized = scriptsByCategory.filter((cat) => cat.category === 'Uncategorized');
+  const categorized = scriptsByCategory.filter((cat) => cat.category !== 'Uncategorized');
 
   return (
     <div className='flex flex-col gap-6 p-6'>
@@ -137,7 +171,7 @@ export function ScriptsIndex() {
         </Button>
       </div>
 
-      <div className='rounded-md border'>
+      <div className='rounded-md border p-2'>
         {filteredScripts.length === 0 ? (
           <div className='flex flex-col items-center justify-center py-12 text-center'>
             <FileCode className='h-12 w-12 text-muted-foreground mb-4' />
@@ -157,18 +191,47 @@ export function ScriptsIndex() {
             )}
           </div>
         ) : (
-          <ul className='divide-y'>
-            {filteredScripts.map((script) => (
-              <ScriptListItem
-                key={script.id}
-                script={script}
-                attributes={attributes}
-                actions={actions}
-                items={items}
-                to={`/rulesets/${rulesetId}/scripts/${script.id}`}
-              />
-            ))}
-          </ul>
+          <>
+            {categorized.length > 0 && (
+              <Accordion type='multiple' className='w-full border-b'>
+                {categorized.map(({ category, scripts: categoryScripts }) => (
+                  <AccordionItem key={category} value={category}>
+                    <AccordionTrigger style={{ textDecoration: 'none' }}>
+                      {category}
+                    </AccordionTrigger>
+                    <AccordionContent>
+                      <ul className='list-none space-y-1 pl-1'>
+                        {categoryScripts.map((script) => (
+                          <li key={script.id}>
+                            <Link
+                              to={`/rulesets/${rulesetId}/scripts/${script.id}`}
+                              className='text-sm text-foreground'>
+                              {script.name || 'Untitled'}.qbs
+                            </Link>
+                          </li>
+                        ))}
+                      </ul>
+                    </AccordionContent>
+                  </AccordionItem>
+                ))}
+              </Accordion>
+            )}
+            <div style={{ paddingTop: '4px', paddingBottom: '4px' }}>
+              {uncategorized.map(({ scripts: categoryScripts }) => (
+                <ul className='list-none space-y-1 pl-1'>
+                  {categoryScripts.map((script) => (
+                    <li key={script.id}>
+                      <Link
+                        to={`/rulesets/${rulesetId}/scripts/${script.id}`}
+                        className='text-sm text-foreground'>
+                        {script.name || 'Untitled'}.qbs
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              ))}
+            </div>
+          </>
         )}
       </div>
     </div>
