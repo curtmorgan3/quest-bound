@@ -214,6 +214,7 @@ export type Script = BaseDetails & {
   entityId: string | null;     // ID of associated entity (null for global scripts)
   isGlobal: boolean;           // Whether this is a global utility script
   enabled: boolean;            // Allow disabling scripts without deleting
+  category?: string;           // Optional category for grouping scripts
 };
 
 export type ScriptError = BaseDetails & {

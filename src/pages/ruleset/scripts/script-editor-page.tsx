@@ -58,6 +58,7 @@ export function ScriptEditorPage() {
 
   const [name, setName] = useState('');
   const [entityType, setEntityType] = useState<Script['entityType']>('attribute');
+  const [category, setCategory] = useState<string | null>(null);
 
   const [entityId, setEntityId] = useState<string | null>(null);
   const [sourceCode, setSourceCode] = useState('');
@@ -100,6 +101,7 @@ export function ScriptEditorPage() {
       setEntityType(script.entityType);
       setEntityId(script.entityId);
       setSourceCode(script.sourceCode);
+      setCategory(script.category ?? null);
     } else if (isNew) {
       setSourceCode(SCRIPT_TEMPLATES[entityType]);
     }
@@ -112,7 +114,7 @@ export function ScriptEditorPage() {
       <EditorTopBar
         sourceCode={sourceCode}
         scriptExecutionHook={workerHook}
-        {...{ name, setName, entityId, setEntityId, entityType, setEntityType }}
+        {...{ name, setName, entityId, setEntityId, entityType, setEntityType, category, setCategory }}
       />
 
       <div className='flex-1 flex flex-col min-h-0 gap-4'>

@@ -20,6 +20,7 @@ import type { Action, Attribute, Item, Script } from '@/types';
 import { Trash2, X, Zap } from 'lucide-react';
 import { useCallback, type Dispatch, type SetStateAction } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { CategoryField } from './category-field';
 
 const ENTITY_TYPES = [
   { value: 'attribute', label: 'Attribute' },
@@ -35,6 +36,8 @@ interface EditorTopBar {
   setEntityType: Dispatch<SetStateAction<'attribute' | 'action' | 'item' | 'global'>>;
   entityId: string | null;
   setEntityId: (id: string | null) => void;
+  category: string | null;
+  setCategory: (value: string | null) => void;
   sourceCode: string;
   saveDisabled?: boolean;
   scriptExecutionHook: UseReactiveScriptExecutionResult;
@@ -47,6 +50,8 @@ export const EditorTopBar = ({
   setEntityType,
   entityId,
   setEntityId,
+  category,
+  setCategory,
   sourceCode,
   saveDisabled,
   scriptExecutionHook,
@@ -93,6 +98,7 @@ export const EditorTopBar = ({
       entityId: entityType === 'global' ? null : entityId,
       isGlobal: entityType === 'global',
       enabled: true,
+      category: category ?? undefined,
     };
     if (isNew) {
       const id = await createScript(payload);
@@ -116,7 +122,7 @@ export const EditorTopBar = ({
 
   return (
     <div className='border-b p-4 flex flex-wrap items-end gap-4'>
-      <div className='flex flex-col gap-2 flex-1 min-w-[200px] max-w-[400px]'>
+      <div className='flex flex-col gap-2 w-[200px]'>
         <Label htmlFor='script-name'>Name</Label>
         <Input
           id='script-name'
@@ -125,7 +131,7 @@ export const EditorTopBar = ({
           placeholder='Script name'
         />
       </div>
-      <div className='flex flex-col gap-2 w-[140px]'>
+      <div className='flex flex-col gap-2'>
         <Label>Type</Label>
         <Select
           value={entityType}
@@ -144,6 +150,9 @@ export const EditorTopBar = ({
             ))}
           </SelectContent>
         </Select>
+      </div>
+      <div className='w-[200px]'>
+        <CategoryField value={category} onChange={setCategory} />
       </div>
       {entityType === 'attribute' && (
         <div className='w-[240px]'>
