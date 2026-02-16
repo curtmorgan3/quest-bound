@@ -19,11 +19,11 @@ export const dbSchema = {
   characterWindows: `${common}, characterId, characterPageId, windowId, title, x, y, isCollapsed`,
   characterAttributes: `${common}, characterId, attributeId, &[characterId+attributeId], scriptDisabled`,
   diceRolls: `${common}, rulesetId, userId, value, label`,
-  scripts: `${common}, rulesetId, name, entityType, entityId, isGlobal, enabled`,
+  scripts: `${common}, rulesetId, name, entityType, entityId, isGlobal, enabled, [entityId+entityType]`,
   scriptErrors: `${common}, rulesetId, scriptId, characterId, timestamp`,
   scriptLogs: `${common}, rulesetId, scriptId, characterId, timestamp, [entityId+entityType]`,
   dependencyGraphNodes: `${common}, rulesetId, scriptId, entityType, entityId`,
 };
 
 // Increment on every schema change
-export const dbSchemaVersion = 20;
+export const dbSchemaVersion = 21;

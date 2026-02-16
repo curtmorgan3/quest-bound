@@ -47,6 +47,7 @@ export const CharacterPage = ({ id, lockByDefault }: { id?: string; lockByDefaul
     updateItemAndFireEvent,
     removeItemAndFireEvent,
     consumeItem,
+    activateItem,
     handleSelectInventoryEntity,
   } = useCharacterInventoryHandlers({
     character,
@@ -102,6 +103,7 @@ export const CharacterPage = ({ id, lockByDefault }: { id?: string; lockByDefaul
         removeInventoryItem: removeItemAndFireEvent,
         fireAction,
         consumeItem,
+        activateItem,
       }}>
       <SheetViewer
         key={character.id}

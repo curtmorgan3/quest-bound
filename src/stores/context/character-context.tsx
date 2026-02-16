@@ -48,6 +48,7 @@ type CharacterContext = {
   ) => void;
   fireAction: (actionId: string) => void;
   consumeItem: (id: string) => void;
+  activateItem: (id: string) => void;
 };
 
 export const CharacterContext = createContext<CharacterContext>(null!);

@@ -32,7 +32,11 @@ export const EventControls = ({
 
   const handleOnActivate = () => {
     if (!entityId) return;
-    executeActionEvent(entityId, testCharacter.id, null, 'on_activate');
+    if (entityType === 'action') {
+      executeActionEvent(entityId, testCharacter.id, null, 'on_activate');
+    } else {
+      executeItemEvent(entityId, testCharacter.id, 'on_activate');
+    }
   };
 
   const handleOnEquip = () => {
@@ -53,17 +57,15 @@ export const EventControls = ({
   return (
     <div className='items-center rounded-md border bg-muted/20 flex flex-col w-[20%] min-w-[200px] p-2 gap-3 overflow-y-auto'>
       <div className='flex flex-col gap-2 justify-center'>
-        {entityType === 'action' && (
-          <Button
-            className='w-[160px]'
-            onClick={handleOnActivate}
-            disabled={!testCharacter}
-            variant='outline'
-            title='Run this script’s on_activate function as the test character'>
-            <Zap className='h-4 w-4' />
-            on_activate
-          </Button>
-        )}
+        <Button
+          className='w-[160px]'
+          onClick={handleOnActivate}
+          disabled={!testCharacter}
+          variant='outline'
+          title='Run this script’s on_activate function as the test character'>
+          <Zap className='h-4 w-4' />
+          on_activate
+        </Button>
         {entityType === 'item' && (
           <>
             <Button

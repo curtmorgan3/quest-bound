@@ -333,6 +333,8 @@ armor = Owner.Item('Plate Mail')
 armor.armor_value // Access custom property
 
 // ===== ITEM EVENTS =====
+on_activate // Fires when the player activates an item
+
 on_equip // Fires when the player equips an item
 
 on_unquip // Fires when the player unequips an item
@@ -419,8 +421,7 @@ Action scripts execute when triggered through UI. They can have `on_activate()` 
 // ===== ACTION METHODS =====
 action = Owner.Action('Mage Armor')
 
-action.activate()   // Async. Triggers on_activate() handler; uses current execution's Target if any
-action.deactivate() // Async. Triggers on_deactivate() handler; uses current execution's Target if any
+action.activate() // Triggers on_activate() handler
 
 // ===== ACTION EVENTS =====
 on_activate()

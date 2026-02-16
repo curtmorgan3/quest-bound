@@ -5,7 +5,7 @@ import type { Action, Attribute, Character, InventoryItem, Item, RollFn } from '
 import { useMemo } from 'react';
 import { findFirstEmptySlot } from '../character-inventory-panel';
 
-type ItemEvent = 'on_equip' | 'on_unequip' | 'on_consume';
+type ItemEvent = 'on_equip' | 'on_unequip' | 'on_consume' | 'on_activate';
 
 interface UseInventoryUpdateWrapperes {
   inventoryPanelConfig: InventoryPanelConfig;
@@ -25,7 +25,7 @@ export const useCharacterInventoryHandlers = ({
 
   const { executeItemEvent } = useExecuteItemEvent();
 
-  const rulesetItemIdToInventoryItem = useMemo(() => {
+  const inventoryItemIdToRulesetItemId = useMemo(() => {
     const map = new Map<string, string>();
 
     inventoryItems.forEach((item) => {
@@ -35,9 +35,9 @@ export const useCharacterInventoryHandlers = ({
     return map;
   }, [inventoryItems]);
 
-  const fireItemEvent = async (itemId: string, event: ItemEvent) => {
+  const fireItemEvent = async (rulesetItemId: string, event: ItemEvent) => {
     if (!character) return;
-    executeItemEvent(itemId, character.id, event, roll);
+    executeItemEvent(rulesetItemId, character.id, event, roll);
   };
 
   const addItemAndFireEvent = async (
@@ -46,10 +46,10 @@ export const useCharacterInventoryHandlers = ({
     await addInventoryItem(data);
   };
 
-  const updateItemAndFireEvent = async (id: string, data: Partial<InventoryItem>) => {
-    const entityId = rulesetItemIdToInventoryItem.get(id);
-    if (entityId) {
-      const fireEvent = (event: ItemEvent) => fireItemEvent(entityId, event);
+  const updateItemAndFireEvent = async (invItemId: string, data: Partial<InventoryItem>) => {
+    const rulesetItemId = inventoryItemIdToRulesetItemId.get(invItemId);
+    if (rulesetItemId) {
+      const fireEvent = (event: ItemEvent) => fireItemEvent(rulesetItemId, event);
 
       if (data.isEquipped === true) {
         fireEvent('on_equip');
@@ -60,28 +60,35 @@ export const useCharacterInventoryHandlers = ({
       }
     }
 
-    updateInventoryItem(id, data);
+    updateInventoryItem(invItemId, data);
   };
 
   /**
    * Fires on_consume event and reduces qty by 1
    * Removes item if new qty is 0
    */
-  const consumeItem = (id: string) => {
-    const entityId = rulesetItemIdToInventoryItem.get(id);
-    if (entityId) {
-      fireItemEvent(entityId, 'on_consume');
+  const consumeItem = (invItemId: string) => {
+    const rulesetItemId = inventoryItemIdToRulesetItemId.get(invItemId);
+    if (rulesetItemId) {
+      fireItemEvent(rulesetItemId, 'on_consume');
     }
 
-    const item = inventoryItems.find((item) => item.id === id);
+    const item = inventoryItems.find((item) => item.id === invItemId);
     if (!item) return;
 
     if (item.quantity <= 1) {
-      removeInventoryItem(id);
+      removeInventoryItem(invItemId);
     } else {
-      updateInventoryItem(id, {
+      updateInventoryItem(invItemId, {
         quantity: item.quantity - 1,
       });
+    }
+  };
+
+  const activateItem = (invItemId: string) => {
+    const rulesetItemId = inventoryItemIdToRulesetItemId.get(invItemId);
+    if (rulesetItemId) {
+      fireItemEvent(rulesetItemId, 'on_activate');
     }
   };
 
@@ -153,5 +160,6 @@ export const useCharacterInventoryHandlers = ({
     updateItemAndFireEvent,
     removeItemAndFireEvent,
     consumeItem,
+    activateItem,
   };
 };
