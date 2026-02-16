@@ -19,34 +19,12 @@ import type { Node, NodeChange, NodePositionChange } from '@xyflow/react';
 import { applyNodeChanges } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { Pencil, Plus } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { BaseEditor } from './base-editor';
+import { WindowNode } from './sheet-viewer/window-node';
 
-// Minimal node data for ruleset windows; rendered similarly to character windows but without close/minimize controls.
 const windowNodeTypes = {
-  window: ({ data }: { data: { rulesetWindow: RulesetWindowType } }) => {
-    const { rulesetWindow } = data;
-    const { windows: rulesetWindowDefs } = useWindows();
-    const windowDef = rulesetWindowDefs.find((w) => w.id === rulesetWindow.windowId);
-
-    return (
-      <div
-        style={{
-          minWidth: 200,
-          minHeight: 120,
-          backgroundColor: '#1f2933',
-          borderRadius: 6,
-          border: '1px solid #4b5563',
-          padding: 8,
-          color: 'white',
-        }}>
-        <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 4 }}>
-          {rulesetWindow.title || windowDef?.title || 'Window'}
-        </div>
-        <div style={{ fontSize: 11, opacity: 0.7 }}>Template window (ruleset)</div>
-      </div>
-    );
-  },
+  window: WindowNode,
 };
 
 interface RulesetPageEditorProps {
@@ -63,6 +41,7 @@ export const RulesetPageEditor = ({ pageId }: RulesetPageEditorProps) => {
     windows: templateWindows,
     updateRulesetWindow,
     createRulesetWindow,
+    deleteRulesetWindow,
   } = useRulesetWindows(effectiveRulesetPageId);
 
   const [editPageOpen, setEditPageOpen] = useState(false);
@@ -76,6 +55,37 @@ export const RulesetPageEditor = ({ pageId }: RulesetPageEditorProps) => {
   );
   const existingWindowIds = new Set(templateWindows.map((w) => w.windowId));
 
+  const handleChildWindowClick = useCallback(
+    (
+      childWindowId: string,
+      parentWindow: { x: number; y: number },
+      rulesetWindow: RulesetWindowType,
+    ) => {
+      const existing = templateWindows.find((tw) => tw.windowId === childWindowId);
+      if (existing) {
+        deleteRulesetWindow(existing.id);
+        return;
+      }
+      const w = rulesetWindowDefs.find((r) => r.id === childWindowId);
+      if (!w || !effectiveRulesetPageId) return;
+      createRulesetWindow({
+        windowId: w.id,
+        rulesetPageId: effectiveRulesetPageId,
+        title: w.title,
+        x: parentWindow.x + 200,
+        y: parentWindow.y + 150,
+        isCollapsed: false,
+      });
+    },
+    [
+      templateWindows,
+      rulesetWindowDefs,
+      effectiveRulesetPageId,
+      createRulesetWindow,
+      deleteRulesetWindow,
+    ],
+  );
+
   const convertWindowsToNode = (windows: RulesetWindowType[]): Node[] => {
     return windows.map((window, index) => {
       const position = { x: window.x, y: window.y };
@@ -88,7 +98,12 @@ export const RulesetPageEditor = ({ pageId }: RulesetPageEditorProps) => {
         selectable: false,
         zIndex: index,
         data: {
-          rulesetWindow: window,
+          window,
+          locked: false,
+          onClose: (id: string) => deleteRulesetWindow(id),
+          onMinimize: (id: string) => updateRulesetWindow(id, { isCollapsed: true }),
+          onChildWindowClick: (childWindowId: string, parentWindow: { x: number; y: number }) =>
+            handleChildWindowClick(childWindowId, parentWindow, window),
         },
       };
     });

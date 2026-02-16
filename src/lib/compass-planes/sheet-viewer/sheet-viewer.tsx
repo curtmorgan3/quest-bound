@@ -1,13 +1,14 @@
 import {
   useCharacterPages,
   useCharacterWindows,
+  useWindows,
   type CharacterWindowUpdate,
 } from '@/lib/compass-api';
 import type { CharacterWindow } from '@/types';
 import type { Node, NodeChange, NodePositionChange } from '@xyflow/react';
 import { applyNodeChanges } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { BaseEditor } from '../base-editor';
 import { WindowNode } from './window-node';
 import { WindowsTabs } from './windows-tabs';
@@ -42,7 +43,12 @@ export const SheetViewer = ({
   onLockedChange,
 }: SheetViewerProps) => {
   const { characterPages } = useCharacterPages(characterId);
-  const { windows: characterWindows } = useCharacterWindows(characterId);
+  const {
+    windows: characterWindows,
+    createCharacterWindow,
+    deleteCharacterWindow,
+  } = useCharacterWindows(characterId);
+  const { windows: rulesetWindowDefs } = useWindows();
   const [currentPageId, setCurrentPageIdState] = useState<string | null>(
     initialCurrentPageId ?? null,
   );
@@ -92,6 +98,34 @@ export const SheetViewer = ({
   );
   const openCharacterWindows = windowsForCurrentPage.filter((w) => !w.isCollapsed);
 
+  const handleChildWindowClick = useCallback(
+    (childWindowId: string, parentWindow: { x: number; y: number }, characterWindow: CharacterWindow) => {
+      const existing = windowsForCurrentPage.find((cw) => cw.windowId === childWindowId);
+      if (existing) {
+        deleteCharacterWindow(existing.id);
+        return;
+      }
+      const w = rulesetWindowDefs.find((r) => r.id === childWindowId);
+      if (!w || !characterId) return;
+      createCharacterWindow({
+        windowId: w.id,
+        characterId,
+        characterPageId: characterWindow.characterPageId ?? undefined,
+        title: w.title,
+        x: parentWindow.x + 200,
+        y: parentWindow.y + 150,
+        isCollapsed: false,
+      });
+    },
+    [
+      windowsForCurrentPage,
+      rulesetWindowDefs,
+      createCharacterWindow,
+      deleteCharacterWindow,
+      characterId,
+    ],
+  );
+
   function convertWindowsToNode(windows: CharacterWindow[]): Node[] {
     return windows.map((window, index) => {
       const position = { x: window.x, y: window.y };
@@ -105,13 +139,15 @@ export const SheetViewer = ({
         zIndex: index, // Render the lastest one open on top
         data: {
           locked,
-          characterWindow: window,
+          window,
           onMinimize: (id: string) => {
             onWindowUpdated?.({ id, isCollapsed: true });
           },
           onClose: (id: string) => {
             onWindowDeleted?.(id);
           },
+          onChildWindowClick: (childWindowId: string, parentWindow: { x: number; y: number }) =>
+            handleChildWindowClick(childWindowId, parentWindow, window),
         },
       };
     });
@@ -182,9 +218,11 @@ export const SheetViewer = ({
               <WindowNode
                 data={{
                   locked,
-                  characterWindow: window,
+                  window,
                   onMinimize: (id: string) => onWindowUpdated?.({ id, isCollapsed: true }),
                   onClose: (id: string) => onWindowDeleted?.(id),
+                  onChildWindowClick: (childWindowId, parentWindow) =>
+                    handleChildWindowClick(childWindowId, parentWindow, window),
                 }}
               />
             </div>

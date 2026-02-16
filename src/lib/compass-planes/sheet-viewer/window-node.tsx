@@ -1,50 +1,38 @@
-import { useCharacterWindows, useComponents, useWindows } from '@/lib/compass-api';
+import { useComponents } from '@/lib/compass-api';
 import { CharacterContext } from '@/stores';
-import type { CharacterWindow } from '@/types';
 import '@xyflow/react/dist/style.css';
 import { OctagonMinus, OctagonX } from 'lucide-react';
 import { useCallback, useContext, useMemo, useState } from 'react';
 import { renderViewComponent } from '../nodes';
 
-interface WindowNodeData {
-  characterWindow: CharacterWindow;
+/** Minimal window shape shared by CharacterWindow and RulesetWindow. */
+export interface WindowNodeWindow {
+  id: string;
+  windowId: string;
+  title: string;
+  x: number;
+  y: number;
+  isCollapsed: boolean;
+}
+
+export interface WindowNodeData {
+  window: WindowNodeWindow;
   onClose: (id: string) => void;
   onMinimize: (id: string) => void;
+  onChildWindowClick: (childWindowId: string, parentWindow: { x: number; y: number }) => void;
   locked: boolean;
 }
 
 export const WindowNode = ({ data }: { data: WindowNodeData }) => {
   const characterContext = useContext(CharacterContext);
-  const { characterWindow, onClose, onMinimize, locked } = data;
-  const { components } = useComponents(characterWindow.windowId);
-  const { windows: rulesetWindows } = useWindows();
-  const {
-    windows: characterWindowsList,
-    createCharacterWindow,
-    deleteCharacterWindow,
-  } = useCharacterWindows(characterWindow.characterId);
+  const { window: windowData, onClose, onMinimize, onChildWindowClick, locked } = data;
+  const { components } = useComponents(windowData.windowId);
 
   const handleChildWindowClick = useCallback(
     (childWindowId: string) => {
-      const existing = characterWindowsList.find((cw) => cw.windowId === childWindowId);
-      if (existing) {
-        deleteCharacterWindow(existing.id);
-        return;
-      }
-      const childWindow = rulesetWindows.find((w) => w.id === childWindowId);
-      if (!childWindow) return;
-
-      createCharacterWindow({
-        windowId: childWindowId,
-        characterId: characterContext?.character?.id,
-        characterPageId: data.characterWindow.characterPageId,
-        title: childWindow.title,
-        x: data.characterWindow.x + 200,
-        y: data.characterWindow.y + 150,
-        isCollapsed: false,
-      });
+      onChildWindowClick(childWindowId, { x: windowData.x, y: windowData.y });
     },
-    [characterWindowsList, rulesetWindows, createCharacterWindow, deleteCharacterWindow],
+    [onChildWindowClick, windowData.x, windowData.y],
   );
 
   // Calculate offsets based on leftmost and topmost components
@@ -105,12 +93,12 @@ export const WindowNode = ({ data }: { data: WindowNodeData }) => {
           <OctagonMinus
             style={{ width: '20px', height: '20px' }}
             className='clickable'
-            onClick={() => onMinimize(characterWindow.id)}
+            onClick={() => onMinimize(windowData.id)}
           />
           <OctagonX
             style={{ width: '20px', height: '20px' }}
             className='clickable'
-            onClick={() => onClose(characterWindow.id)}
+            onClick={() => onClose(windowData.id)}
           />
         </div>
       )}
