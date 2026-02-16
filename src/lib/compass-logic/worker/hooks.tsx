@@ -277,7 +277,6 @@ export function useExecuteItemEvent(timeout = 10000): UseExecuteItemEventResult 
       setError(null);
 
       try {
-        console.log('hooks');
         const response = await client.executeItemEvent(
           itemId,
           characterId,
@@ -285,7 +284,6 @@ export function useExecuteItemEvent(timeout = 10000): UseExecuteItemEventResult 
           roll,
           timeout,
         );
-        console.log('res: ', response);
         setResult(response.value);
         setAnnounceMessages(response.announceMessages);
         setLogMessages(response.logMessages);

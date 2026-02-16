@@ -68,12 +68,7 @@ export class OwnerAccessor {
     if (!action) {
       throw new Error(`Action '${name}' not found`);
     }
-    return new ActionProxy(
-      action.id,
-      this.characterId,
-      this.targetId,
-      this.executeActionEvent,
-    );
+    return new ActionProxy(action.id, this.characterId, this.targetId, this.executeActionEvent);
   }
 
   /**

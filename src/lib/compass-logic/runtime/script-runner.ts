@@ -289,8 +289,7 @@ export class ScriptRunner {
       // Set up accessor objects
       this.setupAccessors();
 
-      console.log('setup accessors');
-
+      console.log('accessors');
       // Run global scripts so their definitions are in the environment
       await this.loadAndRunGlobalScripts();
 

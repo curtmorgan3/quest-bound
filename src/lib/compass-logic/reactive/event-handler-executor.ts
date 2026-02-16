@@ -29,6 +29,13 @@ export interface EventHandlerResult {
 }
 
 /**
+ * Reentrancy depth for action event execution. Only the top-level run (depth 1)
+ * gets executeActionEvent in context so Owner.Action().activate() cannot
+ * recursively re-enter and cause an infinite loop.
+ */
+let actionEventDepth = 0;
+
+/**
  * EventHandlerExecutor handles execution of event handler functions
  * defined in item and action scripts.
  */
@@ -184,28 +191,37 @@ export class EventHandlerExecutor {
 
     // Run full script so all definitions are in scope, then call the handler
     const scriptToRun = this.buildScriptWithHandlerCall(script.sourceCode, eventType);
-    const context: ScriptExecutionContext = {
-      ownerId: characterId,
-      targetId: targetId,
-      rulesetId: action.rulesetId,
-      db: this.db,
-      scriptId: script.id,
-      triggerType: 'action_click',
-      roll,
-      executeActionEvent: (actionId, ownerId, targetIdForAction, eventTypeForAction) =>
-        this.executeActionEvent(actionId, ownerId, targetIdForAction, eventTypeForAction, roll),
-    };
+    actionEventDepth++;
 
-    const runner = new ScriptRunner(context);
-    const result = await runner.run(scriptToRun);
+    try {
+      const context: ScriptExecutionContext = {
+        ownerId: characterId,
+        targetId: targetId,
+        rulesetId: action.rulesetId,
+        db: this.db,
+        scriptId: script.id,
+        triggerType: 'action_click',
+        roll,
+        // Only allow Owner.Action().activate() at top level to avoid infinite re-entrancy
+        ...(actionEventDepth === 1 && {
+          executeActionEvent: (actionId, ownerId, targetIdForAction, eventTypeForAction) =>
+            this.executeActionEvent(actionId, ownerId, targetIdForAction, eventTypeForAction, roll),
+        }),
+      };
 
-    return {
-      success: !result.error,
-      value: result.value,
-      announceMessages: result.announceMessages,
-      logMessages: result.logMessages,
-      error: result.error,
-    };
+      const runner = new ScriptRunner(context);
+      const result = await runner.run(scriptToRun);
+
+      return {
+        success: !result.error,
+        value: result.value,
+        announceMessages: result.announceMessages,
+        logMessages: result.logMessages,
+        error: result.error,
+      };
+    } finally {
+      actionEventDepth--;
+    }
   }
 
   /**

@@ -84,7 +84,6 @@ export class QBScriptClient {
    */
   private initWorker(): void {
     try {
-      console.log('init worker');
       // Use Vite's native Web Worker support
       this.worker = new Worker(new URL('./qbscript-worker.ts', import.meta.url), {
         type: 'module',

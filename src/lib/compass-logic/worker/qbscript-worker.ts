@@ -541,7 +541,6 @@ async function handleExecuteItemEvent(payload: {
       payload.eventType as 'on_equip' | 'on_unequip' | 'on_consume',
       rollFn,
     );
-    console.log('item event: ', result);
 
     const script = await db.scripts.where({ entityId: payload.itemId, entityType: 'item' }).first();
     const scriptId = script?.id ?? payload.itemId;
