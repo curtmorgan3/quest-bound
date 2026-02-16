@@ -95,7 +95,6 @@ export const RulesetPageEditor = ({ pageId }: RulesetPageEditorProps) => {
           window,
           locked: false,
           onClose: (id: string) => deleteRulesetWindow(id),
-          onMinimize: (id: string) => updateRulesetWindow(id, { isCollapsed: true }),
           onChildWindowClick: (childWindowId: string, parentWindow: { x: number; y: number }) =>
             handleChildWindowClick(childWindowId, parentWindow, window),
         },

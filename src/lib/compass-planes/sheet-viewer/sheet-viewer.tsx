@@ -190,7 +190,20 @@ export const SheetViewer = ({
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', position: 'relative' }}>
       {locked ? (
         <div style={{ position: 'relative', flex: 1, overflow: 'hidden' }}>
-          {currentPage?.image && (
+          {currentPage?.backgroundColor != null && (
+            <div
+              aria-hidden
+              style={{
+                position: 'absolute',
+                inset: 0,
+                zIndex: 0,
+                backgroundColor: currentPage.backgroundColor,
+                opacity: currentPage.backgroundOpacity ?? 1,
+                pointerEvents: 'none',
+              }}
+            />
+          )}
+          {currentPage?.image != null && (
             <div
               aria-hidden
               style={{

@@ -18,7 +18,7 @@ export interface WindowNodeWindow {
 export interface WindowNodeData {
   window: WindowNodeWindow;
   onClose: (id: string) => void;
-  onMinimize: (id: string) => void;
+  onMinimize?: (id: string) => void;
   onChildWindowClick: (childWindowId: string, parentWindow: { x: number; y: number }) => void;
   locked: boolean;
 }
@@ -90,11 +90,13 @@ export const WindowNode = ({ data }: { data: WindowNodeData }) => {
             opacity: isHovered && !locked ? 1 : 0,
             transition: 'opacity 0.15s ease-in-out',
           }}>
-          <OctagonMinus
-            style={{ width: '20px', height: '20px' }}
-            className='clickable'
-            onClick={() => onMinimize(windowData.id)}
-          />
+          {!!onMinimize && (
+            <OctagonMinus
+              style={{ width: '20px', height: '20px' }}
+              className='clickable'
+              onClick={() => onMinimize(windowData.id)}
+            />
+          )}
           <OctagonX
             style={{ width: '20px', height: '20px' }}
             className='clickable'
