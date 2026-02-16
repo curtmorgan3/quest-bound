@@ -21,9 +21,9 @@ export const dbSchema = {
   diceRolls: `${common}, rulesetId, userId, value, label`,
   scripts: `${common}, rulesetId, name, entityType, entityId, isGlobal, enabled`,
   scriptErrors: `${common}, rulesetId, scriptId, characterId, timestamp`,
-  scriptLogs: `${common}, rulesetId, scriptId, characterId, timestamp`,
+  scriptLogs: `${common}, rulesetId, scriptId, characterId, timestamp, [entityId+entityType]`,
   dependencyGraphNodes: `${common}, rulesetId, scriptId, entityType, entityId`,
 };
 
 // Increment on every schema change
-export const dbSchemaVersion = 19;
+export const dbSchemaVersion = 20;
