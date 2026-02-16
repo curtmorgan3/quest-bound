@@ -29,12 +29,6 @@ export const useItems = () => {
         rulesetId: activeRuleset.id,
         createdAt: now,
         updatedAt: now,
-        customProperties: {
-          durability: 10,
-          isValuable: true,
-          origin: 'draconic',
-          'House of Worship': 'Lannister',
-        },
       } as Item);
     } catch (e) {
       handleError(e as Error, {
