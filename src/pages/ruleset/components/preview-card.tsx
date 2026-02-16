@@ -29,7 +29,8 @@ export type PreviewCardType =
   | 'actions'
   | 'charts'
   | 'documents'
-  | 'windows';
+  | 'windows'
+  | 'pages';
 
 interface Props {
   id: string;

@@ -41,6 +41,8 @@ function CompassRoutes() {
 
             <Route path={`/rulesets/:rulesetId/windows/:windowId`} element={<WindowEditor />} />
 
+            <Route path={`/rulesets/:rulesetId/pages`} element={<Ruleset page='pages' />} />
+
             <Route path={`/rulesets/:rulesetId/scripts`} element={<ScriptsIndex />} />
 
             <Route path={`/rulesets/:rulesetId/scripts/:scriptId`} element={<ScriptEditorPage />} />

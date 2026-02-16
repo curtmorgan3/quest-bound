@@ -18,12 +18,13 @@ import { BaseCreate } from './create';
 import { Documents } from './documents';
 import { BulkCustomProperties } from './items/bulk-custom-properties';
 import { ItemChart } from './items/item-chart';
+import { PageSelect } from './pages';
 import { WindowSelect } from './windows';
 
 export const Ruleset = ({
   page,
 }: {
-  page?: 'attributes' | 'items' | 'actions' | 'charts' | 'documents' | 'windows';
+  page?: 'attributes' | 'items' | 'actions' | 'charts' | 'documents' | 'windows' | 'pages';
 }) => {
   const { activeRuleset } = useActiveRuleset();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -75,6 +76,16 @@ export const Ruleset = ({
             }}
           />
         );
+      case 'pages':
+        return (
+          <PageSelect
+            onEditDetails={(id) => {
+              searchParams.set('edit', id);
+              setSearchParams(searchParams);
+              setOpen(true);
+            }}
+          />
+        );
       default:
         return <p>Not Found</p>;
     }
@@ -118,10 +129,10 @@ export const Ruleset = ({
             </div>
           )}
           {page === 'items' && <BulkCustomProperties />}
-          {page !== 'charts' && page !== 'windows' && page !== 'documents' && (
+          {page !== 'charts' && page !== 'windows' && page !== 'documents' && page !== 'pages' && (
             <Export type={page} />
           )}
-          {page !== 'charts' && page !== 'windows' && page !== 'documents' && (
+          {page !== 'charts' && page !== 'windows' && page !== 'documents' && page !== 'pages' && (
             <Import type={page} onLoadingChange={setIsImporting} />
           )}
         </div>

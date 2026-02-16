@@ -10,6 +10,7 @@ import {
   Handbag,
   HandFist,
   HelpCircle,
+  LayoutTemplate,
   Newspaper,
   Pin,
   PinOff,
@@ -122,6 +123,11 @@ export function AppSidebar() {
           url: `/rulesets/${activeRuleset?.id}/windows`,
           icon: AppWindow,
         },
+        {
+          title: 'Pages',
+          url: `/rulesets/${activeRuleset?.id}/pages`,
+          icon: LayoutTemplate,
+        },
         ...(scriptingEnabled
           ? [
               {
@@ -179,6 +185,8 @@ export function AppSidebar() {
       if (path.includes('/items')) return 'items';
       if (path.includes('/documents')) return 'documents';
       if (path.includes('/charts')) return 'charts';
+      if (path.includes('/windows')) return 'windows';
+      if (path.includes('/pages')) return 'pages';
       if (path.includes('/scripts')) return 'scripts';
       return 'rulesets';
     }

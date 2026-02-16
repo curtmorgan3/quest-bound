@@ -1,5 +1,13 @@
 import { Button, DescriptionEditor, Input, Label } from '@/components';
-import { AppWindow, FileSpreadsheet, HandFist, Newspaper, Sword, UserRoundPen } from 'lucide-react';
+import {
+  AppWindow,
+  FileSpreadsheet,
+  HandFist,
+  LayoutTemplate,
+  Newspaper,
+  Sword,
+  UserRoundPen,
+} from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useLocation, useSearchParams } from 'react-router-dom';
 import { ActionCreate } from './action-create';
@@ -12,6 +20,7 @@ import {
   useChartValues,
   useDocumentValues,
   useItemValues,
+  usePageValues,
   useWindowValues,
 } from './hooks';
 import { ItemCreate } from './item-create';
@@ -23,6 +32,7 @@ const iconset = {
   charts: FileSpreadsheet,
   documents: Newspaper,
   windows: AppWindow,
+  pages: LayoutTemplate,
 };
 
 interface BaseCreateProps {
@@ -96,6 +106,17 @@ export const BaseCreate = ({ onCreate }: BaseCreateProps) => {
     setDescription,
   });
 
+  const { savePage } = usePageValues({
+    id: editId || undefined,
+    baseProperties,
+    onCreate: () => {
+      document.getElementById('create-title')?.focus();
+    },
+    setTitle,
+    setCategory,
+    setDescription,
+  });
+
   const { saveDocument, ...documentProps } = useDocumentValues({
     id: editId || undefined,
     baseProperties,
@@ -113,9 +134,10 @@ export const BaseCreate = ({ onCreate }: BaseCreateProps) => {
     | 'actions'
     | 'charts'
     | 'documents'
-    | 'windows';
+    | 'windows'
+    | 'pages';
   const [activeType, setActiveType] = useState<
-    'attributes' | 'items' | 'actions' | 'charts' | 'documents' | 'windows'
+    'attributes' | 'items' | 'actions' | 'charts' | 'documents' | 'windows' | 'pages'
   >(initialType || 'attributes');
 
   useEffect(() => {
@@ -148,6 +170,9 @@ export const BaseCreate = ({ onCreate }: BaseCreateProps) => {
         break;
       case 'windows':
         saveWindow();
+        break;
+      case 'pages':
+        savePage();
         break;
       default:
         break;
@@ -197,6 +222,11 @@ export const BaseCreate = ({ onCreate }: BaseCreateProps) => {
           variant={activeType === 'windows' ? 'default' : 'outline'}
           onClick={() => setActiveType('windows')}>
           <iconset.windows />
+        </Button>
+        <Button
+          variant={activeType === 'pages' ? 'default' : 'outline'}
+          onClick={() => setActiveType('pages')}>
+          <iconset.pages />
         </Button>
       </div>
 
