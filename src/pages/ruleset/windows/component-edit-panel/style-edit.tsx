@@ -87,7 +87,7 @@ export const StyleEdit = ({ components, handleUpdate }: Props) => {
           label='Opacity'
           value={opacity}
           step={0.1}
-          onChange={(val) => handleUpdate('opacity', Math.min(1, Math.max(0.1, parseValue(val))))}
+          onChange={(val) => handleUpdate('opacity', Math.min(1, Math.max(0, parseValue(val))))}
         />
         <RulesetColorPicker
           asIcon

@@ -1,5 +1,5 @@
 import { DEFAULT_GRID_SIZE } from '@/lib/compass-planes/editor-config';
-import { colorPaper } from '@/palette';
+import { colorPaper, colorWhite } from '@/palette';
 import type { Component, ComponentStyle, GraphComponentData } from '@/types';
 import { ComponentTypes, type SheetComponentType } from '../../node-types';
 
@@ -26,6 +26,7 @@ const DEFAULT_GRAPH_DATA: GraphComponentData = {
 
 const DEFAULT_GRAPH_STYLES: ComponentStyle = {
   backgroundColor: colorPaper,
+  color: colorWhite,
   opacity: 1,
   borderRadiusTopLeft: 0,
   borderRadiusTopRight: 0,

@@ -11,7 +11,10 @@ import type { RollFn } from '@/types';
 import Dexie from 'dexie';
 import { Lexer } from '../interpreter/lexer';
 import { Parser } from '../interpreter/parser';
-import { EventHandlerExecutor } from '../reactive/event-handler-executor';
+import {
+  EventHandlerExecutor,
+  type OnAttributesModifiedFn,
+} from '../reactive/event-handler-executor';
 import { ReactiveExecutor } from '../reactive/reactive-executor';
 import { ScriptRunner, type ScriptExecutionContext } from '../runtime/script-runner';
 import { prepareForStructuredClone } from '../runtime/structured-clone-safe';
@@ -181,14 +184,43 @@ async function persistScriptLogs(
 }
 
 // ============================================================================
+// Reactive trigger for attribute changes (used by EventHandlerExecutor and handleExecuteScript)
+// ============================================================================
+
+function createOnAttributesModified(
+  rollFn: RollFn,
+  getExecutor: () => EventHandlerExecutor,
+): OnAttributesModifiedFn {
+  return async (attributeIds: string[], characterId: string, rulesetId: string) => {
+    if (attributeIds.length === 0) return;
+    if (!reactiveExecutor) {
+      reactiveExecutor = new ReactiveExecutor(db);
+    }
+    const executor = getExecutor();
+    for (const attributeId of attributeIds) {
+      try {
+        await reactiveExecutor.onAttributeChange(attributeId, characterId, rulesetId, {
+          roll: rollFn,
+          executeActionEvent: (actionId, cId, targetId, eventType) =>
+            executor.executeActionEvent(actionId, cId, targetId, eventType, rollFn),
+        });
+      } catch (e) {
+        console.warn('[QBScript] Reactive execution failed for attribute', attributeId, e);
+      }
+    }
+  };
+}
+
+// ============================================================================
 // Signal Handlers
 // ============================================================================
 
 async function handleExecuteScript(payload: ExecuteScriptPayload): Promise<void> {
   const startTime = performance.now();
-  const executor = new EventHandlerExecutor(db);
   const rollFn: RollFn = (expression: string) =>
     rollBridge.requestRoll(expression, payload.requestId);
+  let executor: EventHandlerExecutor;
+  executor = new EventHandlerExecutor(db, createOnAttributesModified(rollFn, () => executor));
 
   try {
     const context: ScriptExecutionContext = {
@@ -235,6 +267,41 @@ async function handleExecuteScript(payload: ExecuteScriptPayload): Promise<void>
         },
       });
     } else {
+      // Trigger reactive scripts for any attributes modified by this script (e.g. action script
+      // changing an attribute). The main thread's Dexie hooks only run for updates from the main
+      // thread, so when the worker updates characterAttributes we must run the dependency chain here.
+      const modifiedIds = result.modifiedAttributeIds ?? [];
+      if (modifiedIds.length > 0) {
+        if (!reactiveExecutor) {
+          reactiveExecutor = new ReactiveExecutor(db);
+        }
+        const reactiveOptions = {
+          executeActionEvent: (
+            actionId: string,
+            characterId: string,
+            targetId: string | null,
+            eventType: 'on_activate' | 'on_deactivate',
+          ) => executor.executeActionEvent(actionId, characterId, targetId, eventType, rollFn),
+          roll: rollFn,
+        };
+        for (const attributeId of modifiedIds) {
+          try {
+            await reactiveExecutor.onAttributeChange(
+              attributeId,
+              payload.characterId,
+              payload.rulesetId,
+              reactiveOptions,
+            );
+          } catch (reactiveError) {
+            console.warn(
+              '[QBScript] Reactive execution failed for attribute',
+              attributeId,
+              reactiveError,
+            );
+          }
+        }
+      }
+
       sendSignal({
         type: 'SCRIPT_RESULT',
         payload: {
@@ -339,9 +406,10 @@ async function handleAttributeChanged(payload: AttributeChangedPayload): Promise
       reactiveExecutor = new ReactiveExecutor(db);
     }
 
-    const executor = new EventHandlerExecutor(db);
     const rollFn: RollFn = (expression: string) =>
       rollBridge.requestRoll(expression, payload.requestId);
+    let executor: EventHandlerExecutor;
+    executor = new EventHandlerExecutor(db, createOnAttributesModified(rollFn, () => executor));
 
     const result = await reactiveExecutor.onAttributeChange(
       payload.attributeId,
@@ -459,7 +527,8 @@ async function handleExecuteActionEvent(payload: {
     const rollFn: RollFn = (expression: string) =>
       rollBridge.requestRoll(expression, payload.requestId);
 
-    const executor = new EventHandlerExecutor(db);
+    let executor: EventHandlerExecutor;
+    executor = new EventHandlerExecutor(db, createOnAttributesModified(rollFn, () => executor));
     const result = await executor.executeActionEvent(
       payload.actionId,
       payload.characterId,
@@ -534,7 +603,8 @@ async function handleExecuteItemEvent(payload: {
     const rollFn: RollFn = (expression: string) =>
       rollBridge.requestRoll(expression, payload.requestId);
 
-    const executor = new EventHandlerExecutor(db);
+    let executor: EventHandlerExecutor;
+    executor = new EventHandlerExecutor(db, createOnAttributesModified(rollFn, () => executor));
     const result = await executor.executeItemEvent(
       payload.itemId,
       payload.characterId,

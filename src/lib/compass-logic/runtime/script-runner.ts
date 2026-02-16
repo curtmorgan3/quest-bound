@@ -43,6 +43,8 @@ export interface ScriptExecutionResult {
   announceMessages: string[];
   logMessages: any[][];
   error?: Error;
+  /** Attribute IDs (ruleset attribute ids) whose character values were updated. Used to trigger reactive scripts in the worker. */
+  modifiedAttributeIds?: string[];
 }
 
 /**
@@ -154,6 +156,24 @@ export class ScriptRunner {
         this.characterAttributesCache.set(charAttr.id, charAttr);
       }
     }
+  }
+
+  /**
+   * Collect attribute IDs (ruleset attribute ids) that have pending value updates.
+   * Must be called before flushCache() since flush clears pendingUpdates.
+   */
+  getModifiedAttributeIds(): string[] {
+    const ids = new Set<string>();
+    for (const key of this.pendingUpdates.keys()) {
+      if (key.startsWith('characterAttribute:')) {
+        const characterAttributeId = key.slice('characterAttribute:'.length);
+        const charAttr = this.characterAttributesCache.get(characterAttributeId);
+        if (charAttr?.attributeId) {
+          ids.add(charAttr.attributeId);
+        }
+      }
+    }
+    return Array.from(ids);
   }
 
   /**
@@ -310,6 +330,9 @@ export class ScriptRunner {
       const ast = new Parser(tokens).parse();
       const value = await this.evaluator.eval(ast);
 
+      // Collect modified attribute IDs before flush (flush clears pendingUpdates)
+      const modifiedAttributeIds = this.getModifiedAttributeIds();
+
       // Flush changes to database
       await this.flushCache();
 
@@ -317,6 +340,7 @@ export class ScriptRunner {
         value,
         announceMessages: this.evaluator.getAnnounceMessages(),
         logMessages: this.evaluator.getLogMessages(),
+        modifiedAttributeIds,
       };
     } catch (error) {
       return {

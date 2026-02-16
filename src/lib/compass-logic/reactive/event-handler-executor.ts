@@ -4,7 +4,10 @@ import type { ASTNode } from '../interpreter/ast';
 import { functionDefToExecutableSource } from '../interpreter/ast-to-source';
 import { Lexer } from '../interpreter/lexer';
 import { Parser } from '../interpreter/parser';
-import type { ScriptExecutionContext } from '../runtime/script-runner';
+import type {
+  ScriptExecutionContext,
+  ScriptExecutionResult,
+} from '../runtime/script-runner';
 import { ScriptRunner } from '../runtime/script-runner';
 
 /**
@@ -36,14 +39,41 @@ export interface EventHandlerResult {
 let actionEventDepth = 0;
 
 /**
+ * Callback invoked when a script run modifies one or more character attribute values.
+ * Used to trigger reactive execution (e.g. in the worker) so scripts that subscribe to those attributes run.
+ */
+export type OnAttributesModifiedFn = (
+  attributeIds: string[],
+  characterId: string,
+  rulesetId: string,
+) => Promise<void>;
+
+/**
+ * Optional test double: when provided, used instead of ScriptRunner.run() so tests can
+ * assert onAttributesModified is called without running real scripts.
+ */
+export type RunScriptForTestFn = (
+  context: ScriptExecutionContext,
+  sourceCode: string,
+) => Promise<ScriptExecutionResult>;
+
+/**
  * EventHandlerExecutor handles execution of event handler functions
  * defined in item and action scripts.
  */
 export class EventHandlerExecutor {
   private db: DB;
+  private onAttributesModified?: OnAttributesModifiedFn;
+  private runScriptForTest?: RunScriptForTestFn;
 
-  constructor(db: DB) {
+  constructor(
+    db: DB,
+    onAttributesModified?: OnAttributesModifiedFn,
+    runScriptForTest?: RunScriptForTestFn,
+  ) {
     this.db = db;
+    this.onAttributesModified = onAttributesModified;
+    this.runScriptForTest = runScriptForTest;
   }
 
   /**
@@ -119,8 +149,17 @@ export class EventHandlerExecutor {
         this.executeActionEvent(actionId, ownerId, targetIdForAction, eventTypeForAction, roll),
     };
 
-    const runner = new ScriptRunner(context);
-    const result = await runner.run(scriptToRun);
+    const result = this.runScriptForTest
+      ? await this.runScriptForTest(context, scriptToRun)
+      : await new ScriptRunner(context).run(scriptToRun);
+
+    if (!result.error && result.modifiedAttributeIds?.length && this.onAttributesModified) {
+      await this.onAttributesModified(
+        result.modifiedAttributeIds,
+        characterId,
+        item.rulesetId,
+      );
+    }
 
     return {
       success: !result.error,
@@ -213,8 +252,17 @@ export class EventHandlerExecutor {
         }),
       };
 
-      const runner = new ScriptRunner(context);
-      const result = await runner.run(scriptToRun);
+      const result = this.runScriptForTest
+        ? await this.runScriptForTest(context, scriptToRun)
+        : await new ScriptRunner(context).run(scriptToRun);
+
+      if (!result.error && result.modifiedAttributeIds?.length && this.onAttributesModified) {
+        await this.onAttributesModified(
+          result.modifiedAttributeIds,
+          characterId,
+          action.rulesetId,
+        );
+      }
 
       return {
         success: !result.error,
@@ -317,8 +365,21 @@ if ${eventType} != null
 end
 `;
 
-    const runner = new ScriptRunner(context);
-    const result = await runner.run(fullScript);
+    const result = this.runScriptForTest
+      ? await this.runScriptForTest(context, fullScript)
+      : await new ScriptRunner(context).run(fullScript);
+
+    if (
+      !result.error &&
+      result.modifiedAttributeIds?.length &&
+      this.onAttributesModified
+    ) {
+      await this.onAttributesModified(
+        result.modifiedAttributeIds,
+        context.ownerId,
+        context.rulesetId,
+      );
+    }
 
     return {
       success: !result.error,

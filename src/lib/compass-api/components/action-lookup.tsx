@@ -63,7 +63,6 @@ export const ActionLookup = ({
       ? actions.filter(
           (action) =>
             action.title.toLowerCase().includes(searchLower) ||
-            (action.description ?? '').toLowerCase().includes(searchLower) ||
             (action.category ?? 'Uncategorized').toLowerCase().includes(searchLower),
         )
       : actions;
@@ -153,11 +152,7 @@ export const ActionLookup = ({
           </PopoverTrigger>
           <PopoverContent className='w-[300px] p-0' align='start'>
             <Command shouldFilter={false}>
-              <CommandInput
-                placeholder={placeholder}
-                value={search}
-                onValueChange={setSearch}
-              />
+              <CommandInput placeholder={placeholder} value={search} onValueChange={setSearch} />
               <CommandList>
                 <CommandEmpty>No actions found.</CommandEmpty>
                 {rows.length > 0 && (
