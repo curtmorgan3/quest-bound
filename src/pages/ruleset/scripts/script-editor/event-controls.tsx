@@ -56,48 +56,53 @@ export const EventControls = ({
 
   return (
     <div className='items-center rounded-md border bg-muted/20 flex flex-col w-[20%] min-w-[200px] p-2 gap-3 overflow-y-auto'>
-      <div className='flex flex-col gap-2 justify-center'>
-        <Button
-          className='w-[160px]'
-          onClick={handleOnActivate}
-          disabled={!testCharacter}
-          variant='outline'
-          title='Run this script’s on_activate function as the test character'>
-          <Zap className='h-4 w-4' />
-          on_activate
-        </Button>
-        {entityType === 'item' && (
-          <>
-            <Button
-              className='w-[160px]'
-              onClick={handleOnEquip}
-              disabled={!testCharacter}
-              variant='outline'
-              title='Run this script’s on_equip function as the test character'>
-              <Shirt className='h-4 w-4' style={{ color: colorPrimary }} />
-              on_equip
-            </Button>
-            <Button
-              className='w-[160px]'
-              onClick={handleOnUnequip}
-              disabled={!testCharacter}
-              variant='outline'
-              title='Run this script’s on_unequip function as the test character'>
-              <Shirt className='h-4 w-4' />
-              on_unequip
-            </Button>
-            <Button
-              className='w-[160px]'
-              onClick={handleOnConsume}
-              disabled={!testCharacter}
-              variant='outline'
-              title='Run this script’s on_consume function as the test character'>
-              <Drumstick className='h-4 w-4' />
-              on_consume
-            </Button>
-          </>
-        )}
-      </div>
+      {!entityId && (
+        <span className='text-sm text-muted-foreground italic'>{`Attach an ${entityType} to test events`}</span>
+      )}
+      {entityId && (
+        <div className='flex flex-col gap-2 justify-center'>
+          <Button
+            className='w-[160px]'
+            onClick={handleOnActivate}
+            disabled={!testCharacter}
+            variant='outline'
+            title='Run this script’s on_activate function as the test character'>
+            <Zap className='h-4 w-4' />
+            on_activate
+          </Button>
+          {entityType === 'item' && (
+            <>
+              <Button
+                className='w-[160px]'
+                onClick={handleOnEquip}
+                disabled={!testCharacter}
+                variant='outline'
+                title='Run this script’s on_equip function as the test character'>
+                <Shirt className='h-4 w-4' style={{ color: colorPrimary }} />
+                on_equip
+              </Button>
+              <Button
+                className='w-[160px]'
+                onClick={handleOnUnequip}
+                disabled={!testCharacter}
+                variant='outline'
+                title='Run this script’s on_unequip function as the test character'>
+                <Shirt className='h-4 w-4' />
+                on_unequip
+              </Button>
+              <Button
+                className='w-[160px]'
+                onClick={handleOnConsume}
+                disabled={!testCharacter}
+                variant='outline'
+                title='Run this script’s on_consume function as the test character'>
+                <Drumstick className='h-4 w-4' />
+                on_consume
+              </Button>
+            </>
+          )}
+        </div>
+      )}
     </div>
   );
 };

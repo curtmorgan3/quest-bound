@@ -3,7 +3,7 @@ import { useScriptValidation } from '@/lib/compass-logic';
 import type { Script } from '@/types';
 import { useEffect, useRef } from 'react';
 
-const AUTOSAVE_DEBOUNCE_MS = 800;
+const AUTOSAVE_DEBOUNCE_MS = 1500;
 
 interface UseAutoSave {
   sourceCode: string;
