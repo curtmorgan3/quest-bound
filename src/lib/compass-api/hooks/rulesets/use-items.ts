@@ -32,7 +32,8 @@ export const useItems = () => {
         customProperties: {
           durability: 10,
           isValuable: true,
-          origina: 'draconic',
+          origin: 'draconic',
+          'House of Worship': 'Lannister',
         },
       } as Item);
     } catch (e) {

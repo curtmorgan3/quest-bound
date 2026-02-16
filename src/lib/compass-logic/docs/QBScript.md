@@ -332,6 +332,7 @@ item.count() // Quantity of item
 armor = Owner.Item('Plate Mail')
 armor.armor_value // Access custom property (instance override, else ruleset default)
 Owner.Item('item name').<custom prop name>.set(value) // Set item instance custom property
+Owner.Item('item name').property('custom prop') // Access custom property by label (e.g. names with spaces); returns same accessor with .set(value)
 
 // ===== ITEM EVENTS =====
 on_activate // Fires when the player activates an item

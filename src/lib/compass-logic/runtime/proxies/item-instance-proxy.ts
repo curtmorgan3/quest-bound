@@ -135,6 +135,15 @@ export function createItemInstanceProxy(
       if (prop === 'toStructuredCloneSafe') {
         return (target as unknown as Record<string, unknown>).toStructuredCloneSafe;
       }
+      // Owner.Item('item').property('custom prop') – access custom prop by label (e.g. names with spaces).
+      if (prop === 'property') {
+        return (name: string) =>
+          createCustomPropertyAccessor(
+            () => target.getCustomProperty(name),
+            onSetCustomProperty,
+            name,
+          );
+      }
       if (prop in target) {
         return (target as unknown as Record<string, unknown>)[prop];
       }
