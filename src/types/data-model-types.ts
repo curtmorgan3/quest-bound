@@ -213,6 +213,7 @@ export type Ruleset = BaseDetails & {
   details: Record<string, any>;
   assetId: string | null;
   image: string | null;
+  palette: string[];
 };
 
 export type User = BaseDetails & {

@@ -1,11 +1,9 @@
+import { RulesetColorPicker } from '@/components';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { Popover } from '@/components/ui/popover';
-import { colorWhite } from '@/palette';
 import type { Component } from '@/types';
-import { PopoverContent, PopoverTrigger } from '@radix-ui/react-popover';
-import { Palette, SquareRoundCorner } from 'lucide-react';
+import { SquareRoundCorner } from 'lucide-react';
 import { useState } from 'react';
-import { SketchPicker, type RGBColor } from 'react-color';
+import { type RGBColor } from 'react-color';
 import { EditPanelInput } from './component-edit-panel-input';
 import { parseValue, valueIfAllAreEqual } from './utils';
 
@@ -70,38 +68,21 @@ export const StyleEdit = ({ components, handleUpdate }: Props) => {
           step={0.1}
           onChange={(val) => handleUpdate('opacity', Math.min(1, Math.max(0.1, parseValue(val))))}
         />
-        <Popover>
-          <PopoverTrigger title='Background Color'>
-            <Palette
-              className={`text-xs h-[18px] w-[18px] cursor-${backgroundColor !== MIXED_VALUE_LABEL ? 'pointer' : 'not-allowed'}`}
-              color={colorWhite}
-            />
-          </PopoverTrigger>
-          <PopoverContent>
-            <SketchPicker
-              className='sketch-picker'
-              color={backgroundColor}
-              onChange={(color) => handleUpdate('backgroundColor', color.rgb)}
-              presetColors={[]}
-            />
-          </PopoverContent>
-        </Popover>
-        <Popover>
-          <PopoverTrigger title='Color'>
-            <Palette
-              className={`text-xs h-[18px] w-[18px] cursor-${color !== MIXED_VALUE_LABEL ? 'pointer' : 'not-allowed'}`}
-              color={colorWhite}
-            />
-          </PopoverTrigger>
-          <PopoverContent>
-            <SketchPicker
-              className='sketch-picker'
-              color={color}
-              onChange={(color) => handleUpdate('color', color.rgb)}
-              presetColors={[]}
-            />
-          </PopoverContent>
-        </Popover>
+        <RulesetColorPicker
+          asIcon
+          label='Background Color'
+          color={backgroundColor}
+          onUpdate={(color) => handleUpdate('backgroundColor', color)}
+          disabled={backgroundColor === MIXED_VALUE_LABEL}
+        />
+
+        <RulesetColorPicker
+          asIcon
+          label='Color'
+          color={color}
+          onUpdate={(color) => handleUpdate('color', color)}
+          disabled={color === MIXED_VALUE_LABEL}
+        />
       </div>
 
       <div className='w-full flex flex-col gap-2'>
@@ -127,21 +108,14 @@ export const StyleEdit = ({ components, handleUpdate }: Props) => {
             step={1}
             onChange={handleAllCornersChange}
           />
-          <Popover>
-            <PopoverTrigger title='Border Color'>
-              <Palette
-                className={`text-xs h-[18px] w-[18px] cursor-${outlineColor !== MIXED_VALUE_LABEL ? 'pointer' : 'not-allowed'}`}
-                color={colorWhite}
-              />
-            </PopoverTrigger>
-            <PopoverContent>
-              <SketchPicker
-                color={outlineColor !== MIXED_VALUE_LABEL ? outlineColor : '#000000'}
-                onChange={(color) => handleUpdate('outlineColor', color.rgb)}
-                presetColors={[]}
-              />
-            </PopoverContent>
-          </Popover>
+
+          <RulesetColorPicker
+            label='Border Color'
+            asIcon
+            color={outlineColor}
+            disabled={outlineColor === MIXED_VALUE_LABEL}
+            onUpdate={(color) => handleUpdate('outlineColor', color)}
+          />
         </div>
         <Collapsible open={isCornersOpen} onOpenChange={setIsCornersOpen}>
           <div className='w-full flex flex-row gap-2 items-end'>
