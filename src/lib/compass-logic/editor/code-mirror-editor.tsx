@@ -20,6 +20,8 @@ export interface CodeMirrorEditorProps {
   className?: string;
   /** CSS color for the text cursor (caret). Defaults to white for the dark editor background. */
   caretColor?: string;
+  /** Whether autocomplete is enabled. Defaults to true. */
+  autocomplete?: boolean;
 }
 
 export function CodeMirrorEditor({
@@ -30,10 +32,12 @@ export function CodeMirrorEditor({
   readOnly = false,
   className,
   caretColor = colorWhite,
+  autocomplete = true,
 }: CodeMirrorEditorProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
   const readOnlyCompartmentRef = useRef<Compartment | null>(null);
+  const autocompleteCompartmentRef = useRef<Compartment | null>(null);
   const onChangeRef = useRef(onChange);
   const onSaveRef = useRef(onSave);
   const readOnlyRef = useRef(readOnly);
@@ -63,7 +67,9 @@ export function CodeMirrorEditor({
       ]),
       indentUnit.of('    '), // Tab inserts 4 spaces
       qbscript(),
-      qbscriptAutocomplete,
+      (autocompleteCompartmentRef.current = new Compartment()).of(
+        autocomplete ? [qbscriptAutocomplete] : [],
+      ),
       history(),
       keymap.of(defaultKeymap),
       keymap.of([...historyKeymap, indentWithTab]),
@@ -135,6 +141,16 @@ export function CodeMirrorEditor({
       ]),
     });
   }, [readOnly]);
+
+  // Update autocomplete when the prop changes.
+  useEffect(() => {
+    const view = viewRef.current;
+    const compartment = autocompleteCompartmentRef.current;
+    if (!view || !compartment) return;
+    view.dispatch({
+      effects: compartment.reconfigure(autocomplete ? [qbscriptAutocomplete] : []),
+    });
+  }, [autocomplete]);
 
   return (
     <div
