@@ -5,5 +5,7 @@ export * from './use-charts';
 export * from './use-components';
 export * from './use-documents';
 export * from './use-items';
+export * from './use-pages';
+export * from './use-ruleset-pages';
 export * from './use-rulesets';
 export * from './use-windows';

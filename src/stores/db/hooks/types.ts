@@ -14,6 +14,8 @@ export type DB = Dexie & {
   inventories: Dexie.Table;
   inventoryItems: Dexie.Table;
   characterAttributes: Dexie.Table;
+  pages: Dexie.Table;
+  rulesetPages: Dexie.Table;
   characterPages: Dexie.Table;
   characterWindows: Dexie.Table;
   documents: Dexie.Table;

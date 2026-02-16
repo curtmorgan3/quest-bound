@@ -68,7 +68,7 @@ export const useCharacter = (_id?: string) => {
 
     if (!testCharacter) return;
 
-    const testPages = await db.characterPages
+    const testJoins = await db.characterPages
       .where('characterId')
       .equals(testCharacter.id)
       .sortBy('createdAt');
@@ -76,13 +76,23 @@ export const useCharacter = (_id?: string) => {
     const pageIdMap = new Map<string, string>();
     const now = new Date().toISOString();
 
-    for (const page of testPages) {
+    for (const join of testJoins) {
+      const sourcePage = await db.pages.get(join.pageId);
+      if (!sourcePage) continue;
       const newPageId = crypto.randomUUID();
-      pageIdMap.set(page.id, newPageId);
-      await db.characterPages.add({
-        ...page,
+      const newJoinId = crypto.randomUUID();
+      pageIdMap.set(join.id, newJoinId);
+      const { id: _id, createdAt: _c, updatedAt: _u, ...pageRest } = sourcePage;
+      await db.pages.add({
+        ...pageRest,
         id: newPageId,
+        createdAt: now,
+        updatedAt: now,
+      });
+      await db.characterPages.add({
+        id: newJoinId,
         characterId: newCharacterId,
+        pageId: newPageId,
         createdAt: now,
         updatedAt: now,
       } as CharacterPage);
@@ -95,7 +105,7 @@ export const useCharacter = (_id?: string) => {
 
     for (const win of testWindows) {
       const newCharacterPageId = win.characterPageId
-        ? (pageIdMap.get(win.characterPageId) ?? null)
+        ? (pageIdMap.get(win.characterPageId) ?? win.characterPageId)
         : null;
       await db.characterWindows.add({
         id: crypto.randomUUID(),

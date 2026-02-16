@@ -15,6 +15,7 @@ import type {
   Inventory,
   InventoryItem,
   Item,
+  Page,
   Ruleset,
   Window,
 } from '@/types';
@@ -151,6 +152,7 @@ export const useImportRuleset = () => {
       | 'inventories'
       | 'characterWindows'
       | 'characterPages'
+      | 'pages'
       | 'inventoryItems',
   ): { isValid: boolean; errors: string[] } => {
     const errors: string[] = [];
@@ -332,8 +334,14 @@ export const useImportRuleset = () => {
           if (!item.characterId || typeof item.characterId !== 'string') {
             errors.push(`CharacterPage ${index + 1}: characterId is required and must be a string`);
           }
+          if (!item.pageId || typeof item.pageId !== 'string') {
+            errors.push(`CharacterPage ${index + 1}: pageId is required and must be a string`);
+          }
+          break;
+
+        case 'pages':
           if (!item.label || typeof item.label !== 'string') {
-            errors.push(`CharacterPage ${index + 1}: label is required and must be a string`);
+            errors.push(`Page ${index + 1}: label is required and must be a string`);
           }
           break;
 
@@ -1181,7 +1189,34 @@ export const useImportRuleset = () => {
         }
       }
 
-      // Import characterPages
+      // Import pages (must be before characterPages; characterPages reference pageId)
+      const pagesFile = getZipFile('application data/pages.json');
+      if (pagesFile) {
+        try {
+          const pagesText = await pagesFile.async('text');
+          const pagesToImport: Page[] = JSON.parse(pagesText);
+
+          const validation = validateData(pagesToImport, 'pages');
+          if (validation.isValid) {
+            for (const page of pagesToImport) {
+              const newPage: Page = {
+                ...page,
+                createdAt: now,
+                updatedAt: now,
+              };
+              await db.pages.add(newPage);
+            }
+          } else {
+            allErrors.push(...validation.errors);
+          }
+        } catch (error) {
+          allErrors.push(
+            `Failed to import pages: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          );
+        }
+      }
+
+      // Import characterPages (joins; require pages to be imported first)
       const characterPagesFile = getZipFile('application data/characterPages.json');
       if (characterPagesFile) {
         try {

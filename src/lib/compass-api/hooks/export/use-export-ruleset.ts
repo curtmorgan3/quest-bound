@@ -97,13 +97,24 @@ export const useExportRuleset = (rulesetId: string) => {
     [testCharacter?.id],
   );
 
-  const characterPages = useLiveQuery(
-    () =>
-      testCharacter
-        ? db.characterPages.where('characterId').equals(testCharacter.id).toArray()
-        : [],
+  const characterPagesAndPages = useLiveQuery(
+    async () => {
+      if (!testCharacter) return { joins: [] as { id: string; characterId: string; pageId: string }[], pages: [] as import('@/types').Page[] };
+      const joins = await db.characterPages
+        .where('characterId')
+        .equals(testCharacter.id)
+        .toArray();
+      const pageIds = [...new Set(joins.map((j) => j.pageId))];
+      const pages = (await Promise.all(pageIds.map((id) => db.pages.get(id)))).filter(
+        Boolean,
+      ) as import('@/types').Page[];
+      return { joins, pages };
+    },
     [testCharacter?.id],
   );
+
+  const characterPages = characterPagesAndPages?.joins ?? [];
+  const pages = characterPagesAndPages?.pages ?? [];
 
   const inventoryItems = useLiveQuery(async () => {
     if (!testCharacter || !inventories || inventories.length === 0) return [];
@@ -126,7 +137,7 @@ export const useExportRuleset = (rulesetId: string) => {
     characterAttributes === undefined ||
     inventories === undefined ||
     characterWindows === undefined ||
-    characterPages === undefined ||
+    characterPagesAndPages === undefined ||
     inventoryItems === undefined;
 
   const exportRuleset = async (): Promise<void> => {
@@ -173,6 +184,7 @@ export const useExportRuleset = (rulesetId: string) => {
           inventories: inventories?.length || 0,
           characterWindows: characterWindows?.length || 0,
           characterPages: characterPages?.length || 0,
+          pages: pages?.length || 0,
           inventoryItems: inventoryItems?.length || 0,
           scripts: scriptExportResult.files.length,
         },
@@ -385,6 +397,9 @@ export const useExportRuleset = (rulesetId: string) => {
         appDataFolder.file('characterWindows.json', JSON.stringify(characterWindows, null, 2));
       }
 
+      if (pages && pages.length > 0) {
+        appDataFolder.file('pages.json', JSON.stringify(pages, null, 2));
+      }
       if (characterPages && characterPages.length > 0) {
         appDataFolder.file('characterPages.json', JSON.stringify(characterPages, null, 2));
       }
@@ -439,7 +454,8 @@ This zip file contains a complete export of the "${ruleset.title}" ruleset from 
 - \`application data/characterAttributes.json\` - Test character attribute values
 - \`application data/inventories.json\` - Test character inventory associations
 - \`application data/characterWindows.json\` - Test character window positions
-- \`application data/characterPages.json\` - Test character sheet pages
+- \`application data/pages.json\` - Page definitions (sheet page content)
+- \`application data/characterPages.json\` - Test character sheet page links (character-page joins)
 - \`application data/inventoryItems.json\` - Test character inventory items
 
 ## Import Instructions

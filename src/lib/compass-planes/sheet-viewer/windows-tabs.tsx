@@ -15,9 +15,15 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useAssets, useCharacterPages, useCharacterWindows, useWindows } from '@/lib/compass-api';
+import {
+  useAssets,
+  useCharacterPages,
+  useCharacterWindows,
+  useWindows,
+  type CharacterPageWithPage,
+} from '@/lib/compass-api';
 import { colorPrimary } from '@/palette';
-import type { CharacterPage, CharacterWindow, Window } from '@/types';
+import type { CharacterWindow, Window } from '@/types';
 import { ImagePlus, Lock, Pencil, Plus, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -25,7 +31,7 @@ interface WindowsTabsProps {
   characterId?: string;
   currentPageId: string | null;
   onCurrentPageChange: (pageId: string | null) => void;
-  characterPages: CharacterPage[];
+  characterPages: CharacterPageWithPage[];
   windows: CharacterWindow[];
   toggleWindow: (id: string) => void;
   openWindows: Set<string>;

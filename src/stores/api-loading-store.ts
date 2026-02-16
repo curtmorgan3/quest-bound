@@ -10,6 +10,7 @@ export const API_LOADING_KEYS = [
   'documents',
   'components',
   'windows',
+  'rulesetPages',
 ] as const;
 export type ApiLoadingKey = (typeof API_LOADING_KEYS)[number];
 
@@ -30,6 +31,7 @@ const initialLoading: LoadingState = {
   documents: false,
   components: false,
   windows: false,
+  rulesetPages: false,
 };
 
 export const useApiLoadingStore = create<ApiLoadingStore>()((set) => ({
@@ -55,6 +57,7 @@ export function selectAnyApiLoading(state: ApiLoadingStore): boolean {
     loading.charts ||
     loading.documents ||
     loading.components ||
-    loading.windows
+    loading.windows ||
+    loading.rulesetPages
   );
 }

@@ -429,16 +429,24 @@ export async function duplicateRuleset({
     } as Character);
     counts.characters++;
 
-    // Character pages
-    for (const page of sourceCharacterPages as CharacterPage[]) {
+    // Character pages (join + Page entity)
+    for (const join of sourceCharacterPages as CharacterPage[]) {
+      const sourcePage = await db.pages.get(join.pageId);
+      if (!sourcePage) continue;
       const newPageId = crypto.randomUUID();
-      characterPageIdMap.set(page.id, newPageId);
-
-      const { id, createdAt, updatedAt, characterId, ...rest } = page;
-      await db.characterPages.add({
-        ...rest,
+      const newJoinId = crypto.randomUUID();
+      characterPageIdMap.set(join.id, newJoinId);
+      const { id: _pageId, createdAt: _c, updatedAt: _u, ...pageRest } = sourcePage;
+      await db.pages.add({
+        ...pageRest,
         id: newPageId,
+        createdAt: now,
+        updatedAt: now,
+      });
+      await db.characterPages.add({
+        id: newJoinId,
         characterId: newCharacterId,
+        pageId: newPageId,
         createdAt: now,
         updatedAt: now,
       } as CharacterPage);

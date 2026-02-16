@@ -1,6 +1,30 @@
 import type { DB } from './types';
 
 export function registerRulesetDbHooks(db: DB) {
+  // When a ruleset-page join is deleted, delete the page if no other refs
+  db.rulesetPages.hook('deleting', (primKey, obj) => {
+    setTimeout(async () => {
+      try {
+        const pageId = (obj as { pageId?: string })?.pageId;
+        if (pageId) {
+          const otherRulesetPage = await db.rulesetPages
+            .where('pageId')
+            .equals(pageId)
+            .first();
+          const characterPage = await db.characterPages
+            .where('pageId')
+            .equals(pageId)
+            .first();
+          if (!otherRulesetPage && !characterPage) {
+            await db.pages.delete(pageId);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to delete orphaned page after ruleset page:', error);
+      }
+    }, 0);
+  });
+
   // Create test character when a ruleset is created
   db.rulesets.hook('creating', (_primKey, obj) => {
     setTimeout(async () => {
@@ -59,6 +83,15 @@ export function registerRulesetDbHooks(db: DB) {
         await db.scripts.where('rulesetId').equals(rulesetId).delete();
         await db.scriptErrors.where('rulesetId').equals(rulesetId).delete();
         await db.scriptLogs.where('rulesetId').equals(rulesetId).delete();
+
+        const rulesetPageJoins = await db.rulesetPages
+          .where('rulesetId')
+          .equals(rulesetId)
+          .toArray();
+        for (const rp of rulesetPageJoins) {
+          await db.rulesetPages.delete(rp.id);
+        }
+        // Orphaned pages are cleaned up by rulesetPages.hook('deleting')
 
         // Find and delete only the test character (not regular characters)
         const testCharacter = await db.characters

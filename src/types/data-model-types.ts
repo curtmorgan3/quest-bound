@@ -9,7 +9,7 @@ export type Action = BaseDetails & {
   image?: string | null;
   inventoryWidth?: number;
   inventoryHeight?: number;
-  scriptId?: string | null;          // NEW: Associated script
+  scriptId?: string | null; // NEW: Associated script
 };
 
 export type Asset = BaseDetails & {
@@ -40,7 +40,7 @@ export type Attribute = BaseDetails & {
   image?: string | null;
   inventoryWidth?: number;
   inventoryHeight?: number;
-  scriptId?: string | null;          // NEW: Associated script
+  scriptId?: string | null; // NEW: Associated script
 };
 
 export type Chart = BaseDetails & {
@@ -74,16 +74,28 @@ export type CharacterAttribute = Attribute & {
   characterId: string;
   attributeId: string;
   value: string | number | boolean;
-  scriptDisabled?: boolean;          // NEW: Player has overridden the computed value
+  scriptDisabled?: boolean; // NEW: Player has overridden the computed value
 };
 
-export type CharacterPage = BaseDetails & {
-  characterId: string;
+export type Page = BaseDetails & {
   label: string;
+  category?: string;
   assetId?: string;
   assetUrl?: string;
   backgroundOpacity?: number;
+  backgroundColor?: string;
   image?: string | null;
+};
+
+export type RulesetPage = BaseDetails & {
+  rulesetId: string;
+  pageId: string;
+};
+
+/** Join table: character ↔ page. */
+export type CharacterPage = BaseDetails & {
+  characterId: string;
+  pageId: string;
 };
 
 export type CharacterWindow = BaseDetails & {
@@ -156,7 +168,7 @@ export type Item = BaseDetails & {
   inventoryHeight: number;
   assetId?: string | null;
   image?: string | null;
-  scriptId?: string | null;          // NEW: Associated script
+  scriptId?: string | null; // NEW: Associated script
   customProperties?: Record<string, string | number | boolean>; // NEW: Custom properties for scripts
 };
 
@@ -207,41 +219,41 @@ export type Window = BaseDetails & {
 };
 
 export type Script = BaseDetails & {
-  rulesetId: string;           // Which ruleset this script belongs to
-  name: string;                // Script name (e.g., "hit_points", "cast_fireball")
-  sourceCode: string;          // Full QBScript source code
+  rulesetId: string; // Which ruleset this script belongs to
+  name: string; // Script name (e.g., "hit_points", "cast_fireball")
+  sourceCode: string; // Full QBScript source code
   entityType: 'attribute' | 'action' | 'item' | 'global';
-  entityId: string | null;     // ID of associated entity (null for global scripts)
-  isGlobal: boolean;           // Whether this is a global utility script
-  enabled: boolean;            // Allow disabling scripts without deleting
-  category?: string;           // Optional category for grouping scripts
+  entityId: string | null; // ID of associated entity (null for global scripts)
+  isGlobal: boolean; // Whether this is a global utility script
+  enabled: boolean; // Allow disabling scripts without deleting
+  category?: string; // Optional category for grouping scripts
 };
 
 export type ScriptError = BaseDetails & {
   rulesetId: string;
-  scriptId: string;            // Which script caused the error
-  characterId: string | null;  // Which character was executing (null for non-character scripts)
-  errorMessage: string;        // Human-readable error message
-  lineNumber: number | null;   // Where the error occurred
-  stackTrace: string | null;   // Detailed stack trace
-  context: string;             // What triggered the script (e.g., "on_load", "attribute_change")
-  timestamp: number;           // When the error occurred
+  scriptId: string; // Which script caused the error
+  characterId: string | null; // Which character was executing (null for non-character scripts)
+  errorMessage: string; // Human-readable error message
+  lineNumber: number | null; // Where the error occurred
+  stackTrace: string | null; // Detailed stack trace
+  context: string; // What triggered the script (e.g., "on_load", "attribute_change")
+  timestamp: number; // When the error occurred
 };
 
 export type ScriptLog = BaseDetails & {
   rulesetId: string;
   scriptId: string;
   characterId: string | null;
-  argsJson: string;            // JSON.stringify of the log arguments array (any[])
+  argsJson: string; // JSON.stringify of the log arguments array (any[])
   timestamp: number;
-  context?: string;            // e.g. "load" | "attribute_change" | "action_click" | "item_event"
+  context?: string; // e.g. "load" | "attribute_change" | "action_click" | "item_event"
 };
 
 export type DependencyGraphNode = BaseDetails & {
-  rulesetId: string;           // Which ruleset this node belongs to
-  scriptId: string;            // Script that this node represents
+  rulesetId: string; // Which ruleset this node belongs to
+  scriptId: string; // Script that this node represents
   entityType: 'attribute' | 'action' | 'item' | 'global';
-  entityId: string | null;     // ID of associated entity
-  dependencies: string[];      // Array of attribute IDs this script depends on
-  dependents: string[];        // Array of script IDs that depend on this script's entity
+  entityId: string | null; // ID of associated entity
+  dependencies: string[]; // Array of attribute IDs this script depends on
+  dependents: string[]; // Array of script IDs that depend on this script's entity
 };

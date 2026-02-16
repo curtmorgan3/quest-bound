@@ -33,7 +33,7 @@ export const assetInjectorMiddleware: Middleware<DBCore> = {
         const downlevelTable = downlevelDatabase.table(tableName);
 
         if (
-          [
+            [
             'users',
             'rulesets',
             'characters',
@@ -43,7 +43,7 @@ export const assetInjectorMiddleware: Middleware<DBCore> = {
             'assets',
             'documents',
             'attributes',
-            'characterPages',
+            'pages',
           ].indexOf(tableName) === -1
         ) {
           return downlevelTable;

@@ -15,7 +15,9 @@ import type {
   Inventory,
   InventoryItem,
   Item,
+  Page,
   Ruleset,
+  RulesetPage,
   Script,
   ScriptError,
   ScriptLog,
@@ -46,6 +48,8 @@ const db = new Dexie('qbdb') as Dexie & {
   components: EntityTable<Component, 'id'>;
   characters: EntityTable<Character, 'id'>;
   characterAttributes: EntityTable<CharacterAttribute, 'id'>;
+  pages: EntityTable<Page, 'id'>;
+  rulesetPages: EntityTable<RulesetPage, 'id'>;
   characterPages: EntityTable<CharacterPage, 'id'>;
   characterWindows: EntityTable<CharacterWindow, 'id'>;
   inventories: EntityTable<Inventory, 'id'>;
