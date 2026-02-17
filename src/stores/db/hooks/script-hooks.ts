@@ -19,11 +19,26 @@ export function registerScriptHooks(db: DB) {
   });
 
   db.scripts.hook('updating', async (modifications, primKey, obj) => {
-    const mods = modifications as { sourceCode?: string; enabled?: boolean };
-    // If source code or enabled status changed, rebuild dependency graph
-    if (mods.sourceCode !== undefined || mods.enabled !== undefined) {
+    const mods = modifications as {
+      sourceCode?: string;
+      enabled?: boolean;
+      entityType?: string;
+      entityId?: string | null;
+    };
+    // If source code, enabled, or entity association changed, clean up and rebuild dependency graph
+    const associationChanged =
+      mods.entityType !== undefined || mods.entityId !== undefined;
+    const needsRebuild =
+      mods.sourceCode !== undefined ||
+      mods.enabled !== undefined ||
+      associationChanged;
+
+    if (needsRebuild) {
       const script = await db.scripts.get(primKey);
       if (script) {
+        if (associationChanged) {
+          await db.dependencyGraphNodes.where({ scriptId: primKey }).delete();
+        }
         setTimeout(async () => {
           try {
             await buildDependencyGraph(script.rulesetId, db);

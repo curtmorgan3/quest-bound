@@ -1,6 +1,26 @@
+import { buildDependencyGraph } from '@/lib/compass-logic/reactive/dependency-graph';
 import type { DB } from './types';
 
 export function registerItemDbHooks(db: DB) {
+  // Clean up dependency graph when item's script is replaced
+  db.items.hook('updating', (modifications, _primKey, obj) => {
+    const mods = modifications as { scriptId?: string | null };
+    if (mods.scriptId !== undefined && obj.rulesetId) {
+      const deletePromise = obj.scriptId
+        ? db.dependencyGraphNodes.where({ scriptId: obj.scriptId }).delete()
+        : Promise.resolve();
+      deletePromise
+        .then(() =>
+          buildDependencyGraph(obj.rulesetId!, db).catch((error) =>
+            console.error('Failed to rebuild dependency graph:', error),
+          ),
+        )
+        .catch((error) =>
+          console.error('Failed to clean up dependency graph nodes:', error),
+        );
+    }
+  });
+
   // Delete associated asset when an item is deleted
   db.items.hook('deleting', (_primKey, obj) => {
     if (obj?.assetId) {
