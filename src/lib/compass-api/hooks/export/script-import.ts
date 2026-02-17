@@ -107,6 +107,7 @@ export async function importScript(
   let entityName: string | null = null;
   let isGlobal = entityType === 'global';
   let enabled = true;
+  let category: string | undefined;
   let scriptId: string | undefined;
 
   if (metadata) {
@@ -115,6 +116,7 @@ export async function importScript(
     entityName = metadata.entityName;
     isGlobal = metadata.isGlobal;
     enabled = metadata.enabled;
+    category = metadata.category;
     scriptId = metadata.id;
   }
 
@@ -154,6 +156,7 @@ export async function importScript(
     entityId,
     isGlobal,
     enabled,
+    ...(category !== undefined && { category }),
     createdAt: now,
     updatedAt: now,
   };

@@ -26,6 +26,7 @@ export interface ScriptMetadata {
   entityName: string | null; // Name of the associated entity (for re-linking on import)
   isGlobal: boolean;
   enabled: boolean;
+  category?: string; // Optional category for grouping scripts
 }
 
 /**
@@ -129,6 +130,7 @@ export async function exportScripts(rulesetId: string): Promise<ScriptExportResu
       entityName,
       isGlobal: script.isGlobal,
       enabled: script.enabled,
+      category: script.category,
     });
   }
 
