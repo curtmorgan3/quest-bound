@@ -73,11 +73,20 @@ attr.description
       const evaluator = new Evaluator();
 
       const mockChart = {
-        where: (sourceCol: string, sourceVal: any, targetCol: string) => {
-          if (sourceCol === 'Level' && sourceVal === 5 && targetCol === 'HP') {
-            return 100;
+        rowWhere: (sourceCol: string, sourceVal: any) => {
+          if (sourceCol === 'Level' && sourceVal === 5) {
+            return {
+              valueInColumn: (targetCol: string) => {
+                if (targetCol === 'HP') {
+                  return 100;
+                }
+                return 0;
+              },
+            };
           }
-          return 0;
+          return {
+            valueInColumn: () => 0,
+          };
         },
       };
 
@@ -89,7 +98,7 @@ attr.description
 
       const script = `
 chart = Ruleset.Chart("LevelTable")
-hp = chart.where("Level", 5, "HP")
+hp = chart.rowWhere("Level", 5).valueInColumn("HP")
 hp
 `;
 
@@ -104,11 +113,20 @@ hp
       const evaluator = new Evaluator();
 
       const mockChart = {
-        where: (sourceCol: string, sourceVal: any, targetCol: string) => {
-          if (sourceCol === 'Level' && sourceVal === 3 && targetCol === 'HP') {
-            return 50;
+        rowWhere: (sourceCol: string, sourceVal: any) => {
+          if (sourceCol === 'Level' && sourceVal === 3) {
+            return {
+              valueInColumn: (targetCol: string) => {
+                if (targetCol === 'HP') {
+                  return 50;
+                }
+                return 0;
+              },
+            };
           }
-          return 0;
+          return {
+            valueInColumn: () => 0,
+          };
         },
       };
 
@@ -120,7 +138,7 @@ hp
 
       const script = `
 table = getChart("LevelTable")
-hp = table.where("Level", 3, "HP")
+hp = table.rowWhere("Level", 3).valueInColumn("HP")
 hp
 `;
 
@@ -376,9 +394,6 @@ result
       );
 
       const chart = ruleset.Chart('Level Table');
-      const hpBonus = chart.where('Level', 5, 'HP Bonus');
-
-      expect(hpBonus).toBe(20);
 
       // valueInColumn defaults to first data row when not chained from rowWhere()
       const firstRowHpBonus = chart.valueInColumn('HP Bonus');

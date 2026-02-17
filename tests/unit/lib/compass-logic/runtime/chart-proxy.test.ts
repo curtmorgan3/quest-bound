@@ -51,36 +51,50 @@ describe('ChartProxy', () => {
     });
   });
 
-  describe('where method', () => {
-    it('should find value by lookup', () => {
+  describe('rowWhere and valueInColumn methods', () => {
+    it('should find a row by lookup and return value via valueInColumn', () => {
       const proxy = new ChartProxy(chart);
-      const xpForLevel3 = proxy.where('Level', 3, 'XP Required');
+      const row = proxy.rowWhere('Level', 3);
+      const xpForLevel3 = row.valueInColumn('XP Required');
       expect(xpForLevel3).toBe(300);
     });
 
     it('should find ability points for level 2', () => {
       const proxy = new ChartProxy(chart);
-      const abilityPoints = proxy.where('Level', 2, 'Ability Points');
+      const row = proxy.rowWhere('Level', 2);
+      const abilityPoints = row.valueInColumn('Ability Points');
       expect(abilityPoints).toBe(6);
     });
 
-    it('should return empty string when no match found', () => {
+    it('should default valueInColumn to first data row when called on chart', () => {
       const proxy = new ChartProxy(chart);
-      const result = proxy.where('Level', 99, 'XP Required');
-      expect(result).toBe('');
+      const firstRowAbilityPoints = proxy.valueInColumn('Ability Points');
+      // First data row is level 1 -> Ability Points = 5
+      expect(firstRowAbilityPoints).toBe(5);
     });
 
-    it('should return empty string when column not found', () => {
+    it('should return empty row when no match found in rowWhere', () => {
       const proxy = new ChartProxy(chart);
-      const result = proxy.where('Invalid', 1, 'XP Required');
-      expect(result).toBe('');
+      const row = proxy.rowWhere('Level', 99);
+      // Underlying row array should be empty when no match
+      // valueInColumn on this row should fall back to chart-level behavior (first data row)
+      const xp = row.valueInColumn('XP Required');
+      expect(xp).toBe(0);
+    });
+
+    it('should return empty row when source column not found', () => {
+      const proxy = new ChartProxy(chart);
+      const row = proxy.rowWhere('Invalid', 1);
+      const xp = row.valueInColumn('XP Required');
+      expect(xp).toBe(0);
     });
 
     it('should handle string matching with loose equality', () => {
       const proxy = new ChartProxy(chart);
       // Should match 2 as number with "2" as string
-      const result = proxy.where('Level', '2', 'Ability Points');
-      expect(result).toBe(6);
+      const row = proxy.rowWhere('Level', '2');
+      const abilityPoints = row.valueInColumn('Ability Points');
+      expect(abilityPoints).toBe(6);
     });
   });
 

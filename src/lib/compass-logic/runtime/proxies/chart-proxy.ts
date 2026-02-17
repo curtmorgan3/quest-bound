@@ -96,31 +96,6 @@ export class ChartProxy {
     return column[Math.floor(Math.random() * column.length)];
   }
 
-  /**
-   * Find a value in the chart using a lookup.
-   * Searches for sourceValue in sourceColumn and returns the corresponding value from targetColumn.
-   *
-   * @param sourceColumn - Column to search in
-   * @param sourceValue - Value to search for
-   * @param targetColumn - Column to return value from
-   * @returns The value from targetColumn, or empty string if not found
-   */
-  where(columnName: string, cellValue: any, targetColumn?: string): any {
-    if (!targetColumn) return '';
-
-    const headers = this.data[0];
-    const targetIndex = headers.indexOf(targetColumn);
-
-    if (targetIndex === -1) {
-      return ''; // Column not found
-    }
-
-    const rowProxy = this.rowWhere(columnName, cellValue);
-    const value = rowProxy.valueInColumn(targetColumn);
-
-    return value !== undefined ? value : ''; // No match found
-  }
-
   rowWhere(columnName: string, cellValue: any): ChartRowProxy {
     if (!this.data || this.data.length === 0) {
       return new ChartRowProxy(this, []);
