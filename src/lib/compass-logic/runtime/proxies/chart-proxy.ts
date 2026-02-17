@@ -80,7 +80,7 @@ export class ChartProxy {
    * @param targetColumn - Column to return value from
    * @returns The value from targetColumn, or empty string if not found
    */
-  where(sourceColumn: string, sourceValue: any, targetColumn: string): any {
+  where(sourceColumn: string, sourceValue: any, targetColumn?: string): any {
     if (!this.data || this.data.length === 0) {
       return '';
     }
@@ -89,17 +89,23 @@ export class ChartProxy {
     const sourceIndex = headers.indexOf(sourceColumn);
     const targetIndex = headers.indexOf(targetColumn);
 
-    if (sourceIndex === -1 || targetIndex === -1) {
+    if (sourceIndex === -1 || (targetColumn && targetIndex === -1)) {
       return ''; // Column not found
     }
+
+    let row: string[] = [];
 
     // Find first matching row
     for (let i = 1; i < this.data.length; i++) {
       // Use loose equality to match numbers and strings
       if (this.data[i][sourceIndex] == sourceValue) {
-        return this.data[i][targetIndex];
+        row = this.data[i];
       }
     }
+
+    if (!targetColumn) return row;
+
+    if (row[targetIndex]) return row[targetIndex];
 
     return ''; // No match found
   }

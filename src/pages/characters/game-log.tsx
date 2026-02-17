@@ -13,7 +13,7 @@ export const GameLog = ({ className }: GameLogProps) => {
   const [open, setOpen] = useState(false);
 
   const logs: { msg: string; time: string }[] = [...scriptLogs]
-    .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
+    .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
     .map((l) => {
       const logArray = JSON.parse(l.argsJson) as any[];
       return {

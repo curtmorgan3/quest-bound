@@ -72,7 +72,14 @@ export const SheetViewer = ({
   const openWindows = new Set(
     windowsForCurrentPage.filter((cw) => !cw.isCollapsed).map((cw) => cw.id),
   );
-  const openCharacterWindows = windowsForCurrentPage.filter((w) => !w.isCollapsed);
+  // Sorting by createdAt ensures child windows appear at a higher z-index
+  const openCharacterWindows = useMemo(
+    () =>
+      [...windowsForCurrentPage.filter((w) => !w.isCollapsed)].sort(
+        (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+      ),
+    [windowsForCurrentPage],
+  );
 
   const handleChildWindowClick = useCallback(
     (

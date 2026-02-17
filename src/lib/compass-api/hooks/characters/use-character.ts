@@ -59,10 +59,6 @@ export const useCharacter = (_id?: string) => {
     );
   };
 
-  /**
-   * For each ruleset page, create a character page (copy page from ruleset, add character-page join).
-   * For each ruleset window, create a character window (using ruleset window layout).
-   */
   const bootstrapCharacterPagesAndWindows = async (newCharacterId: string, rulesetId: string) => {
     const rulesetPageJoins = await db.rulesetPages
       .where('rulesetId')
@@ -75,33 +71,22 @@ export const useCharacter = (_id?: string) => {
     for (const rp of rulesetPageJoins) {
       const sourcePage = await db.pages.get(rp.pageId);
       if (!sourcePage) continue;
-      const newPageId = crypto.randomUUID();
       const newCharacterPageId = crypto.randomUUID();
       rulesetPageIdToCharacterPageId.set(rp.id, newCharacterPageId);
-      const { id: _id, createdAt: _c, updatedAt: _u, ...pageRest } = sourcePage;
-      await db.pages.add({
-        ...pageRest,
-        id: newPageId,
-        createdAt: now,
-        updatedAt: now,
-      });
       await db.characterPages.add({
         id: newCharacterPageId,
         characterId: newCharacterId,
-        pageId: newPageId,
+        pageId: sourcePage.id,
         createdAt: now,
         updatedAt: now,
       } as CharacterPage);
     }
 
-    const rulesetWindows = await db.rulesetWindows
-      .where('rulesetId')
-      .equals(rulesetId)
-      .toArray();
+    const rulesetWindows = await db.rulesetWindows.where('rulesetId').equals(rulesetId).toArray();
 
     for (const rw of rulesetWindows) {
       const characterPageId = rw.rulesetPageId
-        ? rulesetPageIdToCharacterPageId.get(rw.rulesetPageId) ?? null
+        ? (rulesetPageIdToCharacterPageId.get(rw.rulesetPageId) ?? null)
         : null;
       await db.characterWindows.add({
         id: crypto.randomUUID(),
