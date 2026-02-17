@@ -2,6 +2,17 @@ import { buildDependencyGraph } from '@/lib/compass-logic/reactive/dependency-gr
 import type { DB } from './types';
 
 export function registerScriptHooks(db: DB) {
+  const safeDeleteDependencyGraphNodesByRulesetId = async (rulesetId: string) => {
+    try {
+      await db.dependencyGraphNodes.where({ rulesetId }).delete();
+    } catch (error) {
+      console.error(
+        '[DB] Failed to delete dependency graph nodes for ruleset. This may indicate an outdated IndexedDB schema. Consider clearing local data or letting the app migrate the database.',
+        error,
+      );
+    }
+  };
+
   // Hook for when scripts are created or updated - rebuild dependency graph
   db.scripts.hook('creating', async (primKey, obj) => {
     // After script is created, rebuild the dependency graph for its ruleset
@@ -26,19 +37,13 @@ export function registerScriptHooks(db: DB) {
       entityId?: string | null;
     };
     // If source code, enabled, or entity association changed, clean up and rebuild dependency graph
-    const associationChanged =
-      mods.entityType !== undefined || mods.entityId !== undefined;
+    const associationChanged = mods.entityType !== undefined || mods.entityId !== undefined;
     const needsRebuild =
-      mods.sourceCode !== undefined ||
-      mods.enabled !== undefined ||
-      associationChanged;
+      mods.sourceCode !== undefined || mods.enabled !== undefined || associationChanged;
 
     if (needsRebuild) {
       const script = await db.scripts.get(primKey);
       if (script) {
-        if (associationChanged) {
-          await db.dependencyGraphNodes.where({ scriptId: primKey }).delete();
-        }
         setTimeout(async () => {
           try {
             await buildDependencyGraph(script.rulesetId, db);
@@ -62,9 +67,6 @@ export function registerScriptHooks(db: DB) {
 
     // Delete associated errors and logs
     await db.scriptErrors.where({ scriptId }).delete();
-
-    // Delete dependency graph nodes for this script
-    await db.dependencyGraphNodes.where({ scriptId }).delete();
 
     // Rebuild dependency graph if we have the ruleset
     if (script) {
@@ -109,6 +111,6 @@ export function registerScriptHooks(db: DB) {
     await db.scripts.where({ rulesetId }).delete();
     await db.scriptErrors.where({ rulesetId }).delete();
     await db.scriptLogs.where({ rulesetId }).delete();
-    await db.dependencyGraphNodes.where({ rulesetId }).delete();
+    await safeDeleteDependencyGraphNodesByRulesetId(rulesetId);
   });
 }

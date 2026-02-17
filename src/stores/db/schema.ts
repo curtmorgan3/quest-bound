@@ -29,4 +29,4 @@ export const dbSchema = {
 };
 
 // Increment on every schema change
-export const dbSchemaVersion = 25;
+export const dbSchemaVersion = 26;
