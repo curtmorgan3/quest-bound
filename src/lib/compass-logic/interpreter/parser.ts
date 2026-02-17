@@ -255,15 +255,67 @@ export class Parser {
   private expressionStatement(): ASTNode {
     const expr = this.expression();
 
-    // Check if it's an assignment
-    if (this.match(TokenType.ASSIGN)) {
+    // Check if it's an assignment or compound assignment
+    if (
+      this.match(
+        TokenType.ASSIGN,
+        TokenType.PLUS_ASSIGN,
+        TokenType.MINUS_ASSIGN,
+        TokenType.MULTIPLY_ASSIGN,
+        TokenType.DIVIDE_ASSIGN,
+        TokenType.MODULO_ASSIGN,
+      )
+    ) {
       if (expr.type !== 'Identifier') {
         throw this.error('Invalid assignment target');
       }
-      const value = this.expression();
+
+      const target = expr as Identifier;
+      const operatorToken = this.previous();
+      const right = this.expression();
+
+      // Simple assignment: x = expr
+      if (operatorToken.type === TokenType.ASSIGN) {
+        return {
+          type: 'Assignment',
+          name: target.name,
+          value: right,
+        } as Assignment;
+      }
+
+      // Compound assignment: x += expr, x -= expr, etc.
+      // Desugar to: x = x <op> expr
+      let binaryOperator: string;
+      switch (operatorToken.type) {
+        case TokenType.PLUS_ASSIGN:
+          binaryOperator = '+';
+          break;
+        case TokenType.MINUS_ASSIGN:
+          binaryOperator = '-';
+          break;
+        case TokenType.MULTIPLY_ASSIGN:
+          binaryOperator = '*';
+          break;
+        case TokenType.DIVIDE_ASSIGN:
+          binaryOperator = '/';
+          break;
+        case TokenType.MODULO_ASSIGN:
+          binaryOperator = '%';
+          break;
+        default:
+          throw this.error('Unsupported assignment operator');
+      }
+
+      const value: BinaryOp = {
+        type: 'BinaryOp',
+        operator: binaryOperator as BinaryOp['operator'],
+        left: { type: 'Identifier', name: target.name } as Identifier,
+        right,
+      };
+
       return {
         type: 'Assignment',
-        name: (expr as Identifier).name,
+        name: target.name,
         value,
       } as Assignment;
     }

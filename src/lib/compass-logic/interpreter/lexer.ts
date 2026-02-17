@@ -24,6 +24,13 @@ export enum TokenType {
   POWER = 'POWER', // **
   MODULO = 'MODULO', // %
 
+  // Compound assignment
+  PLUS_ASSIGN = 'PLUS_ASSIGN', // +=
+  MINUS_ASSIGN = 'MINUS_ASSIGN', // -=
+  MULTIPLY_ASSIGN = 'MULTIPLY_ASSIGN', // *=
+  DIVIDE_ASSIGN = 'DIVIDE_ASSIGN', // /=
+  MODULO_ASSIGN = 'MODULO_ASSIGN', // %=
+
   // Comparison
   EQUAL = 'EQUAL', // ==
   NOT_EQUAL = 'NOT_EQUAL', // !=
@@ -159,9 +166,44 @@ export class Lexer {
       return this.scanIdentifier();
     }
 
-    // Two-character operators
+    // Two-character operators and compound assignment
     if (char === '*' && this.peekNext() === '*') {
       const token = this.makeToken(TokenType.POWER, '**');
+      this.advance();
+      this.advance();
+      return token;
+    }
+
+    if (char === '+' && this.peekNext() === '=') {
+      const token = this.makeToken(TokenType.PLUS_ASSIGN, '+=');
+      this.advance();
+      this.advance();
+      return token;
+    }
+
+    if (char === '-' && this.peekNext() === '=') {
+      const token = this.makeToken(TokenType.MINUS_ASSIGN, '-=');
+      this.advance();
+      this.advance();
+      return token;
+    }
+
+    if (char === '*' && this.peekNext() === '=') {
+      const token = this.makeToken(TokenType.MULTIPLY_ASSIGN, '*=');
+      this.advance();
+      this.advance();
+      return token;
+    }
+
+    if (char === '/' && this.peekNext() === '=') {
+      const token = this.makeToken(TokenType.DIVIDE_ASSIGN, '/=');
+      this.advance();
+      this.advance();
+      return token;
+    }
+
+    if (char === '%' && this.peekNext() === '=') {
+      const token = this.makeToken(TokenType.MODULO_ASSIGN, '%=');
       this.advance();
       this.advance();
       return token;

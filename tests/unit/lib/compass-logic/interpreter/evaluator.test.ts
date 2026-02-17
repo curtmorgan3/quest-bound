@@ -724,4 +724,55 @@ arr[10]`),
       expect(await evaluate('x = 42')).toBe(42);
     });
   });
+
+  describe('Compound Assignment', async () => {
+    it('should support += operator', async () => {
+      const result = await evaluate(`x = 10
+x += 5
+x`);
+      expect(result).toBe(15);
+    });
+
+    it('should support -= operator', async () => {
+      const result = await evaluate(`x = 10
+x -= 3
+x`);
+      expect(result).toBe(7);
+    });
+
+    it('should support *= operator', async () => {
+      const result = await evaluate(`x = 4
+x *= 3
+x`);
+      expect(result).toBe(12);
+    });
+
+    it('should support /= operator', async () => {
+      const result = await evaluate(`x = 20
+x /= 4
+x`);
+      expect(result).toBe(5);
+    });
+
+    it('should support %= operator', async () => {
+      const result = await evaluate(`x = 10
+x %= 3
+x`);
+      expect(result).toBe(1);
+    });
+
+    it('should throw when using compound assignment on undefined variable', async () => {
+      await expect(
+        evaluate(`x += 1`),
+      ).rejects.toThrow('Undefined variable');
+    });
+
+    it('should respect arithmetic operator semantics in compound assignments', async () => {
+      const result = await evaluate(`x = 2
+y = 3
+x += y * 4
+x`);
+      expect(result).toBe(14);
+    });
+  });
 });

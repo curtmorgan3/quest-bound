@@ -9,9 +9,11 @@ QBScript is a dynamically typed, interpreted language with Python-like indentati
 ## Components
 
 ### 1. Lexer (`lexer.ts`)
+
 Tokenizes QBScript source code into a stream of tokens.
 
 **Features:**
+
 - All token types (literals, operators, keywords, delimiters)
 - 4-space indentation handling with INDENT/DEDENT tokens
 - Single-line (`//`) and multi-line (`/* */`) comments
@@ -21,9 +23,11 @@ Tokenizes QBScript source code into a stream of tokens.
 **Tests:** 75 unit tests
 
 ### 2. Parser (`parser.ts`)
+
 Parses token stream into an Abstract Syntax Tree (AST).
 
 **Features:**
+
 - All AST node types defined in `ast.ts`
 - Proper operator precedence
 - Statement parsing (functions, if/else, for loops, return, subscribe)
@@ -34,9 +38,11 @@ Parses token stream into an Abstract Syntax Tree (AST).
 **Tests:** 79 unit tests
 
 ### 3. Evaluator (`evaluator.ts`)
+
 Executes the AST and produces results.
 
 **Features:**
+
 - Environment-based variable scoping
 - All binary and unary operations
 - Control flow (if/else if/else, for loops)
@@ -49,9 +55,11 @@ Executes the AST and produces results.
 **Tests:** 96 unit tests
 
 ### 4. CLI (`cli.ts`)
+
 Command-line interface for running QBScript files.
 
 **Features:**
+
 - Run .qbs files from the command line
 - Verbose mode with performance metrics
 - Debug modes (--tokens, --ast)
@@ -63,6 +71,7 @@ Command-line interface for running QBScript files.
 ## Performance
 
 All components are optimized for fast execution:
+
 - **Lexer:** < 10ms for typical scripts
 - **Parser:** < 10ms for typical scripts
 - **Evaluator:** < 100ms for typical scripts
@@ -73,13 +82,15 @@ All components are optimized for fast execution:
 ## Language Features
 
 ### Variables
+
 ```javascript
-x = 42
-name = "Adventurer"
-items = [1, 2, 3]
+x = 42;
+name = 'Adventurer';
+items = [1, 2, 3];
 ```
 
 ### Functions
+
 ```javascript
 calculateModifier(score):
     return floor((score - 10) / 2)
@@ -88,6 +99,7 @@ result = calculateModifier(16)
 ```
 
 ### Control Flow
+
 ```javascript
 if hp > 50:
     status = "Healthy"
@@ -104,35 +116,40 @@ for item in items:
 ```
 
 ### Built-in Functions
+
 ```javascript
-roll("2d6+4")        // Dice rolling
-floor(3.7)           // Math functions
-announce("Message")  // Player messages
-log("Debug")         // Debug output
+roll('2d6+4'); // Dice rolling
+floor(3.7); // Math functions
+announce('Message'); // Player messages
+log('Debug'); // Debug output
 ```
 
 ### String Interpolation
+
 ```javascript
-hp = 100
-announce("You have {{hp}} health")
+hp = 100;
+announce('You have {{hp}} health');
 ```
 
 ### Arrays
+
 ```javascript
-items = [1, 2, 3]
-first = items[0]
-items.length
+items = [1, 2, 3];
+first = items[0];
+items.length;
 ```
 
 ## Testing
 
 **Total: 261 tests passing**
+
 - 75 Lexer tests
 - 79 Parser tests
 - 96 Evaluator tests
 - 11 Performance tests
 
 Run tests:
+
 ```bash
 npm run test:unit -- tests/unit/lib/compass-logic/interpreter/
 ```
@@ -140,6 +157,7 @@ npm run test:unit -- tests/unit/lib/compass-logic/interpreter/
 ## Examples
 
 See `examples/qbscript/` for complete working examples:
+
 - `hello.qbs` - Basic syntax and string interpolation
 - `dice-roll.qbs` - Dice rolling and conditionals
 - `character-stats.qbs` - D&D-style stat calculator
@@ -147,6 +165,7 @@ See `examples/qbscript/` for complete working examples:
 - `combat-simulation.qbs` - Complex game logic
 
 Run examples:
+
 ```bash
 npm run qbscript examples/qbscript/hello.qbs
 ```
@@ -180,6 +199,7 @@ Runtime Error: Undefined variable 'x'
 ```
 
 Errors include:
+
 - Division by zero
 - Undefined variables
 - Invalid function calls
@@ -246,6 +266,4 @@ this.globalEnv.define('myFunc', (arg: any) => {
 ## Resources
 
 - [QBScript Language Specification](../QBScript.md)
-- [Phase 3 Implementation Plan](../implementation-phases/phase-3-interpreter-core.md)
 - [CLI Documentation](./CLI.md)
-- [Example Scripts](../../../examples/qbscript/)

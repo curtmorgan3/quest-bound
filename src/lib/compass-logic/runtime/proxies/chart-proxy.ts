@@ -80,34 +80,43 @@ export class ChartProxy {
    * @param targetColumn - Column to return value from
    * @returns The value from targetColumn, or empty string if not found
    */
-  where(sourceColumn: string, sourceValue: any, targetColumn?: string): any {
+  where(columnName: string, cellValue: any, targetColumn?: string): any {
+    if (!targetColumn) return '';
+
+    const headers = this.data[0];
+    const targetIndex = headers.indexOf(targetColumn);
+    const targetRow = this.rowWhere(columnName, cellValue);
+
+    if (targetColumn && targetIndex === -1) {
+      return ''; // Column not found
+    }
+
+    if (targetRow[targetIndex]) return targetRow[targetIndex];
+
+    return ''; // No match found
+  }
+
+  rowWhere(columnName: string, cellValue: any): any[] {
     if (!this.data || this.data.length === 0) {
-      return '';
+      return [];
     }
 
     const headers = this.data[0];
-    const sourceIndex = headers.indexOf(sourceColumn);
-    const targetIndex = headers.indexOf(targetColumn);
+    const columnIndex = headers.indexOf(columnName);
 
-    if (sourceIndex === -1 || (targetColumn && targetIndex === -1)) {
-      return ''; // Column not found
-    }
+    if (columnIndex === -1) return [];
 
     let row: string[] = [];
 
     // Find first matching row
     for (let i = 1; i < this.data.length; i++) {
       // Use loose equality to match numbers and strings
-      if (this.data[i][sourceIndex] == sourceValue) {
+      if (this.data[i][columnIndex] == cellValue) {
         row = this.data[i];
       }
     }
 
-    if (!targetColumn) return row;
-
-    if (row[targetIndex]) return row[targetIndex];
-
-    return ''; // No match found
+    return row;
   }
 
   /**

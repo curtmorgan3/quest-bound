@@ -27,6 +27,16 @@ const qbscriptCompletions = [
     type: 'keyword',
     info: 'Forces this script to execute again when subscribed attributes change',
   },
+  {
+    label: 'getAttr',
+    type: 'function',
+    info: "Equivalent to Owner.Attribute('name').value",
+  },
+  {
+    label: 'getChart',
+    type: 'function',
+    info: "Equivalent to Ruleset.Chart('name')",
+  },
   { label: 'roll', type: 'function', info: 'Roll dice (e.g. roll("2d6+3"))' },
   { label: 'announce', type: 'function', info: 'Display notification message to player' },
   { label: 'log', type: 'function', info: 'Log to editor console and game log' },

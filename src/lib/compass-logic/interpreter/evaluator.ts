@@ -467,6 +467,27 @@ export class Evaluator {
     this.globalEnv.define('min', Math.min);
     this.globalEnv.define('max', Math.max);
 
+    // Attribute helper: getAttr("HP") -> Owner.Attribute("HP").value
+    this.globalEnv.define('getAttr', (name: string): any => {
+      // Look up Owner in the current environment so scripts that shadow or omit Owner
+      // behave consistently with direct Owner.Attribute(...) usage.
+      const owner = this.currentEnv.get('Owner');
+      if (!owner || typeof (owner as any).Attribute !== 'function') {
+        throw new RuntimeError("Owner.Attribute is not available in this context");
+      }
+      const attributeProxy = (owner as any).Attribute(name);
+      return attributeProxy?.value;
+    });
+
+    // Chart helper: getChart("Level Table") -> Ruleset.Chart("Level Table")
+    this.globalEnv.define('getChart', (name: string): any => {
+      const ruleset = this.currentEnv.get('Ruleset');
+      if (!ruleset || typeof (ruleset as any).Chart !== 'function') {
+        throw new RuntimeError("Ruleset.Chart is not available in this context");
+      }
+      return (ruleset as any).Chart(name);
+    });
+
     // UI functions
     this.globalEnv.define('announce', (...args: any[]): void => {
       const message = args.map((arg) => String(arg)).join(' ');

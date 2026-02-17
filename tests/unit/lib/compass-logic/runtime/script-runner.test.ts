@@ -100,6 +100,37 @@ hp
       expect(result).toBe(100);
     });
 
+    it('should support getChart() helper as Ruleset.Chart(name)', async () => {
+      const evaluator = new Evaluator();
+
+      const mockChart = {
+        where: (sourceCol: string, sourceVal: any, targetCol: string) => {
+          if (sourceCol === 'Level' && sourceVal === 3 && targetCol === 'HP') {
+            return 50;
+          }
+          return 0;
+        },
+      };
+
+      const mockRuleset = {
+        Chart: () => mockChart,
+      };
+
+      evaluator.globalEnv.define('Ruleset', mockRuleset);
+
+      const script = `
+table = getChart("LevelTable")
+hp = table.where("Level", 3, "HP")
+hp
+`;
+
+      const tokens = new Lexer(script).tokenize();
+      const ast = new Parser(tokens).parse();
+      const result = await evaluator.eval(ast);
+
+      expect(result).toBe(50);
+    });
+
     it('should handle null target gracefully', async () => {
       const evaluator = new Evaluator();
 
@@ -191,6 +222,29 @@ Self.value
       const result = await evaluator.eval(ast);
 
       expect(result).toBe(15);
+    });
+
+    it('should support getAttr() helper as Owner.Attribute(name).value', async () => {
+      const evaluator = new Evaluator();
+
+      const mockOwner = {
+        Attribute: (name: string) => ({
+          value: name === 'Hit Points' ? 42 : 0,
+        }),
+      };
+
+      evaluator.globalEnv.define('Owner', mockOwner);
+
+      const script = `
+result = getAttr("Hit Points")
+result
+`;
+
+      const tokens = new Lexer(script).tokenize();
+      const ast = new Parser(tokens).parse();
+      const result = await evaluator.eval(ast);
+
+      expect(result).toBe(42);
     });
   });
 
