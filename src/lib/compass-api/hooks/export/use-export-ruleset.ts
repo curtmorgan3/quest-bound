@@ -103,6 +103,12 @@ export const useExportRuleset = (rulesetId: string) => {
     [rulesetId],
   );
 
+  const rulesetWindows = useLiveQuery(
+    () =>
+      rulesetId ? db.rulesetWindows.where('rulesetId').equals(rulesetId).toArray() : [],
+    [rulesetId],
+  );
+
   const characterPagesAndPages = useLiveQuery(
     async () => {
       if (!testCharacter) return { joins: [] as { id: string; characterId: string; pageId: string }[], pages: [] as import('@/types').Page[] };
@@ -157,6 +163,7 @@ export const useExportRuleset = (rulesetId: string) => {
     characterWindows === undefined ||
     characterPagesAndPages === undefined ||
     rulesetPages === undefined ||
+    rulesetWindows === undefined ||
     pages === undefined ||
     inventoryItems === undefined;
 
@@ -205,6 +212,7 @@ export const useExportRuleset = (rulesetId: string) => {
           characterWindows: characterWindows?.length || 0,
           characterPages: characterPages?.length || 0,
           rulesetPages: rulesetPages?.length || 0,
+          rulesetWindows: rulesetWindows?.length || 0,
           pages: pages?.length || 0,
           inventoryItems: inventoryItems?.length || 0,
           scripts: scriptExportResult.files.length,
@@ -424,6 +432,9 @@ export const useExportRuleset = (rulesetId: string) => {
       if (rulesetPages && rulesetPages.length > 0) {
         appDataFolder.file('rulesetPages.json', JSON.stringify(rulesetPages, null, 2));
       }
+      if (rulesetWindows && rulesetWindows.length > 0) {
+        appDataFolder.file('rulesetWindows.json', JSON.stringify(rulesetWindows, null, 2));
+      }
       if (characterPages && characterPages.length > 0) {
         appDataFolder.file('characterPages.json', JSON.stringify(characterPages, null, 2));
       }
@@ -480,6 +491,7 @@ This zip file contains a complete export of the "${ruleset.title}" ruleset from 
 - \`application data/characterWindows.json\` - Test character window positions
 - \`application data/pages.json\` - Page definitions (sheet page content)
 - \`application data/rulesetPages.json\` - Ruleset sheet page templates (ruleset-page joins)
+- \`application data/rulesetWindows.json\` - Ruleset page window layout (rulesetPageId, windowId, position)
 - \`application data/characterPages.json\` - Test character sheet page links (character-page joins)
 - \`application data/inventoryItems.json\` - Test character inventory items
 

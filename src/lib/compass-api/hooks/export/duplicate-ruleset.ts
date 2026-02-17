@@ -18,6 +18,7 @@ import type {
   Window,
   Script,
   RulesetPage,
+  RulesetWindow,
 } from '@/types';
 
 export interface DuplicateRulesetParams {
@@ -38,6 +39,7 @@ export interface RulesetDuplicationCounts {
   fonts: number;
   documents: number;
   rulesetPages: number;
+  rulesetWindows: number;
   characters: number;
   characterAttributes: number;
   inventories: number;
@@ -74,6 +76,7 @@ export async function duplicateRuleset({
     sourceFonts,
     sourceScripts,
     sourceRulesetPages,
+    sourceRulesetWindows,
   ] = await Promise.all([
     db.attributes.where('rulesetId').equals(sourceRulesetId).toArray(),
     db.actions.where('rulesetId').equals(sourceRulesetId).toArray(),
@@ -85,6 +88,7 @@ export async function duplicateRuleset({
     db.fonts.where('rulesetId').equals(sourceRulesetId).toArray(),
     db.scripts.where('rulesetId').equals(sourceRulesetId).toArray(),
     db.rulesetPages.where('rulesetId').equals(sourceRulesetId).toArray(),
+    db.rulesetWindows.where('rulesetId').equals(sourceRulesetId).toArray(),
   ]);
 
   const windowIds = sourceWindows.map((w) => w.id);
@@ -149,6 +153,8 @@ export async function duplicateRuleset({
   const inventoryIdMap = new Map<string, string>();
   /** Maps source page id -> new page id for ruleset template pages (shared with test character pages when same) */
   const rulesetPageIdMap = new Map<string, string>();
+  /** Maps old rulesetPage join id -> new rulesetPage join id (for rulesetWindows) */
+  const rulesetPageJoinIdMap = new Map<string, string>();
 
   const counts: RulesetDuplicationCounts = {
     attributes: 0,
@@ -161,6 +167,7 @@ export async function duplicateRuleset({
     fonts: 0,
     documents: 0,
     rulesetPages: 0,
+    rulesetWindows: 0,
     characters: 0,
     characterAttributes: 0,
     inventories: 0,
@@ -401,12 +408,14 @@ export async function duplicateRuleset({
     counts.components++;
   }
 
-  // 11. Ruleset pages (template pages + joins; builds rulesetPageIdMap for character pages to reuse)
+  // 11. Ruleset pages (template pages + joins; builds rulesetPageIdMap and rulesetPageJoinIdMap)
   for (const join of sourceRulesetPages as RulesetPage[]) {
     const sourcePage = await db.pages.get(join.pageId);
     if (!sourcePage) continue;
     const newPageId = crypto.randomUUID();
+    const newJoinId = crypto.randomUUID();
     rulesetPageIdMap.set(join.pageId, newPageId);
+    rulesetPageJoinIdMap.set(join.id, newJoinId);
     const { id: _pageId, createdAt: _c, updatedAt: _u, ...pageRest } = sourcePage;
     await db.pages.add({
       ...pageRest,
@@ -415,7 +424,7 @@ export async function duplicateRuleset({
       updatedAt: now,
     } as Page);
     await db.rulesetPages.add({
-      id: crypto.randomUUID(),
+      id: newJoinId,
       rulesetId: targetRulesetId,
       pageId: newPageId,
       createdAt: now,
@@ -424,7 +433,27 @@ export async function duplicateRuleset({
     counts.rulesetPages++;
   }
 
-  // 12. Test character and related entities
+  // 12. Ruleset windows (layout; map rulesetPageId and windowId)
+  for (const rw of sourceRulesetWindows as RulesetWindow[]) {
+    const newId = crypto.randomUUID();
+    const { id, rulesetId, rulesetPageId, windowId, createdAt, updatedAt, ...rest } = rw;
+    const mappedRulesetPageId = rulesetPageId
+      ? (rulesetPageJoinIdMap.get(rulesetPageId) ?? null)
+      : null;
+    const mappedWindowId = windowIdMap.get(windowId) ?? windowId;
+    await db.rulesetWindows.add({
+      id: newId,
+      rulesetId: targetRulesetId,
+      rulesetPageId: mappedRulesetPageId,
+      windowId: mappedWindowId,
+      ...rest,
+      createdAt: now,
+      updatedAt: now,
+    } as RulesetWindow);
+    counts.rulesetWindows++;
+  }
+
+  // 13. Test character and related entities
   if (sourceTestCharacter) {
     const newCharacterId = crypto.randomUUID();
     characterIdMap.set(sourceTestCharacter.id, newCharacterId);
@@ -620,7 +649,7 @@ export async function duplicateRuleset({
     }
   }
 
-  // 13. Clean up the auto-created test character for the target ruleset (if different from cloned one)
+  // 14. Clean up the auto-created test character for the target ruleset (if different from cloned one)
   if (
     autoTestCharacterId &&
     (!sourceTestCharacter || autoTestCharacterId !== characterIdMap.get(sourceTestCharacter.id))

@@ -18,6 +18,7 @@ import type {
   Page,
   Ruleset,
   RulesetPage,
+  RulesetWindow,
   Window,
 } from '@/types';
 import JSZip from 'jszip';
@@ -65,6 +66,7 @@ export interface ImportRulesetResult {
     characterWindows: number;
     characterPages: number;
     rulesetPages: number;
+    rulesetWindows: number;
     inventoryItems: number;
     scripts: number;
   };
@@ -104,6 +106,7 @@ interface ImportedMetadata {
     characterWindows: number;
     characterPages?: number;
     rulesetPages?: number;
+    rulesetWindows?: number;
     inventoryItems?: number;
     scripts?: number;
   };
@@ -156,6 +159,7 @@ export const useImportRuleset = () => {
       | 'characterWindows'
       | 'characterPages'
       | 'rulesetPages'
+      | 'rulesetWindows'
       | 'pages'
       | 'inventoryItems',
   ): { isValid: boolean; errors: string[] } => {
@@ -354,6 +358,31 @@ export const useImportRuleset = () => {
           }
           break;
 
+        case 'rulesetWindows':
+          if (!item.rulesetId || typeof item.rulesetId !== 'string') {
+            errors.push(
+              `RulesetWindow ${index + 1}: rulesetId is required and must be a string`,
+            );
+          }
+          if (!item.windowId || typeof item.windowId !== 'string') {
+            errors.push(
+              `RulesetWindow ${index + 1}: windowId is required and must be a string`,
+            );
+          }
+          if (!item.title || typeof item.title !== 'string') {
+            errors.push(`RulesetWindow ${index + 1}: title is required and must be a string`);
+          }
+          if (typeof item.x !== 'number') {
+            errors.push(`RulesetWindow ${index + 1}: x must be a number`);
+          }
+          if (typeof item.y !== 'number') {
+            errors.push(`RulesetWindow ${index + 1}: y must be a number`);
+          }
+          if (typeof item.isCollapsed !== 'boolean') {
+            errors.push(`RulesetWindow ${index + 1}: isCollapsed must be a boolean`);
+          }
+          break;
+
         case 'pages':
           if (!item.label || typeof item.label !== 'string') {
             errors.push(`Page ${index + 1}: label is required and must be a string`);
@@ -406,6 +435,7 @@ export const useImportRuleset = () => {
     await db.assets.where('rulesetId').equals(rulesetId).delete();
     await db.windows.where('rulesetId').equals(rulesetId).delete();
     await db.rulesetPages.where('rulesetId').equals(rulesetId).delete();
+    await db.rulesetWindows.where('rulesetId').equals(rulesetId).delete();
     await db.fonts.where('rulesetId').equals(rulesetId).delete();
     await db.documents.where('rulesetId').equals(rulesetId).delete();
     await db.scripts.where('rulesetId').equals(rulesetId).delete();
@@ -460,6 +490,7 @@ export const useImportRuleset = () => {
             characterWindows: 0,
             characterPages: 0,
             rulesetPages: 0,
+            rulesetWindows: 0,
             inventoryItems: 0,
             scripts: 0,
           },
@@ -494,6 +525,7 @@ export const useImportRuleset = () => {
             characterWindows: 0,
             characterPages: 0,
             rulesetPages: 0,
+            rulesetWindows: 0,
             inventoryItems: 0,
             scripts: 0,
           },
@@ -576,6 +608,7 @@ export const useImportRuleset = () => {
               characterWindows: 0,
               characterPages: 0,
               rulesetPages: 0,
+              rulesetWindows: 0,
               inventoryItems: 0,
               scripts: 0,
             },
@@ -607,6 +640,7 @@ export const useImportRuleset = () => {
                 characterWindows: 0,
                 characterPages: 0,
                 rulesetPages: 0,
+                rulesetWindows: 0,
                 inventoryItems: 0,
                 scripts: 0,
               },
@@ -635,6 +669,7 @@ export const useImportRuleset = () => {
               characterWindows: 0,
               characterPages: 0,
               rulesetPages: 0,
+              rulesetWindows: 0,
               inventoryItems: 0,
               scripts: 0,
             },
@@ -660,6 +695,7 @@ export const useImportRuleset = () => {
         characterWindows: 0,
         characterPages: 0,
         rulesetPages: 0,
+        rulesetWindows: 0,
         inventoryItems: 0,
         scripts: 0,
       };
@@ -1239,7 +1275,8 @@ export const useImportRuleset = () => {
         }
       }
 
-      // Import rulesetPages (joins; require pages to be imported first)
+      // Import rulesetPages (joins; require pages to be imported first). Build oldId->newId map for rulesetWindows.
+      const rulesetPageIdMap = new Map<string, string>();
       const rulesetPagesFile = getZipFile('application data/rulesetPages.json');
       if (rulesetPagesFile) {
         try {
@@ -1249,9 +1286,11 @@ export const useImportRuleset = () => {
           const validation = validateData(rulesetPagesToImport, 'rulesetPages');
           if (validation.isValid) {
             for (const rulesetPage of rulesetPagesToImport) {
+              const newId = crypto.randomUUID();
+              rulesetPageIdMap.set(rulesetPage.id, newId);
               const newRulesetPage: RulesetPage = {
                 ...rulesetPage,
-                id: crypto.randomUUID(),
+                id: newId,
                 rulesetId: newRulesetId,
                 pageId: rulesetPage.pageId,
                 createdAt: now,
@@ -1266,6 +1305,40 @@ export const useImportRuleset = () => {
         } catch (error) {
           allErrors.push(
             `Failed to import rulesetPages: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          );
+        }
+      }
+
+      // Import rulesetWindows (require rulesetPages and windows to be imported first)
+      const rulesetWindowsFile = getZipFile('application data/rulesetWindows.json');
+      if (rulesetWindowsFile) {
+        try {
+          const rulesetWindowsText = await rulesetWindowsFile.async('text');
+          const rulesetWindowsToImport: RulesetWindow[] = JSON.parse(rulesetWindowsText);
+
+          const validation = validateData(rulesetWindowsToImport, 'rulesetWindows');
+          if (validation.isValid) {
+            for (const rw of rulesetWindowsToImport) {
+              const newRulesetWindow: RulesetWindow = {
+                ...rw,
+                id: crypto.randomUUID(),
+                rulesetId: newRulesetId,
+                rulesetPageId: rw.rulesetPageId
+                  ? rulesetPageIdMap.get(rw.rulesetPageId) ?? null
+                  : null,
+                windowId: rw.windowId,
+                createdAt: now,
+                updatedAt: now,
+              };
+              await db.rulesetWindows.add(newRulesetWindow);
+              importedCounts.rulesetWindows++;
+            }
+          } else {
+            allErrors.push(...validation.errors);
+          }
+        } catch (error) {
+          allErrors.push(
+            `Failed to import rulesetWindows: ${error instanceof Error ? error.message : 'Unknown error'}`,
           );
         }
       }
@@ -1397,6 +1470,7 @@ export const useImportRuleset = () => {
         importedCounts.characterWindows +
         importedCounts.characterPages +
         importedCounts.rulesetPages +
+        importedCounts.rulesetWindows +
         importedCounts.inventoryItems +
         importedCounts.scripts;
 
@@ -1432,6 +1506,7 @@ export const useImportRuleset = () => {
           characterWindows: 0,
           characterPages: 0,
           rulesetPages: 0,
+          rulesetWindows: 0,
           inventoryItems: 0,
           scripts: 0,
         },

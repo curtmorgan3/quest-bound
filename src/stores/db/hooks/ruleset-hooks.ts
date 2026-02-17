@@ -84,6 +84,8 @@ export function registerRulesetDbHooks(db: DB) {
         await db.scriptErrors.where('rulesetId').equals(rulesetId).delete();
         await db.scriptLogs.where('rulesetId').equals(rulesetId).delete();
 
+        await db.rulesetWindows.where('rulesetId').equals(rulesetId).delete();
+
         const rulesetPageJoins = await db.rulesetPages
           .where('rulesetId')
           .equals(rulesetId)
