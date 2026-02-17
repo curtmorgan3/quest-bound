@@ -379,6 +379,15 @@ result
       const hpBonus = chart.where('Level', 5, 'HP Bonus');
 
       expect(hpBonus).toBe(20);
+
+      // valueInColumn defaults to first data row when not chained from rowWhere()
+      const firstRowHpBonus = chart.valueInColumn('HP Bonus');
+      expect(firstRowHpBonus).toBe(10);
+
+      // When chained from rowWhere(), valueInColumn uses the matching row
+      const rowProxy = chart.rowWhere('Level', 5);
+      const chainedHpBonus = rowProxy.valueInColumn('HP Bonus');
+      expect(chainedHpBonus).toBe(20);
     });
   });
 

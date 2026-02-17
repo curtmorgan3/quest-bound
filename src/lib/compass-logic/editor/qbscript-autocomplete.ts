@@ -30,12 +30,22 @@ const qbscriptCompletions = [
   {
     label: 'getAttr',
     type: 'function',
-    info: "Equivalent to Owner.Attribute('name').value",
+    info: "Shorthand for Owner.Attribute('name').value. Example: hp = getAttr('Hit Points')",
   },
   {
     label: 'getChart',
     type: 'function',
-    info: "Equivalent to Ruleset.Chart('name')",
+    info: "Shorthand for Ruleset.Chart('name'). Example: table = getChart('Level Table')",
+  },
+  {
+    label: 'rowWhere',
+    type: 'function',
+    info: "Chart row lookup by column name and cell value. Example: row = chart.rowWhere('Level', 5)",
+  },
+  {
+    label: 'valueInColumn',
+    type: 'function',
+    info: "Get a column's value from a chart row. Example: hp = chart.rowWhere('Level', 5).valueInColumn('HP')",
   },
   { label: 'roll', type: 'function', info: 'Roll dice (e.g. roll("2d6+3"))' },
   { label: 'announce', type: 'function', info: 'Display notification message to player' },

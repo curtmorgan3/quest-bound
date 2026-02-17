@@ -1,4 +1,29 @@
 import type { Chart } from '@/types';
+import type { StructuredCloneSafe } from '../structured-clone-safe';
+
+/**
+ * Lightweight proxy for a single chart row returned from ChartProxy.rowWhere().
+ * Provides valueInColumn() for chaining in QBScript while remaining structured-clone safe
+ * when sent across the worker boundary.
+ */
+class ChartRowProxy implements StructuredCloneSafe {
+  private chartProxy: ChartProxy;
+  private row: any[];
+
+  constructor(chartProxy: ChartProxy, row: any[]) {
+    this.chartProxy = chartProxy;
+    this.row = row;
+  }
+
+  valueInColumn(columnName: string): any {
+    return this.chartProxy.valueInColumn(columnName, this.row);
+  }
+
+  /** When serialized for postMessage, reduce to the underlying row array. */
+  toStructuredCloneSafe(): any[] {
+    return this.row;
+  }
+}
 
 /**
  * Proxy object for charts, providing methods to query chart data.
@@ -85,26 +110,28 @@ export class ChartProxy {
 
     const headers = this.data[0];
     const targetIndex = headers.indexOf(targetColumn);
-    const targetRow = this.rowWhere(columnName, cellValue);
 
-    if (targetColumn && targetIndex === -1) {
+    if (targetIndex === -1) {
       return ''; // Column not found
     }
 
-    if (targetRow[targetIndex]) return targetRow[targetIndex];
+    const rowProxy = this.rowWhere(columnName, cellValue);
+    const value = rowProxy.valueInColumn(targetColumn);
 
-    return ''; // No match found
+    return value !== undefined ? value : ''; // No match found
   }
 
-  rowWhere(columnName: string, cellValue: any): any[] {
+  rowWhere(columnName: string, cellValue: any): ChartRowProxy {
     if (!this.data || this.data.length === 0) {
-      return [];
+      return new ChartRowProxy(this, []);
     }
 
     const headers = this.data[0];
     const columnIndex = headers.indexOf(columnName);
 
-    if (columnIndex === -1) return [];
+    if (columnIndex === -1) {
+      return new ChartRowProxy(this, []);
+    }
 
     let row: string[] = [];
 
@@ -113,10 +140,36 @@ export class ChartProxy {
       // Use loose equality to match numbers and strings
       if (this.data[i][columnIndex] == cellValue) {
         row = this.data[i];
+        break;
       }
     }
 
-    return row;
+    return new ChartRowProxy(this, row);
+  }
+
+  /**
+   * Get the value in the specified column for a given row.
+   * When called directly on the chart (without a rowWhere() chain), it defaults
+   * to the first data row (the row immediately after the header row).
+   *
+   * Example:
+   *   chart.valueInColumn("HP")                      // first data row's HP
+   *   chart.rowWhere("Level", 5).valueInColumn("HP") // matching row's HP
+   */
+  valueInColumn(columnName: string, row?: any[]): any {
+    if (!this.data || this.data.length < 2) {
+      throw new Error(`Chart '${this.chart.title}' has no data rows`);
+    }
+
+    const headers = this.data[0];
+    const columnIndex = headers.indexOf(columnName);
+
+    if (columnIndex === -1) {
+      throw new Error(`Column '${columnName}' not found in chart '${this.chart.title}'`);
+    }
+
+    const targetRow = row && row.length > 0 ? row : this.data[1];
+    return targetRow[columnIndex];
   }
 
   /**
