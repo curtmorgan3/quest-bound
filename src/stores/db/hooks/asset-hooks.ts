@@ -5,20 +5,34 @@ export function registerAssetDbHooks(db: DB) {
   db.assets.hook('deleting', (primKey, obj) => {
     setTimeout(async () => {
       try {
-        const [itemCount, documentCount, actionCount, userCount, attributeCount, characterCount] =
-          await Promise.all([
-            db.items.filter((item) => item.assetId === primKey).count(),
-            db.documents
-              .filter((doc) => doc.assetId === primKey || doc.pdfAssetId === primKey)
-              .count(),
-            db.actions.filter((action) => action.assetId === primKey).count(),
-            db.users.filter((user) => user.assetId === primKey).count(),
-            db.attributes.filter((attr) => attr.assetId === primKey).count(),
-            db.characters.filter((char) => char.assetId === primKey).count(),
-          ]);
+        const [
+          itemCount,
+          documentCount,
+          actionCount,
+          userCount,
+          attributeCount,
+          characterCount,
+          componentCount,
+        ] = await Promise.all([
+          db.items.filter((item) => item.assetId === primKey).count(),
+          db.documents
+            .filter((doc) => doc.assetId === primKey || doc.pdfAssetId === primKey)
+            .count(),
+          db.actions.filter((action) => action.assetId === primKey).count(),
+          db.users.filter((user) => user.assetId === primKey).count(),
+          db.attributes.filter((attr) => attr.assetId === primKey).count(),
+          db.characters.filter((char) => char.assetId === primKey).count(),
+          db.components.filter((comp) => JSON.parse(comp.data)?.assetId === primKey).count(),
+        ]);
 
         const totalCount =
-          itemCount + documentCount + actionCount + userCount + attributeCount + characterCount;
+          itemCount +
+          documentCount +
+          actionCount +
+          userCount +
+          attributeCount +
+          characterCount +
+          componentCount;
 
         if (totalCount > 0) {
           // Re-add used asset
