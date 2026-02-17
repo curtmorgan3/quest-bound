@@ -1447,6 +1447,32 @@ export const useImportRuleset = () => {
           if (scriptImportResult.errors.length > 0) {
             allErrors.push(...scriptImportResult.errors.map((e) => `Script error: ${e}`));
           }
+
+          // Link scripts to entities: for each script with entityId, set that entity's scriptId
+          const scriptsWithEntity = await db.scripts
+            .where('rulesetId')
+            .equals(newRulesetId)
+            .filter((s) => s.entityId != null && s.entityType !== 'global')
+            .toArray();
+          for (const script of scriptsWithEntity) {
+            if (!script.entityId) continue;
+            if (script.entityType === 'attribute') {
+              const attr = await db.attributes.get(script.entityId);
+              if (attr?.rulesetId === newRulesetId) {
+                await db.attributes.update(script.entityId, { scriptId: script.id });
+              }
+            } else if (script.entityType === 'action') {
+              const action = await db.actions.get(script.entityId);
+              if (action?.rulesetId === newRulesetId) {
+                await db.actions.update(script.entityId, { scriptId: script.id });
+              }
+            } else if (script.entityType === 'item') {
+              const item = await db.items.get(script.entityId);
+              if (item?.rulesetId === newRulesetId) {
+                await db.items.update(script.entityId, { scriptId: script.id });
+              }
+            }
+          }
         }
       } catch (error) {
         allErrors.push(
