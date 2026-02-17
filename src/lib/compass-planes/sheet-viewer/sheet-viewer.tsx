@@ -41,6 +41,7 @@ export const SheetViewer = ({
   onLockedChange,
 }: SheetViewerProps) => {
   const { characterPages } = useCharacterPages(characterId);
+  const sortedCharacterPages = [...characterPages.sort((a, b) => a.label.localeCompare(b.label))];
   const {
     windows: characterWindows,
     createCharacterWindow,
@@ -48,7 +49,9 @@ export const SheetViewer = ({
   } = useCharacterWindows(characterId);
   const { windows: rulesetWindowDefs } = useWindows();
   const [searchParams] = useSearchParams();
-  const currentPageId = searchParams.get('pageId') ?? initialCurrentPageId;
+
+  const currentPageId =
+    searchParams.get('pageId') ?? initialCurrentPageId ?? sortedCharacterPages[0]?.id;
 
   const [locked, setLockedState] = useState<boolean>(initialLocked ?? lockByDefault ?? false);
 

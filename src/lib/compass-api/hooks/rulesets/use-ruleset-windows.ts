@@ -9,16 +9,14 @@ export const useRulesetWindows = (rulesetPageId?: string | null) => {
   const { activeRuleset } = useRulesets();
   const { handleError } = useErrorHandler();
 
-  const windows = useLiveQuery(
-    async () => {
-      if (!activeRuleset?.id) return [];
-      const collection = db.rulesetWindows.where('rulesetId').equals(activeRuleset.id);
-      const all = await collection.toArray();
-      if (!rulesetPageId) return all;
-      return all.filter((w) => w.rulesetPageId === rulesetPageId);
-    },
-    [activeRuleset?.id, rulesetPageId],
-  );
+  const windows = useLiveQuery(async () => {
+    if (!activeRuleset?.id) return [];
+    if (!rulesetPageId) return [];
+    const collection = db.rulesetWindows.where('rulesetId').equals(activeRuleset.id);
+    const all = await collection.toArray();
+    if (!rulesetPageId) return all;
+    return all.filter((w) => w.rulesetPageId === rulesetPageId);
+  }, [activeRuleset?.id, rulesetPageId]);
 
   const isLoading = windows === undefined;
   useEffect(() => {
@@ -80,4 +78,3 @@ export const useRulesetWindows = (rulesetPageId?: string | null) => {
     deleteRulesetWindow,
   };
 };
-
