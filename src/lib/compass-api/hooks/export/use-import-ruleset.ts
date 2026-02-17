@@ -17,6 +17,7 @@ import type {
   Item,
   Page,
   Ruleset,
+  RulesetPage,
   Window,
 } from '@/types';
 import JSZip from 'jszip';
@@ -63,6 +64,7 @@ export interface ImportRulesetResult {
     inventories: number;
     characterWindows: number;
     characterPages: number;
+    rulesetPages: number;
     inventoryItems: number;
     scripts: number;
   };
@@ -101,6 +103,7 @@ interface ImportedMetadata {
     characterInventories: number;
     characterWindows: number;
     characterPages?: number;
+    rulesetPages?: number;
     inventoryItems?: number;
     scripts?: number;
   };
@@ -152,6 +155,7 @@ export const useImportRuleset = () => {
       | 'inventories'
       | 'characterWindows'
       | 'characterPages'
+      | 'rulesetPages'
       | 'pages'
       | 'inventoryItems',
   ): { isValid: boolean; errors: string[] } => {
@@ -339,6 +343,17 @@ export const useImportRuleset = () => {
           }
           break;
 
+        case 'rulesetPages':
+          if (!item.rulesetId || typeof item.rulesetId !== 'string') {
+            errors.push(
+              `RulesetPage ${index + 1}: rulesetId is required and must be a string`,
+            );
+          }
+          if (!item.pageId || typeof item.pageId !== 'string') {
+            errors.push(`RulesetPage ${index + 1}: pageId is required and must be a string`);
+          }
+          break;
+
         case 'pages':
           if (!item.label || typeof item.label !== 'string') {
             errors.push(`Page ${index + 1}: label is required and must be a string`);
@@ -390,6 +405,7 @@ export const useImportRuleset = () => {
     await db.charts.where('rulesetId').equals(rulesetId).delete();
     await db.assets.where('rulesetId').equals(rulesetId).delete();
     await db.windows.where('rulesetId').equals(rulesetId).delete();
+    await db.rulesetPages.where('rulesetId').equals(rulesetId).delete();
     await db.fonts.where('rulesetId').equals(rulesetId).delete();
     await db.documents.where('rulesetId').equals(rulesetId).delete();
     await db.scripts.where('rulesetId').equals(rulesetId).delete();
@@ -443,6 +459,7 @@ export const useImportRuleset = () => {
             inventories: 0,
             characterWindows: 0,
             characterPages: 0,
+            rulesetPages: 0,
             inventoryItems: 0,
             scripts: 0,
           },
@@ -476,6 +493,7 @@ export const useImportRuleset = () => {
             inventories: 0,
             characterWindows: 0,
             characterPages: 0,
+            rulesetPages: 0,
             inventoryItems: 0,
             scripts: 0,
           },
@@ -557,6 +575,7 @@ export const useImportRuleset = () => {
               inventories: 0,
               characterWindows: 0,
               characterPages: 0,
+              rulesetPages: 0,
               inventoryItems: 0,
               scripts: 0,
             },
@@ -587,6 +606,7 @@ export const useImportRuleset = () => {
                 inventories: 0,
                 characterWindows: 0,
                 characterPages: 0,
+                rulesetPages: 0,
                 inventoryItems: 0,
                 scripts: 0,
               },
@@ -614,6 +634,7 @@ export const useImportRuleset = () => {
               inventories: 0,
               characterWindows: 0,
               characterPages: 0,
+              rulesetPages: 0,
               inventoryItems: 0,
               scripts: 0,
             },
@@ -638,6 +659,7 @@ export const useImportRuleset = () => {
         inventories: 0,
         characterWindows: 0,
         characterPages: 0,
+        rulesetPages: 0,
         inventoryItems: 0,
         scripts: 0,
       };
@@ -1190,7 +1212,7 @@ export const useImportRuleset = () => {
         }
       }
 
-      // Import pages (must be before characterPages; characterPages reference pageId)
+      // Import pages (must be before rulesetPages and characterPages; they reference pageId)
       const pagesFile = getZipFile('application data/pages.json');
       if (pagesFile) {
         try {
@@ -1213,6 +1235,37 @@ export const useImportRuleset = () => {
         } catch (error) {
           allErrors.push(
             `Failed to import pages: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          );
+        }
+      }
+
+      // Import rulesetPages (joins; require pages to be imported first)
+      const rulesetPagesFile = getZipFile('application data/rulesetPages.json');
+      if (rulesetPagesFile) {
+        try {
+          const rulesetPagesText = await rulesetPagesFile.async('text');
+          const rulesetPagesToImport: RulesetPage[] = JSON.parse(rulesetPagesText);
+
+          const validation = validateData(rulesetPagesToImport, 'rulesetPages');
+          if (validation.isValid) {
+            for (const rulesetPage of rulesetPagesToImport) {
+              const newRulesetPage: RulesetPage = {
+                ...rulesetPage,
+                id: crypto.randomUUID(),
+                rulesetId: newRulesetId,
+                pageId: rulesetPage.pageId,
+                createdAt: now,
+                updatedAt: now,
+              };
+              await db.rulesetPages.add(newRulesetPage);
+              importedCounts.rulesetPages++;
+            }
+          } else {
+            allErrors.push(...validation.errors);
+          }
+        } catch (error) {
+          allErrors.push(
+            `Failed to import rulesetPages: ${error instanceof Error ? error.message : 'Unknown error'}`,
           );
         }
       }
@@ -1343,6 +1396,7 @@ export const useImportRuleset = () => {
         importedCounts.inventories +
         importedCounts.characterWindows +
         importedCounts.characterPages +
+        importedCounts.rulesetPages +
         importedCounts.inventoryItems +
         importedCounts.scripts;
 
@@ -1377,6 +1431,7 @@ export const useImportRuleset = () => {
           inventories: 0,
           characterWindows: 0,
           characterPages: 0,
+          rulesetPages: 0,
           inventoryItems: 0,
           scripts: 0,
         },
