@@ -3,25 +3,33 @@ import type { StructuredCloneSafe } from '../structured-clone-safe';
 
 /**
  * Lightweight proxy for a single chart row returned from ChartProxy.rowWhere().
- * Provides valueInColumn() for chaining in QBScript while remaining structured-clone safe
- * when sent across the worker boundary.
+ *
+ * This class:
+ * - Behaves like an array so you can call array methods directly
+ *   (e.g. rowWhere(...).map(...), rowWhere(...)[0], rowWhere(...).length)
+ * - Provides valueInColumn() for chaining in QBScript
+ * - Implements StructuredCloneSafe so it can be reduced to a plain array
+ *   when sent across the worker boundary.
  */
-class ChartRowProxy implements StructuredCloneSafe {
+class ChartRowProxy extends Array<any> implements StructuredCloneSafe {
   private chartProxy: ChartProxy;
-  private row: any[];
 
   constructor(chartProxy: ChartProxy, row: any[]) {
+    super(...row);
     this.chartProxy = chartProxy;
-    this.row = row;
+    // Ensure the correct prototype when targeting environments that might
+    // not fully support Array subclassing semantics.
+    Object.setPrototypeOf(this, ChartRowProxy.prototype);
   }
 
   valueInColumn(columnName: string): any {
-    return this.chartProxy.valueInColumn(columnName, this.row);
+    // Pass this array-like instance as the row to ChartProxy.
+    return this.chartProxy.valueInColumn(columnName, this as any[]);
   }
 
   /** When serialized for postMessage, reduce to the underlying row array. */
   toStructuredCloneSafe(): any[] {
-    return this.row;
+    return Array.from(this);
   }
 }
 
