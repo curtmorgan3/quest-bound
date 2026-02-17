@@ -1,4 +1,5 @@
-import { useErrorHandler } from '@/hooks';
+import { useErrorHandler, useNotifications } from '@/hooks';
+import { getQBScriptClient } from '@/lib/compass-logic/worker';
 import { db, useCurrentUser } from '@/stores';
 import type {
   Character,
@@ -20,6 +21,8 @@ export const useCharacter = (_id?: string) => {
   const { currentUser } = useCurrentUser();
   const { handleError } = useErrorHandler();
   const { deleteAsset } = useAssets();
+
+  const { addNotification } = useNotifications();
 
   const characters =
     useLiveQuery(
@@ -57,6 +60,22 @@ export const useCharacter = (_id?: string) => {
         updatedAt: now,
       })),
     );
+
+    // After initial attributes are created, run attribute scripts once in dependency order
+    // so derived values are correct (ruleset defaults don't account for scripts).
+    if (rulesetAttributes.length > 0) {
+      try {
+        const client = getQBScriptClient();
+        await client.runInitialAttributeSync(characterId, rulesetId);
+      } catch (error) {
+        const err = error as Error & { scriptName?: string };
+        const scriptInfo = err.scriptName ? ` [script: ${err.scriptName}.qbs]` : '';
+        console.warn('Initial reactive script execution failed' + scriptInfo + ':', error);
+        addNotification(`Failure in script ${err.scriptName}.qbs | ${error}`, {
+          type: 'error',
+        });
+      }
+    }
   };
 
   const bootstrapCharacterPagesAndWindows = async (newCharacterId: string, rulesetId: string) => {

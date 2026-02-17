@@ -3,7 +3,7 @@ import type { DB } from '@/stores/db/hooks/types';
 import type { ExecuteActionEventFn } from '../runtime/proxies';
 import type { ScriptExecutionContext } from '../runtime/script-runner';
 import { ScriptRunner } from '../runtime/script-runner';
-import { DependencyGraph, loadDependencyGraph } from './dependency-graph';
+import { buildDependencyGraph, DependencyGraph, loadDependencyGraph } from './dependency-graph';
 import { ExecutionLimitError, ExecutionTracker } from './execution-tracker';
 import { TransactionManager } from './transaction-manager';
 
@@ -63,6 +63,82 @@ export class ReactiveExecutor {
     if (!this.graph) {
       // No graph exists yet - create an empty one
       this.graph = new DependencyGraph(rulesetId, this.db);
+    }
+  }
+
+  /**
+   * Run all attribute scripts once in dependency order (for initial character creation or sync).
+   * Uses the dependency graph so scripts that depend on other attributes run after them.
+   * @param characterId - ID of the character
+   * @param rulesetId - ID of the ruleset
+   * @param options - Execution options
+   * @returns Execution result
+   */
+  async runInitialSync(
+    characterId: string,
+    rulesetId: string,
+    options: ReactiveExecutionOptions = {},
+  ): Promise<ReactiveExecutionResult> {
+    await this.loadGraph(rulesetId);
+    if (!this.graph) {
+      return {
+        success: true,
+        scriptsExecuted: [],
+        executionCount: 0,
+        rollbackPerformed: false,
+      };
+    }
+    if (this.graph.isEmpty()) {
+      this.graph = await buildDependencyGraph(rulesetId, this.db);
+    }
+    const scriptIds = this.graph.getGlobalAttributeScriptOrder();
+    if (scriptIds.length === 0) {
+      return {
+        success: true,
+        scriptsExecuted: [],
+        executionCount: 0,
+        rollbackPerformed: false,
+      };
+    }
+
+    const executionId = this.executionTracker.startExecution(characterId, 'initial_sync');
+    const context = this.executionTracker.getContext(executionId);
+    if (context && options.maxExecutions !== undefined) context.maxExecutions = options.maxExecutions;
+    if (context && options.maxPerScript !== undefined) context.maxPerScript = options.maxPerScript;
+    if (context && options.timeLimit !== undefined) context.timeLimit = options.timeLimit;
+
+    if (options.useTransaction !== false) {
+      await this.transactionManager.createFullSnapshot(executionId, characterId);
+    }
+
+    try {
+      await this.executeScriptChain(scriptIds, characterId, rulesetId, executionId, options);
+      this.transactionManager.commit(executionId);
+      this.executionTracker.endExecution(executionId);
+      return {
+        success: true,
+        scriptsExecuted: scriptIds,
+        executionCount: scriptIds.length,
+        rollbackPerformed: false,
+      };
+    } catch (error) {
+      let rollbackPerformed = false;
+      if (this.transactionManager.hasSnapshot(executionId)) {
+        await this.transactionManager.rollback(executionId);
+        rollbackPerformed = true;
+      }
+      await this.logError(error as Error, characterId, rulesetId, executionId);
+      if (error instanceof ExecutionLimitError) {
+        await this.handleInfiniteLoop(error as ExecutionLimitError, characterId);
+      }
+      this.executionTracker.endExecution(executionId);
+      return {
+        success: false,
+        scriptsExecuted: context?.executionChain ?? [],
+        executionCount: context?.executionChain?.length ?? 0,
+        error: error as Error,
+        rollbackPerformed,
+      };
     }
   }
 

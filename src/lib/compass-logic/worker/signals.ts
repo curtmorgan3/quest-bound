@@ -14,6 +14,7 @@ export type MainToWorkerSignal =
   | BuildDependencyGraphSignal
   | ValidateScriptSignal
   | AttributeChangedSignal
+  | InitialAttributeSyncSignal
   | ExecuteActionSignal
   | ExecuteActionEventSignal
   | ExecuteItemEventSignal
@@ -45,6 +46,15 @@ export interface ValidateScriptSignal {
 export interface AttributeChangedSignal {
   type: 'ATTRIBUTE_CHANGED';
   payload: AttributeChangedPayload;
+}
+
+export interface InitialAttributeSyncSignal {
+  type: 'RUN_INITIAL_ATTRIBUTE_SYNC';
+  payload: {
+    characterId: string;
+    rulesetId: string;
+    requestId: string;
+  };
 }
 
 export interface ExecuteActionSignal {
@@ -220,6 +230,10 @@ export interface ScriptErrorPayload {
     column?: number;
     stackTrace?: string;
   };
+  /** ID of the script that failed (e.g. initial sync or reactive run). */
+  scriptId?: string;
+  /** Name of the script that failed, for user-facing messages. */
+  scriptName?: string;
   announceMessages?: string[];
   logMessages?: any[][];
 }

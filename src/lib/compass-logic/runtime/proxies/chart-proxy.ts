@@ -152,7 +152,7 @@ export class ChartProxy {
     }
 
     const targetRow = row && row.length > 0 ? row : this.data[1];
-    return targetRow[columnIndex];
+    return targetRow[columnIndex] ?? '';
   }
 
   /**

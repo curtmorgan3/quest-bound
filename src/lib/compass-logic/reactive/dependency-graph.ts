@@ -287,6 +287,56 @@ export class DependencyGraph {
   isEmpty(): boolean {
     return this.nodes.size === 0;
   }
+
+  /**
+   * Get all attribute script IDs in topological order for initial sync.
+   * Script A comes before script B if B depends on the attribute that A writes.
+   * This ensures derived attributes are computed after their dependencies.
+   */
+  getGlobalAttributeScriptOrder(): string[] {
+    const attributeScripts = Array.from(this.nodes.entries()).filter(
+      ([_, node]) => node.entityType === 'attribute' && node.entityId != null,
+    );
+    if (attributeScripts.length === 0) return [];
+
+    const scriptIds = new Set(attributeScripts.map(([id]) => id));
+    const attributeToWriter = new Map<string, string>();
+    for (const [scriptId, node] of attributeScripts) {
+      if (node.entityId) attributeToWriter.set(node.entityId, scriptId);
+    }
+
+    // Predecessors: T is predecessor of S if S depends on the attribute T writes
+    const inDegree = new Map<string, number>();
+    const successors = new Map<string, string[]>();
+    for (const scriptId of scriptIds) {
+      inDegree.set(scriptId, 0);
+      successors.set(scriptId, []);
+    }
+    for (const [scriptId, node] of attributeScripts) {
+      for (const attrId of node.dependencies) {
+        const predScriptId = attributeToWriter.get(attrId);
+        if (predScriptId && predScriptId !== scriptId && scriptIds.has(predScriptId)) {
+          inDegree.set(scriptId, (inDegree.get(scriptId) ?? 0) + 1);
+          const predSuccessors = successors.get(predScriptId) ?? [];
+          predSuccessors.push(scriptId);
+          successors.set(predScriptId, predSuccessors);
+        }
+      }
+    }
+
+    const order: string[] = [];
+    const queue = Array.from(scriptIds).filter((id) => inDegree.get(id) === 0);
+    while (queue.length > 0) {
+      const s = queue.shift()!;
+      order.push(s);
+      for (const t of successors.get(s) ?? []) {
+        const d = (inDegree.get(t) ?? 1) - 1;
+        inDegree.set(t, d);
+        if (d === 0) queue.push(t);
+      }
+    }
+    return order;
+  }
 }
 
 /**

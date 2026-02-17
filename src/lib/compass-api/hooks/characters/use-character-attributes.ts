@@ -1,4 +1,5 @@
-import { useErrorHandler } from '@/hooks';
+import { useErrorHandler, useNotifications } from '@/hooks';
+import { getQBScriptClient } from '@/lib/compass-logic/worker';
 import { db } from '@/stores';
 import type { CharacterAttribute } from '@/types';
 import { useLiveQuery } from 'dexie-react-hooks';
@@ -7,6 +8,7 @@ import { useCharacter } from './use-character';
 export const useCharacterAttributes = (characterId?: string) => {
   const { character } = useCharacter(characterId);
   const { handleError } = useErrorHandler();
+  const { addNotification } = useNotifications();
 
   const characterAttributes = useLiveQuery(
     () =>
@@ -133,6 +135,7 @@ export const useCharacterAttributes = (characterId?: string) => {
               optionsChartColumnHeader: attr.optionsChartColumnHeader,
               category: attr.category,
               allowMultiSelect: attr.allowMultiSelect,
+              scriptId: attr.scriptId,
               updatedAt: now,
             },
           });
@@ -147,7 +150,27 @@ export const useCharacterAttributes = (characterId?: string) => {
         await db.characterAttributes.update(id, data);
       }
 
-      return toAdd.length + toUpdate.length;
+      const count = toAdd.length + toUpdate.length;
+
+      // After syncing, run attribute scripts once in dependency order so derived values are correct.
+      if (count > 0) {
+        try {
+          const client = getQBScriptClient();
+          await client.runInitialAttributeSync(character.id, character.rulesetId);
+        } catch (error) {
+          const err = error as Error & { scriptName?: string };
+          const scriptInfo = err.scriptName ? ` [script: ${err.scriptName}.qbs]` : '';
+          console.warn(
+            'Reactive script execution during syncWithRuleset failed' + scriptInfo + ':',
+            error,
+          );
+          addNotification(`Failure in script ${err.scriptName}.qbs | ${error}`, {
+            type: 'error',
+          });
+        }
+      }
+
+      return count;
     } catch (e) {
       handleError(e as Error, {
         component: 'useCharacterAttributes/syncWithRuleset',

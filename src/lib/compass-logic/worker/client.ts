@@ -257,6 +257,8 @@ export class QBScriptClient {
       (error as any).line = payload.error.line;
       (error as any).column = payload.error.column;
       error.stack = payload.error.stackTrace;
+      if (payload.scriptId != null) (error as any).scriptId = payload.scriptId;
+      if (payload.scriptName != null) (error as any).scriptName = payload.scriptName;
 
       pending.reject(error);
       this.pendingRequests.delete(payload.requestId);
@@ -380,6 +382,29 @@ export class QBScriptClient {
     );
 
     return result.value;
+  }
+
+  /**
+   * Run all attribute scripts once in dependency order (e.g. after character creation or syncWithRuleset).
+   * Uses the dependency graph so execution order respects script dependencies.
+   */
+  async runInitialAttributeSync(
+    characterId: string,
+    rulesetId: string,
+    timeout = 30000,
+  ): Promise<{ scriptsExecuted: string[]; executionCount: number }> {
+    const requestId = generateRequestId();
+    const response = await this.sendSignal<{
+      value?: { scriptsExecuted: string[]; executionCount: number };
+    }>(
+      {
+        type: 'RUN_INITIAL_ATTRIBUTE_SYNC',
+        payload: { characterId, rulesetId, requestId },
+      },
+      requestId,
+      timeout,
+    );
+    return response?.value ?? { scriptsExecuted: [], executionCount: 0 };
   }
 
   /**

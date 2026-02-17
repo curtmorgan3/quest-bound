@@ -107,6 +107,10 @@ async function handleSignal(signal: MainToWorkerSignal): Promise<void> {
         await handleAttributeChanged(signal.payload);
         break;
 
+      case 'RUN_INITIAL_ATTRIBUTE_SYNC':
+        await handleInitialAttributeSync(signal.payload);
+        break;
+
       case 'EXECUTE_ACTION':
         await handleExecuteAction(signal.payload);
         break;
@@ -438,6 +442,11 @@ async function handleAttributeChanged(payload: AttributeChangedPayload): Promise
         },
       });
     } else {
+      const failedScriptId =
+        result.scriptsExecuted.length > 0
+          ? result.scriptsExecuted[result.scriptsExecuted.length - 1]
+          : undefined;
+      const script = failedScriptId ? await db.scripts.get(failedScriptId) : null;
       sendSignal({
         type: 'SCRIPT_ERROR',
         payload: {
@@ -446,6 +455,80 @@ async function handleAttributeChanged(payload: AttributeChangedPayload): Promise
             message: result.error?.message || 'Unknown error',
             stackTrace: result.error?.stack,
           },
+          scriptId: failedScriptId,
+          scriptName: script?.name,
+        },
+      });
+    }
+  } catch (error) {
+    sendSignal({
+      type: 'SCRIPT_ERROR',
+      payload: {
+        requestId: payload.requestId,
+        error: {
+          message: error instanceof Error ? error.message : String(error),
+          stackTrace: error instanceof Error ? error.stack : undefined,
+        },
+      },
+    });
+  }
+}
+
+async function handleInitialAttributeSync(payload: {
+  characterId: string;
+  rulesetId: string;
+  requestId: string;
+}): Promise<void> {
+  try {
+    if (!reactiveExecutor) {
+      reactiveExecutor = new ReactiveExecutor(db);
+    }
+
+    const rollFn: RollFn = (expression: string) =>
+      rollBridge.requestRoll(expression, payload.requestId);
+    let executor: EventHandlerExecutor;
+    executor = new EventHandlerExecutor(db, createOnAttributesModified(rollFn, () => executor));
+
+    const result = await reactiveExecutor.runInitialSync(
+      payload.characterId,
+      payload.rulesetId,
+      {
+        executeActionEvent: (actionId, characterId, targetId, eventType) =>
+          executor.executeActionEvent(actionId, characterId, targetId, eventType, rollFn),
+        roll: rollFn,
+      },
+    );
+
+    if (result.success) {
+      sendSignal({
+        type: 'SCRIPT_RESULT',
+        payload: {
+          requestId: payload.requestId,
+          result: {
+            scriptsExecuted: result.scriptsExecuted,
+            executionCount: result.executionCount,
+          },
+          announceMessages: [],
+          logMessages: [],
+          executionTime: 0,
+        },
+      });
+    } else {
+      const failedScriptId =
+        result.scriptsExecuted.length > 0
+          ? result.scriptsExecuted[result.scriptsExecuted.length - 1]
+          : undefined;
+      const script = failedScriptId ? await db.scripts.get(failedScriptId) : null;
+      sendSignal({
+        type: 'SCRIPT_ERROR',
+        payload: {
+          requestId: payload.requestId,
+          error: {
+            message: result.error?.message || 'Unknown error',
+            stackTrace: result.error?.stack,
+          },
+          scriptId: failedScriptId,
+          scriptName: script?.name,
         },
       });
     }
