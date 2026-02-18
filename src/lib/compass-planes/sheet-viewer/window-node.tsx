@@ -1,8 +1,9 @@
 import { useComponents } from '@/lib/compass-api';
 import { CharacterContext } from '@/stores';
 import '@xyflow/react/dist/style.css';
-import { OctagonMinus, OctagonX } from 'lucide-react';
+import { ExternalLink, OctagonMinus, OctagonX } from 'lucide-react';
 import { useCallback, useContext, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { renderViewComponent } from '../nodes';
 
 /** Minimal window shape shared by CharacterWindow and RulesetWindow. */
@@ -21,11 +22,20 @@ export interface WindowNodeData {
   onMinimize?: (id: string) => void;
   onChildWindowClick: (childWindowId: string, parentWindow: { x: number; y: number }) => void;
   locked: boolean;
+  /** When set, a link to this path is shown on hover next to the close button (e.g. page-editor). */
+  editWindowHref?: string;
 }
 
 export const WindowNode = ({ data }: { data: WindowNodeData }) => {
   const characterContext = useContext(CharacterContext);
-  const { window: windowData, onClose, onMinimize, onChildWindowClick, locked } = data;
+  const {
+    window: windowData,
+    onClose,
+    onMinimize,
+    onChildWindowClick,
+    locked,
+    editWindowHref,
+  } = data;
   const { components } = useComponents(windowData.windowId);
 
   const handleChildWindowClick = useCallback(
@@ -96,6 +106,17 @@ export const WindowNode = ({ data }: { data: WindowNodeData }) => {
               className='clickable'
               onClick={() => onMinimize(windowData.id)}
             />
+          )}
+          {editWindowHref && (
+            <Link
+              to={editWindowHref}
+              target='_blank'
+              className='clickable flex items-center justify-center text-inherit hover:opacity-80'
+              style={{ width: '20px', height: '20px' }}
+              title='Edit window'
+              onClick={(e) => e.stopPropagation()}>
+              <ExternalLink style={{ width: '14px', height: '14px' }} />
+            </Link>
           )}
           <OctagonX
             style={{ width: '20px', height: '20px' }}

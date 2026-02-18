@@ -97,6 +97,10 @@ export const RulesetPageEditor = ({ pageId }: RulesetPageEditorProps) => {
           onClose: (id: string) => deleteRulesetWindow(id),
           onChildWindowClick: (childWindowId: string, parentWindow: { x: number; y: number }) =>
             handleChildWindowClick(childWindowId, parentWindow, window),
+          editWindowHref:
+            activeRuleset?.id != null
+              ? `/rulesets/${activeRuleset.id}/windows/${window.windowId}`
+              : undefined,
         },
       };
     });
@@ -107,7 +111,7 @@ export const RulesetPageEditor = ({ pageId }: RulesetPageEditorProps) => {
 
   useEffect(() => {
     setNodes(convertWindowsToNode(templateWindows));
-  }, [templateWindows]);
+  }, [templateWindows, activeRuleset?.id]);
 
   const onNodesChange = (changes: NodeChange[]) => {
     for (const change of changes) {

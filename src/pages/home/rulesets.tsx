@@ -326,7 +326,7 @@ export const Rulesets = () => {
         {sortedRulesets?.map((r) => {
           const doNotAsk = localStorage.getItem('qb.confirmOnDelete') === 'false';
           return (
-            <Card key={r.id} className='flex flex-row overflow-hidden p-0 h-32 min-h-[225px] gap-0'>
+            <Card key={r.id} className='flex flex-row overflow-hidden p-0 h-32 min-h-[200px] gap-0'>
               <div
                 className='w-40 shrink-0 bg-muted bg-cover bg-center'
                 style={r.image ? { backgroundImage: `url(${r.image})` } : undefined}

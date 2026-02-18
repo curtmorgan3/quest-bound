@@ -1,4 +1,19 @@
-import { Button, ImageUpload, Input } from '@/components';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+  Button,
+  Card,
+  Checkbox,
+  ImageUpload,
+  Input,
+  Label,
+} from '@/components';
 import {
   Dialog,
   DialogClose,
@@ -8,7 +23,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { Label } from '@/components/ui/label';
 import {
   Select,
   SelectContent,
@@ -19,10 +33,9 @@ import {
 import { useAssets, useCharacter, useRulesets } from '@/lib/compass-api';
 import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { PreviewCard } from '../ruleset/components';
 
 export const Characters = () => {
-  const { characters, createCharacter, deleteCharacter, updateCharacter } = useCharacter();
+  const { characters, createCharacter, deleteCharacter } = useCharacter();
   const { rulesets } = useRulesets();
   const { assets, deleteAsset } = useAssets();
 
@@ -177,24 +190,82 @@ export const Characters = () => {
         </Dialog>
       </div>
 
-      <div className='flex flex-row gap-2 flex-wrap'>
-        {selectableCharacters.map((character) => (
-          <PreviewCard
-            key={character.id}
-            id={character.id}
-            title={character.name}
-            category={getRulesetTitle(character.rulesetId)}
-            image={character.image}
-            descriptionExtra={
-              <span className='text-xs text-muted-foreground'>
-                {getRulesetTitle(character.rulesetId)}
-              </span>
-            }
-            onDelete={() => deleteCharacter(character.id)}
-            onOpen={() => navigate(`/characters/${character.id}`)}
-            onEdit={(name) => updateCharacter(character.id, { name })}
-          />
-        ))}
+      <div className='flex flex-col gap-3'>
+        {selectableCharacters.map((character) => {
+          const doNotAsk = localStorage.getItem('qb.confirmOnDelete') === 'false';
+          const rulesetTitle = getRulesetTitle(character.rulesetId);
+
+          return (
+            <Card key={character.id} className='flex flex-row overflow-hidden p-0 h-32 min-h-32'>
+              <div
+                className='w-40 shrink-0 bg-muted bg-cover bg-center'
+                style={
+                  character.image ? { backgroundImage: `url(${character.image})` } : undefined
+                }
+              />
+              <div className='flex min-w-0 flex-1 flex-col justify-between p-4'>
+                <div className='min-w-0'>
+                  <h2 className='truncate text-lg font-semibold'>{character.name}</h2>
+                  <p className='mt-0.5 text-sm text-muted-foreground'>{rulesetTitle}</p>
+                </div>
+
+                <div className='mt-2 flex items-center justify-end gap-2'>
+                  {doNotAsk ? (
+                    <Button
+                      variant='ghost'
+                      size='sm'
+                      className='text-red-500'
+                      data-testid='preview-card-delete'
+                      onClick={() => deleteCharacter(character.id)}>
+                      Delete
+                    </Button>
+                  ) : (
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button
+                          variant='ghost'
+                          size='sm'
+                          className='text-red-500'
+                          data-testid='preview-card-delete'>
+                          Delete
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Permanently delete this content?</AlertDialogTitle>
+                          <div className='flex gap-2'>
+                            <Label htmlFor='preview-card-do-not-ask-again'>Do not ask again</Label>
+                            <Checkbox
+                              id='preview-card-do-not-ask-again'
+                              onCheckedChange={(checked) =>
+                                localStorage.setItem('qb.confirmOnDelete', String(!checked))
+                              }
+                            />
+                          </div>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction
+                            data-testid='preview-card-delete-confirm'
+                            onClick={() => deleteCharacter(character.id)}>
+                            Delete
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  )}
+
+                  <Button
+                    variant='link'
+                    size='sm'
+                    onClick={() => navigate(`/characters/${character.id}`)}>
+                    Open
+                  </Button>
+                </div>
+              </div>
+            </Card>
+          );
+        })}
       </div>
 
       {selectableCharacters.length === 0 && (
