@@ -21,6 +21,16 @@ import { ItemChart } from './items/item-chart';
 import { PageSelect } from './pages';
 import { WindowSelect } from './windows';
 
+const pageToLabel = new Map([
+  ['attributes', 'Attributes'],
+  ['actions', 'Actions'],
+  ['items', 'Items'],
+  ['charts', 'Charts'],
+  ['documents', 'Documents'],
+  ['windows', 'Windows'],
+  ['pages', 'Pages'],
+]);
+
 export const Ruleset = ({
   page,
 }: {
@@ -93,6 +103,7 @@ export const Ruleset = ({
 
   return (
     <div className='flex flex-col p-4 gap-4'>
+      <h1 className='text-2xl'>{pageToLabel.get(page)}</h1>
       <Dialog
         open={open}
         onOpenChange={(open) => {

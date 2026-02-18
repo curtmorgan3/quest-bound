@@ -128,7 +128,7 @@ export function ScriptsIndex() {
   const categorized = scriptsByCategory.filter((cat) => cat.category !== 'Uncategorized');
 
   return (
-    <div className='flex flex-col gap-6 p-6'>
+    <div className='flex flex-col gap-6 p-4'>
       <div className='flex flex-col gap-2'>
         <h1 className='text-2xl font-semibold'>Scripts</h1>
       </div>

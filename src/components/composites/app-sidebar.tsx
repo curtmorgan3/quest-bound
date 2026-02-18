@@ -436,6 +436,14 @@ export function AppSidebar() {
             {!isHomepage && (
               <>
                 <SidebarMenuItem>
+                  <SidebarMenuButton asChild>
+                    <Link to='/rulesets'>
+                      <FolderOpen />
+                      <span>Open</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
                   <SidebarMenuButton onClick={() => setDicePanelOpen(true)}>
                     <Dices />
                     <span>Dice</span>
@@ -451,14 +459,6 @@ export function AppSidebar() {
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 )}
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild>
-                    <Link to='/rulesets'>
-                      <FolderOpen />
-                      <span>Open</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
               </>
             )}
             <SidebarMenuItem>

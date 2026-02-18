@@ -1,4 +1,19 @@
-import { Button, Input, Textarea } from '@/components';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+  Button,
+  Card,
+  Checkbox,
+  Input,
+  Label,
+  Textarea,
+} from '@/components';
 import {
   Dialog,
   DialogClose,
@@ -8,15 +23,14 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { Label } from '@/components/ui/label';
 import { useImportRuleset, useRulesets, type ImportRulesetResult } from '@/lib/compass-api';
 import { AlertCircle, CheckCircle, Upload } from 'lucide-react';
 import { useRef, useState } from 'react';
+import Markdown from 'react-markdown';
 import { useNavigate } from 'react-router-dom';
-import { PreviewCard } from '../ruleset/components';
 
 export const Rulesets = () => {
-  const { rulesets, createRuleset, deleteRuleset, updateRuleset } = useRulesets();
+  const { rulesets, createRuleset, deleteRuleset } = useRulesets();
   const { importRuleset, isImporting } = useImportRuleset();
 
   const sortedRulesets = [...rulesets].sort((a, b) => a.title.localeCompare(b.title));
@@ -308,20 +322,80 @@ export const Rulesets = () => {
         </div>
       </div>
 
-      <div className='flex flex-row gap-2 flex-wrap'>
-        {sortedRulesets?.map((r) => (
-          <PreviewCard
-            key={r.id}
-            id={r.id}
-            title={r.title}
-            image={r.image}
-            categoryEditable={false}
-            descriptionExtra={<span className='text-xs text-muted-foreground'>v{r.version}</span>}
-            onDelete={() => deleteRuleset(r.id)}
-            onOpen={() => navigate(`/rulesets/${r.id}`)}
-            onEdit={(title, description) => updateRuleset(r.id, { title, description })}
-          />
-        ))}
+      <div className='flex flex-col gap-3'>
+        {sortedRulesets?.map((r) => {
+          const doNotAsk = localStorage.getItem('qb.confirmOnDelete') === 'false';
+          return (
+            <Card key={r.id} className='flex flex-row overflow-hidden p-0 h-32 min-h-[225px] gap-0'>
+              <div
+                className='w-40 shrink-0 bg-muted bg-cover bg-center'
+                style={r.image ? { backgroundImage: `url(${r.image})` } : undefined}
+              />
+              <div className='flex min-w-0 flex-1 flex-col justify-between p-4'>
+                <div className='min-w-0'>
+                  <div className='flex items-center w-full justify-between'>
+                    <h2 className='truncate text-lg font-semibold'>{r.title}</h2>
+                    <span className='text-xs text-muted-foreground'>v{r.version}</span>
+                  </div>
+                  {r.description ? (
+                    <div className='md-content mt-0.5 max-h-[90%] overflow-scroll text-sm text-muted-foreground'>
+                      <Markdown>{r.description}</Markdown>
+                    </div>
+                  ) : null}
+                </div>
+                <div className='mt-2 flex items-center justify-end gap-2'>
+                  {doNotAsk ? (
+                    <Button
+                      variant='ghost'
+                      size='sm'
+                      className='text-red-500'
+                      data-testid='preview-card-delete'
+                      onClick={() => deleteRuleset(r.id)}>
+                      Delete
+                    </Button>
+                  ) : (
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button
+                          variant='ghost'
+                          size='sm'
+                          className='text-red-500'
+                          data-testid='preview-card-delete'>
+                          Delete
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Permanently delete this content?</AlertDialogTitle>
+                          <div className='flex gap-2'>
+                            <Label htmlFor='preview-card-do-not-ask-again'>Do not ask again</Label>
+                            <Checkbox
+                              id='preview-card-do-not-ask-again'
+                              onCheckedChange={(checked) =>
+                                localStorage.setItem('qb.confirmOnDelete', String(!checked))
+                              }
+                            />
+                          </div>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction
+                            data-testid='preview-card-delete-confirm'
+                            onClick={() => deleteRuleset(r.id)}>
+                            Delete
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  )}
+                  <Button variant='ghost' size='sm' onClick={() => navigate(`/rulesets/${r.id}`)}>
+                    Open
+                  </Button>
+                </div>
+              </div>
+            </Card>
+          );
+        })}
       </div>
     </div>
   );
