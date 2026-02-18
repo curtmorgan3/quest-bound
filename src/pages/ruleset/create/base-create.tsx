@@ -195,17 +195,20 @@ export const BaseCreate = ({ onCreate }: BaseCreateProps) => {
       <div className='flex justify-around items-center gap-2 mb-4'>
         <Button
           variant={activeType === 'attributes' ? 'default' : 'outline'}
-          onClick={() => setActiveType('attributes')}>
+          onClick={() => setActiveType('attributes')}
+          data-testid='base-create-type-attributes'>
           <iconset.attributes />
         </Button>
         <Button
           variant={activeType === 'actions' ? 'default' : 'outline'}
-          onClick={() => setActiveType('actions')}>
+          onClick={() => setActiveType('actions')}
+          data-testid='base-create-type-actions'>
           <iconset.actions />
         </Button>
         <Button
           variant={activeType === 'items' ? 'default' : 'outline'}
-          onClick={() => setActiveType('items')}>
+          onClick={() => setActiveType('items')}
+          data-testid='base-create-type-items'>
           <iconset.items />
         </Button>
         <Button

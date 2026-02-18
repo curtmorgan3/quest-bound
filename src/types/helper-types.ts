@@ -38,13 +38,13 @@ export interface OnboardingSubstep {
   title?: string;
   description: string;
   ctas?: OnboardingStepCta[];
+  /** Optional CSS selector. When on this substep, elements matching this selector are highlighted. */
+  selector?: string;
 }
 
 export interface OnboardingStep {
   title: string;
   substeps: OnboardingSubstep[];
-  /** Optional CSS selector. When on this step, elements matching this selector are highlighted. */
-  selector?: string;
 }
 
 export type Tutorial = OnboardingStep[];

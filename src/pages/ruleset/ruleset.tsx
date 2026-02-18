@@ -115,7 +115,11 @@ export const Ruleset = ({
         }}>
         <div className='flex gap-2'>
           <DialogTrigger asChild>
-            <Button className='w-[180px]' onClick={() => setOpen(true)}>
+            <Button
+              id='create-button'
+              className='w-[180px]'
+              onClick={() => setOpen(true)}
+              data-testid='ruleset-new-button'>
               New
             </Button>
           </DialogTrigger>

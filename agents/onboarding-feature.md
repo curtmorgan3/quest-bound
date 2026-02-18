@@ -15,7 +15,7 @@ Refactor moved **tutorial content and step building** out of the panel. Preserve
 - **Tutorial content**: `src/content/tutorials/onboarding.ts` — exports `onboardingTutorial: Tutorial`. Step/substep definitions live here; CTAs use `TutorialAction` (e.g. `{ type: 'link', href: '/rulesets' }` or external URL). Uses `DOCS_URL` and `DISCORD_URL` from `@/constants`.
 - **Content barrel**: `src/content/index.ts` → `./tutorials`; `src/content/tutorials/index.ts` → `./onboarding`.
 - **Constants**: `src/constants.ts` — `DOCS_URL`, `DISCORD_URL`.
-- **Types**: `src/types/helper-types.ts` — `Tutorial`, `TutorialAction`, `OnboardingStep`, `OnboardingSubstep`, `OnboardingStepCta`. `OnboardingStep` has optional `selector?: string` (CSS selector; when on that step, matching elements are highlighted). `TutorialAction` is `{ type: 'link'; href?: string }`. `OnboardingStepCta.action` is a `TutorialAction` (not a function) in the content; it gets turned into a function by `buildTutorial`.
+- **Types**: `src/types/helper-types.ts` — `Tutorial`, `TutorialAction`, `OnboardingStep`, `OnboardingSubstep`, `OnboardingStepCta`. `OnboardingSubstep` has optional `selector?: string` (CSS selector; when on that substep, matching elements are highlighted). `TutorialAction` is `{ type: 'link'; href?: string }`. `OnboardingStepCta.action` is a `TutorialAction` (not a function) in the content; it gets turned into a function by `buildTutorial`.
 
 ### Building the tutorial
 
@@ -23,8 +23,8 @@ Refactor moved **tutorial content and step building** out of the panel. Preserve
 
 ### Panel UI & highlight
 
-- **Panel**: `src/components/onboarding/onboarding-panel.tsx` — Gets steps via `buildTutorial({ navigate, tutorial: onboardingTutorial })` from `@/content`. No inline step definitions, no hardcoded DOCS_URL/DISCORD_URL. Single footer row: Back (left) | step number dots (center) | Next/Finish (right). No “Skip all” button; no separate “Step” prev/next row. X in header dismisses. Renders `OnboardingHighlight` with `currentStep.selector` when the step has a selector.
-- **Highlight**: `src/components/onboarding/onboarding-highlight.tsx` — Accepts `selector: string | undefined`. When set, runs `querySelectorAll(selector)` (so comma-separated selectors are supported), measures each element’s rect, and renders fixed-position boxes (portal to body) with a 2px primary-colored ring and padding. Listens to scroll/resize (and ResizeObserver on body) to keep rects in sync. z-index 40 (below panel at 50). Use `data-testid` (e.g. `nav-rulesets`, `nav-dice`, `nav-help`) in the app for targets; add optional `selector` on steps in `onboarding.ts`.
+- **Panel**: `src/components/onboarding/onboarding-panel.tsx` — Gets steps via `buildTutorial({ navigate, tutorial: onboardingTutorial })` from `@/content`. No inline step definitions, no hardcoded DOCS_URL/DISCORD_URL. Single footer row: Back (left) | step number dots (center) | Next/Finish (right). No “Skip all” button; no separate “Step” prev/next row. X in header dismisses. Renders `OnboardingHighlight` with `currentSubstep.selector` when the substep has a selector.
+- **Highlight**: `src/components/onboarding/onboarding-highlight.tsx` — Accepts `selector: string | undefined`. When set, runs `querySelectorAll(selector)` (so comma-separated selectors are supported), measures each element’s rect, and renders fixed-position boxes (portal to body) with a 2px primary-colored ring and padding. Listens to scroll/resize (and ResizeObserver on body) to keep rects in sync. z-index 40 (below panel at 50). Use `data-testid` (e.g. `nav-rulesets`, `nav-dice`, `nav-help`) in the app for targets; add optional `selector` on substeps in `onboarding.ts`.
 
 ### Other
 

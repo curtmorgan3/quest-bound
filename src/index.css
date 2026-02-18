@@ -248,5 +248,5 @@ code {
 }
 
 .onboarding-highlight-box {
-  animation: onboarding-highlight-pulse 1.5s ease-in-out infinite;
+  animation: onboarding-highlight-pulse 2s ease-in-out infinite;
 }

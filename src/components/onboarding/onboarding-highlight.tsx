@@ -83,7 +83,7 @@ export function OnboardingHighlight({ selector }: OnboardingHighlightProps) {
             backgroundColor: colorPrimary,
             boxShadow: '0 0 0 2px hsl(var(--primary))',
             transition:
-              'top 0.3s ease-out, left 0.3s ease-out, width 0.3s ease-out, height 0.3s ease-out',
+              'top 0.1s ease-out, left 0.1s ease-out, width 0.1s ease-out, height 0.1s ease-out',
           }}
         />
       ))}

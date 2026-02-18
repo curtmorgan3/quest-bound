@@ -388,7 +388,11 @@ export const Rulesets = () => {
                       </AlertDialogContent>
                     </AlertDialog>
                   )}
-                  <Button variant='ghost' size='sm' onClick={() => navigate(`/rulesets/${r.id}`)}>
+                  <Button
+                    variant='ghost'
+                    size='sm'
+                    onClick={() => navigate(`/rulesets/${r.id}`)}
+                    data-testid='preview-card-open'>
                     Open
                   </Button>
                 </div>
