@@ -4,6 +4,7 @@ import type { Tutorial } from '@/types';
 export const onboardingTutorial: Tutorial = [
   {
     title: 'Rulesets',
+    selector: '[data-testid="nav-rulesets"]',
     substeps: [
       {
         description:
@@ -18,6 +19,7 @@ export const onboardingTutorial: Tutorial = [
   },
   {
     title: 'Attributes, Actions & Items',
+    selector: '[data-testid="nav-rulesets"]',
     substeps: [
       {
         description:
@@ -28,6 +30,7 @@ export const onboardingTutorial: Tutorial = [
   },
   {
     title: 'Windows & Pages',
+    selector: '[data-testid="nav-windows"], [data-testid="nav-pages"]',
     substeps: [
       {
         description:
@@ -43,6 +46,7 @@ export const onboardingTutorial: Tutorial = [
   },
   {
     title: 'Scripts & Dice',
+    selector: '[data-testid="nav-scripts"], [data-testid="nav-dice"]',
     substeps: [
       {
         description:
@@ -58,6 +62,7 @@ export const onboardingTutorial: Tutorial = [
   },
   {
     title: 'Help & Resources',
+    selector: '[data-testid="nav-help"]',
     substeps: [
       {
         description:

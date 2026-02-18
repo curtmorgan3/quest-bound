@@ -236,3 +236,17 @@ code {
     @apply bg-background text-foreground;
   }
 }
+
+@keyframes onboarding-highlight-pulse {
+  0%,
+  100% {
+    opacity: 0.3;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+.onboarding-highlight-box {
+  animation: onboarding-highlight-pulse 1.5s ease-in-out infinite;
+}

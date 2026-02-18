@@ -7,6 +7,7 @@ import { ChevronLeftIcon, ChevronRightIcon, XIcon } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { buildTutorial } from './build-tutorial';
+import { OnboardingHighlight } from './onboarding-highlight';
 
 interface OnboardingPanelProps {
   userId: string;
@@ -81,8 +82,10 @@ export function OnboardingPanel({ userId, onClose }: OnboardingPanelProps) {
   };
 
   return (
-    <Card
-      className='fixed bottom-6 left-6 z-50 w-[min(380px,calc(100vw-2rem))] border shadow-lg bg-card/95 backdrop-blur-sm'
+    <>
+      <OnboardingHighlight selector={currentStep.selector} />
+      <Card
+        className='fixed bottom-6 left-6 z-50 w-[min(380px,calc(100vw-2rem))] border shadow-lg bg-card/95 backdrop-blur-sm'
       role='region'
       aria-label='Getting started tutorial'>
       <CardHeader className='flex flex-row items-start justify-between gap-2 pb-2'>
@@ -157,5 +160,6 @@ export function OnboardingPanel({ userId, onClose }: OnboardingPanelProps) {
         </div>
       </CardFooter>
     </Card>
+    </>
   );
 }

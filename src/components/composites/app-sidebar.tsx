@@ -444,7 +444,9 @@ export function AppSidebar() {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
                 <SidebarMenuItem>
-                  <SidebarMenuButton onClick={() => setDicePanelOpen(true)}>
+                  <SidebarMenuButton
+                    onClick={() => setDicePanelOpen(true)}
+                    data-testid='nav-dice'>
                     <Dices />
                     <span>Dice</span>
                   </SidebarMenuButton>
