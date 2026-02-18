@@ -122,7 +122,7 @@ export const InventoryDataEdit = ({ components, updateComponents }: InventoryDat
           />
         </div>
       </div>
-      <div className='flex flex-col gap-1'>
+      <div className='flex flex-col gap-1' id='inventory-type-restriction'>
         <label className='text-xs text-muted-foreground'>Type Restriction</label>
         <Select
           value={currentType ?? 'none'}

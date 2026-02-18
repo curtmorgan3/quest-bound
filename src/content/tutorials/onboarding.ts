@@ -40,7 +40,7 @@ export const onboardingTutorial: Tutorial = [
         selector: {
           selector:
             '#create-title, #create-default, #create-min, #create-max, [data-testid="base-create-submit"]',
-          shouldAdvanceOnClick: true,
+          shouldAdvanceOnClick: false,
         },
       },
     ],
@@ -60,10 +60,10 @@ export const onboardingTutorial: Tutorial = [
         },
       },
       {
-        description: 'Enter the title "attack", then click Create.',
+        description: 'Enter the title "take damage", then click Create.',
         selector: {
           selector: '#create-title, [data-testid="base-create-submit"]',
-          shouldAdvanceOnClick: true,
+          shouldAdvanceOnClick: false,
         },
       },
     ],
@@ -99,7 +99,7 @@ export const onboardingTutorial: Tutorial = [
     ],
   },
   {
-    title: 'Windows',
+    title: 'Health Window',
     substeps: [
       {
         description: 'Go to the Windows page from the ruleset sidebar.',
@@ -116,7 +116,7 @@ export const onboardingTutorial: Tutorial = [
         description: 'Enter the title "Health", then click Create.',
         selector: {
           selector: '#create-title, [data-testid="base-create-submit"]',
-          shouldAdvanceOnClick: true,
+          shouldAdvanceOnClick: false,
         },
       },
       {
@@ -146,6 +146,84 @@ export const onboardingTutorial: Tutorial = [
           'Under the Data tab, open the Attribute dropdown and select the "Health" attribute to bind it to the input.',
         selector: {
           selector: '#component-data-attribute-lookup',
+          shouldAdvanceOnClick: false,
+        },
+      },
+    ],
+  },
+  {
+    title: 'Comabt Window',
+    substeps: [
+      {
+        description: 'Go to the Windows page from the ruleset sidebar.',
+        selector: { selector: '[data-testid="nav-windows"]', shouldAdvanceOnClick: true },
+      },
+      {
+        description: 'Click "New" to create a window.',
+        selector: {
+          selector: '[data-testid="ruleset-new-button"]',
+          shouldAdvanceOnClick: true,
+        },
+      },
+      {
+        description: 'Enter the title "Combat", then click Create.',
+        selector: {
+          selector: '#create-title, [data-testid="base-create-submit"]',
+          shouldAdvanceOnClick: false,
+        },
+      },
+      {
+        description: 'Open the Combat window by clicking "Open" on its card.',
+        selector: { selector: '[data-testid="preview-card-open"]', shouldAdvanceOnClick: true },
+      },
+      {
+        description:
+          'Right-click on the canvas and choose "Text" from the context menu to add a text component.',
+        selector: {
+          selector: '[data-testid="context-menu-option-text"]',
+          shouldAdvanceOnClick: true,
+        },
+      },
+      {
+        description: 'Click the text you added to select it.',
+      },
+      {
+        description: 'In the right-hand panel, click the "Data" tab.',
+        selector: {
+          selector: '[data-testid="component-edit-tab-data"]',
+          shouldAdvanceOnClick: true,
+        },
+      },
+      {
+        description:
+          'Under the Data tab, open the Action dropdown and select the "Take Damage" attribute to bind it to the input.',
+        selector: {
+          selector: '#component-data-action-lookup',
+          shouldAdvanceOnClick: false,
+        },
+      },
+      {
+        description:
+          'Right-click on the canvas and choose "Inventory" from the context menu to add a text component.',
+        selector: {
+          selector: '[data-testid="context-menu-option-inventory"]',
+          shouldAdvanceOnClick: true,
+        },
+      },
+      {
+        description: 'Click the text you added to select it.',
+      },
+      {
+        description: 'In the right-hand panel, click the "Data" tab.',
+        selector: {
+          selector: '[data-testid="component-edit-tab-data"]',
+          shouldAdvanceOnClick: true,
+        },
+      },
+      {
+        description: 'Under the Data tab, open the type restriction and select the "Item" type.',
+        selector: {
+          selector: '#inventory-type-restriction',
           shouldAdvanceOnClick: false,
         },
       },

@@ -253,6 +253,7 @@ export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
                   />
 
                   <ActionLookup
+                    id='component-data-action-lookup'
                     value={selectedComponents[0].actionId}
                     onSelect={(attr) => handleUpdate('actionId', attr.id)}
                     onDelete={() => handleUpdate('actionId', null)}

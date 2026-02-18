@@ -35,6 +35,7 @@ interface ActionLookupProps {
   /** Filter lookup by category */
   filterCategory?: string;
   label?: string;
+  id?: string;
 }
 
 export const ActionLookup = ({
@@ -46,6 +47,7 @@ export const ActionLookup = ({
   disabled = false,
   filterCategory,
   label = 'Action',
+  id,
 }: ActionLookupProps) => {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
@@ -123,7 +125,7 @@ export const ActionLookup = ({
   };
 
   return (
-    <div className='flex flex-col gap-2'>
+    <div className='flex flex-col gap-2' id={id}>
       <Label>{label}</Label>
       <div className='flex gap-2'>
         <Popover open={open} onOpenChange={setOpen}>
