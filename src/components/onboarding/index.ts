@@ -1,1 +1,2 @@
-export { OnboardingDialog, useOnboardingStatus } from './onboarding-dialog';
+export { useOnboardingStatus } from './onboarding-dialog';
+export { OnboardingPanel } from './onboarding-panel';

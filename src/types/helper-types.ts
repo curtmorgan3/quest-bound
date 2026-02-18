@@ -23,3 +23,26 @@ export type InventoryListRow = {
   entry: InventoryItemWithData;
   estimatedSize: number;
 };
+
+export type TutorialAction = {
+  type: 'link';
+  href?: string;
+};
+
+export interface OnboardingStepCta {
+  label: string;
+  action: TutorialAction;
+}
+
+export interface OnboardingSubstep {
+  title?: string;
+  description: string;
+  ctas?: OnboardingStepCta[];
+}
+
+export interface OnboardingStep {
+  title: string;
+  substeps: OnboardingSubstep[];
+}
+
+export type Tutorial = OnboardingStep[];

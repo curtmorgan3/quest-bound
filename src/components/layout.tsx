@@ -1,6 +1,6 @@
 import { AppSidebar, Loading } from '@/components';
 import { GlobalLoadingOverlay } from '@/components/global-loading-overlay';
-import { OnboardingDialog, useOnboardingStatus } from '@/components/onboarding';
+import { OnboardingPanel, useOnboardingStatus } from '@/components/onboarding';
 import { useFontLoader, useUsers } from '@/lib/compass-api';
 import { SignIn } from '@/pages';
 import { DicePanel } from '@/pages/dice';
@@ -17,12 +17,9 @@ import { Toaster } from './ui/sonner';
 
 export function Layout() {
   const { currentUser, loading } = useUsers();
-  const {
-    hasCompleted,
-    isLoading: onboardingLoading,
-    refetch,
-  } = useOnboardingStatus(currentUser?.id ?? null);
-  console.log(hasCompleted);
+  const { hasCompleted, isLoading: onboardingLoading, refetch } = useOnboardingStatus(
+    currentUser?.id ?? null,
+  );
   const { forceShowAgain } = useOnboardingStore();
   const showOnboarding = Boolean(
     !onboardingLoading && currentUser && (forceShowAgain || !hasCompleted),
@@ -63,10 +60,9 @@ export function Layout() {
           setOpen: setCharacterInventoryPanelOpen,
         }}>
         <DiceProvider value={diceState}>
-          {currentUser && (
-            <OnboardingDialog
+          {currentUser && showOnboarding && (
+            <OnboardingPanel
               userId={currentUser.id}
-              open={showOnboarding}
               onClose={handleOnboardingClose}
             />
           )}
