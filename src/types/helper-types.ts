@@ -34,12 +34,17 @@ export interface OnboardingStepCta {
   action: TutorialAction;
 }
 
+export interface OnboardingSubstepSelector {
+  selector: string;
+  shouldAdvanceOnClick: boolean;
+}
+
 export interface OnboardingSubstep {
   title?: string;
   description: string;
   ctas?: OnboardingStepCta[];
-  /** Optional CSS selector. When on this substep, elements matching this selector are highlighted. */
-  selector?: string;
+  /** Optional. When on this substep, elements matching the selector are highlighted. If shouldAdvanceOnClick is true, clicking a matched element advances to the next substep. */
+  selector?: OnboardingSubstepSelector;
 }
 
 export interface OnboardingStep {

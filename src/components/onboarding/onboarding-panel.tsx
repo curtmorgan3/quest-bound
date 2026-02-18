@@ -4,7 +4,7 @@ import { onboardingTutorial } from '@/content';
 import { useOnboardingStore } from '@/stores';
 import { setOnboardingCompleted } from '@/utils/onboarding-storage';
 import { ChevronLeftIcon, ChevronRightIcon, XIcon } from 'lucide-react';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { buildTutorial } from './build-tutorial';
 import { OnboardingHighlight } from './onboarding-highlight';
@@ -81,9 +81,38 @@ export function OnboardingPanel({ userId, onClose }: OnboardingPanelProps) {
     }
   };
 
+  const handleNextSubstepRef = useRef(handleNextSubstep);
+  handleNextSubstepRef.current = handleNextSubstep;
+
+  useEffect(() => {
+    const sel = currentSubstep.selector;
+    if (!sel?.shouldAdvanceOnClick || !sel.selector?.trim()) return;
+
+    const selectorStr = sel.selector.trim();
+    let elements: Element[] = [];
+    try {
+      elements = Array.from(document.querySelectorAll(selectorStr));
+    } catch {
+      return;
+    }
+    if (elements.length === 0) return;
+
+    const handler = () => {
+      elements.forEach((el) => el.removeEventListener('click', handler));
+      setTimeout(() => {
+        handleNextSubstepRef.current();
+      }, 0);
+    };
+
+    elements.forEach((el) => el.addEventListener('click', handler));
+    return () => {
+      elements.forEach((el) => el.removeEventListener('click', handler));
+    };
+  }, [currentSubstep.selector]);
+
   return (
     <>
-      <OnboardingHighlight selector={currentSubstep.selector} />
+      <OnboardingHighlight selector={currentSubstep.selector?.selector} />
       <Card
         className='fixed bottom-6 left-14 z-500 w-[min(380px,calc(100vw-2rem))] border shadow-lg bg-card/95 backdrop-blur-sm'
         role='region'

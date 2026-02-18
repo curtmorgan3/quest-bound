@@ -1,9 +1,9 @@
-import { colorPrimary } from '@/palette';
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 
 const HIGHLIGHT_Z_INDEX = 4000;
 const PADDING = 4;
+const POLL_INTERVAL_MS = 200;
 
 interface OnboardingHighlightProps {
   selector: string | undefined;
@@ -42,8 +42,12 @@ export function OnboardingHighlight({ selector }: OnboardingHighlightProps) {
       return;
     }
 
-    const update = () => setRects(getRectsForSelector(selector));
+    const selectorStr = selector.trim();
+    const update = () => setRects(getRectsForSelector(selectorStr));
+
     update();
+
+    const pollId = setInterval(update, POLL_INTERVAL_MS);
 
     window.addEventListener('scroll', update, true);
     window.addEventListener('resize', update);
@@ -51,6 +55,7 @@ export function OnboardingHighlight({ selector }: OnboardingHighlightProps) {
     observer.observe(document.body);
 
     return () => {
+      clearInterval(pollId);
       window.removeEventListener('scroll', update, true);
       window.removeEventListener('resize', update);
       observer.disconnect();
@@ -80,7 +85,7 @@ export function OnboardingHighlight({ selector }: OnboardingHighlightProps) {
             width: r.width,
             height: r.height,
             borderRadius: '6px',
-            backgroundColor: colorPrimary,
+            backgroundColor: '#36bfd1',
             boxShadow: '0 0 0 2px hsl(var(--primary))',
             transition:
               'top 0.1s ease-out, left 0.1s ease-out, width 0.1s ease-out, height 0.1s ease-out',
