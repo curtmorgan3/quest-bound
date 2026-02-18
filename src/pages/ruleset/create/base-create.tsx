@@ -223,7 +223,8 @@ export const BaseCreate = ({ onCreate }: BaseCreateProps) => {
         </Button>
         <Button
           variant={activeType === 'windows' ? 'default' : 'outline'}
-          onClick={() => setActiveType('windows')}>
+          onClick={() => setActiveType('windows')}
+          data-testid='base-create-type-windows'>
           <iconset.windows />
         </Button>
         <Button

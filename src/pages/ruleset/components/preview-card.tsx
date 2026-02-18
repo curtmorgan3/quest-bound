@@ -262,7 +262,8 @@ export const PreviewCard = ({
                 e.stopPropagation();
                 onOpen(id);
               }}
-              disabled={openDisabled}>
+              disabled={openDisabled}
+              data-testid='preview-card-open'>
               Open
             </Button>
           </div>

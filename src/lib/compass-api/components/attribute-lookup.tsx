@@ -35,6 +35,7 @@ interface AttributeLookupProps {
   /** Filter lookup by type */
   filterType?: AttributeType;
   label?: string;
+  id?: string;
 }
 
 export const AttributeLookup = ({
@@ -46,6 +47,7 @@ export const AttributeLookup = ({
   disabled = false,
   filterType,
   label = 'Attribute',
+  id,
 }: AttributeLookupProps) => {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
@@ -126,7 +128,7 @@ export const AttributeLookup = ({
   };
 
   return (
-    <div className='flex flex-col gap-2'>
+    <div className='flex flex-col gap-2' id={id}>
       <Label>{label}</Label>
       <div className={`flex gap-2`}>
         <Popover open={open} onOpenChange={setOpen}>
@@ -136,7 +138,8 @@ export const AttributeLookup = ({
               role='combobox'
               aria-expanded={open}
               className={cn('w-full justify-between', className)}
-              disabled={disabled}>
+              disabled={disabled}
+              data-testid='component-edit-attribute-lookup'>
               {selectedAttribute ? selectedAttribute.title : placeholder}
               <>
                 {selectedAttribute && (

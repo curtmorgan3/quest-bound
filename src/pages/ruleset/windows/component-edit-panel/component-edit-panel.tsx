@@ -225,7 +225,7 @@ export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
             <TabsTrigger value='style' className='flex-1'>
               Style
             </TabsTrigger>
-            <TabsTrigger value='data' className='flex-1'>
+            <TabsTrigger value='data' className='flex-1' data-testid='component-edit-tab-data'>
               Data
             </TabsTrigger>
           </TabsList>
@@ -245,6 +245,7 @@ export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
               selectedComponents[0].type !== ComponentTypes.FRAME && (
                 <>
                   <AttributeLookup
+                    id='component-data-attribute-lookup'
                     value={selectedComponents[0].attributeId}
                     onSelect={(attr) => handleUpdate('attributeId', attr.id)}
                     onDelete={() => handleUpdate('attributeId', null)}
