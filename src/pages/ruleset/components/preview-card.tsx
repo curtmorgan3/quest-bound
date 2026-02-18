@@ -92,6 +92,7 @@ export const PreviewCard = ({
     <Card
       key={id}
       className={`p-4 w-[320px] flex flex-col justify-between h-[240px]`}
+      data-testid='preview-card'
       onClick={handleSave}
       style={
         image

@@ -36,6 +36,7 @@ interface ActionLookupProps {
   filterCategory?: string;
   label?: string;
   id?: string;
+  'data-testid'?: string;
 }
 
 export const ActionLookup = ({
@@ -48,6 +49,7 @@ export const ActionLookup = ({
   filterCategory,
   label = 'Action',
   id,
+  'data-testid': dataTestId,
 }: ActionLookupProps) => {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
@@ -135,7 +137,8 @@ export const ActionLookup = ({
               role='combobox'
               aria-expanded={open}
               className={cn('w-full justify-between', className)}
-              disabled={disabled}>
+              disabled={disabled}
+              data-testid={dataTestId}>
               {selectedAction ? selectedAction.title : placeholder}
               <>
                 {selectedAction && (

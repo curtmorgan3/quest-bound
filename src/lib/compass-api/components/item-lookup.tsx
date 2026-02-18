@@ -35,6 +35,7 @@ interface ItemLookupProps {
   /** Filter lookup by category */
   filterCategory?: string;
   label?: string;
+  'data-testid'?: string;
 }
 
 export const ItemLookup = ({
@@ -46,6 +47,7 @@ export const ItemLookup = ({
   disabled = false,
   filterCategory,
   label = 'Item',
+  'data-testid': dataTestId,
 }: ItemLookupProps) => {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
@@ -132,7 +134,8 @@ export const ItemLookup = ({
               role='combobox'
               aria-expanded={open}
               className={cn('w-full justify-between', className)}
-              disabled={disabled}>
+              disabled={disabled}
+              data-testid={dataTestId}>
               {selectedItem ? selectedItem.title : placeholder}
               <>
                 {selectedItem && (

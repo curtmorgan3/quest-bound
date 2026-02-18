@@ -229,7 +229,8 @@ export const BaseCreate = ({ onCreate }: BaseCreateProps) => {
         </Button>
         <Button
           variant={activeType === 'pages' ? 'default' : 'outline'}
-          onClick={() => setActiveType('pages')}>
+          onClick={() => setActiveType('pages')}
+          data-testid='base-create-type-pages'>
           <iconset.pages />
         </Button>
       </div>

@@ -139,7 +139,7 @@ export const EditorTopBar = ({
             setEntityType(v);
             if (v === 'global') setEntityId(null);
           }}>
-          <SelectTrigger>
+          <SelectTrigger data-testid='script-editor-type'>
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -171,6 +171,7 @@ export const EditorTopBar = ({
             value={entityId}
             onSelect={(a: Action) => setEntityId(a.id)}
             onDelete={() => setEntityId(null)}
+            data-testid='script-editor-action-lookup'
           />
         </div>
       )}
@@ -181,6 +182,7 @@ export const EditorTopBar = ({
             value={entityId}
             onSelect={(i: Item) => setEntityId(i.id)}
             onDelete={() => setEntityId(null)}
+            data-testid='script-editor-item-lookup'
           />
         </div>
       )}
@@ -195,7 +197,11 @@ export const EditorTopBar = ({
             <Zap className='h-4 w-4' />
             Run
           </Button>
-          <Button onClick={handleSave} disabled={saveDisabled} variant='default'>
+          <Button
+            onClick={handleSave}
+            disabled={saveDisabled}
+            variant='default'
+            data-testid='script-editor-save'>
             Save
           </Button>
           <Button variant='outline' onClick={handleCancel}>

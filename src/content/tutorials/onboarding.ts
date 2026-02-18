@@ -40,7 +40,7 @@ export const onboardingTutorial: Tutorial = [
         selector: {
           selector:
             '#create-title, #create-default, #create-min, #create-max, [data-testid="base-create-submit"]',
-          shouldAdvanceOnClick: false,
+          shouldAdvanceOnClick: true,
         },
       },
     ],
@@ -63,7 +63,7 @@ export const onboardingTutorial: Tutorial = [
         description: 'Enter the title "take damage", then click Create.',
         selector: {
           selector: '#create-title, [data-testid="base-create-submit"]',
-          shouldAdvanceOnClick: false,
+          shouldAdvanceOnClick: true,
         },
       },
     ],
@@ -116,7 +116,7 @@ export const onboardingTutorial: Tutorial = [
         description: 'Enter the title "Health", then click Create.',
         selector: {
           selector: '#create-title, [data-testid="base-create-submit"]',
-          shouldAdvanceOnClick: false,
+          shouldAdvanceOnClick: true,
         },
       },
       {
@@ -169,12 +169,15 @@ export const onboardingTutorial: Tutorial = [
         description: 'Enter the title "Combat", then click Create.',
         selector: {
           selector: '#create-title, [data-testid="base-create-submit"]',
-          shouldAdvanceOnClick: false,
+          shouldAdvanceOnClick: true,
         },
       },
       {
-        description: 'Open the Combat window by clicking "Open" on its card.',
-        selector: { selector: '[data-testid="preview-card-open"]', shouldAdvanceOnClick: true },
+        description: 'Open the Combat window by clicking "Open" on the first card.',
+        selector: {
+          selector: '[data-testid="preview-card"]:first-of-type [data-testid="preview-card-open"]',
+          shouldAdvanceOnClick: true,
+        },
       },
       {
         description:
@@ -211,7 +214,7 @@ export const onboardingTutorial: Tutorial = [
         },
       },
       {
-        description: 'Click the text you added to select it.',
+        description: 'Click the inventory you added to select it.',
       },
       {
         description: 'In the right-hand panel, click the "Data" tab.',
@@ -225,6 +228,135 @@ export const onboardingTutorial: Tutorial = [
         selector: {
           selector: '#inventory-type-restriction',
           shouldAdvanceOnClick: false,
+        },
+      },
+    ],
+  },
+  {
+    title: 'Pages',
+    substeps: [
+      {
+        description: 'Go to the Pages section from the ruleset sidebar.',
+        selector: { selector: '[data-testid="nav-pages"]', shouldAdvanceOnClick: true },
+      },
+      {
+        description: 'Click "New" to create a page.',
+        selector: {
+          selector: '[data-testid="ruleset-new-button"]',
+          shouldAdvanceOnClick: true,
+        },
+      },
+      {
+        description: 'Enter the title "Combat Sheet", then click Create.',
+        selector: {
+          selector: '#create-title, [data-testid="base-create-submit"]',
+          shouldAdvanceOnClick: true,
+        },
+      },
+      {
+        description: 'Open the Combat Sheet page by clicking "Open" on its card.',
+        selector: { selector: '[data-testid="preview-card-open"]', shouldAdvanceOnClick: true },
+      },
+      {
+        description: 'Click "Add window" at the bottom of the page editor.',
+        selector: {
+          selector: '[data-testid="page-editor-add-window"]',
+          shouldAdvanceOnClick: true,
+        },
+      },
+      {
+        description:
+          'In the Add window dialog, click "Health" to add the Health window to the page.',
+        selector: {
+          selector: '[data-testid="add-window-option-health"]',
+          shouldAdvanceOnClick: true,
+        },
+      },
+      {
+        description: 'Click "Add window" again to add another window.',
+        selector: {
+          selector: '[data-testid="page-editor-add-window"]',
+          shouldAdvanceOnClick: true,
+        },
+      },
+      {
+        description:
+          'In the Add window dialog, click "Combat" to add the Combat window to the page.',
+        selector: {
+          selector: '[data-testid="add-window-option-combat"]',
+          shouldAdvanceOnClick: true,
+        },
+      },
+    ],
+  },
+  {
+    title: 'Scripts',
+    substeps: [
+      {
+        description: 'Go to the Scripts page from the ruleset sidebar.',
+        selector: { selector: '[data-testid="nav-scripts"]', shouldAdvanceOnClick: true },
+      },
+      {
+        description: 'Click "New Script" to create a script.',
+        selector: {
+          selector: '[data-testid="scripts-new-script-link"]',
+          shouldAdvanceOnClick: true,
+        },
+      },
+      {
+        description:
+          'Enter the name "take_damage", set Type to "Action", then open the Action dropdown and assign it to "Take Damage".',
+        selector: {
+          selector:
+            '#script-name, [data-testid="script-editor-type"], [data-testid="script-editor-action-lookup"]',
+          shouldAdvanceOnClick: false,
+        },
+      },
+      {
+        description: `
+        Copy and paste the following QBScript code into the editor:
+        on_activate():
+            health = getAttr('Health')
+            health.subtract(2)
+        `,
+        selector: {
+          selector: '[data-testid="script-editor-save"]',
+          shouldAdvanceOnClick: true,
+        },
+      },
+      {
+        description: 'Go back to the Scripts list',
+        selector: {
+          selector: '[data-testid="nav-scripts"]',
+          shouldAdvanceOnClick: true,
+        },
+      },
+      {
+        description: 'Click "New Script" again.',
+        selector: {
+          selector: '[data-testid="scripts-new-script-link"]',
+          shouldAdvanceOnClick: true,
+        },
+      },
+      {
+        description:
+          'Enter the name "drink_potion", set Type to "Item", then open the Item dropdown and assign it to "Potion".',
+        selector: {
+          selector:
+            '#script-name, [data-testid="script-editor-type"], [data-testid="script-editor-item-lookup"]',
+          shouldAdvanceOnClick: false,
+        },
+      },
+      {
+        description: `
+        Copy paste the following QBScript code in the editor:
+        on_consume():
+            health = getAttr('Health')
+            health.add(2)
+        `,
+        selector: {
+          selector: '[data-testid="script-editor-save"]',
+          shouldAdvanceOnClick: true,
         },
       },
     ],

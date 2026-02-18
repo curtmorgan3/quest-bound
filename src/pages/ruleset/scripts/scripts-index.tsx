@@ -164,7 +164,7 @@ export function ScriptsIndex() {
           </Select>
         </div>
         <Button asChild>
-          <Link to={`/rulesets/${rulesetId}/scripts/new`}>
+          <Link to={`/rulesets/${rulesetId}/scripts/new`} data-testid='scripts-new-script-link'>
             <Plus className='h-4 w-4 mr-2' />
             New Script
           </Link>
@@ -183,7 +183,7 @@ export function ScriptsIndex() {
             </p>
             {selectedType === 'all' && (
               <Button asChild>
-                <Link to={`/rulesets/${rulesetId}/scripts/new`}>
+                <Link to={`/rulesets/${rulesetId}/scripts/new`} data-testid='scripts-new-script-link'>
                   <Plus className='h-4 w-4 mr-2' />
                   New Script
                 </Link>

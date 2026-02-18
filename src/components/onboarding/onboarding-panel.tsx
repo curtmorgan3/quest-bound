@@ -97,16 +97,26 @@ export function OnboardingPanel({ userId, onClose }: OnboardingPanelProps) {
     }
     if (elements.length === 0) return;
 
+    const isButtonLike = (el: Element): boolean => {
+      const tag = el.tagName.toUpperCase();
+      if (tag === 'BUTTON' || tag === 'A') return true;
+      if (el.getAttribute('role') === 'button') return true;
+      return false;
+    };
+
+    const clickables = elements.filter(isButtonLike);
+    if (clickables.length === 0) return;
+
     const handler = () => {
-      elements.forEach((el) => el.removeEventListener('click', handler));
+      clickables.forEach((el) => el.removeEventListener('click', handler));
       setTimeout(() => {
         handleNextSubstepRef.current();
       }, 0);
     };
 
-    elements.forEach((el) => el.addEventListener('click', handler));
+    clickables.forEach((el) => el.addEventListener('click', handler));
     return () => {
-      elements.forEach((el) => el.removeEventListener('click', handler));
+      clickables.forEach((el) => el.removeEventListener('click', handler));
     };
   }, [currentSubstep.selector]);
 
@@ -114,7 +124,7 @@ export function OnboardingPanel({ userId, onClose }: OnboardingPanelProps) {
     <>
       <OnboardingHighlight selector={currentSubstep.selector?.selector} />
       <Card
-        className='fixed bottom-6 left-14 z-500 w-[min(380px,calc(100vw-2rem))] border shadow-lg bg-card/95 backdrop-blur-sm'
+        className='fixed bottom-8 left-14 z-500 w-[min(380px,calc(100vw-2rem))] border shadow-lg bg-card/95 backdrop-blur-sm'
         role='region'
         aria-label='Getting started tutorial'>
         <CardHeader className='flex flex-row items-start justify-between gap-2 pb-2'>

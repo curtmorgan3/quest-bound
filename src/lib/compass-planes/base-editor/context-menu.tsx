@@ -103,7 +103,7 @@ export const ContextMenu = ({
       <div style={{ overflowY: 'scroll', flexGrow: 1 }}>
         {!filteredOptions.length && <p style={{ fontStyle: 'italic' }}>No options found</p>}
         {filteredOptions.map((option, i) => (
-          <div key={i} data-testid={`context-menu-option-${option.nodeType}`}>
+          <div role='button' key={i} data-testid={`context-menu-option-${option.nodeType}`}>
             <p
               className='clickable'
               onClick={() => {

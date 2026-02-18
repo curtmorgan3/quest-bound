@@ -194,7 +194,8 @@ export const RulesetPageEditor = ({ pageId }: RulesetPageEditorProps) => {
             size='sm'
             className='h-8 shrink-0 gap-1 px-2 text-xs border-[#555] bg-[#333] text-white hover:bg-[#444]'
             onClick={() => setAddWindowOpen(true)}
-            title='Add window to this page'>
+            title='Add window to this page'
+            data-testid='page-editor-add-window'>
             <Plus size={14} />
             Add window
           </Button>
@@ -259,6 +260,7 @@ export const RulesetPageEditor = ({ pageId }: RulesetPageEditorProps) => {
                   type='button'
                   disabled={existingWindowIds.has(w.id)}
                   onClick={() => handleAddWindow(w)}
+                  data-testid={`add-window-option-${w.title.toLowerCase().replace(/\s+/g, '-')}`}
                   style={{
                     padding: '12px 16px',
                     backgroundColor: '#333',

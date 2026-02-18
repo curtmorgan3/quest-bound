@@ -123,6 +123,7 @@ export const ItemCreate = ({
               <Shirt className={isEquippable ? 'text-primary' : ''} />
             </div>
             <div
+              role='button'
               data-testid='item-create-consumable'
               className='flex flex-col gap-2 items-center cursor-pointer'
               onClick={() => setIsConsumable((prev) => !prev)}>
