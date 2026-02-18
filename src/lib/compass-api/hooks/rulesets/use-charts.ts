@@ -1,0 +1,92 @@
+import { useErrorHandler } from '@/hooks/use-error-handler';
+import { db, useApiLoadingStore } from '@/stores';
+import type { Chart } from '@/types';
+import { useLiveQuery } from 'dexie-react-hooks';
+import { useEffect } from 'react';
+import { useAssets } from '../assets';
+import { useActiveRuleset } from './use-active-ruleset';
+
+export const useCharts = (rulesetId?: string) => {
+  const { activeRuleset } = useActiveRuleset();
+  const { handleError } = useErrorHandler();
+  const { deleteAsset } = useAssets();
+
+  const effectiveRulesetId = rulesetId ?? activeRuleset?.id;
+
+  const charts = useLiveQuery(
+    () =>
+      db.charts
+        .where('rulesetId')
+        .equals(effectiveRulesetId ?? 0)
+        .toArray(),
+    [effectiveRulesetId],
+  );
+
+  const isLoading = charts === undefined;
+  useEffect(() => {
+    useApiLoadingStore.getState().setLoading('charts', isLoading);
+  }, [isLoading]);
+
+  const createChart = async (data: Partial<Chart>) => {
+    if (!activeRuleset) return;
+    const now = new Date().toISOString();
+    try {
+      await db.charts.add({
+        ...data,
+        id: crypto.randomUUID(),
+        rulesetId: activeRuleset.id,
+        createdAt: now,
+        updatedAt: now,
+      } as Chart);
+    } catch (e) {
+      handleError(e as Error, {
+        component: 'useCharts/createChart',
+        severity: 'medium',
+      });
+    }
+  };
+
+  const updateChart = async (id: string, data: Partial<Chart>) => {
+    const now = new Date().toISOString();
+    try {
+      if (data.assetId === null) {
+        const original = await db.charts.get(id);
+        if (original?.assetId) {
+          await deleteAsset(original.assetId);
+        }
+
+        if (!data.image) {
+          data.image = null;
+        }
+      }
+      await db.charts.update(id, {
+        ...data,
+        updatedAt: now,
+      });
+    } catch (e) {
+      handleError(e as Error, {
+        component: 'useCharts/updateChart',
+        severity: 'medium',
+      });
+    }
+  };
+
+  const deleteChart = async (id: string) => {
+    try {
+      await db.charts.delete(id);
+    } catch (e) {
+      handleError(e as Error, {
+        component: 'useCharts/deleteChart',
+        severity: 'medium',
+      });
+    }
+  };
+
+  return {
+    charts: charts ?? [],
+    isLoading,
+    createChart,
+    updateChart,
+    deleteChart,
+  };
+};

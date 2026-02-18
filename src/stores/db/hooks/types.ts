@@ -1,0 +1,29 @@
+import type Dexie from 'dexie';
+
+export type DB = Dexie & {
+  rulesets: Dexie.Table;
+  attributes: Dexie.Table;
+  items: Dexie.Table;
+  actions: Dexie.Table;
+  charts: Dexie.Table;
+  assets: Dexie.Table;
+  windows: Dexie.Table;
+   rulesetWindows: Dexie.Table;
+  components: Dexie.Table;
+  fonts: Dexie.Table;
+  characters: Dexie.Table;
+  inventories: Dexie.Table;
+  inventoryItems: Dexie.Table;
+  characterAttributes: Dexie.Table;
+  pages: Dexie.Table;
+  rulesetPages: Dexie.Table;
+  characterPages: Dexie.Table;
+  characterWindows: Dexie.Table;
+  documents: Dexie.Table;
+  users: Dexie.Table;
+  diceRolls: Dexie.Table;
+  scripts: Dexie.Table;
+  scriptErrors: Dexie.Table;
+  scriptLogs: Dexie.Table;
+  dependencyGraphNodes: Dexie.Table;
+};

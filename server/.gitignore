@@ -1,6 +1,0 @@
-node_modules
-/dist
-/src/storage
-.DS_Store
-.npmrc
-src/database/prisma/generated

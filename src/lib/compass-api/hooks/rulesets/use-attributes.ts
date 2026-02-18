@@ -1,0 +1,121 @@
+import { useErrorHandler } from '@/hooks';
+import { db, useApiLoadingStore } from '@/stores';
+import type { Attribute } from '@/types';
+import { useLiveQuery } from 'dexie-react-hooks';
+import { useEffect } from 'react';
+import { useAssets } from '../assets';
+import { useActiveRuleset } from './use-active-ruleset';
+
+export const useAttributes = () => {
+  const { activeRuleset } = useActiveRuleset();
+  const { handleError } = useErrorHandler();
+  const { deleteAsset } = useAssets();
+
+  const attributes = useLiveQuery(
+    () =>
+      db.attributes
+        .where('rulesetId')
+        .equals(activeRuleset?.id ?? 0)
+        .toArray(),
+    [activeRuleset],
+  );
+
+  const isLoading = attributes === undefined;
+
+  useEffect(() => {
+    useApiLoadingStore.getState().setLoading('attributes', isLoading);
+  }, [isLoading]);
+
+  const createAttribute = async (data: Partial<Attribute>) => {
+    if (!activeRuleset) return;
+    const now = new Date().toISOString();
+    try {
+      await db.attributes.add({
+        ...data,
+        id: crypto.randomUUID(),
+        rulesetId: activeRuleset.id,
+        createdAt: now,
+        updatedAt: now,
+      } as Attribute);
+      // Note: characterAttribute for test character is created automatically via db middleware
+    } catch (e) {
+      handleError(e as Error, {
+        component: 'useAttributes/createAttribute',
+        severity: 'medium',
+      });
+    }
+  };
+
+  const updateAttribute = async (id: string, data: Partial<Attribute>) => {
+    const now = new Date().toISOString();
+
+    const newMin = data.min;
+    const newMax = data.max;
+    const newDefaultValue = data.defaultValue;
+
+    // Ensure min is not greater than max
+    if (newMin !== undefined && newMax !== undefined && newMin > newMax) {
+      console.warn('Min cannot be greater than Max. Adjusting Max to match Min.');
+      data.max = newMin;
+    }
+
+    // Ensure defaultValue is within the new min and max bounds
+    if (newDefaultValue !== undefined) {
+      if (newMin !== undefined && typeof newDefaultValue === 'number' && newDefaultValue < newMin) {
+        console.warn('Default value is less than Min. Adjusting Default value to match Min.');
+        data.defaultValue = newMin;
+      } else if (
+        newMax !== undefined &&
+        typeof newDefaultValue === 'number' &&
+        newDefaultValue > newMax
+      ) {
+        console.warn('Default value is greater than Max. Adjusting Default value to match Max.');
+        data.max = newDefaultValue;
+      }
+    }
+
+    try {
+      if (data.assetId === null) {
+        const original = await db.attributes.get(id);
+        if (original?.assetId) {
+          await deleteAsset(original.assetId);
+        }
+
+        if (!data.image) {
+          data.image = null;
+        }
+      }
+
+      await db.attributes.update(id, {
+        ...data,
+        updatedAt: now,
+      });
+      // Note: characterAttribute for test character is updated automatically via db middleware
+    } catch (e) {
+      handleError(e as Error, {
+        component: 'useAttributes/updateAttribute',
+        severity: 'medium',
+      });
+    }
+  };
+
+  const deleteAttribute = async (id: string) => {
+    try {
+      await db.attributes.delete(id);
+      // Note: characterAttribute for test character is deleted automatically via db middleware
+    } catch (e) {
+      handleError(e as Error, {
+        component: 'useAttributes/deleteAttribute',
+        severity: 'medium',
+      });
+    }
+  };
+
+  return {
+    attributes: attributes ?? [],
+    isLoading,
+    createAttribute,
+    updateAttribute,
+    deleteAttribute,
+  };
+};

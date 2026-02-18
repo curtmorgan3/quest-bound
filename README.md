@@ -2,170 +2,73 @@
 
 Quest Bound is a free and open source engine for creating digital tabletop role playing games. This repo contains all of its source code, its open source license and terms of use.
 
-![Screenshot 2024-12-27 at 8 33 12 AM](https://github.com/user-attachments/assets/98809869-265b-40cf-b45e-555682b42888)
-
-[Live Documentation](https://docs.questbound.com)
-
-[Getting Started](https://github.com/curtmorgan3/quest-bound#getting-started)
-
-[Bootstrapping](https://github.com/curtmorgan3/quest-bound#bootstrapping)
-
-[Running Quest Bound](https://github.com/curtmorgan3/quest-bound#starting-quest-bound)
-
-[Contributing](https://github.com/curtmorgan3/quest-bound#contributing-to-quest-bound)
-
-[Report Bugs or Request Features](https://github.com/curtmorgan3/quest-bound#issues)
-
-[About the Creator](https://github.com/curtmorgan3/quest-bound#about-the-creator)
+<img width="3240" height="842" alt="qb" src="https://github.com/user-attachments/assets/bb9a241d-9d17-4e03-8f58-56d4802e1552" />
 
 ---------
 
-Join our [Discord Server](https://discord.gg/7QGV4muT39) to join discussions and troubleshoot issues.
+Join our [Discord Server](https://discord.gg/Zx2jR5Q3zN) to share ideas and troubleshoot issues.
 
 Contribute to the documentation [here](https://github.com/curtmorgan3/quest-bound-docs).
 
 ---------
 
-## Sponsor Shoutout
+## License
+Quest Bound is free and open source under a strong copy left license. That means you can use and share Quest Bound freely.
 
-Special thanks to those who have supported Quest Bound's development above and beyond what's been expected of them.
+You **may** (and should!)
+- Freely download and use Quest Bound on your personal computer
+- Freely use Quest Bound on [https://app.questbound.com](https://app.questbound.com)
+- Share Quest Bound's source code or links to this site with friends
 
-[Crow Brain Games](https://crowbraingames.com/)
+You **may not**
+- Include Quest Bound's source code in your application unlesss that application has the same free and open source license and gives proper attribution
+- Share content, including PDFs of games you've purchased, as Quest Bound rulesets
 
-[Roll 4 Gravity](https://www.roll4gravity.com/)
+Quest Bound lets you build automated tools for your games and includes the ability to upload PDFs for quick reference. Refer to the license of the game you purchases to understand
+your limitations on digitally reporducing and sharing that game.
 
-T.L. Bainter
+You can find Quest Bound's full license on the right hand side of this page, or in the root directory of the source code.
 
-GM Pak
+## Installing
 
-## Getting Started
+### Install Online
+The easiest and recommended way to use Quest Bound is by navigating to [https://app.questbound.com](https://app.questbound.com). Using QB online is free and only requires you to register your email address.
 
-Quest Bound is a web application written entirely in TypeScript, a high level programming language that compiles to JavaScript. You will run two separate applications to use Quest Bound--a server and a client. When both are running, you'll access Quest Bound through a web browser of your choice.
+Quest Bound is a *progressive web app* that can be optionally installed on your computer. You'll see an option on the sign in page to install it.
 
-### Source Code
+<img width="425" height="168" alt="Screenshot 2026-02-06 at 7 28 47 AM" src="https://github.com/user-attachments/assets/4179a132-bc29-4aca-ad86-4206ed28c920" />
 
-Be sure you're on the latest release page! Currently, [v1.0.0](https://github.com/curtmorgan3/quest-bound/tree/v1.0.0) is the stable version. 
+Installing QB will let you launch it as a native application on your laptop or tablet. This is the recommended way to use it. Whether you install it or not, using Quest Bound does *not require an internet connection to work*. If you don't install it, you'll need the internet to initially connect to `app.questbound.com`, but may be disconnected after it loads in your browser. 
 
-Download the source code as a zip file and unzip it on your computer anywhere you'd like. Even though Quest Bound will be running on your own computer, it is not a native application, so it isn't picky about where its files are located.
+### Run from Source
+Alternatively, you may download the source code and run a local web server on your computer. To do so, you must have [Node v >= 22](https://nodejs.org/en/download) installed. 
 
-![Screenshot 2024-12-27 at 9 59 17 AM](https://github.com/user-attachments/assets/0542e7af-4a61-4560-bf6f-ba22924c5f5f)
-
-### Required Downloads
-
-**Docker**
-
-To make it as easy to run as possible, Quest Bound has been encapsulated into a Docker container. Docker is a separate application that will run Quest Bound inside a virtual machine on your computer, relieving you of downloading and installing the several specific runtimes QB requires.
-
-Download [Docker Desktop](https://www.docker.com/products/docker-desktop/). You will not need a paid account.
-
-### Recommended Downloads
-
-**Database Client**
-
-It is sometimes helpful to view the data in your database through a graphical client. This isn't strictly necessary. You can also run SQL commands through your terminal to execute raw database queries.
-My favorite client for Postgres is [Postico](https://eggerapps.at/postico2/). A great alternative is [DB Beaver](https://dbeaver.io/).
-
-**Text Editor**
-
-You will only find this useful if you intend to edit Quest Bound's source code. If you do, you likely already have a favorite code editor. Mine is [VS Code](https://code.visualstudio.com/download).
-
-### Bootstrapping
-
-Boostrapping Quest Bound only needs to be done once. After you get it running the first time, you can simply [start it](https://github.com/curtmorgan3/quest-bound#starting-quest-bound).
-
-### Docker
-
-Install and open Docker Desktop.
-
-![Screenshot 2024-12-27 at 8 00 56 AM](https://github.com/user-attachments/assets/ddc43848-9556-4e4c-af9d-d993ccb4d486)
-
-[Troubleshooting Tips for Docker on Windows](https://github.com/curtmorgan3/quest-bound#troubleshooting)
-
-Open your computer's terminal (Terminal on MacOS and Linux, CMD Prompt on Windows).
-
-In your terminal, navigate to wherever you placed the unzipped source code. For example:
-
-``` 
-cd ~/Documents/quest-bound-main
-```
-
-This command will vary depending on your operating system and where you placed the unzipped source code. In most terminal applications,
-dragging the folder into the terminal will paste its absolute path.
-
-Once in the top level directory, called `quest-bound-main`, run the following command:
+Download and unzip or use git to clone the source code in this repo. From the root, run
 
 ```
-docker compose up --build
+npm install && npm run build
 ```
 
-The `docker` command should have been made available on your machine when you installed Docker Desktop. If it isn't, follow the steps [here](https://www.docker.com/get-started/).
+You only need to run that command once to set up Quest Bound. After that, stat it with
 
-![Screenshot 2024-12-27 at 9 27 34 AM](https://github.com/user-attachments/assets/95f19ea9-602e-452b-aba5-4457663d627a)
+```
+npm run start
+```
 
-This command will install several Docker images on your machine. Each of them has a critical piece of infrastructure that Quest Bound needs. After those are downloaded, it will build the server and client applications. This should take five to ten minutes total.
+To get the latest updates, redownload the zip file and repeat the process or, if you have git installed, run 
 
-When it's finished, you should see four new images listed in Docker Desktop.
+```
+git pull && npm install && npm run build
+```
 
-- quest-bound-client
-- quest-bound-server
-- redis/redis-server-stack
-- postgres
+You will not lose your content after updating.
 
-![Screenshot 2024-12-27 at 8 07 31 AM](https://github.com/user-attachments/assets/a4a99c2d-aab5-4047-b4c4-45ad300518db)
+## Providing Feedback
+Please report bugs, feature requests and general feedback on the [issues page](https://github.com/curtmorgan3/quest-bound/issues).
 
-In your containers list, you should see a new collapsible list of containers called `quest-bound`. If this parent container is running, go ahead a click the stop button to stop it.
-This should clear the running process in your terminal.
+You can find a help channel on our [Discord server](https://discord.gg/Zx2jR5Q3zN).
 
-### Troubleshooting
+## Legacy Version
+You can find the original version of Quest Bound on the `legacy` branch of this repo. This version requires you to run separate applications for its server and client, as well as have PostgreSQL, Node and Redis available on your computer. Alternatively, the legacy version can be run through Docker. 
 
-Windows machines, especially those running Windows 10 or earlier, need a subsystem called Windows Subsystem for Linux (WSL). When installing Docker, you may run into an error like this:
-
-![dockerfail](https://github.com/user-attachments/assets/99679793-3a98-4e32-8c02-9e8446a3215f)
-
-Read through [this thread](https://github.com/docker/for-win/issues/13845#issuecomment-1895788805) to update to the latest version of WSL.
-
-Follow [this guide](https://www.ninjaone.com/blog/how-to-enable-cpu-virtualization-in-your-computer-bios/) to enable virtualization from your computer's BIOS.
-
-It might be helpful to store the `quest-bound-main` directory with the wsl file structure, instead of the usual `C:\\` path. For example:
-
-`\\wsl.localhost\Ubuntu\home\<user>\Documents\quest-bound-main`
-
-## Running Quest Bound
-
-Open Docker Desktop and click on `quest-bound-main` to see a list of containers and a running log.
-
-![Screenshot 2024-12-27 at 8 11 54 AM](https://github.com/user-attachments/assets/c4b6e277-c8d2-4ae9-9c27-400cdfaa3a04)
-
-Start each container in this order, waiting for the corresponding message to show it started successfully.
-
-- quest-bound-redis: `Ready to accept connections tcp`
-- quest-bound-db: `database system is ready to accept connections`
-- quest-bound-server: `[server]: Server is running at http://localhost:8000`
-- quest-bound-client: `Local:   http://localhost:5173/`
-
-Once all four containers are running successfully, open a web browser to test the services.
-
-`http://localhost:8000`
-
-![Screenshot 2024-12-26 at 9 45 07 AM](https://github.com/user-attachments/assets/85c0008d-c4e9-4549-8b53-05bb1027446f)
-
-`http://localhost:5173`
-
-![Screenshot 2024-12-27 at 8 18 14 AM](https://github.com/user-attachments/assets/f0ee2059-1291-408d-a97f-b597d1c2518f)
-
-## Contributing to Quest Bound
-
-You can find documentation on developing Quest Bound on this repo's wiki.
-
-### Issues
-
-To report bugs, create an issue in this repository and select the bug template. Issues will be updated and closed as they are addressed.
-
-### Discussions
-
-Use discussions to chat about potential features and updates with other users.
-
-### Pull Requests
-
-To submit a contribution, push your work to a feature branch and create a pull request to the main branch. Follow the PR template.
-Currently, all pull requests are reviewed by a single code owner, but this policy may change over time.
+The legacy version will remain availble indefinitely, but it will not be developed any further. It's recommended you use this version of Quest Bound instead. 

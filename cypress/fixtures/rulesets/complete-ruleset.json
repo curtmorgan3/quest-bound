@@ -1,0 +1,90 @@
+{
+  "ruleset": {
+    "id": "complete-ruleset-1",
+    "userId": "test-user-1",
+    "title": "Complete Test Ruleset",
+    "description": "A complete ruleset with all features for testing",
+    "assetId": null,
+    "image": null,
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "updatedAt": "2024-01-01T00:00:00.000Z"
+  },
+  "attributes": [
+    {
+      "id": "attr-strength",
+      "rulesetId": "complete-ruleset-1",
+      "title": "Strength",
+      "description": "Physical strength",
+      "category": "Attributes",
+      "type": "number",
+      "defaultValue": 10,
+      "min": 1,
+      "max": 20,
+      "createdAt": "2024-01-01T00:00:00.000Z",
+      "updatedAt": "2024-01-01T00:00:00.000Z"
+    },
+    {
+      "id": "attr-dexterity",
+      "rulesetId": "complete-ruleset-1",
+      "title": "Dexterity",
+      "description": "Agility and reflexes",
+      "category": "Attributes",
+      "type": "number",
+      "defaultValue": 10,
+      "min": 1,
+      "max": 20,
+      "createdAt": "2024-01-01T00:00:00.000Z",
+      "updatedAt": "2024-01-01T00:00:00.000Z"
+    },
+    {
+      "id": "attr-hp",
+      "rulesetId": "complete-ruleset-1",
+      "title": "Hit Points",
+      "description": "Current hit points",
+      "category": "Combat",
+      "type": "number",
+      "defaultValue": 25,
+      "min": 0,
+      "max": 100,
+      "createdAt": "2024-01-01T00:00:00.000Z",
+      "updatedAt": "2024-01-01T00:00:00.000Z"
+    },
+    {
+      "id": "attr-class",
+      "rulesetId": "complete-ruleset-1",
+      "title": "Class",
+      "description": "Character class",
+      "category": "Basic",
+      "type": "list",
+      "defaultValue": "Fighter",
+      "options": ["Fighter", "Wizard", "Rogue", "Cleric", "Ranger"],
+      "allowMultiSelect": false,
+      "createdAt": "2024-01-01T00:00:00.000Z",
+      "updatedAt": "2024-01-01T00:00:00.000Z"
+    }
+  ],
+  "items": [
+    {
+      "id": "item-sword",
+      "rulesetId": "complete-ruleset-1",
+      "title": "Longsword",
+      "description": "Deals 1d8 slashing damage",
+      "category": "Weapons",
+      "inventoryWidth": 1,
+      "inventoryHeight": 2,
+      "createdAt": "2024-01-01T00:00:00.000Z",
+      "updatedAt": "2024-01-01T00:00:00.000Z"
+    },
+    {
+      "id": "item-potion",
+      "rulesetId": "complete-ruleset-1",
+      "title": "Health Potion",
+      "description": "Restores 2d4+2 HP",
+      "category": "Consumables",
+      "inventoryWidth": 1,
+      "inventoryHeight": 1,
+      "createdAt": "2024-01-01T00:00:00.000Z",
+      "updatedAt": "2024-01-01T00:00:00.000Z"
+    }
+  ]
+}

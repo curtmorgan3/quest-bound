@@ -1,0 +1,33 @@
+{
+  "id": "test-window-1",
+  "name": "Test Character Sheet",
+  "rulesetId": "test-ruleset-1",
+  "width": 800,
+  "height": 600,
+  "components": [
+    {
+      "id": "comp-1",
+      "type": "text",
+      "x": 10,
+      "y": 10,
+      "width": 200,
+      "height": 30
+    },
+    {
+      "id": "comp-2",
+      "type": "input",
+      "x": 10,
+      "y": 50,
+      "width": 200,
+      "height": 30
+    },
+    {
+      "id": "comp-3",
+      "type": "frame",
+      "x": 250,
+      "y": 10,
+      "width": 300,
+      "height": 400
+    }
+  ]
+}

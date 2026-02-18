@@ -1,0 +1,61 @@
+[
+  {
+    "id": "attr-string-1",
+    "name": "Character Name",
+    "type": "string",
+    "value": "Test Hero",
+    "characterId": "test-char-1"
+  },
+  {
+    "id": "attr-number-1",
+    "name": "Health Points",
+    "type": "number",
+    "value": 50,
+    "min": 0,
+    "max": 100,
+    "characterId": "test-char-1"
+  },
+  {
+    "id": "attr-number-2",
+    "name": "Max Health",
+    "type": "number",
+    "value": 100,
+    "min": 0,
+    "max": 200,
+    "characterId": "test-char-1"
+  },
+  {
+    "id": "attr-boolean-1",
+    "name": "Is Alive",
+    "type": "boolean",
+    "value": true,
+    "characterId": "test-char-1"
+  },
+  {
+    "id": "attr-list-single-1",
+    "name": "Character Class",
+    "type": "list",
+    "value": "Warrior",
+    "options": ["Warrior", "Mage", "Rogue", "Cleric"],
+    "allowMultiSelect": false,
+    "characterId": "test-char-1"
+  },
+  {
+    "id": "attr-list-multi-1",
+    "name": "Skills",
+    "type": "list",
+    "value": "Swordsmanship;;Shield Bash",
+    "options": ["Swordsmanship", "Shield Bash", "Battle Cry", "Intimidation"],
+    "allowMultiSelect": true,
+    "characterId": "test-char-1"
+  },
+  {
+    "id": "attr-number-3",
+    "name": "Strength",
+    "type": "number",
+    "value": 18,
+    "min": 1,
+    "max": 20,
+    "characterId": "test-char-1"
+  }
+]

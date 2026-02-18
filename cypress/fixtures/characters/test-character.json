@@ -1,0 +1,8 @@
+{
+  "id": "test-char-1",
+  "name": "Test Character",
+  "rulesetId": "test-ruleset-1",
+  "userId": "test-user-1",
+  "createdAt": "2026-01-01T00:00:00.000Z",
+  "updatedAt": "2026-01-01T00:00:00.000Z"
+}

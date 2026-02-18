@@ -1,0 +1,434 @@
+import type { DB } from '@/stores/db/hooks/types';
+import type { RollFn } from '@/types';
+import type { ASTNode } from '../interpreter/ast';
+import { functionDefToExecutableSource } from '../interpreter/ast-to-source';
+import { Lexer } from '../interpreter/lexer';
+import { Parser } from '../interpreter/parser';
+import type {
+  ScriptExecutionContext,
+  ScriptExecutionResult,
+} from '../runtime/script-runner';
+import { ScriptRunner } from '../runtime/script-runner';
+
+/**
+ * Type of event handler.
+ */
+export type EventHandlerType =
+  | 'on_equip'
+  | 'on_unequip'
+  | 'on_consume'
+  | 'on_activate'
+  | 'on_deactivate';
+
+/**
+ * Result of event handler execution.
+ */
+export interface EventHandlerResult {
+  success: boolean;
+  value: any;
+  announceMessages: string[];
+  logMessages: any[][];
+  error?: Error;
+}
+
+/**
+ * Reentrancy depth for action event execution. Only the top-level run (depth 1)
+ * gets executeActionEvent in context so Owner.Action().activate() cannot
+ * recursively re-enter and cause an infinite loop.
+ */
+let actionEventDepth = 0;
+
+/**
+ * Callback invoked when a script run modifies one or more character attribute values.
+ * Used to trigger reactive execution (e.g. in the worker) so scripts that subscribe to those attributes run.
+ */
+export type OnAttributesModifiedFn = (
+  attributeIds: string[],
+  characterId: string,
+  rulesetId: string,
+) => Promise<void>;
+
+/**
+ * Optional test double: when provided, used instead of ScriptRunner.run() so tests can
+ * assert onAttributesModified is called without running real scripts.
+ */
+export type RunScriptForTestFn = (
+  context: ScriptExecutionContext,
+  sourceCode: string,
+) => Promise<ScriptExecutionResult>;
+
+/**
+ * EventHandlerExecutor handles execution of event handler functions
+ * defined in item and action scripts.
+ */
+export class EventHandlerExecutor {
+  private db: DB;
+  private onAttributesModified?: OnAttributesModifiedFn;
+  private runScriptForTest?: RunScriptForTestFn;
+
+  constructor(
+    db: DB,
+    onAttributesModified?: OnAttributesModifiedFn,
+    runScriptForTest?: RunScriptForTestFn,
+  ) {
+    this.db = db;
+    this.onAttributesModified = onAttributesModified;
+    this.runScriptForTest = runScriptForTest;
+  }
+
+  /**
+   * Execute an item event handler.
+   * @param itemId - ID of the item
+   * @param characterId - ID of the character
+   * @param eventType - Type of event (on_equip, on_unequip, on_consume)
+   * @param roll - Optional function to handle dice rolling
+   * @returns Execution result
+   */
+  async executeItemEvent(
+    itemId: string,
+    characterId: string,
+    eventType: 'on_equip' | 'on_unequip' | 'on_consume',
+    roll?: RollFn,
+  ): Promise<EventHandlerResult> {
+    // Get item
+    const item = await this.db.items.get(itemId);
+    if (!item) {
+      return {
+        success: false,
+        value: null,
+        announceMessages: [],
+        logMessages: [],
+        error: new Error(`Item not found: ${itemId}`),
+      };
+    }
+
+    // Check if item has a script
+    if (!item.scriptId) {
+      return {
+        success: true,
+        value: null,
+        announceMessages: [],
+        logMessages: [],
+      };
+    }
+
+    // Get script
+    const script = await this.db.scripts.get(item.scriptId);
+    if (!script || !script.enabled) {
+      return {
+        success: true,
+        value: null,
+        announceMessages: [],
+        logMessages: [],
+      };
+    }
+
+    // Check that the event handler exists
+    const hasHandler = this.extractEventHandler(script.sourceCode, eventType) !== null;
+    if (!hasHandler) {
+      return {
+        success: true,
+        value: null,
+        announceMessages: [],
+        logMessages: [],
+      };
+    }
+
+    // Run full script so all definitions are in scope, then call the handler
+    const scriptToRun = this.buildScriptWithHandlerCall(script.sourceCode, eventType);
+    const context: ScriptExecutionContext = {
+      ownerId: characterId,
+      rulesetId: item.rulesetId,
+      db: this.db,
+      scriptId: script.id,
+      triggerType: 'item_event',
+      entityType: 'item',
+      entityId: item.id,
+      roll,
+      executeActionEvent: (actionId, ownerId, targetIdForAction, eventTypeForAction) =>
+        this.executeActionEvent(actionId, ownerId, targetIdForAction, eventTypeForAction, roll),
+    };
+
+    const result = this.runScriptForTest
+      ? await this.runScriptForTest(context, scriptToRun)
+      : await new ScriptRunner(context).run(scriptToRun);
+
+    if (!result.error && result.modifiedAttributeIds?.length && this.onAttributesModified) {
+      await this.onAttributesModified(
+        result.modifiedAttributeIds,
+        characterId,
+        item.rulesetId,
+      );
+    }
+
+    return {
+      success: !result.error,
+      value: result.value,
+      announceMessages: result.announceMessages,
+      logMessages: result.logMessages,
+      error: result.error,
+    };
+  }
+
+  /**
+   * Execute an action event handler.
+   * @param actionId - ID of the action
+   * @param characterId - ID of the character
+   * @param targetId - Optional ID of target character
+   * @param eventType - Type of event (on_activate, on_deactivate)
+   * @param roll - Function to handle dice rolling
+   * @returns Execution result
+   */
+  async executeActionEvent(
+    actionId: string,
+    characterId: string,
+    targetId: string | null,
+    eventType: 'on_activate' | 'on_deactivate',
+    roll?: RollFn,
+  ): Promise<EventHandlerResult> {
+    // Get action
+    const action = await this.db.actions.get(actionId);
+    if (!action) {
+      return {
+        success: false,
+        value: null,
+        announceMessages: [],
+        logMessages: [],
+        error: new Error(`Action not found: ${actionId}`),
+      };
+    }
+
+    // Check if action has a script
+    if (!action.scriptId) {
+      return {
+        success: true,
+        value: null,
+        announceMessages: [],
+        logMessages: [],
+      };
+    }
+
+    // Get script
+    const script = await this.db.scripts.get(action.scriptId);
+    if (!script || !script.enabled) {
+      return {
+        success: true,
+        value: null,
+        announceMessages: [],
+        logMessages: [],
+      };
+    }
+
+    // Check that the event handler exists
+    const hasHandler = this.extractEventHandler(script.sourceCode, eventType) !== null;
+    if (!hasHandler) {
+      return {
+        success: true,
+        value: null,
+        announceMessages: [],
+        logMessages: [],
+      };
+    }
+
+    // Run full script so all definitions are in scope, then call the handler
+    const scriptToRun = this.buildScriptWithHandlerCall(script.sourceCode, eventType);
+    actionEventDepth++;
+
+    try {
+      const context: ScriptExecutionContext = {
+        ownerId: characterId,
+        targetId: targetId,
+        rulesetId: action.rulesetId,
+        db: this.db,
+        scriptId: script.id,
+        triggerType: 'action_click',
+        entityType: 'action',
+        entityId: action.id,
+        roll,
+        // Only allow Owner.Action().activate() at top level to avoid infinite re-entrancy
+        ...(actionEventDepth === 1 && {
+          executeActionEvent: (actionId, ownerId, targetIdForAction, eventTypeForAction) =>
+            this.executeActionEvent(actionId, ownerId, targetIdForAction, eventTypeForAction, roll),
+        }),
+      };
+
+      const result = this.runScriptForTest
+        ? await this.runScriptForTest(context, scriptToRun)
+        : await new ScriptRunner(context).run(scriptToRun);
+
+      if (!result.error && result.modifiedAttributeIds?.length && this.onAttributesModified) {
+        await this.onAttributesModified(
+          result.modifiedAttributeIds,
+          characterId,
+          action.rulesetId,
+        );
+      }
+
+      return {
+        success: !result.error,
+        value: result.value,
+        announceMessages: result.announceMessages,
+        logMessages: result.logMessages,
+        error: result.error,
+      };
+    } finally {
+      actionEventDepth--;
+    }
+  }
+
+  /**
+   * Build script that runs the full source (so the whole script is in scope) then calls the handler.
+   */
+  private buildScriptWithHandlerCall(sourceCode: string, eventType: EventHandlerType): string {
+    return `${sourceCode}\n${eventType}()`;
+  }
+
+  /**
+   * Extract an event handler function from script source code.
+   * @param sourceCode - The script source code
+   * @param eventType - Type of event handler to extract
+   * @returns Source code of the event handler, or null if not found
+   */
+  private extractEventHandler(sourceCode: string, eventType: EventHandlerType): string | null {
+    try {
+      const tokens = new Lexer(sourceCode).tokenize();
+      const ast = new Parser(tokens).parse();
+
+      // Find the event handler function
+      let handlerNode: any = null;
+
+      function walk(node: ASTNode): void {
+        if (node.type === 'FunctionDef') {
+          const funcNode = node as any;
+          if (funcNode.name === eventType) {
+            handlerNode = funcNode;
+          }
+        }
+
+        // Walk children
+        if ((node as any).statements) {
+          for (const stmt of (node as any).statements) {
+            walk(stmt);
+          }
+        }
+      }
+
+      walk(ast);
+
+      if (!handlerNode) {
+        return null;
+      }
+
+      return this.reconstructHandlerCode(handlerNode);
+    } catch (error) {
+      console.error('Failed to extract event handler:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Reconstruct executable code from a function definition node.
+   * Returns only the body of the handler as top-level executable source.
+   * @param funcNode - The function definition AST node
+   * @returns Executable source code (handler body only)
+   */
+  private reconstructHandlerCode(funcNode: {
+    type: 'FunctionDef';
+    name: string;
+    params: string[];
+    body: ASTNode[];
+  }): string {
+    return functionDefToExecutableSource(funcNode);
+  }
+
+  /**
+   * Execute an event handler by calling it within the script context.
+   * This is a more robust approach that loads the entire script and calls the function.
+   * @param sourceCode - Full script source code
+   * @param eventType - Event handler to call
+   * @param context - Execution context
+   * @returns Execution result
+   */
+  async executeEventHandlerByCall(
+    sourceCode: string,
+    eventType: EventHandlerType,
+    context: ScriptExecutionContext,
+  ): Promise<EventHandlerResult> {
+    // First, execute the script to define all functions
+    // Then call the event handler function
+    const fullScript = `
+${sourceCode}
+
+# Call the event handler
+if ${eventType} != null
+  ${eventType}()
+end
+`;
+
+    const result = this.runScriptForTest
+      ? await this.runScriptForTest(context, fullScript)
+      : await new ScriptRunner(context).run(fullScript);
+
+    if (
+      !result.error &&
+      result.modifiedAttributeIds?.length &&
+      this.onAttributesModified
+    ) {
+      await this.onAttributesModified(
+        result.modifiedAttributeIds,
+        context.ownerId,
+        context.rulesetId,
+      );
+    }
+
+    return {
+      success: !result.error,
+      value: result.value,
+      announceMessages: result.announceMessages,
+      logMessages: result.logMessages,
+      error: result.error,
+    };
+  }
+}
+
+/**
+ * Convenience function to execute an item event.
+ * @param db - Database instance
+ * @param itemId - ID of the item
+ * @param characterId - ID of the character
+ * @param eventType - Type of event
+ * @param roll - Optional function to handle dice rolls
+ * @returns Execution result
+ */
+export async function executeItemEvent(
+  db: DB,
+  itemId: string,
+  characterId: string,
+  eventType: 'on_equip' | 'on_unequip' | 'on_consume',
+  roll?: RollFn,
+): Promise<EventHandlerResult> {
+  const executor = new EventHandlerExecutor(db);
+  return executor.executeItemEvent(itemId, characterId, eventType, roll);
+}
+
+/**
+ * Convenience function to execute an action event.
+ * @param db - Database instance
+ * @param actionId - ID of the action
+ * @param characterId - ID of the character
+ * @param targetId - Optional ID of target character
+ * @param eventType - Type of event
+ * @param roll - Function to handle dice rolls
+ * @returns Execution result
+ */
+export async function executeActionEvent(
+  db: DB,
+  actionId: string,
+  characterId: string,
+  targetId: string | null,
+  eventType: 'on_activate' | 'on_deactivate',
+  roll?: RollFn,
+): Promise<EventHandlerResult> {
+  const executor = new EventHandlerExecutor(db);
+  return executor.executeActionEvent(actionId, characterId, targetId, eventType, roll);
+}

@@ -1,0 +1,65 @@
+[
+  {
+    "id": "text-plain-1",
+    "type": "text",
+    "data": {
+      "value": "Plain text content"
+    },
+    "style": {
+      "fontSize": 16,
+      "fontFamily": "Arial",
+      "color": "#000000",
+      "textAlign": "start"
+    }
+  },
+  {
+    "id": "text-interpolated-1",
+    "type": "text",
+    "data": {
+      "value": "Character: {{Character Name}}, HP: {{Health Points}}"
+    },
+    "style": {
+      "fontSize": 14,
+      "color": "#333333"
+    }
+  },
+  {
+    "id": "text-dice-1",
+    "type": "text",
+    "data": {
+      "value": "Attack: 2d6+4"
+    },
+    "style": {
+      "fontSize": 16,
+      "color": "#0066cc"
+    }
+  },
+  {
+    "id": "text-conditional-1",
+    "type": "text",
+    "data": {
+      "value": "Character is alive!",
+      "conditionalRenderAttributeId": "attr-boolean-1"
+    },
+    "style": {
+      "fontSize": 14,
+      "color": "#00aa00"
+    }
+  },
+  {
+    "id": "text-styled-1",
+    "type": "text",
+    "data": {
+      "value": "Styled Text"
+    },
+    "style": {
+      "fontSize": 24,
+      "fontFamily": "Georgia",
+      "fontWeight": "bold",
+      "fontStyle": "italic",
+      "color": "#ff0000",
+      "textAlign": "center",
+      "backgroundColor": "#f0f0f0"
+    }
+  }
+]

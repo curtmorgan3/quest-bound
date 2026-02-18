@@ -1,2 +1,0 @@
--- AlterTable
-ALTER TABLE "Item" ADD COLUMN     "sortIndex" INTEGER NOT NULL DEFAULT 0;
