@@ -192,7 +192,7 @@ export function AppSidebar() {
     return 'rulesets';
   };
 
-  const helpDocsUrl = `https://v2.docs.questbound.com/docs/${docsPageFromRoute()}`;
+  const helpDocsUrl = `https://docs.questbound.com/docs/${docsPageFromRoute()}`;
   const title =
     (rulesetId ?? characterId)
       ? (character?.name ?? activeRuleset?.title ?? 'Quest Bound')

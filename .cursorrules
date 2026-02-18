@@ -240,6 +240,6 @@ export const useMyContext = (props: UseMyContext): ContextType => {
 ## Resources
 
 - Discord: https://discord.gg/Zx2jR5Q3zN
-- Documentation: https://v2.docs.questbound.com
+- Documentation: https://docs.questbound.com
 - Live App: https://app.questbound.com
 - Issues: https://github.com/curtmorgan3/quest-bound/issues

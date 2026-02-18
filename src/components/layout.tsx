@@ -1,16 +1,35 @@
 import { AppSidebar, Loading } from '@/components';
 import { GlobalLoadingOverlay } from '@/components/global-loading-overlay';
+import { OnboardingDialog, useOnboardingStatus } from '@/components/onboarding';
 import { useFontLoader, useUsers } from '@/lib/compass-api';
 import { SignIn } from '@/pages';
 import { DicePanel } from '@/pages/dice';
-import { CharacterInventoryPanelContext, DiceProvider, useDiceState } from '@/stores';
-import { useEffect, useRef, useState } from 'react';
+import {
+  CharacterInventoryPanelContext,
+  DiceProvider,
+  useDiceState,
+  useOnboardingStore,
+} from '@/stores';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import { SidebarProvider } from './ui/sidebar';
 import { Toaster } from './ui/sonner';
 
 export function Layout() {
   const { currentUser, loading } = useUsers();
+  const {
+    hasCompleted,
+    isLoading: onboardingLoading,
+    refetch,
+  } = useOnboardingStatus(currentUser?.id ?? null);
+  console.log(hasCompleted);
+  const { forceShowAgain } = useOnboardingStore();
+  const showOnboarding = Boolean(
+    !onboardingLoading && currentUser && (forceShowAgain || !hasCompleted),
+  );
+  const handleOnboardingClose = useCallback(() => {
+    refetch();
+  }, [refetch]);
 
   const diceRef = useRef<HTMLCanvasElement>(null);
   const diceState = useDiceState({ canvasRef: diceRef });
@@ -44,6 +63,13 @@ export function Layout() {
           setOpen: setCharacterInventoryPanelOpen,
         }}>
         <DiceProvider value={diceState}>
+          {currentUser && (
+            <OnboardingDialog
+              userId={currentUser.id}
+              open={showOnboarding}
+              onClose={handleOnboardingClose}
+            />
+          )}
           <AppSidebar />
           <main
             style={{

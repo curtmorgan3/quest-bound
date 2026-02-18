@@ -4,3 +4,4 @@ export * from './current-user-store';
 export * from './db';
 export * from './event-log-store';
 export * from './loggers';
+export * from './onboarding-store';

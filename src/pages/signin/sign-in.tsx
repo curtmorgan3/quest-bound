@@ -124,7 +124,7 @@ export const SignIn = () => {
         animate={{ opacity: 1 }}
         transition={{ duration: 1, delay: 2.5 }}>
         <div className='flex flex-col gap-4 items-center'>
-          <Link href='https://v2.docs.questbound.com' target='_blank'>
+          <Link href='https://docs.questbound.com' target='_blank'>
             Learn More
           </Link>
           <a target='_blank' href='https://discord.gg/Zx2jR5Q3zN' data-testid='join-discord'>

@@ -15,12 +15,13 @@ import {
   PWAInstallPrompt,
 } from '@/components';
 import { useUsers } from '@/lib/compass-api';
-import { errorLogger } from '@/stores';
-import { Download } from 'lucide-react';
+import { errorLogger, useOnboardingStore } from '@/stores';
+import { Download, PlayCircleIcon } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 export const UserSettings = () => {
   const { currentUser, updateUser, deleteUser } = useUsers();
+  const { setForceShowAgain } = useOnboardingStore();
 
   const [username, setUsername] = useState(currentUser?.username || '');
   const [exportLoading, setExportLoading] = useState(false);
@@ -90,6 +91,16 @@ export const UserSettings = () => {
         onUpload={(assetId) => updateUser(currentUser.id, { assetId })}
         onSetUrl={(url) => updateUser(currentUser.id, { assetId: null, image: url })}
       />
+
+      <div className='flex flex-col gap-2'>
+        <Button
+          variant='outline'
+          onClick={() => setForceShowAgain(true)}
+          className='gap-2 w-[200px]'>
+          <PlayCircleIcon className='h-4 w-4' />
+          Show intro again
+        </Button>
+      </div>
 
       <div className='flex flex-col gap-2'>
         <Button
