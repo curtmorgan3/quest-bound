@@ -3,6 +3,7 @@
 ## Archetypes
 
 - switcher experience
+- tutorial
 
 ## Charts
 

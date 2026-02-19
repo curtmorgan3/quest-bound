@@ -41,7 +41,6 @@ import {
   useCharacter,
   useCharts,
   useDocuments,
-  useRulesets,
   useUsers,
 } from '@/lib/compass-api';
 import { Settings } from '@/pages';
@@ -57,13 +56,10 @@ import { Button } from '../ui/button';
 import { DialogDescription } from '../ui/dialog';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger } from '../ui/drawer';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 
 export function AppSidebar() {
   const { currentUser, signOut } = useUsers();
   const { activeRuleset } = useActiveRuleset();
-  const { archetypes, effectiveArchetype, selectedArchetypeId, setSelectedArchetype } =
-    useRulesets();
   const { character, updateCharacter } = useCharacter();
   const { documents } = useDocuments(character?.rulesetId);
   const { charts } = useCharts(character?.rulesetId);
@@ -77,14 +73,6 @@ export function AppSidebar() {
   const isViewingDocument = !!documentId && location.pathname.includes('/documents/');
   const isViewingChart = !!chartId && location.pathname.includes('/chart/');
   const { setDicePanelOpen } = useContext(DiceContext);
-
-  const showArchetypeSwitcher =
-    !isHomepage &&
-    !character &&
-    activeRuleset &&
-    (location.pathname.includes('/scripts') ||
-      location.pathname.includes('/windows') ||
-      location.pathname.includes('/pages'));
 
   useEffect(() => {
     const storedState = localStorage.getItem('qb.sidebarCollapsed');
@@ -236,25 +224,6 @@ export function AppSidebar() {
               )}
             </div>
             <SidebarGroupContent>
-              {showArchetypeSwitcher && open && archetypes.length > 1 && (
-                <div className='px-2 pb-2'>
-                  <Select
-                    value={selectedArchetypeId ?? effectiveArchetype?.id ?? ''}
-                    onValueChange={(v) => setSelectedArchetype(v || null)}>
-                    <SelectTrigger className='h-8 text-xs' data-testid='archetype-switcher'>
-                      <SelectValue placeholder='Archetype' />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {archetypes.map((a) => (
-                        <SelectItem key={a.id} value={a.id}>
-                          {a.name}
-                          {a.isDefault ? ' (default)' : ''}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
               <SidebarMenu>
                 {!open && (
                   <SidebarMenuItem>
