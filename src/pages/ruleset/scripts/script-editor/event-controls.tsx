@@ -31,7 +31,7 @@ export const EventControls = ({
   const { testCharacter } = useRulesets();
 
   const handleOnActivate = () => {
-    if (!entityId) return;
+    if (!entityId || !testCharacter) return;
     if (entityType === 'action') {
       executeActionEvent(entityId, testCharacter.id, null, 'on_activate');
     } else {
@@ -40,17 +40,17 @@ export const EventControls = ({
   };
 
   const handleOnEquip = () => {
-    if (!entityId) return;
+    if (!entityId || !testCharacter) return;
     executeItemEvent(entityId, testCharacter.id, 'on_equip');
   };
 
   const handleOnUnequip = () => {
-    if (!entityId) return;
+    if (!entityId || !testCharacter) return;
     executeItemEvent(entityId, testCharacter.id, 'on_unequip');
   };
 
   const handleOnConsume = () => {
-    if (!entityId) return;
+    if (!entityId || !testCharacter) return;
     executeItemEvent(entityId, testCharacter.id, 'on_consume');
   };
 

@@ -18,6 +18,7 @@ import { BaseCreate } from './create';
 import { Documents } from './documents';
 import { BulkCustomProperties } from './items/bulk-custom-properties';
 import { ItemChart } from './items/item-chart';
+import { Archetypes } from './archetypes/archetypes';
 import { PageSelect } from './pages';
 import { WindowSelect } from './windows';
 
@@ -29,12 +30,21 @@ const pageToLabel = new Map([
   ['documents', 'Documents'],
   ['windows', 'Windows'],
   ['pages', 'Pages'],
+  ['archetypes', 'Archetypes'],
 ]);
 
 export const Ruleset = ({
   page,
 }: {
-  page?: 'attributes' | 'items' | 'actions' | 'charts' | 'documents' | 'windows' | 'pages';
+  page?:
+    | 'attributes'
+    | 'items'
+    | 'actions'
+    | 'charts'
+    | 'documents'
+    | 'windows'
+    | 'pages'
+    | 'archetypes';
 }) => {
   const { activeRuleset } = useActiveRuleset();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -96,6 +106,8 @@ export const Ruleset = ({
             }}
           />
         );
+      case 'archetypes':
+        return <Archetypes />;
       default:
         return <p>Not Found</p>;
     }
@@ -114,15 +126,17 @@ export const Ruleset = ({
           setOpen(open);
         }}>
         <div className='flex gap-2'>
-          <DialogTrigger asChild>
-            <Button
-              id='create-button'
-              className='w-[180px]'
-              onClick={() => setOpen(true)}
-              data-testid='ruleset-new-button'>
-              New
-            </Button>
-          </DialogTrigger>
+          {page !== 'archetypes' && (
+            <DialogTrigger asChild>
+              <Button
+                id='create-button'
+                className='w-[180px]'
+                onClick={() => setOpen(true)}
+                data-testid='ruleset-new-button'>
+                New
+              </Button>
+            </DialogTrigger>
+          )}
           {page === 'charts' && chartId && (
             <div className='flex gap-2'>
               <DialogTrigger asChild>
@@ -144,15 +158,21 @@ export const Ruleset = ({
             </div>
           )}
           {page === 'items' && <BulkCustomProperties />}
-          {page !== 'charts' && page !== 'windows' && page !== 'documents' && page !== 'pages' && (
-            <Export type={page} />
-          )}
-          {page !== 'charts' && page !== 'windows' && page !== 'documents' && page !== 'pages' && (
-            <Import type={page} onLoadingChange={setIsImporting} />
-          )}
+          {page !== 'charts' &&
+            page !== 'windows' &&
+            page !== 'documents' &&
+            page !== 'pages' &&
+            page !== 'archetypes' && <Export type={page} />}
+          {page !== 'charts' &&
+            page !== 'windows' &&
+            page !== 'documents' &&
+            page !== 'pages' &&
+            page !== 'archetypes' && <Import type={page} onLoadingChange={setIsImporting} />}
         </div>
 
-        {isImporting ? (
+        {page === 'archetypes' ? (
+          renderChart()
+        ) : isImporting ? (
           <div className='flex items-center justify-center py-12'>
             <Loader2 className='h-8 w-8 animate-spin text-muted-foreground' />
             <span className='ml-3 text-muted-foreground'>Importing...</span>
@@ -161,6 +181,7 @@ export const Ruleset = ({
           renderChart()
         )}
 
+        {page !== 'archetypes' && (
         <DialogContent className='min-w-[600px] max-w-[80vw] min-h-[50vh]'>
           <DialogTitle className='hidden'>Quick Create</DialogTitle>
           <DialogDescription className='hidden'>Quick Create</DialogDescription>
@@ -174,6 +195,7 @@ export const Ruleset = ({
             }}
           />
         </DialogContent>
+        )}
       </Dialog>
     </div>
   );

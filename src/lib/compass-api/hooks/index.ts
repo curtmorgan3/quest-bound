@@ -1,3 +1,4 @@
+export * from './archetypes';
 export * from './assets';
 export * from './characters';
 export * from './dice-rolls';

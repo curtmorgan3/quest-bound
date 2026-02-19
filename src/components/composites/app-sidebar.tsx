@@ -40,12 +40,20 @@ import {
   useCharacter,
   useCharts,
   useDocuments,
+  useRulesets,
   useUsers,
 } from '@/lib/compass-api';
 import { Settings } from '@/pages';
 import { CharacterInventoryPanelContext, DiceContext } from '@/stores';
 import { useContext, useEffect } from 'react';
 import { Link, useLocation, useParams } from 'react-router-dom';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '../ui/select';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { Button } from '../ui/button';
 import { DialogDescription } from '../ui/dialog';
@@ -55,6 +63,12 @@ import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 export function AppSidebar() {
   const { currentUser, signOut } = useUsers();
   const { activeRuleset } = useActiveRuleset();
+  const {
+    archetypes,
+    effectiveArchetype,
+    selectedArchetypeId,
+    setSelectedArchetype,
+  } = useRulesets();
   const { character, updateCharacter } = useCharacter();
   const { documents } = useDocuments(character?.rulesetId);
   const { charts } = useCharts(character?.rulesetId);
@@ -67,6 +81,14 @@ export function AppSidebar() {
   const isViewingDocument = !!documentId && location.pathname.includes('/documents/');
   const isViewingChart = !!chartId && location.pathname.includes('/chart/');
   const { setDicePanelOpen } = useContext(DiceContext);
+
+  const showArchetypeSwitcher =
+    !isHomepage &&
+    !character &&
+    activeRuleset &&
+    (location.pathname.includes('/scripts') ||
+      location.pathname.includes('/windows') ||
+      location.pathname.includes('/pages'));
 
   useEffect(() => {
     const storedState = localStorage.getItem('qb.sidebarCollapsed');
@@ -127,6 +149,11 @@ export function AppSidebar() {
           icon: LayoutTemplate,
         },
         {
+          title: 'Archetypes',
+          url: `/rulesets/${activeRuleset?.id}/archetypes`,
+          icon: User,
+        },
+        {
           title: 'Scripts',
           url: `/rulesets/${activeRuleset?.id}/scripts`,
           icon: FileCode,
@@ -182,6 +209,7 @@ export function AppSidebar() {
       if (path.includes('/windows')) return 'windows';
       if (path.includes('/pages')) return 'pages';
       if (path.includes('/scripts')) return 'scripts';
+      if (path.includes('/archetypes')) return 'archetypes';
       return 'rulesets';
     }
     if (path.includes('/characters')) {
@@ -212,6 +240,25 @@ export function AppSidebar() {
               )}
             </div>
             <SidebarGroupContent>
+              {showArchetypeSwitcher && open && archetypes.length > 1 && (
+                <div className='px-2 pb-2'>
+                  <Select
+                    value={selectedArchetypeId ?? effectiveArchetype?.id ?? ''}
+                    onValueChange={(v) => setSelectedArchetype(v || null)}>
+                    <SelectTrigger className='h-8 text-xs' data-testid='archetype-switcher'>
+                      <SelectValue placeholder='Archetype' />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {archetypes.map((a) => (
+                        <SelectItem key={a.id} value={a.id}>
+                          {a.name}
+                          {a.isDefault ? ' (default)' : ''}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
               <SidebarMenu>
                 {!open && (
                   <SidebarMenuItem>

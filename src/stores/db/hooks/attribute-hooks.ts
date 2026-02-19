@@ -3,31 +3,28 @@ import type { Attribute } from '@/types';
 import type { DB } from './types';
 
 export function registerAttributeDbHooks(db: DB) {
-  // Sync attributes with characterAttributes for test characters
+  // Sync attributes with characterAttributes for all archetype test characters
   db.attributes.hook('creating', (_primKey, obj) => {
-    // Use setTimeout to defer the characterAttribute creation until after the attribute is committed
     setTimeout(async () => {
       try {
-        const testCharacter = await db.characters
-          .where('rulesetId')
-          .equals(obj.rulesetId)
-          .filter((c: any) => c.isTestCharacter)
-          .first();
-
-        if (testCharacter) {
-          const now = new Date().toISOString();
-          await db.characterAttributes.add({
-            ...obj,
-            id: crypto.randomUUID(),
-            characterId: testCharacter.id,
-            attributeId: obj.id,
-            createdAt: now,
-            updatedAt: now,
-            value: obj.defaultValue,
-          });
+        const archetypes = await db.archetypes.where('rulesetId').equals(obj.rulesetId).toArray();
+        const now = new Date().toISOString();
+        for (const archetype of archetypes) {
+          const testCharacter = await db.characters.get(archetype.testCharacterId);
+          if (testCharacter) {
+            await db.characterAttributes.add({
+              ...obj,
+              id: crypto.randomUUID(),
+              characterId: testCharacter.id,
+              attributeId: obj.id,
+              createdAt: now,
+              updatedAt: now,
+              value: obj.defaultValue,
+            });
+          }
         }
       } catch (error) {
-        console.error('Failed to create characterAttribute for test character:', error);
+        console.error('Failed to create characterAttribute for test characters:', error);
       }
     }, 0);
   });
@@ -35,21 +32,19 @@ export function registerAttributeDbHooks(db: DB) {
   db.attributes.hook('updating', (modifications, primKey, obj) => {
     setTimeout(async () => {
       try {
-        const testCharacter = await db.characters
-          .where('rulesetId')
-          .equals(obj.rulesetId)
-          .filter((c: any) => c.isTestCharacter)
-          .first();
-
-        if (testCharacter) {
-          const characterAttribute = await db.characterAttributes.get({
-            characterId: testCharacter.id,
-            attributeId: primKey as string,
-          });
-
+        const archetypes = await db.archetypes.where('rulesetId').equals(obj.rulesetId).toArray();
+        const mods = modifications as Partial<Attribute>;
+        const now = new Date().toISOString();
+        for (const archetype of archetypes) {
+          const testCharacter = await db.characters.get(archetype.testCharacterId);
+          if (!testCharacter) continue;
+          const characterAttributes = await db.characterAttributes
+            .where('characterId')
+            .equals(testCharacter.id)
+            .and((ca) => ca.attributeId === (primKey as string))
+            .toArray();
+          const characterAttribute = characterAttributes[0];
           if (characterAttribute) {
-            const now = new Date().toISOString();
-            const mods = modifications as Partial<Attribute>;
             await db.characterAttributes.update(characterAttribute.id, {
               title: mods.title ?? obj.title,
               defaultValue: mods.defaultValue ?? obj.defaultValue,
@@ -68,7 +63,7 @@ export function registerAttributeDbHooks(db: DB) {
           }
         }
       } catch (error) {
-        console.error('Failed to update characterAttribute for test character:', error);
+        console.error('Failed to update characterAttribute for test characters:', error);
       }
     }, 0);
   });
@@ -76,24 +71,21 @@ export function registerAttributeDbHooks(db: DB) {
   db.attributes.hook('deleting', (primKey, obj) => {
     setTimeout(async () => {
       try {
-        const testCharacter = await db.characters
-          .where('rulesetId')
-          .equals(obj.rulesetId)
-          .filter((c: any) => c.isTestCharacter)
-          .first();
-
-        if (testCharacter) {
-          const characterAttribute = await db.characterAttributes.get({
-            characterId: testCharacter.id,
-            attributeId: primKey as string,
-          });
-
-          if (characterAttribute) {
-            await db.characterAttributes.delete(characterAttribute.id);
+        const archetypes = await db.archetypes.where('rulesetId').equals(obj.rulesetId).toArray();
+        for (const archetype of archetypes) {
+          const testCharacter = await db.characters.get(archetype.testCharacterId);
+          if (!testCharacter) continue;
+          const characterAttributes = await db.characterAttributes
+            .where('characterId')
+            .equals(testCharacter.id)
+            .and((ca) => ca.attributeId === (primKey as string))
+            .toArray();
+          for (const ca of characterAttributes) {
+            await db.characterAttributes.delete(ca.id);
           }
         }
       } catch (error) {
-        console.error('Failed to delete characterAttribute for test character:', error);
+        console.error('Failed to delete characterAttribute for test characters:', error);
       }
     }, 0);
   });

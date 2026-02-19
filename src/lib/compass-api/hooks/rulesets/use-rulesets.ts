@@ -1,8 +1,8 @@
 import { useErrorHandler } from '@/hooks/use-error-handler';
-import { db, useApiLoadingStore, useCurrentUser } from '@/stores';
-import type { Inventory, Ruleset } from '@/types';
+import { db, useApiLoadingStore, useArchetypeStore, useCurrentUser } from '@/stores';
+import type { Archetype, Character, Inventory, Ruleset } from '@/types';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useAssets } from '../assets';
 import { useCharacter } from '../characters';
@@ -36,19 +36,35 @@ export const useRulesets = () => {
 
   const activeRuleset = rulesetIdToUse ? rulesets?.find((r) => r.id === rulesetIdToUse) : null;
 
-  const testCharacters =
+  const archetypes: Archetype[] =
     useLiveQuery(
       () =>
-        db.characters
-          .where('rulesetId')
-          .equals(activeRuleset?.id ?? 0)
-          .and((char) => char.isTestCharacter)
-          .toArray(),
-      [activeRuleset],
+        activeRuleset?.id
+          ? db.archetypes.where('rulesetId').equals(activeRuleset.id).sortBy('loadOrder')
+          : Promise.resolve([] as Archetype[]),
+      [activeRuleset?.id],
     ) ?? [];
 
-  // There should only be one test character
-  const testCharacter = testCharacters[0];
+  const { getSelectedArchetype, setSelectedArchetype } = useArchetypeStore();
+  const selectedArchetypeId = activeRuleset?.id
+    ? getSelectedArchetype(activeRuleset.id)
+    : null;
+
+  const effectiveArchetype = useMemo(() => {
+    if (!archetypes.length) return null;
+    const selected = selectedArchetypeId
+      ? archetypes.find((a) => a.id === selectedArchetypeId)
+      : null;
+    return selected ?? archetypes.find((a) => a.isDefault) ?? archetypes[0];
+  }, [archetypes, selectedArchetypeId]);
+
+  const testCharacter = useLiveQuery(
+    () =>
+      effectiveArchetype?.testCharacterId
+        ? db.characters.get(effectiveArchetype.testCharacterId)
+        : Promise.resolve(null),
+    [effectiveArchetype?.testCharacterId],
+  ) as Character | null | undefined;
 
   // Migrate legacy rulesets: ensure exactly one default archetype when ruleset is activated
   useEffect(() => {
@@ -213,6 +229,11 @@ export const useRulesets = () => {
     rulesets,
     activeRuleset,
     testCharacter,
+    archetypes,
+    effectiveArchetype,
+    selectedArchetypeId,
+    setSelectedArchetype: (id: string | null) =>
+      activeRuleset?.id && setSelectedArchetype(activeRuleset.id, id),
     loading,
     isLoading,
     createRuleset,

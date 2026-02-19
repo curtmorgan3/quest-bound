@@ -10,13 +10,14 @@ import {
 } from '@/components/ui/select';
 import {
   ActionLookup,
+  ArchetypeLookup,
   AttributeLookup,
   ItemLookup,
   useRulesets,
   useScripts,
 } from '@/lib/compass-api';
 import { type UseReactiveScriptExecutionResult } from '@/lib/compass-logic';
-import type { Action, Attribute, Item, Script } from '@/types';
+import type { Action, Archetype, Attribute, Item, Script } from '@/types';
 import { Trash2, X, Zap } from 'lucide-react';
 import { useCallback, type Dispatch, type SetStateAction } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -186,6 +187,18 @@ export const EditorTopBar = ({
             onSelect={(i: Item) => setEntityId(i.id)}
             onDelete={() => setEntityId(null)}
             data-testid='script-editor-item-lookup'
+          />
+        </div>
+      )}
+      {entityType === 'archetype' && (
+        <div className='w-[240px]'>
+          <ArchetypeLookup
+            rulesetId={rulesetId}
+            label='Archetype'
+            value={entityId}
+            onSelect={(a: Archetype) => setEntityId(a.id)}
+            onDelete={() => setEntityId(null)}
+            data-testid='script-editor-archetype-lookup'
           />
         </div>
       )}

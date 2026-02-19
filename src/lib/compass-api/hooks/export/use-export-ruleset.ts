@@ -68,12 +68,17 @@ export const useExportRuleset = (rulesetId: string) => {
     [rulesetId],
   );
 
-  const characters = useLiveQuery(
-    () => (rulesetId ? db.characters.where('rulesetId').equals(rulesetId).toArray() : []),
+  const testCharacter = useLiveQuery(
+    async () => {
+      if (!rulesetId) return null;
+      const arch =
+        (await db.archetypes.where('rulesetId').equals(rulesetId).filter((a) => a.isDefault).first()) ??
+        (await db.archetypes.where('rulesetId').equals(rulesetId).first());
+      if (!arch?.testCharacterId) return null;
+      return (await db.characters.get(arch.testCharacterId)) ?? null;
+    },
     [rulesetId],
   );
-
-  const testCharacter = characters?.find((c) => c.isTestCharacter);
 
   const characterAttributes = useLiveQuery(
     () =>

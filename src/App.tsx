@@ -47,6 +47,7 @@ function CompassRoutes() {
               path={`/rulesets/:rulesetId/pages/:pageId`}
               element={<RulesetPageEditorPage />}
             />
+            <Route path={`/rulesets/:rulesetId/archetypes`} element={<Ruleset page='archetypes' />} />
 
             <Route path={`/rulesets/:rulesetId/scripts`} element={<ScriptsIndex />} />
 
