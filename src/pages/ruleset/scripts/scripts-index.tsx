@@ -205,7 +205,11 @@ export function ScriptsIndex() {
                           <li key={script.id}>
                             <Link
                               to={`/rulesets/${rulesetId}/scripts/${script.id}`}
-                              className='text-sm text-foreground'>
+                              className={
+                                script.moduleId
+                                  ? 'text-sm text-module-origin'
+                                  : 'text-sm text-foreground'
+                              }>
                               {script.name || 'Untitled'}.qbs
                             </Link>
                           </li>
@@ -223,7 +227,11 @@ export function ScriptsIndex() {
                     <li key={script.id}>
                       <Link
                         to={`/rulesets/${rulesetId}/scripts/${script.id}`}
-                        className='text-sm text-foreground'>
+                        className={
+                          script.moduleId
+                            ? 'text-sm text-module-origin'
+                            : 'text-sm text-foreground'
+                        }>
                         {script.name || 'Untitled'}.qbs
                       </Link>
                     </li>

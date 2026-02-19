@@ -36,6 +36,24 @@ export const ItemChart = () => {
             ) : null,
         };
       }
+      if (c.field === 'title') {
+        return {
+          ...c,
+          cellRenderer: (params: CellRendererProps<Item>) => {
+            const value = (params as { value?: string }).value ?? params.data.title;
+            return (
+              <span
+                className={
+                  params.data.moduleId
+                    ? 'text-module-origin'
+                    : undefined
+                }>
+                {value}
+              </span>
+            );
+          },
+        };
+      }
       return c;
     })
     .sort((a, b) => (a.sortIndex ?? 0) - (b.sortIndex ?? 0));

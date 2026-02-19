@@ -47,6 +47,11 @@
   --color-sidebar-ring: var(--sidebar-ring);
 }
 
+/* Module-origin content (e.g. from added modules) */
+.text-module-origin {
+  color: #5a7ee1;
+}
+
 html {
   overscroll-behavior: none !important;
 }

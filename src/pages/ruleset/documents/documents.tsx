@@ -68,6 +68,7 @@ export const Documents = ({ onEditDetails }: DocumentChartProps) => {
               type='documents'
               category={doc.category}
               image={doc.image}
+              titleClassName={doc.moduleId ? 'text-module-origin' : undefined}
               descriptionExtra={
                 hasPdf ? <span className='text-xs text-primary'>PDF attached</span> : undefined
               }

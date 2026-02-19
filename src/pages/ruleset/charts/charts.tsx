@@ -68,6 +68,7 @@ export const ChartSelect = ({ onEditDetails }: ChartSelectProps) => {
             {...c}
             key={c.id}
             type='charts'
+            titleClassName={c.moduleId ? 'text-module-origin' : undefined}
             onDelete={() => deleteChart(c.id)}
             onOpen={() => setSearchParams({ chart: c.id })}
             onEdit={(title, category) => updateChart(c.id, { title, category })}

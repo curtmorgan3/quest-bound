@@ -407,28 +407,38 @@ export const RulesetSettings = ({ activeRuleset }: RulesetSettingsProps) => {
             {modules.length === 0 ? (
               <p className='text-sm text-muted-foreground'>No modules added yet.</p>
             ) : (
-              modules.map((mod) => (
-                <div
-                  key={mod.id}
-                  className='flex items-center gap-3 rounded-md border border-border bg-muted/50 px-3 py-2'>
-                  {mod.image ? (
-                    <img src={mod.image} alt='' className='h-8 w-8 shrink-0 rounded object-cover' />
-                  ) : (
-                    <div className='flex h-8 w-8 shrink-0 items-center justify-center rounded bg-muted'>
-                      <Package className='h-4 w-4 text-muted-foreground' />
+              modules.map((mod) => {
+                const sourceExists = rulesets.some((r) => r.id === mod.id);
+                return (
+                  <div
+                    key={mod.id}
+                    className='flex items-center gap-3 rounded-md border border-border bg-muted/50 px-3 py-2'>
+                    {mod.image ? (
+                      <img src={mod.image} alt='' className='h-8 w-8 shrink-0 rounded object-cover' />
+                    ) : (
+                      <div className='flex h-8 w-8 shrink-0 items-center justify-center rounded bg-muted'>
+                        <Package className='h-4 w-4 text-muted-foreground' />
+                      </div>
+                    )}
+                    <div className='flex-1 min-w-0'>
+                      <span className='text-sm font-medium'>{mod.name}</span>
+                      {!sourceExists && (
+                        <p className='text-xs text-muted-foreground mt-0.5'>
+                          Source no longer available
+                        </p>
+                      )}
                     </div>
-                  )}
-                  <span className='text-sm font-medium flex-1'>{mod.name}</span>
-                  <Button
-                    variant='ghost'
-                    size='sm'
-                    className='h-8 w-8 p-0 text-muted-foreground hover:text-destructive'
-                    onClick={() => handleRemoveModuleClick(mod)}
-                    aria-label={`Remove module ${mod.name}`}>
-                    <Trash className='h-4 w-4' />
-                  </Button>
-                </div>
-              ))
+                    <Button
+                      variant='ghost'
+                      size='sm'
+                      className='h-8 w-8 p-0 text-muted-foreground hover:text-destructive'
+                      onClick={() => handleRemoveModuleClick(mod)}
+                      aria-label={`Remove module ${mod.name}`}>
+                      <Trash className='h-4 w-4' />
+                    </Button>
+                  </div>
+                );
+              })
             )}
           </div>
           <div className='flex flex-wrap items-center gap-2'>

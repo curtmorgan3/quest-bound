@@ -291,15 +291,15 @@ No further decisions are required to draft the plan. The following are assumed:
 
 ---
 
-### Phase 5: Origin visibility and deleted-source UX
+### Phase 5: Origin visibility and deleted-source UX ✅ Implemented
 
 **Goal:** Module-origin content is visually distinct; deleted source is handled in the UI.
 
 1. **Blue titles**
-   - In attribute, action, item charts; charts index; document index; script index: when rendering a row/title for an entity that has `moduleId` (and optionally `moduleName`), apply blue color to the title. Use existing styling (e.g. Tailwind class).
+   - In attribute, action, item charts; charts index; document index; script index: when rendering a row/title for an entity that has `moduleId` (and optionally `moduleName`), apply blue color to the title. Use existing styling (e.g. Tailwind class). **Done:** Attribute/action/item charts title cellRenderer; charts/documents PreviewCard titleClassName; scripts index link class when moduleId.
 
 2. **Deleted source**
-   - In Modules section: for each entry in `ruleset.modules`, if the ruleset id no longer exists in DB, show “Source no longer available” (or similar) but still show “Remove module content” so user can clean up. Optional: same blue-title treatment can remain for orphaned module content until removed.
+   - In Modules section: for each entry in `ruleset.modules`, if the ruleset id no longer exists in DB, show “Source no longer available” (or similar) but still show “Remove module content” so user can clean up. Optional: same blue-title treatment can remain for orphaned module content until removed. **Done:** Module row shows "Source no longer available" when ruleset id not in DB; Remove button kept.
 
 ---
 

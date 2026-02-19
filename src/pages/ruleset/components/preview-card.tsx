@@ -42,6 +42,8 @@ interface Props {
   descriptionExtra?: ReactNode;
   /** When true, the Open button is disabled */
   openDisabled?: boolean;
+  /** Optional class for the title (e.g. blue for module-origin content) */
+  titleClassName?: string;
   onDelete: (id: string) => void;
   onOpen: (id: string) => void;
   onEdit: (title: string, category?: string) => void;
@@ -57,6 +59,7 @@ export const PreviewCard = ({
   image,
   descriptionExtra,
   openDisabled,
+  titleClassName,
   onDelete,
   onOpen,
   onEdit,
@@ -116,7 +119,7 @@ export const PreviewCard = ({
               />
             ) : (
               <CardTitle
-                className='text-lg cursor-pointer'
+                className={`text-lg cursor-pointer ${titleClassName ?? ''}`.trim()}
                 data-testid='preview-card-title'
                 onClick={(e) => {
                   e.stopPropagation();
@@ -165,7 +168,7 @@ export const PreviewCard = ({
               />
             ) : (
               <CardTitle
-                className='text-lg cursor-pointer'
+                className={`text-lg cursor-pointer ${titleClassName ?? ''}`.trim()}
                 data-testid='preview-card-title'
                 onClick={(e) => {
                   e.stopPropagation();
