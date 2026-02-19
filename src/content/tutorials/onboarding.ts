@@ -7,7 +7,7 @@ export const onboardingTutorial: Tutorial = [
     substeps: [
       {
         description:
-          'This tutorial will walk you through creating a basic ruleset. You can run this tutorial any time from user settings',
+          'This tutorial will walk you through creating a basic ruleset. You can run this tutorial any time from user settings.',
       },
       {
         description: 'Go to the Rulesets page to see and manage your rulesets.',
@@ -19,7 +19,7 @@ export const onboardingTutorial: Tutorial = [
     title: 'Ruleset',
     substeps: [
       {
-        description: 'Create a new ruleset by clicking Create New',
+        description: 'Create a new ruleset by clicking Create New.',
         selector: { selector: '[data-testid="create-ruleset-button"]', shouldAdvanceOnClick: true },
       },
       {
@@ -83,7 +83,7 @@ export const onboardingTutorial: Tutorial = [
         selector: { selector: '[data-testid="nav-items"]', shouldAdvanceOnClick: true },
       },
       {
-        description: 'Click New to open the item create menu',
+        description: 'Click New to open the item create menu.',
         selector: {
           selector: '#create-button',
           shouldAdvanceOnClick: true,
@@ -194,7 +194,8 @@ export const onboardingTutorial: Tutorial = [
         },
       },
       {
-        description: 'Double click the text to change its content to Take Damage, then press Enter',
+        description:
+          'Double click the text to change its content to Take Damage, then press Enter.',
       },
       {
         description: 'In the right-hand panel, click the Data tab.',
@@ -336,7 +337,7 @@ export const onboardingTutorial: Tutorial = [
         },
       },
       {
-        description: 'Go back to the Scripts list',
+        description: 'Go back to the Scripts list.',
         selector: {
           selector: '[data-testid="nav-scripts"]',
           shouldAdvanceOnClick: true,
@@ -359,7 +360,7 @@ export const onboardingTutorial: Tutorial = [
         },
       },
       {
-        description: 'Clear the editor, copy paste the following QBScript code below',
+        description: 'Clear the editor, copy paste the following QBScript code below.',
         code: `on_consume():
     Owner.Attribute('Health').add(10)`,
       },
@@ -415,7 +416,7 @@ export const onboardingTutorial: Tutorial = [
         },
       },
       {
-        description: 'On the character sheet, click on the Health input and set it to 10',
+        description: 'On the character sheet, click on the Health input and set it to 10.',
         selector: {
           selector: '[data-attribute-name="Health"]',
           shouldAdvanceOnClick: false,
@@ -429,7 +430,7 @@ export const onboardingTutorial: Tutorial = [
         },
       },
       {
-        description: 'Double-click the inventory grid to open the add panel',
+        description: 'Double-click the inventory grid to open the add panel.',
         selector: {
           selector: '[data-testid="inventory-grid"]',
           shouldAdvanceOnClick: true,
@@ -443,7 +444,7 @@ export const onboardingTutorial: Tutorial = [
         },
       },
       {
-        description: 'Click the potion to open its menu',
+        description: 'Click the potion to open its menu.',
         selector: {
           selector: '[data-item-title="Potion"]',
           shouldAdvanceOnClick: true,
