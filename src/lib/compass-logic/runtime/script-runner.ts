@@ -24,7 +24,7 @@ export interface ScriptExecutionContext {
   rulesetId: string; // Current ruleset
   db: DB; // Database access
   scriptId?: string; // Which script is executing (for error logging)
-  triggerType?: 'load' | 'attribute_change' | 'action_click' | 'item_event';
+  triggerType?: 'load' | 'attribute_change' | 'action_click' | 'item_event' | 'archetype_event';
   /** When script is attached to an entity (attribute, action, item), the entity type. Enables 'Self'. */
   entityType?: string;
   /** When script is attached to an entity, the entity id. Self = Owner.Attribute/Action/Item as appropriate. */
@@ -68,6 +68,8 @@ export class ScriptRunner {
   private ownerInventoryId: string;
   private targetCharacterName: string;
   private targetInventoryId: string;
+  private ownerArchetypeNames: Set<string>;
+  private targetArchetypeNames: Set<string>;
 
   constructor(context: ScriptExecutionContext) {
     this.context = context;
@@ -84,6 +86,8 @@ export class ScriptRunner {
     this.ownerInventoryId = '';
     this.targetCharacterName = 'Character';
     this.targetInventoryId = '';
+    this.ownerArchetypeNames = new Set();
+    this.targetArchetypeNames = new Set();
   }
 
   /**
@@ -156,6 +160,28 @@ export class ScriptRunner {
         this.characterAttributesCache.set(charAttr.id, charAttr);
       }
     }
+
+    // Load archetype names for owner (CharacterArchetype join Archetype)
+    const ownerCharArchetypes = await db.characterArchetypes
+      .where('characterId')
+      .equals(ownerId)
+      .toArray();
+    for (const ca of ownerCharArchetypes) {
+      const archetype = await db.archetypes.get(ca.archetypeId);
+      if (archetype?.name) this.ownerArchetypeNames.add(archetype.name);
+    }
+
+    // Load archetype names for target (if any)
+    if (targetId) {
+      const targetCharArchetypes = await db.characterArchetypes
+        .where('characterId')
+        .equals(targetId)
+        .toArray();
+      for (const ca of targetCharArchetypes) {
+        const archetype = await db.archetypes.get(ca.archetypeId);
+        if (archetype?.name) this.targetArchetypeNames.add(archetype.name);
+      }
+    }
   }
 
   /**
@@ -223,6 +249,7 @@ export class ScriptRunner {
       this.actionsCache,
       this.itemsCache,
       this.ownerInventoryItems,
+      this.ownerArchetypeNames,
       targetId ?? null,
       this.context.executeActionEvent,
     );
@@ -241,6 +268,7 @@ export class ScriptRunner {
         this.actionsCache,
         this.itemsCache,
         this.targetInventoryItems ?? [],
+        this.targetArchetypeNames,
         null, // Target's Action() has no second target
         this.context.executeActionEvent,
       );

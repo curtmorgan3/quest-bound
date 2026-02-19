@@ -26,6 +26,7 @@ export class OwnerAccessor implements StructuredCloneSafe {
   protected actionsCache: Map<string, Action>;
   protected itemsCache: Map<string, Item>;
   protected inventoryItems: InventoryItem[];
+  protected archetypeNamesCache: Set<string>;
   protected targetId: string | null;
   protected executeActionEvent: ExecuteActionEventFn | undefined;
 
@@ -40,6 +41,7 @@ export class OwnerAccessor implements StructuredCloneSafe {
     actionsCache: Map<string, Action>,
     itemsCache: Map<string, Item>,
     inventoryItems: InventoryItem[],
+    archetypeNamesCache: Set<string> = new Set(),
     targetId: string | null = null,
     executeActionEvent?: ExecuteActionEventFn,
   ) {
@@ -53,8 +55,16 @@ export class OwnerAccessor implements StructuredCloneSafe {
     this.actionsCache = actionsCache;
     this.itemsCache = itemsCache;
     this.inventoryItems = inventoryItems;
+    this.archetypeNamesCache = archetypeNamesCache;
     this.targetId = targetId;
     this.executeActionEvent = executeActionEvent;
+  }
+
+  /**
+   * Check whether the character has the given archetype (by Archetype.name).
+   */
+  hasArchetype(name: string): boolean {
+    return this.archetypeNamesCache.has(name);
   }
 
   /**

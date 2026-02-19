@@ -64,6 +64,7 @@ export function registerScriptHooks(db: DB) {
     await db.attributes.where({ scriptId }).modify({ scriptId: null });
     await db.actions.where({ scriptId }).modify({ scriptId: null });
     await db.items.where({ scriptId }).modify({ scriptId: null });
+    await db.archetypes.where({ scriptId }).modify({ scriptId: null });
 
     // Delete associated errors and logs
     await db.scriptErrors.where({ scriptId }).delete();

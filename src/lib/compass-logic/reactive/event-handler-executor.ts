@@ -18,7 +18,9 @@ export type EventHandlerType =
   | 'on_unequip'
   | 'on_consume'
   | 'on_activate'
-  | 'on_deactivate';
+  | 'on_deactivate'
+  | 'on_add'
+  | 'on_remove';
 
 /**
  * Result of event handler execution.
@@ -342,6 +344,95 @@ export class EventHandlerExecutor {
   }
 
   /**
+   * Execute an archetype event handler (on_add or on_remove).
+   * @param archetypeId - ID of the archetype
+   * @param characterId - ID of the character
+   * @param eventType - Type of event (on_add, on_remove)
+   * @param roll - Optional function to handle dice rolling
+   * @returns Execution result
+   */
+  async executeArchetypeEvent(
+    archetypeId: string,
+    characterId: string,
+    eventType: 'on_add' | 'on_remove',
+    roll?: RollFn,
+  ): Promise<EventHandlerResult> {
+    const archetype = await this.db.archetypes.get(archetypeId);
+    if (!archetype) {
+      return {
+        success: false,
+        value: null,
+        announceMessages: [],
+        logMessages: [],
+        error: new Error(`Archetype not found: ${archetypeId}`),
+      };
+    }
+
+    if (!archetype.scriptId) {
+      return {
+        success: true,
+        value: null,
+        announceMessages: [],
+        logMessages: [],
+      };
+    }
+
+    const script = await this.db.scripts.get(archetype.scriptId);
+    if (!script || !script.enabled) {
+      return {
+        success: true,
+        value: null,
+        announceMessages: [],
+        logMessages: [],
+      };
+    }
+
+    const hasHandler = this.extractEventHandler(script.sourceCode, eventType) !== null;
+    if (!hasHandler) {
+      return {
+        success: true,
+        value: null,
+        announceMessages: [],
+        logMessages: [],
+      };
+    }
+
+    const scriptToRun = this.buildScriptWithHandlerCall(script.sourceCode, eventType);
+    const context: ScriptExecutionContext = {
+      ownerId: characterId,
+      rulesetId: archetype.rulesetId,
+      db: this.db,
+      scriptId: script.id,
+      triggerType: 'archetype_event',
+      entityType: 'archetype',
+      entityId: archetype.id,
+      roll,
+      executeActionEvent: (actionId, ownerId, targetIdForAction, eventTypeForAction) =>
+        this.executeActionEvent(actionId, ownerId, targetIdForAction, eventTypeForAction, roll),
+    };
+
+    const result = this.runScriptForTest
+      ? await this.runScriptForTest(context, scriptToRun)
+      : await new ScriptRunner(context).run(scriptToRun);
+
+    if (!result.error && result.modifiedAttributeIds?.length && this.onAttributesModified) {
+      await this.onAttributesModified(
+        result.modifiedAttributeIds,
+        characterId,
+        archetype.rulesetId,
+      );
+    }
+
+    return {
+      success: !result.error,
+      value: result.value,
+      announceMessages: result.announceMessages,
+      logMessages: result.logMessages,
+      error: result.error,
+    };
+  }
+
+  /**
    * Execute an event handler by calling it within the script context.
    * This is a more robust approach that loads the entire script and calls the function.
    * @param sourceCode - Full script source code
@@ -431,4 +522,18 @@ export async function executeActionEvent(
 ): Promise<EventHandlerResult> {
   const executor = new EventHandlerExecutor(db);
   return executor.executeActionEvent(actionId, characterId, targetId, eventType, roll);
+}
+
+/**
+ * Execute an archetype event (on_add or on_remove).
+ */
+export async function executeArchetypeEvent(
+  db: DB,
+  archetypeId: string,
+  characterId: string,
+  eventType: 'on_add' | 'on_remove',
+  roll?: RollFn,
+): Promise<EventHandlerResult> {
+  const executor = new EventHandlerExecutor(db);
+  return executor.executeArchetypeEvent(archetypeId, characterId, eventType, roll);
 }

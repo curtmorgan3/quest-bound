@@ -55,7 +55,12 @@ on_consume():
 // Global scripts are loaded in alphabetical order.
 `,
   archetype: `
-// Archetype scripts run for archetype-specific logic.
-// Use this to configure starting attributes, items, or other behaviors for this archetype.
+// Archetype scripts run when the archetype is added to or removed from a character
+
+on_add():
+    Owner.Attribute('Health').set(10)
+
+on_remove():
+    Owner.Attribute('Health').subtract(5)
 `,
 };

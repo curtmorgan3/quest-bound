@@ -1,4 +1,5 @@
 import { useErrorHandler, useNotifications } from '@/hooks';
+import { executeArchetypeEvent } from '@/lib/compass-logic/reactive/event-handler-executor';
 import { getQBScriptClient } from '@/lib/compass-logic/worker';
 import { db, useCurrentUser } from '@/stores';
 import type { Character, Inventory } from '@/types';
@@ -118,6 +119,19 @@ export const useCharacter = (_id?: string) => {
       });
 
       await runInitialAttributeSyncSafe(characterId, rulesetId);
+
+      if (archetype.scriptId) {
+        // This execution runs on the main thread
+        const archetypeResult = await executeArchetypeEvent(
+          db,
+          archetype.id,
+          characterId,
+          'on_add',
+        );
+        if (archetypeResult.error) {
+          console.warn('Archetype on_add script failed:', archetypeResult.error);
+        }
+      }
     } catch (e) {
       handleError(e as Error, {
         component: 'useCharacter/createCharacter',

@@ -1,4 +1,5 @@
 import { registerActionDbHooks } from './action-hooks';
+import { registerArchetypeDbHooks } from './archetype-hooks';
 import { registerAssetDbHooks } from './asset-hooks';
 import { registerAttributeDbHooks } from './attribute-hooks';
 import { registerCharacterDbHooks } from './character-hooks';
@@ -13,6 +14,7 @@ import type { DB } from './types';
 
 export function registerDbHooks(db: DB) {
   registerRulesetDbHooks(db);
+  registerArchetypeDbHooks(db);
   registerChartDbHooks(db);
   registerAttributeDbHooks(db);
   registerCharacterDbHooks(db);
