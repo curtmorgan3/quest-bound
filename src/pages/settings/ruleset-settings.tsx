@@ -21,14 +21,14 @@ import {
 import { RulesetColorPicker } from '@/components/composites/ruleset-color-picker';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useNotifications } from '@/hooks/use-notifications';
-import { useExportRuleset, useFonts, useRulesets } from '@/lib/compass-api';
+import { useExportRuleset, useFonts, useImportRuleset, useRulesets } from '@/lib/compass-api';
+import { addModuleFromZip } from '@/lib/compass-api/hooks/export/add-module-from-zip';
 import { addModuleToRuleset } from '@/lib/compass-api/hooks/export/add-module-to-ruleset';
 import {
   getDanglingReferencesForModuleRemoval,
   removeModuleFromRuleset,
 } from '@/lib/compass-api/hooks/export/remove-module-from-ruleset';
-import type { Ruleset } from '@/types';
-import type { RulesetModuleEntry } from '@/types';
+import type { Ruleset, RulesetModuleEntry } from '@/types';
 import { Download, Package, Plus, Trash, Upload } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import type { RGBColor } from 'react-color';
@@ -52,10 +52,13 @@ interface RulesetSettingsProps {
 export const RulesetSettings = ({ activeRuleset }: RulesetSettingsProps) => {
   const { updateRuleset, rulesets } = useRulesets();
   const { exportRuleset } = useExportRuleset(activeRuleset.id);
+  const { importRuleset } = useImportRuleset();
   const { fonts, createFont, deleteFont } = useFonts(activeRuleset.id);
   const { addNotification } = useNotifications();
   const [addingModule, setAddingModule] = useState(false);
+  const [addingModuleFromFile, setAddingModuleFromFile] = useState(false);
   const [addModuleOpen, setAddModuleOpen] = useState(false);
+  const addFromFileInputRef = useRef<HTMLInputElement>(null);
   const [removeDialogOpen, setRemoveDialogOpen] = useState(false);
   const [moduleToRemove, setModuleToRemove] = useState<RulesetModuleEntry | null>(null);
   const [danglingRefs, setDanglingRefs] = useState<{
@@ -194,6 +197,37 @@ export const RulesetSettings = ({ activeRuleset }: RulesetSettingsProps) => {
       setDanglingRefs(null);
     }
     setRemoveDialogOpen(true);
+  };
+
+  const handleAddModuleFromFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setAddingModuleFromFile(true);
+    try {
+      const result = await addModuleFromZip({
+        file,
+        targetRulesetId: activeRuleset.id,
+        importRuleset: (f, opts) => importRuleset(f, opts),
+      });
+
+      const totalSkipped = Object.values(result.skippedByConflict).reduce((a, b) => a + b, 0);
+      if (totalSkipped > 0) {
+        const parts = Object.entries(result.skippedByConflict)
+          .filter(([, n]) => n > 0)
+          .map(([type, n]) => `${n} ${type}`);
+        addNotification('Module added from file. Some content skipped (ID conflict).', {
+          type: 'info',
+          description: parts.join(', '),
+        });
+      } else {
+        addNotification('Module added from file successfully.', { type: 'success' });
+      }
+    } catch (err) {
+      addNotification((err as Error).message, { type: 'error' });
+    } finally {
+      setAddingModuleFromFile(false);
+      if (addFromFileInputRef.current) addFromFileInputRef.current.value = '';
+    }
   };
 
   const handleConfirmRemoveModule = async () => {
@@ -391,42 +425,65 @@ export const RulesetSettings = ({ activeRuleset }: RulesetSettingsProps) => {
               ))
             )}
           </div>
-          <Popover open={addModuleOpen} onOpenChange={setAddModuleOpen}>
-            <PopoverTrigger asChild>
-              <Button
-                variant='outline'
-                size='sm'
-                className='gap-2 w-fit'
-                disabled={addingModule || availableModuleRulesets.length === 0}>
-                <Plus className='h-4 w-4' />
-                {addingModule ? 'Adding...' : 'Add module'}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className='w-80 p-0' align='start'>
-              <div className='p-2'>
-                <p className='mb-2 text-sm text-muted-foreground'>
-                  Choose a ruleset to add as a module:
-                </p>
-                <div className='flex max-h-60 flex-col gap-1 overflow-auto'>
-                  {availableModuleRulesets.map((r) => (
-                    <Button
-                      key={r.id}
-                      variant='ghost'
-                      size='sm'
-                      className='justify-start gap-2'
-                      onClick={() => handleAddModule(r.id)}>
-                      {r.image ? (
-                        <img src={r.image} alt='' className='h-6 w-6 shrink-0 rounded object-cover' />
-                      ) : (
-                        <Package className='h-4 w-4 shrink-0 text-muted-foreground' />
-                      )}
-                      {r.title}
-                    </Button>
-                  ))}
+          <div className='flex flex-wrap items-center gap-2'>
+            <Popover open={addModuleOpen} onOpenChange={setAddModuleOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant='outline'
+                  size='sm'
+                  className='gap-2 w-fit'
+                  disabled={addingModule || availableModuleRulesets.length === 0}>
+                  <Plus className='h-4 w-4' />
+                  {addingModule ? 'Adding...' : 'Add module'}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className='w-80 p-0' align='start'>
+                <div className='p-2'>
+                  <p className='mb-2 text-sm text-muted-foreground'>
+                    Choose a ruleset to add as a module:
+                  </p>
+                  <div className='flex max-h-60 flex-col gap-1 overflow-auto'>
+                    {availableModuleRulesets.map((r) => (
+                      <Button
+                        key={r.id}
+                        variant='ghost'
+                        size='sm'
+                        className='justify-start gap-2'
+                        onClick={() => handleAddModule(r.id)}>
+                        {r.image ? (
+                          <img
+                            src={r.image}
+                            alt=''
+                            className='h-6 w-6 shrink-0 rounded object-cover'
+                          />
+                        ) : (
+                          <Package className='h-4 w-4 shrink-0 text-muted-foreground' />
+                        )}
+                        {r.title}
+                      </Button>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            </PopoverContent>
-          </Popover>
+              </PopoverContent>
+            </Popover>
+            <Button
+              variant='outline'
+              size='sm'
+              className='gap-2 w-fit'
+              disabled={addingModuleFromFile}
+              onClick={() => addFromFileInputRef.current?.click()}>
+              <Upload className='h-4 w-4' />
+              {addingModuleFromFile ? 'Adding...' : 'Add from file'}
+            </Button>
+            <input
+              ref={addFromFileInputRef}
+              type='file'
+              accept='.zip'
+              className='hidden'
+              onChange={handleAddModuleFromFile}
+              aria-label='Upload ruleset zip to add as module'
+            />
+          </div>
         </div>
 
         <AlertDialog open={removeDialogOpen} onOpenChange={setRemoveDialogOpen}>

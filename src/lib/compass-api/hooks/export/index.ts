@@ -1,3 +1,4 @@
+export * from './add-module-from-zip';
 export * from './add-module-to-ruleset';
 export * from './remove-module-from-ruleset';
 export * from './use-export';

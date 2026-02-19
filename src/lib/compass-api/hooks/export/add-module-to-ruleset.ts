@@ -68,6 +68,8 @@ export async function addModuleToRuleset({
   const sourceRuleset = await db.rulesets.get(sourceRulesetId);
   const targetRuleset = await db.rulesets.get(targetRulesetId);
 
+  console.log(sourceRuleset);
+
   if (!sourceRuleset) {
     throw new Error('Source ruleset not found');
   }
@@ -128,15 +130,21 @@ export async function addModuleToRuleset({
   };
 
   // Load target titles/names for name conflict (append module name)
-  const [targetAttributes, targetActions, targetItems, targetCharts, targetDocuments, targetScripts] =
-    await Promise.all([
-      db.attributes.where('rulesetId').equals(targetRulesetId).toArray(),
-      db.actions.where('rulesetId').equals(targetRulesetId).toArray(),
-      db.items.where('rulesetId').equals(targetRulesetId).toArray(),
-      db.charts.where('rulesetId').equals(targetRulesetId).toArray(),
-      db.documents.where('rulesetId').equals(targetRulesetId).toArray(),
-      db.scripts.where('rulesetId').equals(targetRulesetId).toArray(),
-    ]);
+  const [
+    targetAttributes,
+    targetActions,
+    targetItems,
+    targetCharts,
+    targetDocuments,
+    targetScripts,
+  ] = await Promise.all([
+    db.attributes.where('rulesetId').equals(targetRulesetId).toArray(),
+    db.actions.where('rulesetId').equals(targetRulesetId).toArray(),
+    db.items.where('rulesetId').equals(targetRulesetId).toArray(),
+    db.charts.where('rulesetId').equals(targetRulesetId).toArray(),
+    db.documents.where('rulesetId').equals(targetRulesetId).toArray(),
+    db.scripts.where('rulesetId').equals(targetRulesetId).toArray(),
+  ]);
   const targetTitles = {
     attributes: new Set(targetAttributes.map((a) => a.title)),
     actions: new Set(targetActions.map((a) => a.title)),
@@ -180,7 +188,10 @@ export async function addModuleToRuleset({
   const windowIds = sourceWindows.map((w) => w.id);
   const sourceComponents =
     windowIds.length > 0
-      ? await db.components.where('windowId').anyOf(windowIds as string[]).toArray()
+      ? await db.components
+          .where('windowId')
+          .anyOf(windowIds as string[])
+          .toArray()
       : [];
 
   const sourceCharacters = await db.characters.where('rulesetId').equals(sourceRulesetId).toArray();
@@ -251,10 +262,7 @@ export async function addModuleToRuleset({
     diceRolls: 0,
   };
 
-  function resolveTitle(
-    type: keyof typeof targetTitles,
-    title: string,
-  ): string {
+  function resolveTitle(type: keyof typeof targetTitles, title: string): string {
     if (targetTitles[type].has(title)) {
       return `${title} (${moduleName})`;
     }
@@ -335,7 +343,7 @@ export async function addModuleToRuleset({
     const newId = crypto.randomUUID();
     chartIdMap.set(chart.id, newId);
     const { id, rulesetId, createdAt, updatedAt, assetId, ...rest } = chart;
-    const mappedAssetId = assetId ? assetIdMap.get(assetId) ?? assetId : assetId ?? null;
+    const mappedAssetId = assetId ? (assetIdMap.get(assetId) ?? assetId) : (assetId ?? null);
     const title = resolveTitle('charts', rest.title);
     await db.charts.add({
       ...rest,
@@ -361,7 +369,7 @@ export async function addModuleToRuleset({
     const newId = crypto.randomUUID();
     attributeIdMap.set(attribute.id, newId);
     const { id, rulesetId, createdAt, updatedAt, assetId, optionsChartRef, ...rest } = attribute;
-    const mappedAssetId = assetId ? assetIdMap.get(assetId) ?? assetId : assetId ?? null;
+    const mappedAssetId = assetId ? (assetIdMap.get(assetId) ?? assetId) : (assetId ?? null);
     let mappedOptionsChartRef = optionsChartRef;
     if (optionsChartRef != null) {
       const mappedChartId = chartIdMap.get(String(optionsChartRef));
@@ -393,7 +401,7 @@ export async function addModuleToRuleset({
     const newId = crypto.randomUUID();
     actionIdMap.set(action.id, newId);
     const { id, rulesetId, createdAt, updatedAt, assetId, ...rest } = action;
-    const mappedAssetId = assetId ? assetIdMap.get(assetId) ?? assetId : assetId ?? null;
+    const mappedAssetId = assetId ? (assetIdMap.get(assetId) ?? assetId) : (assetId ?? null);
     const title = resolveTitle('actions', rest.title);
     await db.actions.add({
       ...rest,
@@ -419,7 +427,7 @@ export async function addModuleToRuleset({
     const newId = crypto.randomUUID();
     itemIdMap.set(item.id, newId);
     const { id, rulesetId, createdAt, updatedAt, assetId, ...rest } = item;
-    const mappedAssetId = assetId ? assetIdMap.get(assetId) ?? assetId : assetId ?? null;
+    const mappedAssetId = assetId ? (assetIdMap.get(assetId) ?? assetId) : (assetId ?? null);
     const title = resolveTitle('items', rest.title);
     await db.items.add({
       ...rest,
@@ -445,8 +453,10 @@ export async function addModuleToRuleset({
     const newId = crypto.randomUUID();
     documentIdMap.set(document.id, newId);
     const { id, rulesetId, createdAt, updatedAt, assetId, pdfAssetId, ...rest } = document;
-    const mappedAssetId = assetId ? assetIdMap.get(assetId) ?? assetId : assetId ?? null;
-    const mappedPdfAssetId = pdfAssetId ? assetIdMap.get(pdfAssetId) ?? pdfAssetId : pdfAssetId ?? null;
+    const mappedAssetId = assetId ? (assetIdMap.get(assetId) ?? assetId) : (assetId ?? null);
+    const mappedPdfAssetId = pdfAssetId
+      ? (assetIdMap.get(pdfAssetId) ?? pdfAssetId)
+      : (pdfAssetId ?? null);
     const title = resolveTitle('documents', rest.title);
     await db.documents.add({
       ...rest,
@@ -554,12 +564,17 @@ export async function addModuleToRuleset({
     if (data) {
       try {
         const parsed = JSON.parse(data) as Record<string, unknown>;
-        if (parsed.conditionalRenderAttributeId && typeof parsed.conditionalRenderAttributeId === 'string') {
+        if (
+          parsed.conditionalRenderAttributeId &&
+          typeof parsed.conditionalRenderAttributeId === 'string'
+        ) {
           parsed.conditionalRenderAttributeId =
-            attributeIdMap.get(parsed.conditionalRenderAttributeId) ?? parsed.conditionalRenderAttributeId;
+            attributeIdMap.get(parsed.conditionalRenderAttributeId) ??
+            parsed.conditionalRenderAttributeId;
         }
         if (parsed.pageId && typeof parsed.pageId === 'string') {
-          parsed.pageId = pageIdMap.get(parsed.pageId) ?? rulesetPageIdMap.get(parsed.pageId) ?? parsed.pageId;
+          parsed.pageId =
+            pageIdMap.get(parsed.pageId) ?? rulesetPageIdMap.get(parsed.pageId) ?? parsed.pageId;
         }
         mappedData = JSON.stringify(parsed);
       } catch {
@@ -768,7 +783,7 @@ export async function addModuleToRuleset({
       const mappedAttributeId = attributeIdMap.get(attributeId) ?? attributeId;
       const mappedAssetId = (ca as Attribute).assetId
         ? (assetIdMap.get((ca as Attribute).assetId!) ?? (ca as Attribute).assetId)
-        : (ca as Attribute).assetId ?? null;
+        : ((ca as Attribute).assetId ?? null);
       let mappedOptionsChartRef = (ca as Attribute).optionsChartRef;
       if (mappedOptionsChartRef != null) {
         const mappedChartId = chartIdMap.get(String(mappedOptionsChartRef));
@@ -811,7 +826,10 @@ export async function addModuleToRuleset({
   }
 
   // Append module to target ruleset's modules list
-  const modules = [...existingModules, { id: sourceRulesetId, name: moduleName, image: moduleImage }];
+  const modules = [
+    ...existingModules,
+    { id: sourceRulesetId, name: moduleName, image: moduleImage },
+  ];
   await db.rulesets.update(targetRulesetId, {
     modules,
     updatedAt: now,

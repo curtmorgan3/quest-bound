@@ -24,6 +24,7 @@ import type {
 import JSZip from 'jszip';
 import { useState } from 'react';
 import { useRulesets } from '../rulesets';
+import { deleteRulesetAndRelatedData } from './delete-ruleset-and-related-data';
 import { duplicateRuleset } from './duplicate-ruleset';
 import type { ScriptMetadata } from './script-export';
 import { extractScriptFiles, importScripts } from './script-import';
@@ -39,6 +40,8 @@ export interface ImportRulesetOptions {
   duplicateTitle?: string;
   /** Optional new version to use when creating a duplicate ruleset */
   duplicateVersion?: string;
+  /** When set, import content only into this ruleset id (ruleset must already exist). Skips ruleset creation and version checks. Used for add-module-from-zip. */
+  contentOnlyIntoRulesetId?: string;
 }
 
 export interface ImportRulesetResult {
@@ -84,6 +87,7 @@ interface ImportedMetadata {
     updatedAt: string;
     details: Record<string, any>;
     image: string | null;
+    isModule: boolean;
   };
   exportInfo: {
     exportedAt: string;
@@ -349,9 +353,7 @@ export const useImportRuleset = () => {
 
         case 'rulesetPages':
           if (!item.rulesetId || typeof item.rulesetId !== 'string') {
-            errors.push(
-              `RulesetPage ${index + 1}: rulesetId is required and must be a string`,
-            );
+            errors.push(`RulesetPage ${index + 1}: rulesetId is required and must be a string`);
           }
           if (!item.pageId || typeof item.pageId !== 'string') {
             errors.push(`RulesetPage ${index + 1}: pageId is required and must be a string`);
@@ -360,14 +362,10 @@ export const useImportRuleset = () => {
 
         case 'rulesetWindows':
           if (!item.rulesetId || typeof item.rulesetId !== 'string') {
-            errors.push(
-              `RulesetWindow ${index + 1}: rulesetId is required and must be a string`,
-            );
+            errors.push(`RulesetWindow ${index + 1}: rulesetId is required and must be a string`);
           }
           if (!item.windowId || typeof item.windowId !== 'string') {
-            errors.push(
-              `RulesetWindow ${index + 1}: windowId is required and must be a string`,
-            );
+            errors.push(`RulesetWindow ${index + 1}: windowId is required and must be a string`);
           }
           if (!item.title || typeof item.title !== 'string') {
             errors.push(`RulesetWindow ${index + 1}: title is required and must be a string`);
@@ -404,43 +402,6 @@ export const useImportRuleset = () => {
     });
 
     return { isValid: errors.length === 0, errors };
-  };
-
-  /** Delete all data for a ruleset so it can be replaced by an import */
-  const deleteRulesetAndRelatedData = async (rulesetId: string): Promise<void> => {
-    const characters = await db.characters.where('rulesetId').equals(rulesetId).toArray();
-    const characterIds = characters.map((c) => c.id);
-    for (const cid of characterIds) {
-      const characterInventories = await db.inventories.where('characterId').equals(cid).toArray();
-      const inventoryIds = characterInventories.map((inv) => inv.id);
-      if (inventoryIds.length > 0) {
-        await db.inventoryItems.where('inventoryId').anyOf(inventoryIds).delete();
-      }
-      await db.characterAttributes.where('characterId').equals(cid).delete();
-      await db.inventories.where('characterId').equals(cid).delete();
-      await db.characterWindows.where('characterId').equals(cid).delete();
-      await db.characterPages.where('characterId').equals(cid).delete();
-    }
-    await db.characters.where('rulesetId').equals(rulesetId).delete();
-    const windowIds = (await db.windows.where('rulesetId').equals(rulesetId).toArray()).map(
-      (w) => w.id,
-    );
-    if (windowIds.length > 0) {
-      await db.components.where('windowId').anyOf(windowIds).delete();
-    }
-    await db.attributes.where('rulesetId').equals(rulesetId).delete();
-    await db.items.where('rulesetId').equals(rulesetId).delete();
-    await db.actions.where('rulesetId').equals(rulesetId).delete();
-    await db.charts.where('rulesetId').equals(rulesetId).delete();
-    await db.assets.where('rulesetId').equals(rulesetId).delete();
-    await db.windows.where('rulesetId').equals(rulesetId).delete();
-    await db.rulesetPages.where('rulesetId').equals(rulesetId).delete();
-    await db.rulesetWindows.where('rulesetId').equals(rulesetId).delete();
-    await db.fonts.where('rulesetId').equals(rulesetId).delete();
-    await db.documents.where('rulesetId').equals(rulesetId).delete();
-    await db.scripts.where('rulesetId').equals(rulesetId).delete();
-    await db.scriptErrors.where('rulesetId').equals(rulesetId).delete();
-    await db.rulesets.delete(rulesetId);
   };
 
   const importRuleset = async (
@@ -534,7 +495,7 @@ export const useImportRuleset = () => {
       }
 
       const now = new Date().toISOString();
-      const newRulesetId = metadata.ruleset.id;
+      let newRulesetId = metadata.ruleset.id;
 
       const newRuleset: Ruleset = {
         id: newRulesetId,
@@ -544,84 +505,62 @@ export const useImportRuleset = () => {
         createdBy: metadata.ruleset.createdBy,
         details: metadata.ruleset.details || {},
         image: metadata.ruleset.image,
+        isModule: metadata.ruleset.isModule || false,
         assetId: null,
         createdAt: now,
         updatedAt: now,
         palette: [],
       };
 
-      // Check for existing ruleset with same id
-      const existingRuleset = await db.rulesets.get(newRulesetId);
-      if (existingRuleset) {
-        if (existingRuleset.version === newRuleset.version) {
-          // Same id and version: either request duplicate-as-new confirmation or perform duplication
-          if (options?.duplicateAsNew) {
-            const duplicateTitle = options.duplicateTitle?.trim() || `${newRuleset.title} (copy)`;
-            const duplicateVersion = options.duplicateVersion?.trim() || newRuleset.version;
-
-            // Create the new ruleset record
-            const newId = await createRuleset({
-              title: duplicateTitle,
-              description: newRuleset.description,
-              version: duplicateVersion,
-              details: newRuleset.details || {},
-              image: newRuleset.image,
-              createdBy: newRuleset.createdBy,
-            });
-
-            // Duplicate all entities from the existing ruleset into the new one
-            const duplicationCounts = await duplicateRuleset({
-              sourceRulesetId: existingRuleset.id,
-              targetRulesetId: newId,
-            });
-
-            const duplicatedRuleset = await db.rulesets.get(newId);
-
-            return {
-              success: true,
-              message: `Created duplicate ruleset "${duplicatedRuleset?.title ?? duplicateTitle}" (v${duplicatedRuleset?.version ?? duplicateVersion}).`,
-              importedRuleset: duplicatedRuleset ?? undefined,
-              importedCounts: duplicationCounts,
-              errors: [],
-            };
-          }
-
-          return {
-            success: false,
-            message: `A ruleset "${existingRuleset.title}" (v${existingRuleset.version}) already exists with the same id and version. You can create a new copy with a different title and version.`,
-            needsDuplicateConfirmation: true,
-            existingRuleset,
-            importedRuleset: newRuleset,
-            importedCounts: {
-              attributes: 0,
-              actions: 0,
-              items: 0,
-              charts: 0,
-              characters: 0,
-              windows: 0,
-              components: 0,
-              assets: 0,
-              fonts: 0,
-              documents: 0,
-              characterAttributes: 0,
-              inventories: 0,
-              characterWindows: 0,
-              characterPages: 0,
-              rulesetPages: 0,
-              rulesetWindows: 0,
-              inventoryItems: 0,
-              scripts: 0,
-            },
-            errors: ['Duplicate ruleset: same id and version as an existing ruleset'],
-          };
+      // Content-only import: fill an existing ruleset (e.g. temp ruleset for add-module-from-zip)
+      if (options?.contentOnlyIntoRulesetId) {
+        newRulesetId = options.contentOnlyIntoRulesetId;
+        const existing = await db.rulesets.get(newRulesetId);
+        if (!existing) {
+          await db.rulesets.add({ ...newRuleset, id: newRulesetId });
         }
-        if (compareVersion(newRuleset.version, existingRuleset.version) > 0) {
-          // Uploaded version is higher: prompt to replace unless already confirmed
-          if (!options?.replaceIfNewer) {
+        // Fall through to "Import content files" (skip existing ruleset version check)
+      } else {
+        // Check for existing ruleset with same id
+        const existingRuleset = await db.rulesets.get(newRulesetId);
+        if (existingRuleset) {
+          if (existingRuleset.version === newRuleset.version) {
+            // Same id and version: either request duplicate-as-new confirmation or perform duplication
+            if (options?.duplicateAsNew) {
+              const duplicateTitle = options.duplicateTitle?.trim() || `${newRuleset.title} (copy)`;
+              const duplicateVersion = options.duplicateVersion?.trim() || newRuleset.version;
+
+              // Create the new ruleset record
+              const newId = await createRuleset({
+                title: duplicateTitle,
+                description: newRuleset.description,
+                version: duplicateVersion,
+                details: newRuleset.details || {},
+                image: newRuleset.image,
+                createdBy: newRuleset.createdBy,
+              });
+
+              // Duplicate all entities from the existing ruleset into the new one
+              const duplicationCounts = await duplicateRuleset({
+                sourceRulesetId: existingRuleset.id,
+                targetRulesetId: newId,
+              });
+
+              const duplicatedRuleset = await db.rulesets.get(newId);
+
+              return {
+                success: true,
+                message: `Created duplicate ruleset "${duplicatedRuleset?.title ?? duplicateTitle}" (v${duplicatedRuleset?.version ?? duplicateVersion}).`,
+                importedRuleset: duplicatedRuleset ?? undefined,
+                importedCounts: duplicationCounts,
+                errors: [],
+              };
+            }
+
             return {
               success: false,
-              message: `A ruleset "${existingRuleset.title}" (v${existingRuleset.version}) already exists with the same id. The uploaded file is a newer version (v${newRuleset.version}). Replacing will remove the existing ruleset and all its data, and replace it with the uploaded version.`,
-              needsReplaceConfirmation: true,
+              message: `A ruleset "${existingRuleset.title}" (v${existingRuleset.version}) already exists with the same id and version. You can create a new copy with a different title and version.`,
+              needsDuplicateConfirmation: true,
               existingRuleset,
               importedRuleset: newRuleset,
               importedCounts: {
@@ -644,37 +583,70 @@ export const useImportRuleset = () => {
                 inventoryItems: 0,
                 scripts: 0,
               },
-              errors: [],
+              errors: ['Duplicate ruleset: same id and version as an existing ruleset'],
             };
           }
-          await deleteRulesetAndRelatedData(newRulesetId);
-        } else {
-          // Uploaded version is lower or equal (same already handled above): reject
-          return {
-            success: false,
-            message: `A ruleset "${existingRuleset.title}" (v${existingRuleset.version}) already exists with the same id. The uploaded file is an older or same version (v${newRuleset.version}). Import aborted.`,
-            importedCounts: {
-              attributes: 0,
-              actions: 0,
-              items: 0,
-              charts: 0,
-              characters: 0,
-              windows: 0,
-              components: 0,
-              assets: 0,
-              fonts: 0,
-              documents: 0,
-              characterAttributes: 0,
-              inventories: 0,
-              characterWindows: 0,
-              characterPages: 0,
-              rulesetPages: 0,
-              rulesetWindows: 0,
-              inventoryItems: 0,
-              scripts: 0,
-            },
-            errors: ['Existing ruleset has same or newer version'],
-          };
+          if (compareVersion(newRuleset.version, existingRuleset.version) > 0) {
+            // Uploaded version is higher: prompt to replace unless already confirmed
+            if (!options?.replaceIfNewer) {
+              return {
+                success: false,
+                message: `A ruleset "${existingRuleset.title}" (v${existingRuleset.version}) already exists with the same id. The uploaded file is a newer version (v${newRuleset.version}). Replacing will remove the existing ruleset and all its data, and replace it with the uploaded version.`,
+                needsReplaceConfirmation: true,
+                existingRuleset,
+                importedRuleset: newRuleset,
+                importedCounts: {
+                  attributes: 0,
+                  actions: 0,
+                  items: 0,
+                  charts: 0,
+                  characters: 0,
+                  windows: 0,
+                  components: 0,
+                  assets: 0,
+                  fonts: 0,
+                  documents: 0,
+                  characterAttributes: 0,
+                  inventories: 0,
+                  characterWindows: 0,
+                  characterPages: 0,
+                  rulesetPages: 0,
+                  rulesetWindows: 0,
+                  inventoryItems: 0,
+                  scripts: 0,
+                },
+                errors: [],
+              };
+            }
+            await deleteRulesetAndRelatedData(newRulesetId);
+          } else {
+            // Uploaded version is lower or equal (same already handled above): reject
+            return {
+              success: false,
+              message: `A ruleset "${existingRuleset.title}" (v${existingRuleset.version}) already exists with the same id. The uploaded file is an older or same version (v${newRuleset.version}). Import aborted.`,
+              importedCounts: {
+                attributes: 0,
+                actions: 0,
+                items: 0,
+                charts: 0,
+                characters: 0,
+                windows: 0,
+                components: 0,
+                assets: 0,
+                fonts: 0,
+                documents: 0,
+                characterAttributes: 0,
+                inventories: 0,
+                characterWindows: 0,
+                characterPages: 0,
+                rulesetPages: 0,
+                rulesetWindows: 0,
+                inventoryItems: 0,
+                scripts: 0,
+              },
+              errors: ['Existing ruleset has same or newer version'],
+            };
+          }
         }
       }
 
@@ -1324,7 +1296,7 @@ export const useImportRuleset = () => {
                 id: crypto.randomUUID(),
                 rulesetId: newRulesetId,
                 rulesetPageId: rw.rulesetPageId
-                  ? rulesetPageIdMap.get(rw.rulesetPageId) ?? null
+                  ? (rulesetPageIdMap.get(rw.rulesetPageId) ?? null)
                   : null,
                 windowId: rw.windowId,
                 createdAt: now,
@@ -1427,8 +1399,10 @@ export const useImportRuleset = () => {
         }
       }
 
-      // Create ruleset after importing characters so test character isn't duplicated
-      await createRuleset(newRuleset);
+      // Create ruleset after importing characters so test character isn't duplicated (skip when content-only import)
+      if (!options?.contentOnlyIntoRulesetId) {
+        await createRuleset(newRuleset);
+      }
 
       // Import scripts after all entities are created (so we can link scripts to entities)
       try {
