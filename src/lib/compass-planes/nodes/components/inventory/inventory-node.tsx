@@ -465,6 +465,7 @@ export const ViewInventoryNode = ({ component }: { component: Component }) => {
     <>
       <div
         ref={containerRef}
+        role='button'
         data-testid='inventory-grid'
         onDoubleClick={handleOpenInventory}
         onPointerMove={handlePointerMove}

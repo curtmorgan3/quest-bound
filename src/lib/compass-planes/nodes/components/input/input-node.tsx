@@ -115,7 +115,7 @@ export const ViewInputNode = ({
   } as React.CSSProperties;
 
   return (
-    <section style={sectionStyle}>
+    <section style={sectionStyle} data-attribute-name={data.name}>
       {isMultiSelectList && !editMode ? (
         <>
           <button

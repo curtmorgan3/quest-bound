@@ -453,6 +453,7 @@ export const InventoryPanel = ({
                 if (!row) return null;
                 return (
                   <div
+                    role='button'
                     key={virtualRow.key}
                     data-index={virtualRow.index}
                     ref={virtualizer.measureElement}

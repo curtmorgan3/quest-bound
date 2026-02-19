@@ -42,6 +42,8 @@ export interface OnboardingSubstepSelector {
 export interface OnboardingSubstep {
   title?: string;
   description: string;
+  /** Optional code block to show with preserved line breaks and spacing (e.g. script snippet). */
+  code?: string;
   ctas?: OnboardingStepCta[];
   /** Optional. When on this substep, elements matching the selector are highlighted. If shouldAdvanceOnClick is true, clicking a matched element advances to the next substep. */
   selector?: OnboardingSubstepSelector;

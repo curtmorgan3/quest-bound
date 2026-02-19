@@ -98,7 +98,7 @@ export const UserSettings = () => {
           onClick={() => setForceShowAgain(true)}
           className='gap-2 w-[200px]'>
           <PlayCircleIcon className='h-4 w-4' />
-          Show intro again
+          Run Tutorial
         </Button>
       </div>
 

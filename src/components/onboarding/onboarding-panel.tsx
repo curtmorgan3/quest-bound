@@ -152,6 +152,14 @@ export function OnboardingPanel({ userId, onClose }: OnboardingPanelProps) {
           <p className='text-muted-foreground text-sm leading-relaxed'>
             {currentSubstep.description}
           </p>
+          {currentSubstep.code != null && currentSubstep.code !== '' && (
+            <pre
+              className='overflow-x-auto rounded-md border bg-muted px-3 py-2 text-sm font-mono leading-relaxed text-foreground whitespace-pre'
+              role='img'
+              aria-label='Code snippet'>
+              {currentSubstep.code}
+            </pre>
+          )}
           {currentSubstep.ctas && currentSubstep.ctas.length > 0 && (
             <div className='flex flex-wrap gap-2'>
               {currentSubstep.ctas.map((cta, i) => (
