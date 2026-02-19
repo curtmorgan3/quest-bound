@@ -8,23 +8,29 @@ import {
 import { useActiveRuleset, useCharacter } from '@/lib/compass-api';
 import { NotebookPen, User, UserRoundPen } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { useParams } from 'react-router-dom';
 import { CharacterSettings } from './character-settings';
 import { RulesetSettings } from './ruleset-settings';
 import { UserSettings } from './user-settings';
 
 export const Settings = () => {
+  const { rulesetId } = useParams();
   const { activeRuleset } = useActiveRuleset();
   const { character } = useCharacter();
+
+  const isOnRulesetRoute = Boolean(rulesetId && rulesetId !== 'undefined');
 
   const [page, setPage] = useState<string>('user');
 
   useEffect(() => {
     if (character) {
       setPage('character');
-    } else if (activeRuleset) {
+    } else if (isOnRulesetRoute && activeRuleset) {
       setPage('ruleset');
+    } else if (page === 'ruleset' && !isOnRulesetRoute) {
+      setPage('user');
     }
-  }, [activeRuleset, character, setPage]);
+  }, [activeRuleset, character, isOnRulesetRoute, setPage]);
 
   return (
     <div className='p-4 min-h-[90vh]'>
@@ -41,7 +47,7 @@ export const Settings = () => {
                 </SidebarMenuButton>
               </SidebarMenuItem>
             )}
-            {activeRuleset && (
+            {isOnRulesetRoute && activeRuleset && (
               <SidebarMenuItem className={`${page === 'ruleset' ? 'text-primary' : ''}`}>
                 <SidebarMenuButton asChild onClick={() => setPage('ruleset')}>
                   <div>
@@ -64,7 +70,9 @@ export const Settings = () => {
       </Sidebar>
       <div className='flex flex-col p-4 gap-4 ml-[200px] h-[1000px] overflow-scroll'>
         {page === 'user' && <UserSettings />}
-        {page === 'ruleset' && activeRuleset && <RulesetSettings activeRuleset={activeRuleset} />}
+        {page === 'ruleset' && isOnRulesetRoute && activeRuleset && (
+          <RulesetSettings activeRuleset={activeRuleset} />
+        )}
         {page === 'character' && character && <CharacterSettings character={character} />}
       </div>
     </div>

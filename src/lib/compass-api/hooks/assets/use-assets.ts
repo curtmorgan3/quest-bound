@@ -5,9 +5,10 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 
-export const useAssets = (_rulesetId?: string) => {
+export const useAssets = (_rulesetId?: string | null) => {
   const { rulesetId: paramRulesetId } = useParams();
-  const rulesetId = _rulesetId ?? paramRulesetId;
+  // Explicitly ignore active ruleset if null is provided
+  const rulesetId = _rulesetId === null ? undefined : (_rulesetId ?? paramRulesetId);
   const { addNotification } = useNotifications();
 
   const query = useCallback(() => {

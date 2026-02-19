@@ -19,7 +19,7 @@ interface ImageUploadProps {
   onUpload?: (assetId: string) => void;
   onSetUrl?: (url: string) => void;
   onRemove?: () => void;
-  rulesetId?: string;
+  rulesetId?: string | null;
 }
 
 export const ImageUpload = ({
@@ -62,8 +62,7 @@ export const ImageUpload = ({
     setDialogOpen(false);
   };
 
-  const isImageUrl = (src: string) =>
-    src.startsWith('http://') || src.startsWith('https://');
+  const isImageUrl = (src: string) => src.startsWith('http://') || src.startsWith('https://');
 
   const handleClick = () => {
     if (loading) return;

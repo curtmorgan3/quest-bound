@@ -90,6 +90,7 @@ export const UserSettings = () => {
         onRemove={() => updateUser(currentUser.id, { assetId: null })}
         onUpload={(assetId) => updateUser(currentUser.id, { assetId })}
         onSetUrl={(url) => updateUser(currentUser.id, { assetId: null, image: url })}
+        rulesetId={null}
       />
 
       <div className='flex flex-col gap-2'>
