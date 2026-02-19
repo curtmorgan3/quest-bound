@@ -105,7 +105,7 @@ export function ScriptEditorPage() {
 
   const associatedAttributeId = entityType === 'attribute' ? entityId : null;
 
-  // Initialize script data (existing script) or prepopulate from template (new script)
+  // Sync script data to state when navigating to a different (existing) script
   useEffect(() => {
     if (script && !isNew) {
       setName(script.name);
@@ -113,10 +113,15 @@ export function ScriptEditorPage() {
       setEntityId(script.entityId);
       setSourceCode(script.sourceCode);
       setCategory(script.category ?? null);
-    } else if (isNew) {
+    }
+  }, [scriptId, script, isNew]);
+
+  // When creating a new script, update source template when type changes
+  useEffect(() => {
+    if (isNew) {
       setSourceCode(SCRIPT_TEMPLATES[entityType]);
     }
-  }, [scriptId, script, isNew, entityType]);
+  }, [isNew, entityType]);
 
   const usesEvents = entityType === 'action' || entityType === 'item' || entityType === 'archetype';
 
