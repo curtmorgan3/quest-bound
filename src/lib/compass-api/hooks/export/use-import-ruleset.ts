@@ -90,6 +90,7 @@ interface ImportedMetadata {
     details: Record<string, any>;
     image: string | null;
     isModule: boolean;
+    palette?: string[];
   };
   exportInfo: {
     exportedAt: string;
@@ -513,7 +514,7 @@ export const useImportRuleset = () => {
         assetId: null,
         createdAt: now,
         updatedAt: now,
-        palette: [],
+        palette: Array.isArray(metadata.ruleset.palette) ? metadata.ruleset.palette : [],
       };
 
       // Content-only import: fill an existing ruleset (e.g. temp ruleset for add-module-from-zip)
