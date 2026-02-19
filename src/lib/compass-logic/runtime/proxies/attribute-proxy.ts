@@ -34,8 +34,7 @@ export class AttributeProxy implements StructuredCloneSafe {
   }
 
   get max(): any {
-    // Check if there's a pending update first
-    const key = `characterAttribute:${this.characterAttribute.id}`;
+    const key = `characterAttributeMax:${this.characterAttribute.id}`;
     if (this.pendingUpdates.has(key)) {
       return this.pendingUpdates.get(key);
     }
@@ -43,8 +42,7 @@ export class AttributeProxy implements StructuredCloneSafe {
   }
 
   get min(): any {
-    // Check if there's a pending update first
-    const key = `characterAttribute:${this.characterAttribute.id}`;
+    const key = `characterAttributeMin:${this.characterAttribute.id}`;
     if (this.pendingUpdates.has(key)) {
       return this.pendingUpdates.get(key);
     }
@@ -70,11 +68,19 @@ export class AttributeProxy implements StructuredCloneSafe {
   }
 
   setMax(newValue: any): void {
-    // set this.characterAttribute.max to a number
+    const key = `characterAttributeMax:${this.characterAttribute.id}`;
+    const typedValue =
+      typeof newValue === 'string' ? parseFloat(newValue) : Number(newValue);
+    this.pendingUpdates.set(key, typedValue);
+    this.characterAttribute.max = typedValue;
   }
 
   setMin(newValue: any): void {
-    // set this.characterAttribute.min to a number
+    const key = `characterAttributeMin:${this.characterAttribute.id}`;
+    const typedValue =
+      typeof newValue === 'string' ? parseFloat(newValue) : Number(newValue);
+    this.pendingUpdates.set(key, typedValue);
+    this.characterAttribute.min = typedValue;
   }
 
   /**
@@ -162,11 +168,10 @@ export class AttributeProxy implements StructuredCloneSafe {
   }
 
   /**
-   * Set the attribute to a random option from its list.
-   * Returns the selected value.
+   * Get a random option from the list attribute (does not set the attribute).
    * Throws an error if the attribute is not a list type.
    */
-  random(): any {
+  get random(): any {
     if (
       this.attribute.type !== 'list' ||
       !this.attribute.options ||
@@ -175,7 +180,23 @@ export class AttributeProxy implements StructuredCloneSafe {
       throw new Error(`Attribute '${this.attribute.title}' is not a list or has no options`);
     }
     const randomIndex = Math.floor(Math.random() * this.attribute.options.length);
-    const randomValue = this.attribute.options[randomIndex];
+    return this.attribute.options[randomIndex];
+  }
+
+  /**
+   * Set the attribute to a random option from its list.
+   * Returns the selected value.
+   * Throws an error if the attribute is not a list type.
+   */
+  setRandom(): any {
+    if (
+      this.attribute.type !== 'list' ||
+      !this.attribute.options ||
+      this.attribute.options.length === 0
+    ) {
+      throw new Error(`Attribute '${this.attribute.title}' is not a list or has no options`);
+    }
+    const randomValue = this.random;
     this.set(randomValue);
     return randomValue;
   }

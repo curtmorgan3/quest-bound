@@ -186,7 +186,7 @@ describe('AttributeProxy', () => {
     });
 
     it('should select random option', () => {
-      const randomValue = proxy.random();
+      const randomValue = proxy.setRandom();
       expect(listAttribute.options).toContain(randomValue);
       expect(proxy.value).toBe(randomValue);
     });

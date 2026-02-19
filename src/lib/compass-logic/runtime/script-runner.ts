@@ -191,8 +191,12 @@ export class ScriptRunner {
   getModifiedAttributeIds(): string[] {
     const ids = new Set<string>();
     for (const key of this.pendingUpdates.keys()) {
-      if (key.startsWith('characterAttribute:')) {
-        const characterAttributeId = key.slice('characterAttribute:'.length);
+      const match =
+        key.startsWith('characterAttribute:') ||
+        key.startsWith('characterAttributeMax:') ||
+        key.startsWith('characterAttributeMin:');
+      if (match) {
+        const characterAttributeId = key.split(':')[1];
         const charAttr = this.characterAttributesCache.get(characterAttributeId);
         if (charAttr?.attributeId) {
           ids.add(charAttr.attributeId);
@@ -214,6 +218,10 @@ export class ScriptRunner {
 
       if (type === 'characterAttribute') {
         await db.characterAttributes.update(id, { value });
+      } else if (type === 'characterAttributeMax') {
+        await db.characterAttributes.update(id, { max: value });
+      } else if (type === 'characterAttributeMin') {
+        await db.characterAttributes.update(id, { min: value });
       } else if (type === 'inventoryAdd') {
         const items = value as InventoryItem[];
         for (const item of items) {
