@@ -27,13 +27,8 @@ import { Link, useParams } from 'react-router-dom';
 
 export const Archetypes = () => {
   const { rulesetId } = useParams();
-  const {
-    archetypes,
-    createArchetype,
-    updateArchetype,
-    deleteArchetype,
-    reorderArchetypes,
-  } = useArchetypes(rulesetId);
+  const { archetypes, createArchetype, updateArchetype, deleteArchetype, reorderArchetypes } =
+    useArchetypes(rulesetId);
 
   const [createOpen, setCreateOpen] = useState(false);
   const [newName, setNewName] = useState('');
@@ -61,7 +56,10 @@ export const Archetypes = () => {
 
   const saveEdit = async () => {
     if (!editingId) return;
-    await updateArchetype(editingId, { name: editName.trim(), description: editDescription.trim() });
+    await updateArchetype(editingId, {
+      name: editName.trim(),
+      description: editDescription.trim(),
+    });
     setEditingId(null);
   };
 
@@ -128,6 +126,12 @@ export const Archetypes = () => {
       </div>
 
       <div className='flex flex-col gap-2' data-testid='archetypes-list'>
+        {archetypes.length > 0 && (
+          <p className='italic text-sm text-muted-foreground'>
+            Order determines default load order of archetype scripts. This is overridable during
+            character creation.
+          </p>
+        )}
         {archetypes.map((archetype, index) => (
           <Card
             key={archetype.id}

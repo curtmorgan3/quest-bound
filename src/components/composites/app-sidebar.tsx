@@ -10,7 +10,6 @@ import {
   Handbag,
   HandFist,
   HelpCircle,
-  Layers,
   LayoutTemplate,
   Newspaper,
   Pin,
@@ -18,6 +17,7 @@ import {
   Settings as SettingsIcon,
   Sword,
   User,
+  UserPlus,
   UserRoundPen,
   Users,
   Wrench,
@@ -52,28 +52,18 @@ import {
 } from '@/stores';
 import { useContext, useEffect } from 'react';
 import { Link, useLocation, useParams } from 'react-router-dom';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '../ui/select';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { Button } from '../ui/button';
 import { DialogDescription } from '../ui/dialog';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger } from '../ui/drawer';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 
 export function AppSidebar() {
   const { currentUser, signOut } = useUsers();
   const { activeRuleset } = useActiveRuleset();
-  const {
-    archetypes,
-    effectiveArchetype,
-    selectedArchetypeId,
-    setSelectedArchetype,
-  } = useRulesets();
+  const { archetypes, effectiveArchetype, selectedArchetypeId, setSelectedArchetype } =
+    useRulesets();
   const { character, updateCharacter } = useCharacter();
   const { documents } = useDocuments(character?.rulesetId);
   const { charts } = useCharts(character?.rulesetId);
@@ -497,9 +487,7 @@ export function AppSidebar() {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
                 <SidebarMenuItem>
-                  <SidebarMenuButton
-                    onClick={() => setDicePanelOpen(true)}
-                    data-testid='nav-dice'>
+                  <SidebarMenuButton onClick={() => setDicePanelOpen(true)} data-testid='nav-dice'>
                     <Dices />
                     <span>Dice</span>
                   </SidebarMenuButton>
@@ -519,7 +507,7 @@ export function AppSidebar() {
                     <SidebarMenuButton
                       onClick={() => characterArchetypesPanel.setOpen(true)}
                       data-testid='nav-character-archetypes'>
-                      <Layers className='w-4 h-4' />
+                      <UserPlus className='w-4 h-4' />
                       <span>Archetypes</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
