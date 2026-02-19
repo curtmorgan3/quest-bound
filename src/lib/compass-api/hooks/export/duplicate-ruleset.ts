@@ -1,6 +1,7 @@
 import { db } from '@/stores';
 import type {
   Action,
+  Archetype,
   Asset,
   Attribute,
   Character,
@@ -40,6 +41,7 @@ export interface RulesetDuplicationCounts {
   documents: number;
   rulesetPages: number;
   rulesetWindows: number;
+  archetypes: number;
   characters: number;
   characterAttributes: number;
   inventories: number;
@@ -100,7 +102,13 @@ export async function duplicateRuleset({
           .toArray()
       : [];
 
-  // Identify source test character (only clone the test character, not player characters)
+  // Load source archetypes (each has a test character)
+  const sourceArchetypes = await db.archetypes
+    .where('rulesetId')
+    .equals(sourceRulesetId)
+    .sortBy('loadOrder');
+
+  // Fallback: if no archetypes (legacy), use first test character
   const sourceCharacters = await db.characters.where('rulesetId').equals(sourceRulesetId).toArray();
   const sourceTestCharacter = sourceCharacters.find((c: Character) => c.isTestCharacter);
 
@@ -109,34 +117,16 @@ export async function duplicateRuleset({
   const autoTestCharacter = targetCharacters.find((c: Character) => c.isTestCharacter);
   const autoTestCharacterId = autoTestCharacter?.id;
 
-  // Character-related entities (only for the source test character)
-  let sourceCharacterAttributes: CharacterAttribute[] = [];
-  let sourceCharacterPages: CharacterPage[] = [];
-  let sourceCharacterWindows: CharacterWindow[] = [];
-  let sourceInventories: Inventory[] = [];
-  let sourceInventoryItems: InventoryItem[] = [];
-
-  if (sourceTestCharacter) {
-    [sourceCharacterAttributes, sourceCharacterPages, sourceCharacterWindows] = await Promise.all([
-      db.characterAttributes.where('characterId').equals(sourceTestCharacter.id).toArray(),
-      db.characterPages.where('characterId').equals(sourceTestCharacter.id).toArray(),
-      db.characterWindows.where('characterId').equals(sourceTestCharacter.id).toArray(),
-    ]);
-
-    sourceInventories = await db.inventories
-      .where('characterId')
-      .equals(sourceTestCharacter.id)
-      .toArray();
-
-    const sourceInventoryIds = sourceInventories.map((inv: any) => inv.id);
-    sourceInventoryItems =
-      sourceInventoryIds.length > 0
-        ? await db.inventoryItems
-            .where('inventoryId')
-            .anyOf(sourceInventoryIds as string[])
-            .toArray()
-        : [];
-  }
+  // Character-related entities: collect per test character (from archetypes or fallback)
+  const testCharacterIds = [
+    ...new Set(
+      sourceArchetypes.length > 0
+        ? sourceArchetypes.map((a) => a.testCharacterId).filter(Boolean)
+        : sourceTestCharacter
+          ? [sourceTestCharacter.id]
+          : [],
+    ),
+  ];
 
   // ID maps for remapping references
   const assetIdMap = new Map<string, string>();
@@ -151,6 +141,7 @@ export async function duplicateRuleset({
   const characterIdMap = new Map<string, string>();
   const characterPageIdMap = new Map<string, string>();
   const inventoryIdMap = new Map<string, string>();
+  const archetypeIdMap = new Map<string, string>();
   /** Maps source page id -> new page id for ruleset template pages (shared with test character pages when same) */
   const rulesetPageIdMap = new Map<string, string>();
   /** Maps old rulesetPage join id -> new rulesetPage join id (for rulesetWindows) */
@@ -168,6 +159,7 @@ export async function duplicateRuleset({
     documents: 0,
     rulesetPages: 0,
     rulesetWindows: 0,
+    archetypes: 0,
     characters: 0,
     characterAttributes: 0,
     inventories: 0,
@@ -317,41 +309,7 @@ export async function duplicateRuleset({
     counts.documents++;
   }
 
-  // 8. Scripts (map entityId based on entityType)
-  for (const script of sourceScripts as Script[]) {
-    const newId = crypto.randomUUID();
-
-    const { id, rulesetId, createdAt, updatedAt, entityId, entityType, ...rest } = script;
-
-    // Remap entityId based on entityType
-    let mappedEntityId = entityId;
-    if (entityId && !script.isGlobal) {
-      switch (entityType) {
-        case 'attribute':
-          mappedEntityId = attributeIdMap.get(entityId) ?? entityId;
-          break;
-        case 'action':
-          mappedEntityId = actionIdMap.get(entityId) ?? entityId;
-          break;
-        case 'item':
-          mappedEntityId = itemIdMap.get(entityId) ?? entityId;
-          break;
-      }
-    }
-
-    await db.scripts.add({
-      ...rest,
-      id: newId,
-      rulesetId: targetRulesetId,
-      entityId: mappedEntityId,
-      entityType,
-      createdAt: now,
-      updatedAt: now,
-    } as Script);
-    counts.scripts++;
-  }
-
-  // 9. Windows
+  // 8. Windows
   for (const window of sourceWindows as Window[]) {
     const newId = crypto.randomUUID();
     windowIdMap.set(window.id, newId);
@@ -368,7 +326,7 @@ export async function duplicateRuleset({
     counts.windows++;
   }
 
-  // 10. Components (map windowId, attributeId, actionId, childWindowId, assetId)
+  // 9. Components (map windowId, attributeId, actionId, childWindowId, assetId)
   for (const component of sourceComponents as Component[]) {
     const newId = crypto.randomUUID();
     componentIdMap.set(component.id, newId);
@@ -408,7 +366,7 @@ export async function duplicateRuleset({
     counts.components++;
   }
 
-  // 11. Ruleset pages (template pages + joins; builds rulesetPageIdMap and rulesetPageJoinIdMap)
+  // 10. Ruleset pages (template pages + joins; builds rulesetPageIdMap and rulesetPageJoinIdMap)
   for (const join of sourceRulesetPages as RulesetPage[]) {
     const sourcePage = await db.pages.get(join.pageId);
     if (!sourcePage) continue;
@@ -433,7 +391,7 @@ export async function duplicateRuleset({
     counts.rulesetPages++;
   }
 
-  // 12. Ruleset windows (layout; map rulesetPageId and windowId)
+  // 11. Ruleset windows (layout; map rulesetPageId and windowId)
   for (const rw of sourceRulesetWindows as RulesetWindow[]) {
     const newId = crypto.randomUUID();
     const { id, rulesetId, rulesetPageId, windowId, createdAt, updatedAt, ...rest } = rw;
@@ -453,23 +411,36 @@ export async function duplicateRuleset({
     counts.rulesetWindows++;
   }
 
-  // 13. Test character and related entities
-  if (sourceTestCharacter) {
-    const newCharacterId = crypto.randomUUID();
-    characterIdMap.set(sourceTestCharacter.id, newCharacterId);
+  // 12. Test characters and archetypes (after ruleset pages so rulesetPageIdMap is available)
+  for (const testCharId of testCharacterIds) {
+    const srcChar = await db.characters.get(testCharId);
+    if (!srcChar || !srcChar.isTestCharacter) continue;
 
-    // Clone character (rulesetId, pinned documents/charts need remapping)
+    const [srcCharAttrs, srcCharPages, srcCharWindows] = await Promise.all([
+      db.characterAttributes.where('characterId').equals(testCharId).toArray(),
+      db.characterPages.where('characterId').equals(testCharId).toArray(),
+      db.characterWindows.where('characterId').equals(testCharId).toArray(),
+    ]);
+    const srcInvs = await db.inventories.where('characterId').equals(testCharId).toArray();
+    const srcInvIds = srcInvs.map((inv) => inv.id);
+    const srcInvItems =
+      srcInvIds.length > 0
+        ? await db.inventoryItems.where('inventoryId').anyOf(srcInvIds).toArray()
+        : [];
+
+    const newCharacterId = crypto.randomUUID();
+    characterIdMap.set(testCharId, newCharacterId);
+
     const {
-      id,
-      rulesetId,
-      createdAt,
-      updatedAt,
-      inventoryId,
+      id: _cid,
+      rulesetId: _crid,
+      createdAt: _cc,
+      updatedAt: _cu,
+      inventoryId: invId,
       pinnedSidebarDocuments,
       pinnedSidebarCharts,
-      ...restCharacter
-    } = sourceTestCharacter;
-
+      ...restChar
+    } = srcChar;
     const mappedPinnedDocs = (pinnedSidebarDocuments || []).map(
       (docId) => documentIdMap.get(docId) ?? docId,
     );
@@ -478,10 +449,10 @@ export async function duplicateRuleset({
     );
 
     await db.characters.add({
-      ...restCharacter,
+      ...restChar,
       id: newCharacterId,
       rulesetId: targetRulesetId,
-      inventoryId: inventoryId, // temporary, will be updated after inventories are cloned
+      inventoryId: invId,
       pinnedSidebarDocuments: mappedPinnedDocs,
       pinnedSidebarCharts: mappedPinnedCharts,
       createdAt: now,
@@ -489,8 +460,7 @@ export async function duplicateRuleset({
     } as Character);
     counts.characters++;
 
-    // Character pages (join + Page entity; reuse new page id if already cloned as ruleset page)
-    for (const join of sourceCharacterPages as CharacterPage[]) {
+    for (const join of srcCharPages as CharacterPage[]) {
       const sourcePage = await db.pages.get(join.pageId);
       if (!sourcePage) continue;
       const newJoinId = crypto.randomUUID();
@@ -498,7 +468,8 @@ export async function duplicateRuleset({
       const existingNewPageId = rulesetPageIdMap.get(join.pageId);
       const newPageId = existingNewPageId ?? crypto.randomUUID();
       if (!existingNewPageId) {
-        const { id: _pageId, createdAt: _c, updatedAt: _u, ...pageRest } = sourcePage;
+        const { id: _pid, createdAt: _pc, updatedAt: _pu, ...pageRest } = sourcePage;
+        rulesetPageIdMap.set(join.pageId, newPageId);
         await db.pages.add({
           ...pageRest,
           id: newPageId,
@@ -516,132 +487,102 @@ export async function duplicateRuleset({
       counts.characterPages++;
     }
 
-    // Inventories for the test character
     let newDefaultInventoryId: string | null = null;
-    for (const inv of sourceInventories as any[]) {
+    for (const inv of srcInvs as Inventory[]) {
       const newInvId = crypto.randomUUID();
       inventoryIdMap.set(inv.id, newInvId);
-
-      const { id, createdAt, updatedAt, characterId, rulesetId: _invRulesetId, ...rest } = inv;
-      const newInventory: any = {
-        ...rest,
+      const { id: _iid, createdAt: _ic, updatedAt: _iu, characterId: _cid2, ...restInv } = inv;
+      await db.inventories.add({
+        ...restInv,
         id: newInvId,
         characterId: newCharacterId,
         rulesetId: targetRulesetId,
         createdAt: now,
         updatedAt: now,
-      };
-
-      await db.inventories.add(newInventory as Inventory);
+      } as Inventory);
       counts.inventories++;
-
-      if (inventoryId && inv.id === inventoryId) {
-        newDefaultInventoryId = newInvId;
-      }
+      if (invId && inv.id === invId) newDefaultInventoryId = newInvId;
     }
-
-    // Update character.inventoryId to point at the cloned inventory
     if (newDefaultInventoryId) {
       await db.characters.update(newCharacterId, { inventoryId: newDefaultInventoryId });
     }
 
-    // Inventory items (map inventoryId, entityId, componentId)
-    for (const invItem of sourceInventoryItems as any[]) {
+    for (const invItem of srcInvItems as InventoryItem[]) {
       const newInvItemId = crypto.randomUUID();
-
       const {
-        id,
-        createdAt,
-        updatedAt,
-        inventoryId: oldInventoryId,
+        id: _iiid,
+        createdAt: _iic,
+        updatedAt: _iiu,
+        inventoryId: oldInvId,
         entityId,
         componentId,
-        ...rest
-      } = invItem as InventoryItem & { [key: string]: any };
-
-      const mappedInventoryId = inventoryIdMap.get(oldInventoryId);
-      if (!mappedInventoryId) continue; // Shouldn't happen, but guard just in case
-
+        ...restInvItem
+      } = invItem;
+      const mappedInvId = inventoryIdMap.get(oldInvId);
+      if (!mappedInvId) continue;
+      const type = invItem.type;
       let mappedEntityId = entityId;
-      const type = (invItem as InventoryItem).type;
-      if (type === 'attribute') {
-        mappedEntityId = attributeIdMap.get(entityId) ?? entityId;
-      } else if (type === 'item') {
-        mappedEntityId = itemIdMap.get(entityId) ?? entityId;
-      } else if (type === 'action') {
-        mappedEntityId = actionIdMap.get(entityId) ?? entityId;
-      }
-
-      const mappedComponentId = componentId
-        ? (componentIdMap.get(componentId) ?? componentId)
-        : componentId;
-
+      if (type === 'attribute') mappedEntityId = attributeIdMap.get(entityId) ?? entityId;
+      else if (type === 'item') mappedEntityId = itemIdMap.get(entityId) ?? entityId;
+      else if (type === 'action') mappedEntityId = actionIdMap.get(entityId) ?? entityId;
+      const mappedCompId = componentId ? (componentIdMap.get(componentId) ?? componentId) : componentId;
       await db.inventoryItems.add({
-        ...rest,
+        ...restInvItem,
         id: newInvItemId,
-        inventoryId: mappedInventoryId,
+        inventoryId: mappedInvId,
         entityId: mappedEntityId,
-        componentId: mappedComponentId,
+        componentId: mappedCompId,
         createdAt: now,
         updatedAt: now,
       } as InventoryItem);
       counts.inventoryItems++;
     }
 
-    // Character attributes
-    for (const ca of sourceCharacterAttributes as CharacterAttribute[]) {
+    for (const ca of srcCharAttrs as CharacterAttribute[]) {
+      const newCaId = crypto.randomUUID();
       const {
-        id,
-        createdAt,
-        updatedAt,
-        characterId,
+        id: _caid,
+        createdAt: _cac,
+        updatedAt: _cau,
+        characterId: _caCharId,
         attributeId,
         assetId,
         optionsChartRef,
-        ...rest
-      } = ca as any;
-
-      const newCaId = crypto.randomUUID();
-      const mappedAttributeId = attributeIdMap.get(attributeId) ?? attributeId;
+        ...restCa
+      } = ca as CharacterAttribute & { assetId?: string | null; optionsChartRef?: number };
+      const mappedAttrId = attributeIdMap.get(attributeId) ?? attributeId;
       const mappedAssetId = assetId ? (assetIdMap.get(assetId) ?? assetId) : (assetId ?? null);
-
-      let mappedOptionsChartRef = optionsChartRef;
-      if (optionsChartRef != null) {
-        const mappedChartId = chartIdMap.get(String(optionsChartRef));
-        if (mappedChartId) {
-          mappedOptionsChartRef = mappedChartId as unknown as number;
-        }
+      let mappedOptChartRef = optionsChartRef;
+      if (mappedOptChartRef != null) {
+        const mc = chartIdMap.get(String(mappedOptChartRef));
+        if (mc) mappedOptChartRef = mc as unknown as number;
       }
-
       await db.characterAttributes.add({
-        ...rest,
+        ...restCa,
         id: newCaId,
         characterId: newCharacterId,
-        attributeId: mappedAttributeId,
+        attributeId: mappedAttrId,
         assetId: mappedAssetId,
-        optionsChartRef: mappedOptionsChartRef,
+        optionsChartRef: mappedOptChartRef,
         createdAt: now,
         updatedAt: now,
-      } as any);
+      } as CharacterAttribute);
       counts.characterAttributes++;
     }
 
-    // Character windows
-    for (const cw of sourceCharacterWindows as CharacterWindow[]) {
+    for (const cw of srcCharWindows as CharacterWindow[]) {
       const newCwId = crypto.randomUUID();
-      const { id, createdAt, updatedAt, characterId, characterPageId, windowId, ...rest } = cw;
-
-      const mappedCharacterPageId = characterPageId
+      const { id: _cwid, createdAt: _cwc, updatedAt: _cwu, characterId: _cwCharId, characterPageId, windowId, ...restCw } = cw;
+      const mappedCharPageId = characterPageId
         ? (characterPageIdMap.get(characterPageId) ?? characterPageId)
         : characterPageId;
-      const mappedWindowId = windowIdMap.get(windowId) ?? windowId;
-
+      const mappedWinId = windowIdMap.get(windowId) ?? windowId;
       await db.characterWindows.add({
-        ...rest,
+        ...restCw,
         id: newCwId,
         characterId: newCharacterId,
-        characterPageId: mappedCharacterPageId,
-        windowId: mappedWindowId,
+        characterPageId: mappedCharPageId,
+        windowId: mappedWinId,
         createdAt: now,
         updatedAt: now,
       } as CharacterWindow);
@@ -649,30 +590,95 @@ export async function duplicateRuleset({
     }
   }
 
-  // 14. Clean up the auto-created test character for the target ruleset (if different from cloned one)
-  if (
-    autoTestCharacterId &&
-    (!sourceTestCharacter || autoTestCharacterId !== characterIdMap.get(sourceTestCharacter.id))
-  ) {
-    const autoInventories = await db.inventories
-      .where('characterId')
-      .equals(autoTestCharacterId)
-      .toArray();
-    const autoInventoryIds = autoInventories.map((inv: any) => inv.id);
-    if (autoInventoryIds.length > 0) {
-      await db.inventoryItems
-        .where('inventoryId')
-        .anyOf(autoInventoryIds as string[])
-        .delete();
+  // Clone archetypes (with new testCharacterId)
+  for (const arch of sourceArchetypes as Archetype[]) {
+    const newArchId = crypto.randomUUID();
+    archetypeIdMap.set(arch.id, newArchId);
+    const newTestCharId = characterIdMap.get(arch.testCharacterId) ?? arch.testCharacterId;
+    const { id: _aid, rulesetId: _arid, createdAt: _ac, updatedAt: _au, ...restArch } = arch;
+    await db.archetypes.add({
+      ...restArch,
+      id: newArchId,
+      rulesetId: targetRulesetId,
+      testCharacterId: newTestCharId,
+      createdAt: now,
+      updatedAt: now,
+    } as Archetype);
+    counts.archetypes++;
+  }
+
+  // 13. Scripts (map entityId based on entityType)
+  for (const script of sourceScripts as Script[]) {
+    const newId = crypto.randomUUID();
+
+    const { id, rulesetId, createdAt, updatedAt, entityId, entityType, ...rest } = script;
+
+    // Remap entityId based on entityType
+    let mappedEntityId = entityId;
+    if (entityId && !script.isGlobal) {
+      switch (entityType) {
+        case 'attribute':
+          mappedEntityId = attributeIdMap.get(entityId) ?? entityId;
+          break;
+        case 'action':
+          mappedEntityId = actionIdMap.get(entityId) ?? entityId;
+          break;
+        case 'item':
+          mappedEntityId = itemIdMap.get(entityId) ?? entityId;
+          break;
+        case 'archetype':
+          mappedEntityId = archetypeIdMap.get(entityId) ?? entityId;
+          break;
+      }
     }
 
-    await Promise.all([
-      db.characterAttributes.where('characterId').equals(autoTestCharacterId).delete(),
-      db.characterPages.where('characterId').equals(autoTestCharacterId).delete(),
-      db.characterWindows.where('characterId').equals(autoTestCharacterId).delete(),
-      db.inventories.where('characterId').equals(autoTestCharacterId).delete(),
-      db.characters.where('id').equals(autoTestCharacterId).delete(),
-    ]);
+    await db.scripts.add({
+      ...rest,
+      id: newId,
+      rulesetId: targetRulesetId,
+      entityId: mappedEntityId,
+      entityType,
+      createdAt: now,
+      updatedAt: now,
+    } as Script);
+    counts.scripts++;
+  }
+
+  // 14. Clean up the auto-created test character and archetypes for the target ruleset
+  if (autoTestCharacterId) {
+    const clonedCharIds = new Set(characterIdMap.values());
+    if (!clonedCharIds.has(autoTestCharacterId)) {
+      const autoInventories = await db.inventories
+        .where('characterId')
+        .equals(autoTestCharacterId)
+        .toArray();
+      const autoInventoryIds = autoInventories.map((inv: any) => inv.id);
+      if (autoInventoryIds.length > 0) {
+        await db.inventoryItems
+          .where('inventoryId')
+          .anyOf(autoInventoryIds as string[])
+          .delete();
+      }
+
+      await Promise.all([
+        db.characterAttributes.where('characterId').equals(autoTestCharacterId).delete(),
+        db.characterPages.where('characterId').equals(autoTestCharacterId).delete(),
+        db.characterWindows.where('characterId').equals(autoTestCharacterId).delete(),
+        db.inventories.where('characterId').equals(autoTestCharacterId).delete(),
+        db.characters.where('id').equals(autoTestCharacterId).delete(),
+      ]);
+    }
+
+    // Delete auto-created archetype that pointed to the auto test character
+    const autoArchetypes = await db.archetypes
+      .where('rulesetId')
+      .equals(targetRulesetId)
+      .filter((a) => a.testCharacterId === autoTestCharacterId)
+      .toArray();
+    for (const a of autoArchetypes) {
+      await db.characterArchetypes.where('archetypeId').equals(a.id).delete();
+      await db.archetypes.delete(a.id);
+    }
   }
 
   return counts;

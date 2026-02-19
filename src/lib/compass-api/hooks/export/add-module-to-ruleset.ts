@@ -2,6 +2,7 @@ import { db } from '@/stores';
 import { deleteModuleContentFromRuleset } from './remove-module-from-ruleset';
 import type {
   Action,
+  Archetype,
   Asset,
   Attribute,
   Character,
@@ -42,6 +43,7 @@ export interface AddModuleResult {
     documents: number;
     rulesetPages: number;
     rulesetWindows: number;
+    archetypes: number;
     characters: number;
     characterAttributes: number;
     inventories: number;
@@ -202,8 +204,21 @@ export async function addModuleToRuleset({
           .toArray()
       : [];
 
+  const sourceArchetypes = await db.archetypes
+    .where('rulesetId')
+    .equals(sourceRulesetId)
+    .sortBy('loadOrder');
   const sourceCharacters = await db.characters.where('rulesetId').equals(sourceRulesetId).toArray();
   const sourceTestCharacter = sourceCharacters.find((c: Character) => c.isTestCharacter);
+  const testCharacterIds = [
+    ...new Set(
+      sourceArchetypes.length > 0
+        ? sourceArchetypes.map((a) => a.testCharacterId).filter(Boolean)
+        : sourceTestCharacter
+          ? [sourceTestCharacter.id]
+          : [],
+    ),
+  ];
 
   let sourceCharacterAttributes: CharacterAttribute[] = [];
   let sourceCharacterPages: CharacterPage[] = [];
@@ -211,15 +226,15 @@ export async function addModuleToRuleset({
   let sourceInventories: Inventory[] = [];
   let sourceInventoryItems: InventoryItem[] = [];
 
-  if (sourceTestCharacter) {
+  if (testCharacterIds.length > 0) {
     [sourceCharacterAttributes, sourceCharacterPages, sourceCharacterWindows] = await Promise.all([
-      db.characterAttributes.where('characterId').equals(sourceTestCharacter.id).toArray(),
-      db.characterPages.where('characterId').equals(sourceTestCharacter.id).toArray(),
-      db.characterWindows.where('characterId').equals(sourceTestCharacter.id).toArray(),
+      db.characterAttributes.where('characterId').anyOf(testCharacterIds).toArray(),
+      db.characterPages.where('characterId').anyOf(testCharacterIds).toArray(),
+      db.characterWindows.where('characterId').anyOf(testCharacterIds).toArray(),
     ]);
     sourceInventories = await db.inventories
       .where('characterId')
-      .equals(sourceTestCharacter.id)
+      .anyOf(testCharacterIds)
       .toArray();
     const sourceInventoryIds = sourceInventories.map((inv) => inv.id);
     sourceInventoryItems =
@@ -243,6 +258,7 @@ export async function addModuleToRuleset({
   const characterIdMap = new Map<string, string>();
   const characterPageIdMap = new Map<string, string>();
   const inventoryIdMap = new Map<string, string>();
+  const archetypeIdMap = new Map<string, string>();
   const rulesetPageIdMap = new Map<string, string>();
   const rulesetPageJoinIdMap = new Map<string, string>();
   const pageIdMap = new Map<string, string>();
@@ -259,6 +275,7 @@ export async function addModuleToRuleset({
     documents: 0,
     rulesetPages: 0,
     rulesetWindows: 0,
+    archetypes: 0,
     characters: 0,
     characterAttributes: 0,
     inventories: 0,
@@ -482,46 +499,7 @@ export async function addModuleToRuleset({
     counts.documents++;
   }
 
-  // 9. Scripts
-  for (const script of sourceScripts as Script[]) {
-    if (targetIds.scripts.has(script.id)) {
-      pushSkipped('scripts', script.id, script.name);
-      continue;
-    }
-    const newId = crypto.randomUUID();
-    const { id, rulesetId, createdAt, updatedAt, entityId, entityType, ...rest } = script;
-    let mappedEntityId = entityId;
-    if (entityId && !script.isGlobal) {
-      switch (entityType) {
-        case 'attribute':
-          mappedEntityId = attributeIdMap.get(entityId) ?? entityId;
-          break;
-        case 'action':
-          mappedEntityId = actionIdMap.get(entityId) ?? entityId;
-          break;
-        case 'item':
-          mappedEntityId = itemIdMap.get(entityId) ?? entityId;
-          break;
-      }
-    }
-    const name = resolveTitle('scripts', rest.name);
-    await db.scripts.add({
-      ...rest,
-      name,
-      id: newId,
-      rulesetId: targetRulesetId,
-      entityId: mappedEntityId,
-      entityType,
-      moduleId: sourceRulesetId,
-      moduleEntityId: script.id,
-      moduleName,
-      createdAt: now,
-      updatedAt: now,
-    } as Script & { moduleId: string; moduleEntityId: string; moduleName: string });
-    counts.scripts++;
-  }
-
-  // 10. Windows
+  // 9. Windows
   for (const window of sourceWindows as Window[]) {
     if (targetIds.windows.has(window.id)) {
       pushSkipped('windows', window.id, (window as { title?: string }).title);
@@ -543,7 +521,7 @@ export async function addModuleToRuleset({
     counts.windows++;
   }
 
-  // 11. Components (no module tracking per spec)
+  // 10. Components (no module tracking per spec)
   for (const component of sourceComponents as Component[]) {
     const newId = crypto.randomUUID();
     componentIdMap.set(component.id, newId);
@@ -604,7 +582,7 @@ export async function addModuleToRuleset({
     counts.components++;
   }
 
-  // 12. Ruleset pages (template pages + joins)
+  // 11. Ruleset pages (template pages + joins)
   for (const join of sourceRulesetPages as RulesetPage[]) {
     const sourcePage = await db.pages.get(join.pageId);
     if (!sourcePage) continue;
@@ -634,7 +612,7 @@ export async function addModuleToRuleset({
     counts.pages++;
   }
 
-  // 13. Ruleset windows
+  // 12. Ruleset windows
   for (const rw of sourceRulesetWindows as RulesetWindow[]) {
     const newId = crypto.randomUUID();
     const { id, rulesetId, rulesetPageId, windowId, createdAt, updatedAt, ...rest } = rw;
@@ -657,20 +635,30 @@ export async function addModuleToRuleset({
     counts.rulesetWindows++;
   }
 
-  // 14. Test character and related
-  if (sourceTestCharacter) {
+  // 13. Test characters and archetypes
+  for (const testCharId of testCharacterIds) {
+    const srcChar = await db.characters.get(testCharId);
+    if (!srcChar || !srcChar.isTestCharacter) continue;
+
+    const charAttrs = sourceCharacterAttributes.filter((ca) => ca.characterId === testCharId);
+    const charPages = sourceCharacterPages.filter((cp) => cp.characterId === testCharId);
+    const charWindows = sourceCharacterWindows.filter((cw) => cw.characterId === testCharId);
+    const charInvs = sourceInventories.filter((inv) => inv.characterId === testCharId);
+    const charInvIds = charInvs.map((inv) => inv.id);
+    const charInvItems = sourceInventoryItems.filter((ii) => charInvIds.includes(ii.inventoryId));
+
     const newCharacterId = crypto.randomUUID();
-    characterIdMap.set(sourceTestCharacter.id, newCharacterId);
+    characterIdMap.set(testCharId, newCharacterId);
     const {
-      id,
-      rulesetId,
-      createdAt,
-      updatedAt,
+      id: _cid,
+      rulesetId: _crid,
+      createdAt: _cc,
+      updatedAt: _cu,
       inventoryId,
       pinnedSidebarDocuments,
       pinnedSidebarCharts,
       ...restCharacter
-    } = sourceTestCharacter;
+    } = srcChar;
     const mappedPinnedDocs = (pinnedSidebarDocuments || []).map(
       (docId) => documentIdMap.get(docId) ?? docId,
     );
@@ -685,14 +673,14 @@ export async function addModuleToRuleset({
       pinnedSidebarDocuments: mappedPinnedDocs,
       pinnedSidebarCharts: mappedPinnedCharts,
       moduleId: sourceRulesetId,
-      moduleEntityId: sourceTestCharacter.id,
+      moduleEntityId: srcChar.id,
       moduleName,
       createdAt: now,
       updatedAt: now,
     } as Character & { moduleId: string; moduleEntityId: string; moduleName: string });
     counts.characters++;
 
-    for (const join of sourceCharacterPages as CharacterPage[]) {
+    for (const join of charPages as CharacterPage[]) {
       const sourcePage = await db.pages.get(join.pageId);
       if (!sourcePage) continue;
       const newJoinId = crypto.randomUUID();
@@ -724,7 +712,7 @@ export async function addModuleToRuleset({
     }
 
     let newDefaultInventoryId: string | null = null;
-    for (const inv of sourceInventories as Inventory[]) {
+    for (const inv of charInvs as Inventory[]) {
       const newInvId = crypto.randomUUID();
       inventoryIdMap.set(inv.id, newInvId);
       const { id, createdAt, updatedAt, characterId, ...rest } = inv;
@@ -737,7 +725,7 @@ export async function addModuleToRuleset({
         updatedAt: now,
       } as Inventory);
       counts.inventories++;
-      if (sourceTestCharacter.inventoryId && inv.id === sourceTestCharacter.inventoryId) {
+      if (inventoryId && inv.id === inventoryId) {
         newDefaultInventoryId = newInvId;
       }
     }
@@ -745,7 +733,7 @@ export async function addModuleToRuleset({
       await db.characters.update(newCharacterId, { inventoryId: newDefaultInventoryId });
     }
 
-    for (const invItem of sourceInventoryItems as InventoryItem[]) {
+    for (const invItem of charInvItems as InventoryItem[]) {
       const newInvItemId = crypto.randomUUID();
       const {
         id: _invItemId,
@@ -778,7 +766,7 @@ export async function addModuleToRuleset({
       counts.inventoryItems++;
     }
 
-    for (const ca of sourceCharacterAttributes as CharacterAttribute[]) {
+    for (const ca of charAttrs as CharacterAttribute[]) {
       const {
         id: _caId,
         createdAt: _c,
@@ -810,7 +798,7 @@ export async function addModuleToRuleset({
       counts.characterAttributes++;
     }
 
-    for (const cw of sourceCharacterWindows as CharacterWindow[]) {
+    for (const cw of charWindows as CharacterWindow[]) {
       const newCwId = crypto.randomUUID();
       const { id, createdAt, updatedAt, characterId, characterPageId, windowId, ...rest } = cw;
       const mappedCharacterPageId = characterPageId
@@ -831,6 +819,68 @@ export async function addModuleToRuleset({
       } as CharacterWindow & { moduleId: string; moduleEntityId: string; moduleName: string });
       counts.characterWindows++;
     }
+  }
+
+  // Clone archetypes (with new testCharacterId)
+  for (const arch of sourceArchetypes as Archetype[]) {
+    const newArchId = crypto.randomUUID();
+    archetypeIdMap.set(arch.id, newArchId);
+    const newTestCharId = characterIdMap.get(arch.testCharacterId) ?? arch.testCharacterId;
+    const { id: _aid, rulesetId: _arid, createdAt: _ac, updatedAt: _au, ...restArch } = arch;
+    await db.archetypes.add({
+      ...restArch,
+      id: newArchId,
+      rulesetId: targetRulesetId,
+      testCharacterId: newTestCharId,
+      moduleId: sourceRulesetId,
+      moduleEntityId: arch.id,
+      moduleName,
+      createdAt: now,
+      updatedAt: now,
+    } as Archetype & { moduleId: string; moduleEntityId: string; moduleName: string });
+    counts.archetypes++;
+  }
+
+  // 14. Scripts (after archetypes so archetypeIdMap is available)
+  for (const script of sourceScripts as Script[]) {
+    if (targetIds.scripts.has(script.id)) {
+      pushSkipped('scripts', script.id, script.name);
+      continue;
+    }
+    const newId = crypto.randomUUID();
+    const { id, rulesetId, createdAt, updatedAt, entityId, entityType, ...rest } = script;
+    let mappedEntityId = entityId;
+    if (entityId && !script.isGlobal) {
+      switch (entityType) {
+        case 'attribute':
+          mappedEntityId = attributeIdMap.get(entityId) ?? entityId;
+          break;
+        case 'action':
+          mappedEntityId = actionIdMap.get(entityId) ?? entityId;
+          break;
+        case 'item':
+          mappedEntityId = itemIdMap.get(entityId) ?? entityId;
+          break;
+        case 'archetype':
+          mappedEntityId = archetypeIdMap.get(entityId) ?? entityId;
+          break;
+      }
+    }
+    const name = resolveTitle('scripts', rest.name);
+    await db.scripts.add({
+      ...rest,
+      name,
+      id: newId,
+      rulesetId: targetRulesetId,
+      entityId: mappedEntityId,
+      entityType,
+      moduleId: sourceRulesetId,
+      moduleEntityId: script.id,
+      moduleName,
+      createdAt: now,
+      updatedAt: now,
+    } as Script & { moduleId: string; moduleEntityId: string; moduleName: string });
+    counts.scripts++;
   }
 
   // Update ruleset.modules: append if new, or update name/image if refresh

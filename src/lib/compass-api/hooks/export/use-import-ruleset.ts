@@ -2,6 +2,7 @@ import { useErrorHandler } from '@/hooks';
 import { db } from '@/stores';
 import type {
   Action,
+  Archetype,
   Asset,
   Attribute,
   Character,
@@ -64,6 +65,7 @@ export interface ImportRulesetResult {
     assets: number;
     fonts: number;
     documents: number;
+    archetypes: number;
     characterAttributes: number;
     inventories: number;
     characterWindows: number;
@@ -446,6 +448,7 @@ export const useImportRuleset = () => {
             assets: 0,
             fonts: 0,
             documents: 0,
+            archetypes: 0,
             characterAttributes: 0,
             inventories: 0,
             characterWindows: 0,
@@ -481,6 +484,7 @@ export const useImportRuleset = () => {
             assets: 0,
             fonts: 0,
             documents: 0,
+            archetypes: 0,
             characterAttributes: 0,
             inventories: 0,
             characterWindows: 0,
@@ -573,17 +577,18 @@ export const useImportRuleset = () => {
                 components: 0,
                 assets: 0,
                 fonts: 0,
-                documents: 0,
-                characterAttributes: 0,
-                inventories: 0,
-                characterWindows: 0,
-                characterPages: 0,
-                rulesetPages: 0,
-                rulesetWindows: 0,
-                inventoryItems: 0,
-                scripts: 0,
-              },
-              errors: ['Duplicate ruleset: same id and version as an existing ruleset'],
+                  documents: 0,
+                  archetypes: 0,
+                  characterAttributes: 0,
+                  inventories: 0,
+                  characterWindows: 0,
+                  characterPages: 0,
+                  rulesetPages: 0,
+                  rulesetWindows: 0,
+                  inventoryItems: 0,
+                  scripts: 0,
+                },
+                errors: ['Duplicate ruleset: same id and version as an existing ruleset'],
             };
           }
           if (compareVersion(newRuleset.version, existingRuleset.version) > 0) {
@@ -606,6 +611,7 @@ export const useImportRuleset = () => {
                   assets: 0,
                   fonts: 0,
                   documents: 0,
+                  archetypes: 0,
                   characterAttributes: 0,
                   inventories: 0,
                   characterWindows: 0,
@@ -635,6 +641,7 @@ export const useImportRuleset = () => {
                 assets: 0,
                 fonts: 0,
                 documents: 0,
+                archetypes: 0,
                 characterAttributes: 0,
                 inventories: 0,
                 characterWindows: 0,
@@ -662,6 +669,7 @@ export const useImportRuleset = () => {
         assets: 0,
         fonts: 0,
         documents: 0,
+        archetypes: 0,
         characterAttributes: 0,
         inventories: 0,
         characterWindows: 0,
@@ -1383,6 +1391,7 @@ export const useImportRuleset = () => {
             for (const character of characters) {
               const newCharacter: Character = {
                 ...character,
+                rulesetId: newRulesetId,
                 createdAt: now,
                 updatedAt: now,
               };
@@ -1398,6 +1407,32 @@ export const useImportRuleset = () => {
           );
         }
       }
+
+      // Import archetypes (after characters, since archetype.testCharacterId references character)
+      const archetypesFile = getZipFile('application data/archetypes.json');
+      if (archetypesFile) {
+        try {
+          const archetypesText = await archetypesFile.async('text');
+          const archetypesToImport: Archetype[] = JSON.parse(archetypesText);
+
+          for (const archetype of archetypesToImport) {
+            const newArchetype: Archetype = {
+              ...archetype,
+              rulesetId: newRulesetId,
+              testCharacterId: archetype.testCharacterId,
+              createdAt: now,
+              updatedAt: now,
+            };
+            await db.archetypes.add(newArchetype);
+            importedCounts.archetypes++;
+          }
+        } catch (error) {
+          allErrors.push(
+            `Failed to import archetypes: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          );
+        }
+      }
+      // Legacy export (no archetypes.json): ruleset creation hook creates default archetype from first test character
 
       // Create ruleset after importing characters so test character isn't duplicated (skip when content-only import)
       if (!options?.contentOnlyIntoRulesetId) {
@@ -1445,6 +1480,11 @@ export const useImportRuleset = () => {
               if (item?.rulesetId === newRulesetId) {
                 await db.items.update(script.entityId, { scriptId: script.id });
               }
+            } else if (script.entityType === 'archetype') {
+              const archetype = await db.archetypes.get(script.entityId);
+              if (archetype?.rulesetId === newRulesetId) {
+                await db.archetypes.update(script.entityId, { scriptId: script.id });
+              }
             }
           }
         }
@@ -1465,6 +1505,7 @@ export const useImportRuleset = () => {
         importedCounts.assets +
         importedCounts.fonts +
         importedCounts.documents +
+        importedCounts.archetypes +
         importedCounts.characterAttributes +
         importedCounts.inventories +
         importedCounts.characterWindows +
@@ -1501,6 +1542,7 @@ export const useImportRuleset = () => {
           assets: 0,
           fonts: 0,
           documents: 0,
+          archetypes: 0,
           characterAttributes: 0,
           inventories: 0,
           characterWindows: 0,

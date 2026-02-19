@@ -68,38 +68,52 @@ export const useExportRuleset = (rulesetId: string) => {
     [rulesetId],
   );
 
-  const testCharacter = useLiveQuery(
-    async () => {
-      if (!rulesetId) return null;
-      const arch =
-        (await db.archetypes.where('rulesetId').equals(rulesetId).filter((a) => a.isDefault).first()) ??
-        (await db.archetypes.where('rulesetId').equals(rulesetId).first());
-      if (!arch?.testCharacterId) return null;
-      return (await db.characters.get(arch.testCharacterId)) ?? null;
-    },
+  const archetypes = useLiveQuery(
+    () =>
+      rulesetId
+        ? db.archetypes.where('rulesetId').equals(rulesetId).sortBy('loadOrder')
+        : Promise.resolve([] as import('@/types').Archetype[]),
     [rulesetId],
   );
 
+  const testCharacters = useLiveQuery(
+    async () => {
+      if (!rulesetId || !archetypes || archetypes.length === 0) return [];
+      const charIds = archetypes
+        .map((a) => a.testCharacterId)
+        .filter((id): id is string => !!id);
+      if (charIds.length === 0) return [];
+      return (await Promise.all(charIds.map((id) => db.characters.get(id)))).filter(
+        (c): c is import('@/types').Character => c != null,
+      );
+    },
+    [rulesetId, archetypes],
+  );
+
+  const testCharacterIds = testCharacters?.map((c) => c.id) ?? [];
+
   const characterAttributes = useLiveQuery(
     () =>
-      testCharacter
-        ? db.characterAttributes.where('characterId').equals(testCharacter.id).toArray()
+      testCharacterIds.length > 0
+        ? db.characterAttributes.where('characterId').anyOf(testCharacterIds).toArray()
         : [],
-    [testCharacter?.id],
+    [testCharacterIds.join(',')],
   );
 
   const inventories = useLiveQuery(
     () =>
-      testCharacter ? db.inventories.where('characterId').equals(testCharacter.id).toArray() : [],
-    [testCharacter?.id],
+      testCharacterIds.length > 0
+        ? db.inventories.where('characterId').anyOf(testCharacterIds).toArray()
+        : [],
+    [testCharacterIds.join(',')],
   );
 
   const characterWindows = useLiveQuery(
     () =>
-      testCharacter
-        ? db.characterWindows.where('characterId').equals(testCharacter.id).toArray()
+      testCharacterIds.length > 0
+        ? db.characterWindows.where('characterId').anyOf(testCharacterIds).toArray()
         : [],
-    [testCharacter?.id],
+    [testCharacterIds.join(',')],
   );
 
   const rulesetPages = useLiveQuery(
@@ -116,10 +130,10 @@ export const useExportRuleset = (rulesetId: string) => {
 
   const characterPagesAndPages = useLiveQuery(
     async () => {
-      if (!testCharacter) return { joins: [] as { id: string; characterId: string; pageId: string }[], pages: [] as import('@/types').Page[] };
+      if (testCharacterIds.length === 0) return { joins: [] as { id: string; characterId: string; pageId: string }[], pages: [] as import('@/types').Page[] };
       const joins = await db.characterPages
         .where('characterId')
-        .equals(testCharacter.id)
+        .anyOf(testCharacterIds)
         .toArray();
       const pageIds = [...new Set(joins.map((j) => j.pageId))];
       const pages = (await Promise.all(pageIds.map((id) => db.pages.get(id)))).filter(
@@ -127,7 +141,7 @@ export const useExportRuleset = (rulesetId: string) => {
       ) as import('@/types').Page[];
       return { joins, pages };
     },
-    [testCharacter?.id],
+    [testCharacterIds.join(',')],
   );
 
   const characterPages = characterPagesAndPages?.joins ?? [];
@@ -146,10 +160,10 @@ export const useExportRuleset = (rulesetId: string) => {
   );
 
   const inventoryItems = useLiveQuery(async () => {
-    if (!testCharacter || !inventories || inventories.length === 0) return [];
+    if (!inventories || inventories.length === 0) return [];
     const inventoryIds = inventories.map((inv) => inv.id);
     return db.inventoryItems.where('inventoryId').anyOf(inventoryIds).toArray();
-  }, [testCharacter?.id, inventories]);
+  }, [inventories]);
 
   const isLoading =
     ruleset === undefined ||
@@ -162,7 +176,8 @@ export const useExportRuleset = (rulesetId: string) => {
     assets === undefined ||
     fonts === undefined ||
     documents === undefined ||
-    testCharacter === undefined ||
+    archetypes === undefined ||
+    testCharacters === undefined ||
     characterAttributes === undefined ||
     inventories === undefined ||
     characterWindows === undefined ||
@@ -212,6 +227,7 @@ export const useExportRuleset = (rulesetId: string) => {
           assets: assets?.length || 0,
           fonts: fonts?.length || 0,
           documents: documents?.length || 0,
+          archetypes: archetypes?.length || 0,
           characterAttributes: characterAttributes?.length || 0,
           inventories: inventories?.length || 0,
           characterWindows: characterWindows?.length || 0,
@@ -266,8 +282,12 @@ export const useExportRuleset = (rulesetId: string) => {
         zip.file('items.tsv', convertToTsv(itemsWithFilenames, ITEM_COLUMNS));
       }
 
-      if (testCharacter) {
-        appDataFolder.file('characters.json', JSON.stringify([testCharacter], null, 2));
+      if (archetypes && archetypes.length > 0) {
+        appDataFolder.file('archetypes.json', JSON.stringify(archetypes, null, 2));
+      }
+
+      if (testCharacters && testCharacters.length > 0) {
+        appDataFolder.file('characters.json', JSON.stringify(testCharacters, null, 2));
       }
 
       if (charts && charts.length > 0) {
