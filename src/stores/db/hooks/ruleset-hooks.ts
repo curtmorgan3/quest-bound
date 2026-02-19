@@ -25,24 +25,25 @@ export function registerRulesetDbHooks(db: DB) {
     }, 0);
   });
 
-  // Create test character when a ruleset is created
+  // Create test character and default archetype when a ruleset is created
   db.rulesets.hook('creating', (_primKey, obj) => {
     setTimeout(async () => {
       try {
+        const rulesetId = obj.id;
+        const now = new Date().toISOString();
+
         // Check if a test character already exists (e.g., for imported rulesets)
-        const existingTestCharacter = await db.characters
+        let testCharacter = await db.characters
           .where('rulesetId')
-          .equals(obj.id)
+          .equals(rulesetId)
           .filter((c: any) => c.isTestCharacter)
           .first();
 
-        if (!existingTestCharacter) {
-          const now = new Date().toISOString();
+        if (!testCharacter) {
           const characterId = crypto.randomUUID();
-
           await db.characters.add({
             id: characterId,
-            rulesetId: obj.id,
+            rulesetId,
             userId: obj.createdBy,
             name: 'Test Character',
             assetId: null,
@@ -56,9 +57,28 @@ export function registerRulesetDbHooks(db: DB) {
             createdAt: now,
             updatedAt: now,
           });
+          testCharacter = await db.characters.get(characterId);
+        }
+
+        if (testCharacter) {
+          // Ensure exactly one default archetype (idempotent for imports)
+          const archetypeCount = await db.archetypes.where('rulesetId').equals(rulesetId).count();
+          if (archetypeCount === 0) {
+            await db.archetypes.add({
+              id: crypto.randomUUID(),
+              rulesetId,
+              name: 'Default',
+              description: '',
+              testCharacterId: testCharacter.id,
+              isDefault: true,
+              loadOrder: 0,
+              createdAt: now,
+              updatedAt: now,
+            });
+          }
         }
       } catch (error) {
-        console.error('Failed to create test character for ruleset:', error);
+        console.error('Failed to create test character and default archetype for ruleset:', error);
       }
     }, 0);
   });
@@ -84,6 +104,13 @@ export function registerRulesetDbHooks(db: DB) {
         await db.scriptErrors.where('rulesetId').equals(rulesetId).delete();
         await db.scriptLogs.where('rulesetId').equals(rulesetId).delete();
         await db.dependencyGraphNodes.where('rulesetId').equals(rulesetId).delete();
+
+        // Delete characterArchetypes for archetypes in this ruleset, then delete archetypes
+        const archetypes = await db.archetypes.where('rulesetId').equals(rulesetId).toArray();
+        for (const archetype of archetypes) {
+          await db.characterArchetypes.where('archetypeId').equals(archetype.id).delete();
+        }
+        await db.archetypes.where('rulesetId').equals(rulesetId).delete();
 
         await db.rulesetWindows.where('rulesetId').equals(rulesetId).delete();
 

@@ -1,6 +1,6 @@
 import { useErrorHandler } from '@/hooks/use-error-handler';
 import { db, useApiLoadingStore, useCurrentUser } from '@/stores';
-import type { Ruleset } from '@/types';
+import type { Inventory, Ruleset } from '@/types';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
@@ -49,6 +49,81 @@ export const useRulesets = () => {
 
   // There should only be one test character
   const testCharacter = testCharacters[0];
+
+  // Migrate legacy rulesets: ensure exactly one default archetype when ruleset is activated
+  useEffect(() => {
+    const rulesetId = activeRuleset?.id;
+    if (!rulesetId) return;
+
+    const migrateDefaultArchetype = async () => {
+      try {
+        const count = await db.archetypes.where('rulesetId').equals(rulesetId).count();
+        if (count > 0) return;
+
+        let testChar = await db.characters
+          .where('rulesetId')
+          .equals(rulesetId)
+          .filter((c) => c.isTestCharacter)
+          .first();
+
+        if (!testChar && currentUser) {
+          const now = new Date().toISOString();
+          const characterId = crypto.randomUUID();
+          const ruleset = await db.rulesets.get(rulesetId);
+          const inventoryId = crypto.randomUUID();
+          await db.inventories.add({
+            id: inventoryId,
+            characterId,
+            rulesetId,
+            title: "Test Character's Inventory",
+            category: null,
+            type: null,
+            entities: [],
+            items: [],
+            createdAt: now,
+            updatedAt: now,
+          } as unknown as Inventory);
+          await db.characters.add({
+            id: characterId,
+            rulesetId,
+            userId: ruleset?.createdBy ?? currentUser.username,
+            inventoryId,
+            name: 'Test Character',
+            assetId: null,
+            image: null,
+            isTestCharacter: true,
+            componentData: {},
+            pinnedSidebarDocuments: [],
+            pinnedSidebarCharts: [],
+            lastViewedPageId: null,
+            sheetLocked: false,
+            createdAt: now,
+            updatedAt: now,
+          });
+          testChar = await db.characters.get(characterId);
+        }
+
+        if (testChar) {
+          const now = new Date().toISOString();
+          await db.archetypes.add({
+            id: crypto.randomUUID(),
+            rulesetId,
+            name: 'Default',
+            description: '',
+            testCharacterId: testChar.id,
+            isDefault: true,
+            loadOrder: 0,
+            createdAt: now,
+            updatedAt: now,
+          });
+        }
+      } catch (err) {
+        console.warn('Default archetype migration failed:', err);
+      }
+    };
+
+    migrateDefaultArchetype();
+  }, [activeRuleset?.id, currentUser?.username]);
 
   const createRuleset = async (data: Partial<Ruleset>) => {
     setLoading(true);
