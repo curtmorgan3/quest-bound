@@ -158,7 +158,7 @@ export const onboardingTutorial: Tutorial = [
     ],
   },
   {
-    title: 'Comabt Window',
+    title: 'Combat Window',
     substeps: [
       {
         description: 'Go to the Windows page from the ruleset sidebar.',

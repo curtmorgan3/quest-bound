@@ -76,7 +76,7 @@ export const SignIn = () => {
             </p>
             <a
               target='_blank'
-              href='https://github.com/curtmorgan3/quest-bound/tree/v2'
+              href='https://github.com/curtmorgan3/quest-bound'
               style={{ textDecoration: 'underline' }}
               className='text-sm'>
               Download the source code to run Quest Bound locally
