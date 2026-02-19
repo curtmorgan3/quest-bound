@@ -499,6 +499,38 @@ export class QBScriptClient {
   }
 
   /**
+   * Execute an archetype event script (on_add, on_remove).
+   * Uses EventHandlerExecutor. Pass optional roll so scripts can call roll().
+   */
+  async executeArchetypeEvent(
+    archetypeId: string,
+    characterId: string,
+    eventType: 'on_add' | 'on_remove',
+    roll?: RollFn,
+    timeout = 10000,
+  ): Promise<{
+    value: any;
+    announceMessages: string[];
+    logMessages: any[][];
+    executionTime: number;
+  }> {
+    const requestId = generateRequestId();
+    this.pendingRollHandlers.set(requestId, roll ?? defaultScriptDiceRoller);
+    try {
+      return await this.sendSignal(
+        {
+          type: 'EXECUTE_ARCHETYPE_EVENT',
+          payload: { archetypeId, characterId, eventType, requestId },
+        },
+        requestId,
+        timeout,
+      );
+    } finally {
+      this.pendingRollHandlers.delete(requestId);
+    }
+  }
+
+  /**
    * Validate script syntax
    */
   async validateScript(

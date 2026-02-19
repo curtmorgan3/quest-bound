@@ -18,6 +18,7 @@ export type MainToWorkerSignal =
   | ExecuteActionSignal
   | ExecuteActionEventSignal
   | ExecuteItemEventSignal
+  | ExecuteArchetypeEventSignal
   | RollResponseSignal
   | ClearGraphSignal;
 
@@ -85,6 +86,17 @@ export interface ExecuteItemEventSignal {
     itemId: string;
     characterId: string;
     eventType: string;
+    requestId: string;
+  };
+}
+
+/** Runs an archetype event handler (on_add, on_remove) via EventHandlerExecutor. */
+export interface ExecuteArchetypeEventSignal {
+  type: 'EXECUTE_ARCHETYPE_EVENT';
+  payload: {
+    archetypeId: string;
+    characterId: string;
+    eventType: 'on_add' | 'on_remove';
     requestId: string;
   };
 }

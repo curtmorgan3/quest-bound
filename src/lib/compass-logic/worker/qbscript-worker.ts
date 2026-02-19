@@ -123,6 +123,10 @@ async function handleSignal(signal: MainToWorkerSignal): Promise<void> {
         await handleExecuteItemEvent(signal.payload);
         break;
 
+      case 'EXECUTE_ARCHETYPE_EVENT':
+        await handleExecuteArchetypeEvent(signal.payload);
+        break;
+
       case 'CLEAR_GRAPH':
         handleClearGraph(signal.payload);
         break;
@@ -713,6 +717,81 @@ async function handleExecuteItemEvent(payload: {
           requestId: payload.requestId,
           error: {
             message: result.error?.message ?? 'Item event failed',
+            stackTrace: result.error?.stack,
+          },
+          logMessages: result.logMessages.map((args) => prepareForStructuredClone(args)),
+        },
+      });
+    } else {
+      sendSignal({
+        type: 'SCRIPT_RESULT',
+        payload: {
+          requestId: payload.requestId,
+          result: prepareForStructuredClone(result.value),
+          announceMessages: result.announceMessages,
+          logMessages: result.logMessages.map((args) => prepareForStructuredClone(args)),
+          executionTime: 0,
+        },
+      });
+    }
+  } catch (error) {
+    sendSignal({
+      type: 'SCRIPT_ERROR',
+      payload: {
+        requestId: payload.requestId,
+        error: {
+          message: error instanceof Error ? error.message : String(error),
+          stackTrace: error instanceof Error ? error.stack : undefined,
+        },
+      },
+    });
+  }
+}
+
+async function handleExecuteArchetypeEvent(payload: {
+  archetypeId: string;
+  characterId: string;
+  eventType: 'on_add' | 'on_remove';
+  requestId: string;
+}): Promise<void> {
+  try {
+    const archetype = await db.archetypes.get(payload.archetypeId);
+    if (!archetype) {
+      throw new Error(`Archetype not found: ${payload.archetypeId}`);
+    }
+
+    const rollFn: RollFn = (expression: string) =>
+      rollBridge.requestRoll(expression, payload.requestId);
+
+    let executor: EventHandlerExecutor;
+    executor = new EventHandlerExecutor(db, createOnAttributesModified(rollFn, () => executor));
+    const result = await executor.executeArchetypeEvent(
+      payload.archetypeId,
+      payload.characterId,
+      payload.eventType,
+      rollFn,
+    );
+
+    const script = await db.scripts
+      .where({ entityId: payload.archetypeId, entityType: 'archetype' })
+      .first();
+    const scriptId = script?.id ?? payload.archetypeId;
+
+    await persistScriptLogs(
+      archetype.rulesetId,
+      scriptId,
+      payload.characterId,
+      result.logMessages,
+      'archetype_event',
+    );
+
+    if (result.error || !result.success) {
+      sendSignal({
+        type: 'SCRIPT_ERROR',
+        payload: {
+          requestId: payload.requestId,
+          error: {
+            message: result.error?.message ?? 'Archetype event failed',
             stackTrace: result.error?.stack,
           },
           logMessages: result.logMessages.map((args) => prepareForStructuredClone(args)),

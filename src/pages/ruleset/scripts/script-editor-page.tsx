@@ -3,6 +3,7 @@ import { useRulesets } from '@/lib/compass-api';
 import { useScripts } from '@/lib/compass-api/hooks/scripts/use-scripts';
 import {
   useExecuteActionEvent,
+  useExecuteArchetypeEvent,
   useExecuteItemEvent,
   useReactiveScriptExecution,
 } from '@/lib/compass-logic';
@@ -52,9 +53,19 @@ export function ScriptEditorPage() {
     announceMessages: itemEventAnnouncements,
     error: itemEventError,
   } = useExecuteItemEvent();
+  const {
+    executeArchetypeEvent,
+    logMessages: archetypeEventLogs,
+    announceMessages: archetypeEventAnnouncements,
+    error: archetypeEventError,
+  } = useExecuteArchetypeEvent();
 
-  const consoleLogs = [...actionEventLogs, ...itemEventLogs];
-  const announcements = [...actionEventAnnouncements, ...itemEventAnnouncements];
+  const consoleLogs = [...actionEventLogs, ...itemEventLogs, ...archetypeEventLogs];
+  const announcements = [
+    ...actionEventAnnouncements,
+    ...itemEventAnnouncements,
+    ...archetypeEventAnnouncements,
+  ];
 
   const [name, setName] = useState('');
   const [entityType, setEntityType] = useState<Script['entityType']>('attribute');
@@ -107,7 +118,7 @@ export function ScriptEditorPage() {
     }
   }, [scriptId, script, isNew, entityType]);
 
-  const usesEvents = entityType === 'action' || entityType === 'item';
+  const usesEvents = entityType === 'action' || entityType === 'item' || entityType === 'archetype';
 
   return (
     <div className='flex flex-col h-full min-h-0'>
@@ -149,8 +160,9 @@ export function ScriptEditorPage() {
               <EventControls
                 entityType={entityType}
                 entityId={entityId}
-                executeItemEvent={executeItemEvent}
                 executeActionEvent={executeActionEvent}
+                executeItemEvent={executeItemEvent}
+                executeArchetypeEvent={executeArchetypeEvent}
               />
             )}
           </div>
@@ -199,7 +211,7 @@ export function ScriptEditorPage() {
             scriptExecutionHook={workerHook}
             logMessages={consoleLogs}
             announceMessages={announcements}
-            error={actionEventError ?? itemEventError}
+            error={actionEventError ?? itemEventError ?? archetypeEventError}
           />
         </div>
       </div>

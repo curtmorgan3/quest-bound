@@ -52,7 +52,8 @@ export const ArchetypeLookup = ({
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
   const parentRef = useRef<HTMLDivElement>(null);
-  const { archetypes } = useArchetypes(rulesetId);
+  const { archetypes: allArchetypes } = useArchetypes(rulesetId);
+  const archetypes = allArchetypes.filter((arch) => !arch.isDefault);
 
   const selectedArchetype = value ? archetypes.find((a) => a.id === value) : undefined;
 

@@ -2,7 +2,6 @@
 
 ## Archetypes
 
-- in script editor, event fire UI
 - switcher experience
 
 ## Charts

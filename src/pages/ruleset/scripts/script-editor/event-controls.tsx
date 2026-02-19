@@ -2,7 +2,7 @@ import { Button } from '@/components';
 import { useRulesets } from '@/lib/compass-api';
 import { colorPrimary } from '@/palette';
 import type { RollFn, Script } from '@/types';
-import { Drumstick, Shirt, Zap } from 'lucide-react';
+import { Drumstick, Minus, Plus, Shirt, Zap } from 'lucide-react';
 
 interface EventControls {
   entityId?: string | null;
@@ -20,10 +20,17 @@ interface EventControls {
     eventType: string,
     roll?: RollFn | undefined,
   ) => Promise<void>;
+  executeArchetypeEvent?: (
+    archetypeId: string,
+    characterId: string,
+    eventType: 'on_add' | 'on_remove',
+    roll?: RollFn | undefined,
+  ) => Promise<void>;
 }
 
 export const EventControls = ({
   executeActionEvent,
+  executeArchetypeEvent,
   executeItemEvent,
   entityId,
   entityType,
@@ -54,6 +61,16 @@ export const EventControls = ({
     executeItemEvent(entityId, testCharacter.id, 'on_consume');
   };
 
+  const handleOnAdd = () => {
+    if (!entityId || !testCharacter || !executeArchetypeEvent) return;
+    executeArchetypeEvent(entityId, testCharacter.id, 'on_add');
+  };
+
+  const handleOnRemove = () => {
+    if (!entityId || !testCharacter || !executeArchetypeEvent) return;
+    executeArchetypeEvent(entityId, testCharacter.id, 'on_remove');
+  };
+
   return (
     <div className='items-center rounded-md border bg-muted/20 flex flex-col w-[20%] min-w-[200px] p-2 gap-3 overflow-y-auto'>
       {!entityId && (
@@ -61,15 +78,39 @@ export const EventControls = ({
       )}
       {entityId && (
         <div className='flex flex-col gap-2 justify-center'>
-          <Button
-            className='w-[160px]'
-            onClick={handleOnActivate}
-            disabled={!testCharacter}
-            variant='outline'
-            title='Run this script’s on_activate function as the test character'>
-            <Zap className='h-4 w-4' />
-            on_activate
-          </Button>
+          {(entityType === 'action' || entityType === 'item') && (
+            <Button
+              className='w-[160px]'
+              onClick={handleOnActivate}
+              disabled={!testCharacter}
+              variant='outline'
+              title='Run this script’s on_activate function as the test character'>
+              <Zap className='h-4 w-4' />
+              on_activate
+            </Button>
+          )}
+          {entityType === 'archetype' && executeArchetypeEvent && (
+            <>
+              <Button
+                className='w-[160px]'
+                onClick={handleOnAdd}
+                disabled={!testCharacter}
+                variant='outline'
+                title="Run this script's on_add function as the test character">
+                <Plus className='h-4 w-4' />
+                on_add
+              </Button>
+              <Button
+                className='w-[160px]'
+                onClick={handleOnRemove}
+                disabled={!testCharacter}
+                variant='outline'
+                title="Run this script's on_remove function as the test character">
+                <Minus className='h-4 w-4' />
+                on_remove
+              </Button>
+            </>
+          )}
           {entityType === 'item' && (
             <>
               <Button

@@ -322,6 +322,90 @@ export function useExecuteItemEvent(timeout = 10000): UseExecuteItemEventResult 
 }
 
 // ============================================================================
+// useExecuteArchetypeEvent - Execute archetype event handlers (on_add, on_remove)
+// ============================================================================
+
+export interface UseExecuteArchetypeEventResult {
+  executeArchetypeEvent: (
+    archetypeId: string,
+    characterId: string,
+    eventType: 'on_add' | 'on_remove',
+    roll?: RollFn,
+  ) => Promise<void>;
+  result: any;
+  announceMessages: string[];
+  logMessages: any[][];
+  executionTime: number | null;
+  isExecuting: boolean;
+  error: Error | null;
+  reset: () => void;
+}
+
+export function useExecuteArchetypeEvent(timeout = 10000): UseExecuteArchetypeEventResult {
+  const client = useQBScriptClient();
+  const [isExecuting, setIsExecuting] = useState(false);
+  const [result, setResult] = useState<any>(null);
+  const [announceMessages, setAnnounceMessages] = useState<string[]>([]);
+  const [logMessages, setLogMessages] = useState<any[][]>([]);
+  const [executionTime, setExecutionTime] = useState<number | null>(null);
+  const [error, setError] = useState<Error | null>(null);
+
+  const executeArchetypeEvent = useCallback(
+    async (
+      archetypeId: string,
+      characterId: string,
+      eventType: 'on_add' | 'on_remove',
+      roll?: RollFn,
+    ) => {
+      setIsExecuting(true);
+      setError(null);
+
+      try {
+        const response = await client.executeArchetypeEvent(
+          archetypeId,
+          characterId,
+          eventType,
+          roll,
+          timeout,
+        );
+        setResult(response.value);
+        setAnnounceMessages(response.announceMessages);
+        setLogMessages(response.logMessages);
+        setExecutionTime(response.executionTime);
+      } catch (err) {
+        setError(err instanceof Error ? err : new Error(String(err)));
+        setResult(null);
+        setAnnounceMessages([]);
+        setLogMessages([]);
+        setExecutionTime(null);
+      } finally {
+        setIsExecuting(false);
+      }
+    },
+    [client, timeout],
+  );
+
+  const reset = useCallback(() => {
+    setResult(null);
+    setAnnounceMessages([]);
+    setLogMessages([]);
+    setExecutionTime(null);
+    setError(null);
+  }, []);
+
+  return {
+    executeArchetypeEvent,
+    result,
+    announceMessages,
+    logMessages,
+    executionTime,
+    isExecuting,
+    error,
+    reset,
+  };
+}
+
+// ============================================================================
 // useAttributeChange - Notify of attribute changes
 // ============================================================================
 
