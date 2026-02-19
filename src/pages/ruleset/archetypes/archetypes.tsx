@@ -42,6 +42,8 @@ export const Archetypes = () => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
   const [editDescription, setEditDescription] = useState('');
+  const [editAssetId, setEditAssetId] = useState<string | null>(null);
+  const [editImage, setEditImage] = useState<string | null>(null);
   const justCreatedRef = useRef(false);
 
   const getImageFromAssetId = (id: string | null) => {
@@ -103,6 +105,8 @@ export const Archetypes = () => {
       setEditingId(id);
       setEditName(a.name);
       setEditDescription(a.description ?? '');
+      setEditAssetId(a.assetId ?? null);
+      setEditImage(a.image ?? null);
     }
   };
 
@@ -111,8 +115,26 @@ export const Archetypes = () => {
     await updateArchetype(editingId, {
       name: editName.trim(),
       description: editDescription.trim(),
+      assetId: editAssetId,
+      image: editImage,
     });
     setEditingId(null);
+  };
+
+  const handleEditImageUpload = (uploadedAssetId: string) => {
+    setEditAssetId(uploadedAssetId);
+    const imageData = getImageFromAssetId(uploadedAssetId);
+    if (imageData) setEditImage(imageData);
+  };
+
+  const handleEditSetUrl = (url: string) => {
+    setEditAssetId(null);
+    setEditImage(url);
+  };
+
+  const handleEditImageRemove = () => {
+    setEditAssetId(null);
+    setEditImage(null);
   };
 
   const moveUp = async (index: number) => {
@@ -242,6 +264,17 @@ export const Archetypes = () => {
                     onChange={(e) => setEditDescription(e.target.value)}
                     placeholder='Description'
                   />
+                  <div className='grid gap-2'>
+                    <Label>Image</Label>
+                    <ImageUpload
+                      image={editImage || getImageFromAssetId(editAssetId)}
+                      alt='Archetype image'
+                      rulesetId={rulesetId}
+                      onUpload={handleEditImageUpload}
+                      onRemove={handleEditImageRemove}
+                      onSetUrl={handleEditSetUrl}
+                    />
+                  </div>
                   <div className='flex gap-2'>
                     <Button size='sm' onClick={saveEdit}>
                       Save

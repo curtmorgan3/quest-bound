@@ -13,8 +13,8 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet';
-import { useArchetypes, useCharacter } from '@/lib/compass-api';
-import { ChevronDown, ChevronUp, GripVertical, Plus, Trash2 } from 'lucide-react';
+import { useArchetypes, useAssets, useCharacter } from '@/lib/compass-api';
+import { Plus, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import {
@@ -34,35 +34,30 @@ export const CharacterArchetypesPanel = ({
   const { characterId } = useParams<{ characterId: string }>();
   const { character } = useCharacter(characterId);
   const { archetypes } = useArchetypes(character?.rulesetId);
-  const {
-    characterArchetypes,
-    addArchetype,
-    removeArchetype,
-    reorderArchetypes,
-  } = useCharacterArchetypes(characterId);
+  const { assets } = useAssets(character?.rulesetId);
+
+  const getImageFromAssetId = (id: string | null) => {
+    if (!id) return null;
+    const asset = assets.find((a) => a.id === id);
+    return asset?.data ?? null;
+  };
+  const { characterArchetypes, addArchetype, removeArchetype } =
+    useCharacterArchetypes(characterId);
+
+  const displayedArchetypes = characterArchetypes
+    .filter((ca) => !ca.archetype.isDefault)
+    .sort((a, b) => a.archetype.name.localeCompare(b.archetype.name));
 
   const [addValue, setAddValue] = useState('');
   const addedArchetypeIds = new Set(characterArchetypes.map((ca) => ca.archetypeId));
-  const availableArchetypes = archetypes.filter((a) => !addedArchetypeIds.has(a.id));
+  const availableArchetypes = archetypes.filter(
+    (a) => !a.isDefault && !addedArchetypeIds.has(a.id),
+  );
 
   const handleAdd = async (archetypeId: string) => {
     if (!archetypeId) return;
     await addArchetype(archetypeId);
     setAddValue('');
-  };
-
-  const moveUp = async (index: number) => {
-    if (index <= 0) return;
-    const ids = characterArchetypes.map((ca) => ca.id);
-    [ids[index - 1], ids[index]] = [ids[index], ids[index - 1]];
-    await reorderArchetypes(ids);
-  };
-
-  const moveDown = async (index: number) => {
-    if (index >= characterArchetypes.length - 1) return;
-    const ids = characterArchetypes.map((ca) => ca.id);
-    [ids[index], ids[index + 1]] = [ids[index + 1], ids[index]];
-    await reorderArchetypes(ids);
   };
 
   return (
@@ -71,7 +66,7 @@ export const CharacterArchetypesPanel = ({
         <SheetHeader>
           <SheetTitle>Character Archetypes</SheetTitle>
           <SheetDescription>
-            View, add, remove, and reorder archetypes on this character.
+            View, add, and remove archetypes on this character.
           </SheetDescription>
         </SheetHeader>
 
@@ -85,7 +80,6 @@ export const CharacterArchetypesPanel = ({
                 {availableArchetypes.map((a) => (
                   <SelectItem key={a.id} value={a.id}>
                     {a.name}
-                    {a.isDefault ? ' (default)' : ''}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -105,11 +99,11 @@ export const CharacterArchetypesPanel = ({
           </div>
         )}
 
-        {availableArchetypes.length === 0 && characterArchetypes.length > 0 && (
+        {availableArchetypes.length === 0 && displayedArchetypes.length > 0 && (
           <p className='text-sm text-muted-foreground'>All archetypes have been added.</p>
         )}
 
-        {characterArchetypes.length === 0 ? (
+        {displayedArchetypes.length === 0 ? (
           <div className='flex-1 flex items-center justify-center text-center py-8 text-muted-foreground'>
             <p>No archetypes on this character yet.</p>
             {archetypes.length === 0 && (
@@ -118,14 +112,15 @@ export const CharacterArchetypesPanel = ({
           </div>
         ) : (
           <div className='flex-1 min-h-0 overflow-auto flex flex-col gap-2 mt-4' data-testid='character-archetypes-list'>
-            {characterArchetypes.map((ca, index) => (
+            {displayedArchetypes.map((ca) => (
               <ArchetypeRow
                 key={ca.id}
                 ca={ca}
-                index={index}
-                total={characterArchetypes.length}
-                onMoveUp={() => moveUp(index)}
-                onMoveDown={() => moveDown(index)}
+                imageSrc={
+                  ca.archetype.image ??
+                  getImageFromAssetId(ca.archetype.assetId ?? null) ??
+                  undefined
+                }
                 onRemove={() => removeArchetype(ca.id)}
               />
             ))}
@@ -138,42 +133,24 @@ export const CharacterArchetypesPanel = ({
 
 function ArchetypeRow({
   ca,
-  index,
-  total,
-  onMoveUp,
-  onMoveDown,
+  imageSrc,
   onRemove,
 }: {
   ca: CharacterArchetypeWithArchetype;
-  index: number;
-  total: number;
-  onMoveUp: () => void;
-  onMoveDown: () => void;
+  imageSrc?: string;
   onRemove: () => void;
 }) {
   return (
     <div
       className='flex items-center gap-2 p-3 rounded-md border bg-card'
       data-testid={`character-archetype-row-${ca.archetype.id}`}>
-      <div className='flex flex-col gap-0 shrink-0'>
-        <Button
-          variant='ghost'
-          size='icon'
-          className='h-6 w-6'
-          onClick={onMoveUp}
-          disabled={index === 0}>
-          <ChevronUp className='h-4 w-4' />
-        </Button>
-        <Button
-          variant='ghost'
-          size='icon'
-          className='h-6 w-6'
-          onClick={onMoveDown}
-          disabled={index === total - 1}>
-          <ChevronDown className='h-4 w-4' />
-        </Button>
-      </div>
-      <GripVertical className='h-4 w-4 text-muted-foreground shrink-0' />
+      {imageSrc && (
+        <img
+          src={imageSrc}
+          alt={ca.archetype.name}
+          className='h-12 w-12 shrink-0 rounded-md object-cover'
+        />
+      )}
       <div className='flex-1 min-w-0'>
         <div className='font-medium'>{ca.archetype.name}</div>
         {ca.archetype.description && (
