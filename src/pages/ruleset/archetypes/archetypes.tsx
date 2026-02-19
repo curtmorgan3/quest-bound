@@ -217,8 +217,7 @@ export const Archetypes = () => {
       <div className='flex flex-col gap-2' data-testid='archetypes-list'>
         {displayArchetypes.length > 0 && (
           <p className='italic text-sm text-muted-foreground'>
-            Order determines default load order of archetype scripts. This is overridable during
-            character creation.
+            Order determines the load order of archetype scripts
           </p>
         )}
         {displayArchetypes.map((archetype, index) => (

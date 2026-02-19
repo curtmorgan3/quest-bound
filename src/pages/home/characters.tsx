@@ -34,7 +34,7 @@ import { useAssets, useCharacter, useRulesets } from '@/lib/compass-api';
 import { db } from '@/stores';
 import type { Archetype } from '@/types';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { ChevronDown, ChevronUp, Plus, X } from 'lucide-react';
+import { Plus, X } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -144,16 +144,6 @@ export const Characters = () => {
 
   const handleRemoveArchetype = (archetypeId: string) => {
     setSelectedArchetypeIds((prev) => prev.filter((id) => id !== archetypeId));
-  };
-
-  const handleMoveArchetype = (index: number, direction: 'up' | 'down') => {
-    setSelectedArchetypeIds((prev) => {
-      const next = [...prev];
-      const swapIndex = direction === 'up' ? index - 1 : index + 1;
-      if (swapIndex < 0 || swapIndex >= next.length) return prev;
-      [next[index], next[swapIndex]] = [next[swapIndex], next[index]];
-      return next;
-    });
   };
 
   const availableArchetypes = selectableArchetypes.filter(
@@ -286,7 +276,7 @@ export const Characters = () => {
                   </div>
                   {selectedArchetypeIds.length > 0 && (
                     <div className='flex flex-col gap-1' data-testid='character-archetypes-list'>
-                      {selectedArchetypeIds.map((archetypeId, index) => {
+                      {selectedArchetypeIds.map((archetypeId) => {
                         const archetype = archetypes.find((a) => a.id === archetypeId);
                         if (!archetype) return null;
                         return (
@@ -294,28 +284,6 @@ export const Characters = () => {
                             key={archetype.id}
                             className='flex items-center gap-2 rounded-md border px-3 py-2'
                             data-testid={`character-archetype-row-${archetype.id}`}>
-                            <div className='flex flex-col'>
-                              <Button
-                                type='button'
-                                variant='ghost'
-                                size='icon'
-                                className='h-5 w-5'
-                                onClick={() => handleMoveArchetype(index, 'up')}
-                                disabled={index === 0}
-                                aria-label='Move up'>
-                                <ChevronUp className='h-3 w-3' />
-                              </Button>
-                              <Button
-                                type='button'
-                                variant='ghost'
-                                size='icon'
-                                className='h-5 w-5'
-                                onClick={() => handleMoveArchetype(index, 'down')}
-                                disabled={index === selectedArchetypeIds.length - 1}
-                                aria-label='Move down'>
-                                <ChevronDown className='h-3 w-3' />
-                              </Button>
-                            </div>
                             <span className='flex-1 text-sm font-medium'>{archetype.name}</span>
                             <Button
                               type='button'
@@ -333,11 +301,6 @@ export const Characters = () => {
                   )}
                   {selectedArchetypeIds.length === 0 && (
                     <p className='text-sm text-muted-foreground'>Archetypes are optional</p>
-                  )}
-                  {selectedArchetypeIds.length > 0 && (
-                    <p className='text-sm text-muted-foreground'>
-                      Order determines load order of archetype scripts.
-                    </p>
                   )}
                 </div>
               </div>

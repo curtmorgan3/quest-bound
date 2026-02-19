@@ -2,7 +2,7 @@ import { useErrorHandler, useNotifications } from '@/hooks';
 import { executeArchetypeEvent } from '@/lib/compass-logic/reactive/event-handler-executor';
 import { getQBScriptClient } from '@/lib/compass-logic/worker';
 import { db, useCurrentUser } from '@/stores';
-import type { Character, Inventory } from '@/types';
+import type { Archetype, Character, Inventory } from '@/types';
 import { duplicateCharacterFromTemplate } from '@/utils/duplicate-character-from-template';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useParams } from 'react-router-dom';
@@ -48,9 +48,7 @@ export const useCharacter = (_id?: string) => {
     }
   };
 
-  const createCharacter = async (
-    data: Partial<Character> & { archetypeIds?: string[] },
-  ) => {
+  const createCharacter = async (data: Partial<Character> & { archetypeIds?: string[] }) => {
     if (!data.rulesetId || !currentUser) return;
     const now = new Date().toISOString();
     const rulesetId = data.rulesetId;
@@ -58,18 +56,37 @@ export const useCharacter = (_id?: string) => {
     try {
       // Resolve archetype IDs: use provided list or fall back to default
       let archetypeIds: string[] = data.archetypeIds ?? [];
-      if (archetypeIds.length === 0) {
-        const defaultArchetype = await db.archetypes
-          .where('rulesetId')
-          .equals(rulesetId)
-          .filter((a) => a.isDefault)
-          .first();
-        const fallback = defaultArchetype ?? (await db.archetypes.where('rulesetId').equals(rulesetId).first());
-        if (fallback) archetypeIds = [fallback.id];
+
+      // For now, always duplicate character from the default archetype.
+      // In the future, character duplication can happen from any archetype.
+      const defaultArchetype = await db.archetypes
+        .where('rulesetId')
+        .equals(rulesetId)
+        .filter((a) => a.isDefault)
+        .first();
+
+      if (defaultArchetype) {
+        archetypeIds = [
+          defaultArchetype.id,
+          ...archetypeIds.filter((id) => id !== defaultArchetype.id),
+        ];
       }
+
       if (archetypeIds.length === 0) {
         throw new Error('No archetype found for ruleset');
       }
+
+      // Sort by Archetype loadOrder (default is always first at position 0)
+      const archetypeRecords = (
+        await Promise.all(archetypeIds.map((id) => db.archetypes.get(id)))
+      ).filter((a): a is Archetype => a != null);
+      archetypeIds = archetypeRecords
+        .sort((a, b) => {
+          if (a.isDefault) return -1;
+          if (b.isDefault) return 1;
+          return a.loadOrder - b.loadOrder;
+        })
+        .map((a) => a.id);
 
       // Use first archetype for character duplication (template/inventory copy)
       const firstArchetype = await db.archetypes.get(archetypeIds[0]);
