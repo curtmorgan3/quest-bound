@@ -2,7 +2,7 @@ import type { Coordinates } from '@/types';
 import type { Node, NodeChange, ReactFlowProps } from '@xyflow/react';
 import { Background, BackgroundVariant, ReactFlow } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { EditorMenuOption } from '../nodes/node-types';
 import { ContextMenu } from './context-menu';
 
@@ -32,6 +32,20 @@ export function BaseEditor({
 }: BaseEditorProps) {
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
   const opacity = !backgroundColor && !backgroundImage ? 0.1 : (backgroundOpacity ?? 0.1);
+  const longPressTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const touchPositionRef = useRef<{ x: number; y: number } | null>(null);
+
+  const clearLongPress = () => {
+    if (longPressTimeoutRef.current != null) {
+      clearTimeout(longPressTimeoutRef.current);
+      longPressTimeoutRef.current = null;
+    }
+    touchPositionRef.current = null;
+  };
+
+  useEffect(() => () => clearLongPress(), []);
+
+  const LONG_PRESS_MS = 500;
 
   return (
     <section
@@ -46,7 +60,19 @@ export function BaseEditor({
           y: e.clientY,
         });
         return false;
-      }}>
+      }}
+      onTouchStart={(e) => {
+        if (!renderContextMenu || e.touches.length !== 1) return;
+        const touch = e.touches[0];
+        touchPositionRef.current = { x: touch.clientX, y: touch.clientY };
+        longPressTimeoutRef.current = setTimeout(() => {
+          const pos = touchPositionRef.current;
+          if (pos) setContextMenu(pos);
+          clearLongPress();
+        }, LONG_PRESS_MS);
+      }}
+      onTouchEnd={clearLongPress}
+      onTouchCancel={clearLongPress}>
       {backgroundColor != null && (
         <div
           aria-hidden

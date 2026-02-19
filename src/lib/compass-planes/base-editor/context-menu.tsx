@@ -44,12 +44,24 @@ export const ContextMenu = ({
   const relativeY = y - viewportY;
 
   const inputRef = useRef<HTMLInputElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (isOpen && inputRef.current) {
       inputRef.current.focus();
     }
   }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleClickAway = (e: MouseEvent) => {
+      if (menuRef.current?.contains(e.target as Node)) return;
+      setFilterValue('');
+      onClose();
+    };
+    document.addEventListener('mousedown', handleClickAway);
+    return () => document.removeEventListener('mousedown', handleClickAway);
+  }, [isOpen, onClose]);
 
   const handleClose = () => {
     setFilterValue('');
@@ -77,6 +89,7 @@ export const ContextMenu = ({
   if (!isOpen) return null;
   return (
     <div
+      ref={menuRef}
       style={{
         padding: '8px',
         width: '300px',

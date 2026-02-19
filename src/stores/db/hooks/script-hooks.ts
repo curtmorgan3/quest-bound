@@ -60,14 +60,16 @@ export function registerScriptHooks(db: DB) {
     const scriptId = primKey as string;
     const script = await db.scripts.get(scriptId);
 
-    // Clean up script associations when script is deleted
-    await db.attributes.where({ scriptId }).modify({ scriptId: null });
-    await db.actions.where({ scriptId }).modify({ scriptId: null });
-    await db.items.where({ scriptId }).modify({ scriptId: null });
-    await db.archetypes.where({ scriptId }).modify({ scriptId: null });
+    setTimeout(async () => {
+      // Clean up script associations when script is deleted
+      await db.attributes.where({ scriptId }).modify({ scriptId: null });
+      await db.actions.where({ scriptId }).modify({ scriptId: null });
+      await db.items.where({ scriptId }).modify({ scriptId: null });
+      await db.archetypes.where({ scriptId }).modify({ scriptId: null });
 
-    // Delete associated errors and logs
-    await db.scriptErrors.where({ scriptId }).delete();
+      // Delete associated errors and logs
+      await db.scriptErrors.where({ scriptId }).delete();
+    }, 0);
 
     // Rebuild dependency graph if we have the ruleset
     if (script) {
@@ -83,35 +85,47 @@ export function registerScriptHooks(db: DB) {
 
   // Hook for when entities are deleted - clean up their scripts
   db.attributes.hook('deleting', async (primKey) => {
-    const attributeId = primKey as string;
-    const attribute = await db.attributes.get(attributeId);
-    if (attribute?.scriptId) {
-      await db.scripts.delete(attribute.scriptId);
-    }
+    setTimeout(async () => {
+      const attributeId = primKey as string;
+      const attribute = await db.attributes.get(attributeId);
+      if (attribute?.scriptId) {
+        await db.scripts.delete(attribute.scriptId);
+      }
+    }, 0);
   });
 
   db.actions.hook('deleting', async (primKey) => {
-    const actionId = primKey as string;
-    const action = await db.actions.get(actionId);
-    if (action?.scriptId) {
-      await db.scripts.delete(action.scriptId);
-    }
+    setTimeout(async () => {
+      const actionId = primKey as string;
+      const action = await db.actions.get(actionId);
+      if (action?.scriptId) {
+        await db.scripts.delete(action.scriptId);
+      }
+    }, 0);
   });
 
   db.items.hook('deleting', async (primKey) => {
-    const itemId = primKey as string;
-    const item = await db.items.get(itemId);
-    if (item?.scriptId) {
-      await db.scripts.delete(item.scriptId);
-    }
+    setTimeout(async () => {
+      const itemId = primKey as string;
+      const item = await db.items.get(itemId);
+      if (item?.scriptId) {
+        await db.scripts.delete(item.scriptId);
+      }
+    }, 0);
   });
 
   // Hook for when rulesets are deleted - clean up all scripts and dependency graph
   db.rulesets.hook('deleting', async (primKey) => {
     const rulesetId = primKey as string;
-    await db.scripts.where({ rulesetId }).delete();
-    await db.scriptErrors.where({ rulesetId }).delete();
-    await db.scriptLogs.where({ rulesetId }).delete();
-    await safeDeleteDependencyGraphNodesByRulesetId(rulesetId);
+    setTimeout(async () => {
+      await db.scripts.where({ rulesetId }).delete();
+      await db.scriptErrors.where({ rulesetId }).delete();
+      await db.scriptLogs.where({ rulesetId }).delete();
+      await safeDeleteDependencyGraphNodesByRulesetId(rulesetId);
+    }, 0);
+    try {
+    } catch (e) {
+      console.warn('Ruleset hook delete');
+    }
   });
 }
