@@ -31,6 +31,9 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useAssets, useCharacter, useRulesets } from '@/lib/compass-api';
+import type { Archetype } from '@/types';
+import { db } from '@/stores';
+import { useLiveQuery } from 'dexie-react-hooks';
 import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -43,8 +46,20 @@ export const Characters = () => {
 
   const [name, setName] = useState('');
   const [rulesetId, setRulesetId] = useState('');
+  const [archetypeId, setArchetypeId] = useState('');
   const [assetId, setAssetId] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
+
+  const archetypes: Archetype[] =
+    useLiveQuery(
+      () =>
+        rulesetId
+          ? db.archetypes.where('rulesetId').equals(rulesetId).sortBy('loadOrder')
+          : Promise.resolve([] as Archetype[]),
+      [rulesetId],
+    ) ?? [];
+
+  const defaultArchetype = archetypes.find((a) => a.isDefault) ?? archetypes[0];
 
   // Track the assetId to clean up if dialog is cancelled
   const pendingAssetIdRef = useRef<string | null>(null);
@@ -63,6 +78,7 @@ export const Characters = () => {
     await createCharacter({
       name: name.trim(),
       rulesetId,
+      archetypeId: archetypeId || defaultArchetype?.id,
       assetId,
     });
 
@@ -76,6 +92,7 @@ export const Characters = () => {
   const resetForm = () => {
     setName('');
     setRulesetId('');
+    setArchetypeId('');
     setAssetId(null);
     setOpen(false);
   };
@@ -89,9 +106,15 @@ export const Characters = () => {
     if (!isOpen) {
       setName('');
       setRulesetId('');
+      setArchetypeId('');
       setAssetId(null);
     }
     setOpen(isOpen);
+  };
+
+  const handleRulesetChange = (value: string) => {
+    setRulesetId(value);
+    setArchetypeId('');
   };
 
   const handleImageUpload = (uploadedAssetId: string) => {
@@ -145,7 +168,7 @@ export const Characters = () => {
                 <Label htmlFor='character-ruleset'>
                   Ruleset <span className='text-destructive'>*</span>
                 </Label>
-                <Select value={rulesetId} onValueChange={setRulesetId}>
+                <Select value={rulesetId} onValueChange={handleRulesetChange}>
                   <SelectTrigger id='character-ruleset' className='w-full' data-testid='character-ruleset-select'>
                     <SelectValue placeholder='Select a ruleset' />
                   </SelectTrigger>
@@ -164,6 +187,32 @@ export const Characters = () => {
                   </SelectContent>
                 </Select>
               </div>
+              {rulesetId && (
+                <div className='grid gap-3'>
+                  <Label htmlFor='character-archetype'>Archetype</Label>
+                  <Select
+                    value={archetypeId || defaultArchetype?.id || ''}
+                    onValueChange={setArchetypeId}>
+                    <SelectTrigger id='character-archetype' className='w-full' data-testid='character-archetype-select'>
+                      <SelectValue placeholder='Select archetype (default used if omitted)' />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {archetypes.length === 0 ? (
+                        <SelectItem value='_none' disabled>
+                          No archetypes available
+                        </SelectItem>
+                      ) : (
+                        archetypes.map((archetype) => (
+                          <SelectItem key={archetype.id} value={archetype.id}>
+                            {archetype.name}
+                            {archetype.isDefault ? ' (default)' : ''}
+                          </SelectItem>
+                        ))
+                      )}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
               <div className='grid gap-3'>
                 <Label>Image</Label>
                 <ImageUpload

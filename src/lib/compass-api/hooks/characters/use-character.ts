@@ -1,13 +1,8 @@
 import { useErrorHandler, useNotifications } from '@/hooks';
 import { getQBScriptClient } from '@/lib/compass-logic/worker';
 import { db, useCurrentUser } from '@/stores';
-import type {
-  Character,
-  CharacterAttribute,
-  CharacterPage,
-  CharacterWindow,
-  Inventory,
-} from '@/types';
+import type { Character, Inventory } from '@/types';
+import { duplicateCharacterFromTemplate } from '@/utils/duplicate-character-from-template';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useParams } from 'react-router-dom';
 import { useAssets } from '../assets';
@@ -38,110 +33,91 @@ export const useCharacter = (_id?: string) => {
 
   const character = useLiveQuery(() => db.characters.get(id ?? ''), [id]);
 
-  const bootstrapCharacterAttributes = async (characterId: string, rulesetId: string) => {
-    const rulesetAttributes = await db.attributes.where({ rulesetId }).toArray();
-    const characterAttributes: CharacterAttribute[] = [];
-    for (const attribute of rulesetAttributes) {
-      characterAttributes.push({
-        ...attribute,
-        characterId,
-        attributeId: attribute.id,
-        value: attribute.defaultValue,
+  const runInitialAttributeSyncSafe = async (characterId: string, rulesetId: string) => {
+    try {
+      const client = getQBScriptClient();
+      await client.runInitialAttributeSync(characterId, rulesetId);
+    } catch (error) {
+      const err = error as Error & { scriptName?: string };
+      const scriptInfo = err.scriptName ? ` [script: ${err.scriptName}.qbs]` : '';
+      console.warn('Initial reactive script execution failed' + scriptInfo + ':', error);
+      addNotification(`Failure in script ${err.scriptName}.qbs | ${error}`, {
+        type: 'error',
       });
     }
-
-    const now = new Date().toISOString();
-
-    await db.characterAttributes.bulkAdd(
-      characterAttributes.map((ca) => ({
-        ...ca,
-        id: crypto.randomUUID(),
-        createdAt: now,
-        updatedAt: now,
-      })),
-    );
-
-    // After initial attributes are created, run attribute scripts once in dependency order
-    // so derived values are correct (ruleset defaults don't account for scripts).
-    if (rulesetAttributes.length > 0) {
-      try {
-        const client = getQBScriptClient();
-        await client.runInitialAttributeSync(characterId, rulesetId);
-      } catch (error) {
-        const err = error as Error & { scriptName?: string };
-        const scriptInfo = err.scriptName ? ` [script: ${err.scriptName}.qbs]` : '';
-        console.warn('Initial reactive script execution failed' + scriptInfo + ':', error);
-        addNotification(`Failure in script ${err.scriptName}.qbs | ${error}`, {
-          type: 'error',
-        });
-      }
-    }
   };
 
-  const bootstrapCharacterPagesAndWindows = async (newCharacterId: string, rulesetId: string) => {
-    const rulesetPageJoins = await db.rulesetPages
-      .where('rulesetId')
-      .equals(rulesetId)
-      .sortBy('createdAt');
-
-    const rulesetPageIdToCharacterPageId = new Map<string, string>();
-    const now = new Date().toISOString();
-
-    for (const rp of rulesetPageJoins) {
-      const sourcePage = await db.pages.get(rp.pageId);
-      if (!sourcePage) continue;
-      const newCharacterPageId = crypto.randomUUID();
-      rulesetPageIdToCharacterPageId.set(rp.id, newCharacterPageId);
-      await db.characterPages.add({
-        id: newCharacterPageId,
-        characterId: newCharacterId,
-        pageId: sourcePage.id,
-        createdAt: now,
-        updatedAt: now,
-      } as CharacterPage);
-    }
-
-    const rulesetWindows = await db.rulesetWindows.where('rulesetId').equals(rulesetId).toArray();
-
-    for (const rw of rulesetWindows) {
-      const characterPageId = rw.rulesetPageId
-        ? (rulesetPageIdToCharacterPageId.get(rw.rulesetPageId) ?? null)
-        : null;
-      await db.characterWindows.add({
-        id: crypto.randomUUID(),
-        characterId: newCharacterId,
-        characterPageId,
-        windowId: rw.windowId,
-        title: rw.title,
-        x: rw.x,
-        y: rw.y,
-        isCollapsed: rw.isCollapsed,
-        createdAt: now,
-        updatedAt: now,
-      } as CharacterWindow);
-    }
-  };
-
-  const createCharacter = async (data: Partial<Character>) => {
+  const createCharacter = async (data: Partial<Character> & { archetypeId?: string }) => {
     if (!data.rulesetId || !currentUser) return;
     const now = new Date().toISOString();
+    const rulesetId = data.rulesetId;
+
     try {
-      const id = await db.characters.add({
+      // Resolve archetype (default if archetypeId omitted)
+      let archetype = data.archetypeId
+        ? await db.archetypes.get(data.archetypeId)
+        : await db.archetypes
+            .where('rulesetId')
+            .equals(rulesetId)
+            .filter((a) => a.isDefault)
+            .first();
+
+      if (!archetype) {
+        archetype = await db.archetypes.where('rulesetId').equals(rulesetId).first();
+      }
+      if (!archetype) {
+        throw new Error('No archetype found for ruleset');
+      }
+
+      const testCharacter = await db.characters.get(archetype.testCharacterId);
+      if (!testCharacter?.inventoryId) {
+        throw new Error('Archetype test character has no inventory');
+      }
+
+      // Create inventory first so character-hooks skips creation
+      const characterId = crypto.randomUUID();
+      const inventoryId = crypto.randomUUID();
+      await db.inventories.add({
+        id: inventoryId,
+        characterId,
+        rulesetId,
+        title: `${data.name ?? 'Character'}'s Inventory`,
+        category: null,
+        type: null,
+        entities: [],
+        items: [],
+        createdAt: now,
+        updatedAt: now,
+      } as unknown as Inventory);
+
+      await db.characters.add({
         ...data,
-        id: crypto.randomUUID(),
+        id: characterId,
+        rulesetId,
         userId: currentUser.id,
+        inventoryId,
         createdAt: now,
         updatedAt: now,
         isTestCharacter: data.isTestCharacter ?? false,
-        componentData: new Map(),
+        componentData: data.componentData ?? {},
         pinnedSidebarDocuments: data.pinnedSidebarDocuments ?? [],
         pinnedSidebarCharts: data.pinnedSidebarCharts ?? [],
         lastViewedPageId: data.lastViewedPageId ?? null,
         sheetLocked: data.sheetLocked ?? false,
       } as Character);
 
-      await bootstrapCharacterAttributes(id, data.rulesetId);
-      await bootstrapCharacterPagesAndWindows(id, data.rulesetId);
+      await duplicateCharacterFromTemplate(testCharacter.id, characterId, inventoryId);
+
+      await db.characterArchetypes.add({
+        id: crypto.randomUUID(),
+        characterId,
+        archetypeId: archetype.id,
+        loadOrder: 0,
+        createdAt: now,
+        updatedAt: now,
+      });
+
+      await runInitialAttributeSyncSafe(characterId, rulesetId);
     } catch (e) {
       handleError(e as Error, {
         component: 'useCharacter/createCharacter',

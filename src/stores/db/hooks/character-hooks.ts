@@ -60,38 +60,7 @@ export function registerCharacterDbHooks(db: DB) {
         await db.characters.update(obj.id, {
           inventoryId: inventoryId,
         });
-
-        // For non-test characters, copy every inventory item from the test character into this inventory
-        const testCharacter = await db.characters
-          .where('rulesetId')
-          .equals(obj.rulesetId)
-          .filter(
-            (c: { isTestCharacter: boolean; id: string; inventoryId?: string }) =>
-              c.isTestCharacter,
-          )
-          .first();
-
-        if (
-          testCharacter &&
-          testCharacter.id !== obj.id &&
-          (testCharacter as { inventoryId?: string }).inventoryId
-        ) {
-          const testInventoryId = (testCharacter as { inventoryId: string }).inventoryId;
-          const sourceInventoryItems = await db.inventoryItems
-            .where('inventoryId')
-            .equals(testInventoryId)
-            .toArray();
-
-          for (const sourceItem of sourceInventoryItems) {
-            await db.inventoryItems.add({
-              ...sourceItem,
-              id: crypto.randomUUID(),
-              inventoryId,
-              createdAt: now,
-              updatedAt: now,
-            });
-          }
-        }
+        // Note: Inventory duplication from archetype test character is handled in createCharacter
       } catch (error) {
         console.error('Failed to create inventory for character:', error);
       }
@@ -127,6 +96,7 @@ export function registerCharacterDbHooks(db: DB) {
       try {
         const characterId = primKey as string;
         await db.characterAttributes.where('characterId').equals(characterId).delete();
+        await db.characterArchetypes.where('characterId').equals(characterId).delete();
         await db.characterPages.where('characterId').equals(characterId).delete();
         await db.characterWindows.where('characterId').equals(characterId).delete();
         await db.inventories.where('characterId').equals(characterId).delete();
