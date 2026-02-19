@@ -1,9 +1,11 @@
-import { Button, DescriptionEditor, ImageUpload, Input, Label } from '@/components';
+import { Button, Checkbox, DescriptionEditor, ImageUpload, Input, Label, Tabs, TabsContent, TabsList, TabsTrigger } from '@/components';
 import { RulesetColorPicker } from '@/components/composites/ruleset-color-picker';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { useNotifications } from '@/hooks/use-notifications';
 import { useExportRuleset, useFonts, useRulesets } from '@/lib/compass-api';
+import { addModuleToRuleset } from '@/lib/compass-api/hooks/export/add-module-to-ruleset';
 import type { Ruleset } from '@/types';
-import { Download, Plus, Trash, Upload } from 'lucide-react';
+import { Download, Package, Plus, Trash, Upload } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import type { RGBColor } from 'react-color';
 
@@ -24,9 +26,12 @@ interface RulesetSettingsProps {
 }
 
 export const RulesetSettings = ({ activeRuleset }: RulesetSettingsProps) => {
-  const { updateRuleset } = useRulesets();
+  const { updateRuleset, rulesets } = useRulesets();
   const { exportRuleset } = useExportRuleset(activeRuleset.id);
   const { fonts, createFont, deleteFont } = useFonts(activeRuleset.id);
+  const { addNotification } = useNotifications();
+  const [addingModule, setAddingModule] = useState(false);
+  const [addModuleOpen, setAddModuleOpen] = useState(false);
 
   const [title, setTitle] = useState(activeRuleset.title);
   const [version, setVersion] = useState(activeRuleset.version);
@@ -107,126 +112,247 @@ export const RulesetSettings = ({ activeRuleset }: RulesetSettingsProps) => {
     }
   };
 
+  const modules = activeRuleset.modules ?? [];
+  const availableModuleRulesets = rulesets.filter(
+    (r) => r.isModule === true && r.id !== activeRuleset.id && !modules.some((m) => m.id === r.id),
+  );
+
+  const handleAddModule = async (sourceRulesetId: string) => {
+    setAddingModule(true);
+    try {
+      const result = await addModuleToRuleset({
+        sourceRulesetId,
+        targetRulesetId: activeRuleset.id,
+      });
+      setAddModuleOpen(false);
+      const totalSkipped = Object.values(result.skippedByConflict).reduce((a, b) => a + b, 0);
+      if (totalSkipped > 0) {
+        const parts = Object.entries(result.skippedByConflict)
+          .filter(([, n]) => n > 0)
+          .map(([type, n]) => `${n} ${type}`);
+        addNotification('Module added. Some content skipped (ID conflict).', {
+          type: 'info',
+          description: parts.join(', '),
+        });
+      } else {
+        addNotification('Module added successfully.', { type: 'success' });
+      }
+    } catch (e) {
+      addNotification((e as Error).message, { type: 'error' });
+    } finally {
+      setAddingModule(false);
+    }
+  };
+
+  const handleIsModuleChange = async (checked: boolean) => {
+    await updateRuleset(activeRuleset.id, { isModule: checked });
+  };
+
   return (
-    <div className='flex flex-col gap-6'>
-      <div className='flex items-end gap-4'>
-        <div className='flex flex-col gap-2 max-w-sm flex-1'>
-          <Label htmlFor='ruleset-title'>Title</Label>
-          <Input id='ruleset-title' value={title} onChange={(e) => setTitle(e.target.value)} />
+    <Tabs defaultValue='details' className='flex flex-col gap-4'>
+      <TabsList>
+        <TabsTrigger value='details'>Details</TabsTrigger>
+        <TabsTrigger value='modules'>Modules</TabsTrigger>
+      </TabsList>
+
+      <TabsContent value='details' className='flex flex-col gap-6 mt-0'>
+        <div className='flex items-end gap-4'>
+          <div className='flex flex-col gap-2 max-w-sm flex-1'>
+            <Label htmlFor='ruleset-title'>Title</Label>
+            <Input id='ruleset-title' value={title} onChange={(e) => setTitle(e.target.value)} />
+          </div>
+
+          <div className='flex flex-col gap-2 w-32'>
+            <Label htmlFor='ruleset-version'>Version</Label>
+            <Input
+              id='ruleset-version'
+              value={version}
+              onChange={(e) => setVersion(e.target.value)}
+              placeholder='1.0.0'
+            />
+          </div>
+
+          <Button className='gap-2 w-[50px]' variant='outline' onClick={exportRuleset}>
+            <Download className='h-4 w-4' />
+          </Button>
         </div>
 
-        <div className='flex flex-col gap-2 w-32'>
-          <Label htmlFor='ruleset-version'>Version</Label>
-          <Input
-            id='ruleset-version'
-            value={version}
-            onChange={(e) => setVersion(e.target.value)}
-            placeholder='1.0.0'
+        <div className='flex w-full justify-between gap-8'>
+          <ImageUpload
+            image={activeRuleset.image}
+            alt={activeRuleset.title}
+            onRemove={() => updateRuleset(activeRuleset.id, { assetId: null })}
+            onUpload={(assetId) => updateRuleset(activeRuleset.id, { assetId })}
+            onSetUrl={(url) => updateRuleset(activeRuleset.id, { image: url, assetId: null })}
+            rulesetId={activeRuleset.id}
           />
+
+          <DescriptionEditor className='flex-1' value={description} onChange={setDescription} />
         </div>
 
-        <Button className='gap-2 w-[50px]' variant='outline' onClick={exportRuleset}>
-          <Download className='h-4 w-4' />
-        </Button>
-      </div>
-
-      <div className='flex w-full justify-between gap-8'>
-        <ImageUpload
-          image={activeRuleset.image}
-          alt={activeRuleset.title}
-          onRemove={() => updateRuleset(activeRuleset.id, { assetId: null })}
-          onUpload={(assetId) => updateRuleset(activeRuleset.id, { assetId })}
-          onSetUrl={(url) => updateRuleset(activeRuleset.id, { image: url, assetId: null })}
-          rulesetId={activeRuleset.id}
-        />
-
-        <DescriptionEditor className='flex-1' value={description} onChange={setDescription} />
-      </div>
-
-      <div className='flex flex-col gap-3'>
-        <Label>Palette</Label>
-        <div className='flex flex-col gap-4'>
-          <div className='flex flex-wrap items-center gap-2'>
-            {palette.map((color, index) => (
-              <div
-                key={`${color}-${index}`}
-                className='group flex items-center gap-0.5 rounded-md border border-border overflow-hidden bg-muted'>
+        <div className='flex flex-col gap-3'>
+          <Label>Palette</Label>
+          <div className='flex flex-col gap-4'>
+            <div className='flex flex-wrap items-center gap-2'>
+              {palette.map((color, index) => (
                 <div
-                  className='h-8 w-8 shrink-0 border-r border-border'
-                  style={{ backgroundColor: color }}
-                  title={color}
-                />
+                  key={`${color}-${index}`}
+                  className='group flex items-center gap-0.5 rounded-md border border-border overflow-hidden bg-muted'>
+                  <div
+                    className='h-8 w-8 shrink-0 border-r border-border'
+                    style={{ backgroundColor: color }}
+                    title={color}
+                  />
+                  <Button
+                    variant='ghost'
+                    size='sm'
+                    onClick={() => handleRemovePaletteColor(index)}
+                    className='h-8 w-6 p-0 opacity-70 hover:opacity-100'
+                    aria-label={`Remove ${color}`}>
+                    <Trash className='h-3.5 w-3.5 text-destructive' />
+                  </Button>
+                </div>
+              ))}
+            </div>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant='outline' size='sm' className='gap-2 h-8 w-[50px]'>
+                  <Plus className='h-4 w-4' />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className='w-auto p-0 border-0' align='start'>
+                <div className='p-2'>
+                  <RulesetColorPicker
+                    color={paletteAddColor}
+                    disableAlpha
+                    onUpdate={handleAddPaletteColor}
+                  />
+                  <Button
+                    className='w-full mt-2'
+                    size='sm'
+                    disabled={!paletteAddColor}
+                    onClick={handleConfirmAddPaletteColor}>
+                    Add to palette
+                  </Button>
+                </div>
+              </PopoverContent>
+            </Popover>
+          </div>
+        </div>
+
+        <div className='flex flex-col gap-3'>
+          <Label>Fonts</Label>
+          <div className='flex flex-col gap-2'>
+            {fonts.map((font) => (
+              <div
+                key={font.id}
+                className='flex items-center justify-between bg-muted px-3 py-2 rounded-md'>
+                <span className='text-sm'>{font.label}</span>
                 <Button
                   variant='ghost'
                   size='sm'
-                  onClick={() => handleRemovePaletteColor(index)}
-                  className='h-8 w-6 p-0 opacity-70 hover:opacity-100'
-                  aria-label={`Remove ${color}`}>
-                  <Trash className='h-3.5 w-3.5 text-destructive' />
+                  onClick={() => deleteFont(font.id)}
+                  className='h-8 w-8 p-0'>
+                  <Trash className='h-4 w-4 text-destructive' />
                 </Button>
               </div>
             ))}
           </div>
-          <Popover>
+          <Button
+            variant='outline'
+            className='gap-2 w-fit'
+            disabled={fontLoading}
+            onClick={() => fontInputRef.current?.click()}>
+            <Upload className='h-4 w-4' />
+            {fontLoading ? 'Uploading...' : 'Upload Font'}
+          </Button>
+          <input
+            ref={fontInputRef}
+            type='file'
+            accept='.ttf,.otf,.woff,.woff2'
+            className='hidden'
+            onChange={handleFontUpload}
+          />
+        </div>
+      </TabsContent>
+
+      <TabsContent value='modules' className='flex flex-col gap-6 mt-0'>
+        <div className='flex flex-col gap-3'>
+          <div className='flex items-center gap-2'>
+            <Checkbox
+              id='ruleset-is-module'
+              checked={activeRuleset.isModule === true}
+              onCheckedChange={(checked) => handleIsModuleChange(checked === true)}
+            />
+            <Label htmlFor='ruleset-is-module' className='cursor-pointer font-normal'>
+              Use as module (allow this ruleset to be added to other rulesets)
+            </Label>
+          </div>
+        </div>
+
+        <div className='flex flex-col gap-3'>
+          <Label>Modules</Label>
+          <p className='text-sm text-muted-foreground'>
+            Add content from another ruleset that is marked as a module.
+          </p>
+          <div className='flex flex-col gap-2'>
+            {modules.length === 0 ? (
+              <p className='text-sm text-muted-foreground'>No modules added yet.</p>
+            ) : (
+              modules.map((mod) => (
+                <div
+                  key={mod.id}
+                  className='flex items-center gap-3 rounded-md border border-border bg-muted/50 px-3 py-2'>
+                  {mod.image ? (
+                    <img src={mod.image} alt='' className='h-8 w-8 shrink-0 rounded object-cover' />
+                  ) : (
+                    <div className='flex h-8 w-8 shrink-0 items-center justify-center rounded bg-muted'>
+                      <Package className='h-4 w-4 text-muted-foreground' />
+                    </div>
+                  )}
+                  <span className='text-sm font-medium'>{mod.name}</span>
+                </div>
+              ))
+            )}
+          </div>
+          <Popover open={addModuleOpen} onOpenChange={setAddModuleOpen}>
             <PopoverTrigger asChild>
-              <Button variant='outline' size='sm' className='gap-2 h-8 w-[50px]'>
+              <Button
+                variant='outline'
+                size='sm'
+                className='gap-2 w-fit'
+                disabled={addingModule || availableModuleRulesets.length === 0}>
                 <Plus className='h-4 w-4' />
+                {addingModule ? 'Adding...' : 'Add module'}
               </Button>
             </PopoverTrigger>
-            <PopoverContent className='w-auto p-0 border-0' align='start'>
+            <PopoverContent className='w-80 p-0' align='start'>
               <div className='p-2'>
-                <RulesetColorPicker
-                  color={paletteAddColor}
-                  disableAlpha
-                  onUpdate={handleAddPaletteColor}
-                />
-                <Button
-                  className='w-full mt-2'
-                  size='sm'
-                  disabled={!paletteAddColor}
-                  onClick={handleConfirmAddPaletteColor}>
-                  Add to palette
-                </Button>
+                <p className='mb-2 text-sm text-muted-foreground'>
+                  Choose a ruleset to add as a module:
+                </p>
+                <div className='flex max-h-60 flex-col gap-1 overflow-auto'>
+                  {availableModuleRulesets.map((r) => (
+                    <Button
+                      key={r.id}
+                      variant='ghost'
+                      size='sm'
+                      className='justify-start gap-2'
+                      onClick={() => handleAddModule(r.id)}>
+                      {r.image ? (
+                        <img src={r.image} alt='' className='h-6 w-6 shrink-0 rounded object-cover' />
+                      ) : (
+                        <Package className='h-4 w-4 shrink-0 text-muted-foreground' />
+                      )}
+                      {r.title}
+                    </Button>
+                  ))}
+                </div>
               </div>
             </PopoverContent>
           </Popover>
         </div>
-      </div>
-
-      <div className='flex flex-col gap-3'>
-        <Label>Fonts</Label>
-        <div className='flex flex-col gap-2'>
-          {fonts.map((font) => (
-            <div
-              key={font.id}
-              className='flex items-center justify-between bg-muted px-3 py-2 rounded-md'>
-              <span className='text-sm'>{font.label}</span>
-              <Button
-                variant='ghost'
-                size='sm'
-                onClick={() => deleteFont(font.id)}
-                className='h-8 w-8 p-0'>
-                <Trash className='h-4 w-4 text-destructive' />
-              </Button>
-            </div>
-          ))}
-        </div>
-        <Button
-          variant='outline'
-          className='gap-2 w-fit'
-          disabled={fontLoading}
-          onClick={() => fontInputRef.current?.click()}>
-          <Upload className='h-4 w-4' />
-          {fontLoading ? 'Uploading...' : 'Upload Font'}
-        </Button>
-        <input
-          ref={fontInputRef}
-          type='file'
-          accept='.ttf,.otf,.woff,.woff2'
-          className='hidden'
-          onChange={handleFontUpload}
-        />
-      </div>
-    </div>
+      </TabsContent>
+    </Tabs>
   );
 };

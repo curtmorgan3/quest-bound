@@ -62,7 +62,7 @@ export const Settings = () => {
           </SidebarMenu>
         </SidebarContent>
       </Sidebar>
-      <div className='flex flex-col p-4 gap-4 ml-[200px]'>
+      <div className='flex flex-col p-4 gap-4 ml-[200px] h-[1000px] overflow-scroll'>
         {page === 'user' && <UserSettings />}
         {page === 'ruleset' && activeRuleset && <RulesetSettings activeRuleset={activeRuleset} />}
         {page === 'character' && character && <CharacterSettings character={character} />}

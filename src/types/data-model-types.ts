@@ -10,6 +10,10 @@ export type Action = BaseDetails & {
   inventoryWidth?: number;
   inventoryHeight?: number;
   scriptId?: string | null; // NEW: Associated script
+  /** Module origin: ruleset id, source entity id, and module name. */
+  moduleId?: string;
+  moduleEntityId?: string;
+  moduleName?: string;
 };
 
 export type Asset = BaseDetails & {
@@ -41,6 +45,10 @@ export type Attribute = BaseDetails & {
   inventoryWidth?: number;
   inventoryHeight?: number;
   scriptId?: string | null; // NEW: Associated script
+  /** Module origin: ruleset id, source entity id, and module name. */
+  moduleId?: string;
+  moduleEntityId?: string;
+  moduleName?: string;
 };
 
 export type Chart = BaseDetails & {
@@ -51,6 +59,10 @@ export type Chart = BaseDetails & {
   data: string;
   assetId?: string | null;
   image?: string | null;
+  /** Module origin: ruleset id, source entity id, and module name. */
+  moduleId?: string;
+  moduleEntityId?: string;
+  moduleName?: string;
 };
 
 export type Character = BaseDetails & {
@@ -68,6 +80,10 @@ export type Character = BaseDetails & {
   lastViewedPageId?: string | null;
   /** Whether the sheet viewer is locked (windows not draggable). */
   sheetLocked?: boolean;
+  /** Module origin: ruleset id, source entity id, and module name. */
+  moduleId?: string;
+  moduleEntityId?: string;
+  moduleName?: string;
 };
 
 export type CharacterAttribute = Attribute & {
@@ -85,6 +101,10 @@ export type Page = BaseDetails & {
   backgroundOpacity?: number;
   backgroundColor?: string;
   image?: string | null;
+  /** Module origin: ruleset id, source entity id, and module name. */
+  moduleId?: string;
+  moduleEntityId?: string;
+  moduleName?: string;
 };
 
 export type RulesetPage = BaseDetails & {
@@ -106,6 +126,10 @@ export type CharacterWindow = BaseDetails & {
   x: number;
   y: number;
   isCollapsed: boolean;
+  /** Module origin: ruleset id, source entity id, and module name. */
+  moduleId?: string;
+  moduleEntityId?: string;
+  moduleName?: string;
 };
 
 /** Template window layout for a ruleset page (used as sheet template). */
@@ -118,6 +142,10 @@ export type RulesetWindow = BaseDetails & {
   x: number;
   y: number;
   isCollapsed: boolean;
+  /** Module origin: ruleset id, source entity id, and module name. */
+  moduleId?: string;
+  moduleEntityId?: string;
+  moduleName?: string;
 };
 
 export type Component = BaseDetails & {
@@ -145,6 +173,10 @@ export type DiceRoll = BaseDetails & {
   userId: string;
   value: string;
   label: string;
+  /** Module origin: ruleset id, source entity id, and module name. */
+  moduleId?: string;
+  moduleEntityId?: string;
+  moduleName?: string;
 };
 
 export type Document = BaseDetails & {
@@ -156,6 +188,10 @@ export type Document = BaseDetails & {
   image?: string | null;
   pdfAssetId?: string | null;
   pdfData?: string | null;
+  /** Module origin: ruleset id, source entity id, and module name. */
+  moduleId?: string;
+  moduleEntityId?: string;
+  moduleName?: string;
 };
 
 export type Font = BaseDetails & {
@@ -182,6 +218,10 @@ export type Item = BaseDetails & {
   image?: string | null;
   scriptId?: string | null; // NEW: Associated script
   customProperties?: Record<string, string | number | boolean>; // NEW: Custom properties for scripts
+  /** Module origin: ruleset id, source entity id, and module name. */
+  moduleId?: string;
+  moduleEntityId?: string;
+  moduleName?: string;
 };
 
 export type Inventory = BaseDetails & {
@@ -205,6 +245,13 @@ export type InventoryItem = BaseDetails & {
   customProperties?: Record<string, string | number | boolean>;
 };
 
+/** Entry for a module added to this ruleset (id, name, image of the source module). */
+export type RulesetModuleEntry = {
+  id: string;
+  name: string;
+  image: string | null;
+};
+
 export type Ruleset = BaseDetails & {
   version: string;
   createdBy: string;
@@ -214,6 +261,10 @@ export type Ruleset = BaseDetails & {
   assetId: string | null;
   image: string | null;
   palette: string[];
+  /** When true, this ruleset can be added as a module to other rulesets. */
+  isModule?: boolean;
+  /** Modules that have been added to this ruleset (source id, name, image). */
+  modules?: RulesetModuleEntry[];
 };
 
 export type User = BaseDetails & {
@@ -229,6 +280,10 @@ export type Window = BaseDetails & {
   title: string;
   category?: string;
   description?: string;
+  /** Module origin: ruleset id, source entity id, and module name. */
+  moduleId?: string;
+  moduleEntityId?: string;
+  moduleName?: string;
 };
 
 export type Script = BaseDetails & {
@@ -240,6 +295,10 @@ export type Script = BaseDetails & {
   isGlobal: boolean; // Whether this is a global utility script
   enabled: boolean; // Allow disabling scripts without deleting
   category?: string; // Optional category for grouping scripts
+  /** Module origin: ruleset id, source entity id, and module name. */
+  moduleId?: string;
+  moduleEntityId?: string;
+  moduleName?: string;
 };
 
 export type ScriptError = BaseDetails & {
