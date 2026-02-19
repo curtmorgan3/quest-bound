@@ -33,6 +33,24 @@ export class AttributeProxy implements StructuredCloneSafe {
     return this.characterAttribute.value;
   }
 
+  get max(): any {
+    // Check if there's a pending update first
+    const key = `characterAttribute:${this.characterAttribute.id}`;
+    if (this.pendingUpdates.has(key)) {
+      return this.pendingUpdates.get(key);
+    }
+    return this.characterAttribute.max;
+  }
+
+  get min(): any {
+    // Check if there's a pending update first
+    const key = `characterAttribute:${this.characterAttribute.id}`;
+    if (this.pendingUpdates.has(key)) {
+      return this.pendingUpdates.get(key);
+    }
+    return this.characterAttribute.min;
+  }
+
   /**
    * Set the attribute to a new value.
    */
@@ -49,6 +67,14 @@ export class AttributeProxy implements StructuredCloneSafe {
     this.pendingUpdates.set(key, typedValue);
     // Update local copy for immediate reads
     this.characterAttribute.value = typedValue;
+  }
+
+  setMax(newValue: any): void {
+    // set this.characterAttribute.max to a number
+  }
+
+  setMin(newValue: any): void {
+    // set this.characterAttribute.min to a number
   }
 
   /**
@@ -106,7 +132,7 @@ export class AttributeProxy implements StructuredCloneSafe {
    * Set the attribute to its maximum value.
    * Throws an error if the attribute has no max value defined.
    */
-  max(): void {
+  setToMax(): void {
     if (this.attribute.max === undefined) {
       throw new Error(`Attribute '${this.attribute.title}' has no max value defined`);
     }
@@ -117,7 +143,7 @@ export class AttributeProxy implements StructuredCloneSafe {
    * Set the attribute to its minimum value.
    * Throws an error if the attribute has no min value defined.
    */
-  min(): void {
+  setToMin(): void {
     if (this.attribute.min === undefined) {
       throw new Error(`Attribute '${this.attribute.title}' has no min value defined`);
     }

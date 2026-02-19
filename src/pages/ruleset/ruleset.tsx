@@ -6,11 +6,12 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components';
-import { useActiveRuleset, useExportChart } from '@/lib/compass-api';
+import { useActiveRuleset, useCharts, useExportChart } from '@/lib/compass-api';
 import { Download, Loader2, Pencil } from 'lucide-react';
 import { useState } from 'react';
 import { Navigate, useSearchParams } from 'react-router-dom';
 import { ActionChart } from './actions';
+import { Archetypes } from './archetypes/archetypes';
 import { AttributeChart } from './attributes/attribute-chart';
 import { ChartSelect } from './charts';
 import { ChartImport, Export, Import } from './components';
@@ -18,7 +19,6 @@ import { BaseCreate } from './create';
 import { Documents } from './documents';
 import { BulkCustomProperties } from './items/bulk-custom-properties';
 import { ItemChart } from './items/item-chart';
-import { Archetypes } from './archetypes/archetypes';
 import { PageSelect } from './pages';
 import { WindowSelect } from './windows';
 
@@ -51,8 +51,12 @@ export const Ruleset = ({
   const [open, setOpen] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const { exportChartAsTSV } = useExportChart();
+  const { charts } = useCharts();
 
   const chartId = searchParams.get('chart');
+  const activeChart = chartId ? charts?.find((c) => c.id === chartId) : undefined;
+  const pageLabel =
+    page === 'charts' && activeChart ? activeChart.title : pageToLabel.get(page ?? '');
 
   if (!page) {
     return <Navigate to={`/rulesets/${activeRuleset?.id}/attributes`} replace={true} />;
@@ -115,7 +119,7 @@ export const Ruleset = ({
 
   return (
     <div className='flex flex-col p-4 gap-4'>
-      <h1 className='text-2xl'>{pageToLabel.get(page)}</h1>
+      <h1 className='text-2xl'>{pageLabel}</h1>
       <Dialog
         open={open}
         onOpenChange={(open) => {
@@ -141,7 +145,7 @@ export const Ruleset = ({
             <div className='flex gap-2'>
               <DialogTrigger asChild>
                 <Button
-                  className='w-[50px]'
+                  size='sm'
                   variant='outline'
                   onClick={() => {
                     searchParams.set('edit', chartId);
@@ -182,19 +186,19 @@ export const Ruleset = ({
         )}
 
         {page !== 'archetypes' && (
-        <DialogContent className='min-w-[600px] max-w-[80vw] min-h-[50vh]'>
-          <DialogTitle className='hidden'>Quick Create</DialogTitle>
-          <DialogDescription className='hidden'>Quick Create</DialogDescription>
-          <BaseCreate
-            onCreate={(isEditMode) => {
-              if (isEditMode) {
-                setOpen(false);
-                searchParams.set('edit', '');
-                setSearchParams(searchParams);
-              }
-            }}
-          />
-        </DialogContent>
+          <DialogContent className='min-w-[600px] max-w-[80vw] min-h-[50vh]'>
+            <DialogTitle className='hidden'>Quick Create</DialogTitle>
+            <DialogDescription className='hidden'>Quick Create</DialogDescription>
+            <BaseCreate
+              onCreate={(isEditMode) => {
+                if (isEditMode) {
+                  setOpen(false);
+                  searchParams.set('edit', '');
+                  setSearchParams(searchParams);
+                }
+              }}
+            />
+          </DialogContent>
         )}
       </Dialog>
     </div>
