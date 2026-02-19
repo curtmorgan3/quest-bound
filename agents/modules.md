@@ -277,15 +277,15 @@ No further decisions are required to draft the plan. The following are assumed:
 
 ---
 
-### Phase 4: Re-import (refresh) and conflict reporting
+### Phase 4: Re-import (refresh) and conflict reporting ✅ Implemented
 
 **Goal:** Re-adding the same module overwrites its content (refresh). Clear reporting of skipped entities (ID conflicts).
 
 1. **Re-import**
-   - When adding a module: if `ruleset.modules` already contains this module id, treat as refresh: delete all entities with this `moduleId` (same as remove), then run add again. Optionally reuse remove logic (without removing from `ruleset.modules`).
+   - When adding a module: if `ruleset.modules` already contains this module id, treat as refresh: delete all entities with this `moduleId` (same as remove), then run add again. Optionally reuse remove logic (without removing from `ruleset.modules`). **Done:** `deleteModuleContentFromRuleset` in `remove-module-from-ruleset.ts`; `addModuleToRuleset` uses it when module already in list, then re-adds; module picker allows already-added modules (refresh).
 
 2. **Conflict reporting**
-   - Improve “skipped entities” UX: e.g. modal or expandable section listing “Skipped due to ID conflict: 2 attributes, 1 action” (and optionally which names/ids). Use the “keep track of skipped instances” from the spec.
+   - Improve “skipped entities” UX: e.g. modal or expandable section listing “Skipped due to ID conflict: 2 attributes, 1 action” (and optionally which names/ids). Use the “keep track of skipped instances” from the spec. **Done:** `AddModuleResult.skippedDetails`; Dialog after add when skips exist lists entity types and id/title per skipped item.
 
 **Out of scope for Phase 4:** Blue titles, deleted-source UI.
 

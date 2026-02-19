@@ -10,6 +10,12 @@ import {
   Button,
   Checkbox,
   DescriptionEditor,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
   ImageUpload,
   Input,
   Label,
@@ -72,6 +78,10 @@ export const RulesetSettings = ({ activeRuleset }: RulesetSettingsProps) => {
     items: number;
   } | null>(null);
   const [removingModule, setRemovingModule] = useState(false);
+  const [conflictDialogOpen, setConflictDialogOpen] = useState(false);
+  const [conflictDetails, setConflictDetails] = useState<
+    Record<string, Array<{ id: string; title?: string }>> | null
+  >(null);
 
   const [title, setTitle] = useState(activeRuleset.title);
   const [version, setVersion] = useState(activeRuleset.version);
@@ -154,7 +164,7 @@ export const RulesetSettings = ({ activeRuleset }: RulesetSettingsProps) => {
 
   const modules = activeRuleset.modules ?? [];
   const availableModuleRulesets = rulesets.filter(
-    (r) => r.isModule === true && r.id !== activeRuleset.id && !modules.some((m) => m.id === r.id),
+    (r) => r.isModule === true && r.id !== activeRuleset.id,
   );
 
   const handleAddModule = async (sourceRulesetId: string) => {
@@ -167,12 +177,10 @@ export const RulesetSettings = ({ activeRuleset }: RulesetSettingsProps) => {
       setAddModuleOpen(false);
       const totalSkipped = Object.values(result.skippedByConflict).reduce((a, b) => a + b, 0);
       if (totalSkipped > 0) {
-        const parts = Object.entries(result.skippedByConflict)
-          .filter(([, n]) => n > 0)
-          .map(([type, n]) => `${n} ${type}`);
-        addNotification('Module added. Some content skipped (ID conflict).', {
+        setConflictDetails(result.skippedDetails ?? null);
+        setConflictDialogOpen(true);
+        addNotification('Module added. Some content was skipped due to ID conflicts.', {
           type: 'info',
-          description: parts.join(', '),
         });
       } else {
         addNotification('Module added successfully.', { type: 'success' });
@@ -212,12 +220,10 @@ export const RulesetSettings = ({ activeRuleset }: RulesetSettingsProps) => {
 
       const totalSkipped = Object.values(result.skippedByConflict).reduce((a, b) => a + b, 0);
       if (totalSkipped > 0) {
-        const parts = Object.entries(result.skippedByConflict)
-          .filter(([, n]) => n > 0)
-          .map(([type, n]) => `${n} ${type}`);
-        addNotification('Module added from file. Some content skipped (ID conflict).', {
+        setConflictDetails(result.skippedDetails ?? null);
+        setConflictDialogOpen(true);
+        addNotification('Module added from file. Some content was skipped due to ID conflicts.', {
           type: 'info',
-          description: parts.join(', '),
         });
       } else {
         addNotification('Module added from file successfully.', { type: 'success' });
@@ -529,6 +535,51 @@ export const RulesetSettings = ({ activeRuleset }: RulesetSettingsProps) => {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+
+        <Dialog
+          open={conflictDialogOpen}
+          onOpenChange={(open) => {
+            setConflictDialogOpen(open);
+            if (!open) setConflictDetails(null);
+          }}>
+          <DialogContent className='max-w-md'>
+            <DialogHeader>
+              <DialogTitle>Skipped due to ID conflicts</DialogTitle>
+              <DialogDescription>
+                The following content from the module was not added because the target ruleset
+                already has content with the same ID. You can rename or remove the conflicting
+                content in the target, then add the module again to include it.
+              </DialogDescription>
+            </DialogHeader>
+            <div className='max-h-64 overflow-auto rounded-md border border-border bg-muted/30 p-2'>
+              {conflictDetails &&
+                Object.entries(conflictDetails).map(([entityType, items]) => {
+                  if (!items.length) return null;
+                  const label =
+                    entityType === 'diceRolls'
+                      ? 'Dice rolls'
+                      : entityType.charAt(0).toUpperCase() + entityType.slice(1);
+                  return (
+                    <div key={entityType} className='mb-3 last:mb-0'>
+                      <p className='text-sm font-medium text-foreground'>
+                        {label} ({items.length})
+                      </p>
+                      <ul className='mt-1 list-inside list-disc text-sm text-muted-foreground'>
+                        {items.map((item) => (
+                          <li key={item.id}>
+                            {item.title ? `${item.title} (${item.id})` : item.id}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  );
+                })}
+            </div>
+            <DialogFooter>
+              <Button onClick={() => setConflictDialogOpen(false)}>Close</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </TabsContent>
     </Tabs>
   );

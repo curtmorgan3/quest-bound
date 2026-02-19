@@ -266,6 +266,25 @@ export async function removeModuleFromRuleset({
     }
   }
 
+  await deleteModuleContentFromRuleset(targetRulesetId, moduleIdToRemove);
+
+  // Remove module from ruleset.modules
+  const modules = (ruleset as Ruleset & { modules?: { id: string }[] }).modules ?? [];
+  const nextModules = modules.filter((m) => m.id !== moduleIdToRemove);
+  await db.rulesets.update(targetRulesetId, {
+    modules: nextModules,
+    updatedAt: new Date().toISOString(),
+  });
+}
+
+/**
+ * Delete all entities with the given moduleId from the target ruleset, without
+ * removing the module from ruleset.modules. Used for re-import (refresh).
+ */
+export async function deleteModuleContentFromRuleset(
+  targetRulesetId: string,
+  moduleIdToRemove: string,
+): Promise<void> {
   const removed = await getRemovedIds(targetRulesetId, moduleIdToRemove);
 
   // 1. Inventory items for inventories that belong to removed characters
@@ -389,12 +408,4 @@ export async function removeModuleFromRuleset({
       .filter((n) => removed.scriptIds.has(n.scriptId))
       .delete();
   }
-
-  // 13. Remove module from ruleset.modules
-  const modules = (ruleset as Ruleset & { modules?: { id: string }[] }).modules ?? [];
-  const nextModules = modules.filter((m) => m.id !== moduleIdToRemove);
-  await db.rulesets.update(targetRulesetId, {
-    modules: nextModules,
-    updatedAt: new Date().toISOString(),
-  });
 }

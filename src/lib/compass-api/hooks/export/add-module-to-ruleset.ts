@@ -1,4 +1,5 @@
 import { db } from '@/stores';
+import { deleteModuleContentFromRuleset } from './remove-module-from-ruleset';
 import type {
   Action,
   Asset,
@@ -53,6 +54,8 @@ export interface AddModuleResult {
   };
   /** Entity types and counts skipped due to ID conflict (e.g. { attributes: 2 }). */
   skippedByConflict: Record<string, number>;
+  /** Per-entity-type details for skipped items (id and display title/name). */
+  skippedDetails?: Record<string, Array<{ id: string; title?: string }>>;
 }
 
 /**
@@ -68,8 +71,6 @@ export async function addModuleToRuleset({
   const sourceRuleset = await db.rulesets.get(sourceRulesetId);
   const targetRuleset = await db.rulesets.get(targetRulesetId);
 
-  console.log(sourceRuleset);
-
   if (!sourceRuleset) {
     throw new Error('Source ruleset not found');
   }
@@ -83,9 +84,10 @@ export async function addModuleToRuleset({
     throw new Error('Cannot add a ruleset as a module to itself');
   }
 
-  const existingModules = (targetRuleset as Ruleset & { modules?: { id: string }[] }).modules ?? [];
-  if (existingModules.some((m) => m.id === sourceRulesetId)) {
-    throw new Error('This module is already added to the ruleset');
+  const existingModules = (targetRuleset as Ruleset & { modules?: { id: string; name: string; image: string | null }[] }).modules ?? [];
+  const isRefresh = existingModules.some((m) => m.id === sourceRulesetId);
+  if (isRefresh) {
+    await deleteModuleContentFromRuleset(targetRulesetId, sourceRulesetId);
   }
 
   const moduleName = sourceRuleset.title;
@@ -155,6 +157,12 @@ export async function addModuleToRuleset({
   };
 
   const skippedByConflict: Record<string, number> = {};
+  const skippedDetails: Record<string, Array<{ id: string; title?: string }>> = {};
+  const pushSkipped = (entityType: string, id: string, title?: string) => {
+    skippedByConflict[entityType] = (skippedByConflict[entityType] ?? 0) + 1;
+    if (!skippedDetails[entityType]) skippedDetails[entityType] = [];
+    skippedDetails[entityType].push({ id, title });
+  };
 
   // Load all source entities
   const [
@@ -272,7 +280,7 @@ export async function addModuleToRuleset({
   // 1. Assets
   for (const asset of sourceAssets as Asset[]) {
     if (targetIds.assets.has(asset.id)) {
-      skippedByConflict.assets = (skippedByConflict.assets ?? 0) + 1;
+      pushSkipped('assets', asset.id, (asset as { name?: string }).name);
       continue;
     }
     const newId = crypto.randomUUID();
@@ -294,7 +302,7 @@ export async function addModuleToRuleset({
   // 2. Fonts
   for (const font of sourceFonts as Font[]) {
     if (targetIds.fonts.has(font.id)) {
-      skippedByConflict.fonts = (skippedByConflict.fonts ?? 0) + 1;
+      pushSkipped('fonts', font.id, (font as { name?: string }).name);
       continue;
     }
     const newId = crypto.randomUUID();
@@ -316,7 +324,7 @@ export async function addModuleToRuleset({
   // 3. Dice rolls
   for (const roll of sourceDiceRolls as DiceRoll[]) {
     if (targetIds.diceRolls.has(roll.id)) {
-      skippedByConflict.diceRolls = (skippedByConflict.diceRolls ?? 0) + 1;
+      pushSkipped('diceRolls', roll.id, (roll as { name?: string }).name);
       continue;
     }
     const newId = crypto.randomUUID();
@@ -337,7 +345,7 @@ export async function addModuleToRuleset({
   // 4. Charts
   for (const chart of sourceCharts as Chart[]) {
     if (targetIds.charts.has(chart.id)) {
-      skippedByConflict.charts = (skippedByConflict.charts ?? 0) + 1;
+      pushSkipped('charts', chart.id, chart.title);
       continue;
     }
     const newId = crypto.randomUUID();
@@ -363,7 +371,7 @@ export async function addModuleToRuleset({
   // 5. Attributes
   for (const attribute of sourceAttributes as Attribute[]) {
     if (targetIds.attributes.has(attribute.id)) {
-      skippedByConflict.attributes = (skippedByConflict.attributes ?? 0) + 1;
+      pushSkipped('attributes', attribute.id, attribute.title);
       continue;
     }
     const newId = crypto.randomUUID();
@@ -395,7 +403,7 @@ export async function addModuleToRuleset({
   // 6. Actions
   for (const action of sourceActions as Action[]) {
     if (targetIds.actions.has(action.id)) {
-      skippedByConflict.actions = (skippedByConflict.actions ?? 0) + 1;
+      pushSkipped('actions', action.id, action.title);
       continue;
     }
     const newId = crypto.randomUUID();
@@ -421,7 +429,7 @@ export async function addModuleToRuleset({
   // 7. Items
   for (const item of sourceItems as Item[]) {
     if (targetIds.items.has(item.id)) {
-      skippedByConflict.items = (skippedByConflict.items ?? 0) + 1;
+      pushSkipped('items', item.id, item.title);
       continue;
     }
     const newId = crypto.randomUUID();
@@ -447,7 +455,7 @@ export async function addModuleToRuleset({
   // 8. Documents
   for (const document of sourceDocuments as Document[]) {
     if (targetIds.documents.has(document.id)) {
-      skippedByConflict.documents = (skippedByConflict.documents ?? 0) + 1;
+      pushSkipped('documents', document.id, document.title);
       continue;
     }
     const newId = crypto.randomUUID();
@@ -477,7 +485,7 @@ export async function addModuleToRuleset({
   // 9. Scripts
   for (const script of sourceScripts as Script[]) {
     if (targetIds.scripts.has(script.id)) {
-      skippedByConflict.scripts = (skippedByConflict.scripts ?? 0) + 1;
+      pushSkipped('scripts', script.id, script.name);
       continue;
     }
     const newId = crypto.randomUUID();
@@ -516,7 +524,7 @@ export async function addModuleToRuleset({
   // 10. Windows
   for (const window of sourceWindows as Window[]) {
     if (targetIds.windows.has(window.id)) {
-      skippedByConflict.windows = (skippedByConflict.windows ?? 0) + 1;
+      pushSkipped('windows', window.id, (window as { title?: string }).title);
       continue;
     }
     const newId = crypto.randomUUID();
@@ -825,15 +833,16 @@ export async function addModuleToRuleset({
     }
   }
 
-  // Append module to target ruleset's modules list
-  const modules = [
-    ...existingModules,
-    { id: sourceRulesetId, name: moduleName, image: moduleImage },
-  ];
+  // Update ruleset.modules: append if new, or update name/image if refresh
+  const modules = isRefresh
+    ? existingModules.map((m) =>
+        m.id === sourceRulesetId ? { ...m, name: moduleName, image: moduleImage } : m,
+      )
+    : [...existingModules, { id: sourceRulesetId, name: moduleName, image: moduleImage }];
   await db.rulesets.update(targetRulesetId, {
     modules,
     updatedAt: now,
   });
 
-  return { counts, skippedByConflict };
+  return { counts, skippedByConflict, skippedDetails };
 }
