@@ -772,18 +772,8 @@ async function handleExecuteArchetypeEvent(payload: {
       rollFn,
     );
 
-    const script = await db.scripts
-      .where({ entityId: payload.archetypeId, entityType: 'archetype' })
-      .first();
-    const scriptId = script?.id ?? payload.archetypeId;
-
-    await persistScriptLogs(
-      archetype.rulesetId,
-      scriptId,
-      payload.characterId,
-      result.logMessages,
-      'archetype_event',
-    );
+    // Logs are persisted inside EventHandlerExecutor.executeArchetypeEvent so they
+    // appear in useScriptLogs whether the event runs in the worker or on the main thread.
 
     if (result.error || !result.success) {
       sendSignal({

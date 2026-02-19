@@ -423,6 +423,13 @@ export class EventHandlerExecutor {
       );
     }
 
+    await this.persistArchetypeLogs(
+      archetype.rulesetId,
+      script.id,
+      characterId,
+      result.logMessages,
+    );
+
     return {
       success: !result.error,
       value: result.value,
@@ -430,6 +437,43 @@ export class EventHandlerExecutor {
       logMessages: result.logMessages,
       error: result.error,
     };
+  }
+
+  /**
+   * Persist archetype event log messages to scriptLogs so they appear in useScriptLogs.
+   */
+  private async persistArchetypeLogs(
+    rulesetId: string,
+    scriptId: string,
+    characterId: string,
+    logMessages: any[][],
+  ): Promise<void> {
+    if (logMessages.length === 0) return;
+    const now = new Date().toISOString();
+    const timestamp = Date.now();
+    try {
+      for (const args of logMessages) {
+        let argsJson: string;
+        try {
+          argsJson = JSON.stringify(args);
+        } catch {
+          argsJson = JSON.stringify(args.map((a) => String(a)));
+        }
+        await this.db.scriptLogs.add({
+          id: crypto.randomUUID(),
+          rulesetId,
+          scriptId,
+          characterId,
+          argsJson,
+          timestamp,
+          context: 'archetype_event',
+          createdAt: now,
+          updatedAt: now,
+        } as any);
+      }
+    } catch (e) {
+      console.warn('[QBScript] Failed to persist archetype event logs:', e);
+    }
   }
 
   /**
