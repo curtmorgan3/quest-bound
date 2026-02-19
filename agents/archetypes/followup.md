@@ -3,7 +3,6 @@
 ## Archetypes
 
 - in script editor, event fire UI
-- multi-select initial archetype UI with custom load order
 - switcher experience
 
 ## Charts

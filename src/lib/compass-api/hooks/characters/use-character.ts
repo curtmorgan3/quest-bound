@@ -48,29 +48,35 @@ export const useCharacter = (_id?: string) => {
     }
   };
 
-  const createCharacter = async (data: Partial<Character> & { archetypeId?: string }) => {
+  const createCharacter = async (
+    data: Partial<Character> & { archetypeIds?: string[] },
+  ) => {
     if (!data.rulesetId || !currentUser) return;
     const now = new Date().toISOString();
     const rulesetId = data.rulesetId;
 
     try {
-      // Resolve archetype (default if archetypeId omitted)
-      let archetype = data.archetypeId
-        ? await db.archetypes.get(data.archetypeId)
-        : await db.archetypes
-            .where('rulesetId')
-            .equals(rulesetId)
-            .filter((a) => a.isDefault)
-            .first();
-
-      if (!archetype) {
-        archetype = await db.archetypes.where('rulesetId').equals(rulesetId).first();
+      // Resolve archetype IDs: use provided list or fall back to default
+      let archetypeIds: string[] = data.archetypeIds ?? [];
+      if (archetypeIds.length === 0) {
+        const defaultArchetype = await db.archetypes
+          .where('rulesetId')
+          .equals(rulesetId)
+          .filter((a) => a.isDefault)
+          .first();
+        const fallback = defaultArchetype ?? (await db.archetypes.where('rulesetId').equals(rulesetId).first());
+        if (fallback) archetypeIds = [fallback.id];
       }
-      if (!archetype) {
+      if (archetypeIds.length === 0) {
         throw new Error('No archetype found for ruleset');
       }
 
-      const testCharacter = await db.characters.get(archetype.testCharacterId);
+      // Use first archetype for character duplication (template/inventory copy)
+      const firstArchetype = await db.archetypes.get(archetypeIds[0]);
+      if (!firstArchetype) {
+        throw new Error('First archetype not found');
+      }
+      const testCharacter = await db.characters.get(firstArchetype.testCharacterId);
       if (!testCharacter?.inventoryId) {
         throw new Error('Archetype test character has no inventory');
       }
@@ -109,27 +115,33 @@ export const useCharacter = (_id?: string) => {
 
       await duplicateCharacterFromTemplate(testCharacter.id, characterId, inventoryId);
 
-      await db.characterArchetypes.add({
-        id: crypto.randomUUID(),
-        characterId,
-        archetypeId: archetype.id,
-        loadOrder: 0,
-        createdAt: now,
-        updatedAt: now,
-      });
+      // Add CharacterArchetype rows in sorted order
+      for (let i = 0; i < archetypeIds.length; i++) {
+        await db.characterArchetypes.add({
+          id: crypto.randomUUID(),
+          characterId,
+          archetypeId: archetypeIds[i],
+          loadOrder: i,
+          createdAt: now,
+          updatedAt: now,
+        });
+      }
 
       await runInitialAttributeSyncSafe(characterId, rulesetId);
 
-      if (archetype.scriptId) {
-        // This execution runs on the main thread
-        const archetypeResult = await executeArchetypeEvent(
-          db,
-          archetype.id,
-          characterId,
-          'on_add',
-        );
-        if (archetypeResult.error) {
-          console.warn('Archetype on_add script failed:', archetypeResult.error);
+      // Run archetype on_add scripts in sorted order
+      for (const archetypeId of archetypeIds) {
+        const archetype = await db.archetypes.get(archetypeId);
+        if (archetype?.scriptId) {
+          const archetypeResult = await executeArchetypeEvent(
+            db,
+            archetype.id,
+            characterId,
+            'on_add',
+          );
+          if (archetypeResult.error) {
+            console.warn('Archetype on_add script failed:', archetypeResult.error);
+          }
         }
       }
     } catch (e) {
