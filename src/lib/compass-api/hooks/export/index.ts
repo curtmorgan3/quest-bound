@@ -1,4 +1,5 @@
 export * from './add-module-to-ruleset';
+export * from './remove-module-from-ruleset';
 export * from './use-export';
 export * from './use-export-chart';
 export * from './use-export-ruleset';

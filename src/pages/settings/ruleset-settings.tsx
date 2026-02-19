@@ -1,10 +1,34 @@
-import { Button, Checkbox, DescriptionEditor, ImageUpload, Input, Label, Tabs, TabsContent, TabsList, TabsTrigger } from '@/components';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  Button,
+  Checkbox,
+  DescriptionEditor,
+  ImageUpload,
+  Input,
+  Label,
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from '@/components';
 import { RulesetColorPicker } from '@/components/composites/ruleset-color-picker';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useNotifications } from '@/hooks/use-notifications';
 import { useExportRuleset, useFonts, useRulesets } from '@/lib/compass-api';
 import { addModuleToRuleset } from '@/lib/compass-api/hooks/export/add-module-to-ruleset';
+import {
+  getDanglingReferencesForModuleRemoval,
+  removeModuleFromRuleset,
+} from '@/lib/compass-api/hooks/export/remove-module-from-ruleset';
 import type { Ruleset } from '@/types';
+import type { RulesetModuleEntry } from '@/types';
 import { Download, Package, Plus, Trash, Upload } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import type { RGBColor } from 'react-color';
@@ -32,6 +56,19 @@ export const RulesetSettings = ({ activeRuleset }: RulesetSettingsProps) => {
   const { addNotification } = useNotifications();
   const [addingModule, setAddingModule] = useState(false);
   const [addModuleOpen, setAddModuleOpen] = useState(false);
+  const [removeDialogOpen, setRemoveDialogOpen] = useState(false);
+  const [moduleToRemove, setModuleToRemove] = useState<RulesetModuleEntry | null>(null);
+  const [danglingRefs, setDanglingRefs] = useState<{
+    components: number;
+    scripts: number;
+    charts: number;
+    documents: number;
+    windows: number;
+    attributes: number;
+    actions: number;
+    items: number;
+  } | null>(null);
+  const [removingModule, setRemovingModule] = useState(false);
 
   const [title, setTitle] = useState(activeRuleset.title);
   const [version, setVersion] = useState(activeRuleset.version);
@@ -146,6 +183,37 @@ export const RulesetSettings = ({ activeRuleset }: RulesetSettingsProps) => {
 
   const handleIsModuleChange = async (checked: boolean) => {
     await updateRuleset(activeRuleset.id, { isModule: checked });
+  };
+
+  const handleRemoveModuleClick = async (mod: RulesetModuleEntry) => {
+    setModuleToRemove(mod);
+    try {
+      const refs = await getDanglingReferencesForModuleRemoval(activeRuleset.id, mod.id);
+      setDanglingRefs(refs);
+    } catch {
+      setDanglingRefs(null);
+    }
+    setRemoveDialogOpen(true);
+  };
+
+  const handleConfirmRemoveModule = async () => {
+    if (!moduleToRemove) return;
+    setRemovingModule(true);
+    try {
+      await removeModuleFromRuleset({
+        targetRulesetId: activeRuleset.id,
+        moduleIdToRemove: moduleToRemove.id,
+        force: true,
+      });
+      setRemoveDialogOpen(false);
+      setModuleToRemove(null);
+      setDanglingRefs(null);
+      addNotification(`Module "${moduleToRemove.name}" removed.`, { type: 'success' });
+    } catch (e) {
+      addNotification((e as Error).message, { type: 'error' });
+    } finally {
+      setRemovingModule(false);
+    }
   };
 
   return (
@@ -310,7 +378,15 @@ export const RulesetSettings = ({ activeRuleset }: RulesetSettingsProps) => {
                       <Package className='h-4 w-4 text-muted-foreground' />
                     </div>
                   )}
-                  <span className='text-sm font-medium'>{mod.name}</span>
+                  <span className='text-sm font-medium flex-1'>{mod.name}</span>
+                  <Button
+                    variant='ghost'
+                    size='sm'
+                    className='h-8 w-8 p-0 text-muted-foreground hover:text-destructive'
+                    onClick={() => handleRemoveModuleClick(mod)}
+                    aria-label={`Remove module ${mod.name}`}>
+                    <Trash className='h-4 w-4' />
+                  </Button>
                 </div>
               ))
             )}
@@ -352,6 +428,50 @@ export const RulesetSettings = ({ activeRuleset }: RulesetSettingsProps) => {
             </PopoverContent>
           </Popover>
         </div>
+
+        <AlertDialog open={removeDialogOpen} onOpenChange={setRemoveDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Remove module?</AlertDialogTitle>
+              <AlertDialogDescription asChild>
+                <div className='flex flex-col gap-2'>
+                  {moduleToRemove && (
+                    <span>
+                      All content from <strong>{moduleToRemove.name}</strong> will be removed from
+                      this ruleset.
+                    </span>
+                  )}
+                  {danglingRefs &&
+                    (danglingRefs.components > 0 ||
+                      danglingRefs.scripts > 0 ||
+                      danglingRefs.charts > 0 ||
+                      danglingRefs.documents > 0 ||
+                      danglingRefs.windows > 0 ||
+                      danglingRefs.attributes > 0 ||
+                      danglingRefs.actions > 0 ||
+                      danglingRefs.items > 0) && (
+                      <span className='text-destructive font-medium'>
+                        Some of your ruleset content references this module (e.g. attributes,
+                        scripts, components). Those references will break if you remove it.
+                      </span>
+                    )}
+                </div>
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={() => setModuleToRemove(null)}>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={(e) => {
+                  e.preventDefault();
+                  void handleConfirmRemoveModule();
+                }}
+                disabled={removingModule}
+                className='bg-destructive text-destructive-foreground hover:bg-destructive/90'>
+                {removingModule ? 'Removing...' : 'Remove module'}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </TabsContent>
     </Tabs>
   );

@@ -22,6 +22,10 @@ export type Asset = BaseDetails & {
   filename: string;
   rulesetId: string | null; // Nullable for user assets
   directory?: string;
+  /** Module origin: ruleset id, source entity id, and module name. */
+  moduleId?: string;
+  moduleEntityId?: string;
+  moduleName?: string;
 };
 
 export type AttributeType = 'string' | 'number' | 'boolean' | 'list';
@@ -198,6 +202,10 @@ export type Font = BaseDetails & {
   rulesetId: string;
   label: string;
   data: string;
+  /** Module origin: ruleset id, source entity id, and module name. */
+  moduleId?: string;
+  moduleEntityId?: string;
+  moduleName?: string;
 };
 
 export type Item = BaseDetails & {

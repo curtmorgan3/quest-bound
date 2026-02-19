@@ -274,9 +274,12 @@ export async function addModuleToRuleset({
       ...rest,
       id: newId,
       rulesetId: targetRulesetId,
+      moduleId: sourceRulesetId,
+      moduleEntityId: asset.id,
+      moduleName,
       createdAt: now,
       updatedAt: now,
-    } as Asset);
+    } as Asset & { moduleId: string; moduleEntityId: string; moduleName: string });
     counts.assets++;
   }
 
@@ -293,9 +296,12 @@ export async function addModuleToRuleset({
       ...rest,
       id: newId,
       rulesetId: targetRulesetId,
+      moduleId: sourceRulesetId,
+      moduleEntityId: font.id,
+      moduleName,
       createdAt: now,
       updatedAt: now,
-    } as Font);
+    } as Font & { moduleId: string; moduleEntityId: string; moduleName: string });
     counts.fonts++;
   }
 
