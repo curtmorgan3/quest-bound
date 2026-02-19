@@ -1,13 +1,13 @@
 import type { DB } from './types';
+import type { Archetype } from '@/types';
 
 export function registerArchetypeDbHooks(db: DB) {
-  db.archetypes.hook('deleting', (primKey) => {
+  db.archetypes.hook('deleting', (primKey, obj) => {
+    const archetypeId = primKey as string;
+    const testCharacterId = (obj as Archetype | undefined)?.testCharacterId;
+
     setTimeout(async () => {
       try {
-        const archetypeId = primKey as string;
-        const archetype = await db.archetypes.get(archetypeId);
-        if (!archetype) return;
-
         // Delete all CharacterArchetype rows for this archetype
         await db.characterArchetypes.where('archetypeId').equals(archetypeId).delete();
 
@@ -23,9 +23,9 @@ export function registerArchetypeDbHooks(db: DB) {
 
         // Cascade delete test character (and its related entities via character-hooks)
         // Check existence first to avoid errors when ruleset deletion already removed it
-        if (archetype.testCharacterId) {
-          const char = await db.characters.get(archetype.testCharacterId);
-          if (char) await db.characters.delete(archetype.testCharacterId);
+        if (testCharacterId) {
+          const char = await db.characters.get(testCharacterId);
+          if (char) await db.characters.delete(testCharacterId);
         }
       } catch (error) {
         console.error('Failed to clean up archetype deletion:', error);

@@ -17,7 +17,12 @@ export const useArchetypes = (rulesetId: string | undefined) => {
       [rulesetId],
     ) ?? [];
 
-  const createArchetype = async (data: { name: string; description?: string }) => {
+  const createArchetype = async (data: {
+    name: string;
+    description?: string;
+    assetId?: string | null;
+    image?: string | null;
+  }) => {
     if (!rulesetId || !currentUser) return;
     const now = new Date().toISOString();
 
@@ -80,6 +85,8 @@ export const useArchetypes = (rulesetId: string | undefined) => {
         rulesetId,
         name: data.name,
         description: data.description ?? '',
+        assetId: data.assetId ?? null,
+        image: data.image ?? null,
         testCharacterId: characterId,
         isDefault: false,
         loadOrder: maxLoadOrder + 1,

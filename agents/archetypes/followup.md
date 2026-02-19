@@ -7,6 +7,7 @@
 - remove ordering from char arch panel
   - load order only matters if you create a character with multiple archetypes
 - default shouldn't be a surfaced option. Remove it from archetype lists. Only show archetype UI if ruleset has at least one non-default
+- switcher experience
 
 ## Charts
 

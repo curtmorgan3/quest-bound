@@ -42,7 +42,6 @@ describe('Archetypes', () => {
       cy.get('#archetype-desc').type('Melee specialist');
       cy.contains('button', 'Create').click();
 
-      cy.get('[data-testid="archetypes-list"]').should('contain', 'Default');
       cy.get('[data-testid="archetypes-list"]').should('contain', 'Fighter');
 
       cy.visit('/characters');
@@ -104,8 +103,6 @@ describe('Archetypes', () => {
       cy.visit('/rulesets');
       cy.contains('Archetype CRUD Ruleset').parents().find('[data-testid="preview-card-open"]').first().click();
       cy.get('[data-testid="nav-archetypes"]').click();
-
-      cy.get('[data-testid="archetypes-list"]').should('contain', 'Default');
 
       cy.get('[data-testid="archetypes-new-button"]').click();
       cy.get('#archetype-name').type('Rogue');
