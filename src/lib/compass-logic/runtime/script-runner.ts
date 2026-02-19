@@ -9,6 +9,7 @@ import type {
   RollFn,
   Script,
 } from '@/types';
+import { executeArchetypeEvent } from '../reactive/event-handler-executor';
 import { Evaluator } from '../interpreter/evaluator';
 import { Lexer } from '../interpreter/lexer';
 import { Parser } from '../interpreter/parser';
@@ -210,7 +211,7 @@ export class ScriptRunner {
    * Write all pending changes back to the database.
    */
   async flushCache(): Promise<void> {
-    const { db } = this.context;
+    const { db, rulesetId } = this.context;
 
     // Process all pending updates
     for (const [key, value] of this.pendingUpdates.entries()) {
@@ -232,6 +233,56 @@ export class ScriptRunner {
         await db.inventoryItems.update(id, { ...value, updatedAt: now });
       } else if (type === 'inventoryDelete') {
         await db.inventoryItems.delete(id);
+      } else if (type === 'archetypeAdd') {
+        const entries = value as { characterId: string; archetypeName: string }[];
+        for (const { characterId, archetypeName } of entries) {
+          const archetype = await db.archetypes
+            .where({ rulesetId, name: archetypeName })
+            .first();
+          if (!archetype) continue;
+          const existing = await db.characterArchetypes
+            .where('[characterId+archetypeId]')
+            .equals([characterId, archetype.id])
+            .first();
+          if (existing) continue;
+          const maxOrder =
+            (await db.characterArchetypes
+              .where('characterId')
+              .equals(characterId)
+              .sortBy('loadOrder'))
+              .pop()?.loadOrder ?? -1;
+          const now = new Date().toISOString();
+          await db.characterArchetypes.add({
+            id: crypto.randomUUID(),
+            characterId,
+            archetypeId: archetype.id,
+            loadOrder: maxOrder + 1,
+            createdAt: now,
+            updatedAt: now,
+          });
+          const result = await executeArchetypeEvent(db, archetype.id, characterId, 'on_add');
+          if (result.error) {
+            console.warn('Archetype on_add script failed:', result.error);
+          }
+        }
+      } else if (type === 'archetypeRemove') {
+        const entries = value as { characterId: string; archetypeName: string }[];
+        for (const { characterId, archetypeName } of entries) {
+          const archetype = await db.archetypes
+            .where({ rulesetId, name: archetypeName })
+            .first();
+          if (!archetype) continue;
+          const ca = await db.characterArchetypes
+            .where('[characterId+archetypeId]')
+            .equals([characterId, archetype.id])
+            .first();
+          if (!ca) continue;
+          const result = await executeArchetypeEvent(db, archetype.id, characterId, 'on_remove');
+          if (result.error) {
+            console.warn('Archetype on_remove script failed:', result.error);
+          }
+          await db.characterArchetypes.delete(ca.id);
+        }
       }
     }
 

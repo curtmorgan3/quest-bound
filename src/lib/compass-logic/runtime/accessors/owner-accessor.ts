@@ -68,6 +68,43 @@ export class OwnerAccessor implements StructuredCloneSafe {
   }
 
   /**
+   * Get an array of all archetype names on the character.
+   */
+  get archetypes(): string[] {
+    return Array.from(this.archetypeNamesCache);
+  }
+
+  /**
+   * Add an archetype to the character by name. Change is applied when the script finishes.
+   * Updates the in-memory cache immediately so Owner.hasArchetype and Owner.archetypes reflect it for the rest of the script.
+   * @param archetypeName - The name of the ruleset archetype to add
+   */
+  addArchetype(archetypeName: string): void {
+    this.archetypeNamesCache.add(archetypeName);
+    const key = 'archetypeAdd';
+    const existing = this.pendingUpdates.get(key) as
+      | { characterId: string; archetypeName: string }[]
+      | undefined;
+    const entry = { characterId: this.characterId, archetypeName };
+    this.pendingUpdates.set(key, existing ? [...existing, entry] : [entry]);
+  }
+
+  /**
+   * Remove an archetype from the character by name. Change is applied when the script finishes.
+   * Updates the in-memory cache immediately. No-op if the character does not have the archetype.
+   * @param archetypeName - The name of the ruleset archetype to remove
+   */
+  removeArchetype(archetypeName: string): void {
+    this.archetypeNamesCache.delete(archetypeName);
+    const key = 'archetypeRemove';
+    const existing = this.pendingUpdates.get(key) as
+      | { characterId: string; archetypeName: string }[]
+      | undefined;
+    const entry = { characterId: this.characterId, archetypeName };
+    this.pendingUpdates.set(key, existing ? [...existing, entry] : [entry]);
+  }
+
+  /**
    * Get an action reference by title. Returns a proxy with async activate() and deactivate()
    * that run the action's event handlers using the current execution's Owner and Target.
    * @param name - The title/name of the ruleset action
