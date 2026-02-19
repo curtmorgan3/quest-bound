@@ -123,20 +123,16 @@ export function registerRulesetDbHooks(db: DB) {
         }
         // Orphaned pages are cleaned up by rulesetPages.hook('deleting')
 
-        // Find and delete only the test character (not regular characters)
-        const testCharacter = await db.characters
+        // Find and delete all test characters (archetype hooks may have already deleted some)
+        const testCharacters = await db.characters
           .where('rulesetId')
           .equals(rulesetId)
           .filter((c: any) => c.isTestCharacter)
-          .first();
+          .toArray();
 
-        if (testCharacter) {
-          await db.characters.where('id').equals(testCharacter.id).delete();
-          await db.characterAttributes.where('characterId').equals(testCharacter.id).delete();
-          await db.characterPages.where('characterId').equals(testCharacter.id).delete();
-          await db.characterWindows.where('characterId').equals(testCharacter.id).delete();
-          await db.inventories.where('characterId').equals(testCharacter.id).delete();
-          await db.inventoryItems.where('characterId').equals(testCharacter.id).delete();
+        for (const testCharacter of testCharacters) {
+          await db.characters.delete(testCharacter.id);
+          // Character hook cascades to attributes, pages, windows, inventories, inventoryItems
         }
       } catch (error) {
         console.error('Failed to delete associated entities for ruleset:', error);

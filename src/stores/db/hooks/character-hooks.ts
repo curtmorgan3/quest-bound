@@ -95,6 +95,7 @@ export function registerCharacterDbHooks(db: DB) {
     setTimeout(async () => {
       try {
         const characterId = primKey as string;
+        await db.inventoryItems.where('characterId').equals(characterId).delete();
         await db.characterAttributes.where('characterId').equals(characterId).delete();
         await db.characterArchetypes.where('characterId').equals(characterId).delete();
         await db.characterPages.where('characterId').equals(characterId).delete();

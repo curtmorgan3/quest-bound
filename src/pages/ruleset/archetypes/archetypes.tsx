@@ -127,9 +127,12 @@ export const Archetypes = () => {
         </Dialog>
       </div>
 
-      <div className='flex flex-col gap-2'>
+      <div className='flex flex-col gap-2' data-testid='archetypes-list'>
         {archetypes.map((archetype, index) => (
-          <Card key={archetype.id} className='p-4 flex flex-row items-center gap-3'>
+          <Card
+            key={archetype.id}
+            className='p-4 flex flex-row items-center gap-3'
+            data-testid={`archetype-item-${archetype.id}`}>
             <div className='flex flex-col gap-0'>
               <Button
                 variant='ghost'
@@ -203,13 +206,20 @@ export const Archetypes = () => {
                       variant='ghost'
                       size='sm'
                       className='text-destructive'
-                      onClick={() => deleteArchetype(archetype.id)}>
+                      onClick={() => deleteArchetype(archetype.id)}
+                      data-testid='archetype-delete-btn'
+                      aria-label={`Delete ${archetype.name}`}>
                       <Trash2 className='h-4 w-4' />
                     </Button>
                   ) : (
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
-                        <Button variant='ghost' size='sm' className='text-destructive'>
+                        <Button
+                          variant='ghost'
+                          size='sm'
+                          className='text-destructive'
+                          data-testid='archetype-delete-btn'
+                          aria-label={`Delete ${archetype.name}`}>
                           <Trash2 className='h-4 w-4' />
                         </Button>
                       </AlertDialogTrigger>
@@ -223,7 +233,8 @@ export const Archetypes = () => {
                           <AlertDialogCancel>Cancel</AlertDialogCancel>
                           <AlertDialogAction
                             className='bg-destructive text-destructive-foreground'
-                            onClick={() => deleteArchetype(archetype.id)}>
+                            onClick={() => deleteArchetype(archetype.id)}
+                            data-testid='archetype-delete-confirm'>
                             Delete
                           </AlertDialogAction>
                         </AlertDialogFooter>

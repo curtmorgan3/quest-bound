@@ -24,10 +24,27 @@ This document lists all `data-testid` attributes used in the application for tes
 - `nav-characters` - Navigation link to characters section
 - `create-character-button` - Create new character button
 - `create-character-submit` - Submit button in create character dialog
+- `character-archetype-select` - Archetype selector in create character dialog
 - `character-card-name` - Character card name display
 - `character-card` - Character card container
 - `delete-character` - Delete character button
 - `confirm-delete` - Confirm deletion button
+- `nav-character-archetypes` - Archetypes panel button in sidebar
+- `character-archetypes-panel` - Character archetypes sheet panel
+- `character-archetypes-list` - List of archetypes on character
+- `add-archetype-select` - Add archetype dropdown in Archetypes panel
+- `add-archetype-button` - Add first available archetype button
+- `remove-archetype-btn` - Remove archetype from character button
+- `character-archetype-row-{id}` - Row for archetype on character
+
+## Archetypes
+
+- `archetype-switcher` - Archetype switcher in sidebar (ruleset context)
+- `archetypes-new-button` - New archetype button
+- `archetypes-list` - List of archetypes in ruleset
+- `archetype-item-{id}` - Archetype card in management list
+- `archetype-delete-btn` - Delete archetype button
+- `archetype-delete-confirm` - Confirm archetype deletion in dialog
 
 ## Dice Rolling
 
@@ -141,4 +158,4 @@ When adding new data-testid attributes:
 3. Keep the list alphabetically sorted within sections
 4. Update the date below
 
-**Last Updated**: February 12, 2026
+**Last Updated**: February 19, 2026

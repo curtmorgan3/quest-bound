@@ -22,8 +22,10 @@ export function registerArchetypeDbHooks(db: DB) {
         }
 
         // Cascade delete test character (and its related entities via character-hooks)
+        // Check existence first to avoid errors when ruleset deletion already removed it
         if (archetype.testCharacterId) {
-          await db.characters.delete(archetype.testCharacterId);
+          const char = await db.characters.get(archetype.testCharacterId);
+          if (char) await db.characters.delete(archetype.testCharacterId);
         }
       } catch (error) {
         console.error('Failed to clean up archetype deletion:', error);

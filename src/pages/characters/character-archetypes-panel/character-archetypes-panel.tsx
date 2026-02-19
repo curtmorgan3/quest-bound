@@ -67,7 +67,7 @@ export const CharacterArchetypesPanel = ({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side='left' className='flex flex-col p-[8px]'>
+      <SheetContent side='left' className='flex flex-col p-[8px]' data-testid='character-archetypes-panel'>
         <SheetHeader>
           <SheetTitle>Character Archetypes</SheetTitle>
           <SheetDescription>
@@ -117,7 +117,7 @@ export const CharacterArchetypesPanel = ({
             )}
           </div>
         ) : (
-          <div className='flex-1 min-h-0 overflow-auto flex flex-col gap-2 mt-4'>
+          <div className='flex-1 min-h-0 overflow-auto flex flex-col gap-2 mt-4' data-testid='character-archetypes-list'>
             {characterArchetypes.map((ca, index) => (
               <ArchetypeRow
                 key={ca.id}
@@ -152,7 +152,9 @@ function ArchetypeRow({
   onRemove: () => void;
 }) {
   return (
-    <div className='flex items-center gap-2 p-3 rounded-md border bg-card'>
+    <div
+      className='flex items-center gap-2 p-3 rounded-md border bg-card'
+      data-testid={`character-archetype-row-${ca.archetype.id}`}>
       <div className='flex flex-col gap-0 shrink-0'>
         <Button
           variant='ghost'
@@ -178,7 +180,13 @@ function ArchetypeRow({
           <p className='text-sm text-muted-foreground truncate'>{ca.archetype.description}</p>
         )}
       </div>
-      <Button variant='ghost' size='icon' className='shrink-0 text-destructive' onClick={onRemove}>
+      <Button
+        variant='ghost'
+        size='icon'
+        className='shrink-0 text-destructive'
+        onClick={onRemove}
+        data-testid='remove-archetype-btn'
+        aria-label={`Remove ${ca.archetype.name}`}>
         <Trash2 className='h-4 w-4' />
       </Button>
     </div>

@@ -212,7 +212,8 @@ export const Rulesets = () => {
             className='gap-2 w-[50px]'
             variant='outline'
             disabled={isImporting}
-            onClick={handleImport}>
+            onClick={handleImport}
+            data-testid='import-ruleset-button'>
             {isImporting ? (
               <Upload className='h-4 w-4 animate-pulse' />
             ) : (
