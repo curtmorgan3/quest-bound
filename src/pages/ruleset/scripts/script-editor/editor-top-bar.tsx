@@ -26,6 +26,7 @@ const ENTITY_TYPES = [
   { value: 'attribute', label: 'Attribute' },
   { value: 'action', label: 'Action' },
   { value: 'item', label: 'Item' },
+  { value: 'archetype', label: 'Archetype' },
   { value: 'global', label: 'Global' },
 ] as const;
 
@@ -33,7 +34,9 @@ interface EditorTopBar {
   name: string;
   setName: (name: string) => void;
   entityType: Script['entityType'];
-  setEntityType: Dispatch<SetStateAction<'attribute' | 'action' | 'item' | 'global'>>;
+  setEntityType: Dispatch<
+    SetStateAction<'attribute' | 'action' | 'item' | 'archetype' | 'global'>
+  >;
   entityId: string | null;
   setEntityId: (id: string | null) => void;
   category: string | null;

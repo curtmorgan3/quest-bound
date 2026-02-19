@@ -5,13 +5,15 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useActiveRuleset } from '../rulesets/use-active-ruleset';
 
-function getEntityTable(entityType: 'attribute' | 'action' | 'item' | 'global') {
+function getEntityTable(entityType: 'attribute' | 'action' | 'item' | 'archetype' | 'global') {
   if (entityType === 'global') return;
   return entityType === 'attribute'
     ? db.attributes
     : entityType === 'action'
       ? db.actions
-      : db.items;
+      : entityType === 'item'
+        ? db.items
+        : db.archetypes;
 }
 
 export const useScripts = () => {

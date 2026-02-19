@@ -14,6 +14,7 @@ export const dbSchema = {
   pages: `${common}, label, category, moduleId`,
   components: `${common}, rulesetId, windowId, type, x, y, z, height, width, rotation, selected, assetId, assetUrl, groupId, attributeId, actionId, data, style`,
   characters: `${common}, rulesetId, userId, assetId, image, moduleId`,
+  archetypes: `${common}, rulesetId, name, description, assetId, image, scriptId, testCharacterId, isDefault, loadOrder, moduleId`,
   inventories: `${common}, rulesetId, characterId, title, category, type`,
   inventoryItems: `${common}, characterId, inventoryId, entityId, quantity`,
   rulesetPages: `${common}, rulesetId, pageId, [rulesetId+pageId]`,
@@ -21,6 +22,7 @@ export const dbSchema = {
   characterWindows: `${common}, characterId, characterPageId, windowId, title, x, y, isCollapsed, moduleId`,
   rulesetWindows: `${common}, rulesetId, rulesetPageId, windowId, title, x, y, isCollapsed, moduleId`,
   characterAttributes: `${common}, characterId, attributeId, &[characterId+attributeId], scriptDisabled`,
+  characterArchetypes: `${common}, characterId, archetypeId, loadOrder, &[characterId+archetypeId]`,
   diceRolls: `${common}, rulesetId, userId, value, label, moduleId`,
   scripts: `${common}, rulesetId, name, entityType, entityId, isGlobal, enabled, category, moduleId, [entityId+entityType]`,
   scriptErrors: `${common}, rulesetId, scriptId, characterId, timestamp`,
@@ -29,4 +31,4 @@ export const dbSchema = {
 };
 
 // Increment on every schema change
-export const dbSchemaVersion = 30;
+export const dbSchemaVersion = 31;

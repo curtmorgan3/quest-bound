@@ -1,9 +1,11 @@
 import type {
   Action,
+  Archetype,
   Asset,
   Attribute,
   Character,
   CharacterAttribute,
+  CharacterArchetype,
   CharacterPage,
   CharacterWindow,
   Chart,
@@ -61,6 +63,8 @@ const db = new Dexie('qbdb') as Dexie & {
   scriptErrors: EntityTable<ScriptError, 'id'>;
   scriptLogs: EntityTable<ScriptLog, 'id'>;
   dependencyGraphNodes: EntityTable<DependencyGraphNode, 'id'>;
+  archetypes: EntityTable<Archetype, 'id'>;
+  characterArchetypes: EntityTable<CharacterArchetype, 'id'>;
 };
 
 db.version(dbSchemaVersion).stores(dbSchema);

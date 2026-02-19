@@ -5,6 +5,7 @@ export type DB = Dexie & {
   attributes: Dexie.Table;
   items: Dexie.Table;
   actions: Dexie.Table;
+  archetypes: Dexie.Table;
   charts: Dexie.Table;
   assets: Dexie.Table;
   windows: Dexie.Table;
@@ -12,6 +13,7 @@ export type DB = Dexie & {
   components: Dexie.Table;
   fonts: Dexie.Table;
   characters: Dexie.Table;
+  characterArchetypes: Dexie.Table;
   inventories: Dexie.Table;
   inventoryItems: Dexie.Table;
   characterAttributes: Dexie.Table;

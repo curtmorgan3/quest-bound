@@ -21,7 +21,7 @@ export interface ScriptMetadata {
   id: string;
   name: string;
   file: string; // Relative path to the .qbs file
-  entityType: 'attribute' | 'action' | 'item' | 'global';
+  entityType: 'attribute' | 'action' | 'item' | 'archetype' | 'global';
   entityId: string | null;
   entityName: string | null; // Name of the associated entity (for re-linking on import)
   isGlobal: boolean;

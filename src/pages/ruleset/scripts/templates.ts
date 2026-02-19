@@ -54,4 +54,8 @@ on_consume():
 // Accessible to all scripts. Use as a library of utility functions.
 // Global scripts are loaded in alphabetical order.
 `,
+  archetype: `
+// Archetype scripts run for archetype-specific logic.
+// Use this to configure starting attributes, items, or other behaviors for this archetype.
+`,
 };

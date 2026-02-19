@@ -97,6 +97,28 @@ export type CharacterAttribute = Attribute & {
   scriptDisabled?: boolean; // NEW: Player has overridden the computed value
 };
 
+export type Archetype = BaseDetails & {
+  rulesetId: string;
+  name: string;
+  description: string;
+  assetId?: string | null;
+  image?: string | null;
+  scriptId?: string | null;
+  testCharacterId: string;
+  isDefault: boolean;
+  loadOrder: number;
+  /** Module origin: ruleset id, source entity id, and module name. */
+  moduleId?: string;
+  moduleEntityId?: string;
+  moduleName?: string;
+};
+
+export type CharacterArchetype = BaseDetails & {
+  characterId: string;
+  archetypeId: string;
+  loadOrder: number;
+};
+
 export type Page = BaseDetails & {
   label: string;
   category?: string;
@@ -298,7 +320,7 @@ export type Script = BaseDetails & {
   rulesetId: string; // Which ruleset this script belongs to
   name: string; // Script name (e.g., "hit_points", "cast_fireball")
   sourceCode: string; // Full QBScript source code
-  entityType: 'attribute' | 'action' | 'item' | 'global';
+  entityType: 'attribute' | 'action' | 'item' | 'archetype' | 'global';
   entityId: string | null; // ID of associated entity (null for global scripts)
   isGlobal: boolean; // Whether this is a global utility script
   enabled: boolean; // Allow disabling scripts without deleting
@@ -332,7 +354,7 @@ export type ScriptLog = BaseDetails & {
 export type DependencyGraphNode = BaseDetails & {
   rulesetId: string; // Which ruleset this node belongs to
   scriptId: string; // Script that this node represents
-  entityType: 'attribute' | 'action' | 'item' | 'global';
+  entityType: 'attribute' | 'action' | 'item' | 'archetype' | 'global';
   entityId: string | null; // ID of associated entity
   dependencies: string[]; // Array of attribute IDs this script depends on
   dependents: string[]; // Array of script IDs that depend on this script's entity

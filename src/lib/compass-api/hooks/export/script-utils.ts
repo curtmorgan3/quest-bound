@@ -34,7 +34,7 @@ export function sanitizeFileName(name: string): string {
  * Returns: { entityType: 'attribute', name: 'hit_points' }
  */
 export function parseScriptPath(path: string): {
-  entityType: 'attribute' | 'action' | 'item' | 'global';
+  entityType: 'attribute' | 'action' | 'item' | 'archetype' | 'global';
   name: string;
 } | null {
   // Remove leading/trailing slashes and normalize
@@ -50,7 +50,7 @@ export function parseScriptPath(path: string): {
   const [, typeFolder, filename] = match;
 
   // Map folder names to entity types
-  let entityType: 'attribute' | 'action' | 'item' | 'global';
+  let entityType: 'attribute' | 'action' | 'item' | 'archetype' | 'global';
   switch (typeFolder) {
     case 'attributes':
       entityType = 'attribute';
@@ -60,6 +60,9 @@ export function parseScriptPath(path: string): {
       break;
     case 'items':
       entityType = 'item';
+      break;
+    case 'archetypes':
+      entityType = 'archetype';
       break;
     case 'global':
       entityType = 'global';
@@ -80,7 +83,7 @@ export function parseScriptPath(path: string): {
  * Returns: scripts/attributes/max_hit_points.qbs
  */
 export function generateScriptPath(
-  entityType: 'attribute' | 'action' | 'item' | 'global',
+  entityType: 'attribute' | 'action' | 'item' | 'archetype' | 'global',
   name: string,
 ): string {
   const sanitizedName = sanitizeFileName(name);
@@ -96,6 +99,9 @@ export function generateScriptPath(
       break;
     case 'item':
       folderName = 'items';
+      break;
+    case 'archetype':
+      folderName = 'archetypes';
       break;
     case 'global':
       folderName = 'global';
@@ -124,8 +130,10 @@ export function validateScriptForExport(script: Script): string[] {
     errors.push(`Script ${script.id}: sourceCode cannot be empty`);
   }
 
-  if (!['attribute', 'action', 'item', 'global'].includes(script.entityType)) {
-    errors.push(`Script ${script.id}: entityType must be one of: attribute, action, item, global`);
+  if (!['attribute', 'action', 'item', 'archetype', 'global'].includes(script.entityType)) {
+    errors.push(
+      `Script ${script.id}: entityType must be one of: attribute, action, item, archetype, global`,
+    );
   }
 
   if (!script.isGlobal && !script.entityId) {

@@ -30,7 +30,7 @@ export interface ScriptImportResult {
  */
 export async function linkScriptToEntity(
   rulesetId: string,
-  entityType: 'attribute' | 'action' | 'item' | 'global',
+  entityType: 'attribute' | 'action' | 'item' | 'archetype' | 'global',
   entityName: string,
 ): Promise<string | null> {
   if (entityType === 'global') {
@@ -61,6 +61,14 @@ export async function linkScriptToEntity(
           .where('rulesetId')
           .equals(rulesetId)
           .and((item) => item.title === entityName)
+          .first();
+        return entity?.id || null;
+      }
+      case 'archetype': {
+        const entity = await db.archetypes
+          .where('rulesetId')
+          .equals(rulesetId)
+          .and((archetype) => archetype.name === entityName)
           .first();
         return entity?.id || null;
       }
