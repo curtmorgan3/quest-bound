@@ -3,13 +3,21 @@ import type { Tutorial } from '@/types';
 
 export const onboardingTutorial: Tutorial = [
   {
-    title: 'Ruleset',
+    title: 'Welcome to Quest Bound!',
     substeps: [
+      {
+        description:
+          'This tutorial will walk you through creating a basic ruleset. You can run this tutorial any time from user settings',
+      },
       {
         description: 'Go to the Rulesets page to see and manage your rulesets.',
         selector: { selector: '[data-testid="nav-rulesets"]', shouldAdvanceOnClick: true },
-        ctas: [{ label: 'Go to Rulesets', action: { type: 'link', href: '/rulesets' } }],
       },
+    ],
+  },
+  {
+    title: 'Ruleset',
+    substeps: [
       {
         description: 'Create a new ruleset by clicking Create New',
         selector: { selector: '[data-testid="create-ruleset-button"]', shouldAdvanceOnClick: true },
