@@ -4,6 +4,7 @@ import { useCharacter, useCharacterAttributes } from '@/lib/compass-api';
 import { useExecuteActionEvent, useScriptAnnouncements } from '@/lib/compass-logic';
 import { SheetViewer } from '@/lib/compass-planes';
 import {
+  CharacterArchetypesPanelContext,
   CharacterInventoryPanelContext,
   CharacterProvider,
   DiceContext,
@@ -12,6 +13,7 @@ import {
 import { type CharacterAttribute } from '@/types';
 import { useContext, useState } from 'react';
 import { useParams } from 'react-router-dom';
+import { CharacterArchetypesPanel } from './character-archetypes-panel';
 import { CharacterInventoryPanel } from './character-inventory-panel';
 import { GameLog } from './game-log';
 import {
@@ -26,6 +28,7 @@ export const CharacterPage = ({ id, lockByDefault }: { id?: string; lockByDefaul
   const { characterId } = useParams<{ characterId: string }>();
   const { addNotification } = useNotifications();
   const characterInventoryPanel = useContext(CharacterInventoryPanelContext);
+  const characterArchetypesPanel = useContext(CharacterArchetypesPanelContext);
 
   const { rollDice } = useContext(DiceContext);
   const roll = async (diceString: string) => rollDice(diceString).then((res) => res.total);
@@ -130,6 +133,12 @@ export const CharacterPage = ({ id, lockByDefault }: { id?: string; lockByDefaul
         <CharacterInventoryPanel
           open={characterInventoryPanel.open}
           onOpenChange={characterInventoryPanel.setOpen}
+        />
+      )}
+      {characterArchetypesPanel && (
+        <CharacterArchetypesPanel
+          open={characterArchetypesPanel.open}
+          onOpenChange={characterArchetypesPanel.setOpen}
         />
       )}
     </CharacterProvider>

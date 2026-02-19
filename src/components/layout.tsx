@@ -5,6 +5,7 @@ import { useFontLoader, useUsers } from '@/lib/compass-api';
 import { SignIn } from '@/pages';
 import { DicePanel } from '@/pages/dice';
 import {
+  CharacterArchetypesPanelContext,
   CharacterInventoryPanelContext,
   DiceProvider,
   useDiceState,
@@ -44,6 +45,7 @@ export function Layout() {
   useFontLoader();
 
   const [characterInventoryPanelOpen, setCharacterInventoryPanelOpen] = useState(false);
+  const [characterArchetypesPanelOpen, setCharacterArchetypesPanelOpen] = useState(false);
 
   return loading ? (
     <Loading />
@@ -59,6 +61,11 @@ export function Layout() {
           open: characterInventoryPanelOpen,
           setOpen: setCharacterInventoryPanelOpen,
         }}>
+        <CharacterArchetypesPanelContext.Provider
+          value={{
+            open: characterArchetypesPanelOpen,
+            setOpen: setCharacterArchetypesPanelOpen,
+          }}>
         <DiceProvider value={diceState}>
           {currentUser && showOnboarding && (
             <OnboardingPanel
@@ -93,6 +100,7 @@ export function Layout() {
             }}></canvas>
           <Toaster />
         </DiceProvider>
+        </CharacterArchetypesPanelContext.Provider>
       </CharacterInventoryPanelContext.Provider>
     </SidebarProvider>
   );

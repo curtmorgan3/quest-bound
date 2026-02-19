@@ -10,6 +10,7 @@ import {
   Handbag,
   HandFist,
   HelpCircle,
+  Layers,
   LayoutTemplate,
   Newspaper,
   Pin,
@@ -44,7 +45,11 @@ import {
   useUsers,
 } from '@/lib/compass-api';
 import { Settings } from '@/pages';
-import { CharacterInventoryPanelContext, DiceContext } from '@/stores';
+import {
+  CharacterArchetypesPanelContext,
+  CharacterInventoryPanelContext,
+  DiceContext,
+} from '@/stores';
 import { useContext, useEffect } from 'react';
 import { Link, useLocation, useParams } from 'react-router-dom';
 import {
@@ -76,6 +81,7 @@ export function AppSidebar() {
   const { rulesetId, characterId } = useParams();
   const location = useLocation();
   const characterInventoryPanel = useContext(CharacterInventoryPanelContext);
+  const characterArchetypesPanel = useContext(CharacterArchetypesPanelContext);
   const { documentId, chartId } = useParams<{ documentId?: string; chartId?: string }>();
   const isHomepage = location.pathname === '/rulesets' || location.pathname === '/characters';
   const isViewingDocument = !!documentId && location.pathname.includes('/documents/');
@@ -505,6 +511,16 @@ export function AppSidebar() {
                       data-testid='nav-character-inventory'>
                       <Handbag className='w-4 h-4' />
                       <span>Inventory</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                )}
+                {character && characterArchetypesPanel && (
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      onClick={() => characterArchetypesPanel.setOpen(true)}
+                      data-testid='nav-character-archetypes'>
+                      <Layers className='w-4 h-4' />
+                      <span>Archetypes</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 )}
