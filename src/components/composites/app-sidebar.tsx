@@ -437,7 +437,7 @@ export function AppSidebar() {
               <>
                 <SidebarMenuItem>
                   <SidebarMenuButton asChild>
-                    <Link to='/rulesets'>
+                    <Link to='/rulesets' data-testid='nav-open'>
                       <FolderOpen />
                       <span>Open</span>
                     </Link>

@@ -32,11 +32,11 @@ export const onboardingTutorial: Tutorial = [
       {
         description:
           'With a ruleset open, go to the Attributes page from the sidebar. Then click "New" to create an attribute.',
-        selector: { selector: '#create-button', shouldAdvanceOnClick: true },
+        selector: { selector: '[data-testid="ruleset-new-button"]', shouldAdvanceOnClick: true },
       },
       {
         description:
-          'Enter the title "health". Set Default to 0, Min to 0, and Max to 10. Click create',
+          'Enter the title "health". Set Default to 10, Min to 0, and Max to 10. Click create',
         selector: {
           selector:
             '#create-title, #create-default, #create-min, #create-max, [data-testid="base-create-submit"]',
@@ -131,11 +131,10 @@ export const onboardingTutorial: Tutorial = [
           shouldAdvanceOnClick: true,
         },
       },
+
       {
-        description: 'Click the input you added to select it.',
-      },
-      {
-        description: 'In the right-hand panel, click the "Data" tab.',
+        description:
+          'Click the input you added to select it. In the right-hand panel, click the "Data" tab.',
         selector: {
           selector: '[data-testid="component-edit-tab-data"]',
           shouldAdvanceOnClick: true,
@@ -188,10 +187,11 @@ export const onboardingTutorial: Tutorial = [
         },
       },
       {
-        description: 'Click the text you added to select it.',
+        description: 'Double click the text to change its content to Take Damage',
       },
       {
-        description: 'In the right-hand panel, click the "Data" tab.',
+        description:
+          'Click the Take Damage text to select it. In the right-hand panel, click the "Data" tab.',
         selector: {
           selector: '[data-testid="component-edit-tab-data"]',
           shouldAdvanceOnClick: true,
@@ -214,10 +214,8 @@ export const onboardingTutorial: Tutorial = [
         },
       },
       {
-        description: 'Click the inventory you added to select it.',
-      },
-      {
-        description: 'In the right-hand panel, click the "Data" tab.',
+        description:
+          'Click the inventory you added to select it. In the right-hand panel, click the "Data" tab.',
         selector: {
           selector: '[data-testid="component-edit-tab-data"]',
           shouldAdvanceOnClick: true,
@@ -314,10 +312,9 @@ export const onboardingTutorial: Tutorial = [
       },
       {
         description: `
-        Copy and paste the following QBScript code into the editor:
+        Clear the editor, then copy and paste the following QBScript code:
         on_activate():
-            health = getAttr('Health')
-            health.subtract(2)
+            Owner.Attribute('Health').subtract(10)
         `,
         selector: {
           selector: '[data-testid="script-editor-save"]',
@@ -349,15 +346,90 @@ export const onboardingTutorial: Tutorial = [
       },
       {
         description: `
-        Copy paste the following QBScript code in the editor:
+        Clear the editor, then opy paste the following QBScript code:
         on_consume():
-            health = getAttr('Health')
-            health.add(2)
+            Owner.Attribute('Health').add(10)
         `,
         selector: {
           selector: '[data-testid="script-editor-save"]',
           shouldAdvanceOnClick: true,
         },
+      },
+    ],
+  },
+  {
+    title: 'Characters',
+    substeps: [
+      {
+        description: 'In the sidebar, click "Open" to go to the home menu.',
+        selector: {
+          selector: '[data-testid="nav-open"]',
+          shouldAdvanceOnClick: true,
+        },
+      },
+      {
+        description: 'Click "Characters" to go to the Characters page.',
+        selector: {
+          selector: '[data-testid="nav-characters"]',
+          shouldAdvanceOnClick: true,
+        },
+      },
+      {
+        description: 'Click "Create New" to open the new character dialog.',
+        selector: {
+          selector: '[data-testid="create-character-button"]',
+          shouldAdvanceOnClick: true,
+        },
+      },
+      {
+        description:
+          'Enter a character name, then select your ruleset from the dropdown and click Create.',
+        selector: {
+          selector:
+            '#character-name, [data-testid="character-ruleset-select"], [data-testid="create-character-submit"]',
+          shouldAdvanceOnClick: false,
+        },
+      },
+      {
+        description: 'Click "Open" on your character to open the character sheet.',
+        selector: {
+          selector:
+            '[data-testid="character-card"]:first-of-type [data-testid="character-card-open"]',
+          shouldAdvanceOnClick: true,
+        },
+      },
+      {
+        description:
+          'On the character sheet, click the Take Damage action. See how the health value dropped by 10?',
+        selector: {
+          selector: '[data-action-title="Take Damage"]',
+          shouldAdvanceOnClick: true,
+        },
+      },
+      {
+        description:
+          'Double-click the inventory grid to open the add panel, then click "Potion" to add it to the grid.',
+        selector: {
+          selector: '[data-testid="inventory-grid"], [data-entry-title="Potion"]',
+          shouldAdvanceOnClick: true,
+        },
+      },
+      {
+        description: 'Click the potion to open its menu',
+        selector: {
+          selector: '[data-item-title="Potion"]',
+          shouldAdvanceOnClick: true,
+        },
+      },
+      {
+        description: 'Consume the potion to restore health.',
+        selector: {
+          selector: '[data-testid="item-context-menu-consume"]',
+          shouldAdvanceOnClick: true,
+        },
+      },
+      {
+        description: 'End',
       },
     ],
   },

@@ -465,6 +465,7 @@ export const ViewInventoryNode = ({ component }: { component: Component }) => {
     <>
       <div
         ref={containerRef}
+        data-testid='inventory-grid'
         onDoubleClick={handleOpenInventory}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
@@ -489,6 +490,7 @@ export const ViewInventoryNode = ({ component }: { component: Component }) => {
           return (
             <div
               key={invItem.id}
+              data-item-title={invItem.title}
               onDoubleClick={(e) => e.stopPropagation()}
               onClick={(e) => handleItemClick(e, invItem)}
               onPointerDown={(e) => handlePointerDown(e, invItem)}

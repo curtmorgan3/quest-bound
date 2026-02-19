@@ -402,14 +402,13 @@ export const ItemContextMenu = ({
         )}
 
         {item.isConsumable && !!onConsume && (
-          <div style={{ marginBottom: 12 }}>
-            <Drumstick
-              onClick={handleConsume}
-              onPointerDown={(e) => e.stopPropagation()}
-              size={18}
-              className='clickable'
-              style={{ color: '#999' }}
-            />
+          <div
+            role='button'
+            style={{ marginBottom: 12 }}
+            data-testid='item-context-menu-consume'
+            onClick={handleConsume}
+            onPointerDown={(e) => e.stopPropagation()}>
+            <Drumstick size={18} className='clickable' style={{ color: '#999' }} />
           </div>
         )}
       </div>

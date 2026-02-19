@@ -146,7 +146,7 @@ export const Characters = () => {
                   Ruleset <span className='text-destructive'>*</span>
                 </Label>
                 <Select value={rulesetId} onValueChange={setRulesetId}>
-                  <SelectTrigger id='character-ruleset' className='w-full'>
+                  <SelectTrigger id='character-ruleset' className='w-full' data-testid='character-ruleset-select'>
                     <SelectValue placeholder='Select a ruleset' />
                   </SelectTrigger>
                   <SelectContent>
@@ -196,7 +196,10 @@ export const Characters = () => {
           const rulesetTitle = getRulesetTitle(character.rulesetId);
 
           return (
-            <Card key={character.id} className='flex flex-row overflow-hidden p-0 h-32 min-h-32'>
+            <Card
+              key={character.id}
+              className='flex flex-row overflow-hidden p-0 h-32 min-h-32'
+              data-testid='character-card'>
               <div
                 className='w-40 shrink-0 bg-muted bg-cover bg-center'
                 style={
@@ -258,7 +261,8 @@ export const Characters = () => {
                   <Button
                     variant='link'
                     size='sm'
-                    onClick={() => navigate(`/characters/${character.id}`)}>
+                    onClick={() => navigate(`/characters/${character.id}`)}
+                    data-testid='character-card-open'>
                     Open
                   </Button>
                 </div>

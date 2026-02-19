@@ -59,7 +59,8 @@ function EntryRow({
     <button
       type='button'
       onClick={() => onSelect(entry, entryType)}
-      className='w-full text-left px-2 py-1.5 rounded-md text-sm hover:bg-accent hover:text-accent-foreground transition-colors flex items-center gap-2'>
+      className='w-full text-left px-2 py-1.5 rounded-md text-sm hover:bg-accent hover:text-accent-foreground transition-colors flex items-center gap-2'
+      data-entry-title={entry.title}>
       <Avatar className='h-8 w-8 rounded-md shrink-0'>
         {image ? (
           <AvatarImage src={image} alt={entry.title} className='object-cover' />

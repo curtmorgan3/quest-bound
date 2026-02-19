@@ -23,8 +23,11 @@ export const NodeActionCaller = ({ children, component, style }: NodeActionCalle
   return (
     <div
       style={style}
+      role={action ? 'button' : undefined}
       onClick={action ? handleClick : undefined}
-      className={action ? 'clickable' : ''}>
+      className={action ? 'clickable' : ''}
+      data-action-id={action?.id}
+      data-action-title={action?.title}>
       {children}
     </div>
   );
