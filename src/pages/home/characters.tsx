@@ -31,8 +31,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useAssets, useCharacter, useRulesets } from '@/lib/compass-api';
-import type { Archetype } from '@/types';
 import { db } from '@/stores';
+import type { Archetype } from '@/types';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -59,6 +59,7 @@ export const Characters = () => {
       [rulesetId],
     ) ?? [];
 
+  const selectableArchetypes = archetypes.filter((a) => !a.isDefault);
   const defaultArchetype = archetypes.find((a) => a.isDefault) ?? archetypes[0];
 
   // Track the assetId to clean up if dialog is cancelled
@@ -169,7 +170,10 @@ export const Characters = () => {
                   Ruleset <span className='text-destructive'>*</span>
                 </Label>
                 <Select value={rulesetId} onValueChange={handleRulesetChange}>
-                  <SelectTrigger id='character-ruleset' className='w-full' data-testid='character-ruleset-select'>
+                  <SelectTrigger
+                    id='character-ruleset'
+                    className='w-full'
+                    data-testid='character-ruleset-select'>
                     <SelectValue placeholder='Select a ruleset' />
                   </SelectTrigger>
                   <SelectContent>
@@ -187,28 +191,22 @@ export const Characters = () => {
                   </SelectContent>
                 </Select>
               </div>
-              {rulesetId && (
+              {rulesetId && selectableArchetypes.length > 0 && (
                 <div className='grid gap-3'>
                   <Label htmlFor='character-archetype'>Archetype</Label>
-                  <Select
-                    value={archetypeId || defaultArchetype?.id || ''}
-                    onValueChange={setArchetypeId}>
-                    <SelectTrigger id='character-archetype' className='w-full' data-testid='character-archetype-select'>
-                      <SelectValue placeholder='Select archetype (default used if omitted)' />
+                  <Select value={archetypeId || ''} onValueChange={setArchetypeId}>
+                    <SelectTrigger
+                      id='character-archetype'
+                      className='w-full'
+                      data-testid='character-archetype-select'>
+                      <SelectValue placeholder='Select archetype' />
                     </SelectTrigger>
                     <SelectContent>
-                      {archetypes.length === 0 ? (
-                        <SelectItem value='_none' disabled>
-                          No archetypes available
+                      {selectableArchetypes.map((archetype) => (
+                        <SelectItem key={archetype.id} value={archetype.id}>
+                          {archetype.name}
                         </SelectItem>
-                      ) : (
-                        archetypes.map((archetype) => (
-                          <SelectItem key={archetype.id} value={archetype.id}>
-                            {archetype.name}
-                            {archetype.isDefault ? ' (default)' : ''}
-                          </SelectItem>
-                        ))
-                      )}
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -251,9 +249,7 @@ export const Characters = () => {
               data-testid='character-card'>
               <div
                 className='w-40 shrink-0 bg-muted bg-cover bg-center'
-                style={
-                  character.image ? { backgroundImage: `url(${character.image})` } : undefined
-                }
+                style={character.image ? { backgroundImage: `url(${character.image})` } : undefined}
               />
               <div className='flex min-w-0 flex-1 flex-col justify-between p-4'>
                 <div className='min-w-0'>
