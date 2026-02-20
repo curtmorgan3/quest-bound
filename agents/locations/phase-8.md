@@ -1,98 +1,114 @@
-# Phase 8: Player experience (later)
+# Phase 8: Campaign editor and play campaign
 
-**Goal:** Players can enter a world with a character, view their current location (grid with characters, items, and tile actions), move between locations, and interact with tiles (run actions, view items/characters). Easy navigation between character sheet and location view. This phase is documented for later implementation; not part of the initial creator-focused v1.
+**Goal:** CampaignEditor lets the creator place CampaignCharacters, CampaignItems, and CampaignEvents per location (using WorldViewer and LocationViewer for navigation). Play campaign lets a player select a character in the campaign and view the world/location with campaign characters, items, and events; link to character sheet.
 
-**Depends on:** All previous phases. Character and location data are in place; world and location editors exist for creators.
+**Depends on:** Phase 7. Campaign model, hooks, campaign creation, WorldViewer, and LocationViewer exist. World and location editors remain for world-building only (no placement there).
 
-**Reference:** [locations.md](./locations.md), [worlds-plan.md](./worlds-plan.md). Player experience is described in locations.md under "Player Experience."
-
----
-
-## Current design notes (alignment)
-
-- **Routes:** World editor: `/worlds/:worldId`; location editor: `/worlds/:worldId/locations/:locationId`. For player experience, add a player-facing route such as `/characters/:characterId/location` or `/worlds/:worldId/play` (with character in context). Character sheet: `/characters/:characterId` (and ruleset context may use `/rulesets/:rulesetId/characters/:characterId`).
-- **Location:** Has `hasMap`, `tileRenderSize`, `tiles` (TileData[]). TileData has id, zIndex, actionId, isPassable. Multiple TileData per cell (layers); render using location.tileRenderSize. No world-level background in the current editor; location has background image/opacity as needed.
-- **Data:** Character has worldId, locationId, tileId (TileData.id). LocationItem has worldId, locationId, tileId. Use useLocation, useWorld, useLocationItems(worldId, locationId), useCharacter; resolve actions by actionId (ruleset action).
-- **Hooks:** useCharacter, useLocation, useLocations, useWorld, useLocationItems, useAssets (for rulesetId), action execution via existing ruleset/action APIs.
+**Reference:** [locations.md](./locations.md), [adjustments.md](./adjustments.md). Placement is campaign-scoped. CampaignEvent has one scriptId; CampaignEventLocation links events to locations; events surface as buttons on locations in a campaign.
 
 ---
 
-## Overview (for future implementation)
+## Design summary
 
-### 8.1 Enter world and set character location
-
-- Entry point: from character sheet or home, "Enter world" (or similar) with a character. Set character's worldId, locationId, tileId to a default or chosen location/tile (e.g. first location in world, or a "spawn" location).
-- Persist via updateCharacter so the character "remembers" position across sessions.
-
-### 8.2 Location viewer (player)
-
-- Route or view: show current location grid in a read-only or movement-enabled mode. Render tiles (with tile art from location.tiles and tileRenderSize), characters (by tileId), and items (LocationItem by tileId) on the grid; show tile actions (e.g. clickable where TileData.actionId is set).
-- Click tile: if it has an actionId → run the action (e.g. trigger ruleset action). If it has an item (LocationItem) → show item details or interaction. If it has a character → show character or interaction option.
-- Design for single-player first; data model should not prevent future sync of other players' positions.
-
-### 8.3 Navigation between locations
-
-- Allow moving the character to another location (e.g. list of child locations, or "exits" defined on tiles/locations). Update character's locationId and tileId (and optionally worldId if crossing worlds).
-- May require defining "exits" or links from one location to another (could be a tile action or a location-level property; to be designed).
-
-### 8.4 Link to character sheet
-
-- Easy link from location view to `/characters/:characterId` (or the app’s character sheet route) and back (e.g. "Open character sheet" / "Back to location").
+- **CampaignEditor:** Opens in campaign context (e.g. `/campaigns/:campaignId/edit`). Uses WorldViewer to navigate the campaign’s world; selecting a location opens LocationViewer for that location. On the location view, creator can: place CampaignCharacters (characters from campaign.rulesetId), place CampaignItems (items from campaign.rulesetId), add CampaignEvents and attach them to the current location (CampaignEventLocation). Events appear as buttons on the location. One script per CampaignEvent. Resolve tile for placement using one TileData.id per cell (e.g. topmost by zIndex).
+- **Play campaign:** User selects a campaign and a character (CampaignCharacter for that campaign). View world via WorldViewer and location via LocationViewer; LocationViewer shows CampaignCharacters, CampaignItems, and CampaignEvents for the current location. Tile actions (TileData.actionId) still apply. Link to character sheet and back.
 
 ---
 
-## Tasks (when implementing)
+## Tasks
 
-| Area | Tasks |
-|------|--------|
-| **Enter world** | Entry UI (e.g. from character card or sheet). Select world and starting location/tile; set character.worldId, locationId, tileId. Persist via updateCharacter. |
-| **Location viewer** | New route or view (e.g. `/characters/:characterId/location` or `/worlds/:worldId/play`). Load character's current location and world; render grid with location.tileRenderSize, tiles (from location.tiles), characters at their tileIds, and LocationItems at their tileIds. Resolve actions from TileData.actionId. |
-| **Tile interaction** | On tile click: resolve action (actionId → ruleset action, run or show); resolve item (LocationItem → item details); resolve character (show or interact). Use existing action execution and item/character APIs. |
-| **Move between locations** | UI to choose another location (e.g. child locations of current, or list). Update character.locationId and character.tileId (and optionally worldId if crossing worlds). |
-| **Navigation** | Link "Character sheet" ↔ "Current location" in header or sidebar when in player context. |
-| **Permissions** | (Optional) Who can move which character; who can "enter" a world. Defer or keep simple for v1 (e.g. only character owner). |
+### 8.1 Campaign editor – shell and navigation
+
+| Task | File(s) | Notes |
+|------|--------|--------|
+| Route for campaign edit, e.g. `/campaigns/:campaignId/edit`. Load campaign (useCampaign); load world (useWorld(campaign.worldId)) and locations (useLocations(campaign.worldId)). | Campaign editor page | |
+| Render WorldViewer with campaign’s world; on location select, set “current location” and show LocationViewer for that location. Breadcrumb or context: Campaign > World > [Location name]. | Same | |
+| Optional: sidebar or list of locations in the campaign’s world to jump to a location. | Same | |
+
+### 8.2 Campaign editor – place characters
+
+| Task | File(s) | Notes |
+|------|--------|--------|
+| In campaign editor, when a location is shown in LocationViewer: “Place character” mode or button. List characters for campaign.rulesetId (e.g. db.characters.where('rulesetId').equals(campaign.rulesetId) or useCharacter filtered). User selects a character, then clicks a cell that has at least one TileData. Resolve one TileData.id (e.g. topmost by zIndex) for that cell. Create or update CampaignCharacter: set currentLocationId to current location, currentTileId to that TileData.id. If character already in campaign, updateCampaignCharacter; else createCampaignCharacter. | Campaign editor | |
+| Render CampaignCharacters on LocationViewer when in edit mode: for each CampaignCharacter with currentLocationId === current location.id, find TileData.id === currentTileId and draw character there (avatar or sprite from character). | Same | Use read-only LocationViewer but overlay campaign entities for this location. |
+| “Remove from location” or “Move”: clear currentLocationId/currentTileId to remove; or set new currentTileId (and optionally currentLocationId) to move. | Same | |
+
+### 8.3 Campaign editor – place items
+
+| Task | File(s) | Notes |
+|------|--------|--------|
+| “Place item” mode: list items from campaign.rulesetId (e.g. db.items.where('rulesetId').equals(campaign.rulesetId)). User picks item, then clicks a cell with TileData. Resolve one TileData.id (e.g. topmost). createCampaignItem(campaignId, { itemId, currentLocationId: location.id, currentTileId }). | Campaign editor | |
+| Render CampaignItems on LocationViewer: for each CampaignItem with currentLocationId === current location.id, draw at tile matching currentTileId (icon or item label). | Same | |
+| Remove: deleteCampaignItem. Move: updateCampaignItem with new currentLocationId/currentTileId. | Same | |
+
+### 8.4 Campaign editor – campaign events
+
+| Task | File(s) | Notes |
+|------|--------|--------|
+| “Add event” or similar: create CampaignEvent (campaignId, label, scriptId optional). Attach to current location: create CampaignEventLocation(campaignEventId, locationId). List script entity type for “campaign event” so user can pick a script (one per event). | Campaign editor | |
+| On LocationViewer (edit mode), show events for this location: list CampaignEventLocations for locationId, resolve CampaignEvent for each; display as buttons (label; optional run script). Remove: delete CampaignEventLocation and optionally CampaignEvent. | Same | |
+| Events “surface as buttons to be attached to locations within campaigns” (adjustments.md). UI: e.g. a list or bar of event buttons for the current location; creator can add/remove/reorder or edit label and script. | Same | |
+
+### 8.5 Campaign editor – UI clarity
+
+| Task | File(s) | Notes |
+|------|--------|--------|
+| Clear mode or toolbar: e.g. “Navigate” / “Place character” / “Place item” / “Manage events”. When a placed character or item is selected, show remove/move. Use existing design system (@/components). | Campaign editor | |
+
+### 8.6 Play campaign – entry and viewer
+
+| Task | File(s) | Notes |
+|------|--------|--------|
+| Play entry: from campaign detail or list, “Play” → select a character that is in this campaign (CampaignCharacter for this campaignId). Or: “Play as [character name]” if only one. Route e.g. `/campaigns/:campaignId/play` with character in context (query or state). | Play campaign page | |
+| Load campaign and chosen character’s CampaignCharacter record (currentLocationId, currentTileId). Load world and locations. Render WorldViewer; current location = CampaignCharacter.currentLocationId. Show LocationViewer for current location. | Same | |
+| LocationViewer in play mode: render tiles (from location.tiles), plus CampaignCharacters with currentLocationId === location.id (at their currentTileId), CampaignItems same, and CampaignEvents for this location (CampaignEventLocation) as buttons. TileData.actionId: clickable to run ruleset action. | Same | |
+| Link “Character sheet” to `/characters/:characterId` (or app’s character route) and “Back to location” or “Back to campaign” so player can switch between sheet and location view. | Same | |
+
+### 8.7 Play campaign – navigation between locations
+
+| Task | File(s) | Notes |
+|------|--------|--------|
+| Allow player to move to another location: e.g. list of child locations of current, or list of locations in world. On select, update CampaignCharacter’s currentLocationId and currentTileId (e.g. to a default tile in the new location). Re-render LocationViewer for new location. | Play campaign | |
+| Optional: “exits” or tile actions that trigger location change; same idea—update CampaignCharacter placement and refresh view. | Same | |
 
 ---
 
-## Exit criteria (when implemented)
+## Exit criteria
 
-- [ ] Player can enter a world with a character and see the character's current location.
-- [ ] Location viewer shows grid, tiles, characters, and items; tile actions are clickable and run the ruleset action.
-- [ ] Player can move the character to another location and see the update.
-- [ ] Player can switch between character sheet and location view easily.
-- [ ] No regression in creator flows (world/location/tilemap editing, placing characters and items).
+- [ ] Creator can open campaign edit, navigate world and locations via WorldViewer and LocationViewer, and place CampaignCharacters and CampaignItems on tiles (currentLocationId, currentTileId).
+- [ ] Creator can remove or move placed characters and items in the campaign editor.
+- [ ] Creator can add CampaignEvents (with optional script), attach them to locations (CampaignEventLocation), and see them as buttons on the location; can remove events.
+- [ ] Character and item lists in campaign editor are filtered by campaign.rulesetId.
+- [ ] Player can start play for a campaign by selecting a character (in that campaign); view world and current location with campaign characters, items, and event buttons; use tile actions.
+- [ ] Player can navigate to another location and see the update; can switch between character sheet and location view.
+- [ ] No regression in world editor, location editor, or Phase 7 campaign creation and viewers.
 
 ---
 
 ## Implementation prompt
 
-Use this prompt when implementing Phase 8 (player experience):
+Use this prompt when implementing Phase 8:
 
 ```
-Implement Phase 8 of the Worlds & Locations feature: the player experience.
+Implement Phase 8 of the Worlds & Locations feature: Campaign editor and Play campaign.
 
 Context:
-- All previous phases (1–7) are done: data model, hooks, world list, world editor, location editor, tilemap editor, and placing characters/items in locations. Characters have worldId, locationId, tileId; LocationItem and TileData.actionId exist.
-- Routes: Creator flows use /worlds/:worldId and /worlds/:worldId/locations/:locationId. Add player routes as needed (e.g. /characters/:characterId/location or /worlds/:worldId/play). Character sheet uses the app’s existing character route (e.g. /characters/:characterId).
-- Location has tiles (TileData[]), tileRenderSize, hasMap; multiple TileData per cell (layers). Use existing hooks: useCharacter, useLocation, useWorld, useLocations, useLocationItems.
-- Read agents/locations/phase-8.md and agents/locations/locations.md (Player Experience section).
+- Phase 7 is done: Campaign, CampaignCharacter, CampaignItem, CampaignEvent, CampaignEventLocation; World without rulesetId; Character without placement; LocationItem retired. WorldViewer and LocationViewer exist (read-only). Campaign creation workflow exists.
+- Read agents/locations/adjustments.md, agents/locations/phase-7.md, and agents/locations/phase-8.md.
 
 Do the following:
 
-1. **Enter world**
-   - Add an entry point (e.g. from character sheet or /characters) to "Enter world" with a character. Let the user pick a world (and optionally starting location/tile) or use a default. Set character.worldId, locationId, tileId and persist via updateCharacter.
+1. **Campaign editor**
+   - Route /campaigns/:campaignId/edit. Use WorldViewer to navigate campaign’s world; on location select, show LocationViewer for that location. Breadcrumb: Campaign > World > Location.
+   - Place character: list characters by campaign.rulesetId; user selects character and clicks a cell with TileData; resolve one TileData.id (topmost by zIndex); create/update CampaignCharacter with currentLocationId and currentTileId. Render CampaignCharacters on LocationViewer for this location. Remove/move: clear or update currentLocationId/currentTileId.
+   - Place item: list items by campaign.rulesetId; select item, click cell; create CampaignItem with currentLocationId, currentTileId. Render CampaignItems on LocationViewer. Remove/move via update/delete.
+   - Campaign events: create CampaignEvent (label, scriptId optional); attach to location via CampaignEventLocation. Show events for current location as buttons (label; one script per event). Allow add/remove. Script entity type for “campaign event” as needed.
+   - Clear UI modes: e.g. Navigate / Place character / Place item / Manage events. Use existing design system.
 
-2. **Location viewer (player)**
-   - Add a route or view for the player's current location (e.g. /characters/:characterId/location or /worlds/:worldId/play). Load the character and their location; render the location grid (read-only) using location.tileRenderSize and location.tiles. Show tiles (with tile art), characters at their tiles (by tileId), and items (LocationItems) at their tiles. For tiles with actionId, make them clickable; on click run the ruleset action (use existing action execution). For tiles with LocationItem, show item on click. For tiles with a character, show character or interaction.
+2. **Play campaign**
+   - Entry: from campaign, “Play” and select a character in the campaign (CampaignCharacter). Route e.g. /campaigns/:campaignId/play with character in context.
+   - Render WorldViewer and LocationViewer for campaign’s world and character’s current location. LocationViewer shows tiles, CampaignCharacters, CampaignItems, and CampaignEvents (as buttons) for that location. TileData.actionId: click to run ruleset action.
+   - Link to character sheet and back. Allow moving to another location (update CampaignCharacter currentLocationId/currentTileId and refresh).
 
-3. **Move between locations**
-   - In the location viewer, add a way to move to another location (e.g. list of child locations of current location, or a list of locations in the world). On select, update character.locationId and character.tileId (e.g. to first tile of that location or a designated tile). Re-render the location viewer.
-
-4. **Navigation**
-   - Add a clear link from the location viewer to the character sheet (/characters/:characterId or app’s character route) and from the character sheet to "View location" when the character is in a world.
-
-5. **Edge cases**
-   - Handle character not in a world (prompt to enter world). Handle missing location or world (redirect or error). Do not break creator flows (world/location/tilemap editing, placing characters and items).
-
-Follow existing patterns and the project's tech stack (React, Zustand, Dexie, Tailwind, etc.). Design so that future sync of other players' positions can be added without changing the data model.
+Follow existing patterns and tech stack. Do not add character/item placement to the location editor (that stays world-building only).
 ```

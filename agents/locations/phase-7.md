@@ -1,56 +1,86 @@
-# Phase 7: Place characters and items in locations (creator)
+# Phase 7: Campaign model, world decoupling, and read-only viewers
 
-**Goal:** In the location editor, the creator can place characters (from the world's ruleset) and items (LocationItem) on tiles. Characters and items are visible on the grid; creator can remove or move them.
+**Goal:** Introduce Campaign as the join between ruleset and world; decouple World from Ruleset. Add Campaign, CampaignCharacter, CampaignItem, CampaignEvent, and CampaignEventLocation. Retire LocationItem and character placement on Character. Add optional worldId to Asset. Implement campaign creation workflow and read-only WorldViewer and LocationViewer (no campaign placement yet).
 
-**Depends on:** Phase 1, 2, 5 (and ideally 4, 6). Location editor with grid and tiles must exist; world editor provides context. Character hooks support worldId, locationId, tileId; LocationItem hooks exist.
+**Depends on:** Phase 1, 2, 3, 4, 5, 6. World and location editors exist; location has grid and TileData. This phase updates the data model and adds campaign + viewers.
 
-**Reference:** [locations.md](./locations.md), [worlds-plan.md](./worlds-plan.md). Character has optional worldId, locationId, tileId. LocationItem has itemId, rulesetId, worldId, locationId, tileId (TileData.id). World has rulesetId; characters and items are chosen from that ruleset.
+**Reference:** [locations.md](./locations.md), [adjustments.md](./adjustments.md). Campaign joins ruleset and world; placement is campaign-scoped via CampaignCharacter and CampaignItem. One script per CampaignEvent.
 
 ---
 
-## Current design notes (alignment)
+## Design summary
 
-- **Routes:** World editor at `/worlds/:worldId`; location editor at `/worlds/:worldId/locations/:locationId`. Back navigates to parent location or world root.
-- **Location editor:** `src/pages/worlds/location-editor.tsx`. Grid uses `location.tileRenderSize`; global "Layer" (paint z-index) and "Tile size" in top bar. Multi-tile selection in tile paint bar; cell property panel for layers at a cell.
-- **Tiles:** `Location.tiles` is `TileData[]`. Each `TileData` has `id`, `tileId`, `x`, `y`, `zIndex`, `isPassable`, `actionId`. Multiple TileData per cell (layers) are supported; use one `TileData.id` per character/item placement (e.g. topmost layer at that cell by zIndex).
-- **Hooks:** `useWorld(worldId)`, `useLocation(locationId)`, `useLocations(worldId)`, `useLocationItems(worldId, locationId)` with `createLocationItem`, `updateLocationItem`, `deleteLocationItem`. Characters: filter by `world.rulesetId` (e.g. from `useCharacter()` list or `db.characters` by rulesetId). Items: load by `world.rulesetId` (e.g. `db.items.where('rulesetId').equals(world.rulesetId)` or a ruleset-scoped items API). `updateCharacter(id, { worldId, locationId, tileId })` for placement.
-- **Location type:** Includes `hasMap`, `tileRenderSize`, `opacity` (fill and background image). No separate `backgroundOpacity`.
+- **World** no longer has `rulesetId`. Worlds (and Location, Tile, Tilemap) are ruleset-agnostic. **Asset** gets optional `worldId` for tracking/export.
+- **Character** loses `worldId`, `locationId`, `tileId`; placement is only via **CampaignCharacter** (currentLocationId, currentTileId).
+- **LocationItem** is retired; **CampaignItem** replaces it (campaignId, currentLocationId, currentTileId).
+- **Campaign** = id, rulesetId, worldId. **CampaignCharacter** = characterId, campaignId, currentLocationId?, currentTileId?. **CampaignItem** = id, itemId, campaignId, currentLocationId?, currentTileId?. **CampaignEvent** = id, label, campaignId, scriptId?. **CampaignEventLocation** = id, campaignEventId, locationId (events surface as buttons on locations in a campaign).
+- **WorldViewer** and **LocationViewer** are read-only UI for navigating world and location grid; used later by CampaignEditor and Play. No campaign data rendered in this phase.
 
 ---
 
 ## Tasks
 
-### 7.1 Characters in location
+### 7.1 Types and schema changes
 
 | Task | File(s) | Notes |
 |------|--------|--------|
-| In location editor: "Place character" mode or button. List characters for world.rulesetId (e.g. filter characters from useCharacter by rulesetId, or query by rulesetId). User selects a character, then clicks a cell that has at least one TileData. Use one TileData.id at that cell (e.g. topmost by zIndex) and set character's worldId, locationId, tileId via updateCharacter. | Location editor | |
-| Render characters on the grid: for each character with locationId === current location.id, find the tile (TileData.id === character.tileId) and render the character there (avatar or first sprite asset from character.sprites / assetId). | Same | |
-| "Remove from location" or "Move": clear character's worldId, locationId, tileId; or set a new tileId (TileData.id) to move. | Same | |
+| Add `Campaign`, `CampaignCharacter`, `CampaignItem`, `CampaignEvent`, `CampaignEventLocation` types. Campaign has id, rulesetId, worldId. CampaignCharacter: characterId, campaignId, currentLocationId?, currentTileId?. CampaignItem: id, itemId, campaignId, currentLocationId?, currentTileId?. CampaignEvent: id, label, campaignId, scriptId?. CampaignEventLocation: id, campaignEventId, locationId. All extend BaseDetails where appropriate. | `src/types/` | |
+| Remove `rulesetId` from `World`. Add optional `worldId?: string` to Asset (or asset type used for world export). | Same | Migration: existing worlds have rulesetId; decide migration path (e.g. create a Campaign per world with that rulesetId, then drop column). |
+| Remove `worldId`, `locationId`, `tileId` from `Character`. | Same | Optional migration: move existing placement into CampaignCharacter if a campaign exists. |
+| Remove or deprecate `LocationItem` type and table; document replacement by CampaignItem. | Same + Dexie | Delete LocationItem table in schema; migrate or drop data. |
+| Export new types from types barrel. | `src/types/index.ts` | |
 
-### 7.2 Location items
-
-| Task | File(s) | Notes |
-|------|--------|--------|
-| "Place item" mode: list items from ruleset (world.rulesetId), e.g. db.items.where('rulesetId').equals(world.rulesetId). User picks item, then clicks a cell with TileData. Use one TileData.id at that cell (e.g. topmost by zIndex). Create LocationItem via createLocationItem(worldId, locationId, { itemId, rulesetId: world.rulesetId, tileId }). | Location editor | |
-| Render items on the grid: for each LocationItem with locationId === current location.id, render at the tile with matching tileId (icon or item label). | Same | |
-| Remove: deleteLocationItem. Move: updateLocationItem with new tileId (TileData.id). | Same | |
-
-### 7.3 UI flow
+### 7.2 Dexie schema
 
 | Task | File(s) | Notes |
 |------|--------|--------|
-| Clear mode switching: e.g. "Paint tile" vs "Place character" vs "Place item". Or a single "Place" menu with character/item options. Ensure selecting a placed character/item allows remove/move. | Location editor | |
+| Add tables: campaigns, campaignCharacters, campaignItems, campaignEvents, campaignEventLocations. Indexes: campaigns by rulesetId, worldId; campaignCharacters by campaignId, characterId; campaignItems by campaignId; campaignEvents by campaignId; campaignEventLocations by campaignEventId, locationId. | Dexie schema | |
+| Remove World.rulesetId from schema; add Asset.worldId if stored in same DB. Remove Character worldId, locationId, tileId. Remove locationItems table. Bump schema version; add migration. | Same | |
+
+### 7.3 Hooks and API
+
+| Task | File(s) | Notes |
+|------|--------|--------|
+| useCampaigns(): list campaigns (e.g. all or by rulesetId/worldId). useCampaign(campaignId): single campaign. createCampaign({ rulesetId, worldId }), updateCampaign, deleteCampaign. | `src/lib/compass-api/hooks/` or equivalent | |
+| useCampaignCharacters(campaignId): list join records; useCampaignCharacter(campaignId, characterId) or by id. createCampaignCharacter(campaignId, characterId, { currentLocationId?, currentTileId? }), updateCampaignCharacter, deleteCampaignCharacter. | Same | |
+| useCampaignItems(campaignId): list; createCampaignItem(campaignId, { itemId, currentLocationId?, currentTileId? }), updateCampaignItem, deleteCampaignItem. | Same | |
+| useCampaignEvents(campaignId): list events. useCampaignEventLocations(campaignEventId) or by campaignId. createCampaignEvent(campaignId, { label, scriptId? }), updateCampaignEvent, deleteCampaignEvent. createCampaignEventLocation(campaignEventId, locationId), delete. | Same | |
+| Update world/location hooks if they referenced World.rulesetId or LocationItem. Remove useLocationItems or replace usages with campaign-scoped hooks where needed. | Various | |
+| Characters and items for a campaign: filter by campaign.rulesetId (e.g. useCharacter / db.characters.where('rulesetId').equals(campaign.rulesetId); items by rulesetId). | Same | |
+
+### 7.4 Campaign creation workflow
+
+| Task | File(s) | Notes |
+|------|--------|--------|
+| Dedicated campaigns entry: e.g. "Campaigns" in nav or home. List campaigns (useCampaigns). "Create campaign" → select a world (useWorlds) and a ruleset (useRulesets or list); create campaign with chosen worldId and rulesetId; navigate to campaign context (e.g. campaign editor or campaign detail). | New page(s) e.g. `src/pages/campaigns/` | Route suggestion: `/campaigns`, `/campaigns/new`, `/campaigns/:campaignId`. |
+| Campaign detail or shell: show campaign info (world label, ruleset label), links to "Edit campaign" (Phase 8) and "Play" (Phase 8). | Same | |
+
+### 7.5 WorldViewer
+
+| Task | File(s) | Notes |
+|------|--------|--------|
+| WorldViewer component: read-only world canvas (e.g. same as world editor canvas but no edit controls). Load world (useWorld), locations (useLocations(worldId)). Render location nodes; click a location → callback (e.g. onSelectLocation(locationId)) for parent to handle. Zoom/pan OK. No create/delete/edit. | e.g. `src/components/worlds/world-viewer.tsx` or pages | Reuse layout/canvas from world editor if possible; strip editing. |
+| On **double-click** a location: if that location **has a map** (e.g. location.hasMap or equivalent), show a **tooltip menu** with two options: **"Advance to location"** (WorldViewer: e.g. drill into / set as current location in world context) and **"Open map"** (open LocationViewer for that location). If the location has no map, double-click can invoke a single default action (e.g. advance or callback). | Same | Parent or viewer handles menu choice; callbacks e.g. onAdvanceToLocation(locationId), onOpenMap(locationId). |
+| Use WorldViewer in a minimal route or campaign shell so it can be used in Phase 8 for "navigate to a location" (CampaignEditor and Play). | Routes / campaign shell | |
+
+### 7.6 LocationViewer
+
+| Task | File(s) | Notes |
+|------|--------|--------|
+| LocationViewer component: read-only location grid. Load location (useLocation), render grid (gridWidth × gridHeight), TileData from location.tiles. Draw tiles (Tile → Tilemap → asset slice). No paint, no property panel, no mode switching. Optional: callback on cell click (e.g. onSelectCell(x, y) or onSelectTileData(tileData)) for Phase 8. | e.g. `src/components/locations/location-viewer.tsx` | Same dimensions and tile rendering as location editor; no editing. |
+| Use LocationViewer in a minimal route or campaign shell so Phase 8 can embed it when editing or playing a campaign. | Same | |
 
 ---
 
 ## Exit criteria
 
-- [ ] Creator can place a character on a tile (character gets worldId, locationId, tileId); character appears on the grid (e.g. avatar or sprite).
-- [ ] Creator can remove a character from the location or move to another tile.
-- [ ] Creator can place an item on a tile (LocationItem created); item appears on the grid.
-- [ ] Creator can remove or move a placed item.
-- [ ] Character and item lists are filtered by the world's rulesetId. No regression in tile painting or grid behavior.
+- [ ] World has no rulesetId; Asset has optional worldId. Character has no worldId/locationId/tileId. LocationItem is removed.
+- [ ] Campaign, CampaignCharacter, CampaignItem, CampaignEvent, CampaignEventLocation types and tables exist with appropriate indexes.
+- [ ] Hooks: useCampaigns, useCampaign, useCampaignCharacters, useCampaignItems, useCampaignEvents, useCampaignEventLocations, and CRUD for each. Characters/items for a campaign filtered by campaign.rulesetId.
+- [ ] User can create a campaign by selecting a world and a ruleset; campaigns are listed.
+- [ ] WorldViewer shows a read-only world canvas; clicking a location notifies parent (e.g. locationId). Double-clicking a location with a map shows a tooltip menu: "Advance to location" (WorldViewer) or "Open map" (LocationViewer).
+- [ ] LocationViewer shows a read-only location grid with tiles; no editing.
+- [ ] No regression in world editor or location editor (grid, tile paint, tile properties). Editors no longer reference rulesetId on world for character/item lists (those move to campaign context in Phase 8).
 
 ---
 
@@ -59,25 +89,33 @@
 Use this prompt when implementing Phase 7:
 
 ```
-Implement Phase 7 of the Worlds & Locations feature: placing characters and items in the location editor (creator experience).
+Implement Phase 7 of the Worlds & Locations feature: Campaign model, decouple World from Ruleset, and read-only WorldViewer and LocationViewer.
 
 Context:
-- Phases 1–5 (and ideally 6) are done: types, hooks, world list, world editor, location editor with grid and tile painting. Character has optional worldId, locationId, tileId. LocationItem hooks and types exist (useLocationItems in @/lib/compass-api/hooks/location-items/use-location-items.ts). World has rulesetId; use it to filter characters and items.
-- Location editor: src/pages/worlds/location-editor.tsx. Routes: /worlds/:worldId/locations/:locationId. Location.tiles is TileData[]; cells can have multiple TileData (layers with zIndex). Use one TileData.id per character/item placement (e.g. topmost TileData at clicked cell).
-- Read agents/locations/phase-7.md and agents/locations/locations.md.
+- Phases 1–6 are done: World (currently with rulesetId), Location, TileData, Tilemap, Tile, LocationItem, Character (with worldId, locationId, tileId). World editor and location editor exist.
+- Read agents/locations/adjustments.md and agents/locations/phase-7.md.
 
 Do the following:
 
-1. **Place character**
-   - In the location editor, add "Place character" (mode or button). Load characters and filter by rulesetId === world.rulesetId (e.g. from useCharacter-style list or db.characters). When user selects a character and clicks a grid cell that has at least one TileData, resolve one TileData.id for that cell (e.g. topmost by zIndex) and call updateCharacter(characterId, { worldId, locationId, tileId: that TileData.id }). Render characters on the grid: for each character where character.locationId === location.id, find the TileData with id === character.tileId and draw the character there (use character.assetId or character.sprites[0] for avatar/image).
-   - Add "Remove from location" (clear worldId, locationId, tileId) and optionally "Move" (set tileId to another TileData.id).
+1. **Types and schema**
+   - Add Campaign (id, rulesetId, worldId), CampaignCharacter (characterId, campaignId, currentLocationId?, currentTileId?), CampaignItem (id, itemId, campaignId, currentLocationId?, currentTileId?), CampaignEvent (id, label, campaignId, scriptId?), CampaignEventLocation (id, campaignEventId, locationId). Extend BaseDetails where appropriate.
+   - Remove rulesetId from World. Add optional worldId to Asset. Remove worldId, locationId, tileId from Character. Retire LocationItem (remove type and table). Bump Dexie schema version; add migration for existing data.
 
-2. **Place item**
-   - Add "Place item" mode. List items from the ruleset (world.rulesetId), e.g. db.items.where('rulesetId').equals(world.rulesetId) or a ruleset-scoped hook. When user selects an item and clicks a cell with TileData, resolve one TileData.id (e.g. topmost at that cell) and call createLocationItem(worldId, locationId, { itemId, rulesetId: world.rulesetId, tileId }). Render: for each LocationItem with locationId === location.id, draw at the cell whose TileData.id === locationItem.tileId (show item label or icon).
-   - Add remove (deleteLocationItem) and move (updateLocationItem with new tileId).
+2. **Hooks**
+   - Campaigns: useCampaigns, useCampaign, createCampaign, updateCampaign, deleteCampaign.
+   - CampaignCharacter: useCampaignCharacters(campaignId), create/update/delete.
+   - CampaignItem: useCampaignItems(campaignId), create/update/delete.
+   - CampaignEvent: useCampaignEvents(campaignId), create/update/delete. CampaignEventLocation: useCampaignEventLocations(campaignEventId), create/delete.
+   - When needing characters or items for a campaign, filter by campaign.rulesetId.
 
-3. **UI**
-   - Make the mode clear (e.g. Paint tile / Place character / Place item). When a placed character or item is selected, show options to remove or move. Use existing design system and components (e.g. from @/components).
+3. **Campaign creation**
+   - Dedicated campaigns workflow: list campaigns, "Create campaign" → select world + ruleset → create campaign; routes e.g. /campaigns, /campaigns/new, /campaigns/:campaignId.
 
-Do not implement player-facing "interact with character/item" yet; this phase is creator-only placement and display.
+4. **WorldViewer**
+   - Read-only world canvas: load world and locations, render location nodes, zoom/pan. On location click, callback with locationId. On location double-click: if location has a map (e.g. hasMap), show a tooltip menu with "Advance to location" (WorldViewer drill-in/set current) and "Open map" (open LocationViewer for that location); parent handles choice via callbacks (e.g. onAdvanceToLocation, onOpenMap).
+
+5. **LocationViewer**
+   - Read-only location grid: load location, render grid and tiles from location.tiles (same rendering as location editor). No paint or property panel. Optional callback on cell/tile click for Phase 8.
+
+Update world/location editor code that relied on World.rulesetId or LocationItem so the app still builds. Do not implement campaign placement or play yet (Phase 8).
 ```
