@@ -32,6 +32,7 @@ import {
 } from '@/components/ui/select';
 import { useAssets, useRulesets, useWorlds } from '@/lib/compass-api';
 import { useRef, useState } from 'react';
+import Markdown from 'react-markdown';
 import { useNavigate } from 'react-router-dom';
 
 export const Worlds = () => {
@@ -64,7 +65,6 @@ export const Worlds = () => {
     const id = await createWorld({
       label: label.trim(),
       rulesetId,
-      assetId: assetId ?? undefined,
     });
 
     if (id) {
@@ -143,7 +143,10 @@ export const Worlds = () => {
                   Ruleset <span className='text-destructive'>*</span>
                 </Label>
                 <Select value={rulesetId} onValueChange={setRulesetId}>
-                  <SelectTrigger id='world-ruleset' className='w-full' data-testid='world-ruleset-select'>
+                  <SelectTrigger
+                    id='world-ruleset'
+                    className='w-full'
+                    data-testid='world-ruleset-select'>
                     <SelectValue placeholder='Select a ruleset' />
                   </SelectTrigger>
                   <SelectContent>
@@ -191,12 +194,12 @@ export const Worlds = () => {
         {sortedWorlds.map((world) => {
           const doNotAsk = localStorage.getItem('qb.confirmOnDelete') === 'false';
           const rulesetTitle = getRulesetTitle(world.rulesetId);
-          const imageUrl = getImageFromAssetId(world.assetId ?? null);
+          const imageUrl = world.image;
 
           return (
             <Card
               key={world.id}
-              className='flex flex-row overflow-hidden p-0 h-32 min-h-32'
+              className='flex flex-row overflow-hidden p-0 h-32 min-h-[200px] gap-0'
               data-testid='world-card'>
               <div
                 className='w-40 shrink-0 bg-muted bg-cover bg-center'
@@ -204,8 +207,15 @@ export const Worlds = () => {
               />
               <div className='flex min-w-0 flex-1 flex-col justify-between p-4'>
                 <div className='min-w-0'>
-                  <h2 className='truncate text-lg font-semibold'>{world.label}</h2>
-                  <p className='mt-0.5 text-sm text-muted-foreground'>{rulesetTitle}</p>
+                  <div className='flex w-full items-start justify-between gap-2'>
+                    <h2 className='truncate text-lg font-semibold'>{world.label}</h2>
+                    <p className='shrink-0 text-sm text-muted-foreground'>{rulesetTitle}</p>
+                  </div>
+                  {world.description ? (
+                    <div className='md-content mt-0.5 max-h-[90%] overflow-scroll text-sm text-muted-foreground'>
+                      <Markdown>{world.description}</Markdown>
+                    </div>
+                  ) : null}
                 </div>
 
                 <div className='mt-2 flex items-center justify-end gap-2'>

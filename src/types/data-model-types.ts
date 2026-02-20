@@ -383,17 +383,9 @@ export interface TileData {
 export type World = BaseDetails & {
   label: string;
   rulesetId: string;
+  description?: string;
   assetId?: string | null;
-  /** Asset id for canvas background image. */
-  backgroundAssetId?: string | null;
-  /** Resolved background image URL (injected at read from DB). */
-  backgroundImage?: string | null;
-  /** Opacity of the background image (0–1). */
-  backgroundOpacity?: number;
-  /** CSS background-size: cover, contain, auto, etc. */
-  backgroundSize?: string | null;
-  /** CSS background-position: center, top, left, etc. */
-  backgroundPosition?: string | null;
+  image?: string | null;
 };
 
 export type Tilemap = BaseDetails & {

@@ -8,27 +8,36 @@
 
 ---
 
+## Current design notes (alignment)
+
+- **Routes:** World editor: `/worlds/:worldId`; location editor: `/worlds/:worldId/locations/:locationId`. For player experience, add a player-facing route such as `/characters/:characterId/location` or `/worlds/:worldId/play` (with character in context). Character sheet: `/characters/:characterId` (and ruleset context may use `/rulesets/:rulesetId/characters/:characterId`).
+- **Location:** Has `hasMap`, `tileRenderSize`, `tiles` (TileData[]). TileData has id, zIndex, actionId, isPassable. Multiple TileData per cell (layers); render using location.tileRenderSize. No world-level background in the current editor; location has background image/opacity as needed.
+- **Data:** Character has worldId, locationId, tileId (TileData.id). LocationItem has worldId, locationId, tileId. Use useLocation, useWorld, useLocationItems(worldId, locationId), useCharacter; resolve actions by actionId (ruleset action).
+- **Hooks:** useCharacter, useLocation, useLocations, useWorld, useLocationItems, useAssets (for rulesetId), action execution via existing ruleset/action APIs.
+
+---
+
 ## Overview (for future implementation)
 
 ### 8.1 Enter world and set character location
 
 - Entry point: from character sheet or home, "Enter world" (or similar) with a character. Set character's worldId, locationId, tileId to a default or chosen location/tile (e.g. first location in world, or a "spawn" location).
-- Persist so the character "remembers" position across sessions.
+- Persist via updateCharacter so the character "remembers" position across sessions.
 
 ### 8.2 Location viewer (player)
 
-- Route or view: show current location grid in a read-only or movement-enabled mode. Render characters (including other players in the future) and items on tiles; show tile actions (e.g. clickable).
+- Route or view: show current location grid in a read-only or movement-enabled mode. Render tiles (with tile art from location.tiles and tileRenderSize), characters (by tileId), and items (LocationItem by tileId) on the grid; show tile actions (e.g. clickable where TileData.actionId is set).
 - Click tile: if it has an actionId → run the action (e.g. trigger ruleset action). If it has an item (LocationItem) → show item details or interaction. If it has a character → show character or interaction option.
 - Design for single-player first; data model should not prevent future sync of other players' positions.
 
 ### 8.3 Navigation between locations
 
-- Allow moving the character to another location (e.g. list of child locations, or "exits" defined on tiles/locations). Update character's locationId and tileId.
+- Allow moving the character to another location (e.g. list of child locations, or "exits" defined on tiles/locations). Update character's locationId and tileId (and optionally worldId if crossing worlds).
 - May require defining "exits" or links from one location to another (could be a tile action or a location-level property; to be designed).
 
 ### 8.4 Link to character sheet
 
-- Easy link from location view to `/characters/:characterId` and back (e.g. "Open character sheet" / "Back to location").
+- Easy link from location view to `/characters/:characterId` (or the app’s character sheet route) and back (e.g. "Open character sheet" / "Back to location").
 
 ---
 
@@ -36,8 +45,8 @@
 
 | Area | Tasks |
 |------|--------|
-| **Enter world** | Entry UI (e.g. from character card or sheet). Select world and starting location/tile; set character.worldId, locationId, tileId. Persist. |
-| **Location viewer** | New route or view (e.g. `/characters/:characterId/location` or `/worlds/:worldId/play`). Load character's current location and world; render grid, tiles, characters, items. Resolve actions from actionId. |
+| **Enter world** | Entry UI (e.g. from character card or sheet). Select world and starting location/tile; set character.worldId, locationId, tileId. Persist via updateCharacter. |
+| **Location viewer** | New route or view (e.g. `/characters/:characterId/location` or `/worlds/:worldId/play`). Load character's current location and world; render grid with location.tileRenderSize, tiles (from location.tiles), characters at their tileIds, and LocationItems at their tileIds. Resolve actions from TileData.actionId. |
 | **Tile interaction** | On tile click: resolve action (actionId → ruleset action, run or show); resolve item (LocationItem → item details); resolve character (show or interact). Use existing action execution and item/character APIs. |
 | **Move between locations** | UI to choose another location (e.g. child locations of current, or list). Update character.locationId and character.tileId (and optionally worldId if crossing worlds). |
 | **Navigation** | Link "Character sheet" ↔ "Current location" in header or sidebar when in player context. |
@@ -63,7 +72,9 @@ Use this prompt when implementing Phase 8 (player experience):
 Implement Phase 8 of the Worlds & Locations feature: the player experience.
 
 Context:
-- All previous phases (1–7) are done: data model, hooks, world list, world editor, location editor, tilemap editor, and placing characters/items in locations. Characters have worldId, locationId, tileId; LocationItem and tile actions exist.
+- All previous phases (1–7) are done: data model, hooks, world list, world editor, location editor, tilemap editor, and placing characters/items in locations. Characters have worldId, locationId, tileId; LocationItem and TileData.actionId exist.
+- Routes: Creator flows use /worlds/:worldId and /worlds/:worldId/locations/:locationId. Add player routes as needed (e.g. /characters/:characterId/location or /worlds/:worldId/play). Character sheet uses the app’s existing character route (e.g. /characters/:characterId).
+- Location has tiles (TileData[]), tileRenderSize, hasMap; multiple TileData per cell (layers). Use existing hooks: useCharacter, useLocation, useWorld, useLocations, useLocationItems.
 - Read agents/locations/phase-8.md and agents/locations/locations.md (Player Experience section).
 
 Do the following:
@@ -72,13 +83,13 @@ Do the following:
    - Add an entry point (e.g. from character sheet or /characters) to "Enter world" with a character. Let the user pick a world (and optionally starting location/tile) or use a default. Set character.worldId, locationId, tileId and persist via updateCharacter.
 
 2. **Location viewer (player)**
-   - Add a route or view for the player's current location (e.g. /characters/:characterId/location or /worlds/:worldId/play). Load the character and their location; render the location grid (read-only). Show tiles (with tile art), characters at their tiles (by tileId), and items (LocationItems) at their tiles. For tiles with actionId, make them clickable; on click run the ruleset action (use existing action execution). For tiles with LocationItem, show item on click. For tiles with a character, show character or interaction.
+   - Add a route or view for the player's current location (e.g. /characters/:characterId/location or /worlds/:worldId/play). Load the character and their location; render the location grid (read-only) using location.tileRenderSize and location.tiles. Show tiles (with tile art), characters at their tiles (by tileId), and items (LocationItems) at their tiles. For tiles with actionId, make them clickable; on click run the ruleset action (use existing action execution). For tiles with LocationItem, show item on click. For tiles with a character, show character or interaction.
 
 3. **Move between locations**
    - In the location viewer, add a way to move to another location (e.g. list of child locations of current location, or a list of locations in the world). On select, update character.locationId and character.tileId (e.g. to first tile of that location or a designated tile). Re-render the location viewer.
 
 4. **Navigation**
-   - Add a clear link from the location viewer to the character sheet (/characters/:characterId) and from the character sheet to "View location" when the character is in a world.
+   - Add a clear link from the location viewer to the character sheet (/characters/:characterId or app’s character route) and from the character sheet to "View location" when the character is in a world.
 
 5. **Edge cases**
    - Handle character not in a world (prompt to enter world). Handle missing location or world (redirect or error). Do not break creator flows (world/location/tilemap editing, placing characters and items).

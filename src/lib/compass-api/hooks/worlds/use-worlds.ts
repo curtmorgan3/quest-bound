@@ -8,9 +8,7 @@ export const useWorlds = (rulesetId?: string) => {
 
   const worlds = useLiveQuery(
     () =>
-      rulesetId
-        ? db.worlds.where('rulesetId').equals(rulesetId).toArray()
-        : db.worlds.toArray(),
+      rulesetId ? db.worlds.where('rulesetId').equals(rulesetId).toArray() : db.worlds.toArray(),
     [rulesetId],
   );
 

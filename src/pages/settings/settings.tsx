@@ -5,20 +5,23 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from '@/components/ui/sidebar';
-import { useActiveRuleset, useCharacter } from '@/lib/compass-api';
-import { NotebookPen, User, UserRoundPen } from 'lucide-react';
+import { useActiveRuleset, useCharacter, useWorld } from '@/lib/compass-api';
+import { Globe, NotebookPen, User, UserRoundPen } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { CharacterSettings } from './character-settings';
 import { RulesetSettings } from './ruleset-settings';
 import { UserSettings } from './user-settings';
+import { WorldSettings } from './world-settings';
 
 export const Settings = () => {
-  const { rulesetId } = useParams();
+  const { rulesetId, worldId } = useParams();
   const { activeRuleset } = useActiveRuleset();
   const { character } = useCharacter();
+  const world = useWorld(worldId);
 
   const isOnRulesetRoute = Boolean(rulesetId && rulesetId !== 'undefined');
+  const isOnWorldRoute = Boolean(worldId && worldId !== 'undefined');
 
   const [page, setPage] = useState<string>('user');
 
@@ -27,10 +30,14 @@ export const Settings = () => {
       setPage('character');
     } else if (isOnRulesetRoute && activeRuleset) {
       setPage('ruleset');
+    } else if (isOnWorldRoute && world) {
+      setPage('world');
     } else if (page === 'ruleset' && !isOnRulesetRoute) {
       setPage('user');
+    } else if (page === 'world' && !isOnWorldRoute) {
+      setPage('user');
     }
-  }, [activeRuleset, character, isOnRulesetRoute, setPage]);
+  }, [activeRuleset, character, isOnRulesetRoute, isOnWorldRoute, page, setPage, world]);
 
   return (
     <div className='p-4 min-h-[90vh]'>
@@ -57,6 +64,16 @@ export const Settings = () => {
                 </SidebarMenuButton>
               </SidebarMenuItem>
             )}
+            {isOnWorldRoute && world && (
+              <SidebarMenuItem className={`${page === 'world' ? 'text-primary' : ''}`}>
+                <SidebarMenuButton asChild onClick={() => setPage('world')}>
+                  <div>
+                    <Globe />
+                    <span>{world.label}</span>
+                  </div>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            )}
             <SidebarMenuItem className={`${page === 'user' ? 'text-primary' : ''}`}>
               <SidebarMenuButton asChild onClick={() => setPage('user')}>
                 <div>
@@ -74,6 +91,7 @@ export const Settings = () => {
           <RulesetSettings activeRuleset={activeRuleset} />
         )}
         {page === 'character' && character && <CharacterSettings character={character} />}
+        {page === 'world' && world && <WorldSettings world={world} />}
       </div>
     </div>
   );
