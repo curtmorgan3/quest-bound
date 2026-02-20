@@ -1,12 +1,4 @@
 import { Button, Checkbox, Input, Label } from '@/components';
-import { ImageUpload } from '@/components/composites/image-upload';
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
 import {
   Select,
   SelectContent,
@@ -25,7 +17,7 @@ import {
 import { db } from '@/stores';
 import type { Action, Tile, TileData, Tilemap } from '@/types';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { ArrowLeft, Grid3X3, Plus } from 'lucide-react';
+import { ArrowLeft, Grid3X3, Trash2 } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 
@@ -44,7 +36,7 @@ export function LocationEditor() {
   const world = useWorld(worldId);
   const location = useLocation(locationId);
   const { updateLocation } = useLocations(worldId);
-  const { tilemaps, createTilemap } = useTilemaps(worldId);
+  const { tilemaps } = useTilemaps(worldId);
   const [selectedTilemapId, setSelectedTilemapId] = useState<string | null>(null);
   const tilesResult = useTiles(selectedTilemapId ?? undefined);
   const tilesForPicker = tilesResult?.tiles ?? [];
@@ -87,14 +79,8 @@ export function LocationEditor() {
     [world?.rulesetId],
   );
 
-  console.log(tilemaps);
-
   const [selectedTile, setSelectedTile] = useState<Tile | null>(null);
   const [selectedCell, setSelectedCell] = useState<{ x: number; y: number } | null>(null);
-  const [createTilemapOpen, setCreateTilemapOpen] = useState(false);
-  const [newTilemapAssetId, setNewTilemapAssetId] = useState<string | null>(null);
-  const [newTilemapWidth, setNewTilemapWidth] = useState(32);
-  const [newTilemapHeight, setNewTilemapHeight] = useState(32);
   const [gridWidthInput, setGridWidthInput] = useState('');
   const [gridHeightInput, setGridHeightInput] = useState('');
   const gridWidthDisplay = gridWidthInput !== '' ? gridWidthInput : String(gridWidth);
@@ -144,38 +130,18 @@ export function LocationEditor() {
     updateLocation(loc.id, { tiles: newTiles });
   };
 
-  const handleCreateTilemap = async () => {
-    if (!worldId || !newTilemapAssetId) return;
-    const tmId = await createTilemap(worldId, {
-      assetId: newTilemapAssetId,
-      tileWidth: newTilemapWidth,
-      tileHeight: newTilemapHeight,
-    });
-    if (tmId) {
-      setCreateTilemapOpen(false);
-      setNewTilemapAssetId(null);
-      setSelectedTilemapId(tmId);
-      const now = new Date().toISOString();
-      const tileId = crypto.randomUUID();
-      await db.tiles.add({
-        id: tileId,
-        tilemapId: tmId,
-        tileX: 0,
-        tileY: 0,
-        createdAt: now,
-        updatedAt: now,
-      } as Tile);
-      const newTile = await db.tiles.get(tileId);
-      if (newTile) setSelectedTile(newTile);
-    }
+  const handleRemoveTileFromCell = () => {
+    if (!loc || !selectedCell) return;
+    const newTiles = (loc.tiles ?? []).filter(
+      (td) => !(td.x === selectedCell!.x && td.y === selectedCell!.y),
+    );
+    updateLocation(loc.id, { tiles: newTiles });
   };
 
   const getAssetData = (assetId: string) => {
     const asset = assets.find((a) => a.id === assetId);
     return asset?.data ?? null;
   };
-
-  console.log(assetDimensions);
 
   // Preload tilemap asset images to get dimensions; scale tiles by tilemap tileWidth/tileHeight
   useEffect(() => {
@@ -332,93 +298,10 @@ export function LocationEditor() {
         </div>
       </div>
 
-      <div className='flex min-h-0 flex-1 gap-4 p-4'>
-        {/* Tile picker sidebar */}
-        <div className='flex w-56 shrink-0 flex-col gap-2 rounded-md border bg-muted/30 p-3'>
-          <h3 className='text-sm font-semibold'>Tile paint</h3>
-          {tilemapsList.length === 0 ? (
-            <Button
-              variant='outline'
-              size='sm'
-              className='gap-1'
-              onClick={() => setCreateTilemapOpen(true)}>
-              <Plus className='h-4 w-4' />
-              Create tilemap
-            </Button>
-          ) : (
-            <>
-              <Label className='text-xs'>Tilemap</Label>
-              <Select
-                value={selectedTilemapId ?? '_none'}
-                onValueChange={(v) =>
-                  v === '_none' ? setSelectedTilemapId(null) : setSelectedTilemapId(v)
-                }>
-                <SelectTrigger className='h-8'>
-                  <SelectValue placeholder='Select tilemap' />
-                </SelectTrigger>
-                <SelectContent>
-                  {tilemapsList.map((tm) => (
-                    <SelectItem key={tm.id} value={tm.id}>
-                      {tm.label || `${tm.tileWidth}×${tm.tileHeight}`}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {selectedTilemapId && (
-                <>
-                  <Label className='text-xs'>Tile</Label>
-                  <div className='flex flex-wrap gap-1'>
-                    {tilesForPicker.slice(0, 20).map((t) => {
-                      const tm = tilemapsList.find((m) => m.id === t.tilemapId);
-                      return (
-                        <button
-                          key={t.id}
-                          type='button'
-                          className={`h-8 w-8 shrink-0 rounded border bg-muted ${
-                            selectedTile?.id === t.id ? 'ring-2 ring-primary' : ''
-                          }`}
-                          style={tm ? getPickerTileStyle(tm, t) : undefined}
-                          onClick={() => setSelectedTile(t)}
-                          title={`Tile ${t.tileX},${t.tileY}`}
-                        />
-                      );
-                    })}
-                  </div>
-                  {tilesForPicker.length === 0 && (
-                    <Button
-                      variant='outline'
-                      size='sm'
-                      className='text-xs'
-                      onClick={async () => {
-                        if (!selectedTilemapId) return;
-                        const id = await tilesResult.createTile(selectedTilemapId, {
-                          tileX: 0,
-                          tileY: 0,
-                        });
-                        if (id) {
-                          const t = await db.tiles.get(id);
-                          if (t) setSelectedTile(t);
-                        }
-                      }}>
-                      Add tile (0,0)
-                    </Button>
-                  )}
-                </>
-              )}
-              <Button
-                variant='ghost'
-                size='sm'
-                className='mt-1 gap-1'
-                onClick={() => setCreateTilemapOpen(true)}>
-                <Plus className='h-4 w-4' />
-                New tilemap
-              </Button>
-            </>
-          )}
-        </div>
-
-        {/* Grid */}
-        <div className='flex min-w-0 flex-1 flex-col gap-2'>
+      <div className='flex min-h-0 flex-1 flex-col'>
+        {/* Grid + cell panel */}
+        <div className='flex min-h-0 flex-1 gap-4 p-4'>
+          <div className='flex min-w-0 flex-1 flex-col gap-2'>
           <p className='text-xs text-muted-foreground'>
             {selectedTile
               ? 'Click a cell to paint. Click without a tile to select cell.'
@@ -449,7 +332,7 @@ export function LocationEditor() {
               }),
             )}
           </div>
-        </div>
+          </div>
 
         {/* Cell property panel */}
         {selectedCell && (
@@ -489,6 +372,14 @@ export function LocationEditor() {
                     </SelectContent>
                   </Select>
                 </div>
+                <Button
+                  variant='outline'
+                  size='sm'
+                  className='gap-1 text-destructive hover:text-destructive'
+                  onClick={handleRemoveTileFromCell}>
+                  <Trash2 className='h-4 w-4' />
+                  Remove tile
+                </Button>
               </>
             ) : (
               <p className='text-xs text-muted-foreground'>
@@ -497,56 +388,109 @@ export function LocationEditor() {
             )}
           </div>
         )}
-      </div>
 
-      {/* Create tilemap dialog */}
-      <Dialog open={createTilemapOpen} onOpenChange={setCreateTilemapOpen}>
-        <DialogContent className='sm:max-w-md'>
-          <DialogHeader>
-            <DialogTitle>Create tilemap</DialogTitle>
-          </DialogHeader>
-          <div className='grid gap-4'>
-            <div className='grid gap-2'>
-              <Label>Image</Label>
-              <ImageUpload
-                image={newTilemapAssetId ? getAssetData(newTilemapAssetId) : null}
-                alt='Tilemap'
-                onUpload={setNewTilemapAssetId}
-                onRemove={() => setNewTilemapAssetId(null)}
-                rulesetId={world?.rulesetId ?? undefined}
-              />
-            </div>
-            <div className='grid grid-cols-2 gap-4'>
-              <div className='grid gap-2'>
-                <Label htmlFor='tm-width'>Tile width</Label>
-                <Input
-                  id='tm-width'
-                  type='number'
-                  value={newTilemapWidth}
-                  onChange={(e) => setNewTilemapWidth(parseInt(e.target.value, 10) || 32)}
-                />
+        </div>
+
+        {/* Tile paint bar - full width at bottom */}
+        <div className='flex shrink-0 flex-wrap items-center gap-4 border-t bg-muted/30 px-4 py-3'>
+          <h3 className='text-sm font-semibold'>Tile paint</h3>
+          {tilemapsList.length === 0 ? (
+            <p className='text-xs text-muted-foreground'>
+              No tilemaps. Create one from the world&apos;s Tilemaps page.
+            </p>
+          ) : (
+            <>
+              <div className='flex items-center gap-2'>
+                <Label className='text-xs'>Tilemap</Label>
+                <Select
+                  value={selectedTilemapId ?? '_none'}
+                  onValueChange={(v) =>
+                    v === '_none' ? setSelectedTilemapId(null) : setSelectedTilemapId(v)
+                  }>
+                  <SelectTrigger className='h-8 w-40'>
+                    <SelectValue placeholder='Select tilemap' />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {tilemapsList.map((tm) => (
+                      <SelectItem key={tm.id} value={tm.id}>
+                        {tm.label || `${tm.tileWidth}×${tm.tileHeight}`}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
-              <div className='grid gap-2'>
-                <Label htmlFor='tm-height'>Tile height</Label>
-                <Input
-                  id='tm-height'
-                  type='number'
-                  value={newTilemapHeight}
-                  onChange={(e) => setNewTilemapHeight(parseInt(e.target.value, 10) || 32)}
-                />
-              </div>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant='outline' onClick={() => setCreateTilemapOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleCreateTilemap} disabled={!newTilemapAssetId}>
-              Create
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+              {selectedTilemapId && (() => {
+                const tm = tilemapsList.find((m) => m.id === selectedTilemapId);
+                if (!tm) return null;
+                const dim = assetDimensions[tm.assetId];
+                const cols = dim
+                  ? Math.ceil(dim.w / tm.tileWidth)
+                  : Math.max(1, ...tilesForPicker.map((t) => (t.tileX ?? 0) + 1));
+                const rows = dim
+                  ? Math.ceil(dim.h / tm.tileHeight)
+                  : Math.max(1, ...tilesForPicker.map((t) => (t.tileY ?? 0) + 1));
+                const tilesByCoord = new Map(
+                  tilesForPicker.map((t) => [`${t.tileX ?? 0},${t.tileY ?? 0}`, t]),
+                );
+                return (
+                  <>
+                    <div className='flex items-center gap-2'>
+                      <Label className='text-xs'>Tile</Label>
+                      <div
+                        className='inline-grid max-h-32 overflow-auto rounded border bg-muted/30 p-1'
+                        style={{
+                          gridTemplateColumns: `repeat(${cols}, ${TILE_DISPLAY_SIZE}px)`,
+                          gridTemplateRows: `repeat(${rows}, ${TILE_DISPLAY_SIZE}px)`,
+                        }}>
+                        {Array.from({ length: rows }, (_, y) =>
+                          Array.from({ length: cols }, (_, x) => {
+                            const tile = tilesByCoord.get(`${x},${y}`);
+                            return (
+                              <button
+                                key={tile ? tile.id : `empty-${x}-${y}`}
+                                type='button'
+                                className={`h-8 w-8 shrink-0 rounded border bg-muted ${
+                                  selectedTile?.id === tile?.id ? 'ring-2 ring-primary' : ''
+                                }`}
+                                style={tile && tm ? getPickerTileStyle(tm, tile) : undefined}
+                                onClick={() =>
+                                  setSelectedTile((current) =>
+                                    tile ? (current?.id === tile.id ? null : tile) : current,
+                                  )
+                                }
+                                title={tile ? `Tile ${x},${y}` : `(${x},${y})`}
+                              />
+                            );
+                          }),
+                        )}
+                      </div>
+                    </div>
+                    {tilesForPicker.length === 0 && (
+                      <Button
+                        variant='outline'
+                        size='sm'
+                        className='text-xs'
+                        onClick={async () => {
+                          if (!selectedTilemapId) return;
+                          const id = await tilesResult.createTile(selectedTilemapId, {
+                            tileX: 0,
+                            tileY: 0,
+                          });
+                          if (id) {
+                            const t = await db.tiles.get(id);
+                            if (t) setSelectedTile(t);
+                          }
+                        }}>
+                        Add tile (0,0)
+                      </Button>
+                    )}
+                  </>
+                );
+              })()}
+            </>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
