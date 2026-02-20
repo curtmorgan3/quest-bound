@@ -35,6 +35,7 @@ interface ArchetypeLookupProps {
   label?: string;
   id?: string;
   'data-testid'?: string;
+  allowDefault?: boolean;
 }
 
 export const ArchetypeLookup = ({
@@ -48,12 +49,16 @@ export const ArchetypeLookup = ({
   label = 'Archetype',
   id,
   'data-testid': dataTestId,
+  allowDefault = false,
 }: ArchetypeLookupProps) => {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
   const parentRef = useRef<HTMLDivElement>(null);
   const { archetypes: allArchetypes } = useArchetypes(rulesetId);
-  const archetypes = allArchetypes.filter((arch) => !arch.isDefault);
+  const archetypes = allArchetypes.filter((arch) => {
+    if (allowDefault) return true;
+    return !arch.isDefault;
+  });
 
   const selectedArchetype = value ? archetypes.find((a) => a.id === value) : undefined;
 

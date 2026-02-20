@@ -1,25 +1,8 @@
 import type { LocationViewerOverlayNode } from '@/components/locations/location-viewer';
 import { LocationViewer, getTopTileDataAt } from '@/components/locations/location-viewer';
 import { Button } from '@/components/ui/button';
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import { Label } from '@/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { WorldViewer } from '@/components/worlds/world-viewer';
 import {
-  ArchetypeLookup,
-  ItemLookup,
   useAssets,
   useCampaign,
   useCampaignCharacters,
@@ -33,17 +16,18 @@ import {
 } from '@/lib/compass-api';
 import { useCharacter } from '@/lib/compass-api/hooks/characters/use-character';
 import { db } from '@/stores';
-import type { CampaignCharacter, CampaignItem, Character, CampaignEventType, Item } from '@/types';
+import type {
+  CampaignCharacter,
+  CampaignEventType,
+  CampaignItem,
+  Character,
+  Item,
+} from '@/types';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { ArrowUp, ChevronRight, Plus, Trash2 } from 'lucide-react';
+import { ArrowUp, ChevronRight } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-
-const CAMPAIGN_EVENT_TYPES: { value: CampaignEventType; label: string }[] = [
-  { value: 'on_enter', label: 'On Enter' },
-  { value: 'on_leave', label: 'On Leave' },
-  { value: 'on_activate', label: 'On Activate' },
-];
+import { CampaignEditTileMenu } from './campaign-edit-tile-menu';
 
 export function CampaignEdit() {
   const { campaignId, locationId: locationIdParam } = useParams<{
@@ -75,21 +59,6 @@ export function CampaignEdit() {
     clientX: number;
     clientY: number;
   } | null>(null);
-  const [addCharacterOpen, setAddCharacterOpen] = useState(false);
-  const [addItemOpen, setAddItemOpen] = useState(false);
-  const [addEventOpen, setAddEventOpen] = useState(false);
-  const [addEventName, setAddEventName] = useState('');
-  const [addEventType, setAddEventType] = useState<CampaignEventType>('on_activate');
-  const [pendingTile, setPendingTile] = useState<{
-    locationId: string;
-    tileId: string;
-    x: number;
-    y: number;
-  } | null>(null);
-  const [selectedArchetypeId, setSelectedArchetypeId] = useState<string | null>(null);
-  const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
-
-  console.log(currentLocation);
 
   const getAssetData = useCallback(
     (assetId: string) => assets?.find((a) => a.id === assetId)?.data ?? null,
@@ -128,12 +97,6 @@ export function CampaignEdit() {
       if (!currentLocation?.tiles) return;
       const top = getTopTileDataAt(currentLocation.tiles, x, y);
       if (!top) return;
-      setPendingTile({
-        locationId: currentLocation.id,
-        tileId: top.id,
-        x,
-        y,
-      });
       setTileMenu({ x, y, clientX, clientY });
     },
     [currentLocation],
@@ -151,28 +114,26 @@ export function CampaignEdit() {
       campaignItems.filter((ci) => ci.currentLocationId === selectedLocationId && ci.currentTileId),
     [campaignItems, selectedLocationId],
   );
-  const charactersResolved = useLiveQuery(
-    async (): Promise<Array<{ campaignCharacter: CampaignCharacter; character: Character | null }>> => {
-      if (charactersAtLocation.length === 0) return [];
-      const chars = await db.characters.bulkGet(charactersAtLocation.map((cc) => cc.characterId));
-      return charactersAtLocation.map((cc) => ({
-        campaignCharacter: cc,
-        character: chars.find((c) => c?.id === cc.characterId) ?? null,
-      }));
-    },
-    [charactersAtLocation.map((c) => c.id).join(',')],
-  );
-  const itemsResolved = useLiveQuery(
-    async (): Promise<Array<{ campaignItem: CampaignItem; item: Item | null }>> => {
-      if (itemsAtLocation.length === 0) return [];
-      const itemRecs = await db.items.bulkGet(itemsAtLocation.map((ci) => ci.itemId));
-      return itemsAtLocation.map((ci) => ({
-        campaignItem: ci,
-        item: itemRecs.find((i) => i?.id === ci.itemId) ?? null,
-      }));
-    },
-    [itemsAtLocation.map((i) => i.id).join(',')],
-  );
+  const charactersResolved = useLiveQuery(async (): Promise<
+    Array<{ campaignCharacter: CampaignCharacter; character: Character | null }>
+  > => {
+    if (charactersAtLocation.length === 0) return [];
+    const chars = await db.characters.bulkGet(charactersAtLocation.map((cc) => cc.characterId));
+    return charactersAtLocation.map((cc) => ({
+      campaignCharacter: cc,
+      character: chars.find((c) => c?.id === cc.characterId) ?? null,
+    }));
+  }, [charactersAtLocation.map((c) => c.id).join(',')]);
+  const itemsResolved = useLiveQuery(async (): Promise<
+    Array<{ campaignItem: CampaignItem; item: Item | null }>
+  > => {
+    if (itemsAtLocation.length === 0) return [];
+    const itemRecs = await db.items.bulkGet(itemsAtLocation.map((ci) => ci.itemId));
+    return itemsAtLocation.map((ci) => ({
+      campaignItem: ci,
+      item: itemRecs.find((i) => i?.id === ci.itemId) ?? null,
+    }));
+  }, [itemsAtLocation.map((i) => i.id).join(',')]);
 
   const overlayNodes = useMemo((): LocationViewerOverlayNode[] => {
     const nodes: LocationViewerOverlayNode[] = [];
@@ -238,96 +199,49 @@ export function CampaignEdit() {
     [eventLocationsWithEvent],
   );
 
-  const handleAddCharacter = useCallback(async () => {
-    if (!campaignId || !pendingTile || !selectedArchetypeId || !campaign?.rulesetId) return;
-    const newCharId = await createCharacter({
-      rulesetId: campaign.rulesetId,
-      archetypeIds: [selectedArchetypeId],
-    });
-    if (newCharId) {
-      await createCampaignCharacter(campaignId, newCharId, {
-        currentLocationId: pendingTile.locationId,
-        currentTileId: pendingTile.tileId,
+  const onCreateCharacter = useCallback(
+    async (tile: { locationId: string; tileId: string }, archetypeId: string) => {
+      if (!campaignId || !campaign?.rulesetId) return;
+      const newCharId = await createCharacter({
+        rulesetId: campaign.rulesetId,
+        archetypeIds: [archetypeId],
       });
-    }
-    setAddCharacterOpen(false);
-    setPendingTile(null);
-    setSelectedArchetypeId(null);
-    setTileMenu(null);
-  }, [
-    campaignId,
-    campaign?.rulesetId,
-    pendingTile,
-    selectedArchetypeId,
-    createCharacter,
-    createCampaignCharacter,
-  ]);
-
-  const handleAddItem = useCallback(async () => {
-    if (!campaignId || !pendingTile || !selectedItemId) return;
-    await createCampaignItem(campaignId, {
-      itemId: selectedItemId,
-      currentLocationId: pendingTile.locationId,
-      currentTileId: pendingTile.tileId,
-    });
-    setAddItemOpen(false);
-    setPendingTile(null);
-    setSelectedItemId(null);
-    setTileMenu(null);
-  }, [campaignId, pendingTile, selectedItemId, createCampaignItem]);
-
-  const handleAddEvent = useCallback(async () => {
-    if (!campaignId || !pendingTile || !addEventName.trim()) return;
-    const eventId = await createCampaignEvent(campaignId, {
-      label: addEventName.trim(),
-      type: addEventType,
-    });
-    if (eventId) {
-      await createCampaignEventLocation(eventId, pendingTile.locationId, pendingTile.tileId);
-    }
-    setAddEventOpen(false);
-    setAddEventName('');
-    setAddEventType('on_activate');
-    setPendingTile(null);
-    setTileMenu(null);
-  }, [
-    campaignId,
-    pendingTile,
-    addEventName,
-    addEventType,
-    createCampaignEvent,
-    createCampaignEventLocation,
-  ]);
-
-  const openAddCharacter = useCallback(() => {
-    if (currentLocation?.tiles && tileMenu) {
-      const top = getTopTileDataAt(currentLocation.tiles, tileMenu.x, tileMenu.y);
-      if (top)
-        setPendingTile({
-          locationId: currentLocation.id,
-          tileId: top.id,
-          x: tileMenu.x,
-          y: tileMenu.y,
+      if (newCharId) {
+        await createCampaignCharacter(campaignId, newCharId, {
+          currentLocationId: tile.locationId,
+          currentTileId: tile.tileId,
         });
-    }
-    setTileMenu(null);
-    setAddCharacterOpen(true);
-  }, [currentLocation, tileMenu]);
+      }
+    },
+    [campaignId, campaign?.rulesetId, createCharacter, createCampaignCharacter],
+  );
 
-  const openAddItem = useCallback(() => {
-    if (currentLocation?.tiles && tileMenu) {
-      const top = getTopTileDataAt(currentLocation.tiles, tileMenu.x, tileMenu.y);
-      if (top)
-        setPendingTile({
-          locationId: currentLocation.id,
-          tileId: top.id,
-          x: tileMenu.x,
-          y: tileMenu.y,
-        });
-    }
-    setTileMenu(null);
-    setAddItemOpen(true);
-  }, [currentLocation, tileMenu]);
+  const onCreateItem = useCallback(
+    async (tile: { locationId: string; tileId: string }, itemId: string) => {
+      if (!campaignId) return;
+      await createCampaignItem(campaignId, {
+        itemId,
+        currentLocationId: tile.locationId,
+        currentTileId: tile.tileId,
+      });
+    },
+    [campaignId, createCampaignItem],
+  );
+
+  const onCreateEvent = useCallback(
+    async (
+      tile: { locationId: string; tileId: string },
+      label: string,
+      type: CampaignEventType,
+    ) => {
+      if (!campaignId) return;
+      const eventId = await createCampaignEvent(campaignId, { label, type });
+      if (eventId) {
+        await createCampaignEventLocation(eventId, tile.locationId, tile.tileId);
+      }
+    },
+    [campaignId, createCampaignEvent, createCampaignEventLocation],
+  );
 
   const handleRemoveCharacter = useCallback(async () => {
     if (!entityAtTile?.character) return;
@@ -350,21 +264,6 @@ export function CampaignEdit() {
     await deleteCampaignEvent(entityAtTile.event.campaignEventId);
     setTileMenu(null);
   }, [entityAtTile?.event, deleteCampaignEventLocation, deleteCampaignEvent]);
-
-  const openAddEvent = useCallback(() => {
-    if (currentLocation?.tiles && tileMenu) {
-      const top = getTopTileDataAt(currentLocation.tiles, tileMenu.x, tileMenu.y);
-      if (top)
-        setPendingTile({
-          locationId: currentLocation.id,
-          tileId: top.id,
-          x: tileMenu.x,
-          y: tileMenu.y,
-        });
-    }
-    setTileMenu(null);
-    setAddEventOpen(true);
-  }, [currentLocation, tileMenu]);
 
   if (campaignId && campaign === undefined) {
     return (
@@ -448,169 +347,21 @@ export function CampaignEdit() {
         )}
       </div>
 
-      {tileMenu && currentLocation?.tiles && (
-        <>
-          <div
-            className='fixed inset-0 z-10'
-            role='button'
-            tabIndex={-1}
-            onClick={() => setTileMenu(null)}
-            onContextMenu={(e) => e.preventDefault()}
-            aria-hidden
-          />
-          <div
-            className='fixed z-20 rounded-md border bg-popover px-1 py-1 shadow-md'
-            style={{
-              left: tileMenu.clientX || 0,
-              top: tileMenu.clientY || 0,
-            }}>
-            <button
-              type='button'
-              className='flex w-full items-center rounded-sm px-2 py-1.5 text-sm hover:bg-accent'
-              onClick={openAddCharacter}>
-              <Plus className='mr-2 h-4 w-4' />
-              Add Character
-            </button>
-            <button
-              type='button'
-              className='flex w-full items-center rounded-sm px-2 py-1.5 text-sm hover:bg-accent'
-              onClick={openAddItem}>
-              <Plus className='mr-2 h-4 w-4' />
-              Add Item
-            </button>
-            <button
-              type='button'
-              className='flex w-full items-center rounded-sm px-2 py-1.5 text-sm hover:bg-accent'
-              onClick={openAddEvent}>
-              <Plus className='mr-2 h-4 w-4' />
-              Add Event
-            </button>
-            {entityAtTile?.character && (
-              <button
-                type='button'
-                className='flex w-full items-center rounded-sm px-2 py-1.5 text-sm text-destructive hover:bg-accent'
-                onClick={handleRemoveCharacter}>
-                <Trash2 className='mr-2 h-4 w-4' />
-                Remove character
-              </button>
-            )}
-            {entityAtTile?.item && (
-              <button
-                type='button'
-                className='flex w-full items-center rounded-sm px-2 py-1.5 text-sm text-destructive hover:bg-accent'
-                onClick={handleRemoveItem}>
-                <Trash2 className='mr-2 h-4 w-4' />
-                Remove item
-              </button>
-            )}
-            {entityAtTile?.event && (
-              <button
-                type='button'
-                className='flex w-full items-center rounded-sm px-2 py-1.5 text-sm text-destructive hover:bg-accent'
-                onClick={handleRemoveEvent}>
-                <Trash2 className='mr-2 h-4 w-4' />
-                Remove event
-              </button>
-            )}
-          </div>
-        </>
+      {tileMenu && currentLocation?.tiles && tileMenuTileId && (
+        <CampaignEditTileMenu
+          position={{ clientX: tileMenu.clientX, clientY: tileMenu.clientY }}
+          tile={{ locationId: currentLocation.id, tileId: tileMenuTileId }}
+          entityAtTile={entityAtTile}
+          rulesetId={campaign?.rulesetId}
+          onClose={() => setTileMenu(null)}
+          onCreateCharacter={onCreateCharacter}
+          onCreateItem={onCreateItem}
+          onCreateEvent={onCreateEvent}
+          onRemoveCharacter={handleRemoveCharacter}
+          onRemoveItem={handleRemoveItem}
+          onRemoveEvent={handleRemoveEvent}
+        />
       )}
-
-      <Dialog open={addCharacterOpen} onOpenChange={setAddCharacterOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Add Character</DialogTitle>
-          </DialogHeader>
-          <div className='space-y-2'>
-            <ArchetypeLookup
-              rulesetId={campaign?.rulesetId}
-              value={selectedArchetypeId}
-              onSelect={(archetype) => setSelectedArchetypeId(archetype.id)}
-              onDelete={() => setSelectedArchetypeId(null)}
-              placeholder='Search archetypes...'
-              label='Archetype'
-            />
-          </div>
-          <DialogFooter>
-            <Button variant='outline' onClick={() => setAddCharacterOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleAddCharacter} disabled={!selectedArchetypeId}>
-              Add
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={addItemOpen} onOpenChange={setAddItemOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Add Item</DialogTitle>
-          </DialogHeader>
-          <div className='space-y-2'>
-            <ItemLookup
-              value={selectedItemId}
-              onSelect={(item) => setSelectedItemId(item.id)}
-              onDelete={() => setSelectedItemId(null)}
-              placeholder='Search items...'
-              label='Item'
-            />
-          </div>
-          <DialogFooter>
-            <Button variant='outline' onClick={() => setAddItemOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleAddItem} disabled={!selectedItemId}>
-              Add
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={addEventOpen} onOpenChange={setAddEventOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Add Event</DialogTitle>
-          </DialogHeader>
-          <div className='space-y-4'>
-            <div className='space-y-2'>
-              <Label>Name</Label>
-              <input
-                type='text'
-                className='flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm'
-                value={addEventName}
-                onChange={(e) => setAddEventName(e.target.value)}
-                placeholder='Event name'
-              />
-            </div>
-            <div className='space-y-2'>
-              <Label>Type</Label>
-              <Select
-                value={addEventType}
-                onValueChange={(v) => setAddEventType(v as CampaignEventType)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {CAMPAIGN_EVENT_TYPES.map((opt) => (
-                    <SelectItem key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant='outline' onClick={() => setAddEventOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleAddEvent} disabled={!addEventName.trim()}>
-              Add
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
