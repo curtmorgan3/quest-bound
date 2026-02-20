@@ -1,7 +1,7 @@
 import { Button, Input, Label } from '@/components';
 import { useAssets, useLocation, useLocations, useTilemaps, useWorld } from '@/lib/compass-api';
 import { db } from '@/stores';
-import type { Action, Tile, TileData, Tilemap } from '@/types';
+import type { Tile, TileData, Tilemap } from '@/types';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { Trash2 } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -62,14 +62,7 @@ export function LocationEditor() {
     tilemapsList.forEach((tm) => map.set(tm.id, tm));
     return map;
   }, [tilemapsList]);
-  const { assets } = useAssets(world?.rulesetId ?? null);
-  const actions = useLiveQuery(
-    () =>
-      world?.rulesetId
-        ? db.actions.where('rulesetId').equals(world.rulesetId).toArray()
-        : Promise.resolve([] as Action[]),
-    [world?.rulesetId],
-  );
+  const { assets } = useAssets();
 
   const [selectedCell, setSelectedCell] = useState<{ x: number; y: number } | null>(null);
   const [selectedLayerId, setSelectedLayerId] = useState<string | null>(null);
@@ -196,6 +189,7 @@ export function LocationEditor() {
     const asset = assets.find((a) => a.id === assetId);
     return asset?.data ?? null;
   };
+  const mapImageUrl = loc?.mapAssetId ? (getAssetData(loc.mapAssetId) ?? null) : null;
 
   // Preload tilemap asset images to get dimensions; scale tiles by tilemap tileWidth/tileHeight
   useEffect(() => {
@@ -271,7 +265,12 @@ export function LocationEditor() {
     );
   }
 
-  const actionsList = actions ?? [];
+  /*
+  For handling images. Get intrinsic image size
+  If it's larger than 900px x 1200px, scale it down to fit below that
+  Set height and width of location-editor-grid of the scaled down image dimensions
+  Keep background size to cover to show entire image at native resolution.
+  */
 
   return (
     <div className='flex h-full w-full flex-col'>
@@ -346,34 +345,50 @@ export function LocationEditor() {
       </div>
 
       <div className='flex min-h-0 flex-1 flex-col'>
-        <div className='flex items-center gap-1 pl-4 pr-4 pt-2'>
-          <Label htmlFor='paint-layer' className='text-xs'>
-            Editing Layer
-          </Label>
-          <Input
-            id='paint-layer'
-            type='number'
-            className='w-14'
-            value={paintLayer}
-            onChange={(e) => {
-              const v = parseInt(e.target.value, 10);
-              if (!Number.isNaN(v)) setPaintLayer(v);
-            }}
-          />
+        <div className='flex flex-wrap items-end gap-4 pl-4 pr-4 pt-2'>
+          <div className='flex items-center gap-1'>
+            <Label htmlFor='paint-layer' className='text-xs'>
+              Editing Layer
+            </Label>
+            <Input
+              id='paint-layer'
+              type='number'
+              className='w-14'
+              value={paintLayer}
+              onChange={(e) => {
+                const v = parseInt(e.target.value, 10);
+                if (!Number.isNaN(v)) setPaintLayer(v);
+              }}
+            />
+          </div>
         </div>
         {/* Grid + cell panel */}
-        <div className='flex min-h-0 flex-1 gap-4 p-4'>
-          <div className='flex min-w-0 flex-1 flex-col gap-2'>
+        <div className='flex min-h-0 flex-1 gap-4 p-4 max-h-[60dvh]'>
+          <div className='flex min-w-0 flex-1 flex-col gap-2 max-w-[60dvw] overflow-x-auto'>
             <p className='text-xs text-muted-foreground'>
               {selectedTiles.length > 0
                 ? 'Click or drag over cells to paint. Top-left of selection aligns to cell. Click without a tile to select cell.'
                 : 'Select one or more (Shift+click) tiles in the tile paint panel, then click or drag to paint.'}
             </p>
             <div
-              className='inline-grid gap-px border bg-muted-foreground/20 p-px max-w-[90dvw] overflow-auto'
+              id='location-editor-grid'
+              className='inline-grid border bg-muted-foreground/20'
               style={{
                 gridTemplateColumns: `repeat(${gridWidth}, ${tileRenderSize}px)`,
                 gridTemplateRows: `repeat(${gridHeight}, ${tileRenderSize}px)`,
+
+                ...(mapImageUrl
+                  ? {
+                      // 3640x5040 | 26x36 => 140px^2
+                      // 885x1260 => 34px^2
+                      backgroundImage: `url(${mapImageUrl})`,
+                      height: `1260px`,
+                      width: `885px`,
+                      backgroundSize: 'cover',
+                      backgroundPosition: '0 0',
+                      backgroundRepeat: 'no-repeat',
+                    }
+                  : {}),
               }}>
               {Array.from({ length: gridHeight }, (_, y) =>
                 Array.from({ length: gridWidth }, (_, x) => {
@@ -384,9 +399,9 @@ export function LocationEditor() {
                     <button
                       key={key}
                       type='button'
-                      className={`shrink-0 bg-muted/50 ${
-                        isSelected ? 'ring-2 ring-primary' : 'hover:bg-muted'
-                      }`}
+                      className={`shrink-0 ${
+                        mapImageUrl ? 'bg-muted/50 hover:bg-muted' : 'bg-muted/50 hover:bg-muted'
+                      } ${isSelected ? 'ring-2 ring-primary' : ''}`}
                       style={{ width: tileRenderSize, height: tileRenderSize }}
                       onClick={() => handleCellClick(x, y)}
                       onMouseDown={() => handleCellMouseDown(x, y)}
@@ -416,7 +431,7 @@ export function LocationEditor() {
               selectedTileData={selectedTileData}
               onSelectLayer={setSelectedLayerId}
               getTileStyle={getTileStyle}
-              actions={actionsList}
+              actions={[]}
               onUpdateTileData={handleUpdateTileData}
               onRemoveTile={handleRemoveTileFromCell}
             />
@@ -429,6 +444,10 @@ export function LocationEditor() {
           assetDimensions={assetDimensions}
           selectedTiles={selectedTiles}
           onSelectedTilesChange={setSelectedTiles}
+          mapImage={mapImageUrl}
+          onMapImageUpload={(id) => loc && updateLocation(loc.id, { mapAssetId: id })}
+          onMapImageRemove={() => loc && updateLocation(loc.id, { mapAssetId: null })}
+          rulesetId={world?.rulesetId ?? undefined}
         />
       </div>
     </div>

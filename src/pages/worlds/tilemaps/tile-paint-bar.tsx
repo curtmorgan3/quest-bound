@@ -1,4 +1,5 @@
 import { Button } from '@/components';
+import { ImageUpload } from '@/components/composites/image-upload';
 import {
   Select,
   SelectContent,
@@ -6,6 +7,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useTilemaps, useTiles } from '@/lib/compass-api';
 import { db } from '@/stores';
 import type { Tile, Tilemap } from '@/types';
@@ -19,6 +21,11 @@ export interface TilePaintBarProps {
   assetDimensions: Record<string, { w: number; h: number }>;
   selectedTiles: Tile[];
   onSelectedTilesChange: (tiles: Tile[]) => void;
+  /** Map image (flat asset) for the Image tab. */
+  mapImage?: string | null;
+  onMapImageUpload?: (assetId: string) => void;
+  onMapImageRemove?: () => void;
+  rulesetId?: string | null;
 }
 
 function getPickerTileStyle(
@@ -54,6 +61,10 @@ export function TilePaintBar({
   assetDimensions,
   selectedTiles,
   onSelectedTilesChange,
+  mapImage,
+  onMapImageUpload,
+  onMapImageRemove,
+  rulesetId,
 }: TilePaintBarProps) {
   const selectedIds = useMemo(() => new Set(selectedTiles.map((t) => t.id)), [selectedTiles]);
 
@@ -88,105 +99,136 @@ export function TilePaintBar({
   }, [tilesForPicker]);
 
   return (
-    <div className='flex shrink-0 max-h-[45dvh] overflow-auto flex-wrap items-start gap-4 border-t bg-muted/30 px-4 py-3'>
-      {tilemapsList.length === 0 ? (
-        <p className='text-xs text-muted-foreground'>
-          No tilemaps. Create one from the world&apos;s Tilemaps page.
-        </p>
-      ) : (
-        <>
-          <div className='flex flex-col gap-2'>
-            <h3 className='text-sm font-semibold'>Tile paint</h3>
-            <Select
-              value={selectedTilemapId ?? '_none'}
-              onValueChange={(v) => {
-                setSelectedTilemapId(v === '_none' ? null : v);
-                if (v === '_none') onSelectedTilesChange([]);
-              }}>
-              <SelectTrigger className='h-8 w-40'>
-                <SelectValue placeholder='Select tilemap' />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value='_none'>None</SelectItem>
-                {tilemapsList.map((tm) => (
-                  <SelectItem key={tm.id} value={tm.id}>
-                    {tm.label || `${tm.tileWidth}×${tm.tileHeight}`}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          {selectedTilemapId &&
-            (() => {
-              const tm = tilemapsList.find((m) => m.id === selectedTilemapId);
-              if (!tm) return null;
-              const tilesByCoord = new Map(
-                tilesForPicker.map((t) => [`${t.tileX ?? 0},${t.tileY ?? 0}`, t]),
-              );
-              const rowCount = rowIndices.length;
-              const colCount = colIndices.length;
-              return (
-                <>
-                  <div className='flex items-center gap-2'>
-                    <div
-                      className='inline-grid rounded border bg-muted/30 p-1'
-                      style={{
-                        gridTemplateColumns:
-                          colCount > 0 ? `repeat(${colCount}, ${TILE_DISPLAY_SIZE}px)` : undefined,
-                        gridTemplateRows:
-                          rowCount > 0 ? `repeat(${rowCount}, ${TILE_DISPLAY_SIZE}px)` : undefined,
-                      }}>
-                      {rowIndices.map((y) =>
-                        colIndices.map((x) => {
-                          const tile = tilesByCoord.get(`${x},${y}`);
-                          return (
-                            <button
-                              key={tile ? tile.id : `empty-${x}-${y}`}
-                              type='button'
-                              className={`h-8 w-8 shrink-0 rounded border bg-muted ${
-                                tile && selectedIds.has(tile.id) ? 'ring-2 ring-primary' : ''
-                              }`}
-                              style={
-                                tile && tm
-                                  ? getPickerTileStyle(tm, tile, getAssetData, assetDimensions)
-                                  : undefined
-                              }
-                              onClick={(e) => handleTileClick(e, tile)}
-                              title={
-                                tile
-                                  ? `Tile ${x},${y} (Shift+click to multi-select)`
-                                  : `(${x},${y})`
-                              }
-                            />
-                          );
-                        }),
+    <div className='flex shrink-0 max-h-[45dvh] flex-col overflow-auto border-t bg-muted/30 px-4 py-3'>
+      <Tabs defaultValue='tilemap' className='flex min-h-0 flex-1 flex-col'>
+        <TabsList className='w-full'>
+          <TabsTrigger value='tilemap' className='flex-1'>
+            Tilemap
+          </TabsTrigger>
+          <TabsTrigger value='image' className='flex-1'>
+            Image
+          </TabsTrigger>
+        </TabsList>
+        <TabsContent value='tilemap' className='mt-2 flex flex-wrap items-start gap-4'>
+          {tilemapsList.length === 0 ? (
+            <p className='text-xs text-muted-foreground'>
+              No tilemaps. Create one from the world&apos;s Tilemaps page.
+            </p>
+          ) : (
+            <>
+              <div className='flex flex-col gap-2'>
+                <h3 className='text-sm font-semibold'>Tile paint</h3>
+                <Select
+                  value={selectedTilemapId ?? '_none'}
+                  onValueChange={(v) => {
+                    setSelectedTilemapId(v === '_none' ? null : v);
+                    if (v === '_none') onSelectedTilesChange([]);
+                  }}>
+                  <SelectTrigger className='h-8 w-40'>
+                    <SelectValue placeholder='Select tilemap' />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value='_none'>None</SelectItem>
+                    {tilemapsList.map((tm) => (
+                      <SelectItem key={tm.id} value={tm.id}>
+                        {tm.label || `${tm.tileWidth}×${tm.tileHeight}`}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              {selectedTilemapId &&
+                (() => {
+                  const tm = tilemapsList.find((m) => m.id === selectedTilemapId);
+                  if (!tm) return null;
+                  const tilesByCoord = new Map(
+                    tilesForPicker.map((t) => [`${t.tileX ?? 0},${t.tileY ?? 0}`, t]),
+                  );
+                  const rowCount = rowIndices.length;
+                  const colCount = colIndices.length;
+                  return (
+                    <>
+                      <div className='flex items-center gap-2'>
+                        <div
+                          className='inline-grid rounded border bg-muted/30 p-1'
+                          style={{
+                            gridTemplateColumns:
+                              colCount > 0
+                                ? `repeat(${colCount}, ${TILE_DISPLAY_SIZE}px)`
+                                : undefined,
+                            gridTemplateRows:
+                              rowCount > 0
+                                ? `repeat(${rowCount}, ${TILE_DISPLAY_SIZE}px)`
+                                : undefined,
+                          }}>
+                          {rowIndices.map((y) =>
+                            colIndices.map((x) => {
+                              const tile = tilesByCoord.get(`${x},${y}`);
+                              return (
+                                <button
+                                  key={tile ? tile.id : `empty-${x}-${y}`}
+                                  type='button'
+                                  className={`h-8 w-8 shrink-0 rounded border bg-muted ${
+                                    tile && selectedIds.has(tile.id) ? 'ring-2 ring-primary' : ''
+                                  }`}
+                                  style={
+                                    tile && tm
+                                      ? getPickerTileStyle(tm, tile, getAssetData, assetDimensions)
+                                      : undefined
+                                  }
+                                  onClick={(e) => handleTileClick(e, tile)}
+                                  title={
+                                    tile
+                                      ? `Tile ${x},${y} (Shift+click to multi-select)`
+                                      : `(${x},${y})`
+                                  }
+                                />
+                              );
+                            }),
+                          )}
+                        </div>
+                      </div>
+                      {tilesForPicker.length === 0 && (
+                        <Button
+                          variant='outline'
+                          size='sm'
+                          className='text-xs'
+                          onClick={async () => {
+                            if (!selectedTilemapId) return;
+                            const id = await tilesResult.createTile(selectedTilemapId, {
+                              tileX: 0,
+                              tileY: 0,
+                            });
+                            if (id) {
+                              const t = await db.tiles.get(id);
+                              if (t) onSelectedTilesChange([t]);
+                            }
+                          }}>
+                          Add tile (0,0)
+                        </Button>
                       )}
-                    </div>
-                  </div>
-                  {tilesForPicker.length === 0 && (
-                    <Button
-                      variant='outline'
-                      size='sm'
-                      className='text-xs'
-                      onClick={async () => {
-                        if (!selectedTilemapId) return;
-                        const id = await tilesResult.createTile(selectedTilemapId, {
-                          tileX: 0,
-                          tileY: 0,
-                        });
-                        if (id) {
-                          const t = await db.tiles.get(id);
-                          if (t) onSelectedTilesChange([t]);
-                        }
-                      }}>
-                      Add tile (0,0)
-                    </Button>
-                  )}
-                </>
-              );
-            })()}
-        </>
-      )}
+                    </>
+                  );
+                })()}
+            </>
+          )}
+        </TabsContent>
+        <TabsContent value='image' className='mt-2'>
+          <div className='flex flex-col gap-2'>
+            <h3 className='text-sm font-semibold'>Map image (flat asset)</h3>
+            <p className='text-xs text-muted-foreground'>
+              Optional image shown in viewer and as grid background in the editor.
+            </p>
+            <ImageUpload
+              image={mapImage ?? null}
+              alt='Map'
+              onUpload={(id) => onMapImageUpload?.(id)}
+              onRemove={() => onMapImageRemove?.()}
+              rulesetId={rulesetId ?? undefined}
+            />
+          </div>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

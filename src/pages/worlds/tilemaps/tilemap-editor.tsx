@@ -141,7 +141,6 @@ export function TilemapEditor() {
             <Input
               id='te-tile-width'
               type='number'
-              min={8}
               className='w-16'
               value={tileWidthInput || tileWidth}
               onChange={(e) => setTileWidthInput(e.target.value)}
@@ -155,7 +154,6 @@ export function TilemapEditor() {
             <Input
               id='te-tile-height'
               type='number'
-              min={8}
               className='w-16'
               value={tileHeightInput || tileHeight}
               onChange={(e) => setTileHeightInput(e.target.value)}
@@ -178,7 +176,7 @@ export function TilemapEditor() {
               <img
                 src={assetData}
                 alt='Tilemap'
-                className='block max-h-[70vh] w-auto max-w-full object-none'
+                className='block max-h-[70vh] w-auto max-w-full'
                 style={{
                   imageRendering: 'pixelated',
                 }}

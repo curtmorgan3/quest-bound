@@ -432,6 +432,8 @@ export type Location = BaseDetails & {
   backgroundSize?: string | null;
   /** CSS background-position: center, top, left, etc. */
   backgroundPosition?: string | null;
+  /** Optional flat map image asset; when set, location-viewer shows this image instead of the tile grid. */
+  mapAssetId?: string | null;
 };
 
 // --- Campaign (joins ruleset + world); placement is campaign-scoped ---

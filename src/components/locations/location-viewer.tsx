@@ -80,6 +80,7 @@ export function LocationViewer({
   }, [tilemapsList]);
 
   const tilesByKey = useMemo(() => getTilesByKey(loc?.tiles ?? []), [loc?.tiles]);
+  const mapImageUrl = loc?.mapAssetId ? getAssetData(loc.mapAssetId) : null;
 
   useEffect(() => {
     const dataUrls = new Map<string, string>();
@@ -175,39 +176,53 @@ export function LocationViewer({
           <ZoomOut className='h-4 w-4' />
         </Button>
       </div>
-      <div
-        className='inline-grid gap-px border bg-muted-foreground/20 p-px overflow-auto'
-        style={{
-          gridTemplateColumns: `repeat(${gridWidth}, ${effectiveTileSize}px)`,
-          gridTemplateRows: `repeat(${gridHeight}, ${effectiveTileSize}px)`,
-        }}>
-        {Array.from({ length: gridHeight }, (_, y) =>
-          Array.from({ length: gridWidth }, (_, x) => {
-            const key = `${x},${y}`;
-            const layers = tilesByKey.get(key) ?? [];
-            return (
-              <div
-                key={key}
-                role={onSelectCell ? 'button' : undefined}
-                className='shrink-0 bg-muted/50 hover:bg-muted'
-                style={{ width: effectiveTileSize, height: effectiveTileSize }}
-                onClick={() => onSelectCell?.(x, y)}>
-                {layers.length > 0 && (
-                  <span className='relative block size-full overflow-hidden'>
-                    {layers.map((td) => (
-                      <span
-                        key={td.id}
-                        className='absolute inset-0 bg-no-repeat'
-                        style={getTileStyle(td)}
-                      />
-                    ))}
-                  </span>
-                )}
-              </div>
-            );
-          }),
-        )}
-      </div>
+      {mapImageUrl ? (
+        <div className='h-full w-full overflow-auto'>
+          <img
+            src={mapImageUrl}
+            alt='Location map'
+            className='max-w-none object-none'
+            style={{
+              transform: `scale(${zoom})`,
+              transformOrigin: '0 0',
+            }}
+          />
+        </div>
+      ) : (
+        <div
+          className='inline-grid gap-px border bg-muted-foreground/20 p-px overflow-auto'
+          style={{
+            gridTemplateColumns: `repeat(${gridWidth}, ${effectiveTileSize}px)`,
+            gridTemplateRows: `repeat(${gridHeight}, ${effectiveTileSize}px)`,
+          }}>
+          {Array.from({ length: gridHeight }, (_, y) =>
+            Array.from({ length: gridWidth }, (_, x) => {
+              const key = `${x},${y}`;
+              const layers = tilesByKey.get(key) ?? [];
+              return (
+                <div
+                  key={key}
+                  role={onSelectCell ? 'button' : undefined}
+                  className='shrink-0 bg-muted/50 hover:bg-muted'
+                  style={{ width: effectiveTileSize, height: effectiveTileSize }}
+                  onClick={() => onSelectCell?.(x, y)}>
+                  {layers.length > 0 && (
+                    <span className='relative block size-full overflow-hidden'>
+                      {layers.map((td) => (
+                        <span
+                          key={td.id}
+                          className='absolute inset-0 bg-no-repeat'
+                          style={getTileStyle(td)}
+                        />
+                      ))}
+                    </span>
+                  )}
+                </div>
+              );
+            }),
+          )}
+        </div>
+      )}
     </div>
   );
 }
