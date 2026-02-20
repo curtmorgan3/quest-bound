@@ -21,6 +21,8 @@ export type Asset = BaseDetails & {
   type: string; // MIME type
   filename: string;
   rulesetId: string | null; // Nullable for user assets
+  /** Optional world for tracking/exporting worlds. */
+  worldId?: string | null;
   directory?: string;
   /** Module origin: ruleset id, source entity id, and module name. */
   moduleId?: string;
@@ -90,12 +92,6 @@ export type Character = BaseDetails & {
   moduleName?: string;
   /** Asset IDs for map sprites (stacked by z-index). */
   sprites?: string[];
-  /** Current world (optional; existing characters remain valid without). */
-  worldId?: string;
-  /** Current location within the world. */
-  locationId?: string;
-  /** Tile placement within the location (TileData.id). */
-  tileId?: string;
 };
 
 export type CharacterAttribute = Attribute & {
@@ -384,10 +380,11 @@ export interface TileData {
 
 export type World = BaseDetails & {
   label: string;
-  rulesetId: string;
   description?: string;
   assetId?: string | null;
   image?: string | null;
+  /** @deprecated Legacy: may still exist in DB after migration; do not set on new worlds. Use Campaign for ruleset–world association. */
+  rulesetId?: string;
 };
 
 export type Tilemap = BaseDetails & {
@@ -439,11 +436,34 @@ export type Location = BaseDetails & {
   backgroundPosition?: string | null;
 };
 
-export type LocationItem = BaseDetails & {
-  itemId: string;
+// --- Campaign (joins ruleset + world); placement is campaign-scoped ---
+export type Campaign = BaseDetails & {
+  label?: string;
   rulesetId: string;
   worldId: string;
+};
+
+export type CampaignCharacter = BaseDetails & {
+  characterId: string;
+  campaignId: string;
+  currentLocationId?: string | null;
+  currentTileId?: string | null;
+};
+
+export type CampaignItem = BaseDetails & {
+  itemId: string;
+  campaignId: string;
+  currentLocationId?: string | null;
+  currentTileId?: string | null;
+};
+
+export type CampaignEvent = BaseDetails & {
+  label: string;
+  campaignId: string;
+  scriptId?: string | null;
+};
+
+export type CampaignEventLocation = BaseDetails & {
+  campaignEventId: string;
   locationId: string;
-  tileId: string;
-  sprites?: string[];
 };

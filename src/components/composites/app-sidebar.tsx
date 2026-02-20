@@ -13,6 +13,7 @@ import {
   HelpCircle,
   Layers,
   LayoutTemplate,
+  Map,
   Newspaper,
   Pin,
   PinOff,
@@ -78,7 +79,8 @@ export function AppSidebar() {
   const isHomepage =
     location.pathname === '/rulesets' ||
     location.pathname === '/characters' ||
-    location.pathname === '/worlds';
+    location.pathname === '/worlds' ||
+    location.pathname === '/campaigns';
   const isWorldsRoute = location.pathname.startsWith('/worlds/');
   const isWorldsGlobeActive =
     location.pathname === '/worlds' || /^\/worlds\/[^/]+$/.test(location.pathname);
@@ -108,6 +110,11 @@ export function AppSidebar() {
       title: 'Worlds',
       url: '/worlds',
       icon: Globe,
+    },
+    {
+      title: 'Campaigns',
+      url: '/campaigns',
+      icon: Map,
     },
   ];
 
@@ -173,11 +180,6 @@ export function AppSidebar() {
             title: 'Tilemaps',
             url: `/worlds/${worldId}/tilemaps`,
             icon: Layers,
-          },
-          {
-            title: 'Scripts',
-            url: `/worlds/${worldId}/scripts`,
-            icon: FileCode,
           },
         ]
       : rulesetItems.filter((i) => i.title === 'Scripts');

@@ -23,7 +23,7 @@ export function WorldEditor() {
   const { updateWorld } = useWorlds();
   const [selectedLocationIds, setSelectedLocationIds] = useState<string[]>([]);
 
-  const { assets } = useAssets(world?.rulesetId ?? null);
+  const { assets } = useAssets(null);
   const getAssetData = (assetId: string) =>
     assets?.find((a) => a.id === assetId)?.data ?? null;
 
@@ -173,7 +173,7 @@ export function WorldEditor() {
             key={singleSelectedLocation.id}
             location={singleSelectedLocation}
             siblingLocations={locationsList.filter((loc) => loc.id !== singleSelectedLocation.id)}
-            rulesetId={world.rulesetId}
+            rulesetId={null}
             getAssetData={getAssetData}
             onAddGrid={() => {
               updateLocation(singleSelectedLocation.id, {

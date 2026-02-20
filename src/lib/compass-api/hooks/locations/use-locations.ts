@@ -67,8 +67,8 @@ export const useLocations = (
 
   const deleteLocation = async (id: string) => {
     try {
-      const locationItems = await db.locationItems.where('locationId').equals(id).toArray();
-      await db.locationItems.bulkDelete(locationItems.map((li) => li.id));
+      const eventLocs = await db.campaignEventLocations.where('locationId').equals(id).toArray();
+      await db.campaignEventLocations.bulkDelete(eventLocs.map((el) => el.id));
       await db.locations.delete(id);
     } catch (e) {
       handleError(e as Error, {

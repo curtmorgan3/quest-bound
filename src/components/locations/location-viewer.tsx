@@ -1,0 +1,179 @@
+import { useLocation, useTilemaps } from '@/lib/compass-api';
+import { db } from '@/stores';
+import type { Tile, TileData, Tilemap } from '@/types';
+import { useLiveQuery } from 'dexie-react-hooks';
+import { useEffect, useMemo, useRef, useState } from 'react';
+
+const DEFAULT_TILE_RENDER_SIZE = 32;
+
+function getTilesByKey(tiles: TileData[]): Map<string, TileData[]> {
+  const map = new Map<string, TileData[]>();
+  for (const td of tiles) {
+    const key = `${td.x},${td.y}`;
+    const list = map.get(key) ?? [];
+    list.push(td);
+    map.set(key, list);
+  }
+  map.forEach((list) => list.sort((a, b) => (a.zIndex ?? 0) - (b.zIndex ?? 0)));
+  return map;
+}
+
+export interface LocationViewerProps {
+  locationId: string | undefined;
+  worldId: string | undefined;
+  /** Optional: resolve asset data for tile images. If not provided, tiles may not show images. */
+  getAssetData?: (assetId: string) => string | null;
+  /** Optional: called when a cell is clicked (x, y). */
+  onSelectCell?: (x: number, y: number) => void;
+  /** Optional: tile render size in pixels. */
+  tileRenderSize?: number;
+}
+
+export function LocationViewer({
+  locationId,
+  worldId,
+  getAssetData = () => null,
+  onSelectCell,
+  tileRenderSize: tileRenderSizeProp,
+}: LocationViewerProps) {
+  const location = useLocation(locationId);
+  const { tilemaps } = useTilemaps(worldId);
+  const tilemapsList = tilemaps ?? [];
+  const loc = location ?? undefined;
+  const gridWidth = loc?.gridWidth ?? 1;
+  const gridHeight = loc?.gridHeight ?? 1;
+  const tileRenderSize = tileRenderSizeProp ?? loc?.tileRenderSize ?? DEFAULT_TILE_RENDER_SIZE;
+
+  const [assetDimensions, setAssetDimensions] = useState<Record<string, { w: number; h: number }>>(
+    {},
+  );
+  const assetDimensionsRef = useRef(assetDimensions);
+  assetDimensionsRef.current = assetDimensions;
+
+  const tileIdsInLocation = useMemo(
+    () => [...new Set((loc?.tiles ?? []).map((td) => td.tileId))],
+    [loc?.tiles],
+  );
+  const tilesById = useLiveQuery(
+    () =>
+      tileIdsInLocation.length > 0
+        ? db.tiles.bulkGet(tileIdsInLocation).then((arr) => {
+            const map = new Map<string, Tile>();
+            arr.forEach((t) => t && map.set(t.id, t));
+            return map;
+          })
+        : Promise.resolve(new Map<string, Tile>()),
+    [tileIdsInLocation.join(',')],
+  );
+  const tilemapsById = useMemo(() => {
+    const map = new Map<string, Tilemap>();
+    tilemapsList.forEach((tm) => map.set(tm.id, tm));
+    return map;
+  }, [tilemapsList]);
+
+  const tilesByKey = useMemo(() => getTilesByKey(loc?.tiles ?? []), [loc?.tiles]);
+
+  useEffect(() => {
+    const dataUrls = new Map<string, string>();
+    tilemapsList.forEach((tm) => {
+      if (tm.assetId) {
+        const data = getAssetData(tm.assetId);
+        if (data) dataUrls.set(tm.assetId, data);
+      }
+    });
+    const cancels: Array<() => void> = [];
+    dataUrls.forEach((dataUrl, assetId) => {
+      if (assetDimensionsRef.current[assetId]) return;
+      const img = new Image();
+      img.onload = () => {
+        setAssetDimensions((prev) => ({
+          ...prev,
+          [assetId]: { w: img.naturalWidth, h: img.naturalHeight },
+        }));
+      };
+      img.src = dataUrl;
+      cancels.push(() => {
+        img.src = '';
+      });
+    });
+    return () => cancels.forEach((c) => c());
+  }, [tilemapsList, getAssetData]);
+
+  const getTileStyle = (td: TileData): React.CSSProperties => {
+    const tile = tilesById?.get(td.tileId);
+    if (!tile) return {};
+    const tilemap = tilemapsById.get(tile.tilemapId ?? '');
+    if (!tilemap) return {};
+    const data = getAssetData(tilemap.assetId);
+    if (!data) return {};
+    const tw = tilemap.tileWidth;
+    const th = tilemap.tileHeight;
+    const tileX = tile.tileX ?? 0;
+    const tileY = tile.tileY ?? 0;
+    const dim = assetDimensionsRef.current[tilemap.assetId];
+    const backgroundSize =
+      dim != null
+        ? `${(dim.w * tileRenderSize) / tw}px ${(dim.h * tileRenderSize) / th}px`
+        : 'auto';
+    const posX = tileX * tileRenderSize;
+    const posY = tileY * tileRenderSize;
+    return {
+      backgroundImage: `url(${data})`,
+      backgroundPosition: `-${posX}px -${posY}px`,
+      backgroundSize,
+      backgroundRepeat: 'no-repeat',
+    };
+  };
+
+  if (!locationId || !worldId) return null;
+  if (location === undefined) {
+    return (
+      <div className='flex h-full w-full items-center justify-center p-4'>
+        <p className='text-muted-foreground'>Loading…</p>
+      </div>
+    );
+  }
+  if (!location) {
+    return (
+      <div className='flex h-full w-full items-center justify-center p-4'>
+        <p className='text-muted-foreground'>Location not found.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className='inline-grid gap-px border bg-muted-foreground/20 p-px overflow-auto'
+      style={{
+        gridTemplateColumns: `repeat(${gridWidth}, ${tileRenderSize}px)`,
+        gridTemplateRows: `repeat(${gridHeight}, ${tileRenderSize}px)`,
+      }}>
+      {Array.from({ length: gridHeight }, (_, y) =>
+        Array.from({ length: gridWidth }, (_, x) => {
+          const key = `${x},${y}`;
+          const layers = tilesByKey.get(key) ?? [];
+          return (
+            <div
+              key={key}
+              role={onSelectCell ? 'button' : undefined}
+              className='shrink-0 bg-muted/50 hover:bg-muted'
+              style={{ width: tileRenderSize, height: tileRenderSize }}
+              onClick={() => onSelectCell?.(x, y)}>
+              {layers.length > 0 && (
+                <span className='relative block size-full overflow-hidden'>
+                  {layers.map((td) => (
+                    <span
+                      key={td.id}
+                      className='absolute inset-0 bg-no-repeat'
+                      style={getTileStyle(td)}
+                    />
+                  ))}
+                </span>
+              )}
+            </div>
+          );
+        }),
+      )}
+    </div>
+  );
+}

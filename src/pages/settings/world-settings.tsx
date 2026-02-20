@@ -9,7 +9,7 @@ interface WorldSettingsProps {
 
 export const WorldSettings = ({ world }: WorldSettingsProps) => {
   const { updateWorld } = useWorlds();
-  const { assets } = useAssets(world.rulesetId ?? null);
+  const { assets } = useAssets(null);
   const [label, setLabel] = useState(world.label);
   const [description, setDescription] = useState(world.description ?? '');
 
@@ -63,7 +63,7 @@ export const WorldSettings = ({ world }: WorldSettingsProps) => {
             onRemove={() => void updateWorld(world.id, { assetId: null })}
             onUpload={(assetId) => void updateWorld(world.id, { assetId })}
             onSetUrl={(url) => void updateWorld(world.id, { image: url, assetId: null })}
-            rulesetId={world.rulesetId ?? null}
+            rulesetId={null}
           />
         </div>
         <DescriptionEditor

@@ -3,6 +3,11 @@ import type {
   Archetype,
   Asset,
   Attribute,
+  Campaign,
+  CampaignCharacter,
+  CampaignEvent,
+  CampaignEventLocation,
+  CampaignItem,
   Character,
   CharacterAttribute,
   CharacterArchetype,
@@ -18,7 +23,6 @@ import type {
   InventoryItem,
   Item,
   Location,
-  LocationItem,
   Page,
   Ruleset,
   RulesetPage,
@@ -74,10 +78,32 @@ const db = new Dexie('qbdb') as Dexie & {
   tilemaps: EntityTable<Tilemap, 'id'>;
   tiles: EntityTable<Tile, 'id'>;
   locations: EntityTable<Location, 'id'>;
-  locationItems: EntityTable<LocationItem, 'id'>;
+  campaigns: EntityTable<Campaign, 'id'>;
+  campaignCharacters: EntityTable<CampaignCharacter, 'id'>;
+  campaignItems: EntityTable<CampaignItem, 'id'>;
+  campaignEvents: EntityTable<CampaignEvent, 'id'>;
+  campaignEventLocations: EntityTable<CampaignEventLocation, 'id'>;
 };
 
-db.version(dbSchemaVersion).stores(dbSchema);
+db.version(dbSchemaVersion)
+  .stores(dbSchema)
+  .upgrade((tx) => {
+    // Create a Campaign for each world that had rulesetId (upgrading from pre-Phase-7)
+    const worlds = (tx as any).table('worlds');
+    const campaigns = (tx as any).table('campaigns');
+    return worlds.toCollection().each((world: { id: string; rulesetId?: string }) => {
+      if (world.rulesetId) {
+        const now = new Date().toISOString();
+        return campaigns.add({
+          id: crypto.randomUUID(),
+          rulesetId: world.rulesetId,
+          worldId: world.id,
+          createdAt: now,
+          updatedAt: now,
+        });
+      }
+    });
+  });
 
 // Cache assets for reference in the asset injector middleware
 db.on('ready', async () => {

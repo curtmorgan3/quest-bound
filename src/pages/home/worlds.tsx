@@ -23,25 +23,16 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { useAssets, useRulesets, useWorlds } from '@/lib/compass-api';
+import { useAssets, useWorlds } from '@/lib/compass-api';
 import { useRef, useState } from 'react';
 import Markdown from 'react-markdown';
 import { useNavigate } from 'react-router-dom';
 
 export const Worlds = () => {
   const { worlds, createWorld, deleteWorld } = useWorlds();
-  const { rulesets } = useRulesets();
   const { assets, deleteAsset } = useAssets();
 
   const [label, setLabel] = useState('');
-  const [rulesetId, setRulesetId] = useState('');
   const [assetId, setAssetId] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
 
@@ -54,17 +45,11 @@ export const Worlds = () => {
     return asset?.data ?? null;
   };
 
-  const getRulesetTitle = (id: string) => {
-    const ruleset = rulesets.find((r) => r.id === id);
-    return ruleset?.title ?? 'Unknown Ruleset';
-  };
-
   const handleCreate = async () => {
-    if (!label.trim() || !rulesetId) return;
+    if (!label.trim()) return;
 
     const id = await createWorld({
       label: label.trim(),
-      rulesetId,
     });
 
     if (id) {
@@ -76,7 +61,6 @@ export const Worlds = () => {
 
   const resetForm = () => {
     setLabel('');
-    setRulesetId('');
     setAssetId(null);
     setOpen(false);
   };
@@ -88,7 +72,6 @@ export const Worlds = () => {
     }
     if (!isOpen) {
       setLabel('');
-      setRulesetId('');
       setAssetId(null);
     }
     setOpen(isOpen);
@@ -107,7 +90,7 @@ export const Worlds = () => {
     setAssetId(null);
   };
 
-  const isFormValid = label.trim() !== '' && rulesetId !== '';
+  const isFormValid = label.trim() !== '';
 
   const sortedWorlds = [...worlds].sort((a, b) => a.label.localeCompare(b.label));
 
@@ -139,39 +122,13 @@ export const Worlds = () => {
                 />
               </div>
               <div className='grid gap-3'>
-                <Label htmlFor='world-ruleset'>
-                  Ruleset <span className='text-destructive'>*</span>
-                </Label>
-                <Select value={rulesetId} onValueChange={setRulesetId}>
-                  <SelectTrigger
-                    id='world-ruleset'
-                    className='w-full'
-                    data-testid='world-ruleset-select'>
-                    <SelectValue placeholder='Select a ruleset' />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {rulesets.length === 0 ? (
-                      <SelectItem value='_none' disabled>
-                        No rulesets available
-                      </SelectItem>
-                    ) : (
-                      rulesets.map((ruleset) => (
-                        <SelectItem key={ruleset.id} value={ruleset.id}>
-                          {ruleset.title}
-                        </SelectItem>
-                      ))
-                    )}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className='grid gap-3'>
                 <Label>Image</Label>
                 <ImageUpload
                   image={getImageFromAssetId(assetId)}
                   alt={label || 'World image'}
                   onUpload={handleImageUpload}
                   onRemove={handleImageRemove}
-                  rulesetId={rulesetId || undefined}
+                  rulesetId={undefined}
                 />
               </div>
             </div>
@@ -193,7 +150,6 @@ export const Worlds = () => {
       <div className='flex flex-col gap-3'>
         {sortedWorlds.map((world) => {
           const doNotAsk = localStorage.getItem('qb.confirmOnDelete') === 'false';
-          const rulesetTitle = getRulesetTitle(world.rulesetId);
           const imageUrl = world.image;
 
           return (
@@ -209,7 +165,6 @@ export const Worlds = () => {
                 <div className='min-w-0'>
                   <div className='flex w-full items-start justify-between gap-2'>
                     <h2 className='truncate text-lg font-semibold'>{world.label}</h2>
-                    <p className='shrink-0 text-sm text-muted-foreground'>{rulesetTitle}</p>
                   </div>
                   {world.description ? (
                     <div className='md-content mt-0.5 max-h-[90%] overflow-scroll text-sm text-muted-foreground'>

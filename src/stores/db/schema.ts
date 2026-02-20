@@ -31,9 +31,13 @@ export const dbSchema = {
   worlds: `${common}, label, rulesetId, assetId, backgroundAssetId, backgroundOpacity, backgroundSize, backgroundPosition`,
   tilemaps: `${common}, label, worldId, assetId, tileHeight, tileWidth`,
   tiles: `${common}, tilemapId, tileX, tileY`,
-  locations: `${common}, label, worldId, nodeX, nodeY, nodeWidth, nodeHeight, parentLocationId, gridWidth, gridHeight, tiles, labelVisible, backgroundColor, opacity, sides, backgroundAssetId, backgroundSize, backgroundPosition, [worldId+parentLocationId]`,
-  locationItems: `${common}, itemId, rulesetId, worldId, locationId, tileId, sprites`,
+  locations: `${common}, label, worldId, nodeX, nodeY, nodeWidth, nodeHeight, parentLocationId, gridWidth, gridHeight, tiles, hasMap, tileRenderSize, labelVisible, backgroundColor, opacity, sides, backgroundAssetId, backgroundSize, backgroundPosition, [worldId+parentLocationId]`,
+  campaigns: `${common}, label, rulesetId, worldId, [rulesetId], [worldId]`,
+  campaignCharacters: `${common}, characterId, campaignId, currentLocationId, currentTileId, [campaignId], [characterId]`,
+  campaignItems: `${common}, itemId, campaignId, currentLocationId, currentTileId, [campaignId]`,
+  campaignEvents: `${common}, label, campaignId, scriptId, [campaignId]`,
+  campaignEventLocations: `${common}, campaignEventId, locationId, [campaignEventId], [locationId]`,
 };
 
 // Increment on every schema change
-export const dbSchemaVersion = 36;
+export const dbSchemaVersion = 37;

@@ -3,17 +3,12 @@ import { db } from '@/stores';
 import type { World } from '@/types';
 import { useLiveQuery } from 'dexie-react-hooks';
 
-export const useWorlds = (rulesetId?: string) => {
+export const useWorlds = () => {
   const { handleError } = useErrorHandler();
 
-  const worlds = useLiveQuery(
-    () =>
-      rulesetId ? db.worlds.where('rulesetId').equals(rulesetId).toArray() : db.worlds.toArray(),
-    [rulesetId],
-  );
+  const worlds = useLiveQuery(() => db.worlds.toArray(), []);
 
   const createWorld = async (data: Partial<World>) => {
-    if (!data.rulesetId) return;
     const now = new Date().toISOString();
     const id = crypto.randomUUID();
     try {
@@ -21,8 +16,9 @@ export const useWorlds = (rulesetId?: string) => {
         ...data,
         id,
         label: data.label ?? 'New World',
-        rulesetId: data.rulesetId,
+        description: data.description,
         assetId: data.assetId ?? null,
+        image: data.image ?? null,
         createdAt: now,
         updatedAt: now,
       } as World);
@@ -55,9 +51,18 @@ export const useWorlds = (rulesetId?: string) => {
       const world = await db.worlds.get(id);
       if (!world) return;
 
-      // Cascade: location items for this world
-      const locationItems = await db.locationItems.where('worldId').equals(id).toArray();
-      await db.locationItems.bulkDelete(locationItems.map((li) => li.id));
+      // Cascade: campaigns for this world
+      const campaigns = await db.campaigns.where('worldId').equals(id).toArray();
+      for (const c of campaigns) {
+        await db.campaignCharacters.where('campaignId').equals(c.id).delete();
+        await db.campaignItems.where('campaignId').equals(c.id).delete();
+        const events = await db.campaignEvents.where('campaignId').equals(c.id).toArray();
+        for (const e of events) {
+          await db.campaignEventLocations.where('campaignEventId').equals(e.id).delete();
+        }
+        await db.campaignEvents.where('campaignId').equals(c.id).delete();
+        await db.campaigns.delete(c.id);
+      }
 
       // Locations for this world
       const locations = await db.locations.where('worldId').equals(id).toArray();
