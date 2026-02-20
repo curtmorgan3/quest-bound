@@ -17,6 +17,8 @@ import type {
   Inventory,
   InventoryItem,
   Item,
+  Location,
+  LocationItem,
   Page,
   Ruleset,
   RulesetPage,
@@ -24,8 +26,11 @@ import type {
   Script,
   ScriptError,
   ScriptLog,
+  Tile,
+  Tilemap,
   User,
   Window,
+  World,
 } from '@/types';
 import Dexie, { type EntityTable } from 'dexie';
 import { assetInjectorMiddleware } from './asset-injector-middleware';
@@ -65,6 +70,11 @@ const db = new Dexie('qbdb') as Dexie & {
   dependencyGraphNodes: EntityTable<DependencyGraphNode, 'id'>;
   archetypes: EntityTable<Archetype, 'id'>;
   characterArchetypes: EntityTable<CharacterArchetype, 'id'>;
+  worlds: EntityTable<World, 'id'>;
+  tilemaps: EntityTable<Tilemap, 'id'>;
+  tiles: EntityTable<Tile, 'id'>;
+  locations: EntityTable<Location, 'id'>;
+  locationItems: EntityTable<LocationItem, 'id'>;
 };
 
 db.version(dbSchemaVersion).stores(dbSchema);

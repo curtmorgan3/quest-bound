@@ -88,6 +88,14 @@ export type Character = BaseDetails & {
   moduleId?: string;
   moduleEntityId?: string;
   moduleName?: string;
+  /** Asset IDs for map sprites (stacked by z-index). */
+  sprites?: string[];
+  /** Current world (optional; existing characters remain valid without). */
+  worldId?: string;
+  /** Current location within the world. */
+  locationId?: string;
+  /** Tile placement within the location (TileData.id). */
+  tileId?: string;
 };
 
 export type CharacterAttribute = Attribute & {
@@ -358,4 +366,55 @@ export type DependencyGraphNode = BaseDetails & {
   entityId: string | null; // ID of associated entity
   dependencies: string[]; // Array of attribute IDs this script depends on
   dependents: string[]; // Array of script IDs that depend on this script's entity
+};
+
+// --- Worlds & Locations (not a DB table; stored inside Location.tiles) ---
+export interface TileData {
+  id: string;
+  tileId: string;
+  x: number;
+  y: number;
+  isPassable: boolean;
+  actionId?: string;
+}
+
+export type World = BaseDetails & {
+  label: string;
+  rulesetId: string;
+  assetId?: string | null;
+};
+
+export type Tilemap = BaseDetails & {
+  worldId: string;
+  assetId: string;
+  tileHeight: number;
+  tileWidth: number;
+};
+
+export type Tile = BaseDetails & {
+  tilemapId?: string;
+  tileX?: number;
+  tileY?: number;
+};
+
+export type Location = BaseDetails & {
+  label: string;
+  worldId: string;
+  nodeX: number;
+  nodeY: number;
+  nodeWidth: number;
+  nodeHeight: number;
+  parentLocationId?: string | null;
+  gridWidth: number;
+  gridHeight: number;
+  tiles: TileData[];
+};
+
+export type LocationItem = BaseDetails & {
+  itemId: string;
+  rulesetId: string;
+  worldId: string;
+  locationId: string;
+  tileId: string;
+  sprites?: string[];
 };

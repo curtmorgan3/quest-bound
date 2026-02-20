@@ -28,7 +28,12 @@ export const dbSchema = {
   scriptErrors: `${common}, rulesetId, scriptId, characterId, timestamp`,
   scriptLogs: `${common}, rulesetId, scriptId, characterId, timestamp, [entityId+entityType]`,
   dependencyGraphNodes: `${common}, rulesetId, scriptId, entityType, entityId`,
+  worlds: `${common}, label, rulesetId, assetId`,
+  tilemaps: `${common}, worldId, assetId, tileHeight, tileWidth`,
+  tiles: `${common}, tilemapId, tileX, tileY`,
+  locations: `${common}, label, worldId, nodeX, nodeY, nodeWidth, nodeHeight, parentLocationId, gridWidth, gridHeight, tiles, [worldId+parentLocationId]`,
+  locationItems: `${common}, itemId, rulesetId, worldId, locationId, tileId, sprites`,
 };
 
 // Increment on every schema change
-export const dbSchemaVersion = 31;
+export const dbSchemaVersion = 32;
