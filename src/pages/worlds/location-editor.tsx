@@ -11,11 +11,15 @@ import { TilePaintBar } from './tilemaps';
 
 const TILE_DISPLAY_SIZE = 32;
 
-function getTilesByKey(tiles: TileData[]): Map<string, TileData> {
-  const map = new Map<string, TileData>();
+function getTilesByKey(tiles: TileData[]): Map<string, TileData[]> {
+  const map = new Map<string, TileData[]>();
   for (const td of tiles) {
-    map.set(`${td.x},${td.y}`, td);
+    const key = `${td.x},${td.y}`;
+    const list = map.get(key) ?? [];
+    list.push(td);
+    map.set(key, list);
   }
+  map.forEach((list) => list.sort((a, b) => (a.zIndex ?? 0) - (b.zIndex ?? 0)));
   return map;
 }
 
@@ -66,16 +70,31 @@ export function LocationEditor() {
 
   const [selectedTile, setSelectedTile] = useState<Tile | null>(null);
   const [selectedCell, setSelectedCell] = useState<{ x: number; y: number } | null>(null);
+  const [selectedLayerId, setSelectedLayerId] = useState<string | null>(null);
   const [gridWidthInput, setGridWidthInput] = useState('');
   const [gridHeightInput, setGridHeightInput] = useState('');
   const gridWidthDisplay = gridWidthInput !== '' ? gridWidthInput : String(gridWidth);
   const gridHeightDisplay = gridHeightInput !== '' ? gridHeightInput : String(gridHeight);
 
   const tilesByKey = useMemo(() => getTilesByKey(loc?.tiles ?? []), [loc?.tiles]);
+  const isPaintingRef = useRef(false);
 
-  const selectedTileData = selectedCell
-    ? tilesByKey.get(`${selectedCell.x},${selectedCell.y}`)
-    : null;
+  useEffect(() => {
+    const onMouseUp = () => {
+      isPaintingRef.current = false;
+    };
+    document.addEventListener('mouseup', onMouseUp);
+    return () => document.removeEventListener('mouseup', onMouseUp);
+  }, []);
+
+  const selectedCellLayers = selectedCell
+    ? tilesByKey.get(`${selectedCell.x},${selectedCell.y}`) ?? []
+    : [];
+  const selectedTileData =
+    selectedCellLayers.length > 0
+      ? selectedCellLayers.find((td) => td.id === selectedLayerId) ??
+        selectedCellLayers[selectedCellLayers.length - 1]
+      : null;
 
   const handleSetGridSize = () => {
     const w = Math.max(1, Math.min(100, parseInt(gridWidthDisplay, 10) || 1));
@@ -85,43 +104,63 @@ export function LocationEditor() {
     if (loc) updateLocation(loc.id, { gridWidth: w, gridHeight: h });
   };
 
-  const handleCellClick = async (x: number, y: number) => {
+  const applyTileToCell = (x: number, y: number) => {
+    if (!loc || !selectedTile) return;
+    const layers = tilesByKey.get(`${x},${y}`) ?? [];
+    const nextZ = layers.length === 0
+      ? 0
+      : Math.max(...layers.map((td) => td.zIndex ?? 0)) + 1;
+    const newTile: TileData = {
+      id: crypto.randomUUID(),
+      tileId: selectedTile.id,
+      x,
+      y,
+      zIndex: nextZ,
+      isPassable: true,
+    };
+    updateLocation(loc.id, { tiles: [...(loc.tiles ?? []), newTile] });
+  };
+
+  const handleCellClick = (x: number, y: number) => {
     if (!loc) return;
     if (selectedTile) {
-      const existing = tilesByKey.get(`${x},${y}`);
-      const tileId = selectedTile.id;
-      const newTiles = (loc.tiles ?? []).filter((td) => !(td.x === x && td.y === y));
-      newTiles.push({
-        id: existing?.id ?? crypto.randomUUID(),
-        tileId,
-        x,
-        y,
-        isPassable: existing?.isPassable ?? true,
-        actionId: existing?.actionId,
-      });
-      await updateLocation(loc.id, { tiles: newTiles });
-    } else if (selectedCell?.x === x && selectedCell?.y === y) {
+      // Tile already applied in handleCellMouseDown; click only used for drag or to select
+      return;
+    }
+    if (selectedCell?.x === x && selectedCell?.y === y) {
       setSelectedCell(null);
+      setSelectedLayerId(null);
     } else {
       setSelectedCell({ x, y });
+      const layers = tilesByKey.get(`${x},${y}`) ?? [];
+      setSelectedLayerId(layers[layers.length - 1]?.id ?? null);
+    }
+  };
+
+  const handleCellMouseDown = (x: number, y: number) => {
+    if (selectedTile) {
+      applyTileToCell(x, y);
+      isPaintingRef.current = true;
+    }
+  };
+
+  const handleCellMouseEnter = (x: number, y: number) => {
+    if (isPaintingRef.current && selectedTile) {
+      applyTileToCell(x, y);
     }
   };
 
   const handleUpdateTileData = (updates: Partial<TileData>) => {
-    if (!loc || !selectedCell) return;
-    const existing = tilesByKey.get(`${selectedCell.x},${selectedCell.y}`);
-    if (!existing) return;
+    if (!loc || !selectedTileData) return;
     const newTiles = (loc.tiles ?? []).map((td) =>
-      td.x === selectedCell.x && td.y === selectedCell.y ? { ...td, ...updates } : td,
+      td.id === selectedTileData.id ? { ...td, ...updates } : td,
     );
     updateLocation(loc.id, { tiles: newTiles });
   };
 
   const handleRemoveTileFromCell = () => {
-    if (!loc || !selectedCell) return;
-    const newTiles = (loc.tiles ?? []).filter(
-      (td) => !(td.x === selectedCell!.x && td.y === selectedCell!.y),
-    );
+    if (!loc || !selectedTileData) return;
+    const newTiles = (loc.tiles ?? []).filter((td) => td.id !== selectedTileData.id);
     updateLocation(loc.id, { tiles: newTiles });
   };
 
@@ -269,8 +308,8 @@ export function LocationEditor() {
           <div className='flex min-w-0 flex-1 flex-col gap-2'>
             <p className='text-xs text-muted-foreground'>
               {selectedTile
-                ? 'Click a cell to paint. Click without a tile to select cell.'
-                : 'Select a tile, then click a cell to paint.'}
+                ? 'Click or drag over cells to paint. Click without a tile to select cell.'
+                : 'Select a tile, then click or drag over cells to paint.'}
             </p>
             <div
               className='inline-grid gap-px rounded border bg-muted-foreground/20 p-px'
@@ -281,7 +320,7 @@ export function LocationEditor() {
               {Array.from({ length: gridHeight }, (_, y) =>
                 Array.from({ length: gridWidth }, (_, x) => {
                   const key = `${x},${y}`;
-                  const td = tilesByKey.get(key);
+                  const layers = tilesByKey.get(key) ?? [];
                   const isSelected = selectedCell?.x === x && selectedCell?.y === y;
                   return (
                     <button
@@ -290,11 +329,21 @@ export function LocationEditor() {
                       className={`h-8 w-8 shrink-0 rounded-sm bg-muted/50 ${
                         isSelected ? 'ring-2 ring-primary' : 'hover:bg-muted'
                       }`}
-                      style={
-                        td ? { ...getTileStyle(td), backgroundRepeat: 'no-repeat' } : undefined
-                      }
                       onClick={() => handleCellClick(x, y)}
-                    />
+                      onMouseDown={() => handleCellMouseDown(x, y)}
+                      onMouseEnter={() => handleCellMouseEnter(x, y)}>
+                      {layers.length > 0 && (
+                        <span className='relative block size-full overflow-hidden rounded-sm'>
+                          {layers.map((td) => (
+                            <span
+                              key={td.id}
+                              className='absolute inset-0 bg-no-repeat'
+                              style={getTileStyle(td)}
+                            />
+                          ))}
+                        </span>
+                      )}
+                    </button>
                   );
                 }),
               )}
@@ -304,7 +353,10 @@ export function LocationEditor() {
           {selectedCell && (
             <CellPropertyPanel
               cell={selectedCell}
-              tileData={selectedTileData}
+              layers={selectedCellLayers}
+              selectedTileData={selectedTileData}
+              onSelectLayer={setSelectedLayerId}
+              getTileStyle={getTileStyle}
               actions={actionsList}
               onUpdateTileData={handleUpdateTileData}
               onRemoveTile={handleRemoveTileFromCell}

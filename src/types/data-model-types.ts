@@ -374,6 +374,8 @@ export interface TileData {
   tileId: string;
   x: number;
   y: number;
+  /** Layer order; higher values draw on top. Default 0 when omitted. */
+  zIndex?: number;
   isPassable: boolean;
   actionId?: string;
 }
