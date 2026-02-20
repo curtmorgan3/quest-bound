@@ -29,6 +29,9 @@ interface SheetViewerProps {
   initialLocked?: boolean;
   /** Called when the locked state changes (e.g. to persist). */
   onLockedChange?: (locked: boolean) => void;
+  showWindowTabs?: boolean;
+  allowWindowMinimize?: boolean;
+  allowWindowClose?: boolean;
 }
 
 export const SheetViewer = ({
@@ -39,6 +42,9 @@ export const SheetViewer = ({
   initialCurrentPageId,
   initialLocked,
   onLockedChange,
+  showWindowTabs = true,
+  allowWindowMinimize = true,
+  allowWindowClose = true,
 }: SheetViewerProps) => {
   const { characterPages } = useCharacterPages(characterId);
   const sortedCharacterPages = [...characterPages.sort((a, b) => a.label.localeCompare(b.label))];
@@ -130,12 +136,16 @@ export const SheetViewer = ({
         data: {
           locked,
           window,
-          onMinimize: (id: string) => {
-            onWindowUpdated?.({ id, isCollapsed: true });
-          },
-          onClose: (id: string) => {
-            onWindowDeleted?.(id);
-          },
+          onMinimize: allowWindowMinimize
+            ? (id: string) => {
+                onWindowUpdated?.({ id, isCollapsed: true });
+              }
+            : undefined,
+          onClose: allowWindowClose
+            ? (id: string) => {
+                onWindowDeleted?.(id);
+              }
+            : undefined,
           onChildWindowClick: (childWindowId: string, parentWindow: { x: number; y: number }) =>
             handleChildWindowClick(childWindowId, parentWindow, window),
         },
@@ -222,8 +232,10 @@ export const SheetViewer = ({
                 data={{
                   locked,
                   window,
-                  onMinimize: (id: string) => onWindowUpdated?.({ id, isCollapsed: true }),
-                  onClose: (id: string) => onWindowDeleted?.(id),
+                  onMinimize: allowWindowMinimize
+                    ? (id: string) => onWindowUpdated?.({ id, isCollapsed: true })
+                    : undefined,
+                  onClose: allowWindowClose ? (id: string) => onWindowDeleted?.(id) : undefined,
                   onChildWindowClick: (childWindowId, parentWindow) =>
                     handleChildWindowClick(childWindowId, parentWindow, window),
                 }}
@@ -248,15 +260,17 @@ export const SheetViewer = ({
           backgroundOpacity={currentPage?.backgroundOpacity}
         />
       )}
-      <WindowsTabs
-        characterId={characterId}
-        characterPages={characterPages}
-        windows={windowsForCurrentPage}
-        openWindows={openWindows}
-        toggleWindow={(id: string) => onWindowUpdated?.({ id, isCollapsed: openWindows.has(id) })}
-        locked={locked}
-        onToggleLock={() => setLocked((prev) => !prev)}
-      />
+      {showWindowTabs && (
+        <WindowsTabs
+          characterId={characterId}
+          characterPages={characterPages}
+          windows={windowsForCurrentPage}
+          openWindows={openWindows}
+          toggleWindow={(id: string) => onWindowUpdated?.({ id, isCollapsed: openWindows.has(id) })}
+          locked={locked}
+          onToggleLock={() => setLocked((prev) => !prev)}
+        />
+      )}
     </div>
   );
 };

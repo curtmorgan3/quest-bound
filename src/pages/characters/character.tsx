@@ -23,7 +23,15 @@ import {
 } from './hooks';
 import { InventoryPanel } from './inventory-panel';
 
-export const CharacterPage = ({ id, lockByDefault }: { id?: string; lockByDefault?: boolean }) => {
+export const CharacterPage = ({
+  id,
+  lockByDefault,
+  windowEditorMode = false,
+}: {
+  id?: string;
+  lockByDefault?: boolean;
+  windowEditorMode?: boolean;
+}) => {
   const { open } = useSidebar();
   const { characterId } = useParams<{ characterId: string }>();
   const { addNotification } = useNotifications();
@@ -117,8 +125,13 @@ export const CharacterPage = ({ id, lockByDefault }: { id?: string; lockByDefaul
         onLockedChange={sheetViewerPersistence?.onLockedChange}
         onWindowUpdated={handleUpdateWindow}
         onWindowDeleted={handleDeleteWindow}
+        showWindowTabs={!windowEditorMode}
+        allowWindowClose={!windowEditorMode}
+        allowWindowMinimize={!windowEditorMode}
       />
-      <GameLog className={`fixed bottom-[50px] left-${open ? '265' : '65'} z-30`} />
+      {!windowEditorMode && (
+        <GameLog className={`fixed bottom-[50px] left-${open ? '265' : '65'} z-30`} />
+      )}
       <InventoryPanel
         open={inventoryPanelConfig.open ?? false}
         onOpenChange={(open: boolean) => {

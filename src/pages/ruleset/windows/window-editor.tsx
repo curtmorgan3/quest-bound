@@ -57,10 +57,7 @@ export const WindowEditor = () => {
     replaceComponents(restored);
   };
 
-  let eyeLeft = open ? 265 : 65;
-  if (viewMode) {
-    eyeLeft = open ? 295 : 85;
-  }
+  const eyeLeft = open ? 265 : 65;
 
   if (!windowId) return null;
 
@@ -69,7 +66,7 @@ export const WindowEditor = () => {
       value={{ viewMode, components, getComponent, updateComponent, updateComponents }}>
       <div className='flex flex-col' style={{ overflow: 'hidden' }}>
         {viewMode ? (
-          <CharacterPage id={testCharacter?.id} />
+          <CharacterPage id={testCharacter?.id} windowEditorMode />
         ) : (
           <SheetEditor
             components={components}

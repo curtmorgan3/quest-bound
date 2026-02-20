@@ -18,7 +18,7 @@ export interface WindowNodeWindow {
 
 export interface WindowNodeData {
   window: WindowNodeWindow;
-  onClose: (id: string) => void;
+  onClose?: (id: string) => void;
   onMinimize?: (id: string) => void;
   onChildWindowClick: (childWindowId: string, parentWindow: { x: number; y: number }) => void;
   locked: boolean;
@@ -110,7 +110,6 @@ export const WindowNode = ({ data }: { data: WindowNodeData }) => {
           {editWindowHref && (
             <Link
               to={editWindowHref}
-              target='_blank'
               className='clickable flex items-center justify-center text-inherit hover:opacity-80'
               style={{ width: '20px', height: '20px' }}
               title='Edit window'
@@ -118,11 +117,13 @@ export const WindowNode = ({ data }: { data: WindowNodeData }) => {
               <ExternalLink style={{ width: '14px', height: '14px' }} />
             </Link>
           )}
-          <OctagonX
-            style={{ width: '20px', height: '20px' }}
-            className='clickable'
-            onClick={() => onClose(windowData.id)}
-          />
+          {!!onClose && (
+            <OctagonX
+              style={{ width: '20px', height: '20px' }}
+              className='clickable'
+              onClick={() => onClose(windowData.id)}
+            />
+          )}
         </div>
       )}
       <div
