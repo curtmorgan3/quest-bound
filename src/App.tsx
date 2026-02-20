@@ -1,12 +1,13 @@
 import {
+  ArchetypeSheetEditor,
   CharacterChartViewer,
   CharacterPage,
   Characters,
   DevTools,
   ErrorPage,
   Ruleset,
-  Rulesets,
   RulesetPageEditorPage,
+  Rulesets,
   ScriptEditorPage,
   ScriptsIndex,
 } from '@/pages';
@@ -47,7 +48,15 @@ function CompassRoutes() {
               path={`/rulesets/:rulesetId/pages/:pageId`}
               element={<RulesetPageEditorPage />}
             />
-            <Route path={`/rulesets/:rulesetId/archetypes`} element={<Ruleset page='archetypes' />} />
+            <Route
+              path={`/rulesets/:rulesetId/archetypes`}
+              element={<Ruleset page='archetypes' />}
+            />
+
+            <Route
+              path={`/rulesets/:rulesetId/archetypes/:archetypeId/edit`}
+              element={<ArchetypeSheetEditor />}
+            />
 
             <Route path={`/rulesets/:rulesetId/scripts`} element={<ScriptsIndex />} />
 

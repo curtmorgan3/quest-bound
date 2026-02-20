@@ -13,9 +13,10 @@ import {
   Input,
   Label,
 } from '@/components';
+import { useActiveRuleset } from '@/lib/compass-api';
 import type { Archetype } from '@/types';
 import { ChevronDown, ChevronUp, Pencil, Trash2 } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 export interface ArchetypeCardProps {
   archetype: Archetype;
@@ -66,7 +67,14 @@ export function ArchetypeCard({
   onDelete,
   confirmBeforeDelete,
 }: ArchetypeCardProps) {
+  const { activeRuleset } = useActiveRuleset();
+  const navigate = useNavigate();
   const imageSrc = archetype.image ?? getImageFromAssetId(archetype.assetId ?? null) ?? undefined;
+
+  const handleOpenSheetEdit = () => {
+    if (!activeRuleset) return;
+    navigate(`${archetype.id}/edit`);
+  };
 
   return (
     <Card
@@ -152,8 +160,8 @@ export function ArchetypeCard({
       </div>
       {!isEditing && (
         <div className='flex gap-1 shrink-0'>
-          <Button variant='ghost' size='sm' onClick={onStartEdit}>
-            Set Default Sheet
+          <Button variant='ghost' size='sm' onClick={handleOpenSheetEdit}>
+            Edit Default Sheet
           </Button>
           {!archetype.isDefault && (
             <Button disabled={archetype.isDefault} variant='ghost' size='sm' onClick={onStartEdit}>

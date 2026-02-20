@@ -32,15 +32,7 @@ interface CharacterPage {
   editorWindowId?: string;
 }
 
-export const CharacterPage = ({
-  id,
-  lockByDefault,
-  editorWindowId,
-}: {
-  id?: string;
-  lockByDefault?: boolean;
-  editorWindowId?: string;
-}) => {
+export const CharacterPage = ({ id, lockByDefault, editorWindowId }: CharacterPage) => {
   const { open } = useSidebar();
   const { characterId } = useParams<{ characterId: string }>();
   const { addNotification } = useNotifications();
