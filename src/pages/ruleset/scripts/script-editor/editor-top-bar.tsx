@@ -32,12 +32,12 @@ const ENTITY_TYPES = [
 ] as const;
 
 interface EditorTopBar {
+  rulesetId: string;
+  worldId?: string;
   name: string;
   setName: (name: string) => void;
   entityType: Script['entityType'];
-  setEntityType: Dispatch<
-    SetStateAction<'attribute' | 'action' | 'item' | 'archetype' | 'global'>
-  >;
+  setEntityType: Dispatch<SetStateAction<'attribute' | 'action' | 'item' | 'archetype' | 'global'>>;
   entityId: string | null;
   setEntityId: (id: string | null) => void;
   category: string | null;
@@ -48,6 +48,8 @@ interface EditorTopBar {
 }
 
 export const EditorTopBar = ({
+  rulesetId,
+  worldId,
   name,
   setName,
   entityType,
@@ -61,8 +63,8 @@ export const EditorTopBar = ({
   scriptExecutionHook,
 }: EditorTopBar) => {
   const navigate = useNavigate();
-  const { rulesetId, scriptId } = useParams<{ rulesetId: string; scriptId: string }>();
-  const { scripts, createScript, updateScript, deleteScript } = useScripts();
+  const { scriptId } = useParams<{ scriptId: string }>();
+  const { scripts, createScript, updateScript, deleteScript } = useScripts(worldId);
   const { activeRuleset, testCharacter } = useRulesets();
 
   const isNew = scriptId === 'new';
@@ -107,20 +109,23 @@ export const EditorTopBar = ({
     if (isNew) {
       const id = await createScript(payload);
       if (id) {
-        navigate(`/rulesets/${rulesetId}/scripts/${id}`, { replace: true });
+        navigate(`/${worldId ? 'worlds' : 'rulesets'}/${worldId ?? rulesetId}/scripts/${id}`, {
+          replace: true,
+        });
       }
     } else if (script) {
       await updateScript(script.id, payload);
     }
   };
 
-  const handleCancel = () => navigate(`/rulesets/${rulesetId}/scripts`);
+  const handleCancel = () =>
+    navigate(worldId ? `/worlds/${worldId}/scripts` : `/rulesets/${rulesetId}/scripts`);
 
   const handleDelete = async () => {
     if (!script || isNew) return;
     if (window.confirm('Delete this script? This cannot be undone.')) {
       await deleteScript(script.id);
-      navigate(`/rulesets/${rulesetId}/scripts`);
+      navigate(worldId ? `/worlds/${worldId}/scripts` : `/rulesets/${rulesetId}/scripts`);
     }
   };
 

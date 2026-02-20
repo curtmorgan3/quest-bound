@@ -15,6 +15,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { AlertCircle } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
+import { useWorld } from '@/lib/compass-api/hooks/worlds/use-world';
 import { AttributeControls } from './script-editor/attribute-controls';
 import { EditorConsole } from './script-editor/editor-console';
 import { EditorTopBar } from './script-editor/editor-top-bar';
@@ -35,9 +36,15 @@ function getAutocompletePreference(): boolean {
 }
 
 export function ScriptEditorPage() {
-  const { scriptId } = useParams<{ rulesetId: string; scriptId: string }>();
+  const { rulesetId: rulesetIdParam, scriptId, worldId } = useParams<{
+    rulesetId?: string;
+    scriptId: string;
+    worldId?: string;
+  }>();
+  const world = useWorld(worldId);
+  const effectiveRulesetId = rulesetIdParam ?? world?.rulesetId ?? '';
+  const { scripts } = useScripts(worldId);
   const isNew = scriptId === 'new';
-  const { scripts } = useScripts();
   const script = isNew ? null : (scripts.find((s) => s.id === scriptId) ?? null);
 
   const { activeRuleset, testCharacter } = useRulesets();
@@ -128,6 +135,8 @@ export function ScriptEditorPage() {
   return (
     <div className='flex flex-col h-full min-h-0'>
       <EditorTopBar
+        rulesetId={effectiveRulesetId}
+        worldId={worldId}
         sourceCode={sourceCode}
         scriptExecutionHook={workerHook}
         {...{ name, setName, entityId, setEntityId, entityType, setEntityType, category, setCategory }}

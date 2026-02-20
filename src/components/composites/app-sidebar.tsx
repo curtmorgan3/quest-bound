@@ -172,7 +172,11 @@ export function AppSidebar() {
             url: `/worlds/${worldId}/tilemaps`,
             icon: Layers,
           },
-          ...rulesetItems.filter((i) => i.title === 'Scripts'),
+          {
+            title: 'Scripts',
+            url: `/worlds/${worldId}/scripts`,
+            icon: FileCode,
+          },
         ]
       : rulesetItems.filter((i) => i.title === 'Scripts');
 

@@ -4,6 +4,7 @@ import type { Script } from '@/types';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useActiveRuleset } from '../rulesets/use-active-ruleset';
+import { useWorld } from '../worlds/use-world';
 
 function getEntityTable(entityType: 'attribute' | 'action' | 'item' | 'archetype' | 'global') {
   if (entityType === 'global') return;
@@ -16,18 +17,23 @@ function getEntityTable(entityType: 'attribute' | 'action' | 'item' | 'archetype
         : db.archetypes;
 }
 
-export const useScripts = () => {
+export const useScripts = (worldId?: string) => {
   const { activeRuleset } = useActiveRuleset();
+  const world = useWorld(worldId);
   const { handleError } = useErrorHandler();
 
-  const scripts = useLiveQuery(
-    () =>
-      db.scripts
-        .where('rulesetId')
-        .equals(activeRuleset?.id ?? 0)
-        .toArray(),
-    [activeRuleset],
-  );
+  const rulesetId = worldId ? world?.rulesetId : activeRuleset?.id;
+
+  const scripts = useLiveQuery(async () => {
+    if (!rulesetId) return [];
+    const list = await db.scripts.where('rulesetId').equals(rulesetId).toArray();
+    if (worldId != null) {
+      // World scripts index: only show scripts for this world
+      return list.filter((s) => s.worldId === worldId);
+    }
+    // Ruleset-level scripts index: only show scripts without a world
+    return list.filter((s) => s.worldId == null);
+  }, [rulesetId, worldId]);
 
   /** True while the initial query or a dependency-driven re-query is in flight. */
   const isLoading = scripts === undefined;
@@ -37,14 +43,16 @@ export const useScripts = () => {
   }, [isLoading]);
 
   const createScript = async (data: Partial<Script>) => {
-    if (!activeRuleset) return;
+    const effectiveRulesetId = rulesetId ?? activeRuleset?.id;
+    if (!effectiveRulesetId) return;
     const now = new Date().toISOString();
     try {
       const scriptId = crypto.randomUUID();
       await db.scripts.add({
         ...data,
         id: scriptId,
-        rulesetId: activeRuleset.id,
+        rulesetId: effectiveRulesetId,
+        ...(worldId != null && { worldId }),
         createdAt: now,
         updatedAt: now,
       } as Script);
@@ -171,6 +179,7 @@ export const useScripts = () => {
     scripts: scripts ?? [],
     globalScripts,
     isLoading,
+    rulesetId: rulesetId ?? undefined,
     createScript,
     updateScript,
     deleteScript,

@@ -69,15 +69,11 @@ function CompassRoutes() {
 
             <Route path={`/worlds`} element={<Worlds />} />
             <Route path={`/worlds/:worldId`} element={<WorldEditor />} />
-            <Route
-              path={`/worlds/:worldId/locations/:locationId`}
-              element={<WorldEditor />}
-            />
+            <Route path={`/worlds/:worldId/scripts`} element={<ScriptsIndex />} />
+            <Route path={`/worlds/:worldId/scripts/:scriptId`} element={<ScriptEditorPage />} />
+            <Route path={`/worlds/:worldId/locations/:locationId`} element={<WorldEditor />} />
             <Route path={`/worlds/:worldId/tilemaps`} element={<TilemapListPage />} />
-            <Route
-              path={`/worlds/:worldId/tilemaps/:tilemapId`}
-              element={<TilemapEditor />}
-            />
+            <Route path={`/worlds/:worldId/tilemaps/:tilemapId`} element={<TilemapEditor />} />
             <Route
               path={`/worlds/:worldId/locations/:locationId/edit`}
               element={<LocationEditor />}

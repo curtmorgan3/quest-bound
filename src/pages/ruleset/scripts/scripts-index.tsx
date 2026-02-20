@@ -73,9 +73,14 @@ function groupScriptsByCategory(scripts: Script[]): { category: string; scripts:
 }
 
 export function ScriptsIndex() {
-  const { rulesetId } = useParams<{ rulesetId: string }>();
+  const { rulesetId: rulesetIdParam, worldId } = useParams<{
+    rulesetId?: string;
+    worldId?: string;
+  }>();
+
   const [searchParams, setSearchParams] = useSearchParams();
-  const { scripts } = useScripts();
+  const { scripts, rulesetId: rulesetIdFromHook } = useScripts(worldId);
+  const rulesetId = rulesetIdParam ?? rulesetIdFromHook ?? '';
   const selectedType = typeFromParams(searchParams);
   const setSelectedType = (value: string) => {
     setSearchParams(
@@ -163,12 +168,16 @@ export function ScriptsIndex() {
             </SelectContent>
           </Select>
         </div>
-        <Button asChild>
-          <Link to={`/rulesets/${rulesetId}/scripts/new`} data-testid='scripts-new-script-link'>
-            <Plus className='h-4 w-4 mr-2' />
-            New Script
-          </Link>
-        </Button>
+        {rulesetId && (
+          <Button asChild>
+            <Link
+              to={worldId ? `/worlds/${worldId}/scripts/new` : `/rulesets/${rulesetId}/scripts/new`}
+              data-testid='scripts-new-script-link'>
+              <Plus className='h-4 w-4 mr-2' />
+              New Script
+            </Link>
+          </Button>
+        )}
       </div>
 
       <div className='rounded-md border p-2'>
@@ -181,9 +190,15 @@ export function ScriptsIndex() {
                 ? `No scripts of type "${ENTITY_TYPE_OPTIONS.find((o) => o.value === selectedType)?.label}".`
                 : 'Create a script to get started.'}
             </p>
-            {selectedType === 'all' && (
+            {selectedType === 'all' && rulesetId && (
               <Button asChild>
-                <Link to={`/rulesets/${rulesetId}/scripts/new`} data-testid='scripts-new-script-link'>
+                <Link
+                  to={
+                    worldId
+                      ? `/worlds/${worldId}/scripts/new`
+                      : `/rulesets/${rulesetId}/scripts/new`
+                  }
+                  data-testid='scripts-new-script-link'>
                   <Plus className='h-4 w-4 mr-2' />
                   New Script
                 </Link>
@@ -204,7 +219,13 @@ export function ScriptsIndex() {
                         {categoryScripts.map((script) => (
                           <li key={script.id}>
                             <Link
-                              to={`/rulesets/${rulesetId}/scripts/${script.id}`}
+                              to={
+                                worldId
+                                  ? `/worlds/${worldId}/scripts/${script.id}`
+                                  : rulesetId
+                                    ? `/rulesets/${rulesetId}/scripts/${script.id}`
+                                    : '#'
+                              }
                               className={
                                 script.moduleId
                                   ? 'text-sm text-module-origin'
@@ -226,11 +247,15 @@ export function ScriptsIndex() {
                   {categoryScripts.map((script) => (
                     <li key={script.id}>
                       <Link
-                        to={`/rulesets/${rulesetId}/scripts/${script.id}`}
+                        to={
+                          worldId
+                            ? `/worlds/${worldId}/scripts/${script.id}`
+                            : rulesetId
+                              ? `/rulesets/${rulesetId}/scripts/${script.id}`
+                              : '#'
+                        }
                         className={
-                          script.moduleId
-                            ? 'text-sm text-module-origin'
-                            : 'text-sm text-foreground'
+                          script.moduleId ? 'text-sm text-module-origin' : 'text-sm text-foreground'
                         }>
                         {script.name || 'Untitled'}.qbs
                       </Link>

@@ -333,6 +333,8 @@ export type Script = BaseDetails & {
   isGlobal: boolean; // Whether this is a global utility script
   enabled: boolean; // Allow disabling scripts without deleting
   category?: string; // Optional category for grouping scripts
+  /** Optional world; when set, script is world-specific and hidden from ruleset-level script list. */
+  worldId?: string;
   /** Module origin: ruleset id, source entity id, and module name. */
   moduleId?: string;
   moduleEntityId?: string;

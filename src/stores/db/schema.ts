@@ -24,7 +24,7 @@ export const dbSchema = {
   characterAttributes: `${common}, characterId, attributeId, &[characterId+attributeId], scriptDisabled`,
   characterArchetypes: `${common}, characterId, archetypeId, loadOrder, &[characterId+archetypeId]`,
   diceRolls: `${common}, rulesetId, userId, value, label, moduleId`,
-  scripts: `${common}, rulesetId, name, entityType, entityId, isGlobal, enabled, category, moduleId, [entityId+entityType]`,
+  scripts: `${common}, rulesetId, worldId, name, entityType, entityId, isGlobal, enabled, category, moduleId, [entityId+entityType]`,
   scriptErrors: `${common}, rulesetId, scriptId, characterId, timestamp`,
   scriptLogs: `${common}, rulesetId, scriptId, characterId, timestamp, [entityId+entityType]`,
   dependencyGraphNodes: `${common}, rulesetId, scriptId, entityType, entityId`,
@@ -36,4 +36,4 @@ export const dbSchema = {
 };
 
 // Increment on every schema change
-export const dbSchemaVersion = 35;
+export const dbSchemaVersion = 36;
