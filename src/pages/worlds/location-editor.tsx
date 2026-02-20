@@ -35,6 +35,11 @@ export function LocationEditor() {
   );
   const assetDimensionsRef = useRef(assetDimensions);
   assetDimensionsRef.current = assetDimensions;
+  const [mapImageDimensions, setMapImageDimensions] = useState<{
+    natural: { w: number; h: number };
+    scaled: { w: number; h: number };
+  } | null>(null);
+
   const loc = location ?? undefined;
   const gridWidth = loc?.gridWidth ?? 1;
   const gridHeight = loc?.gridHeight ?? 1;
@@ -218,6 +223,37 @@ export function LocationEditor() {
     return () => cancels.forEach((c) => c());
   }, [tilemapsList, assets]);
 
+  const MAP_IMAGE_MAX_WIDTH = 900;
+  const MAP_IMAGE_MAX_HEIGHT = 1200;
+
+  useEffect(() => {
+    if (!mapImageUrl) {
+      setMapImageDimensions(null);
+      return;
+    }
+    const img = new Image();
+    img.onload = () => {
+      const w = img.naturalWidth;
+      const h = img.naturalHeight;
+
+      const scaleDivisor = Math.max(
+        1,
+        Math.ceil(w / MAP_IMAGE_MAX_WIDTH),
+        Math.ceil(h / MAP_IMAGE_MAX_HEIGHT),
+      );
+      const scaledW = Math.round(w / scaleDivisor);
+      const scaledH = Math.round(h / scaleDivisor);
+      setMapImageDimensions({
+        natural: { w, h },
+        scaled: { w: scaledW, h: scaledH },
+      });
+    };
+    img.src = mapImageUrl;
+    return () => {
+      img.src = '';
+    };
+  }, [mapImageUrl]);
+
   const getTileStyle = (td: TileData): React.CSSProperties => {
     const tile = tilesById?.get(td.tileId);
     if (!tile) return {};
@@ -264,13 +300,6 @@ export function LocationEditor() {
       </div>
     );
   }
-
-  /*
-  For handling images. Get intrinsic image size
-  If it's larger than 900px x 1200px, scale it down to fit below that
-  Set height and width of location-editor-grid of the scaled down image dimensions
-  Keep background size to cover to show entire image at native resolution.
-  */
 
   return (
     <div className='flex h-full w-full flex-col'>
@@ -377,18 +406,23 @@ export function LocationEditor() {
                 gridTemplateColumns: `repeat(${gridWidth}, ${tileRenderSize}px)`,
                 gridTemplateRows: `repeat(${gridHeight}, ${tileRenderSize}px)`,
 
-                ...(mapImageUrl
+                ...(mapImageUrl && mapImageDimensions
                   ? {
-                      // 3640x5040 | 26x36 => 140px^2
-                      // 885x1260 => 34px^2
                       backgroundImage: `url(${mapImageUrl})`,
-                      height: `1260px`,
-                      width: `885px`,
-                      backgroundSize: 'cover',
+                      width: `${mapImageDimensions.scaled.w}px`,
+                      height: `${mapImageDimensions.scaled.h}px`,
+                      backgroundSize: `${mapImageDimensions.scaled.w}px ${mapImageDimensions.scaled.h}px`,
                       backgroundPosition: '0 0',
                       backgroundRepeat: 'no-repeat',
                     }
-                  : {}),
+                  : mapImageUrl
+                    ? {
+                        backgroundImage: `url(${mapImageUrl})`,
+                        backgroundSize: 'cover',
+                        backgroundPosition: '0 0',
+                        backgroundRepeat: 'no-repeat',
+                      }
+                    : {}),
               }}>
               {Array.from({ length: gridHeight }, (_, y) =>
                 Array.from({ length: gridWidth }, (_, x) => {
@@ -400,9 +434,7 @@ export function LocationEditor() {
                       key={key}
                       type='button'
                       className={`group relative shrink-0 cursor-pointer transition-colors ${
-                        mapImageUrl
-                          ? 'bg-muted/50'
-                          : 'border border-border bg-muted'
+                        mapImageUrl ? 'bg-muted/50' : 'border border-border bg-muted'
                       } ${isSelected ? 'ring-2 ring-primary ring-inset' : ''}`}
                       style={{ width: tileRenderSize, height: tileRenderSize }}
                       onClick={() => handleCellClick(x, y)}
