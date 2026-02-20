@@ -1,5 +1,5 @@
 import { Button, Input, Label } from '@/components';
-import { useAssets, useTilemap, useTiles, useTilemaps, useWorld } from '@/lib/compass-api';
+import { useAssets, useTilemap, useTilemaps, useTiles, useWorld } from '@/lib/compass-api';
 import { db } from '@/stores';
 import type { Tile } from '@/types';
 import { ArrowLeft } from 'lucide-react';
@@ -29,9 +29,7 @@ export function TilemapEditor() {
   const tilesArray: Tile[] = Array.isArray(tiles) ? tiles : [];
   const tilesSet = useCallback(
     (tx: number, ty: number) =>
-      tilesArray.some(
-        (t) => t.tilemapId === tilemapId && t.tileX === tx && t.tileY === ty,
-      ),
+      tilesArray.some((t) => t.tilemapId === tilemapId && t.tileX === tx && t.tileY === ty),
     [tilesArray, tilemapId],
   );
 
@@ -60,6 +58,13 @@ export function TilemapEditor() {
       if (tile) await deleteTile(tile.id);
     } else {
       await createTile(tilemapId, { tileX: tx, tileY: ty });
+    }
+  };
+
+  const handleClearAllTiles = async () => {
+    if (!tilesArray.length) return;
+    for (const t of tilesArray) {
+      await deleteTile(t.id);
     }
   };
 
@@ -99,7 +104,7 @@ export function TilemapEditor() {
       <div className='flex h-full w-full flex-col items-center justify-center gap-2 p-4'>
         <p className='text-muted-foreground'>Tilemap not found.</p>
         <Button asChild variant='link'>
-          <Link to={`/worlds/${worldId}`}>Back to World</Link>
+          <Link to={`/worlds/${worldId}/tilemaps`}>Back to tilemaps</Link>
         </Button>
       </div>
     );
@@ -109,9 +114,8 @@ export function TilemapEditor() {
     <div className='flex h-full w-full flex-col'>
       <div className='flex shrink-0 items-center gap-2 border-b bg-background px-4 py-2'>
         <Button variant='ghost' size='sm' asChild>
-          <Link to={`/worlds/${worldId}`} data-testid='tilemap-editor-back'>
+          <Link to={`/worlds/${worldId}/tilemaps`} data-testid='tilemap-editor-back'>
             <ArrowLeft className='h-4 w-4' />
-            Back to World
           </Link>
         </Button>
         <span className='text-muted-foreground'>|</span>
@@ -191,8 +195,7 @@ export function TilemapEditor() {
                     gridTemplateRows: `repeat(${rows}, ${tileHeight}px)`,
                     width: cols * tileWidth,
                     height: rows * tileHeight,
-                  }}
-                >
+                  }}>
                   {Array.from({ length: rows }, (_, y) =>
                     Array.from({ length: cols }, (_, x) => {
                       const hasTile = tilesSet(x, y);
@@ -219,9 +222,23 @@ export function TilemapEditor() {
               )}
             </div>
             {cols > 0 && rows > 0 && (
-              <Button variant='outline' size='sm' onClick={handleCreateAllTiles}>
-                Create all tiles ({cols * rows} cells)
-              </Button>
+              <div className='flex flex-wrap gap-2'>
+                <Button
+                  variant='outline'
+                  size='sm'
+                  onClick={handleCreateAllTiles}
+                  className='max-w-[250px]'>
+                  Use all tiles ({cols * rows} cells)
+                </Button>
+                <Button
+                  variant='outline'
+                  size='sm'
+                  onClick={handleClearAllTiles}
+                  disabled={tilesArray.length === 0}
+                  className='text-muted-foreground hover:text-destructive'>
+                  Clear
+                </Button>
+              </div>
             )}
           </div>
         ) : (
