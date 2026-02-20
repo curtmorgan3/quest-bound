@@ -5,37 +5,12 @@ import type { Tile, TileData, Tilemap } from '@/types';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { ZoomIn, ZoomOut } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { getTilesByKey } from './utils';
 
 const DEFAULT_TILE_RENDER_SIZE = 32;
 const ZOOM_MIN = 0.25;
 const ZOOM_MAX = 3;
 const ZOOM_STEP = 0.25;
-
-function getTilesByKey(tiles: TileData[]): Map<string, TileData[]> {
-  const map = new Map<string, TileData[]>();
-  for (const td of tiles) {
-    const key = `${td.x},${td.y}`;
-    const list = map.get(key) ?? [];
-    list.push(td);
-    map.set(key, list);
-  }
-  map.forEach((list) => list.sort((a, b) => (a.zIndex ?? 0) - (b.zIndex ?? 0)));
-  return map;
-}
-
-/** Topmost TileData at (x, y) by zIndex, or null if no tile. */
-export function getTopTileDataAt(tiles: TileData[], x: number, y: number): TileData | null {
-  const key = `${x},${y}`;
-  const byKey = getTilesByKey(tiles);
-  const layers = byKey.get(key) ?? [];
-  return layers.length > 0 ? layers[layers.length - 1]! : null;
-}
-
-/** First passable tile in the location (for placing character when moving locations). */
-export function getFirstPassableTileId(tiles: TileData[]): string | null {
-  const passable = tiles.filter((td) => td.isPassable);
-  return passable.length > 0 ? passable[0]!.id : null;
-}
 
 export type LocationViewerOverlayNode = {
   id: string;
@@ -87,7 +62,11 @@ export function LocationViewer({
   assetDimensionsRef.current = assetDimensions;
 
   const tileIdsInLocation = useMemo(
-    () => [...new Set((loc?.tiles ?? []).map((td) => td.tileId))],
+    () => [
+      ...new Set(
+        (loc?.tiles ?? []).map((td) => td.tileId).filter((id): id is string => id != null),
+      ),
+    ],
     [loc?.tiles],
   );
   const tilesById = useLiveQuery(
@@ -142,6 +121,7 @@ export function LocationViewer({
   }, [tilemapsList, getAssetData]);
 
   const getTileStyle = (td: TileData): React.CSSProperties => {
+    if (!td.tileId) return {}; // Placeholder tile (no tileset)
     const tile = tilesById?.get(td.tileId);
     if (!tile) return {};
     const tilemap = tilemapsById.get(tile.tilemapId ?? '');

@@ -47,7 +47,10 @@ export function LocationEditor() {
   const [selectedTiles, setSelectedTiles] = useState<Tile[]>([]);
   const tileIdsInLocation = useMemo(
     () => [
-      ...new Set([...(loc?.tiles ?? []).map((td) => td.tileId), ...selectedTiles.map((t) => t.id)]),
+      ...new Set([
+        ...(loc?.tiles ?? []).map((td) => td.tileId).filter((id): id is string => id != null),
+        ...selectedTiles.map((t) => t.id),
+      ]),
     ],
     [loc?.tiles, selectedTiles],
   );
@@ -273,6 +276,7 @@ export function LocationEditor() {
   }, [mapImageUrl]);
 
   const getTileStyle = (td: TileData): React.CSSProperties => {
+    if (!td.tileId) return {}; // Placeholder tile (no tileset)
     const tile = tilesById?.get(td.tileId);
     if (!tile) return {};
     const tilemap = tilemapsById.get(tile.tilemapId ?? '');

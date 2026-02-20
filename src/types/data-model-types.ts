@@ -111,6 +111,8 @@ export type Archetype = BaseDetails & {
   testCharacterId: string;
   isDefault: boolean;
   loadOrder: number;
+  mapHeight?: number;
+  mapWidth?: number;
   /** Module origin: ruleset id, source entity id, and module name. */
   moduleId?: string;
   moduleEntityId?: string;
@@ -250,8 +252,10 @@ export type Item = BaseDetails & {
   inventoryHeight: number;
   assetId?: string | null;
   image?: string | null;
-  scriptId?: string | null; // NEW: Associated script
-  customProperties?: Record<string, string | number | boolean>; // NEW: Custom properties for scripts
+  scriptId?: string | null;
+  customProperties?: Record<string, string | number | boolean>;
+  mapHeight?: number;
+  mapWidth?: number;
   /** Module origin: ruleset id, source entity id, and module name. */
   moduleId?: string;
   moduleEntityId?: string;
@@ -369,7 +373,8 @@ export type DependencyGraphNode = BaseDetails & {
 // --- Worlds & Locations (not a DB table; stored inside Location.tiles) ---
 export interface TileData {
   id: string;
-  tileId: string;
+  /** Optional for placeholder cells (no tileset); used for entity placement and isPassable. */
+  tileId?: string;
   x: number;
   y: number;
   /** Layer order; higher values draw on top. Default 0 when omitted. */
@@ -448,6 +453,8 @@ export type CampaignCharacter = BaseDetails & {
   campaignId: string;
   currentLocationId?: string | null;
   currentTileId?: string | null;
+  mapHeight?: number;
+  mapWidth?: number;
 };
 
 export type CampaignItem = BaseDetails & {
@@ -455,6 +462,8 @@ export type CampaignItem = BaseDetails & {
   campaignId: string;
   currentLocationId?: string | null;
   currentTileId?: string | null;
+  mapHeight?: number;
+  mapWidth?: number;
 };
 
 export type CampaignEventType = 'on_enter' | 'on_leave' | 'on_activate';

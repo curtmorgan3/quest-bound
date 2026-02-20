@@ -1,6 +1,6 @@
 import { Button, Card } from '@/components';
-import { LocationViewer, getFirstPassableTileId, getTopTileDataAt } from '@/components/locations/location-viewer';
-import type { LocationViewerOverlayNode } from '@/components/locations/location-viewer';
+import type { LocationViewerOverlayNode } from '@/components/locations';
+import { LocationViewer, getFirstPassableTileId, getTopTileDataAt } from '@/components/locations';
 import {
   useAssets,
   useCampaign,
@@ -38,10 +38,7 @@ export function CampaignPlay() {
   const currentLocationId = playingCc?.currentLocationId ?? null;
   const currentLocation = useLocation(currentLocationId ?? undefined);
   const { locations: rootLocations } = useLocations(campaign?.worldId, null);
-  const { locations: childLocations } = useLocations(
-    campaign?.worldId,
-    currentLocationId,
-  );
+  const { locations: childLocations } = useLocations(campaign?.worldId, currentLocationId);
   const { assets } = useAssets(null);
   const eventLocationsWithEvent = useCampaignEventLocationsByLocation(
     currentLocationId ?? undefined,
@@ -53,45 +50,37 @@ export function CampaignPlay() {
     [assets],
   );
 
-  const charactersResolved = useLiveQuery(
-    async () => {
-      if (!currentLocationId || campaignCharacters.length === 0) return [];
-      const atLocation = campaignCharacters.filter(
-        (cc) => cc.currentLocationId === currentLocationId && cc.currentTileId,
-      );
-      if (atLocation.length === 0) return [];
-      const chars = await db.characters.bulkGet(atLocation.map((cc) => cc.characterId));
-      return atLocation.map((cc) => ({
-        campaignCharacter: cc,
-        character: chars.find((c) => c?.id === cc.characterId) ?? null,
-      }));
-    },
-    [
-      currentLocationId,
-      campaignCharacters
-        .filter((c) => c.currentLocationId === currentLocationId)
-        .map((c) => c.id)
-        .join(','),
-    ],
-  );
+  const charactersResolved = useLiveQuery(async () => {
+    if (!currentLocationId || campaignCharacters.length === 0) return [];
+    const atLocation = campaignCharacters.filter(
+      (cc) => cc.currentLocationId === currentLocationId && cc.currentTileId,
+    );
+    if (atLocation.length === 0) return [];
+    const chars = await db.characters.bulkGet(atLocation.map((cc) => cc.characterId));
+    return atLocation.map((cc) => ({
+      campaignCharacter: cc,
+      character: chars.find((c) => c?.id === cc.characterId) ?? null,
+    }));
+  }, [
+    currentLocationId,
+    campaignCharacters
+      .filter((c) => c.currentLocationId === currentLocationId)
+      .map((c) => c.id)
+      .join(','),
+  ]);
   const itemsAtLocation = useMemo(
     () =>
-      campaignItems.filter(
-        (ci) => ci.currentLocationId === currentLocationId && ci.currentTileId,
-      ),
+      campaignItems.filter((ci) => ci.currentLocationId === currentLocationId && ci.currentTileId),
     [campaignItems, currentLocationId],
   );
-  const itemsResolved = useLiveQuery(
-    async () => {
-      if (itemsAtLocation.length === 0) return [];
-      const itemRecs = await db.items.bulkGet(itemsAtLocation.map((ci) => ci.itemId));
-      return itemsAtLocation.map((ci) => ({
-        campaignItem: ci,
-        item: itemRecs.find((i) => i?.id === ci.itemId) ?? null,
-      }));
-    },
-    [itemsAtLocation.map((i) => i.id).join(',')],
-  );
+  const itemsResolved = useLiveQuery(async () => {
+    if (itemsAtLocation.length === 0) return [];
+    const itemRecs = await db.items.bulkGet(itemsAtLocation.map((ci) => ci.itemId));
+    return itemsAtLocation.map((ci) => ({
+      campaignItem: ci,
+      item: itemRecs.find((i) => i?.id === ci.itemId) ?? null,
+    }));
+  }, [itemsAtLocation.map((i) => i.id).join(',')]);
 
   const overlayNodes = useMemo((): LocationViewerOverlayNode[] => {
     const nodes: LocationViewerOverlayNode[] = [];
@@ -127,10 +116,7 @@ export function CampaignPlay() {
   }, [charactersResolved, itemsResolved, getAssetData]);
 
   const eventTileIds = useMemo(
-    () =>
-      eventLocationsWithEvent
-        .filter((el) => el.tileId)
-        .map((el) => el.tileId as string),
+    () => eventLocationsWithEvent.filter((el) => el.tileId).map((el) => el.tileId as string),
     [eventLocationsWithEvent],
   );
 
@@ -140,12 +126,7 @@ export function CampaignPlay() {
       const top = getTopTileDataAt(currentLocation.tiles, x, y);
       if (top?.actionId) {
         const client = getQBScriptClient();
-        client.executeActionEvent(
-          top.actionId,
-          characterIdParam,
-          null,
-          'on_activate',
-        );
+        client.executeActionEvent(top.actionId, characterIdParam, null, 'on_activate');
       }
     },
     [currentLocation?.tiles, characterIdParam],
@@ -167,8 +148,7 @@ export function CampaignPlay() {
     [playingCc?.id, updateCampaignCharacter],
   );
 
-  const showLocationView =
-    currentLocationId && currentLocation?.hasMap && playingCc;
+  const showLocationView = currentLocationId && currentLocation?.hasMap && playingCc;
 
   if (campaignId && campaign === undefined) {
     return (
@@ -188,19 +168,14 @@ export function CampaignPlay() {
     );
   }
 
-  const campaignCharactersWithNames = useLiveQuery(
-    async () => {
-      if (campaignCharacters.length === 0) return [];
-      const chars = await db.characters.bulkGet(
-        campaignCharacters.map((cc) => cc.characterId),
-      );
-      return campaignCharacters.map((cc) => ({
-        cc,
-        character: chars.find((c) => c?.id === cc.characterId) ?? null,
-      }));
-    },
-    [campaignCharacters.map((c) => c.characterId).join(',')],
-  );
+  const campaignCharactersWithNames = useLiveQuery(async () => {
+    if (campaignCharacters.length === 0) return [];
+    const chars = await db.characters.bulkGet(campaignCharacters.map((cc) => cc.characterId));
+    return campaignCharacters.map((cc) => ({
+      cc,
+      character: chars.find((c) => c?.id === cc.characterId) ?? null,
+    }));
+  }, [campaignCharacters.map((c) => c.characterId).join(',')]);
   const characterList = campaignCharactersWithNames ?? [];
 
   if (!characterIdParam) {
@@ -240,9 +215,7 @@ export function CampaignPlay() {
     return (
       <div className='flex h-full w-full flex-col items-center justify-center gap-4 p-4'>
         <p className='text-muted-foreground'>Character not found in campaign.</p>
-        <Button
-          variant='outline'
-          onClick={() => navigate(`/campaigns/${campaignId}/play`)}>
+        <Button variant='outline' onClick={() => navigate(`/campaigns/${campaignId}/play`)}>
           Choose character
         </Button>
       </div>
@@ -250,15 +223,9 @@ export function CampaignPlay() {
   }
 
   useEffect(() => {
-    if (
-      playingCc?.id &&
-      !currentLocationId &&
-      rootLocations.length > 0
-    ) {
+    if (playingCc?.id && !currentLocationId && rootLocations.length > 0) {
       const firstRoot = rootLocations[0]!;
-      const tileId = firstRoot.tiles?.length
-        ? getFirstPassableTileId(firstRoot.tiles)
-        : null;
+      const tileId = firstRoot.tiles?.length ? getFirstPassableTileId(firstRoot.tiles) : null;
       if (tileId) {
         updateCampaignCharacter(playingCc.id, {
           currentLocationId: firstRoot.id,
@@ -266,12 +233,7 @@ export function CampaignPlay() {
         });
       }
     }
-  }, [
-    playingCc?.id,
-    currentLocationId,
-    rootLocations,
-    updateCampaignCharacter,
-  ]);
+  }, [playingCc?.id, currentLocationId, rootLocations, updateCampaignCharacter]);
 
   return (
     <div className='flex h-full w-full flex-col'>
@@ -297,10 +259,7 @@ export function CampaignPlay() {
             onClick={() => navigate(`/characters/${characterIdParam}`)}>
             Character sheet
           </Button>
-          <Button
-            variant='outline'
-            size='sm'
-            onClick={() => setMoveLocationOpen(true)}>
+          <Button variant='outline' size='sm' onClick={() => setMoveLocationOpen(true)}>
             Move to location
           </Button>
           <Button variant='ghost' size='sm' onClick={() => navigate(`/campaigns/${campaignId}`)}>

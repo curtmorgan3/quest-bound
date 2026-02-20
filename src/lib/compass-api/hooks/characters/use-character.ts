@@ -115,12 +115,18 @@ export const useCharacter = (_id?: string) => {
         updatedAt: now,
       } as unknown as Inventory);
 
+      const characterImage =
+        data.image != null && data.image !== ''
+          ? data.image
+          : (firstArchetype.image ?? null);
+
       await db.characters.add({
         ...data,
         id: characterId,
         rulesetId,
         userId: currentUser.id,
         inventoryId,
+        image: characterImage,
         createdAt: now,
         updatedAt: now,
         isTestCharacter: data.isTestCharacter ?? false,

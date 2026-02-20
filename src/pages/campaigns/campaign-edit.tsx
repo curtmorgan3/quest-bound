@@ -1,5 +1,5 @@
+import { LocationViewer, getTopTileDataAt } from '@/components/locations';
 import type { LocationViewerOverlayNode } from '@/components/locations/location-viewer';
-import { LocationViewer, getTopTileDataAt } from '@/components/locations/location-viewer';
 import { Button } from '@/components/ui/button';
 import { WorldViewer } from '@/components/worlds/world-viewer';
 import {
@@ -22,6 +22,7 @@ import type {
   CampaignItem,
   Character,
   Item,
+  TileData,
 } from '@/types';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { ArrowUp, ChevronRight } from 'lucide-react';
@@ -38,7 +39,7 @@ export function CampaignEdit() {
   const campaign = useCampaign(campaignId);
   const world = useWorld(campaign?.worldId);
   const selectedLocationId = locationIdParam ?? null;
-  const { locations: rootLocations } = useLocations(campaign?.worldId, null);
+  const { locations: rootLocations, updateLocation } = useLocations(campaign?.worldId, null);
   const currentLocation = useLocation(selectedLocationId ?? undefined);
   const { locations: childLocations } = useLocations(campaign?.worldId, selectedLocationId);
   const { assets } = useAssets(null);
@@ -58,6 +59,8 @@ export function CampaignEdit() {
     y: number;
     clientX: number;
     clientY: number;
+    /** Set when we just created a blank tile; use as tileId until location refetches. */
+    createdTileId?: string;
   } | null>(null);
 
   const getAssetData = useCallback(
@@ -93,13 +96,25 @@ export function CampaignEdit() {
   }, [campaignId, currentLocation?.parentLocationId, navigate]);
 
   const openTileMenuAt = useCallback(
-    (x: number, y: number, clientX: number, clientY: number) => {
-      if (!currentLocation?.tiles) return;
-      const top = getTopTileDataAt(currentLocation.tiles, x, y);
-      if (!top) return;
+    async (x: number, y: number, clientX: number, clientY: number) => {
+      if (!currentLocation) return;
+      const tiles = currentLocation.tiles ?? [];
+      let top = getTopTileDataAt(tiles, x, y);
+      if (!top) {
+        const newTile: TileData = {
+          id: crypto.randomUUID(),
+          x,
+          y,
+          zIndex: 0,
+          isPassable: true,
+        };
+        await updateLocation(currentLocation.id, { tiles: [...tiles, newTile] });
+        setTileMenu({ x, y, clientX, clientY, createdTileId: newTile.id });
+        return;
+      }
       setTileMenu({ x, y, clientX, clientY });
     },
-    [currentLocation],
+    [currentLocation, updateLocation],
   );
 
   const charactersAtLocation = useMemo(
@@ -174,21 +189,24 @@ export function CampaignEdit() {
     return top?.id ?? null;
   }, [tileMenu, currentLocation?.tiles]);
 
+  /** Tile id for the menu: from existing tile at cell, or from a blank tile we just created. */
+  const effectiveTileId = tileMenuTileId ?? tileMenu?.createdTileId ?? null;
+
   const entityAtTile = useMemo(() => {
-    if (!selectedLocationId || !tileMenuTileId) return null;
+    if (!selectedLocationId || !effectiveTileId) return null;
     const cc = campaignCharacters.find(
-      (c) => c.currentLocationId === selectedLocationId && c.currentTileId === tileMenuTileId,
+      (c) => c.currentLocationId === selectedLocationId && c.currentTileId === effectiveTileId,
     );
     const ci = campaignItems.find(
-      (c) => c.currentLocationId === selectedLocationId && c.currentTileId === tileMenuTileId,
+      (c) => c.currentLocationId === selectedLocationId && c.currentTileId === effectiveTileId,
     );
     const ev = eventLocationsWithEvent.find(
-      (e) => e.locationId === selectedLocationId && e.tileId === tileMenuTileId,
+      (e) => e.locationId === selectedLocationId && e.tileId === effectiveTileId,
     );
     return { character: cc, item: ci, event: ev };
   }, [
     selectedLocationId,
-    tileMenuTileId,
+    effectiveTileId,
     campaignCharacters,
     campaignItems,
     eventLocationsWithEvent,
@@ -334,10 +352,7 @@ export function CampaignEdit() {
               worldId={campaign.worldId}
               getAssetData={getAssetData}
               onSelectCell={(x, y, e) => {
-                const top = currentLocation?.tiles
-                  ? getTopTileDataAt(currentLocation.tiles, x, y)
-                  : null;
-                if (top) openTileMenuAt(x, y, e?.clientX ?? 0, e?.clientY ?? 0);
+                openTileMenuAt(x, y, e?.clientX ?? 0, e?.clientY ?? 0);
               }}
               tileRenderSize={currentLocation?.tileRenderSize}
               overlayNodes={overlayNodes}
@@ -347,10 +362,10 @@ export function CampaignEdit() {
         )}
       </div>
 
-      {tileMenu && currentLocation?.tiles && tileMenuTileId && (
+      {tileMenu && currentLocation && effectiveTileId && (
         <CampaignEditTileMenu
           position={{ clientX: tileMenu.clientX, clientY: tileMenu.clientY }}
-          tile={{ locationId: currentLocation.id, tileId: tileMenuTileId }}
+          tile={{ locationId: currentLocation.id, tileId: effectiveTileId }}
           entityAtTile={entityAtTile}
           rulesetId={campaign?.rulesetId}
           onClose={() => setTileMenu(null)}
