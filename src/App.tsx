@@ -1,10 +1,10 @@
 import {
   ArchetypeSheetEditor,
   CampaignDetail,
-  CampaignEditPlaceholder,
+  CampaignEdit,
   CampaignNew,
   CampaignsList,
-  CampaignPlayPlaceholder,
+  CampaignPlay,
   CampaignWorldView,
   CharacterChartViewer,
   CharacterPage,
@@ -81,8 +81,12 @@ function CompassRoutes() {
               element={<CampaignWorldView />}
             />
             <Route path={`/campaigns/:campaignId/view`} element={<CampaignWorldView />} />
-            <Route path={`/campaigns/:campaignId/edit`} element={<CampaignEditPlaceholder />} />
-            <Route path={`/campaigns/:campaignId/play`} element={<CampaignPlayPlaceholder />} />
+            <Route path={`/campaigns/:campaignId/edit`} element={<CampaignEdit />} />
+            <Route
+              path={`/campaigns/:campaignId/locations/:locationId/edit`}
+              element={<CampaignEdit />}
+            />
+            <Route path={`/campaigns/:campaignId/play`} element={<CampaignPlay />} />
             <Route path={`/worlds`} element={<Worlds />} />
             <Route path={`/worlds/:worldId`} element={<WorldEditor />} />
             <Route path={`/worlds/:worldId/scripts`} element={<ScriptsIndex />} />

@@ -23,15 +23,45 @@ function getTilesByKey(tiles: TileData[]): Map<string, TileData[]> {
   return map;
 }
 
+/** Topmost TileData at (x, y) by zIndex, or null if no tile. */
+export function getTopTileDataAt(
+  tiles: TileData[],
+  x: number,
+  y: number,
+): TileData | null {
+  const key = `${x},${y}`;
+  const byKey = getTilesByKey(tiles);
+  const layers = byKey.get(key) ?? [];
+  return layers.length > 0 ? layers[layers.length - 1]! : null;
+}
+
+/** First passable tile in the location (for placing character when moving locations). */
+export function getFirstPassableTileId(tiles: TileData[]): string | null {
+  const passable = tiles.filter((td) => td.isPassable);
+  return passable.length > 0 ? passable[0]!.id : null;
+}
+
+export type LocationViewerOverlayNode = {
+  id: string;
+  tileId: string;
+  type: 'character' | 'item';
+  imageUrl: string | null;
+  label: string;
+};
+
 export interface LocationViewerProps {
   locationId: string | undefined;
   worldId: string | undefined;
   /** Optional: resolve asset data for tile images. If not provided, tiles may not show images. */
   getAssetData?: (assetId: string) => string | null;
-  /** Optional: called when a cell is clicked (x, y). */
-  onSelectCell?: (x: number, y: number) => void;
+  /** Optional: called when a cell is clicked (x, y). Event provided for menu positioning. */
+  onSelectCell?: (x: number, y: number, event?: React.MouseEvent) => void;
   /** Optional: tile render size in pixels. */
   tileRenderSize?: number;
+  /** Optional: campaign entities to draw on the grid (character/item icons). */
+  overlayNodes?: LocationViewerOverlayNode[];
+  /** Optional: tile IDs that have a campaign event (highlight). */
+  eventTileIds?: string[];
 }
 
 export function LocationViewer({
@@ -40,6 +70,8 @@ export function LocationViewer({
   getAssetData = () => null,
   onSelectCell,
   tileRenderSize: tileRenderSizeProp,
+  overlayNodes = [],
+  eventTileIds = [],
 }: LocationViewerProps) {
   const location = useLocation(locationId);
   const { tilemaps } = useTilemaps(worldId);
@@ -80,6 +112,11 @@ export function LocationViewer({
   }, [tilemapsList]);
 
   const tilesByKey = useMemo(() => getTilesByKey(loc?.tiles ?? []), [loc?.tiles]);
+  const tileIdToCoord = useMemo(() => {
+    const map = new Map<string, { x: number; y: number }>();
+    (loc?.tiles ?? []).forEach((td) => map.set(td.id, { x: td.x, y: td.y }));
+    return map;
+  }, [loc?.tiles]);
   const mapImageUrl = loc?.mapAssetId ? getAssetData(loc.mapAssetId) : null;
 
   useEffect(() => {
@@ -200,13 +237,14 @@ export function LocationViewer({
               Array.from({ length: gridWidth }, (_, x) => {
                 const key = `${x},${y}`;
                 const layers = tilesByKey.get(key) ?? [];
+                const hasEvent = layers.some((td) => eventTileIds.includes(td.id));
                 return (
                   <div
                     key={key}
                     role={onSelectCell ? 'button' : undefined}
-                    className='shrink-0 bg-muted/50 hover:bg-muted'
+                    className='shrink-0 bg-muted/50 hover:bg-muted relative'
                     style={{ width: effectiveTileSize, height: effectiveTileSize }}
-                    onClick={() => onSelectCell?.(x, y)}>
+                    onClick={(e) => onSelectCell?.(x, y, e)}>
                     {layers.length > 0 && (
                       <span className='relative block size-full overflow-hidden'>
                         {layers.map((td) => (
@@ -218,11 +256,46 @@ export function LocationViewer({
                         ))}
                       </span>
                     )}
+                    {hasEvent && (
+                      <span
+                        className='absolute inset-0 border-2 border-amber-500 rounded pointer-events-none'
+                        title='Campaign event'
+                        aria-hidden
+                      />
+                    )}
                   </div>
                 );
               }),
             )}
           </div>
+          {overlayNodes.length > 0 &&
+            overlayNodes.map((node) => {
+              const coord = tileIdToCoord.get(node.tileId);
+              if (coord == null) return null;
+              return (
+                <div
+                  key={node.id}
+                  className='absolute flex items-center justify-center overflow-hidden rounded border border-background bg-muted/90'
+                  style={{
+                    left: coord.x * effectiveTileSize + 2,
+                    top: coord.y * effectiveTileSize + 2,
+                    width: effectiveTileSize - 4,
+                    height: effectiveTileSize - 4,
+                    pointerEvents: 'none',
+                  }}
+                  title={node.label}>
+                  {node.imageUrl ? (
+                    <img
+                      src={node.imageUrl}
+                      alt={node.label}
+                      className='max-w-full max-h-full object-contain'
+                    />
+                  ) : (
+                    <span className='text-xs truncate px-0.5'>{node.label}</span>
+                  )}
+                </div>
+              );
+            })}
         </div>
       </div>
     </div>

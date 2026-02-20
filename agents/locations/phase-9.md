@@ -39,9 +39,10 @@
 
 *(When implementing Phase 8, add here any discoveries about what Phase 9 needs.)*
 
-- Script entity type for campaign events: …
-- Where to invoke event runners (play LocationViewer, navigation, tile click): …
-- Context to pass into script (campaignId, characterId, locationId, tileId, event type): …
+- **Script entity type for campaign events:** Ruleset scripts can be filtered or tagged for “campaign event” so the campaign editor can offer a script picker when creating/editing a CampaignEvent. Phase 8 does not add the picker; Phase 9 can add it when wiring execution.
+- **Where to invoke event runners:** In play mode, when the player’s character (a) enters a tile that has a CampaignEvent of type On Enter, (b) leaves a tile that has a CampaignEvent of type On Leave, or (c) clicks/activates a tile that has a CampaignEvent of type On Activate. So: track “previous tile” vs “current tile” for the playing character; on enter/leave call runners for events at those tiles; on tile click in LocationViewer call runner for On Activate events at that tile.
+- **Context to pass into script:** campaignId, characterId (playing character), locationId, tileId, event type (on_enter | on_leave | on_activate). Script runner in `lib/compass-logic` may need a new execution context or trigger type for “campaign_event”.
+- **Tile actions (TileData.actionId):** Phase 8 wires tile click in play mode to `getQBScriptClient().executeActionEvent(actionId, characterId, null, 'on_activate')`. Campaign events (On Activate) are separate and not yet wired; Phase 9 will run CampaignEvent.scriptId when the event type matches.
 
 ---
 

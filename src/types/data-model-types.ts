@@ -457,13 +457,17 @@ export type CampaignItem = BaseDetails & {
   currentTileId?: string | null;
 };
 
+export type CampaignEventType = 'on_enter' | 'on_leave' | 'on_activate';
+
 export type CampaignEvent = BaseDetails & {
   label: string;
   campaignId: string;
+  type: CampaignEventType;
   scriptId?: string | null;
 };
 
 export type CampaignEventLocation = BaseDetails & {
   campaignEventId: string;
   locationId: string;
+  tileId?: string | null;
 };

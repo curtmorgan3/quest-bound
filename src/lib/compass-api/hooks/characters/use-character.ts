@@ -162,6 +162,7 @@ export const useCharacter = (_id?: string) => {
           }
         }
       }
+      return characterId;
     } catch (e) {
       handleError(e as Error, {
         component: 'useCharacter/createCharacter',

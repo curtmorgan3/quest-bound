@@ -20,6 +20,7 @@ export const useCampaignEventLocations = (campaignEventId: string | undefined) =
   const createCampaignEventLocation = async (
     campaignEventId: string,
     locationId: string,
+    tileId?: string | null,
   ) => {
     const now = new Date().toISOString();
     const id = crypto.randomUUID();
@@ -28,6 +29,7 @@ export const useCampaignEventLocations = (campaignEventId: string | undefined) =
         id,
         campaignEventId,
         locationId,
+        tileId: tileId ?? null,
         createdAt: now,
         updatedAt: now,
       } as CampaignEventLocation);
