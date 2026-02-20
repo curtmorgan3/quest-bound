@@ -124,7 +124,7 @@ export function OnboardingPanel({ userId, onClose }: OnboardingPanelProps) {
     <>
       <OnboardingHighlight selector={currentSubstep.selector?.selector} />
       <Card
-        className='fixed bottom-12 left-14 z-500 w-[min(500px,calc(100vw-2rem))] border shadow-lg bg-card/95 backdrop-blur-sm'
+        className='fixed bottom-12 left-14 z-500 w-[min(450px,calc(100vw-2rem))] border shadow-lg bg-card/95 backdrop-blur-sm'
         role='region'
         aria-label='Getting started tutorial'>
         <CardHeader className='flex flex-row items-start justify-between gap-2 pb-2'>
@@ -170,8 +170,8 @@ export function OnboardingPanel({ userId, onClose }: OnboardingPanelProps) {
             </div>
           )}
         </CardContent>
-        <CardFooter className='flex flex-col gap-3 pl-1 pr-3 border-t pt-3'>
-          <div className='flex items-center w-full justify-between gap-2'>
+        <CardFooter className='flex flex-col gap-3 border-t pt-3'>
+          <div className='flex items-center  justify-between gap-2'>
             <Button
               variant='outline'
               size='sm'
@@ -181,24 +181,23 @@ export function OnboardingPanel({ userId, onClose }: OnboardingPanelProps) {
               <ChevronLeftIcon className='size-4' />
               Back
             </Button>
-            <div className='flex items-center justify-between gap-2'>
-              <div className='flex items-center gap-1'>
-                {steps.map((_, i) => (
-                  <button
-                    key={i}
-                    type='button'
-                    onClick={() => goToStep(i)}
-                    className={`rounded px-1.5 py-0.5 text-xs font-medium transition-colors ${
-                      i === stepIndex
-                        ? 'bg-primary text-primary-foreground'
-                        : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-                    }`}
-                    aria-label={`Go to step ${i + 1}`}
-                    aria-current={i === stepIndex ? 'step' : undefined}>
-                    {i + 1}
-                  </button>
-                ))}
-              </div>
+
+            <div className='flex items-center justify-center gap-1 max-w-[40%] flex-wrap'>
+              {steps.map((_, i) => (
+                <button
+                  key={i}
+                  type='button'
+                  onClick={() => goToStep(i)}
+                  className={`rounded px-1.5 py-0.5 text-xs font-medium transition-colors ${
+                    i === stepIndex
+                      ? 'bg-primary text-primary-foreground'
+                      : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                  }`}
+                  aria-label={`Go to step ${i + 1}`}
+                  aria-current={i === stepIndex ? 'step' : undefined}>
+                  {i + 1}
+                </button>
+              ))}
             </div>
             <Button size='sm' onClick={handleNextSubstep} className='gap-1'>
               {isAtEnd ? 'Finish' : 'Next'}
