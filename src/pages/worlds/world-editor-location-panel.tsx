@@ -2,23 +2,33 @@ import { Button, Checkbox, Input, Label } from '@/components';
 import type { Location } from '@/types';
 import { Grid3X3, MapPinned, Minus } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { WorldEditorLocationMove } from './world-editor-location-move';
 
 export interface WorldEditorLocationPanelProps {
   location: Location;
+  /** Sibling locations (same parent as this location); used for "move as child of" */
+  siblingLocations: Location[];
   hasGrid: boolean;
   onAddGrid: () => void;
   onRemoveGrid: () => void;
   onOpenInLocationEditor: () => void;
   onUpdateLocation: (data: Partial<Location>) => void;
+  /** Move this location to be a child of the given sibling. */
+  onMoveAsChildOf: (siblingId: string) => void;
+  /** Move this location to be a sibling of its parent (one level up). Omit or undefined when already at root. */
+  onMoveAsSiblingOfParent?: () => void;
 }
 
 export function WorldEditorLocationPanel({
   location,
+  siblingLocations,
   hasGrid,
   onAddGrid,
   onRemoveGrid,
   onOpenInLocationEditor,
   onUpdateLocation,
+  onMoveAsChildOf,
+  onMoveAsSiblingOfParent,
 }: WorldEditorLocationPanelProps) {
   const [labelInput, setLabelInput] = useState(location.label);
 
@@ -134,6 +144,11 @@ export function WorldEditorLocationPanel({
           className='h-8'
         />
       </div>
+      <WorldEditorLocationMove
+        siblingLocations={siblingLocations}
+        onMoveAsChildOf={onMoveAsChildOf}
+        onMoveAsSiblingOfParent={onMoveAsSiblingOfParent}
+      />
       <div className='flex flex-col gap-2'>
         {!hasGrid ? (
           <Button variant='outline' size='sm' className='gap-1' onClick={onAddGrid}>

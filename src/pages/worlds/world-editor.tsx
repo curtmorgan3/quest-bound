@@ -82,6 +82,47 @@ export function WorldEditor() {
     }
   };
 
+  const handleAddParentToCurrent = async () => {
+    if (!worldId) return;
+    if (currentParent) {
+      const newId = await createLocation(worldId, {
+        label: 'New Parent',
+        parentLocationId: currentParent.parentLocationId ?? null,
+        nodeX: currentParent.nodeX - 60,
+        nodeY: currentParent.nodeY - 60,
+        nodeWidth: 160,
+        nodeHeight: 100,
+        gridWidth: 1,
+        gridHeight: 1,
+        tiles: [],
+      });
+      if (newId) {
+        await updateLocation(currentParent.id, { parentLocationId: newId });
+        setSelectedLocationIds([]);
+        navigate(`/worlds/${worldId}/locations/${newId}`);
+      }
+    } else {
+      const newId = await createLocation(worldId, {
+        label: 'New Parent',
+        parentLocationId: null,
+        nodeX: 200,
+        nodeY: 200,
+        nodeWidth: 160,
+        nodeHeight: 100,
+        gridWidth: 1,
+        gridHeight: 1,
+        tiles: [],
+      });
+      if (newId) {
+        for (const loc of locationsList) {
+          await updateLocation(loc.id, { parentLocationId: newId });
+        }
+        setSelectedLocationIds([]);
+        navigate(`/worlds/${worldId}/locations/${newId}`);
+      }
+    }
+  };
+
   if (world === undefined) {
     return (
       <div className='flex h-full w-full items-center justify-center p-4'>
@@ -102,6 +143,7 @@ export function WorldEditor() {
         parentStack={parentStack}
         onBack={handleBack}
         onAddLocation={() => handleAddLocationAt(200, 200)}
+        onAddParentToCurrent={handleAddParentToCurrent}
         onEditBackground={() => setBackgroundDialogOpen(true)}
       />
       <WorldEditorBackgroundDialog
@@ -138,6 +180,9 @@ export function WorldEditor() {
           <WorldEditorLocationPanel
             key={singleSelectedLocation.id}
             location={singleSelectedLocation}
+            siblingLocations={locationsList.filter(
+              (loc) => loc.id !== singleSelectedLocation.id,
+            )}
             onAddGrid={() => {
               updateLocation(singleSelectedLocation.id, {
                 gridWidth: DEFAULT_GRID_SIZE,
@@ -152,6 +197,20 @@ export function WorldEditor() {
                 navigate(`/worlds/${worldId}/locations/${singleSelectedLocation.id}/edit`);
             }}
             onUpdateLocation={(data) => updateLocation(singleSelectedLocation.id, data)}
+            onMoveAsChildOf={(siblingId) => {
+              updateLocation(singleSelectedLocation.id, { parentLocationId: siblingId });
+              setSelectedLocationIds([]);
+            }}
+            onMoveAsSiblingOfParent={
+              currentParent
+                ? () => {
+                    updateLocation(singleSelectedLocation.id, {
+                      parentLocationId: currentParent.parentLocationId ?? null,
+                    });
+                    setSelectedLocationIds([]);
+                  }
+                : undefined
+            }
             hasGrid={
               singleSelectedLocation.gridWidth > 1 || singleSelectedLocation.gridHeight > 1
             }

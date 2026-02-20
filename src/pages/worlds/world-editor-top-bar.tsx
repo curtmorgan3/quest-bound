@@ -1,6 +1,6 @@
 import { Button, Input } from '@/components';
 import type { Location } from '@/types';
-import { ArrowLeft, ChevronRight, Pencil, Plus } from 'lucide-react';
+import { ArrowLeft, ArrowUp, ChevronRight, Pencil, Plus, Waypoints } from 'lucide-react';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 
@@ -10,6 +10,8 @@ export interface WorldEditorTopBarProps {
   parentStack: Location[];
   onBack: () => void;
   onAddLocation: () => void;
+  /** Add a new parent location above the current one (only when viewing inside a location). */
+  onAddParentToCurrent?: () => void;
   onEditBackground: () => void;
 }
 
@@ -19,6 +21,7 @@ export function WorldEditorTopBar({
   parentStack,
   onBack,
   onAddLocation,
+  onAddParentToCurrent,
   onEditBackground,
 }: WorldEditorTopBarProps) {
   const [isEditingTitle, setIsEditingTitle] = useState(false);
@@ -78,8 +81,13 @@ export function WorldEditorTopBar({
         </span>
       ))}
       {parentStack.length > 0 && (
-        <Button variant='ghost' size='sm' onClick={onBack} data-testid='world-editor-back-in'>
-          Back
+        <Button
+          variant='ghost'
+          size='sm'
+          onClick={onBack}
+          data-testid='world-editor-back-in'
+          className='clickable'>
+          <ArrowUp className='h-4 w-4 clickable' />
         </Button>
       )}
       <div className='flex flex-1 justify-end gap-2'>
@@ -90,6 +98,17 @@ export function WorldEditorTopBar({
           data-testid='world-editor-edit-background'>
           <Pencil className='h-4 w-4' />
         </Button>
+        {onAddParentToCurrent && (
+          <Button
+            variant='outline'
+            size='sm'
+            className='gap-1'
+            data-testid='world-editor-add-parent'
+            onClick={onAddParentToCurrent}>
+            <Waypoints className='h-4 w-4' />
+            Add parent
+          </Button>
+        )}
         <Button
           variant='outline'
           size='sm'
