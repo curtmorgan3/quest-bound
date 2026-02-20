@@ -27,10 +27,12 @@ export const CharacterPage = ({
   id,
   lockByDefault,
   windowEditorMode = false,
+  windowEditorId,
 }: {
   id?: string;
   lockByDefault?: boolean;
   windowEditorMode?: boolean;
+  windowEditorId?: string;
 }) => {
   const { open } = useSidebar();
   const { characterId } = useParams<{ characterId: string }>();
@@ -128,6 +130,7 @@ export const CharacterPage = ({
         showWindowTabs={!windowEditorMode}
         allowWindowClose={!windowEditorMode}
         allowWindowMinimize={!windowEditorMode}
+        windowEditorId={windowEditorId}
       />
       {!windowEditorMode && (
         <GameLog className={`fixed bottom-[50px] left-${open ? '265' : '65'} z-30`} />

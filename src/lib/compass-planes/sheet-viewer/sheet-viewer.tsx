@@ -32,6 +32,7 @@ interface SheetViewerProps {
   showWindowTabs?: boolean;
   allowWindowMinimize?: boolean;
   allowWindowClose?: boolean;
+  windowEditorId?: string;
 }
 
 export const SheetViewer = ({
@@ -45,6 +46,7 @@ export const SheetViewer = ({
   showWindowTabs = true,
   allowWindowMinimize = true,
   allowWindowClose = true,
+  windowEditorId,
 }: SheetViewerProps) => {
   const { characterPages } = useCharacterPages(characterId);
   const sortedCharacterPages = [...characterPages.sort((a, b) => a.label.localeCompare(b.label))];
@@ -78,16 +80,27 @@ export const SheetViewer = ({
     return characterWindows.filter((w) => w.characterPageId === currentPageId);
   }, [characterWindows, currentPageId]);
 
+  const windowsToRenderAsNodes = useMemo(() => {
+    if (windowEditorId) {
+      return windowsForCurrentPage.filter((w) => w.windowId === windowEditorId);
+    }
+    return windowsForCurrentPage;
+  }, [windowsForCurrentPage, windowEditorId]);
+
   const openWindows = new Set(
     windowsForCurrentPage.filter((cw) => !cw.isCollapsed).map((cw) => cw.id),
   );
+
   // Sorting by createdAt ensures child windows appear at a higher z-index
   const openCharacterWindows = useMemo(
     () =>
-      [...windowsForCurrentPage.filter((w) => !w.isCollapsed)].sort(
-        (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
-      ),
-    [windowsForCurrentPage],
+      [
+        ...windowsToRenderAsNodes.filter((w) => {
+          if (windowEditorId) return true;
+          return !w.isCollapsed;
+        }),
+      ].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()),
+    [windowsToRenderAsNodes],
   );
 
   const handleChildWindowClick = useCallback(
@@ -153,12 +166,12 @@ export const SheetViewer = ({
     });
   }
 
-  const [nodes, setNodes] = useState<Node[]>(convertWindowsToNode(windowsForCurrentPage));
+  const [nodes, setNodes] = useState<Node[]>(() => convertWindowsToNode(openCharacterWindows));
   const positionUpdateTimeouts = useRef<Map<string, NodeJS.Timeout>>(new Map());
 
   useEffect(() => {
     setNodes(convertWindowsToNode(openCharacterWindows));
-  }, [windowsForCurrentPage, locked]);
+  }, [openCharacterWindows, locked]);
 
   const onNodesChange = (changes: NodeChange[]) => {
     for (const change of changes) {
