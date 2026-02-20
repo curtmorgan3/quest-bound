@@ -18,7 +18,8 @@ import {
 } from '@/components/ui/select';
 import { WorldViewer } from '@/components/worlds/world-viewer';
 import {
-  useArchetypes,
+  ArchetypeLookup,
+  ItemLookup,
   useAssets,
   useCampaign,
   useCampaignCharacters,
@@ -32,7 +33,7 @@ import {
 } from '@/lib/compass-api';
 import { useCharacter } from '@/lib/compass-api/hooks/characters/use-character';
 import { db } from '@/stores';
-import type { CampaignEventType, Item } from '@/types';
+import type { CampaignCharacter, CampaignItem, Character, CampaignEventType, Item } from '@/types';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { ArrowUp, ChevronRight, Plus, Trash2 } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
@@ -67,12 +68,6 @@ export function CampaignEdit() {
   const eventLocationsWithEvent = useCampaignEventLocationsByLocation(
     selectedLocationId ?? undefined,
   );
-  const { archetypes } = useArchetypes(campaign?.rulesetId);
-  const itemsForRuleset = useLiveQuery(async (): Promise<Item[]> => {
-    if (!campaign?.rulesetId) return [];
-    return db.items.where('rulesetId').equals(campaign.rulesetId).toArray();
-  }, [campaign?.rulesetId]);
-  const items: Item[] = itemsForRuleset ?? [];
 
   const [tileMenu, setTileMenu] = useState<{
     x: number;
@@ -156,22 +151,28 @@ export function CampaignEdit() {
       campaignItems.filter((ci) => ci.currentLocationId === selectedLocationId && ci.currentTileId),
     [campaignItems, selectedLocationId],
   );
-  const charactersResolved = useLiveQuery(async () => {
-    if (charactersAtLocation.length === 0) return [];
-    const chars = await db.characters.bulkGet(charactersAtLocation.map((cc) => cc.characterId));
-    return charactersAtLocation.map((cc) => ({
-      campaignCharacter: cc,
-      character: chars.find((c) => c?.id === cc.characterId) ?? null,
-    }));
-  }, [charactersAtLocation.map((c) => c.id).join(',')]);
-  const itemsResolved = useLiveQuery(async () => {
-    if (itemsAtLocation.length === 0) return [];
-    const itemRecs = await db.items.bulkGet(itemsAtLocation.map((ci) => ci.itemId));
-    return itemsAtLocation.map((ci) => ({
-      campaignItem: ci,
-      item: itemRecs.find((i) => i?.id === ci.itemId) ?? null,
-    }));
-  }, [itemsAtLocation.map((i) => i.id).join(',')]);
+  const charactersResolved = useLiveQuery(
+    async (): Promise<Array<{ campaignCharacter: CampaignCharacter; character: Character | null }>> => {
+      if (charactersAtLocation.length === 0) return [];
+      const chars = await db.characters.bulkGet(charactersAtLocation.map((cc) => cc.characterId));
+      return charactersAtLocation.map((cc) => ({
+        campaignCharacter: cc,
+        character: chars.find((c) => c?.id === cc.characterId) ?? null,
+      }));
+    },
+    [charactersAtLocation.map((c) => c.id).join(',')],
+  );
+  const itemsResolved = useLiveQuery(
+    async (): Promise<Array<{ campaignItem: CampaignItem; item: Item | null }>> => {
+      if (itemsAtLocation.length === 0) return [];
+      const itemRecs = await db.items.bulkGet(itemsAtLocation.map((ci) => ci.itemId));
+      return itemsAtLocation.map((ci) => ({
+        campaignItem: ci,
+        item: itemRecs.find((i) => i?.id === ci.itemId) ?? null,
+      }));
+    },
+    [itemsAtLocation.map((i) => i.id).join(',')],
+  );
 
   const overlayNodes = useMemo((): LocationViewerOverlayNode[] => {
     const nodes: LocationViewerOverlayNode[] = [];
@@ -384,7 +385,6 @@ export function CampaignEdit() {
   }
 
   const showMap = selectedLocationId && currentLocation?.hasMap;
-  const archetypesForSelect = archetypes;
 
   return (
     <div className='flex h-full w-full flex-col'>
@@ -522,19 +522,14 @@ export function CampaignEdit() {
             <DialogTitle>Add Character</DialogTitle>
           </DialogHeader>
           <div className='space-y-2'>
-            <Label>Archetype</Label>
-            <Select value={selectedArchetypeId ?? ''} onValueChange={setSelectedArchetypeId}>
-              <SelectTrigger>
-                <SelectValue placeholder='Select archetype' />
-              </SelectTrigger>
-              <SelectContent>
-                {archetypesForSelect.map((a) => (
-                  <SelectItem key={a.id} value={a.id}>
-                    {a.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <ArchetypeLookup
+              rulesetId={campaign?.rulesetId}
+              value={selectedArchetypeId}
+              onSelect={(archetype) => setSelectedArchetypeId(archetype.id)}
+              onDelete={() => setSelectedArchetypeId(null)}
+              placeholder='Search archetypes...'
+              label='Archetype'
+            />
           </div>
           <DialogFooter>
             <Button variant='outline' onClick={() => setAddCharacterOpen(false)}>
@@ -553,19 +548,13 @@ export function CampaignEdit() {
             <DialogTitle>Add Item</DialogTitle>
           </DialogHeader>
           <div className='space-y-2'>
-            <Label>Item</Label>
-            <Select value={selectedItemId ?? ''} onValueChange={setSelectedItemId}>
-              <SelectTrigger>
-                <SelectValue placeholder='Select item' />
-              </SelectTrigger>
-              <SelectContent>
-                {items.map((item) => (
-                  <SelectItem key={item.id} value={item.id}>
-                    {item.title}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <ItemLookup
+              value={selectedItemId}
+              onSelect={(item) => setSelectedItemId(item.id)}
+              onDelete={() => setSelectedItemId(null)}
+              placeholder='Search items...'
+              label='Item'
+            />
           </div>
           <DialogFooter>
             <Button variant='outline' onClick={() => setAddItemOpen(false)}>
