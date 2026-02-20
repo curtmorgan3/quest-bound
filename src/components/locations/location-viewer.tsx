@@ -24,11 +24,7 @@ function getTilesByKey(tiles: TileData[]): Map<string, TileData[]> {
 }
 
 /** Topmost TileData at (x, y) by zIndex, or null if no tile. */
-export function getTopTileDataAt(
-  tiles: TileData[],
-  x: number,
-  y: number,
-): TileData | null {
+export function getTopTileDataAt(tiles: TileData[], x: number, y: number): TileData | null {
   const key = `${x},${y}`;
   const byKey = getTilesByKey(tiles);
   const layers = byKey.get(key) ?? [];
@@ -275,8 +271,9 @@ export function LocationViewer({
               return (
                 <div
                   key={node.id}
-                  className='absolute flex items-center justify-center overflow-hidden rounded border border-background bg-muted/90'
+                  className='absolute flex items-center justify-center overflow-hidden'
                   style={{
+                    backgroundColor: 'transparent',
                     left: coord.x * effectiveTileSize + 2,
                     top: coord.y * effectiveTileSize + 2,
                     width: effectiveTileSize - 4,
