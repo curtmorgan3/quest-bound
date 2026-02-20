@@ -3,13 +3,13 @@ import { useAssets, useLocation, useLocations, useTilemaps, useWorld } from '@/l
 import { db } from '@/stores';
 import type { Action, Tile, TileData, Tilemap } from '@/types';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { ArrowLeft, Grid3X3 } from 'lucide-react';
+import { ArrowLeft, Trash2 } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { CellPropertyPanel } from './cell-property-panel';
 import { TilePaintBar } from './tilemaps';
 
-const TILE_DISPLAY_SIZE = 32;
+const DEFAULT_TILE_RENDER_SIZE = 32;
 
 function getTilesByKey(tiles: TileData[]): Map<string, TileData[]> {
   const map = new Map<string, TileData[]>();
@@ -39,9 +39,12 @@ export function LocationEditor() {
   const gridWidth = loc?.gridWidth ?? 1;
   const gridHeight = loc?.gridHeight ?? 1;
 
+  const [selectedTiles, setSelectedTiles] = useState<Tile[]>([]);
   const tileIdsInLocation = useMemo(
-    () => [...new Set((loc?.tiles ?? []).map((td) => td.tileId))],
-    [loc?.tiles],
+    () => [
+      ...new Set([...(loc?.tiles ?? []).map((td) => td.tileId), ...selectedTiles.map((t) => t.id)]),
+    ],
+    [loc?.tiles, selectedTiles],
   );
   const tilesById = useLiveQuery(
     () =>
@@ -68,13 +71,14 @@ export function LocationEditor() {
     [world?.rulesetId],
   );
 
-  const [selectedTile, setSelectedTile] = useState<Tile | null>(null);
   const [selectedCell, setSelectedCell] = useState<{ x: number; y: number } | null>(null);
   const [selectedLayerId, setSelectedLayerId] = useState<string | null>(null);
+  const [paintLayer, setPaintLayer] = useState(0);
   const [gridWidthInput, setGridWidthInput] = useState('');
   const [gridHeightInput, setGridHeightInput] = useState('');
   const gridWidthDisplay = gridWidthInput !== '' ? gridWidthInput : String(gridWidth);
   const gridHeightDisplay = gridHeightInput !== '' ? gridHeightInput : String(gridHeight);
+  const tileRenderSize = loc?.tileRenderSize ?? DEFAULT_TILE_RENDER_SIZE;
 
   const tilesByKey = useMemo(() => getTilesByKey(loc?.tiles ?? []), [loc?.tiles]);
   const isPaintingRef = useRef(false);
@@ -88,12 +92,12 @@ export function LocationEditor() {
   }, []);
 
   const selectedCellLayers = selectedCell
-    ? tilesByKey.get(`${selectedCell.x},${selectedCell.y}`) ?? []
+    ? (tilesByKey.get(`${selectedCell.x},${selectedCell.y}`) ?? [])
     : [];
   const selectedTileData =
     selectedCellLayers.length > 0
-      ? selectedCellLayers.find((td) => td.id === selectedLayerId) ??
-        selectedCellLayers[selectedCellLayers.length - 1]
+      ? (selectedCellLayers.find((td) => td.id === selectedLayerId) ??
+        selectedCellLayers[selectedCellLayers.length - 1])
       : null;
 
   const handleSetGridSize = () => {
@@ -105,26 +109,50 @@ export function LocationEditor() {
   };
 
   const applyTileToCell = (x: number, y: number) => {
-    if (!loc || !selectedTile) return;
-    const layers = tilesByKey.get(`${x},${y}`) ?? [];
-    const nextZ = layers.length === 0
-      ? 0
-      : Math.max(...layers.map((td) => td.zIndex ?? 0)) + 1;
-    const newTile: TileData = {
-      id: crypto.randomUUID(),
-      tileId: selectedTile.id,
-      x,
-      y,
-      zIndex: nextZ,
-      isPassable: true,
-    };
-    updateLocation(loc.id, { tiles: [...(loc.tiles ?? []), newTile] });
+    if (!loc || selectedTiles.length === 0) return;
+    if (selectedTiles.length === 1) {
+      const t = selectedTiles[0];
+      const newTile: TileData = {
+        id: crypto.randomUUID(),
+        tileId: t.id,
+        x,
+        y,
+        zIndex: paintLayer,
+        isPassable: true,
+      };
+      updateLocation(loc.id, { tiles: [...(loc.tiles ?? []), newTile] });
+      return;
+    }
+    const topLeft = selectedTiles.reduce((best, t) =>
+      (t.tileY ?? 0) < (best.tileY ?? 0) ||
+      ((t.tileY ?? 0) === (best.tileY ?? 0) && (t.tileX ?? 0) < (best.tileX ?? 0))
+        ? t
+        : best,
+    );
+    const baseX = topLeft.tileX ?? 0;
+    const baseY = topLeft.tileY ?? 0;
+    const newTilesData: TileData[] = [];
+    for (const t of selectedTiles) {
+      const cx = x + (t.tileX ?? 0) - baseX;
+      const cy = y + (t.tileY ?? 0) - baseY;
+      if (cx >= 0 && cx < gridWidth && cy >= 0 && cy < gridHeight) {
+        newTilesData.push({
+          id: crypto.randomUUID(),
+          tileId: t.id,
+          x: cx,
+          y: cy,
+          zIndex: paintLayer,
+          isPassable: true,
+        });
+      }
+    }
+    updateLocation(loc.id, { tiles: [...(loc.tiles ?? []), ...newTilesData] });
   };
 
   const handleCellClick = (x: number, y: number) => {
     if (!loc) return;
-    if (selectedTile) {
-      // Tile already applied in handleCellMouseDown; click only used for drag or to select
+    if (selectedTiles.length > 0) {
+      // Tile(s) already applied in handleCellMouseDown; click only used for drag or to select
       return;
     }
     if (selectedCell?.x === x && selectedCell?.y === y) {
@@ -138,14 +166,14 @@ export function LocationEditor() {
   };
 
   const handleCellMouseDown = (x: number, y: number) => {
-    if (selectedTile) {
+    if (selectedTiles.length > 0) {
       applyTileToCell(x, y);
       isPaintingRef.current = true;
     }
   };
 
   const handleCellMouseEnter = (x: number, y: number) => {
-    if (isPaintingRef.current && selectedTile) {
+    if (isPaintingRef.current && selectedTiles.length > 0) {
       applyTileToCell(x, y);
     }
   };
@@ -208,14 +236,14 @@ export function LocationEditor() {
     const tileX = tile.tileX ?? 0;
     const tileY = tile.tileY ?? 0;
     const dim = assetDimensions[tilemap.assetId];
-    // Scale asset so one tilemap grid cell (tw×th) fills location editor cell (TILE_DISPLAY_SIZE)
+    // Scale asset so one tilemap grid cell (tw×th) fills location editor cell (tileRenderSize)
     const backgroundSize =
       dim != null
-        ? `${(dim.w * TILE_DISPLAY_SIZE) / tw}px ${(dim.h * TILE_DISPLAY_SIZE) / th}px`
+        ? `${(dim.w * tileRenderSize) / tw}px ${(dim.h * tileRenderSize) / th}px`
         : 'auto';
-    // Position in scaled image: one tile = TILE_DISPLAY_SIZE px, so tile (tileX,tileY) is at (tileX*TILE_DISPLAY_SIZE, tileY*TILE_DISPLAY_SIZE)
-    const posX = tileX * TILE_DISPLAY_SIZE;
-    const posY = tileY * TILE_DISPLAY_SIZE;
+    // Position in scaled image: one tile = tileRenderSize px
+    const posX = tileX * tileRenderSize;
+    const posY = tileY * tileRenderSize;
     return {
       backgroundImage: `url(${data})`,
       backgroundPosition: `-${posX}px -${posY}px`,
@@ -266,14 +294,30 @@ export function LocationEditor() {
 
         <div className='ml-auto flex items-center gap-2'>
           <div className='flex items-center gap-1'>
+            <Label htmlFor='tile-render-size' className='text-xs'>
+              Tile size
+            </Label>
+            <Input
+              id='tile-render-size'
+              type='number'
+              className='w-16'
+              value={tileRenderSize}
+              onChange={(e) => {
+                const v = parseInt(e.target.value, 10);
+                if (!Number.isNaN(v) && loc)
+                  updateLocation(loc.id, {
+                    tileRenderSize: Math.max(8, Math.min(128, v)),
+                  });
+              }}
+            />
+          </div>
+          <div className='flex items-center gap-1'>
             <Label htmlFor='grid-width' className='text-xs'>
               W
             </Label>
             <Input
               id='grid-width'
               type='number'
-              min={1}
-              max={100}
               className='w-16'
               value={gridWidthDisplay}
               onChange={(e) => setGridWidthInput(e.target.value)}
@@ -287,35 +331,52 @@ export function LocationEditor() {
             <Input
               id='grid-height'
               type='number'
-              min={1}
-              max={100}
               className='w-16'
               value={gridHeightDisplay}
               onChange={(e) => setGridHeightInput(e.target.value)}
               onBlur={handleSetGridSize}
             />
           </div>
-          <Button variant='outline' size='sm' onClick={handleSetGridSize}>
-            <Grid3X3 className='h-4 w-4' />
-            Set grid
+          <Button
+            variant='outline'
+            size='sm'
+            className='gap-1 text-muted-foreground hover:text-destructive'
+            onClick={() => loc && updateLocation(loc.id, { tiles: [] })}>
+            <Trash2 className='h-4 w-4' />
+            Clear
           </Button>
         </div>
       </div>
 
       <div className='flex min-h-0 flex-1 flex-col'>
+        <div className='flex items-center gap-1 pl-4 pr-4 pt-2'>
+          <Label htmlFor='paint-layer' className='text-xs'>
+            Editing Layer
+          </Label>
+          <Input
+            id='paint-layer'
+            type='number'
+            className='w-14'
+            value={paintLayer}
+            onChange={(e) => {
+              const v = parseInt(e.target.value, 10);
+              if (!Number.isNaN(v)) setPaintLayer(v);
+            }}
+          />
+        </div>
         {/* Grid + cell panel */}
         <div className='flex min-h-0 flex-1 gap-4 p-4'>
           <div className='flex min-w-0 flex-1 flex-col gap-2'>
             <p className='text-xs text-muted-foreground'>
-              {selectedTile
-                ? 'Click or drag over cells to paint. Click without a tile to select cell.'
-                : 'Select a tile, then click or drag over cells to paint.'}
+              {selectedTiles.length > 0
+                ? 'Click or drag over cells to paint. Top-left of selection aligns to cell. Click without a tile to select cell.'
+                : 'Select one or more (Shift+click) tiles in the tile paint panel, then click or drag to paint.'}
             </p>
             <div
-              className='inline-grid gap-px rounded border bg-muted-foreground/20 p-px'
+              className='inline-grid gap-px border bg-muted-foreground/20 p-px max-w-[90dvw] overflow-auto'
               style={{
-                gridTemplateColumns: `repeat(${gridWidth}, ${TILE_DISPLAY_SIZE}px)`,
-                gridTemplateRows: `repeat(${gridHeight}, ${TILE_DISPLAY_SIZE}px)`,
+                gridTemplateColumns: `repeat(${gridWidth}, ${tileRenderSize}px)`,
+                gridTemplateRows: `repeat(${gridHeight}, ${tileRenderSize}px)`,
               }}>
               {Array.from({ length: gridHeight }, (_, y) =>
                 Array.from({ length: gridWidth }, (_, x) => {
@@ -326,14 +387,15 @@ export function LocationEditor() {
                     <button
                       key={key}
                       type='button'
-                      className={`h-8 w-8 shrink-0 rounded-sm bg-muted/50 ${
+                      className={`shrink-0 bg-muted/50 ${
                         isSelected ? 'ring-2 ring-primary' : 'hover:bg-muted'
                       }`}
+                      style={{ width: tileRenderSize, height: tileRenderSize }}
                       onClick={() => handleCellClick(x, y)}
                       onMouseDown={() => handleCellMouseDown(x, y)}
                       onMouseEnter={() => handleCellMouseEnter(x, y)}>
                       {layers.length > 0 && (
-                        <span className='relative block size-full overflow-hidden rounded-sm'>
+                        <span className='relative block size-full overflow-hidden'>
                           {layers.map((td) => (
                             <span
                               key={td.id}
@@ -368,8 +430,8 @@ export function LocationEditor() {
           worldId={worldId!}
           getAssetData={getAssetData}
           assetDimensions={assetDimensions}
-          selectedTile={selectedTile}
-          onSelectedTileChange={setSelectedTile}
+          selectedTiles={selectedTiles}
+          onSelectedTilesChange={setSelectedTiles}
         />
       </div>
     </div>

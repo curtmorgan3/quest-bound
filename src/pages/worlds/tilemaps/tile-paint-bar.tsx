@@ -1,4 +1,4 @@
-import { Button, Label } from '@/components';
+import { Button } from '@/components';
 import {
   Select,
   SelectContent,
@@ -17,8 +17,8 @@ export interface TilePaintBarProps {
   worldId: string;
   getAssetData: (assetId: string) => string | null;
   assetDimensions: Record<string, { w: number; h: number }>;
-  selectedTile: Tile | null;
-  onSelectedTileChange: (tile: Tile | null) => void;
+  selectedTiles: Tile[];
+  onSelectedTilesChange: (tiles: Tile[]) => void;
 }
 
 function getPickerTileStyle(
@@ -52,9 +52,27 @@ export function TilePaintBar({
   worldId,
   getAssetData,
   assetDimensions,
-  selectedTile,
-  onSelectedTileChange,
+  selectedTiles,
+  onSelectedTilesChange,
 }: TilePaintBarProps) {
+  const selectedIds = useMemo(() => new Set(selectedTiles.map((t) => t.id)), [selectedTiles]);
+
+  const handleTileClick = (e: React.MouseEvent, tile: Tile | undefined) => {
+    if (e.shiftKey) {
+      if (!tile) return;
+      if (selectedIds.has(tile.id)) {
+        onSelectedTilesChange(selectedTiles.filter((t) => t.id !== tile.id));
+      } else {
+        onSelectedTilesChange([...selectedTiles, tile]);
+      }
+    } else {
+      if (tile) {
+        onSelectedTilesChange(selectedIds.has(tile.id) && selectedTiles.length === 1 ? [] : [tile]);
+      } else {
+        onSelectedTilesChange([]);
+      }
+    }
+  };
   const { tilemaps } = useTilemaps(worldId);
   const [selectedTilemapId, setSelectedTilemapId] = useState<string | null>(null);
   const tilesResult = useTiles(selectedTilemapId ?? undefined);
@@ -70,23 +88,26 @@ export function TilePaintBar({
   }, [tilesForPicker]);
 
   return (
-    <div className='flex shrink-0 flex-wrap items-center gap-4 border-t bg-muted/30 px-4 py-3'>
-      <h3 className='text-sm font-semibold'>Tile paint</h3>
+    <div className='flex shrink-0 max-h-[45dvh] overflow-auto flex-wrap items-start gap-4 border-t bg-muted/30 px-4 py-3'>
       {tilemapsList.length === 0 ? (
         <p className='text-xs text-muted-foreground'>
           No tilemaps. Create one from the world&apos;s Tilemaps page.
         </p>
       ) : (
         <>
-          <div className='flex items-center gap-2'>
-            <Label className='text-xs'>Tilemap</Label>
+          <div className='flex flex-col gap-2'>
+            <h3 className='text-sm font-semibold'>Tile paint</h3>
             <Select
               value={selectedTilemapId ?? '_none'}
-              onValueChange={(v) => setSelectedTilemapId(v === '_none' ? null : v)}>
+              onValueChange={(v) => {
+                setSelectedTilemapId(v === '_none' ? null : v);
+                if (v === '_none') onSelectedTilesChange([]);
+              }}>
               <SelectTrigger className='h-8 w-40'>
                 <SelectValue placeholder='Select tilemap' />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value='_none'>None</SelectItem>
                 {tilemapsList.map((tm) => (
                   <SelectItem key={tm.id} value={tm.id}>
                     {tm.label || `${tm.tileWidth}×${tm.tileHeight}`}
@@ -107,18 +128,13 @@ export function TilePaintBar({
               return (
                 <>
                   <div className='flex items-center gap-2'>
-                    <Label className='text-xs'>Tile</Label>
                     <div
-                      className='inline-grid max-h-64 overflow-auto rounded border bg-muted/30 p-1'
+                      className='inline-grid rounded border bg-muted/30 p-1'
                       style={{
                         gridTemplateColumns:
-                          colCount > 0
-                            ? `repeat(${colCount}, ${TILE_DISPLAY_SIZE}px)`
-                            : undefined,
+                          colCount > 0 ? `repeat(${colCount}, ${TILE_DISPLAY_SIZE}px)` : undefined,
                         gridTemplateRows:
-                          rowCount > 0
-                            ? `repeat(${rowCount}, ${TILE_DISPLAY_SIZE}px)`
-                            : undefined,
+                          rowCount > 0 ? `repeat(${rowCount}, ${TILE_DISPLAY_SIZE}px)` : undefined,
                       }}>
                       {rowIndices.map((y) =>
                         colIndices.map((x) => {
@@ -128,25 +144,19 @@ export function TilePaintBar({
                               key={tile ? tile.id : `empty-${x}-${y}`}
                               type='button'
                               className={`h-8 w-8 shrink-0 rounded border bg-muted ${
-                                selectedTile?.id === tile?.id && tile?.id !== undefined
-                                  ? 'ring-2 ring-primary'
-                                  : ''
+                                tile && selectedIds.has(tile.id) ? 'ring-2 ring-primary' : ''
                               }`}
                               style={
                                 tile && tm
                                   ? getPickerTileStyle(tm, tile, getAssetData, assetDimensions)
                                   : undefined
                               }
-                              onClick={() =>
-                                onSelectedTileChange(
-                                  tile
-                                    ? selectedTile?.id === tile.id
-                                      ? null
-                                      : tile
-                                    : selectedTile,
-                                )
+                              onClick={(e) => handleTileClick(e, tile)}
+                              title={
+                                tile
+                                  ? `Tile ${x},${y} (Shift+click to multi-select)`
+                                  : `(${x},${y})`
                               }
-                              title={tile ? `Tile ${x},${y}` : `(${x},${y})`}
                             />
                           );
                         }),
@@ -166,7 +176,7 @@ export function TilePaintBar({
                         });
                         if (id) {
                           const t = await db.tiles.get(id);
-                          if (t) onSelectedTileChange(t);
+                          if (t) onSelectedTilesChange([t]);
                         }
                       }}>
                       Add tile (0,0)

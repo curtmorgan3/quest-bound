@@ -422,6 +422,8 @@ export type Location = BaseDetails & {
   gridHeight: number;
   /** When true, this location has a tile map (grid) and can be opened in the location editor. */
   hasMap?: boolean;
+  /** Pixel size (width and height) for rendering each tile in the location editor. */
+  tileRenderSize?: number;
   tiles: TileData[];
   /** Stacking order of the node on the canvas; higher values draw on top. */
   nodeZIndex?: number;
