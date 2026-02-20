@@ -63,7 +63,6 @@ export const Characters = () => {
     ) ?? [];
 
   const selectableArchetypes = archetypes.filter((a) => !a.isDefault);
-  const defaultArchetype = archetypes.find((a) => a.isDefault) ?? archetypes[0];
 
   // Track the assetId to clean up if dialog is cancelled
   const pendingAssetIdRef = useRef<string | null>(null);
@@ -79,17 +78,10 @@ export const Characters = () => {
   const handleCreate = async () => {
     if (!name.trim() || !rulesetId) return;
 
-    const archetypeIds =
-      selectedArchetypeIds.length > 0
-        ? selectedArchetypeIds
-        : defaultArchetype
-          ? [defaultArchetype.id]
-          : [];
-
     await createCharacter({
       name: name.trim(),
       rulesetId,
-      archetypeIds,
+      archetypeIds: selectedArchetypeIds,
       assetId,
     });
 

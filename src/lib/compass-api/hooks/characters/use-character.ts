@@ -57,19 +57,20 @@ export const useCharacter = (_id?: string) => {
       // Resolve archetype IDs: use provided list or fall back to default
       let archetypeIds: string[] = data.archetypeIds ?? [];
 
-      // For now, always duplicate character from the default archetype.
-      // In the future, character duplication can happen from any archetype.
-      const defaultArchetype = await db.archetypes
-        .where('rulesetId')
-        .equals(rulesetId)
-        .filter((a) => a.isDefault)
-        .first();
+      // Use default if none are provided
+      if (!archetypeIds.length) {
+        const defaultArchetype = await db.archetypes
+          .where('rulesetId')
+          .equals(rulesetId)
+          .filter((a) => a.isDefault)
+          .first();
 
-      if (defaultArchetype) {
-        archetypeIds = [
-          defaultArchetype.id,
-          ...archetypeIds.filter((id) => id !== defaultArchetype.id),
-        ];
+        if (defaultArchetype) {
+          archetypeIds = [
+            defaultArchetype.id,
+            ...archetypeIds.filter((id) => id !== defaultArchetype.id),
+          ];
+        }
       }
 
       if (archetypeIds.length === 0) {
