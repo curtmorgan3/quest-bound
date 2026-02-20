@@ -2,7 +2,8 @@ import { Button } from '@/components';
 import { LocationViewer } from '@/components/locations/location-viewer';
 import { WorldViewer } from '@/components/worlds/world-viewer';
 import { useAssets, useCampaign, useLocation, useLocations, useWorld } from '@/lib/compass-api';
-import { useCallback } from 'react';
+import { ArrowUp, ChevronRight } from 'lucide-react';
+import { useCallback, useMemo } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 
 /**
@@ -16,7 +17,7 @@ export function CampaignWorldView() {
     campaignId: string;
     locationId?: string;
   }>();
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const campaign = useCampaign(campaignId);
   const world = useWorld(campaign?.worldId);
@@ -49,13 +50,19 @@ export function CampaignWorldView() {
     [campaignId, navigate],
   );
 
-  const handleBackToWorld = useCallback(() => {
-    setSearchParams((prev) => {
-      const next = new URLSearchParams(prev);
-      next.delete('map');
-      return next;
-    });
-  }, [setSearchParams]);
+  const parentStack = useMemo(() => {
+    if (selectedLocationId && currentLocation) return [currentLocation];
+    return [];
+  }, [selectedLocationId, currentLocation]);
+
+  const handleBack = useCallback(() => {
+    if (!campaignId) return;
+    if (currentLocation?.parentLocationId) {
+      navigate(`/campaigns/${campaignId}/locations/${currentLocation.parentLocationId}/view`);
+    } else {
+      navigate(`/campaigns/${campaignId}/view`);
+    }
+  }, [campaignId, currentLocation?.parentLocationId, navigate]);
 
   const locationsList = locations ?? [];
   const selectedLocation = currentLocation ?? null;
@@ -80,19 +87,25 @@ export function CampaignWorldView() {
 
   return (
     <div className='flex h-full w-full flex-col'>
-      <div className='flex shrink-0 items-center gap-2 border-b bg-background px-4 py-2'>
+      <div className='flex shrink-0 flex-wrap items-center gap-2 border-b bg-background px-4 py-2'>
         <Button variant='ghost' size='sm' onClick={() => navigate(`/campaigns/${campaignId}`)}>
           Back to campaign
         </Button>
-        {selectedLocation && (
-          <>
-            <span className='text-muted-foreground'>›</span>
-            <span className='font-medium'>{selectedLocation.label}</span>
-          </>
-        )}
-        {viewMode === 'location' && selectedLocation && (
-          <Button variant='ghost' size='sm' onClick={handleBackToWorld}>
-            Back to world
+        <span className='truncate font-semibold'>{world.label}</span>
+        {parentStack.map((loc) => (
+          <span key={loc.id} className='flex items-center gap-1 text-muted-foreground'>
+            <ChevronRight className='h-4 w-4' />
+            <span className='truncate font-medium text-foreground'>{loc.label}</span>
+          </span>
+        ))}
+        {parentStack.length > 0 && (
+          <Button
+            variant='ghost'
+            size='sm'
+            onClick={handleBack}
+            data-testid='campaign-world-view-back'
+            className='clickable'>
+            <ArrowUp className='h-4 w-4' />
           </Button>
         )}
       </div>

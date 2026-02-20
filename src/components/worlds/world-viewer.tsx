@@ -95,7 +95,6 @@ export function WorldViewer({
 
   const handleNodeDoubleClick = useCallback(
     (e: React.MouseEvent, node: Node<LocationNodeData>) => {
-      console.log('click');
       const loc = (node.data as LocationNodeData).location;
       if (!loc) return;
       if (loc.hasMap && (onAdvanceToLocation || onOpenMap)) {
