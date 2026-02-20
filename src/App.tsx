@@ -4,7 +4,7 @@ import {
   Characters,
   DevTools,
   ErrorPage,
-  LocationEditorPlaceholder,
+  LocationEditor,
   Ruleset,
   Rulesets,
   RulesetPageEditorPage,
@@ -60,7 +60,7 @@ function CompassRoutes() {
             <Route path={`/worlds/:worldId`} element={<WorldEditor />} />
             <Route
               path={`/worlds/:worldId/locations/:locationId`}
-              element={<LocationEditorPlaceholder />}
+              element={<LocationEditor />}
             />
 
             <Route path={`/characters`} element={<Characters />} />
