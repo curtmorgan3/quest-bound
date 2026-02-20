@@ -421,6 +421,8 @@ export type Location = BaseDetails & {
   gridWidth: number;
   gridHeight: number;
   tiles: TileData[];
+  /** Stacking order of the node on the canvas; higher values draw on top. */
+  nodeZIndex?: number;
   /** Whether to show the label on the node. */
   labelVisible?: boolean;
   /** CSS background color for the node. */

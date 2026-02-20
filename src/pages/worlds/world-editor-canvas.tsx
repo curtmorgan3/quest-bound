@@ -23,7 +23,11 @@ function locationsToNodes(locations: Location[]): Node<LocationNodeData>[] {
     type: 'location',
     position: { x: loc.nodeX, y: loc.nodeY },
     data: { label: loc.label, location: loc },
-    style: { width: loc.nodeWidth, height: loc.nodeHeight },
+    style: {
+      width: loc.nodeWidth,
+      height: loc.nodeHeight,
+      zIndex: loc.nodeZIndex ?? 0,
+    },
   }));
 }
 
@@ -39,8 +43,8 @@ interface WorldEditorCanvasProps {
   onUpdateLocation: (id: string, data: Partial<Location>) => Promise<void>;
   onDeleteLocation: (id: string) => Promise<void>;
   onEnterLocation: (location: Location) => void;
-  selectedLocationId: string | null;
-  onSelectLocation: (id: string | null) => void;
+  selectedLocationIds: string[];
+  onSelectLocations: (ids: string[]) => void;
   /** Optional pan bounds. Example: [[-2000, -2000], [2000, 2000]] limits pan to ±2000 on both axes. */
   translateExtent?: TranslateExtent;
 }
@@ -91,8 +95,8 @@ export function WorldEditorCanvas({
   onUpdateLocation,
   onDeleteLocation,
   onEnterLocation,
-  selectedLocationId,
-  onSelectLocation,
+  selectedLocationIds,
+  onSelectLocations,
   translateExtent,
 }: WorldEditorCanvasProps) {
   const { worldId } = useParams<{ worldId: string }>();
@@ -111,6 +115,7 @@ export function WorldEditorCanvas({
         nodeY: l.nodeY,
         nodeWidth: l.nodeWidth,
         nodeHeight: l.nodeHeight,
+        nodeZIndex: l.nodeZIndex,
         labelVisible: l.labelVisible,
         backgroundColor: l.backgroundColor,
         opacity: l.opacity,
@@ -132,11 +137,16 @@ export function WorldEditorCanvas({
       });
       return locations.map((loc) => {
         const existing = prevById.get(loc.id);
+        const style = {
+          width: loc.nodeWidth,
+          height: loc.nodeHeight,
+          zIndex: loc.nodeZIndex ?? 0,
+        };
         if (existing) {
           return {
             ...existing,
             data: nodeData(loc),
-            style: { width: loc.nodeWidth, height: loc.nodeHeight },
+            style,
           };
         }
         return {
@@ -144,7 +154,7 @@ export function WorldEditorCanvas({
           type: 'location' as const,
           position: { x: loc.nodeX, y: loc.nodeY },
           data: nodeData(loc),
-          style: { width: loc.nodeWidth, height: loc.nodeHeight },
+          style,
         };
       });
     });
@@ -222,9 +232,9 @@ export function WorldEditorCanvas({
       await onDeleteLocation(locationId);
       setNodes((nds) => nds.filter((n) => n.id !== locationId));
       setNodeMenu(null);
-      if (selectedLocationId === locationId) onSelectLocation(null);
+      onSelectLocations(selectedLocationIds.filter((id) => id !== locationId));
     },
-    [onDeleteLocation, selectedLocationId, onSelectLocation],
+    [onDeleteLocation, selectedLocationIds, onSelectLocations],
   );
 
   const handlePaneContextMenu = useCallback(
@@ -259,22 +269,30 @@ export function WorldEditorCanvas({
   );
 
   const handleNodeClick = useCallback(
-    (_: React.MouseEvent, node: Node<LocationNodeData>) => {
-      onSelectLocation(node.id);
+    (e: React.MouseEvent, node: Node<LocationNodeData>) => {
+      if (e.shiftKey) {
+        const next = selectedLocationIds.includes(node.id)
+          ? selectedLocationIds.filter((id) => id !== node.id)
+          : [...selectedLocationIds, node.id];
+        onSelectLocations(next);
+      } else {
+        onSelectLocations([node.id]);
+      }
     },
-    [onSelectLocation],
+    [selectedLocationIds, onSelectLocations],
   );
 
   const handlePaneClick = useCallback(() => {
-    onSelectLocation(null);
-  }, [onSelectLocation]);
+    onSelectLocations([]);
+  }, [onSelectLocations]);
 
   const worldBackgroundUrl = world?.backgroundImage ?? null;
   const showWorldBackground = worldBackgroundUrl && parentLocationId === null;
 
+  const selectedSet = new Set(selectedLocationIds);
   const flowNodes = nodes.map((n) => ({
     ...n,
-    selected: n.id === selectedLocationId,
+    selected: selectedSet.has(n.id),
   }));
 
   return (

@@ -1,7 +1,7 @@
 import { Button, Checkbox, Input, Label } from '@/components';
 import type { Location } from '@/types';
 import { Grid3X3, MapPinned, Minus } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 export interface WorldEditorLocationPanelProps {
   location: Location;
@@ -22,6 +22,10 @@ export function WorldEditorLocationPanel({
 }: WorldEditorLocationPanelProps) {
   const [labelInput, setLabelInput] = useState(location.label);
 
+  useEffect(() => {
+    setLabelInput(location.label);
+  }, [location.id, location.label]);
+
   const handleLabelBlur = () => {
     const next = labelInput.trim() || location.label;
     setLabelInput(next);
@@ -33,6 +37,25 @@ export function WorldEditorLocationPanel({
   return (
     <div className='flex w-56 shrink-0 flex-col gap-3 border-l bg-muted/30 p-3'>
       <h3 className='text-sm font-semibold'>Location</h3>
+      <div className='grid gap-1'>
+        <Label htmlFor={`${idPrefix}-zindex`} className='text-xs'>
+          Layer
+        </Label>
+        <Input
+          id={`${idPrefix}-zindex`}
+          type='number'
+          value={location.nodeZIndex ?? 0}
+          onChange={(e) => {
+            const v = parseInt(e.target.value, 10);
+            if (!Number.isNaN(v)) onUpdateLocation({ nodeZIndex: v });
+          }}
+          onBlur={(e) => {
+            const v = parseInt(e.target.value, 10);
+            if (!Number.isNaN(v)) onUpdateLocation({ nodeZIndex: v });
+          }}
+          className='h-8'
+        />
+      </div>
       <div className='grid gap-1'>
         <Label htmlFor={`${idPrefix}-label`} className='text-xs'>
           Label

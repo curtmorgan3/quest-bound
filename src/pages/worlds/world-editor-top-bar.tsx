@@ -82,24 +82,24 @@ export function WorldEditorTopBar({
           Back
         </Button>
       )}
-      <Button
-        variant='outline'
-        size='sm'
-        className='gap-1'
-        onClick={onEditBackground}
-        data-testid='world-editor-edit-background'>
-        <Pencil className='h-4 w-4' />
-        Edit
-      </Button>
-      <Button
-        variant='outline'
-        size='sm'
-        className='ml-auto gap-1'
-        data-testid='world-editor-add-location'
-        onClick={onAddLocation}>
-        <Plus className='h-4 w-4' />
-        Add location
-      </Button>
+      <div className='flex flex-1 justify-end gap-2'>
+        <Button
+          variant='outline'
+          size='sm'
+          onClick={onEditBackground}
+          data-testid='world-editor-edit-background'>
+          <Pencil className='h-4 w-4' />
+        </Button>
+        <Button
+          variant='outline'
+          size='sm'
+          className='gap-1'
+          data-testid='world-editor-add-location'
+          onClick={onAddLocation}>
+          <Plus className='h-4 w-4' />
+          Add location
+        </Button>
+      </div>
     </div>
   );
 }

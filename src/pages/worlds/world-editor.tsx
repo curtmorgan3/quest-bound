@@ -1,7 +1,7 @@
-import { useAssets, useLocations, useWorld, useWorlds } from '@/lib/compass-api';
+import { useLocation, useLocations, useWorld, useWorlds } from '@/lib/compass-api';
 import type { Location } from '@/types';
-import { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useEffect, useMemo, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { WorldEditorBackgroundDialog } from './world-editor-background-dialog';
 import { WorldEditorCanvas } from './world-editor-canvas';
 import { WorldEditorLocationPanel } from './world-editor-location-panel';
@@ -10,17 +10,21 @@ import { WorldEditorTopBar } from './world-editor-top-bar';
 const DEFAULT_GRID_SIZE = 8;
 
 export function WorldEditor() {
-  const { worldId } = useParams<{ worldId: string }>();
+  const { worldId, locationId: urlLocationId } = useParams<{
+    worldId: string;
+    locationId?: string;
+  }>();
   const navigate = useNavigate();
   const world = useWorld(worldId);
+  const urlLocation = useLocation(urlLocationId);
   const { updateWorld } = useWorlds();
-  const [parentStack, setParentStack] = useState<Location[]>([]);
-  const [selectedLocationId, setSelectedLocationId] = useState<string | null>(null);
+  const [selectedLocationIds, setSelectedLocationIds] = useState<string[]>([]);
   const [backgroundDialogOpen, setBackgroundDialogOpen] = useState(false);
 
-  const { assets } = useAssets(world?.rulesetId ?? null);
-  const getAssetData = (assetId: string) =>
-    assets?.find((a) => a.id === assetId)?.data ?? null;
+  const parentStack = useMemo(() => {
+    if (urlLocationId && urlLocation) return [urlLocation];
+    return [];
+  }, [urlLocationId, urlLocation]);
 
   const currentParent = parentStack.length > 0 ? parentStack[parentStack.length - 1] : null;
   const { locations, createLocation, updateLocation, deleteLocation } = useLocations(
@@ -29,9 +33,14 @@ export function WorldEditor() {
   );
 
   const locationsList = locations ?? [];
-  const selectedLocation = selectedLocationId
-    ? locationsList.find((loc) => loc.id === selectedLocationId)
-    : null;
+  const selectedLocationIdsFiltered = useMemo(
+    () => selectedLocationIds.filter((id) => locationsList.some((loc) => loc.id === id)),
+    [selectedLocationIds, locationsList],
+  );
+  const singleSelectedLocation =
+    selectedLocationIdsFiltered.length === 1
+      ? locationsList.find((loc) => loc.id === selectedLocationIdsFiltered[0])
+      : null;
 
   useEffect(() => {
     if (worldId && world === undefined) {
@@ -59,13 +68,18 @@ export function WorldEditor() {
   };
 
   const handleEnterLocation = (location: Location) => {
-    setParentStack((prev) => [...prev, location]);
-    setSelectedLocationId(null);
+    setSelectedLocationIds([]);
+    if (worldId) navigate(`/worlds/${worldId}/locations/${location.id}`);
   };
 
   const handleBack = () => {
-    setParentStack((prev) => prev.slice(0, -1));
-    setSelectedLocationId(null);
+    setSelectedLocationIds([]);
+    if (!worldId) return;
+    if (currentParent?.parentLocationId) {
+      navigate(`/worlds/${worldId}/locations/${currentParent.parentLocationId}`);
+    } else {
+      navigate(`/worlds/${worldId}`);
+    }
   };
 
   if (world === undefined) {
@@ -98,7 +112,7 @@ export function WorldEditor() {
         currentLocation={currentParent}
         worldId={worldId}
         rulesetId={world.rulesetId}
-        getAssetData={getAssetData}
+        getAssetData={() => null}
         onUpdateWorld={updateWorld}
         onUpdateLocation={updateLocation}
       />
@@ -112,32 +126,34 @@ export function WorldEditor() {
             onUpdateLocation={updateLocation}
             onDeleteLocation={deleteLocation}
             onEnterLocation={handleEnterLocation}
-            selectedLocationId={selectedLocationId}
-            onSelectLocation={setSelectedLocationId}
+            selectedLocationIds={selectedLocationIdsFiltered}
+            onSelectLocations={setSelectedLocationIds}
             translateExtent={[
               [-2000, -2000],
               [2000, 2000],
             ]}
           />
         </div>
-        {selectedLocation && (
+        {singleSelectedLocation && (
           <WorldEditorLocationPanel
-            location={selectedLocation}
+            key={singleSelectedLocation.id}
+            location={singleSelectedLocation}
             onAddGrid={() => {
-              updateLocation(selectedLocation.id, {
+              updateLocation(singleSelectedLocation.id, {
                 gridWidth: DEFAULT_GRID_SIZE,
                 gridHeight: DEFAULT_GRID_SIZE,
               });
             }}
             onRemoveGrid={() =>
-              updateLocation(selectedLocation.id, { gridWidth: 1, gridHeight: 1 })
+              updateLocation(singleSelectedLocation.id, { gridWidth: 1, gridHeight: 1 })
             }
             onOpenInLocationEditor={() => {
-              if (worldId) navigate(`/worlds/${worldId}/locations/${selectedLocation.id}`);
+              if (worldId)
+                navigate(`/worlds/${worldId}/locations/${singleSelectedLocation.id}/edit`);
             }}
-            onUpdateLocation={(data) => updateLocation(selectedLocation.id, data)}
+            onUpdateLocation={(data) => updateLocation(singleSelectedLocation.id, data)}
             hasGrid={
-              selectedLocation.gridWidth > 1 || selectedLocation.gridHeight > 1
+              singleSelectedLocation.gridWidth > 1 || singleSelectedLocation.gridHeight > 1
             }
           />
         )}

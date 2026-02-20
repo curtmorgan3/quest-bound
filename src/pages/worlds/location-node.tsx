@@ -70,8 +70,7 @@ export function LocationNode(props: Props) {
         minHeight={MIN_HEIGHT}
       />
       <div
-        className='relative flex items-center justify-center rounded border-2 border-muted-foreground/30 px-2 py-1 text-sm font-medium'
-        onClick={(e) => e.preventDefault()}
+        className='relative flex items-start justify-start rounded border-2 border-muted-foreground/30 px-2 py-1 text-sm font-medium'
         style={{
           width: `${width}px`,
           height: `${height}px`,
