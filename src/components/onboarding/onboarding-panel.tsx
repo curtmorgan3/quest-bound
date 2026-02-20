@@ -124,7 +124,7 @@ export function OnboardingPanel({ userId, onClose }: OnboardingPanelProps) {
     <>
       <OnboardingHighlight selector={currentSubstep.selector?.selector} />
       <Card
-        className='fixed bottom-12 left-14 z-500 w-[min(480px,calc(100vw-2rem))] border shadow-lg bg-card/95 backdrop-blur-sm'
+        className='fixed bottom-12 left-14 z-500 w-[min(500px,calc(100vw-2rem))] border shadow-lg bg-card/95 backdrop-blur-sm'
         role='region'
         aria-label='Getting started tutorial'>
         <CardHeader className='flex flex-row items-start justify-between gap-2 pb-2'>
@@ -170,7 +170,7 @@ export function OnboardingPanel({ userId, onClose }: OnboardingPanelProps) {
             </div>
           )}
         </CardContent>
-        <CardFooter className='flex flex-col gap-3 border-t pt-3'>
+        <CardFooter className='flex flex-col gap-3 pl-1 pr-3 border-t pt-3'>
           <div className='flex items-center w-full justify-between gap-2'>
             <Button
               variant='outline'

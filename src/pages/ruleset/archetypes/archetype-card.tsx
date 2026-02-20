@@ -160,7 +160,11 @@ export function ArchetypeCard({
       </div>
       {!isEditing && (
         <div className='flex gap-1 shrink-0'>
-          <Button variant='ghost' size='sm' onClick={handleOpenSheetEdit}>
+          <Button
+            variant='ghost'
+            size='sm'
+            onClick={handleOpenSheetEdit}
+            data-testid='archetype-edit-default-sheet'>
             Edit Default Sheet
           </Button>
           {!archetype.isDefault && (

@@ -252,14 +252,14 @@ export const onboardingTutorial: Tutorial = [
         },
       },
       {
-        description: 'Enter the title "Combat Sheet", then click Create.',
+        description: 'Enter the title "Combat Page", then click Create.',
         selector: {
           selector: '#create-title, [data-testid="base-create-submit"]',
           shouldAdvanceOnClick: true,
         },
       },
       {
-        description: 'Open the Combat Sheet page by clicking Open on its card.',
+        description: 'Open the Combat Page page by clicking Open on its card.',
         selector: { selector: '[data-testid="preview-card-open"]', shouldAdvanceOnClick: true },
       },
       {
@@ -294,6 +294,40 @@ export const onboardingTutorial: Tutorial = [
       },
       {
         description: 'Reposition the windows on the page to your liking, then continue.',
+      },
+    ],
+  },
+  {
+    title: 'Archetypes',
+    substeps: [
+      {
+        description: 'Go to the Archetypes page from the ruleset sidebar.',
+        selector: { selector: '[data-testid="nav-archetypes"]', shouldAdvanceOnClick: true },
+      },
+      {
+        description:
+          'Archetypes let you bundle pages into default character sheets and apply script events when characters add or remove them.',
+      },
+      {
+        description: "Click 'Edit Default Sheet' on the default archetype card.",
+        selector: {
+          selector: '[data-testid="archetype-edit-default-sheet"]',
+          shouldAdvanceOnClick: true,
+        },
+      },
+      {
+        description: "Click the 'Add Page' button.",
+        selector: {
+          selector: '[data-testid="sheet-add-page"]',
+          shouldAdvanceOnClick: true,
+        },
+      },
+      {
+        description: "Choose 'Combat Page' from the template list.",
+        selector: {
+          selector: '[data-testid="add-page-option-combat-page"]',
+          shouldAdvanceOnClick: true,
+        },
       },
     ],
   },

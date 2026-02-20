@@ -196,7 +196,8 @@ export const WindowsTabs = ({
             size='sm'
             className='h-8 shrink-0 gap-1 px-2 text-xs border-[#555] bg-[#333] text-white hover:bg-[#444]'
             onClick={() => setIsAddPageModalOpen(true)}
-            title='Add page'>
+            title='Add page'
+            data-testid='sheet-add-page'>
             <Plus size={14} />
           </Button>
         )}
@@ -397,7 +398,8 @@ export const WindowsTabs = ({
                     key={rp.rulesetPageId}
                     type='button'
                     onClick={() => handleAddPageFromTemplate(rp.rulesetPageId)}
-                    className='text-left px-3 py-2 rounded text-sm text-white hover:bg-[#444] transition-colors'>
+                    className='text-left px-3 py-2 rounded text-sm text-white hover:bg-[#444] transition-colors'
+                    data-testid={`add-page-option-${rp.label.toLowerCase().replace(/\s+/g, '-')}`}>
                     {rp.label}
                     {rp.category && (
                       <span className='text-muted-foreground ml-1 text-xs'>({rp.category})</span>
