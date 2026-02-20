@@ -399,15 +399,21 @@ export function LocationEditor() {
                     <button
                       key={key}
                       type='button'
-                      className={`shrink-0 ${
-                        mapImageUrl ? 'bg-muted/50 hover:bg-muted' : 'bg-muted/50 hover:bg-muted'
-                      } ${isSelected ? 'ring-2 ring-primary' : ''}`}
+                      className={`group relative shrink-0 cursor-pointer transition-colors ${
+                        mapImageUrl
+                          ? 'bg-muted/50'
+                          : 'border border-border bg-muted'
+                      } ${isSelected ? 'ring-2 ring-primary ring-inset' : ''}`}
                       style={{ width: tileRenderSize, height: tileRenderSize }}
                       onClick={() => handleCellClick(x, y)}
                       onMouseDown={() => handleCellMouseDown(x, y)}
                       onMouseEnter={() => handleCellMouseEnter(x, y)}>
+                      <span
+                        className='pointer-events-none absolute inset-0 bg-primary/25 opacity-0 transition-opacity group-hover:opacity-100'
+                        aria-hidden
+                      />
                       {layers.length > 0 && (
-                        <span className='relative block size-full overflow-hidden'>
+                        <span className='relative block size-full overflow-hidden pointer-events-none'>
                           {layers.map((td) => (
                             <span
                               key={td.id}
