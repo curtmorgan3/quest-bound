@@ -10,6 +10,7 @@ import {
   RulesetPageEditorPage,
   ScriptEditorPage,
   ScriptsIndex,
+  TilemapEditor,
   WorldEditor,
   Worlds,
 } from '@/pages';
@@ -58,6 +59,10 @@ function CompassRoutes() {
 
             <Route path={`/worlds`} element={<Worlds />} />
             <Route path={`/worlds/:worldId`} element={<WorldEditor />} />
+            <Route
+              path={`/worlds/:worldId/tilemaps/:tilemapId`}
+              element={<TilemapEditor />}
+            />
             <Route
               path={`/worlds/:worldId/locations/:locationId`}
               element={<LocationEditor />}
