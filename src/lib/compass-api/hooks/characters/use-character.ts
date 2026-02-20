@@ -169,6 +169,7 @@ export const useCharacter = (_id?: string) => {
     }
   };
 
+  /** Updates a character. Supports all Character fields including sprites, worldId, locationId, tileId for map placement. */
   const updateCharacter = async (id: string, data: Partial<Character>) => {
     const now = new Date().toISOString();
     try {
