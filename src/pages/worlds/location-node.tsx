@@ -10,40 +10,6 @@ export type LocationNodeData = {
 const MIN_WIDTH = 20;
 const MIN_HEIGHT = 20;
 
-function LocationPolygon({
-  width,
-  height,
-  sides,
-  fill,
-  opacity,
-}: {
-  width: number;
-  height: number;
-  sides: number;
-  fill: string;
-  opacity: number;
-}) {
-  const angle = (2 * Math.PI) / sides;
-  const diameter = Math.min(width, height);
-  const radius = diameter / 2;
-  const cx = width / 2;
-  const cy = height / 2;
-  const points = Array.from({ length: sides }, (_, i) => {
-    const currAngle = i * angle - Math.PI / 2;
-    return [cx + radius * Math.cos(currAngle), cy + radius * Math.sin(currAngle)].join(',');
-  }).join(' ');
-
-  return (
-    <svg
-      width={width}
-      height={height}
-      className='absolute inset-0 overflow-visible'
-      style={{ pointerEvents: 'none' }}>
-      <polygon points={points} fill={fill} opacity={opacity} />
-    </svg>
-  );
-}
-
 type Props = NodeProps<Node<{ data: LocationNodeData }>>;
 
 export function LocationNode(props: Props) {
@@ -52,8 +18,6 @@ export function LocationNode(props: Props) {
   const location = nodeData?.location;
   const width = location?.nodeWidth ?? 160;
   const height = location?.nodeHeight ?? 100;
-  const sides = location?.sides ?? 4;
-  const isPolygon = sides !== 4;
   const bg = location?.backgroundColor ?? 'hsl(var(--muted))';
   const opacity = location?.opacity ?? 1;
   const showLabel = location?.labelVisible !== false;
@@ -75,8 +39,8 @@ export function LocationNode(props: Props) {
         style={{
           width: `${width}px`,
           height: `${height}px`,
-          backgroundColor: isPolygon ? 'transparent' : bg,
-          opacity: isPolygon ? undefined : opacity,
+          backgroundColor: bg,
+          opacity,
           contain: 'layout paint',
         }}>
         {backgroundImageUrl && (
@@ -89,15 +53,6 @@ export function LocationNode(props: Props) {
               opacity: bgOpacity,
               transform: 'translateZ(0)',
             }}
-          />
-        )}
-        {isPolygon && (
-          <LocationPolygon
-            width={width}
-            height={height}
-            sides={sides}
-            fill={bg}
-            opacity={opacity}
           />
         )}
         {nodeData?.location.hasMap && <MapPinned className='h-4 w-4 mr-2' />}

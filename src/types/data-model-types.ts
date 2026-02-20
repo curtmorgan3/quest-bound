@@ -424,8 +424,6 @@ export type Location = BaseDetails & {
   backgroundColor?: string | null;
   /** Opacity 0–1 for the node fill and for the background image when present. */
   opacity?: number;
-  /** Number of sides for polygon shape (e.g. 4 = rect, 6 = hex). */
-  sides?: number;
   /** Asset id for node background image. */
   backgroundAssetId?: string | null;
   /** Resolved background image URL (injected at read from DB). */
