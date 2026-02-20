@@ -163,6 +163,11 @@ export function AppSidebar() {
     worldId != null
       ? [
           {
+            title: 'Worlds',
+            url: `/worlds`,
+            icon: Globe,
+          },
+          {
             title: 'Tilemaps',
             url: `/worlds/${worldId}/tilemaps`,
             icon: Layers,
@@ -171,11 +176,7 @@ export function AppSidebar() {
         ]
       : rulesetItems.filter((i) => i.title === 'Scripts');
 
-  const items = character
-    ? []
-    : isWorldsRoute
-      ? worldsRouteItems
-      : rulesetItems;
+  const items = character ? [] : isWorldsRoute ? worldsRouteItems : rulesetItems;
 
   const pinnedDocIds = character?.pinnedSidebarDocuments ?? [];
   const pinnedChartIds = character?.pinnedSidebarCharts ?? [];

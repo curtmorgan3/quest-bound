@@ -1,8 +1,7 @@
 import { Button, Input } from '@/components';
 import type { Location } from '@/types';
-import { ArrowLeft, ArrowUp, ChevronRight, Plus, Waypoints } from 'lucide-react';
+import { ArrowUp, ChevronRight, Plus, Waypoints } from 'lucide-react';
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
 
 export interface WorldEditorTopBarProps {
   worldLabel: string;
@@ -44,13 +43,6 @@ export function WorldEditorTopBar({
 
   return (
     <div className='flex shrink-0 flex-wrap items-center gap-2 border-b bg-background px-4 py-2'>
-      <Button variant='ghost' size='sm' asChild>
-        <Link to='/worlds' data-testid='world-editor-back'>
-          <ArrowLeft className='h-4 w-4' />
-          Back to Worlds
-        </Link>
-      </Button>
-      <span className='text-muted-foreground'>|</span>
       {isEditingTitle ? (
         <Input
           value={titleInput}
