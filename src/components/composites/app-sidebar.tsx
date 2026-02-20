@@ -7,6 +7,7 @@ import {
   FileSpreadsheet,
   FileText,
   FolderOpen,
+  Globe,
   Handbag,
   HandFist,
   HelpCircle,
@@ -69,7 +70,10 @@ export function AppSidebar() {
   const characterInventoryPanel = useContext(CharacterInventoryPanelContext);
   const characterArchetypesPanel = useContext(CharacterArchetypesPanelContext);
   const { documentId, chartId } = useParams<{ documentId?: string; chartId?: string }>();
-  const isHomepage = location.pathname === '/rulesets' || location.pathname === '/characters';
+  const isHomepage =
+    location.pathname === '/rulesets' ||
+    location.pathname === '/characters' ||
+    location.pathname === '/worlds';
   const isViewingDocument = !!documentId && location.pathname.includes('/documents/');
   const isViewingChart = !!chartId && location.pathname.includes('/chart/');
   const { setDicePanelOpen } = useContext(DiceContext);
@@ -91,6 +95,11 @@ export function AppSidebar() {
       title: 'Characters',
       url: '/characters',
       icon: Users,
+    },
+    {
+      title: 'Worlds',
+      url: '/worlds',
+      icon: Globe,
     },
   ];
 
@@ -201,6 +210,7 @@ export function AppSidebar() {
         return path.includes('/chart/') ? 'charts' : 'documents';
       return 'characters';
     }
+    if (path.includes('/worlds')) return 'worlds';
     return 'rulesets';
   };
 

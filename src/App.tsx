@@ -9,6 +9,8 @@ import {
   RulesetPageEditorPage,
   ScriptEditorPage,
   ScriptsIndex,
+  WorldEditorPage,
+  Worlds,
 } from '@/pages';
 import { HashRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { ErrorBoundary } from './components';
@@ -52,6 +54,9 @@ function CompassRoutes() {
             <Route path={`/rulesets/:rulesetId/scripts`} element={<ScriptsIndex />} />
 
             <Route path={`/rulesets/:rulesetId/scripts/:scriptId`} element={<ScriptEditorPage />} />
+
+            <Route path={`/worlds`} element={<Worlds />} />
+            <Route path={`/worlds/:worldId`} element={<WorldEditorPage />} />
 
             <Route path={`/characters`} element={<Characters />} />
             <Route path={`/characters/:characterId`} element={<CharacterPage lockByDefault />} />
