@@ -80,6 +80,8 @@ export function AppSidebar() {
     location.pathname === '/characters' ||
     location.pathname === '/worlds';
   const isWorldsRoute = location.pathname.startsWith('/worlds/');
+  const isWorldsGlobeActive =
+    location.pathname === '/worlds' || /^\/worlds\/[^/]+$/.test(location.pathname);
   const isViewingDocument = !!documentId && location.pathname.includes('/documents/');
   const isViewingChart = !!chartId && location.pathname.includes('/chart/');
   const { setDicePanelOpen } = useContext(DiceContext);
@@ -271,18 +273,24 @@ export function AppSidebar() {
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 )}
-                {items.map((item) => (
-                  <SidebarMenuItem
-                    key={item.title}
-                    className={`${location.pathname.includes(item.title.toLowerCase()) ? 'text-primary' : ''}`}>
-                    <SidebarMenuButton asChild>
-                      <Link to={item.url} data-testid={`nav-${item.title.toLowerCase()}`}>
-                        <item.icon />
-                        <span>{item.title}</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
+                {items.map((item) => {
+                  const isActive =
+                    item.url === '/worlds'
+                      ? isWorldsGlobeActive
+                      : location.pathname.includes(item.title.toLowerCase());
+                  return (
+                    <SidebarMenuItem
+                      key={item.title}
+                      className={isActive ? 'text-primary' : ''}>
+                      <SidebarMenuButton asChild>
+                        <Link to={item.url} data-testid={`nav-${item.title.toLowerCase()}`}>
+                          <item.icon />
+                          <span>{item.title}</span>
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  );
+                })}
 
                 {character && (isViewingDocument || isViewingChart) && (
                   <SidebarMenuItem>
