@@ -9,8 +9,8 @@ import {
   useReactFlow,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { useCallback, useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { useParams } from 'react-router-dom';
 import { LocationNode, type LocationNodeData } from './location-node';
 
 const nodeTypes: NodeTypes = { location: LocationNode as NodeTypes['location'] };
@@ -30,9 +30,13 @@ export type TranslateExtent = [[number, number], [number, number]];
 
 interface WorldEditorCanvasProps {
   locations: Location[];
+  parentLocationId: string | null;
   onCreateLocation: (worldId: string, data: Partial<Location>) => Promise<string | void>;
   onUpdateLocation: (id: string, data: Partial<Location>) => Promise<void>;
   onDeleteLocation: (id: string) => Promise<void>;
+  onEnterLocation: (location: Location) => void;
+  selectedLocationId: string | null;
+  onSelectLocation: (id: string | null) => void;
   /** Optional pan bounds. Example: [[-2000, -2000], [2000, 2000]] limits pan to ±2000 on both axes. */
   translateExtent?: TranslateExtent;
 }
@@ -77,48 +81,79 @@ function PaneContextMenu({
 
 export function WorldEditorCanvas({
   locations,
+  parentLocationId,
   onCreateLocation,
   onUpdateLocation,
   onDeleteLocation,
+  onEnterLocation,
+  selectedLocationId,
+  onSelectLocation,
   translateExtent,
 }: WorldEditorCanvasProps) {
   const { worldId } = useParams<{ worldId: string }>();
-  const navigate = useNavigate();
   const [nodes, setNodes] = useState<Node<LocationNodeData>[]>(() => locationsToNodes(locations));
   const [paneMenu, setPaneMenu] = useState<{ x: number; y: number } | null>(null);
   const [nodeMenu, setNodeMenu] = useState<{ id: string; x: number; y: number } | null>(null);
+  const lastLocationsSigRef = useRef<string>('');
 
-  // Sync nodes when locations count or ids change (add/delete from DB)
+  // Merge location data into nodes without overwriting position, so React Flow drag state is never clobbered
   useEffect(() => {
-    const next = locationsToNodes(locations);
-    setNodes((prev) =>
-      prev.length !== next.length || next.some((n) => !prev.find((p) => p.id === n.id))
-        ? next
-        : prev,
+    const sig = JSON.stringify(
+      locations.map((l) => ({
+        id: l.id,
+        label: l.label,
+        nodeX: l.nodeX,
+        nodeY: l.nodeY,
+        nodeWidth: l.nodeWidth,
+        nodeHeight: l.nodeHeight,
+      })),
     );
+    if (lastLocationsSigRef.current === sig) return;
+    lastLocationsSigRef.current = sig;
+
+    setNodes((prev) => {
+      const prevById = new Map(prev.map((p) => [p.id, p]));
+      return locations.map((loc) => {
+        const existing = prevById.get(loc.id);
+        if (existing) {
+          return {
+            ...existing,
+            data: { label: loc.label, location: loc },
+            style: { width: loc.nodeWidth, height: loc.nodeHeight },
+          };
+        }
+        return {
+          id: loc.id,
+          type: 'location' as const,
+          position: { x: loc.nodeX, y: loc.nodeY },
+          data: { label: loc.label, location: loc },
+          style: { width: loc.nodeWidth, height: loc.nodeHeight },
+        };
+      });
+    });
   }, [locations]);
 
   const onNodesChange = useCallback(
     (changes: NodeChange<Node<LocationNodeData>>[]) => {
+      setNodes((nds) => applyNodeChanges(changes, nds));
+
       const toRemove = changes.filter((c) => c.type === 'remove');
       toRemove.forEach((c) => {
         if ('id' in c) onDeleteLocation(c.id);
       });
 
       const toUpdate = changes.filter((c) => c.type === 'position' || c.type === 'dimensions');
-      toUpdate.forEach((c: any) => {
-        if (c.type === 'position' && c.position) {
+      toUpdate.forEach((c: NodeChange<Node<LocationNodeData>>) => {
+        if (c.type === 'position' && 'position' in c && c.position) {
           onUpdateLocation(c.id, { nodeX: c.position.x, nodeY: c.position.y });
         }
-        if (c.type === 'dimensions' && c.dimensions) {
+        if (c.type === 'dimensions' && 'dimensions' in c && c.dimensions) {
           onUpdateLocation(c.id, {
             nodeWidth: c.dimensions.width,
             nodeHeight: c.dimensions.height,
           });
         }
       });
-
-      setNodes((nds) => applyNodeChanges(changes, nds));
     },
     [onUpdateLocation, onDeleteLocation],
   );
@@ -128,6 +163,7 @@ export function WorldEditorCanvas({
       if (!worldId) return;
       const id = await onCreateLocation(worldId, {
         label: 'New Location',
+        parentLocationId: parentLocationId ?? undefined,
         nodeX: x,
         nodeY: y,
         nodeWidth: 160,
@@ -150,15 +186,16 @@ export function WorldEditorCanvas({
       }
       setPaneMenu(null);
     },
-    [worldId, onCreateLocation],
+    [worldId, parentLocationId, onCreateLocation],
   );
 
   const handleOpenLocation = useCallback(
     (locationId: string) => {
-      if (worldId) navigate(`/worlds/${worldId}/locations/${locationId}`);
       setNodeMenu(null);
+      const loc = locations.find((l) => l.id === locationId);
+      if (loc) onEnterLocation(loc);
     },
-    [worldId, navigate],
+    [locations, onEnterLocation],
   );
 
   const handleDeleteLocation = useCallback(
@@ -166,8 +203,9 @@ export function WorldEditorCanvas({
       await onDeleteLocation(locationId);
       setNodes((nds) => nds.filter((n) => n.id !== locationId));
       setNodeMenu(null);
+      if (selectedLocationId === locationId) onSelectLocation(null);
     },
-    [onDeleteLocation],
+    [onDeleteLocation, selectedLocationId, onSelectLocation],
   );
 
   const handlePaneContextMenu = useCallback(
@@ -195,19 +233,36 @@ export function WorldEditorCanvas({
 
   const handleDoubleClick = useCallback(
     (_: React.MouseEvent, node: Node<LocationNodeData>) => {
-      if (worldId) navigate(`/worlds/${worldId}/locations/${node.id}`);
+      const loc = (node.data as LocationNodeData).location;
+      if (loc) onEnterLocation(loc);
     },
-    [worldId, navigate],
+    [onEnterLocation],
   );
+
+  const handleNodeClick = useCallback(
+    (_: React.MouseEvent, node: Node<LocationNodeData>) => {
+      onSelectLocation(node.id);
+    },
+    [onSelectLocation],
+  );
+
+  const handlePaneClick = useCallback(() => {
+    onSelectLocation(null);
+  }, [onSelectLocation]);
 
   return (
     <div className='relative h-full w-full'>
       <ReactFlow
-        nodes={nodes}
+        nodes={nodes.map((n) => ({
+          ...n,
+          selected: n.id === selectedLocationId,
+        }))}
         onNodesChange={onNodesChange}
         nodeTypes={nodeTypes}
         onPaneContextMenu={handlePaneContextMenu}
+        onPaneClick={handlePaneClick}
         onNodeContextMenu={handleNodeContextMenu}
+        onNodeClick={handleNodeClick}
         onNodeDoubleClick={handleDoubleClick}
         minZoom={0.8}
         maxZoom={2}

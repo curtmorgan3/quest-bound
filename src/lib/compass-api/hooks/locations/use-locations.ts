@@ -3,15 +3,23 @@ import { db } from '@/stores';
 import type { Location } from '@/types';
 import { useLiveQuery } from 'dexie-react-hooks';
 
-export const useLocations = (worldId: string | undefined) => {
+/** Pass null for world root; pass a location id to get its children. */
+export const useLocations = (
+  worldId: string | undefined,
+  parentLocationId: string | null = null,
+) => {
   const { handleError } = useErrorHandler();
 
   const locations = useLiveQuery(
-    () =>
-      worldId
-        ? db.locations.where('worldId').equals(worldId).toArray()
-        : Promise.resolve([] as Location[]),
-    [worldId],
+    async () => {
+      if (!worldId) return [] as Location[];
+      const all = await db.locations.where('worldId').equals(worldId).toArray();
+      if (parentLocationId === null) {
+        return all.filter((loc) => loc.parentLocationId == null);
+      }
+      return all.filter((loc) => loc.parentLocationId === parentLocationId);
+    },
+    [worldId, parentLocationId],
   );
 
   const createLocation = async (worldId: string, data: Partial<Location>) => {
@@ -22,6 +30,7 @@ export const useLocations = (worldId: string | undefined) => {
         ...data,
         id,
         worldId,
+        parentLocationId: data.parentLocationId ?? null,
         label: data.label ?? 'New Location',
         nodeX: data.nodeX ?? 0,
         nodeY: data.nodeY ?? 0,

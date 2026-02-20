@@ -28,6 +28,7 @@ export function LocationNode(props: Props) {
       />
       <div
         className='flex items-center justify-center rounded border-2 border-muted-foreground/30 bg-muted/50 px-2 py-1 text-sm font-medium'
+        onClick={(e) => e.preventDefault()}
         style={{
           width: `${width}px`,
           height: `${height}px`,
