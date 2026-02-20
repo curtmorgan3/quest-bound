@@ -63,4 +63,12 @@ on_add():
 on_remove():
     Owner.Attribute('Health').subtract(5)
 `,
+  location: `
+// Location script
+    
+`,
+  tile: `
+// Tile script
+    
+`,
 };

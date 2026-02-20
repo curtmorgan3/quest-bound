@@ -6,7 +6,7 @@ import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useActiveRuleset } from '../rulesets/use-active-ruleset';
 import { useWorld } from '../worlds/use-world';
 
-function getEntityTable(entityType: 'attribute' | 'action' | 'item' | 'archetype' | 'global') {
+function getEntityTable(entityType: Script['entityType']) {
   if (entityType === 'global') return;
   return entityType === 'attribute'
     ? db.attributes

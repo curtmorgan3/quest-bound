@@ -82,10 +82,7 @@ export function parseScriptPath(path: string): {
  * Example: generateScriptPath('attribute', 'Max Hit Points')
  * Returns: scripts/attributes/max_hit_points.qbs
  */
-export function generateScriptPath(
-  entityType: 'attribute' | 'action' | 'item' | 'archetype' | 'global',
-  name: string,
-): string {
+export function generateScriptPath(entityType: Script['entityType'], name: string): string {
   const sanitizedName = sanitizeFileName(name);
 
   // Map entity types to folder names
@@ -105,6 +102,15 @@ export function generateScriptPath(
       break;
     case 'global':
       folderName = 'global';
+      break;
+    case 'location':
+      folderName = 'locations';
+      break;
+    case 'tile':
+      folderName = 'tiles';
+      break;
+    default:
+      folderName = 'other';
       break;
   }
 

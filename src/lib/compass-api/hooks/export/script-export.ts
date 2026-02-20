@@ -1,4 +1,5 @@
 import { db } from '@/stores';
+import type { Script } from '@/types';
 import {
   findDuplicateScriptNames,
   generateScriptPath,
@@ -21,7 +22,7 @@ export interface ScriptMetadata {
   id: string;
   name: string;
   file: string; // Relative path to the .qbs file
-  entityType: 'attribute' | 'action' | 'item' | 'archetype' | 'global';
+  entityType: Script['entityType'];
   entityId: string | null;
   entityName: string | null; // Name of the associated entity (for re-linking on import)
   isGlobal: boolean;

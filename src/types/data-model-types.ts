@@ -364,7 +364,7 @@ export type ScriptLog = BaseDetails & {
 export type DependencyGraphNode = BaseDetails & {
   rulesetId: string; // Which ruleset this node belongs to
   scriptId: string; // Script that this node represents
-  entityType: 'attribute' | 'action' | 'item' | 'archetype' | 'global';
+  entityType: 'attribute' | 'action' | 'item' | 'archetype' | 'location' | 'tile' | 'global';
   entityId: string | null; // ID of associated entity
   dependencies: string[]; // Array of attribute IDs this script depends on
   dependents: string[]; // Array of script IDs that depend on this script's entity

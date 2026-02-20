@@ -346,7 +346,8 @@ export class ScriptRunner {
     this.evaluator.globalEnv.define('Target', target);
     this.evaluator.globalEnv.define('Ruleset', ruleset);
 
-    // 'Self' refers to the entity this script is attached to (attribute, action, or item)
+    // 'Self' refers to the entity this script is attached to (attribute, action, or item).
+    // location and tile scripts do not have a Self binding (no Location/Tile accessor yet).
     if (this.context.entityType === 'attribute' && this.context.entityId) {
       const attribute = this.attributesCache.get(this.context.entityId);
       if (attribute) {
@@ -366,6 +367,7 @@ export class ScriptRunner {
         }
       }
     }
+    // entityType 'location' | 'tile' | 'archetype' | 'global' (or unknown): no Self
   }
 
   /**
