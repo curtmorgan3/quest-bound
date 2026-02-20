@@ -72,24 +72,26 @@ export function ArchetypeCard({
     <Card
       className='p-4 flex flex-row items-center gap-3'
       data-testid={`archetype-item-${archetype.id}`}>
-      <div className='flex flex-col gap-0'>
-        <Button
-          variant='ghost'
-          size='icon'
-          className='h-6 w-6'
-          onClick={onMoveUp}
-          disabled={index === 0}>
-          <ChevronUp className='h-4 w-4' />
-        </Button>
-        <Button
-          variant='ghost'
-          size='icon'
-          className='h-6 w-6'
-          onClick={onMoveDown}
-          disabled={index === totalCount - 1}>
-          <ChevronDown className='h-4 w-4' />
-        </Button>
-      </div>
+      {!archetype.isDefault && (
+        <div className='flex flex-col gap-0'>
+          <Button
+            variant='ghost'
+            size='icon'
+            className='h-6 w-6'
+            onClick={onMoveUp}
+            disabled={index === 1}>
+            <ChevronUp className='h-4 w-4' />
+          </Button>
+          <Button
+            variant='ghost'
+            size='icon'
+            className='h-6 w-6'
+            onClick={onMoveDown}
+            disabled={index === totalCount - 1}>
+            <ChevronDown className='h-4 w-4' />
+          </Button>
+        </div>
+      )}
       {imageSrc && (
         <img
           src={imageSrc}
@@ -132,7 +134,9 @@ export function ArchetypeCard({
           </div>
         ) : (
           <div>
-            <div className='font-medium'>{archetype.name}</div>
+            <div className={`font-medium ${archetype.isDefault ? 'text-muted-foreground' : ''}`}>
+              {archetype.name}
+            </div>
             {archetype.description && (
               <p className='text-sm text-muted-foreground mt-0.5'>{archetype.description}</p>
             )}
@@ -151,49 +155,54 @@ export function ArchetypeCard({
           <Button variant='ghost' size='sm' onClick={onStartEdit}>
             Set Default Sheet
           </Button>
-          <Button variant='ghost' size='sm' onClick={onStartEdit}>
-            <Pencil className='h-4 w-4' />
-          </Button>
-          {confirmBeforeDelete ? (
-            <Button
-              variant='ghost'
-              size='sm'
-              className='text-destructive'
-              onClick={onDelete}
-              data-testid='archetype-delete-btn'
-              aria-label={`Delete ${archetype.name}`}>
-              <Trash2 className='h-4 w-4' />
+          {!archetype.isDefault && (
+            <Button disabled={archetype.isDefault} variant='ghost' size='sm' onClick={onStartEdit}>
+              <Pencil className='h-4 w-4' />
             </Button>
-          ) : (
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
+          )}
+          {confirmBeforeDelete
+            ? !archetype.isDefault && (
                 <Button
                   variant='ghost'
                   size='sm'
                   className='text-destructive'
+                  onClick={onDelete}
+                  disabled={archetype.isDefault}
                   data-testid='archetype-delete-btn'
                   aria-label={`Delete ${archetype.name}`}>
                   <Trash2 className='h-4 w-4' />
                 </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Delete archetype?</AlertDialogTitle>
-                  This will delete the test character and all character associations. This cannot be
-                  undone.
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction
-                    className='bg-destructive text-destructive-foreground'
-                    onClick={onDelete}
-                    data-testid='archetype-delete-confirm'>
-                    Delete
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          )}
+              )
+            : !archetype.isDefault && (
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button
+                      variant='ghost'
+                      size='sm'
+                      className='text-destructive'
+                      data-testid='archetype-delete-btn'
+                      aria-label={`Delete ${archetype.name}`}>
+                      <Trash2 className='h-4 w-4' />
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Delete archetype?</AlertDialogTitle>
+                      This will delete the test character and all character associations. This
+                      cannot be undone.
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction
+                        className='bg-destructive text-destructive-foreground'
+                        onClick={onDelete}
+                        data-testid='archetype-delete-confirm'>
+                        Delete
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              )}
         </div>
       )}
     </Card>

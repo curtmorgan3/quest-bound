@@ -126,7 +126,8 @@ export const Archetypes = () => {
   };
 
   const moveUp = async (index: number) => {
-    if (index <= 0) return;
+    console.log(index);
+    if (index <= 1) return;
     const defaultId = archetypes.find((a) => a.isDefault)?.id;
     const displayIds = archetypes.map((a) => a.id);
     [displayIds[index - 1], displayIds[index]] = [displayIds[index], displayIds[index - 1]];
