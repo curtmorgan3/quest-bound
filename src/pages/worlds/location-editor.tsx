@@ -26,8 +26,10 @@ import { db } from '@/stores';
 import type { Action, Tile, TileData, Tilemap } from '@/types';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { ArrowLeft, Grid3X3, Plus } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
+
+const TILE_DISPLAY_SIZE = 32;
 
 function getTilesByKey(tiles: TileData[]): Map<string, TileData> {
   const map = new Map<string, TileData>();
@@ -47,6 +49,11 @@ export function LocationEditor() {
   const tilesResult = useTiles(selectedTilemapId ?? undefined);
   const tilesForPicker = tilesResult?.tiles ?? [];
   const tilemapsList = tilemaps ?? [];
+  const [assetDimensions, setAssetDimensions] = useState<Record<string, { w: number; h: number }>>(
+    {},
+  );
+  const assetDimensionsRef = useRef(assetDimensions);
+  assetDimensionsRef.current = assetDimensions;
   const loc = location ?? undefined;
   const gridWidth = loc?.gridWidth ?? 1;
   const gridHeight = loc?.gridHeight ?? 1;
@@ -79,6 +86,8 @@ export function LocationEditor() {
         : Promise.resolve([] as Action[]),
     [world?.rulesetId],
   );
+
+  console.log(tilemaps);
 
   const [selectedTile, setSelectedTile] = useState<Tile | null>(null);
   const [selectedCell, setSelectedCell] = useState<{ x: number; y: number } | null>(null);
@@ -166,6 +175,35 @@ export function LocationEditor() {
     return asset?.data ?? null;
   };
 
+  console.log(assetDimensions);
+
+  // Preload tilemap asset images to get dimensions; scale tiles by tilemap tileWidth/tileHeight
+  useEffect(() => {
+    const dataUrls = new Map<string, string>();
+    tilemapsList.forEach((tm) => {
+      if (tm.assetId) {
+        const data = getAssetData(tm.assetId);
+        if (data) dataUrls.set(tm.assetId, data);
+      }
+    });
+    const cancels: Array<() => void> = [];
+    dataUrls.forEach((dataUrl, assetId) => {
+      if (assetDimensionsRef.current[assetId]) return;
+      const img = new Image();
+      img.onload = () => {
+        setAssetDimensions((prev) => ({
+          ...prev,
+          [assetId]: { w: img.naturalWidth, h: img.naturalHeight },
+        }));
+      };
+      img.src = dataUrl;
+      cancels.push(() => {
+        img.src = '';
+      });
+    });
+    return () => cancels.forEach((c) => c());
+  }, [tilemapsList, assets]);
+
   const getTileStyle = (td: TileData): React.CSSProperties => {
     const tile = tilesById?.get(td.tileId);
     if (!tile) return {};
@@ -175,12 +213,44 @@ export function LocationEditor() {
     if (!data) return {};
     const tw = tilemap.tileWidth;
     const th = tilemap.tileHeight;
-    const px = (tile.tileX ?? 0) * tw;
-    const py = (tile.tileY ?? 0) * th;
+    const tileX = tile.tileX ?? 0;
+    const tileY = tile.tileY ?? 0;
+    const dim = assetDimensions[tilemap.assetId];
+    // Scale asset so one tilemap grid cell (tw×th) fills location editor cell (TILE_DISPLAY_SIZE)
+    const backgroundSize =
+      dim != null
+        ? `${(dim.w * TILE_DISPLAY_SIZE) / tw}px ${(dim.h * TILE_DISPLAY_SIZE) / th}px`
+        : 'auto';
+    // Position in scaled image: one tile = TILE_DISPLAY_SIZE px, so tile (tileX,tileY) is at (tileX*TILE_DISPLAY_SIZE, tileY*TILE_DISPLAY_SIZE)
+    const posX = tileX * TILE_DISPLAY_SIZE;
+    const posY = tileY * TILE_DISPLAY_SIZE;
     return {
       backgroundImage: `url(${data})`,
-      backgroundPosition: `-${px}px -${py}px`,
-      backgroundSize: 'auto',
+      backgroundPosition: `-${posX}px -${posY}px`,
+      backgroundSize,
+      backgroundRepeat: 'no-repeat',
+    };
+  };
+
+  const getPickerTileStyle = (tm: Tilemap, t: Tile): React.CSSProperties => {
+    const data = getAssetData(tm.assetId);
+    if (!data) return {};
+    const tw = tm.tileWidth;
+    const th = tm.tileHeight;
+    const tileX = t.tileX ?? 0;
+    const tileY = t.tileY ?? 0;
+    const dim = assetDimensions[tm.assetId];
+    const backgroundSize =
+      dim != null
+        ? `${(dim.w * TILE_DISPLAY_SIZE) / tw}px ${(dim.h * TILE_DISPLAY_SIZE) / th}px`
+        : 'auto';
+    const posX = tileX * TILE_DISPLAY_SIZE;
+    const posY = tileY * TILE_DISPLAY_SIZE;
+    return {
+      backgroundImage: `url(${data})`,
+      backgroundPosition: `-${posX}px -${posY}px`,
+      backgroundSize,
+      backgroundRepeat: 'no-repeat',
     };
   };
 
@@ -298,30 +368,21 @@ export function LocationEditor() {
                 <>
                   <Label className='text-xs'>Tile</Label>
                   <div className='flex flex-wrap gap-1'>
-                    {tilesForPicker.slice(0, 20).map((t) => (
-                      <button
-                        key={t.id}
-                        type='button'
-                        className={`h-8 w-8 shrink-0 rounded border bg-muted ${
-                          selectedTile?.id === t.id ? 'ring-2 ring-primary' : ''
-                        }`}
-                        style={(() => {
-                          const tm = tilemapsList.find((m) => m.id === t.tilemapId);
-                          if (!tm) return {};
-                          const data = getAssetData(tm.assetId);
-                          if (!data) return {};
-                          const px = (t.tileX ?? 0) * tm.tileWidth;
-                          const py = (t.tileY ?? 0) * tm.tileHeight;
-                          return {
-                            backgroundImage: `url(${data})`,
-                            backgroundPosition: `-${px}px -${py}px`,
-                            backgroundSize: 'auto',
-                          };
-                        })()}
-                        onClick={() => setSelectedTile(t)}
-                        title={`Tile ${t.tileX},${t.tileY}`}
-                      />
-                    ))}
+                    {tilesForPicker.slice(0, 20).map((t) => {
+                      const tm = tilemapsList.find((m) => m.id === t.tilemapId);
+                      return (
+                        <button
+                          key={t.id}
+                          type='button'
+                          className={`h-8 w-8 shrink-0 rounded border bg-muted ${
+                            selectedTile?.id === t.id ? 'ring-2 ring-primary' : ''
+                          }`}
+                          style={tm ? getPickerTileStyle(tm, t) : undefined}
+                          onClick={() => setSelectedTile(t)}
+                          title={`Tile ${t.tileX},${t.tileY}`}
+                        />
+                      );
+                    })}
                   </div>
                   {tilesForPicker.length === 0 && (
                     <Button
