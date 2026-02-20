@@ -59,16 +59,21 @@ export function TilemapList({ onCreated }: TilemapListProps) {
         size='sm'
         className='gap-1'
         onClick={() => setCreateOpen(true)}
-        data-testid='create-tilemap-button'
-      >
+        data-testid='create-tilemap-button'>
         <Plus className='h-4 w-4' />
         Create tilemap
       </Button>
       <ul className='flex flex-col gap-1 overflow-auto'>
         {list.map((tm) => (
           <li key={tm.id}>
-            <Button variant='ghost' size='sm' className='h-auto w-full justify-start truncate py-1' asChild>
-              <Link to={`/worlds/${worldId}/tilemaps/${tm.id}`} data-testid={`tilemap-edit-${tm.id}`}>
+            <Button
+              variant='ghost'
+              size='sm'
+              className='h-auto w-full justify-start truncate py-1'
+              asChild>
+              <Link
+                to={`/worlds/${worldId}/tilemaps/${tm.id}`}
+                data-testid={`tilemap-edit-${tm.id}`}>
                 <span className='truncate' title={tm.label || `${tm.tileWidth}×${tm.tileHeight}`}>
                   {tm.label || `${tm.tileWidth}×${tm.tileHeight}`}
                 </span>
@@ -119,7 +124,6 @@ export function TilemapList({ onCreated }: TilemapListProps) {
                 <Input
                   id='tilemap-tile-height'
                   type='number'
-                  min={8}
                   value={tileHeight}
                   onChange={(e) => setTileHeight(parseInt(e.target.value, 10) || 32)}
                 />

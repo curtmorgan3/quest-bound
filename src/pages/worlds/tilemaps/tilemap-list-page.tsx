@@ -23,7 +23,7 @@ import { useAssets, useTilemaps, useWorld } from '@/lib/compass-api';
 import { db } from '@/stores';
 import { ArrowLeft, Layers, Plus, Trash2 } from 'lucide-react';
 import { useState } from 'react';
-import { Link, useParams, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 
 async function isAssetReferencedElsewhere(assetId: string): Promise<boolean> {
   if (!assetId) return false;
@@ -130,8 +130,7 @@ export function TilemapListPage() {
           size='sm'
           className='ml-auto gap-1'
           onClick={() => setCreateOpen(true)}
-          data-testid='create-tilemap-button'
-        >
+          data-testid='create-tilemap-button'>
           <Plus className='h-4 w-4' />
           Create tilemap
         </Button>
@@ -230,7 +229,6 @@ export function TilemapListPage() {
                 <Input
                   id='tilemap-tile-height'
                   type='number'
-                  min={8}
                   value={tileHeight}
                   onChange={(e) => setTileHeight(parseInt(e.target.value, 10) || 32)}
                 />

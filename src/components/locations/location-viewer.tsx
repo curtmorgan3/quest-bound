@@ -1,10 +1,15 @@
+import { Button } from '@/components/ui/button';
 import { useLocation, useTilemaps } from '@/lib/compass-api';
 import { db } from '@/stores';
 import type { Tile, TileData, Tilemap } from '@/types';
 import { useLiveQuery } from 'dexie-react-hooks';
+import { ZoomIn, ZoomOut } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 const DEFAULT_TILE_RENDER_SIZE = 32;
+const ZOOM_MIN = 0.25;
+const ZOOM_MAX = 3;
+const ZOOM_STEP = 0.25;
 
 function getTilesByKey(tiles: TileData[]): Map<string, TileData[]> {
   const map = new Map<string, TileData[]>();
@@ -42,7 +47,10 @@ export function LocationViewer({
   const loc = location ?? undefined;
   const gridWidth = loc?.gridWidth ?? 1;
   const gridHeight = loc?.gridHeight ?? 1;
-  const tileRenderSize = tileRenderSizeProp ?? loc?.tileRenderSize ?? DEFAULT_TILE_RENDER_SIZE;
+  const baseTileSize = tileRenderSizeProp ?? loc?.tileRenderSize ?? DEFAULT_TILE_RENDER_SIZE;
+
+  const [zoom, setZoom] = useState(1);
+  const effectiveTileSize = baseTileSize * zoom;
 
   const [assetDimensions, setAssetDimensions] = useState<Record<string, { w: number; h: number }>>(
     {},
@@ -113,10 +121,10 @@ export function LocationViewer({
     const dim = assetDimensionsRef.current[tilemap.assetId];
     const backgroundSize =
       dim != null
-        ? `${(dim.w * tileRenderSize) / tw}px ${(dim.h * tileRenderSize) / th}px`
+        ? `${(dim.w * effectiveTileSize) / tw}px ${(dim.h * effectiveTileSize) / th}px`
         : 'auto';
-    const posX = tileX * tileRenderSize;
-    const posY = tileY * tileRenderSize;
+    const posX = tileX * effectiveTileSize;
+    const posY = tileY * effectiveTileSize;
     return {
       backgroundImage: `url(${data})`,
       backgroundPosition: `-${posX}px -${posY}px`,
@@ -142,38 +150,64 @@ export function LocationViewer({
   }
 
   return (
-    <div
-      className='inline-grid gap-px border bg-muted-foreground/20 p-px overflow-auto'
-      style={{
-        gridTemplateColumns: `repeat(${gridWidth}, ${tileRenderSize}px)`,
-        gridTemplateRows: `repeat(${gridHeight}, ${tileRenderSize}px)`,
-      }}>
-      {Array.from({ length: gridHeight }, (_, y) =>
-        Array.from({ length: gridWidth }, (_, x) => {
-          const key = `${x},${y}`;
-          const layers = tilesByKey.get(key) ?? [];
-          return (
-            <div
-              key={key}
-              role={onSelectCell ? 'button' : undefined}
-              className='shrink-0 bg-muted/50 hover:bg-muted'
-              style={{ width: tileRenderSize, height: tileRenderSize }}
-              onClick={() => onSelectCell?.(x, y)}>
-              {layers.length > 0 && (
-                <span className='relative block size-full overflow-hidden'>
-                  {layers.map((td) => (
-                    <span
-                      key={td.id}
-                      className='absolute inset-0 bg-no-repeat'
-                      style={getTileStyle(td)}
-                    />
-                  ))}
-                </span>
-              )}
-            </div>
-          );
-        }),
-      )}
+    <div className='relative h-full w-full'>
+      <div className='fixed bottom-2 right-2 z-10 flex flex-col gap-0.5'>
+        <Button
+          type='button'
+          variant='secondary'
+          size='icon'
+          className='h-8 w-8 shrink-0 shadow'
+          onClick={() => setZoom((z) => Math.min(ZOOM_MAX, z + ZOOM_STEP))}
+          disabled={zoom >= ZOOM_MAX}
+          title='Zoom in'
+          aria-label='Zoom in'>
+          <ZoomIn className='h-4 w-4' />
+        </Button>
+        <Button
+          type='button'
+          variant='secondary'
+          size='icon'
+          className='h-8 w-8 shrink-0 shadow'
+          onClick={() => setZoom((z) => Math.max(ZOOM_MIN, z - ZOOM_STEP))}
+          disabled={zoom <= ZOOM_MIN}
+          title='Zoom out'
+          aria-label='Zoom out'>
+          <ZoomOut className='h-4 w-4' />
+        </Button>
+      </div>
+      <div
+        className='inline-grid gap-px border bg-muted-foreground/20 p-px overflow-auto'
+        style={{
+          gridTemplateColumns: `repeat(${gridWidth}, ${effectiveTileSize}px)`,
+          gridTemplateRows: `repeat(${gridHeight}, ${effectiveTileSize}px)`,
+        }}>
+        {Array.from({ length: gridHeight }, (_, y) =>
+          Array.from({ length: gridWidth }, (_, x) => {
+            const key = `${x},${y}`;
+            const layers = tilesByKey.get(key) ?? [];
+            return (
+              <div
+                key={key}
+                role={onSelectCell ? 'button' : undefined}
+                className='shrink-0 bg-muted/50 hover:bg-muted'
+                style={{ width: effectiveTileSize, height: effectiveTileSize }}
+                onClick={() => onSelectCell?.(x, y)}>
+                {layers.length > 0 && (
+                  <span className='relative block size-full overflow-hidden'>
+                    {layers.map((td) => (
+                      <span
+                        key={td.id}
+                        className='absolute inset-0 bg-no-repeat'
+                        style={getTileStyle(td)}
+                      />
+                    ))}
+                  </span>
+                )}
+              </div>
+            );
+          }),
+        )}
+      </div>
     </div>
   );
 }
