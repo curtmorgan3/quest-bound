@@ -66,7 +66,7 @@ export const WindowEditor = () => {
       value={{ viewMode, components, getComponent, updateComponent, updateComponents }}>
       <div className='flex flex-col' style={{ overflow: 'hidden' }}>
         {viewMode ? (
-          <CharacterPage id={testCharacter?.id} windowEditorMode windowEditorId={windowId} />
+          <CharacterPage id={testCharacter?.id} editorWindowId={windowId} />
         ) : (
           <SheetEditor
             components={components}

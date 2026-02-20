@@ -29,10 +29,7 @@ interface SheetViewerProps {
   initialLocked?: boolean;
   /** Called when the locked state changes (e.g. to persist). */
   onLockedChange?: (locked: boolean) => void;
-  showWindowTabs?: boolean;
-  allowWindowMinimize?: boolean;
-  allowWindowClose?: boolean;
-  windowEditorId?: string;
+  editorWindowId?: string;
 }
 
 export const SheetViewer = ({
@@ -43,10 +40,7 @@ export const SheetViewer = ({
   initialCurrentPageId,
   initialLocked,
   onLockedChange,
-  showWindowTabs = true,
-  allowWindowMinimize = true,
-  allowWindowClose = true,
-  windowEditorId,
+  editorWindowId,
 }: SheetViewerProps) => {
   const { characterPages } = useCharacterPages(characterId);
   const sortedCharacterPages = [...characterPages.sort((a, b) => a.label.localeCompare(b.label))];
@@ -73,6 +67,7 @@ export const SheetViewer = ({
     });
   };
 
+  // Windows on the current page
   const windowsForCurrentPage = useMemo(() => {
     if (currentPageId === null) {
       return characterWindows.filter((w) => !w.characterPageId);
@@ -80,13 +75,15 @@ export const SheetViewer = ({
     return characterWindows.filter((w) => w.characterPageId === currentPageId);
   }, [characterWindows, currentPageId]);
 
+  // If editorWindowId is provided, only render that
   const windowsToRenderAsNodes = useMemo(() => {
-    if (windowEditorId) {
-      return windowsForCurrentPage.filter((w) => w.windowId === windowEditorId);
+    if (editorWindowId) {
+      return windowsForCurrentPage.filter((w) => w.windowId === editorWindowId);
     }
     return windowsForCurrentPage;
-  }, [windowsForCurrentPage, windowEditorId]);
+  }, [windowsForCurrentPage, editorWindowId]);
 
+  // Windows that are open
   const openWindows = new Set(
     windowsForCurrentPage.filter((cw) => !cw.isCollapsed).map((cw) => cw.id),
   );
@@ -96,7 +93,7 @@ export const SheetViewer = ({
     () =>
       [
         ...windowsToRenderAsNodes.filter((w) => {
-          if (windowEditorId) return true;
+          if (editorWindowId) return true;
           return !w.isCollapsed;
         }),
       ].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()),
@@ -149,12 +146,12 @@ export const SheetViewer = ({
         data: {
           locked,
           window,
-          onMinimize: allowWindowMinimize
+          onMinimize: !editorWindowId
             ? (id: string) => {
                 onWindowUpdated?.({ id, isCollapsed: true });
               }
             : undefined,
-          onClose: allowWindowClose
+          onClose: !editorWindowId
             ? (id: string) => {
                 onWindowDeleted?.(id);
               }
@@ -245,10 +242,10 @@ export const SheetViewer = ({
                 data={{
                   locked,
                   window,
-                  onMinimize: allowWindowMinimize
+                  onMinimize: !editorWindowId
                     ? (id: string) => onWindowUpdated?.({ id, isCollapsed: true })
                     : undefined,
-                  onClose: allowWindowClose ? (id: string) => onWindowDeleted?.(id) : undefined,
+                  onClose: !editorWindowId ? (id: string) => onWindowDeleted?.(id) : undefined,
                   onChildWindowClick: (childWindowId, parentWindow) =>
                     handleChildWindowClick(childWindowId, parentWindow, window),
                 }}
@@ -273,7 +270,7 @@ export const SheetViewer = ({
           backgroundOpacity={currentPage?.backgroundOpacity}
         />
       )}
-      {showWindowTabs && (
+      {!editorWindowId && (
         <WindowsTabs
           characterId={characterId}
           characterPages={characterPages}

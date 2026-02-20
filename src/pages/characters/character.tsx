@@ -23,16 +23,23 @@ import {
 } from './hooks';
 import { InventoryPanel } from './inventory-panel';
 
+interface CharacterPage {
+  id?: string;
+  lockByDefault?: boolean;
+  /**
+   * If provided, renders just this window in preview mode. Otherwise, it renders all character pages and windows.
+   */
+  editorWindowId?: string;
+}
+
 export const CharacterPage = ({
   id,
   lockByDefault,
-  windowEditorMode = false,
-  windowEditorId,
+  editorWindowId,
 }: {
   id?: string;
   lockByDefault?: boolean;
-  windowEditorMode?: boolean;
-  windowEditorId?: string;
+  editorWindowId?: string;
 }) => {
   const { open } = useSidebar();
   const { characterId } = useParams<{ characterId: string }>();
@@ -127,12 +134,9 @@ export const CharacterPage = ({
         onLockedChange={sheetViewerPersistence?.onLockedChange}
         onWindowUpdated={handleUpdateWindow}
         onWindowDeleted={handleDeleteWindow}
-        showWindowTabs={!windowEditorMode}
-        allowWindowClose={!windowEditorMode}
-        allowWindowMinimize={!windowEditorMode}
-        windowEditorId={windowEditorId}
+        editorWindowId={editorWindowId}
       />
-      {!windowEditorMode && (
+      {!editorWindowId && (
         <GameLog className={`fixed bottom-[50px] left-${open ? '265' : '65'} z-30`} />
       )}
       <InventoryPanel
