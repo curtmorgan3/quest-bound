@@ -151,7 +151,7 @@ export function LocationViewer({
   }
 
   return (
-    <div className='relative h-full w-full'>
+    <div className='relative h-full w-full flex justify-center items-center'>
       <div className='fixed bottom-2 right-2 z-10 flex flex-col gap-0.5'>
         <Button
           type='button'
@@ -177,20 +177,20 @@ export function LocationViewer({
         </Button>
       </div>
       {mapImageUrl ? (
-        <div className='h-full w-full overflow-auto'>
-          <img
-            src={mapImageUrl}
-            alt='Location map'
-            className='max-w-none object-none'
+        <div className='h-full w-full overflow-auto flex justify-center items-center'>
+          <div
             style={{
+              width: gridWidth * baseTileSize,
+              height: gridHeight * baseTileSize,
               transform: `scale(${zoom})`,
               transformOrigin: '0 0',
-            }}
-          />
+            }}>
+            <img src={mapImageUrl} alt='Location map' className='size-full object-cover' />
+          </div>
         </div>
       ) : (
         <div
-          className='inline-grid gap-px border bg-muted-foreground/20 p-px overflow-auto'
+          className='inline-grid gap-px border bg-muted-foreground/20 p-px overflow-auto flex'
           style={{
             gridTemplateColumns: `repeat(${gridWidth}, ${effectiveTileSize}px)`,
             gridTemplateRows: `repeat(${gridHeight}, ${effectiveTileSize}px)`,
