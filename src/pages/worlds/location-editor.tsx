@@ -100,6 +100,8 @@ export function LocationEditor() {
         actionId: existing?.actionId,
       });
       await updateLocation(loc.id, { tiles: newTiles });
+    } else if (selectedCell?.x === x && selectedCell?.y === y) {
+      setSelectedCell(null);
     } else {
       setSelectedCell({ x, y });
     }

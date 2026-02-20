@@ -9,7 +9,7 @@ import {
 import { useTilemaps, useTiles } from '@/lib/compass-api';
 import { db } from '@/stores';
 import type { Tile, Tilemap } from '@/types';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 
 const TILE_DISPLAY_SIZE = 32;
 
@@ -60,6 +60,14 @@ export function TilePaintBar({
   const tilesResult = useTiles(selectedTilemapId ?? undefined);
   const tilesForPicker = tilesResult?.tiles ?? [];
   const tilemapsList = tilemaps ?? [];
+  const rowIndices = useMemo(() => {
+    const ys = new Set(tilesForPicker.map((t) => t.tileY ?? 0));
+    return Array.from(ys).sort((a, b) => a - b);
+  }, [tilesForPicker]);
+  const colIndices = useMemo(() => {
+    const xs = new Set(tilesForPicker.map((t) => t.tileX ?? 0));
+    return Array.from(xs).sort((a, b) => a - b);
+  }, [tilesForPicker]);
 
   return (
     <div className='flex shrink-0 flex-wrap items-center gap-4 border-t bg-muted/30 px-4 py-3'>
@@ -91,16 +99,11 @@ export function TilePaintBar({
             (() => {
               const tm = tilemapsList.find((m) => m.id === selectedTilemapId);
               if (!tm) return null;
-              const dim = assetDimensions[tm.assetId];
-              const cols = dim
-                ? Math.ceil(dim.w / tm.tileWidth)
-                : Math.max(1, ...tilesForPicker.map((t) => (t.tileX ?? 0) + 1));
-              const rows = dim
-                ? Math.ceil(dim.h / tm.tileHeight)
-                : Math.max(1, ...tilesForPicker.map((t) => (t.tileY ?? 0) + 1));
               const tilesByCoord = new Map(
                 tilesForPicker.map((t) => [`${t.tileX ?? 0},${t.tileY ?? 0}`, t]),
               );
+              const rowCount = rowIndices.length;
+              const colCount = colIndices.length;
               return (
                 <>
                   <div className='flex items-center gap-2'>
@@ -108,11 +111,17 @@ export function TilePaintBar({
                     <div
                       className='inline-grid max-h-64 overflow-auto rounded border bg-muted/30 p-1'
                       style={{
-                        gridTemplateColumns: `repeat(${cols}, ${TILE_DISPLAY_SIZE}px)`,
-                        gridTemplateRows: `repeat(${rows}, ${TILE_DISPLAY_SIZE}px)`,
+                        gridTemplateColumns:
+                          colCount > 0
+                            ? `repeat(${colCount}, ${TILE_DISPLAY_SIZE}px)`
+                            : undefined,
+                        gridTemplateRows:
+                          rowCount > 0
+                            ? `repeat(${rowCount}, ${TILE_DISPLAY_SIZE}px)`
+                            : undefined,
                       }}>
-                      {Array.from({ length: rows }, (_, y) =>
-                        Array.from({ length: cols }, (_, x) => {
+                      {rowIndices.map((y) =>
+                        colIndices.map((x) => {
                           const tile = tilesByCoord.get(`${x},${y}`);
                           return (
                             <button
