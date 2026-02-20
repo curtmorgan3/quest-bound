@@ -11,6 +11,7 @@ import {
   ScriptEditorPage,
   ScriptsIndex,
   TilemapEditor,
+  TilemapListPage,
   WorldEditor,
   Worlds,
 } from '@/pages';
@@ -59,6 +60,7 @@ function CompassRoutes() {
 
             <Route path={`/worlds`} element={<Worlds />} />
             <Route path={`/worlds/:worldId`} element={<WorldEditor />} />
+            <Route path={`/worlds/:worldId/tilemaps`} element={<TilemapListPage />} />
             <Route
               path={`/worlds/:worldId/tilemaps/:tilemapId`}
               element={<TilemapEditor />}

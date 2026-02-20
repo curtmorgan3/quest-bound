@@ -289,7 +289,7 @@ export function LocationEditor() {
                 <SelectContent>
                   {tilemapsList.map((tm) => (
                     <SelectItem key={tm.id} value={tm.id}>
-                      {tm.id.slice(0, 8)}…
+                      {tm.label || `${tm.tileWidth}×${tm.tileHeight}`}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -461,7 +461,6 @@ export function LocationEditor() {
                 <Input
                   id='tm-width'
                   type='number'
-                  min={8}
                   value={newTilemapWidth}
                   onChange={(e) => setNewTilemapWidth(parseInt(e.target.value, 10) || 32)}
                 />
@@ -471,7 +470,6 @@ export function LocationEditor() {
                 <Input
                   id='tm-height'
                   type='number'
-                  min={8}
                   value={newTilemapHeight}
                   onChange={(e) => setNewTilemapHeight(parseInt(e.target.value, 10) || 32)}
                 />

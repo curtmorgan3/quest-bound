@@ -11,9 +11,10 @@ export function TilemapEditor() {
   const world = useWorld(worldId);
   const tilemap = useTilemap(tilemapId);
   const { updateTilemap } = useTilemaps(worldId ?? undefined);
-  const { tiles, createTile } = useTiles(tilemapId ?? undefined);
+  const { tiles, createTile, deleteTile } = useTiles(tilemapId ?? undefined);
   const { assets } = useAssets(world?.rulesetId ?? null);
   const [imgSize, setImgSize] = useState<{ w: number; h: number } | null>(null);
+  const [labelInput, setLabelInput] = useState('');
   const [tileWidthInput, setTileWidthInput] = useState('');
   const [tileHeightInput, setTileHeightInput] = useState('');
 
@@ -34,6 +35,13 @@ export function TilemapEditor() {
     [tilesArray, tilemapId],
   );
 
+  const displayLabel = tm?.label ?? `${tileWidth}×${tileHeight}`;
+  const handleApplyLabel = () => {
+    if (!tm) return;
+    const next = labelInput.trim() || displayLabel;
+    setLabelInput('');
+    updateTilemap(tm.id, { label: next });
+  };
   const handleApplyDimensions = () => {
     if (!tm) return;
     const w = Math.max(8, parseInt(tileWidthInput, 10) || tileWidth);
@@ -43,9 +51,16 @@ export function TilemapEditor() {
     updateTilemap(tm.id, { tileWidth: w, tileHeight: h });
   };
 
-  const handleAddTile = async (tx: number, ty: number) => {
-    if (!tilemapId || tilesSet(tx, ty)) return;
-    await createTile(tilemapId, { tileX: tx, tileY: ty });
+  const handleTileClick = async (tx: number, ty: number) => {
+    if (!tilemapId) return;
+    if (tilesSet(tx, ty)) {
+      const tile = tilesArray.find(
+        (t) => t.tilemapId === tilemapId && t.tileX === tx && t.tileY === ty,
+      );
+      if (tile) await deleteTile(tile.id);
+    } else {
+      await createTile(tilemapId, { tileX: tx, tileY: ty });
+    }
   };
 
   const handleCreateAllTiles = async () => {
@@ -100,7 +115,17 @@ export function TilemapEditor() {
           </Link>
         </Button>
         <span className='text-muted-foreground'>|</span>
-        <h1 className='truncate text-lg font-semibold'>Tilemap</h1>
+        <Label htmlFor='te-label' className='sr-only'>
+          Label
+        </Label>
+        <Input
+          id='te-label'
+          className='max-w-40 truncate font-semibold'
+          value={labelInput || displayLabel}
+          onChange={(e) => setLabelInput(e.target.value)}
+          onBlur={handleApplyLabel}
+          onKeyDown={(e) => e.key === 'Enter' && handleApplyLabel()}
+        />
         <span className='text-muted-foreground'>
           {tileWidth}×{tileHeight}
         </span>
@@ -143,7 +168,7 @@ export function TilemapEditor() {
         {assetData ? (
           <div className='flex flex-col gap-2'>
             <p className='text-xs text-muted-foreground'>
-              Grid: {cols}×{rows} cells. Click a cell to add a tile (slice) for use in locations.
+              Grid: {cols}×{rows} cells. Click a cell to add a tile; click again to remove.
             </p>
             <div className='relative inline-block max-w-full'>
               <img
@@ -184,8 +209,8 @@ export function TilemapEditor() {
                             width: tileWidth,
                             height: tileHeight,
                           }}
-                          onClick={() => handleAddTile(x, y)}
-                          title={hasTile ? `Tile (${x},${y})` : `Add tile (${x},${y})`}
+                          onClick={() => handleTileClick(x, y)}
+                          title={hasTile ? `Remove tile (${x},${y})` : `Add tile (${x},${y})`}
                         />
                       );
                     }),

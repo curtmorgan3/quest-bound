@@ -22,6 +22,7 @@ export function TilemapList({ onCreated }: TilemapListProps) {
   const { tilemaps, createTilemap } = useTilemaps(worldId);
   const { assets } = useAssets(world?.rulesetId ?? null);
   const [createOpen, setCreateOpen] = useState(false);
+  const [label, setLabel] = useState('');
   const [assetId, setAssetId] = useState<string | null>(null);
   const [tileWidth, setTileWidth] = useState(32);
   const [tileHeight, setTileHeight] = useState(32);
@@ -32,12 +33,14 @@ export function TilemapList({ onCreated }: TilemapListProps) {
   const handleCreate = async () => {
     if (!worldId || !assetId) return;
     const id = await createTilemap(worldId, {
+      label: label.trim() || 'New Tilemap',
       assetId,
       tileWidth,
       tileHeight,
     });
     if (id) {
       setCreateOpen(false);
+      setLabel('');
       setAssetId(null);
       setTileWidth(32);
       setTileHeight(32);
@@ -66,8 +69,8 @@ export function TilemapList({ onCreated }: TilemapListProps) {
           <li key={tm.id}>
             <Button variant='ghost' size='sm' className='h-auto w-full justify-start truncate py-1' asChild>
               <Link to={`/worlds/${worldId}/tilemaps/${tm.id}`} data-testid={`tilemap-edit-${tm.id}`}>
-                <span className='truncate' title={tm.id}>
-                  {tm.tileWidth}×{tm.tileHeight}
+                <span className='truncate' title={tm.label || `${tm.tileWidth}×${tm.tileHeight}`}>
+                  {tm.label || `${tm.tileWidth}×${tm.tileHeight}`}
                 </span>
               </Link>
             </Button>
@@ -81,6 +84,15 @@ export function TilemapList({ onCreated }: TilemapListProps) {
             <DialogTitle>Create tilemap</DialogTitle>
           </DialogHeader>
           <div className='grid gap-4'>
+            <div className='grid gap-2'>
+              <Label htmlFor='tilemap-label'>Label</Label>
+              <Input
+                id='tilemap-label'
+                value={label}
+                onChange={(e) => setLabel(e.target.value)}
+                placeholder='New Tilemap'
+              />
+            </div>
             <div className='grid gap-2'>
               <Label>Image</Label>
               <ImageUpload

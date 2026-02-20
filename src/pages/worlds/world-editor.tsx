@@ -2,13 +2,11 @@ import { Button } from '@/components';
 import { useLocations, useWorld } from '@/lib/compass-api';
 import { ArrowLeft, Plus } from 'lucide-react';
 import { useEffect } from 'react';
-import { Link, useParams, useNavigate } from 'react-router-dom';
-import { TilemapList } from './tilemap-list';
+import { Link, useParams } from 'react-router-dom';
 import { WorldEditorCanvas } from './world-editor-canvas';
 
 export function WorldEditor() {
   const { worldId } = useParams<{ worldId: string }>();
-  const navigate = useNavigate();
   const world = useWorld(worldId);
   const { locations, createLocation, updateLocation, deleteLocation } = useLocations(worldId);
 
@@ -69,21 +67,16 @@ export function WorldEditor() {
           Add location
         </Button>
       </div>
-      <div className='flex min-h-0 flex-1'>
-        <div className='min-h-0 min-w-0 flex-1' id='world-canvas-wrap'>
-          <WorldEditorCanvas
-            locations={locations ?? []}
-            onCreateLocation={async (wid, data) => createLocation(wid, data)}
-            onUpdateLocation={updateLocation}
-            onDeleteLocation={deleteLocation}
-            translateExtent={[
-              [-2000, -2000],
-              [2000, 2000],
-            ]}
-          />
-        </div>
-        <TilemapList
-          onCreated={(id) => navigate(`/worlds/${worldId}/tilemaps/${id}`)}
+      <div className='min-h-0 flex-1' id='world-canvas-wrap'>
+        <WorldEditorCanvas
+          locations={locations ?? []}
+          onCreateLocation={async (wid, data) => createLocation(wid, data)}
+          onUpdateLocation={updateLocation}
+          onDeleteLocation={deleteLocation}
+          translateExtent={[
+            [-2000, -2000],
+            [2000, 2000],
+          ]}
         />
       </div>
     </div>

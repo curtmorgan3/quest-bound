@@ -11,6 +11,7 @@ import {
   Handbag,
   HandFist,
   HelpCircle,
+  Layers,
   LayoutTemplate,
   Newspaper,
   Pin,
@@ -65,7 +66,11 @@ export function AppSidebar() {
   const { documents } = useDocuments(character?.rulesetId);
   const { charts } = useCharts(character?.rulesetId);
   const { open, setOpen } = useSidebar();
-  const { rulesetId, characterId } = useParams();
+  const { rulesetId, characterId, worldId } = useParams<{
+    rulesetId?: string;
+    characterId?: string;
+    worldId?: string;
+  }>();
   const location = useLocation();
   const characterInventoryPanel = useContext(CharacterInventoryPanelContext);
   const characterArchetypesPanel = useContext(CharacterArchetypesPanelContext);
@@ -74,6 +79,7 @@ export function AppSidebar() {
     location.pathname === '/rulesets' ||
     location.pathname === '/characters' ||
     location.pathname === '/worlds';
+  const isWorldsRoute = location.pathname.startsWith('/worlds/');
   const isViewingDocument = !!documentId && location.pathname.includes('/documents/');
   const isViewingChart = !!chartId && location.pathname.includes('/chart/');
   const { setDicePanelOpen } = useContext(DiceContext);
@@ -153,7 +159,23 @@ export function AppSidebar() {
         },
       ];
 
-  const items = character ? [] : rulesetItems;
+  const worldsRouteItems =
+    worldId != null
+      ? [
+          {
+            title: 'Tilemaps',
+            url: `/worlds/${worldId}/tilemaps`,
+            icon: Layers,
+          },
+          ...rulesetItems.filter((i) => i.title === 'Scripts'),
+        ]
+      : rulesetItems.filter((i) => i.title === 'Scripts');
+
+  const items = character
+    ? []
+    : isWorldsRoute
+      ? worldsRouteItems
+      : rulesetItems;
 
   const pinnedDocIds = character?.pinnedSidebarDocuments ?? [];
   const pinnedChartIds = character?.pinnedSidebarCharts ?? [];

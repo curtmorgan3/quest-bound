@@ -21,6 +21,7 @@ export const useTilemaps = (worldId: string | undefined) => {
       await db.tilemaps.add({
         ...data,
         id,
+        label: data.label ?? 'New Tilemap',
         worldId,
         assetId: data.assetId ?? '',
         tileHeight: data.tileHeight ?? 32,

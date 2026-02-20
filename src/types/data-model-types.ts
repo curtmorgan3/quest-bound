@@ -385,6 +385,7 @@ export type World = BaseDetails & {
 };
 
 export type Tilemap = BaseDetails & {
+  label?: string;
   worldId: string;
   assetId: string;
   tileHeight: number;
