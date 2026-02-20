@@ -1,25 +1,13 @@
-import { Button, Checkbox, Input, Label } from '@/components';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import {
-  useAssets,
-  useLocation,
-  useLocations,
-  useTilemaps,
-  useTiles,
-  useWorld,
-} from '@/lib/compass-api';
+import { Button, Input, Label } from '@/components';
+import { useAssets, useLocation, useLocations, useTilemaps, useWorld } from '@/lib/compass-api';
 import { db } from '@/stores';
 import type { Action, Tile, TileData, Tilemap } from '@/types';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { ArrowLeft, Grid3X3, Trash2 } from 'lucide-react';
+import { ArrowLeft, Grid3X3 } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
+import { CellPropertyPanel } from './cell-property-panel';
+import { TilePaintBar } from './tilemaps';
 
 const TILE_DISPLAY_SIZE = 32;
 
@@ -37,9 +25,6 @@ export function LocationEditor() {
   const location = useLocation(locationId);
   const { updateLocation } = useLocations(worldId);
   const { tilemaps } = useTilemaps(worldId);
-  const [selectedTilemapId, setSelectedTilemapId] = useState<string | null>(null);
-  const tilesResult = useTiles(selectedTilemapId ?? undefined);
-  const tilesForPicker = tilesResult?.tiles ?? [];
   const tilemapsList = tilemaps ?? [];
   const [assetDimensions, setAssetDimensions] = useState<Record<string, { w: number; h: number }>>(
     {},
@@ -198,28 +183,6 @@ export function LocationEditor() {
     };
   };
 
-  const getPickerTileStyle = (tm: Tilemap, t: Tile): React.CSSProperties => {
-    const data = getAssetData(tm.assetId);
-    if (!data) return {};
-    const tw = tm.tileWidth;
-    const th = tm.tileHeight;
-    const tileX = t.tileX ?? 0;
-    const tileY = t.tileY ?? 0;
-    const dim = assetDimensions[tm.assetId];
-    const backgroundSize =
-      dim != null
-        ? `${(dim.w * TILE_DISPLAY_SIZE) / tw}px ${(dim.h * TILE_DISPLAY_SIZE) / th}px`
-        : 'auto';
-    const posX = tileX * TILE_DISPLAY_SIZE;
-    const posY = tileY * TILE_DISPLAY_SIZE;
-    return {
-      backgroundImage: `url(${data})`,
-      backgroundPosition: `-${posX}px -${posY}px`,
-      backgroundSize,
-      backgroundRepeat: 'no-repeat',
-    };
-  };
-
   if (!worldId || !locationId) return null;
   if (location === undefined) {
     return (
@@ -302,194 +265,58 @@ export function LocationEditor() {
         {/* Grid + cell panel */}
         <div className='flex min-h-0 flex-1 gap-4 p-4'>
           <div className='flex min-w-0 flex-1 flex-col gap-2'>
-          <p className='text-xs text-muted-foreground'>
-            {selectedTile
-              ? 'Click a cell to paint. Click without a tile to select cell.'
-              : 'Select a tile, then click a cell to paint.'}
-          </p>
-          <div
-            className='inline-grid gap-px rounded border bg-muted-foreground/20 p-px'
-            style={{
-              gridTemplateColumns: `repeat(${gridWidth}, 32px)`,
-              gridTemplateRows: `repeat(${gridHeight}, 32px)`,
-            }}>
-            {Array.from({ length: gridHeight }, (_, y) =>
-              Array.from({ length: gridWidth }, (_, x) => {
-                const key = `${x},${y}`;
-                const td = tilesByKey.get(key);
-                const isSelected = selectedCell?.x === x && selectedCell?.y === y;
-                return (
-                  <button
-                    key={key}
-                    type='button'
-                    className={`h-8 w-8 shrink-0 rounded-sm border bg-muted/50 ${
-                      isSelected ? 'ring-2 ring-primary' : 'hover:bg-muted'
-                    }`}
-                    style={td ? { ...getTileStyle(td), backgroundRepeat: 'no-repeat' } : undefined}
-                    onClick={() => handleCellClick(x, y)}
-                  />
-                );
-              }),
-            )}
-          </div>
-          </div>
-
-        {/* Cell property panel */}
-        {selectedCell && (
-          <div className='flex w-56 shrink-0 flex-col gap-3 rounded-md border bg-muted/30 p-3'>
-            <h3 className='text-sm font-semibold'>
-              Cell ({selectedCell.x}, {selectedCell.y})
-            </h3>
-            {selectedTileData ? (
-              <>
-                <div className='flex items-center gap-2'>
-                  <Checkbox
-                    id='cell-passable'
-                    checked={selectedTileData.isPassable}
-                    onCheckedChange={(c) => handleUpdateTileData({ isPassable: c === true })}
-                  />
-                  <Label htmlFor='cell-passable' className='text-sm'>
-                    Passable
-                  </Label>
-                </div>
-                <div className='grid gap-1'>
-                  <Label className='text-xs'>Action</Label>
-                  <Select
-                    value={selectedTileData.actionId ?? '_none'}
-                    onValueChange={(v) =>
-                      handleUpdateTileData({ actionId: v === '_none' ? undefined : v })
-                    }>
-                    <SelectTrigger className='h-8'>
-                      <SelectValue placeholder='None' />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value='_none'>None</SelectItem>
-                      {actionsList.map((a) => (
-                        <SelectItem key={a.id} value={a.id}>
-                          {a.title}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <Button
-                  variant='outline'
-                  size='sm'
-                  className='gap-1 text-destructive hover:text-destructive'
-                  onClick={handleRemoveTileFromCell}>
-                  <Trash2 className='h-4 w-4' />
-                  Remove tile
-                </Button>
-              </>
-            ) : (
-              <p className='text-xs text-muted-foreground'>
-                No tile here. Select a tile and click to paint.
-              </p>
-            )}
-          </div>
-        )}
-
-        </div>
-
-        {/* Tile paint bar - full width at bottom */}
-        <div className='flex shrink-0 flex-wrap items-center gap-4 border-t bg-muted/30 px-4 py-3'>
-          <h3 className='text-sm font-semibold'>Tile paint</h3>
-          {tilemapsList.length === 0 ? (
             <p className='text-xs text-muted-foreground'>
-              No tilemaps. Create one from the world&apos;s Tilemaps page.
+              {selectedTile
+                ? 'Click a cell to paint. Click without a tile to select cell.'
+                : 'Select a tile, then click a cell to paint.'}
             </p>
-          ) : (
-            <>
-              <div className='flex items-center gap-2'>
-                <Label className='text-xs'>Tilemap</Label>
-                <Select
-                  value={selectedTilemapId ?? '_none'}
-                  onValueChange={(v) =>
-                    v === '_none' ? setSelectedTilemapId(null) : setSelectedTilemapId(v)
-                  }>
-                  <SelectTrigger className='h-8 w-40'>
-                    <SelectValue placeholder='Select tilemap' />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {tilemapsList.map((tm) => (
-                      <SelectItem key={tm.id} value={tm.id}>
-                        {tm.label || `${tm.tileWidth}×${tm.tileHeight}`}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              {selectedTilemapId && (() => {
-                const tm = tilemapsList.find((m) => m.id === selectedTilemapId);
-                if (!tm) return null;
-                const dim = assetDimensions[tm.assetId];
-                const cols = dim
-                  ? Math.ceil(dim.w / tm.tileWidth)
-                  : Math.max(1, ...tilesForPicker.map((t) => (t.tileX ?? 0) + 1));
-                const rows = dim
-                  ? Math.ceil(dim.h / tm.tileHeight)
-                  : Math.max(1, ...tilesForPicker.map((t) => (t.tileY ?? 0) + 1));
-                const tilesByCoord = new Map(
-                  tilesForPicker.map((t) => [`${t.tileX ?? 0},${t.tileY ?? 0}`, t]),
-                );
-                return (
-                  <>
-                    <div className='flex items-center gap-2'>
-                      <Label className='text-xs'>Tile</Label>
-                      <div
-                        className='inline-grid max-h-32 overflow-auto rounded border bg-muted/30 p-1'
-                        style={{
-                          gridTemplateColumns: `repeat(${cols}, ${TILE_DISPLAY_SIZE}px)`,
-                          gridTemplateRows: `repeat(${rows}, ${TILE_DISPLAY_SIZE}px)`,
-                        }}>
-                        {Array.from({ length: rows }, (_, y) =>
-                          Array.from({ length: cols }, (_, x) => {
-                            const tile = tilesByCoord.get(`${x},${y}`);
-                            return (
-                              <button
-                                key={tile ? tile.id : `empty-${x}-${y}`}
-                                type='button'
-                                className={`h-8 w-8 shrink-0 rounded border bg-muted ${
-                                  selectedTile?.id === tile?.id ? 'ring-2 ring-primary' : ''
-                                }`}
-                                style={tile && tm ? getPickerTileStyle(tm, tile) : undefined}
-                                onClick={() =>
-                                  setSelectedTile((current) =>
-                                    tile ? (current?.id === tile.id ? null : tile) : current,
-                                  )
-                                }
-                                title={tile ? `Tile ${x},${y}` : `(${x},${y})`}
-                              />
-                            );
-                          }),
-                        )}
-                      </div>
-                    </div>
-                    {tilesForPicker.length === 0 && (
-                      <Button
-                        variant='outline'
-                        size='sm'
-                        className='text-xs'
-                        onClick={async () => {
-                          if (!selectedTilemapId) return;
-                          const id = await tilesResult.createTile(selectedTilemapId, {
-                            tileX: 0,
-                            tileY: 0,
-                          });
-                          if (id) {
-                            const t = await db.tiles.get(id);
-                            if (t) setSelectedTile(t);
-                          }
-                        }}>
-                        Add tile (0,0)
-                      </Button>
-                    )}
-                  </>
-                );
-              })()}
-            </>
+            <div
+              className='inline-grid gap-px rounded border bg-muted-foreground/20 p-px'
+              style={{
+                gridTemplateColumns: `repeat(${gridWidth}, ${TILE_DISPLAY_SIZE}px)`,
+                gridTemplateRows: `repeat(${gridHeight}, ${TILE_DISPLAY_SIZE}px)`,
+              }}>
+              {Array.from({ length: gridHeight }, (_, y) =>
+                Array.from({ length: gridWidth }, (_, x) => {
+                  const key = `${x},${y}`;
+                  const td = tilesByKey.get(key);
+                  const isSelected = selectedCell?.x === x && selectedCell?.y === y;
+                  return (
+                    <button
+                      key={key}
+                      type='button'
+                      className={`h-8 w-8 shrink-0 rounded-sm bg-muted/50 ${
+                        isSelected ? 'ring-2 ring-primary' : 'hover:bg-muted'
+                      }`}
+                      style={
+                        td ? { ...getTileStyle(td), backgroundRepeat: 'no-repeat' } : undefined
+                      }
+                      onClick={() => handleCellClick(x, y)}
+                    />
+                  );
+                }),
+              )}
+            </div>
+          </div>
+
+          {selectedCell && (
+            <CellPropertyPanel
+              cell={selectedCell}
+              tileData={selectedTileData}
+              actions={actionsList}
+              onUpdateTileData={handleUpdateTileData}
+              onRemoveTile={handleRemoveTileFromCell}
+            />
           )}
         </div>
+
+        <TilePaintBar
+          worldId={worldId!}
+          getAssetData={getAssetData}
+          assetDimensions={assetDimensions}
+          selectedTile={selectedTile}
+          onSelectedTileChange={setSelectedTile}
+        />
       </div>
     </div>
   );
