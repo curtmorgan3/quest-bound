@@ -7,14 +7,8 @@ export function registerRulesetDbHooks(db: DB) {
       try {
         const pageId = (obj as { pageId?: string })?.pageId;
         if (pageId) {
-          const otherRulesetPage = await db.rulesetPages
-            .where('pageId')
-            .equals(pageId)
-            .first();
-          const characterPage = await db.characterPages
-            .where('pageId')
-            .equals(pageId)
-            .first();
+          const otherRulesetPage = await db.rulesetPages.where('pageId').equals(pageId).first();
+          const characterPage = await db.characterPages.where('pageId').equals(pageId).first();
           if (!otherRulesetPage && !characterPage) {
             await db.pages.delete(pageId);
           }

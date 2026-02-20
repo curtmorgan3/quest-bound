@@ -1,38 +1,26 @@
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
   Button,
-  Card,
-  ImageUpload,
-  Input,
-  Label,
-} from '@/components';
-import {
   Dialog,
   DialogContent,
   DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog';
+  ImageUpload,
+  Input,
+  Label,
+} from '@/components';
 import { useArchetypes, useAssets } from '@/lib/compass-api';
-import { ChevronDown, ChevronUp, Plus, Trash2 } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { useRef, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
+import { ArchetypeCard } from './archetype-card';
 
 export const Archetypes = () => {
   const { rulesetId } = useParams();
   const { archetypes, createArchetype, updateArchetype, deleteArchetype, reorderArchetypes } =
     useArchetypes(rulesetId);
   const { assets, deleteAsset } = useAssets(rulesetId);
-
-  const displayArchetypes = archetypes.filter((a) => !a.isDefault);
 
   const [createOpen, setCreateOpen] = useState(false);
   const [newName, setNewName] = useState('');
@@ -100,7 +88,7 @@ export const Archetypes = () => {
   };
 
   const startEdit = (id: string) => {
-    const a = displayArchetypes.find((x) => x.id === id);
+    const a = archetypes.find((x) => x.id === id);
     if (a) {
       setEditingId(id);
       setEditName(a.name);
@@ -138,18 +126,18 @@ export const Archetypes = () => {
   };
 
   const moveUp = async (index: number) => {
-    if (index <= 0) return;
+    if (index <= 1) return;
     const defaultId = archetypes.find((a) => a.isDefault)?.id;
-    const displayIds = displayArchetypes.map((a) => a.id);
+    const displayIds = archetypes.map((a) => a.id);
     [displayIds[index - 1], displayIds[index]] = [displayIds[index], displayIds[index - 1]];
     const ids = defaultId ? [defaultId, ...displayIds] : displayIds;
     await reorderArchetypes(ids);
   };
 
   const moveDown = async (index: number) => {
-    if (index >= displayArchetypes.length - 1) return;
+    if (index >= archetypes.length - 1) return;
     const defaultId = archetypes.find((a) => a.isDefault)?.id;
-    const displayIds = displayArchetypes.map((a) => a.id);
+    const displayIds = archetypes.map((a) => a.id);
     [displayIds[index], displayIds[index + 1]] = [displayIds[index + 1], displayIds[index]];
     const ids = defaultId ? [defaultId, ...displayIds] : displayIds;
     await reorderArchetypes(ids);
@@ -215,142 +203,41 @@ export const Archetypes = () => {
       </div>
 
       <div className='flex flex-col gap-2' data-testid='archetypes-list'>
-        {displayArchetypes.length > 0 && (
+        {archetypes.length > 0 && (
           <p className='italic text-sm text-muted-foreground'>
             Order determines the load order of archetype scripts
           </p>
         )}
-        {displayArchetypes.map((archetype, index) => (
-          <Card
+        {archetypes.map((archetype, index) => (
+          <ArchetypeCard
             key={archetype.id}
-            className='p-4 flex flex-row items-center gap-3'
-            data-testid={`archetype-item-${archetype.id}`}>
-            <div className='flex flex-col gap-0'>
-              <Button
-                variant='ghost'
-                size='icon'
-                className='h-6 w-6'
-                onClick={() => moveUp(index)}
-                disabled={index === 0}>
-                <ChevronUp className='h-4 w-4' />
-              </Button>
-              <Button
-                variant='ghost'
-                size='icon'
-                className='h-6 w-6'
-                onClick={() => moveDown(index)}
-                disabled={index === displayArchetypes.length - 1}>
-                <ChevronDown className='h-4 w-4' />
-              </Button>
-            </div>
-            {(archetype.image || getImageFromAssetId(archetype.assetId ?? null)) && (
-              <img
-                src={archetype.image ?? getImageFromAssetId(archetype.assetId ?? null) ?? undefined}
-                alt={archetype.name}
-                className='h-12 w-12 shrink-0 rounded-md object-cover'
-              />
-            )}
-            <div className='flex-1 min-w-0'>
-              {editingId === archetype.id ? (
-                <div className='flex flex-col gap-2'>
-                  <Input
-                    value={editName}
-                    onChange={(e) => setEditName(e.target.value)}
-                    placeholder='Name'
-                  />
-                  <Input
-                    value={editDescription}
-                    onChange={(e) => setEditDescription(e.target.value)}
-                    placeholder='Description'
-                  />
-                  <div className='grid gap-2'>
-                    <Label>Image</Label>
-                    <ImageUpload
-                      image={editImage || getImageFromAssetId(editAssetId)}
-                      alt='Archetype image'
-                      rulesetId={rulesetId}
-                      onUpload={handleEditImageUpload}
-                      onRemove={handleEditImageRemove}
-                      onSetUrl={handleEditSetUrl}
-                    />
-                  </div>
-                  <div className='flex gap-2'>
-                    <Button size='sm' onClick={saveEdit}>
-                      Save
-                    </Button>
-                    <Button size='sm' variant='outline' onClick={() => setEditingId(null)}>
-                      Cancel
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                <div>
-                  <div className='font-medium'>{archetype.name}</div>
-                  {archetype.description && (
-                    <p className='text-sm text-muted-foreground mt-0.5'>{archetype.description}</p>
-                  )}
-                  {archetype.scriptId && (
-                    <Link
-                      to={`/rulesets/${rulesetId}/scripts/${archetype.scriptId}`}
-                      className='text-sm text-primary hover:underline'>
-                      View script
-                    </Link>
-                  )}
-                </div>
-              )}
-            </div>
-            {editingId !== archetype.id && (
-              <div className='flex gap-1 shrink-0'>
-                <Button variant='ghost' size='sm' onClick={() => startEdit(archetype.id)}>
-                  Edit
-                </Button>
-                {doNotAsk ? (
-                  <Button
-                    variant='ghost'
-                    size='sm'
-                    className='text-destructive'
-                    onClick={() => deleteArchetype(archetype.id)}
-                    data-testid='archetype-delete-btn'
-                    aria-label={`Delete ${archetype.name}`}>
-                    <Trash2 className='h-4 w-4' />
-                  </Button>
-                ) : (
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button
-                        variant='ghost'
-                        size='sm'
-                        className='text-destructive'
-                        data-testid='archetype-delete-btn'
-                        aria-label={`Delete ${archetype.name}`}>
-                        <Trash2 className='h-4 w-4' />
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Delete archetype?</AlertDialogTitle>
-                        This will delete the test character and all character associations. This
-                        cannot be undone.
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction
-                          className='bg-destructive text-destructive-foreground'
-                          onClick={() => deleteArchetype(archetype.id)}
-                          data-testid='archetype-delete-confirm'>
-                          Delete
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                )}
-              </div>
-            )}
-          </Card>
+            archetype={archetype}
+            index={index}
+            totalCount={archetypes.length}
+            rulesetId={rulesetId}
+            getImageFromAssetId={getImageFromAssetId}
+            isEditing={editingId === archetype.id}
+            editName={editName}
+            editDescription={editDescription}
+            editAssetId={editAssetId}
+            editImage={editImage}
+            onMoveUp={() => moveUp(index)}
+            onMoveDown={() => moveDown(index)}
+            onStartEdit={() => startEdit(archetype.id)}
+            onSaveEdit={saveEdit}
+            onCancelEdit={() => setEditingId(null)}
+            onEditNameChange={setEditName}
+            onEditDescriptionChange={setEditDescription}
+            onEditImageUpload={handleEditImageUpload}
+            onEditImageRemove={handleEditImageRemove}
+            onEditSetUrl={handleEditSetUrl}
+            onDelete={() => deleteArchetype(archetype.id)}
+            confirmBeforeDelete={doNotAsk}
+          />
         ))}
       </div>
 
-      {displayArchetypes.length === 0 && (
+      {archetypes.length === 0 && (
         <p className='text-muted-foreground py-8'>No archetypes yet. Create one to get started.</p>
       )}
     </div>
