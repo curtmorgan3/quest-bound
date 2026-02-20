@@ -53,9 +53,27 @@ export const useCampaignEventLocations = (campaignEventId: string | undefined) =
     }
   };
 
+  const updateCampaignEventLocation = async (
+    id: string,
+    updates: { locationId?: string; tileId?: string | null },
+  ) => {
+    try {
+      await db.campaignEventLocations.update(id, {
+        ...updates,
+        updatedAt: new Date().toISOString(),
+      });
+    } catch (e) {
+      handleError(e as Error, {
+        component: 'useCampaignEventLocations/updateCampaignEventLocation',
+        severity: 'medium',
+      });
+    }
+  };
+
   return {
     campaignEventLocations: campaignEventLocations ?? [],
     createCampaignEventLocation,
     deleteCampaignEventLocation,
+    updateCampaignEventLocation,
   };
 };

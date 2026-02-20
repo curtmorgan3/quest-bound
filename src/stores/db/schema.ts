@@ -7,7 +7,7 @@ export const dbSchema = {
   fonts: `${common}, rulesetId, label, data, moduleId`,
   attributes: `${common}, rulesetId, title, description, category, type, options, defaultValue, optionsChartRef, optionsChartColumnHeader, min, max, scriptId, moduleId`,
   actions: `${common}, rulesetId, title, description, category, scriptId, moduleId`,
-  items: `${common}, rulesetId, title, description, category, weight, defaultQuantity, stackSize, isContainer, isStorable, isEquippable, isConsumable, inventoryWidth, inventoryHeight, scriptId, moduleId`,
+  items: `${common}, rulesetId, title, description, category, weight, defaultQuantity, stackSize, isContainer, isStorable, isEquippable, isConsumable, inventoryWidth, inventoryHeight, scriptId, moduleId, sprites`,
   charts: `${common}, rulesetId, title, description, category, data, assetId, image, moduleId`,
   documents: `${common}, rulesetId, title, description, category, assetId, image, pdfAssetId, pdfData, moduleId`,
   windows: `${common}, rulesetId, title, category, moduleId`,
@@ -40,4 +40,4 @@ export const dbSchema = {
 };
 
 // Increment on every schema change
-export const dbSchemaVersion = 39;
+export const dbSchemaVersion = 40;

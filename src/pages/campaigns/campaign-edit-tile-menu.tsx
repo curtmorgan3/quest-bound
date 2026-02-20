@@ -57,6 +57,8 @@ export interface CampaignEditTileMenuProps {
   onRemoveCharacter: () => void;
   onRemoveItem: () => void;
   onRemoveEvent: () => void;
+  /** Called with event location id when user chooses to move the event (menu closes; parent handles next cell click). */
+  onMoveEvent?: (eventLocationId: string) => void;
 }
 
 export function CampaignEditTileMenu({
@@ -71,6 +73,7 @@ export function CampaignEditTileMenu({
   onRemoveCharacter,
   onRemoveItem,
   onRemoveEvent,
+  onMoveEvent,
 }: CampaignEditTileMenuProps) {
   const [addCharacterOpen, setAddCharacterOpen] = useState(false);
   const [addItemOpen, setAddItemOpen] = useState(false);
@@ -212,13 +215,26 @@ export function CampaignEditTileMenu({
             </button>
           )}
           {entityAtTile?.event && (
-            <button
-              type='button'
-              className='flex w-full items-center rounded-sm px-2 py-1.5 text-sm text-destructive hover:bg-accent'
-              onClick={onRemoveEvent}>
-              <Trash2 className='mr-2 h-4 w-4' />
-              Remove event
-            </button>
+            <>
+              {onMoveEvent && (
+                <button
+                  type='button'
+                  className='flex w-full items-center rounded-sm px-2 py-1.5 text-sm hover:bg-accent'
+                  onClick={() => {
+                    onMoveEvent?.(entityAtTile.event!.id);
+                    onClose();
+                  }}>
+                  Move event
+                </button>
+              )}
+              <button
+                type='button'
+                className='flex w-full items-center rounded-sm px-2 py-1.5 text-sm text-destructive hover:bg-accent'
+                onClick={onRemoveEvent}>
+                <Trash2 className='mr-2 h-4 w-4' />
+                Remove event
+              </button>
+            </>
           )}
         </div>
       )}

@@ -22,12 +22,23 @@ export const useCampaignCharacters = (campaignId: string | undefined) => {
     const now = new Date().toISOString();
     const id = crypto.randomUUID();
     try {
+      const characterArchetypes = await db.characterArchetypes
+        .where('characterId')
+        .equals(characterId)
+        .sortBy('loadOrder');
+      const firstArchetypeId = characterArchetypes[0]?.archetypeId;
+      const archetype = firstArchetypeId
+        ? await db.archetypes.get(firstArchetypeId)
+        : null;
+
       await db.campaignCharacters.add({
         id,
         campaignId,
         characterId,
         currentLocationId: data?.currentLocationId ?? null,
         currentTileId: data?.currentTileId ?? null,
+        mapWidth: archetype?.mapWidth,
+        mapHeight: archetype?.mapHeight,
         createdAt: now,
         updatedAt: now,
       } as CampaignCharacter);

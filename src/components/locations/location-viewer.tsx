@@ -12,12 +12,18 @@ const ZOOM_MIN = 0.25;
 const ZOOM_MAX = 3;
 const ZOOM_STEP = 0.25;
 
+export type LocationViewerDragPayload =
+  | { type: 'campaign-character'; id: string }
+  | { type: 'campaign-item'; id: string };
+
 export type LocationViewerOverlayNode = {
   id: string;
   tileId: string;
   type: 'character' | 'item';
   imageUrl: string | null;
   label: string;
+  /** When set, the overlay is draggable and this payload is passed on drop. */
+  dragPayload?: LocationViewerDragPayload;
 };
 
 export interface LocationViewerProps {
@@ -33,6 +39,10 @@ export interface LocationViewerProps {
   overlayNodes?: LocationViewerOverlayNode[];
   /** Optional: tile IDs that have a campaign event (highlight). */
   eventTileIds?: string[];
+  /** Optional: called when something is dropped on a cell (e.g. drag payload from overlay). */
+  onDrop?: (x: number, y: number, e: React.DragEvent) => void;
+  /** Optional: called when an overlay node (e.g. character/item) is clicked. Use to open context menu at that tile. */
+  onOverlayClick?: (tileId: string, e: React.MouseEvent) => void;
 }
 
 export function LocationViewer({
@@ -43,6 +53,8 @@ export function LocationViewer({
   tileRenderSize: tileRenderSizeProp,
   overlayNodes = [],
   eventTileIds = [],
+  onDrop,
+  onOverlayClick,
 }: LocationViewerProps) {
   const location = useLocation(locationId);
   const { tilemaps } = useTilemaps(worldId);
@@ -220,7 +232,23 @@ export function LocationViewer({
                     role={onSelectCell ? 'button' : undefined}
                     className='shrink-0 bg-muted/50 hover:bg-muted relative'
                     style={{ width: effectiveTileSize, height: effectiveTileSize }}
-                    onClick={(e) => onSelectCell?.(x, y, e)}>
+                    onClick={(e) => onSelectCell?.(x, y, e)}
+                    onDragOver={
+                      onDrop
+                        ? (e) => {
+                            e.preventDefault();
+                            e.dataTransfer.dropEffect = 'move';
+                          }
+                        : undefined
+                    }
+                    onDrop={
+                      onDrop
+                        ? (e) => {
+                            e.preventDefault();
+                            onDrop(x, y, e);
+                          }
+                        : undefined
+                    }>
                     {layers.length > 0 && (
                       <span className='relative block size-full overflow-hidden'>
                         {layers.map((td) => (
@@ -248,27 +276,52 @@ export function LocationViewer({
             overlayNodes.map((node) => {
               const coord = tileIdToCoord.get(node.tileId);
               if (coord == null) return null;
+              const isDraggable = Boolean(node.dragPayload);
               return (
                 <div
                   key={node.id}
-                  className='absolute flex items-center justify-center overflow-hidden'
+                  className='absolute flex items-center justify-center overflow-hidden cursor-grab active:cursor-grabbing'
                   style={{
                     backgroundColor: 'transparent',
                     left: coord.x * effectiveTileSize + 2,
                     top: coord.y * effectiveTileSize + 2,
                     width: effectiveTileSize - 4,
                     height: effectiveTileSize - 4,
-                    pointerEvents: 'none',
+                    pointerEvents: isDraggable ? 'auto' : 'none',
+                    ...(isDraggable ? { border: '2px solid transparent', borderRadius: 4 } : {}),
                   }}
-                  title={node.label}>
+                  title={node.label}
+                  draggable={isDraggable}
+                  onDragStart={
+                    isDraggable && node.dragPayload
+                      ? (e) => {
+                          e.dataTransfer.effectAllowed = 'move';
+                          e.dataTransfer.setData(
+                            'application/json',
+                            JSON.stringify(node.dragPayload),
+                          );
+                        }
+                      : undefined
+                  }
+                  onClick={
+                    onOverlayClick && isDraggable
+                      ? (e) => {
+                          e.stopPropagation();
+                          onOverlayClick(node.tileId, e);
+                        }
+                      : undefined
+                  }>
                   {node.imageUrl ? (
                     <img
                       src={node.imageUrl}
                       alt={node.label}
-                      className='max-w-full max-h-full object-contain'
+                      className='max-w-full max-h-full object-contain pointer-events-none'
+                      draggable={false}
                     />
                   ) : (
-                    <span className='text-xs truncate px-0.5'>{node.label}</span>
+                    <span className='text-xs truncate px-0.5 pointer-events-none'>
+                      {node.label}
+                    </span>
                   )}
                 </div>
               );

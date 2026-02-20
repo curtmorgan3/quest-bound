@@ -256,6 +256,8 @@ export type Item = BaseDetails & {
   customProperties?: Record<string, string | number | boolean>;
   mapHeight?: number;
   mapWidth?: number;
+  /** Asset IDs for map sprites (stacked by z-index). */
+  sprites?: string[];
   /** Module origin: ruleset id, source entity id, and module name. */
   moduleId?: string;
   moduleEntityId?: string;

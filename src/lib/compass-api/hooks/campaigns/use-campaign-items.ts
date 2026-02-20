@@ -25,12 +25,15 @@ export const useCampaignItems = (campaignId: string | undefined) => {
     const now = new Date().toISOString();
     const id = crypto.randomUUID();
     try {
+      const item = await db.items.get(data.itemId);
       await db.campaignItems.add({
         id,
         campaignId,
         itemId: data.itemId,
         currentLocationId: data.currentLocationId ?? null,
         currentTileId: data.currentTileId ?? null,
+        mapWidth: item?.mapWidth,
+        mapHeight: item?.mapHeight,
         createdAt: now,
         updatedAt: now,
       } as CampaignItem);

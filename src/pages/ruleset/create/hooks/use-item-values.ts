@@ -43,6 +43,9 @@ export const useItemValues = ({
       setDefaultQuantity(activeItem.defaultQuantity);
       setInventoryWidth(activeItem.inventoryWidth);
       setInventoryHeight(activeItem.inventoryHeight);
+      setMapWidth(activeItem.mapWidth);
+      setMapHeight(activeItem.mapHeight);
+      setSprites(activeItem.sprites ?? []);
       setImage(activeItem.image ?? null);
       setAssetId(activeItem.assetId ?? null);
     } else {
@@ -59,6 +62,9 @@ export const useItemValues = ({
   const [defaultQuantity, setDefaultQuantity] = useState(1);
   const [inventoryWidth, setInventoryWidth] = useState(2);
   const [inventoryHeight, setInventoryHeight] = useState(2);
+  const [mapWidth, setMapWidth] = useState<number | undefined>(undefined);
+  const [mapHeight, setMapHeight] = useState<number | undefined>(undefined);
+  const [sprites, setSprites] = useState<string[]>([]);
   const [image, setImage] = useState<string | null>(null);
   const [assetId, setAssetId] = useState<string | null>(null);
 
@@ -68,6 +74,9 @@ export const useItemValues = ({
     setDefaultQuantity(1);
     setInventoryWidth(2);
     setInventoryHeight(2);
+    setMapWidth(undefined);
+    setMapHeight(undefined);
+    setSprites([]);
     setImage(null);
     setAssetId(null);
   };
@@ -82,6 +91,9 @@ export const useItemValues = ({
     defaultQuantity,
     inventoryWidth,
     inventoryHeight,
+    mapWidth,
+    mapHeight,
+    sprites,
     image,
     assetId,
   };
@@ -113,6 +125,10 @@ export const useItemValues = ({
     defaultQuantity,
     inventoryWidth,
     inventoryHeight,
+    mapWidth,
+    mapHeight,
+    sprites,
+    setSprites,
     image,
     assetId,
     setIsContainer,
@@ -124,6 +140,8 @@ export const useItemValues = ({
     setDefaultQuantity,
     setInventoryWidth,
     setInventoryHeight,
+    setMapWidth,
+    setMapHeight,
     setImage,
     setAssetId,
   };

@@ -29,6 +29,8 @@ export interface ArchetypeCardProps {
   editDescription: string;
   editAssetId: string | null;
   editImage: string | null;
+  editMapWidth: number | undefined;
+  editMapHeight: number | undefined;
   onMoveUp: () => void;
   onMoveDown: () => void;
   onStartEdit: () => void;
@@ -39,6 +41,8 @@ export interface ArchetypeCardProps {
   onEditImageUpload: (assetId: string) => void;
   onEditImageRemove: () => void;
   onEditSetUrl: (url: string) => void;
+  onEditMapWidthChange: (value: number | undefined) => void;
+  onEditMapHeightChange: (value: number | undefined) => void;
   onDelete: () => void;
   confirmBeforeDelete: boolean;
 }
@@ -54,6 +58,8 @@ export function ArchetypeCard({
   editDescription,
   editAssetId,
   editImage,
+  editMapWidth,
+  editMapHeight,
   onMoveUp,
   onMoveDown,
   onStartEdit,
@@ -64,6 +70,8 @@ export function ArchetypeCard({
   onEditImageUpload,
   onEditImageRemove,
   onEditSetUrl,
+  onEditMapWidthChange,
+  onEditMapHeightChange,
   onDelete,
   confirmBeforeDelete,
 }: ArchetypeCardProps) {
@@ -130,6 +138,37 @@ export function ArchetypeCard({
                 onRemove={onEditImageRemove}
                 onSetUrl={onEditSetUrl}
               />
+            </div>
+            <div className='grid gap-2'>
+              <Label className='text-muted-foreground'>Map Size (tiles)</Label>
+              <div className='flex gap-2'>
+                <div className='flex flex-col gap-1 flex-1'>
+                  <Label className='text-muted-foreground text-xs'>Width</Label>
+                  <Input
+                    type='number'
+                    min={1}
+                    placeholder='—'
+                    value={editMapWidth ?? ''}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      onEditMapWidthChange(v === '' ? undefined : parseInt(v, 10) || 1);
+                    }}
+                  />
+                </div>
+                <div className='flex flex-col gap-1 flex-1'>
+                  <Label className='text-muted-foreground text-xs'>Height</Label>
+                  <Input
+                    type='number'
+                    min={1}
+                    placeholder='—'
+                    value={editMapHeight ?? ''}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      onEditMapHeightChange(v === '' ? undefined : parseInt(v, 10) || 1);
+                    }}
+                  />
+                </div>
+              </div>
             </div>
             <div className='flex gap-2'>
               <Button size='sm' onClick={onSaveEdit}>

@@ -32,6 +32,8 @@ export const Archetypes = () => {
   const [editDescription, setEditDescription] = useState('');
   const [editAssetId, setEditAssetId] = useState<string | null>(null);
   const [editImage, setEditImage] = useState<string | null>(null);
+  const [editMapWidth, setEditMapWidth] = useState<number | undefined>(undefined);
+  const [editMapHeight, setEditMapHeight] = useState<number | undefined>(undefined);
   const justCreatedRef = useRef(false);
 
   const getImageFromAssetId = (id: string | null) => {
@@ -95,6 +97,8 @@ export const Archetypes = () => {
       setEditDescription(a.description ?? '');
       setEditAssetId(a.assetId ?? null);
       setEditImage(a.image ?? null);
+      setEditMapWidth(a.mapWidth);
+      setEditMapHeight(a.mapHeight);
     }
   };
 
@@ -105,6 +109,8 @@ export const Archetypes = () => {
       description: editDescription.trim(),
       assetId: editAssetId,
       image: editImage,
+      mapWidth: editMapWidth,
+      mapHeight: editMapHeight,
     });
     setEditingId(null);
   };
@@ -221,6 +227,8 @@ export const Archetypes = () => {
             editDescription={editDescription}
             editAssetId={editAssetId}
             editImage={editImage}
+            editMapWidth={editMapWidth}
+            editMapHeight={editMapHeight}
             onMoveUp={() => moveUp(index)}
             onMoveDown={() => moveDown(index)}
             onStartEdit={() => startEdit(archetype.id)}
@@ -231,6 +239,8 @@ export const Archetypes = () => {
             onEditImageUpload={handleEditImageUpload}
             onEditImageRemove={handleEditImageRemove}
             onEditSetUrl={handleEditSetUrl}
+            onEditMapWidthChange={setEditMapWidth}
+            onEditMapHeightChange={setEditMapHeight}
             onDelete={() => deleteArchetype(archetype.id)}
             confirmBeforeDelete={doNotAsk}
           />

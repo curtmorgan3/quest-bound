@@ -42,11 +42,13 @@ export function CampaignEdit() {
   const { locations: rootLocations, updateLocation } = useLocations(campaign?.worldId, null);
   const currentLocation = useLocation(selectedLocationId ?? undefined);
   const { locations: childLocations } = useLocations(campaign?.worldId, selectedLocationId);
+  const { updateCampaignEventLocation } = useCampaignEventLocations(undefined);
   const { assets } = useAssets(null);
   const { createCharacter } = useCharacter();
   const { campaignCharacters, createCampaignCharacter, updateCampaignCharacter } =
     useCampaignCharacters(campaignId);
-  const { campaignItems, createCampaignItem, deleteCampaignItem } = useCampaignItems(campaignId);
+  const { campaignItems, createCampaignItem, updateCampaignItem, deleteCampaignItem } =
+    useCampaignItems(campaignId);
   const { createCampaignEvent, deleteCampaignEvent } = useCampaignEvents(campaignId);
   const { createCampaignEventLocation, deleteCampaignEventLocation } =
     useCampaignEventLocations(undefined);
@@ -54,6 +56,7 @@ export function CampaignEdit() {
     selectedLocationId ?? undefined,
   );
 
+  const [movingEventLocationId, setMovingEventLocationId] = useState<string | null>(null);
   const [tileMenu, setTileMenu] = useState<{
     x: number;
     y: number;
@@ -117,6 +120,21 @@ export function CampaignEdit() {
     [currentLocation, updateLocation],
   );
 
+  const handleOverlayClick = useCallback(
+    (tileId: string, e: React.MouseEvent) => {
+      if (!currentLocation?.tiles) return;
+      const tile = currentLocation.tiles.find((t) => t.id === tileId);
+      if (!tile) return;
+      setTileMenu({
+        x: tile.x,
+        y: tile.y,
+        clientX: e.clientX,
+        clientY: e.clientY,
+      });
+    },
+    [currentLocation],
+  );
+
   const charactersAtLocation = useMemo(
     () =>
       campaignCharacters.filter(
@@ -138,7 +156,7 @@ export function CampaignEdit() {
       campaignCharacter: cc,
       character: chars.find((c) => c?.id === cc.characterId) ?? null,
     }));
-  }, [charactersAtLocation.map((c) => c.id).join(',')]);
+  }, [charactersAtLocation.map((c) => `${c.id}:${c.currentTileId}`).join(',')]);
   const itemsResolved = useLiveQuery(async (): Promise<
     Array<{ campaignItem: CampaignItem; item: Item | null }>
   > => {
@@ -148,7 +166,7 @@ export function CampaignEdit() {
       campaignItem: ci,
       item: itemRecs.find((i) => i?.id === ci.itemId) ?? null,
     }));
-  }, [itemsAtLocation.map((i) => i.id).join(',')]);
+  }, [itemsAtLocation.map((i) => `${i.id}:${i.currentTileId}`).join(',')]);
 
   const overlayNodes = useMemo((): LocationViewerOverlayNode[] => {
     const nodes: LocationViewerOverlayNode[] = [];
@@ -165,6 +183,7 @@ export function CampaignEdit() {
         type: 'character',
         imageUrl,
         label: character?.name ?? 'Character',
+        dragPayload: { type: 'campaign-character', id: campaignCharacter.id },
       });
     });
     (itemsResolved ?? []).forEach(({ campaignItem, item }) => {
@@ -178,6 +197,7 @@ export function CampaignEdit() {
         type: 'item',
         imageUrl,
         label: item?.title ?? 'Item',
+        dragPayload: { type: 'campaign-item', id: campaignItem.id },
       });
     });
     return nodes;
@@ -283,6 +303,92 @@ export function CampaignEdit() {
     setTileMenu(null);
   }, [entityAtTile?.event, deleteCampaignEventLocation, deleteCampaignEvent]);
 
+  const handleMoveEvent = useCallback((eventLocationId: string) => {
+    setMovingEventLocationId(eventLocationId);
+    setTileMenu(null);
+  }, []);
+
+  const handleSelectCell = useCallback(
+    async (x: number, y: number, e: React.MouseEvent | undefined) => {
+      if (!currentLocation || !selectedLocationId) return;
+      if (movingEventLocationId != null) {
+        const tiles = currentLocation.tiles ?? [];
+        let targetTile = getTopTileDataAt(tiles, x, y);
+        if (!targetTile) {
+          const newTile: TileData = {
+            id: crypto.randomUUID(),
+            x,
+            y,
+            zIndex: 0,
+            isPassable: true,
+          };
+          await updateLocation(currentLocation.id, { tiles: [...tiles, newTile] });
+          targetTile = newTile;
+        }
+        await updateCampaignEventLocation(movingEventLocationId, {
+          locationId: selectedLocationId,
+          tileId: targetTile.id,
+        });
+        setMovingEventLocationId(null);
+        return;
+      }
+      openTileMenuAt(x, y, e?.clientX ?? 0, e?.clientY ?? 0);
+    },
+    [
+      currentLocation,
+      selectedLocationId,
+      movingEventLocationId,
+      updateLocation,
+      updateCampaignEventLocation,
+      openTileMenuAt,
+    ],
+  );
+
+  const handleDrop = useCallback(
+    async (x: number, y: number, e: React.DragEvent) => {
+      if (!currentLocation || !selectedLocationId) return;
+      const raw = e.dataTransfer.getData('application/json');
+      if (!raw) return;
+      let payload: { type: string; id: string };
+      try {
+        payload = JSON.parse(raw);
+      } catch {
+        return;
+      }
+      const tiles = currentLocation.tiles ?? [];
+      let targetTile = getTopTileDataAt(tiles, x, y);
+      if (!targetTile) {
+        const newTile: TileData = {
+          id: crypto.randomUUID(),
+          x,
+          y,
+          zIndex: 0,
+          isPassable: true,
+        };
+        await updateLocation(currentLocation.id, { tiles: [...tiles, newTile] });
+        targetTile = newTile;
+      }
+      if (payload.type === 'campaign-character') {
+        await updateCampaignCharacter(payload.id, {
+          currentLocationId: selectedLocationId,
+          currentTileId: targetTile.id,
+        });
+      } else if (payload.type === 'campaign-item') {
+        await updateCampaignItem(payload.id, {
+          currentLocationId: selectedLocationId,
+          currentTileId: targetTile.id,
+        });
+      }
+    },
+    [
+      currentLocation,
+      selectedLocationId,
+      updateLocation,
+      updateCampaignCharacter,
+      updateCampaignItem,
+    ],
+  );
+
   if (campaignId && campaign === undefined) {
     return (
       <div className='flex h-full w-full items-center justify-center p-4'>
@@ -320,6 +426,9 @@ export function CampaignEdit() {
             <span className='font-medium text-foreground'>{currentLocation.label}</span>
           </>
         )}
+        {movingEventLocationId != null && (
+          <span className='text-muted-foreground text-sm'>Click a tile to move the event</span>
+        )}
         {(selectedLocationId || currentLocation?.parentLocationId) && (
           <Button
             variant='ghost'
@@ -351,12 +460,12 @@ export function CampaignEdit() {
               locationId={selectedLocationId}
               worldId={campaign.worldId}
               getAssetData={getAssetData}
-              onSelectCell={(x, y, e) => {
-                openTileMenuAt(x, y, e?.clientX ?? 0, e?.clientY ?? 0);
-              }}
+              onSelectCell={handleSelectCell}
               tileRenderSize={currentLocation?.tileRenderSize}
               overlayNodes={overlayNodes}
               eventTileIds={eventTileIds}
+              onDrop={handleDrop}
+              onOverlayClick={handleOverlayClick}
             />
           </div>
         )}
@@ -375,6 +484,7 @@ export function CampaignEdit() {
           onRemoveCharacter={handleRemoveCharacter}
           onRemoveItem={handleRemoveItem}
           onRemoveEvent={handleRemoveEvent}
+          onMoveEvent={handleMoveEvent}
         />
       )}
     </div>
