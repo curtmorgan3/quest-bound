@@ -15,6 +15,15 @@ export const useTiles = (tilemapId: string | undefined) => {
   );
 
   const createTile = async (tilemapId: string, data: Partial<Tile>) => {
+    const tx = data.tileX ?? 0;
+    const ty = data.tileY ?? 0;
+    const existing = await db.tiles
+      .where('tilemapId')
+      .equals(tilemapId)
+      .filter((t) => t.tileX === tx && t.tileY === ty)
+      .count();
+    if (existing > 0) return undefined;
+
     const now = new Date().toISOString();
     const id = crypto.randomUUID();
     try {
@@ -22,8 +31,8 @@ export const useTiles = (tilemapId: string | undefined) => {
         ...data,
         id,
         tilemapId,
-        tileX: data.tileX,
-        tileY: data.tileY,
+        tileX: tx,
+        tileY: ty,
         createdAt: now,
         updatedAt: now,
       } as Tile);

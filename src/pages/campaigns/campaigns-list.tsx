@@ -1,13 +1,25 @@
-import { Button, Card } from '@/components';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+  Button,
+  Card,
+} from '@/components';
 import {
   useCampaigns,
   useRulesets,
   useWorlds,
 } from '@/lib/compass-api';
+import { Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 export function CampaignsList() {
-  const { campaigns } = useCampaigns();
+  const { campaigns, deleteCampaign } = useCampaigns();
   const { worlds } = useWorlds();
   const { rulesets } = useRulesets();
   const navigate = useNavigate();
@@ -43,13 +55,46 @@ export function CampaignsList() {
                 {getWorldLabel(campaign.worldId)} · {getRulesetTitle(campaign.rulesetId)}
               </p>
             </div>
-            <Button
-              variant='outline'
-              size='sm'
-              onClick={() => navigate(`/campaigns/${campaign.id}`)}
-              data-testid='campaign-card-open'>
-              Open
-            </Button>
+            <div className='flex items-center gap-2'>
+              <Button
+                variant='outline'
+                size='sm'
+                onClick={() => navigate(`/campaigns/${campaign.id}`)}
+                data-testid='campaign-card-open'>
+                Open
+              </Button>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    type='button'
+                    variant='outline'
+                    size='icon'
+                    className='shrink-0 text-muted-foreground hover:text-destructive'
+                    aria-label='Delete campaign'
+                    data-testid='campaign-card-delete'>
+                    <Trash2 className='h-4 w-4' />
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete campaign?</AlertDialogTitle>
+                    <p className='text-sm text-muted-foreground'>
+                      This will permanently delete the campaign and its characters, items, and
+                      events. This cannot be undone.
+                    </p>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      className='bg-destructive text-destructive-foreground hover:bg-destructive/90'
+                      onClick={() => deleteCampaign(campaign.id)}
+                      data-testid='campaign-delete-confirm'>
+                      Delete
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
           </Card>
         ))}
       </div>
