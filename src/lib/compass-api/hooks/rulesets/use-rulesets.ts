@@ -46,9 +46,7 @@ export const useRulesets = () => {
     ) ?? [];
 
   const { getSelectedArchetype, setSelectedArchetype } = useArchetypeStore();
-  const selectedArchetypeId = activeRuleset?.id
-    ? getSelectedArchetype(activeRuleset.id)
-    : null;
+  const selectedArchetypeId = activeRuleset?.id ? getSelectedArchetype(activeRuleset.id) : null;
 
   const effectiveArchetype = useMemo(() => {
     if (!archetypes.length) return null;
@@ -120,18 +118,23 @@ export const useRulesets = () => {
         }
 
         if (testChar) {
-          const now = new Date().toISOString();
-          await db.archetypes.add({
-            id: crypto.randomUUID(),
-            rulesetId,
-            name: 'Default',
-            description: '',
-            testCharacterId: testChar.id,
-            isDefault: true,
-            loadOrder: 0,
-            createdAt: now,
-            updatedAt: now,
+          const existingArchetype = await db.characterArchetypes.where({
+            characterId: testChar.id,
           });
+          if (!existingArchetype) {
+            const now = new Date().toISOString();
+            await db.archetypes.add({
+              id: crypto.randomUUID(),
+              rulesetId,
+              name: 'Default',
+              description: '',
+              testCharacterId: testChar.id,
+              isDefault: true,
+              loadOrder: 0,
+              createdAt: now,
+              updatedAt: now,
+            });
+          }
         }
       } catch (err) {
         console.warn('Default archetype migration failed:', err);

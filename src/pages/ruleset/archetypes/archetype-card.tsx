@@ -1,0 +1,201 @@
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+  Button,
+  Card,
+  ImageUpload,
+  Input,
+  Label,
+} from '@/components';
+import type { Archetype } from '@/types';
+import { ChevronDown, ChevronUp, Pencil, Trash2 } from 'lucide-react';
+import { Link } from 'react-router-dom';
+
+export interface ArchetypeCardProps {
+  archetype: Archetype;
+  index: number;
+  totalCount: number;
+  rulesetId: string | undefined;
+  getImageFromAssetId: (id: string | null) => string | null;
+  isEditing: boolean;
+  editName: string;
+  editDescription: string;
+  editAssetId: string | null;
+  editImage: string | null;
+  onMoveUp: () => void;
+  onMoveDown: () => void;
+  onStartEdit: () => void;
+  onSaveEdit: () => void;
+  onCancelEdit: () => void;
+  onEditNameChange: (value: string) => void;
+  onEditDescriptionChange: (value: string) => void;
+  onEditImageUpload: (assetId: string) => void;
+  onEditImageRemove: () => void;
+  onEditSetUrl: (url: string) => void;
+  onDelete: () => void;
+  confirmBeforeDelete: boolean;
+}
+
+export function ArchetypeCard({
+  archetype,
+  index,
+  totalCount,
+  rulesetId,
+  getImageFromAssetId,
+  isEditing,
+  editName,
+  editDescription,
+  editAssetId,
+  editImage,
+  onMoveUp,
+  onMoveDown,
+  onStartEdit,
+  onSaveEdit,
+  onCancelEdit,
+  onEditNameChange,
+  onEditDescriptionChange,
+  onEditImageUpload,
+  onEditImageRemove,
+  onEditSetUrl,
+  onDelete,
+  confirmBeforeDelete,
+}: ArchetypeCardProps) {
+  const imageSrc = archetype.image ?? getImageFromAssetId(archetype.assetId ?? null) ?? undefined;
+
+  return (
+    <Card
+      className='p-4 flex flex-row items-center gap-3'
+      data-testid={`archetype-item-${archetype.id}`}>
+      <div className='flex flex-col gap-0'>
+        <Button
+          variant='ghost'
+          size='icon'
+          className='h-6 w-6'
+          onClick={onMoveUp}
+          disabled={index === 0}>
+          <ChevronUp className='h-4 w-4' />
+        </Button>
+        <Button
+          variant='ghost'
+          size='icon'
+          className='h-6 w-6'
+          onClick={onMoveDown}
+          disabled={index === totalCount - 1}>
+          <ChevronDown className='h-4 w-4' />
+        </Button>
+      </div>
+      {imageSrc && (
+        <img
+          src={imageSrc}
+          alt={archetype.name}
+          className='h-12 w-12 shrink-0 rounded-md object-cover'
+        />
+      )}
+      <div className='flex-1 min-w-0'>
+        {isEditing ? (
+          <div className='flex flex-col gap-2'>
+            <Input
+              value={editName}
+              onChange={(e) => onEditNameChange(e.target.value)}
+              placeholder='Name'
+            />
+            <Input
+              value={editDescription}
+              onChange={(e) => onEditDescriptionChange(e.target.value)}
+              placeholder='Description'
+            />
+            <div className='grid gap-2'>
+              <Label>Image</Label>
+              <ImageUpload
+                image={editImage || getImageFromAssetId(editAssetId)}
+                alt='Archetype image'
+                rulesetId={rulesetId}
+                onUpload={onEditImageUpload}
+                onRemove={onEditImageRemove}
+                onSetUrl={onEditSetUrl}
+              />
+            </div>
+            <div className='flex gap-2'>
+              <Button size='sm' onClick={onSaveEdit}>
+                Save
+              </Button>
+              <Button size='sm' variant='outline' onClick={onCancelEdit}>
+                Cancel
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <div>
+            <div className='font-medium'>{archetype.name}</div>
+            {archetype.description && (
+              <p className='text-sm text-muted-foreground mt-0.5'>{archetype.description}</p>
+            )}
+            {archetype.scriptId && (
+              <Link
+                to={`/rulesets/${rulesetId}/scripts/${archetype.scriptId}`}
+                className='text-sm text-primary hover:underline'>
+                View script
+              </Link>
+            )}
+          </div>
+        )}
+      </div>
+      {!isEditing && (
+        <div className='flex gap-1 shrink-0'>
+          <Button variant='ghost' size='sm' onClick={onStartEdit}>
+            Set Default Sheet
+          </Button>
+          <Button variant='ghost' size='sm' onClick={onStartEdit}>
+            <Pencil className='h-4 w-4' />
+          </Button>
+          {confirmBeforeDelete ? (
+            <Button
+              variant='ghost'
+              size='sm'
+              className='text-destructive'
+              onClick={onDelete}
+              data-testid='archetype-delete-btn'
+              aria-label={`Delete ${archetype.name}`}>
+              <Trash2 className='h-4 w-4' />
+            </Button>
+          ) : (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button
+                  variant='ghost'
+                  size='sm'
+                  className='text-destructive'
+                  data-testid='archetype-delete-btn'
+                  aria-label={`Delete ${archetype.name}`}>
+                  <Trash2 className='h-4 w-4' />
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Delete archetype?</AlertDialogTitle>
+                  This will delete the test character and all character associations. This cannot be
+                  undone.
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction
+                    className='bg-destructive text-destructive-foreground'
+                    onClick={onDelete}
+                    data-testid='archetype-delete-confirm'>
+                    Delete
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
+        </div>
+      )}
+    </Card>
+  );
+}
