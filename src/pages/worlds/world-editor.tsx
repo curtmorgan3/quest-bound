@@ -1,13 +1,16 @@
-import { useLocation, useLocations, useWorld, useWorlds } from '@/lib/compass-api';
+import {
+  useAssets,
+  useLocation,
+  useLocations,
+  useWorld,
+  useWorlds,
+} from '@/lib/compass-api';
 import type { Location } from '@/types';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { WorldEditorBackgroundDialog } from './world-editor-background-dialog';
 import { WorldEditorCanvas } from './world-editor-canvas';
 import { WorldEditorLocationPanel } from './world-editor-location-panel';
 import { WorldEditorTopBar } from './world-editor-top-bar';
-
-const DEFAULT_GRID_SIZE = 8;
 
 export function WorldEditor() {
   const { worldId, locationId: urlLocationId } = useParams<{
@@ -19,7 +22,10 @@ export function WorldEditor() {
   const urlLocation = useLocation(urlLocationId);
   const { updateWorld } = useWorlds();
   const [selectedLocationIds, setSelectedLocationIds] = useState<string[]>([]);
-  const [backgroundDialogOpen, setBackgroundDialogOpen] = useState(false);
+
+  const { assets } = useAssets(world?.rulesetId ?? null);
+  const getAssetData = (assetId: string) =>
+    assets?.find((a) => a.id === assetId)?.data ?? null;
 
   const parentStack = useMemo(() => {
     if (urlLocationId && urlLocation) return [urlLocation];
@@ -144,26 +150,12 @@ export function WorldEditor() {
         onBack={handleBack}
         onAddLocation={() => handleAddLocationAt(200, 200)}
         onAddParentToCurrent={handleAddParentToCurrent}
-        onEditBackground={() => setBackgroundDialogOpen(true)}
-      />
-      <WorldEditorBackgroundDialog
-        open={backgroundDialogOpen}
-        onOpenChange={setBackgroundDialogOpen}
-        isWorldLevel={parentStack.length === 0}
-        world={world}
-        currentLocation={currentParent}
-        worldId={worldId}
-        rulesetId={world.rulesetId}
-        getAssetData={() => null}
-        onUpdateWorld={updateWorld}
-        onUpdateLocation={updateLocation}
       />
       <div className='flex min-h-0 flex-1'>
         <div className='min-h-0 flex-1' id='world-canvas-wrap'>
           <WorldEditorCanvas
             locations={locationsList}
             parentLocationId={currentParent?.id ?? null}
-            world={parentStack.length === 0 ? world : null}
             onCreateLocation={async (wid, data) => createLocation(wid, data)}
             onUpdateLocation={updateLocation}
             onDeleteLocation={deleteLocation}
@@ -180,17 +172,18 @@ export function WorldEditor() {
           <WorldEditorLocationPanel
             key={singleSelectedLocation.id}
             location={singleSelectedLocation}
-            siblingLocations={locationsList.filter(
-              (loc) => loc.id !== singleSelectedLocation.id,
-            )}
+            siblingLocations={locationsList.filter((loc) => loc.id !== singleSelectedLocation.id)}
+            rulesetId={world.rulesetId}
+            getAssetData={getAssetData}
             onAddGrid={() => {
               updateLocation(singleSelectedLocation.id, {
-                gridWidth: DEFAULT_GRID_SIZE,
-                gridHeight: DEFAULT_GRID_SIZE,
+                hasMap: true,
               });
             }}
             onRemoveGrid={() =>
-              updateLocation(singleSelectedLocation.id, { gridWidth: 1, gridHeight: 1 })
+              updateLocation(singleSelectedLocation.id, {
+                hasMap: false,
+              })
             }
             onOpenInLocationEditor={() => {
               if (worldId)
@@ -211,9 +204,7 @@ export function WorldEditor() {
                   }
                 : undefined
             }
-            hasGrid={
-              singleSelectedLocation.gridWidth > 1 || singleSelectedLocation.gridHeight > 1
-            }
+            hasMap={singleSelectedLocation.hasMap ?? false}
           />
         )}
       </div>

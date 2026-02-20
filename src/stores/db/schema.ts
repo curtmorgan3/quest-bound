@@ -31,7 +31,7 @@ export const dbSchema = {
   worlds: `${common}, label, rulesetId, assetId, backgroundAssetId, backgroundOpacity, backgroundSize, backgroundPosition`,
   tilemaps: `${common}, label, worldId, assetId, tileHeight, tileWidth`,
   tiles: `${common}, tilemapId, tileX, tileY`,
-  locations: `${common}, label, worldId, nodeX, nodeY, nodeWidth, nodeHeight, parentLocationId, gridWidth, gridHeight, tiles, labelVisible, backgroundColor, opacity, sides, backgroundAssetId, backgroundOpacity, backgroundSize, backgroundPosition, [worldId+parentLocationId]`,
+  locations: `${common}, label, worldId, nodeX, nodeY, nodeWidth, nodeHeight, parentLocationId, gridWidth, gridHeight, tiles, labelVisible, backgroundColor, opacity, sides, backgroundAssetId, backgroundSize, backgroundPosition, [worldId+parentLocationId]`,
   locationItems: `${common}, itemId, rulesetId, worldId, locationId, tileId, sprites`,
 };
 

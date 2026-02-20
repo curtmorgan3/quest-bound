@@ -1,5 +1,6 @@
 import type { Location } from '@/types';
 import { NodeResizer, type Node, type NodeProps } from '@xyflow/react';
+import { MapPinned } from 'lucide-react';
 
 export type LocationNodeData = {
   label: string;
@@ -57,7 +58,7 @@ export function LocationNode(props: Props) {
   const opacity = location?.opacity ?? 1;
   const showLabel = location?.labelVisible !== false;
   const backgroundImageUrl = location?.backgroundImage ?? null;
-  const bgOpacity = location?.backgroundOpacity ?? 1;
+  const bgOpacity = location?.opacity ?? 1;
   const bgSize = location?.backgroundSize ?? 'cover';
   const bgPosition = location?.backgroundPosition ?? 'center';
 
@@ -99,6 +100,7 @@ export function LocationNode(props: Props) {
             opacity={opacity}
           />
         )}
+        {nodeData?.location.hasMap && <MapPinned className='h-4 w-4 mr-2' />}
         {showLabel && <span className='relative z-10'>{nodeData?.label || 'Location'}</span>}
       </div>
     </>

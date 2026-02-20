@@ -1,4 +1,4 @@
-import type { Location, World } from '@/types';
+import type { Location } from '@/types';
 import type { Node, NodeChange, NodeTypes } from '@xyflow/react';
 import {
   applyNodeChanges,
@@ -37,8 +37,6 @@ export type TranslateExtent = [[number, number], [number, number]];
 interface WorldEditorCanvasProps {
   locations: Location[];
   parentLocationId: string | null;
-  /** When at world root, world is set and its background can be shown on the canvas. */
-  world?: World | null;
   onCreateLocation: (worldId: string, data: Partial<Location>) => Promise<string | void>;
   onUpdateLocation: (id: string, data: Partial<Location>) => Promise<void>;
   onDeleteLocation: (id: string) => Promise<void>;
@@ -90,7 +88,6 @@ function PaneContextMenu({
 export function WorldEditorCanvas({
   locations,
   parentLocationId,
-  world,
   onCreateLocation,
   onUpdateLocation,
   onDeleteLocation,
@@ -116,12 +113,12 @@ export function WorldEditorCanvas({
         nodeWidth: l.nodeWidth,
         nodeHeight: l.nodeHeight,
         nodeZIndex: l.nodeZIndex,
+        hasMap: l.hasMap,
         labelVisible: l.labelVisible,
         backgroundColor: l.backgroundColor,
         opacity: l.opacity,
         sides: l.sides,
         backgroundAssetId: l.backgroundAssetId,
-        backgroundOpacity: l.backgroundOpacity,
         backgroundSize: l.backgroundSize,
         backgroundPosition: l.backgroundPosition,
       })),
@@ -286,9 +283,6 @@ export function WorldEditorCanvas({
     onSelectLocations([]);
   }, [onSelectLocations]);
 
-  const worldBackgroundUrl = world?.backgroundImage ?? null;
-  const showWorldBackground = worldBackgroundUrl && parentLocationId === null;
-
   const selectedSet = new Set(selectedLocationIds);
   const flowNodes = nodes.map((n) => ({
     ...n,
@@ -297,17 +291,6 @@ export function WorldEditorCanvas({
 
   return (
     <div className='relative h-full w-full'>
-      {showWorldBackground && (
-        <div
-          className='absolute inset-0 z-0 bg-cover bg-center bg-no-repeat'
-          style={{
-            backgroundImage: `url(${worldBackgroundUrl})`,
-            backgroundSize: world?.backgroundSize ?? 'cover',
-            backgroundPosition: world?.backgroundPosition ?? 'center',
-            opacity: world?.backgroundOpacity ?? 1,
-          }}
-        />
-      )}
       <ReactFlow
         nodes={flowNodes}
         onNodesChange={onNodesChange}
@@ -330,7 +313,7 @@ export function WorldEditorCanvas({
         nodesDraggable
         nodesConnectable={false}
         elementsSelectable
-        style={{ background: showWorldBackground ? 'transparent' : 'var(--muted)' }}
+        style={{ background: 'var(--muted)' }}
         translateExtent={translateExtent}>
         <Background variant={BackgroundVariant.Lines} gap={20} size={1} style={{ opacity: 0.1 }} />
         <Panel position='top-left'>

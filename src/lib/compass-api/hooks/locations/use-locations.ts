@@ -3,6 +3,8 @@ import { db } from '@/stores';
 import type { Location } from '@/types';
 import { useLiveQuery } from 'dexie-react-hooks';
 
+const DEFAULT_GRID_SIZE = 8;
+
 /** Pass null for world root; pass a location id to get its children. */
 export const useLocations = (
   worldId: string | undefined,
@@ -10,17 +12,14 @@ export const useLocations = (
 ) => {
   const { handleError } = useErrorHandler();
 
-  const locations = useLiveQuery(
-    async () => {
-      if (!worldId) return [] as Location[];
-      const all = await db.locations.where('worldId').equals(worldId).toArray();
-      if (parentLocationId === null) {
-        return all.filter((loc) => loc.parentLocationId == null);
-      }
-      return all.filter((loc) => loc.parentLocationId === parentLocationId);
-    },
-    [worldId, parentLocationId],
-  );
+  const locations = useLiveQuery(async () => {
+    if (!worldId) return [] as Location[];
+    const all = await db.locations.where('worldId').equals(worldId).toArray();
+    if (parentLocationId === null) {
+      return all.filter((loc) => loc.parentLocationId == null);
+    }
+    return all.filter((loc) => loc.parentLocationId === parentLocationId);
+  }, [worldId, parentLocationId]);
 
   const createLocation = async (worldId: string, data: Partial<Location>) => {
     const now = new Date().toISOString();
@@ -36,8 +35,8 @@ export const useLocations = (
         nodeY: data.nodeY ?? 0,
         nodeWidth: data.nodeWidth ?? 1,
         nodeHeight: data.nodeHeight ?? 1,
-        gridWidth: data.gridWidth ?? 1,
-        gridHeight: data.gridHeight ?? 1,
+        gridWidth: data.gridWidth ?? DEFAULT_GRID_SIZE,
+        gridHeight: data.gridHeight ?? DEFAULT_GRID_SIZE,
         tiles: data.tiles ?? [],
         createdAt: now,
         updatedAt: now,

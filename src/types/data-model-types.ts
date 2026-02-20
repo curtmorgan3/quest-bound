@@ -420,6 +420,8 @@ export type Location = BaseDetails & {
   parentLocationId?: string | null;
   gridWidth: number;
   gridHeight: number;
+  /** When true, this location has a tile map (grid) and can be opened in the location editor. */
+  hasMap?: boolean;
   tiles: TileData[];
   /** Stacking order of the node on the canvas; higher values draw on top. */
   nodeZIndex?: number;
@@ -427,7 +429,7 @@ export type Location = BaseDetails & {
   labelVisible?: boolean;
   /** CSS background color for the node. */
   backgroundColor?: string | null;
-  /** Opacity 0–1 for the node fill. */
+  /** Opacity 0–1 for the node fill and for the background image when present. */
   opacity?: number;
   /** Number of sides for polygon shape (e.g. 4 = rect, 6 = hex). */
   sides?: number;
@@ -435,8 +437,6 @@ export type Location = BaseDetails & {
   backgroundAssetId?: string | null;
   /** Resolved background image URL (injected at read from DB). */
   backgroundImage?: string | null;
-  /** Opacity of the background image (0–1). */
-  backgroundOpacity?: number;
   /** CSS background-size: cover, contain, auto, etc. */
   backgroundSize?: string | null;
   /** CSS background-position: center, top, left, etc. */

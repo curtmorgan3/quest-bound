@@ -1,14 +1,44 @@
 import { Button, Checkbox, Input, Label } from '@/components';
+import { Slider } from '@/components/ui/slider';
+import { ImageUpload } from '@/components/composites/image-upload';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import type { Location } from '@/types';
-import { Grid3X3, MapPinned, Minus } from 'lucide-react';
+import { MapPinned, Minus } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { WorldEditorLocationMove } from './world-editor-location-move';
+
+const BACKGROUND_SIZE_OPTIONS = [
+  { value: 'cover', label: 'Cover' },
+  { value: 'contain', label: 'Contain' },
+  { value: 'auto', label: 'Auto' },
+  { value: '100% 100%', label: 'Fill (stretch)' },
+];
+
+const BACKGROUND_POSITION_OPTIONS = [
+  { value: 'center', label: 'Center' },
+  { value: 'top', label: 'Top' },
+  { value: 'bottom', label: 'Bottom' },
+  { value: 'left', label: 'Left' },
+  { value: 'right', label: 'Right' },
+  { value: 'top left', label: 'Top left' },
+  { value: 'top right', label: 'Top right' },
+  { value: 'bottom left', label: 'Bottom left' },
+  { value: 'bottom right', label: 'Bottom right' },
+];
 
 export interface WorldEditorLocationPanelProps {
   location: Location;
   /** Sibling locations (same parent as this location); used for "move as child of" */
   siblingLocations: Location[];
-  hasGrid: boolean;
+  hasMap: boolean;
+  rulesetId: string | null;
+  getAssetData: (assetId: string) => string | null;
   onAddGrid: () => void;
   onRemoveGrid: () => void;
   onOpenInLocationEditor: () => void;
@@ -22,7 +52,9 @@ export interface WorldEditorLocationPanelProps {
 export function WorldEditorLocationPanel({
   location,
   siblingLocations,
-  hasGrid,
+  hasMap,
+  rulesetId,
+  getAssetData,
   onAddGrid,
   onRemoveGrid,
   onOpenInLocationEditor,
@@ -45,7 +77,9 @@ export function WorldEditorLocationPanel({
   const idPrefix = `loc-panel-${location.id}`;
 
   return (
-    <div className='flex w-56 shrink-0 flex-col gap-3 border-l bg-muted/30 p-3'>
+    <div
+      className='flex w-56 shrink-0 flex-col gap-3 border-l bg-muted/30 p-3 overflow-auto'
+      style={{ height: 'calc(100vh - 50px)' }}>
       <h3 className='text-sm font-semibold'>Location</h3>
       <div className='grid gap-1'>
         <Label htmlFor={`${idPrefix}-zindex`} className='text-xs'>
@@ -90,6 +124,57 @@ export function WorldEditorLocationPanel({
         </Label>
       </div>
       <div className='grid gap-1'>
+        <Label className='text-xs'>Background image</Label>
+        <ImageUpload
+          image={
+            location.backgroundImage ??
+            (location.backgroundAssetId ? getAssetData(location.backgroundAssetId) : null)
+          }
+          alt='Background'
+          onUpload={(id) => onUpdateLocation({ backgroundAssetId: id })}
+          onRemove={() => onUpdateLocation({ backgroundAssetId: null })}
+          rulesetId={rulesetId ?? undefined}
+        />
+      </div>
+      {location.backgroundImage && (
+        <>
+          <div className='grid gap-1'>
+            <Label className='text-xs'>Background size</Label>
+            <Select
+              value={location.backgroundSize ?? 'cover'}
+              onValueChange={(v) => onUpdateLocation({ backgroundSize: v })}>
+              <SelectTrigger className='h-8'>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {BACKGROUND_SIZE_OPTIONS.map((o) => (
+                  <SelectItem key={o.value} value={o.value}>
+                    {o.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className='grid gap-1'>
+            <Label className='text-xs'>Background position</Label>
+            <Select
+              value={location.backgroundPosition ?? 'center'}
+              onValueChange={(v) => onUpdateLocation({ backgroundPosition: v })}>
+              <SelectTrigger className='h-8'>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {BACKGROUND_POSITION_OPTIONS.map((o) => (
+                  <SelectItem key={o.value} value={o.value}>
+                    {o.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </>
+      )}
+      <div className='grid gap-1'>
         <Label htmlFor={`${idPrefix}-bg`} className='text-xs'>
           Background color
         </Label>
@@ -102,28 +187,18 @@ export function WorldEditorLocationPanel({
         />
       </div>
       <div className='grid gap-1'>
-        <Label htmlFor={`${idPrefix}-opacity`} className='text-xs'>
-          Opacity (0–1)
-        </Label>
-        <Input
-          id={`${idPrefix}-opacity`}
-          type='number'
+        <Label className='text-xs'>Opacity (0–1)</Label>
+        <Slider
           min={0}
-          max={1}
-          step={0.1}
-          value={location.opacity ?? 1}
-          onChange={(e) => {
-            const v = parseFloat(e.target.value);
-            if (!Number.isNaN(v)) onUpdateLocation({ opacity: Math.max(0, Math.min(1, v)) });
-          }}
-          onBlur={(e) => {
-            const v = parseFloat(e.target.value);
-            if (!Number.isNaN(v)) onUpdateLocation({ opacity: Math.max(0, Math.min(1, v)) });
-          }}
-          className='h-8'
+          max={100}
+          step={1}
+          value={[Math.round((location.opacity ?? 1) * 100)]}
+          onValueChange={(v) =>
+            onUpdateLocation({ opacity: Math.max(0, Math.min(1, (v[0] ?? 0) / 100)) })
+          }
         />
       </div>
-      <div className='grid gap-1'>
+      {/* <div className='grid gap-1'>
         <Label htmlFor={`${idPrefix}-sides`} className='text-xs'>
           Sides
         </Label>
@@ -143,23 +218,24 @@ export function WorldEditorLocationPanel({
           }}
           className='h-8'
         />
-      </div>
+      </div> */}
+
       <WorldEditorLocationMove
         siblingLocations={siblingLocations}
         onMoveAsChildOf={onMoveAsChildOf}
         onMoveAsSiblingOfParent={onMoveAsSiblingOfParent}
       />
       <div className='flex flex-col gap-2'>
-        {!hasGrid ? (
+        {!hasMap ? (
           <Button variant='outline' size='sm' className='gap-1' onClick={onAddGrid}>
-            <Grid3X3 className='h-4 w-4' />
-            Add grid
+            <MapPinned className='h-4 w-4' />
+            Add Map
           </Button>
         ) : (
           <>
             <Button variant='outline' size='sm' className='gap-1' onClick={onOpenInLocationEditor}>
               <MapPinned className='h-4 w-4' />
-              Open in location editor
+              Edit Map
             </Button>
             <Button
               variant='outline'
@@ -167,7 +243,7 @@ export function WorldEditorLocationPanel({
               className='gap-1 text-muted-foreground hover:text-muted-foreground'
               onClick={onRemoveGrid}>
               <Minus className='h-4 w-4' />
-              Remove grid
+              Remove Map
             </Button>
           </>
         )}
