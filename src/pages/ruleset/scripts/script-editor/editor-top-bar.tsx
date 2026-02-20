@@ -23,11 +23,17 @@ import { useCallback, type Dispatch, type SetStateAction } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { CategoryField } from './category-field';
 
-const ENTITY_TYPES = [
+const RULEST_ENTITY_TYPES = [
   { value: 'attribute', label: 'Attribute' },
   { value: 'action', label: 'Action' },
   { value: 'item', label: 'Item' },
   { value: 'archetype', label: 'Archetype' },
+  { value: 'global', label: 'Global' },
+] as const;
+
+const WORLD_ENTITY_TYPES = [
+  { value: 'location', label: 'Location' },
+  { value: 'tile', label: 'Tile' },
   { value: 'global', label: 'Global' },
 ] as const;
 
@@ -37,7 +43,7 @@ interface EditorTopBar {
   name: string;
   setName: (name: string) => void;
   entityType: Script['entityType'];
-  setEntityType: Dispatch<SetStateAction<'attribute' | 'action' | 'item' | 'archetype' | 'global'>>;
+  setEntityType: Dispatch<SetStateAction<Script['entityType']>>;
   entityId: string | null;
   setEntityId: (id: string | null) => void;
   category: string | null;
@@ -69,6 +75,8 @@ export const EditorTopBar = ({
 
   const isNew = scriptId === 'new';
   const script = isNew ? null : (scripts.find((s) => s.id === scriptId) ?? null);
+
+  const entityTypes = worldId ? WORLD_ENTITY_TYPES : RULEST_ENTITY_TYPES;
 
   const handleRun = useCallback(async () => {
     if (!activeRuleset) throw new Error('No ruleset found.');
@@ -152,7 +160,7 @@ export const EditorTopBar = ({
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            {ENTITY_TYPES.map((opt) => (
+            {entityTypes.map((opt) => (
               <SelectItem key={opt.value} value={opt.value}>
                 {opt.label}
               </SelectItem>

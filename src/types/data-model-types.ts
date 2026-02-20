@@ -328,7 +328,7 @@ export type Script = BaseDetails & {
   rulesetId: string; // Which ruleset this script belongs to
   name: string; // Script name (e.g., "hit_points", "cast_fireball")
   sourceCode: string; // Full QBScript source code
-  entityType: 'attribute' | 'action' | 'item' | 'archetype' | 'global';
+  entityType: 'attribute' | 'action' | 'item' | 'archetype' | 'location' | 'tile' | 'global';
   entityId: string | null; // ID of associated entity (null for global scripts)
   isGlobal: boolean; // Whether this is a global utility script
   enabled: boolean; // Allow disabling scripts without deleting

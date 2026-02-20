@@ -1,6 +1,7 @@
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useRulesets } from '@/lib/compass-api';
 import { useScripts } from '@/lib/compass-api/hooks/scripts/use-scripts';
+import { useWorld } from '@/lib/compass-api/hooks/worlds/use-world';
 import {
   useExecuteActionEvent,
   useExecuteArchetypeEvent,
@@ -15,7 +16,6 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { AlertCircle } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { useWorld } from '@/lib/compass-api/hooks/worlds/use-world';
 import { AttributeControls } from './script-editor/attribute-controls';
 import { EditorConsole } from './script-editor/editor-console';
 import { EditorTopBar } from './script-editor/editor-top-bar';
@@ -36,7 +36,11 @@ function getAutocompletePreference(): boolean {
 }
 
 export function ScriptEditorPage() {
-  const { rulesetId: rulesetIdParam, scriptId, worldId } = useParams<{
+  const {
+    rulesetId: rulesetIdParam,
+    scriptId,
+    worldId,
+  } = useParams<{
     rulesetId?: string;
     scriptId: string;
     worldId?: string;
@@ -74,8 +78,10 @@ export function ScriptEditorPage() {
     ...archetypeEventAnnouncements,
   ];
 
+  const defaultEntityType = worldId ? 'location' : 'attribute';
+
   const [name, setName] = useState('');
-  const [entityType, setEntityType] = useState<Script['entityType']>('attribute');
+  const [entityType, setEntityType] = useState<Script['entityType']>(defaultEntityType);
   const [category, setCategory] = useState<string | null>(null);
 
   const [entityId, setEntityId] = useState<string | null>(null);
@@ -139,7 +145,16 @@ export function ScriptEditorPage() {
         worldId={worldId}
         sourceCode={sourceCode}
         scriptExecutionHook={workerHook}
-        {...{ name, setName, entityId, setEntityId, entityType, setEntityType, category, setCategory }}
+        {...{
+          name,
+          setName,
+          entityId,
+          setEntityId,
+          entityType,
+          setEntityType,
+          category,
+          setCategory,
+        }}
       />
 
       <div className='flex-1 flex flex-col min-h-0 gap-4'>
