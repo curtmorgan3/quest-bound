@@ -1,4 +1,4 @@
-import type { Location } from '@/types';
+import type { Location, World } from '@/types';
 import type { Node, NodeChange, NodeTypes } from '@xyflow/react';
 import {
   applyNodeChanges,
@@ -13,7 +13,9 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { LocationNode, type LocationNodeData } from './location-node';
 
-const nodeTypes: NodeTypes = { location: LocationNode as NodeTypes['location'] };
+const nodeTypes: NodeTypes = {
+  location: LocationNode as NodeTypes['location'],
+};
 
 function locationsToNodes(locations: Location[]): Node<LocationNodeData>[] {
   return locations.map((loc) => ({
@@ -31,6 +33,8 @@ export type TranslateExtent = [[number, number], [number, number]];
 interface WorldEditorCanvasProps {
   locations: Location[];
   parentLocationId: string | null;
+  /** When at world root, world is set and its background can be shown on the canvas. */
+  world?: World | null;
   onCreateLocation: (worldId: string, data: Partial<Location>) => Promise<string | void>;
   onUpdateLocation: (id: string, data: Partial<Location>) => Promise<void>;
   onDeleteLocation: (id: string) => Promise<void>;
@@ -82,6 +86,7 @@ function PaneContextMenu({
 export function WorldEditorCanvas({
   locations,
   parentLocationId,
+  world,
   onCreateLocation,
   onUpdateLocation,
   onDeleteLocation,
@@ -106,6 +111,14 @@ export function WorldEditorCanvas({
         nodeY: l.nodeY,
         nodeWidth: l.nodeWidth,
         nodeHeight: l.nodeHeight,
+        labelVisible: l.labelVisible,
+        backgroundColor: l.backgroundColor,
+        opacity: l.opacity,
+        sides: l.sides,
+        backgroundAssetId: l.backgroundAssetId,
+        backgroundOpacity: l.backgroundOpacity,
+        backgroundSize: l.backgroundSize,
+        backgroundPosition: l.backgroundPosition,
       })),
     );
     if (lastLocationsSigRef.current === sig) return;
@@ -113,12 +126,16 @@ export function WorldEditorCanvas({
 
     setNodes((prev) => {
       const prevById = new Map(prev.map((p) => [p.id, p]));
+      const nodeData = (loc: Location) => ({
+        label: loc.label,
+        location: loc,
+      });
       return locations.map((loc) => {
         const existing = prevById.get(loc.id);
         if (existing) {
           return {
             ...existing,
-            data: { label: loc.label, location: loc },
+            data: nodeData(loc),
             style: { width: loc.nodeWidth, height: loc.nodeHeight },
           };
         }
@@ -126,7 +143,7 @@ export function WorldEditorCanvas({
           id: loc.id,
           type: 'location' as const,
           position: { x: loc.nodeX, y: loc.nodeY },
-          data: { label: loc.label, location: loc },
+          data: nodeData(loc),
           style: { width: loc.nodeWidth, height: loc.nodeHeight },
         };
       });
@@ -142,7 +159,9 @@ export function WorldEditorCanvas({
         if ('id' in c) onDeleteLocation(c.id);
       });
 
-      const toUpdate = changes.filter((c) => c.type === 'position' || c.type === 'dimensions');
+      const toUpdate = changes.filter(
+        (c) => c.type === 'position' || c.type === 'dimensions',
+      );
       toUpdate.forEach((c: NodeChange<Node<LocationNodeData>>) => {
         if (c.type === 'position' && 'position' in c && c.position) {
           onUpdateLocation(c.id, { nodeX: c.position.x, nodeY: c.position.y });
@@ -250,13 +269,29 @@ export function WorldEditorCanvas({
     onSelectLocation(null);
   }, [onSelectLocation]);
 
+  const worldBackgroundUrl = world?.backgroundImage ?? null;
+  const showWorldBackground = worldBackgroundUrl && parentLocationId === null;
+
+  const flowNodes = nodes.map((n) => ({
+    ...n,
+    selected: n.id === selectedLocationId,
+  }));
+
   return (
     <div className='relative h-full w-full'>
+      {showWorldBackground && (
+        <div
+          className='absolute inset-0 z-0 bg-cover bg-center bg-no-repeat'
+          style={{
+            backgroundImage: `url(${worldBackgroundUrl})`,
+            backgroundSize: world?.backgroundSize ?? 'cover',
+            backgroundPosition: world?.backgroundPosition ?? 'center',
+            opacity: world?.backgroundOpacity ?? 1,
+          }}
+        />
+      )}
       <ReactFlow
-        nodes={nodes.map((n) => ({
-          ...n,
-          selected: n.id === selectedLocationId,
-        }))}
+        nodes={flowNodes}
         onNodesChange={onNodesChange}
         nodeTypes={nodeTypes}
         onPaneContextMenu={handlePaneContextMenu}
@@ -277,7 +312,7 @@ export function WorldEditorCanvas({
         nodesDraggable
         nodesConnectable={false}
         elementsSelectable
-        style={{ background: 'var(--muted)' }}
+        style={{ background: showWorldBackground ? 'transparent' : 'var(--muted)' }}
         translateExtent={translateExtent}>
         <Background variant={BackgroundVariant.Lines} gap={20} size={1} style={{ opacity: 0.1 }} />
         <Panel position='top-left'>

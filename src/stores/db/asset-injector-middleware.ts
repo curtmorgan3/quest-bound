@@ -1,26 +1,33 @@
 import type { DBCore, Middleware } from 'dexie';
 import { memoizedAssets } from './memoization-cache';
 
-function injectImageData(record: any) {
-  if (record?.assetUrl) {
-    return {
-      ...record,
-      image: record.assetUrl,
-    };
-  }
-
-  if (!record?.assetId) return record;
-
+function resolveAssetUrl(assetId: string | null | undefined): string | undefined {
+  if (!assetId) return undefined;
   try {
-    const asset = memoizedAssets[record.assetId];
-    if (asset) {
-      return { ...record, image: asset };
-    }
-  } catch (error) {
-    console.warn(`Failed to load asset for asset ${record.assetId}:`, error);
+    return memoizedAssets[assetId];
+  } catch {
+    return undefined;
+  }
+}
+
+function injectImageData(record: any) {
+  if (!record) return record;
+
+  let next = record;
+
+  if (record.assetUrl) {
+    next = { ...next, image: record.assetUrl };
+  } else if (record.assetId) {
+    const asset = resolveAssetUrl(record.assetId);
+    if (asset) next = { ...next, image: asset };
   }
 
-  return record;
+  if (record.backgroundAssetId) {
+    const backgroundImage = resolveAssetUrl(record.backgroundAssetId);
+    if (backgroundImage) next = { ...next, backgroundImage };
+  }
+
+  return next;
 }
 
 export const assetInjectorMiddleware: Middleware<DBCore> = {
@@ -44,6 +51,8 @@ export const assetInjectorMiddleware: Middleware<DBCore> = {
             'documents',
             'attributes',
             'pages',
+            'worlds',
+            'locations',
           ].indexOf(tableName) === -1
         ) {
           return downlevelTable;

@@ -382,6 +382,16 @@ export type World = BaseDetails & {
   label: string;
   rulesetId: string;
   assetId?: string | null;
+  /** Asset id for canvas background image. */
+  backgroundAssetId?: string | null;
+  /** Resolved background image URL (injected at read from DB). */
+  backgroundImage?: string | null;
+  /** Opacity of the background image (0–1). */
+  backgroundOpacity?: number;
+  /** CSS background-size: cover, contain, auto, etc. */
+  backgroundSize?: string | null;
+  /** CSS background-position: center, top, left, etc. */
+  backgroundPosition?: string | null;
 };
 
 export type Tilemap = BaseDetails & {
@@ -409,6 +419,24 @@ export type Location = BaseDetails & {
   gridWidth: number;
   gridHeight: number;
   tiles: TileData[];
+  /** Whether to show the label on the node. */
+  labelVisible?: boolean;
+  /** CSS background color for the node. */
+  backgroundColor?: string | null;
+  /** Opacity 0–1 for the node fill. */
+  opacity?: number;
+  /** Number of sides for polygon shape (e.g. 4 = rect, 6 = hex). */
+  sides?: number;
+  /** Asset id for node background image. */
+  backgroundAssetId?: string | null;
+  /** Resolved background image URL (injected at read from DB). */
+  backgroundImage?: string | null;
+  /** Opacity of the background image (0–1). */
+  backgroundOpacity?: number;
+  /** CSS background-size: cover, contain, auto, etc. */
+  backgroundSize?: string | null;
+  /** CSS background-position: center, top, left, etc. */
+  backgroundPosition?: string | null;
 };
 
 export type LocationItem = BaseDetails & {
