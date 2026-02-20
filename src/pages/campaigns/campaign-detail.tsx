@@ -1,9 +1,5 @@
 import { Button, Card } from '@/components';
-import {
-  useCampaign,
-  useRulesets,
-  useWorlds,
-} from '@/lib/compass-api';
+import { useCampaign, useRulesets, useWorlds } from '@/lib/compass-api';
 import { useNavigate, useParams } from 'react-router-dom';
 
 export function CampaignDetail() {
@@ -37,14 +33,7 @@ export function CampaignDetail() {
 
   return (
     <div className='flex h-full w-full flex-col gap-6 p-4'>
-      <div className='flex items-center justify-between'>
-        <h1 className='text-4xl font-bold'>
-          {campaign.label || 'Unnamed campaign'}
-        </h1>
-        <Button variant='outline' onClick={() => navigate('/campaigns')}>
-          Back to campaigns
-        </Button>
-      </div>
+      <h1 className='text-4xl font-bold'>{campaign.label || 'Unnamed campaign'}</h1>
 
       <Card className='flex flex-col gap-4 p-4'>
         <div>

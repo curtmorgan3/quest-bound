@@ -88,10 +88,6 @@ export function CampaignWorldView() {
   return (
     <div className='flex h-full w-full flex-col'>
       <div className='flex shrink-0 flex-wrap items-center gap-2 border-b bg-background px-4 py-2'>
-        <Button variant='ghost' size='sm' onClick={() => navigate(`/campaigns/${campaignId}`)}>
-          Back to campaign
-        </Button>
-        <span className='truncate font-semibold'>{world.label}</span>
         {parentStack.map((loc) => (
           <span key={loc.id} className='flex items-center gap-1 text-muted-foreground'>
             <ChevronRight className='h-4 w-4' />
@@ -124,7 +120,7 @@ export function CampaignWorldView() {
           </div>
         )}
         {viewMode === 'location' && selectedLocationId && (
-          <div className='flex justify-center'>
+          <div className='flex justify-center items-center h-full'>
             <LocationViewer
               locationId={selectedLocationId}
               worldId={campaign.worldId}

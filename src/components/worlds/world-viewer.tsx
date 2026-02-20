@@ -1,6 +1,6 @@
 import type { Location } from '@/types';
 import type { Node, NodeProps, NodeTypes } from '@xyflow/react';
-import { Background, BackgroundVariant, ReactFlow } from '@xyflow/react';
+import { ReactFlow } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { MapPinned } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
@@ -133,8 +133,8 @@ export function WorldViewer({
         onNodeDoubleClick={handleNodeDoubleClick}
         onNodeClick={(e) => e.preventDefault()}
         zoomOnDoubleClick={false}
-        minZoom={0.8}
-        maxZoom={2}
+        minZoom={0.6}
+        maxZoom={2.6}
         defaultViewport={{ x: 0, y: 0, zoom: 1 }}
         fitView
         panOnDrag
@@ -143,9 +143,7 @@ export function WorldViewer({
         nodesConnectable={false}
         elementsSelectable={false}
         style={{ background: 'var(--muted)' }}
-        translateExtent={translateExtent}>
-        <Background variant={BackgroundVariant.Lines} gap={20} size={1} style={{ opacity: 0.1 }} />
-      </ReactFlow>
+        translateExtent={translateExtent}></ReactFlow>
 
       {doubleClickMenu && (
         <>

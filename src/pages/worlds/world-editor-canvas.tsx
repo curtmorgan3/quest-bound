@@ -1,13 +1,6 @@
 import type { Location } from '@/types';
 import type { Node, NodeChange, NodeTypes } from '@xyflow/react';
-import {
-  applyNodeChanges,
-  Background,
-  BackgroundVariant,
-  Panel,
-  ReactFlow,
-  useReactFlow,
-} from '@xyflow/react';
+import { applyNodeChanges, Panel, ReactFlow, useReactFlow } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
@@ -117,7 +110,6 @@ export function WorldEditorCanvas({
         labelVisible: l.labelVisible,
         backgroundColor: l.backgroundColor,
         opacity: l.opacity,
-        sides: l.sides,
         backgroundAssetId: l.backgroundAssetId,
         backgroundSize: l.backgroundSize,
         backgroundPosition: l.backgroundPosition,
@@ -166,9 +158,7 @@ export function WorldEditorCanvas({
         if ('id' in c) onDeleteLocation(c.id);
       });
 
-      const toUpdate = changes.filter(
-        (c) => c.type === 'position' || c.type === 'dimensions',
-      );
+      const toUpdate = changes.filter((c) => c.type === 'position' || c.type === 'dimensions');
       toUpdate.forEach((c: NodeChange<Node<LocationNodeData>>) => {
         if (c.type === 'position' && 'position' in c && c.position) {
           onUpdateLocation(c.id, { nodeX: c.position.x, nodeY: c.position.y });
@@ -300,11 +290,9 @@ export function WorldEditorCanvas({
         onNodeContextMenu={handleNodeContextMenu}
         onNodeClick={handleNodeClick}
         onNodeDoubleClick={handleDoubleClick}
-        minZoom={0.8}
-        maxZoom={2}
+        minZoom={0.6}
+        maxZoom={2.6}
         defaultViewport={{ x: 0, y: 0, zoom: 1 }}
-        snapGrid={[20, 20]}
-        snapToGrid
         fitView
         panOnDrag
         panOnScroll
@@ -315,7 +303,6 @@ export function WorldEditorCanvas({
         elementsSelectable
         style={{ background: 'var(--muted)' }}
         translateExtent={translateExtent}>
-        <Background variant={BackgroundVariant.Lines} gap={20} size={1} style={{ opacity: 0.1 }} />
         <Panel position='top-left'>
           <PaneContextMenu
             paneMenu={paneMenu}
