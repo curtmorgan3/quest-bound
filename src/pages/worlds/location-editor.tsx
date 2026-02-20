@@ -80,10 +80,12 @@ export function LocationEditor() {
 
   const tilesByKey = useMemo(() => getTilesByKey(loc?.tiles ?? []), [loc?.tiles]);
   const isPaintingRef = useRef(false);
+  const pendingPaintKeysRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     const onMouseUp = () => {
       isPaintingRef.current = false;
+      pendingPaintKeysRef.current = new Set();
     };
     document.addEventListener('mouseup', onMouseUp);
     return () => document.removeEventListener('mouseup', onMouseUp);
@@ -106,10 +108,22 @@ export function LocationEditor() {
     if (loc) updateLocation(loc.id, { gridWidth: w, gridHeight: h });
   };
 
+  const existingKeys = useMemo(() => {
+    const keys = new Set<string>();
+    for (const td of loc?.tiles ?? []) {
+      keys.add(`${td.x},${td.y},${td.tileId},${td.zIndex ?? 0}`);
+    }
+    return keys;
+  }, [loc?.tiles]);
+
   const applyTileToCell = (x: number, y: number) => {
     if (!loc || selectedTiles.length === 0) return;
+    const hasKey = (key: string) => existingKeys.has(key) || pendingPaintKeysRef.current.has(key);
     if (selectedTiles.length === 1) {
       const t = selectedTiles[0];
+      const key = `${x},${y},${t.id},${paintLayer}`;
+      if (hasKey(key)) return;
+      pendingPaintKeysRef.current.add(key);
       const newTile: TileData = {
         id: crypto.randomUUID(),
         tileId: t.id,
@@ -134,6 +148,9 @@ export function LocationEditor() {
       const cx = x + (t.tileX ?? 0) - baseX;
       const cy = y + (t.tileY ?? 0) - baseY;
       if (cx >= 0 && cx < gridWidth && cy >= 0 && cy < gridHeight) {
+        const key = `${cx},${cy},${t.id},${paintLayer}`;
+        if (hasKey(key)) continue;
+        pendingPaintKeysRef.current.add(key);
         newTilesData.push({
           id: crypto.randomUUID(),
           tileId: t.id,
@@ -144,6 +161,7 @@ export function LocationEditor() {
         });
       }
     }
+    if (newTilesData.length === 0) return;
     updateLocation(loc.id, { tiles: [...(loc.tiles ?? []), ...newTilesData] });
   };
 
