@@ -30,11 +30,11 @@ export interface ScriptImportResult {
  */
 export async function linkScriptToEntity(
   rulesetId: string,
-  entityType: 'attribute' | 'action' | 'item' | 'archetype' | 'global',
+  entityType: 'attribute' | 'action' | 'item' | 'archetype' | 'global' | 'characterLoader',
   entityName: string,
 ): Promise<string | null> {
-  if (entityType === 'global') {
-    return null; // Global scripts don't link to entities
+  if (entityType === 'global' || entityType === 'characterLoader') {
+    return null; // Global and Character Loader scripts don't link to entities
   }
 
   try {
@@ -133,8 +133,17 @@ export async function importScript(
     warnings.push(`Script ${scriptName} has empty source code. Importing anyway for later editing.`);
   }
 
+  if (entityType === 'characterLoader') {
+    entityId = null; // Only one per ruleset; no entity link
+  }
+
   // Try to link to entity if we have an entity name but no entity ID
-  if (!isGlobal && entityName && !entityId) {
+  if (
+    !isGlobal &&
+    entityType !== 'characterLoader' &&
+    entityName &&
+    !entityId
+  ) {
     entityId = await linkScriptToEntity(rulesetId, entityType, entityName);
     if (!entityId) {
       warnings.push(
@@ -151,6 +160,18 @@ export async function importScript(
       scriptName = uniqueName;
     }
     existingScriptNames.add(scriptName);
+  }
+
+  if (entityType === 'characterLoader') {
+    const existing = await db.scripts
+      .where({ rulesetId, entityType: 'characterLoader' })
+      .first();
+    if (existing) {
+      warnings.push(
+        `Character Loader script "${scriptName}" not imported: this ruleset already has a Character Loader script.`,
+      );
+      return { success: true, warnings, errors };
+    }
   }
 
   // Create script record

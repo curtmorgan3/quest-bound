@@ -29,19 +29,18 @@ const ENTITY_TYPE_OPTIONS = [
   { value: 'attribute', label: 'Attribute' },
   { value: 'action', label: 'Action' },
   { value: 'item', label: 'Item' },
+  { value: 'archetype', label: 'Archetype' },
   { value: 'global', label: 'Global' },
+  { value: 'characterLoader', label: 'Character Loader' },
 ] as const;
 
 const VALID_TYPES = new Set(ENTITY_TYPE_OPTIONS.map((o) => o.value));
 
-function typeFromParams(searchParams: URLSearchParams): string {
-  const type = (searchParams.get('type') ?? 'all') as
-    | 'all'
-    | 'attribute'
-    | 'action'
-    | 'item'
-    | 'global';
-  return VALID_TYPES.has(type) ? type : 'all';
+type EntityTypeFilter = (typeof ENTITY_TYPE_OPTIONS)[number]['value'];
+
+function typeFromParams(searchParams: URLSearchParams): EntityTypeFilter {
+  const type = searchParams.get('type') ?? 'all';
+  return VALID_TYPES.has(type as EntityTypeFilter) ? (type as EntityTypeFilter) : 'all';
 }
 
 function nameFromParams(searchParams: URLSearchParams): string {

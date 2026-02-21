@@ -19,7 +19,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { Pencil } from 'lucide-react';
+import { FileText, Pencil } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useState } from 'react';
 
@@ -48,6 +48,8 @@ interface Props {
   onOpen: (id: string) => void;
   onEdit: (title: string, category?: string) => void;
   onEditDetails?: () => void;
+  /** Edit markdown content (distinct from details). Shown as second icon when provided. */
+  onEditMarkdown?: () => void;
   categoryEditable?: boolean;
 }
 
@@ -64,6 +66,7 @@ export const PreviewCard = ({
   onOpen,
   onEdit,
   onEditDetails,
+  onEditMarkdown,
   categoryEditable = true,
 }: Props) => {
   const [editingTitle, setEditingTitle] = useState(false);
@@ -256,8 +259,13 @@ export const PreviewCard = ({
         <CardAction>
           <div className='flex gap-1'>
             {!!onEditDetails && (
-              <Button variant='ghost' size='sm' onClick={onEditDetails}>
+              <Button variant='ghost' size='sm' onClick={onEditDetails} aria-label='Edit details'>
                 <Pencil className='h-4 w-4' />
+              </Button>
+            )}
+            {!!onEditMarkdown && (
+              <Button variant='ghost' size='sm' onClick={onEditMarkdown} aria-label='Edit content'>
+                <FileText className='h-4 w-4' />
               </Button>
             )}
             <Button

@@ -7,7 +7,7 @@ import { analyzeScript } from './script-analyzer';
  */
 export interface GraphNode {
   scriptId: string;
-  entityType: 'attribute' | 'action' | 'item' | 'archetype' | 'location' | 'tile' | 'global';
+  entityType: 'attribute' | 'action' | 'item' | 'archetype' | 'global' | 'characterLoader';
   entityId: string | null;
   dependencies: Set<string>; // Attribute IDs this script depends on
   dependents: Set<string>; // Script IDs that depend on this script's entity

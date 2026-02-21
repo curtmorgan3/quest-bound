@@ -6,8 +6,10 @@ import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useActiveRuleset } from '../rulesets/use-active-ruleset';
 import { useWorld } from '../worlds/use-world';
 
-function getEntityTable(entityType: Script['entityType']) {
-  if (entityType === 'global') return;
+function getEntityTable(
+  entityType: 'attribute' | 'action' | 'item' | 'archetype' | 'global' | 'characterLoader',
+) {
+  if (entityType === 'global' || entityType === 'characterLoader') return;
   return entityType === 'attribute'
     ? db.attributes
     : entityType === 'action'
@@ -47,19 +49,39 @@ export const useScripts = (worldId?: string) => {
     if (!effectiveRulesetId) return;
     const now = new Date().toISOString();
     try {
-      const scriptId = crypto.randomUUID();
-      await db.scripts.add({
+      const entityType = data.entityType ?? 'attribute';
+      const payload = {
         ...data,
-        id: scriptId,
-        rulesetId: effectiveRulesetId,
-        ...(worldId != null && { worldId }),
+        entityType,
+        entityId:
+          entityType === 'global' || entityType === 'characterLoader' ? null : data.entityId,
+        isGlobal: entityType === 'global',
+        id: undefined as string | undefined,
+        rulesetId: activeRuleset.id,
         createdAt: now,
         updatedAt: now,
+      };
+
+      if (entityType === 'characterLoader') {
+        const existing = await db.scripts
+          .where({ rulesetId: activeRuleset.id, entityType: 'characterLoader' })
+          .first();
+        if (existing) {
+          throw new Error(
+            'This ruleset already has a Character Loader script. Only one is allowed.',
+          );
+        }
+      }
+
+      const scriptId = crypto.randomUUID();
+      await db.scripts.add({
+        ...payload,
+        id: scriptId,
       } as Script);
 
       // If associated with an entity, update the entity's scriptId
-      if (data.entityId && data.entityType && data.entityType !== 'global') {
-        await getEntityTable(data.entityType)?.update(data.entityId, { scriptId });
+      if (payload.entityId && entityType !== 'global' && entityType !== 'characterLoader') {
+        await getEntityTable(entityType)?.update(payload.entityId, { scriptId });
       }
 
       return scriptId;
@@ -84,14 +106,28 @@ export const useScripts = (worldId?: string) => {
 
       const newEntityType = data.entityType ?? existing.entityType;
       const newEntityId =
-        newEntityType === 'global'
+        newEntityType === 'global' || newEntityType === 'characterLoader'
           ? null
           : data.entityId !== undefined
             ? data.entityId
             : existing.entityId;
 
-      const oldEntityId = existing.entityType !== 'global' ? existing.entityId : null;
+      const oldEntityId =
+        existing.entityType !== 'global' && existing.entityType !== 'characterLoader'
+          ? existing.entityId
+          : null;
       const oldEntityType = existing.entityType;
+
+      if (newEntityType === 'characterLoader') {
+        const other = await db.scripts
+          .where({ rulesetId: existing.rulesetId, entityType: 'characterLoader' })
+          .first();
+        if (other && other.id !== id) {
+          throw new Error(
+            'This ruleset already has a Character Loader script. Only one is allowed.',
+          );
+        }
+      }
 
       // Clear scriptId on the previous entity if the association changed
       if (oldEntityId && (oldEntityId !== newEntityId || oldEntityType !== newEntityType)) {
@@ -103,7 +139,7 @@ export const useScripts = (worldId?: string) => {
       }
 
       // Set scriptId on the new entity when associated with this script
-      if (newEntityId && newEntityType !== 'global') {
+      if (newEntityId && newEntityType !== 'global' && newEntityType !== 'characterLoader') {
         await getEntityTable(newEntityType)?.update(newEntityId, { scriptId: id });
       }
     } catch (e) {

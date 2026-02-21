@@ -3,6 +3,7 @@ import { useActiveRuleset, useDocuments } from '@/lib/compass-api';
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PreviewCard } from '../components';
+import { MarkdownEditorPanel } from './markdown-editor-panel';
 
 interface DocumentChartProps {
   onEditDetails?: (id: string) => void;
@@ -16,6 +17,8 @@ export const Documents = ({ onEditDetails }: DocumentChartProps) => {
   const navigate = useNavigate();
   const [filterValue, setFilterValue] = useState('');
   const [categoryFilter, setCategoryFilter] = useState(ALL_CATEGORIES);
+  const [markdownPanelDocumentId, setMarkdownPanelDocumentId] = useState<string | null>(null);
+  const [markdownPanelOpen, setMarkdownPanelOpen] = useState(false);
 
   const categories = useMemo(() => {
     const set = new Set<string>();
@@ -59,7 +62,15 @@ export const Documents = ({ onEditDetails }: DocumentChartProps) => {
       </div>
       <div className='flex gap-2 flex-wrap'>
         {filteredDocuments.map((doc) => {
-          const hasPdf = !!doc.pdfData;
+          const hasPdf = !!doc.pdfData || !!doc.pdfAssetId;
+          const hasMarkdown = !!doc.markdownData;
+          const canOpen = hasPdf || hasMarkdown;
+          const canEditMarkdown = !hasPdf; // Either add or edit markdown when no PDF
+          const descriptionExtra = hasPdf ? (
+            <span className='text-xs text-primary'>PDF</span>
+          ) : hasMarkdown ? (
+            <span className='text-xs text-primary'>Markdown</span>
+          ) : undefined;
           return (
             <PreviewCard
               key={doc.id}
@@ -69,18 +80,34 @@ export const Documents = ({ onEditDetails }: DocumentChartProps) => {
               category={doc.category}
               image={doc.image}
               titleClassName={doc.moduleId ? 'text-module-origin' : undefined}
-              descriptionExtra={
-                hasPdf ? <span className='text-xs text-primary'>PDF attached</span> : undefined
-              }
-              openDisabled={!hasPdf}
+              descriptionExtra={descriptionExtra}
+              openDisabled={!canOpen}
               onDelete={() => deleteDocument(doc.id)}
               onOpen={() => navigate(`/rulesets/${activeRuleset?.id}/documents/${doc.id}`)}
               onEdit={(title, category) => updateDocument(doc.id, { title, category })}
               onEditDetails={onEditDetails ? () => onEditDetails(doc.id) : undefined}
+              onEditMarkdown={
+                canEditMarkdown
+                  ? () => {
+                      setMarkdownPanelDocumentId(doc.id);
+                      setMarkdownPanelOpen(true);
+                    }
+                  : undefined
+              }
             />
           );
         })}
       </div>
+      <MarkdownEditorPanel
+        open={markdownPanelOpen}
+        onOpenChange={(open) => {
+          setMarkdownPanelOpen(open);
+          if (!open) setMarkdownPanelDocumentId(null);
+        }}
+        documentId={markdownPanelDocumentId}
+        mode='edit'
+        rulesetId={activeRuleset?.id}
+      />
     </div>
   );
 };

@@ -9,7 +9,7 @@ export const dbSchema = {
   actions: `${common}, rulesetId, title, description, category, scriptId, moduleId`,
   items: `${common}, rulesetId, title, description, category, weight, defaultQuantity, stackSize, isContainer, isStorable, isEquippable, isConsumable, inventoryWidth, inventoryHeight, scriptId, moduleId, sprites`,
   charts: `${common}, rulesetId, title, description, category, data, assetId, image, moduleId`,
-  documents: `${common}, rulesetId, title, description, category, assetId, image, pdfAssetId, pdfData, moduleId`,
+  documents: `${common}, rulesetId, title, description, category, assetId, image, pdfAssetId, pdfData, markdownData, moduleId`,
   windows: `${common}, rulesetId, title, category, moduleId`,
   pages: `${common}, label, category, moduleId`,
   components: `${common}, rulesetId, windowId, type, x, y, z, height, width, rotation, selected, assetId, assetUrl, groupId, attributeId, actionId, data, style`,
@@ -24,7 +24,7 @@ export const dbSchema = {
   characterAttributes: `${common}, characterId, attributeId, &[characterId+attributeId], scriptDisabled`,
   characterArchetypes: `${common}, characterId, archetypeId, loadOrder, &[characterId+archetypeId]`,
   diceRolls: `${common}, rulesetId, userId, value, label, moduleId`,
-  scripts: `${common}, rulesetId, worldId, name, entityType, entityId, isGlobal, enabled, category, moduleId, [entityId+entityType]`,
+  scripts: `${common}, rulesetId, name, entityType, entityId, isGlobal, enabled, category, moduleId, [entityId+entityType], [rulesetId+entityType]`,
   scriptErrors: `${common}, rulesetId, scriptId, characterId, timestamp`,
   scriptLogs: `${common}, rulesetId, scriptId, characterId, timestamp, [entityId+entityType]`,
   dependencyGraphNodes: `${common}, rulesetId, scriptId, entityType, entityId`,
@@ -40,4 +40,4 @@ export const dbSchema = {
 };
 
 // Increment on every schema change
-export const dbSchemaVersion = 41;
+export const dbSchemaVersion = 33;

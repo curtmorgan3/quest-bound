@@ -1,4 +1,5 @@
 import { Button } from '@/components';
+import { DocumentMarkdownContent } from '@/components/composites/document-markdown-content';
 import { useIsMobileDevice } from '@/hooks/use-mobile-device';
 import { useCharacter, useDocuments } from '@/lib/compass-api';
 import { ArrowLeft, Download } from 'lucide-react';
@@ -152,9 +153,17 @@ export const DocumentViewer = () => {
           <div className='flex items-center justify-center h-full'>
             <p className='text-muted-foreground'>Loading PDF...</p>
           </div>
+        ) : document.markdownData ? (
+          <div className='flex flex-1 flex-col overflow-auto'>
+            <DocumentMarkdownContent
+              value={document.markdownData}
+              mode='view'
+              placeholder='No content.'
+            />
+          </div>
         ) : (
           <div className='flex items-center justify-center h-full'>
-            <p className='text-muted-foreground'>No PDF attached to this document</p>
+            <p className='text-muted-foreground'>No PDF or markdown content for this document</p>
           </div>
         )}
       </div>

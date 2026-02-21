@@ -130,6 +130,12 @@ code {
   text-decoration: underline;
 }
 
+.md-content img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
 .react-flow__attribution a {
   color: #000;
   opacity: 0.4;
