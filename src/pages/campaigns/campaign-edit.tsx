@@ -1,201 +1,47 @@
 import { LocationViewer, getTopTileDataAt } from '@/components/locations';
-import type { LocationViewerOverlayNode } from '@/components/locations/location-viewer';
 import { Button } from '@/components/ui/button';
 import { WorldViewer } from '@/components/worlds/world-viewer';
 import {
   useCampaign,
-  useCampaignCharacters,
-  useCampaignEventLocations,
   useCampaignEventLocationsByLocation,
-  useCampaignEvents,
-  useCampaignItems,
   useLocation,
   useLocations,
   useWorld,
 } from '@/lib/compass-api';
-import { useCharacter } from '@/lib/compass-api/hooks/characters/use-character';
-import { db } from '@/stores';
-import type {
-  CampaignCharacter,
-  CampaignEventType,
-  CampaignItem,
-  Character,
-  Item,
-  TileData,
-} from '@/types';
-import { useLiveQuery } from 'dexie-react-hooks';
+import type { TileData } from '@/types';
 import { ArrowUp, ChevronRight } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { CampaignEditTileMenu } from './campaign-edit-tile-menu';
+import {
+  useCampaignEditHandlers,
+  useLocationEntities,
+  useMapHelpers,
+  type TileMenu,
+} from './hooks';
 
 export function CampaignEdit() {
   const { campaignId, locationId: locationIdParam } = useParams<{
     campaignId: string;
     locationId?: string;
   }>();
+  const selectedLocationId = locationIdParam ?? null;
+
   const navigate = useNavigate();
   const campaign = useCampaign(campaignId);
   const world = useWorld(campaign?.worldId);
-  const selectedLocationId = locationIdParam ?? null;
   const { locations: rootLocations, updateLocation } = useLocations(campaign?.worldId, null);
-  const currentLocation = useLocation(selectedLocationId ?? undefined);
   const { locations: childLocations } = useLocations(campaign?.worldId, selectedLocationId);
-  const { updateCampaignEventLocation } = useCampaignEventLocations(undefined);
-  const { createCharacter } = useCharacter();
-  const { campaignCharacters, createCampaignCharacter, updateCampaignCharacter } =
-    useCampaignCharacters(campaignId);
-  const { campaignItems, createCampaignItem, updateCampaignItem, deleteCampaignItem } =
-    useCampaignItems(campaignId);
-  const { createCampaignEvent, deleteCampaignEvent } = useCampaignEvents(campaignId);
-  const { createCampaignEventLocation, deleteCampaignEventLocation } =
-    useCampaignEventLocations(undefined);
+
+  const currentLocation = useLocation(selectedLocationId ?? undefined);
+
   const eventLocationsWithEvent = useCampaignEventLocationsByLocation(
     selectedLocationId ?? undefined,
   );
   const [movingEventLocationId, setMovingEventLocationId] = useState<string | null>(null);
-  const [tileMenu, setTileMenu] = useState<{
-    x: number;
-    y: number;
-    clientX: number;
-    clientY: number;
-    /** Set when we just created a blank tile; use as tileId until location refetches. */
-    createdTileId?: string;
-  } | null>(null);
+  const [tileMenu, setTileMenu] = useState<TileMenu>(null);
 
   const locationsList = selectedLocationId ? childLocations : rootLocations;
-
-  const handleAdvanceToLocation = useCallback(
-    (locationId: string) => {
-      if (!campaignId) return;
-      navigate(`/campaigns/${campaignId}/locations/${locationId}/edit`);
-    },
-    [campaignId, navigate],
-  );
-
-  const handleOpenMap = useCallback(
-    (locationId: string) => {
-      if (!campaignId) return;
-      navigate(`/campaigns/${campaignId}/locations/${locationId}/edit`);
-    },
-    [campaignId, navigate],
-  );
-
-  const handleBack = useCallback(() => {
-    if (!campaignId) return;
-    if (currentLocation?.parentLocationId) {
-      navigate(`/campaigns/${campaignId}/locations/${currentLocation.parentLocationId}/edit`);
-    } else {
-      navigate(`/campaigns/${campaignId}/edit`);
-    }
-  }, [campaignId, currentLocation?.parentLocationId, navigate]);
-
-  const openTileMenuAt = useCallback(
-    async (x: number, y: number, clientX: number, clientY: number) => {
-      if (!currentLocation) return;
-      const tiles = currentLocation.tiles ?? [];
-      let top = getTopTileDataAt(tiles, x, y);
-      if (!top) {
-        const newTile: TileData = {
-          id: crypto.randomUUID(),
-          x,
-          y,
-          zIndex: 0,
-          isPassable: true,
-        };
-        await updateLocation(currentLocation.id, { tiles: [...tiles, newTile] });
-        setTileMenu({ x, y, clientX, clientY, createdTileId: newTile.id });
-        return;
-      }
-      setTileMenu({ x, y, clientX, clientY });
-    },
-    [currentLocation, updateLocation],
-  );
-
-  const handleOverlayClick = useCallback(
-    (tileId: string, e: React.MouseEvent) => {
-      if (!currentLocation?.tiles) return;
-      const tile = currentLocation.tiles.find((t) => t.id === tileId);
-      if (!tile) return;
-      setTileMenu({
-        x: tile.x,
-        y: tile.y,
-        clientX: e.clientX,
-        clientY: e.clientY,
-      });
-    },
-    [currentLocation],
-  );
-
-  const charactersAtLocation = useMemo(
-    () =>
-      campaignCharacters.filter(
-        (cc) => cc.currentLocationId === selectedLocationId && cc.currentTileId,
-      ),
-    [campaignCharacters, selectedLocationId],
-  );
-  const itemsAtLocation = useMemo(
-    () =>
-      campaignItems.filter((ci) => ci.currentLocationId === selectedLocationId && ci.currentTileId),
-    [campaignItems, selectedLocationId],
-  );
-  const charactersResolved = useLiveQuery(async (): Promise<
-    Array<{ campaignCharacter: CampaignCharacter; character: Character | null }>
-  > => {
-    if (charactersAtLocation.length === 0) return [];
-    const chars = await db.characters.bulkGet(charactersAtLocation.map((cc) => cc.characterId));
-    return charactersAtLocation.map((cc) => ({
-      campaignCharacter: cc,
-      character: chars.find((c) => c?.id === cc.characterId) ?? null,
-    }));
-  }, [charactersAtLocation.map((c) => `${c.id}:${c.currentTileId}`).join(',')]);
-  const itemsResolved = useLiveQuery(async (): Promise<
-    Array<{ campaignItem: CampaignItem; item: Item | null }>
-  > => {
-    if (itemsAtLocation.length === 0) return [];
-    const itemRecs = await db.items.bulkGet(itemsAtLocation.map((ci) => ci.itemId));
-    return itemsAtLocation.map((ci) => ({
-      campaignItem: ci,
-      item: itemRecs.find((i) => i?.id === ci.itemId) ?? null,
-    }));
-  }, [itemsAtLocation.map((i) => `${i.id}:${i.currentTileId}`).join(',')]);
-
-  const overlayNodes = useMemo((): LocationViewerOverlayNode[] => {
-    const nodes: LocationViewerOverlayNode[] = [];
-    (charactersResolved ?? []).forEach(({ campaignCharacter, character }) => {
-      if (!campaignCharacter.currentTileId) return;
-      const sprites = character?.sprites ?? [];
-      const imageUrl = sprites.length > 0 ? null : (character?.image ?? null);
-      nodes.push({
-        id: `char-${campaignCharacter.id}`,
-        tileId: campaignCharacter.currentTileId,
-        type: 'character',
-        imageUrl,
-        label: character?.name ?? 'Character',
-        sprites: sprites.length > 0 ? sprites : undefined,
-        mapWidth: campaignCharacter.mapWidth ?? 1,
-        mapHeight: campaignCharacter.mapHeight ?? 1,
-        dragPayload: { type: 'campaign-character', id: campaignCharacter.id },
-      });
-    });
-    (itemsResolved ?? []).forEach(({ campaignItem, item }) => {
-      if (!campaignItem.currentTileId) return;
-      const sprites = item?.sprites ?? [];
-      const imageUrl = sprites.length > 0 ? null : (item?.image ?? null);
-      nodes.push({
-        id: `item-${campaignItem.id}`,
-        tileId: campaignItem.currentTileId,
-        type: 'item',
-        imageUrl,
-        label: item?.title ?? 'Item',
-        sprites: sprites.length > 0 ? sprites : undefined,
-        mapWidth: campaignItem.mapWidth ?? 1,
-        mapHeight: campaignItem.mapHeight ?? 1,
-        dragPayload: { type: 'campaign-item', id: campaignItem.id },
-      });
-    });
-    return nodes;
-  }, [charactersResolved, itemsResolved]);
 
   const tileMenuTileId = useMemo(() => {
     if (!tileMenu || !currentLocation?.tiles) return null;
@@ -206,101 +52,45 @@ export function CampaignEdit() {
   /** Tile id for the menu: from existing tile at cell, or from a blank tile we just created. */
   const effectiveTileId = tileMenuTileId ?? tileMenu?.createdTileId ?? null;
 
-  const entityAtTile = useMemo(() => {
-    if (!selectedLocationId || !effectiveTileId) return null;
-    const cc = campaignCharacters.find(
-      (c) => c.currentLocationId === selectedLocationId && c.currentTileId === effectiveTileId,
-    );
-    const ci = campaignItems.find(
-      (c) => c.currentLocationId === selectedLocationId && c.currentTileId === effectiveTileId,
-    );
-    const ev = eventLocationsWithEvent.find(
-      (e) => e.locationId === selectedLocationId && e.tileId === effectiveTileId,
-    );
-    return { character: cc, item: ci, event: ev };
-  }, [
+  const { overlayNodes, entityAtTile } = useLocationEntities({
     selectedLocationId,
     effectiveTileId,
-    campaignCharacters,
-    campaignItems,
     eventLocationsWithEvent,
-  ]);
+  });
+
+  const {
+    handleMoveEvent,
+    handleRemoveCharacter,
+    handleRemoveItem,
+    handleRemoveEvent,
+    onCreateCharacter,
+    onCreateEvent,
+    onCreateItem,
+    updateCampaignEventLocation,
+  } = useCampaignEditHandlers({
+    campaignId,
+    entityAtTile,
+    setMovingEventLocationId,
+    setTileMenu,
+  });
+
+  const {
+    openTileMenuAt,
+    handleBack,
+    handleDrop,
+    handleAdvanceToLocation,
+    handleOpenMap,
+    handleOverlayClick,
+  } = useMapHelpers({
+    campaignId,
+    setTileMenu,
+    currentLocation,
+  });
 
   const eventTileIds = useMemo(
     () => eventLocationsWithEvent.filter((el) => el.tileId).map((el) => el.tileId as string),
     [eventLocationsWithEvent],
   );
-
-  const onCreateCharacter = useCallback(
-    async (tile: { locationId: string; tileId: string }, archetypeId: string) => {
-      if (!campaignId || !campaign?.rulesetId) return;
-      const newCharId = await createCharacter({
-        rulesetId: campaign.rulesetId,
-        archetypeIds: [archetypeId],
-      });
-      if (newCharId) {
-        await createCampaignCharacter(campaignId, newCharId, {
-          currentLocationId: tile.locationId,
-          currentTileId: tile.tileId,
-        });
-      }
-    },
-    [campaignId, campaign?.rulesetId, createCharacter, createCampaignCharacter],
-  );
-
-  const onCreateItem = useCallback(
-    async (tile: { locationId: string; tileId: string }, itemId: string) => {
-      if (!campaignId) return;
-      await createCampaignItem(campaignId, {
-        itemId,
-        currentLocationId: tile.locationId,
-        currentTileId: tile.tileId,
-      });
-    },
-    [campaignId, createCampaignItem],
-  );
-
-  const onCreateEvent = useCallback(
-    async (
-      tile: { locationId: string; tileId: string },
-      label: string,
-      type: CampaignEventType,
-    ) => {
-      if (!campaignId) return;
-      const eventId = await createCampaignEvent(campaignId, { label, type });
-      if (eventId) {
-        await createCampaignEventLocation(eventId, tile.locationId, tile.tileId);
-      }
-    },
-    [campaignId, createCampaignEvent, createCampaignEventLocation],
-  );
-
-  const handleRemoveCharacter = useCallback(async () => {
-    if (!entityAtTile?.character) return;
-    await updateCampaignCharacter(entityAtTile.character.id, {
-      currentLocationId: null,
-      currentTileId: null,
-    });
-    setTileMenu(null);
-  }, [entityAtTile?.character, updateCampaignCharacter]);
-
-  const handleRemoveItem = useCallback(async () => {
-    if (!entityAtTile?.item) return;
-    await deleteCampaignItem(entityAtTile.item.id);
-    setTileMenu(null);
-  }, [entityAtTile?.item, deleteCampaignItem]);
-
-  const handleRemoveEvent = useCallback(async () => {
-    if (!entityAtTile?.event) return;
-    await deleteCampaignEventLocation(entityAtTile.event.id);
-    await deleteCampaignEvent(entityAtTile.event.campaignEventId);
-    setTileMenu(null);
-  }, [entityAtTile?.event, deleteCampaignEventLocation, deleteCampaignEvent]);
-
-  const handleMoveEvent = useCallback((eventLocationId: string) => {
-    setMovingEventLocationId(eventLocationId);
-    setTileMenu(null);
-  }, []);
 
   const handleSelectCell = useCallback(
     async (x: number, y: number, e: React.MouseEvent | undefined) => {
@@ -335,51 +125,6 @@ export function CampaignEdit() {
       updateLocation,
       updateCampaignEventLocation,
       openTileMenuAt,
-    ],
-  );
-
-  const handleDrop = useCallback(
-    async (x: number, y: number, e: React.DragEvent) => {
-      if (!currentLocation || !selectedLocationId) return;
-      const raw = e.dataTransfer.getData('application/json');
-      if (!raw) return;
-      let payload: { type: string; id: string };
-      try {
-        payload = JSON.parse(raw);
-      } catch {
-        return;
-      }
-      const tiles = currentLocation.tiles ?? [];
-      let targetTile = getTopTileDataAt(tiles, x, y);
-      if (!targetTile) {
-        const newTile: TileData = {
-          id: crypto.randomUUID(),
-          x,
-          y,
-          zIndex: 0,
-          isPassable: true,
-        };
-        await updateLocation(currentLocation.id, { tiles: [...tiles, newTile] });
-        targetTile = newTile;
-      }
-      if (payload.type === 'campaign-character') {
-        await updateCampaignCharacter(payload.id, {
-          currentLocationId: selectedLocationId,
-          currentTileId: targetTile.id,
-        });
-      } else if (payload.type === 'campaign-item') {
-        await updateCampaignItem(payload.id, {
-          currentLocationId: selectedLocationId,
-          currentTileId: targetTile.id,
-        });
-      }
-    },
-    [
-      currentLocation,
-      selectedLocationId,
-      updateLocation,
-      updateCampaignCharacter,
-      updateCampaignItem,
     ],
   );
 

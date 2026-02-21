@@ -79,6 +79,7 @@ export type Character = BaseDetails & {
   assetId: string | null;
   image: string | null;
   isTestCharacter: boolean;
+  isNpc?: boolean;
   componentData: Record<string, any>;
   pinnedSidebarDocuments: string[];
   pinnedSidebarCharts: string[];
