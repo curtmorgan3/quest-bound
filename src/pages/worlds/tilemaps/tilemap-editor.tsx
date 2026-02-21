@@ -4,7 +4,7 @@ import { useAssets, useTilemap, useTilemaps, useTiles } from '@/lib/compass-api'
 import { db } from '@/stores';
 import type { Tile } from '@/types';
 import { ArrowLeft } from 'lucide-react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 
 export function TilemapEditor() {
@@ -17,12 +17,13 @@ export function TilemapEditor() {
   const assetData = tm?.assetId ? assets.find((a) => a.id === tm.assetId)?.data : null;
   const { assetDimensions } = useTilemapAsset({ worldId, imageUrl: assetData ?? undefined });
 
-  const [labelInput, setLabelInput] = useState('');
-  const [tileWidthInput, setTileWidthInput] = useState('');
-  const [tileHeightInput, setTileHeightInput] = useState('');
-
   const tileWidth = tm?.tileWidth ?? 32;
   const tileHeight = tm?.tileHeight ?? 32;
+
+  const [labelInput, setLabelInput] = useState('');
+  const [tileWidthInput, setTileWidthInput] = useState(tileWidth);
+  const [tileHeightInput, setTileHeightInput] = useState(tileHeight);
+
   const imgSize = assetDimensions[tm?.assetId ?? ''];
 
   const cols = imgSize ? Math.max(0, Math.floor(imgSize.w / tileWidth)) : 0;
@@ -43,29 +44,22 @@ export function TilemapEditor() {
     updateTilemap(tm.id, { label: next });
   };
 
-  const tileWidthInputRef = useRef(tileWidthInput);
-  const tileHeightInputRef = useRef(tileHeightInput);
-  tileWidthInputRef.current = tileWidthInput;
-  tileHeightInputRef.current = tileHeightInput;
-
-  const DEBOUNCE_MS = 400;
-  useEffect(() => {
+  const handleSetDimensions = () => {
     if (!tm) return;
-    const t = setTimeout(() => {
-      const wRaw = parseInt(tileWidthInputRef.current, 10);
-      const hRaw = parseInt(tileHeightInputRef.current, 10);
-      const w = Number.isNaN(wRaw) ? tileWidth : wRaw;
-      const h = Number.isNaN(hRaw) ? tileHeight : hRaw;
-      const widthChanged = tileWidthInputRef.current !== '' && w !== tileWidth;
-      const heightChanged = tileHeightInputRef.current !== '' && h !== tileHeight;
-      if (widthChanged || heightChanged) {
-        updateTilemap(tm.id, { tileWidth: w, tileHeight: h });
-        setTileWidthInput('');
-        setTileHeightInput('');
-      }
-    }, DEBOUNCE_MS);
-    return () => clearTimeout(t);
-  }, [tm, tileWidthInput, tileHeightInput, tileWidth, tileHeight, updateTilemap]);
+    const wRaw = tileWidthInput;
+    const hRaw = tileHeightInput;
+
+    const w = Number.isNaN(wRaw) ? tileWidth : wRaw;
+    const h = Number.isNaN(hRaw) ? tileHeight : hRaw;
+
+    const widthChanged = w !== tileWidth;
+    const heightChanged = h !== tileHeight;
+    if (widthChanged || heightChanged) {
+      updateTilemap(tm.id, { tileWidth: w, tileHeight: h });
+      setTileWidthInput(w);
+      setTileHeightInput(h);
+    }
+  };
 
   const handleTileClick = async (tx: number, ty: number) => {
     if (!tilemapId) return;
@@ -160,8 +154,8 @@ export function TilemapEditor() {
               id='te-tile-width'
               type='number'
               className='w-16'
-              value={tileWidthInput || tileWidth}
-              onChange={(e) => setTileWidthInput(e.target.value)}
+              value={tileWidthInput}
+              onChange={(e) => setTileWidthInput(parseInt(e.target.value))}
             />
           </div>
           <div className='flex items-center gap-1'>
@@ -172,10 +166,13 @@ export function TilemapEditor() {
               id='te-tile-height'
               type='number'
               className='w-16'
-              value={tileHeightInput || tileHeight}
-              onChange={(e) => setTileHeightInput(e.target.value)}
+              value={tileHeightInput}
+              onChange={(e) => setTileHeightInput(parseInt(e.target.value))}
             />
           </div>
+          <Button variant='outline' size='sm' onClick={handleSetDimensions}>
+            Set
+          </Button>
         </div>
       </div>
 

@@ -193,6 +193,9 @@ export function TilemapListPage() {
             <DialogTitle>Create tilemap</DialogTitle>
           </DialogHeader>
           <div className='grid gap-4'>
+            <p className='text-sm text-muted-foreground'>
+              Images larger than 2560x1440 will be scaled down
+            </p>
             <div className='grid gap-2'>
               <Label htmlFor='tilemap-label'>Label</Label>
               <Input
