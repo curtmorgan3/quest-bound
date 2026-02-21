@@ -25,7 +25,7 @@ export interface ScriptExecutionContext {
   rulesetId: string; // Current ruleset
   db: DB; // Database access
   scriptId?: string; // Which script is executing (for error logging)
-  triggerType?: 'load' | 'attribute_change' | 'action_click' | 'item_event' | 'archetype_event';
+  triggerType?: 'load' | 'attribute_change' | 'action_click' | 'item_event' | 'archetype_event' | 'character_load';
   /** When script is attached to an entity (attribute, action, item), the entity type. Enables 'Self'. */
   entityType?: string;
   /** When script is attached to an entity, the entity id. Self = Owner.Attribute/Action/Item as appropriate. */

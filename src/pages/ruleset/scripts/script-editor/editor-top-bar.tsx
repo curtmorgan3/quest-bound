@@ -29,15 +29,14 @@ const ENTITY_TYPES = [
   { value: 'item', label: 'Item' },
   { value: 'archetype', label: 'Archetype' },
   { value: 'global', label: 'Global' },
+  { value: 'characterLoader', label: 'Character Loader' },
 ] as const;
 
 interface EditorTopBar {
   name: string;
   setName: (name: string) => void;
   entityType: Script['entityType'];
-  setEntityType: Dispatch<
-    SetStateAction<'attribute' | 'action' | 'item' | 'archetype' | 'global'>
-  >;
+  setEntityType: Dispatch<SetStateAction<Script['entityType']>>;
   entityId: string | null;
   setEntityId: (id: string | null) => void;
   category: string | null;
@@ -99,7 +98,7 @@ export const EditorTopBar = ({
       name: name || 'Untitled',
       sourceCode,
       entityType,
-      entityId: entityType === 'global' ? null : entityId,
+      entityId: entityType === 'global' || entityType === 'characterLoader' ? null : entityId,
       isGlobal: entityType === 'global',
       enabled: true,
       category: category ?? undefined,
@@ -141,7 +140,7 @@ export const EditorTopBar = ({
           value={entityType}
           onValueChange={(v: Script['entityType']) => {
             setEntityType(v);
-            if (v === 'global') setEntityId(null);
+            if (v === 'global' || v === 'characterLoader') setEntityId(null);
           }}>
           <SelectTrigger data-testid='script-editor-type'>
             <SelectValue />

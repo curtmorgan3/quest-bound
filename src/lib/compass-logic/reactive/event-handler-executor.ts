@@ -440,6 +440,106 @@ export class EventHandlerExecutor {
   }
 
   /**
+   * Execute the ruleset's Character Loader script for a character.
+   * Runs once at character creation, before initial attribute sync and archetype on_add scripts.
+   * Owner and archetype API are available; the full script is executed (no named handler).
+   */
+  async executeCharacterLoader(
+    characterId: string,
+    rulesetId: string,
+    roll?: RollFn,
+  ): Promise<EventHandlerResult> {
+    const script = await this.db.scripts
+      .where({ rulesetId, entityType: 'characterLoader' })
+      .first();
+    if (!script || !script.enabled) {
+      return {
+        success: true,
+        value: null,
+        announceMessages: [],
+        logMessages: [],
+      };
+    }
+
+    const context: ScriptExecutionContext = {
+      ownerId: characterId,
+      rulesetId,
+      db: this.db,
+      scriptId: script.id,
+      triggerType: 'character_load',
+      entityType: 'characterLoader',
+      entityId: undefined,
+      roll,
+      executeActionEvent: (actionId, ownerId, targetIdForAction, eventTypeForAction) =>
+        this.executeActionEvent(actionId, ownerId, targetIdForAction, eventTypeForAction, roll),
+    };
+
+    const result = this.runScriptForTest
+      ? await this.runScriptForTest(context, script.sourceCode)
+      : await new ScriptRunner(context).run(script.sourceCode);
+
+    if (!result.error && result.modifiedAttributeIds?.length && this.onAttributesModified) {
+      await this.onAttributesModified(
+        result.modifiedAttributeIds,
+        characterId,
+        rulesetId,
+      );
+    }
+
+    await this.persistCharacterLoaderLogs(
+      rulesetId,
+      script.id,
+      characterId,
+      result.logMessages,
+    );
+
+    return {
+      success: !result.error,
+      value: result.value,
+      announceMessages: result.announceMessages,
+      logMessages: result.logMessages,
+      error: result.error,
+    };
+  }
+
+  /**
+   * Persist character loader log messages to scriptLogs so they appear in useScriptLogs.
+   */
+  private async persistCharacterLoaderLogs(
+    rulesetId: string,
+    scriptId: string,
+    characterId: string,
+    logMessages: any[][],
+  ): Promise<void> {
+    if (logMessages.length === 0) return;
+    const now = new Date().toISOString();
+    const timestamp = Date.now();
+    try {
+      for (const args of logMessages) {
+        let argsJson: string;
+        try {
+          argsJson = JSON.stringify(args);
+        } catch {
+          argsJson = JSON.stringify(args.map((a) => String(a)));
+        }
+        await this.db.scriptLogs.add({
+          id: crypto.randomUUID(),
+          rulesetId,
+          scriptId,
+          characterId,
+          argsJson,
+          timestamp,
+          context: 'character_load',
+          createdAt: now,
+          updatedAt: now,
+        } as any);
+      }
+    } catch (e) {
+      console.warn('[QBScript] Failed to persist character loader event logs:', e);
+    }
+  }
+
+  /**
    * Persist archetype event log messages to scriptLogs so they appear in useScriptLogs.
    */
   private async persistArchetypeLogs(
@@ -580,4 +680,17 @@ export async function executeArchetypeEvent(
 ): Promise<EventHandlerResult> {
   const executor = new EventHandlerExecutor(db);
   return executor.executeArchetypeEvent(archetypeId, characterId, eventType, roll);
+}
+
+/**
+ * Execute the ruleset's Character Loader script for a character (at first creation only).
+ */
+export async function executeCharacterLoader(
+  db: DB,
+  characterId: string,
+  rulesetId: string,
+  roll?: RollFn,
+): Promise<EventHandlerResult> {
+  const executor = new EventHandlerExecutor(db);
+  return executor.executeCharacterLoader(characterId, rulesetId, roll);
 }

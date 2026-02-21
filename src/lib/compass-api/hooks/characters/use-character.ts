@@ -1,5 +1,8 @@
 import { useErrorHandler, useNotifications } from '@/hooks';
-import { executeArchetypeEvent } from '@/lib/compass-logic/reactive/event-handler-executor';
+import {
+  executeArchetypeEvent,
+  executeCharacterLoader,
+} from '@/lib/compass-logic/reactive/event-handler-executor';
 import { getQBScriptClient } from '@/lib/compass-logic/worker';
 import { db, useCurrentUser } from '@/stores';
 import type { Archetype, Character, Inventory } from '@/types';
@@ -142,6 +145,15 @@ export const useCharacter = (_id?: string) => {
           loadOrder: i,
           createdAt: now,
           updatedAt: now,
+        });
+      }
+
+      // Run Character Loader first (before attribute sync and archetype scripts)
+      const characterLoaderResult = await executeCharacterLoader(db, characterId, rulesetId);
+      if (characterLoaderResult.error) {
+        console.warn('Character Loader script failed:', characterLoaderResult.error);
+        addNotification(`Character Loader script failed | ${characterLoaderResult.error}`, {
+          type: 'error',
         });
       }
 

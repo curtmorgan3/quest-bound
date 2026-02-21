@@ -34,7 +34,7 @@ export function sanitizeFileName(name: string): string {
  * Returns: { entityType: 'attribute', name: 'hit_points' }
  */
 export function parseScriptPath(path: string): {
-  entityType: 'attribute' | 'action' | 'item' | 'archetype' | 'global';
+  entityType: 'attribute' | 'action' | 'item' | 'archetype' | 'global' | 'characterLoader';
   name: string;
 } | null {
   // Remove leading/trailing slashes and normalize
@@ -50,7 +50,7 @@ export function parseScriptPath(path: string): {
   const [, typeFolder, filename] = match;
 
   // Map folder names to entity types
-  let entityType: 'attribute' | 'action' | 'item' | 'archetype' | 'global';
+  let entityType: 'attribute' | 'action' | 'item' | 'archetype' | 'global' | 'characterLoader';
   switch (typeFolder) {
     case 'attributes':
       entityType = 'attribute';
@@ -66,6 +66,9 @@ export function parseScriptPath(path: string): {
       break;
     case 'global':
       entityType = 'global';
+      break;
+    case 'character_loaders':
+      entityType = 'characterLoader';
       break;
     default:
       return null;
@@ -83,7 +86,7 @@ export function parseScriptPath(path: string): {
  * Returns: scripts/attributes/max_hit_points.qbs
  */
 export function generateScriptPath(
-  entityType: 'attribute' | 'action' | 'item' | 'archetype' | 'global',
+  entityType: 'attribute' | 'action' | 'item' | 'archetype' | 'global' | 'characterLoader',
   name: string,
 ): string {
   const sanitizedName = sanitizeFileName(name);
@@ -105,6 +108,9 @@ export function generateScriptPath(
       break;
     case 'global':
       folderName = 'global';
+      break;
+    case 'characterLoader':
+      folderName = 'character_loaders';
       break;
   }
 
@@ -130,14 +136,22 @@ export function validateScriptForExport(script: Script): string[] {
     errors.push(`Script ${script.id}: sourceCode cannot be empty`);
   }
 
-  if (!['attribute', 'action', 'item', 'archetype', 'global'].includes(script.entityType)) {
+  if (
+    !['attribute', 'action', 'item', 'archetype', 'global', 'characterLoader'].includes(
+      script.entityType,
+    )
+  ) {
     errors.push(
-      `Script ${script.id}: entityType must be one of: attribute, action, item, archetype, global`,
+      `Script ${script.id}: entityType must be one of: attribute, action, item, archetype, global, characterLoader`,
     );
   }
 
-  if (!script.isGlobal && !script.entityId) {
-    errors.push(`Script ${script.id}: non-global scripts must have an entityId`);
+  if (
+    !script.isGlobal &&
+    script.entityType !== 'characterLoader' &&
+    !script.entityId
+  ) {
+    errors.push(`Script ${script.id}: non-global, non-characterLoader scripts must have an entityId`);
   }
 
   return errors;

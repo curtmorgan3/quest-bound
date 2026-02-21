@@ -63,4 +63,14 @@ on_add():
 on_remove():
     Owner.Attribute('Health').subtract(5)
 `,
+  characterLoader: `
+// Character Loader runs once per character at creation, before attribute scripts and archetype on_add.
+// Only one Character Loader script per ruleset. Owner and archetypes are available.
+
+// Example: set initial values based on archetypes
+if Owner.hasArchetype('Warrior'):
+    Owner.Attribute('Health').set(12)
+else:
+    Owner.Attribute('Health').set(8)
+`,
 };
