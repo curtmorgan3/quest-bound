@@ -21,44 +21,16 @@ import {
 } from '@/components/ui/dialog';
 import { MAX_LOCATION_MAP_ASSET_HEIGHT, MAX_LOCATION_MAP_ASSET_WIDTH } from '@/constants';
 import { useAssets, useTilemaps, useWorld } from '@/lib/compass-api';
-import { db } from '@/stores';
 import { ArrowLeft, Layers, Plus, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-
-async function isAssetReferencedElsewhere(assetId: string): Promise<boolean> {
-  if (!assetId) return false;
-  const [user, ruleset, chart, document, component, character, archetype, world, tilemap] =
-    await Promise.all([
-      db.users.where('assetId').equals(assetId).first(),
-      db.rulesets.where('assetId').equals(assetId).first(),
-      db.charts.where('assetId').equals(assetId).first(),
-      db.documents.where('assetId').equals(assetId).first(),
-      db.components.where('assetId').equals(assetId).first(),
-      db.characters.where('assetId').equals(assetId).first(),
-      db.archetypes.where('assetId').equals(assetId).first(),
-      db.worlds.where('assetId').equals(assetId).first(),
-      db.tilemaps.where('assetId').equals(assetId).first(),
-    ]);
-  return !!(
-    user ||
-    ruleset ||
-    chart ||
-    document ||
-    component ||
-    character ||
-    archetype ||
-    world ||
-    tilemap
-  );
-}
 
 export function TilemapListPage() {
   const { worldId } = useParams<{ worldId: string }>();
   const navigate = useNavigate();
   const world = useWorld(worldId);
   const { tilemaps, createTilemap, deleteTilemap } = useTilemaps(worldId);
-  const { assets, deleteAsset } = useAssets(world?.rulesetId ?? null);
+  const { assets } = useAssets(world?.rulesetId ?? null);
   const [createOpen, setCreateOpen] = useState(false);
   const [label, setLabel] = useState('');
   const [assetId, setAssetId] = useState<string | null>(null);
@@ -85,12 +57,8 @@ export function TilemapListPage() {
     }
   };
 
-  const handleDelete = async (tm: { id: string; assetId: string }) => {
-    const assetIdToCheck = tm.assetId || null;
+  const handleDelete = async (tm: { id: string }) => {
     await deleteTilemap(tm.id);
-    if (assetIdToCheck && !(await isAssetReferencedElsewhere(assetIdToCheck))) {
-      await deleteAsset(assetIdToCheck);
-    }
   };
 
   if (!worldId) return null;

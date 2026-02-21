@@ -28,4 +28,6 @@ export type DB = Dexie & {
   scriptErrors: Dexie.Table;
   scriptLogs: Dexie.Table;
   dependencyGraphNodes: Dexie.Table;
+  worlds: Dexie.Table;
+  tilemaps: Dexie.Table;
 };

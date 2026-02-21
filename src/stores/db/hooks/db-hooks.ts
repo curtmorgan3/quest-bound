@@ -10,6 +10,7 @@ import { registerItemDbHooks } from './item-hooks';
 import { registerInventoryDbHooks } from './inventory-hooks';
 import { registerRulesetDbHooks } from './ruleset-hooks';
 import { registerScriptHooks } from './script-hooks';
+import { registerTilemapDbHooks } from './tilemap-hooks';
 import type { DB } from './types';
 
 export function registerDbHooks(db: DB) {
@@ -24,5 +25,6 @@ export function registerDbHooks(db: DB) {
   registerDocumentDbHooks(db);
   registerAssetDbHooks(db);
   registerComponentDbHooks(db);
+  registerTilemapDbHooks(db);
   registerScriptHooks(db);
 }

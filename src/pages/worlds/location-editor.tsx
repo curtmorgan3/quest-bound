@@ -27,8 +27,6 @@ export function LocationEditor() {
   const gridWidth = loc?.gridWidth ?? 1;
   const gridHeight = loc?.gridHeight ?? 1;
 
-  console.log(location);
-
   const [selectedTiles, setSelectedTiles] = useState<Tile[]>([]);
 
   const [selectedCell, setSelectedCell] = useState<{ x: number; y: number } | null>(null);

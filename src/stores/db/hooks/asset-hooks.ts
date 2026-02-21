@@ -13,6 +13,11 @@ export function registerAssetDbHooks(db: DB) {
           attributeCount,
           characterCount,
           componentCount,
+          rulesetCount,
+          chartCount,
+          archetypeCount,
+          worldCount,
+          tilemapCount,
         ] = await Promise.all([
           db.items.filter((item) => item.assetId === primKey).count(),
           db.documents
@@ -23,6 +28,11 @@ export function registerAssetDbHooks(db: DB) {
           db.attributes.filter((attr) => attr.assetId === primKey).count(),
           db.characters.filter((char) => char.assetId === primKey).count(),
           db.components.filter((comp) => JSON.parse(comp.data)?.assetId === primKey).count(),
+          db.rulesets.filter((r) => r.assetId === primKey).count(),
+          db.charts.filter((c) => c.assetId === primKey).count(),
+          db.archetypes.filter((a) => a.assetId === primKey).count(),
+          db.worlds.filter((w) => w.assetId === primKey).count(),
+          db.tilemaps.filter((tm) => tm.assetId === primKey).count(),
         ]);
 
         const totalCount =
@@ -32,7 +42,12 @@ export function registerAssetDbHooks(db: DB) {
           userCount +
           attributeCount +
           characterCount +
-          componentCount;
+          componentCount +
+          rulesetCount +
+          chartCount +
+          archetypeCount +
+          worldCount +
+          tilemapCount;
 
         if (totalCount > 0) {
           // Re-add used asset
