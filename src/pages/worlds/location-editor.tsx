@@ -27,6 +27,8 @@ export function LocationEditor() {
   const gridWidth = loc?.gridWidth ?? 1;
   const gridHeight = loc?.gridHeight ?? 1;
 
+  console.log(location);
+
   const [selectedTiles, setSelectedTiles] = useState<Tile[]>([]);
 
   const [selectedCell, setSelectedCell] = useState<{ x: number; y: number } | null>(null);
@@ -382,7 +384,9 @@ export function LocationEditor() {
           onSelectedTilesChange={setSelectedTiles}
           mapImage={mapImageUrl}
           onMapImageUpload={(id) => loc && updateLocation(loc.id, { mapAssetId: id })}
-          onMapImageRemove={() => loc && updateLocation(loc.id, { mapAssetId: null })}
+          onMapImageRemove={() =>
+            loc && updateLocation(loc.id, { mapAssetId: null, hasMap: false, mapAsset: null })
+          }
         />
       </div>
     </div>

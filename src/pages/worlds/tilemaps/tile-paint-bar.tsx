@@ -39,7 +39,6 @@ function getPickerTileStyle(
   const tileX = t.tileX ?? 0;
   const tileY = t.tileY ?? 0;
   const dim = assetDimensions[tm.assetId];
-  console.log(dim);
   const backgroundSize =
     dim != null
       ? `${(dim.w * TILE_DISPLAY_SIZE) / tw}px ${(dim.h * TILE_DISPLAY_SIZE) / th}px`
@@ -219,9 +218,9 @@ export function TilePaintBar({
         </TabsContent>
         <TabsContent value='image' className='mt-2'>
           <div className='flex flex-col gap-2'>
-            <h3 className='text-sm font-semibold'>Map image (flat asset)</h3>
+            <h3 className='text-sm font-semibold'>Location Image</h3>
             <p className='text-xs text-muted-foreground'>
-              Optional image shown in viewer and as grid background in the editor.
+              Set the background image of the location and place tiles on top of it
             </p>
             <ImageUpload
               image={mapImage ?? null}
