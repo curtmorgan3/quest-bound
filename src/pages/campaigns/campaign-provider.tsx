@@ -129,7 +129,17 @@ function useCampaignProvider(campaignId: string | undefined): CampaignPlayContex
       const tiles = loc.tiles ?? [];
       const targetTileId =
         tileId ?? getFirstPassableTileId(tiles) ?? (tiles[0] ? tiles[0].id : null);
-      if (!targetTileId) return;
+
+      if (!targetTileId) {
+        for (const character of selectedCharacters) {
+          await updateCampaignCharacter(character.campaignCharacterId, {
+            currentLocationId: locationId,
+            currentTileId: null,
+          });
+        }
+
+        return;
+      }
 
       const charactersInLocation = campaignCharacters.filter(
         (cc) => cc.currentLocationId === locationId,
