@@ -214,6 +214,8 @@ export type Document = BaseDetails & {
   image?: string | null;
   pdfAssetId?: string | null;
   pdfData?: string | null;
+  /** Raw markdown content when document has no PDF (either PDF or markdown, not both). */
+  markdownData?: string | null;
   /** Module origin: ruleset id, source entity id, and module name. */
   moduleId?: string;
   moduleEntityId?: string;

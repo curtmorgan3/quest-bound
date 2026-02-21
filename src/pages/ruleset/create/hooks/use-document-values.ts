@@ -60,6 +60,8 @@ export const useDocumentValues = ({
     assetId,
     pdfAssetId,
     pdfData,
+    // Enforce either PDF or markdown: when saving with PDF, clear markdown
+    ...(pdfData || pdfAssetId ? { markdownData: null } : {}),
   };
 
   const saveDocument = () => {
