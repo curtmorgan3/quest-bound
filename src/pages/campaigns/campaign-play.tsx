@@ -134,8 +134,6 @@ export function CampaignPlay() {
   );
 
   const showLocationView = Boolean(viewingLocationId && viewingLocation?.hasMap);
-  const singleSelectedCharacterId =
-    selectedCharacters.length === 1 ? selectedCharacters[0]!.id : null;
 
   if (campaignId && campaign === undefined) {
     return (

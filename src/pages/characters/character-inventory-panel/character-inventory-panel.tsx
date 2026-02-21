@@ -28,10 +28,16 @@ import { useCharacterInventoryMethods } from './use-character-inventory-methods'
 type CharacterInventoryPanelProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  characterId?: string;
 };
 
-export const CharacterInventoryPanel = ({ open, onOpenChange }: CharacterInventoryPanelProps) => {
-  const { characterId } = useParams<{ characterId: string }>();
+export const CharacterInventoryPanel = ({
+  open,
+  onOpenChange,
+  characterId: _characterId,
+}: CharacterInventoryPanelProps) => {
+  const { characterId: paramId } = useParams<{ characterId: string }>();
+  const characterId = _characterId ?? paramId;
   const { character } = useCharacter(characterId);
   const { inventoryItems } = useInventory(character?.inventoryId ?? '', character?.id ?? '');
   const sheetContentRef = useRef<HTMLDivElement>(null);

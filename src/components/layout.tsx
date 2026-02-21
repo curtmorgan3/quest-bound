@@ -1,4 +1,4 @@
-import { AppSidebar, Loading } from '@/components';
+import { Loading } from '@/components';
 import { GlobalLoadingOverlay } from '@/components/global-loading-overlay';
 import { OnboardingPanel, useOnboardingStatus } from '@/components/onboarding';
 import { useFontLoader, useUsers } from '@/lib/compass-api';
@@ -13,14 +13,17 @@ import {
 } from '@/stores';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Outlet } from 'react-router-dom';
+import { AppSidebar } from './composites/app-sidebar';
 import { SidebarProvider } from './ui/sidebar';
 import { Toaster } from './ui/sonner';
 
 export function Layout() {
   const { currentUser, loading } = useUsers();
-  const { hasCompleted, isLoading: onboardingLoading, refetch } = useOnboardingStatus(
-    currentUser?.id ?? null,
-  );
+  const {
+    hasCompleted,
+    isLoading: onboardingLoading,
+    refetch,
+  } = useOnboardingStatus(currentUser?.id ?? null);
   const { forceShowAgain } = useOnboardingStore();
   const showOnboarding = Boolean(
     !onboardingLoading && currentUser && (forceShowAgain || !hasCompleted),
@@ -66,40 +69,37 @@ export function Layout() {
             open: characterArchetypesPanelOpen,
             setOpen: setCharacterArchetypesPanelOpen,
           }}>
-        <DiceProvider value={diceState}>
-          {currentUser && showOnboarding && (
-            <OnboardingPanel
-              userId={currentUser.id}
-              onClose={handleOnboardingClose}
-            />
-          )}
-          <AppSidebar />
-          <main
-            style={{
-              display: 'grid',
-              height: '100dvh',
-              width: '100dvw',
-              gridTemplateColumns: '1fr',
-              gridTemplateRows: '1fr',
-            }}>
-            <GlobalLoadingOverlay />
-            <Outlet />
-          </main>
-          <DicePanel />
-          <canvas
-            id='threeddice'
-            ref={diceRef}
-            style={{
-              position: 'fixed',
-              top: '10000px',
-              left: 50,
-              height: '95dvh',
-              width: '100dvw',
-              zIndex: 1000,
-              maxWidth: 'calc(100vw - 400px)',
-            }}></canvas>
-          <Toaster />
-        </DiceProvider>
+          <DiceProvider value={diceState}>
+            {currentUser && showOnboarding && (
+              <OnboardingPanel userId={currentUser.id} onClose={handleOnboardingClose} />
+            )}
+            <AppSidebar />
+            <main
+              style={{
+                display: 'grid',
+                height: '100dvh',
+                width: '100dvw',
+                gridTemplateColumns: '1fr',
+                gridTemplateRows: '1fr',
+              }}>
+              <GlobalLoadingOverlay />
+              <Outlet />
+            </main>
+            <DicePanel />
+            <canvas
+              id='threeddice'
+              ref={diceRef}
+              style={{
+                position: 'fixed',
+                top: '10000px',
+                left: 50,
+                height: '95dvh',
+                width: '100dvw',
+                zIndex: 1000,
+                maxWidth: 'calc(100vw - 400px)',
+              }}></canvas>
+            <Toaster />
+          </DiceProvider>
         </CharacterArchetypesPanelContext.Provider>
       </CharacterInventoryPanelContext.Provider>
     </SidebarProvider>

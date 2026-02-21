@@ -2,7 +2,7 @@ import { Button } from '@/components';
 import { useSidebar } from '@/components/ui/sidebar';
 import { CharacterPage } from '@/pages/characters';
 import { AnimatePresence, motion } from 'framer-motion';
-import { X } from 'lucide-react';
+import { Backpack, X } from 'lucide-react';
 import { useState } from 'react';
 import { useCampaignContext } from '../campaign-provider';
 
@@ -38,15 +38,32 @@ export const CampaignCharacterSheet = () => {
             exit={{ x: '100%' }}
             transition={{ type: 'tween', duration: 0.25, ease: 'easeInOut' }}>
             <div className='relative h-full w-full overflow-auto'>
-              <Button
-                variant='ghost'
-                size='icon'
-                className='absolute right-2 top-2 z-40 size-8 shrink-0'
-                onClick={() => setSheetOpen(false)}
-                aria-label='Close character sheet'>
-                <X className='size-4' />
-              </Button>
-              <CharacterPage id={characterId} lockByDefault transparentBackground />
+              <CharacterPage
+                id={characterId}
+                lockByDefault
+                transparentBackground
+                onClose={() => setSheetOpen(false)}
+                renderFloatingActions={({ onOpenInventory, onClose }) => (
+                  <>
+                    <Button
+                      variant='ghost'
+                      size='icon'
+                      className='size-8 shrink-0'
+                      onClick={onOpenInventory}
+                      aria-label='Open inventory'>
+                      <Backpack className='size-4' />
+                    </Button>
+                    <Button
+                      variant='ghost'
+                      size='icon'
+                      className='size-8 shrink-0'
+                      onClick={onClose}
+                      aria-label='Close character sheet'>
+                      <X className='size-4' />
+                    </Button>
+                  </>
+                )}
+              />
             </div>
           </motion.div>
         )}

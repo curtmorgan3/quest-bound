@@ -23,6 +23,11 @@ import {
 } from './hooks';
 import { InventoryPanel } from './inventory-panel';
 
+export type CharacterPageFloatingActions = {
+  onOpenInventory: () => void;
+  onClose: () => void;
+};
+
 interface CharacterPage {
   id?: string;
   lockByDefault?: boolean;
@@ -32,6 +37,10 @@ interface CharacterPage {
   editorWindowId?: string;
   /** When true, the sheet viewer shows only nodes with no background (e.g. for overlay use). */
   transparentBackground?: boolean;
+  /** Called when a close action is requested (e.g. from floating actions). */
+  onClose?: () => void;
+  /** When provided with onClose, renders floating action buttons (e.g. inventory + close) in the top-right. */
+  renderFloatingActions?: (actions: CharacterPageFloatingActions) => React.ReactNode;
 }
 
 export const CharacterPage = ({
@@ -39,6 +48,8 @@ export const CharacterPage = ({
   lockByDefault,
   editorWindowId,
   transparentBackground,
+  onClose,
+  renderFloatingActions,
 }: CharacterPage) => {
   const { open } = useSidebar();
   const { characterId } = useParams<{ characterId: string }>();
@@ -106,6 +117,15 @@ export const CharacterPage = ({
     return null;
   }
 
+  const openInventory = () => {
+    if (characterInventoryPanel) {
+      characterInventoryPanel.setOpen(true);
+    } else {
+      setInventoryPanelConfig({ open: true });
+    }
+  };
+  const showFloatingActions = renderFloatingActions != null && onClose != null;
+
   return (
     <CharacterProvider
       value={{
@@ -124,6 +144,14 @@ export const CharacterPage = ({
         consumeItem,
         activateItem,
       }}>
+      {showFloatingActions && (
+        <div className='absolute right-2 top-2 z-40 flex gap-2'>
+          {renderFloatingActions!({
+            onOpenInventory: openInventory,
+            onClose: onClose!,
+          })}
+        </div>
+      )}
       <SheetViewer
         key={character.id}
         characterId={character.id}
@@ -153,6 +181,7 @@ export const CharacterPage = ({
         <CharacterInventoryPanel
           open={characterInventoryPanel.open}
           onOpenChange={characterInventoryPanel.setOpen}
+          characterId={id}
         />
       )}
       {characterArchetypesPanel && (
