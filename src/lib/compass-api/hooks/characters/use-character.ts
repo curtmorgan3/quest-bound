@@ -5,11 +5,21 @@ import { db, useCurrentUser } from '@/stores';
 import type { Archetype, Character, Inventory } from '@/types';
 import { duplicateCharacterFromTemplate } from '@/utils/duplicate-character-from-template';
 import { useLiveQuery } from 'dexie-react-hooks';
+import { useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import { useAssets } from '../assets';
 
 export type CharacterWithInventories = Character & {
   inventory: Inventory;
+};
+
+/** Returns current user's characters for the given ruleset. */
+export const useCharacters = (rulesetId: string | undefined): Character[] => {
+  const { characters } = useCharacter();
+  return useMemo(
+    () => (rulesetId ? characters.filter((c) => c.rulesetId === rulesetId) : []),
+    [characters, rulesetId],
+  );
 };
 
 export const useCharacter = (_id?: string) => {

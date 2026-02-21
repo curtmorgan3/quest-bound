@@ -1,15 +1,18 @@
 import { getFirstPassableTileId } from '@/components/locations';
-import { useCampaignCharacters, useLocation } from '@/lib/compass-api';
+import { useCampaign, useCampaignCharacters, useCharacters, useLocation } from '@/lib/compass-api';
 import { db } from '@/stores';
-import type { CampaignCharacter } from '@/types';
+import type { CampaignCharacter, Character } from '@/types';
 import { createContext, useCallback, useContext, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { useCampaignPlayCharacterList } from './hooks/use-campaign-play-character-list';
+
+type ActiveCharacter = Character & CampaignCharacter;
 
 export interface CampaignPlayContextValue {
-  campaignPlayerCharacters: CampaignCharacter[];
-  campaignNpcs: CampaignCharacter[];
-  selectedCharacters: CampaignCharacter[];
+  campaignPlayerCharacters: ActiveCharacter[];
+  campaignNpcs: ActiveCharacter[];
+  selectedCharacters: ActiveCharacter[];
+  selectedPlayerCharacters: ActiveCharacter[];
+  selectedNpcs: ActiveCharacter[];
   addSelectedCharacter: (id: string) => void;
   removeSelectedCharacter: (id: string) => void;
   moveSelectedCharactersTo: (locationId: string, tileId?: string) => void;
@@ -28,29 +31,57 @@ export function useCampaignContext(): CampaignPlayContextValue {
 }
 
 function useCampaignProvider(campaignId: string | undefined): CampaignPlayContextValue | null {
+  const campaign = useCampaign(campaignId);
+  const rulesetId = campaign?.rulesetId;
+  const charactersForRuleset = useCharacters(rulesetId);
   const { campaignCharacters, updateCampaignCharacter } = useCampaignCharacters(campaignId);
-  const withNames = useCampaignPlayCharacterList({ campaignCharacters });
+
+  const characterIdsInCampaign = useMemo(
+    () => new Set(campaignCharacters.map((cc) => cc.characterId)),
+    [campaignCharacters],
+  );
 
   const campaignPlayerCharacters = useMemo(
-    () => withNames.filter((e) => e.character?.isNpc !== true).map((e) => e.cc),
-    [withNames],
+    () => charactersForRuleset.filter((c) => characterIdsInCampaign.has(c.id) && c.isNpc !== true),
+    [charactersForRuleset, characterIdsInCampaign],
   );
   const campaignNpcs = useMemo(
-    () => withNames.filter((e) => e.character?.isNpc === true).map((e) => e.cc),
-    [withNames],
+    () => charactersForRuleset.filter((c) => characterIdsInCampaign.has(c.id) && c.isNpc === true),
+    [charactersForRuleset, characterIdsInCampaign],
   );
 
-  console.log(campaignPlayerCharacters);
+  const activePlayerCharacters: ActiveCharacter[] = campaignPlayerCharacters.map((character) => {
+    const campaignCharacter = campaignCharacters.find((cc) => cc.characterId === character.id)!;
+    return {
+      ...character,
+      ...campaignCharacter,
+    };
+  });
+
+  const activeNpcs: ActiveCharacter[] = campaignNpcs.map((character) => {
+    const campaignCharacter = campaignCharacters.find((cc) => cc.characterId === character.id)!;
+    return {
+      ...character,
+      ...campaignCharacter,
+    };
+  });
 
   const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
   const [viewingLocationId, setViewingLocationId] = useState<string | null>(null);
 
   const viewingLocation = useLocation(viewingLocationId ?? undefined);
 
-  const selectedCharacters = useMemo(
-    () => campaignCharacters.filter((cc) => selectedIds.has(cc.id)),
-    [campaignCharacters, selectedIds],
+  const selectedPlayerCharacters: ActiveCharacter[] = useMemo(
+    () => activePlayerCharacters.filter((cc) => selectedIds.has(cc.id)),
+    [activePlayerCharacters, selectedIds],
   );
+
+  const selectedNpcs: ActiveCharacter[] = useMemo(
+    () => activeNpcs.filter((cc) => selectedIds.has(cc.id)),
+    [activeNpcs, selectedIds],
+  );
+
+  const selectedCharacters = [...selectedNpcs, ...selectedPlayerCharacters];
 
   const addSelectedCharacter = useCallback((id: string) => {
     setSelectedIds((prev) => new Set(prev).add(id));
@@ -66,6 +97,7 @@ function useCampaignProvider(campaignId: string | undefined): CampaignPlayContex
 
   const moveSelectedCharactersTo = useCallback(
     async (locationId: string, tileId?: string) => {
+      console.log('move to: ', locationId);
       let resolvedTileId = tileId;
       if (resolvedTileId == null) {
         const loc = await db.locations.get(locationId);
@@ -93,9 +125,11 @@ function useCampaignProvider(campaignId: string | undefined): CampaignPlayContex
 
   return useMemo(
     () => ({
-      campaignPlayerCharacters,
-      campaignNpcs,
+      campaignPlayerCharacters: activePlayerCharacters,
+      campaignNpcs: activeNpcs,
       selectedCharacters,
+      selectedPlayerCharacters,
+      selectedNpcs,
       addSelectedCharacter,
       removeSelectedCharacter,
       moveSelectedCharactersTo,

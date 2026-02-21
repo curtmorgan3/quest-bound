@@ -1,15 +1,14 @@
 import { Button, Card } from '@/components';
+import { getTopTileDataAt, LocationViewer } from '@/components/locations';
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { getTopTileDataAt, LocationViewer } from '@/components/locations';
 import { WorldViewer } from '@/components/worlds/world-viewer';
 import {
   useCampaign,
-  useCampaignCharacters,
   useCampaignEventLocationsByLocation,
   useLocation,
   useLocations,
@@ -20,7 +19,6 @@ import { ArrowUp, ChevronRight, Users } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useCampaignContext } from './campaign-provider';
-import { useCampaignPlayCharacterList } from './hooks/use-campaign-play-character-list';
 import { useCampaignPlayOverlay } from './hooks';
 
 export function CampaignPlay() {
@@ -28,8 +26,6 @@ export function CampaignPlay() {
   const navigate = useNavigate();
   const campaign = useCampaign(campaignId);
   const world = useWorld(campaign?.worldId);
-  const { campaignCharacters } = useCampaignCharacters(campaignId);
-  const charactersWithNames = useCampaignPlayCharacterList({ campaignCharacters });
 
   const {
     viewingLocationId,
@@ -39,7 +35,10 @@ export function CampaignPlay() {
     addSelectedCharacter,
     removeSelectedCharacter,
     moveSelectedCharactersTo,
+    campaignPlayerCharacters,
   } = useCampaignContext();
+
+  console.log(campaignPlayerCharacters);
 
   const selectedIds = useMemo(
     () => new Set(selectedCharacters.map((c) => c.id)),
@@ -59,18 +58,9 @@ export function CampaignPlay() {
 
   const viewingLocation = useLocation(viewingLocationId ?? undefined);
 
-  const { locations: rootLocations, updateLocation } = useLocations(
-    campaign?.worldId,
-    null,
-  );
-  const { locations: locationsList } = useLocations(
-    campaign?.worldId,
-    viewingLocationId,
-  );
-  const { locations: childLocations } = useLocations(
-    campaign?.worldId,
-    viewingLocationId,
-  );
+  const { locations: rootLocations, updateLocation } = useLocations(campaign?.worldId, null);
+  const { locations: locationsList } = useLocations(campaign?.worldId, viewingLocationId);
+  const { locations: childLocations } = useLocations(campaign?.worldId, viewingLocationId);
   const eventLocationsWithEvent = useCampaignEventLocationsByLocation(
     viewingLocationId ?? undefined,
   );
@@ -133,7 +123,7 @@ export function CampaignPlay() {
 
   const showLocationView = Boolean(viewingLocationId && viewingLocation?.hasMap);
   const singleSelectedCharacterId =
-    selectedCharacters.length === 1 ? selectedCharacters[0]!.characterId : null;
+    selectedCharacters.length === 1 ? selectedCharacters[0]!.id : null;
 
   if (campaignId && campaign === undefined) {
     return (
@@ -167,9 +157,7 @@ export function CampaignPlay() {
         {viewingLocation && (
           <>
             <ChevronRight className='h-4 w-4 text-muted-foreground' />
-            <span className='font-medium text-foreground'>
-              {viewingLocation.label}
-            </span>
+            <span className='font-medium text-foreground'>{viewingLocation.label}</span>
             <Button
               variant='ghost'
               size='sm'
@@ -191,15 +179,15 @@ export function CampaignPlay() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align='end' className='max-h-60 overflow-auto'>
-              {charactersWithNames.map(({ cc, character }) => (
+              {campaignPlayerCharacters.map((character) => (
                 <DropdownMenuCheckboxItem
-                  key={cc.id}
-                  checked={selectedIds.has(cc.id)}
-                  onCheckedChange={() => toggleCharacterSelection(cc.id)}>
+                  key={character.id}
+                  checked={selectedIds.has(character.id)}
+                  onCheckedChange={() => toggleCharacterSelection(character.id)}>
                   {character?.name ?? 'Unknown'}
                 </DropdownMenuCheckboxItem>
               ))}
-              {charactersWithNames.length === 0 && (
+              {campaignPlayerCharacters.length === 0 && (
                 <span className='px-2 py-1.5 text-sm text-muted-foreground'>
                   No characters in campaign
                 </span>
@@ -210,9 +198,7 @@ export function CampaignPlay() {
             <Button
               variant='outline'
               size='sm'
-              onClick={() =>
-                navigate(`/characters/${singleSelectedCharacterId}`)
-              }>
+              onClick={() => navigate(`/characters/${singleSelectedCharacterId}`)}>
               Character sheet
             </Button>
           )}
@@ -223,10 +209,7 @@ export function CampaignPlay() {
             disabled={selectedCharacters.length === 0}>
             Move to location
           </Button>
-          <Button
-            variant='ghost'
-            size='sm'
-            onClick={() => navigate(`/campaigns/${campaignId}`)}>
+          <Button variant='ghost' size='sm' onClick={() => navigate(`/campaigns/${campaignId}`)}>
             Back to campaign
           </Button>
         </div>
@@ -271,18 +254,16 @@ export function CampaignPlay() {
           <Card className='fixed left-1/2 top-1/2 z-20 w-full max-w-sm -translate-x-1/2 -translate-y-1/2 p-4'>
             <h3 className='mb-2 font-semibold'>Move to location</h3>
             <div className='flex max-h-60 flex-col gap-1 overflow-auto'>
-              {(viewingLocationId ? childLocations : rootLocations).map(
-                (loc) => (
-                  <Button
-                    key={loc.id}
-                    variant='ghost'
-                    size='sm'
-                    className='justify-start'
-                    onClick={() => handleMoveToLocation(loc.id)}>
-                    {loc.label}
-                  </Button>
-                ),
-              )}
+              {(viewingLocationId ? childLocations : rootLocations).map((loc) => (
+                <Button
+                  key={loc.id}
+                  variant='ghost'
+                  size='sm'
+                  className='justify-start'
+                  onClick={() => handleMoveToLocation(loc.id)}>
+                  {loc.label}
+                </Button>
+              ))}
             </div>
             <Button
               variant='outline'
