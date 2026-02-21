@@ -8,25 +8,26 @@ import {
   SidebarTrigger,
   useSidebar,
 } from '@/components/ui/sidebar';
-import { useActiveRuleset } from '@/lib/compass-api';
+import { useWorld } from '@/lib/compass-api';
 import { Globe, Layers } from 'lucide-react';
 import { Link, useLocation, useParams } from 'react-router-dom';
 
 export function WorldSidebar() {
-  const { activeRuleset } = useActiveRuleset();
   const { open } = useSidebar();
   const { worldId } = useParams<{ worldId?: string }>();
   const location = useLocation();
+
+  const world = useWorld(worldId);
 
   const isWorldsGlobeActive =
     location.pathname === '/worlds' || /^\/worlds\/[^/]+$/.test(location.pathname);
 
   const items = [
-    { title: 'Worlds', url: '/worlds', icon: Globe },
+    { title: 'World', url: `/worlds/${worldId}`, icon: Globe },
     { title: 'Tilemaps', url: `/worlds/${worldId}/tilemaps`, icon: Layers },
   ];
 
-  const title = activeRuleset?.title ?? 'Quest Bound';
+  const title = world?.label ?? 'Quest Bound';
 
   return (
     <SidebarGroup>
@@ -49,7 +50,7 @@ export function WorldSidebar() {
           )}
           {items.map((item) => {
             const isActive =
-              item.url === '/worlds'
+              item.url === `/worlds/${worldId}`
                 ? isWorldsGlobeActive
                 : location.pathname.includes(item.title.toLowerCase());
             return (

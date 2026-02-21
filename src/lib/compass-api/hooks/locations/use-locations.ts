@@ -52,7 +52,6 @@ export const useLocations = (
 
   const updateLocation = async (id: string, data: Partial<Location>) => {
     const now = new Date().toISOString();
-    console.log(data);
     try {
       await db.locations.update(id, {
         ...data,

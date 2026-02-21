@@ -30,4 +30,5 @@ export type DB = Dexie & {
   dependencyGraphNodes: Dexie.Table;
   worlds: Dexie.Table;
   tilemaps: Dexie.Table;
+  locations: Dexie.Table;
 };

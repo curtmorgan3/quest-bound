@@ -95,7 +95,8 @@ export function WorldEditorCanvas({
   const [nodeMenu, setNodeMenu] = useState<{ id: string; x: number; y: number } | null>(null);
   const lastLocationsSigRef = useRef<string>('');
 
-  // Merge location data into nodes without overwriting position, so React Flow drag state is never clobbered
+  // Merge location data into nodes without overwriting position, so React Flow drag state is never clobbered.
+  // Include updatedAt and background fields so background image changes trigger a node rerender.
   useEffect(() => {
     const sig = JSON.stringify(
       locations.map((l) => ({
@@ -113,6 +114,7 @@ export function WorldEditorCanvas({
         backgroundAssetId: l.backgroundAssetId,
         backgroundSize: l.backgroundSize,
         backgroundPosition: l.backgroundPosition,
+        updatedAt: l.updatedAt,
       })),
     );
     if (lastLocationsSigRef.current === sig) return;
@@ -122,7 +124,7 @@ export function WorldEditorCanvas({
       const prevById = new Map(prev.map((p) => [p.id, p]));
       const nodeData = (loc: Location) => ({
         label: loc.label,
-        location: loc,
+        location: { ...loc },
       });
       return locations.map((loc) => {
         const existing = prevById.get(loc.id);

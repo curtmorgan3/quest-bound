@@ -38,6 +38,8 @@ export const useTilemapAsset = ({
   const location = useLocation(locationId);
   const mapImageUrl = imageUrlOverride ?? location?.mapAsset ?? null;
 
+  const renderSize = location?.tileRenderSize ?? DEFAULT_TILE_RENDER_SIZE;
+
   const [assetDimensions, setAssetDimensions] = useState<Record<string, AssetSize>>({});
   const assetDimensionsRef = useRef(assetDimensions);
   assetDimensionsRef.current = assetDimensions;
@@ -143,17 +145,16 @@ export const useTilemapAsset = ({
 
     const data = tm.image ?? null;
     if (!data) return {};
+
     const tw = tm.tileWidth;
     const th = tm.tileHeight;
     const tileX = t.tileX ?? 0;
     const tileY = t.tileY ?? 0;
     const dim = assetDimensions[tm.assetId];
     const backgroundSize =
-      dim != null
-        ? `${(dim.w * DEFAULT_TILE_RENDER_SIZE) / tw}px ${(dim.h * DEFAULT_TILE_RENDER_SIZE) / th}px`
-        : 'auto';
-    const posX = tileX * DEFAULT_TILE_RENDER_SIZE;
-    const posY = tileY * DEFAULT_TILE_RENDER_SIZE;
+      dim != null ? `${(dim.w * renderSize) / tw}px ${(dim.h * renderSize) / th}px` : 'auto';
+    const posX = tileX * renderSize;
+    const posY = tileY * renderSize;
     return {
       backgroundImage: `url(${data})`,
       backgroundPosition: `-${posX}px -${posY}px`,

@@ -8,6 +8,7 @@ import { registerComponentDbHooks } from './component-hooks';
 import { registerDocumentDbHooks } from './document-hooks';
 import { registerItemDbHooks } from './item-hooks';
 import { registerInventoryDbHooks } from './inventory-hooks';
+import { registerLocationDbHooks } from './location-hooks';
 import { registerRulesetDbHooks } from './ruleset-hooks';
 import { registerScriptHooks } from './script-hooks';
 import { registerTilemapDbHooks } from './tilemap-hooks';
@@ -21,6 +22,7 @@ export function registerDbHooks(db: DB) {
   registerCharacterDbHooks(db);
   registerItemDbHooks(db);
   registerInventoryDbHooks(db);
+  registerLocationDbHooks(db);
   registerActionDbHooks(db);
   registerDocumentDbHooks(db);
   registerAssetDbHooks(db);

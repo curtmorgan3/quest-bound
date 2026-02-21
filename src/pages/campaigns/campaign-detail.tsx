@@ -46,15 +46,9 @@ export function CampaignDetail() {
         </div>
         <div className='flex flex-wrap gap-2 pt-2'>
           <Button
-            variant='outline'
-            data-testid='campaign-view-world'
-            onClick={() => navigate(`/campaigns/${campaign.id}/view`)}>
-            View world
-          </Button>
-          <Button
             data-testid='campaign-edit'
             onClick={() => navigate(`/campaigns/${campaign.id}/edit`)}>
-            Edit campaign
+            Edit
           </Button>
           <Button
             variant='outline'

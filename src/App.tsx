@@ -3,9 +3,8 @@ import {
   CampaignDetail,
   CampaignEdit,
   CampaignNew,
-  CampaignsList,
   CampaignPlay,
-  CampaignWorldView,
+  CampaignsList,
   CharacterChartViewer,
   CharacterPage,
   Characters,
@@ -76,21 +75,15 @@ function CompassRoutes() {
             <Route path={`/campaigns`} element={<CampaignsList />} />
             <Route path={`/campaigns/new`} element={<CampaignNew />} />
             <Route path={`/campaigns/:campaignId`} element={<CampaignDetail />} />
-            <Route
-              path={`/campaigns/:campaignId/locations/:locationId/view`}
-              element={<CampaignWorldView />}
-            />
-            <Route path={`/campaigns/:campaignId/view`} element={<CampaignWorldView />} />
             <Route path={`/campaigns/:campaignId/edit`} element={<CampaignEdit />} />
             <Route
               path={`/campaigns/:campaignId/locations/:locationId/edit`}
               element={<CampaignEdit />}
             />
             <Route path={`/campaigns/:campaignId/play`} element={<CampaignPlay />} />
+
             <Route path={`/worlds`} element={<Worlds />} />
             <Route path={`/worlds/:worldId`} element={<WorldEditor />} />
-            <Route path={`/worlds/:worldId/scripts`} element={<ScriptsIndex />} />
-            <Route path={`/worlds/:worldId/scripts/:scriptId`} element={<ScriptEditorPage />} />
             <Route path={`/worlds/:worldId/locations/:locationId`} element={<WorldEditor />} />
             <Route path={`/worlds/:worldId/tilemaps`} element={<TilemapListPage />} />
             <Route path={`/worlds/:worldId/tilemaps/:tilemapId`} element={<TilemapEditor />} />

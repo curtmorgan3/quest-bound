@@ -1,5 +1,4 @@
 import { Button, Checkbox, Input, Label } from '@/components';
-import { Slider } from '@/components/ui/slider';
 import { ImageUpload } from '@/components/composites/image-upload';
 import {
   Select,
@@ -8,6 +7,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Slider } from '@/components/ui/slider';
 import type { Location } from '@/types';
 import { MapPinned, Minus } from 'lucide-react';
 import { useEffect, useState } from 'react';
@@ -127,7 +127,7 @@ export function WorldEditorLocationPanel({
           image={location.backgroundImage ?? null}
           alt='Background'
           onUpload={(id) => onUpdateLocation({ backgroundAssetId: id })}
-          onRemove={() => onUpdateLocation({ backgroundAssetId: null })}
+          onRemove={() => onUpdateLocation({ backgroundAssetId: null, backgroundImage: null })}
           rulesetId={rulesetId ?? undefined}
         />
       </div>
@@ -193,28 +193,6 @@ export function WorldEditorLocationPanel({
           }
         />
       </div>
-      {/* <div className='grid gap-1'>
-        <Label htmlFor={`${idPrefix}-sides`} className='text-xs'>
-          Sides
-        </Label>
-        <Input
-          id={`${idPrefix}-sides`}
-          type='number'
-          min={3}
-          max={12}
-          value={location.sides ?? 4}
-          onChange={(e) => {
-            const v = parseInt(e.target.value, 10);
-            if (!Number.isNaN(v)) onUpdateLocation({ sides: Math.max(3, Math.min(12, v)) });
-          }}
-          onBlur={(e) => {
-            const v = parseInt(e.target.value, 10);
-            if (!Number.isNaN(v)) onUpdateLocation({ sides: Math.max(3, Math.min(12, v)) });
-          }}
-          className='h-8'
-        />
-      </div> */}
-
       <WorldEditorLocationMove
         siblingLocations={siblingLocations}
         onMoveAsChildOf={onMoveAsChildOf}
