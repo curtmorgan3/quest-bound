@@ -34,6 +34,7 @@ export const useCampaignPlayHandlers = ({
     (x: number, y: number) => {
       if (!currentLocation?.tiles || !characterIdParam) return;
       const top = getTopTileDataAt(currentLocation.tiles, x, y);
+      console.log(top);
       if (top?.actionId) {
         const client = getQBScriptClient();
         client.executeActionEvent(top.actionId, characterIdParam, null, 'on_activate');
@@ -58,6 +59,29 @@ export const useCampaignPlayHandlers = ({
     [playingCc?.id, updateCampaignCharacter, setMoveLocationOpen],
   );
 
+  const handleAdvanceToLocation = useCallback(
+    async (locationId: string) => {
+      if (!playingCc?.id) return;
+      const loc = await db.locations.get(locationId);
+      if (!loc) return;
+      const tileId = loc.tiles?.length ? getFirstPassableTileId(loc.tiles) : null;
+      await updateCampaignCharacter(playingCc.id, {
+        currentLocationId: locationId,
+        currentTileId: tileId ?? null,
+      });
+    },
+    [playingCc?.id, updateCampaignCharacter],
+  );
+
+  const handleBack = useCallback(async () => {
+    if (!playingCc?.id || !currentLocation) return;
+    const parentId = currentLocation.parentLocationId ?? null;
+    await updateCampaignCharacter(playingCc.id, {
+      currentLocationId: parentId,
+      currentTileId: null,
+    });
+  }, [playingCc?.id, currentLocation, updateCampaignCharacter]);
+
   useEffect(() => {
     if (playingCc?.id && !currentLocationId && rootLocations.length > 0) {
       const firstRoot = rootLocations[0]!;
@@ -74,5 +98,7 @@ export const useCampaignPlayHandlers = ({
   return {
     handleTileClick,
     handleMoveToLocation,
+    handleAdvanceToLocation,
+    handleBack,
   };
 };

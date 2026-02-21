@@ -57,7 +57,7 @@ export const assetInjectorMiddleware: Middleware<DBCore> = {
         const downlevelTable = downlevelDatabase.table(tableName);
 
         if (
-            [
+          [
             'users',
             'rulesets',
             'characters',
@@ -80,6 +80,11 @@ export const assetInjectorMiddleware: Middleware<DBCore> = {
           ...downlevelTable,
           get: (req) => {
             return downlevelTable.get(req).then(injectImageData);
+          },
+          getMany: (req) => {
+            return downlevelTable.getMany(req).then((results) =>
+              results.map(injectImageData),
+            );
           },
           query: (req) => {
             return downlevelTable.query(req).then(async (originalResult) => {

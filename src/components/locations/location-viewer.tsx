@@ -5,7 +5,7 @@ import { db } from '@/stores';
 import type { Tile, TileData, Tilemap } from '@/types';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { ZoomIn, ZoomOut } from 'lucide-react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { getTilesByKey } from './utils';
 
 const DEFAULT_TILE_RENDER_SIZE = 32;
@@ -48,6 +48,12 @@ export interface LocationViewerProps {
   onDrop?: (x: number, y: number, e: React.DragEvent) => void;
   /** Optional: called when an overlay node (e.g. character/item) is clicked. Use to open context menu at that tile. */
   onOverlayClick?: (tileId: string, e: React.MouseEvent) => void;
+  /** When true, clicking a tile opens a menu with "Move Character" instead of calling onSelectCell. */
+  playMode?: boolean;
+  /** In play mode, called when the user chooses "Move Character" for a tile. */
+  onMoveCharacter?: (tileId: string) => void;
+  /** In play mode, called when the user clicks a cell with no tile. Should create a tile and return its id, or null on failure. */
+  onCreateTileAt?: (x: number, y: number) => Promise<string | null>;
 }
 
 export function LocationViewer({
@@ -59,8 +65,18 @@ export function LocationViewer({
   eventTileIds = [],
   onDrop,
   onOverlayClick,
+  playMode = false,
+  onMoveCharacter,
+  onCreateTileAt,
 }: LocationViewerProps) {
   const location = useLocation(locationId);
+  const [tileMenu, setTileMenu] = useState<{
+    x: number;
+    y: number;
+    clientX: number;
+    clientY: number;
+    tileId: string;
+  } | null>(null);
   const { tilemaps } = useTilemaps(worldId);
   const tilemapsList = tilemaps ?? [];
   const loc = location ?? undefined;
@@ -109,6 +125,38 @@ export function LocationViewer({
     return map;
   }, [loc?.tiles]);
   const mapImageUrl = loc?.mapAsset ?? null;
+
+  const handleCellClick = useCallback(
+    async (x: number, y: number, e: React.MouseEvent) => {
+      if (playMode && onMoveCharacter) {
+        const layers = tilesByKey.get(`${x},${y}`) ?? [];
+        let topTile = layers.length > 0 ? layers[layers.length - 1]! : null;
+        if (!topTile && onCreateTileAt) {
+          const newTileId = await onCreateTileAt(x, y);
+          if (newTileId) topTile = { id: newTileId, x, y, zIndex: 0 } as TileData;
+        }
+        if (topTile) {
+          setTileMenu({
+            x,
+            y,
+            clientX: e.clientX,
+            clientY: e.clientY,
+            tileId: topTile.id,
+          });
+        }
+        return;
+      }
+      onSelectCell?.(x, y, e);
+    },
+    [playMode, onMoveCharacter, onCreateTileAt, tilesByKey, onSelectCell],
+  );
+
+  const handleMoveCharacter = useCallback(() => {
+    if (tileMenu) {
+      onMoveCharacter?.(tileMenu.tileId);
+      setTileMenu(null);
+    }
+  }, [tileMenu, onMoveCharacter]);
 
   useEffect(() => {
     const dataUrls = new Map<string, string>();
@@ -232,10 +280,10 @@ export function LocationViewer({
                 return (
                   <div
                     key={key}
-                    role={onSelectCell ? 'button' : undefined}
+                    role={onSelectCell || (playMode && onMoveCharacter) ? 'button' : undefined}
                     className='shrink-0 bg-muted/50 hover:bg-muted relative'
                     style={{ width: effectiveTileSize, height: effectiveTileSize }}
-                    onClick={(e) => onSelectCell?.(x, y, e)}
+                    onClick={(e) => handleCellClick(x, y, e)}
                     onDragOver={
                       onDrop
                         ? (e) => {
@@ -340,6 +388,22 @@ export function LocationViewer({
             })}
         </div>
       </div>
+
+      {tileMenu && playMode && onMoveCharacter && (
+        <>
+          <div className='fixed inset-0 z-10' onClick={() => setTileMenu(null)} aria-hidden />
+          <div
+            className='fixed z-20 rounded-md border bg-popover px-2 py-1 shadow-md'
+            style={{ left: tileMenu.clientX, top: tileMenu.clientY }}>
+            <button
+              type='button'
+              className='block w-full rounded px-2 py-1.5 text-left text-sm hover:bg-accent'
+              onClick={handleMoveCharacter}>
+              Move Character
+            </button>
+          </div>
+        </>
+      )}
     </div>
   );
 }

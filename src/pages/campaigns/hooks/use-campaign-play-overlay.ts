@@ -24,9 +24,7 @@ export const useCampaignPlayOverlay = ({
 
   const itemsAtLocation = useMemo(
     () =>
-      campaignItems.filter(
-        (ci) => ci.currentLocationId === currentLocationId && ci.currentTileId,
-      ),
+      campaignItems.filter((ci) => ci.currentLocationId === currentLocationId && ci.currentTileId),
     [campaignItems, currentLocationId],
   );
 

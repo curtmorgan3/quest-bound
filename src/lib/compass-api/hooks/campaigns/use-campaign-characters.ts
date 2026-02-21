@@ -10,9 +10,7 @@ export const useCampaignCharacters = (campaignId: string | undefined) => {
 
   const campaignCharacters = useLiveQuery(
     async (): Promise<CampaignCharacter[]> =>
-      campaignId
-        ? db.campaignCharacters.where('campaignId').equals(campaignId).toArray()
-        : [],
+      campaignId ? db.campaignCharacters.where('campaignId').equals(campaignId).toArray() : [],
     [campaignId],
   );
 
@@ -29,9 +27,7 @@ export const useCampaignCharacters = (campaignId: string | undefined) => {
         .equals(characterId)
         .sortBy('loadOrder');
       const firstArchetypeId = characterArchetypes[0]?.archetypeId;
-      const archetype = firstArchetypeId
-        ? await db.archetypes.get(firstArchetypeId)
-        : null;
+      const archetype = firstArchetypeId ? await db.archetypes.get(firstArchetypeId) : null;
 
       await db.campaignCharacters.add({
         id,

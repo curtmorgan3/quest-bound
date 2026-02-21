@@ -1,5 +1,6 @@
 import { Button, Card } from '@/components';
-import { LocationViewer } from '@/components/locations';
+import { getTopTileDataAt, LocationViewer } from '@/components/locations';
+import { WorldViewer } from '@/components/worlds/world-viewer';
 import {
   useCampaign,
   useCampaignCharacters,
@@ -8,8 +9,9 @@ import {
   useLocations,
   useWorld,
 } from '@/lib/compass-api';
-import { ChevronRight, User } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import type { TileData } from '@/types';
+import { ArrowUp, ChevronRight, User } from 'lucide-react';
+import { useCallback, useMemo, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import {
   useCampaignPlayEligibleCharacters,
@@ -24,7 +26,8 @@ export function CampaignPlay() {
   const navigate = useNavigate();
   const campaign = useCampaign(campaignId);
   const world = useWorld(campaign?.worldId);
-  const { campaignCharacters, createCampaignCharacter } = useCampaignCharacters(campaignId);
+  const { campaignCharacters, createCampaignCharacter, updateCampaignCharacter } =
+    useCampaignCharacters(campaignId);
   const eligibleCharacters = useCampaignPlayEligibleCharacters({
     campaignId,
     rulesetId: campaign?.rulesetId,
@@ -38,7 +41,7 @@ export function CampaignPlay() {
   );
   const currentLocationId = playingCc?.currentLocationId ?? null;
   const currentLocation = useLocation(currentLocationId ?? undefined);
-  const { locations: rootLocations } = useLocations(campaign?.worldId, null);
+  const { locations: rootLocations, updateLocation } = useLocations(campaign?.worldId, null);
   const { locations: childLocations } = useLocations(campaign?.worldId, currentLocationId);
   const eventLocationsWithEvent = useCampaignEventLocationsByLocation(
     currentLocationId ?? undefined,
@@ -51,15 +54,37 @@ export function CampaignPlay() {
     eventLocationsWithEvent,
   });
 
-  const { handleTileClick, handleMoveToLocation } = useCampaignPlayHandlers({
-    campaignId,
-    characterIdParam,
-    currentLocation,
-    currentLocationId,
-    playingCc,
-    rootLocations,
-    setMoveLocationOpen,
-  });
+  const { handleTileClick, handleMoveToLocation, handleAdvanceToLocation, handleBack } =
+    useCampaignPlayHandlers({
+      campaignId,
+      characterIdParam,
+      currentLocation,
+      currentLocationId,
+      playingCc,
+      rootLocations,
+      setMoveLocationOpen,
+    });
+
+  const locationsList = currentLocationId ? childLocations : rootLocations;
+
+  const handleCreateTileAt = useCallback(
+    async (x: number, y: number): Promise<string | null> => {
+      if (!currentLocation) return null;
+      const tiles = currentLocation.tiles ?? [];
+      const existing = getTopTileDataAt(tiles, x, y);
+      if (existing) return existing.id;
+      const newTile: TileData = {
+        id: crypto.randomUUID(),
+        x,
+        y,
+        zIndex: 0,
+        isPassable: true,
+      };
+      await updateLocation(currentLocation.id, { tiles: [...tiles, newTile] });
+      return newTile.id;
+    },
+    [currentLocation, updateLocation],
+  );
 
   const showLocationView = currentLocationId && currentLocation?.hasMap && playingCc;
 
@@ -149,6 +174,14 @@ export function CampaignPlay() {
           <>
             <ChevronRight className='h-4 w-4 text-muted-foreground' />
             <span className='font-medium text-foreground'>{currentLocation.label}</span>
+            <Button
+              variant='ghost'
+              size='sm'
+              onClick={() => handleBack()}
+              data-testid='campaign-play-back'
+              className='clickable'>
+              <ArrowUp className='h-4 w-4' />
+            </Button>
           </>
         )}
         <div className='ml-auto flex gap-2'>
@@ -168,22 +201,19 @@ export function CampaignPlay() {
       </div>
       <div className='min-h-0 flex-1 p-4'>
         {!showLocationView && (
-          <div className='flex h-full min-h-[300px] flex-col items-center justify-center gap-4'>
-            <p className='text-muted-foreground'>
-              {!currentLocationId
-                ? 'Loading location…'
-                : !currentLocation?.hasMap
-                  ? 'This location has no map.'
-                  : 'No location set.'}
-            </p>
-            {rootLocations.length > 0 && !currentLocationId && (
-              <p className='text-sm text-muted-foreground'>
-                You will be placed at the first location.
-              </p>
-            )}
+          <div className='h-full min-h-[400px]'>
+            <WorldViewer
+              locations={locationsList}
+              onAdvanceToLocation={handleAdvanceToLocation}
+              onOpenMap={handleAdvanceToLocation}
+              translateExtent={[
+                [-2000, -2000],
+                [2000, 2000],
+              ]}
+            />
           </div>
         )}
-        {showLocationView && currentLocationId && (
+        {showLocationView && currentLocationId && playingCc && (
           <div className='h-full flex justify-center items-center'>
             <LocationViewer
               locationId={currentLocationId}
@@ -192,6 +222,14 @@ export function CampaignPlay() {
               tileRenderSize={currentLocation?.tileRenderSize}
               overlayNodes={overlayNodes}
               eventTileIds={eventTileIds}
+              playMode
+              onMoveCharacter={(tileId) =>
+                updateCampaignCharacter(playingCc.id, {
+                  currentLocationId: currentLocationId,
+                  currentTileId: tileId,
+                })
+              }
+              onCreateTileAt={handleCreateTileAt}
             />
           </div>
         )}
