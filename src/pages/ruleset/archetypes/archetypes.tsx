@@ -34,6 +34,7 @@ export const Archetypes = () => {
   const [editImage, setEditImage] = useState<string | null>(null);
   const [editMapWidth, setEditMapWidth] = useState<number | undefined>(undefined);
   const [editMapHeight, setEditMapHeight] = useState<number | undefined>(undefined);
+  const [editSprites, setEditSprites] = useState<string[]>([]);
   const justCreatedRef = useRef(false);
 
   const getImageFromAssetId = (id: string | null) => {
@@ -99,6 +100,7 @@ export const Archetypes = () => {
       setEditImage(a.image ?? null);
       setEditMapWidth(a.mapWidth);
       setEditMapHeight(a.mapHeight);
+      setEditSprites(a.sprites ?? []);
     }
   };
 
@@ -111,6 +113,7 @@ export const Archetypes = () => {
       image: editImage,
       mapWidth: editMapWidth,
       mapHeight: editMapHeight,
+      sprites: editSprites,
     });
     setEditingId(null);
   };
@@ -129,6 +132,20 @@ export const Archetypes = () => {
   const handleEditImageRemove = () => {
     setEditAssetId(null);
     setEditImage(null);
+  };
+
+  const editSpriteAssetId = editSprites[0] ?? null;
+  const handleEditSpriteUpload = (uploadedAssetId: string) => {
+    setEditSprites([uploadedAssetId]);
+  };
+  const handleEditSpriteSetUrl = (url: string) => {
+    setEditSprites([url]);
+  };
+  const handleEditSpriteRemove = async () => {
+    if (editSpriteAssetId && !editSpriteAssetId.startsWith('http')) {
+      await deleteAsset(editSpriteAssetId);
+    }
+    setEditSprites([]);
   };
 
   const moveUp = async (index: number) => {
@@ -229,6 +246,7 @@ export const Archetypes = () => {
             editImage={editImage}
             editMapWidth={editMapWidth}
             editMapHeight={editMapHeight}
+            editSprites={editSprites}
             onMoveUp={() => moveUp(index)}
             onMoveDown={() => moveDown(index)}
             onStartEdit={() => startEdit(archetype.id)}
@@ -241,6 +259,9 @@ export const Archetypes = () => {
             onEditSetUrl={handleEditSetUrl}
             onEditMapWidthChange={setEditMapWidth}
             onEditMapHeightChange={setEditMapHeight}
+            onEditSpriteUpload={handleEditSpriteUpload}
+            onEditSpriteRemove={handleEditSpriteRemove}
+            onEditSpriteSetUrl={handleEditSpriteSetUrl}
             onDelete={() => deleteArchetype(archetype.id)}
             confirmBeforeDelete={doNotAsk}
           />

@@ -191,7 +191,7 @@ export const BaseCreate = ({ onCreate }: BaseCreateProps) => {
   };
 
   return (
-    <div className='flex flex-col gap-4'>
+    <div className='flex flex-col gap-4 max-h-[80vh] overflow-auto'>
       <div className='flex justify-around items-center gap-2 mb-4'>
         <Button
           variant={activeType === 'attributes' ? 'default' : 'outline'}

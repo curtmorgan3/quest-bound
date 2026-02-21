@@ -101,8 +101,12 @@ export const ItemCreate = ({
     setSprites([uploadedAssetId]);
   };
 
+  const handleSpriteSetUrl = (url: string) => {
+    setSprites([url]);
+  };
+
   const handleSpriteRemove = async () => {
-    if (spriteAssetId) {
+    if (spriteAssetId && !spriteAssetId.startsWith('http')) {
       await deleteAsset(spriteAssetId);
     }
     setSprites([]);
@@ -110,7 +114,10 @@ export const ItemCreate = ({
 
   // Use the image from props (edit mode) or look it up from assets (create mode)
   const displayImage = image || getImageFromAssetId(assetId);
-  const displaySpriteImage = getImageFromAssetId(spriteAssetId);
+  const displaySpriteImage =
+    (sprites[0]?.startsWith('http://') || sprites[0]?.startsWith('https://')
+      ? sprites[0]
+      : getImageFromAssetId(spriteAssetId)) ?? null;
 
   return (
     <div className='flex flex-col gap-6'>
@@ -257,6 +264,7 @@ export const ItemCreate = ({
           rulesetId={rulesetId}
           onUpload={handleSpriteUpload}
           onRemove={handleSpriteRemove}
+          onSetUrl={handleSpriteSetUrl}
         />
       </div>
     </div>

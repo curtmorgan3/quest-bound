@@ -22,6 +22,9 @@ export type LocationViewerOverlayNode = {
   type: 'character' | 'item';
   imageUrl: string | null;
   label: string;
+  /** Size in tiles (default 1). */
+  mapWidth?: number;
+  mapHeight?: number;
   /** When set, the overlay is draggable and this payload is passed on drop. */
   dragPayload?: LocationViewerDragPayload;
 };
@@ -277,16 +280,19 @@ export function LocationViewer({
               const coord = tileIdToCoord.get(node.tileId);
               if (coord == null) return null;
               const isDraggable = Boolean(node.dragPayload);
+              const w = node.mapWidth ?? 1;
+              const h = node.mapHeight ?? 1;
+              const padding = 2;
               return (
                 <div
                   key={node.id}
                   className='absolute flex items-center justify-center overflow-hidden cursor-grab active:cursor-grabbing'
                   style={{
                     backgroundColor: 'transparent',
-                    left: coord.x * effectiveTileSize + 2,
-                    top: coord.y * effectiveTileSize + 2,
-                    width: effectiveTileSize - 4,
-                    height: effectiveTileSize - 4,
+                    left: coord.x * effectiveTileSize + padding,
+                    top: coord.y * effectiveTileSize + padding,
+                    width: effectiveTileSize * w - padding * 2,
+                    height: effectiveTileSize * h - padding * 2,
                     pointerEvents: isDraggable ? 'auto' : 'none',
                     ...(isDraggable ? { border: '2px solid transparent', borderRadius: 4 } : {}),
                   }}

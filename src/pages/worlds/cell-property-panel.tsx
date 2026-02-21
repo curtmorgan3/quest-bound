@@ -1,7 +1,7 @@
 import { Button, Checkbox, Input, Label } from '@/components';
 import { cn } from '@/lib/utils';
 import type { Action, TileData } from '@/types';
-import { Trash2 } from 'lucide-react';
+import { Plus, Trash2 } from 'lucide-react';
 import type { CSSProperties } from 'react';
 
 export interface CellPropertyPanelProps {
@@ -17,6 +17,8 @@ export interface CellPropertyPanelProps {
   actions: Action[];
   onUpdateTileData: (updates: Partial<TileData>) => void;
   onRemoveTile: () => void;
+  /** Called when the user clicks "Add Tile" to add a blank tile (no tilemap) at this cell. */
+  onAddBlankTile?: () => void;
 }
 
 export function CellPropertyPanel({
@@ -28,6 +30,7 @@ export function CellPropertyPanel({
   actions,
   onUpdateTileData,
   onRemoveTile,
+  onAddBlankTile,
 }: CellPropertyPanelProps) {
   const idPrefix = `cell-${cell.x}-${cell.y}`;
 
@@ -43,6 +46,7 @@ export function CellPropertyPanel({
             <div className='flex flex-wrap gap-1'>
               {layers.map((td) => {
                 const isSelected = selectedTileData?.id === td.id;
+                const hasStyle = td.tileId != null;
                 return (
                   <button
                     key={td.id}
@@ -50,13 +54,25 @@ export function CellPropertyPanel({
                     className={cn(
                       'h-8 w-8 shrink-0 overflow-hidden rounded border-2 bg-muted/50 transition-colors hover:bg-muted',
                       isSelected ? 'border-primary ring-1 ring-primary' : 'border-transparent',
+                      !hasStyle && 'border-dashed',
                     )}
                     style={getTileStyle(td)}
                     onClick={() => onSelectLayer(td.id)}
-                    title={`Z-index: ${td.zIndex ?? 0}`}
+                    title={hasStyle ? `Z-index: ${td.zIndex ?? 0}` : `Blank (Z-index: ${td.zIndex ?? 0})`}
                   />
                 );
               })}
+              {onAddBlankTile && (
+                <Button
+                  type='button'
+                  variant='outline'
+                  size='icon'
+                  className='h-8 w-8 shrink-0'
+                  onClick={onAddBlankTile}
+                  title='Add blank tile'>
+                  <Plus className='h-4 w-4' />
+                </Button>
+              )}
             </div>
           </div>
           {selectedTileData && (
@@ -91,9 +107,17 @@ export function CellPropertyPanel({
           )}
         </>
       ) : (
-        <p className='text-xs text-muted-foreground'>
-          No tile here. Select a tile and click to paint.
-        </p>
+        <div className='flex flex-col gap-2'>
+          <p className='text-xs text-muted-foreground'>
+            No tile here. Select a tile and click to paint, or add a blank tile.
+          </p>
+          {onAddBlankTile && (
+            <Button variant='outline' size='sm' className='gap-1' onClick={onAddBlankTile}>
+              <Plus className='h-4 w-4' />
+              Add Tile
+            </Button>
+          )}
+        </div>
       )}
     </div>
   );

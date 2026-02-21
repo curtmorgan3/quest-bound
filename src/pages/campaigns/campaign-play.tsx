@@ -97,6 +97,8 @@ export function CampaignPlay() {
         type: 'character',
         imageUrl,
         label: character?.name ?? 'Character',
+        mapWidth: campaignCharacter.mapWidth ?? 1,
+        mapHeight: campaignCharacter.mapHeight ?? 1,
       });
     });
     (itemsResolved ?? []).forEach(({ campaignItem, item }) => {
@@ -110,6 +112,8 @@ export function CampaignPlay() {
         type: 'item',
         imageUrl,
         label: item?.title ?? 'Item',
+        mapWidth: campaignItem.mapWidth ?? 1,
+        mapHeight: campaignItem.mapHeight ?? 1,
       });
     });
     return nodes;

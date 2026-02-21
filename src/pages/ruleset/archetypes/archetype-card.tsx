@@ -31,6 +31,7 @@ export interface ArchetypeCardProps {
   editImage: string | null;
   editMapWidth: number | undefined;
   editMapHeight: number | undefined;
+  editSprites: string[];
   onMoveUp: () => void;
   onMoveDown: () => void;
   onStartEdit: () => void;
@@ -43,6 +44,9 @@ export interface ArchetypeCardProps {
   onEditSetUrl: (url: string) => void;
   onEditMapWidthChange: (value: number | undefined) => void;
   onEditMapHeightChange: (value: number | undefined) => void;
+  onEditSpriteUpload: (assetId: string) => void;
+  onEditSpriteRemove: () => void;
+  onEditSpriteSetUrl: (url: string) => void;
   onDelete: () => void;
   confirmBeforeDelete: boolean;
 }
@@ -60,6 +64,7 @@ export function ArchetypeCard({
   editImage,
   editMapWidth,
   editMapHeight,
+  editSprites,
   onMoveUp,
   onMoveDown,
   onStartEdit,
@@ -72,6 +77,9 @@ export function ArchetypeCard({
   onEditSetUrl,
   onEditMapWidthChange,
   onEditMapHeightChange,
+  onEditSpriteUpload,
+  onEditSpriteRemove,
+  onEditSpriteSetUrl,
   onDelete,
   confirmBeforeDelete,
 }: ArchetypeCardProps) {
@@ -169,6 +177,24 @@ export function ArchetypeCard({
                   />
                 </div>
               </div>
+            </div>
+            <div className='grid gap-2'>
+              <Label className='text-muted-foreground'>Map sprite</Label>
+              <p className='text-sm text-muted-foreground'>
+                Optional image shown when this archetype is placed on the campaign map.
+              </p>
+              <ImageUpload
+                image={
+                  (editSprites[0]?.startsWith('http://') || editSprites[0]?.startsWith('https://')
+                    ? editSprites[0]
+                    : getImageFromAssetId(editSprites[0] ?? null)) ?? undefined
+                }
+                alt='Archetype map sprite'
+                rulesetId={rulesetId}
+                onUpload={onEditSpriteUpload}
+                onRemove={onEditSpriteRemove}
+                onSetUrl={onEditSpriteSetUrl}
+              />
             </div>
             <div className='flex gap-2'>
               <Button size='sm' onClick={onSaveEdit}>

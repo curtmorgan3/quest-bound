@@ -14,7 +14,7 @@ export const dbSchema = {
   pages: `${common}, label, category, moduleId`,
   components: `${common}, rulesetId, windowId, type, x, y, z, height, width, rotation, selected, assetId, assetUrl, groupId, attributeId, actionId, data, style`,
   characters: `${common}, rulesetId, userId, assetId, image, moduleId`,
-  archetypes: `${common}, rulesetId, name, description, assetId, image, scriptId, testCharacterId, isDefault, loadOrder, moduleId, [rulesetId+name]`,
+  archetypes: `${common}, rulesetId, name, description, assetId, image, scriptId, testCharacterId, isDefault, loadOrder, moduleId, sprites, [rulesetId+name]`,
   inventories: `${common}, rulesetId, characterId, title, category, type`,
   inventoryItems: `${common}, characterId, inventoryId, entityId, quantity`,
   rulesetPages: `${common}, rulesetId, pageId, [rulesetId+pageId]`,
@@ -40,4 +40,4 @@ export const dbSchema = {
 };
 
 // Increment on every schema change
-export const dbSchemaVersion = 40;
+export const dbSchemaVersion = 41;

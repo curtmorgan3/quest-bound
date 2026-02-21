@@ -174,7 +174,7 @@ export function CampaignEdit() {
       if (!campaignCharacter.currentTileId) return;
       let imageUrl: string | null = null;
       if (character?.sprites?.[0]) {
-        imageUrl = getAssetData(character.sprites[0]) ?? null;
+        imageUrl = character.sprites[0];
       }
       if (!imageUrl && character?.image) imageUrl = character.image;
       nodes.push({
@@ -183,6 +183,8 @@ export function CampaignEdit() {
         type: 'character',
         imageUrl,
         label: character?.name ?? 'Character',
+        mapWidth: campaignCharacter.mapWidth ?? 1,
+        mapHeight: campaignCharacter.mapHeight ?? 1,
         dragPayload: { type: 'campaign-character', id: campaignCharacter.id },
       });
     });
@@ -197,6 +199,8 @@ export function CampaignEdit() {
         type: 'item',
         imageUrl,
         label: item?.title ?? 'Item',
+        mapWidth: campaignItem.mapWidth ?? 1,
+        mapHeight: campaignItem.mapHeight ?? 1,
         dragPayload: { type: 'campaign-item', id: campaignItem.id },
       });
     });

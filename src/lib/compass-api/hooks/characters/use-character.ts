@@ -116,9 +116,7 @@ export const useCharacter = (_id?: string) => {
       } as unknown as Inventory);
 
       const characterImage =
-        data.image != null && data.image !== ''
-          ? data.image
-          : (firstArchetype.image ?? null);
+        data.image != null && data.image !== '' ? data.image : (firstArchetype.image ?? null);
 
       await db.characters.add({
         ...data,
@@ -135,6 +133,7 @@ export const useCharacter = (_id?: string) => {
         pinnedSidebarCharts: data.pinnedSidebarCharts ?? [],
         lastViewedPageId: data.lastViewedPageId ?? null,
         sheetLocked: data.sheetLocked ?? false,
+        sprites: data.sprites ?? firstArchetype?.sprites ?? [],
       } as Character);
 
       await duplicateCharacterFromTemplate(testCharacter.id, characterId, inventoryId);

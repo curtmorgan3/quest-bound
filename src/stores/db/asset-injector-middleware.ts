@@ -27,6 +27,18 @@ function injectImageData(record: any) {
     if (backgroundImage) next = { ...next, backgroundImage };
   }
 
+  if (record.sprites && Array.isArray(record.sprites)) {
+    next = {
+      ...next,
+      sprites: record.sprites.map((s: string) => {
+        if (typeof s !== 'string') return s;
+        if (s.startsWith('http://') || s.startsWith('https://')) return s;
+        const data = resolveAssetUrl(s);
+        return data ?? s;
+      }),
+    };
+  }
+
   return next;
 }
 

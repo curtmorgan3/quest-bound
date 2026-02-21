@@ -211,6 +211,19 @@ export function LocationEditor() {
     updateLocation(loc.id, { tiles: newTiles });
   };
 
+  const handleAddBlankTileToCell = () => {
+    if (!loc || !selectedCell) return;
+    const newTile: TileData = {
+      id: crypto.randomUUID(),
+      x: selectedCell.x,
+      y: selectedCell.y,
+      zIndex: paintLayer,
+      isPassable: true,
+    };
+    updateLocation(loc.id, { tiles: [...(loc.tiles ?? []), newTile] });
+    setSelectedLayerId(newTile.id);
+  };
+
   const getAssetData = (assetId: string) => {
     const asset = assets.find((a) => a.id === assetId);
     return asset?.data ?? null;
@@ -494,6 +507,7 @@ export function LocationEditor() {
               actions={[]}
               onUpdateTileData={handleUpdateTileData}
               onRemoveTile={handleRemoveTileFromCell}
+              onAddBlankTile={handleAddBlankTileToCell}
             />
           )}
         </div>
