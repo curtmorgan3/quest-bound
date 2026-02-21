@@ -1,28 +1,29 @@
 import { Button, Input, Label } from '@/components';
-import { useAssets, useTilemap, useTilemaps, useTiles, useWorld } from '@/lib/compass-api';
+import { useTilemapAsset } from '@/hooks';
+import { useAssets, useTilemap, useTilemaps, useTiles } from '@/lib/compass-api';
 import { db } from '@/stores';
 import type { Tile } from '@/types';
 import { ArrowLeft } from 'lucide-react';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 
 export function TilemapEditor() {
   const { worldId, tilemapId } = useParams<{ worldId: string; tilemapId: string }>();
-  const world = useWorld(worldId);
   const tilemap = useTilemap(tilemapId);
   const { updateTilemap } = useTilemaps(worldId ?? undefined);
   const { tiles, createTile, deleteTile } = useTiles(tilemapId ?? undefined);
-  const { assets } = useAssets(world?.rulesetId ?? null);
-  const [imgSize, setImgSize] = useState<{ w: number; h: number } | null>(null);
+  const { assets } = useAssets();
+  const tm = tilemap ?? undefined;
+  const assetData = tm?.assetId ? assets.find((a) => a.id === tm.assetId)?.data : null;
+  const { mapImageDimensions } = useTilemapAsset({ worldId, imageUrl: assetData ?? undefined });
+
   const [labelInput, setLabelInput] = useState('');
   const [tileWidthInput, setTileWidthInput] = useState('');
   const [tileHeightInput, setTileHeightInput] = useState('');
 
-  const tm = tilemap ?? undefined;
   const tileWidth = tm?.tileWidth ?? 32;
   const tileHeight = tm?.tileHeight ?? 32;
-  const assetData = tm?.assetId ? assets.find((a) => a.id === tm.assetId)?.data : null;
-
+  const imgSize = mapImageDimensions?.scaled ?? null;
   const cols = imgSize ? Math.max(0, Math.floor(imgSize.w / tileWidth)) : 0;
   const rows = imgSize ? Math.max(0, Math.floor(imgSize.h / tileHeight)) : 0;
 
@@ -40,14 +41,30 @@ export function TilemapEditor() {
     setLabelInput('');
     updateTilemap(tm.id, { label: next });
   };
-  const handleApplyDimensions = () => {
+
+  const tileWidthInputRef = useRef(tileWidthInput);
+  const tileHeightInputRef = useRef(tileHeightInput);
+  tileWidthInputRef.current = tileWidthInput;
+  tileHeightInputRef.current = tileHeightInput;
+
+  const DEBOUNCE_MS = 400;
+  useEffect(() => {
     if (!tm) return;
-    const w = Math.max(8, parseInt(tileWidthInput, 10) || tileWidth);
-    const h = Math.max(8, parseInt(tileHeightInput, 10) || tileHeight);
-    setTileWidthInput('');
-    setTileHeightInput('');
-    updateTilemap(tm.id, { tileWidth: w, tileHeight: h });
-  };
+    const t = setTimeout(() => {
+      const wRaw = parseInt(tileWidthInputRef.current, 10);
+      const hRaw = parseInt(tileHeightInputRef.current, 10);
+      const w = Number.isNaN(wRaw) ? tileWidth : wRaw;
+      const h = Number.isNaN(hRaw) ? tileHeight : hRaw;
+      const widthChanged = tileWidthInputRef.current !== '' && w !== tileWidth;
+      const heightChanged = tileHeightInputRef.current !== '' && h !== tileHeight;
+      if (widthChanged || heightChanged) {
+        updateTilemap(tm.id, { tileWidth: w, tileHeight: h });
+        setTileWidthInput('');
+        setTileHeightInput('');
+      }
+    }, DEBOUNCE_MS);
+    return () => clearTimeout(t);
+  }, [tm, tileWidthInput, tileHeightInput, tileWidth, tileHeight, updateTilemap]);
 
   const handleTileClick = async (tx: number, ty: number) => {
     if (!tilemapId) return;
@@ -136,7 +153,7 @@ export function TilemapEditor() {
         <div className='ml-auto flex items-center gap-2'>
           <div className='flex items-center gap-1'>
             <Label htmlFor='te-tile-width' className='text-xs'>
-              W
+              Tile Width
             </Label>
             <Input
               id='te-tile-width'
@@ -144,12 +161,11 @@ export function TilemapEditor() {
               className='w-16'
               value={tileWidthInput || tileWidth}
               onChange={(e) => setTileWidthInput(e.target.value)}
-              onBlur={handleApplyDimensions}
             />
           </div>
           <div className='flex items-center gap-1'>
             <Label htmlFor='te-tile-height' className='text-xs'>
-              H
+              Tile Height
             </Label>
             <Input
               id='te-tile-height'
@@ -157,12 +173,8 @@ export function TilemapEditor() {
               className='w-16'
               value={tileHeightInput || tileHeight}
               onChange={(e) => setTileHeightInput(e.target.value)}
-              onBlur={handleApplyDimensions}
             />
           </div>
-          <Button variant='outline' size='sm' onClick={handleApplyDimensions}>
-            Apply
-          </Button>
         </div>
       </div>
 
@@ -176,18 +188,16 @@ export function TilemapEditor() {
               <img
                 src={assetData}
                 alt='Tilemap'
-                className='block max-h-[70vh] w-auto max-w-full'
+                className='block w-auto max-w-full'
                 style={{
                   imageRendering: 'pixelated',
-                }}
-                onLoad={(e) => {
-                  const img = e.currentTarget;
-                  setImgSize({ w: img.naturalWidth, h: img.naturalHeight });
+                  height: mapImageDimensions?.scaled.h,
+                  width: mapImageDimensions?.scaled.w,
                 }}
               />
               {imgSize && cols > 0 && rows > 0 && (
                 <div
-                  className='absolute inset-0 grid max-h-[70vh] max-w-full'
+                  className='absolute inset-0 grid max-w-full'
                   style={{
                     gridTemplateColumns: `repeat(${cols}, ${tileWidth}px)`,
                     gridTemplateRows: `repeat(${rows}, ${tileHeight}px)`,

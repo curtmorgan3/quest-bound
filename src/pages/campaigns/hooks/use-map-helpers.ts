@@ -22,7 +22,7 @@ interface UseMapHelpers {
   campaignId?: string;
   currentLocation?: Location;
   setTileMenu: (menu: TileMenu) => void;
-  selectedLocationId?: string;
+  selectedLocationId?: string | null;
 }
 
 export const useMapHelpers = ({

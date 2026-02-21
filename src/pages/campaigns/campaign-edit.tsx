@@ -86,6 +86,7 @@ export function CampaignEdit() {
     campaignId,
     setTileMenu,
     currentLocation,
+    selectedLocationId,
   });
 
   const eventTileIds = useMemo(

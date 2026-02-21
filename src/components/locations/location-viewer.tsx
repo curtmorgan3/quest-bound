@@ -1,14 +1,12 @@
 import { SpriteStack } from '@/components/composites/sprite-stack';
 import { Button } from '@/components/ui/button';
-import { useLocation, useTilemaps } from '@/lib/compass-api';
-import { db } from '@/stores';
-import type { Tile, TileData, Tilemap } from '@/types';
-import { useLiveQuery } from 'dexie-react-hooks';
+import { useTilemapAsset } from '@/hooks';
+import { useLocation } from '@/lib/compass-api';
+import type { TileData } from '@/types';
 import { ZoomIn, ZoomOut } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { getTilesByKey } from './utils';
 
-const DEFAULT_TILE_RENDER_SIZE = 32;
 const ZOOM_MIN = 0.25;
 const ZOOM_MAX = 3;
 const ZOOM_STEP = 0.25;
@@ -77,46 +75,18 @@ export function LocationViewer({
     clientY: number;
     tileId: string;
   } | null>(null);
-  const { tilemaps } = useTilemaps(worldId);
-  const tilemapsList = tilemaps ?? [];
   const loc = location ?? undefined;
   const gridWidth = loc?.gridWidth ?? 1;
   const gridHeight = loc?.gridHeight ?? 1;
-  const baseTileSize = tileRenderSizeProp ?? loc?.tileRenderSize ?? DEFAULT_TILE_RENDER_SIZE;
 
   const [zoom, setZoom] = useState(1);
-  const effectiveTileSize = baseTileSize * zoom;
 
-  const [assetDimensions, setAssetDimensions] = useState<Record<string, { w: number; h: number }>>(
-    {},
-  );
-  const assetDimensionsRef = useRef(assetDimensions);
-  assetDimensionsRef.current = assetDimensions;
-
-  const tileIdsInLocation = useMemo(
-    () => [
-      ...new Set(
-        (loc?.tiles ?? []).map((td) => td.tileId).filter((id): id is string => id != null),
-      ),
-    ],
-    [loc?.tiles],
-  );
-  const tilesById = useLiveQuery(
-    () =>
-      tileIdsInLocation.length > 0
-        ? db.tiles.bulkGet(tileIdsInLocation).then((arr) => {
-            const map = new Map<string, Tile>();
-            arr.forEach((t) => t && map.set(t.id, t));
-            return map;
-          })
-        : Promise.resolve(new Map<string, Tile>()),
-    [tileIdsInLocation.join(',')],
-  );
-  const tilemapsById = useMemo(() => {
-    const map = new Map<string, Tilemap>();
-    tilemapsList.forEach((tm) => map.set(tm.id, tm));
-    return map;
-  }, [tilemapsList]);
+  const { getTileStyle, effectiveTileSize } = useTilemapAsset({
+    worldId,
+    locationId,
+    zoom,
+    overrideTileRendersize: tileRenderSizeProp,
+  });
 
   const tilesByKey = useMemo(() => getTilesByKey(loc?.tiles ?? []), [loc?.tiles]);
   const tileIdToCoord = useMemo(() => {
@@ -157,58 +127,6 @@ export function LocationViewer({
       setTileMenu(null);
     }
   }, [tileMenu, onMoveCharacter]);
-
-  useEffect(() => {
-    const dataUrls = new Map<string, string>();
-    tilemapsList.forEach((tm) => {
-      if (tm.assetId && tm.image) {
-        dataUrls.set(tm.assetId, tm.image);
-      }
-    });
-    const cancels: Array<() => void> = [];
-    dataUrls.forEach((dataUrl, assetId) => {
-      if (assetDimensionsRef.current[assetId]) return;
-      const img = new Image();
-      img.onload = () => {
-        setAssetDimensions((prev) => ({
-          ...prev,
-          [assetId]: { w: img.naturalWidth, h: img.naturalHeight },
-        }));
-      };
-      img.src = dataUrl;
-      cancels.push(() => {
-        img.src = '';
-      });
-    });
-    return () => cancels.forEach((c) => c());
-  }, [tilemapsList]);
-
-  const getTileStyle = (td: TileData): React.CSSProperties => {
-    if (!td.tileId) return {}; // Placeholder tile (no tileset)
-    const tile = tilesById?.get(td.tileId);
-    if (!tile) return {};
-    const tilemap = tilemapsById.get(tile.tilemapId ?? '');
-    if (!tilemap) return {};
-    const data = tilemap.image ?? null;
-    if (!data) return {};
-    const tw = tilemap.tileWidth;
-    const th = tilemap.tileHeight;
-    const tileX = tile.tileX ?? 0;
-    const tileY = tile.tileY ?? 0;
-    const dim = assetDimensionsRef.current[tilemap.assetId];
-    const backgroundSize =
-      dim != null
-        ? `${(dim.w * effectiveTileSize) / tw}px ${(dim.h * effectiveTileSize) / th}px`
-        : 'auto';
-    const posX = tileX * effectiveTileSize;
-    const posY = tileY * effectiveTileSize;
-    return {
-      backgroundImage: `url(${data})`,
-      backgroundPosition: `-${posX}px -${posY}px`,
-      backgroundSize,
-      backgroundRepeat: 'no-repeat',
-    };
-  };
 
   if (!locationId || !worldId) return null;
   if (location === undefined) {
@@ -267,7 +185,7 @@ export function LocationViewer({
             />
           )}
           <div
-            className='inline-grid border bg-muted-foreground/20 p-px'
+            className='inline-grid bg-muted-foreground/20'
             style={{
               gridTemplateColumns: `repeat(${gridWidth}, ${effectiveTileSize}px)`,
               gridTemplateRows: `repeat(${gridHeight}, ${effectiveTileSize}px)`,

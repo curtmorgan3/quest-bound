@@ -1,75 +1,34 @@
 import { Button, Input, Label } from '@/components';
-import { useLocation, useLocations, useTilemaps, useWorld } from '@/lib/compass-api';
-import { db } from '@/stores';
-import type { Tile, TileData, Tilemap } from '@/types';
-import { useLiveQuery } from 'dexie-react-hooks';
+import { getTilesByKey } from '@/components/locations';
+import { DEFAULT_TILE_RENDER_SIZE } from '@/constants';
+import { useTilemapAsset } from '@/hooks';
+import { useLocation, useLocations, useWorld } from '@/lib/compass-api';
+import type { Tile, TileData } from '@/types';
 import { Trash2 } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { CellPropertyPanel } from './cell-property-panel';
 import { TilePaintBar } from './tilemaps';
 
-const DEFAULT_TILE_RENDER_SIZE = 32;
-
-function getTilesByKey(tiles: TileData[]): Map<string, TileData[]> {
-  const map = new Map<string, TileData[]>();
-  for (const td of tiles) {
-    const key = `${td.x},${td.y}`;
-    const list = map.get(key) ?? [];
-    list.push(td);
-    map.set(key, list);
-  }
-  map.forEach((list) => list.sort((a, b) => (a.zIndex ?? 0) - (b.zIndex ?? 0)));
-  return map;
-}
-
 export function LocationEditor() {
   const { worldId, locationId } = useParams<{ worldId: string; locationId: string }>();
   const world = useWorld(worldId);
   const location = useLocation(locationId);
   const { updateLocation } = useLocations(worldId);
-  const { tilemaps } = useTilemaps(worldId);
-  const tilemapsList = tilemaps ?? [];
-  const [assetDimensions, setAssetDimensions] = useState<Record<string, { w: number; h: number }>>(
-    {},
-  );
-  const assetDimensionsRef = useRef(assetDimensions);
-  assetDimensionsRef.current = assetDimensions;
-  const [mapImageDimensions, setMapImageDimensions] = useState<{
-    natural: { w: number; h: number };
-    scaled: { w: number; h: number };
-  } | null>(null);
+
+  const mapImageUrl = location?.mapAsset ?? null;
+
+  const { assetDimensions, getTileStyle, mapImageDimensions } = useTilemapAsset({
+    worldId,
+    locationId,
+  });
 
   const loc = location ?? undefined;
   const gridWidth = loc?.gridWidth ?? 1;
   const gridHeight = loc?.gridHeight ?? 1;
 
   const [selectedTiles, setSelectedTiles] = useState<Tile[]>([]);
-  const tileIdsInLocation = useMemo(
-    () => [
-      ...new Set([
-        ...(loc?.tiles ?? []).map((td) => td.tileId).filter((id): id is string => id != null),
-        ...selectedTiles.map((t) => t.id),
-      ]),
-    ],
-    [loc?.tiles, selectedTiles],
-  );
-  const tilesById = useLiveQuery(
-    () =>
-      tileIdsInLocation.length > 0
-        ? db.tiles.bulkGet(tileIdsInLocation).then((arr) => {
-            const map = new Map<string, Tile>();
-            arr.forEach((t) => t && map.set(t.id, t));
-            return map;
-          })
-        : Promise.resolve(new Map<string, Tile>()),
-    [tileIdsInLocation.join(',')],
-  );
-  const tilemapsById = useMemo(() => {
-    const map = new Map<string, Tilemap>();
-    tilemapsList.forEach((tm) => map.set(tm.id, tm));
-    return map;
-  }, [tilemapsList]);
+
   const [selectedCell, setSelectedCell] = useState<{ x: number; y: number } | null>(null);
   const [selectedLayerId, setSelectedLayerId] = useState<string | null>(null);
   const [paintLayer, setPaintLayer] = useState(0);
@@ -220,94 +179,6 @@ export function LocationEditor() {
     };
     updateLocation(loc.id, { tiles: [...(loc.tiles ?? []), newTile] });
     setSelectedLayerId(newTile.id);
-  };
-
-  const mapImageUrl = loc?.mapAsset ?? null;
-
-  // Preload tilemap asset images to get dimensions; scale tiles by tilemap tileWidth/tileHeight
-  useEffect(() => {
-    const dataUrls = new Map<string, string>();
-    tilemapsList.forEach((tm) => {
-      if (tm.assetId && tm.image) {
-        dataUrls.set(tm.assetId, tm.image);
-      }
-    });
-    const cancels: Array<() => void> = [];
-    dataUrls.forEach((dataUrl, assetId) => {
-      if (assetDimensionsRef.current[assetId]) return;
-      const img = new Image();
-      img.onload = () => {
-        setAssetDimensions((prev) => ({
-          ...prev,
-          [assetId]: { w: img.naturalWidth, h: img.naturalHeight },
-        }));
-      };
-      img.src = dataUrl;
-      cancels.push(() => {
-        img.src = '';
-      });
-    });
-    return () => cancels.forEach((c) => c());
-  }, [tilemapsList]);
-
-  const MAP_IMAGE_MAX_WIDTH = 900;
-  const MAP_IMAGE_MAX_HEIGHT = 1200;
-
-  useEffect(() => {
-    if (!mapImageUrl) {
-      setMapImageDimensions(null);
-      return;
-    }
-    const img = new Image();
-    img.onload = () => {
-      const w = img.naturalWidth;
-      const h = img.naturalHeight;
-
-      const scaleDivisor = Math.max(
-        1,
-        Math.ceil(w / MAP_IMAGE_MAX_WIDTH),
-        Math.ceil(h / MAP_IMAGE_MAX_HEIGHT),
-      );
-      const scaledW = Math.round(w / scaleDivisor);
-      const scaledH = Math.round(h / scaleDivisor);
-      setMapImageDimensions({
-        natural: { w, h },
-        scaled: { w: scaledW, h: scaledH },
-      });
-    };
-    img.src = mapImageUrl;
-    return () => {
-      img.src = '';
-    };
-  }, [mapImageUrl]);
-
-  const getTileStyle = (td: TileData): React.CSSProperties => {
-    if (!td.tileId) return {}; // Placeholder tile (no tileset)
-    const tile = tilesById?.get(td.tileId);
-    if (!tile) return {};
-    const tilemap = tilemapsById.get(tile.tilemapId ?? '');
-    if (!tilemap) return {};
-    const data = tilemap.image ?? null;
-    if (!data) return {};
-    const tw = tilemap.tileWidth;
-    const th = tilemap.tileHeight;
-    const tileX = tile.tileX ?? 0;
-    const tileY = tile.tileY ?? 0;
-    const dim = assetDimensions[tilemap.assetId];
-    // Scale asset so one tilemap grid cell (tw×th) fills location editor cell (tileRenderSize)
-    const backgroundSize =
-      dim != null
-        ? `${(dim.w * tileRenderSize) / tw}px ${(dim.h * tileRenderSize) / th}px`
-        : 'auto';
-    // Position in scaled image: one tile = tileRenderSize px
-    const posX = tileX * tileRenderSize;
-    const posY = tileY * tileRenderSize;
-    return {
-      backgroundImage: `url(${data})`,
-      backgroundPosition: `-${posX}px -${posY}px`,
-      backgroundSize,
-      backgroundRepeat: 'no-repeat',
-    };
   };
 
   if (!worldId || !locationId) return null;
