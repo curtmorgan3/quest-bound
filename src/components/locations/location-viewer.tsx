@@ -2,6 +2,7 @@ import { SpriteStack } from '@/components/composites/sprite-stack';
 import { Button } from '@/components/ui/button';
 import { useTilemapAsset } from '@/hooks';
 import { useLocation } from '@/lib/compass-api';
+import { cn } from '@/lib/utils';
 import type { TileData } from '@/types';
 import { ZoomIn, ZoomOut } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
@@ -29,6 +30,7 @@ export type LocationViewerOverlayNode = {
   mapHeight?: number;
   /** When set, the overlay is draggable and this payload is passed on drop. */
   dragPayload?: LocationViewerDragPayload;
+  selected?: boolean;
 };
 
 export interface LocationViewerProps {
@@ -99,13 +101,23 @@ export function LocationViewer({
   const handleCellClick = useCallback(
     async (x: number, y: number, e: React.MouseEvent) => {
       if (playMode && onMoveCharacter) {
+        // Find top layered tile at this cell
         const layers = tilesByKey.get(`${x},${y}`) ?? [];
         let topTile = layers.length > 0 ? layers[layers.length - 1]! : null;
+
+        // Create a tile if there isn't one
         if (!topTile && onCreateTileAt) {
           const newTileId = await onCreateTileAt(x, y);
           if (newTileId) topTile = { id: newTileId, x, y, zIndex: 0 } as TileData;
         }
+
         if (topTile) {
+          // If clicking on a character/item sprite (overlay at this tile), callback on overlay select and skip the menu
+          const overlayAtTile = overlayNodes.find((node) => node.tileId === topTile!.id);
+          if (overlayAtTile && onOverlayClick) {
+            onOverlayClick(topTile.id, e);
+            return;
+          }
           setTileMenu({
             x,
             y,
@@ -118,7 +130,15 @@ export function LocationViewer({
       }
       onSelectCell?.(x, y, e);
     },
-    [playMode, onMoveCharacter, onCreateTileAt, tilesByKey, onSelectCell],
+    [
+      playMode,
+      onMoveCharacter,
+      onCreateTileAt,
+      tilesByKey,
+      overlayNodes,
+      onOverlayClick,
+      onSelectCell,
+    ],
   );
 
   const handleMoveCharacter = useCallback(() => {
@@ -252,7 +272,11 @@ export function LocationViewer({
               return (
                 <div
                   key={node.id}
-                  className='absolute flex items-center justify-center overflow-hidden cursor-grab active:cursor-grabbing'
+                  className={cn(
+                    'absolute flex items-center justify-center overflow-hidden',
+                    isDraggable && 'cursor-grab active:cursor-grabbing',
+                    node.selected && 'ring-2 ring-primary ring-offset-2 ring-offset-background',
+                  )}
                   style={{
                     backgroundColor: 'transparent',
                     left: coord.x * effectiveTileSize + padding,

@@ -41,6 +41,7 @@ export function CampaignPlay() {
     moveSelectedCharactersTo,
     jumpToCharacter,
     campaignPlayerCharacters,
+    campaignNpcs,
   } = useCampaignContext();
 
   const charactersInThisLocation = campaignPlayerCharacters.filter(
@@ -82,6 +83,7 @@ export function CampaignPlay() {
     campaignId,
     currentLocationId: viewingLocationId,
     eventLocationsWithEvent,
+    selectedCharacterIds: selectedIds,
   });
 
   const handleAdvanceView = useCallback(
@@ -129,6 +131,42 @@ export function CampaignPlay() {
       return newTile.id;
     },
     [viewingLocation, updateLocation],
+  );
+
+  const handleOverlayClick = useCallback(
+    (tileId: string, e: React.MouseEvent) => {
+      const shiftHeld = e.shiftKey;
+
+      const allAtLocation = [...campaignPlayerCharacters, ...campaignNpcs];
+      const charactersAtTile = allAtLocation.filter(
+        (c) =>
+          c.currentLocationId === viewingLocationId && c.currentTileId === tileId,
+      );
+      const idsAtTile = new Set(charactersAtTile.map((c) => c.id));
+
+      if (!shiftHeld) {
+        allAtLocation
+          .filter((c) => selectedIds.has(c.id) && !idsAtTile.has(c.id))
+          .forEach((c) => removeSelectedCharacter(c.id));
+      }
+
+      const anyAlreadySelected = charactersAtTile.some((c) =>
+        selectedIds.has(c.id),
+      );
+      if (anyAlreadySelected) {
+        charactersAtTile.forEach((c) => removeSelectedCharacter(c.id));
+      } else {
+        charactersAtTile.forEach((c) => addSelectedCharacter(c.id));
+      }
+    },
+    [
+      campaignPlayerCharacters,
+      campaignNpcs,
+      viewingLocationId,
+      selectedIds,
+      addSelectedCharacter,
+      removeSelectedCharacter,
+    ],
   );
 
   const showLocationView = Boolean(viewingLocationId && viewingLocation?.hasMap);
@@ -243,6 +281,7 @@ export function CampaignPlay() {
               playMode
               onMoveCharacter={handleMoveToTile}
               onCreateTileAt={handleCreateTileAt}
+              onOverlayClick={handleOverlayClick}
             />
           </div>
         )}

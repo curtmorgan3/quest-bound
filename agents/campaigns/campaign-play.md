@@ -81,3 +81,7 @@ Yes
 - **Avatar selection state:** In CampaignPlay, show a border (e.g. ring) on the character avatar when that character is selected.
 
 - **Jump to character dialog:** The "Move to location" flow is refactored to a small dialog that lists `campaignPlayerCharacters`. Each row shows the character's image (avatar) and name. On click of a character, call `jumpToCharacter(characterId)` to navigate the view to that character's current location (if they have one), then close the dialog. Use the shared Dialog component for the modal.
+
+- **handleOverlayClick (LocationViewer in play mode):** When the user clicks an overlay node (character or item sprite) on the map, call `handleOverlayClick(tileId)`. Behaviour: find all campaign characters (player + NPC) at the current view location whose `currentTileId === tileId`. If any of those characters are already selected, deselect every character on that tile. Otherwise, add every character on that tile to the selection. This gives tile-based toggle selection: click a character to select all at that tile; click again to deselect all at that tile.
+
+- **Overlay node `selected`:** Pass `selected` as a property on each overlay node so the LocationViewer can show a border for selected characters. In `useCampaignPlayOverlay`, accept `selectedCharacterIds` (e.g. a `Set<string>` of campaign character ids) and set `selected: selectedCharacterIds?.has(campaignCharacter.id)` on character nodes. In LocationViewer, when `node.selected` is true, render the overlay with a visible border (e.g. ring).

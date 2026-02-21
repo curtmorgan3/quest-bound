@@ -12,12 +12,15 @@ interface UseCampaignPlayOverlay {
   campaignId?: string;
   currentLocationId: string | null;
   eventLocationsWithEvent: EventLocationWithEvent[];
+  /** Campaign character ids that are currently selected (used to set overlay node selected state). */
+  selectedCharacterIds?: Set<string>;
 }
 
 export const useCampaignPlayOverlay = ({
   campaignId,
   currentLocationId,
   eventLocationsWithEvent,
+  selectedCharacterIds,
 }: UseCampaignPlayOverlay) => {
   const { campaignCharacters } = useCampaignCharacters(campaignId);
   const { campaignItems } = useCampaignItems(campaignId);
@@ -69,6 +72,7 @@ export const useCampaignPlayOverlay = ({
         sprites: sprites.length > 0 ? sprites : undefined,
         mapWidth: campaignCharacter.mapWidth ?? 1,
         mapHeight: campaignCharacter.mapHeight ?? 1,
+        selected: selectedCharacterIds?.has(campaignCharacter.id),
       });
     });
     (itemsResolved ?? []).forEach(({ campaignItem, item }) => {
@@ -87,7 +91,7 @@ export const useCampaignPlayOverlay = ({
       });
     });
     return nodes;
-  }, [charactersResolved, itemsResolved]);
+  }, [charactersResolved, itemsResolved, selectedCharacterIds]);
 
   const eventTileIds = useMemo(
     () => eventLocationsWithEvent.filter((el) => el.tileId).map((el) => el.tileId as string),
