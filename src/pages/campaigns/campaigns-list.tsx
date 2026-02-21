@@ -10,11 +10,7 @@ import {
   Button,
   Card,
 } from '@/components';
-import {
-  useCampaigns,
-  useRulesets,
-  useWorlds,
-} from '@/lib/compass-api';
+import { useCampaigns, useRulesets, useWorlds } from '@/lib/compass-api';
 import { Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -36,10 +32,13 @@ export function CampaignsList() {
 
   return (
     <div className='flex h-full w-full flex-col gap-4 p-4'>
-      <div className='flex items-center justify-between'>
-        <h1 className='text-4xl font-bold'>Campaigns</h1>
-        <Button data-testid='campaigns-create' onClick={() => navigate('/campaigns/new')}>
-          Create campaign
+      <h1 className='text-4xl font-bold'>Campaigns</h1>
+      <div className='flex items-center gap-4'>
+        <Button
+          className='w-[180px]'
+          data-testid='campaigns-create'
+          onClick={() => navigate('/campaigns/new')}>
+          Create New
         </Button>
       </div>
 
@@ -103,9 +102,6 @@ export function CampaignsList() {
         <div className='flex flex-col items-center justify-center py-12 text-muted-foreground'>
           <p className='text-lg'>No campaigns yet</p>
           <p className='text-sm'>Create a campaign by selecting a world and a ruleset</p>
-          <Button className='mt-4' onClick={() => navigate('/campaigns/new')}>
-            Create campaign
-          </Button>
         </div>
       )}
     </div>
