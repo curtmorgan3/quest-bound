@@ -1,11 +1,5 @@
-import { Button, Card } from '@/components';
+import { Avatar, AvatarFallback, AvatarImage, Button, Card } from '@/components';
 import { getTopTileDataAt, LocationViewer } from '@/components/locations';
-import {
-  DropdownMenu,
-  DropdownMenuCheckboxItem,
-  DropdownMenuContent,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { WorldViewer } from '@/components/worlds/world-viewer';
 import {
   useCampaign,
@@ -14,15 +8,16 @@ import {
   useLocations,
   useWorld,
 } from '@/lib/compass-api';
+import { cn } from '@/lib/utils';
 import type { TileData } from '@/types';
-import { ArrowUp, ChevronRight, Users } from 'lucide-react';
+import { ArrowUp, ChevronRight } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useCampaignContext } from './campaign-provider';
 import { useCampaignPlayOverlay } from './hooks';
 
 export function CampaignPlay() {
-  const { campaignId } = useParams<{ campaignId: string }>();
+  const { campaignId, locationId } = useParams<{ campaignId: string; locationId?: string }>();
   const navigate = useNavigate();
   const campaign = useCampaign(campaignId);
   const world = useWorld(campaign?.worldId);
@@ -38,7 +33,9 @@ export function CampaignPlay() {
     campaignPlayerCharacters,
   } = useCampaignContext();
 
-  console.log(campaignPlayerCharacters);
+  const charactersInThisLocation = campaignPlayerCharacters.filter(
+    (c) => c.currentLocationId === locationId,
+  );
 
   const selectedIds = useMemo(
     () => new Set(selectedCharacters.map((c) => c.id)),
@@ -169,31 +166,6 @@ export function CampaignPlay() {
           </>
         )}
         <div className='ml-auto flex gap-2'>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant='outline' size='sm'>
-                <Users className='mr-2 h-4 w-4' />
-                {selectedCharacters.length > 0
-                  ? `${selectedCharacters.length} selected`
-                  : 'Select characters'}
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align='end' className='max-h-60 overflow-auto'>
-              {campaignPlayerCharacters.map((character) => (
-                <DropdownMenuCheckboxItem
-                  key={character.id}
-                  checked={selectedIds.has(character.id)}
-                  onCheckedChange={() => toggleCharacterSelection(character.id)}>
-                  {character?.name ?? 'Unknown'}
-                </DropdownMenuCheckboxItem>
-              ))}
-              {campaignPlayerCharacters.length === 0 && (
-                <span className='px-2 py-1.5 text-sm text-muted-foreground'>
-                  No characters in campaign
-                </span>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
           {singleSelectedCharacterId && (
             <Button
               variant='outline'
@@ -202,15 +174,35 @@ export function CampaignPlay() {
               Character sheet
             </Button>
           )}
+          <div className='flex gap-2'>
+            {charactersInThisLocation.map((character) => (
+              <button
+                type='button'
+                onClick={() => toggleCharacterSelection(character.id)}
+                className='rounded-md focus:outline-none focus-visible:ring-2 focus-visible:ring-ring'
+                aria-label={
+                  selectedIds.has(character.id) ? 'Deselect character' : 'Select character'
+                }>
+                <Avatar
+                  className={cn(
+                    'size-8 shrink-0 rounded-md',
+                    selectedIds.has(character.id) && 'ring-2 ring-primary',
+                  )}>
+                  <AvatarImage src={character?.image ?? ''} alt={character?.name ?? 'Character'} />
+                  <AvatarFallback className='rounded-md text-xs'>
+                    {(character?.name ?? '?').slice(0, 1).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+              </button>
+            ))}
+          </div>
+
           <Button
             variant='outline'
             size='sm'
             onClick={() => setMoveLocationOpen(true)}
             disabled={selectedCharacters.length === 0}>
             Move to location
-          </Button>
-          <Button variant='ghost' size='sm' onClick={() => navigate(`/campaigns/${campaignId}`)}>
-            Back to campaign
           </Button>
         </div>
       </div>

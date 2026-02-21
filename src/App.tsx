@@ -89,6 +89,14 @@ function CompassRoutes() {
                 </CampaignProvider>
               }
             />
+            <Route
+              path={`/campaigns/:campaignId/play/locations/:locationId`}
+              element={
+                <CampaignProvider>
+                  <CampaignPlay />
+                </CampaignProvider>
+              }
+            />
 
             <Route path={`/worlds`} element={<Worlds />} />
             <Route path={`/worlds/:worldId`} element={<WorldEditor />} />

@@ -73,3 +73,9 @@ A
 3. **Component name:** You wrote "chracter-lookup" — should the component be `CharacterLookup` in `character-lookup.tsx` (same pattern as `AttributeLookup` / `attribute-lookup.tsx`), and live under `src/lib/compass-api/components/`?
 
 Yes
+
+---
+
+## UI notes
+
+- **Avatar selection state:** In CampaignPlay, show a border (e.g. ring) on the character avatar when that character is selected.

@@ -3,7 +3,7 @@ import { useCampaign, useCampaignCharacters, useCharacters, useLocation } from '
 import { db } from '@/stores';
 import type { CampaignCharacter, Character } from '@/types';
 import { createContext, useCallback, useContext, useMemo, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 
 type ActiveCharacter = Character & CampaignCharacter;
 
@@ -67,7 +67,12 @@ function useCampaignProvider(campaignId: string | undefined): CampaignPlayContex
   });
 
   const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
-  const [viewingLocationId, setViewingLocationId] = useState<string | null>(null);
+  const navigate = useNavigate();
+  const { campaignId: campaignIdParam, locationId: locationIdParam } = useParams<{
+    campaignId?: string;
+    locationId?: string;
+  }>();
+  const viewingLocationId = locationIdParam ?? null;
 
   const viewingLocation = useLocation(viewingLocationId ?? undefined);
 
@@ -97,7 +102,6 @@ function useCampaignProvider(campaignId: string | undefined): CampaignPlayContex
 
   const moveSelectedCharactersTo = useCallback(
     async (locationId: string, tileId?: string) => {
-      console.log('move to: ', locationId);
       let resolvedTileId = tileId;
       if (resolvedTileId == null) {
         const loc = await db.locations.get(locationId);
@@ -115,13 +119,26 @@ function useCampaignProvider(campaignId: string | undefined): CampaignPlayContex
     [selectedCharacters, updateCampaignCharacter],
   );
 
-  const navigateTo = useCallback((locationId: string) => {
-    setViewingLocationId(locationId);
-  }, []);
+  const navigateTo = useCallback(
+    (locationId: string) => {
+      if (campaignIdParam) {
+        navigate(`/campaigns/${campaignIdParam}/play/locations/${locationId}`);
+      }
+
+      moveSelectedCharactersTo(locationId);
+    },
+    [campaignIdParam, navigate, selectedCharacters],
+  );
 
   const navigateBack = useCallback(() => {
-    setViewingLocationId(viewingLocation?.parentLocationId ?? null);
-  }, [viewingLocation?.parentLocationId]);
+    if (!campaignIdParam) return;
+    if (viewingLocation?.parentLocationId) {
+      navigate(`/campaigns/${campaignIdParam}/play/locations/${viewingLocation.parentLocationId}`);
+      moveSelectedCharactersTo(viewingLocation.parentLocationId);
+    } else {
+      navigate(`/campaigns/${campaignIdParam}/play`);
+    }
+  }, [campaignIdParam, viewingLocation?.parentLocationId, navigate, selectedCharacters]);
 
   return useMemo(
     () => ({
@@ -138,8 +155,8 @@ function useCampaignProvider(campaignId: string | undefined): CampaignPlayContex
       viewingLocationId,
     }),
     [
-      campaignPlayerCharacters,
-      campaignNpcs,
+      activePlayerCharacters,
+      activeNpcs,
       selectedCharacters,
       addSelectedCharacter,
       removeSelectedCharacter,
