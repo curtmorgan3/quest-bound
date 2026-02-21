@@ -53,6 +53,7 @@ export function CampaignEdit() {
   const effectiveTileId = tileMenuTileId ?? tileMenu?.createdTileId ?? null;
 
   const { overlayNodes, entityAtTile } = useLocationEntities({
+    campaignId,
     selectedLocationId,
     effectiveTileId,
     eventLocationsWithEvent,

@@ -32,11 +32,14 @@ export const useLocationEntities = ({
       ),
     [campaignCharacters, selectedLocationId],
   );
+
   const itemsAtLocation = useMemo(
     () =>
       campaignItems.filter((ci) => ci.currentLocationId === selectedLocationId && ci.currentTileId),
     [campaignItems, selectedLocationId],
   );
+
+  // Characters
   const charactersResolved = useLiveQuery(async (): Promise<
     Array<{ campaignCharacter: CampaignCharacter; character: Character | null }>
   > => {
@@ -47,6 +50,8 @@ export const useLocationEntities = ({
       character: chars.find((c) => c?.id === cc.characterId) ?? null,
     }));
   }, [charactersAtLocation.map((c) => `${c.id}:${c.currentTileId}`).join(',')]);
+
+  // Items
   const itemsResolved = useLiveQuery(async (): Promise<
     Array<{ campaignItem: CampaignItem; item: Item | null }>
   > => {
