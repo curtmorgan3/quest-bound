@@ -30,6 +30,8 @@ interface SheetViewerProps {
   /** Called when the locked state changes (e.g. to persist). */
   onLockedChange?: (locked: boolean) => void;
   editorWindowId?: string;
+  /** When true, no background color/image is shown; only the React Flow nodes are visible. */
+  transparentBackground?: boolean;
 }
 
 export const SheetViewer = ({
@@ -41,6 +43,7 @@ export const SheetViewer = ({
   initialLocked,
   onLockedChange,
   editorWindowId,
+  transparentBackground = false,
 }: SheetViewerProps) => {
   const { characterPages } = useCharacterPages(characterId);
   const sortedCharacterPages = [...characterPages.sort((a, b) => a.label.localeCompare(b.label))];
@@ -200,7 +203,7 @@ export const SheetViewer = ({
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', position: 'relative' }}>
       {locked ? (
         <div style={{ position: 'relative', flex: 1, overflow: 'hidden' }}>
-          {currentPage?.backgroundColor != null && (
+          {!transparentBackground && currentPage?.backgroundColor != null && (
             <div
               aria-hidden
               style={{
@@ -213,7 +216,7 @@ export const SheetViewer = ({
               }}
             />
           )}
-          {currentPage?.image != null && (
+          {!transparentBackground && currentPage?.image != null && (
             <div
               aria-hidden
               style={{
@@ -265,8 +268,8 @@ export const SheetViewer = ({
           zoomOnScroll={false}
           nodesDraggable={!locked}
           renderContextMenu={false}
-          backgroundColor={currentPage?.backgroundColor}
-          backgroundImage={currentPage?.image}
+          backgroundColor={transparentBackground ? undefined : currentPage?.backgroundColor}
+          backgroundImage={transparentBackground ? undefined : currentPage?.image}
           backgroundOpacity={currentPage?.backgroundOpacity}
         />
       )}

@@ -13,7 +13,7 @@ import type { TileData } from '@/types';
 import { ArrowUp, ChevronRight } from 'lucide-react';
 import { useCallback, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { JumpToCharacter, TileMenu } from './campaign-controls';
+import { CampaignCharacterSheet, JumpToCharacter, TileMenu } from './campaign-controls';
 import { useCampaignContext } from './campaign-provider';
 import { useCampaignPlayOverlay } from './hooks';
 
@@ -181,14 +181,7 @@ export function CampaignPlay() {
           </>
         )}
         <div className='ml-auto flex gap-2'>
-          {singleSelectedCharacterId && (
-            <Button
-              variant='outline'
-              size='sm'
-              onClick={() => navigate(`/characters/${singleSelectedCharacterId}`)}>
-              Character sheet
-            </Button>
-          )}
+          <CampaignCharacterSheet />
           <div className='flex gap-2'>
             {charactersInThisLocation.map((character) => (
               <button

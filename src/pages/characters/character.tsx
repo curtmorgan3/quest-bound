@@ -30,9 +30,16 @@ interface CharacterPage {
    * If provided, renders just this window in preview mode. Otherwise, it renders all character pages and windows.
    */
   editorWindowId?: string;
+  /** When true, the sheet viewer shows only nodes with no background (e.g. for overlay use). */
+  transparentBackground?: boolean;
 }
 
-export const CharacterPage = ({ id, lockByDefault, editorWindowId }: CharacterPage) => {
+export const CharacterPage = ({
+  id,
+  lockByDefault,
+  editorWindowId,
+  transparentBackground,
+}: CharacterPage) => {
   const { open } = useSidebar();
   const { characterId } = useParams<{ characterId: string }>();
   const { addNotification } = useNotifications();
@@ -127,6 +134,7 @@ export const CharacterPage = ({ id, lockByDefault, editorWindowId }: CharacterPa
         onWindowUpdated={handleUpdateWindow}
         onWindowDeleted={handleDeleteWindow}
         editorWindowId={editorWindowId}
+        transparentBackground={transparentBackground}
       />
       {!editorWindowId && (
         <GameLog className={`fixed bottom-[50px] left-${open ? '265' : '65'} z-30`} />

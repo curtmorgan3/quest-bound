@@ -29,7 +29,7 @@ export interface CampaignPlayContextValue {
   viewingLocationId: string | null;
 }
 
-const CampaignPlayContext = createContext<CampaignPlayContextValue | null>(null);
+export const CampaignPlayContext = createContext<CampaignPlayContextValue | null>(null);
 
 export function useCampaignContext(): CampaignPlayContextValue {
   const ctx = useContext(CampaignPlayContext);

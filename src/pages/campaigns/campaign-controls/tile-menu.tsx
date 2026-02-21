@@ -13,6 +13,12 @@ interface TileMenuProps {
   children: (props: { onTileMenuRequest: (payload: TileMenuPayload) => void }) => React.ReactNode;
 }
 
+type MenuOption = { label: string; action: 'move' | 'createCharacter' };
+
+const selectedCharacterOptions: MenuOption[] = [{ label: 'Move', action: 'move' }];
+
+const emptyTileOptions: MenuOption[] = [{ label: 'Create Character', action: 'createCharacter' }];
+
 export function TileMenu({ children }: TileMenuProps) {
   const { viewingLocationId, selectedCharacters, moveSelectedCharactersTo } = useCampaignContext();
 
@@ -38,6 +44,21 @@ export function TileMenu({ children }: TileMenuProps) {
     setTileMenu(null);
   }, [tileMenu, viewingLocationId, selectedCharacters.length, moveSelectedCharactersTo]);
 
+  const handleCreateCharacter = useCallback(() => {
+    // stub
+    setTileMenu(null);
+  }, []);
+
+  const options = selectedCharacters.length > 0 ? selectedCharacterOptions : emptyTileOptions;
+
+  const handleOptionClick = useCallback(
+    (action: MenuOption['action']) => {
+      if (action === 'move') handleMoveCharacter();
+      else if (action === 'createCharacter') handleCreateCharacter();
+    },
+    [handleMoveCharacter, handleCreateCharacter],
+  );
+
   return (
     <>
       {children({ onTileMenuRequest })}
@@ -47,12 +68,15 @@ export function TileMenu({ children }: TileMenuProps) {
           <div
             className='fixed z-20 rounded-md border bg-popover px-2 py-1 shadow-md'
             style={{ left: tileMenu.clientX, top: tileMenu.clientY }}>
-            <button
-              type='button'
-              className='block w-full rounded px-2 py-1.5 text-left text-sm hover:bg-accent'
-              onClick={handleMoveCharacter}>
-              Move Character
-            </button>
+            {options.map((opt) => (
+              <button
+                key={opt.action}
+                type='button'
+                className='block w-full rounded px-2 py-1.5 text-left text-sm hover:bg-accent'
+                onClick={() => handleOptionClick(opt.action)}>
+                {opt.label}
+              </button>
+            ))}
           </div>
         </>
       )}
