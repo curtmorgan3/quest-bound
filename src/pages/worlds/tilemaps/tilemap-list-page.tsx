@@ -64,7 +64,6 @@ export function TilemapListPage() {
   const [tileWidth, setTileWidth] = useState(32);
   const [tileHeight, setTileHeight] = useState(32);
 
-  const getAssetData = (id: string) => assets.find((a) => a.id === id)?.data ?? null;
   const list = tilemaps ?? [];
 
   const handleCreate = async () => {
@@ -206,7 +205,7 @@ export function TilemapListPage() {
             <div className='grid gap-2'>
               <Label>Image</Label>
               <ImageUpload
-                image={assetId ? getAssetData(assetId) : null}
+                image={assetId ? assets.find((a) => a.id === assetId)?.data ?? null : null}
                 alt='Tilemap'
                 onUpload={setAssetId}
                 onRemove={() => setAssetId(null)}

@@ -1,10 +1,4 @@
-import {
-  useAssets,
-  useLocation,
-  useLocations,
-  useWorld,
-  useWorlds,
-} from '@/lib/compass-api';
+import { useLocation, useLocations, useWorld, useWorlds } from '@/lib/compass-api';
 import type { Location } from '@/types';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -22,10 +16,6 @@ export function WorldEditor() {
   const urlLocation = useLocation(urlLocationId);
   const { updateWorld } = useWorlds();
   const [selectedLocationIds, setSelectedLocationIds] = useState<string[]>([]);
-
-  const { assets } = useAssets(null);
-  const getAssetData = (assetId: string) =>
-    assets?.find((a) => a.id === assetId)?.data ?? null;
 
   const parentStack = useMemo(() => {
     if (urlLocationId && urlLocation) return [urlLocation];
@@ -174,7 +164,6 @@ export function WorldEditor() {
             location={singleSelectedLocation}
             siblingLocations={locationsList.filter((loc) => loc.id !== singleSelectedLocation.id)}
             rulesetId={null}
-            getAssetData={getAssetData}
             onAddGrid={() => {
               updateLocation(singleSelectedLocation.id, {
                 hasMap: true,

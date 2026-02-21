@@ -17,7 +17,6 @@ const TILE_DISPLAY_SIZE = 32;
 
 export interface TilePaintBarProps {
   worldId: string;
-  getAssetData: (assetId: string) => string | null;
   assetDimensions: Record<string, { w: number; h: number }>;
   selectedTiles: Tile[];
   onSelectedTilesChange: (tiles: Tile[]) => void;
@@ -31,10 +30,9 @@ export interface TilePaintBarProps {
 function getPickerTileStyle(
   tm: Tilemap,
   t: Tile,
-  getAssetData: (assetId: string) => string | null,
   assetDimensions: Record<string, { w: number; h: number }>,
 ): React.CSSProperties {
-  const data = getAssetData(tm.assetId);
+  const data = tm.image ?? null;
   if (!data) return {};
   const tw = tm.tileWidth;
   const th = tm.tileHeight;
@@ -57,7 +55,6 @@ function getPickerTileStyle(
 
 export function TilePaintBar({
   worldId,
-  getAssetData,
   assetDimensions,
   selectedTiles,
   onSelectedTilesChange,
@@ -173,7 +170,7 @@ export function TilePaintBar({
                                   }`}
                                   style={
                                     tile && tm
-                                      ? getPickerTileStyle(tm, tile, getAssetData, assetDimensions)
+                                      ? getPickerTileStyle(tm, tile, assetDimensions)
                                       : undefined
                                   }
                                   onClick={(e) => handleTileClick(e, tile)}

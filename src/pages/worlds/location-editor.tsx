@@ -1,5 +1,5 @@
 import { Button, Input, Label } from '@/components';
-import { useAssets, useLocation, useLocations, useTilemaps, useWorld } from '@/lib/compass-api';
+import { useLocation, useLocations, useTilemaps, useWorld } from '@/lib/compass-api';
 import { db } from '@/stores';
 import type { Tile, TileData, Tilemap } from '@/types';
 import { useLiveQuery } from 'dexie-react-hooks';
@@ -70,8 +70,6 @@ export function LocationEditor() {
     tilemapsList.forEach((tm) => map.set(tm.id, tm));
     return map;
   }, [tilemapsList]);
-  const { assets } = useAssets();
-
   const [selectedCell, setSelectedCell] = useState<{ x: number; y: number } | null>(null);
   const [selectedLayerId, setSelectedLayerId] = useState<string | null>(null);
   const [paintLayer, setPaintLayer] = useState(0);
@@ -224,19 +222,14 @@ export function LocationEditor() {
     setSelectedLayerId(newTile.id);
   };
 
-  const getAssetData = (assetId: string) => {
-    const asset = assets.find((a) => a.id === assetId);
-    return asset?.data ?? null;
-  };
-  const mapImageUrl = loc?.mapAssetId ? (getAssetData(loc.mapAssetId) ?? null) : null;
+  const mapImageUrl = loc?.mapAsset ?? null;
 
   // Preload tilemap asset images to get dimensions; scale tiles by tilemap tileWidth/tileHeight
   useEffect(() => {
     const dataUrls = new Map<string, string>();
     tilemapsList.forEach((tm) => {
-      if (tm.assetId) {
-        const data = getAssetData(tm.assetId);
-        if (data) dataUrls.set(tm.assetId, data);
+      if (tm.assetId && tm.image) {
+        dataUrls.set(tm.assetId, tm.image);
       }
     });
     const cancels: Array<() => void> = [];
@@ -255,7 +248,7 @@ export function LocationEditor() {
       });
     });
     return () => cancels.forEach((c) => c());
-  }, [tilemapsList, assets]);
+  }, [tilemapsList]);
 
   const MAP_IMAGE_MAX_WIDTH = 900;
   const MAP_IMAGE_MAX_HEIGHT = 1200;
@@ -294,7 +287,7 @@ export function LocationEditor() {
     if (!tile) return {};
     const tilemap = tilemapsById.get(tile.tilemapId ?? '');
     if (!tilemap) return {};
-    const data = getAssetData(tilemap.assetId);
+    const data = tilemap.image ?? null;
     if (!data) return {};
     const tw = tilemap.tileWidth;
     const th = tilemap.tileHeight;
@@ -514,7 +507,6 @@ export function LocationEditor() {
 
         <TilePaintBar
           worldId={worldId!}
-          getAssetData={getAssetData}
           assetDimensions={assetDimensions}
           selectedTiles={selectedTiles}
           onSelectedTilesChange={setSelectedTiles}

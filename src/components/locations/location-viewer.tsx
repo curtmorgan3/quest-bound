@@ -1,3 +1,4 @@
+import { SpriteStack } from '@/components/composites/sprite-stack';
 import { Button } from '@/components/ui/button';
 import { useLocation, useTilemaps } from '@/lib/compass-api';
 import { db } from '@/stores';
@@ -20,8 +21,11 @@ export type LocationViewerOverlayNode = {
   id: string;
   tileId: string;
   type: 'character' | 'item';
+  /** Fallback when sprites not provided. */
   imageUrl: string | null;
   label: string;
+  /** Asset IDs or URLs for map sprites (stacked by z-index). When set, used instead of imageUrl. */
+  sprites?: string[];
   /** Size in tiles (default 1). */
   mapWidth?: number;
   mapHeight?: number;
@@ -32,8 +36,6 @@ export type LocationViewerOverlayNode = {
 export interface LocationViewerProps {
   locationId: string | undefined;
   worldId: string | undefined;
-  /** Optional: resolve asset data for tile images. If not provided, tiles may not show images. */
-  getAssetData?: (assetId: string) => string | null;
   /** Optional: called when a cell is clicked (x, y). Event provided for menu positioning. */
   onSelectCell?: (x: number, y: number, event?: React.MouseEvent) => void;
   /** Optional: tile render size in pixels. */
@@ -51,7 +53,6 @@ export interface LocationViewerProps {
 export function LocationViewer({
   locationId,
   worldId,
-  getAssetData = () => null,
   onSelectCell,
   tileRenderSize: tileRenderSizeProp,
   overlayNodes = [],
@@ -107,14 +108,13 @@ export function LocationViewer({
     (loc?.tiles ?? []).forEach((td) => map.set(td.id, { x: td.x, y: td.y }));
     return map;
   }, [loc?.tiles]);
-  const mapImageUrl = loc?.mapAssetId ? getAssetData(loc.mapAssetId) : null;
+  const mapImageUrl = loc?.mapAsset ?? null;
 
   useEffect(() => {
     const dataUrls = new Map<string, string>();
     tilemapsList.forEach((tm) => {
-      if (tm.assetId) {
-        const data = getAssetData(tm.assetId);
-        if (data) dataUrls.set(tm.assetId, data);
+      if (tm.assetId && tm.image) {
+        dataUrls.set(tm.assetId, tm.image);
       }
     });
     const cancels: Array<() => void> = [];
@@ -133,7 +133,7 @@ export function LocationViewer({
       });
     });
     return () => cancels.forEach((c) => c());
-  }, [tilemapsList, getAssetData]);
+  }, [tilemapsList]);
 
   const getTileStyle = (td: TileData): React.CSSProperties => {
     if (!td.tileId) return {}; // Placeholder tile (no tileset)
@@ -141,7 +141,7 @@ export function LocationViewer({
     if (!tile) return {};
     const tilemap = tilemapsById.get(tile.tilemapId ?? '');
     if (!tilemap) return {};
-    const data = getAssetData(tilemap.assetId);
+    const data = tilemap.image ?? null;
     if (!data) return {};
     const tw = tilemap.tileWidth;
     const th = tilemap.tileHeight;
@@ -317,7 +317,13 @@ export function LocationViewer({
                         }
                       : undefined
                   }>
-                  {node.imageUrl ? (
+                  {node.sprites && node.sprites.length > 0 ? (
+                    <SpriteStack
+                      entity={{ sprites: node.sprites }}
+                      className='pointer-events-none'
+                      alt={node.label}
+                    />
+                  ) : node.imageUrl ? (
                     <img
                       src={node.imageUrl}
                       alt={node.label}

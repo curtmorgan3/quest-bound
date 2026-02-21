@@ -38,7 +38,6 @@ export interface WorldEditorLocationPanelProps {
   siblingLocations: Location[];
   hasMap: boolean;
   rulesetId: string | null;
-  getAssetData: (assetId: string) => string | null;
   onAddGrid: () => void;
   onRemoveGrid: () => void;
   onOpenInLocationEditor: () => void;
@@ -54,7 +53,6 @@ export function WorldEditorLocationPanel({
   siblingLocations,
   hasMap,
   rulesetId,
-  getAssetData,
   onAddGrid,
   onRemoveGrid,
   onOpenInLocationEditor,
@@ -126,10 +124,7 @@ export function WorldEditorLocationPanel({
       <div className='grid gap-1'>
         <Label className='text-xs'>Background image</Label>
         <ImageUpload
-          image={
-            location.backgroundImage ??
-            (location.backgroundAssetId ? getAssetData(location.backgroundAssetId) : null)
-          }
+          image={location.backgroundImage ?? null}
           alt='Background'
           onUpload={(id) => onUpdateLocation({ backgroundAssetId: id })}
           onRemove={() => onUpdateLocation({ backgroundAssetId: null })}

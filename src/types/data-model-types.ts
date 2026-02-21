@@ -400,6 +400,8 @@ export type Tilemap = BaseDetails & {
   label?: string;
   worldId: string;
   assetId: string;
+  /** Resolved tilemap image URL (injected at read from DB). */
+  image?: string | null;
   tileHeight: number;
   tileWidth: number;
 };
@@ -443,6 +445,8 @@ export type Location = BaseDetails & {
   backgroundPosition?: string | null;
   /** Optional flat map image asset; when set, location-viewer shows this image instead of the tile grid. */
   mapAssetId?: string | null;
+  /** Resolved map image URL (injected at read from DB). */
+  mapAsset?: string | null;
 };
 
 // --- Campaign (joins ruleset + world); placement is campaign-scoped ---

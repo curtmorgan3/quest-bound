@@ -3,7 +3,6 @@ import type { LocationViewerOverlayNode } from '@/components/locations/location-
 import { Button } from '@/components/ui/button';
 import { WorldViewer } from '@/components/worlds/world-viewer';
 import {
-  useAssets,
   useCampaign,
   useCampaignCharacters,
   useCampaignEventLocations,
@@ -43,7 +42,6 @@ export function CampaignEdit() {
   const currentLocation = useLocation(selectedLocationId ?? undefined);
   const { locations: childLocations } = useLocations(campaign?.worldId, selectedLocationId);
   const { updateCampaignEventLocation } = useCampaignEventLocations(undefined);
-  const { assets } = useAssets(null);
   const { createCharacter } = useCharacter();
   const { campaignCharacters, createCampaignCharacter, updateCampaignCharacter } =
     useCampaignCharacters(campaignId);
@@ -55,7 +53,6 @@ export function CampaignEdit() {
   const eventLocationsWithEvent = useCampaignEventLocationsByLocation(
     selectedLocationId ?? undefined,
   );
-
   const [movingEventLocationId, setMovingEventLocationId] = useState<string | null>(null);
   const [tileMenu, setTileMenu] = useState<{
     x: number;
@@ -65,11 +62,6 @@ export function CampaignEdit() {
     /** Set when we just created a blank tile; use as tileId until location refetches. */
     createdTileId?: string;
   } | null>(null);
-
-  const getAssetData = useCallback(
-    (assetId: string) => assets?.find((a) => a.id === assetId)?.data ?? null,
-    [assets],
-  );
 
   const locationsList = selectedLocationId ? childLocations : rootLocations;
 
@@ -172,17 +164,15 @@ export function CampaignEdit() {
     const nodes: LocationViewerOverlayNode[] = [];
     (charactersResolved ?? []).forEach(({ campaignCharacter, character }) => {
       if (!campaignCharacter.currentTileId) return;
-      let imageUrl: string | null = null;
-      if (character?.sprites?.[0]) {
-        imageUrl = character.sprites[0];
-      }
-      if (!imageUrl && character?.image) imageUrl = character.image;
+      const sprites = character?.sprites ?? [];
+      const imageUrl = sprites.length > 0 ? null : (character?.image ?? null);
       nodes.push({
         id: `char-${campaignCharacter.id}`,
         tileId: campaignCharacter.currentTileId,
         type: 'character',
         imageUrl,
         label: character?.name ?? 'Character',
+        sprites: sprites.length > 0 ? sprites : undefined,
         mapWidth: campaignCharacter.mapWidth ?? 1,
         mapHeight: campaignCharacter.mapHeight ?? 1,
         dragPayload: { type: 'campaign-character', id: campaignCharacter.id },
@@ -190,22 +180,22 @@ export function CampaignEdit() {
     });
     (itemsResolved ?? []).forEach(({ campaignItem, item }) => {
       if (!campaignItem.currentTileId) return;
-      let imageUrl: string | null = null;
-      if (item?.assetId) imageUrl = getAssetData(item.assetId) ?? null;
-      if (!imageUrl && item?.image) imageUrl = item.image;
+      const sprites = item?.sprites ?? [];
+      const imageUrl = sprites.length > 0 ? null : (item?.image ?? null);
       nodes.push({
         id: `item-${campaignItem.id}`,
         tileId: campaignItem.currentTileId,
         type: 'item',
         imageUrl,
         label: item?.title ?? 'Item',
+        sprites: sprites.length > 0 ? sprites : undefined,
         mapWidth: campaignItem.mapWidth ?? 1,
         mapHeight: campaignItem.mapHeight ?? 1,
         dragPayload: { type: 'campaign-item', id: campaignItem.id },
       });
     });
     return nodes;
-  }, [charactersResolved, itemsResolved, getAssetData]);
+  }, [charactersResolved, itemsResolved]);
 
   const tileMenuTileId = useMemo(() => {
     if (!tileMenu || !currentLocation?.tiles) return null;
@@ -463,7 +453,6 @@ export function CampaignEdit() {
             <LocationViewer
               locationId={selectedLocationId}
               worldId={campaign.worldId}
-              getAssetData={getAssetData}
               onSelectCell={handleSelectCell}
               tileRenderSize={currentLocation?.tileRenderSize}
               overlayNodes={overlayNodes}

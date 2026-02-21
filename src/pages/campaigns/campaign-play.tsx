@@ -39,16 +39,15 @@ export function CampaignPlay() {
   const currentLocation = useLocation(currentLocationId ?? undefined);
   const { locations: rootLocations } = useLocations(campaign?.worldId, null);
   const { locations: childLocations } = useLocations(campaign?.worldId, currentLocationId);
-  const { assets } = useAssets(null);
   const eventLocationsWithEvent = useCampaignEventLocationsByLocation(
     currentLocationId ?? undefined,
   );
-  const [moveLocationOpen, setMoveLocationOpen] = useState(false);
-
+  const { assets } = useAssets(campaign?.rulesetId ?? null);
   const getAssetData = useCallback(
     (assetId: string) => assets?.find((a) => a.id === assetId)?.data ?? null,
     [assets],
   );
+  const [moveLocationOpen, setMoveLocationOpen] = useState(false);
 
   const charactersResolved = useLiveQuery(async () => {
     if (!currentLocationId || campaignCharacters.length === 0) return [];
@@ -86,38 +85,38 @@ export function CampaignPlay() {
     const nodes: LocationViewerOverlayNode[] = [];
     (charactersResolved ?? []).forEach(({ campaignCharacter, character }) => {
       if (!campaignCharacter.currentTileId) return;
-      let imageUrl: string | null = null;
-      if (character?.sprites?.[0]) {
-        imageUrl = getAssetData(character.sprites[0]) ?? null;
-      }
-      if (!imageUrl && character?.image) imageUrl = character.image;
+      const sprites = character?.sprites ?? [];
+      const imageUrl =
+        sprites.length > 0 ? null : (character?.image ?? null);
       nodes.push({
         id: `char-${campaignCharacter.id}`,
         tileId: campaignCharacter.currentTileId,
         type: 'character',
         imageUrl,
         label: character?.name ?? 'Character',
+        sprites: sprites.length > 0 ? sprites : undefined,
         mapWidth: campaignCharacter.mapWidth ?? 1,
         mapHeight: campaignCharacter.mapHeight ?? 1,
       });
     });
     (itemsResolved ?? []).forEach(({ campaignItem, item }) => {
       if (!campaignItem.currentTileId) return;
-      let imageUrl: string | null = null;
-      if (item?.assetId) imageUrl = getAssetData(item.assetId) ?? null;
-      if (!imageUrl && item?.image) imageUrl = item.image;
+      const sprites = item?.sprites ?? [];
+      const imageUrl =
+        sprites.length > 0 ? null : (item?.image ?? null);
       nodes.push({
         id: `item-${campaignItem.id}`,
         tileId: campaignItem.currentTileId,
         type: 'item',
         imageUrl,
         label: item?.title ?? 'Item',
+        sprites: sprites.length > 0 ? sprites : undefined,
         mapWidth: campaignItem.mapWidth ?? 1,
         mapHeight: campaignItem.mapHeight ?? 1,
       });
     });
     return nodes;
-  }, [charactersResolved, itemsResolved, getAssetData]);
+  }, [charactersResolved, itemsResolved]);
 
   const eventTileIds = useMemo(
     () => eventLocationsWithEvent.filter((el) => el.tileId).map((el) => el.tileId as string),

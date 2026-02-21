@@ -27,6 +27,11 @@ function injectImageData(record: any) {
     if (backgroundImage) next = { ...next, backgroundImage };
   }
 
+  if (record.mapAssetId) {
+    const mapAsset = resolveAssetUrl(record.mapAssetId);
+    if (mapAsset) next = { ...next, mapAsset };
+  }
+
   if (record.sprites && Array.isArray(record.sprites)) {
     next = {
       ...next,
@@ -65,6 +70,7 @@ export const assetInjectorMiddleware: Middleware<DBCore> = {
             'pages',
             'worlds',
             'locations',
+            'tilemaps',
           ].indexOf(tableName) === -1
         ) {
           return downlevelTable;

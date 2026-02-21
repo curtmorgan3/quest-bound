@@ -1,7 +1,7 @@
 import { Button } from '@/components';
 import { LocationViewer } from '@/components/locations/location-viewer';
 import { WorldViewer } from '@/components/worlds/world-viewer';
-import { useAssets, useCampaign, useLocation, useLocations, useWorld } from '@/lib/compass-api';
+import { useCampaign, useLocation, useLocations, useWorld } from '@/lib/compass-api';
 import { ArrowUp, ChevronRight } from 'lucide-react';
 import { useCallback, useMemo } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
@@ -24,15 +24,8 @@ export function CampaignWorldView() {
   const selectedLocationId = locationIdParam ?? null;
   const { locations } = useLocations(campaign?.worldId, selectedLocationId);
   const currentLocation = useLocation(selectedLocationId ?? undefined);
-  const { assets } = useAssets(null);
-
   const showMap = searchParams.get('map') === '1';
   const viewMode = showMap ? 'location' : 'world';
-
-  const getAssetData = useCallback(
-    (assetId: string) => assets?.find((a) => a.id === assetId)?.data ?? null,
-    [assets],
-  );
 
   const handleAdvanceToLocation = useCallback(
     (locationId: string) => {
@@ -124,7 +117,6 @@ export function CampaignWorldView() {
             <LocationViewer
               locationId={selectedLocationId}
               worldId={campaign.worldId}
-              getAssetData={getAssetData}
               tileRenderSize={selectedLocation?.tileRenderSize}
             />
           </div>

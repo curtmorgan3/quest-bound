@@ -7,3 +7,4 @@ export * from './loading';
 export * from './number-input';
 export * from './ruleset-color-picker';
 export * from './splash-card';
+export * from './sprite-stack';
