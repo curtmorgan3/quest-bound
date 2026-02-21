@@ -47,11 +47,11 @@ export function CampaignDetail() {
         <div className='flex flex-wrap gap-2 pt-2'>
           <Button
             data-testid='campaign-edit'
+            variant='outline'
             onClick={() => navigate(`/campaigns/${campaign.id}/edit`)}>
             Edit
           </Button>
           <Button
-            variant='outline'
             data-testid='campaign-play'
             onClick={() => navigate(`/campaigns/${campaign.id}/play`)}>
             Play
