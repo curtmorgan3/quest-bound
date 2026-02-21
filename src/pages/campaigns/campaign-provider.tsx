@@ -4,8 +4,13 @@ import { db } from '@/stores';
 import type { CampaignCharacter, Character } from '@/types';
 import { createContext, useCallback, useContext, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { moveCharacters } from './campaign-controls/character-movement';
 
-type ActiveCharacter = Character & CampaignCharacter;
+type ActiveCharacter = Character &
+  CampaignCharacter & {
+    characterId: string;
+    campaignCharacterId: string;
+  };
 
 export interface CampaignPlayContextValue {
   campaignPlayerCharacters: ActiveCharacter[];
@@ -57,6 +62,8 @@ function useCampaignProvider(campaignId: string | undefined): CampaignPlayContex
     return {
       ...character,
       ...campaignCharacter,
+      characterId: character.id,
+      campaignCharacterId: campaignCharacter.id,
     };
   });
 
@@ -65,6 +72,8 @@ function useCampaignProvider(campaignId: string | undefined): CampaignPlayContex
     return {
       ...character,
       ...campaignCharacter,
+      characterId: character.id,
+      campaignCharacterId: campaignCharacter.id,
     };
   });
 
@@ -103,24 +112,44 @@ function useCampaignProvider(campaignId: string | undefined): CampaignPlayContex
   }, []);
 
   const moveSelectedCharactersTo = useCallback(
-    async (locationId?: string, tileId?: string) => {
-      let resolvedTileId = tileId;
+    async (locationId: string | null, tileId?: string) => {
+      if (!locationId) {
+        for (const character of selectedCharacters) {
+          await updateCampaignCharacter(character.campaignCharacterId, {
+            currentLocationId: null,
+          });
+        }
 
-      if (resolvedTileId == null && locationId) {
-        const loc = await db.locations.get(locationId);
-        resolvedTileId = loc?.tiles?.length
-          ? (getFirstPassableTileId(loc.tiles) ?? undefined)
-          : undefined;
+        return;
       }
 
-      for (const cc of selectedCharacters) {
-        await updateCampaignCharacter(cc.id, {
-          currentLocationId: locationId ?? null,
-          currentTileId: resolvedTileId ?? null,
+      const loc = await db.locations.get(locationId);
+      if (!loc) return;
+
+      const tiles = loc.tiles ?? [];
+      const targetTileId =
+        tileId ?? getFirstPassableTileId(tiles) ?? (tiles[0] ? tiles[0].id : null);
+      if (!targetTileId) return;
+
+      const charactersInLocation = campaignCharacters.filter(
+        (cc) => cc.currentLocationId === locationId,
+      );
+
+      const movements = moveCharacters({
+        location: loc,
+        targetTile: { id: targetTileId },
+        characterToMove: selectedCharacters,
+        charactersInLocation,
+      });
+
+      for (const movement of movements) {
+        await updateCampaignCharacter(movement.characterId, {
+          currentLocationId: locationId,
+          currentTileId: movement.tileId,
         });
       }
     },
-    [selectedCharacters, updateCampaignCharacter],
+    [selectedCharacters, campaignCharacters, updateCampaignCharacter],
   );
 
   const navigateTo = useCallback(
@@ -141,7 +170,7 @@ function useCampaignProvider(campaignId: string | undefined): CampaignPlayContex
       moveSelectedCharactersTo(viewingLocation.parentLocationId);
     } else {
       navigate(`/campaigns/${campaignIdParam}/play`);
-      moveSelectedCharactersTo();
+      moveSelectedCharactersTo(null);
     }
   }, [campaignIdParam, viewingLocation?.parentLocationId, navigate, selectedCharacters]);
 
