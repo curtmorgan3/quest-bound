@@ -19,6 +19,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { MAX_LOCATION_MAP_ASSET_HEIGHT, MAX_LOCATION_MAP_ASSET_WIDTH } from '@/constants';
 import { useAssets, useTilemaps, useWorld } from '@/lib/compass-api';
 import { db } from '@/stores';
 import { ArrowLeft, Layers, Plus, Trash2 } from 'lucide-react';
@@ -194,7 +195,7 @@ export function TilemapListPage() {
           </DialogHeader>
           <div className='grid gap-4'>
             <p className='text-sm text-muted-foreground'>
-              Images larger than 2560x1440 will be scaled down
+              {`Images larger than ${MAX_LOCATION_MAP_ASSET_WIDTH}x${MAX_LOCATION_MAP_ASSET_HEIGHT} will be scaled down`}
             </p>
             <div className='grid gap-2'>
               <Label htmlFor='tilemap-label'>Label</Label>
@@ -213,8 +214,8 @@ export function TilemapListPage() {
                 onUpload={setAssetId}
                 onRemove={() => setAssetId(null)}
                 worldId={worldId}
-                maxWidth={2560}
-                maxHeight={1440}
+                maxWidth={MAX_LOCATION_MAP_ASSET_WIDTH}
+                maxHeight={MAX_LOCATION_MAP_ASSET_HEIGHT}
               />
             </div>
             <div className='grid grid-cols-2 gap-4'>

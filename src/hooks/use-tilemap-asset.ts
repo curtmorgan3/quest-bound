@@ -1,18 +1,25 @@
-import { DEFAULT_TILE_RENDER_SIZE } from '@/constants';
+import {
+  DEFAULT_TILE_RENDER_SIZE,
+  MAX_LOCATION_MAP_ASSET_HEIGHT,
+  MAX_LOCATION_MAP_ASSET_WIDTH,
+} from '@/constants';
 import { useLocation, useTilemaps } from '@/lib/compass-api';
 import { db } from '@/stores';
 import type { Tile, TileData, Tilemap } from '@/types';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
-const MAP_IMAGE_MAX_WIDTH = 900;
-const MAP_IMAGE_MAX_HEIGHT = 1200;
-
 type AssetSize = {
   w: number;
   h: number;
 };
 
+/**
+ * Given a world and location ID, returns a lookup of tilemap assets to dimensions.
+ *
+ * assetDimensions are tilemap assets that are split into tiles. These are scaled at time of save.
+ * mapImageDimensions are scaled at runtime. getStyleTile accounts for the scaling.
+ */
 export const useTilemapAsset = ({
   worldId,
   locationId,
@@ -32,11 +39,13 @@ export const useTilemapAsset = ({
   const mapImageUrl = imageUrlOverride ?? location?.mapAsset ?? null;
 
   const [assetDimensions, setAssetDimensions] = useState<Record<string, AssetSize>>({});
-  const [assetScaledDimensions, setAssetScaledDimensions] = useState<Record<string, AssetSize>>({});
   const assetDimensionsRef = useRef(assetDimensions);
-  const assetScaledDimensionsRef = useRef(assetScaledDimensions);
   assetDimensionsRef.current = assetDimensions;
-  assetScaledDimensionsRef.current = assetScaledDimensions;
+
+  const [mapImageDimensions, setMapImageDimensions] = useState<{
+    natural: { w: number; h: number };
+    scaled: { w: number; h: number };
+  } | null>(null);
 
   const baseTileSize =
     overrideTileRendersize ?? location?.tileRenderSize ?? DEFAULT_TILE_RENDER_SIZE;
@@ -69,7 +78,7 @@ export const useTilemapAsset = ({
     [tileIdsInLocation.join(',')],
   );
 
-  // Preload tilemap asset images to get dimensions (natural + scaled); scale tiles by tilemap tileWidth/tileHeight
+  // Preload tilemap asset images to get dimensions
   useEffect(() => {
     const dataUrls = new Map<string, string>();
     tilemaps.forEach((tm) => {
@@ -84,15 +93,7 @@ export const useTilemapAsset = ({
       img.onload = () => {
         const w = img.naturalWidth;
         const h = img.naturalHeight;
-        const scaleDivisor = Math.max(
-          1,
-          Math.ceil(w / MAP_IMAGE_MAX_WIDTH),
-          Math.ceil(h / MAP_IMAGE_MAX_HEIGHT),
-        );
-        const scaledW = Math.round(w / scaleDivisor);
-        const scaledH = Math.round(h / scaleDivisor);
         setAssetDimensions((prev) => ({ ...prev, [assetId]: { w, h } }));
-        setAssetScaledDimensions((prev) => ({ ...prev, [assetId]: { w: scaledW, h: scaledH } }));
       };
       img.src = dataUrl;
       cancels.push(() => {
@@ -102,11 +103,7 @@ export const useTilemapAsset = ({
     return () => cancels.forEach((c) => c());
   }, [tilemaps]);
 
-  const [mapImageDimensions, setMapImageDimensions] = useState<{
-    natural: { w: number; h: number };
-    scaled: { w: number; h: number };
-  } | null>(null);
-
+  // Scale Map images down if naturally larger than max allowed
   useEffect(() => {
     if (!mapImageUrl) {
       setMapImageDimensions(null);
@@ -119,8 +116,8 @@ export const useTilemapAsset = ({
 
       const scaleDivisor = Math.max(
         1,
-        Math.ceil(w / MAP_IMAGE_MAX_WIDTH),
-        Math.ceil(h / MAP_IMAGE_MAX_HEIGHT),
+        Math.ceil(w / MAX_LOCATION_MAP_ASSET_WIDTH),
+        Math.ceil(h / MAX_LOCATION_MAP_ASSET_HEIGHT),
       );
       const scaledW = Math.round(w / scaleDivisor);
       const scaledH = Math.round(h / scaleDivisor);
@@ -135,50 +132,39 @@ export const useTilemapAsset = ({
     };
   }, [mapImageUrl]);
 
-  const getTileStyle = (td: TileData): React.CSSProperties => {
-    if (!td.tileId) return {}; // Placeholder tile (no tileset)
-    const tile = tilesById?.get(td.tileId);
-    if (!tile) return {};
-    const tilemap = tilemapsById.get(tile.tilemapId ?? '');
-    if (!tilemap) return {};
-    const data = tilemap.image ?? null;
+  function getTileStyle(td: TileData): React.CSSProperties {
+    if (!td?.tileId) return {};
+    const t = tilesById?.get(td.tileId);
+    if (!t) return {};
+
+    if (!t.tilemapId) return {};
+    const tm = tilemapsById.get(t.tilemapId);
+    if (!tm) return {};
+
+    const data = tm.image ?? null;
     if (!data) return {};
-    const tw = tilemap.tileWidth;
-    const th = tilemap.tileHeight;
-    let tileX = tile.tileX ?? 0;
-    let tileY = tile.tileY ?? 0;
-    const dim = assetDimensionsRef.current[tilemap.assetId];
-    const scaledDim = assetScaledDimensionsRef.current[tilemap.assetId];
-    // Tiles may have been selected when the tilemap image was shown scaled; map to natural coords.
-    if (dim != null && scaledDim != null) {
-      const colsNatural = Math.max(1, Math.floor(dim.w / tw));
-      const rowsNatural = Math.max(1, Math.floor(dim.h / th));
-      const colsScaled = Math.max(1, Math.floor(scaledDim.w / tw));
-      const rowsScaled = Math.max(1, Math.floor(scaledDim.h / th));
-      if (colsScaled < colsNatural || rowsScaled < rowsNatural) {
-        tileX = Math.min(Math.floor((tileX * colsNatural) / colsScaled), colsNatural - 1);
-        tileY = Math.min(Math.floor((tileY * rowsNatural) / rowsScaled), rowsNatural - 1);
-      }
-    }
+    const tw = tm.tileWidth;
+    const th = tm.tileHeight;
+    const tileX = t.tileX ?? 0;
+    const tileY = t.tileY ?? 0;
+    const dim = assetDimensions[tm.assetId];
     const backgroundSize =
       dim != null
-        ? `${(dim.w * effectiveTileSize) / tw}px ${(dim.h * effectiveTileSize) / th}px`
+        ? `${(dim.w * DEFAULT_TILE_RENDER_SIZE) / tw}px ${(dim.h * DEFAULT_TILE_RENDER_SIZE) / th}px`
         : 'auto';
-
-    const posX = tileX * effectiveTileSize;
-    const posY = tileY * effectiveTileSize;
+    const posX = tileX * DEFAULT_TILE_RENDER_SIZE;
+    const posY = tileY * DEFAULT_TILE_RENDER_SIZE;
     return {
       backgroundImage: `url(${data})`,
       backgroundPosition: `-${posX}px -${posY}px`,
       backgroundSize,
       backgroundRepeat: 'no-repeat',
     };
-  };
+  }
 
   return {
-    assetDimensions,
-    assetScaledDimensions,
     getTileStyle,
+    assetDimensions,
     effectiveTileSize,
     mapImageDimensions,
   };
