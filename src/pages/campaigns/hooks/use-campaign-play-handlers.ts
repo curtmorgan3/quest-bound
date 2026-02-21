@@ -34,7 +34,6 @@ export const useCampaignPlayHandlers = ({
     (x: number, y: number) => {
       if (!currentLocation?.tiles || !characterIdParam) return;
       const top = getTopTileDataAt(currentLocation.tiles, x, y);
-      console.log(top);
       if (top?.actionId) {
         const client = getQBScriptClient();
         client.executeActionEvent(top.actionId, characterIdParam, null, 'on_activate');

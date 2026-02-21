@@ -11,7 +11,7 @@ import {
 } from '@/lib/compass-api';
 import type { TileData } from '@/types';
 import { ArrowUp, ChevronRight, User } from 'lucide-react';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import {
   useCampaignPlayEligibleCharacters,
@@ -41,36 +41,62 @@ export function CampaignPlay() {
   );
   const currentLocationId = playingCc?.currentLocationId ?? null;
   const currentLocation = useLocation(currentLocationId ?? undefined);
-  const { locations: rootLocations, updateLocation } = useLocations(campaign?.worldId, null);
-  const { locations: childLocations } = useLocations(campaign?.worldId, currentLocationId);
+
+  const [viewingLocationId, setViewingLocationId] = useState<string | null>(null);
+  const initialViewSet = useRef(false);
+  useEffect(() => {
+    if (!initialViewSet.current && playingCc?.currentLocationId != null) {
+      initialViewSet.current = true;
+      setViewingLocationId(playingCc.currentLocationId);
+    }
+  }, [playingCc?.currentLocationId]);
+
+  const { locations: rootLocations, updateLocation } = useLocations(
+    campaign?.worldId,
+    null,
+  );
+  const { locations: locationsList } = useLocations(
+    campaign?.worldId,
+    viewingLocationId,
+  );
+  const { locations: childLocations } = useLocations(
+    campaign?.worldId,
+    currentLocationId,
+  );
+  const viewingLocation = useLocation(viewingLocationId ?? undefined);
   const eventLocationsWithEvent = useCampaignEventLocationsByLocation(
-    currentLocationId ?? undefined,
+    viewingLocationId ?? undefined,
   );
   const [moveLocationOpen, setMoveLocationOpen] = useState(false);
 
   const { overlayNodes, eventTileIds } = useCampaignPlayOverlay({
     campaignId,
-    currentLocationId,
+    currentLocationId: viewingLocationId,
     eventLocationsWithEvent,
   });
 
-  const { handleTileClick, handleMoveToLocation, handleAdvanceToLocation, handleBack } =
-    useCampaignPlayHandlers({
-      campaignId,
-      characterIdParam,
-      currentLocation,
-      currentLocationId,
-      playingCc,
-      rootLocations,
-      setMoveLocationOpen,
-    });
+  const { handleTileClick, handleMoveToLocation } = useCampaignPlayHandlers({
+    campaignId,
+    characterIdParam,
+    currentLocation: viewingLocation ?? currentLocation,
+    currentLocationId: viewingLocationId ?? currentLocationId,
+    playingCc,
+    rootLocations,
+    setMoveLocationOpen,
+  });
 
-  const locationsList = currentLocationId ? childLocations : rootLocations;
+  const handleAdvanceView = useCallback((locationId: string) => {
+    setViewingLocationId(locationId);
+  }, []);
+
+  const handleBackView = useCallback(() => {
+    setViewingLocationId(viewingLocation?.parentLocationId ?? null);
+  }, [viewingLocation?.parentLocationId]);
 
   const handleCreateTileAt = useCallback(
     async (x: number, y: number): Promise<string | null> => {
-      if (!currentLocation) return null;
-      const tiles = currentLocation.tiles ?? [];
+      if (!viewingLocation) return null;
+      const tiles = viewingLocation.tiles ?? [];
       const existing = getTopTileDataAt(tiles, x, y);
       if (existing) return existing.id;
       const newTile: TileData = {
@@ -80,13 +106,14 @@ export function CampaignPlay() {
         zIndex: 0,
         isPassable: true,
       };
-      await updateLocation(currentLocation.id, { tiles: [...tiles, newTile] });
+      await updateLocation(viewingLocation.id, { tiles: [...tiles, newTile] });
       return newTile.id;
     },
-    [currentLocation, updateLocation],
+    [viewingLocation, updateLocation],
   );
 
-  const showLocationView = currentLocationId && currentLocation?.hasMap && playingCc;
+  const showLocationView =
+    viewingLocationId && viewingLocation?.hasMap && playingCc;
 
   if (campaignId && campaign === undefined) {
     return (
@@ -170,14 +197,16 @@ export function CampaignPlay() {
         </button>
         <ChevronRight className='h-4 w-4 text-muted-foreground' />
         <span className='font-medium text-foreground'>{world.label}</span>
-        {currentLocation && (
+        {viewingLocation && (
           <>
             <ChevronRight className='h-4 w-4 text-muted-foreground' />
-            <span className='font-medium text-foreground'>{currentLocation.label}</span>
+            <span className='font-medium text-foreground'>
+              {viewingLocation.label}
+            </span>
             <Button
               variant='ghost'
               size='sm'
-              onClick={() => handleBack()}
+              onClick={() => handleBackView()}
               data-testid='campaign-play-back'
               className='clickable'>
               <ArrowUp className='h-4 w-4' />
@@ -204,8 +233,8 @@ export function CampaignPlay() {
           <div className='h-full min-h-[400px]'>
             <WorldViewer
               locations={locationsList}
-              onAdvanceToLocation={handleAdvanceToLocation}
-              onOpenMap={handleAdvanceToLocation}
+              onAdvanceToLocation={handleAdvanceView}
+              onOpenMap={handleAdvanceView}
               translateExtent={[
                 [-2000, -2000],
                 [2000, 2000],
@@ -213,19 +242,19 @@ export function CampaignPlay() {
             />
           </div>
         )}
-        {showLocationView && currentLocationId && playingCc && (
+        {showLocationView && viewingLocationId && playingCc && (
           <div className='h-full flex justify-center items-center'>
             <LocationViewer
-              locationId={currentLocationId}
+              locationId={viewingLocationId}
               worldId={campaign.worldId}
               onSelectCell={handleTileClick}
-              tileRenderSize={currentLocation?.tileRenderSize}
+              tileRenderSize={viewingLocation?.tileRenderSize}
               overlayNodes={overlayNodes}
               eventTileIds={eventTileIds}
               playMode
               onMoveCharacter={(tileId) =>
                 updateCampaignCharacter(playingCc.id, {
-                  currentLocationId: currentLocationId,
+                  currentLocationId: viewingLocationId,
                   currentTileId: tileId,
                 })
               }
