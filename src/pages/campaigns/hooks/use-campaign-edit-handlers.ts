@@ -74,6 +74,7 @@ export const useCampaignEditHandlers = ({
       const newCharId = await createCharacter({
         rulesetId: campaign.rulesetId,
         archetypeIds: [archetypeId],
+        isNpc: true,
       });
       if (newCharId) {
         await createCampaignCharacter(campaignId, newCharId, {

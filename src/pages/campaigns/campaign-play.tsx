@@ -1,21 +1,21 @@
 import { Button, Card } from '@/components';
-import type { LocationViewerOverlayNode } from '@/components/locations';
-import { LocationViewer, getFirstPassableTileId, getTopTileDataAt } from '@/components/locations';
+import { LocationViewer } from '@/components/locations';
 import {
   useCampaign,
   useCampaignCharacters,
   useCampaignEventLocationsByLocation,
-  useCampaignItems,
   useLocation,
   useLocations,
   useWorld,
 } from '@/lib/compass-api';
-import { getQBScriptClient } from '@/lib/compass-logic/worker';
-import { db } from '@/stores';
-import { useLiveQuery } from 'dexie-react-hooks';
 import { ChevronRight, User } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import {
+  useCampaignPlayCharacterList,
+  useCampaignPlayHandlers,
+  useCampaignPlayOverlay,
+} from './hooks';
 
 export function CampaignPlay() {
   const { campaignId } = useParams<{ campaignId: string }>();
@@ -25,8 +25,6 @@ export function CampaignPlay() {
   const campaign = useCampaign(campaignId);
   const world = useWorld(campaign?.worldId);
   const { campaignCharacters } = useCampaignCharacters(campaignId);
-  const { campaignItems } = useCampaignItems(campaignId);
-  const { updateCampaignCharacter } = useCampaignCharacters(campaignId);
   const playingCc = useMemo(
     () =>
       characterIdParam
@@ -43,105 +41,23 @@ export function CampaignPlay() {
   );
   const [moveLocationOpen, setMoveLocationOpen] = useState(false);
 
-  const charactersResolved = useLiveQuery(async () => {
-    if (!currentLocationId || campaignCharacters.length === 0) return [];
-    const atLocation = campaignCharacters.filter(
-      (cc) => cc.currentLocationId === currentLocationId && cc.currentTileId,
-    );
-    if (atLocation.length === 0) return [];
-    const chars = await db.characters.bulkGet(atLocation.map((cc) => cc.characterId));
-    return atLocation.map((cc) => ({
-      campaignCharacter: cc,
-      character: chars.find((c) => c?.id === cc.characterId) ?? null,
-    }));
-  }, [
+  const characterList = useCampaignPlayCharacterList({ campaignCharacters });
+
+  const { overlayNodes, eventTileIds } = useCampaignPlayOverlay({
+    campaignId,
     currentLocationId,
-    campaignCharacters
-      .filter((c) => c.currentLocationId === currentLocationId)
-      .map((c) => c.id)
-      .join(','),
-  ]);
-  const itemsAtLocation = useMemo(
-    () =>
-      campaignItems.filter((ci) => ci.currentLocationId === currentLocationId && ci.currentTileId),
-    [campaignItems, currentLocationId],
-  );
-  const itemsResolved = useLiveQuery(async () => {
-    if (itemsAtLocation.length === 0) return [];
-    const itemRecs = await db.items.bulkGet(itemsAtLocation.map((ci) => ci.itemId));
-    return itemsAtLocation.map((ci) => ({
-      campaignItem: ci,
-      item: itemRecs.find((i) => i?.id === ci.itemId) ?? null,
-    }));
-  }, [itemsAtLocation.map((i) => i.id).join(',')]);
+    eventLocationsWithEvent,
+  });
 
-  const overlayNodes = useMemo((): LocationViewerOverlayNode[] => {
-    const nodes: LocationViewerOverlayNode[] = [];
-    (charactersResolved ?? []).forEach(({ campaignCharacter, character }) => {
-      if (!campaignCharacter.currentTileId) return;
-      const sprites = character?.sprites ?? [];
-      const imageUrl = sprites.length > 0 ? null : (character?.image ?? null);
-      nodes.push({
-        id: `char-${campaignCharacter.id}`,
-        tileId: campaignCharacter.currentTileId,
-        type: 'character',
-        imageUrl,
-        label: character?.name ?? 'Character',
-        sprites: sprites.length > 0 ? sprites : undefined,
-        mapWidth: campaignCharacter.mapWidth ?? 1,
-        mapHeight: campaignCharacter.mapHeight ?? 1,
-      });
-    });
-    (itemsResolved ?? []).forEach(({ campaignItem, item }) => {
-      if (!campaignItem.currentTileId) return;
-      const sprites = item?.sprites ?? [];
-      const imageUrl = sprites.length > 0 ? null : (item?.image ?? null);
-      nodes.push({
-        id: `item-${campaignItem.id}`,
-        tileId: campaignItem.currentTileId,
-        type: 'item',
-        imageUrl,
-        label: item?.title ?? 'Item',
-        sprites: sprites.length > 0 ? sprites : undefined,
-        mapWidth: campaignItem.mapWidth ?? 1,
-        mapHeight: campaignItem.mapHeight ?? 1,
-      });
-    });
-    return nodes;
-  }, [charactersResolved, itemsResolved]);
-
-  const eventTileIds = useMemo(
-    () => eventLocationsWithEvent.filter((el) => el.tileId).map((el) => el.tileId as string),
-    [eventLocationsWithEvent],
-  );
-
-  const handleTileClick = useCallback(
-    (x: number, y: number) => {
-      if (!currentLocation?.tiles || !characterIdParam) return;
-      const top = getTopTileDataAt(currentLocation.tiles, x, y);
-      if (top?.actionId) {
-        const client = getQBScriptClient();
-        client.executeActionEvent(top.actionId, characterIdParam, null, 'on_activate');
-      }
-    },
-    [currentLocation?.tiles, characterIdParam],
-  );
-
-  const handleMoveToLocation = useCallback(
-    async (locationId: string) => {
-      if (!playingCc?.id) return;
-      const loc = await db.locations.get(locationId);
-      if (!loc?.tiles?.length) return;
-      const tileId = getFirstPassableTileId(loc.tiles);
-      if (!tileId) return;
-      await updateCampaignCharacter(playingCc.id, {
-        currentLocationId: locationId,
-        currentTileId: tileId,
-      });
-      setMoveLocationOpen(false);
-    },
-    [playingCc?.id, updateCampaignCharacter],
-  );
+  const { handleTileClick, handleMoveToLocation } = useCampaignPlayHandlers({
+    campaignId,
+    characterIdParam,
+    currentLocation,
+    currentLocationId,
+    playingCc,
+    rootLocations,
+    setMoveLocationOpen,
+  });
 
   const showLocationView = currentLocationId && currentLocation?.hasMap && playingCc;
 
@@ -162,16 +78,6 @@ export function CampaignPlay() {
       </div>
     );
   }
-
-  const campaignCharactersWithNames = useLiveQuery(async () => {
-    if (campaignCharacters.length === 0) return [];
-    const chars = await db.characters.bulkGet(campaignCharacters.map((cc) => cc.characterId));
-    return campaignCharacters.map((cc) => ({
-      cc,
-      character: chars.find((c) => c?.id === cc.characterId) ?? null,
-    }));
-  }, [campaignCharacters.map((c) => c.characterId).join(',')]);
-  const characterList = campaignCharactersWithNames ?? [];
 
   if (!characterIdParam) {
     const list = characterList;
@@ -216,19 +122,6 @@ export function CampaignPlay() {
       </div>
     );
   }
-
-  useEffect(() => {
-    if (playingCc?.id && !currentLocationId && rootLocations.length > 0) {
-      const firstRoot = rootLocations[0]!;
-      const tileId = firstRoot.tiles?.length ? getFirstPassableTileId(firstRoot.tiles) : null;
-      if (tileId) {
-        updateCampaignCharacter(playingCc.id, {
-          currentLocationId: firstRoot.id,
-          currentTileId: tileId,
-        });
-      }
-    }
-  }, [playingCc?.id, currentLocationId, rootLocations, updateCampaignCharacter]);
 
   return (
     <div className='flex h-full w-full flex-col'>

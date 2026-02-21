@@ -2,9 +2,11 @@ import { useErrorHandler } from '@/hooks';
 import { db } from '@/stores';
 import type { CampaignCharacter } from '@/types';
 import { useLiveQuery } from 'dexie-react-hooks';
+import { useCharacter } from '../characters/use-character';
 
 export const useCampaignCharacters = (campaignId: string | undefined) => {
   const { handleError } = useErrorHandler();
+  const { deleteCharacter } = useCharacter();
 
   const campaignCharacters = useLiveQuery(
     async (): Promise<CampaignCharacter[]> =>
@@ -71,6 +73,13 @@ export const useCampaignCharacters = (campaignId: string | undefined) => {
 
   const deleteCampaignCharacter = async (id: string) => {
     try {
+      const campaignCharacter = await db.campaignCharacters.get(id);
+      if (campaignCharacter) {
+        const character = await db.characters.get(campaignCharacter.characterId);
+        if (character?.isNpc) {
+          await deleteCharacter(character.id);
+        }
+      }
       await db.campaignCharacters.delete(id);
     } catch (e) {
       handleError(e as Error, {

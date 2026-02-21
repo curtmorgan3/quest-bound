@@ -43,7 +43,9 @@ export const Characters = () => {
   const { rulesets } = useRulesets();
   const { assets, deleteAsset } = useAssets();
 
-  const selectableCharacters = characters.filter((c) => !c.isTestCharacter);
+  const selectableCharacters = characters.filter(
+    (c) => !c.isTestCharacter && c.isNpc !== true,
+  );
 
   const [step, setStep] = useState<1 | 2>(1);
   const [name, setName] = useState('');
