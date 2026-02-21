@@ -1,4 +1,13 @@
-import { Avatar, AvatarFallback, AvatarImage, Button, Card } from '@/components';
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+  Button,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components';
 import { getTopTileDataAt, LocationViewer } from '@/components/locations';
 import { WorldViewer } from '@/components/worlds/world-viewer';
 import {
@@ -30,11 +39,16 @@ export function CampaignPlay() {
     addSelectedCharacter,
     removeSelectedCharacter,
     moveSelectedCharactersTo,
+    jumpToCharacter,
     campaignPlayerCharacters,
   } = useCampaignContext();
 
   const charactersInThisLocation = campaignPlayerCharacters.filter(
-    (c) => c.currentLocationId === locationId,
+    (c) => c.currentLocationId === locationId || (!locationId && c.currentLocationId === null),
+  );
+
+  const hasPlayerCharactersElsewhere = campaignPlayerCharacters.some(
+    (c) => c.currentLocationId !== viewingLocationId,
   );
 
   const selectedIds = useMemo(
@@ -55,13 +69,14 @@ export function CampaignPlay() {
 
   const viewingLocation = useLocation(viewingLocationId ?? undefined);
 
-  const { locations: rootLocations, updateLocation } = useLocations(campaign?.worldId, null);
-  const { locations: locationsList } = useLocations(campaign?.worldId, viewingLocationId);
-  const { locations: childLocations } = useLocations(campaign?.worldId, viewingLocationId);
+  const { locations: locationsList, updateLocation } = useLocations(
+    campaign?.worldId,
+    viewingLocationId,
+  );
   const eventLocationsWithEvent = useCampaignEventLocationsByLocation(
     viewingLocationId ?? undefined,
   );
-  const [moveLocationOpen, setMoveLocationOpen] = useState(false);
+  const [jumpToCharacterOpen, setJumpToCharacterOpen] = useState(false);
 
   const { overlayNodes, eventTileIds } = useCampaignPlayOverlay({
     campaignId,
@@ -89,14 +104,12 @@ export function CampaignPlay() {
     [viewingLocationId, selectedCharacters.length, moveSelectedCharactersTo],
   );
 
-  const handleMoveToLocation = useCallback(
-    async (locationId: string) => {
-      if (selectedCharacters.length > 0) {
-        await moveSelectedCharactersTo(locationId);
-      }
-      setMoveLocationOpen(false);
+  const handleJumpToCharacter = useCallback(
+    (characterId: string) => {
+      jumpToCharacter(characterId);
+      setJumpToCharacterOpen(false);
     },
-    [selectedCharacters.length, moveSelectedCharactersTo],
+    [jumpToCharacter],
   );
 
   const handleCreateTileAt = useCallback(
@@ -178,6 +191,7 @@ export function CampaignPlay() {
             {charactersInThisLocation.map((character) => (
               <button
                 type='button'
+                key={character.id}
                 onClick={() => toggleCharacterSelection(character.id)}
                 className='rounded-md focus:outline-none focus-visible:ring-2 focus-visible:ring-ring'
                 aria-label={
@@ -197,13 +211,11 @@ export function CampaignPlay() {
             ))}
           </div>
 
-          <Button
-            variant='outline'
-            size='sm'
-            onClick={() => setMoveLocationOpen(true)}
-            disabled={selectedCharacters.length === 0}>
-            Move to location
-          </Button>
+          {hasPlayerCharactersElsewhere && (
+            <Button variant='outline' size='sm' onClick={() => setJumpToCharacterOpen(true)}>
+              Jump to character
+            </Button>
+          )}
         </div>
       </div>
       <div className='min-h-0 flex-1 p-4'>
@@ -236,36 +248,35 @@ export function CampaignPlay() {
         )}
       </div>
 
-      {moveLocationOpen && (
-        <>
-          <div
-            className='fixed inset-0 z-10'
-            onClick={() => setMoveLocationOpen(false)}
-            aria-hidden
-          />
-          <Card className='fixed left-1/2 top-1/2 z-20 w-full max-w-sm -translate-x-1/2 -translate-y-1/2 p-4'>
-            <h3 className='mb-2 font-semibold'>Move to location</h3>
-            <div className='flex max-h-60 flex-col gap-1 overflow-auto'>
-              {(viewingLocationId ? childLocations : rootLocations).map((loc) => (
-                <Button
-                  key={loc.id}
-                  variant='ghost'
-                  size='sm'
-                  className='justify-start'
-                  onClick={() => handleMoveToLocation(loc.id)}>
-                  {loc.label}
-                </Button>
-              ))}
-            </div>
-            <Button
-              variant='outline'
-              className='mt-2 w-full'
-              onClick={() => setMoveLocationOpen(false)}>
-              Cancel
-            </Button>
-          </Card>
-        </>
-      )}
+      <Dialog open={jumpToCharacterOpen} onOpenChange={setJumpToCharacterOpen}>
+        <DialogContent className='max-w-sm'>
+          <DialogHeader>
+            <DialogTitle>Jump to character</DialogTitle>
+          </DialogHeader>
+          <div className='flex max-h-60 flex-col gap-1 overflow-auto'>
+            {campaignPlayerCharacters.map((character) => (
+              <button
+                key={character.id}
+                type='button'
+                onClick={() => handleJumpToCharacter(character.characterId)}
+                className='flex items-center gap-2 rounded-md px-2 py-2 text-left text-sm hover:bg-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-ring'>
+                <Avatar className='size-8 shrink-0 rounded-md'>
+                  <AvatarImage src={character.image ?? ''} alt={character.name ?? 'Character'} />
+                  <AvatarFallback className='rounded-md text-xs'>
+                    {(character.name ?? '?').slice(0, 1).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <span className='truncate font-medium'>{character.name ?? 'Unknown'}</span>
+              </button>
+            ))}
+            {campaignPlayerCharacters.length === 0 && (
+              <p className='py-4 text-center text-sm text-muted-foreground'>
+                No player characters in campaign
+              </p>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -18,6 +18,8 @@ export interface CampaignPlayContextValue {
   moveSelectedCharactersTo: (locationId: string, tileId?: string) => void;
   navigateTo: (locationId: string) => void;
   navigateBack: () => void;
+  /** Navigate the view to the given character's current location, if they have one */
+  jumpToCharacter: (characterId: string) => void;
   /** Current location id the view is showing (not character positions) */
   viewingLocationId: string | null;
 }
@@ -101,17 +103,19 @@ function useCampaignProvider(campaignId: string | undefined): CampaignPlayContex
   }, []);
 
   const moveSelectedCharactersTo = useCallback(
-    async (locationId: string, tileId?: string) => {
+    async (locationId?: string, tileId?: string) => {
       let resolvedTileId = tileId;
-      if (resolvedTileId == null) {
+
+      if (resolvedTileId == null && locationId) {
         const loc = await db.locations.get(locationId);
         resolvedTileId = loc?.tiles?.length
           ? (getFirstPassableTileId(loc.tiles) ?? undefined)
           : undefined;
       }
+
       for (const cc of selectedCharacters) {
         await updateCampaignCharacter(cc.id, {
-          currentLocationId: locationId,
+          currentLocationId: locationId ?? null,
           currentTileId: resolvedTileId ?? null,
         });
       }
@@ -137,8 +141,19 @@ function useCampaignProvider(campaignId: string | undefined): CampaignPlayContex
       moveSelectedCharactersTo(viewingLocation.parentLocationId);
     } else {
       navigate(`/campaigns/${campaignIdParam}/play`);
+      moveSelectedCharactersTo();
     }
   }, [campaignIdParam, viewingLocation?.parentLocationId, navigate, selectedCharacters]);
+
+  const jumpToCharacter = useCallback(
+    (characterId: string) => {
+      const cc = campaignCharacters.find((c) => c.characterId === characterId);
+      if (cc?.currentLocationId && campaignIdParam) {
+        navigate(`/campaigns/${campaignIdParam}/play/locations/${cc.currentLocationId}`);
+      }
+    },
+    [campaignCharacters, campaignIdParam, navigate, selectedCharacters],
+  );
 
   return useMemo(
     () => ({
@@ -152,6 +167,7 @@ function useCampaignProvider(campaignId: string | undefined): CampaignPlayContex
       moveSelectedCharactersTo,
       navigateTo,
       navigateBack,
+      jumpToCharacter,
       viewingLocationId,
     }),
     [
@@ -163,6 +179,7 @@ function useCampaignProvider(campaignId: string | undefined): CampaignPlayContex
       moveSelectedCharactersTo,
       navigateTo,
       navigateBack,
+      jumpToCharacter,
       viewingLocationId,
     ],
   );

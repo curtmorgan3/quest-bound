@@ -79,3 +79,5 @@ Yes
 ## UI notes
 
 - **Avatar selection state:** In CampaignPlay, show a border (e.g. ring) on the character avatar when that character is selected.
+
+- **Jump to character dialog:** The "Move to location" flow is refactored to a small dialog that lists `campaignPlayerCharacters`. Each row shows the character's image (avatar) and name. On click of a character, call `jumpToCharacter(characterId)` to navigate the view to that character's current location (if they have one), then close the dialog. Use the shared Dialog component for the modal.
