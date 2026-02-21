@@ -54,17 +54,12 @@ function CampaignCardCharacterSection({ campaign }: { campaign: Campaign }) {
             className='flex items-center justify-between gap-2 rounded-md border px-2 py-1.5'>
             <div className='flex min-w-0 flex-1 items-center gap-2'>
               <Avatar className='size-8 shrink-0 rounded-md'>
-                <AvatarImage
-                  src={character?.image ?? ''}
-                  alt={character?.name ?? 'Character'}
-                />
+                <AvatarImage src={character?.image ?? ''} alt={character?.name ?? 'Character'} />
                 <AvatarFallback className='rounded-md text-xs'>
                   {(character?.name ?? '?').slice(0, 1).toUpperCase()}
                 </AvatarFallback>
               </Avatar>
-              <span className='truncate text-sm'>
-                {character?.name ?? 'Unknown'}
-              </span>
+              <span className='truncate text-sm'>{character?.name ?? 'Unknown'}</span>
             </div>
             <Button
               type='button'

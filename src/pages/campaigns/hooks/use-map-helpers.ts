@@ -117,7 +117,7 @@ export const useMapHelpers = ({
       navigate(`/campaigns/${campaignIdParam}/locations/${viewingLocation.parentLocationId}`);
       moveSelectedCharactersTo(viewingLocation.parentLocationId);
     } else {
-      navigate(`/campaigns/${campaignIdParam}/locations`);
+      navigate(`/campaigns/${campaignIdParam}`);
       moveSelectedCharactersTo(null);
     }
   }, [campaignIdParam, viewingLocation?.parentLocationId, navigate, selectedCharacters]);

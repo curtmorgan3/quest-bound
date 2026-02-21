@@ -1,6 +1,5 @@
 import {
   ArchetypeSheetEditor,
-  CampaignDetail,
   CampaignNew,
   CampaignPlay,
   CampaignsList,
@@ -74,9 +73,8 @@ function CompassRoutes() {
 
             <Route path={`/campaigns`} element={<CampaignsList />} />
             <Route path={`/campaigns/new`} element={<CampaignNew />} />
-            <Route path={`/campaigns/:campaignId`} element={<CampaignDetail />} />
             <Route
-              path={`/campaigns/:campaignId/locations/:locationId`}
+              path={`/campaigns/:campaignId`}
               element={
                 <CampaignProvider>
                   <CampaignPlay />
@@ -85,7 +83,7 @@ function CompassRoutes() {
             />
 
             <Route
-              path={`/campaigns/:campaignId/locations`}
+              path={`/campaigns/:campaignId/locations/:locationId`}
               element={
                 <CampaignProvider>
                   <CampaignPlay />
