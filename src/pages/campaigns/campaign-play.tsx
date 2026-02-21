@@ -1,13 +1,4 @@
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-  Button,
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components';
+import { Avatar, AvatarFallback, AvatarImage, Button } from '@/components';
 import { getTopTileDataAt, LocationViewer } from '@/components/locations';
 import { WorldViewer } from '@/components/worlds/world-viewer';
 import {
@@ -20,8 +11,9 @@ import {
 import { cn } from '@/lib/utils';
 import type { TileData } from '@/types';
 import { ArrowUp, ChevronRight } from 'lucide-react';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { JumpToCharacter, TileMenu } from './campaign-controls';
 import { useCampaignContext } from './campaign-provider';
 import { useCampaignPlayOverlay } from './hooks';
 
@@ -38,18 +30,12 @@ export function CampaignPlay() {
     selectedCharacters,
     addSelectedCharacter,
     removeSelectedCharacter,
-    moveSelectedCharactersTo,
-    jumpToCharacter,
     campaignPlayerCharacters,
     campaignNpcs,
   } = useCampaignContext();
 
   const charactersInThisLocation = campaignPlayerCharacters.filter(
     (c) => c.currentLocationId === locationId || (!locationId && c.currentLocationId === null),
-  );
-
-  const hasPlayerCharactersElsewhere = campaignPlayerCharacters.some(
-    (c) => c.currentLocationId !== viewingLocationId,
   );
 
   const selectedIds = useMemo(
@@ -77,8 +63,6 @@ export function CampaignPlay() {
   const eventLocationsWithEvent = useCampaignEventLocationsByLocation(
     viewingLocationId ?? undefined,
   );
-  const [jumpToCharacterOpen, setJumpToCharacterOpen] = useState(false);
-
   const { overlayNodes, eventTileIds } = useCampaignPlayOverlay({
     campaignId,
     currentLocationId: viewingLocationId,
@@ -96,23 +80,6 @@ export function CampaignPlay() {
   const handleBackView = useCallback(() => {
     navigateBack();
   }, [navigateBack]);
-
-  const handleMoveToTile = useCallback(
-    (tileId: string) => {
-      if (viewingLocationId && selectedCharacters.length > 0) {
-        moveSelectedCharactersTo(viewingLocationId, tileId);
-      }
-    },
-    [viewingLocationId, selectedCharacters.length, moveSelectedCharactersTo],
-  );
-
-  const handleJumpToCharacter = useCallback(
-    (characterId: string) => {
-      jumpToCharacter(characterId);
-      setJumpToCharacterOpen(false);
-    },
-    [jumpToCharacter],
-  );
 
   const handleCreateTileAt = useCallback(
     async (x: number, y: number): Promise<string | null> => {
@@ -139,8 +106,7 @@ export function CampaignPlay() {
 
       const allAtLocation = [...campaignPlayerCharacters, ...campaignNpcs];
       const charactersAtTile = allAtLocation.filter(
-        (c) =>
-          c.currentLocationId === viewingLocationId && c.currentTileId === tileId,
+        (c) => c.currentLocationId === viewingLocationId && c.currentTileId === tileId,
       );
       const idsAtTile = new Set(charactersAtTile.map((c) => c.id));
 
@@ -150,9 +116,7 @@ export function CampaignPlay() {
           .forEach((c) => removeSelectedCharacter(c.id));
       }
 
-      const anyAlreadySelected = charactersAtTile.some((c) =>
-        selectedIds.has(c.id),
-      );
+      const anyAlreadySelected = charactersAtTile.some((c) => selectedIds.has(c.id));
       if (anyAlreadySelected) {
         charactersAtTile.forEach((c) => removeSelectedCharacter(c.id));
       } else {
@@ -249,11 +213,7 @@ export function CampaignPlay() {
             ))}
           </div>
 
-          {hasPlayerCharactersElsewhere && (
-            <Button variant='outline' size='sm' onClick={() => setJumpToCharacterOpen(true)}>
-              Jump to character
-            </Button>
-          )}
+          <JumpToCharacter />
         </div>
       </div>
       <div className='min-h-0 flex-1 p-4'>
@@ -272,50 +232,24 @@ export function CampaignPlay() {
         )}
         {showLocationView && viewingLocationId && (
           <div className='flex h-full items-center justify-center'>
-            <LocationViewer
-              locationId={viewingLocationId}
-              worldId={campaign.worldId}
-              tileRenderSize={viewingLocation?.tileRenderSize}
-              overlayNodes={overlayNodes}
-              eventTileIds={eventTileIds}
-              playMode
-              onMoveCharacter={handleMoveToTile}
-              onCreateTileAt={handleCreateTileAt}
-              onOverlayClick={handleOverlayClick}
-            />
+            <TileMenu>
+              {({ onTileMenuRequest }) => (
+                <LocationViewer
+                  locationId={viewingLocationId}
+                  worldId={campaign.worldId}
+                  tileRenderSize={viewingLocation?.tileRenderSize}
+                  overlayNodes={overlayNodes}
+                  eventTileIds={eventTileIds}
+                  playMode
+                  onTileMenuRequest={onTileMenuRequest}
+                  onCreateTileAt={handleCreateTileAt}
+                  onOverlayClick={handleOverlayClick}
+                />
+              )}
+            </TileMenu>
           </div>
         )}
       </div>
-
-      <Dialog open={jumpToCharacterOpen} onOpenChange={setJumpToCharacterOpen}>
-        <DialogContent className='max-w-sm'>
-          <DialogHeader>
-            <DialogTitle>Jump to character</DialogTitle>
-          </DialogHeader>
-          <div className='flex max-h-60 flex-col gap-1 overflow-auto'>
-            {campaignPlayerCharacters.map((character) => (
-              <button
-                key={character.id}
-                type='button'
-                onClick={() => handleJumpToCharacter(character.characterId)}
-                className='flex items-center gap-2 rounded-md px-2 py-2 text-left text-sm hover:bg-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-ring'>
-                <Avatar className='size-8 shrink-0 rounded-md'>
-                  <AvatarImage src={character.image ?? ''} alt={character.name ?? 'Character'} />
-                  <AvatarFallback className='rounded-md text-xs'>
-                    {(character.name ?? '?').slice(0, 1).toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-                <span className='truncate font-medium'>{character.name ?? 'Unknown'}</span>
-              </button>
-            ))}
-            {campaignPlayerCharacters.length === 0 && (
-              <p className='py-4 text-center text-sm text-muted-foreground'>
-                No player characters in campaign
-              </p>
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

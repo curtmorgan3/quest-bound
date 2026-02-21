@@ -5,7 +5,7 @@ import { useLocation } from '@/lib/compass-api';
 import { cn } from '@/lib/utils';
 import type { TileData } from '@/types';
 import { ZoomIn, ZoomOut } from 'lucide-react';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { getTilesByKey } from './utils';
 
 const ZOOM_MIN = 0.25;
@@ -52,6 +52,14 @@ export interface LocationViewerProps {
   playMode?: boolean;
   /** In play mode, called when the user chooses "Move Character" for a tile. */
   onMoveCharacter?: (tileId: string) => void;
+  /** In play mode, called when the user clicks a tile (and not an overlay). Parent can open a tile menu and then call onMoveCharacter when user chooses "Move Character". */
+  onTileMenuRequest?: (payload: {
+    x: number;
+    y: number;
+    clientX: number;
+    clientY: number;
+    tileId: string;
+  }) => void;
   /** In play mode, called when the user clicks a cell with no tile. Should create a tile and return its id, or null on failure. */
   onCreateTileAt?: (x: number, y: number) => Promise<string | null>;
 }
@@ -67,21 +75,33 @@ export function LocationViewer({
   onOverlayClick,
   playMode = false,
   onMoveCharacter,
+  onTileMenuRequest,
   onCreateTileAt,
 }: LocationViewerProps) {
   const location = useLocation(locationId);
-  const [tileMenu, setTileMenu] = useState<{
-    x: number;
-    y: number;
-    clientX: number;
-    clientY: number;
-    tileId: string;
-  } | null>(null);
   const loc = location ?? undefined;
   const gridWidth = loc?.gridWidth ?? 1;
   const gridHeight = loc?.gridHeight ?? 1;
 
   const [zoom, setZoom] = useState(1);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const isMod = e.metaKey || e.ctrlKey;
+      if (!isMod) return;
+      if (e.key === '=' || e.key === '+') {
+        e.preventDefault();
+        e.stopPropagation();
+        setZoom((z) => Math.min(ZOOM_MAX, z + ZOOM_STEP));
+      } else if (e.key === '-') {
+        e.preventDefault();
+        e.stopPropagation();
+        setZoom((z) => Math.max(ZOOM_MIN, z - ZOOM_STEP));
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown, { capture: true });
+    return () => window.removeEventListener('keydown', handleKeyDown, { capture: true });
+  }, []);
 
   const { getTileStyle, effectiveTileSize } = useTilemapAsset({
     worldId,
@@ -100,7 +120,7 @@ export function LocationViewer({
 
   const handleCellClick = useCallback(
     async (x: number, y: number, e: React.MouseEvent) => {
-      if (playMode && onMoveCharacter) {
+      if (playMode && (onMoveCharacter || onTileMenuRequest)) {
         // Find top layered tile at this cell
         const layers = tilesByKey.get(`${x},${y}`) ?? [];
         let topTile = layers.length > 0 ? layers[layers.length - 1]! : null;
@@ -118,7 +138,7 @@ export function LocationViewer({
             onOverlayClick(topTile.id, e);
             return;
           }
-          setTileMenu({
+          onTileMenuRequest?.({
             x,
             y,
             clientX: e.clientX,
@@ -133,6 +153,7 @@ export function LocationViewer({
     [
       playMode,
       onMoveCharacter,
+      onTileMenuRequest,
       onCreateTileAt,
       tilesByKey,
       overlayNodes,
@@ -140,13 +161,6 @@ export function LocationViewer({
       onSelectCell,
     ],
   );
-
-  const handleMoveCharacter = useCallback(() => {
-    if (tileMenu) {
-      onMoveCharacter?.(tileMenu.tileId);
-      setTileMenu(null);
-    }
-  }, [tileMenu, onMoveCharacter]);
 
   if (!locationId || !worldId) return null;
   if (location === undefined) {
@@ -218,7 +232,11 @@ export function LocationViewer({
                 return (
                   <div
                     key={key}
-                    role={onSelectCell || (playMode && onMoveCharacter) ? 'button' : undefined}
+                    role={
+                      onSelectCell || (playMode && (onMoveCharacter || onTileMenuRequest))
+                        ? 'button'
+                        : undefined
+                    }
                     className='shrink-0 bg-muted/50 hover:bg-muted relative'
                     style={{ width: effectiveTileSize, height: effectiveTileSize }}
                     onClick={(e) => handleCellClick(x, y, e)}
@@ -330,22 +348,6 @@ export function LocationViewer({
             })}
         </div>
       </div>
-
-      {tileMenu && playMode && onMoveCharacter && (
-        <>
-          <div className='fixed inset-0 z-10' onClick={() => setTileMenu(null)} aria-hidden />
-          <div
-            className='fixed z-20 rounded-md border bg-popover px-2 py-1 shadow-md'
-            style={{ left: tileMenu.clientX, top: tileMenu.clientY }}>
-            <button
-              type='button'
-              className='block w-full rounded px-2 py-1.5 text-left text-sm hover:bg-accent'
-              onClick={handleMoveCharacter}>
-              Move Character
-            </button>
-          </div>
-        </>
-      )}
     </div>
   );
 }
