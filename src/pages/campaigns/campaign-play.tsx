@@ -2,7 +2,6 @@ import { Button, Card } from '@/components';
 import type { LocationViewerOverlayNode } from '@/components/locations';
 import { LocationViewer, getFirstPassableTileId, getTopTileDataAt } from '@/components/locations';
 import {
-  useAssets,
   useCampaign,
   useCampaignCharacters,
   useCampaignEventLocationsByLocation,
@@ -41,11 +40,6 @@ export function CampaignPlay() {
   const { locations: childLocations } = useLocations(campaign?.worldId, currentLocationId);
   const eventLocationsWithEvent = useCampaignEventLocationsByLocation(
     currentLocationId ?? undefined,
-  );
-  const { assets } = useAssets(campaign?.rulesetId ?? null);
-  const getAssetData = useCallback(
-    (assetId: string) => assets?.find((a) => a.id === assetId)?.data ?? null,
-    [assets],
   );
   const [moveLocationOpen, setMoveLocationOpen] = useState(false);
 
@@ -86,8 +80,7 @@ export function CampaignPlay() {
     (charactersResolved ?? []).forEach(({ campaignCharacter, character }) => {
       if (!campaignCharacter.currentTileId) return;
       const sprites = character?.sprites ?? [];
-      const imageUrl =
-        sprites.length > 0 ? null : (character?.image ?? null);
+      const imageUrl = sprites.length > 0 ? null : (character?.image ?? null);
       nodes.push({
         id: `char-${campaignCharacter.id}`,
         tileId: campaignCharacter.currentTileId,
@@ -102,8 +95,7 @@ export function CampaignPlay() {
     (itemsResolved ?? []).forEach(({ campaignItem, item }) => {
       if (!campaignItem.currentTileId) return;
       const sprites = item?.sprites ?? [];
-      const imageUrl =
-        sprites.length > 0 ? null : (item?.image ?? null);
+      const imageUrl = sprites.length > 0 ? null : (item?.image ?? null);
       nodes.push({
         id: `item-${campaignItem.id}`,
         tileId: campaignItem.currentTileId,
@@ -292,7 +284,6 @@ export function CampaignPlay() {
             <LocationViewer
               locationId={currentLocationId}
               worldId={campaign.worldId}
-              getAssetData={getAssetData}
               onSelectCell={handleTileClick}
               tileRenderSize={currentLocation?.tileRenderSize}
               overlayNodes={overlayNodes}
