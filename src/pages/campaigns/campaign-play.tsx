@@ -12,7 +12,7 @@ import { ChevronRight, User } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import {
-  useCampaignPlayCharacterList,
+  useCampaignPlayEligibleCharacters,
   useCampaignPlayHandlers,
   useCampaignPlayOverlay,
 } from './hooks';
@@ -24,7 +24,11 @@ export function CampaignPlay() {
   const navigate = useNavigate();
   const campaign = useCampaign(campaignId);
   const world = useWorld(campaign?.worldId);
-  const { campaignCharacters } = useCampaignCharacters(campaignId);
+  const { campaignCharacters, createCampaignCharacter } = useCampaignCharacters(campaignId);
+  const eligibleCharacters = useCampaignPlayEligibleCharacters({
+    campaignId,
+    rulesetId: campaign?.rulesetId,
+  });
   const playingCc = useMemo(
     () =>
       characterIdParam
@@ -40,8 +44,6 @@ export function CampaignPlay() {
     currentLocationId ?? undefined,
   );
   const [moveLocationOpen, setMoveLocationOpen] = useState(false);
-
-  const characterList = useCampaignPlayCharacterList({ campaignCharacters });
 
   const { overlayNodes, eventTileIds } = useCampaignPlayOverlay({
     campaignId,
@@ -80,27 +82,36 @@ export function CampaignPlay() {
   }
 
   if (!characterIdParam) {
-    const list = characterList;
+    const handleSelectCharacter = async (characterId: string) => {
+      const existingCc = campaignCharacters.find((cc) => cc.characterId === characterId);
+      if (existingCc) {
+        navigate(`/campaigns/${campaignId}/play?characterId=${characterId}`);
+        return;
+      }
+      if (campaignId) {
+        await createCampaignCharacter(campaignId, characterId, {});
+      }
+      navigate(`/campaigns/${campaignId}/play?characterId=${characterId}`);
+    };
+
     return (
       <div className='flex h-full w-full flex-col gap-6 p-4'>
         <h1 className='text-2xl font-bold'>Play campaign</h1>
         <p className='text-muted-foreground'>Choose a character to play as.</p>
-        {list.length === 0 ? (
+        {eligibleCharacters.length === 0 ? (
           <p className='text-muted-foreground'>
-            No characters in this campaign. Add characters in the campaign editor.
+            No characters available. Create a character for this ruleset first.
           </p>
         ) : (
           <div className='flex flex-col gap-2'>
-            {list.map(({ cc, character }) => (
+            {eligibleCharacters.map(({ character, existingCc }) => (
               <Button
-                key={cc.id}
+                key={character.id}
                 variant='outline'
                 className='justify-start'
-                onClick={() =>
-                  navigate(`/campaigns/${campaignId}/play?characterId=${cc.characterId}`)
-                }>
+                onClick={() => handleSelectCharacter(character.id)}>
                 <User className='mr-2 h-4 w-4' />
-                Play as {character?.name ?? 'Unknown'}
+                Play as {character.name ?? 'Unknown'}
               </Button>
             ))}
           </div>

@@ -169,14 +169,31 @@ export const CharacterSettings = ({ character }: CharacterSettingsProps) => {
         </DialogContent>
       </Dialog>
 
-      <ImageUpload
-        image={character.image}
-        alt={character.name}
-        onRemove={() => updateCharacter(character.id, { assetId: null })}
-        onUpload={(assetId) => updateCharacter(character.id, { assetId })}
-        onSetUrl={(url) => updateCharacter(character.id, { assetId: null, image: url })}
-        rulesetId={activeRuleset?.id}
-      />
+      <div className='flex gap-4'>
+        <div className='flex flex-col gap-2 max-w-sm'>
+          <Label>Portrait</Label>
+          <ImageUpload
+            image={character.image}
+            alt={character.name}
+            onRemove={() => updateCharacter(character.id, { assetId: null })}
+            onUpload={(assetId) => updateCharacter(character.id, { assetId })}
+            onSetUrl={(url) => updateCharacter(character.id, { assetId: null, image: url })}
+            rulesetId={activeRuleset?.id}
+          />
+        </div>
+
+        <div className='flex flex-col gap-2 max-w-sm'>
+          <Label>Map sprite</Label>
+          <ImageUpload
+            image={character.sprites?.[0]}
+            alt={`${character.name} sprite`}
+            onRemove={() => updateCharacter(character.id, { sprites: [] })}
+            onUpload={(assetId) => updateCharacter(character.id, { sprites: [assetId] })}
+            onSetUrl={(url) => updateCharacter(character.id, { sprites: [url] })}
+            rulesetId={character.rulesetId}
+          />
+        </div>
+      </div>
 
       <Button className='w-[150px]' variant='secondary' onClick={handleSyncWithRuleset}>
         Sync with Ruleset
