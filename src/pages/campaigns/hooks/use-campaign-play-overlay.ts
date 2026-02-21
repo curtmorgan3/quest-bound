@@ -43,7 +43,7 @@ export const useCampaignPlayOverlay = ({
       campaignCharacter: cc,
       character: chars.find((c) => c?.id === cc.characterId) ?? null,
     }));
-  }, [charactersAtLocation.map((c) => c.id).join(',')]);
+  }, [charactersAtLocation.map((c) => `${c.id}:${c.currentTileId}`).join(',')]);
 
   const itemsResolved = useLiveQuery(async () => {
     if (itemsAtLocation.length === 0) return [];
@@ -52,7 +52,7 @@ export const useCampaignPlayOverlay = ({
       campaignItem: ci,
       item: itemRecs.find((i) => i?.id === ci.itemId) ?? null,
     }));
-  }, [itemsAtLocation.map((i) => i.id).join(',')]);
+  }, [itemsAtLocation.map((i) => `${i.id}:${i.currentTileId}`).join(',')]);
 
   const overlayNodes = useMemo((): LocationViewerOverlayNode[] => {
     const nodes: LocationViewerOverlayNode[] = [];
