@@ -448,6 +448,10 @@ export type Location = BaseDetails & {
   mapAssetId?: string | null;
   /** Resolved map image URL (injected at read from DB). */
   mapAsset?: string | null;
+  // Large images are scaled down. Tiles selected in the location editor are relative
+  // to this size.
+  scaledMapHeight?: number;
+  scaledMapWidth?: number;
 };
 
 // --- Campaign (joins ruleset + world); placement is campaign-scoped ---

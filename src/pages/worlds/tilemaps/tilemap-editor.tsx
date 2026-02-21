@@ -15,7 +15,7 @@ export function TilemapEditor() {
   const { assets } = useAssets();
   const tm = tilemap ?? undefined;
   const assetData = tm?.assetId ? assets.find((a) => a.id === tm.assetId)?.data : null;
-  const { mapImageDimensions } = useTilemapAsset({ worldId, imageUrl: assetData ?? undefined });
+  const { assetDimensions } = useTilemapAsset({ worldId, imageUrl: assetData ?? undefined });
 
   const [labelInput, setLabelInput] = useState('');
   const [tileWidthInput, setTileWidthInput] = useState('');
@@ -23,7 +23,8 @@ export function TilemapEditor() {
 
   const tileWidth = tm?.tileWidth ?? 32;
   const tileHeight = tm?.tileHeight ?? 32;
-  const imgSize = mapImageDimensions?.scaled ?? null;
+  const imgSize = assetDimensions[tm?.assetId ?? ''];
+
   const cols = imgSize ? Math.max(0, Math.floor(imgSize.w / tileWidth)) : 0;
   const rows = imgSize ? Math.max(0, Math.floor(imgSize.h / tileHeight)) : 0;
 
@@ -191,8 +192,6 @@ export function TilemapEditor() {
                 className='block w-auto max-w-full'
                 style={{
                   imageRendering: 'pixelated',
-                  height: mapImageDimensions?.scaled.h,
-                  width: mapImageDimensions?.scaled.w,
                 }}
               />
               {imgSize && cols > 0 && rows > 0 && (

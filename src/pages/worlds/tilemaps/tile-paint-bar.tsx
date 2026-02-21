@@ -8,6 +8,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useTilemapAsset } from '@/hooks';
 import { useTilemaps, useTiles } from '@/lib/compass-api';
 import { db } from '@/stores';
 import type { Tile, Tilemap } from '@/types';
@@ -17,7 +18,6 @@ const TILE_DISPLAY_SIZE = 32;
 
 export interface TilePaintBarProps {
   worldId: string;
-  assetDimensions: Record<string, { w: number; h: number }>;
   selectedTiles: Tile[];
   onSelectedTilesChange: (tiles: Tile[]) => void;
   /** Map image (flat asset) for the Image tab. */
@@ -39,6 +39,7 @@ function getPickerTileStyle(
   const tileX = t.tileX ?? 0;
   const tileY = t.tileY ?? 0;
   const dim = assetDimensions[tm.assetId];
+  console.log(dim);
   const backgroundSize =
     dim != null
       ? `${(dim.w * TILE_DISPLAY_SIZE) / tw}px ${(dim.h * TILE_DISPLAY_SIZE) / th}px`
@@ -55,7 +56,6 @@ function getPickerTileStyle(
 
 export function TilePaintBar({
   worldId,
-  assetDimensions,
   selectedTiles,
   onSelectedTilesChange,
   mapImage,
@@ -63,6 +63,11 @@ export function TilePaintBar({
   onMapImageRemove,
   rulesetId,
 }: TilePaintBarProps) {
+  const { assetDimensions } = useTilemapAsset({
+    worldId,
+    imageUrl: mapImage ?? undefined,
+  });
+
   const selectedIds = useMemo(() => new Set(selectedTiles.map((t) => t.id)), [selectedTiles]);
 
   const handleTileClick = (e: React.MouseEvent, tile: Tile | undefined) => {
@@ -86,10 +91,12 @@ export function TilePaintBar({
   const tilesResult = useTiles(selectedTilemapId ?? undefined);
   const tilesForPicker = tilesResult?.tiles ?? [];
   const tilemapsList = tilemaps ?? [];
+
   const rowIndices = useMemo(() => {
     const ys = new Set(tilesForPicker.map((t) => t.tileY ?? 0));
     return Array.from(ys).sort((a, b) => a - b);
   }, [tilesForPicker]);
+
   const colIndices = useMemo(() => {
     const xs = new Set(tilesForPicker.map((t) => t.tileX ?? 0));
     return Array.from(xs).sort((a, b) => a - b);

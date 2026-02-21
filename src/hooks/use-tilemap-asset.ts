@@ -32,8 +32,11 @@ export const useTilemapAsset = ({
   const mapImageUrl = imageUrlOverride ?? location?.mapAsset ?? null;
 
   const [assetDimensions, setAssetDimensions] = useState<Record<string, AssetSize>>({});
+  const [assetScaledDimensions, setAssetScaledDimensions] = useState<Record<string, AssetSize>>({});
   const assetDimensionsRef = useRef(assetDimensions);
+  const assetScaledDimensionsRef = useRef(assetScaledDimensions);
   assetDimensionsRef.current = assetDimensions;
+  assetScaledDimensionsRef.current = assetScaledDimensions;
 
   const baseTileSize =
     overrideTileRendersize ?? location?.tileRenderSize ?? DEFAULT_TILE_RENDER_SIZE;
@@ -66,7 +69,7 @@ export const useTilemapAsset = ({
     [tileIdsInLocation.join(',')],
   );
 
-  // Preload tilemap asset images to get dimensions; scale tiles by tilemap tileWidth/tileHeight
+  // Preload tilemap asset images to get dimensions (natural + scaled); scale tiles by tilemap tileWidth/tileHeight
   useEffect(() => {
     const dataUrls = new Map<string, string>();
     tilemaps.forEach((tm) => {
@@ -79,10 +82,17 @@ export const useTilemapAsset = ({
       if (assetDimensionsRef.current[assetId]) return;
       const img = new Image();
       img.onload = () => {
-        setAssetDimensions((prev) => ({
-          ...prev,
-          [assetId]: { w: img.naturalWidth, h: img.naturalHeight },
-        }));
+        const w = img.naturalWidth;
+        const h = img.naturalHeight;
+        const scaleDivisor = Math.max(
+          1,
+          Math.ceil(w / MAP_IMAGE_MAX_WIDTH),
+          Math.ceil(h / MAP_IMAGE_MAX_HEIGHT),
+        );
+        const scaledW = Math.round(w / scaleDivisor);
+        const scaledH = Math.round(h / scaleDivisor);
+        setAssetDimensions((prev) => ({ ...prev, [assetId]: { w, h } }));
+        setAssetScaledDimensions((prev) => ({ ...prev, [assetId]: { w: scaledW, h: scaledH } }));
       };
       img.src = dataUrl;
       cancels.push(() => {
@@ -135,9 +145,21 @@ export const useTilemapAsset = ({
     if (!data) return {};
     const tw = tilemap.tileWidth;
     const th = tilemap.tileHeight;
-    const tileX = tile.tileX ?? 0;
-    const tileY = tile.tileY ?? 0;
+    let tileX = tile.tileX ?? 0;
+    let tileY = tile.tileY ?? 0;
     const dim = assetDimensionsRef.current[tilemap.assetId];
+    const scaledDim = assetScaledDimensionsRef.current[tilemap.assetId];
+    // Tiles may have been selected when the tilemap image was shown scaled; map to natural coords.
+    if (dim != null && scaledDim != null) {
+      const colsNatural = Math.max(1, Math.floor(dim.w / tw));
+      const rowsNatural = Math.max(1, Math.floor(dim.h / th));
+      const colsScaled = Math.max(1, Math.floor(scaledDim.w / tw));
+      const rowsScaled = Math.max(1, Math.floor(scaledDim.h / th));
+      if (colsScaled < colsNatural || rowsScaled < rowsNatural) {
+        tileX = Math.min(Math.floor((tileX * colsNatural) / colsScaled), colsNatural - 1);
+        tileY = Math.min(Math.floor((tileY * rowsNatural) / rowsScaled), rowsNatural - 1);
+      }
+    }
     const backgroundSize =
       dim != null
         ? `${(dim.w * effectiveTileSize) / tw}px ${(dim.h * effectiveTileSize) / th}px`
@@ -155,6 +177,7 @@ export const useTilemapAsset = ({
 
   return {
     assetDimensions,
+    assetScaledDimensions,
     getTileStyle,
     effectiveTileSize,
     mapImageDimensions,

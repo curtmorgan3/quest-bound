@@ -105,6 +105,8 @@ export function TilemapList({ onCreated }: TilemapListProps) {
                 onUpload={setAssetId}
                 onRemove={() => setAssetId(null)}
                 rulesetId={world?.rulesetId ?? undefined}
+                maxWidth={900}
+                maxHeight={1200}
               />
             </div>
             <div className='grid grid-cols-2 gap-4'>

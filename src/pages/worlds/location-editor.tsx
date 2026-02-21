@@ -18,7 +18,7 @@ export function LocationEditor() {
 
   const mapImageUrl = location?.mapAsset ?? null;
 
-  const { assetDimensions, getTileStyle, mapImageDimensions } = useTilemapAsset({
+  const { getTileStyle, mapImageDimensions } = useTilemapAsset({
     worldId,
     locationId,
   });
@@ -378,13 +378,11 @@ export function LocationEditor() {
 
         <TilePaintBar
           worldId={worldId!}
-          assetDimensions={assetDimensions}
           selectedTiles={selectedTiles}
           onSelectedTilesChange={setSelectedTiles}
           mapImage={mapImageUrl}
           onMapImageUpload={(id) => loc && updateLocation(loc.id, { mapAssetId: id })}
           onMapImageRemove={() => loc && updateLocation(loc.id, { mapAssetId: null })}
-          rulesetId={world?.rulesetId ?? undefined}
         />
       </div>
     </div>

@@ -205,11 +205,13 @@ export function TilemapListPage() {
             <div className='grid gap-2'>
               <Label>Image</Label>
               <ImageUpload
-                image={assetId ? assets.find((a) => a.id === assetId)?.data ?? null : null}
+                image={assetId ? (assets.find((a) => a.id === assetId)?.data ?? null) : null}
                 alt='Tilemap'
                 onUpload={setAssetId}
                 onRemove={() => setAssetId(null)}
-                rulesetId={world?.rulesetId ?? undefined}
+                worldId={worldId}
+                maxWidth={2560}
+                maxHeight={1440}
               />
             </div>
             <div className='grid grid-cols-2 gap-4'>
