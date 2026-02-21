@@ -1,10 +1,10 @@
 import { Button } from '@/components';
 import { useSidebar } from '@/components/ui/sidebar';
 import { CharacterPage } from '@/pages/characters';
+import { useCampaignContext } from '@/stores';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Backpack, X } from 'lucide-react';
 import { useState } from 'react';
-import { useCampaignContext } from '../campaign-provider';
 
 export const CampaignCharacterSheet = () => {
   const { selectedPlayerCharacters } = useCampaignContext();

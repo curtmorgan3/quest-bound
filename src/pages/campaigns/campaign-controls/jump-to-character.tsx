@@ -8,19 +8,15 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components';
-import { useCampaignContext } from '../campaign-provider';
+import { useCampaignContext } from '@/stores';
 import { useMemo, useState } from 'react';
 
 export function JumpToCharacter() {
-  const { campaignPlayerCharacters, jumpToCharacter, viewingLocationId } =
-    useCampaignContext();
+  const { campaignPlayerCharacters, jumpToCharacter, viewingLocationId } = useCampaignContext();
   const [open, setOpen] = useState(false);
 
   const hasPlayerCharactersElsewhere = useMemo(
-    () =>
-      campaignPlayerCharacters.some(
-        (c) => c.currentLocationId !== viewingLocationId,
-      ),
+    () => campaignPlayerCharacters.some((c) => c.currentLocationId !== viewingLocationId),
     [campaignPlayerCharacters, viewingLocationId],
   );
 
@@ -49,17 +45,12 @@ export function JumpToCharacter() {
                 onClick={() => handleSelect(character.characterId)}
                 className='flex items-center gap-2 rounded-md px-2 py-2 text-left text-sm hover:bg-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-ring'>
                 <Avatar className='size-8 shrink-0 rounded-md'>
-                  <AvatarImage
-                    src={character.image ?? ''}
-                    alt={character.name ?? 'Character'}
-                  />
+                  <AvatarImage src={character.image ?? ''} alt={character.name ?? 'Character'} />
                   <AvatarFallback className='rounded-md text-xs'>
                     {(character.name ?? '?').slice(0, 1).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
-                <span className='truncate font-medium'>
-                  {character.name ?? 'Unknown'}
-                </span>
+                <span className='truncate font-medium'>{character.name ?? 'Unknown'}</span>
               </button>
             ))}
             {campaignPlayerCharacters.length === 0 && (

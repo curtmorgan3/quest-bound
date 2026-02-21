@@ -1,13 +1,16 @@
-import { getTopTileDataAt } from '@/components/locations';
+import { getFirstPassableTileId, getTopTileDataAt } from '@/components/locations';
 import {
   useCampaign,
   useCampaignCharacters,
   useCampaignItems,
+  useLocation,
   useLocations,
 } from '@/lib/compass-api';
-import type { Location, TileData } from '@/types';
+import { db } from '@/stores';
+import type { ActiveCharacter, Location, TileData } from '@/types';
 import { useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
+import { moveCharacters } from '../campaign-controls/character-movement';
 
 export type TileMenu = {
   x: number;
@@ -21,8 +24,9 @@ export type TileMenu = {
 interface UseMapHelpers {
   campaignId?: string;
   currentLocation?: Location;
-  setTileMenu: (menu: TileMenu) => void;
+  setTileMenu?: (menu: TileMenu) => void;
   selectedLocationId?: string | null;
+  selectedCharacters: ActiveCharacter[];
 }
 
 export const useMapHelpers = ({
@@ -30,74 +34,102 @@ export const useMapHelpers = ({
   currentLocation,
   selectedLocationId,
   setTileMenu,
+  selectedCharacters,
 }: UseMapHelpers) => {
   const campaign = useCampaign(campaignId);
+  const { campaignCharacters, updateCampaignCharacter } = useCampaignCharacters(campaignId);
   const { updateLocation } = useLocations(campaign?.worldId, null);
-  const { updateCampaignCharacter } = useCampaignCharacters(campaignId);
   const { updateCampaignItem } = useCampaignItems(campaignId);
 
   const navigate = useNavigate();
+  const { campaignId: campaignIdParam, locationId: locationIdParam } = useParams<{
+    campaignId?: string;
+    locationId?: string;
+  }>();
 
-  const handleAdvanceToLocation = useCallback(
-    (locationId: string) => {
-      if (!campaignId) return;
-      navigate(`/campaigns/${campaignId}/locations/${locationId}/edit`);
-    },
-    [campaignId, navigate],
-  );
+  const viewingLocation = useLocation(locationIdParam);
 
-  const handleOpenMap = useCallback(
-    (locationId: string) => {
-      if (!campaignId) return;
-      navigate(`/campaigns/${campaignId}/locations/${locationId}/edit`);
-    },
-    [campaignId, navigate],
-  );
+  const moveSelectedCharactersTo = useCallback(
+    async (locationId: string | null, tileId?: string) => {
+      if (!locationId) {
+        for (const character of selectedCharacters) {
+          await updateCampaignCharacter(character.campaignCharacterId, {
+            currentLocationId: null,
+          });
+        }
 
-  const handleBack = useCallback(() => {
-    if (!campaignId) return;
-    if (currentLocation?.parentLocationId) {
-      navigate(`/campaigns/${campaignId}/locations/${currentLocation.parentLocationId}/edit`);
-    } else {
-      navigate(`/campaigns/${campaignId}/edit`);
-    }
-  }, [campaignId, currentLocation?.parentLocationId, navigate]);
-
-  const openTileMenuAt = useCallback(
-    async (x: number, y: number, clientX: number, clientY: number) => {
-      if (!currentLocation) return;
-      const tiles = currentLocation.tiles ?? [];
-      let top = getTopTileDataAt(tiles, x, y);
-      if (!top) {
-        const newTile: TileData = {
-          id: crypto.randomUUID(),
-          x,
-          y,
-          zIndex: 0,
-          isPassable: true,
-        };
-        await updateLocation(currentLocation.id, { tiles: [...tiles, newTile] });
-        setTileMenu({ x, y, clientX, clientY, createdTileId: newTile.id });
         return;
       }
-      setTileMenu({ x, y, clientX, clientY });
+
+      const loc = await db.locations.get(locationId);
+      if (!loc) return;
+
+      const tiles = loc.tiles ?? [];
+      const targetTileId =
+        tileId ?? getFirstPassableTileId(tiles) ?? (tiles[0] ? tiles[0].id : null);
+
+      if (!targetTileId) {
+        for (const character of selectedCharacters) {
+          await updateCampaignCharacter(character.campaignCharacterId, {
+            currentLocationId: locationId,
+            currentTileId: null,
+          });
+        }
+
+        return;
+      }
+
+      const charactersInLocation = campaignCharacters.filter(
+        (cc) => cc.currentLocationId === locationId,
+      );
+
+      const movements = moveCharacters({
+        location: loc,
+        targetTile: { id: targetTileId },
+        characterToMove: selectedCharacters,
+        charactersInLocation,
+      });
+
+      for (const movement of movements) {
+        await updateCampaignCharacter(movement.characterId, {
+          currentLocationId: locationId,
+          currentTileId: movement.tileId,
+        });
+      }
     },
-    [currentLocation, updateLocation],
+    [selectedCharacters, campaignCharacters, updateCampaignCharacter],
   );
 
-  const handleOverlayClick = useCallback(
-    (tileId: string, e: React.MouseEvent) => {
-      if (!currentLocation?.tiles) return;
-      const tile = currentLocation.tiles.find((t) => t.id === tileId);
-      if (!tile) return;
-      setTileMenu({
-        x: tile.x,
-        y: tile.y,
-        clientX: e.clientX,
-        clientY: e.clientY,
-      });
+  const navigateTo = useCallback(
+    (locationId: string) => {
+      if (campaignIdParam) {
+        navigate(`/campaigns/${campaignIdParam}/locations/${locationId}`);
+      }
+
+      moveSelectedCharactersTo(locationId);
     },
-    [currentLocation],
+    [campaignIdParam, navigate, selectedCharacters],
+  );
+
+  const navigateBack = useCallback(() => {
+    if (!campaignIdParam) return;
+    if (viewingLocation?.parentLocationId) {
+      navigate(`/campaigns/${campaignIdParam}/locations/${viewingLocation.parentLocationId}`);
+      moveSelectedCharactersTo(viewingLocation.parentLocationId);
+    } else {
+      navigate(`/campaigns/${campaignIdParam}/locations`);
+      moveSelectedCharactersTo(null);
+    }
+  }, [campaignIdParam, viewingLocation?.parentLocationId, navigate, selectedCharacters]);
+
+  const jumpToCharacter = useCallback(
+    (characterId: string) => {
+      const cc = campaignCharacters.find((c) => c.characterId === characterId);
+      if (cc?.currentLocationId && campaignIdParam) {
+        navigate(`/campaigns/${campaignIdParam}/locations/${cc.currentLocationId}`);
+      }
+    },
+    [campaignCharacters, campaignIdParam, navigate, selectedCharacters],
   );
 
   const handleDrop = useCallback(
@@ -146,11 +178,10 @@ export const useMapHelpers = ({
   );
 
   return {
-    handleOpenMap,
-    handleOverlayClick,
-    openTileMenuAt,
-    handleAdvanceToLocation,
-    handleBack,
+    navigateTo,
+    navigateBack,
+    jumpToCharacter,
+    moveSelectedCharactersTo,
     handleDrop,
   };
 };

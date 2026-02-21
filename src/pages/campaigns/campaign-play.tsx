@@ -4,21 +4,20 @@ import { WorldViewer } from '@/components/worlds/world-viewer';
 import {
   useCampaign,
   useCampaignEventLocationsByLocation,
-  useLocation,
   useLocations,
   useWorld,
 } from '@/lib/compass-api';
 import { cn } from '@/lib/utils';
+import { useCampaignContext } from '@/stores';
 import type { TileData } from '@/types';
 import { ArrowUp, ChevronRight } from 'lucide-react';
 import { useCallback, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { CampaignCharacterSheet, JumpToCharacter, TileMenu } from './campaign-controls';
-import { useCampaignContext } from './campaign-provider';
 import { useCampaignPlayOverlay } from './hooks';
 
 export function CampaignPlay() {
-  const { campaignId, locationId } = useParams<{ campaignId: string; locationId?: string }>();
+  const { campaignId } = useParams<{ campaignId: string; locationId?: string }>();
   const navigate = useNavigate();
   const campaign = useCampaign(campaignId);
   const world = useWorld(campaign?.worldId);
@@ -32,29 +31,15 @@ export function CampaignPlay() {
     removeSelectedCharacter,
     campaignPlayerCharacters,
     campaignNpcs,
+    charactersInThisLocation,
+    toggleCharacterSelection,
+    currentLocation,
   } = useCampaignContext();
-
-  const charactersInThisLocation = campaignPlayerCharacters.filter(
-    (c) => c.currentLocationId === locationId || (!locationId && c.currentLocationId === null),
-  );
 
   const selectedIds = useMemo(
     () => new Set(selectedCharacters.map((c) => c.id)),
     [selectedCharacters],
   );
-
-  const toggleCharacterSelection = useCallback(
-    (ccId: string) => {
-      if (selectedIds.has(ccId)) {
-        removeSelectedCharacter(ccId);
-      } else {
-        addSelectedCharacter(ccId);
-      }
-    },
-    [selectedIds, addSelectedCharacter, removeSelectedCharacter],
-  );
-
-  const viewingLocation = useLocation(viewingLocationId ?? undefined);
 
   const { locations: locationsList, updateLocation } = useLocations(
     campaign?.worldId,
@@ -65,7 +50,7 @@ export function CampaignPlay() {
   );
   const { overlayNodes, eventTileIds } = useCampaignPlayOverlay({
     campaignId,
-    currentLocationId: viewingLocationId,
+    currentLocationId: currentLocation?.id ?? null,
     eventLocationsWithEvent,
     selectedCharacterIds: selectedIds,
   });
@@ -83,8 +68,8 @@ export function CampaignPlay() {
 
   const handleCreateTileAt = useCallback(
     async (x: number, y: number): Promise<string | null> => {
-      if (!viewingLocation) return null;
-      const tiles = viewingLocation.tiles ?? [];
+      if (!currentLocation) return null;
+      const tiles = currentLocation.tiles ?? [];
       const existing = getTopTileDataAt(tiles, x, y);
       if (existing) return existing.id;
       const newTile: TileData = {
@@ -94,10 +79,10 @@ export function CampaignPlay() {
         zIndex: 0,
         isPassable: true,
       };
-      await updateLocation(viewingLocation.id, { tiles: [...tiles, newTile] });
+      await updateLocation(currentLocation.id, { tiles: [...tiles, newTile] });
       return newTile.id;
     },
-    [viewingLocation, updateLocation],
+    [currentLocation, updateLocation],
   );
 
   const handleOverlayClick = useCallback(
@@ -133,7 +118,7 @@ export function CampaignPlay() {
     ],
   );
 
-  const showLocationView = Boolean(viewingLocationId && viewingLocation?.hasMap);
+  const showLocationView = Boolean(viewingLocationId && currentLocation?.hasMap);
 
   if (campaignId && campaign === undefined) {
     return (
@@ -164,10 +149,10 @@ export function CampaignPlay() {
         </button>
         <ChevronRight className='h-4 w-4 text-muted-foreground' />
         <span className='font-medium text-foreground'>{world.label}</span>
-        {viewingLocation && (
+        {currentLocation && (
           <>
             <ChevronRight className='h-4 w-4 text-muted-foreground' />
-            <span className='font-medium text-foreground'>{viewingLocation.label}</span>
+            <span className='font-medium text-foreground'>{currentLocation.label}</span>
             <Button
               variant='ghost'
               size='sm'
@@ -228,7 +213,7 @@ export function CampaignPlay() {
                 <LocationViewer
                   locationId={viewingLocationId}
                   worldId={campaign.worldId}
-                  tileRenderSize={viewingLocation?.tileRenderSize}
+                  tileRenderSize={currentLocation?.tileRenderSize}
                   overlayNodes={overlayNodes}
                   eventTileIds={eventTileIds}
                   playMode

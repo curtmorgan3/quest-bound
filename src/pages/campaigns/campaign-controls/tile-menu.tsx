@@ -1,5 +1,5 @@
+import { useCampaignContext } from '@/stores';
 import { useCallback, useState } from 'react';
-import { useCampaignContext } from '../campaign-provider';
 
 export type TileMenuPayload = {
   x: number;

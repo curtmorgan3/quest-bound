@@ -1,10 +1,8 @@
 import {
   ArchetypeSheetEditor,
   CampaignDetail,
-  CampaignEdit,
   CampaignNew,
   CampaignPlay,
-  CampaignProvider,
   CampaignsList,
   CharacterChartViewer,
   CharacterPage,
@@ -27,6 +25,7 @@ import { ErrorBoundary } from './components';
 import { Layout } from './components/layout';
 import { DocumentViewer } from './pages/ruleset/documents';
 import { WindowEditor } from './pages/ruleset/windows/window-editor';
+import { CampaignProvider } from './stores';
 
 function CompassRoutes() {
   return (
@@ -76,21 +75,17 @@ function CompassRoutes() {
             <Route path={`/campaigns`} element={<CampaignsList />} />
             <Route path={`/campaigns/new`} element={<CampaignNew />} />
             <Route path={`/campaigns/:campaignId`} element={<CampaignDetail />} />
-            <Route path={`/campaigns/:campaignId/edit`} element={<CampaignEdit />} />
             <Route
-              path={`/campaigns/:campaignId/locations/:locationId/edit`}
-              element={<CampaignEdit />}
-            />
-            <Route
-              path={`/campaigns/:campaignId/play`}
+              path={`/campaigns/:campaignId/locations/:locationId`}
               element={
                 <CampaignProvider>
                   <CampaignPlay />
                 </CampaignProvider>
               }
             />
+
             <Route
-              path={`/campaigns/:campaignId/play/locations/:locationId`}
+              path={`/campaigns/:campaignId/locations`}
               element={
                 <CampaignProvider>
                   <CampaignPlay />
