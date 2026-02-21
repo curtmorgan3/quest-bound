@@ -78,7 +78,7 @@ export function ScriptEditorPage() {
     ...archetypeEventAnnouncements,
   ];
 
-  const defaultEntityType = worldId ? 'location' : 'attribute';
+  const defaultEntityType = 'attribute';
 
   const [name, setName] = useState('');
   const [entityType, setEntityType] = useState<Script['entityType']>(defaultEntityType);

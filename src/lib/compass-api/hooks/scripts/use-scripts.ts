@@ -4,7 +4,6 @@ import type { Script } from '@/types';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useActiveRuleset } from '../rulesets/use-active-ruleset';
-import { useWorld } from '../worlds/use-world';
 
 function getEntityTable(
   entityType: 'attribute' | 'action' | 'item' | 'archetype' | 'global' | 'characterLoader',
@@ -21,10 +20,9 @@ function getEntityTable(
 
 export const useScripts = (worldId?: string) => {
   const { activeRuleset } = useActiveRuleset();
-  const world = useWorld(worldId);
   const { handleError } = useErrorHandler();
 
-  const rulesetId = worldId ? world?.rulesetId : activeRuleset?.id;
+  const rulesetId = activeRuleset?.id;
 
   const scripts = useLiveQuery(async () => {
     if (!rulesetId) return [];
@@ -57,14 +55,14 @@ export const useScripts = (worldId?: string) => {
           entityType === 'global' || entityType === 'characterLoader' ? null : data.entityId,
         isGlobal: entityType === 'global',
         id: undefined as string | undefined,
-        rulesetId: activeRuleset.id,
+        rulesetId: activeRuleset?.id,
         createdAt: now,
         updatedAt: now,
       };
 
       if (entityType === 'characterLoader') {
         const existing = await db.scripts
-          .where({ rulesetId: activeRuleset.id, entityType: 'characterLoader' })
+          .where({ rulesetId: activeRuleset?.id, entityType: 'characterLoader' })
           .first();
         if (existing) {
           throw new Error(
