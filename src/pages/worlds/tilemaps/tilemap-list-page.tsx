@@ -21,7 +21,7 @@ import {
 } from '@/components/ui/dialog';
 import { MAX_LOCATION_MAP_ASSET_HEIGHT, MAX_LOCATION_MAP_ASSET_WIDTH } from '@/constants';
 import { useAssets, useTilemaps, useWorld } from '@/lib/compass-api';
-import { ArrowLeft, Layers, Plus, Trash2 } from 'lucide-react';
+import { Layers, Plus, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 
@@ -73,9 +73,6 @@ export function TilemapListPage() {
     return (
       <div className='flex h-full w-full flex-col items-center justify-center gap-2 p-4'>
         <p className='text-muted-foreground'>World not found.</p>
-        <Button asChild variant='link'>
-          <Link to='/worlds'>Back to Worlds</Link>
-        </Button>
       </div>
     );
   }
@@ -83,13 +80,6 @@ export function TilemapListPage() {
   return (
     <div className='flex h-full w-full flex-col'>
       <div className='flex shrink-0 items-center gap-2 border-b bg-background px-4 py-2'>
-        <Button variant='ghost' size='sm' asChild>
-          <Link to={`/worlds/${worldId}`} data-testid='tilemap-list-back'>
-            <ArrowLeft className='h-4 w-4' />
-            Back to World
-          </Link>
-        </Button>
-        <span className='text-muted-foreground'>|</span>
         <h1 className='truncate text-lg font-semibold'>{world.label}</h1>
         <span className='text-muted-foreground'>›</span>
         <h1 className='truncate text-lg font-semibold'>Tilemaps</h1>

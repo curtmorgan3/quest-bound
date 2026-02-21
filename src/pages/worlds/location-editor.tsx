@@ -193,9 +193,6 @@ export function LocationEditor() {
     return (
       <div className='flex h-full w-full items-center justify-center p-4'>
         <p className='text-muted-foreground'>Location not found.</p>
-        <Button asChild variant='link'>
-          <Link to={`/worlds/${worldId}`}>Back to World</Link>
-        </Button>
       </div>
     );
   }
