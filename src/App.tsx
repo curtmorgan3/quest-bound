@@ -4,6 +4,7 @@ import {
   CampaignEdit,
   CampaignNew,
   CampaignPlay,
+  CampaignProvider,
   CampaignsList,
   CharacterChartViewer,
   CharacterPage,
@@ -80,7 +81,14 @@ function CompassRoutes() {
               path={`/campaigns/:campaignId/locations/:locationId/edit`}
               element={<CampaignEdit />}
             />
-            <Route path={`/campaigns/:campaignId/play`} element={<CampaignPlay />} />
+            <Route
+              path={`/campaigns/:campaignId/play`}
+              element={
+                <CampaignProvider>
+                  <CampaignPlay />
+                </CampaignProvider>
+              }
+            />
 
             <Route path={`/worlds`} element={<Worlds />} />
             <Route path={`/worlds/:worldId`} element={<WorldEditor />} />
