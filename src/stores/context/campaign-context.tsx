@@ -4,8 +4,8 @@ import {
   useCampaignPlayHandlers,
   useMapHelpers,
 } from '@/pages/campaigns/hooks';
-import type { ActiveCharacter, Location } from '@/types';
-import { createContext, useCallback, useContext, useMemo, useState } from 'react';
+import type { ActiveCharacter, CampaignEventType, Location } from '@/types';
+import { createContext, useCallback, useContext, useState } from 'react';
 import { useParams } from 'react-router-dom';
 
 export interface CampaignPlayContextValue {
@@ -27,9 +27,14 @@ export interface CampaignPlayContextValue {
   viewingLocationId: string | null;
   currentLocation?: Location;
   rulesetId?: string;
-  handleCreateCampaignCharacter: (archetypeId: string, tileId?: string) => void;
   npcsInThisLocation: ActiveCharacter[];
   playerCharactersInThisLocation: ActiveCharacter[];
+  handleCreateCampaignCharacter: (archetypeId: string, tileId?: string) => void;
+  handleCreateCampaignEvent: (
+    tile: { locationId: string; tileId: string },
+    label: string,
+    type: CampaignEventType,
+  ) => Promise<void>;
 }
 
 export const CampaignPlayContext = createContext<CampaignPlayContextValue | null>(null);
@@ -66,7 +71,7 @@ function useCampaignProvider(campaignId: string | undefined): CampaignPlayContex
     selectedCharacters,
   });
 
-  const { handleCreateCampaignCharacter } = useCampaignPlayHandlers({
+  const { handleCreateCampaignCharacter, handleCreateCampaignEvent } = useCampaignPlayHandlers({
     campaignId,
     currentLocation,
     rulesetId,
@@ -95,47 +100,28 @@ function useCampaignProvider(campaignId: string | undefined): CampaignPlayContex
     [selectedIds, addSelectedCharacter, removeSelectedCharacter],
   );
 
-  return useMemo(
-    () => ({
-      campaignPlayerCharacters: activePlayerCharacters,
-      campaignNpcs: activeNpcs,
-      selectedCharacters,
-      selectedPlayerCharacters,
-      selectedNpcs,
-      addSelectedCharacter,
-      removeSelectedCharacter,
-      moveSelectedCharactersTo,
-      navigateTo,
-      navigateBack,
-      jumpToCharacter,
-      toggleCharacterSelection,
-      viewingLocationId: currentLocation?.id ?? null,
-      currentLocation,
-      charactersInThisLocation,
-      rulesetId,
-      handleCreateCampaignCharacter,
-      playerCharactersInThisLocation,
-      npcsInThisLocation,
-    }),
-    [
-      activePlayerCharacters,
-      activeNpcs,
-      selectedCharacters,
-      addSelectedCharacter,
-      removeSelectedCharacter,
-      moveSelectedCharactersTo,
-      navigateTo,
-      navigateBack,
-      jumpToCharacter,
-      toggleCharacterSelection,
-      currentLocation,
-      charactersInThisLocation,
-      rulesetId,
-      handleCreateCampaignCharacter,
-      playerCharactersInThisLocation,
-      npcsInThisLocation,
-    ],
-  );
+  return {
+    campaignPlayerCharacters: activePlayerCharacters,
+    campaignNpcs: activeNpcs,
+    selectedCharacters,
+    selectedPlayerCharacters,
+    selectedNpcs,
+    addSelectedCharacter,
+    removeSelectedCharacter,
+    moveSelectedCharactersTo,
+    navigateTo,
+    navigateBack,
+    jumpToCharacter,
+    toggleCharacterSelection,
+    viewingLocationId: currentLocation?.id ?? null,
+    currentLocation,
+    charactersInThisLocation,
+    rulesetId,
+    handleCreateCampaignCharacter,
+    playerCharactersInThisLocation,
+    npcsInThisLocation,
+    handleCreateCampaignEvent,
+  };
 }
 
 interface CampaignProviderProps {

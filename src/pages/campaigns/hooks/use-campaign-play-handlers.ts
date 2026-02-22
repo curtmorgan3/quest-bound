@@ -1,7 +1,11 @@
-import { getTopTileDataAt } from '@/components/locations';
-import { useCampaignCharacters, useCharacter } from '@/lib/compass-api';
-import { getQBScriptClient } from '@/lib/compass-logic/worker';
-import type { Location } from '@/types';
+import {
+  useCampaignCharacters,
+  useCampaignEventLocations,
+  useCampaignEvents,
+  useCampaignItems,
+  useCharacter,
+} from '@/lib/compass-api';
+import type { CampaignEventType, Location } from '@/types';
 import { useCallback } from 'react';
 
 interface UseCampaignPlayHandlers {
@@ -16,21 +20,12 @@ export const useCampaignPlayHandlers = ({
   rulesetId,
 }: UseCampaignPlayHandlers) => {
   const { createCharacter } = useCharacter();
-  const { createCampaignCharacter } = useCampaignCharacters(campaignId);
+  const { createCampaignCharacter, deleteCampaignCharacter } = useCampaignCharacters(campaignId);
+  const { createCampaignItem, deleteCampaignItem } = useCampaignItems(campaignId);
+  const { createCampaignEvent, deleteCampaignEvent } = useCampaignEvents(campaignId);
 
-  // TODO: script execution requires a character, but location events won't have them
-  const characterIdParam = '';
-  const handleTileClick = useCallback(
-    (x: number, y: number) => {
-      if (!currentLocation?.tiles || !characterIdParam) return;
-      const top = getTopTileDataAt(currentLocation.tiles, x, y);
-      if (top?.actionId) {
-        const client = getQBScriptClient();
-        client.executeActionEvent(top.actionId, characterIdParam, null, 'on_activate');
-      }
-    },
-    [currentLocation?.tiles, characterIdParam],
-  );
+  const { createCampaignEventLocation, deleteCampaignEventLocation } =
+    useCampaignEventLocations(undefined);
 
   const handleCreateCampaignCharacter = useCallback(
     async (archetypeId: string, tileId?: string) => {
@@ -50,8 +45,61 @@ export const useCampaignPlayHandlers = ({
     [campaignId, rulesetId, currentLocation?.id, createCharacter, createCampaignCharacter],
   );
 
+  const handleDeleteCampaignCharacter = useCallback(
+    async (campaignCharacterId: string) => {
+      deleteCampaignCharacter(campaignCharacterId);
+    },
+    [deleteCampaignCharacter],
+  );
+
+  const handleCreateCampaignItem = useCallback(
+    async (tile: { locationId: string; tileId: string }, itemId: string) => {
+      if (!campaignId) return;
+      await createCampaignItem(campaignId, {
+        itemId,
+        currentLocationId: tile.locationId,
+        currentTileId: tile.tileId,
+      });
+    },
+    [campaignId, createCampaignItem],
+  );
+
+  const handleRemoveCampaginItem = useCallback(
+    async (campaignItemId: string) => {
+      await deleteCampaignItem(campaignItemId);
+    },
+    [deleteCampaignItem],
+  );
+
+  const handleCreateCampaignEvent = useCallback(
+    async (
+      tile: { locationId: string; tileId: string },
+      label: string,
+      type: CampaignEventType,
+    ) => {
+      if (!campaignId) return;
+      const eventId = await createCampaignEvent(campaignId, { label, type });
+      if (eventId) {
+        await createCampaignEventLocation(eventId, tile.locationId, tile.tileId);
+      }
+    },
+    [campaignId, createCampaignEvent, createCampaignEventLocation],
+  );
+
+  const handleRemoveCampaignEvent = useCallback(
+    async (campaignEventId: string) => {
+      await deleteCampaignEventLocation(campaignEventId);
+      await deleteCampaignEvent(campaignEventId);
+    },
+    [deleteCampaignEventLocation, deleteCampaignEvent],
+  );
+
   return {
-    handleTileClick,
     handleCreateCampaignCharacter,
+    handleDeleteCampaignCharacter,
+    handleCreateCampaignEvent,
+    handleRemoveCampaignEvent,
+    handleRemoveCampaginItem,
+    handleCreateCampaignItem,
   };
 };
