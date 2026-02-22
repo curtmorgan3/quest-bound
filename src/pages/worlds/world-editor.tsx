@@ -172,6 +172,8 @@ export function WorldEditor() {
             onAddGrid={() => {
               updateLocation(singleSelectedLocation.id, {
                 hasMap: true,
+                gridHeight: 8,
+                gridWidth: 8,
               });
             }}
             onRemoveGrid={() =>

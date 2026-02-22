@@ -35,9 +35,9 @@ export const dbSchema = {
   campaigns: `${common}, label, rulesetId, worldId, [rulesetId], [worldId]`,
   campaignCharacters: `${common}, characterId, campaignId, currentLocationId, currentTileId, [campaignId], [characterId], [campaignId+characterId]`,
   campaignItems: `${common}, itemId, campaignId, currentLocationId, currentTileId, [campaignId]`,
-  campaignEvents: `${common}, label, campaignId, scriptId, [campaignId]`,
+  campaignEvents: `${common}, label, campaignId, scriptId, category, [campaignId]`,
   campaignEventLocations: `${common}, campaignEventId, locationId, tileId, [campaignEventId], [locationId]`,
 };
 
 // Increment on every schema change
-export const dbSchemaVersion = 36;
+export const dbSchemaVersion = 37;

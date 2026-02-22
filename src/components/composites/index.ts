@@ -1,5 +1,6 @@
 export * from './app-sidebar';
 export * from './asset-manager-modal';
+export * from './category-field';
 export * from './description-editor';
 export * from './document-markdown-content';
 export * from './grid';

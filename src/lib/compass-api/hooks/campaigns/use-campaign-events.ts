@@ -16,7 +16,7 @@ export const useCampaignEvents = (campaignId: string | undefined) => {
 
   const createCampaignEvent = async (
     campaignId: string,
-    data: { label: string; scriptId?: string | null },
+    data: { label: string; scriptId?: string | null; category?: string | null },
   ) => {
     const now = new Date().toISOString();
     const id = crypto.randomUUID();
@@ -26,6 +26,7 @@ export const useCampaignEvents = (campaignId: string | undefined) => {
         campaignId,
         label: data.label,
         scriptId: data.scriptId ?? null,
+        category: data.category?.trim() || undefined,
         createdAt: now,
         updatedAt: now,
       } as CampaignEvent);
@@ -40,7 +41,7 @@ export const useCampaignEvents = (campaignId: string | undefined) => {
 
   const updateCampaignEvent = async (
     id: string,
-    data: Partial<Pick<CampaignEvent, 'label' | 'scriptId'>>,
+    data: Partial<Pick<CampaignEvent, 'label' | 'scriptId' | 'category'>>,
   ) => {
     const now = new Date().toISOString();
     try {

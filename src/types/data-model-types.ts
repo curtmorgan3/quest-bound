@@ -501,6 +501,7 @@ export type CampaignEvent = BaseDetails & {
   label: string;
   campaignId: string;
   scriptId?: string | null;
+  category?: string;
 };
 
 export type CampaignEventLocation = BaseDetails & {
