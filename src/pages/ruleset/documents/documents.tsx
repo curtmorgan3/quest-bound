@@ -7,14 +7,21 @@ import { MarkdownEditorPanel } from './markdown-editor-panel';
 
 interface DocumentChartProps {
   onEditDetails?: (id: string) => void;
+  /** When set, show and create documents for this world instead of the active ruleset. */
+  worldId?: string;
 }
 
 const ALL_CATEGORIES = 'all';
 
-export const Documents = ({ onEditDetails }: DocumentChartProps) => {
-  const { documents, deleteDocument, updateDocument } = useDocuments();
+export const Documents = ({ onEditDetails, worldId }: DocumentChartProps) => {
+  const { documents, deleteDocument, updateDocument } = useDocuments(
+    worldId ? { worldId } : undefined,
+  );
   const { activeRuleset } = useActiveRuleset();
   const navigate = useNavigate();
+  const documentOpenUrl = worldId
+    ? (docId: string) => `/worlds/${worldId}/documents/${docId}`
+    : (docId: string) => `/rulesets/${activeRuleset?.id}/documents/${docId}`;
   const [filterValue, setFilterValue] = useState('');
   const [categoryFilter, setCategoryFilter] = useState(ALL_CATEGORIES);
   const [markdownPanelDocumentId, setMarkdownPanelDocumentId] = useState<string | null>(null);
@@ -83,7 +90,7 @@ export const Documents = ({ onEditDetails }: DocumentChartProps) => {
               descriptionExtra={descriptionExtra}
               openDisabled={!canOpen}
               onDelete={() => deleteDocument(doc.id)}
-              onOpen={() => navigate(`/rulesets/${activeRuleset?.id}/documents/${doc.id}`)}
+              onOpen={() => navigate(documentOpenUrl(doc.id))}
               onEdit={(title, category) => updateDocument(doc.id, { title, category })}
               onEditDetails={onEditDetails ? () => onEditDetails(doc.id) : undefined}
               onEditMarkdown={
@@ -106,7 +113,8 @@ export const Documents = ({ onEditDetails }: DocumentChartProps) => {
         }}
         documentId={markdownPanelDocumentId}
         mode='edit'
-        rulesetId={activeRuleset?.id}
+        rulesetId={worldId ? undefined : activeRuleset?.id}
+        worldId={worldId}
       />
     </div>
   );

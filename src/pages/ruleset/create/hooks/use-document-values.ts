@@ -13,6 +13,8 @@ interface UseDocumentValueProps {
   setTitle: (title: string) => void;
   setDescription: (description: string) => void;
   setCategory: (category: string) => void;
+  /** When set, documents are scoped to this world (create/list use worldId). */
+  worldId?: string;
 }
 
 export const useDocumentValues = ({
@@ -22,8 +24,11 @@ export const useDocumentValues = ({
   setTitle,
   setDescription,
   setCategory,
+  worldId,
 }: UseDocumentValueProps) => {
-  const { documents, createDocument, updateDocument } = useDocuments();
+  const { documents, createDocument, updateDocument } = useDocuments(
+    worldId ? { worldId } : undefined,
+  );
   const isEditMode = !!id;
 
   const activeDocument = documents.find((d) => d.id === id);
@@ -73,7 +78,7 @@ export const useDocumentValues = ({
     if (isEditMode) {
       updateDocument(id, data);
     } else {
-      createDocument(data);
+      createDocument(worldId ? { ...data, worldId } : data);
       resetAll();
     }
 

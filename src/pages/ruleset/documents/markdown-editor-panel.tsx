@@ -18,6 +18,8 @@ interface MarkdownEditorPanelProps {
   mode: DocumentMarkdownMode;
   /** When provided, document is resolved from this ruleset (e.g. when not in character context). */
   rulesetId?: string;
+  /** When provided, document is resolved from this world (e.g. world documents page). */
+  worldId?: string;
 }
 
 export function MarkdownEditorPanel({
@@ -26,8 +28,11 @@ export function MarkdownEditorPanel({
   documentId,
   mode,
   rulesetId,
+  worldId,
 }: MarkdownEditorPanelProps) {
-  const { documents, updateDocument } = useDocuments(rulesetId);
+  const { documents, updateDocument } = useDocuments(
+    worldId ? { worldId } : rulesetId,
+  );
   const document = documentId ? documents.find((d) => d.id === documentId) : undefined;
   const [localValue, setLocalValue] = useState('');
   const [saving, setSaving] = useState(false);

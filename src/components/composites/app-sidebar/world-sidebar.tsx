@@ -9,7 +9,7 @@ import {
   useSidebar,
 } from '@/components/ui/sidebar';
 import { useWorld } from '@/lib/compass-api';
-import { Globe, Layers, Map } from 'lucide-react';
+import { Globe, Layers, Map, Newspaper } from 'lucide-react';
 import { Link, useLocation, useParams } from 'react-router-dom';
 
 export function WorldSidebar() {
@@ -23,6 +23,7 @@ export function WorldSidebar() {
     { title: 'Worlds', url: `/worlds`, icon: Globe },
     { title: `${world?.label ?? 'World'}`, url: `/worlds/${worldId}`, icon: Map },
     { title: 'Tilemaps', url: `/worlds/${worldId}/tilemaps`, icon: Layers },
+    { title: 'Documents', url: `/worlds/${worldId}/documents`, icon: Newspaper },
   ];
 
   const title = world?.label ?? 'Quest Bound';
@@ -47,7 +48,10 @@ export function WorldSidebar() {
             </SidebarMenuItem>
           )}
           {items.map((item) => {
-            const isActive = location.pathname === item.url;
+            const isActive =
+              item.title === 'Documents'
+                ? location.pathname === item.url || location.pathname.startsWith(`${item.url}/`)
+                : location.pathname === item.url;
             return (
               <SidebarMenuItem key={item.title} className={isActive ? 'text-primary' : ''}>
                 <SidebarMenuButton asChild>
