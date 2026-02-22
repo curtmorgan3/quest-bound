@@ -73,12 +73,12 @@ describe('AttributeProxy', () => {
     });
 
     it('should set to max value', () => {
-      proxy.max();
+      proxy.setToMax();
       expect(proxy.value).toBe(100);
     });
 
     it('should set to min value', () => {
-      proxy.min();
+      proxy.setToMin();
       expect(proxy.value).toBe(0);
     });
 
@@ -218,7 +218,7 @@ describe('AttributeProxy', () => {
 
       const proxy = new AttributeProxy(characterAttribute, attribute, pendingUpdates);
 
-      expect(() => proxy.max()).toThrow('has no max value defined');
+      expect(() => proxy.setToMax()).toThrow('has no max value defined');
     });
 
     it('should throw error when accessing min on attribute without min', () => {
@@ -242,7 +242,7 @@ describe('AttributeProxy', () => {
 
       const proxy = new AttributeProxy(characterAttribute, attribute, pendingUpdates);
 
-      expect(() => proxy.min()).toThrow('has no min value defined');
+      expect(() => proxy.setToMin()).toThrow('has no min value defined');
     });
   });
 });
