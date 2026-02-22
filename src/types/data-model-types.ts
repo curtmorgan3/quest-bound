@@ -490,12 +490,9 @@ export type CampaignItem = BaseDetails & {
   mapWidth?: number;
 };
 
-export type CampaignEventType = 'on_enter' | 'on_leave' | 'on_activate';
-
 export type CampaignEvent = BaseDetails & {
   label: string;
   campaignId: string;
-  type: CampaignEventType;
   scriptId?: string | null;
 };
 

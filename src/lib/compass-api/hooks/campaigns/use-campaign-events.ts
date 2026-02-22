@@ -1,6 +1,6 @@
 import { useErrorHandler } from '@/hooks';
 import { db } from '@/stores';
-import type { CampaignEvent, CampaignEventType } from '@/types';
+import type { CampaignEvent } from '@/types';
 import { useLiveQuery } from 'dexie-react-hooks';
 
 export const useCampaignEvents = (campaignId: string | undefined) => {
@@ -16,7 +16,7 @@ export const useCampaignEvents = (campaignId: string | undefined) => {
 
   const createCampaignEvent = async (
     campaignId: string,
-    data: { label: string; type: CampaignEventType; scriptId?: string | null },
+    data: { label: string; scriptId?: string | null },
   ) => {
     const now = new Date().toISOString();
     const id = crypto.randomUUID();
@@ -25,7 +25,6 @@ export const useCampaignEvents = (campaignId: string | undefined) => {
         id,
         campaignId,
         label: data.label,
-        type: data.type,
         scriptId: data.scriptId ?? null,
         createdAt: now,
         updatedAt: now,
@@ -41,7 +40,7 @@ export const useCampaignEvents = (campaignId: string | undefined) => {
 
   const updateCampaignEvent = async (
     id: string,
-    data: Partial<Pick<CampaignEvent, 'label' | 'type' | 'scriptId'>>,
+    data: Partial<Pick<CampaignEvent, 'label' | 'scriptId'>>,
   ) => {
     const now = new Date().toISOString();
     try {

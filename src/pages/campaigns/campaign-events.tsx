@@ -8,29 +8,11 @@ import {
   DialogTrigger,
   Input,
   Label,
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
 } from '@/components';
 import { useCampaignEvents } from '@/lib/compass-api';
-import type { CampaignEventType } from '@/types';
 import { Plus } from 'lucide-react';
 import { useState } from 'react';
 import { useParams } from 'react-router-dom';
-
-const EVENT_TYPE_OPTIONS: { value: CampaignEventType; label: string }[] = [
-  { value: 'on_enter', label: 'On Enter' },
-  { value: 'on_leave', label: 'On Leave' },
-  { value: 'on_activate', label: 'On Activate' },
-];
-
-const EVENT_TYPE_LABELS: Record<CampaignEventType, string> = {
-  on_enter: 'On Enter',
-  on_leave: 'On Leave',
-  on_activate: 'On Activate',
-};
 
 export function CampaignEvents() {
   const { campaignId } = useParams<{ campaignId: string }>();
@@ -39,13 +21,11 @@ export function CampaignEvents() {
 
   const [createOpen, setCreateOpen] = useState(false);
   const [newLabel, setNewLabel] = useState('');
-  const [newType, setNewType] = useState<CampaignEventType>('on_enter');
 
   const handleCreateOpenChange = (open: boolean) => {
     setCreateOpen(open);
     if (!open) {
       setNewLabel('');
-      setNewType('on_enter');
     }
   };
 
@@ -53,10 +33,8 @@ export function CampaignEvents() {
     if (!campaignId || !newLabel.trim()) return;
     await createCampaignEvent(campaignId, {
       label: newLabel.trim(),
-      type: newType,
     });
     setNewLabel('');
-    setNewType('on_enter');
     setCreateOpen(false);
   };
 
@@ -85,21 +63,6 @@ export function CampaignEvents() {
                   placeholder='e.g. Treasure found'
                 />
               </div>
-              <div className='grid gap-2'>
-                <Label>Type</Label>
-                <Select value={newType} onValueChange={(v) => setNewType(v as CampaignEventType)}>
-                  <SelectTrigger className='w-full'>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {EVENT_TYPE_OPTIONS.map((opt) => (
-                      <SelectItem key={opt.value} value={opt.value}>
-                        {opt.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
             </div>
             <DialogFooter>
               <Button variant='outline' onClick={() => handleCreateOpenChange(false)}>
@@ -118,10 +81,7 @@ export function CampaignEvents() {
           <div
             key={event.id}
             className='flex items-center justify-between rounded-md border bg-card px-4 py-3'>
-            <div className='flex flex-col gap-0.5'>
-              <span className='font-medium'>{event.label}</span>
-              <span className='text-sm text-muted-foreground'>{EVENT_TYPE_LABELS[event.type]}</span>
-            </div>
+            <span className='font-medium'>{event.label}</span>
             <Button
               variant='ghost'
               size='sm'

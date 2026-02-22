@@ -103,8 +103,11 @@ db.version(38).stores(dbSchema).upgrade((tx) => {
   });
 });
 
-db.version(dbSchemaVersion)
-  .stores(dbSchema)
+db.version(33)
+  .stores({
+    ...dbSchema,
+    campaignEvents: `${dbSchema.campaignEvents}, type`,
+  } as any)
   .upgrade((tx) => {
     // Phase 8: add type to campaignEvents (default on_activate), tileId on campaignEventLocations
     const campaignEvents = (tx as any).table('campaignEvents');
@@ -114,6 +117,8 @@ db.version(dbSchemaVersion)
       }
     });
   });
+
+db.version(dbSchemaVersion).stores(dbSchema);
 
 // Cache assets for reference in the asset injector middleware
 db.on('ready', async () => {

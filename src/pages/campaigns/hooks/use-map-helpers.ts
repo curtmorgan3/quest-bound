@@ -81,14 +81,7 @@ export const useMapHelpers = ({
         charactersInLocation,
       });
 
-      for (const movement of movements) {
-        await updateCampaignCharacter(movement.characterId, {
-          currentLocationId: locationId,
-          currentTileId: movement.tileId,
-        });
-      }
-
-      // Fire on_enter for event locations on the target tile(s) that have a script and type 'on_enter'
+      // Load event locations and events so we can fire on_leave (before move) and on_enter (after move)
       const eventLocations = await db.campaignEventLocations
         .where('locationId')
         .equals(locationId)
@@ -98,6 +91,43 @@ export const useMapHelpers = ({
         ...new Set(eventLocations.map((el) => el.campaignEventId)),
       ]);
 
+      // Fire on_leave for event locations on the tile(s) characters are leaving
+      for (const movement of movements) {
+        const selectedChar = selectedCharacters.find(
+          (c) => c.id === movement.characterId || c.campaignCharacterId === movement.characterId,
+        );
+        const characterId = selectedChar?.characterId;
+        if (!characterId) continue;
+
+        const previousTileId = charactersInLocation.find(
+          (cc) =>
+            cc.characterId === selectedChar?.characterId ||
+            cc.id === selectedChar?.campaignCharacterId,
+        )?.currentTileId;
+
+        if (previousTileId) {
+          const eventLocationsOnPreviousTile = eventLocations.filter(
+            (el) => el.tileId === previousTileId,
+          );
+          for (const el of eventLocationsOnPreviousTile) {
+            const event = events.find((e) => e?.id === el.campaignEventId);
+            if (event?.scriptId) {
+              client
+                .executeCampaignEventEvent(el.id, characterId, 'on_leave')
+                .catch((err) => console.warn('[Campaign] on_leave script failed:', err));
+            }
+          }
+        }
+      }
+
+      for (const movement of movements) {
+        await updateCampaignCharacter(movement.characterId, {
+          currentLocationId: locationId,
+          currentTileId: movement.tileId,
+        });
+      }
+
+      // Fire on_enter for event locations on the target tile(s) that have a script
       for (const movement of movements) {
         const characterId = selectedCharacters.find(
           (c) => c.id === movement.characterId || c.campaignCharacterId === movement.characterId,
@@ -109,7 +139,7 @@ export const useMapHelpers = ({
 
         for (const el of eventLocationsOnTile) {
           const event = events.find((e) => e?.id === el.campaignEventId);
-          if (event?.type === 'on_enter' && event.scriptId) {
+          if (event?.scriptId) {
             client
               .executeCampaignEventEvent(el.id, characterId, 'on_enter')
               .catch((err) => console.warn('[Campaign] on_enter script failed:', err));

@@ -827,7 +827,7 @@ async function handleExecuteArchetypeEvent(payload: {
 async function handleExecuteCampaignEventEvent(payload: {
   campaignEventLocationId: string;
   characterId: string;
-  eventType: 'on_enter' | 'on_leave';
+  eventType: 'on_enter' | 'on_leave' | 'on_activate';
   requestId: string;
 }): Promise<void> {
   try {

@@ -14,12 +14,6 @@ import { Check, ChevronsUpDown, XIcon } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useCampaignEvents } from '../hooks/campaigns/use-campaign-events';
 
-const EVENT_TYPE_LABELS: Record<string, string> = {
-  on_enter: 'On Enter',
-  on_leave: 'On Leave',
-  on_activate: 'On Activate',
-};
-
 interface EventLookupProps {
   campaignId: string | undefined;
   onSelect: (event: CampaignEvent) => void;
@@ -59,11 +53,7 @@ export const EventLookup = ({
   const searchLower = search.toLowerCase().trim();
   const filteredEvents = useMemo(() => {
     if (!searchLower) return campaignEvents;
-    return campaignEvents.filter(
-      (e) =>
-        e.label.toLowerCase().includes(searchLower) ||
-        (EVENT_TYPE_LABELS[e.type]?.toLowerCase().includes(searchLower) ?? false),
-    );
+    return campaignEvents.filter((e) => e.label.toLowerCase().includes(searchLower));
   }, [campaignEvents, searchLower]);
 
   useEffect(() => {
@@ -88,12 +78,7 @@ export const EventLookup = ({
             disabled={disabled || !campaignId}
             data-testid={dataTestId}>
             {selectedEvent ? (
-              <span className='truncate'>
-                {selectedEvent.label}{' '}
-                <span className='text-muted-foreground text-xs'>
-                  ({EVENT_TYPE_LABELS[selectedEvent.type]})
-                </span>
-              </span>
+              <span className='truncate'>{selectedEvent.label}</span>
             ) : (
               placeholder
             )}
@@ -131,7 +116,7 @@ export const EventLookup = ({
               {filteredEvents.map((event) => (
                 <CommandItem
                   key={event.id}
-                  value={`${event.label} ${EVENT_TYPE_LABELS[event.type] ?? ''}`}
+                  value={event.label}
                   onSelect={() => handleSelect(event)}>
                   <Check
                     className={cn(
@@ -139,12 +124,7 @@ export const EventLookup = ({
                       selectedEvent?.id === event.id ? 'opacity-100' : 'opacity-0',
                     )}
                   />
-                  <div className='flex flex-col'>
-                    <span>{event.label}</span>
-                    <span className='text-xs text-muted-foreground'>
-                      {EVENT_TYPE_LABELS[event.type]}
-                    </span>
-                  </div>
+                  <span>{event.label}</span>
                 </CommandItem>
               ))}
             </CommandList>

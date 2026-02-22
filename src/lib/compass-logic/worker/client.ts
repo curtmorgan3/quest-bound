@@ -542,7 +542,7 @@ export class QBScriptClient {
   async executeCampaignEventEvent(
     campaignEventLocationId: string,
     characterId: string,
-    eventType: 'on_enter' | 'on_leave',
+    eventType: 'on_enter' | 'on_leave' | 'on_activate',
     roll?: RollFn,
     timeout = 10000,
   ): Promise<{

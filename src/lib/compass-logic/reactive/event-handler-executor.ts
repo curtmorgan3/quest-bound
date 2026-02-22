@@ -608,7 +608,7 @@ export class EventHandlerExecutor {
   async executeCampaignEventEvent(
     campaignEventLocationId: string,
     characterId: string,
-    eventType: 'on_enter' | 'on_leave',
+    eventType: 'on_enter' | 'on_leave' | 'on_activate',
     roll?: RollFn,
   ): Promise<EventHandlerResult> {
     const eventLocation = await this.db.campaignEventLocations.get(campaignEventLocationId);
@@ -820,14 +820,14 @@ export async function executeCharacterLoader(
 }
 
 /**
- * Execute a campaign event script (on_enter, on_leave) when a character moves onto/off a tile.
+ * Execute a campaign event script (on_enter, on_leave, on_activate) when a character moves onto/off a tile or activates it.
  * Pass the CampaignEventLocation id so Self refers to that location in the script.
  */
 export async function executeCampaignEventEvent(
   db: DB,
   campaignEventLocationId: string,
   characterId: string,
-  eventType: 'on_enter' | 'on_leave',
+  eventType: 'on_enter' | 'on_leave' | 'on_activate',
   roll?: RollFn,
 ): Promise<EventHandlerResult> {
   const executor = new EventHandlerExecutor(db);
