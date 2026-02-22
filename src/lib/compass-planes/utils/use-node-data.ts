@@ -72,7 +72,7 @@ export const useNodeData = (component: Component): NodeData => {
     }),
     attributeType: rulesetAttribute?.type ?? 'string',
     characterAttributeId: characterAttribute?.id,
-    options: rulesetAttribute?.options ?? [],
+    options: characterAttribute?.options ?? rulesetAttribute?.options ?? [],
     min: characterAttribute?.min ?? rulesetAttribute?.min,
     max: characterAttribute?.max ?? rulesetAttribute?.max,
     allowMultiSelect: rulesetAttribute?.allowMultiSelect,
