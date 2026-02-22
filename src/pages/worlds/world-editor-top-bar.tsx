@@ -1,6 +1,6 @@
 import { Button, Input } from '@/components';
 import type { Location } from '@/types';
-import { ArrowUp, ChevronRight, Plus, Waypoints } from 'lucide-react';
+import { ArrowUp, ChevronRight, FileText, Plus, Waypoints } from 'lucide-react';
 import { useState } from 'react';
 
 export interface WorldEditorTopBarProps {
@@ -11,6 +11,10 @@ export interface WorldEditorTopBarProps {
   onAddLocation: () => void;
   /** Add a new parent location above the current one (only when viewing inside a location). */
   onAddParentToCurrent?: () => void;
+  /** Open the location details panel (document). Shown when truthy. */
+  onOpenDetails?: () => void;
+  /** Whether a location is selected or in context so details can be shown. */
+  hasDetailsContext?: boolean;
 }
 
 export function WorldEditorTopBar({
@@ -20,6 +24,8 @@ export function WorldEditorTopBar({
   onBack,
   onAddLocation,
   onAddParentToCurrent,
+  onOpenDetails,
+  hasDetailsContext,
 }: WorldEditorTopBarProps) {
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [titleInput, setTitleInput] = useState(worldLabel);
@@ -81,6 +87,16 @@ export function WorldEditorTopBar({
         </Button>
       )}
       <div className='flex flex-1 justify-end gap-2'>
+        {hasDetailsContext && onOpenDetails && (
+          <Button
+            variant='outline'
+            size='sm'
+            onClick={onOpenDetails}
+            aria-label='Location details'
+            title='Location details'>
+            <FileText className='h-4 w-4' />
+          </Button>
+        )}
         {onAddParentToCurrent && (
           <Button
             variant='outline'

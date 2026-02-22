@@ -2,6 +2,7 @@ import { useLocation, useLocations, useWorld, useWorlds } from '@/lib/compass-ap
 import type { Location } from '@/types';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { LocationDetailsPanel } from '../campaigns/location-details-panel';
 import { WorldEditorCanvas } from './world-editor-canvas';
 import { WorldEditorLocationPanel } from './world-editor-location-panel';
 import { WorldEditorTopBar } from './world-editor-top-bar';
@@ -16,6 +17,7 @@ export function WorldEditor() {
   const urlLocation = useLocation(urlLocationId);
   const { updateWorld } = useWorlds();
   const [selectedLocationIds, setSelectedLocationIds] = useState<string[]>([]);
+  const [detailsPanelOpen, setDetailsPanelOpen] = useState(false);
 
   const parentStack = useMemo(() => {
     if (urlLocationId && urlLocation) return [urlLocation];
@@ -37,6 +39,7 @@ export function WorldEditor() {
     selectedLocationIdsFiltered.length === 1
       ? locationsList.find((loc) => loc.id === selectedLocationIdsFiltered[0])
       : null;
+  const detailsLocation = singleSelectedLocation ?? currentParent ?? null;
 
   useEffect(() => {
     if (worldId && world === undefined) {
@@ -140,6 +143,8 @@ export function WorldEditor() {
         onBack={handleBack}
         onAddLocation={() => handleAddLocationAt(200, 200)}
         onAddParentToCurrent={handleAddParentToCurrent}
+        onOpenDetails={() => setDetailsPanelOpen(true)}
+        hasDetailsContext={!!detailsLocation}
       />
       <div className='flex min-h-0 flex-1'>
         <div className='min-h-0 flex-1' id='world-canvas-wrap'>
@@ -197,6 +202,13 @@ export function WorldEditor() {
           />
         )}
       </div>
+      <LocationDetailsPanel
+        open={detailsPanelOpen}
+        onOpenChange={setDetailsPanelOpen}
+        worldId={worldId}
+        locationId={detailsLocation?.id}
+        locationLabel={detailsLocation?.label}
+      />
     </div>
   );
 }

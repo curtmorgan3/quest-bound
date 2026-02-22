@@ -3,6 +3,7 @@ export * from './archetype-lookup';
 export * from './event-lookup';
 export * from './attribute-lookup';
 export * from './character-lookup';
+export * from './document-lookup';
 export * from './item-lookup';
 export * from './location-lookup';
 export * from './page-lookup';

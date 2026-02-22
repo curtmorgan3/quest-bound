@@ -8,6 +8,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Slider } from '@/components/ui/slider';
+import { DocumentLookup, useDocuments } from '@/lib/compass-api';
 import type { Location } from '@/types';
 import { MapPinned, Minus } from 'lucide-react';
 import { useEffect, useState } from 'react';
@@ -62,6 +63,13 @@ export function WorldEditorLocationPanel({
 }: WorldEditorLocationPanelProps) {
   const [labelInput, setLabelInput] = useState(location.label);
 
+  const { documents: linkedDocuments } = useDocuments({
+    worldId: location.worldId,
+    locationId: location.id,
+  });
+  const { updateDocument } = useDocuments({ worldId: location.worldId });
+  const linkedDocument = linkedDocuments[0];
+
   useEffect(() => {
     setLabelInput(location.label);
   }, [location.id, location.label]);
@@ -111,6 +119,27 @@ export function WorldEditorLocationPanel({
           className='h-8'
         />
       </div>
+      <DocumentLookup
+        worldId={location.worldId}
+        label='Document'
+        placeholder='Search documents...'
+        value={linkedDocument?.id ?? null}
+        onSelect={(doc) =>
+          updateDocument(doc.id, {
+            worldId: location.worldId,
+            locationId: location.id,
+          })
+        }
+        onDelete={
+          linkedDocument
+            ? () =>
+                updateDocument(linkedDocument.id, {
+                  worldId: null,
+                  locationId: null,
+                })
+            : undefined
+        }
+      />
       <div className='flex items-center gap-2'>
         <Checkbox
           id={`${idPrefix}-label-visible`}

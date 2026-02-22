@@ -10,11 +10,12 @@ import {
 import { cn } from '@/lib/utils';
 import { useCampaignContext } from '@/stores';
 import type { TileData, TileMenuPayload } from '@/types';
-import { ArrowUp, ChevronRight, Map, MapPinned } from 'lucide-react';
-import { useCallback, useMemo } from 'react';
+import { ArrowUp, ChevronRight, FileText, Map, MapPinned } from 'lucide-react';
+import { useCallback, useMemo, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { CampaignCharacterSheet, JumpTo, TileMenu } from './campaign-controls';
 import { useCampaignPlayOverlay } from './hooks';
+import { LocationDetailsPanel } from './location-details-panel';
 
 export function CampaignPlay() {
   const { campaignId } = useParams<{ campaignId: string; locationId?: string }>();
@@ -22,6 +23,7 @@ export function CampaignPlay() {
   const campaign = useCampaign(campaignId);
   const world = useWorld(campaign?.worldId);
   const [searchParams, setSearchParams] = useSearchParams();
+  const [detailsPanelOpen, setDetailsPanelOpen] = useState(false);
 
   const {
     viewingLocationId,
@@ -218,6 +220,14 @@ export function CampaignPlay() {
           </div>
 
           <div className='flex items-center gap-1'>
+            <Button
+              variant='outline'
+              size='sm'
+              onClick={() => setDetailsPanelOpen(true)}
+              aria-label='Open location details'
+              title='Location details'>
+              <FileText className='h-4 w-4' />
+            </Button>
             <JumpTo />
             {currentLocation?.hasMap && (
               <Button
@@ -232,6 +242,13 @@ export function CampaignPlay() {
           </div>
         </div>
       </div>
+      <LocationDetailsPanel
+        open={detailsPanelOpen}
+        onOpenChange={setDetailsPanelOpen}
+        worldId={campaign?.worldId}
+        locationId={currentLocation?.id}
+        locationLabel={currentLocation?.label}
+      />
       <div className='min-h-0 flex-1 p-4'>
         {!showLocationView && (
           <div className='h-full min-h-[400px]'>
