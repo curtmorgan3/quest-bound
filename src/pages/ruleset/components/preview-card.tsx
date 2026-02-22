@@ -19,6 +19,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import { CategoryField } from '@/components/composites';
 import { FileText, Pencil } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useState } from 'react';
@@ -51,6 +52,8 @@ interface Props {
   /** Edit markdown content (distinct from details). Shown as second icon when provided. */
   onEditMarkdown?: () => void;
   categoryEditable?: boolean;
+  /** Existing category names for the type-ahead dropdown (e.g. from documents, charts, etc.). */
+  existingCategories: string[];
 }
 
 export const PreviewCard = ({
@@ -68,30 +71,29 @@ export const PreviewCard = ({
   onEditDetails,
   onEditMarkdown,
   categoryEditable = true,
+  existingCategories,
 }: Props) => {
   const [editingTitle, setEditingTitle] = useState(false);
   const [newTitle, setNewTitle] = useState(title);
 
-  const [editingCategory, setEditingCategory] = useState(false);
-  const [newCategory, setNewCategory] = useState(category);
-
   const doNotAsk = localStorage.getItem('qb.confirmOnDelete') === 'false';
 
-  const handleSave = () => {
-    onEdit(newTitle, newCategory);
+  const handleSaveTitle = () => {
+    onEdit(newTitle, category);
     setEditingTitle(false);
-    setEditingCategory(false);
   };
 
   const handleKeyEvent = (e: KeyboardEvent) => {
     if (e.key === 'Enter') {
-      handleSave();
+      handleSaveTitle();
     } else if (e.key === 'Escape') {
       setEditingTitle(false);
-      setEditingCategory(false);
       setNewTitle(title);
-      setNewCategory(category);
     }
+  };
+
+  const handleCategoryChange = (value: string | null) => {
+    onEdit(editingTitle ? newTitle : title, value ?? undefined);
   };
 
   return (
@@ -99,7 +101,7 @@ export const PreviewCard = ({
       key={id}
       className={`p-4 w-[320px] flex flex-col justify-between h-[240px]`}
       data-testid='preview-card'
-      onClick={handleSave}
+      onClick={handleSaveTitle}
       style={
         image
           ? {
@@ -133,27 +135,16 @@ export const PreviewCard = ({
             )}
           </CardHeader>
           <CardDescription className='grow-1 max-h-[200px] overflow-y-auto mt-1'>
-            <div className='flex flex-col gap-2'>
-              {editingCategory ? (
-                <Input
-                  value={newCategory}
-                  data-testid='preview-card-description-input'
-                  onChange={(e) => setNewCategory(e.target.value)}
-                  autoFocus
-                  onKeyDown={(e) => handleKeyEvent(e as unknown as KeyboardEvent)}
-                />
-              ) : (
-                <p
-                  className='cursor-pointer'
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (categoryEditable) {
-                      setEditingCategory(true);
-                    }
-                  }}>
-                  {categoryEditable ? category || 'Set category' : ''}
-                </p>
-              )}
+            <div className='flex flex-col gap-2' onClick={(e) => e.stopPropagation()}>
+              <CategoryField
+                value={category ?? null}
+                onChange={handleCategoryChange}
+                existingCategories={existingCategories}
+                placeholder='Set category'
+                label=''
+                disabled={!categoryEditable}
+                className='h-8 text-sm'
+              />
               {descriptionExtra}
             </div>
           </CardDescription>
@@ -182,25 +173,16 @@ export const PreviewCard = ({
             )}
           </CardHeader>
           <CardDescription className='grow-1 max-h-[200px] overflow-y-auto'>
-            <div className='flex flex-col gap-2'>
-              {editingCategory ? (
-                <Input
-                  value={newCategory}
-                  data-testid='preview-card-description-input'
-                  onChange={(e) => setNewCategory(e.target.value)}
-                  autoFocus
-                  onKeyDown={(e) => handleKeyEvent(e as unknown as KeyboardEvent)}
-                />
-              ) : (
-                <p
-                  className='cursor-pointer'
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setEditingCategory(true);
-                  }}>
-                  {category || 'Set category'}
-                </p>
-              )}
+            <div className='flex flex-col gap-2' onClick={(e) => e.stopPropagation()}>
+              <CategoryField
+                value={category ?? null}
+                onChange={handleCategoryChange}
+                existingCategories={existingCategories}
+                placeholder='Set category'
+                label=''
+                disabled={!categoryEditable}
+                className='h-8 text-sm'
+              />
               {descriptionExtra}
             </div>
           </CardDescription>

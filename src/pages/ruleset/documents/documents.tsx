@@ -97,6 +97,7 @@ export const Documents = ({ onEditDetails, worldId, campaignId }: DocumentChartP
               titleClassName={doc.moduleId ? 'text-module-origin' : undefined}
               descriptionExtra={descriptionExtra}
               openDisabled={!canOpen}
+              existingCategories={categories}
               onDelete={() => deleteDocument(doc.id)}
               onOpen={() => navigate(documentOpenUrl(doc.id))}
               onEdit={(title, category) => updateDocument(doc.id, { title, category })}

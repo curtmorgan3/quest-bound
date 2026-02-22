@@ -125,7 +125,9 @@ export function CategoryField({
                   </CommandItem>
                 ))}
                 {filteredCategories.length === 0 && !canCreateFromSearch && (
-                  <CommandEmpty>No categories found.</CommandEmpty>
+                  <CommandEmpty style={{ fontSize: '12px' }}>
+                    Start typing to create a category
+                  </CommandEmpty>
                 )}
               </CommandList>
             </Command>

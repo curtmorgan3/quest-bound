@@ -7,6 +7,7 @@ export * from './grid';
 export * from './image-upload';
 export * from './loading';
 export * from './number-input';
+export * from './page-wrapper';
 export * from './ruleset-color-picker';
 export * from './splash-card';
 export * from './sprite-stack';

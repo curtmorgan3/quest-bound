@@ -1,4 +1,5 @@
 import { Button, Dialog, DialogContent, DialogTitle } from '@/components';
+import { PageWrapper } from '@/components/composites';
 import { useWorld } from '@/lib/compass-api';
 import { Loader2, Plus } from 'lucide-react';
 import { useState } from 'react';
@@ -28,25 +29,21 @@ export function WorldDocumentsPage() {
   }
 
   return (
-    <div className='flex h-full w-full flex-col'>
-      <div className='flex shrink-0 items-center gap-2 border-b bg-background px-4 py-2'>
-        <h1 className='truncate text-lg font-semibold'>{world.label}</h1>
-        <span className='text-muted-foreground'>›</span>
-        <h1 className='truncate text-lg font-semibold'>Documents</h1>
+    <PageWrapper
+      title={world.label}
+      subheader='Documents'
+      headerActions={
         <Button
           variant='outline'
           size='sm'
-          className='ml-auto gap-1'
+          className='gap-1'
           onClick={() => setCreateOpen(true)}
           data-testid='create-document-button'>
           <Plus className='h-4 w-4' />
           New
         </Button>
-      </div>
-
-      <div className='flex min-h-0 flex-1 flex-col gap-4 overflow-auto p-4'>
-        <Documents worldId={worldId} />
-      </div>
+      }>
+      <Documents worldId={worldId} />
 
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
         <DialogContent className='min-w-[600px] max-w-[80vw] min-h-[50vh]'>
@@ -59,6 +56,6 @@ export function WorldDocumentsPage() {
           />
         </DialogContent>
       </Dialog>
-    </div>
+    </PageWrapper>
   );
 }
