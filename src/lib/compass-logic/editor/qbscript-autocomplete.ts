@@ -53,6 +53,8 @@ const qbscriptCompletions = [
   { label: 'floor', type: 'function', info: 'Round down to nearest whole integer' },
   { label: 'ceil', type: 'function', info: 'Round up to nearest whole integer' },
   { label: 'round', type: 'function', info: 'Mathematically round to nearest whole integer' },
+  { label: 'number', type: 'function', info: 'Parse argument to a number (int or float)' },
+  { label: 'text', type: 'function', info: 'Convert argument to a string' },
   { label: 'if', type: 'keyword', info: 'Conditional' },
   { label: 'else', type: 'keyword', info: 'Else branch' },
   { label: 'for', type: 'keyword', info: 'Loop over an array or set of numbers' },

@@ -127,6 +127,10 @@ async function handleSignal(signal: MainToWorkerSignal): Promise<void> {
         await handleExecuteArchetypeEvent(signal.payload);
         break;
 
+      case 'EXECUTE_CAMPAIGN_EVENT_EVENT':
+        await handleExecuteCampaignEventEvent(signal.payload);
+        break;
+
       case 'CLEAR_GRAPH':
         handleClearGraph(signal.payload);
         break;
@@ -425,8 +429,9 @@ async function handleAttributeChanged(payload: AttributeChangedPayload): Promise
       payload.rulesetId,
       {
         ...(payload.options || {}),
+        campaignId: payload.campaignId,
         executeActionEvent: (actionId, characterId, targetId, eventType) =>
-          executor.executeActionEvent(actionId, characterId, targetId, eventType, rollFn),
+          executor.executeActionEvent(actionId, characterId, targetId, eventType, rollFn, payload.campaignId),
         roll: rollFn,
       },
     );
@@ -603,6 +608,7 @@ async function handleExecuteActionEvent(payload: {
   targetId: string | null;
   eventType: 'on_activate' | 'on_deactivate';
   requestId: string;
+  campaignId?: string;
   roll?: RollFn;
 }): Promise<void> {
   try {
@@ -622,6 +628,7 @@ async function handleExecuteActionEvent(payload: {
       payload.targetId,
       payload.eventType,
       rollFn,
+      payload.campaignId,
     );
 
     const script = await db.scripts
@@ -680,6 +687,7 @@ async function handleExecuteItemEvent(payload: {
   characterId: string;
   eventType: string;
   requestId: string;
+  campaignId?: string;
 }): Promise<void> {
   try {
     const item = await db.items.get(payload.itemId);
@@ -697,6 +705,7 @@ async function handleExecuteItemEvent(payload: {
       payload.characterId,
       payload.eventType as 'on_equip' | 'on_unequip' | 'on_consume',
       rollFn,
+      payload.campaignId,
     );
 
     const script = await db.scripts.where({ entityId: payload.itemId, entityType: 'item' }).first();
@@ -753,6 +762,7 @@ async function handleExecuteArchetypeEvent(payload: {
   characterId: string;
   eventType: 'on_add' | 'on_remove';
   requestId: string;
+  campaignId?: string;
 }): Promise<void> {
   try {
     const archetype = await db.archetypes.get(payload.archetypeId);
@@ -770,6 +780,7 @@ async function handleExecuteArchetypeEvent(payload: {
       payload.characterId,
       payload.eventType,
       rollFn,
+      payload.campaignId,
     );
 
     // Logs are persisted inside EventHandlerExecutor.executeArchetypeEvent so they
@@ -785,6 +796,63 @@ async function handleExecuteArchetypeEvent(payload: {
             stackTrace: result.error?.stack,
           },
           logMessages: result.logMessages.map((args) => prepareForStructuredClone(args)),
+        },
+      });
+    } else {
+      sendSignal({
+        type: 'SCRIPT_RESULT',
+        payload: {
+          requestId: payload.requestId,
+          result: prepareForStructuredClone(result.value),
+          announceMessages: result.announceMessages,
+          logMessages: result.logMessages.map((args) => prepareForStructuredClone(args)),
+          executionTime: 0,
+        },
+      });
+    }
+  } catch (error) {
+    sendSignal({
+      type: 'SCRIPT_ERROR',
+      payload: {
+        requestId: payload.requestId,
+        error: {
+          message: error instanceof Error ? error.message : String(error),
+          stackTrace: error instanceof Error ? error.stack : undefined,
+        },
+      },
+    });
+  }
+}
+
+async function handleExecuteCampaignEventEvent(payload: {
+  campaignEventLocationId: string;
+  characterId: string;
+  eventType: 'on_enter' | 'on_leave' | 'on_activate';
+  requestId: string;
+}): Promise<void> {
+  try {
+    const rollFn: RollFn = (expression: string) =>
+      rollBridge.requestRoll(expression, payload.requestId);
+
+    let executor: EventHandlerExecutor;
+    executor = new EventHandlerExecutor(db, createOnAttributesModified(rollFn, () => executor));
+    const result = await executor.executeCampaignEventEvent(
+      payload.campaignEventLocationId,
+      payload.characterId,
+      payload.eventType,
+      rollFn,
+    );
+
+    if (result.error || !result.success) {
+      sendSignal({
+        type: 'SCRIPT_ERROR',
+        payload: {
+          requestId: payload.requestId,
+          error: {
+            message: result.error?.message ?? 'Campaign event script failed',
+            stackTrace: result.error?.stack,
+          },
+          logMessages: result.logMessages?.map((args) => prepareForStructuredClone(args)) ?? [],
         },
       });
     } else {

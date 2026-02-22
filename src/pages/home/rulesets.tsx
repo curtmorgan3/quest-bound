@@ -14,6 +14,7 @@ import {
   Label,
   Textarea,
 } from '@/components';
+import { PageWrapper } from '@/components/composites';
 import {
   Dialog,
   DialogClose,
@@ -24,7 +25,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { useImportRuleset, useRulesets, type ImportRulesetResult } from '@/lib/compass-api';
-import { AlertCircle, CheckCircle, Upload } from 'lucide-react';
+import { AlertCircle, CheckCircle, Plus, Upload } from 'lucide-react';
 import { useRef, useState } from 'react';
 import Markdown from 'react-markdown';
 import { useNavigate } from 'react-router-dom';
@@ -152,75 +153,10 @@ export const Rulesets = () => {
   };
 
   return (
-    <div className='flex h-full w-full flex-col p-4 gap-4'>
-      <h1 className='text-4xl font-bold'>Rulesets</h1>
-      <div className='flex items-center gap-4'>
-        <Dialog>
-          <form>
-            <DialogTrigger asChild>
-              <Button className='w-[180px]' data-testid='create-ruleset-button'>
-                Create New
-              </Button>
-            </DialogTrigger>
-            <DialogContent className='sm:max-w-[425px]'>
-              <DialogHeader>
-                <DialogTitle>New Ruleset</DialogTitle>
-              </DialogHeader>
-              <div className='grid gap-4'>
-                <div className='grid gap-3'>
-                  <Label htmlFor='ruleset-title'>Title</Label>
-                  <Input
-                    id='ruleset-title'
-                    name='title'
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                  />
-                </div>
-                <div className='grid gap-3'>
-                  <Label htmlFor='ruleset-description'>Description</Label>
-                  <Textarea
-                    id='ruleset-description'
-                    name='username'
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                  />
-                </div>
-              </div>
-              <DialogFooter>
-                <DialogClose asChild>
-                  <Button variant='outline'>Cancel</Button>
-                </DialogClose>
-                <DialogClose asChild>
-                  <Button data-testid='create-ruleset-submit' onClick={handleCreate}>
-                    Create
-                  </Button>
-                </DialogClose>
-              </DialogFooter>
-            </DialogContent>
-          </form>
-        </Dialog>
-
-        <div className='flex items-center gap-4'>
-          <Input
-            ref={fileInputRef}
-            type='file'
-            accept='.zip'
-            onChange={handleFileSelect}
-            className='hidden'
-          />
-          <Button
-            className='gap-2 w-[50px]'
-            variant='outline'
-            disabled={isImporting}
-            onClick={handleImport}
-            data-testid='import-ruleset-button'>
-            {isImporting ? (
-              <Upload className='h-4 w-4 animate-pulse' />
-            ) : (
-              <Upload className='h-4 w-4' />
-            )}
-          </Button>
-
+    <PageWrapper
+      title='Rulesets'
+      headerActions={
+        <div className='flex items-center gap-2'>
           {importResult && (
             <div
               className={`p-3 rounded-lg border ${
@@ -266,6 +202,79 @@ export const Rulesets = () => {
               )}
             </div>
           )}
+
+          <Dialog>
+            <form>
+              <DialogTrigger asChild>
+                <Button size='sm' className='gap-1' data-testid='create-ruleset-button'>
+                  <Plus className='h-4 w-4' />
+                  Create Ruleset
+                </Button>
+              </DialogTrigger>
+              <DialogContent className='sm:max-w-[425px]'>
+                <DialogHeader>
+                  <DialogTitle>New Ruleset</DialogTitle>
+                </DialogHeader>
+                <div className='grid gap-4'>
+                  <div className='grid gap-3'>
+                    <Label htmlFor='ruleset-title'>Title</Label>
+                    <Input
+                      id='ruleset-title'
+                      name='title'
+                      value={title}
+                      onChange={(e) => setTitle(e.target.value)}
+                    />
+                  </div>
+                  <div className='grid gap-3'>
+                    <Label htmlFor='ruleset-description'>Description</Label>
+                    <Textarea
+                      id='ruleset-description'
+                      name='username'
+                      value={description}
+                      onChange={(e) => setDescription(e.target.value)}
+                    />
+                  </div>
+                </div>
+                <DialogFooter>
+                  <DialogClose asChild>
+                    <Button variant='outline'>Cancel</Button>
+                  </DialogClose>
+                  <DialogClose asChild>
+                    <Button data-testid='create-ruleset-submit' onClick={handleCreate}>
+                      Create
+                    </Button>
+                  </DialogClose>
+                </DialogFooter>
+              </DialogContent>
+            </form>
+          </Dialog>
+
+          <Input
+            ref={fileInputRef}
+            type='file'
+            accept='.zip'
+            onChange={handleFileSelect}
+            className='hidden'
+          />
+          <Button
+            variant='outline'
+            size='sm'
+            className='gap-1'
+            disabled={isImporting}
+            onClick={handleImport}
+            data-testid='import-ruleset-button'>
+            {isImporting ? (
+              <>
+                <Upload className='h-4 w-4 animate-pulse' />
+                Upload
+              </>
+            ) : (
+              <>
+                <Upload className='h-4 w-4' />
+                Upload
+              </>
+            )}
+          </Button>
 
           <Dialog open={replaceConfirmOpen} onOpenChange={setReplaceConfirmOpen}>
             <DialogContent className='sm:max-w-[425px]'>
@@ -321,8 +330,7 @@ export const Rulesets = () => {
             </DialogContent>
           </Dialog>
         </div>
-      </div>
-
+      }>
       <div className='flex flex-col gap-3'>
         {sortedRulesets?.map((r) => {
           const doNotAsk = localStorage.getItem('qb.confirmOnDelete') === 'false';
@@ -402,6 +410,6 @@ export const Rulesets = () => {
           );
         })}
       </div>
-    </div>
+    </PageWrapper>
   );
 };

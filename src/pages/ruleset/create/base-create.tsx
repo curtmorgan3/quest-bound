@@ -37,9 +37,13 @@ const iconset = {
 
 interface BaseCreateProps {
   onCreate?: (editMode: boolean) => void;
+  /** When set, only document creation is shown (for world documents). */
+  worldId?: string;
+  /** When set, only document creation is shown (for campaign documents). */
+  campaignId?: string;
 }
 
-export const BaseCreate = ({ onCreate }: BaseCreateProps) => {
+export const BaseCreate = ({ onCreate, worldId, campaignId }: BaseCreateProps) => {
   const { pathname } = useLocation();
   const [searchParams] = useSearchParams();
   const editId = searchParams.get('edit');
@@ -126,9 +130,11 @@ export const BaseCreate = ({ onCreate }: BaseCreateProps) => {
     setTitle,
     setDescription,
     setCategory,
+    worldId,
+    campaignId,
   });
 
-  const initialType = pathname.split('/').pop() as
+  const initialType = (worldId || campaignId ? 'documents' : pathname.split('/').pop()) as
     | 'attributes'
     | 'items'
     | 'actions'
@@ -191,49 +197,51 @@ export const BaseCreate = ({ onCreate }: BaseCreateProps) => {
   };
 
   return (
-    <div className='flex flex-col gap-4'>
-      <div className='flex justify-around items-center gap-2 mb-4'>
-        <Button
-          variant={activeType === 'attributes' ? 'default' : 'outline'}
-          onClick={() => setActiveType('attributes')}
-          data-testid='base-create-type-attributes'>
-          <iconset.attributes />
-        </Button>
-        <Button
-          variant={activeType === 'actions' ? 'default' : 'outline'}
-          onClick={() => setActiveType('actions')}
-          data-testid='base-create-type-actions'>
-          <iconset.actions />
-        </Button>
-        <Button
-          variant={activeType === 'items' ? 'default' : 'outline'}
-          onClick={() => setActiveType('items')}
-          data-testid='base-create-type-items'>
-          <iconset.items />
-        </Button>
-        <Button
-          variant={activeType === 'charts' ? 'default' : 'outline'}
-          onClick={() => setActiveType('charts')}>
-          <iconset.charts />
-        </Button>
-        <Button
-          variant={activeType === 'documents' ? 'default' : 'outline'}
-          onClick={() => setActiveType('documents')}>
-          <iconset.documents />
-        </Button>
-        <Button
-          variant={activeType === 'windows' ? 'default' : 'outline'}
-          onClick={() => setActiveType('windows')}
-          data-testid='base-create-type-windows'>
-          <iconset.windows />
-        </Button>
-        <Button
-          variant={activeType === 'pages' ? 'default' : 'outline'}
-          onClick={() => setActiveType('pages')}
-          data-testid='base-create-type-pages'>
-          <iconset.pages />
-        </Button>
-      </div>
+    <div className='flex flex-col gap-4 max-h-[80vh] overflow-auto'>
+      {!worldId && !campaignId && (
+        <div className='flex justify-around items-center gap-2 mb-4'>
+          <Button
+            variant={activeType === 'attributes' ? 'default' : 'outline'}
+            onClick={() => setActiveType('attributes')}
+            data-testid='base-create-type-attributes'>
+            <iconset.attributes />
+          </Button>
+          <Button
+            variant={activeType === 'actions' ? 'default' : 'outline'}
+            onClick={() => setActiveType('actions')}
+            data-testid='base-create-type-actions'>
+            <iconset.actions />
+          </Button>
+          <Button
+            variant={activeType === 'items' ? 'default' : 'outline'}
+            onClick={() => setActiveType('items')}
+            data-testid='base-create-type-items'>
+            <iconset.items />
+          </Button>
+          <Button
+            variant={activeType === 'charts' ? 'default' : 'outline'}
+            onClick={() => setActiveType('charts')}>
+            <iconset.charts />
+          </Button>
+          <Button
+            variant={activeType === 'documents' ? 'default' : 'outline'}
+            onClick={() => setActiveType('documents')}>
+            <iconset.documents />
+          </Button>
+          <Button
+            variant={activeType === 'windows' ? 'default' : 'outline'}
+            onClick={() => setActiveType('windows')}
+            data-testid='base-create-type-windows'>
+            <iconset.windows />
+          </Button>
+          <Button
+            variant={activeType === 'pages' ? 'default' : 'outline'}
+            onClick={() => setActiveType('pages')}
+            data-testid='base-create-type-pages'>
+            <iconset.pages />
+          </Button>
+        </div>
+      )}
 
       <div className='grid gap-4'>
         <div className='w-full flex flex-row gap-4'>

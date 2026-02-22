@@ -73,6 +73,7 @@ export const PageSelect = ({ onEditDetails }: PageSelectProps) => {
             category={p.category ?? undefined}
             image={p.image ?? undefined}
             titleClassName={p.moduleId ? 'text-module-origin' : undefined}
+            existingCategories={categories}
             onDelete={() => handleDelete(p.id)}
             onOpen={() => navigate(`/rulesets/${activeRuleset?.id}/pages/${p.id}`)}
             onEdit={(label, category) => updatePage(p.id, { label, category })}

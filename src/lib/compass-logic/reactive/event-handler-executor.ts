@@ -17,7 +17,9 @@ export type EventHandlerType =
   | 'on_activate'
   | 'on_deactivate'
   | 'on_add'
-  | 'on_remove';
+  | 'on_remove'
+  | 'on_enter'
+  | 'on_leave';
 
 /**
  * Result of event handler execution.
@@ -88,6 +90,7 @@ export class EventHandlerExecutor {
     characterId: string,
     eventType: 'on_equip' | 'on_unequip' | 'on_consume',
     roll?: RollFn,
+    campaignId?: string,
   ): Promise<EventHandlerResult> {
     // Get item
     const item = await this.db.items.get(itemId);
@@ -143,9 +146,17 @@ export class EventHandlerExecutor {
       triggerType: 'item_event',
       entityType: 'item',
       entityId: item.id,
+      campaignId,
       roll,
       executeActionEvent: (actionId, ownerId, targetIdForAction, eventTypeForAction) =>
-        this.executeActionEvent(actionId, ownerId, targetIdForAction, eventTypeForAction, roll),
+        this.executeActionEvent(
+          actionId,
+          ownerId,
+          targetIdForAction,
+          eventTypeForAction,
+          roll,
+          campaignId,
+        ),
     };
 
     const result = this.runScriptForTest
@@ -180,6 +191,7 @@ export class EventHandlerExecutor {
     targetId: string | null,
     eventType: 'on_activate' | 'on_deactivate',
     roll?: RollFn,
+    campaignId?: string,
   ): Promise<EventHandlerResult> {
     // Get action
     const action = await this.db.actions.get(actionId);
@@ -239,11 +251,19 @@ export class EventHandlerExecutor {
         triggerType: 'action_click',
         entityType: 'action',
         entityId: action.id,
+        campaignId,
         roll,
         // Only allow Owner.Action().activate() at top level to avoid infinite re-entrancy
         ...(actionEventDepth === 1 && {
           executeActionEvent: (actionId, ownerId, targetIdForAction, eventTypeForAction) =>
-            this.executeActionEvent(actionId, ownerId, targetIdForAction, eventTypeForAction, roll),
+            this.executeActionEvent(
+              actionId,
+              ownerId,
+              targetIdForAction,
+              eventTypeForAction,
+              roll,
+              campaignId,
+            ),
         }),
       };
 
@@ -345,6 +365,7 @@ export class EventHandlerExecutor {
     characterId: string,
     eventType: 'on_add' | 'on_remove',
     roll?: RollFn,
+    campaignId?: string,
   ): Promise<EventHandlerResult> {
     const archetype = await this.db.archetypes.get(archetypeId);
     if (!archetype) {
@@ -395,9 +416,17 @@ export class EventHandlerExecutor {
       triggerType: 'archetype_event',
       entityType: 'archetype',
       entityId: archetype.id,
+      campaignId,
       roll,
       executeActionEvent: (actionId, ownerId, targetIdForAction, eventTypeForAction) =>
-        this.executeActionEvent(actionId, ownerId, targetIdForAction, eventTypeForAction, roll),
+        this.executeActionEvent(
+          actionId,
+          ownerId,
+          targetIdForAction,
+          eventTypeForAction,
+          roll,
+          campaignId,
+        ),
     };
 
     const result = this.runScriptForTest
@@ -557,6 +586,154 @@ export class EventHandlerExecutor {
   }
 
   /**
+   * Persist campaign event log messages to scriptLogs so they appear in useScriptLogs.
+   */
+  private async persistCampaignEventLogs(
+    rulesetId: string,
+    scriptId: string,
+    characterId: string,
+    logMessages: any[][],
+  ): Promise<void> {
+    if (logMessages.length === 0) return;
+    const now = new Date().toISOString();
+    const timestamp = Date.now();
+    try {
+      for (const args of logMessages) {
+        let argsJson: string;
+        try {
+          argsJson = JSON.stringify(args);
+        } catch {
+          argsJson = JSON.stringify(args.map((a) => String(a)));
+        }
+        await this.db.scriptLogs.add({
+          id: crypto.randomUUID(),
+          rulesetId,
+          scriptId,
+          characterId,
+          argsJson,
+          timestamp,
+          context: 'campaign_event',
+          createdAt: now,
+          updatedAt: now,
+        } as any);
+      }
+    } catch (e) {
+      console.warn('[QBScript] Failed to persist campaign event logs:', e);
+    }
+  }
+
+  /**
+   * Execute a campaign event's script handler (e.g. on_enter when a character moves onto a tile with that event).
+   * Uses campaignEventLocationId so Self can refer to the CampaignEventLocation.
+   */
+  async executeCampaignEventEvent(
+    campaignEventLocationId: string,
+    characterId: string,
+    eventType: 'on_enter' | 'on_leave' | 'on_activate',
+    roll?: RollFn,
+  ): Promise<EventHandlerResult> {
+    const eventLocation = await this.db.campaignEventLocations.get(campaignEventLocationId);
+    if (!eventLocation) {
+      return {
+        success: false,
+        value: null,
+        announceMessages: [],
+        logMessages: [],
+        error: new Error(`Campaign event location not found: ${campaignEventLocationId}`),
+      };
+    }
+
+    const campaignEvent = await this.db.campaignEvents.get(eventLocation.campaignEventId);
+    if (!campaignEvent) {
+      return {
+        success: false,
+        value: null,
+        announceMessages: [],
+        logMessages: [],
+        error: new Error(`Campaign event not found: ${eventLocation.campaignEventId}`),
+      };
+    }
+
+    if (!campaignEvent.scriptId) {
+      return {
+        success: true,
+        value: null,
+        announceMessages: [],
+        logMessages: [],
+      };
+    }
+
+    const script = await this.db.scripts.get(campaignEvent.scriptId);
+    if (!script || !script.enabled) {
+      return {
+        success: true,
+        value: null,
+        announceMessages: [],
+        logMessages: [],
+      };
+    }
+
+    const campaign = await this.db.campaigns.get(campaignEvent.campaignId);
+    if (!campaign?.rulesetId) {
+      return {
+        success: false,
+        value: null,
+        announceMessages: [],
+        logMessages: [],
+        error: new Error('Campaign or ruleset not found for event'),
+      };
+    }
+
+    const hasHandler = this.extractEventHandler(script.sourceCode, eventType) !== null;
+    if (!hasHandler) {
+      return {
+        success: true,
+        value: null,
+        announceMessages: [],
+        logMessages: [],
+      };
+    }
+
+    const context: ScriptExecutionContext = {
+      ownerId: characterId,
+      rulesetId: campaign.rulesetId,
+      db: this.db,
+      scriptId: script.id,
+      triggerType: 'attribute_change',
+      entityType: 'campaignEventLocation',
+      entityId: campaignEventLocationId,
+      campaignId: campaignEvent.campaignId,
+      roll,
+      executeActionEvent: (actionId, ownerId, targetIdForAction, eventTypeForAction) =>
+        this.executeActionEvent(
+          actionId,
+          ownerId,
+          targetIdForAction,
+          eventTypeForAction,
+          roll,
+          campaignEvent.campaignId,
+        ),
+    };
+
+    const result = await this.executeEventHandlerByCall(script.sourceCode, eventType, context);
+
+    await this.persistCampaignEventLogs(
+      campaign.rulesetId,
+      script.id,
+      characterId,
+      result.logMessages,
+    );
+
+    return {
+      success: !result.error,
+      value: result.value,
+      announceMessages: result.announceMessages,
+      logMessages: result.logMessages,
+      error: result.error,
+    };
+  }
+
+  /**
    * Execute an event handler by calling it within the script context.
    * This is a more robust approach that loads the entire script and calls the function.
    * @param sourceCode - Full script source code
@@ -577,7 +754,6 @@ ${sourceCode}
 // Call the event handler
 if ${eventType}:
     ${eventType}()
-end
 `;
 
     const result = this.runScriptForTest
@@ -669,4 +845,19 @@ export async function executeCharacterLoader(
 ): Promise<EventHandlerResult> {
   const executor = new EventHandlerExecutor(db);
   return executor.executeCharacterLoader(characterId, rulesetId, roll);
+}
+
+/**
+ * Execute a campaign event script (on_enter, on_leave, on_activate) when a character moves onto/off a tile or activates it.
+ * Pass the CampaignEventLocation id so Self refers to that location in the script.
+ */
+export async function executeCampaignEventEvent(
+  db: DB,
+  campaignEventLocationId: string,
+  characterId: string,
+  eventType: 'on_enter' | 'on_leave' | 'on_activate',
+  roll?: RollFn,
+): Promise<EventHandlerResult> {
+  const executor = new EventHandlerExecutor(db);
+  return executor.executeCampaignEventEvent(campaignEventLocationId, characterId, eventType, roll);
 }

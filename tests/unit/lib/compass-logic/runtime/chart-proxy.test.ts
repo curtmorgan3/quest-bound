@@ -110,6 +110,58 @@ describe('ChartProxy', () => {
     });
   });
 
+  describe('type coercion', () => {
+    it('should return numbers for parseable int/float strings', () => {
+      const stringNumberChart: Chart = {
+        ...chart,
+        data: JSON.stringify([
+          ['Col'],
+          ['42'],
+          ['3.14'],
+          ['0'],
+          ['-10'],
+        ]),
+      };
+      const proxy = new ChartProxy(stringNumberChart);
+      const values = proxy.get('Col');
+      expect(values).toEqual([42, 3.14, 0, -10]);
+      expect(values.every((v) => typeof v === 'number')).toBe(true);
+    });
+
+    it('should return booleans for true/false strings in any casing', () => {
+      const boolChart: Chart = {
+        ...chart,
+        data: JSON.stringify([
+          ['Flag'],
+          ['true'],
+          ['TRUE'],
+          ['False'],
+          ['FALSE'],
+        ]),
+      };
+      const proxy = new ChartProxy(boolChart);
+      const values = proxy.get('Flag');
+      expect(values).toEqual([true, true, false, false]);
+      expect(values.every((v) => typeof v === 'boolean')).toBe(true);
+    });
+
+    it('should return strings for non-numeric, non-boolean values', () => {
+      const stringChart: Chart = {
+        ...chart,
+        data: JSON.stringify([
+          ['Label'],
+          ['hello'],
+          [''],
+          ['42px'],
+        ]),
+      };
+      const proxy = new ChartProxy(stringChart);
+      const values = proxy.get('Label');
+      expect(values).toEqual(['hello', '', '42px']);
+      expect(values.every((v) => typeof v === 'string')).toBe(true);
+    });
+  });
+
   describe('error handling', () => {
     it('should throw error for invalid JSON data', () => {
       const invalidChart: Chart = {

@@ -73,12 +73,12 @@ describe('AttributeProxy', () => {
     });
 
     it('should set to max value', () => {
-      proxy.max();
+      proxy.setToMax();
       expect(proxy.value).toBe(100);
     });
 
     it('should set to min value', () => {
-      proxy.min();
+      proxy.setToMin();
       expect(proxy.value).toBe(0);
     });
 
@@ -194,6 +194,35 @@ describe('AttributeProxy', () => {
     it('should throw error when flipping list attribute', () => {
       expect(() => proxy.flip()).toThrow('Cannot flip non-boolean attribute');
     });
+
+    it('should get options (from attribute or pending update)', () => {
+      expect(proxy.options).toEqual(['Lawful Good', 'Neutral', 'Chaotic Evil']);
+      proxy.setOptions(['A', 'B', 'C']);
+      expect(proxy.options).toEqual(['A', 'B', 'C']);
+    });
+
+    it('should set options and coerce values to strings', () => {
+      proxy.setOptions(['A', 'B', 'C']);
+      expect(characterAttribute.options).toEqual(['A', 'B', 'C']);
+      expect(pendingUpdates.get(`characterAttributeOptions:${characterAttribute.id}`)).toEqual([
+        'A',
+        'B',
+        'C',
+      ]);
+    });
+
+    it('should coerce non-string option values to strings', () => {
+      proxy.setOptions([1, true, 3.14]);
+      expect(characterAttribute.options).toEqual(['1', 'true', '3.14']);
+    });
+
+    it('should reset options to ruleset attribute definition', () => {
+      proxy.setOptions(['X', 'Y', 'Z']);
+      expect(proxy.options).toEqual(['X', 'Y', 'Z']);
+      proxy.resetOptions();
+      expect(proxy.options).toEqual(['Lawful Good', 'Neutral', 'Chaotic Evil']);
+      expect(characterAttribute.options).toEqual(['Lawful Good', 'Neutral', 'Chaotic Evil']);
+    });
   });
 
   describe('error handling', () => {
@@ -218,7 +247,7 @@ describe('AttributeProxy', () => {
 
       const proxy = new AttributeProxy(characterAttribute, attribute, pendingUpdates);
 
-      expect(() => proxy.max()).toThrow('has no max value defined');
+      expect(() => proxy.setToMax()).toThrow('has no max value defined');
     });
 
     it('should throw error when accessing min on attribute without min', () => {
@@ -242,7 +271,7 @@ describe('AttributeProxy', () => {
 
       const proxy = new AttributeProxy(characterAttribute, attribute, pendingUpdates);
 
-      expect(() => proxy.min()).toThrow('has no min value defined');
+      expect(() => proxy.setToMin()).toThrow('has no min value defined');
     });
   });
 });

@@ -1,8 +1,8 @@
 import { getFeatureFlag, listFeatureFlags } from '@/utils/feature-flags';
 import { useEffect, useState, useSyncExternalStore } from 'react';
 
-function getFeatureFlagSnapshot(flagName: string): boolean {
-  return getFeatureFlag(flagName);
+function getFeatureFlagSnapshot(flagName: string, defaultEnabled = false): boolean {
+  return getFeatureFlag(flagName, defaultEnabled);
 }
 
 function subscribeToFeatureFlag(flagName: string, callback: () => void): () => void {
@@ -17,12 +17,13 @@ function subscribeToFeatureFlag(flagName: string, callback: () => void): () => v
 /**
  * Returns whether the feature flag is enabled (stored in localStorage under feature.{name}).
  * Updates when the flag is toggled in Dev Tools.
+ * @param defaultEnabled - when the flag is not set, use this value (default false).
  */
-export function useFeatureFlag(flagName: string): boolean {
+export function useFeatureFlag(flagName: string, defaultEnabled = false): boolean {
   return useSyncExternalStore(
     (callback) => subscribeToFeatureFlag(flagName, callback),
-    () => getFeatureFlagSnapshot(flagName),
-    () => getFeatureFlagSnapshot(flagName),
+    () => getFeatureFlagSnapshot(flagName, defaultEnabled),
+    () => getFeatureFlagSnapshot(flagName, defaultEnabled),
   );
 }
 

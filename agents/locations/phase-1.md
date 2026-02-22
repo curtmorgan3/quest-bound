@@ -12,15 +12,15 @@
 
 All DB entities extend `BaseDetails` (id, createdAt, updatedAt).
 
-| Entity      | Key fields |
-|------------|------------|
-| **World**  | label, rulesetId (required), assetId? |
-| **Tilemap**| worldId, assetId, tileHeight, tileWidth |
-| **Tile**   | tilemapId?, tileX?, tileY? (slice of tilemap image) |
-| **TileData** | Not a DB table. `{ id, tileId, x, y, isPassable, actionId? }`; stored inside `Location.tiles`. |
-| **Location** | label, worldId, nodeX, nodeY, nodeWidth, nodeHeight, parentLocationId?, gridWidth, gridHeight, tiles: TileData[] |
-| **LocationItem** | itemId, rulesetId, worldId, locationId, tileId (tileId = TileData.id) |
-| **Character** (extend) | sprites?: string[], worldId?, locationId?, tileId? (all optional) |
+| Entity                 | Key fields                                                                                                       |
+| ---------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| **World**              | label, rulesetId (required), assetId?                                                                            |
+| **Tilemap**            | worldId, assetId, tileHeight, tileWidth                                                                          |
+| **Tile**               | tilemapId?, tileX?, tileY? (slice of tilemap image)                                                              |
+| **TileData**           | Not a DB table. `{ id, tileId, x, y, isPassable, actionId? }`; stored inside `Location.tiles`.                   |
+| **Location**           | label, worldId, nodeX, nodeY, nodeWidth, nodeHeight, parentLocationId?, gridWidth, gridHeight, tiles: TileData[] |
+| **LocationItem**       | itemId, rulesetId, worldId, locationId, tileId (tileId = TileData.id), sprites?: string[]                        |
+| **Character** (extend) | sprites?: string[], worldId?, locationId?, tileId? (all optional)                                                |
 
 ---
 
@@ -28,31 +28,31 @@ All DB entities extend `BaseDetails` (id, createdAt, updatedAt).
 
 ### 1.1 Types
 
-| Task | File(s) | Notes |
-|------|--------|--------|
-| Add `World`, `Tilemap`, `Tile`, `TileData`, `Location`, `LocationItem` types. World, Tilemap, Tile, Location, LocationItem extend `BaseDetails`. `TileData` is a plain interface (not a table). | `src/types/data-model-types.ts` | Import `BaseDetails` from helper-types. |
-| Extend `Character` with optional `sprites?: string[]`, `worldId?: string`, `locationId?: string`, `tileId?: string`. | `src/types/data-model-types.ts` | Keeps existing characters valid. |
-| Ensure new types are exported from the types barrel so `@/types` exposes them. | `src/types/index.ts` (or existing type barrel) | |
+| Task                                                                                                                                                                                            | File(s)                                        | Notes                                   |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------- | --------------------------------------- |
+| Add `World`, `Tilemap`, `Tile`, `TileData`, `Location`, `LocationItem` types. World, Tilemap, Tile, Location, LocationItem extend `BaseDetails`. `TileData` is a plain interface (not a table). | `src/types/data-model-types.ts`                | Import `BaseDetails` from helper-types. |
+| Extend `Character` with optional `sprites?: string[]`, `worldId?: string`, `locationId?: string`, `tileId?: string`.                                                                            | `src/types/data-model-types.ts`                | Keeps existing characters valid.        |
+| Ensure new types are exported from the types barrel so `@/types` exposes them.                                                                                                                  | `src/types/index.ts` (or existing type barrel) |                                         |
 
 ### 1.2 Dexie schema
 
-| Task | File(s) | Notes |
-|------|--------|--------|
+| Task                                                                                                                                                                                                                                                                                                                    | File(s)                   | Notes                                      |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------- | ------------------------------------------ |
 | Add schema entries for `worlds`, `tilemaps`, `tiles`, `locations`, `locationItems`. Use the same `common` pattern: `++id, createdAt, updatedAt`. Add indexes: worlds by rulesetId; tilemaps by worldId; tiles by tilemapId; locations by worldId and parentLocationId; locationItems by worldId, locationId, rulesetId. | `src/stores/db/schema.ts` | Follow existing table format in that file. |
-| Bump `dbSchemaVersion` (e.g. to 32). | `src/stores/db/schema.ts` | |
+| Bump `dbSchemaVersion` (e.g. to 32).                                                                                                                                                                                                                                                                                    | `src/stores/db/schema.ts` |                                            |
 
 ### 1.3 Dexie DB instance
 
-| Task | File(s) | Notes |
-|------|--------|--------|
-| Add `worlds`, `tilemaps`, `tiles`, `locations`, `locationItems` to the Dexie typings (the `Dexie & { ... }` type). | `src/stores/db/db.ts` | Use `EntityTable<World, 'id'>` etc. |
-| Add the new tables to the schema passed to `db.version().stores()`. | `src/stores/db/db.ts` | Schema is in schema.ts; db imports and uses it. |
-| Import the new types at the top of db.ts. | `src/stores/db/db.ts` | |
+| Task                                                                                                               | File(s)               | Notes                                           |
+| ------------------------------------------------------------------------------------------------------------------ | --------------------- | ----------------------------------------------- |
+| Add `worlds`, `tilemaps`, `tiles`, `locations`, `locationItems` to the Dexie typings (the `Dexie & { ... }` type). | `src/stores/db/db.ts` | Use `EntityTable<World, 'id'>` etc.             |
+| Add the new tables to the schema passed to `db.version().stores()`.                                                | `src/stores/db/db.ts` | Schema is in schema.ts; db imports and uses it. |
+| Import the new types at the top of db.ts.                                                                          | `src/stores/db/db.ts` |                                                 |
 
 ### 1.4 DB hooks (optional for Phase 1)
 
-| Task | File(s) | Notes |
-|------|--------|--------|
+| Task                                                                                                                                                             | File(s)                                                               | Notes                             |
+| ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- | --------------------------------- |
 | Defer cascade deletes to Phase 2 unless you want them now. If implementing: e.g. on world delete, delete locations, tilemaps, and location items for that world. | `src/stores/db/hooks/world-hooks.ts` (new), register in `db-hooks.ts` | Optional; can be done in Phase 2. |
 
 ---

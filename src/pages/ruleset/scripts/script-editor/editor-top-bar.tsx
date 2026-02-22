@@ -12,27 +12,23 @@ import {
   ActionLookup,
   ArchetypeLookup,
   AttributeLookup,
+  EventLookup,
   ItemLookup,
   useRulesets,
   useScripts,
 } from '@/lib/compass-api';
 import { type UseReactiveScriptExecutionResult } from '@/lib/compass-logic';
-import type { Action, Archetype, Attribute, Item, Script } from '@/types';
+import { activateButtonStyle } from '@/palette';
+import type { Action, Archetype, Attribute, CampaignEvent, Item, Script } from '@/types';
 import { Trash2, X, Zap } from 'lucide-react';
 import { useCallback, type Dispatch, type SetStateAction } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { CAMPAIGN_TYPE_OPTIONS, ENTITY_TYPE_OPTIONS } from '../utils';
 import { CategoryField } from './category-field';
 
-const ENTITY_TYPES = [
-  { value: 'attribute', label: 'Attribute' },
-  { value: 'action', label: 'Action' },
-  { value: 'item', label: 'Item' },
-  { value: 'archetype', label: 'Archetype' },
-  { value: 'global', label: 'Global' },
-  { value: 'characterLoader', label: 'Character Loader' },
-] as const;
-
 interface EditorTopBar {
+  rulesetId: string;
+  campaignId?: string;
   name: string;
   setName: (name: string) => void;
   entityType: Script['entityType'];
@@ -47,6 +43,8 @@ interface EditorTopBar {
 }
 
 export const EditorTopBar = ({
+  rulesetId,
+  campaignId,
   name,
   setName,
   entityType,
@@ -60,12 +58,16 @@ export const EditorTopBar = ({
   scriptExecutionHook,
 }: EditorTopBar) => {
   const navigate = useNavigate();
-  const { rulesetId, scriptId } = useParams<{ rulesetId: string; scriptId: string }>();
-  const { scripts, createScript, updateScript, deleteScript } = useScripts();
+  const { scriptId } = useParams<{ scriptId: string }>();
+  const { scripts, createScript, updateScript, deleteScript } = useScripts(campaignId);
   const { activeRuleset, testCharacter } = useRulesets();
 
   const isNew = scriptId === 'new';
   const script = isNew ? null : (scripts.find((s) => s.id === scriptId) ?? null);
+
+  const entityTypes = (campaignId ? CAMPAIGN_TYPE_OPTIONS : ENTITY_TYPE_OPTIONS).filter(
+    (opt) => !campaignId || opt.value !== 'all',
+  );
 
   const handleRun = useCallback(async () => {
     if (!activeRuleset) throw new Error('No ruleset found.');
@@ -102,24 +104,31 @@ export const EditorTopBar = ({
       isGlobal: entityType === 'global',
       enabled: true,
       category: category ?? undefined,
+      campaignId,
     };
     if (isNew) {
       const id = await createScript(payload);
       if (id) {
-        navigate(`/rulesets/${rulesetId}/scripts/${id}`, { replace: true });
+        navigate(
+          `/${campaignId ? 'campaigns' : 'rulesets'}/${campaignId ?? rulesetId}/scripts/${id}`,
+          {
+            replace: true,
+          },
+        );
       }
     } else if (script) {
       await updateScript(script.id, payload);
     }
   };
 
-  const handleCancel = () => navigate(`/rulesets/${rulesetId}/scripts`);
+  const handleCancel = () =>
+    navigate(campaignId ? `/campaigns/${campaignId}/scripts` : `/rulesets/${rulesetId}/scripts`);
 
   const handleDelete = async () => {
     if (!script || isNew) return;
     if (window.confirm('Delete this script? This cannot be undone.')) {
       await deleteScript(script.id);
-      navigate(`/rulesets/${rulesetId}/scripts`);
+      navigate(campaignId ? `/campaigns/${campaignId}/scripts` : `/rulesets/${rulesetId}/scripts`);
     }
   };
 
@@ -146,7 +155,7 @@ export const EditorTopBar = ({
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            {ENTITY_TYPES.map((opt) => (
+            {entityTypes.map((opt) => (
               <SelectItem key={opt.value} value={opt.value}>
                 {opt.label}
               </SelectItem>
@@ -155,7 +164,7 @@ export const EditorTopBar = ({
         </Select>
       </div>
       <div className='w-[200px]'>
-        <CategoryField value={category} onChange={setCategory} />
+        <CategoryField value={category} onChange={setCategory} campaignScripts={!!campaignId} />
       </div>
       {entityType === 'attribute' && (
         <div className='w-[240px]'>
@@ -201,6 +210,18 @@ export const EditorTopBar = ({
           />
         </div>
       )}
+      {entityType === 'campaignEvent' && (
+        <div className='w-[240px]'>
+          <EventLookup
+            campaignId={campaignId}
+            label='Campaign Event'
+            value={entityId}
+            onSelect={(event: CampaignEvent) => setEntityId(event.id)}
+            onDelete={() => setEntityId(null)}
+            data-testid='script-editor-event-lookup'
+          />
+        </div>
+      )}
       <div className='flex justify-end items-center flex-1'>
         <div className='flex gap-2 justify-end min-w-[225px]'>
           <Button
@@ -208,6 +229,7 @@ export const EditorTopBar = ({
             disabled={
               scriptExecutionHook.isExecuting || !activeRuleset || !testCharacter || saveDisabled
             }
+            style={activateButtonStyle}
             variant='secondary'>
             <Zap className='h-4 w-4' />
             Run

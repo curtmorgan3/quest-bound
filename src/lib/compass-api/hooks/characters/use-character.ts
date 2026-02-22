@@ -8,11 +8,21 @@ import { db, useCurrentUser } from '@/stores';
 import type { Archetype, Character, Inventory } from '@/types';
 import { duplicateCharacterFromTemplate } from '@/utils/duplicate-character-from-template';
 import { useLiveQuery } from 'dexie-react-hooks';
+import { useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import { useAssets } from '../assets';
 
 export type CharacterWithInventories = Character & {
   inventory: Inventory;
+};
+
+/** Returns current user's characters for the given ruleset. */
+export const useCharacters = (rulesetId: string | undefined): Character[] => {
+  const { characters } = useCharacter();
+  return useMemo(
+    () => (rulesetId ? characters.filter((c) => c.rulesetId === rulesetId) : []),
+    [characters, rulesetId],
+  );
 };
 
 export const useCharacter = (_id?: string) => {
@@ -118,12 +128,16 @@ export const useCharacter = (_id?: string) => {
         updatedAt: now,
       } as unknown as Inventory);
 
+      const characterImage =
+        data.image != null && data.image !== '' ? data.image : (firstArchetype.image ?? null);
+
       await db.characters.add({
         ...data,
         id: characterId,
         rulesetId,
         userId: currentUser.id,
         inventoryId,
+        image: characterImage,
         createdAt: now,
         updatedAt: now,
         isTestCharacter: data.isTestCharacter ?? false,
@@ -132,6 +146,7 @@ export const useCharacter = (_id?: string) => {
         pinnedSidebarCharts: data.pinnedSidebarCharts ?? [],
         lastViewedPageId: data.lastViewedPageId ?? null,
         sheetLocked: data.sheetLocked ?? false,
+        sprites: data.sprites ?? firstArchetype?.sprites ?? [],
       } as Character);
 
       await duplicateCharacterFromTemplate(testCharacter.id, characterId, inventoryId);
@@ -174,6 +189,7 @@ export const useCharacter = (_id?: string) => {
           }
         }
       }
+      return characterId;
     } catch (e) {
       handleError(e as Error, {
         component: 'useCharacter/createCharacter',
@@ -182,6 +198,7 @@ export const useCharacter = (_id?: string) => {
     }
   };
 
+  /** Updates a character. Supports all Character fields including sprites, worldId, locationId, tileId for map placement. */
   const updateCharacter = async (id: string, data: Partial<Character>) => {
     const now = new Date().toISOString();
     try {

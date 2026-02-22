@@ -13,6 +13,56 @@ import {
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 
+/**
+ * Resizes an image file to fit within maxWidth×maxHeight using the same scaling
+ * logic as loadTilemapAssetDimensions (integer scale divisor, aspect ratio preserved).
+ * Returns a new File with the same name and type, or the original file if no resize needed.
+ */
+async function resizeImageFile(file: File, maxWidth: number, maxHeight: number): Promise<File> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const w = img.naturalWidth;
+      const h = img.naturalHeight;
+      const scaleDivisor = Math.max(1, Math.ceil(w / maxWidth), Math.ceil(h / maxHeight));
+      if (scaleDivisor <= 1) {
+        resolve(file);
+        return;
+      }
+      const scaledW = Math.round(w / scaleDivisor);
+      const scaledH = Math.round(h / scaleDivisor);
+      const canvas = document.createElement('canvas');
+      canvas.width = scaledW;
+      canvas.height = scaledH;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        reject(new Error('Could not get canvas context'));
+        return;
+      }
+      ctx.drawImage(img, 0, 0, w, h, 0, 0, scaledW, scaledH);
+      const mime = file.type || 'image/png';
+      canvas.toBlob(
+        (blob) => {
+          if (!blob) {
+            reject(new Error('Canvas toBlob failed'));
+            return;
+          }
+          resolve(new File([blob], file.name, { type: blob.type }));
+        },
+        mime,
+        0.92,
+      );
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error('Failed to load image for resize'));
+    };
+    img.src = url;
+  });
+}
+
 interface ImageUploadProps {
   image?: string | null;
   alt?: string;
@@ -20,6 +70,11 @@ interface ImageUploadProps {
   onSetUrl?: (url: string) => void;
   onRemove?: () => void;
   rulesetId?: string | null;
+  worldId?: string | null;
+  /** When set with maxHeight, image is resized to fit within these dimensions before upload. */
+  maxWidth?: number;
+  /** When set with maxWidth, image is resized to fit within these dimensions before upload. */
+  maxHeight?: number;
 }
 
 export const ImageUpload = ({
@@ -28,7 +83,10 @@ export const ImageUpload = ({
   onSetUrl,
   onRemove,
   rulesetId,
+  worldId,
   alt = '',
+  maxWidth,
+  maxHeight,
 }: ImageUploadProps) => {
   const id = crypto.randomUUID();
   const { createAsset } = useAssets(rulesetId);
@@ -42,10 +100,17 @@ export const ImageUpload = ({
     const file = e.target.files?.[0];
     if (file) {
       setLoading(true);
-      const assetId = await createAsset(file);
-      onUpload?.(assetId);
-      setLoading(false);
-      setDialogOpen(false);
+      try {
+        const fileToUpload =
+          maxWidth != null && maxHeight != null
+            ? await resizeImageFile(file, maxWidth, maxHeight)
+            : file;
+        const assetId = await createAsset(fileToUpload);
+        onUpload?.(assetId);
+        setDialogOpen(false);
+      } finally {
+        setLoading(false);
+      }
     }
     e.target.value = '';
   };

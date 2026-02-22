@@ -55,3 +55,17 @@ export interface OnboardingStep {
 }
 
 export type Tutorial = OnboardingStep[];
+
+export type TileMenuPayload = {
+  x: number;
+  y: number;
+  clientX: number;
+  clientY: number;
+  tileId: string;
+};
+
+export type ITileMenu = {
+  clientX: number;
+  clientY: number;
+  tileId: string;
+} | null;

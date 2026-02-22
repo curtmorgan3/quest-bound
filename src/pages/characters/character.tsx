@@ -1,7 +1,6 @@
 import { useSidebar } from '@/components/ui/sidebar';
-import { useNotifications } from '@/hooks';
 import { useCharacter, useCharacterAttributes } from '@/lib/compass-api';
-import { useExecuteActionEvent, useScriptAnnouncements } from '@/lib/compass-logic';
+import { useExecuteActionEvent } from '@/lib/compass-logic';
 import { SheetViewer } from '@/lib/compass-planes';
 import {
   CharacterArchetypesPanelContext,
@@ -23,19 +22,39 @@ import {
 } from './hooks';
 import { InventoryPanel } from './inventory-panel';
 
+export type CharacterPageFloatingActions = {
+  onOpenInventory: () => void;
+  onClose: () => void;
+};
+
 interface CharacterPage {
   id?: string;
+  /** When set (e.g. in campaign play), scripts get Owner.location and other campaign context. */
+  campaignId?: string;
   lockByDefault?: boolean;
   /**
    * If provided, renders just this window in preview mode. Otherwise, it renders all character pages and windows.
    */
   editorWindowId?: string;
+  /** When true, the sheet viewer shows only nodes with no background (e.g. for overlay use). */
+  transparentBackground?: boolean;
+  /** Called when a close action is requested (e.g. from floating actions). */
+  onClose?: () => void;
+  /** When provided with onClose, renders floating action buttons (e.g. inventory + close) in the top-right. */
+  renderFloatingActions?: (actions: CharacterPageFloatingActions) => React.ReactNode;
 }
 
-export const CharacterPage = ({ id, lockByDefault, editorWindowId }: CharacterPage) => {
+export const CharacterPage = ({
+  id,
+  campaignId,
+  lockByDefault,
+  editorWindowId,
+  transparentBackground,
+  onClose,
+  renderFloatingActions,
+}: CharacterPage) => {
   const { open } = useSidebar();
   const { characterId } = useParams<{ characterId: string }>();
-  const { addNotification } = useNotifications();
   const characterInventoryPanel = useContext(CharacterInventoryPanelContext);
   const characterArchetypesPanel = useContext(CharacterArchetypesPanelContext);
 
@@ -43,6 +62,7 @@ export const CharacterPage = ({ id, lockByDefault, editorWindowId }: CharacterPa
   const roll = async (diceString: string) => rollDice(diceString).then((res) => res.total);
 
   const { character, updateCharacter } = useCharacter(id ?? characterId);
+
   const { characterAttributes, updateCharacterAttribute } = useCharacterAttributes(character?.id);
   const { handleUpdateWindow, handleDeleteWindow } = useCharacterWindowHandlers(
     character?.id ?? '',
@@ -64,12 +84,9 @@ export const CharacterPage = ({ id, lockByDefault, editorWindowId }: CharacterPa
   } = useCharacterInventoryHandlers({
     character,
     roll,
+    campaignId,
     inventoryPanelConfig,
     setInventoryPanelConfig,
-  });
-
-  useScriptAnnouncements((msg: string) => {
-    addNotification(msg);
   });
 
   const handleUpdateCharacterAttribute = (id: string, update: Partial<CharacterAttribute>) => {
@@ -92,12 +109,21 @@ export const CharacterPage = ({ id, lockByDefault, editorWindowId }: CharacterPa
 
   const fireAction = async (actionId: string) => {
     if (!character) return;
-    executeActionEvent(actionId, character.id, null, 'on_activate', roll);
+    executeActionEvent(actionId, character.id, null, 'on_activate', roll, campaignId);
   };
 
   if (!character) {
     return null;
   }
+
+  const openInventory = () => {
+    if (characterInventoryPanel) {
+      characterInventoryPanel.setOpen(true);
+    } else {
+      setInventoryPanelConfig({ open: true });
+    }
+  };
+  const showFloatingActions = renderFloatingActions != null && onClose != null;
 
   return (
     <CharacterProvider
@@ -117,6 +143,14 @@ export const CharacterPage = ({ id, lockByDefault, editorWindowId }: CharacterPa
         consumeItem,
         activateItem,
       }}>
+      {showFloatingActions && (
+        <div className='absolute right-2 top-2 z-40 flex gap-2'>
+          {renderFloatingActions!({
+            onOpenInventory: openInventory,
+            onClose: onClose!,
+          })}
+        </div>
+      )}
       <SheetViewer
         key={character.id}
         characterId={character.id}
@@ -127,6 +161,7 @@ export const CharacterPage = ({ id, lockByDefault, editorWindowId }: CharacterPa
         onWindowUpdated={handleUpdateWindow}
         onWindowDeleted={handleDeleteWindow}
         editorWindowId={editorWindowId}
+        transparentBackground={transparentBackground}
       />
       {!editorWindowId && (
         <GameLog className={`fixed bottom-[50px] left-${open ? '265' : '65'} z-30`} />
@@ -145,6 +180,7 @@ export const CharacterPage = ({ id, lockByDefault, editorWindowId }: CharacterPa
         <CharacterInventoryPanel
           open={characterInventoryPanel.open}
           onOpenChange={characterInventoryPanel.setOpen}
+          characterId={id}
         />
       )}
       {characterArchetypesPanel && (

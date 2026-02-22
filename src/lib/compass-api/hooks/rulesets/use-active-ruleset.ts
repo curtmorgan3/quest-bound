@@ -1,13 +1,15 @@
-import type { Archetype } from '@/types';
 import { db, useArchetypeStore, useCurrentUser } from '@/stores';
+import type { Archetype } from '@/types';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useMemo } from 'react';
 import { useParams } from 'react-router-dom';
+import { useCampaign } from '@/lib/compass-api/hooks/campaigns/use-campaign';
 
 export const useActiveRuleset = () => {
   const { currentUser } = useCurrentUser();
-  const { rulesetId, characterId } = useParams();
+  const { rulesetId, characterId, campaignId } = useParams();
   const getSelectedArchetype = useArchetypeStore((s) => s.getSelectedArchetype);
+  const campaign = useCampaign(campaignId);
 
   const lastEditedRulesetId = localStorage.getItem('qb.lastEditedRulesetId');
 
@@ -20,9 +22,7 @@ export const useActiveRuleset = () => {
   const rulesetIdToUse =
     rulesetId && rulesetId !== 'undefined'
       ? rulesetId
-      : character
-        ? character.rulesetId
-        : lastEditedRulesetId;
+      : campaign?.rulesetId ?? (character ? character.rulesetId : lastEditedRulesetId);
 
   const activeRuleset = rulesetIdToUse ? rulesets?.find((r) => r.id === rulesetIdToUse) : null;
 

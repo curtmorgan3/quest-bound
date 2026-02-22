@@ -9,12 +9,17 @@ import type {
   RollFn,
   Script,
 } from '@/types';
-import { executeArchetypeEvent } from '../reactive/event-handler-executor';
 import { Evaluator } from '../interpreter/evaluator';
 import { Lexer } from '../interpreter/lexer';
 import { Parser } from '../interpreter/parser';
-import { OwnerAccessor, RulesetAccessor, TargetAccessor } from './accessors';
-import type { ExecuteActionEventFn } from './proxies';
+import { executeArchetypeEvent } from '../reactive/event-handler-executor';
+import {
+  CharacterAccessor,
+  OwnerAccessor,
+  RulesetAccessor,
+  TargetAccessor,
+} from './accessors';
+import { TileProxy, type ExecuteActionEventFn } from './proxies';
 
 /**
  * Context for script execution.
@@ -25,7 +30,13 @@ export interface ScriptExecutionContext {
   rulesetId: string; // Current ruleset
   db: DB; // Database access
   scriptId?: string; // Which script is executing (for error logging)
-  triggerType?: 'load' | 'attribute_change' | 'action_click' | 'item_event' | 'archetype_event' | 'character_load';
+  triggerType?:
+    | 'load'
+    | 'attribute_change'
+    | 'action_click'
+    | 'item_event'
+    | 'archetype_event'
+    | 'character_load';
   /** When script is attached to an entity (attribute, action, item), the entity type. Enables 'Self'. */
   entityType?: string;
   /** When script is attached to an entity, the entity id. Self = Owner.Attribute/Action/Item as appropriate. */
@@ -34,6 +45,8 @@ export interface ScriptExecutionContext {
   roll?: RollFn;
   /** When set, Owner.Action('name').activate() / .deactivate() can run action event handlers (e.g. from worker or EventHandlerExecutor). */
   executeActionEvent?: ExecuteActionEventFn;
+  /** When set (e.g. campaign event scripts), used to resolve Owner.location from the character's current location in the campaign. */
+  campaignId?: string;
 }
 
 /**
@@ -71,6 +84,34 @@ export class ScriptRunner {
   private targetInventoryId: string;
   private ownerArchetypeNames: Set<string>;
   private targetArchetypeNames: Set<string>;
+  private campaignEventLocationCache: {
+    id: string;
+    campaignEventId: string;
+    locationId: string;
+    tileId: string | null;
+  } | null = null;
+  /** Tile coordinates for Self when entityType is campaignEventLocation; null if no tile. */
+  private campaignEventLocationTile: { x: number; y: number } | null = null;
+  private ownerLocationName: string = '';
+  /** Owner's current tile coordinates (from campaign character's currentTileId); null when not in campaign or no tile. */
+  private ownerCurrentTile: { x: number; y: number } | null = null;
+
+  /** Owner's current location id (from campaign character); set when in campaign. */
+  private ownerCurrentLocationId: string | null = null;
+
+  /**
+   * Per-location character accessors (event location and/or owner's location).
+   * Key = locationId. Value = characters in DB order and campaign char data for resolving character on tile.
+   */
+  private locationCharactersData: Map<
+    string,
+    {
+      locationLabel: string;
+      locationTiles: { id: string; x: number; y: number }[];
+      characters: (CharacterAccessor | OwnerAccessor | TargetAccessor)[];
+      campaignCharacters: { characterId: string; currentTileId: string | null }[];
+    }
+  > = new Map();
 
   constructor(context: ScriptExecutionContext) {
     this.context = context;
@@ -183,6 +224,211 @@ export class ScriptRunner {
         if (archetype?.name) this.targetArchetypeNames.add(archetype.name);
       }
     }
+
+    // Load CampaignEventLocation when Self is the event location (campaign event scripts)
+    if (this.context.entityType === 'campaignEventLocation' && this.context.entityId) {
+      const loc = await db.campaignEventLocations.get(this.context.entityId);
+      if (loc) {
+        this.campaignEventLocationCache = {
+          id: loc.id,
+          campaignEventId: loc.campaignEventId,
+          locationId: loc.locationId,
+          tileId: loc.tileId ?? null,
+        };
+        if (loc.tileId) {
+          const location = await db.locations.get(loc.locationId);
+          const tile = location?.tiles?.find((t: any) => t.id === loc.tileId);
+          if (tile) {
+            this.campaignEventLocationTile = { x: tile.x, y: tile.y };
+          }
+        }
+      }
+    }
+
+    // Owner's campaign character (for location/tile and for loading owner's location characters)
+    let ownerCc: { currentLocationId?: string | null; currentTileId?: string | null } | null = null;
+    if (this.context.campaignId && this.context.ownerId) {
+      ownerCc = await db.campaignCharacters
+        .where('[campaignId+characterId]')
+        .equals([this.context.campaignId, this.context.ownerId])
+        .first();
+      if (ownerCc?.currentLocationId) {
+        this.ownerCurrentLocationId = ownerCc.currentLocationId;
+        const location = await db.locations.get(ownerCc.currentLocationId);
+        this.ownerLocationName = location?.label ?? '';
+        if (ownerCc.currentTileId && location?.tiles?.length) {
+          const tile = location.tiles.find((t: { id: string }) => t.id === ownerCc!.currentTileId!);
+          if (tile) {
+            this.ownerCurrentTile = { x: tile.x, y: tile.y };
+          }
+        }
+      }
+    }
+
+    // Load location characters for event location (so Self.Tile has character/characters)
+    if (
+      this.context.entityType === 'campaignEventLocation' &&
+      this.campaignEventLocationCache &&
+      this.context.campaignId
+    ) {
+      const eventLocationId = this.campaignEventLocationCache.locationId;
+      const location = await db.locations.get(eventLocationId);
+      if (location) {
+        const tiles = (location.tiles ?? []).map((t: { id: string; x: number; y: number }) => ({
+          id: t.id,
+          x: t.x,
+          y: t.y,
+        }));
+        await this.loadLocationCharactersData(
+          this.context.campaignId,
+          eventLocationId,
+          location.label ?? '',
+          tiles,
+        );
+      }
+    }
+
+    // Load location characters for owner's current location (so Owner.Tile has character/characters)
+    if (
+      this.context.campaignId &&
+      ownerCc?.currentLocationId &&
+      !this.locationCharactersData.has(ownerCc.currentLocationId)
+    ) {
+      const location = await db.locations.get(ownerCc.currentLocationId);
+      if (location) {
+        const tiles = (location.tiles ?? []).map((t: { id: string; x: number; y: number }) => ({
+          id: t.id,
+          x: t.x,
+          y: t.y,
+        }));
+        await this.loadLocationCharactersData(
+          this.context.campaignId,
+          ownerCc.currentLocationId,
+          location.label ?? '',
+          tiles,
+        );
+      }
+    }
+  }
+
+  /**
+   * Load all campaign characters in a location and build Character accessors.
+   * Merges into characterAttributesCache. Populates locationCharactersData for locationId.
+   */
+  private async loadLocationCharactersData(
+    campaignId: string,
+    locationId: string,
+    locationLabel: string,
+    locationTiles: { id: string; x: number; y: number }[],
+  ): Promise<void> {
+    const { db, ownerId, targetId } = this.context;
+    const campaignChars = await db.campaignCharacters
+      .where('campaignId')
+      .equals(campaignId)
+      .filter((cc: { currentLocationId?: string | null }) => cc.currentLocationId === locationId)
+      .toArray();
+    const campaignCharacters: { characterId: string; currentTileId: string | null }[] = [];
+    const characters: (CharacterAccessor | OwnerAccessor | TargetAccessor)[] = [];
+
+    for (const cc of campaignChars) {
+      const characterId = cc.characterId;
+      campaignCharacters.push({ characterId, currentTileId: cc.currentTileId ?? null });
+
+      const character = await db.characters.get(characterId);
+      const characterName = character?.name ?? 'Character';
+      const inventoryId = character?.inventoryId ?? '';
+      let inventoryItems: InventoryItem[] = [];
+      if (inventoryId) {
+        inventoryItems = await db.inventoryItems.where('inventoryId').equals(inventoryId).toArray();
+      }
+
+      const charAttrs = await db.characterAttributes.where({ characterId }).toArray();
+      for (const charAttr of charAttrs) {
+        this.characterAttributesCache.set(charAttr.id, charAttr);
+      }
+
+      const archetypeNames = new Set<string>();
+      const charArchetypes = await db.characterArchetypes.where('characterId').equals(characterId).toArray();
+      for (const ca of charArchetypes) {
+        const archetype = await db.archetypes.get(ca.archetypeId);
+        if (archetype?.name) archetypeNames.add(archetype.name);
+      }
+
+      const currentTile = cc.currentTileId
+        ? (() => {
+            const t = locationTiles.find((t) => t.id === cc.currentTileId);
+            return t ? { x: t.x, y: t.y } : null;
+          })()
+        : null;
+
+      const isOwner = characterId === ownerId;
+      const isTarget = characterId === targetId;
+      const accessor =
+        isOwner
+          ? new OwnerAccessor(
+              characterId,
+              characterName,
+              inventoryId,
+              db,
+              this.pendingUpdates,
+              this.characterAttributesCache,
+              this.attributesCache,
+              this.actionsCache,
+              this.itemsCache,
+              inventoryItems,
+              archetypeNames,
+              targetId ?? null,
+              this.context.executeActionEvent,
+              locationLabel,
+              currentTile,
+              null, // tileWithContext set later in setupAccessors
+            )
+          : isTarget
+            ? new TargetAccessor(
+                characterId,
+                characterName,
+                inventoryId,
+                db,
+                this.pendingUpdates,
+                this.characterAttributesCache,
+                this.attributesCache,
+                this.actionsCache,
+                this.itemsCache,
+                inventoryItems,
+                archetypeNames,
+                null,
+                this.context.executeActionEvent,
+                locationLabel,
+                currentTile,
+                null,
+              )
+            : new CharacterAccessor(
+                characterId,
+                characterName,
+                inventoryId,
+                db,
+                this.pendingUpdates,
+                this.characterAttributesCache,
+                this.attributesCache,
+                this.actionsCache,
+                this.itemsCache,
+                inventoryItems,
+                archetypeNames,
+                null,
+                this.context.executeActionEvent,
+                locationLabel,
+                currentTile,
+                null,
+              );
+      characters.push(accessor);
+    }
+
+    this.locationCharactersData.set(locationId, {
+      locationLabel,
+      locationTiles,
+      characters,
+      campaignCharacters,
+    });
   }
 
   /**
@@ -195,7 +441,8 @@ export class ScriptRunner {
       const match =
         key.startsWith('characterAttribute:') ||
         key.startsWith('characterAttributeMax:') ||
-        key.startsWith('characterAttributeMin:');
+        key.startsWith('characterAttributeMin:') ||
+        key.startsWith('characterAttributeOptions:');
       if (match) {
         const characterAttributeId = key.split(':')[1];
         const charAttr = this.characterAttributesCache.get(characterAttributeId);
@@ -223,6 +470,8 @@ export class ScriptRunner {
         await db.characterAttributes.update(id, { max: value });
       } else if (type === 'characterAttributeMin') {
         await db.characterAttributes.update(id, { min: value });
+      } else if (type === 'characterAttributeOptions') {
+        await db.characterAttributes.update(id, { options: value });
       } else if (type === 'inventoryAdd') {
         const items = value as InventoryItem[];
         for (const item of items) {
@@ -236,9 +485,7 @@ export class ScriptRunner {
       } else if (type === 'archetypeAdd') {
         const entries = value as { characterId: string; archetypeName: string }[];
         for (const { characterId, archetypeName } of entries) {
-          const archetype = await db.archetypes
-            .where({ rulesetId, name: archetypeName })
-            .first();
+          const archetype = await db.archetypes.where({ rulesetId, name: archetypeName }).first();
           if (!archetype) continue;
           const existing = await db.characterArchetypes
             .where('[characterId+archetypeId]')
@@ -246,11 +493,12 @@ export class ScriptRunner {
             .first();
           if (existing) continue;
           const maxOrder =
-            (await db.characterArchetypes
-              .where('characterId')
-              .equals(characterId)
-              .sortBy('loadOrder'))
-              .pop()?.loadOrder ?? -1;
+            (
+              await db.characterArchetypes
+                .where('characterId')
+                .equals(characterId)
+                .sortBy('loadOrder')
+            ).pop()?.loadOrder ?? -1;
           const now = new Date().toISOString();
           await db.characterArchetypes.add({
             id: crypto.randomUUID(),
@@ -268,9 +516,7 @@ export class ScriptRunner {
       } else if (type === 'archetypeRemove') {
         const entries = value as { characterId: string; archetypeName: string }[];
         for (const { characterId, archetypeName } of entries) {
-          const archetype = await db.archetypes
-            .where({ rulesetId, name: archetypeName })
-            .first();
+          const archetype = await db.archetypes.where({ rulesetId, name: archetypeName }).first();
           if (!archetype) continue;
           const ca = await db.characterArchetypes
             .where('[characterId+archetypeId]')
@@ -296,41 +542,80 @@ export class ScriptRunner {
   private setupAccessors(): void {
     const { ownerId, targetId, rulesetId, db } = this.context;
 
-    // Create Owner accessor
-    const owner = new OwnerAccessor(
-      ownerId,
-      this.ownerCharacterName,
-      this.ownerInventoryId,
-      db,
-      this.pendingUpdates,
-      this.characterAttributesCache,
-      this.attributesCache,
-      this.actionsCache,
-      this.itemsCache,
-      this.ownerInventoryItems,
-      this.ownerArchetypeNames,
-      targetId ?? null,
-      this.context.executeActionEvent,
-    );
+    const ownerLocationData = this.ownerCurrentLocationId
+      ? this.locationCharactersData.get(this.ownerCurrentLocationId)
+      : undefined;
+    const ownerFromList = ownerLocationData?.characters.find((c) => c.characterId === ownerId) as
+      | OwnerAccessor
+      | undefined;
+    const targetFromList = ownerLocationData?.characters.find((c) => c.characterId === targetId);
 
-    // Create Target accessor (null if no target)
-    let target: TargetAccessor | null = null;
-    if (targetId) {
-      target = new TargetAccessor(
-        targetId,
-        this.targetCharacterName,
-        this.targetInventoryId,
+    let owner: OwnerAccessor;
+    if (ownerFromList) {
+      owner = ownerFromList;
+      // Build Owner.Tile with character/characters and set on owner
+      const idx = ownerLocationData!.characters.findIndex((c) => c.characterId === ownerId);
+      const campaignChars = ownerLocationData!.campaignCharacters;
+      const ownerTileId = idx >= 0 ? campaignChars[idx]?.currentTileId ?? null : null;
+      const ownerTileCoords = this.ownerCurrentTile ?? { x: 0, y: 0 };
+      const characterOnTile =
+        ownerTileId != null
+          ? ownerLocationData!.characters[
+              ownerLocationData!.campaignCharacters.findIndex((cc) => cc.currentTileId === ownerTileId)
+            ]
+          : undefined;
+      const tileWithContext = new TileProxy(
+        ownerTileCoords.x,
+        ownerTileCoords.y,
+        characterOnTile,
+        ownerLocationData!.characters,
+      );
+      owner.setTileWithContext(tileWithContext);
+    } else {
+      owner = new OwnerAccessor(
+        ownerId,
+        this.ownerCharacterName,
+        this.ownerInventoryId,
         db,
         this.pendingUpdates,
         this.characterAttributesCache,
         this.attributesCache,
         this.actionsCache,
         this.itemsCache,
-        this.targetInventoryItems ?? [],
-        this.targetArchetypeNames,
-        null, // Target's Action() has no second target
+        this.ownerInventoryItems,
+        this.ownerArchetypeNames,
+        targetId ?? null,
         this.context.executeActionEvent,
+        this.ownerLocationName,
+        this.ownerCurrentTile,
+        null,
       );
+    }
+
+    let target: TargetAccessor | null = null;
+    if (targetId) {
+      if (targetFromList && targetFromList instanceof TargetAccessor) {
+        target = targetFromList;
+      } else {
+        target = new TargetAccessor(
+          targetId,
+          this.targetCharacterName,
+          this.targetInventoryId,
+          db,
+          this.pendingUpdates,
+          this.characterAttributesCache,
+          this.attributesCache,
+          this.actionsCache,
+          this.itemsCache,
+          this.targetInventoryItems ?? [],
+          this.targetArchetypeNames,
+          null,
+          this.context.executeActionEvent,
+          '',
+          null,
+          null,
+        );
+      }
     }
 
     // Create Ruleset accessor
@@ -346,7 +631,8 @@ export class ScriptRunner {
     this.evaluator.globalEnv.define('Target', target);
     this.evaluator.globalEnv.define('Ruleset', ruleset);
 
-    // 'Self' refers to the entity this script is attached to (attribute, action, or item)
+    // 'Self' refers to the entity this script is attached to (attribute, action, or item).
+    // location and tile scripts do not have a Self binding (no Location/Tile accessor yet).
     if (this.context.entityType === 'attribute' && this.context.entityId) {
       const attribute = this.attributesCache.get(this.context.entityId);
       if (attribute) {
@@ -365,7 +651,40 @@ export class ScriptRunner {
           this.evaluator.globalEnv.define('Self', itemRef);
         }
       }
+    } else if (
+      this.context.entityType === 'campaignEventLocation' &&
+      this.campaignEventLocationCache
+    ) {
+      // Self = the CampaignEventLocation (id, campaignEventId, locationId, tileId) with Tile (character/characters) and destroy()
+      const loc = this.campaignEventLocationCache;
+      const db = this.context.db;
+      const tileCoords = this.campaignEventLocationTile ?? { x: 0, y: 0 };
+      const eventLocationData = loc.locationId
+        ? this.locationCharactersData.get(loc.locationId)
+        : undefined;
+      const eventCharacters = eventLocationData?.characters ?? [];
+      const eventCampaignChars = eventLocationData?.campaignCharacters ?? [];
+      const characterOnEventTile =
+        loc.tileId != null
+          ? eventCharacters[
+              eventCampaignChars.findIndex((cc) => cc.currentTileId === loc.tileId)
+            ]
+          : undefined;
+      const selfTile = new TileProxy(
+        tileCoords.x,
+        tileCoords.y,
+        characterOnEventTile,
+        eventCharacters,
+      );
+      this.evaluator.globalEnv.define('Self', {
+        ...loc,
+        Tile: selfTile,
+        destroy: async () => {
+          await db.campaignEventLocations.delete(loc.id);
+        },
+      });
     }
+    // entityType 'location' | 'tile' | 'archetype' | 'global' (or unknown): no Self
   }
 
   /**

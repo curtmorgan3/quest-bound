@@ -5,7 +5,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 
-export const useAssets = (_rulesetId?: string | null) => {
+export const useAssets = (_rulesetId?: string | null, worldId?: string | null) => {
   const { rulesetId: paramRulesetId } = useParams();
   // Explicitly ignore active ruleset if null is provided
   const rulesetId = _rulesetId === null ? undefined : (_rulesetId ?? paramRulesetId);
@@ -66,6 +66,7 @@ export const useAssets = (_rulesetId?: string | null) => {
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
             rulesetId: targetRulesetId,
+            worldId,
           });
 
           resolve(id);

@@ -1,10 +1,10 @@
-import type { Script } from '@/types';
+import type { ScriptEntityType } from '@/types';
 
 /**
  * Default source code templates for new scripts, keyed by entity type.
  * Used to prepopulate the editor when creating a new script.
  */
-export const SCRIPT_TEMPLATES: Record<Script['entityType'], string> = {
+export const SCRIPT_TEMPLATES: Record<ScriptEntityType, string> = {
   attribute: `
 // Attribute scripts run on load and when subscribed attributes change
 // Subscribe to other attributes to trigger this script when they change
@@ -65,12 +65,15 @@ on_remove():
 `,
   characterLoader: `
 // Character Loader runs once per character at creation, before attribute scripts and archetype on_add.
-// Only one Character Loader script per ruleset. Owner and archetypes are available.
+// Only one Character Loader script is allowed per ruleset. Owner.archetypes are available.
 
 // Example: set initial values based on archetypes
 if Owner.hasArchetype('Warrior'):
     Owner.Attribute('Health').set(12)
 else:
     Owner.Attribute('Health').set(8)
+`,
+  campaignEvent: `
+// campaign event script
 `,
 };

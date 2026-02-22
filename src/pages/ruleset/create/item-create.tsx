@@ -2,6 +2,7 @@ import { ImageUpload, Input, Label } from '@/components';
 import { useAssets } from '@/lib/compass-api';
 import { Boxes, Drumstick, PackageOpen, Shirt } from 'lucide-react';
 import { type Dispatch, type SetStateAction } from 'react';
+import { useParams } from 'react-router-dom';
 
 interface ItemCreateProps {
   isContainer: boolean;
@@ -13,6 +14,9 @@ interface ItemCreateProps {
   defaultQuantity: number;
   inventoryWidth: number;
   inventoryHeight: number;
+  mapWidth: number | undefined;
+  mapHeight: number | undefined;
+  sprites: string[];
   image: string | null;
   assetId: string | null;
   setIsContainer: Dispatch<SetStateAction<boolean>>;
@@ -24,6 +28,9 @@ interface ItemCreateProps {
   setDefaultQuantity: Dispatch<SetStateAction<number>>;
   setInventoryWidth: Dispatch<SetStateAction<number>>;
   setInventoryHeight: Dispatch<SetStateAction<number>>;
+  setMapWidth: Dispatch<SetStateAction<number | undefined>>;
+  setMapHeight: Dispatch<SetStateAction<number | undefined>>;
+  setSprites: Dispatch<SetStateAction<string[]>>;
   setImage: Dispatch<SetStateAction<string | null>>;
   setAssetId: Dispatch<SetStateAction<string | null>>;
 }
@@ -38,6 +45,9 @@ export const ItemCreate = ({
   defaultQuantity,
   inventoryWidth,
   inventoryHeight,
+  mapWidth,
+  mapHeight,
+  sprites,
   image,
   assetId,
   setIsContainer,
@@ -49,10 +59,15 @@ export const ItemCreate = ({
   setDefaultQuantity,
   setInventoryWidth,
   setInventoryHeight,
+  setMapWidth,
+  setMapHeight,
+  setSprites,
   setImage,
   setAssetId,
 }: ItemCreateProps) => {
+  const { rulesetId } = useParams();
   const { assets, deleteAsset } = useAssets();
+  const spriteAssetId = sprites[0] ?? null;
 
   const getImageFromAssetId = (id: string | null) => {
     if (!id) return null;
@@ -82,8 +97,27 @@ export const ItemCreate = ({
     setImage(null);
   };
 
+  const handleSpriteUpload = (uploadedAssetId: string) => {
+    setSprites([uploadedAssetId]);
+  };
+
+  const handleSpriteSetUrl = (url: string) => {
+    setSprites([url]);
+  };
+
+  const handleSpriteRemove = async () => {
+    if (spriteAssetId && !spriteAssetId.startsWith('http')) {
+      await deleteAsset(spriteAssetId);
+    }
+    setSprites([]);
+  };
+
   // Use the image from props (edit mode) or look it up from assets (create mode)
   const displayImage = image || getImageFromAssetId(assetId);
+  const displaySpriteImage =
+    (sprites[0]?.startsWith('http://') || sprites[0]?.startsWith('https://')
+      ? sprites[0]
+      : getImageFromAssetId(spriteAssetId)) ?? null;
 
   return (
     <div className='flex flex-col gap-6'>
@@ -185,6 +219,53 @@ export const ItemCreate = ({
             />
           </div>
         </div>
+      </div>
+
+      <div className='flex flex-col gap-2'>
+        <Label className='text-muted-foreground'>Map Size (tiles)</Label>
+        <div className='flex gap-4'>
+          <div className='flex flex-col gap-4 w-full'>
+            <Label>Width</Label>
+            <Input
+              type='number'
+              min={1}
+              placeholder='—'
+              value={mapWidth ?? ''}
+              onChange={(e) => {
+                const v = e.target.value;
+                setMapWidth(v === '' ? undefined : parseInt(v, 10) || 1);
+              }}
+            />
+          </div>
+          <div className='flex flex-col gap-4 w-full'>
+            <Label>Height</Label>
+            <Input
+              type='number'
+              min={1}
+              placeholder='—'
+              value={mapHeight ?? ''}
+              onChange={(e) => {
+                const v = e.target.value;
+                setMapHeight(v === '' ? undefined : parseInt(v, 10) || 1);
+              }}
+            />
+          </div>
+        </div>
+      </div>
+
+      <div className='flex flex-col gap-2'>
+        <Label className='text-muted-foreground'>Map sprite</Label>
+        <p className='text-sm text-muted-foreground'>
+          Optional image shown when this item is placed on the map.
+        </p>
+        <ImageUpload
+          image={displaySpriteImage}
+          alt='Item map sprite'
+          rulesetId={rulesetId}
+          onUpload={handleSpriteUpload}
+          onRemove={handleSpriteRemove}
+          onSetUrl={handleSpriteSetUrl}
+        />
       </div>
     </div>
   );

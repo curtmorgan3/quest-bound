@@ -1,0 +1,70 @@
+import {
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarTrigger,
+  useSidebar,
+} from '@/components/ui/sidebar';
+import { Calendar, FileCode, Map, Newspaper } from 'lucide-react';
+import { Link, useLocation, useParams } from 'react-router-dom';
+
+export function CampaignSidebar() {
+  const { open } = useSidebar();
+  const { campaignId } = useParams<{ campaignId?: string }>();
+  const location = useLocation();
+
+  const isCampaignActive =
+    location.pathname === '/campaigns' || /^\/campaigns\/[^/]+$/.test(location.pathname);
+
+  const items = [
+    { title: 'Campaign', url: `/campaigns/${campaignId}`, icon: Map },
+    { title: 'Documents', url: `/campaigns/${campaignId}/documents`, icon: Newspaper },
+    { title: 'Events', url: `/campaigns/${campaignId}/events`, icon: Calendar },
+    { title: 'Scripts', url: `/campaigns/${campaignId}/scripts`, icon: FileCode },
+  ];
+
+  return (
+    <SidebarGroup>
+      <div className='flex items-center justify-left'>
+        <SidebarGroupLabel>Campaigns</SidebarGroupLabel>
+        {open && (
+          <SidebarTrigger onClick={() => localStorage.setItem('qb.sidebarCollapsed', 'true')} />
+        )}
+      </div>
+      <SidebarGroupContent>
+        <SidebarMenu>
+          {!open && (
+            <SidebarMenuItem>
+              <SidebarMenuButton asChild>
+                <SidebarTrigger
+                  onClick={() => localStorage.setItem('qb.sidebarCollapsed', 'false')}
+                />
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          )}
+          {items.map((item) => {
+            const isActive =
+              item.url === `/campaigns/${campaignId}`
+                ? isCampaignActive
+                : item.title === 'Documents'
+                  ? location.pathname === item.url || location.pathname.startsWith(`${item.url}/`)
+                  : location.pathname.includes(item.title.toLowerCase());
+            return (
+              <SidebarMenuItem key={item.title} className={isActive ? 'text-primary' : ''}>
+                <SidebarMenuButton asChild>
+                  <Link to={item.url} data-testid={`nav-${item.title.toLowerCase()}`}>
+                    <item.icon />
+                    <span>{item.title}</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            );
+          })}
+        </SidebarMenu>
+      </SidebarGroupContent>
+    </SidebarGroup>
+  );
+}

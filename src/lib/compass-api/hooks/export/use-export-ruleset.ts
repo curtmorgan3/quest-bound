@@ -64,7 +64,14 @@ export const useExportRuleset = (rulesetId: string) => {
   );
 
   const documents = useLiveQuery(
-    () => (rulesetId ? db.documents.where('rulesetId').equals(rulesetId).toArray() : []),
+    () =>
+      rulesetId
+        ? db.documents
+            .where('rulesetId')
+            .equals(rulesetId)
+            .filter((d) => d.worldId == null && d.campaignId == null)
+            .toArray()
+        : [],
     [rulesetId],
   );
 

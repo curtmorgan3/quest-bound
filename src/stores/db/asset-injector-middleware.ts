@@ -1,26 +1,50 @@
 import type { DBCore, Middleware } from 'dexie';
 import { memoizedAssets } from './memoization-cache';
 
+function resolveAssetUrl(assetId: string | null | undefined): string | undefined {
+  if (!assetId) return undefined;
+  try {
+    return memoizedAssets[assetId];
+  } catch {
+    return undefined;
+  }
+}
+
 function injectImageData(record: any) {
-  if (record?.assetUrl) {
-    return {
-      ...record,
-      image: record.assetUrl,
+  if (!record) return record;
+
+  let next = record;
+
+  if (record.assetUrl) {
+    next = { ...next, image: record.assetUrl };
+  } else if (record.assetId) {
+    const asset = resolveAssetUrl(record.assetId);
+    if (asset) next = { ...next, image: asset };
+  }
+
+  if (record.backgroundAssetId) {
+    const backgroundImage = resolveAssetUrl(record.backgroundAssetId);
+    if (backgroundImage) next = { ...next, backgroundImage };
+  }
+
+  if (record.mapAssetId) {
+    const mapAsset = resolveAssetUrl(record.mapAssetId);
+    if (mapAsset) next = { ...next, mapAsset };
+  }
+
+  if (record.sprites && Array.isArray(record.sprites)) {
+    next = {
+      ...next,
+      sprites: record.sprites.map((s: string) => {
+        if (typeof s !== 'string') return s;
+        if (s.startsWith('http://') || s.startsWith('https://')) return s;
+        const data = resolveAssetUrl(s);
+        return data ?? s;
+      }),
     };
   }
 
-  if (!record?.assetId) return record;
-
-  try {
-    const asset = memoizedAssets[record.assetId];
-    if (asset) {
-      return { ...record, image: asset };
-    }
-  } catch (error) {
-    console.warn(`Failed to load asset for asset ${record.assetId}:`, error);
-  }
-
-  return record;
+  return next;
 }
 
 export const assetInjectorMiddleware: Middleware<DBCore> = {
@@ -33,7 +57,7 @@ export const assetInjectorMiddleware: Middleware<DBCore> = {
         const downlevelTable = downlevelDatabase.table(tableName);
 
         if (
-            [
+          [
             'users',
             'rulesets',
             'characters',
@@ -44,6 +68,9 @@ export const assetInjectorMiddleware: Middleware<DBCore> = {
             'documents',
             'attributes',
             'pages',
+            'worlds',
+            'locations',
+            'tilemaps',
           ].indexOf(tableName) === -1
         ) {
           return downlevelTable;
@@ -53,6 +80,11 @@ export const assetInjectorMiddleware: Middleware<DBCore> = {
           ...downlevelTable,
           get: (req) => {
             return downlevelTable.get(req).then(injectImageData);
+          },
+          getMany: (req) => {
+            return downlevelTable.getMany(req).then((results) =>
+              results.map(injectImageData),
+            );
           },
           query: (req) => {
             return downlevelTable.query(req).then(async (originalResult) => {

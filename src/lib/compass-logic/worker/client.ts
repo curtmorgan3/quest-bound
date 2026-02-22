@@ -44,6 +44,7 @@ export interface AttributeChangeOptions {
   attributeId: string;
   characterId: string;
   rulesetId: string;
+  campaignId?: string;
   useTransaction?: boolean;
   maxExecutions?: number;
   maxPerScript?: number;
@@ -367,6 +368,7 @@ export class QBScriptClient {
       characterId: options.characterId,
       rulesetId: options.rulesetId,
       requestId,
+      campaignId: options.campaignId,
       options: {
         useTransaction: options.useTransaction,
         maxExecutions: options.maxExecutions,
@@ -444,6 +446,7 @@ export class QBScriptClient {
     eventType: 'on_activate' | 'on_deactivate',
     roll?: RollFn,
     timeout = 10000,
+    campaignId?: string,
   ): Promise<{
     value: any;
     announceMessages: string[];
@@ -456,7 +459,7 @@ export class QBScriptClient {
       return await this.sendSignal(
         {
           type: 'EXECUTE_ACTION_EVENT',
-          payload: { actionId, characterId, targetId, eventType, requestId },
+          payload: { actionId, characterId, targetId, eventType, requestId, campaignId },
         },
         requestId,
         timeout,
@@ -476,6 +479,7 @@ export class QBScriptClient {
     eventType: string,
     roll?: RollFn,
     timeout = 10000,
+    campaignId?: string,
   ): Promise<{
     value: any;
     announceMessages: string[];
@@ -488,7 +492,7 @@ export class QBScriptClient {
       return await this.sendSignal(
         {
           type: 'EXECUTE_ITEM_EVENT',
-          payload: { itemId, characterId, eventType, requestId },
+          payload: { itemId, characterId, eventType, requestId, campaignId },
         },
         requestId,
         timeout,
@@ -508,6 +512,7 @@ export class QBScriptClient {
     eventType: 'on_add' | 'on_remove',
     roll?: RollFn,
     timeout = 10000,
+    campaignId?: string,
   ): Promise<{
     value: any;
     announceMessages: string[];
@@ -520,7 +525,44 @@ export class QBScriptClient {
       return await this.sendSignal(
         {
           type: 'EXECUTE_ARCHETYPE_EVENT',
-          payload: { archetypeId, characterId, eventType, requestId },
+          payload: { archetypeId, characterId, eventType, requestId, campaignId },
+        },
+        requestId,
+        timeout,
+      );
+    } finally {
+      this.pendingRollHandlers.delete(requestId);
+    }
+  }
+
+  /**
+   * Execute a campaign event script (on_enter, on_leave) when a character moves onto/off a tile.
+   * Pass the CampaignEventLocation id so Self refers to that location in the script.
+   */
+  async executeCampaignEventEvent(
+    campaignEventLocationId: string,
+    characterId: string,
+    eventType: 'on_enter' | 'on_leave' | 'on_activate',
+    roll?: RollFn,
+    timeout = 10000,
+  ): Promise<{
+    value: any;
+    announceMessages: string[];
+    logMessages: any[][];
+    executionTime: number;
+  }> {
+    const requestId = generateRequestId();
+    this.pendingRollHandlers.set(requestId, roll ?? defaultScriptDiceRoller);
+    try {
+      return await this.sendSignal(
+        {
+          type: 'EXECUTE_CAMPAIGN_EVENT_EVENT',
+          payload: {
+            campaignEventLocationId,
+            characterId,
+            eventType,
+            requestId,
+          },
         },
         requestId,
         timeout,

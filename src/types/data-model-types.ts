@@ -21,6 +21,8 @@ export type Asset = BaseDetails & {
   type: string; // MIME type
   filename: string;
   rulesetId: string | null; // Nullable for user assets
+  /** Optional world for tracking/exporting worlds. */
+  worldId?: string | null;
   directory?: string;
   /** Module origin: ruleset id, source entity id, and module name. */
   moduleId?: string;
@@ -77,6 +79,7 @@ export type Character = BaseDetails & {
   assetId: string | null;
   image: string | null;
   isTestCharacter: boolean;
+  isNpc?: boolean;
   componentData: Record<string, any>;
   pinnedSidebarDocuments: string[];
   pinnedSidebarCharts: string[];
@@ -88,6 +91,8 @@ export type Character = BaseDetails & {
   moduleId?: string;
   moduleEntityId?: string;
   moduleName?: string;
+  /** Asset IDs for map sprites (stacked by z-index). */
+  sprites?: string[];
 };
 
 export type CharacterAttribute = Attribute & {
@@ -107,6 +112,10 @@ export type Archetype = BaseDetails & {
   testCharacterId: string;
   isDefault: boolean;
   loadOrder: number;
+  mapHeight?: number;
+  mapWidth?: number;
+  /** Asset IDs or URLs for map sprites (e.g. single sprite for campaign map). */
+  sprites?: string[];
   /** Module origin: ruleset id, source entity id, and module name. */
   moduleId?: string;
   moduleEntityId?: string;
@@ -206,7 +215,14 @@ export type DiceRoll = BaseDetails & {
 };
 
 export type Document = BaseDetails & {
-  rulesetId: string;
+  /** When set, document belongs to a ruleset (ruleset-scoped). Omitted when document belongs to a world or campaign. */
+  rulesetId?: string;
+  /** When set, document belongs to a world (and optionally a location). Mutually exclusive with campaign usage. */
+  worldId?: string | null;
+  /** When set with worldId, document is scoped to this location within the world. When set with campaignId, document is scoped to this location within the campaign. */
+  locationId?: string | null;
+  /** When set, document belongs to a campaign (and has locationId; no worldId). */
+  campaignId?: string | null;
   title: string;
   description: string;
   category?: string;
@@ -248,8 +264,12 @@ export type Item = BaseDetails & {
   inventoryHeight: number;
   assetId?: string | null;
   image?: string | null;
-  scriptId?: string | null; // NEW: Associated script
-  customProperties?: Record<string, string | number | boolean>; // NEW: Custom properties for scripts
+  scriptId?: string | null;
+  customProperties?: Record<string, string | number | boolean>;
+  mapHeight?: number;
+  mapWidth?: number;
+  /** Asset IDs or urls for map sprites (stacked by z-index). */
+  sprites?: string[];
   /** Module origin: ruleset id, source entity id, and module name. */
   moduleId?: string;
   moduleEntityId?: string;
@@ -318,15 +338,26 @@ export type Window = BaseDetails & {
   moduleName?: string;
 };
 
+export type ScriptEntityType =
+  | 'attribute'
+  | 'action'
+  | 'item'
+  | 'archetype'
+  | 'global'
+  | 'characterLoader'
+  | 'campaignEvent';
+
 export type Script = BaseDetails & {
   rulesetId: string; // Which ruleset this script belongs to
   name: string; // Script name (e.g., "hit_points", "cast_fireball")
   sourceCode: string; // Full QBScript source code
-  entityType: 'attribute' | 'action' | 'item' | 'archetype' | 'global' | 'characterLoader';
+  entityType: ScriptEntityType;
   entityId: string | null; // ID of associated entity (null for global and characterLoader scripts)
   isGlobal: boolean; // Whether this is a global utility script
   enabled: boolean; // Allow disabling scripts without deleting
   category?: string; // Optional category for grouping scripts
+  /** Optional world; when set, script is world-specific and hidden from ruleset-level script list. */
+  campaignId?: string;
   /** Module origin: ruleset id, source entity id, and module name. */
   moduleId?: string;
   moduleEntityId?: string;
@@ -356,8 +387,125 @@ export type ScriptLog = BaseDetails & {
 export type DependencyGraphNode = BaseDetails & {
   rulesetId: string; // Which ruleset this node belongs to
   scriptId: string; // Script that this node represents
-  entityType: 'attribute' | 'action' | 'item' | 'archetype' | 'global' | 'characterLoader';
+  entityType: ScriptEntityType;
   entityId: string | null; // ID of associated entity
   dependencies: string[]; // Array of attribute IDs this script depends on
   dependents: string[]; // Array of script IDs that depend on this script's entity
+};
+
+// --- Worlds & Locations (not a DB table; stored inside Location.tiles) ---
+export interface TileData {
+  id: string;
+  /** Optional for placeholder cells (no tileset); used for entity placement and isPassable. */
+  tileId?: string;
+  x: number;
+  y: number;
+  /** Layer order; higher values draw on top. Default 0 when omitted. */
+  zIndex?: number;
+  isPassable: boolean;
+  actionId?: string;
+}
+
+export type World = BaseDetails & {
+  label: string;
+  description?: string;
+  assetId?: string | null;
+  image?: string | null;
+  /** @deprecated Legacy: may still exist in DB after migration; do not set on new worlds. Use Campaign for ruleset–world association. */
+  rulesetId?: string;
+};
+
+export type Tilemap = BaseDetails & {
+  label?: string;
+  worldId: string;
+  assetId: string;
+  /** Resolved tilemap image URL (injected at read from DB). */
+  image?: string | null;
+  tileHeight: number;
+  tileWidth: number;
+};
+
+export type Tile = BaseDetails & {
+  tilemapId?: string;
+  tileX?: number;
+  tileY?: number;
+};
+
+export type Location = BaseDetails & {
+  label: string;
+  worldId: string;
+  nodeX: number;
+  nodeY: number;
+  nodeWidth: number;
+  nodeHeight: number;
+  parentLocationId?: string | null;
+  gridWidth: number;
+  gridHeight: number;
+  /** When true, this location has a tile map (grid) and can be opened in the location editor. */
+  hasMap?: boolean;
+  /** Pixel size (width and height) for rendering each tile in the location editor. */
+  tileRenderSize?: number;
+  tiles: TileData[];
+  /** Stacking order of the node on the canvas; higher values draw on top. */
+  nodeZIndex?: number;
+  /** Whether to show the label on the node. */
+  labelVisible?: boolean;
+  /** CSS background color for the node. */
+  backgroundColor?: string | null;
+  /** Opacity 0–1 for the node fill and for the background image when present. */
+  opacity?: number;
+  /** Asset id for node background image. */
+  backgroundAssetId?: string | null;
+  /** Resolved background image URL (injected at read from DB). */
+  backgroundImage?: string | null;
+  /** CSS background-size: cover, contain, auto, etc. */
+  backgroundSize?: string | null;
+  /** CSS background-position: center, top, left, etc. */
+  backgroundPosition?: string | null;
+  /** Optional flat map image asset; when set, location-viewer shows this image instead of the tile grid. */
+  mapAssetId?: string | null;
+  /** Resolved map image URL (injected at read from DB). */
+  mapAsset?: string | null;
+  // Large images are scaled down. Tiles selected in the location editor are relative
+  // to this size.
+  scaledMapHeight?: number;
+  scaledMapWidth?: number;
+};
+
+// --- Campaign (joins ruleset + world); placement is campaign-scoped ---
+export type Campaign = BaseDetails & {
+  label?: string;
+  rulesetId: string;
+  worldId: string;
+};
+
+export type CampaignCharacter = BaseDetails & {
+  characterId: string;
+  campaignId: string;
+  currentLocationId?: string | null;
+  currentTileId?: string | null;
+  mapHeight?: number;
+  mapWidth?: number;
+};
+
+export type CampaignItem = BaseDetails & {
+  itemId: string;
+  campaignId: string;
+  currentLocationId?: string | null;
+  currentTileId?: string | null;
+  mapHeight?: number;
+  mapWidth?: number;
+};
+
+export type CampaignEvent = BaseDetails & {
+  label: string;
+  campaignId: string;
+  scriptId?: string | null;
+  category?: string;
+};
+
+export type CampaignEventLocation = BaseDetails & {
+  campaignEventId: string;
+  locationId: string;
+  tileId?: string | null;
 };

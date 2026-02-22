@@ -1,5 +1,5 @@
 import type { DB } from '@/stores/db/hooks/types';
-import type { DependencyGraphNode } from '@/types';
+import type { DependencyGraphNode, ScriptEntityType } from '@/types';
 import { analyzeScript } from './script-analyzer';
 
 /**
@@ -7,7 +7,7 @@ import { analyzeScript } from './script-analyzer';
  */
 export interface GraphNode {
   scriptId: string;
-  entityType: 'attribute' | 'action' | 'item' | 'archetype' | 'global' | 'characterLoader';
+  entityType: ScriptEntityType;
   entityId: string | null;
   dependencies: Set<string>; // Attribute IDs this script depends on
   dependents: Set<string>; // Script IDs that depend on this script's entity

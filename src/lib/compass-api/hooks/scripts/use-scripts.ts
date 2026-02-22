@@ -1,13 +1,11 @@
 import { useErrorHandler } from '@/hooks';
 import { db, useApiLoadingStore } from '@/stores';
-import type { Script } from '@/types';
+import type { Script, ScriptEntityType } from '@/types';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useActiveRuleset } from '../rulesets/use-active-ruleset';
 
-function getEntityTable(
-  entityType: 'attribute' | 'action' | 'item' | 'archetype' | 'global' | 'characterLoader',
-) {
+function getEntityTable(entityType: ScriptEntityType) {
   if (entityType === 'global' || entityType === 'characterLoader') return;
   return entityType === 'attribute'
     ? db.attributes
@@ -15,21 +13,27 @@ function getEntityTable(
       ? db.actions
       : entityType === 'item'
         ? db.items
-        : db.archetypes;
+        : entityType === 'campaignEvent'
+          ? db.campaignEvents
+          : db.archetypes;
 }
 
-export const useScripts = () => {
+export const useScripts = (campaignId?: string) => {
   const { activeRuleset } = useActiveRuleset();
   const { handleError } = useErrorHandler();
 
-  const scripts = useLiveQuery(
-    () =>
-      db.scripts
-        .where('rulesetId')
-        .equals(activeRuleset?.id ?? 0)
-        .toArray(),
-    [activeRuleset],
-  );
+  const rulesetId = activeRuleset?.id;
+
+  const scripts = useLiveQuery(async () => {
+    if (!rulesetId) return [];
+    const list = await db.scripts.where('rulesetId').equals(rulesetId).toArray();
+    if (campaignId != null) {
+      // World scripts index: only show scripts for this world
+      return list.filter((s) => s.campaignId === campaignId);
+    }
+    // Ruleset-level scripts index: only show scripts without a world
+    return list.filter((s) => s.campaignId == null);
+  }, [rulesetId, campaignId]);
 
   /** True while the initial query or a dependency-driven re-query is in flight. */
   const isLoading = scripts === undefined;
@@ -39,27 +43,31 @@ export const useScripts = () => {
   }, [isLoading]);
 
   const createScript = async (data: Partial<Script>) => {
-    if (!activeRuleset) return;
+    const effectiveRulesetId = rulesetId ?? activeRuleset?.id;
+    if (!effectiveRulesetId) return;
     const now = new Date().toISOString();
     try {
       const entityType = data.entityType ?? 'attribute';
       const payload = {
         ...data,
         entityType,
-        entityId: entityType === 'global' || entityType === 'characterLoader' ? null : data.entityId,
+        entityId:
+          entityType === 'global' || entityType === 'characterLoader' ? null : data.entityId,
         isGlobal: entityType === 'global',
         id: undefined as string | undefined,
-        rulesetId: activeRuleset.id,
+        rulesetId: activeRuleset?.id,
         createdAt: now,
         updatedAt: now,
       };
 
       if (entityType === 'characterLoader') {
         const existing = await db.scripts
-          .where({ rulesetId: activeRuleset.id, entityType: 'characterLoader' })
+          .where({ rulesetId: activeRuleset?.id, entityType: 'characterLoader' })
           .first();
         if (existing) {
-          throw new Error('This ruleset already has a Character Loader script. Only one is allowed.');
+          throw new Error(
+            'This ruleset already has a Character Loader script. Only one is allowed.',
+          );
         }
       }
 
@@ -113,7 +121,9 @@ export const useScripts = () => {
           .where({ rulesetId: existing.rulesetId, entityType: 'characterLoader' })
           .first();
         if (other && other.id !== id) {
-          throw new Error('This ruleset already has a Character Loader script. Only one is allowed.');
+          throw new Error(
+            'This ruleset already has a Character Loader script. Only one is allowed.',
+          );
         }
       }
 
@@ -203,6 +213,7 @@ export const useScripts = () => {
     scripts: scripts ?? [],
     globalScripts,
     isLoading,
+    rulesetId: rulesetId ?? undefined,
     createScript,
     updateScript,
     deleteScript,

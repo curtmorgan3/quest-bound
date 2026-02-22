@@ -19,6 +19,7 @@ export type MainToWorkerSignal =
   | ExecuteActionEventSignal
   | ExecuteItemEventSignal
   | ExecuteArchetypeEventSignal
+  | ExecuteCampaignEventEventSignal
   | RollResponseSignal
   | ClearGraphSignal;
 
@@ -77,6 +78,7 @@ export interface ExecuteActionEventSignal {
     targetId: string | null;
     eventType: 'on_activate' | 'on_deactivate';
     requestId: string;
+    campaignId?: string;
   };
 }
 
@@ -87,6 +89,7 @@ export interface ExecuteItemEventSignal {
     characterId: string;
     eventType: string;
     requestId: string;
+    campaignId?: string;
   };
 }
 
@@ -97,6 +100,18 @@ export interface ExecuteArchetypeEventSignal {
     archetypeId: string;
     characterId: string;
     eventType: 'on_add' | 'on_remove';
+    requestId: string;
+    campaignId?: string;
+  };
+}
+
+/** Runs a campaign event script handler (on_enter, on_leave, on_activate) when a character moves onto/off a tile or activates it. */
+export interface ExecuteCampaignEventEventSignal {
+  type: 'EXECUTE_CAMPAIGN_EVENT_EVENT';
+  payload: {
+    campaignEventLocationId: string;
+    characterId: string;
+    eventType: 'on_enter' | 'on_leave' | 'on_activate';
     requestId: string;
   };
 }
@@ -218,6 +233,7 @@ export interface AttributeChangedPayload {
   characterId: string;
   rulesetId: string;
   requestId: string;
+  campaignId?: string;
   options?: {
     useTransaction?: boolean;
     maxExecutions?: number;

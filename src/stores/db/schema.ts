@@ -7,14 +7,14 @@ export const dbSchema = {
   fonts: `${common}, rulesetId, label, data, moduleId`,
   attributes: `${common}, rulesetId, title, description, category, type, options, defaultValue, optionsChartRef, optionsChartColumnHeader, min, max, scriptId, moduleId`,
   actions: `${common}, rulesetId, title, description, category, scriptId, moduleId`,
-  items: `${common}, rulesetId, title, description, category, weight, defaultQuantity, stackSize, isContainer, isStorable, isEquippable, isConsumable, inventoryWidth, inventoryHeight, scriptId, moduleId`,
+  items: `${common}, rulesetId, title, description, category, weight, defaultQuantity, stackSize, isContainer, isStorable, isEquippable, isConsumable, inventoryWidth, inventoryHeight, scriptId, moduleId, sprites`,
   charts: `${common}, rulesetId, title, description, category, data, assetId, image, moduleId`,
-  documents: `${common}, rulesetId, title, description, category, assetId, image, pdfAssetId, pdfData, markdownData, moduleId`,
+  documents: `${common}, rulesetId, worldId, campaignId, title, description, category, assetId, image, pdfAssetId, pdfData, markdownData, moduleId`,
   windows: `${common}, rulesetId, title, category, moduleId`,
   pages: `${common}, label, category, moduleId`,
   components: `${common}, rulesetId, windowId, type, x, y, z, height, width, rotation, selected, assetId, assetUrl, groupId, attributeId, actionId, data, style`,
   characters: `${common}, rulesetId, userId, assetId, image, moduleId`,
-  archetypes: `${common}, rulesetId, name, description, assetId, image, scriptId, testCharacterId, isDefault, loadOrder, moduleId, [rulesetId+name]`,
+  archetypes: `${common}, rulesetId, name, description, assetId, image, scriptId, testCharacterId, isDefault, loadOrder, moduleId, sprites, [rulesetId+name]`,
   inventories: `${common}, rulesetId, characterId, title, category, type`,
   inventoryItems: `${common}, characterId, inventoryId, entityId, quantity`,
   rulesetPages: `${common}, rulesetId, pageId, [rulesetId+pageId]`,
@@ -28,7 +28,16 @@ export const dbSchema = {
   scriptErrors: `${common}, rulesetId, scriptId, characterId, timestamp`,
   scriptLogs: `${common}, rulesetId, scriptId, characterId, timestamp, [entityId+entityType]`,
   dependencyGraphNodes: `${common}, rulesetId, scriptId, entityType, entityId`,
+  worlds: `${common}, label, rulesetId, assetId, backgroundAssetId, backgroundOpacity, backgroundSize, backgroundPosition`,
+  tilemaps: `${common}, label, worldId, assetId, tileHeight, tileWidth`,
+  tiles: `${common}, tilemapId, tileX, tileY`,
+  locations: `${common}, label, worldId, nodeX, nodeY, nodeWidth, nodeHeight, parentLocationId, gridWidth, gridHeight, tiles, hasMap, tileRenderSize, labelVisible, backgroundColor, opacity, sides, backgroundAssetId, backgroundSize, backgroundPosition, mapAssetId, [worldId+parentLocationId]`,
+  campaigns: `${common}, label, rulesetId, worldId, [rulesetId], [worldId]`,
+  campaignCharacters: `${common}, characterId, campaignId, currentLocationId, currentTileId, [campaignId], [characterId], [campaignId+characterId]`,
+  campaignItems: `${common}, itemId, campaignId, currentLocationId, currentTileId, [campaignId]`,
+  campaignEvents: `${common}, label, campaignId, scriptId, category, [campaignId]`,
+  campaignEventLocations: `${common}, campaignEventId, locationId, tileId, [campaignEventId], [locationId]`,
 };
 
 // Increment on every schema change
-export const dbSchemaVersion = 33;
+export const dbSchemaVersion = 37;

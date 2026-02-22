@@ -23,6 +23,8 @@ export interface ReactiveExecutionOptions {
   executeActionEvent?: ExecuteActionEventFn;
   /** Optional roll function for script built-in roll(). */
   roll?: RollFn;
+  /** When set (e.g. in campaign play), enables Owner.location and other campaign character context. */
+  campaignId?: string;
 }
 
 /**
@@ -277,6 +279,7 @@ export class ReactiveExecutor {
         triggerType: 'attribute_change',
         entityType: script.entityType,
         entityId: script.entityId ?? undefined,
+        campaignId: options.campaignId,
         executeActionEvent: options.executeActionEvent,
         roll: options.roll,
       };

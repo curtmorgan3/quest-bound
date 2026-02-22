@@ -161,6 +161,13 @@ damage = roll('1d8');
 | `min(a, b)` | Smaller of two values                    |
 | `max(a, b)` | Larger of two values                     |
 
+### Type conversion
+
+| Function   | Description                                                                 |
+| ---------- | --------------------------------------------------------------------------- |
+| `number(x)` | Parse the argument to a number. If the argument is a string, any `,` characters are removed first (e.g. thousands separators), then the result is passed to the Number constructor. Periods are kept for decimals. e.g. `number("42")` → 42, `number("1,000")` → 1000, `number("3.14")` → 3.14 |
+| `text(x)`   | Convert the argument to a string. e.g. `text(42)` → `"42"`                  |
+
 ### UI and debugging
 
 | Function            | Description                                                                                                            |

@@ -1,10 +1,16 @@
 import { OwnerAccessor } from './owner-accessor';
 
 /**
- * Accessor object representing the target character (if any).
- * Extends OwnerAccessor with the same functionality for a different character.
+ * Accessor for the target character (if any). Same API as Owner; serializes as __type: 'Target'.
  */
 export class TargetAccessor extends OwnerAccessor {
-  // Inherits all methods from OwnerAccessor
-  // The only difference is the characterId used in the constructor
+  override toStructuredCloneSafe(): unknown {
+    // Serialize Tile as x,y only to avoid cycle (Tile.characters can include this character).
+    return {
+      __type: 'Target',
+      name: this.characterName,
+      location: this.locationName,
+      Tile: { __type: 'Tile' as const, x: this.Tile.x, y: this.Tile.y },
+    };
+  }
 }

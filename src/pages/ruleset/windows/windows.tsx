@@ -66,6 +66,7 @@ export const WindowSelect = ({ onEditDetails }: WindowSelectProps) => {
             key={c.id}
             type='windows'
             titleClassName={c.moduleId ? 'text-module-origin' : undefined}
+            existingCategories={categories}
             onDelete={() => deleteWindow(c.id)}
             onOpen={() => navigate(`/rulesets/${activeRuleset?.id}/windows/${c.id}`)}
             onEdit={(title, category) => updateWindow(c.id, { title, category })}

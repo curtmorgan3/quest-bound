@@ -31,10 +31,15 @@ const base64ToBlobUrl = (base64Data: string): string | null => {
 };
 
 export const DocumentViewer = () => {
-  const { documentId, characterId } = useParams();
+  const { documentId, characterId, worldId, campaignId } = useParams();
   const { character } = useCharacter(characterId);
-  // Use character's rulesetId if viewing from character path, otherwise use activeRuleset
-  const { documents } = useDocuments(character?.rulesetId);
+  const { documents } = useDocuments(
+    campaignId != null
+      ? { campaignId }
+      : worldId != null
+        ? { worldId }
+        : character?.rulesetId,
+  );
   const navigate = useNavigate();
   const [blobUrl, setBlobUrl] = useState<string | null>(null);
   const isMobileDevice = useIsMobileDevice();

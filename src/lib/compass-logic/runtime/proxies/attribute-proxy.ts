@@ -49,6 +49,14 @@ export class AttributeProxy implements StructuredCloneSafe {
     return this.characterAttribute.min;
   }
 
+  get options(): string[] | undefined {
+    const key = `characterAttributeOptions:${this.characterAttribute.id}`;
+    if (this.pendingUpdates.has(key)) {
+      return this.pendingUpdates.get(key);
+    }
+    return this.characterAttribute.options;
+  }
+
   /**
    * Set the attribute to a new value.
    */
@@ -81,6 +89,27 @@ export class AttributeProxy implements StructuredCloneSafe {
       typeof newValue === 'string' ? parseFloat(newValue) : Number(newValue);
     this.pendingUpdates.set(key, typedValue);
     this.characterAttribute.min = typedValue;
+  }
+
+  /**
+   * Set the attribute's options (for list-type attributes).
+   * All values in the array are coerced to strings before storing.
+   */
+  setOptions(options: any[]): void {
+    const key = `characterAttributeOptions:${this.characterAttribute.id}`;
+    const stringOptions = options.map((item) => String(item ?? ''));
+    this.pendingUpdates.set(key, stringOptions);
+    this.characterAttribute.options = stringOptions;
+  }
+
+  /**
+   * Reset the character attribute's options to match the ruleset attribute definition.
+   */
+  resetOptions(): void {
+    const key = `characterAttributeOptions:${this.characterAttribute.id}`;
+    const options = this.attribute.options !== undefined ? [...this.attribute.options] : undefined;
+    this.pendingUpdates.set(key, options);
+    this.characterAttribute.options = options;
   }
 
   /**

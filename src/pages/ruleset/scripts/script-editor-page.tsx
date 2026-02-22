@@ -1,5 +1,5 @@
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { useRulesets } from '@/lib/compass-api';
+import { useActiveRuleset, useCampaign } from '@/lib/compass-api';
 import { useScripts } from '@/lib/compass-api/hooks/scripts/use-scripts';
 import {
   useExecuteActionEvent,
@@ -21,26 +21,28 @@ import { EditorTopBar } from './script-editor/editor-top-bar';
 import { EventControls } from './script-editor/event-controls';
 import { SCRIPT_TEMPLATES } from './templates';
 import { useAutoSave } from './use-auto-save';
-
-const SCRIPT_EDITOR_AUTOCOMPLETE_KEY = 'quest-bound/script-editor/autocomplete';
-
-function getAutocompletePreference(): boolean {
-  try {
-    const stored = localStorage.getItem(SCRIPT_EDITOR_AUTOCOMPLETE_KEY);
-    if (stored === null) return true;
-    return stored === 'true';
-  } catch {
-    return true;
-  }
-}
+import { getAutocompletePreference, SCRIPT_EDITOR_AUTOCOMPLETE_KEY } from './utils';
 
 export function ScriptEditorPage() {
-  const { scriptId } = useParams<{ rulesetId: string; scriptId: string }>();
+  const {
+    rulesetId: rulesetIdParam,
+    scriptId,
+    campaignId,
+  } = useParams<{
+    rulesetId?: string;
+    scriptId: string;
+    campaignId?: string;
+  }>();
+
+  const campaign = useCampaign(campaignId);
+
+  const effectiveRulesetId = rulesetIdParam ?? campaign?.rulesetId ?? '';
+
+  const { scripts } = useScripts(campaignId);
   const isNew = scriptId === 'new';
-  const { scripts } = useScripts();
   const script = isNew ? null : (scripts.find((s) => s.id === scriptId) ?? null);
 
-  const { activeRuleset, testCharacter } = useRulesets();
+  const { activeRuleset, testCharacter } = useActiveRuleset();
   const {
     executeActionEvent,
     logMessages: actionEventLogs,
@@ -67,8 +69,10 @@ export function ScriptEditorPage() {
     ...archetypeEventAnnouncements,
   ];
 
+  const defaultEntityType = campaignId ? 'campaignEvent' : 'attribute';
+
   const [name, setName] = useState('');
-  const [entityType, setEntityType] = useState<Script['entityType']>('attribute');
+  const [entityType, setEntityType] = useState<Script['entityType']>(defaultEntityType);
   const [category, setCategory] = useState<string | null>(null);
 
   const [entityId, setEntityId] = useState<string | null>(null);
@@ -128,9 +132,20 @@ export function ScriptEditorPage() {
   return (
     <div className='flex flex-col h-full min-h-0'>
       <EditorTopBar
+        rulesetId={effectiveRulesetId}
+        campaignId={campaignId}
         sourceCode={sourceCode}
         scriptExecutionHook={workerHook}
-        {...{ name, setName, entityId, setEntityId, entityType, setEntityType, category, setCategory }}
+        {...{
+          name,
+          setName,
+          entityId,
+          setEntityId,
+          entityType,
+          setEntityType,
+          category,
+          setCategory,
+        }}
       />
 
       <div className='flex-1 flex flex-col min-h-0 gap-4'>

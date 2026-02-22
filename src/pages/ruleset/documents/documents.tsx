@@ -7,14 +7,29 @@ import { MarkdownEditorPanel } from './markdown-editor-panel';
 
 interface DocumentChartProps {
   onEditDetails?: (id: string) => void;
+  /** When set, show and create documents for this world instead of the active ruleset. */
+  worldId?: string;
+  /** When set, show and create documents for this campaign. */
+  campaignId?: string;
 }
 
 const ALL_CATEGORIES = 'all';
 
-export const Documents = ({ onEditDetails }: DocumentChartProps) => {
-  const { documents, deleteDocument, updateDocument } = useDocuments();
+export const Documents = ({ onEditDetails, worldId, campaignId }: DocumentChartProps) => {
+  const options =
+    campaignId != null
+      ? { campaignId }
+      : worldId != null
+        ? { worldId }
+        : undefined;
+  const { documents, deleteDocument, updateDocument } = useDocuments(options);
   const { activeRuleset } = useActiveRuleset();
   const navigate = useNavigate();
+  const documentOpenUrl = campaignId
+    ? (docId: string) => `/campaigns/${campaignId}/documents/${docId}`
+    : worldId
+      ? (docId: string) => `/worlds/${worldId}/documents/${docId}`
+      : (docId: string) => `/rulesets/${activeRuleset?.id}/documents/${docId}`;
   const [filterValue, setFilterValue] = useState('');
   const [categoryFilter, setCategoryFilter] = useState(ALL_CATEGORIES);
   const [markdownPanelDocumentId, setMarkdownPanelDocumentId] = useState<string | null>(null);
@@ -82,8 +97,9 @@ export const Documents = ({ onEditDetails }: DocumentChartProps) => {
               titleClassName={doc.moduleId ? 'text-module-origin' : undefined}
               descriptionExtra={descriptionExtra}
               openDisabled={!canOpen}
+              existingCategories={categories}
               onDelete={() => deleteDocument(doc.id)}
-              onOpen={() => navigate(`/rulesets/${activeRuleset?.id}/documents/${doc.id}`)}
+              onOpen={() => navigate(documentOpenUrl(doc.id))}
               onEdit={(title, category) => updateDocument(doc.id, { title, category })}
               onEditDetails={onEditDetails ? () => onEditDetails(doc.id) : undefined}
               onEditMarkdown={
@@ -106,7 +122,9 @@ export const Documents = ({ onEditDetails }: DocumentChartProps) => {
         }}
         documentId={markdownPanelDocumentId}
         mode='edit'
-        rulesetId={activeRuleset?.id}
+        rulesetId={worldId || campaignId ? undefined : activeRuleset?.id}
+        worldId={worldId}
+        campaignId={campaignId}
       />
     </div>
   );

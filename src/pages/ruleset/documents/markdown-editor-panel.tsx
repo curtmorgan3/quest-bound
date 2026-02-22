@@ -18,6 +18,10 @@ interface MarkdownEditorPanelProps {
   mode: DocumentMarkdownMode;
   /** When provided, document is resolved from this ruleset (e.g. when not in character context). */
   rulesetId?: string;
+  /** When provided, document is resolved from this world (e.g. world documents page). */
+  worldId?: string;
+  /** When provided, document is resolved from this campaign (e.g. campaign documents page). */
+  campaignId?: string;
 }
 
 export function MarkdownEditorPanel({
@@ -26,8 +30,16 @@ export function MarkdownEditorPanel({
   documentId,
   mode,
   rulesetId,
+  worldId,
+  campaignId,
 }: MarkdownEditorPanelProps) {
-  const { documents, updateDocument } = useDocuments(rulesetId);
+  const options =
+    campaignId != null
+      ? { campaignId }
+      : worldId != null
+        ? { worldId }
+        : rulesetId;
+  const { documents, updateDocument } = useDocuments(options);
   const document = documentId ? documents.find((d) => d.id === documentId) : undefined;
   const [localValue, setLocalValue] = useState('');
   const [saving, setSaving] = useState(false);

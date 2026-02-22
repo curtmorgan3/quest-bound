@@ -508,6 +508,23 @@ foo()`);
       });
     });
 
+    describe('number() and text()', async () => {
+      it('should parse string to number, stripping commas and preserving decimals', async () => {
+        expect(await evaluate('number("42")')).toBe(42);
+        expect(await evaluate('number("3.14")')).toBe(3.14);
+        expect(await evaluate('number("1,000")')).toBe(1000);
+        expect(await evaluate('number("-10")')).toBe(-10);
+        expect(await evaluate('number(7)')).toBe(7);
+      });
+
+      it('should convert value to string with text()', async () => {
+        expect(await evaluate('text(42)')).toBe('42');
+        expect(await evaluate('text(3.14)')).toBe('3.14');
+        expect(await evaluate('text(true)')).toBe('true');
+        expect(await evaluate('text("hello")')).toBe('hello');
+      });
+    });
+
     describe('announce() and log()', async () => {
       it('should capture announce messages', async () => {
         const lexer = new Lexer('announce("Hello")');

@@ -1,11 +1,7 @@
 import { db } from '@/stores';
-import type { Script } from '@/types';
-import {
-  parseScriptPath,
-  validateScriptPath,
-  generateUniqueScriptName,
-} from './script-utils';
+import type { Script, ScriptEntityType } from '@/types';
 import type { ScriptMetadata } from './script-export';
+import { generateUniqueScriptName, parseScriptPath, validateScriptPath } from './script-utils';
 
 /**
  * Represents a script file being imported.
@@ -30,7 +26,7 @@ export interface ScriptImportResult {
  */
 export async function linkScriptToEntity(
   rulesetId: string,
-  entityType: 'attribute' | 'action' | 'item' | 'archetype' | 'global' | 'characterLoader',
+  entityType: ScriptEntityType,
   entityName: string,
 ): Promise<string | null> {
   if (entityType === 'global' || entityType === 'characterLoader') {
@@ -130,7 +126,9 @@ export async function importScript(
 
   // Validate source code
   if (!scriptImport.content || scriptImport.content.trim() === '') {
-    warnings.push(`Script ${scriptName} has empty source code. Importing anyway for later editing.`);
+    warnings.push(
+      `Script ${scriptName} has empty source code. Importing anyway for later editing.`,
+    );
   }
 
   if (entityType === 'characterLoader') {
@@ -138,12 +136,7 @@ export async function importScript(
   }
 
   // Try to link to entity if we have an entity name but no entity ID
-  if (
-    !isGlobal &&
-    entityType !== 'characterLoader' &&
-    entityName &&
-    !entityId
-  ) {
+  if (!isGlobal && entityType !== 'characterLoader' && entityName && !entityId) {
     entityId = await linkScriptToEntity(rulesetId, entityType, entityName);
     if (!entityId) {
       warnings.push(
@@ -163,9 +156,7 @@ export async function importScript(
   }
 
   if (entityType === 'characterLoader') {
-    const existing = await db.scripts
-      .where({ rulesetId, entityType: 'characterLoader' })
-      .first();
+    const existing = await db.scripts.where({ rulesetId, entityType: 'characterLoader' }).first();
     if (existing) {
       warnings.push(
         `Character Loader script "${scriptName}" not imported: this ruleset already has a Character Loader script.`,
@@ -238,12 +229,7 @@ export async function importScripts(
   for (const scriptFile of scriptFiles) {
     const metadata = metadataMap.get(scriptFile.path);
 
-    const importResult = await importScript(
-      rulesetId,
-      scriptFile,
-      metadata,
-      existingScriptNames,
-    );
+    const importResult = await importScript(rulesetId, scriptFile, metadata, existingScriptNames);
 
     if (importResult.success) {
       result.importedCount++;

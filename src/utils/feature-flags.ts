@@ -5,9 +5,10 @@ export function getFeatureFlagKey(name: string): string {
   return `${FEATURE_FLAG_PREFIX}${name}`;
 }
 
-export function getFeatureFlag(name: string): boolean {
-  if (typeof window === 'undefined') return false;
+export function getFeatureFlag(name: string, defaultEnabled = false): boolean {
+  if (typeof window === 'undefined') return defaultEnabled;
   const value = localStorage.getItem(getFeatureFlagKey(name));
+  if (value === null) return defaultEnabled;
   return value === 'true';
 }
 

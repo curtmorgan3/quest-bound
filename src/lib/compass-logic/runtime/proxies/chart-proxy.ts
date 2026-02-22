@@ -2,11 +2,34 @@ import type { Chart } from '@/types';
 import type { StructuredCloneSafe } from '../structured-clone-safe';
 
 /**
+ * Coerce a raw chart cell value to a script-friendly type:
+ * - Parseable ints/floats → number
+ * - 'true' / 'false' (any casing) → boolean
+ * - Everything else → string
+ */
+function coerceCellValue(value: unknown): string | number | boolean {
+  if (value === null || value === undefined) return '';
+  if (typeof value === 'boolean') return value;
+  if (typeof value === 'number') return value;
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    const lower = trimmed.toLowerCase();
+    if (lower === 'true') return true;
+    if (lower === 'false') return false;
+    const num = Number(trimmed);
+    if (trimmed !== '' && !Number.isNaN(num) && isFinite(num)) return num;
+    return value;
+  }
+  return String(value);
+}
+
+/**
  * Lightweight proxy for a single chart row returned from ChartProxy.rowWhere().
  *
  * This class:
  * - Behaves like an array so you can call array methods directly
  *   (e.g. rowWhere(...).map(...), rowWhere(...)[0], rowWhere(...).length)
+ * - Applies type coercion to all values in the row (number/boolean/string)
  * - Provides valueInColumn() for chaining in QBScript
  * - Implements StructuredCloneSafe so it can be reduced to a plain array
  *   when sent across the worker boundary.
@@ -15,7 +38,7 @@ class ChartRowProxy extends Array<any> implements StructuredCloneSafe {
   private chartProxy: ChartProxy;
 
   constructor(chartProxy: ChartProxy, row: any[]) {
-    super(...row);
+    super(...row.map(coerceCellValue));
     this.chartProxy = chartProxy;
     // Ensure the correct prototype when targeting environments that might
     // not fully support Array subclassing semantics.
@@ -66,8 +89,8 @@ export class ChartProxy {
       throw new Error(`Column '${columnName}' not found in chart '${this.chart.title}'`);
     }
 
-    // Return all values in column (skip header row)
-    return this.data.slice(1).map((row) => row[columnIndex]);
+    // Return all values in column (skip header row), coerced to number/boolean/string
+    return this.data.slice(1).map((row) => coerceCellValue(row[columnIndex]));
   }
 
   /**
@@ -86,22 +109,24 @@ export class ChartProxy {
 
   /**
    * Get the value of a random cell of the chart
-   * @returns A single value in that chart excluding the header row
+   * @returns A single value in that chart excluding the header row (coerced to number/boolean/string)
    */
-  randomCell(): any {
+  randomCell(): string | number | boolean {
     const column = this.randomColumn();
-    return column[Math.floor(Math.random() * column.length)];
+    const value = column[Math.floor(Math.random() * column.length)];
+    return coerceCellValue(value);
   }
 
   /**
    * Get the value of a random non-empty cell of the chart
-   * @returns A single non-empty value in that chart excluding the header row
+   * @returns A single non-empty value in that chart excluding the header row (coerced to number/boolean/string)
    */
-  randomNonEmptyCell(): any {
+  randomNonEmptyCell(): string | number | boolean {
     const column = this.randomColumn().filter(
       (val: any) => val !== '' && val !== null && val !== undefined,
     );
-    return column[Math.floor(Math.random() * column.length)];
+    const value = column[Math.floor(Math.random() * column.length)];
+    return coerceCellValue(value);
   }
 
   rowWhere(columnName: string, cellValue: any): ChartRowProxy {
@@ -152,7 +177,7 @@ export class ChartProxy {
     }
 
     const targetRow = row && row.length > 0 ? row : this.data[1];
-    return targetRow[columnIndex] ?? '';
+    return coerceCellValue(targetRow[columnIndex] ?? '');
   }
 
   /**

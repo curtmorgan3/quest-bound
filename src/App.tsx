@@ -1,23 +1,39 @@
+import { useFeatureFlag } from '@/hooks/use-feature-flag';
 import {
   ArchetypeSheetEditor,
+  CampaignDocumentsPage,
+  CampaignEvents,
+  CampaignNew,
+  CampaignPlay,
+  Campaigns,
   CharacterChartViewer,
   CharacterPage,
   Characters,
   DevTools,
   ErrorPage,
+  LocationEditor,
   Ruleset,
   RulesetPageEditorPage,
   Rulesets,
   ScriptEditorPage,
   ScriptsIndex,
+  TilemapEditor,
+  TilemapListPage,
+  WorldDocumentsPage,
+  WorldEditor,
+  Worlds,
 } from '@/pages';
 import { HashRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { ErrorBoundary } from './components';
 import { Layout } from './components/layout';
 import { DocumentViewer } from './pages/ruleset/documents';
 import { WindowEditor } from './pages/ruleset/windows/window-editor';
+import { CampaignProvider } from './stores';
 
 function CompassRoutes() {
+  const worldsEnabled = useFeatureFlag('worlds', false);
+  const campaignsEnabled = useFeatureFlag('campaigns', false);
+
   return (
     <ErrorBoundary showDetails>
       <HashRouter>
@@ -61,6 +77,84 @@ function CompassRoutes() {
             <Route path={`/rulesets/:rulesetId/scripts`} element={<ScriptsIndex />} />
 
             <Route path={`/rulesets/:rulesetId/scripts/:scriptId`} element={<ScriptEditorPage />} />
+
+            {campaignsEnabled && (
+              <>
+                <Route path={`/campaigns`} element={<Campaigns />} />
+                <Route path={`/campaigns/new`} element={<CampaignNew />} />
+                <Route
+                  path={`/campaigns/:campaignId`}
+                  element={
+                    <CampaignProvider>
+                      <CampaignPlay />
+                    </CampaignProvider>
+                  }
+                />
+                <Route
+                  path={`/campaigns/:campaignId/scripts`}
+                  element={
+                    <CampaignProvider>
+                      <ScriptsIndex />
+                    </CampaignProvider>
+                  }
+                />
+                <Route
+                  path={`/campaigns/:campaignId/scripts/:scriptId`}
+                  element={
+                    <CampaignProvider>
+                      <ScriptEditorPage />
+                    </CampaignProvider>
+                  }
+                />
+                <Route
+                  path={`/campaigns/:campaignId/documents`}
+                  element={
+                    <CampaignProvider>
+                      <CampaignDocumentsPage />
+                    </CampaignProvider>
+                  }
+                />
+                <Route
+                  path={`/campaigns/:campaignId/documents/:documentId`}
+                  element={<DocumentViewer />}
+                />
+                <Route
+                  path={`/campaigns/:campaignId/events`}
+                  element={
+                    <CampaignProvider>
+                      <CampaignEvents />
+                    </CampaignProvider>
+                  }
+                />
+                <Route
+                  path={`/campaigns/:campaignId/locations/:locationId`}
+                  element={
+                    <CampaignProvider>
+                      <CampaignPlay />
+                    </CampaignProvider>
+                  }
+                />
+              </>
+            )}
+
+            {worldsEnabled && (
+              <>
+                <Route path={`/worlds`} element={<Worlds />} />
+                <Route path={`/worlds/:worldId`} element={<WorldEditor />} />
+                <Route path={`/worlds/:worldId/locations/:locationId`} element={<WorldEditor />} />
+                <Route path={`/worlds/:worldId/tilemaps`} element={<TilemapListPage />} />
+                <Route path={`/worlds/:worldId/tilemaps/:tilemapId`} element={<TilemapEditor />} />
+                <Route path={`/worlds/:worldId/documents`} element={<WorldDocumentsPage />} />
+                <Route
+                  path={`/worlds/:worldId/documents/:documentId`}
+                  element={<DocumentViewer />}
+                />
+                <Route
+                  path={`/worlds/:worldId/locations/:locationId/edit`}
+                  element={<LocationEditor />}
+                />
+              </>
+            )}
 
             <Route path={`/characters`} element={<Characters />} />
             <Route path={`/characters/:characterId`} element={<CharacterPage lockByDefault />} />
