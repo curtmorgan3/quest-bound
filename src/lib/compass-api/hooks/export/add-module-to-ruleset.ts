@@ -113,7 +113,11 @@ export async function addModuleToRuleset({
     db.actions.where('rulesetId').equals(targetRulesetId).primaryKeys(),
     db.items.where('rulesetId').equals(targetRulesetId).primaryKeys(),
     db.charts.where('rulesetId').equals(targetRulesetId).primaryKeys(),
-    db.documents.where('rulesetId').equals(targetRulesetId).primaryKeys(),
+    db.documents
+      .where('rulesetId')
+      .equals(targetRulesetId)
+      .filter((d) => d.worldId == null)
+      .primaryKeys(),
     db.windows.where('rulesetId').equals(targetRulesetId).primaryKeys(),
     db.scripts.where('rulesetId').equals(targetRulesetId).primaryKeys(),
     db.assets.where('rulesetId').equals(targetRulesetId).primaryKeys(),
@@ -146,7 +150,11 @@ export async function addModuleToRuleset({
     db.actions.where('rulesetId').equals(targetRulesetId).toArray(),
     db.items.where('rulesetId').equals(targetRulesetId).toArray(),
     db.charts.where('rulesetId').equals(targetRulesetId).toArray(),
-    db.documents.where('rulesetId').equals(targetRulesetId).toArray(),
+    db.documents
+      .where('rulesetId')
+      .equals(targetRulesetId)
+      .filter((d) => d.worldId == null)
+      .toArray(),
     db.scripts.where('rulesetId').equals(targetRulesetId).toArray(),
   ]);
   const targetTitles = {
@@ -185,7 +193,11 @@ export async function addModuleToRuleset({
     db.actions.where('rulesetId').equals(sourceRulesetId).toArray(),
     db.items.where('rulesetId').equals(sourceRulesetId).toArray(),
     db.charts.where('rulesetId').equals(sourceRulesetId).toArray(),
-    db.documents.where('rulesetId').equals(sourceRulesetId).toArray(),
+    db.documents
+      .where('rulesetId')
+      .equals(sourceRulesetId)
+      .filter((d) => d.worldId == null)
+      .toArray(),
     db.windows.where('rulesetId').equals(sourceRulesetId).toArray(),
     db.assets.where('rulesetId').equals(sourceRulesetId).toArray(),
     db.fonts.where('rulesetId').equals(sourceRulesetId).toArray(),
@@ -477,7 +489,8 @@ export async function addModuleToRuleset({
     }
     const newId = crypto.randomUUID();
     documentIdMap.set(document.id, newId);
-    const { id, rulesetId, createdAt, updatedAt, assetId, pdfAssetId, ...rest } = document;
+    const { id, rulesetId, worldId, locationId, createdAt, updatedAt, assetId, pdfAssetId, ...rest } =
+      document;
     const mappedAssetId = assetId ? (assetIdMap.get(assetId) ?? assetId) : (assetId ?? null);
     const mappedPdfAssetId = pdfAssetId
       ? (assetIdMap.get(pdfAssetId) ?? pdfAssetId)

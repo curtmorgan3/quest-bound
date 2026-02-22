@@ -215,7 +215,12 @@ export type DiceRoll = BaseDetails & {
 };
 
 export type Document = BaseDetails & {
-  rulesetId: string;
+  /** When set, document belongs to a ruleset (ruleset-scoped). Omitted when document belongs to a world. */
+  rulesetId?: string;
+  /** When set, document belongs to a world (and optionally a location). Mutually exclusive with ruleset-only usage. */
+  worldId?: string | null;
+  /** When set with worldId, document is scoped to this location within the world. */
+  locationId?: string | null;
   title: string;
   description: string;
   category?: string;

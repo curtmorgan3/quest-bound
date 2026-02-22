@@ -176,7 +176,11 @@ export async function getDanglingReferencesForModuleRemoval(
   }
 
   // Documents: rulesetId = target, not from this module, assetId or pdfAssetId in removed
-  const documents = await db.documents.where('rulesetId').equals(targetRulesetId).toArray();
+  const documents = await db.documents
+    .where('rulesetId')
+    .equals(targetRulesetId)
+    .filter((d) => d.worldId == null)
+    .toArray();
   for (const d of documents) {
     if ((d as { moduleId?: string }).moduleId === moduleIdToRemove) continue;
     const refsRemoved =
