@@ -215,12 +215,14 @@ export type DiceRoll = BaseDetails & {
 };
 
 export type Document = BaseDetails & {
-  /** When set, document belongs to a ruleset (ruleset-scoped). Omitted when document belongs to a world. */
+  /** When set, document belongs to a ruleset (ruleset-scoped). Omitted when document belongs to a world or campaign. */
   rulesetId?: string;
-  /** When set, document belongs to a world (and optionally a location). Mutually exclusive with ruleset-only usage. */
+  /** When set, document belongs to a world (and optionally a location). Mutually exclusive with campaign usage. */
   worldId?: string | null;
-  /** When set with worldId, document is scoped to this location within the world. */
+  /** When set with worldId, document is scoped to this location within the world. When set with campaignId, document is scoped to this location within the campaign. */
   locationId?: string | null;
+  /** When set, document belongs to a campaign (and has locationId; no worldId). */
+  campaignId?: string | null;
   title: string;
   description: string;
   category?: string;

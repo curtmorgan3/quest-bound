@@ -1,5 +1,6 @@
 import {
   ArchetypeSheetEditor,
+  CampaignDocumentsPage,
   CampaignEvents,
   CampaignNew,
   CampaignPlay,
@@ -102,6 +103,18 @@ function CompassRoutes() {
               }
             />
 
+            <Route
+              path={`/campaigns/:campaignId/documents`}
+              element={
+                <CampaignProvider>
+                  <CampaignDocumentsPage />
+                </CampaignProvider>
+              }
+            />
+            <Route
+              path={`/campaigns/:campaignId/documents/:documentId`}
+              element={<DocumentViewer />}
+            />
             <Route
               path={`/campaigns/:campaignId/events`}
               element={

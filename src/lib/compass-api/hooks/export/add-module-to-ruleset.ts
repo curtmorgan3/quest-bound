@@ -116,7 +116,7 @@ export async function addModuleToRuleset({
     db.documents
       .where('rulesetId')
       .equals(targetRulesetId)
-      .filter((d) => d.worldId == null)
+      .filter((d) => d.worldId == null && d.campaignId == null)
       .primaryKeys(),
     db.windows.where('rulesetId').equals(targetRulesetId).primaryKeys(),
     db.scripts.where('rulesetId').equals(targetRulesetId).primaryKeys(),
@@ -153,7 +153,7 @@ export async function addModuleToRuleset({
     db.documents
       .where('rulesetId')
       .equals(targetRulesetId)
-      .filter((d) => d.worldId == null)
+      .filter((d) => d.worldId == null && d.campaignId == null)
       .toArray(),
     db.scripts.where('rulesetId').equals(targetRulesetId).toArray(),
   ]);
@@ -196,7 +196,7 @@ export async function addModuleToRuleset({
     db.documents
       .where('rulesetId')
       .equals(sourceRulesetId)
-      .filter((d) => d.worldId == null)
+      .filter((d) => d.worldId == null && d.campaignId == null)
       .toArray(),
     db.windows.where('rulesetId').equals(sourceRulesetId).toArray(),
     db.assets.where('rulesetId').equals(sourceRulesetId).toArray(),
@@ -489,7 +489,7 @@ export async function addModuleToRuleset({
     }
     const newId = crypto.randomUUID();
     documentIdMap.set(document.id, newId);
-    const { id, rulesetId, worldId, locationId, createdAt, updatedAt, assetId, pdfAssetId, ...rest } =
+    const { id, rulesetId, worldId, locationId, campaignId, createdAt, updatedAt, assetId, pdfAssetId, ...rest } =
       document;
     const mappedAssetId = assetId ? (assetIdMap.get(assetId) ?? assetId) : (assetId ?? null);
     const mappedPdfAssetId = pdfAssetId

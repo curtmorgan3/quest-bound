@@ -69,7 +69,7 @@ export const useExportRuleset = (rulesetId: string) => {
         ? db.documents
             .where('rulesetId')
             .equals(rulesetId)
-            .filter((d) => d.worldId == null)
+            .filter((d) => d.worldId == null && d.campaignId == null)
             .toArray()
         : [],
     [rulesetId],

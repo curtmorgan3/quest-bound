@@ -39,9 +39,11 @@ interface BaseCreateProps {
   onCreate?: (editMode: boolean) => void;
   /** When set, only document creation is shown (for world documents). */
   worldId?: string;
+  /** When set, only document creation is shown (for campaign documents). */
+  campaignId?: string;
 }
 
-export const BaseCreate = ({ onCreate, worldId }: BaseCreateProps) => {
+export const BaseCreate = ({ onCreate, worldId, campaignId }: BaseCreateProps) => {
   const { pathname } = useLocation();
   const [searchParams] = useSearchParams();
   const editId = searchParams.get('edit');
@@ -129,9 +131,10 @@ export const BaseCreate = ({ onCreate, worldId }: BaseCreateProps) => {
     setDescription,
     setCategory,
     worldId,
+    campaignId,
   });
 
-  const initialType = (worldId ? 'documents' : pathname.split('/').pop()) as
+  const initialType = (worldId || campaignId ? 'documents' : pathname.split('/').pop()) as
     | 'attributes'
     | 'items'
     | 'actions'
@@ -195,7 +198,7 @@ export const BaseCreate = ({ onCreate, worldId }: BaseCreateProps) => {
 
   return (
     <div className='flex flex-col gap-4 max-h-[80vh] overflow-auto'>
-      {!worldId && (
+      {!worldId && !campaignId && (
         <div className='flex justify-around items-center gap-2 mb-4'>
           <Button
             variant={activeType === 'attributes' ? 'default' : 'outline'}

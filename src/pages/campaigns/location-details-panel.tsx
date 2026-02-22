@@ -1,3 +1,4 @@
+import { Button } from '@/components';
 import { DocumentMarkdownContent } from '@/components/composites/document-markdown-content';
 import {
   Sheet,
@@ -6,7 +7,8 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet';
-import { useDocuments } from '@/lib/compass-api';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { DocumentLookup, useDocuments } from '@/lib/compass-api';
 import type { Document } from '@/types';
 import { FileText } from 'lucide-react';
 import { useEffect, useState } from 'react';
@@ -34,6 +36,52 @@ interface LocationDetailsPanelProps {
   worldId: string | undefined;
   locationId: string | undefined;
   locationLabel?: string;
+  /** When set (e.g. in campaign play), show World and Campaign tabs. */
+  campaignId?: string;
+}
+
+function DocumentContent({ document, blobUrl }: { document: Document; blobUrl: string | null }) {
+  const hasContent = document.pdfData || document.pdfAssetId || document.markdownData;
+
+  if (!hasContent) {
+    return (
+      <div className='flex flex-1 items-center justify-center p-6 text-muted-foreground'>
+        <p>This document has no PDF or markdown content yet.</p>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <div className='min-h-0 flex-1 overflow-auto p-6'>
+        {blobUrl ? (
+          <iframe
+            src={blobUrl}
+            className='h-full min-h-[60vh] w-full rounded-lg border'
+            title={document.title}
+          />
+        ) : document.pdfData ? (
+          <div className='flex h-40 items-center justify-center text-muted-foreground'>
+            Loading PDF…
+          </div>
+        ) : document.markdownData ? (
+          <div className='prose prose-sm dark:prose-invert max-w-none'>
+            <DocumentMarkdownContent
+              value={document.markdownData}
+              mode='view'
+              placeholder='No content.'
+            />
+          </div>
+        ) : null}
+      </div>
+      {document.description && (
+        <div className='shrink-0 border-t px-6 py-4'>
+          <h2 className='text-sm font-medium mb-2'>Description</h2>
+          <p className='text-sm text-muted-foreground'>{document.description}</p>
+        </div>
+      )}
+    </>
+  );
 }
 
 export function LocationDetailsPanel({
@@ -42,25 +90,39 @@ export function LocationDetailsPanel({
   worldId,
   locationId,
   locationLabel,
+  campaignId,
 }: LocationDetailsPanelProps) {
-  const { documents } = useDocuments(worldId && locationId ? { worldId, locationId } : undefined);
+  const [activeTab, setActiveTab] = useState<'world' | 'campaign'>('campaign');
+
+  const { documents: worldDocuments } = useDocuments(
+    worldId && locationId ? { worldId, locationId } : undefined,
+  );
+  const { documents: campaignDocuments } = useDocuments(
+    campaignId && locationId ? { campaignId, locationId } : undefined,
+  );
+  const { updateDocument: updateCampaignDocument } = useDocuments(
+    campaignId ? { campaignId } : undefined,
+  );
+
+  const worldDocument = worldDocuments?.[0] as Document | undefined;
+  const campaignDocument = campaignDocuments?.[0] as Document | undefined;
+
+  const displayDocument = activeTab === 'world' ? worldDocument : campaignDocument;
   const [blobUrl, setBlobUrl] = useState<string | null>(null);
 
-  const document = documents?.[0] as Document | undefined;
-
   useEffect(() => {
-    if (!document?.pdfData) {
+    if (!displayDocument?.pdfData) {
       setBlobUrl(null);
       return;
     }
-    const url = base64ToBlobUrl(document.pdfData);
+    const url = base64ToBlobUrl(displayDocument.pdfData);
     setBlobUrl(url);
     return () => {
       if (url) URL.revokeObjectURL(url);
     };
-  }, [document?.id, document?.pdfData]);
+  }, [displayDocument?.id, displayDocument?.pdfData]);
 
-  const hasContent = document && (document.pdfData || document.pdfAssetId || document.markdownData);
+  const showTabs = Boolean(campaignId && worldId && locationId);
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -72,8 +134,8 @@ export function LocationDetailsPanel({
             {locationLabel ? `${locationLabel} — Details` : 'Location details'}
           </SheetTitle>
           <SheetDescription>
-            {document
-              ? document.title
+            {displayDocument
+              ? displayDocument.title
               : locationId
                 ? 'No document linked to this location.'
                 : 'Select a location to view its document.'}
@@ -87,47 +149,94 @@ export function LocationDetailsPanel({
                 <p>No location selected</p>
               </div>
             </div>
-          ) : !document ? (
+          ) : showTabs ? (
+            <Tabs
+              value={activeTab}
+              onValueChange={(v) => setActiveTab(v as 'world' | 'campaign')}
+              className='flex min-h-0 flex-1 flex-col'>
+              <div className='shrink-0 border-b px-6 pt-2'>
+                <TabsList className='w-full'>
+                  <TabsTrigger value='campaign' className='flex-1'>
+                    Campaign
+                  </TabsTrigger>
+                  <TabsTrigger value='world' className='flex-1'>
+                    World
+                  </TabsTrigger>
+                </TabsList>
+              </div>
+              <TabsContent
+                value='world'
+                className='flex min-h-0 flex-1 flex-col data-[state=inactive]:hidden'>
+                {!worldDocument ? (
+                  <div className='flex flex-1 items-center justify-center p-6 text-muted-foreground'>
+                    <div className='flex flex-col items-center gap-2'>
+                      <FileText className='h-12 w-12' />
+                      <p>No world document linked to this location</p>
+                    </div>
+                  </div>
+                ) : (
+                  <DocumentContent
+                    document={worldDocument}
+                    blobUrl={activeTab === 'world' ? blobUrl : null}
+                  />
+                )}
+              </TabsContent>
+              <TabsContent
+                value='campaign'
+                className='flex min-h-0 flex-1 flex-col data-[state=inactive]:hidden'>
+                {!campaignDocument ? (
+                  <div className='flex flex-1 flex-col gap-4 overflow-auto p-6'>
+                    <p className='text-sm text-muted-foreground'>
+                      Associate a campaign document to this location.
+                    </p>
+                    <DocumentLookup
+                      campaignId={campaignId}
+                      label='Document'
+                      placeholder='Search documents...'
+                      value={null}
+                      onSelect={(doc) =>
+                        updateCampaignDocument(doc.id, {
+                          campaignId: campaignId!,
+                          locationId: locationId!,
+                        })
+                      }
+                    />
+                  </div>
+                ) : (
+                  <>
+                    <div className='shrink-0 flex items-center justify-between border-b px-6 py-2'>
+                      <span className='text-sm text-muted-foreground'>
+                        {campaignDocument.title}
+                      </span>
+                      <Button
+                        variant='ghost'
+                        size='sm'
+                        onClick={() =>
+                          updateCampaignDocument(campaignDocument.id, {
+                            campaignId: null,
+                            locationId: null,
+                          })
+                        }>
+                        Unlink
+                      </Button>
+                    </div>
+                    <DocumentContent
+                      document={campaignDocument}
+                      blobUrl={activeTab === 'campaign' ? blobUrl : null}
+                    />
+                  </>
+                )}
+              </TabsContent>
+            </Tabs>
+          ) : !worldDocument ? (
             <div className='flex flex-1 items-center justify-center p-6 text-muted-foreground'>
               <div className='flex flex-col items-center gap-2'>
                 <FileText className='h-12 w-12' />
                 <p>No document linked to this location</p>
               </div>
             </div>
-          ) : !hasContent ? (
-            <div className='flex flex-1 items-center justify-center p-6 text-muted-foreground'>
-              <p>This document has no PDF or markdown content yet.</p>
-            </div>
           ) : (
-            <>
-              <div className='min-h-0 flex-1 overflow-auto p-6'>
-                {blobUrl ? (
-                  <iframe
-                    src={blobUrl}
-                    className='h-full min-h-[60vh] w-full rounded-lg border'
-                    title={document.title}
-                  />
-                ) : document.pdfData ? (
-                  <div className='flex h-40 items-center justify-center text-muted-foreground'>
-                    Loading PDF…
-                  </div>
-                ) : document.markdownData ? (
-                  <div className='prose prose-sm dark:prose-invert max-w-none'>
-                    <DocumentMarkdownContent
-                      value={document.markdownData}
-                      mode='view'
-                      placeholder='No content.'
-                    />
-                  </div>
-                ) : null}
-              </div>
-              {document.description && (
-                <div className='shrink-0 border-t px-6 py-4'>
-                  <h2 className='text-sm font-medium mb-2'>Description</h2>
-                  <p className='text-sm text-muted-foreground'>{document.description}</p>
-                </div>
-              )}
-            </>
+            <DocumentContent document={worldDocument} blobUrl={blobUrl} />
           )}
         </div>
       </SheetContent>

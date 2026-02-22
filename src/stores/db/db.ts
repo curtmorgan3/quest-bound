@@ -85,9 +85,9 @@ const db = new Dexie('qbdb') as Dexie & {
   campaignEventLocations: EntityTable<CampaignEventLocation, 'id'>;
 };
 
-db.version(39).stores(dbSchema);
+db.version(40).stores(dbSchema);
 
-db.version(38).stores(dbSchema).upgrade((tx) => {
+db.version(39).stores(dbSchema).upgrade((tx) => {
   // Create a Campaign for each world that had rulesetId (upgrading from pre-Phase-7)
   const worlds = (tx as any).table('worlds');
   const campaigns = (tx as any).table('campaigns');

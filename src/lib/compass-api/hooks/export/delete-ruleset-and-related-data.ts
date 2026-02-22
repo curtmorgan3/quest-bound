@@ -37,7 +37,7 @@ export async function deleteRulesetAndRelatedData(rulesetId: string): Promise<vo
   await db.documents
     .where('rulesetId')
     .equals(rulesetId)
-    .filter((d) => d.worldId == null)
+    .filter((d) => d.worldId == null && d.campaignId == null)
     .delete();
   await db.scripts.where('rulesetId').equals(rulesetId).delete();
   await db.diceRolls.where('rulesetId').equals(rulesetId).delete();

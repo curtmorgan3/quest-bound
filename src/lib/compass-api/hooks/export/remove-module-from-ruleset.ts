@@ -179,7 +179,7 @@ export async function getDanglingReferencesForModuleRemoval(
   const documents = await db.documents
     .where('rulesetId')
     .equals(targetRulesetId)
-    .filter((d) => d.worldId == null)
+    .filter((d) => d.worldId == null && d.campaignId == null)
     .toArray();
   for (const d of documents) {
     if ((d as { moduleId?: string }).moduleId === moduleIdToRemove) continue;

@@ -8,7 +8,7 @@ import {
   SidebarTrigger,
   useSidebar,
 } from '@/components/ui/sidebar';
-import { Calendar, FileCode, Map } from 'lucide-react';
+import { Calendar, FileCode, Map, Newspaper } from 'lucide-react';
 import { Link, useLocation, useParams } from 'react-router-dom';
 
 export function CampaignSidebar() {
@@ -21,6 +21,7 @@ export function CampaignSidebar() {
 
   const items = [
     { title: 'Campaign', url: `/campaigns/${campaignId}`, icon: Map },
+    { title: 'Documents', url: `/campaigns/${campaignId}/documents`, icon: Newspaper },
     { title: 'Events', url: `/campaigns/${campaignId}/events`, icon: Calendar },
     { title: 'Scripts', url: `/campaigns/${campaignId}/scripts`, icon: FileCode },
   ];
@@ -48,7 +49,9 @@ export function CampaignSidebar() {
             const isActive =
               item.url === `/campaigns/${campaignId}`
                 ? isCampaignActive
-                : location.pathname.includes(item.title.toLowerCase());
+                : item.title === 'Documents'
+                  ? location.pathname === item.url || location.pathname.startsWith(`${item.url}/`)
+                  : location.pathname.includes(item.title.toLowerCase());
             return (
               <SidebarMenuItem key={item.title} className={isActive ? 'text-primary' : ''}>
                 <SidebarMenuButton asChild>

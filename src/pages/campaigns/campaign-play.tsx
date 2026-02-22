@@ -248,6 +248,7 @@ export function CampaignPlay() {
         worldId={campaign?.worldId}
         locationId={currentLocation?.id}
         locationLabel={currentLocation?.label}
+        campaignId={campaignId ?? undefined}
       />
       <div className='min-h-0 flex-1 p-4'>
         {!showLocationView && (

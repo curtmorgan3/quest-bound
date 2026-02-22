@@ -24,6 +24,10 @@ interface DocumentLookupProps {
   rulesetId?: string;
   /** Limit results to documents in this world. */
   worldId?: string;
+  /** When set with worldId, limit to documents in this location. */
+  locationId?: string;
+  /** Limit results to documents in this campaign (campaign-scoped; have campaignId and locationId, no worldId). Optionally combine with locationId. */
+  campaignId?: string;
   /** Callback fired when a document is selected */
   onSelect: (document: Document) => void;
   /** Callback fired when the clear button is clicked */
@@ -43,6 +47,8 @@ interface DocumentLookupProps {
 export const DocumentLookup = ({
   rulesetId,
   worldId,
+  locationId,
+  campaignId,
   onSelect,
   onDelete,
   placeholder = 'Search documents...',
@@ -56,10 +62,12 @@ export const DocumentLookup = ({
   const [search, setSearch] = useState('');
   const parentRef = useRef<HTMLDivElement>(null);
 
-  const options = useMemo(
-    () => (worldId ? { worldId } : rulesetId ? { rulesetId } : undefined),
-    [worldId, rulesetId],
-  );
+  const options = useMemo(() => {
+    if (campaignId) return { campaignId, locationId };
+    if (worldId) return { worldId, locationId };
+    if (rulesetId) return { rulesetId };
+    return undefined;
+  }, [campaignId, worldId, locationId, rulesetId]);
   const { documents } = useDocuments(options);
 
   const selectedDocument = value ? documents.find((doc) => doc.id === value) : undefined;

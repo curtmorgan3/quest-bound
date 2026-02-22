@@ -1157,6 +1157,7 @@ export const useImportRuleset = () => {
                 rulesetId: newRulesetId,
                 worldId: undefined,
                 locationId: undefined,
+                campaignId: undefined,
                 // Restore pdfData from the PDF file if available
                 pdfData: pdfFiles[document.id] || null,
                 createdAt: now,
