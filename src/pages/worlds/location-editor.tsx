@@ -1,10 +1,12 @@
 import { Button, Input, Label } from '@/components';
 import { getTilesByKey } from '@/components/locations';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { DEFAULT_TILE_RENDER_SIZE } from '@/constants';
 import { useTilemapAsset } from '@/hooks';
 import { useLocation, useLocations, useWorld } from '@/lib/compass-api';
 import type { Tile, TileData } from '@/types';
-import { Trash2 } from 'lucide-react';
+import { ChevronDown, ChevronUp, Trash2 } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { CellPropertyPanel } from './cell-property-panel';
@@ -32,6 +34,7 @@ export function LocationEditor() {
   const [selectedCell, setSelectedCell] = useState<{ x: number; y: number } | null>(null);
   const [selectedLayerId, setSelectedLayerId] = useState<string | null>(null);
   const [paintLayer, setPaintLayer] = useState(0);
+  const [panelOpen, setPanelOpen] = useState(false);
   const [gridWidthInput, setGridWidthInput] = useState('');
   const [gridHeightInput, setGridHeightInput] = useState('');
   const gridWidthDisplay = gridWidthInput !== '' ? gridWidthInput : String(gridWidth);
@@ -138,6 +141,7 @@ export function LocationEditor() {
       setSelectedCell({ x, y });
       const layers = tilesByKey.get(`${x},${y}`) ?? [];
       setSelectedLayerId(layers[layers.length - 1]?.id ?? null);
+      setPanelOpen(true);
     }
   };
 
@@ -287,85 +291,152 @@ export function LocationEditor() {
             />
           </div>
         </div>
-        {/* Grid + cell panel */}
-        <div className='flex min-h-0 flex-1 gap-4 p-4 max-h-[60dvh]'>
-          <div className='flex min-w-0 flex-1 flex-col gap-2 max-w-[90dvw] overflow-x-auto'>
-            <p className='text-xs text-muted-foreground'>
-              {selectedTiles.length > 0
-                ? 'Click or drag over cells to paint. Top-left of selection aligns to cell. Click without a tile to select cell.'
-                : 'Select one or more (Shift+click) tiles in the tile paint panel, then click or drag to paint.'}
-            </p>
-            <div
-              id='location-editor-grid'
-              className='inline-grid border bg-muted-foreground/20'
-              style={{
-                gridTemplateColumns: `repeat(${gridWidth}, ${tileRenderSize}px)`,
-                gridTemplateRows: `repeat(${gridHeight}, ${tileRenderSize}px)`,
-                ...mapImageStyle,
-              }}>
-              {Array.from({ length: gridHeight }, (_, y) =>
-                Array.from({ length: gridWidth }, (_, x) => {
-                  const key = `${x},${y}`;
-                  const layers = tilesByKey.get(key) ?? [];
-                  const isSelected = selectedCell?.x === x && selectedCell?.y === y;
-                  return (
-                    <button
-                      key={key}
-                      type='button'
-                      className={`group relative shrink-0 cursor-pointer transition-colors ${
-                        mapImageUrl ? 'bg-muted/50' : 'border border-border bg-muted'
-                      } ${isSelected ? 'ring-2 ring-primary ring-inset' : ''}`}
-                      style={{ width: tileRenderSize, height: tileRenderSize }}
-                      onClick={() => handleCellClick(x, y)}
-                      onMouseDown={() => handleCellMouseDown(x, y)}
-                      onMouseEnter={() => handleCellMouseEnter(x, y)}>
-                      <span
-                        className='pointer-events-none absolute inset-0 bg-primary/25 opacity-0 transition-opacity group-hover:opacity-100'
-                        aria-hidden
-                      />
-                      {layers.length > 0 && (
-                        <span className='relative block size-full overflow-hidden pointer-events-none'>
-                          {layers.map((td) => (
-                            <span
-                              key={td.id}
-                              className='absolute inset-0 bg-no-repeat'
-                              style={getTileStyle(td)}
-                            />
-                          ))}
-                        </span>
-                      )}
-                    </button>
-                  );
-                }),
-              )}
-            </div>
+        {/* Grid */}
+        <div
+          className={`flex min-h-0 flex-1 flex-col gap-2 overflow-x-auto p-4 max-h-[${panelOpen ? '60dvh' : '80dvh'}]`}>
+          <p className='text-xs text-muted-foreground'>
+            {selectedTiles.length > 0
+              ? 'Click or drag over cells to paint. Top-left of selection aligns to cell. Click without a tile to select cell.'
+              : 'Select one or more (Shift+click) tiles in the tile paint panel, then click or drag to paint.'}
+          </p>
+          <div
+            id='location-editor-grid'
+            className='inline-grid w-fit border bg-muted-foreground/20'
+            style={{
+              gridTemplateColumns: `repeat(${gridWidth}, ${tileRenderSize}px)`,
+              gridTemplateRows: `repeat(${gridHeight}, ${tileRenderSize}px)`,
+              ...mapImageStyle,
+            }}>
+            {Array.from({ length: gridHeight }, (_, y) =>
+              Array.from({ length: gridWidth }, (_, x) => {
+                const key = `${x},${y}`;
+                const layers = tilesByKey.get(key) ?? [];
+                const isSelected = selectedCell?.x === x && selectedCell?.y === y;
+                return (
+                  <button
+                    key={key}
+                    type='button'
+                    className={`group relative shrink-0 cursor-pointer transition-colors ${
+                      mapImageUrl ? 'bg-muted/50' : 'border border-border bg-muted'
+                    } ${isSelected ? 'ring-2 ring-primary ring-inset' : ''}`}
+                    style={{ width: tileRenderSize, height: tileRenderSize }}
+                    onClick={() => handleCellClick(x, y)}
+                    onMouseDown={() => handleCellMouseDown(x, y)}
+                    onMouseEnter={() => handleCellMouseEnter(x, y)}>
+                    <span
+                      className='pointer-events-none absolute inset-0 bg-primary/25 opacity-0 transition-opacity group-hover:opacity-100'
+                      aria-hidden
+                    />
+                    {layers.length > 0 && (
+                      <span className='relative block size-full overflow-hidden pointer-events-none'>
+                        {layers.map((td) => (
+                          <span
+                            key={td.id}
+                            className='absolute inset-0 bg-no-repeat'
+                            style={getTileStyle(td)}
+                          />
+                        ))}
+                      </span>
+                    )}
+                  </button>
+                );
+              }),
+            )}
           </div>
-
-          {selectedCell && (
-            <CellPropertyPanel
-              cell={selectedCell}
-              layers={selectedCellLayers}
-              selectedTileData={selectedTileData}
-              onSelectLayer={setSelectedLayerId}
-              getTileStyle={getTileStyle}
-              actions={[]}
-              onUpdateTileData={handleUpdateTileData}
-              onRemoveTile={handleRemoveTileFromCell}
-              onAddBlankTile={handleAddBlankTileToCell}
-            />
-          )}
         </div>
 
-        <TilePaintBar
-          worldId={worldId!}
-          selectedTiles={selectedTiles}
-          onSelectedTilesChange={setSelectedTiles}
-          mapImage={mapImageUrl}
-          onMapImageUpload={(id) => loc && updateLocation(loc.id, { mapAssetId: id })}
-          onMapImageRemove={() =>
-            loc && updateLocation(loc.id, { mapAssetId: null, hasMap: false, mapAsset: null })
-          }
-        />
+        <Collapsible
+          open={panelOpen}
+          onOpenChange={setPanelOpen}
+          className='flex shrink-0 flex-col border-t bg-muted/30'>
+          <Tabs defaultValue='tilemap' className='flex min-h-0 flex-1 flex-col'>
+            <div className='flex items-center justify-between gap-2 px-4 py-2'>
+              <TabsList className='w-full max-w-sm'>
+                <TabsTrigger value='tilemap' className='flex-1'>
+                  Tilemap
+                </TabsTrigger>
+                <TabsTrigger value='image' className='flex-1'>
+                  Image
+                </TabsTrigger>
+                <TabsTrigger value='cell' className='flex-1'>
+                  Cell
+                </TabsTrigger>
+              </TabsList>
+              <CollapsibleTrigger asChild>
+                <Button
+                  variant='ghost'
+                  size='icon'
+                  className='h-8 w-8 shrink-0'
+                  aria-label={panelOpen ? 'Collapse panel' : 'Expand panel'}>
+                  {panelOpen ? (
+                    <ChevronDown className='h-4 w-4' />
+                  ) : (
+                    <ChevronUp className='h-4 w-4' />
+                  )}
+                </Button>
+              </CollapsibleTrigger>
+            </div>
+            <CollapsibleContent asChild>
+              <div className='max-h-[45dvh] overflow-auto px-4 pb-3'>
+                <TabsContent value='tilemap' className='mt-2'>
+                  <TilePaintBar
+                    worldId={worldId!}
+                    selectedTiles={selectedTiles}
+                    onSelectedTilesChange={setSelectedTiles}
+                    mapImage={mapImageUrl}
+                    onMapImageUpload={(id) => loc && updateLocation(loc.id, { mapAssetId: id })}
+                    onMapImageRemove={() =>
+                      loc &&
+                      updateLocation(loc.id, {
+                        mapAssetId: null,
+                        hasMap: false,
+                        mapAsset: null,
+                      })
+                    }
+                    mode='tilemap'
+                  />
+                </TabsContent>
+                <TabsContent value='image' className='mt-2'>
+                  <TilePaintBar
+                    worldId={worldId!}
+                    selectedTiles={selectedTiles}
+                    onSelectedTilesChange={setSelectedTiles}
+                    mapImage={mapImageUrl}
+                    onMapImageUpload={(id) => loc && updateLocation(loc.id, { mapAssetId: id })}
+                    onMapImageRemove={() =>
+                      loc &&
+                      updateLocation(loc.id, {
+                        mapAssetId: null,
+                        hasMap: false,
+                        mapAsset: null,
+                      })
+                    }
+                    mode='image'
+                  />
+                </TabsContent>
+                <TabsContent value='cell' className='mt-2'>
+                  {selectedCell ? (
+                    <CellPropertyPanel
+                      cell={selectedCell}
+                      layers={selectedCellLayers}
+                      selectedTileData={selectedTileData}
+                      onSelectLayer={setSelectedLayerId}
+                      getTileStyle={getTileStyle}
+                      actions={[]}
+                      onUpdateTileData={handleUpdateTileData}
+                      onRemoveTile={handleRemoveTileFromCell}
+                      onAddBlankTile={handleAddBlankTileToCell}
+                    />
+                  ) : (
+                    <p className='text-xs text-muted-foreground'>
+                      Select a cell on the grid to edit its tiles and properties.
+                    </p>
+                  )}
+                </TabsContent>
+              </div>
+            </CollapsibleContent>
+          </Tabs>
+        </Collapsible>
       </div>
     </div>
   );

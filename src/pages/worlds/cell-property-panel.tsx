@@ -35,13 +35,13 @@ export function CellPropertyPanel({
   const idPrefix = `cell-${cell.x}-${cell.y}`;
 
   return (
-    <div className='flex w-56 shrink-0 flex-col gap-3 rounded-md border bg-muted/30 p-3'>
-      <h3 className='text-sm font-semibold'>
+    <div className='flex min-w-0 flex-wrap items-center gap-4 rounded-md border bg-muted/30 p-3'>
+      <h3 className='shrink-0 text-sm font-semibold'>
         Cell ({cell.x}, {cell.y})
       </h3>
       {layers.length > 0 ? (
         <>
-          <div className='grid gap-1'>
+          <div className='flex shrink-0 items-center gap-2'>
             <Label className='text-xs'>Layers</Label>
             <div className='flex flex-wrap gap-1'>
               {layers.map((td) => {
@@ -77,15 +77,16 @@ export function CellPropertyPanel({
           </div>
           {selectedTileData && (
             <>
-              <div className='grid gap-1'>
+              <div className='flex shrink-0 items-center gap-2'>
                 <Label className='text-xs'>Z-index</Label>
                 <Input
                   type='number'
+                  className='w-16'
                   value={selectedTileData.zIndex ?? 0}
                   onChange={(e) => onUpdateTileData({ zIndex: parseInt(e.target.value, 10) || 0 })}
                 />
               </div>
-              <div className='flex items-center gap-2'>
+              <div className='flex shrink-0 items-center gap-2'>
                 <Checkbox
                   id={`${idPrefix}-passable`}
                   checked={selectedTileData.isPassable}
@@ -98,7 +99,7 @@ export function CellPropertyPanel({
               <Button
                 variant='outline'
                 size='sm'
-                className='gap-1 text-destructive hover:text-destructive'
+                className='shrink-0 gap-1 text-destructive hover:text-destructive'
                 onClick={onRemoveTile}>
                 <Trash2 className='h-4 w-4' />
                 {layers.length > 1 ? 'Remove this layer' : 'Remove tile'}
@@ -107,7 +108,7 @@ export function CellPropertyPanel({
           )}
         </>
       ) : (
-        <div className='flex flex-col gap-2'>
+        <div className='flex flex-wrap items-center gap-2'>
           <p className='text-xs text-muted-foreground'>
             No tile here. Select a tile and click to paint, or add a blank tile.
           </p>
