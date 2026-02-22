@@ -467,6 +467,19 @@ export class Evaluator {
     this.globalEnv.define('min', Math.min);
     this.globalEnv.define('max', Math.max);
 
+    // Type conversion: for strings, strip commas then parse (e.g. "1,000" → 1000, "3.14" → 3.14)
+    this.globalEnv.define(
+      'number',
+      (value: any): number => {
+        if (typeof value === 'string') {
+          const stripped = value.replace(/,/g, '');
+          return Number(stripped);
+        }
+        return Number(value);
+      },
+    );
+    this.globalEnv.define('text', (value: any): string => String(value ?? ''));
+
     // Attribute helper: getAttr("HP") -> Owner.Attribute("HP").value
     this.globalEnv.define('getAttr', (name: string): any => {
       // Look up Owner in the current environment so scripts that shadow or omit Owner
