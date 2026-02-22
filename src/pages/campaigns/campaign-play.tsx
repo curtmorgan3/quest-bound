@@ -225,6 +225,7 @@ export function CampaignPlay() {
               tileMenu={tileMenu}
               lastClickedTileId={lastClickedTileId}
               eventAtClickedTile={eventAtClickedTile}
+              campaignId={campaignId}
             />
 
             <LocationViewer

@@ -1,0 +1,109 @@
+import { Button } from '@/components/ui/button';
+import {
+  Command,
+  CommandEmpty,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command';
+import { Label } from '@/components/ui/label';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { cn } from '@/lib/utils';
+import type { CampaignEvent } from '@/types';
+import { Check, ChevronsUpDown } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { useCampaignEvents } from '../hooks/campaigns/use-campaign-events';
+
+const EVENT_TYPE_LABELS: Record<string, string> = {
+  on_enter: 'On Enter',
+  on_leave: 'On Leave',
+  on_activate: 'On Activate',
+};
+
+interface EventLookupProps {
+  campaignId: string | undefined;
+  onSelect: (event: CampaignEvent) => void;
+  placeholder?: string;
+  className?: string;
+  disabled?: boolean;
+  label?: string;
+  id?: string;
+  'data-testid'?: string;
+}
+
+export const EventLookup = ({
+  campaignId,
+  onSelect,
+  placeholder = 'Search events...',
+  className,
+  disabled = false,
+  label = 'Event',
+  id,
+  'data-testid': dataTestId,
+}: EventLookupProps) => {
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState('');
+  const { campaignEvents } = useCampaignEvents(campaignId);
+
+  const searchLower = search.toLowerCase().trim();
+  const filteredEvents = useMemo(() => {
+    if (!searchLower) return campaignEvents;
+    return campaignEvents.filter(
+      (e) =>
+        e.label.toLowerCase().includes(searchLower) ||
+        (EVENT_TYPE_LABELS[e.type]?.toLowerCase().includes(searchLower) ?? false),
+    );
+  }, [campaignEvents, searchLower]);
+
+  useEffect(() => {
+    if (open) setSearch('');
+  }, [open]);
+
+  const handleSelect = (event: CampaignEvent) => {
+    console.log('select: ', event);
+    onSelect(event);
+    setOpen(false);
+  };
+
+  return (
+    <div className='flex flex-col gap-2' id={id}>
+      <Label>{label}</Label>
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <Button
+            variant='outline'
+            role='combobox'
+            aria-expanded={open}
+            className={cn('w-full justify-between', className)}
+            disabled={disabled || !campaignId}
+            data-testid={dataTestId}>
+            {placeholder}
+            <ChevronsUpDown className='ml-2 h-4 w-4 shrink-0 opacity-50' />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className='w-[300px] p-0' align='start'>
+          <Command shouldFilter={false}>
+            <CommandInput placeholder={placeholder} value={search} onValueChange={setSearch} />
+            <CommandList>
+              <CommandEmpty>No events found.</CommandEmpty>
+              {filteredEvents.map((event) => (
+                <CommandItem
+                  key={event.id}
+                  value={`${event.label} ${EVENT_TYPE_LABELS[event.type] ?? ''}`}
+                  onSelect={() => handleSelect(event)}>
+                  <Check className='mr-2 h-4 w-4 opacity-0' />
+                  <div className='flex flex-col'>
+                    <span>{event.label}</span>
+                    <span className='text-xs text-muted-foreground'>
+                      {EVENT_TYPE_LABELS[event.type]}
+                    </span>
+                  </div>
+                </CommandItem>
+              ))}
+            </CommandList>
+          </Command>
+        </PopoverContent>
+      </Popover>
+    </div>
+  );
+};

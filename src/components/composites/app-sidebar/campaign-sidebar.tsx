@@ -8,7 +8,7 @@ import {
   SidebarTrigger,
   useSidebar,
 } from '@/components/ui/sidebar';
-import { FileCode, Map } from 'lucide-react';
+import { Calendar, FileCode, Map } from 'lucide-react';
 import { Link, useLocation, useParams } from 'react-router-dom';
 
 export function CampaignSidebar() {
@@ -21,6 +21,7 @@ export function CampaignSidebar() {
 
   const items = [
     { title: 'Campaign', url: `/campaigns/${campaignId}`, icon: Map },
+    { title: 'Events', url: `/campaigns/${campaignId}/events`, icon: Calendar },
     { title: 'Scripts', url: `/campaigns/${campaignId}/scripts`, icon: FileCode },
   ];
 

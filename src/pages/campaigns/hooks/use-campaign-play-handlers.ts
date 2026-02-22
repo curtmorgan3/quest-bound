@@ -1,12 +1,10 @@
 import {
   useCampaignCharacters,
   useCampaignEventLocations,
-  useCampaignEvents,
   useCampaignItems,
   useCharacter,
 } from '@/lib/compass-api';
-import { db } from '@/stores';
-import type { CampaignEventType, Location } from '@/types';
+import type { Location } from '@/types';
 import { useCallback } from 'react';
 
 interface UseCampaignPlayHandlers {
@@ -23,7 +21,6 @@ export const useCampaignPlayHandlers = ({
   const { createCharacter } = useCharacter();
   const { createCampaignCharacter, deleteCampaignCharacter } = useCampaignCharacters(campaignId);
   const { createCampaignItem, deleteCampaignItem } = useCampaignItems(campaignId);
-  const { createCampaignEvent, deleteCampaignEvent } = useCampaignEvents(campaignId);
 
   const { createCampaignEventLocation, deleteCampaignEventLocation } =
     useCampaignEventLocations(undefined);
@@ -72,40 +69,26 @@ export const useCampaignPlayHandlers = ({
     [deleteCampaignItem],
   );
 
-  const handleCreateCampaignEvent = useCallback(
-    async (
-      tile: { locationId: string; tileId: string },
-      label: string,
-      type: CampaignEventType,
-    ) => {
-      if (!campaignId) return;
-      const eventId = await createCampaignEvent(campaignId, { label, type });
-      if (eventId) {
-        await createCampaignEventLocation(eventId, tile.locationId, tile.tileId);
-      }
+  const handleAddEventToTile = useCallback(
+    async (tile: { locationId: string; tileId: string }, campaignEventId: string) => {
+      console.log(tile, campaignEventId);
+      await createCampaignEventLocation(campaignEventId, tile.locationId, tile.tileId);
     },
-    [campaignId, createCampaignEvent, createCampaignEventLocation],
+    [createCampaignEventLocation],
   );
 
-  const handleRemoveCampaignEvent = useCallback(
-    async (campaignEventId: string) => {
-      const locations = await db.campaignEventLocations
-        .where('campaignEventId')
-        .equals(campaignEventId)
-        .toArray();
-      for (const loc of locations) {
-        await deleteCampaignEventLocation(loc.id);
-      }
-      await deleteCampaignEvent(campaignEventId);
+  const handleRemoveEventFromTile = useCallback(
+    async (campaignEventLocationId: string) => {
+      await deleteCampaignEventLocation(campaignEventLocationId);
     },
-    [deleteCampaignEventLocation, deleteCampaignEvent],
+    [deleteCampaignEventLocation],
   );
 
   return {
     handleCreateCampaignCharacter,
     handleDeleteCampaignCharacter,
-    handleCreateCampaignEvent,
-    handleRemoveCampaignEvent,
+    handleAddEventToTile,
+    handleRemoveEventFromTile,
     handleRemoveCampaginItem,
     handleCreateCampaignItem,
   };

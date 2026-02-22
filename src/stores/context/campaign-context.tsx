@@ -4,7 +4,7 @@ import {
   useCampaignPlayHandlers,
   useMapHelpers,
 } from '@/pages/campaigns/hooks';
-import type { ActiveCharacter, CampaignEventType, Location } from '@/types';
+import type { ActiveCharacter, Location } from '@/types';
 import { createContext, useCallback, useContext, useState } from 'react';
 import { useParams } from 'react-router-dom';
 
@@ -30,12 +30,13 @@ export interface CampaignPlayContextValue {
   npcsInThisLocation: ActiveCharacter[];
   playerCharactersInThisLocation: ActiveCharacter[];
   handleCreateCampaignCharacter: (archetypeId: string, tileId?: string) => void;
-  handleCreateCampaignEvent: (
+  /** Place an existing campaign event on a tile (creates CampaignEventLocation only). */
+  handleAddEventToTile: (
     tile: { locationId: string; tileId: string },
-    label: string,
-    type: CampaignEventType,
+    campaignEventId: string,
   ) => Promise<void>;
-  handleRemoveCampaignEvent: (campaignEventId: string) => Promise<void>;
+  /** Remove an event from a tile (deletes only the CampaignEventLocation). */
+  handleRemoveEventFromTile: (campaignEventLocationId: string) => Promise<void>;
 }
 
 export const CampaignPlayContext = createContext<CampaignPlayContextValue | null>(null);
@@ -72,12 +73,12 @@ function useCampaignProvider(campaignId: string | undefined): CampaignPlayContex
     selectedCharacters,
   });
 
-  const { handleCreateCampaignCharacter, handleCreateCampaignEvent, handleRemoveCampaignEvent } =
+  const { handleCreateCampaignCharacter, handleAddEventToTile, handleRemoveEventFromTile } =
     useCampaignPlayHandlers({
-    campaignId,
-    currentLocation,
-    rulesetId,
-  });
+      campaignId,
+      currentLocation,
+      rulesetId,
+    });
 
   const addSelectedCharacter = useCallback((id: string) => {
     setSelectedIds((prev) => new Set(prev).add(id));
@@ -122,8 +123,8 @@ function useCampaignProvider(campaignId: string | undefined): CampaignPlayContex
     handleCreateCampaignCharacter,
     playerCharactersInThisLocation,
     npcsInThisLocation,
-    handleCreateCampaignEvent,
-    handleRemoveCampaignEvent,
+    handleAddEventToTile,
+    handleRemoveEventFromTile,
   };
 }
 
