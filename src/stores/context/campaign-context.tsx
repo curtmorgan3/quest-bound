@@ -22,6 +22,7 @@ export interface CampaignPlayContextValue {
   /** Current location id the view is showing (not character positions) */
   viewingLocationId: string | null;
   currentLocation?: Location;
+  rulesetId?: string;
 }
 
 export const CampaignPlayContext = createContext<CampaignPlayContextValue | null>(null);
@@ -45,6 +46,7 @@ function useCampaignProvider(campaignId: string | undefined): CampaignPlayContex
     selectedNpcs,
     selectedCharacters,
     charactersInThisLocation,
+    rulesetId,
   } = useCampaignEntities({ campaignId, selectedIds, locationId });
 
   const currentLocation = useLocation(locationId);
@@ -95,6 +97,7 @@ function useCampaignProvider(campaignId: string | undefined): CampaignPlayContex
       viewingLocationId: currentLocation?.id ?? null,
       currentLocation,
       charactersInThisLocation,
+      rulesetId,
     }),
     [
       activePlayerCharacters,
@@ -109,6 +112,7 @@ function useCampaignProvider(campaignId: string | undefined): CampaignPlayContex
       toggleCharacterSelection,
       currentLocation,
       charactersInThisLocation,
+      rulesetId,
     ],
   );
 }

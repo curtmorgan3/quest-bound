@@ -1,10 +1,7 @@
 import type { LocationViewerOverlayNode } from '@/components/locations';
-import {
-  useCampaignCharacters,
-  useCampaignItems,
-  type EventLocationWithEvent,
-} from '@/lib/compass-api';
+import { useCampaignItems, type EventLocationWithEvent } from '@/lib/compass-api';
 import { db } from '@/stores';
+import type { ActiveCharacter } from '@/types';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useMemo } from 'react';
 
@@ -14,6 +11,7 @@ interface UseCampaignPlayOverlay {
   eventLocationsWithEvent: EventLocationWithEvent[];
   /** Campaign character ids that are currently selected (used to set overlay node selected state). */
   selectedCharacterIds?: Set<string>;
+  charactersInThisLocation: ActiveCharacter[];
 }
 
 export const useCampaignPlayOverlay = ({
@@ -21,8 +19,8 @@ export const useCampaignPlayOverlay = ({
   currentLocationId,
   eventLocationsWithEvent,
   selectedCharacterIds,
+  charactersInThisLocation,
 }: UseCampaignPlayOverlay) => {
-  const { campaignCharacters } = useCampaignCharacters(campaignId);
   const { campaignItems } = useCampaignItems(campaignId);
 
   const itemsAtLocation = useMemo(
@@ -30,23 +28,6 @@ export const useCampaignPlayOverlay = ({
       campaignItems.filter((ci) => ci.currentLocationId === currentLocationId && ci.currentTileId),
     [campaignItems, currentLocationId],
   );
-
-  const charactersAtLocation = useMemo(
-    () =>
-      campaignCharacters.filter(
-        (cc) => cc.currentLocationId === currentLocationId && cc.currentTileId,
-      ),
-    [campaignCharacters, currentLocationId],
-  );
-
-  const charactersResolved = useLiveQuery(async () => {
-    if (charactersAtLocation.length === 0) return [];
-    const chars = await db.characters.bulkGet(charactersAtLocation.map((cc) => cc.characterId));
-    return charactersAtLocation.map((cc) => ({
-      campaignCharacter: cc,
-      character: chars.find((c) => c?.id === cc.characterId) ?? null,
-    }));
-  }, [charactersAtLocation.map((c) => `${c.id}:${c.currentTileId}`).join(',')]);
 
   const itemsResolved = useLiveQuery(async () => {
     if (itemsAtLocation.length === 0) return [];
@@ -59,22 +40,23 @@ export const useCampaignPlayOverlay = ({
 
   const overlayNodes = useMemo((): LocationViewerOverlayNode[] => {
     const nodes: LocationViewerOverlayNode[] = [];
-    (charactersResolved ?? []).forEach(({ campaignCharacter, character }) => {
-      if (!campaignCharacter.currentTileId) return;
-      const sprites = character?.sprites ?? [];
-      const imageUrl = sprites.length > 0 ? null : (character?.image ?? null);
+    (charactersInThisLocation ?? []).forEach((activeChacter) => {
+      if (!activeChacter.currentTileId) return;
+      const sprites = activeChacter?.sprites ?? [];
+      const imageUrl = sprites.length > 0 ? null : (activeChacter?.image ?? null);
       nodes.push({
-        id: `char-${campaignCharacter.id}`,
-        tileId: campaignCharacter.currentTileId,
+        id: `char-${activeChacter.id}`,
+        tileId: activeChacter.currentTileId,
         type: 'character',
         imageUrl,
-        label: character?.name ?? 'Character',
+        label: activeChacter?.name ?? 'Character',
         sprites: sprites.length > 0 ? sprites : undefined,
-        mapWidth: campaignCharacter.mapWidth ?? 1,
-        mapHeight: campaignCharacter.mapHeight ?? 1,
-        selected: selectedCharacterIds?.has(campaignCharacter.id),
+        mapWidth: activeChacter.mapWidth ?? 1,
+        mapHeight: activeChacter.mapHeight ?? 1,
+        selected: selectedCharacterIds?.has(activeChacter.id),
       });
     });
+
     (itemsResolved ?? []).forEach(({ campaignItem, item }) => {
       if (!campaignItem.currentTileId) return;
       const sprites = item?.sprites ?? [];
@@ -91,7 +73,7 @@ export const useCampaignPlayOverlay = ({
       });
     });
     return nodes;
-  }, [charactersResolved, itemsResolved, selectedCharacterIds]);
+  }, [charactersInThisLocation, itemsResolved, selectedCharacterIds]);
 
   const eventTileIds = useMemo(
     () => eventLocationsWithEvent.filter((el) => el.tileId).map((el) => el.tileId as string),

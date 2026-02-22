@@ -23,11 +23,12 @@ export const useCampaignEntities = ({
 
   const campaignPlayerCharacters = useMemo(
     () => charactersForRuleset.filter((c) => characterIdsInCampaign.has(c.id) && c.isNpc !== true),
-    [charactersForRuleset, characterIdsInCampaign],
+    [charactersForRuleset, characterIdsInCampaign, locationId],
   );
+
   const campaignNpcs = useMemo(
     () => charactersForRuleset.filter((c) => characterIdsInCampaign.has(c.id) && c.isNpc === true),
-    [charactersForRuleset, characterIdsInCampaign],
+    [charactersForRuleset, characterIdsInCampaign, locationId],
   );
 
   const activePlayerCharacters: ActiveCharacter[] = campaignPlayerCharacters.map((character) => {
@@ -62,7 +63,7 @@ export const useCampaignEntities = ({
 
   const selectedCharacters = [...selectedNpcs, ...selectedPlayerCharacters];
 
-  const charactersInThisLocation = activePlayerCharacters.filter(
+  const charactersInThisLocation = [...activePlayerCharacters, ...activeNpcs].filter(
     (c) => c.currentLocationId === locationId || (!locationId && c.currentLocationId === null),
   );
 
@@ -73,5 +74,6 @@ export const useCampaignEntities = ({
     selectedNpcs,
     selectedCharacters,
     charactersInThisLocation,
+    rulesetId,
   };
 };

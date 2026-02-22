@@ -53,6 +53,7 @@ export function CampaignPlay() {
     currentLocationId: currentLocation?.id ?? null,
     eventLocationsWithEvent,
     selectedCharacterIds: selectedIds,
+    charactersInThisLocation,
   });
 
   const handleAdvanceView = useCallback(
