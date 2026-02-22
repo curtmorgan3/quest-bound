@@ -67,6 +67,9 @@ export const useCampaignEntities = ({
     (c) => c.currentLocationId === locationId || (!locationId && c.currentLocationId === null),
   );
 
+  const playerCharactersInThisLocation = charactersInThisLocation.filter((c) => !c.isNpc);
+  const npcsInThisLocation = charactersInThisLocation.filter((c) => c.isNpc);
+
   return {
     activePlayerCharacters,
     activeNpcs,
@@ -74,6 +77,8 @@ export const useCampaignEntities = ({
     selectedNpcs,
     selectedCharacters,
     charactersInThisLocation,
+    playerCharactersInThisLocation,
+    npcsInThisLocation,
     rulesetId,
   };
 };

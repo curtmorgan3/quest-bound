@@ -34,6 +34,7 @@ export function CampaignPlay() {
     charactersInThisLocation,
     toggleCharacterSelection,
     currentLocation,
+    playerCharactersInThisLocation,
   } = useCampaignContext();
 
   const selectedIds = useMemo(
@@ -167,7 +168,7 @@ export function CampaignPlay() {
         <div className='ml-auto flex gap-2'>
           <CampaignCharacterSheet />
           <div className='flex gap-2'>
-            {charactersInThisLocation.map((character) => (
+            {playerCharactersInThisLocation.map((character) => (
               <button
                 type='button'
                 key={character.id}

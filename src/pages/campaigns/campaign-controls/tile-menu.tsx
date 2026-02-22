@@ -1,7 +1,7 @@
 import { ArchetypeLookup } from '@/lib/compass-api';
-import type { Archetype } from '@/types';
 import { useCampaignContext } from '@/stores';
-import { useCallback, useState } from 'react';
+import type { Archetype } from '@/types';
+import { useCallback, useRef, useState } from 'react';
 
 export type TileMenuPayload = {
   x: number;
@@ -18,12 +18,17 @@ interface TileMenuProps {
 type MenuOption = { label: string; action: 'move' | 'createCharacter' };
 
 const selectedCharacterOptions: MenuOption[] = [{ label: 'Move', action: 'move' }];
-
 const emptyTileOptions: MenuOption[] = [{ label: 'Create Character', action: 'createCharacter' }];
 
 export function TileMenu({ children }: TileMenuProps) {
-  const { viewingLocationId, selectedCharacters, moveSelectedCharactersTo, rulesetId } =
-    useCampaignContext();
+  const {
+    viewingLocationId,
+    selectedCharacters,
+    moveSelectedCharactersTo,
+    rulesetId,
+    handleCreateCampaignCharacter,
+    currentLocation,
+  } = useCampaignContext();
 
   const [tileMenu, setTileMenu] = useState<{
     clientX: number;
@@ -32,7 +37,10 @@ export function TileMenu({ children }: TileMenuProps) {
   } | null>(null);
   const [showArchetypeLookup, setShowArchetypeLookup] = useState(false);
 
+  const lastClickedTileId = useRef<string | null>(null);
+
   const onTileMenuRequest = useCallback((payload: TileMenuPayload) => {
+    lastClickedTileId.current = payload.tileId;
     setTileMenu({
       clientX: payload.clientX,
       clientY: payload.clientY,
@@ -52,12 +60,14 @@ export function TileMenu({ children }: TileMenuProps) {
     setShowArchetypeLookup(true);
   }, []);
 
-  const handleArchetypeSelect = useCallback((archetype: Archetype) => {
-    // Stub: create character with selected archetype at tile
-    void archetype;
-    setShowArchetypeLookup(false);
-    setTileMenu(null);
-  }, []);
+  const handleArchetypeSelect = useCallback(
+    (archetype: Archetype) => {
+      handleCreateCampaignCharacter(archetype.id, lastClickedTileId.current ?? undefined);
+      setShowArchetypeLookup(false);
+      setTileMenu(null);
+    },
+    [lastClickedTileId.current],
+  );
 
   const options = selectedCharacters.length > 0 ? selectedCharacterOptions : emptyTileOptions;
 
@@ -73,6 +83,11 @@ export function TileMenu({ children }: TileMenuProps) {
     setTileMenu(null);
     setShowArchetypeLookup(false);
   }, []);
+
+  const clickedTile = tileMenu
+    ? (currentLocation?.tiles ?? []).find((t) => t.id === tileMenu.tileId)
+    : undefined;
+  const isNotPassable = clickedTile ? !clickedTile.isPassable : false;
 
   return (
     <>
@@ -96,15 +111,21 @@ export function TileMenu({ children }: TileMenuProps) {
             <div
               className='fixed z-20 rounded-md border bg-popover px-2 py-1 shadow-md'
               style={{ left: tileMenu.clientX, top: tileMenu.clientY }}>
-              {options.map((opt) => (
-                <button
-                  key={opt.action}
-                  type='button'
-                  className='block w-full rounded px-2 py-1.5 text-left text-sm hover:bg-accent'
-                  onClick={() => handleOptionClick(opt.action)}>
-                  {opt.label}
-                </button>
-              ))}
+              {isNotPassable ? (
+                <p className='px-2 py-1.5 text-sm text-muted-foreground border-b'>
+                  This tile is impassable.
+                </p>
+              ) : (
+                options.map((opt) => (
+                  <button
+                    key={opt.action}
+                    type='button'
+                    className='block w-full rounded px-2 py-1.5 text-left text-sm hover:bg-accent'
+                    onClick={() => handleOptionClick(opt.action)}>
+                    {opt.label}
+                  </button>
+                ))
+              )}
             </div>
           )}
         </>

@@ -1,5 +1,9 @@
 import { useLocation } from '@/lib/compass-api';
-import { useCampaignEntities, useMapHelpers } from '@/pages/campaigns/hooks';
+import {
+  useCampaignEntities,
+  useCampaignPlayHandlers,
+  useMapHelpers,
+} from '@/pages/campaigns/hooks';
 import type { ActiveCharacter, Location } from '@/types';
 import { createContext, useCallback, useContext, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
@@ -23,6 +27,9 @@ export interface CampaignPlayContextValue {
   viewingLocationId: string | null;
   currentLocation?: Location;
   rulesetId?: string;
+  handleCreateCampaignCharacter: (archetypeId: string, tileId?: string) => void;
+  npcsInThisLocation: ActiveCharacter[];
+  playerCharactersInThisLocation: ActiveCharacter[];
 }
 
 export const CampaignPlayContext = createContext<CampaignPlayContextValue | null>(null);
@@ -47,6 +54,8 @@ function useCampaignProvider(campaignId: string | undefined): CampaignPlayContex
     selectedCharacters,
     charactersInThisLocation,
     rulesetId,
+    playerCharactersInThisLocation,
+    npcsInThisLocation,
   } = useCampaignEntities({ campaignId, selectedIds, locationId });
 
   const currentLocation = useLocation(locationId);
@@ -55,6 +64,12 @@ function useCampaignProvider(campaignId: string | undefined): CampaignPlayContex
     campaignId,
     currentLocation,
     selectedCharacters,
+  });
+
+  const { handleCreateCampaignCharacter } = useCampaignPlayHandlers({
+    campaignId,
+    currentLocation,
+    rulesetId,
   });
 
   const addSelectedCharacter = useCallback((id: string) => {
@@ -98,6 +113,9 @@ function useCampaignProvider(campaignId: string | undefined): CampaignPlayContex
       currentLocation,
       charactersInThisLocation,
       rulesetId,
+      handleCreateCampaignCharacter,
+      playerCharactersInThisLocation,
+      npcsInThisLocation,
     }),
     [
       activePlayerCharacters,
@@ -113,6 +131,9 @@ function useCampaignProvider(campaignId: string | undefined): CampaignPlayContex
       currentLocation,
       charactersInThisLocation,
       rulesetId,
+      handleCreateCampaignCharacter,
+      playerCharactersInThisLocation,
+      npcsInThisLocation,
     ],
   );
 }
