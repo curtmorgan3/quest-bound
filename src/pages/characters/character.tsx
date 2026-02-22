@@ -30,6 +30,8 @@ export type CharacterPageFloatingActions = {
 
 interface CharacterPage {
   id?: string;
+  /** When set (e.g. in campaign play), scripts get Owner.location and other campaign context. */
+  campaignId?: string;
   lockByDefault?: boolean;
   /**
    * If provided, renders just this window in preview mode. Otherwise, it renders all character pages and windows.
@@ -45,6 +47,7 @@ interface CharacterPage {
 
 export const CharacterPage = ({
   id,
+  campaignId,
   lockByDefault,
   editorWindowId,
   transparentBackground,
@@ -83,6 +86,7 @@ export const CharacterPage = ({
   } = useCharacterInventoryHandlers({
     character,
     roll,
+    campaignId,
     inventoryPanelConfig,
     setInventoryPanelConfig,
   });
@@ -111,7 +115,7 @@ export const CharacterPage = ({
 
   const fireAction = async (actionId: string) => {
     if (!character) return;
-    executeActionEvent(actionId, character.id, null, 'on_activate', roll);
+    executeActionEvent(actionId, character.id, null, 'on_activate', roll, campaignId);
   };
 
   if (!character) {

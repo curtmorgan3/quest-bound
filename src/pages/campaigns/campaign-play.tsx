@@ -234,6 +234,7 @@ export function CampaignPlay() {
               tileRenderSize={currentLocation?.tileRenderSize}
               overlayNodes={overlayNodes}
               eventTileIds={eventTileIds}
+              highlightedTileId={tileMenu?.tileId ?? null}
               playMode
               onTileMenuRequest={onTileMenuRequest}
               onCreateTileAt={handleCreateTileAt}

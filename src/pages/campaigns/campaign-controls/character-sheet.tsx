@@ -7,7 +7,7 @@ import { Backpack, X } from 'lucide-react';
 import { useState } from 'react';
 
 export const CampaignCharacterSheet = () => {
-  const { selectedPlayerCharacters } = useCampaignContext();
+  const { campaignId, selectedPlayerCharacters } = useCampaignContext();
   const { state: sidebarState } = useSidebar();
   const [sheetOpen, setSheetOpen] = useState(false);
 
@@ -40,6 +40,7 @@ export const CampaignCharacterSheet = () => {
             <div className='relative h-full w-full overflow-auto'>
               <CharacterPage
                 id={characterId}
+                campaignId={campaignId}
                 lockByDefault
                 transparentBackground
                 onClose={() => setSheetOpen(false)}

@@ -33,7 +33,7 @@ export const dbSchema = {
   tiles: `${common}, tilemapId, tileX, tileY`,
   locations: `${common}, label, worldId, nodeX, nodeY, nodeWidth, nodeHeight, parentLocationId, gridWidth, gridHeight, tiles, hasMap, tileRenderSize, labelVisible, backgroundColor, opacity, sides, backgroundAssetId, backgroundSize, backgroundPosition, mapAssetId, [worldId+parentLocationId]`,
   campaigns: `${common}, label, rulesetId, worldId, [rulesetId], [worldId]`,
-  campaignCharacters: `${common}, characterId, campaignId, currentLocationId, currentTileId, [campaignId], [characterId]`,
+  campaignCharacters: `${common}, characterId, campaignId, currentLocationId, currentTileId, [campaignId], [characterId], [campaignId+characterId]`,
   campaignItems: `${common}, itemId, campaignId, currentLocationId, currentTileId, [campaignId]`,
   campaignEvents: `${common}, label, campaignId, type, scriptId, [campaignId]`,
   campaignEventLocations: `${common}, campaignEventId, locationId, tileId, [campaignEventId], [locationId]`,

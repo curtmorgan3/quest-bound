@@ -90,6 +90,7 @@ export class EventHandlerExecutor {
     characterId: string,
     eventType: 'on_equip' | 'on_unequip' | 'on_consume',
     roll?: RollFn,
+    campaignId?: string,
   ): Promise<EventHandlerResult> {
     // Get item
     const item = await this.db.items.get(itemId);
@@ -145,9 +146,10 @@ export class EventHandlerExecutor {
       triggerType: 'item_event',
       entityType: 'item',
       entityId: item.id,
+      campaignId,
       roll,
       executeActionEvent: (actionId, ownerId, targetIdForAction, eventTypeForAction) =>
-        this.executeActionEvent(actionId, ownerId, targetIdForAction, eventTypeForAction, roll),
+        this.executeActionEvent(actionId, ownerId, targetIdForAction, eventTypeForAction, roll, campaignId),
     };
 
     const result = this.runScriptForTest
@@ -182,6 +184,7 @@ export class EventHandlerExecutor {
     targetId: string | null,
     eventType: 'on_activate' | 'on_deactivate',
     roll?: RollFn,
+    campaignId?: string,
   ): Promise<EventHandlerResult> {
     // Get action
     const action = await this.db.actions.get(actionId);
@@ -241,11 +244,12 @@ export class EventHandlerExecutor {
         triggerType: 'action_click',
         entityType: 'action',
         entityId: action.id,
+        campaignId,
         roll,
         // Only allow Owner.Action().activate() at top level to avoid infinite re-entrancy
         ...(actionEventDepth === 1 && {
           executeActionEvent: (actionId, ownerId, targetIdForAction, eventTypeForAction) =>
-            this.executeActionEvent(actionId, ownerId, targetIdForAction, eventTypeForAction, roll),
+            this.executeActionEvent(actionId, ownerId, targetIdForAction, eventTypeForAction, roll, campaignId),
         }),
       };
 
@@ -347,6 +351,7 @@ export class EventHandlerExecutor {
     characterId: string,
     eventType: 'on_add' | 'on_remove',
     roll?: RollFn,
+    campaignId?: string,
   ): Promise<EventHandlerResult> {
     const archetype = await this.db.archetypes.get(archetypeId);
     if (!archetype) {
@@ -397,9 +402,10 @@ export class EventHandlerExecutor {
       triggerType: 'archetype_event',
       entityType: 'archetype',
       entityId: archetype.id,
+      campaignId,
       roll,
       executeActionEvent: (actionId, ownerId, targetIdForAction, eventTypeForAction) =>
-        this.executeActionEvent(actionId, ownerId, targetIdForAction, eventTypeForAction, roll),
+        this.executeActionEvent(actionId, ownerId, targetIdForAction, eventTypeForAction, roll, campaignId),
     };
 
     const result = this.runScriptForTest
@@ -675,9 +681,10 @@ export class EventHandlerExecutor {
       triggerType: 'attribute_change',
       entityType: 'campaignEventLocation',
       entityId: campaignEventLocationId,
+      campaignId: campaignEvent.campaignId,
       roll,
       executeActionEvent: (actionId, ownerId, targetIdForAction, eventTypeForAction) =>
-        this.executeActionEvent(actionId, ownerId, targetIdForAction, eventTypeForAction, roll),
+        this.executeActionEvent(actionId, ownerId, targetIdForAction, eventTypeForAction, roll, campaignEvent.campaignId),
     };
 
     const result = await this.executeEventHandlerByCall(script.sourceCode, eventType, context);

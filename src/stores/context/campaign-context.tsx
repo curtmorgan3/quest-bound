@@ -1,3 +1,4 @@
+import { setCurrentCampaignIdForScripts } from '@/lib/compass-logic/worker/current-campaign-ref';
 import { useLocation } from '@/lib/compass-api';
 import {
   useCampaignEntities,
@@ -5,10 +6,11 @@ import {
   useMapHelpers,
 } from '@/pages/campaigns/hooks';
 import type { ActiveCharacter, Location } from '@/types';
-import { createContext, useCallback, useContext, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 
 export interface CampaignPlayContextValue {
+  campaignId: string | undefined;
   campaignPlayerCharacters: ActiveCharacter[];
   campaignNpcs: ActiveCharacter[];
   selectedCharacters: ActiveCharacter[];
@@ -104,6 +106,7 @@ function useCampaignProvider(campaignId: string | undefined): CampaignPlayContex
   );
 
   return {
+    campaignId,
     campaignPlayerCharacters: activePlayerCharacters,
     campaignNpcs: activeNpcs,
     selectedCharacters,
@@ -135,6 +138,11 @@ interface CampaignProviderProps {
 export function CampaignProvider({ children }: CampaignProviderProps) {
   const { campaignId } = useParams<{ campaignId: string }>();
   const value = useCampaignProvider(campaignId);
+
+  useEffect(() => {
+    setCurrentCampaignIdForScripts(campaignId);
+    return () => setCurrentCampaignIdForScripts(undefined);
+  }, [campaignId]);
 
   return <CampaignPlayContext.Provider value={value}>{children}</CampaignPlayContext.Provider>;
 }

@@ -12,11 +12,14 @@ interface UseInventoryUpdateWrapperes {
   setInventoryPanelConfig: (config: InventoryPanelConfig) => void;
   character?: Character;
   roll?: RollFn;
+  /** When set (e.g. in campaign play), scripts get Owner.location and other campaign context. */
+  campaignId?: string;
 }
 
 export const useCharacterInventoryHandlers = ({
   character,
   roll,
+  campaignId,
   inventoryPanelConfig,
   setInventoryPanelConfig,
 }: UseInventoryUpdateWrapperes) => {
@@ -37,7 +40,7 @@ export const useCharacterInventoryHandlers = ({
 
   const fireItemEvent = async (rulesetItemId: string, event: ItemEvent) => {
     if (!character) return;
-    executeItemEvent(rulesetItemId, character.id, event, roll);
+    executeItemEvent(rulesetItemId, character.id, event, roll, campaignId);
   };
 
   const addItemAndFireEvent = async (

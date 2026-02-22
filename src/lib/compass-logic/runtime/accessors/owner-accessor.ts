@@ -1,11 +1,7 @@
 import type { Action, Attribute, CharacterAttribute, InventoryItem, Item } from '@/types';
 import type Dexie from 'dexie';
 import type { ExecuteActionEventFn } from '../proxies';
-import {
-  ActionProxy,
-  AttributeProxy,
-  createItemInstanceProxy,
-} from '../proxies';
+import { ActionProxy, AttributeProxy, createItemInstanceProxy } from '../proxies';
 import type { StructuredCloneSafe } from '../structured-clone-safe';
 
 /**
@@ -29,6 +25,7 @@ export class OwnerAccessor implements StructuredCloneSafe {
   protected archetypeNamesCache: Set<string>;
   protected targetId: string | null;
   protected executeActionEvent: ExecuteActionEventFn | undefined;
+  protected locationName: string;
 
   constructor(
     characterId: string,
@@ -44,6 +41,7 @@ export class OwnerAccessor implements StructuredCloneSafe {
     archetypeNamesCache: Set<string> = new Set(),
     targetId: string | null = null,
     executeActionEvent?: ExecuteActionEventFn,
+    locationName: string = '',
   ) {
     this.characterId = characterId;
     this.characterName = characterName;
@@ -58,6 +56,7 @@ export class OwnerAccessor implements StructuredCloneSafe {
     this.archetypeNamesCache = archetypeNamesCache;
     this.targetId = targetId;
     this.executeActionEvent = executeActionEvent;
+    this.locationName = locationName;
   }
 
   /**
@@ -206,6 +205,15 @@ export class OwnerAccessor implements StructuredCloneSafe {
   }
 
   /**
+   * Get the name (label) of the character's current location in the campaign.
+   * Only set when the script runs in campaign context (e.g. campaign event on_enter); otherwise empty string.
+   */
+  get location(): string {
+    console.log('location name: ', this.locationName);
+    return this.locationName;
+  }
+
+  /**
    * Get the character's name/title (alias for name).
    */
   get title(): string {
@@ -324,7 +332,7 @@ export class OwnerAccessor implements StructuredCloneSafe {
    * Return a plain object for postMessage (structured clone).
    * Called at the worker boundary when script returns or logs Owner.
    */
-  toStructuredCloneSafe(): { __type: 'Owner'; name: string } {
-    return { __type: 'Owner', name: this.characterName };
+  toStructuredCloneSafe(): { __type: 'Owner'; name: string; location: string } {
+    return { __type: 'Owner', name: this.characterName, location: this.locationName };
   }
 }

@@ -1,3 +1,4 @@
+import { getCurrentCampaignIdForScripts } from '@/lib/compass-logic/worker/current-campaign-ref';
 import { getQBScriptClient } from '@/lib/compass-logic/worker';
 import type { DB } from './types';
 
@@ -20,6 +21,7 @@ export function registerCharacterDbHooks(db: DB) {
             attributeId,
             characterId,
             rulesetId,
+            campaignId: getCurrentCampaignIdForScripts(),
           })
           .catch((err) => {
             console.warn('Reactive script execution failed:', err);

@@ -34,6 +34,8 @@ export interface ScriptExecutionContext {
   roll?: RollFn;
   /** When set, Owner.Action('name').activate() / .deactivate() can run action event handlers (e.g. from worker or EventHandlerExecutor). */
   executeActionEvent?: ExecuteActionEventFn;
+  /** When set (e.g. campaign event scripts), used to resolve Owner.location from the character's current location in the campaign. */
+  campaignId?: string;
 }
 
 /**
@@ -77,6 +79,7 @@ export class ScriptRunner {
     locationId: string;
     tileId: string | null;
   } | null = null;
+  private ownerLocationName: string = '';
 
   constructor(context: ScriptExecutionContext) {
     this.context = context;
@@ -204,6 +207,18 @@ export class ScriptRunner {
             tileId: loc.tileId ?? null,
           }
         : null;
+    }
+
+    // Load owner's current location name when in campaign context (for Owner.location)
+    if (this.context.campaignId && this.context.ownerId) {
+      const cc = await db.campaignCharacters
+        .where('[campaignId+characterId]')
+        .equals([this.context.campaignId, this.context.ownerId])
+        .first();
+      if (cc?.currentLocationId) {
+        const location = await db.locations.get(cc.currentLocationId);
+        this.ownerLocationName = location?.label ?? '';
+      }
     }
   }
 
@@ -333,6 +348,7 @@ export class ScriptRunner {
       this.ownerArchetypeNames,
       targetId ?? null,
       this.context.executeActionEvent,
+      this.ownerLocationName,
     );
 
     // Create Target accessor (null if no target)

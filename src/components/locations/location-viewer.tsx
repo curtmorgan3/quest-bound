@@ -46,6 +46,8 @@ export interface LocationViewerProps {
   overlayNodes?: LocationViewerOverlayNode[];
   /** Optional: tile IDs that have a campaign event (highlight). */
   eventTileIds?: string[];
+  /** Optional: tile ID to highlight (e.g. when tile menu is open). Shown as orange overlay. */
+  highlightedTileId?: string | null;
   /** Optional: called when something is dropped on a cell (e.g. drag payload from overlay). */
   onDrop?: (x: number, y: number, e: React.DragEvent) => void;
   /** Optional: called when an overlay node (e.g. character/item) is clicked. Use to open context menu at that tile. */
@@ -75,6 +77,7 @@ export function LocationViewer({
   tileRenderSize: tileRenderSizeProp,
   overlayNodes = [],
   eventTileIds = [],
+  highlightedTileId = null,
   onDrop,
   onOverlayClick,
   playMode = false,
@@ -289,6 +292,9 @@ export function LocationViewer({
                 const key = `${x},${y}`;
                 const layers = tilesByKey.get(key) ?? [];
                 const hasEvent = layers.some((td) => eventTileIds.includes(td.id));
+                const isHighlighted =
+                  highlightedTileId != null &&
+                  layers.some((td) => td.id === highlightedTileId);
                 return (
                   <div
                     key={key}
@@ -331,6 +337,13 @@ export function LocationViewer({
                       <span
                         className='absolute inset-0 border-2 border-amber-500 rounded pointer-events-none'
                         title='Campaign event'
+                        aria-hidden
+                      />
+                    )}
+                    {isHighlighted && (
+                      <span
+                        className='absolute inset-0 bg-orange-500/40 rounded pointer-events-none border-2 border-orange-500'
+                        title='Selected'
                         aria-hidden
                       />
                     )}

@@ -78,6 +78,7 @@ export interface ExecuteActionEventSignal {
     targetId: string | null;
     eventType: 'on_activate' | 'on_deactivate';
     requestId: string;
+    campaignId?: string;
   };
 }
 
@@ -88,6 +89,7 @@ export interface ExecuteItemEventSignal {
     characterId: string;
     eventType: string;
     requestId: string;
+    campaignId?: string;
   };
 }
 
@@ -99,6 +101,7 @@ export interface ExecuteArchetypeEventSignal {
     characterId: string;
     eventType: 'on_add' | 'on_remove';
     requestId: string;
+    campaignId?: string;
   };
 }
 
@@ -230,6 +233,7 @@ export interface AttributeChangedPayload {
   characterId: string;
   rulesetId: string;
   requestId: string;
+  campaignId?: string;
   options?: {
     useTransaction?: boolean;
     maxExecutions?: number;

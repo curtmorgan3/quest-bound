@@ -429,8 +429,9 @@ async function handleAttributeChanged(payload: AttributeChangedPayload): Promise
       payload.rulesetId,
       {
         ...(payload.options || {}),
+        campaignId: payload.campaignId,
         executeActionEvent: (actionId, characterId, targetId, eventType) =>
-          executor.executeActionEvent(actionId, characterId, targetId, eventType, rollFn),
+          executor.executeActionEvent(actionId, characterId, targetId, eventType, rollFn, payload.campaignId),
         roll: rollFn,
       },
     );
@@ -607,6 +608,7 @@ async function handleExecuteActionEvent(payload: {
   targetId: string | null;
   eventType: 'on_activate' | 'on_deactivate';
   requestId: string;
+  campaignId?: string;
   roll?: RollFn;
 }): Promise<void> {
   try {
@@ -626,6 +628,7 @@ async function handleExecuteActionEvent(payload: {
       payload.targetId,
       payload.eventType,
       rollFn,
+      payload.campaignId,
     );
 
     const script = await db.scripts
@@ -684,6 +687,7 @@ async function handleExecuteItemEvent(payload: {
   characterId: string;
   eventType: string;
   requestId: string;
+  campaignId?: string;
 }): Promise<void> {
   try {
     const item = await db.items.get(payload.itemId);
@@ -701,6 +705,7 @@ async function handleExecuteItemEvent(payload: {
       payload.characterId,
       payload.eventType as 'on_equip' | 'on_unequip' | 'on_consume',
       rollFn,
+      payload.campaignId,
     );
 
     const script = await db.scripts.where({ entityId: payload.itemId, entityType: 'item' }).first();
@@ -757,6 +762,7 @@ async function handleExecuteArchetypeEvent(payload: {
   characterId: string;
   eventType: 'on_add' | 'on_remove';
   requestId: string;
+  campaignId?: string;
 }): Promise<void> {
   try {
     const archetype = await db.archetypes.get(payload.archetypeId);
@@ -774,6 +780,7 @@ async function handleExecuteArchetypeEvent(payload: {
       payload.characterId,
       payload.eventType,
       rollFn,
+      payload.campaignId,
     );
 
     // Logs are persisted inside EventHandlerExecutor.executeArchetypeEvent so they

@@ -165,6 +165,7 @@ export interface UseExecuteActionEventResult {
     targetId: string | null,
     eventType: 'on_activate' | 'on_deactivate',
     roll?: RollFn,
+    campaignId?: string,
   ) => Promise<void>;
   result: any;
   announceMessages: string[];
@@ -191,6 +192,7 @@ export function useExecuteActionEvent(timeout = 10000): UseExecuteActionEventRes
       targetId: string | null,
       eventType: 'on_activate' | 'on_deactivate',
       roll?: RollFn,
+      campaignId?: string,
     ) => {
       setIsExecuting(true);
       setError(null);
@@ -203,6 +205,7 @@ export function useExecuteActionEvent(timeout = 10000): UseExecuteActionEventRes
           eventType,
           roll,
           timeout,
+          campaignId,
         );
 
         setResult(response.value);
@@ -252,6 +255,7 @@ export interface UseExecuteItemEventResult {
     characterId: string,
     eventType: string,
     roll?: RollFn,
+    campaignId?: string,
   ) => Promise<void>;
   result: any;
   announceMessages: string[];
@@ -272,7 +276,7 @@ export function useExecuteItemEvent(timeout = 10000): UseExecuteItemEventResult 
   const [error, setError] = useState<Error | null>(null);
 
   const executeItemEvent = useCallback(
-    async (itemId: string, characterId: string, eventType: string, roll?: RollFn) => {
+    async (itemId: string, characterId: string, eventType: string, roll?: RollFn, campaignId?: string) => {
       setIsExecuting(true);
       setError(null);
 
@@ -283,6 +287,7 @@ export function useExecuteItemEvent(timeout = 10000): UseExecuteItemEventResult 
           eventType,
           roll,
           timeout,
+          campaignId,
         );
         setResult(response.value);
         setAnnounceMessages(response.announceMessages);
@@ -331,6 +336,7 @@ export interface UseExecuteArchetypeEventResult {
     characterId: string,
     eventType: 'on_add' | 'on_remove',
     roll?: RollFn,
+    campaignId?: string,
   ) => Promise<void>;
   result: any;
   announceMessages: string[];
@@ -356,6 +362,7 @@ export function useExecuteArchetypeEvent(timeout = 10000): UseExecuteArchetypeEv
       characterId: string,
       eventType: 'on_add' | 'on_remove',
       roll?: RollFn,
+      campaignId?: string,
     ) => {
       setIsExecuting(true);
       setError(null);
@@ -367,6 +374,7 @@ export function useExecuteArchetypeEvent(timeout = 10000): UseExecuteArchetypeEv
           eventType,
           roll,
           timeout,
+          campaignId,
         );
         setResult(response.value);
         setAnnounceMessages(response.announceMessages);
