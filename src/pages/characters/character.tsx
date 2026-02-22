@@ -1,7 +1,6 @@
 import { useSidebar } from '@/components/ui/sidebar';
-import { useNotifications } from '@/hooks';
 import { useCharacter, useCharacterAttributes } from '@/lib/compass-api';
-import { useExecuteActionEvent, useScriptAnnouncements } from '@/lib/compass-logic';
+import { useExecuteActionEvent } from '@/lib/compass-logic';
 import { SheetViewer } from '@/lib/compass-planes';
 import {
   CharacterArchetypesPanelContext,
@@ -56,7 +55,6 @@ export const CharacterPage = ({
 }: CharacterPage) => {
   const { open } = useSidebar();
   const { characterId } = useParams<{ characterId: string }>();
-  const { addNotification } = useNotifications();
   const characterInventoryPanel = useContext(CharacterInventoryPanelContext);
   const characterArchetypesPanel = useContext(CharacterArchetypesPanelContext);
 
@@ -89,10 +87,6 @@ export const CharacterPage = ({
     campaignId,
     inventoryPanelConfig,
     setInventoryPanelConfig,
-  });
-
-  useScriptAnnouncements((msg: string) => {
-    addNotification(msg);
   });
 
   const handleUpdateCharacterAttribute = (id: string, update: Partial<CharacterAttribute>) => {

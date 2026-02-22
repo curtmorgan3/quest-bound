@@ -1,7 +1,9 @@
 import { Loading } from '@/components';
 import { GlobalLoadingOverlay } from '@/components/global-loading-overlay';
 import { OnboardingPanel, useOnboardingStatus } from '@/components/onboarding';
+import { useNotifications } from '@/hooks';
 import { useFontLoader, useUsers } from '@/lib/compass-api';
+import { useScriptAnnouncements } from '@/lib/compass-logic';
 import { SignIn } from '@/pages';
 import { DicePanel } from '@/pages/dice';
 import {
@@ -46,6 +48,9 @@ export function Layout() {
 
   // Load ruleset fonts into the browser
   useFontLoader();
+
+  const { addNotification } = useNotifications();
+  useScriptAnnouncements(addNotification);
 
   const [characterInventoryPanelOpen, setCharacterInventoryPanelOpen] = useState(false);
   const [characterArchetypesPanelOpen, setCharacterArchetypesPanelOpen] = useState(false);
