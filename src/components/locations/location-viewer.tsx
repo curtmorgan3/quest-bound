@@ -2,10 +2,13 @@ import { SpriteStack } from '@/components/composites/sprite-stack';
 import { Button } from '@/components/ui/button';
 import { useTilemapAsset } from '@/hooks';
 import { useLocation } from '@/lib/compass-api';
+import type { SheetViewerBackdropClickDetail } from '@/lib/compass-planes/sheet-viewer';
+import { SHEET_VIEWER_BACKDROP_CLICK } from '@/lib/compass-planes/sheet-viewer';
 import { cn } from '@/lib/utils';
+import type { TileMenuPayload } from '@/pages/campaigns/hooks';
 import type { TileData } from '@/types';
 import { ZoomIn, ZoomOut } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { getTilesByKey } from './utils';
 
 const ZOOM_MIN = 0.25;
@@ -62,6 +65,8 @@ export interface LocationViewerProps {
   }) => void;
   /** In play mode, called when the user clicks a cell with no tile. Should create a tile and return its id, or null on failure. */
   onCreateTileAt?: (x: number, y: number) => Promise<string | null>;
+  /** Called when the sheet viewer backdrop is clicked and the position is over this viewer's grid. x,y are cell coords; tileId is the top tile at that cell or null. */
+  onSheetBackdropClick?: (payload: TileMenuPayload) => void;
 }
 
 export function LocationViewer({
@@ -77,6 +82,7 @@ export function LocationViewer({
   onMoveCharacter,
   onTileMenuRequest,
   onCreateTileAt,
+  onSheetBackdropClick,
 }: LocationViewerProps) {
   const location = useLocation(locationId);
   const loc = location ?? undefined;
@@ -117,6 +123,61 @@ export function LocationViewer({
     return map;
   }, [loc?.tiles]);
   const mapImageUrl = loc?.mapAsset ?? null;
+
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const gridStateRef = useRef({
+    effectiveTileSize: 0,
+    gridWidth: 0,
+    gridHeight: 0,
+    tilesByKey: new Map<string, TileData[]>(),
+  });
+  gridStateRef.current = {
+    effectiveTileSize,
+    gridWidth,
+    gridHeight,
+    tilesByKey,
+  };
+
+  useEffect(() => {
+    if (!onSheetBackdropClick) return;
+    const handler = (e: CustomEvent<SheetViewerBackdropClickDetail>) => {
+      const { clientX, clientY } = e.detail;
+      const container = scrollContainerRef.current;
+      if (!container) return;
+      const rect = container.getBoundingClientRect();
+      if (
+        clientX < rect.left ||
+        clientX >= rect.right ||
+        clientY < rect.top ||
+        clientY >= rect.bottom
+      )
+        return;
+      const {
+        effectiveTileSize: size,
+        gridWidth: gw,
+        gridHeight: gh,
+        tilesByKey: tbk,
+      } = gridStateRef.current;
+      if (size <= 0) return;
+      const localX = clientX - rect.left + container.scrollLeft;
+      const localY = clientY - rect.top + container.scrollTop;
+      const x = Math.floor(localX / size);
+      const y = Math.floor(localY / size);
+      if (x < 0 || x >= gw || y < 0 || y >= gh) return;
+      const layers = tbk.get(`${x},${y}`) ?? [];
+      const topTile = layers.length > 0 ? layers[layers.length - 1]! : null;
+      if (!topTile) return;
+      onSheetBackdropClick({
+        clientX,
+        clientY,
+        x,
+        y,
+        tileId: topTile.id,
+      });
+    };
+    window.addEventListener(SHEET_VIEWER_BACKDROP_CLICK, handler as EventListener);
+    return () => window.removeEventListener(SHEET_VIEWER_BACKDROP_CLICK, handler as EventListener);
+  }, [onSheetBackdropClick]);
 
   const handleCellClick = useCallback(
     async (x: number, y: number, e: React.MouseEvent) => {
@@ -204,7 +265,7 @@ export function LocationViewer({
           <ZoomOut className='h-4 w-4' />
         </Button>
       </div>
-      <div className='h-full w-full overflow-auto flex'>
+      <div ref={scrollContainerRef} className='h-full w-full overflow-auto flex'>
         <div
           className='relative'
           style={{

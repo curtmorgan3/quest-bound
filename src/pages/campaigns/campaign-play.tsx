@@ -14,7 +14,7 @@ import { ArrowUp, ChevronRight } from 'lucide-react';
 import { useCallback, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { CampaignCharacterSheet, JumpToCharacter, TileMenu } from './campaign-controls';
-import { useCampaignPlayOverlay } from './hooks';
+import { useCampaignPlayOverlay, type TileMenuPayload } from './hooks';
 
 export function CampaignPlay() {
   const { campaignId } = useParams<{ campaignId: string; locationId?: string }>();
@@ -49,13 +49,14 @@ export function CampaignPlay() {
   const eventLocationsWithEvent = useCampaignEventLocationsByLocation(
     viewingLocationId ?? undefined,
   );
-  const { overlayNodes, eventTileIds } = useCampaignPlayOverlay({
-    campaignId,
-    currentLocationId: currentLocation?.id ?? null,
-    eventLocationsWithEvent,
-    selectedCharacterIds: selectedIds,
-    charactersInThisLocation,
-  });
+  const { overlayNodes, eventTileIds, tileMenu, onTileMenuRequest, lastClickedTileId } =
+    useCampaignPlayOverlay({
+      campaignId,
+      currentLocationId: currentLocation?.id ?? null,
+      eventLocationsWithEvent,
+      selectedCharacterIds: selectedIds,
+      charactersInThisLocation,
+    });
 
   const handleAdvanceView = useCallback(
     (locationId: string) => {
@@ -88,8 +89,8 @@ export function CampaignPlay() {
   );
 
   const handleOverlayClick = useCallback(
-    (tileId: string, e: React.MouseEvent) => {
-      const shiftHeld = e.shiftKey;
+    (tileId: string, e?: React.MouseEvent) => {
+      const shiftHeld = e?.shiftKey;
 
       const allAtLocation = [...campaignPlayerCharacters, ...campaignNpcs];
       const charactersAtTile = allAtLocation.filter(
@@ -119,6 +120,10 @@ export function CampaignPlay() {
       removeSelectedCharacter,
     ],
   );
+
+  const handleClickFromSheet = (payload: TileMenuPayload) => {
+    onTileMenuRequest(payload);
+  };
 
   const showLocationView = Boolean(viewingLocationId && currentLocation?.hasMap);
 
@@ -210,21 +215,24 @@ export function CampaignPlay() {
         )}
         {showLocationView && viewingLocationId && (
           <div className='flex h-full items-center justify-center'>
-            <TileMenu>
-              {({ onTileMenuRequest }) => (
-                <LocationViewer
-                  locationId={viewingLocationId}
-                  worldId={campaign.worldId}
-                  tileRenderSize={currentLocation?.tileRenderSize}
-                  overlayNodes={overlayNodes}
-                  eventTileIds={eventTileIds}
-                  playMode
-                  onTileMenuRequest={onTileMenuRequest}
-                  onCreateTileAt={handleCreateTileAt}
-                  onOverlayClick={handleOverlayClick}
-                />
-              )}
-            </TileMenu>
+            <TileMenu
+              onTileMenuRequest={onTileMenuRequest}
+              tileMenu={tileMenu}
+              lastClickedTileId={lastClickedTileId}
+            />
+
+            <LocationViewer
+              locationId={viewingLocationId}
+              worldId={campaign.worldId}
+              tileRenderSize={currentLocation?.tileRenderSize}
+              overlayNodes={overlayNodes}
+              eventTileIds={eventTileIds}
+              playMode
+              onTileMenuRequest={onTileMenuRequest}
+              onCreateTileAt={handleCreateTileAt}
+              onOverlayClick={handleOverlayClick}
+              onSheetBackdropClick={handleClickFromSheet}
+            />
           </div>
         )}
       </div>

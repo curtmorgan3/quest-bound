@@ -11,6 +11,7 @@ import '@xyflow/react/dist/style.css';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { BaseEditor } from '../base-editor';
+import { dispatchSheetViewerBackdropClick } from './backdrop-click-event';
 import { WindowNode } from './window-node';
 import { WindowsTabs } from './windows-tabs';
 
@@ -202,7 +203,13 @@ export const SheetViewer = ({
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', position: 'relative' }}>
       {locked ? (
-        <div style={{ position: 'relative', flex: 1, overflow: 'hidden' }}>
+        <div
+          style={{ position: 'relative', flex: 1, overflow: 'hidden' }}
+          onClick={(e) => {
+            if (!(e.target as Element).closest('.window-node')) {
+              dispatchSheetViewerBackdropClick(e.clientX, e.clientY);
+            }
+          }}>
           {!transparentBackground && currentPage?.backgroundColor != null && (
             <div
               aria-hidden
@@ -271,6 +278,7 @@ export const SheetViewer = ({
           backgroundColor={transparentBackground ? undefined : currentPage?.backgroundColor}
           backgroundImage={transparentBackground ? undefined : currentPage?.image}
           backgroundOpacity={currentPage?.backgroundOpacity}
+          onPaneClick={(e) => dispatchSheetViewerBackdropClick(e.clientX, e.clientY)}
         />
       )}
       {!editorWindowId && (

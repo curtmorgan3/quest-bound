@@ -3,7 +3,21 @@ import { useCampaignItems, type EventLocationWithEvent } from '@/lib/compass-api
 import { db } from '@/stores';
 import type { ActiveCharacter } from '@/types';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { useMemo } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
+
+export type TileMenuPayload = {
+  x: number;
+  y: number;
+  clientX: number;
+  clientY: number;
+  tileId: string;
+};
+
+export type TileMenu = {
+  clientX: number;
+  clientY: number;
+  tileId: string;
+} | null;
 
 interface UseCampaignPlayOverlay {
   campaignId?: string;
@@ -22,6 +36,7 @@ export const useCampaignPlayOverlay = ({
   charactersInThisLocation,
 }: UseCampaignPlayOverlay) => {
   const { campaignItems } = useCampaignItems(campaignId);
+  const lastClickedTileId = useRef<string | null>(null);
 
   const itemsAtLocation = useMemo(
     () =>
@@ -37,6 +52,25 @@ export const useCampaignPlayOverlay = ({
       item: itemRecs.find((i) => i?.id === ci.itemId) ?? null,
     }));
   }, [itemsAtLocation.map((i) => `${i.id}:${i.currentTileId}`).join(',')]);
+
+  const [tileMenu, setTileMenu] = useState<TileMenu>(null);
+
+  const onTileMenuRequest = useCallback((payload: TileMenuPayload | null) => {
+    if (!payload) {
+      setTileMenu(null);
+      return;
+    }
+
+    console.log(payload);
+
+    lastClickedTileId.current = payload.tileId;
+
+    setTileMenu({
+      clientX: payload.clientX,
+      clientY: payload.clientY,
+      tileId: payload.tileId,
+    });
+  }, []);
 
   const overlayNodes = useMemo((): LocationViewerOverlayNode[] => {
     const nodes: LocationViewerOverlayNode[] = [];
@@ -83,5 +117,8 @@ export const useCampaignPlayOverlay = ({
   return {
     overlayNodes,
     eventTileIds,
+    onTileMenuRequest,
+    tileMenu,
+    lastClickedTileId: lastClickedTileId.current,
   };
 };

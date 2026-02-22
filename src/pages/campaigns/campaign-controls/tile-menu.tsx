@@ -1,18 +1,13 @@
 import { ArchetypeLookup } from '@/lib/compass-api';
 import { useCampaignContext } from '@/stores';
 import type { Archetype } from '@/types';
-import { useCallback, useRef, useState } from 'react';
-
-export type TileMenuPayload = {
-  x: number;
-  y: number;
-  clientX: number;
-  clientY: number;
-  tileId: string;
-};
+import { useCallback, useState } from 'react';
+import type { TileMenu, TileMenuPayload } from '../hooks';
 
 interface TileMenuProps {
-  children: (props: { onTileMenuRequest: (payload: TileMenuPayload) => void }) => React.ReactNode;
+  onTileMenuRequest: (payload: TileMenuPayload | null) => void;
+  tileMenu?: TileMenu;
+  lastClickedTileId?: string | null;
 }
 
 type MenuOption = { label: string; action: 'move' | 'createCharacter' };
@@ -20,7 +15,7 @@ type MenuOption = { label: string; action: 'move' | 'createCharacter' };
 const selectedCharacterOptions: MenuOption[] = [{ label: 'Move', action: 'move' }];
 const emptyTileOptions: MenuOption[] = [{ label: 'Create Character', action: 'createCharacter' }];
 
-export function TileMenu({ children }: TileMenuProps) {
+export function TileMenu({ onTileMenuRequest, tileMenu, lastClickedTileId }: TileMenuProps) {
   const {
     viewingLocationId,
     selectedCharacters,
@@ -30,30 +25,14 @@ export function TileMenu({ children }: TileMenuProps) {
     currentLocation,
   } = useCampaignContext();
 
-  const [tileMenu, setTileMenu] = useState<{
-    clientX: number;
-    clientY: number;
-    tileId: string;
-  } | null>(null);
   const [showArchetypeLookup, setShowArchetypeLookup] = useState(false);
-
-  const lastClickedTileId = useRef<string | null>(null);
-
-  const onTileMenuRequest = useCallback((payload: TileMenuPayload) => {
-    lastClickedTileId.current = payload.tileId;
-    setTileMenu({
-      clientX: payload.clientX,
-      clientY: payload.clientY,
-      tileId: payload.tileId,
-    });
-  }, []);
 
   const handleMoveCharacter = useCallback(() => {
     if (!tileMenu) return;
     if (viewingLocationId && selectedCharacters.length > 0) {
       moveSelectedCharactersTo(viewingLocationId, tileMenu.tileId);
     }
-    setTileMenu(null);
+    onTileMenuRequest(null);
   }, [tileMenu, viewingLocationId, selectedCharacters.length, moveSelectedCharactersTo]);
 
   const handleCreateCharacterClick = useCallback(() => {
@@ -62,11 +41,11 @@ export function TileMenu({ children }: TileMenuProps) {
 
   const handleArchetypeSelect = useCallback(
     (archetype: Archetype) => {
-      handleCreateCampaignCharacter(archetype.id, lastClickedTileId.current ?? undefined);
+      handleCreateCampaignCharacter(archetype.id, lastClickedTileId ?? undefined);
       setShowArchetypeLookup(false);
-      setTileMenu(null);
+      onTileMenuRequest(null);
     },
-    [lastClickedTileId.current],
+    [lastClickedTileId],
   );
 
   const options = selectedCharacters.length > 0 ? selectedCharacterOptions : emptyTileOptions;
@@ -80,7 +59,7 @@ export function TileMenu({ children }: TileMenuProps) {
   );
 
   const closeMenu = useCallback(() => {
-    setTileMenu(null);
+    onTileMenuRequest(null);
     setShowArchetypeLookup(false);
   }, []);
 
@@ -91,7 +70,6 @@ export function TileMenu({ children }: TileMenuProps) {
 
   return (
     <>
-      {children({ onTileMenuRequest })}
       {tileMenu && (
         <>
           <div className='fixed inset-0 z-10' onClick={closeMenu} aria-hidden />
@@ -121,7 +99,10 @@ export function TileMenu({ children }: TileMenuProps) {
                     key={opt.action}
                     type='button'
                     className='block w-full rounded px-2 py-1.5 text-left text-sm hover:bg-accent'
-                    onClick={() => handleOptionClick(opt.action)}>
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleOptionClick(opt.action);
+                    }}>
                     {opt.label}
                   </button>
                 ))
