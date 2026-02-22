@@ -35,10 +35,8 @@ export function LocationEditor() {
   const [selectedLayerId, setSelectedLayerId] = useState<string | null>(null);
   const [paintLayer, setPaintLayer] = useState(0);
   const [panelOpen, setPanelOpen] = useState(false);
-  const [gridWidthInput, setGridWidthInput] = useState('');
-  const [gridHeightInput, setGridHeightInput] = useState('');
-  const gridWidthDisplay = gridWidthInput !== '' ? gridWidthInput : String(gridWidth);
-  const gridHeightDisplay = gridHeightInput !== '' ? gridHeightInput : String(gridHeight);
+  const [gridWidthInput, setGridWidthInput] = useState(gridWidth);
+  const [gridHeightInput, setGridHeightInput] = useState(gridHeight);
   const tileRenderSize = loc?.tileRenderSize ?? DEFAULT_TILE_RENDER_SIZE;
 
   const tilesByKey = useMemo(() => getTilesByKey(loc?.tiles ?? []), [loc?.tiles]);
@@ -54,6 +52,11 @@ export function LocationEditor() {
     return () => document.removeEventListener('mouseup', onMouseUp);
   }, []);
 
+  useEffect(() => {
+    setGridWidthInput(gridWidth);
+    setGridHeightInput(gridHeight);
+  }, [gridWidth, gridHeight]);
+
   const selectedCellLayers = selectedCell
     ? (tilesByKey.get(`${selectedCell.x},${selectedCell.y}`) ?? [])
     : [];
@@ -64,11 +67,18 @@ export function LocationEditor() {
       : null;
 
   const handleSetGridSize = () => {
-    const w = Math.max(1, Math.min(100, parseInt(gridWidthDisplay, 10) || 1));
-    const h = Math.max(1, Math.min(100, parseInt(gridHeightDisplay, 10) || 1));
-    setGridWidthInput('');
-    setGridHeightInput('');
-    if (loc) updateLocation(loc.id, { gridWidth: w, gridHeight: h });
+    if (!loc) return;
+    const wRaw = gridWidthInput;
+    const hRaw = gridHeightInput;
+    const w = Math.max(1, Math.min(100, Number.isNaN(wRaw) ? gridWidth : wRaw));
+    const h = Math.max(1, Math.min(100, Number.isNaN(hRaw) ? gridHeight : hRaw));
+    const widthChanged = w !== gridWidth;
+    const heightChanged = h !== gridHeight;
+    if (widthChanged || heightChanged) {
+      updateLocation(loc.id, { gridWidth: w, gridHeight: h });
+      setGridWidthInput(w);
+      setGridHeightInput(h);
+    }
   };
 
   const existingKeys = useMemo(() => {
@@ -244,9 +254,8 @@ export function LocationEditor() {
               id='grid-width'
               type='number'
               className='w-16'
-              value={gridWidthDisplay}
-              onChange={(e) => setGridWidthInput(e.target.value)}
-              onBlur={handleSetGridSize}
+              value={gridWidthInput}
+              onChange={(e) => setGridWidthInput(parseInt(e.target.value, 10))}
             />
           </div>
           <div className='flex items-center gap-1'>
@@ -257,11 +266,13 @@ export function LocationEditor() {
               id='grid-height'
               type='number'
               className='w-16'
-              value={gridHeightDisplay}
-              onChange={(e) => setGridHeightInput(e.target.value)}
-              onBlur={handleSetGridSize}
+              value={gridHeightInput}
+              onChange={(e) => setGridHeightInput(parseInt(e.target.value, 10))}
             />
           </div>
+          <Button variant='outline' size='sm' onClick={handleSetGridSize}>
+            Set
+          </Button>
           <Button
             variant='outline'
             size='sm'
@@ -317,7 +328,7 @@ export function LocationEditor() {
                     key={key}
                     type='button'
                     className={`group relative shrink-0 cursor-pointer transition-colors ${
-                      mapImageUrl ? 'bg-muted/50' : 'border border-border bg-muted'
+                      mapImageUrl ? 'bg-muted/20' : 'border border-border bg-muted'
                     } ${isSelected ? 'ring-2 ring-primary ring-inset' : ''}`}
                     style={{ width: tileRenderSize, height: tileRenderSize }}
                     onClick={() => handleCellClick(x, y)}

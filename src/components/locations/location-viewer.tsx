@@ -241,10 +241,6 @@ export function LocationViewer({
     );
   }
 
-  console.log('effective: ', effectiveTileSize);
-  console.log('w: ', gridWidth, 'h: ', gridHeight);
-  console.log('dim: ', gridWidth * effectiveTileSize, gridHeight * effectiveTileSize);
-
   return (
     <div className='relative h-full w-full flex justify-center items-center'>
       <div className='fixed bottom-12 right-2 z-10 flex flex-col gap-0.5'>
@@ -301,7 +297,7 @@ export function LocationViewer({
                         ? 'button'
                         : undefined
                     }
-                    className='shrink-0 bg-muted/50 hover:bg-muted relative'
+                    className='shrink-0 hover:bg-muted/50 relative'
                     style={{ width: effectiveTileSize, height: effectiveTileSize }}
                     onClick={(e) => handleCellClick(x, y, e)}
                     onDragOver={
