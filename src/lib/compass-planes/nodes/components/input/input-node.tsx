@@ -155,9 +155,11 @@ export const ViewInputNode = ({
           onChange={(e) => handleChange(e.target.value)}
           value={data.value.toString()}
           style={inputStyle}>
-          <option value=''>{data.name}</option>
-          {data.options.map((option) => (
-            <option key={option} value={option}>
+          <option className='text-muted-foreground' value=''>
+            {data.placeholder ?? data.name ?? data.type}
+          </option>
+          {data.options.map((option, i) => (
+            <option key={i} value={option}>
               {option}
             </option>
           ))}
@@ -165,7 +167,7 @@ export const ViewInputNode = ({
       ) : data.type === 'number' ? (
         <NumberInput
           disabled={editMode}
-          placeholder={data?.name ?? data.type}
+          placeholder={data?.placeholder ?? data?.name ?? data.type}
           value={data.value as number}
           onChange={(value) => handleChange(value)}
           style={inputStyle}
@@ -177,7 +179,7 @@ export const ViewInputNode = ({
           className='editor-input'
           type='text'
           disabled={editMode}
-          placeholder={data?.name ?? data.type}
+          placeholder={data?.placeholder ?? data?.name ?? data.type}
           onChange={(e) => handleChange(e.target.value)}
           value={editMode ? undefined : data.value.toString()}
           style={inputStyle}

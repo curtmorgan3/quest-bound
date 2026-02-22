@@ -1,3 +1,4 @@
+import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
@@ -12,7 +13,7 @@ import {
   updateComponentData,
 } from '@/lib/compass-planes/utils';
 import type { Component, InputComponentData } from '@/types';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 interface InputDataEditProps {
   components: Array<Component>;
@@ -86,16 +87,45 @@ export const InputDataEdit = ({
     fireExternalComponentChangeEvent({ updates });
   };
 
+  const [placeholderValue, setPlaceholderValue] = useState('');
+  const currentPlaceholder = firstComponentData?.placeholder ?? '';
+
+  useEffect(() => {
+    setPlaceholderValue(currentPlaceholder);
+  }, [currentPlaceholder]);
+
+  const handlePlaceholderBlur = async () => {
+    if (editableComponents.length === 0) return;
+
+    const placeholderToSave = placeholderValue.trim();
+
+    const updates = editableComponents.map((component) => ({
+      id: component.id,
+      data: updateComponentData(component.data, { placeholder: placeholderToSave }),
+    }));
+
+    await updateComponents(updates);
+    fireExternalComponentChangeEvent({ updates });
+  };
+
   const isDisabled = editableComponents.length === 0;
 
   return (
     <div className='flex flex-col w-full gap-2 pb-2 border-b-1'>
       <div className='flex flex-col gap-1'>
+        <label className='text-xs text-muted-foreground'>Placeholder</label>
+        <Input
+          value={placeholderValue}
+          onChange={(e) => setPlaceholderValue(e.target.value)}
+          onBlur={handlePlaceholderBlur}
+          placeholder='Input'
+          disabled={isDisabled}
+          className='w-full'
+        />
+      </div>
+      <div className='flex flex-col gap-1'>
         <label className='text-xs text-muted-foreground'>Input Type</label>
-        <Select
-          value={currentType}
-          onValueChange={handleTypeChange}
-          disabled={isDisabled}>
+        <Select value={currentType} onValueChange={handleTypeChange} disabled={isDisabled}>
           <SelectTrigger className='w-full'>
             <SelectValue />
           </SelectTrigger>
@@ -108,4 +138,3 @@ export const InputDataEdit = ({
     </div>
   );
 };
-
