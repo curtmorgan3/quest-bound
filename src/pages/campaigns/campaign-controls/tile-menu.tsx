@@ -1,13 +1,12 @@
 import { ArchetypeLookup } from '@/lib/compass-api';
 import { useCampaignContext } from '@/stores';
-import type { Archetype } from '@/types';
+import type { Archetype, ITileMenu, TileMenuPayload } from '@/types';
 import { useCallback, useState } from 'react';
 import { createPortal } from 'react-dom';
-import type { TileMenu, TileMenuPayload } from '../hooks';
 
 interface TileMenuProps {
   onTileMenuRequest: (payload: TileMenuPayload | null) => void;
-  tileMenu?: TileMenu;
+  tileMenu?: ITileMenu;
   lastClickedTileId?: string | null;
 }
 

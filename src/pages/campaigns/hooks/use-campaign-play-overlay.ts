@@ -1,23 +1,9 @@
 import type { LocationViewerOverlayNode } from '@/components/locations';
 import { useCampaignItems, type EventLocationWithEvent } from '@/lib/compass-api';
 import { db } from '@/stores';
-import type { ActiveCharacter } from '@/types';
+import type { ActiveCharacter, ITileMenu, TileMenuPayload } from '@/types';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useCallback, useMemo, useRef, useState } from 'react';
-
-export type TileMenuPayload = {
-  x: number;
-  y: number;
-  clientX: number;
-  clientY: number;
-  tileId: string;
-};
-
-export type TileMenu = {
-  clientX: number;
-  clientY: number;
-  tileId: string;
-} | null;
 
 interface UseCampaignPlayOverlay {
   campaignId?: string;
@@ -53,7 +39,7 @@ export const useCampaignPlayOverlay = ({
     }));
   }, [itemsAtLocation.map((i) => `${i.id}:${i.currentTileId}`).join(',')]);
 
-  const [tileMenu, setTileMenu] = useState<TileMenu>(null);
+  const [tileMenu, setTileMenu] = useState<ITileMenu>(null);
 
   const onTileMenuRequest = useCallback((payload: TileMenuPayload | null) => {
     if (!payload) {

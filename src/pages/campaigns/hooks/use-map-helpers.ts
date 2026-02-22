@@ -12,19 +12,9 @@ import { useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { moveCharacters } from '../campaign-controls/character-movement';
 
-export type TileMenu = {
-  x: number;
-  y: number;
-  clientX: number;
-  clientY: number;
-  /** Set when we just created a blank tile; use as tileId until location refetches. */
-  createdTileId?: string;
-} | null;
-
 interface UseMapHelpers {
   campaignId?: string;
   currentLocation?: Location;
-  setTileMenu?: (menu: TileMenu) => void;
   selectedLocationId?: string | null;
   selectedCharacters: ActiveCharacter[];
 }
@@ -33,7 +23,6 @@ export const useMapHelpers = ({
   campaignId,
   currentLocation,
   selectedLocationId,
-  setTileMenu,
   selectedCharacters,
 }: UseMapHelpers) => {
   const campaign = useCampaign(campaignId);

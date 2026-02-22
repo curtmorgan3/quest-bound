@@ -9,12 +9,12 @@ import {
 } from '@/lib/compass-api';
 import { cn } from '@/lib/utils';
 import { useCampaignContext } from '@/stores';
-import type { TileData } from '@/types';
+import type { TileData, TileMenuPayload } from '@/types';
 import { ArrowUp, ChevronRight } from 'lucide-react';
 import { useCallback, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { CampaignCharacterSheet, JumpToCharacter, TileMenu } from './campaign-controls';
-import { useCampaignPlayOverlay, type TileMenuPayload } from './hooks';
+import { useCampaignPlayOverlay } from './hooks';
 
 export function CampaignPlay() {
   const { campaignId } = useParams<{ campaignId: string; locationId?: string }>();

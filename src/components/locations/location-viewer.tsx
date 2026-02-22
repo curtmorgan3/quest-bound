@@ -5,8 +5,7 @@ import { useLocation } from '@/lib/compass-api';
 import type { SheetViewerBackdropClickDetail } from '@/lib/compass-planes/sheet-viewer';
 import { SHEET_VIEWER_BACKDROP_CLICK } from '@/lib/compass-planes/sheet-viewer';
 import { cn } from '@/lib/utils';
-import type { TileMenuPayload } from '@/pages/campaigns/hooks';
-import type { TileData } from '@/types';
+import type { TileData, TileMenuPayload } from '@/types';
 import { ZoomIn, ZoomOut } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { getTilesByKey } from './utils';
@@ -241,7 +240,7 @@ export function LocationViewer({
 
   return (
     <div className='relative h-full w-full flex justify-center items-center'>
-      <div className='fixed bottom-2 right-2 z-10 flex flex-col gap-0.5'>
+      <div className='fixed bottom-12 right-2 z-10 flex flex-col gap-0.5'>
         <Button
           type='button'
           variant='secondary'
