@@ -9,6 +9,7 @@ import {
   Input,
   Label,
 } from '@/components';
+import { CategoryField } from '@/components/composites';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -19,7 +20,6 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { CategoryField } from '@/components/composites';
 import { FileText, Pencil } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useState } from 'react';
@@ -124,7 +124,7 @@ export const PreviewCard = ({
               />
             ) : (
               <CardTitle
-                className={`text-lg cursor-pointer ${titleClassName ?? ''}`.trim()}
+                className={`text-md cursor-pointer ${titleClassName ?? ''}`.trim()}
                 data-testid='preview-card-title'
                 onClick={(e) => {
                   e.stopPropagation();
@@ -162,7 +162,7 @@ export const PreviewCard = ({
               />
             ) : (
               <CardTitle
-                className={`text-lg cursor-pointer ${titleClassName ?? ''}`.trim()}
+                className={`text-md cursor-pointer ${titleClassName ?? ''}`.trim()}
                 data-testid='preview-card-title'
                 onClick={(e) => {
                   e.stopPropagation();

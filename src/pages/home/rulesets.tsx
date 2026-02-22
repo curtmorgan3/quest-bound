@@ -157,14 +157,56 @@ export const Rulesets = () => {
       title='Rulesets'
       headerActions={
         <div className='flex items-center gap-2'>
+          {importResult && (
+            <div
+              className={`p-3 rounded-lg border ${
+                importResult.success
+                  ? 'bg-green-50 border-green-200 text-green-800'
+                  : 'bg-red-50 border-red-200 text-red-800'
+              }`}>
+              <div className='flex items-center gap-2'>
+                {importResult.success ? (
+                  <CheckCircle className='h-4 w-4' />
+                ) : (
+                  <AlertCircle className='h-4 w-4' />
+                )}
+                <span className='text-sm font-medium'>{importResult.message}</span>
+              </div>
+
+              {importResult.success && importResult.importedRuleset && (
+                <div className='mt-2 text-xs'>
+                  <p>
+                    Imported: <strong>{importResult.importedRuleset.title}</strong>
+                  </p>
+                  <div className='flex gap-4'>
+                    <span>Attributes: {importResult.importedCounts.attributes}</span>
+                    <span>Actions: {importResult.importedCounts.actions}</span>
+                    <span>Items: {importResult.importedCounts.items}</span>
+                    <span>Charts: {importResult.importedCounts.charts}</span>
+                  </div>
+                </div>
+              )}
+
+              {importResult.errors.length > 0 && (
+                <div className='mt-2'>
+                  <p className='text-xs font-medium'>Errors:</p>
+                  <ul className='list-disc list-inside text-xs'>
+                    {importResult.errors.slice(0, 3).map((error, index) => (
+                      <li key={index}>{error}</li>
+                    ))}
+                    {importResult.errors.length > 3 && (
+                      <li>...and {importResult.errors.length - 3} more errors</li>
+                    )}
+                  </ul>
+                </div>
+              )}
+            </div>
+          )}
+
           <Dialog>
             <form>
               <DialogTrigger asChild>
-                <Button
-                  variant='outline'
-                  size='sm'
-                  className='gap-1'
-                  data-testid='create-ruleset-button'>
+                <Button size='sm' className='gap-1' data-testid='create-ruleset-button'>
                   <Plus className='h-4 w-4' />
                   Create Ruleset
                 </Button>
@@ -233,52 +275,6 @@ export const Rulesets = () => {
               </>
             )}
           </Button>
-
-          {importResult && (
-            <div
-              className={`p-3 rounded-lg border ${
-                importResult.success
-                  ? 'bg-green-50 border-green-200 text-green-800'
-                  : 'bg-red-50 border-red-200 text-red-800'
-              }`}>
-              <div className='flex items-center gap-2'>
-                {importResult.success ? (
-                  <CheckCircle className='h-4 w-4' />
-                ) : (
-                  <AlertCircle className='h-4 w-4' />
-                )}
-                <span className='text-sm font-medium'>{importResult.message}</span>
-              </div>
-
-              {importResult.success && importResult.importedRuleset && (
-                <div className='mt-2 text-xs'>
-                  <p>
-                    Imported: <strong>{importResult.importedRuleset.title}</strong>
-                  </p>
-                  <div className='flex gap-4'>
-                    <span>Attributes: {importResult.importedCounts.attributes}</span>
-                    <span>Actions: {importResult.importedCounts.actions}</span>
-                    <span>Items: {importResult.importedCounts.items}</span>
-                    <span>Charts: {importResult.importedCounts.charts}</span>
-                  </div>
-                </div>
-              )}
-
-              {importResult.errors.length > 0 && (
-                <div className='mt-2'>
-                  <p className='text-xs font-medium'>Errors:</p>
-                  <ul className='list-disc list-inside text-xs'>
-                    {importResult.errors.slice(0, 3).map((error, index) => (
-                      <li key={index}>{error}</li>
-                    ))}
-                    {importResult.errors.length > 3 && (
-                      <li>...and {importResult.errors.length - 3} more errors</li>
-                    )}
-                  </ul>
-                </div>
-              )}
-            </div>
-          )}
 
           <Dialog open={replaceConfirmOpen} onOpenChange={setReplaceConfirmOpen}>
             <DialogContent className='sm:max-w-[425px]'>

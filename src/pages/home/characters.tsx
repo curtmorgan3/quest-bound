@@ -169,11 +169,7 @@ export const Characters = () => {
       headerActions={
         <Dialog open={open} onOpenChange={handleOpenChange}>
           <DialogTrigger asChild>
-            <Button
-              variant='outline'
-              size='sm'
-              className='gap-1'
-              data-testid='create-character-button'>
+            <Button size='sm' className='gap-1' data-testid='create-character-button'>
               <Plus className='h-4 w-4' />
               Create Character
             </Button>

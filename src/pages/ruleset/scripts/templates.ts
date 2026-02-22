@@ -65,7 +65,7 @@ on_remove():
 `,
   characterLoader: `
 // Character Loader runs once per character at creation, before attribute scripts and archetype on_add.
-// Only one Character Loader script per ruleset. Owner and archetypes are available.
+// Only one Character Loader script is allowed per ruleset. Owner.archetypes are available.
 
 // Example: set initial values based on archetypes
 if Owner.hasArchetype('Warrior'):
