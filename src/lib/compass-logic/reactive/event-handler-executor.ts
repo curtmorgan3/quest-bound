@@ -597,22 +597,33 @@ export class EventHandlerExecutor {
 
   /**
    * Execute a campaign event's script handler (e.g. on_enter when a character moves onto a tile with that event).
-   * Call only for events whose type matches (e.g. type === 'on_enter' when firing on enter).
+   * Uses campaignEventLocationId so Self can refer to the CampaignEventLocation.
    */
   async executeCampaignEventEvent(
-    campaignEventId: string,
+    campaignEventLocationId: string,
     characterId: string,
     eventType: 'on_enter' | 'on_leave',
     roll?: RollFn,
   ): Promise<EventHandlerResult> {
-    const campaignEvent = await this.db.campaignEvents.get(campaignEventId);
+    const eventLocation = await this.db.campaignEventLocations.get(campaignEventLocationId);
+    if (!eventLocation) {
+      return {
+        success: false,
+        value: null,
+        announceMessages: [],
+        logMessages: [],
+        error: new Error(`Campaign event location not found: ${campaignEventLocationId}`),
+      };
+    }
+
+    const campaignEvent = await this.db.campaignEvents.get(eventLocation.campaignEventId);
     if (!campaignEvent) {
       return {
         success: false,
         value: null,
         announceMessages: [],
         logMessages: [],
-        error: new Error(`Campaign event not found: ${campaignEventId}`),
+        error: new Error(`Campaign event not found: ${eventLocation.campaignEventId}`),
       };
     }
 
@@ -662,6 +673,8 @@ export class EventHandlerExecutor {
       db: this.db,
       scriptId: script.id,
       triggerType: 'attribute_change',
+      entityType: 'campaignEventLocation',
+      entityId: campaignEventLocationId,
       roll,
       executeActionEvent: (actionId, ownerId, targetIdForAction, eventTypeForAction) =>
         this.executeActionEvent(actionId, ownerId, targetIdForAction, eventTypeForAction, roll),
@@ -801,14 +814,20 @@ export async function executeCharacterLoader(
 
 /**
  * Execute a campaign event script (on_enter, on_leave) when a character moves onto/off a tile.
+ * Pass the CampaignEventLocation id so Self refers to that location in the script.
  */
 export async function executeCampaignEventEvent(
   db: DB,
-  campaignEventId: string,
+  campaignEventLocationId: string,
   characterId: string,
   eventType: 'on_enter' | 'on_leave',
   roll?: RollFn,
 ): Promise<EventHandlerResult> {
   const executor = new EventHandlerExecutor(db);
-  return executor.executeCampaignEventEvent(campaignEventId, characterId, eventType, roll);
+  return executor.executeCampaignEventEvent(
+    campaignEventLocationId,
+    characterId,
+    eventType,
+    roll,
+  );
 }

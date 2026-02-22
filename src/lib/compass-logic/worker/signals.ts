@@ -106,7 +106,7 @@ export interface ExecuteArchetypeEventSignal {
 export interface ExecuteCampaignEventEventSignal {
   type: 'EXECUTE_CAMPAIGN_EVENT_EVENT';
   payload: {
-    campaignEventId: string;
+    campaignEventLocationId: string;
     characterId: string;
     eventType: 'on_enter' | 'on_leave';
     requestId: string;

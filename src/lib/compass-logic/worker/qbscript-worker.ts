@@ -818,7 +818,7 @@ async function handleExecuteArchetypeEvent(payload: {
 }
 
 async function handleExecuteCampaignEventEvent(payload: {
-  campaignEventId: string;
+  campaignEventLocationId: string;
   characterId: string;
   eventType: 'on_enter' | 'on_leave';
   requestId: string;
@@ -830,7 +830,7 @@ async function handleExecuteCampaignEventEvent(payload: {
     let executor: EventHandlerExecutor;
     executor = new EventHandlerExecutor(db, createOnAttributesModified(rollFn, () => executor));
     const result = await executor.executeCampaignEventEvent(
-      payload.campaignEventId,
+      payload.campaignEventLocationId,
       payload.characterId,
       payload.eventType,
       rollFn,

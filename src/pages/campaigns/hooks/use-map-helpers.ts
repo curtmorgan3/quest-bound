@@ -111,7 +111,7 @@ export const useMapHelpers = ({
           const event = events.find((e) => e?.id === el.campaignEventId);
           if (event?.type === 'on_enter' && event.scriptId) {
             client
-              .executeCampaignEventEvent(event.id, characterId, 'on_enter')
+              .executeCampaignEventEvent(el.id, characterId, 'on_enter')
               .catch((err) => console.warn('[Campaign] on_enter script failed:', err));
           }
         }

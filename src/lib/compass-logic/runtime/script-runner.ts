@@ -71,6 +71,12 @@ export class ScriptRunner {
   private targetInventoryId: string;
   private ownerArchetypeNames: Set<string>;
   private targetArchetypeNames: Set<string>;
+  private campaignEventLocationCache: {
+    id: string;
+    campaignEventId: string;
+    locationId: string;
+    tileId: string | null;
+  } | null = null;
 
   constructor(context: ScriptExecutionContext) {
     this.context = context;
@@ -182,6 +188,22 @@ export class ScriptRunner {
         const archetype = await db.archetypes.get(ca.archetypeId);
         if (archetype?.name) this.targetArchetypeNames.add(archetype.name);
       }
+    }
+
+    // Load CampaignEventLocation when Self is the event location (campaign event scripts)
+    if (
+      this.context.entityType === 'campaignEventLocation' &&
+      this.context.entityId
+    ) {
+      const loc = await db.campaignEventLocations.get(this.context.entityId);
+      this.campaignEventLocationCache = loc
+        ? {
+            id: loc.id,
+            campaignEventId: loc.campaignEventId,
+            locationId: loc.locationId,
+            tileId: loc.tileId ?? null,
+          }
+        : null;
     }
   }
 
@@ -366,6 +388,12 @@ export class ScriptRunner {
           this.evaluator.globalEnv.define('Self', itemRef);
         }
       }
+    } else if (
+      this.context.entityType === 'campaignEventLocation' &&
+      this.campaignEventLocationCache
+    ) {
+      // Self = the CampaignEventLocation (id, campaignEventId, locationId, tileId)
+      this.evaluator.globalEnv.define('Self', this.campaignEventLocationCache);
     }
     // entityType 'location' | 'tile' | 'archetype' | 'global' (or unknown): no Self
   }
