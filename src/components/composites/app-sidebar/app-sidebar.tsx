@@ -18,6 +18,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from '@/components/ui/sidebar';
+import { useFeatureFlag } from '@/hooks/use-feature-flag';
 import { useCharacter, useUsers } from '@/lib/compass-api';
 import { Settings } from '@/pages';
 import {
@@ -68,6 +69,8 @@ export function AppSidebar() {
   const characterArchetypesPanel = useContext(CharacterArchetypesPanelContext);
   const { setDicePanelOpen } = useContext(DiceContext);
 
+  const worldsEnabled = useFeatureFlag('worlds', false);
+  const campaignsEnabled = useFeatureFlag('campaigns', false);
   const isHomepage =
     location.pathname === '/rulesets' ||
     location.pathname === '/characters' ||
@@ -87,9 +90,9 @@ export function AppSidebar() {
 
   const sidebarContent = character ? (
     <CharacterSidebar />
-  ) : isWorldsRoute ? (
+  ) : isWorldsRoute && worldsEnabled ? (
     <WorldSidebar />
-  ) : isCampaignsRoute ? (
+  ) : isCampaignsRoute && campaignsEnabled ? (
     <CampaignSidebar />
   ) : (
     <RulesetSidebar />

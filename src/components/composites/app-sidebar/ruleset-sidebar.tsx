@@ -23,6 +23,7 @@ import {
   SidebarTrigger,
   useSidebar,
 } from '@/components/ui/sidebar';
+import { useFeatureFlag } from '@/hooks/use-feature-flag';
 import { useActiveRuleset } from '@/lib/compass-api';
 import { Link, useLocation } from 'react-router-dom';
 
@@ -37,6 +38,8 @@ export function RulesetSidebar() {
   const { activeRuleset } = useActiveRuleset();
   const { open } = useSidebar();
   const location = useLocation();
+  const worldsEnabled = useFeatureFlag('worlds', false);
+  const campaignsEnabled = useFeatureFlag('campaigns', false);
 
   const isHomepage =
     location.pathname === '/rulesets' ||
@@ -44,8 +47,14 @@ export function RulesetSidebar() {
     location.pathname === '/worlds' ||
     location.pathname === '/campaigns';
 
+  const homepageItems = HOMEPAGE_ITEMS.filter((item) => {
+    if (item.title === 'Worlds') return worldsEnabled;
+    if (item.title === 'Campaigns') return campaignsEnabled;
+    return true;
+  });
+
   const items = isHomepage
-    ? HOMEPAGE_ITEMS
+    ? homepageItems
     : [
         { title: 'Attributes', url: `/rulesets/${activeRuleset?.id}/attributes`, icon: UserRoundPen },
         { title: 'Actions', url: `/rulesets/${activeRuleset?.id}/actions`, icon: HandFist },
