@@ -226,9 +226,6 @@ export const useTilemapAsset = ({
       width: gridWidth * effectiveTileSize,
       height: gridHeight * effectiveTileSize,
       backgroundSize: 'cover',
-      // width: `${mapImageDimensions.scaled.w}px`,
-      // height: `${mapImageDimensions.scaled.h}px`,
-      // backgroundSize: `${mapImageDimensions.scaled.w}px ${mapImageDimensions.scaled.h}px`,
       backgroundPosition: '0 0',
       backgroundRepeat: 'no-repeat',
     };

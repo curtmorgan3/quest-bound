@@ -7,7 +7,7 @@ import { useTilemapAsset } from '@/hooks';
 import { useLocation, useLocations, useWorld } from '@/lib/compass-api';
 import type { Tile, TileData } from '@/types';
 import { ChevronDown, ChevronUp, Trash2 } from 'lucide-react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { CellPropertyPanel } from './cell-property-panel';
 import { TilePaintBar } from './tilemaps';
@@ -23,6 +23,7 @@ export function LocationEditor() {
   const { getTileStyle, mapImageStyle } = useTilemapAsset({
     worldId,
     locationId,
+    tileDataList: location?.tiles ?? [],
   });
 
   const loc = location ?? undefined;
@@ -39,6 +40,9 @@ export function LocationEditor() {
   const [panelOpen, setPanelOpen] = useState(false);
   const [gridWidthInput, setGridWidthInput] = useState(gridWidth);
   const [gridHeightInput, setGridHeightInput] = useState(gridHeight);
+  const [tileRenderSizeInput, setTileRenderSizeInput] = useState(
+    loc?.tileRenderSize ?? DEFAULT_TILE_RENDER_SIZE,
+  );
   const tileRenderSize = loc?.tileRenderSize ?? DEFAULT_TILE_RENDER_SIZE;
 
   const tilesByKey = useMemo(() => getTilesByKey(loc?.tiles ?? []), [loc?.tiles]);
@@ -57,7 +61,8 @@ export function LocationEditor() {
   useEffect(() => {
     setGridWidthInput(gridWidth);
     setGridHeightInput(gridHeight);
-  }, [gridWidth, gridHeight]);
+    setTileRenderSizeInput(loc?.tileRenderSize ?? DEFAULT_TILE_RENDER_SIZE);
+  }, [gridWidth, gridHeight, loc?.tileRenderSize]);
 
   const selectedCellLayers = selectedCell
     ? (tilesByKey.get(`${selectedCell.x},${selectedCell.y}`) ?? [])
@@ -72,14 +77,18 @@ export function LocationEditor() {
     if (!loc) return;
     const wRaw = gridWidthInput;
     const hRaw = gridHeightInput;
+    const sizeRaw = tileRenderSizeInput;
     const w = Math.max(1, Math.min(100, Number.isNaN(wRaw) ? gridWidth : wRaw));
     const h = Math.max(1, Math.min(100, Number.isNaN(hRaw) ? gridHeight : hRaw));
+    const size = Math.max(8, Math.min(128, Number.isNaN(sizeRaw) ? tileRenderSize : sizeRaw));
     const widthChanged = w !== gridWidth;
     const heightChanged = h !== gridHeight;
-    if (widthChanged || heightChanged) {
-      updateLocation(loc.id, { gridWidth: w, gridHeight: h });
+    const sizeChanged = size !== tileRenderSize;
+    if (widthChanged || heightChanged || sizeChanged) {
+      updateLocation(loc.id, { gridWidth: w, gridHeight: h, tileRenderSize: size });
       setGridWidthInput(w);
       setGridHeightInput(h);
+      setTileRenderSizeInput(size);
     }
   };
 
@@ -197,6 +206,48 @@ export function LocationEditor() {
     setSelectedLayerId(newTile.id);
   };
 
+  const lastPaintCellRef = useRef<{ x: number; y: number } | null>(null);
+  const handleGridClick = useCallback(
+    (e: React.MouseEvent<HTMLDivElement>) => {
+      const cell = (e.target as HTMLElement).closest<HTMLElement>('[data-cell]');
+      if (!cell) return;
+      const x = Number(cell.dataset.x);
+      const y = Number(cell.dataset.y);
+      if (Number.isNaN(x) || Number.isNaN(y)) return;
+      handleCellClick(x, y);
+    },
+    [handleCellClick],
+  );
+  const handleGridMouseDown = useCallback(
+    (e: React.MouseEvent<HTMLDivElement>) => {
+      const cell = (e.target as HTMLElement).closest<HTMLElement>('[data-cell]');
+      if (!cell) return;
+      const x = Number(cell.dataset.x);
+      const y = Number(cell.dataset.y);
+      if (Number.isNaN(x) || Number.isNaN(y)) return;
+      handleCellMouseDown(x, y);
+    },
+    [handleCellMouseDown],
+  );
+  const handleGridMouseMove = useCallback(
+    (e: React.MouseEvent<HTMLDivElement>) => {
+      const cell = (e.target as HTMLElement).closest<HTMLElement>('[data-cell]');
+      if (!cell) return;
+      const x = Number(cell.dataset.x);
+      const y = Number(cell.dataset.y);
+      if (Number.isNaN(x) || Number.isNaN(y)) return;
+      const last = lastPaintCellRef.current;
+      if (last?.x !== x || last?.y !== y) {
+        lastPaintCellRef.current = { x, y };
+        handleCellMouseEnter(x, y);
+      }
+    },
+    [handleCellMouseEnter],
+  );
+  const handleGridMouseLeave = useCallback(() => {
+    lastPaintCellRef.current = null;
+  }, []);
+
   if (!worldId || !locationId) return null;
   if (location === undefined) {
     return (
@@ -238,14 +289,12 @@ export function LocationEditor() {
               id='tile-render-size'
               type='number'
               className='w-16'
-              value={tileRenderSize}
-              onChange={(e) => {
-                const v = parseInt(e.target.value, 10);
-                if (!Number.isNaN(v) && loc)
-                  updateLocation(loc.id, {
-                    tileRenderSize: Math.max(8, Math.min(128, v)),
-                  });
-              }}
+              value={Number.isNaN(tileRenderSizeInput) ? '' : tileRenderSizeInput}
+              onChange={(e) =>
+                setTileRenderSizeInput(
+                  e.target.value === '' ? (NaN as number) : parseInt(e.target.value, 10),
+                )
+              }
             />
           </div>
           <div className='flex items-center gap-1'>
@@ -314,35 +363,40 @@ export function LocationEditor() {
           </p>
           <div ref={scrollContainerRef} className='h-full w-full overflow-auto flex'>
             <div className='relative' style={mapImageStyle}>
-              {mapImageUrl && (
-                <img
-                  src={mapImageUrl}
-                  alt='Location map'
-                  className='absolute inset-0 size-full pointer-events-none'
-                />
-              )}
               <div
                 className='inline-grid bg-muted-foreground/20'
                 style={{
                   gridTemplateColumns: `repeat(${gridWidth}, ${tileRenderSize}px)`,
                   gridTemplateRows: `repeat(${gridHeight}, ${tileRenderSize}px)`,
-                }}>
+                }}
+                role='grid'
+                onClick={handleGridClick}
+                onMouseDown={handleGridMouseDown}
+                onMouseMove={handleGridMouseMove}
+                onMouseLeave={handleGridMouseLeave}>
                 {Array.from({ length: gridHeight }, (_, y) =>
                   Array.from({ length: gridWidth }, (_, x) => {
                     const key = `${x},${y}`;
                     const layers = tilesByKey.get(key) ?? [];
                     const isSelected = selectedCell?.x === x && selectedCell?.y === y;
                     return (
-                      <button
+                      <div
                         key={key}
-                        type='button'
+                        data-cell
+                        data-x={x}
+                        data-y={y}
+                        role='gridcell'
+                        tabIndex={0}
                         className={`group relative shrink-0 cursor-pointer transition-colors ${
                           mapImageUrl ? 'bg-muted/20' : 'border border-border bg-muted'
                         } ${isSelected ? 'ring-2 ring-primary ring-inset' : ''}`}
                         style={{ width: tileRenderSize, height: tileRenderSize }}
-                        onClick={() => handleCellClick(x, y)}
-                        onMouseDown={() => handleCellMouseDown(x, y)}
-                        onMouseEnter={() => handleCellMouseEnter(x, y)}>
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            handleCellClick(x, y);
+                          }
+                        }}>
                         <span
                           className='pointer-events-none absolute inset-0 bg-primary/25 opacity-0 transition-opacity group-hover:opacity-100'
                           aria-hidden
@@ -358,7 +412,7 @@ export function LocationEditor() {
                             ))}
                           </span>
                         )}
-                      </button>
+                      </div>
                     );
                   }),
                 )}

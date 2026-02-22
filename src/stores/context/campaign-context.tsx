@@ -1,5 +1,5 @@
-import { setCurrentCampaignIdForScripts } from '@/lib/compass-logic/worker/current-campaign-ref';
 import { useLocation } from '@/lib/compass-api';
+import { setCurrentCampaignIdForScripts } from '@/lib/compass-logic/worker/current-campaign-ref';
 import {
   useCampaignEntities,
   useCampaignPlayHandlers,
@@ -22,6 +22,7 @@ export interface CampaignPlayContextValue {
   toggleCharacterSelection: (id: string) => void;
   moveSelectedCharactersTo: (locationId: string, tileId?: string) => void;
   navigateTo: (locationId: string) => void;
+  openMap: (locationId: string) => void;
   navigateBack: () => void;
   /** Navigate the view to the given character's current location, if they have one */
   jumpToCharacter: (characterId: string) => void;
@@ -69,11 +70,12 @@ function useCampaignProvider(campaignId: string | undefined): CampaignPlayContex
 
   const currentLocation = useLocation(locationId);
 
-  const { navigateTo, navigateBack, moveSelectedCharactersTo, jumpToCharacter } = useMapHelpers({
-    campaignId,
-    currentLocation,
-    selectedCharacters,
-  });
+  const { navigateTo, openMap, navigateBack, moveSelectedCharactersTo, jumpToCharacter } =
+    useMapHelpers({
+      campaignId,
+      currentLocation,
+      selectedCharacters,
+    });
 
   const { handleCreateCampaignCharacter, handleAddEventToTile, handleRemoveEventFromTile } =
     useCampaignPlayHandlers({
@@ -128,6 +130,7 @@ function useCampaignProvider(campaignId: string | undefined): CampaignPlayContex
     npcsInThisLocation,
     handleAddEventToTile,
     handleRemoveEventFromTile,
+    openMap,
   };
 }
 

@@ -161,6 +161,17 @@ export const useMapHelpers = ({
     [campaignIdParam, navigate, selectedCharacters],
   );
 
+  const openMap = useCallback(
+    (locationId: string) => {
+      if (campaignIdParam) {
+        navigate(`/campaigns/${campaignIdParam}/locations/${locationId}?view=map`);
+      }
+
+      moveSelectedCharactersTo(locationId);
+    },
+    [campaignIdParam, navigate, selectedCharacters],
+  );
+
   const navigateBack = useCallback(() => {
     if (!campaignIdParam) return;
     if (viewingLocation?.parentLocationId) {
@@ -229,6 +240,7 @@ export const useMapHelpers = ({
 
   return {
     navigateTo,
+    openMap,
     navigateBack,
     jumpToCharacter,
     moveSelectedCharactersTo,

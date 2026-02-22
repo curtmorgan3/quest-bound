@@ -12,7 +12,7 @@ import { useCampaignContext } from '@/stores';
 import type { TileData, TileMenuPayload } from '@/types';
 import { ArrowUp, ChevronRight } from 'lucide-react';
 import { useCallback, useMemo } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { CampaignCharacterSheet, JumpToCharacter, TileMenu } from './campaign-controls';
 import { useCampaignPlayOverlay } from './hooks';
 
@@ -21,10 +21,12 @@ export function CampaignPlay() {
   const navigate = useNavigate();
   const campaign = useCampaign(campaignId);
   const world = useWorld(campaign?.worldId);
+  const [searchParams] = useSearchParams();
 
   const {
     viewingLocationId,
     navigateTo,
+    openMap,
     navigateBack,
     selectedCharacters,
     addSelectedCharacter,
@@ -69,6 +71,10 @@ export function CampaignPlay() {
     },
     [navigateTo],
   );
+
+  const handleOpenMap = (locationId: string) => {
+    openMap(locationId);
+  };
 
   const handleBackView = useCallback(() => {
     navigateBack();
@@ -130,7 +136,9 @@ export function CampaignPlay() {
     onTileMenuRequest(payload);
   };
 
-  const showLocationView = Boolean(viewingLocationId && currentLocation?.hasMap);
+  const showLocationView = Boolean(
+    viewingLocationId && currentLocation?.hasMap && searchParams.get('view') === 'map',
+  );
 
   if (campaignId && campaign === undefined) {
     return (
@@ -210,7 +218,7 @@ export function CampaignPlay() {
             <WorldViewer
               locations={locationsList}
               onAdvanceToLocation={handleAdvanceView}
-              onOpenMap={handleAdvanceView}
+              onOpenMap={handleOpenMap}
               translateExtent={[
                 [-2000, -2000],
                 [2000, 2000],
