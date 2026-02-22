@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 import type { CampaignEvent } from '@/types';
-import { Check, ChevronsUpDown } from 'lucide-react';
+import { Check, ChevronsUpDown, XIcon } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useCampaignEvents } from '../hooks/campaigns/use-campaign-events';
 
@@ -23,6 +23,10 @@ const EVENT_TYPE_LABELS: Record<string, string> = {
 interface EventLookupProps {
   campaignId: string | undefined;
   onSelect: (event: CampaignEvent) => void;
+  /** Optional: show currently selected event by id. When set, trigger shows event label. */
+  value?: string | null;
+  /** Optional: when value is set, show clear (X) button that calls this. */
+  onDelete?: () => void;
   placeholder?: string;
   className?: string;
   /** Applied to the popover content. Use e.g. z-[110] when rendered inside a portaled overlay so the popover is clickable. */
@@ -36,6 +40,8 @@ interface EventLookupProps {
 export const EventLookup = ({
   campaignId,
   onSelect,
+  value,
+  onDelete,
   placeholder = 'Search events...',
   className,
   popoverContentClassName,
@@ -47,6 +53,8 @@ export const EventLookup = ({
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
   const { campaignEvents } = useCampaignEvents(campaignId);
+
+  const selectedEvent = value ? campaignEvents.find((e) => e.id === value) : undefined;
 
   const searchLower = search.toLowerCase().trim();
   const filteredEvents = useMemo(() => {
@@ -79,8 +87,38 @@ export const EventLookup = ({
             className={cn('w-full justify-between', className)}
             disabled={disabled || !campaignId}
             data-testid={dataTestId}>
-            {placeholder}
-            <ChevronsUpDown className='ml-2 h-4 w-4 shrink-0 opacity-50' />
+            {selectedEvent ? (
+              <span className='truncate'>
+                {selectedEvent.label}{' '}
+                <span className='text-muted-foreground text-xs'>
+                  ({EVENT_TYPE_LABELS[selectedEvent.type]})
+                </span>
+              </span>
+            ) : (
+              placeholder
+            )}
+            <>
+              {selectedEvent && onDelete && (
+                <div
+                  role='button'
+                  tabIndex={-1}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDelete();
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      onDelete();
+                    }
+                  }}
+                  className='flex flex-1 justify-end'
+                  aria-label='Clear selection'>
+                  <XIcon className='size-4 shrink-0 opacity-70 hover:opacity-100' />
+                </div>
+              )}
+              <ChevronsUpDown className='ml-2 h-4 w-4 shrink-0 opacity-50' />
+            </>
           </Button>
         </PopoverTrigger>
         <PopoverContent
@@ -95,7 +133,12 @@ export const EventLookup = ({
                   key={event.id}
                   value={`${event.label} ${EVENT_TYPE_LABELS[event.type] ?? ''}`}
                   onSelect={() => handleSelect(event)}>
-                  <Check className='mr-2 h-4 w-4 opacity-0' />
+                  <Check
+                    className={cn(
+                      'mr-2 h-4 w-4',
+                      selectedEvent?.id === event.id ? 'opacity-100' : 'opacity-0',
+                    )}
+                  />
                   <div className='flex flex-col'>
                     <span>{event.label}</span>
                     <span className='text-xs text-muted-foreground'>

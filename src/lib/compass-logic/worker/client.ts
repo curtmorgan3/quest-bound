@@ -531,6 +531,37 @@ export class QBScriptClient {
   }
 
   /**
+   * Execute a campaign event script (on_enter, on_leave) when a character moves onto/off a tile.
+   */
+  async executeCampaignEventEvent(
+    campaignEventId: string,
+    characterId: string,
+    eventType: 'on_enter' | 'on_leave',
+    roll?: RollFn,
+    timeout = 10000,
+  ): Promise<{
+    value: any;
+    announceMessages: string[];
+    logMessages: any[][];
+    executionTime: number;
+  }> {
+    const requestId = generateRequestId();
+    this.pendingRollHandlers.set(requestId, roll ?? defaultScriptDiceRoller);
+    try {
+      return await this.sendSignal(
+        {
+          type: 'EXECUTE_CAMPAIGN_EVENT_EVENT',
+          payload: { campaignEventId, characterId, eventType, requestId },
+        },
+        requestId,
+        timeout,
+      );
+    } finally {
+      this.pendingRollHandlers.delete(requestId);
+    }
+  }
+
+  /**
    * Validate script syntax
    */
   async validateScript(

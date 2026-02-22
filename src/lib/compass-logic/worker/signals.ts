@@ -19,6 +19,7 @@ export type MainToWorkerSignal =
   | ExecuteActionEventSignal
   | ExecuteItemEventSignal
   | ExecuteArchetypeEventSignal
+  | ExecuteCampaignEventEventSignal
   | RollResponseSignal
   | ClearGraphSignal;
 
@@ -97,6 +98,17 @@ export interface ExecuteArchetypeEventSignal {
     archetypeId: string;
     characterId: string;
     eventType: 'on_add' | 'on_remove';
+    requestId: string;
+  };
+}
+
+/** Runs a campaign event script handler (on_enter, on_leave) when a character moves onto/off a tile. */
+export interface ExecuteCampaignEventEventSignal {
+  type: 'EXECUTE_CAMPAIGN_EVENT_EVENT';
+  payload: {
+    campaignEventId: string;
+    characterId: string;
+    eventType: 'on_enter' | 'on_leave';
     requestId: string;
   };
 }

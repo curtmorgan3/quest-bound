@@ -1,5 +1,5 @@
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { useCampaign, useRulesets } from '@/lib/compass-api';
+import { useActiveRuleset, useCampaign } from '@/lib/compass-api';
 import { useScripts } from '@/lib/compass-api/hooks/scripts/use-scripts';
 import {
   useExecuteActionEvent,
@@ -42,7 +42,7 @@ export function ScriptEditorPage() {
   const isNew = scriptId === 'new';
   const script = isNew ? null : (scripts.find((s) => s.id === scriptId) ?? null);
 
-  const { activeRuleset, testCharacter } = useRulesets();
+  const { activeRuleset, testCharacter } = useActiveRuleset();
   const {
     executeActionEvent,
     logMessages: actionEventLogs,

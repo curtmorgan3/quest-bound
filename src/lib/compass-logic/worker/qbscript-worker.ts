@@ -127,6 +127,10 @@ async function handleSignal(signal: MainToWorkerSignal): Promise<void> {
         await handleExecuteArchetypeEvent(signal.payload);
         break;
 
+      case 'EXECUTE_CAMPAIGN_EVENT_EVENT':
+        await handleExecuteCampaignEventEvent(signal.payload);
+        break;
+
       case 'CLEAR_GRAPH':
         handleClearGraph(signal.payload);
         break;
@@ -785,6 +789,63 @@ async function handleExecuteArchetypeEvent(payload: {
             stackTrace: result.error?.stack,
           },
           logMessages: result.logMessages.map((args) => prepareForStructuredClone(args)),
+        },
+      });
+    } else {
+      sendSignal({
+        type: 'SCRIPT_RESULT',
+        payload: {
+          requestId: payload.requestId,
+          result: prepareForStructuredClone(result.value),
+          announceMessages: result.announceMessages,
+          logMessages: result.logMessages.map((args) => prepareForStructuredClone(args)),
+          executionTime: 0,
+        },
+      });
+    }
+  } catch (error) {
+    sendSignal({
+      type: 'SCRIPT_ERROR',
+      payload: {
+        requestId: payload.requestId,
+        error: {
+          message: error instanceof Error ? error.message : String(error),
+          stackTrace: error instanceof Error ? error.stack : undefined,
+        },
+      },
+    });
+  }
+}
+
+async function handleExecuteCampaignEventEvent(payload: {
+  campaignEventId: string;
+  characterId: string;
+  eventType: 'on_enter' | 'on_leave';
+  requestId: string;
+}): Promise<void> {
+  try {
+    const rollFn: RollFn = (expression: string) =>
+      rollBridge.requestRoll(expression, payload.requestId);
+
+    let executor: EventHandlerExecutor;
+    executor = new EventHandlerExecutor(db, createOnAttributesModified(rollFn, () => executor));
+    const result = await executor.executeCampaignEventEvent(
+      payload.campaignEventId,
+      payload.characterId,
+      payload.eventType,
+      rollFn,
+    );
+
+    if (result.error || !result.success) {
+      sendSignal({
+        type: 'SCRIPT_ERROR',
+        payload: {
+          requestId: payload.requestId,
+          error: {
+            message: result.error?.message ?? 'Campaign event script failed',
+            stackTrace: result.error?.stack,
+          },
+          logMessages: result.logMessages?.map((args) => prepareForStructuredClone(args)) ?? [],
         },
       });
     } else {

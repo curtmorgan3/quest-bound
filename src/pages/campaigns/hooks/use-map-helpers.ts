@@ -6,6 +6,7 @@ import {
   useLocation,
   useLocations,
 } from '@/lib/compass-api';
+import { useQBScriptClient } from '@/lib/compass-logic/worker/hooks';
 import { db } from '@/stores';
 import type { ActiveCharacter, Location, TileData } from '@/types';
 import { useCallback } from 'react';
@@ -29,6 +30,7 @@ export const useMapHelpers = ({
   const { campaignCharacters, updateCampaignCharacter } = useCampaignCharacters(campaignId);
   const { updateLocation } = useLocations(campaign?.worldId, null);
   const { updateCampaignItem } = useCampaignItems(campaignId);
+  const client = useQBScriptClient();
 
   const navigate = useNavigate();
   const { campaignId: campaignIdParam, locationId: locationIdParam } = useParams<{
@@ -85,8 +87,37 @@ export const useMapHelpers = ({
           currentTileId: movement.tileId,
         });
       }
+
+      // Fire on_enter for event locations on the target tile(s) that have a script and type 'on_enter'
+      const eventLocations = await db.campaignEventLocations
+        .where('locationId')
+        .equals(locationId)
+        .toArray();
+
+      const events = await db.campaignEvents.bulkGet([
+        ...new Set(eventLocations.map((el) => el.campaignEventId)),
+      ]);
+
+      for (const movement of movements) {
+        const characterId = selectedCharacters.find(
+          (c) => c.id === movement.characterId || c.campaignCharacterId === movement.characterId,
+        )?.characterId;
+
+        if (!characterId) continue;
+
+        const eventLocationsOnTile = eventLocations.filter((el) => el.tileId === movement.tileId);
+
+        for (const el of eventLocationsOnTile) {
+          const event = events.find((e) => e?.id === el.campaignEventId);
+          if (event?.type === 'on_enter' && event.scriptId) {
+            client
+              .executeCampaignEventEvent(event.id, characterId, 'on_enter')
+              .catch((err) => console.warn('[Campaign] on_enter script failed:', err));
+          }
+        }
+      }
     },
-    [selectedCharacters, campaignCharacters, updateCampaignCharacter],
+    [selectedCharacters, campaignCharacters, updateCampaignCharacter, client],
   );
 
   const navigateTo = useCallback(

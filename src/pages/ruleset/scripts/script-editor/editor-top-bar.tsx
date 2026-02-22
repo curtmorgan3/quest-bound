@@ -12,12 +12,13 @@ import {
   ActionLookup,
   ArchetypeLookup,
   AttributeLookup,
+  EventLookup,
   ItemLookup,
   useRulesets,
   useScripts,
 } from '@/lib/compass-api';
 import { type UseReactiveScriptExecutionResult } from '@/lib/compass-logic';
-import type { Action, Archetype, Attribute, Item, Script } from '@/types';
+import type { Action, Archetype, Attribute, CampaignEvent, Item, Script } from '@/types';
 import { Trash2, X, Zap } from 'lucide-react';
 import { useCallback, type Dispatch, type SetStateAction } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -63,7 +64,9 @@ export const EditorTopBar = ({
   const isNew = scriptId === 'new';
   const script = isNew ? null : (scripts.find((s) => s.id === scriptId) ?? null);
 
-  const entityTypes = campaignId ? CAMPAIGN_TYPE_OPTIONS : ENTITY_TYPE_OPTIONS;
+  const entityTypes = (campaignId ? CAMPAIGN_TYPE_OPTIONS : ENTITY_TYPE_OPTIONS).filter(
+    (opt) => !campaignId || opt.value !== 'all',
+  );
 
   const handleRun = useCallback(async () => {
     if (!activeRuleset) throw new Error('No ruleset found.');
@@ -203,6 +206,18 @@ export const EditorTopBar = ({
             onSelect={(a: Archetype) => setEntityId(a.id)}
             onDelete={() => setEntityId(null)}
             data-testid='script-editor-archetype-lookup'
+          />
+        </div>
+      )}
+      {entityType === 'campaignEvent' && (
+        <div className='w-[240px]'>
+          <EventLookup
+            campaignId={campaignId}
+            label='Campaign Event'
+            value={entityId}
+            onSelect={(event: CampaignEvent) => setEntityId(event.id)}
+            onDelete={() => setEntityId(null)}
+            data-testid='script-editor-event-lookup'
           />
         </div>
       )}

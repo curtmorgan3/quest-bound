@@ -4,10 +4,7 @@ import type { ASTNode } from '../interpreter/ast';
 import { functionDefToExecutableSource } from '../interpreter/ast-to-source';
 import { Lexer } from '../interpreter/lexer';
 import { Parser } from '../interpreter/parser';
-import type {
-  ScriptExecutionContext,
-  ScriptExecutionResult,
-} from '../runtime/script-runner';
+import type { ScriptExecutionContext, ScriptExecutionResult } from '../runtime/script-runner';
 import { ScriptRunner } from '../runtime/script-runner';
 
 /**
@@ -20,7 +17,9 @@ export type EventHandlerType =
   | 'on_activate'
   | 'on_deactivate'
   | 'on_add'
-  | 'on_remove';
+  | 'on_remove'
+  | 'on_enter'
+  | 'on_leave';
 
 /**
  * Result of event handler execution.
@@ -156,11 +155,7 @@ export class EventHandlerExecutor {
       : await new ScriptRunner(context).run(scriptToRun);
 
     if (!result.error && result.modifiedAttributeIds?.length && this.onAttributesModified) {
-      await this.onAttributesModified(
-        result.modifiedAttributeIds,
-        characterId,
-        item.rulesetId,
-      );
+      await this.onAttributesModified(result.modifiedAttributeIds, characterId, item.rulesetId);
     }
 
     return {
@@ -259,11 +254,7 @@ export class EventHandlerExecutor {
         : await new ScriptRunner(context).run(scriptToRun);
 
       if (!result.error && result.modifiedAttributeIds?.length && this.onAttributesModified) {
-        await this.onAttributesModified(
-          result.modifiedAttributeIds,
-          characterId,
-          action.rulesetId,
-        );
+        await this.onAttributesModified(result.modifiedAttributeIds, characterId, action.rulesetId);
       }
 
       return {
@@ -479,19 +470,10 @@ export class EventHandlerExecutor {
       : await new ScriptRunner(context).run(script.sourceCode);
 
     if (!result.error && result.modifiedAttributeIds?.length && this.onAttributesModified) {
-      await this.onAttributesModified(
-        result.modifiedAttributeIds,
-        characterId,
-        rulesetId,
-      );
+      await this.onAttributesModified(result.modifiedAttributeIds, characterId, rulesetId);
     }
 
-    await this.persistCharacterLoaderLogs(
-      rulesetId,
-      script.id,
-      characterId,
-      result.logMessages,
-    );
+    await this.persistCharacterLoaderLogs(rulesetId, script.id, characterId, result.logMessages);
 
     return {
       success: !result.error,
@@ -577,6 +559,83 @@ export class EventHandlerExecutor {
   }
 
   /**
+   * Execute a campaign event's script handler (e.g. on_enter when a character moves onto a tile with that event).
+   * Call only for events whose type matches (e.g. type === 'on_enter' when firing on enter).
+   */
+  async executeCampaignEventEvent(
+    campaignEventId: string,
+    characterId: string,
+    eventType: 'on_enter' | 'on_leave',
+    roll?: RollFn,
+  ): Promise<EventHandlerResult> {
+    const campaignEvent = await this.db.campaignEvents.get(campaignEventId);
+    if (!campaignEvent) {
+      return {
+        success: false,
+        value: null,
+        announceMessages: [],
+        logMessages: [],
+        error: new Error(`Campaign event not found: ${campaignEventId}`),
+      };
+    }
+
+    if (!campaignEvent.scriptId) {
+      return {
+        success: true,
+        value: null,
+        announceMessages: [],
+        logMessages: [],
+      };
+    }
+
+    const script = await this.db.scripts.get(campaignEvent.scriptId);
+    if (!script || !script.enabled) {
+      return {
+        success: true,
+        value: null,
+        announceMessages: [],
+        logMessages: [],
+      };
+    }
+
+    const campaign = await this.db.campaigns.get(campaignEvent.campaignId);
+    if (!campaign?.rulesetId) {
+      return {
+        success: false,
+        value: null,
+        announceMessages: [],
+        logMessages: [],
+        error: new Error('Campaign or ruleset not found for event'),
+      };
+    }
+
+    const hasHandler = this.extractEventHandler(script.sourceCode, eventType) !== null;
+    if (!hasHandler) {
+      return {
+        success: true,
+        value: null,
+        announceMessages: [],
+        logMessages: [],
+      };
+    }
+
+    const context: ScriptExecutionContext = {
+      ownerId: characterId,
+      rulesetId: campaign.rulesetId,
+      db: this.db,
+      scriptId: script.id,
+      triggerType: 'attribute_change',
+      roll,
+      executeActionEvent: (actionId, ownerId, targetIdForAction, eventTypeForAction) =>
+        this.executeActionEvent(actionId, ownerId, targetIdForAction, eventTypeForAction, roll),
+    };
+
+    const result = await this.executeEventHandlerByCall(script.sourceCode, eventType, context);
+
+    return result;
+  }
+
+  /**
    * Execute an event handler by calling it within the script context.
    * This is a more robust approach that loads the entire script and calls the function.
    * @param sourceCode - Full script source code
@@ -594,21 +653,16 @@ export class EventHandlerExecutor {
     const fullScript = `
 ${sourceCode}
 
-# Call the event handler
-if ${eventType} != null
-  ${eventType}()
-end
+// Call the event handler
+if ${eventType}:
+    ${eventType}()
 `;
 
     const result = this.runScriptForTest
       ? await this.runScriptForTest(context, fullScript)
       : await new ScriptRunner(context).run(fullScript);
 
-    if (
-      !result.error &&
-      result.modifiedAttributeIds?.length &&
-      this.onAttributesModified
-    ) {
+    if (!result.error && result.modifiedAttributeIds?.length && this.onAttributesModified) {
       await this.onAttributesModified(
         result.modifiedAttributeIds,
         context.ownerId,
@@ -693,4 +747,18 @@ export async function executeCharacterLoader(
 ): Promise<EventHandlerResult> {
   const executor = new EventHandlerExecutor(db);
   return executor.executeCharacterLoader(characterId, rulesetId, roll);
+}
+
+/**
+ * Execute a campaign event script (on_enter, on_leave) when a character moves onto/off a tile.
+ */
+export async function executeCampaignEventEvent(
+  db: DB,
+  campaignEventId: string,
+  characterId: string,
+  eventType: 'on_enter' | 'on_leave',
+  roll?: RollFn,
+): Promise<EventHandlerResult> {
+  const executor = new EventHandlerExecutor(db);
+  return executor.executeCampaignEventEvent(campaignEventId, characterId, eventType, roll);
 }
