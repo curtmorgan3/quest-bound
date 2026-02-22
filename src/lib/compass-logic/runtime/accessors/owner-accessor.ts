@@ -48,11 +48,12 @@ export class OwnerAccessor extends CharacterAccessor {
   }
 
   override toStructuredCloneSafe(): unknown {
+    // Serialize Tile as x,y only to avoid cycle: Tile.characters includes Owner, so full Tile.toStructuredCloneSafe() would recurse.
     return {
       __type: 'Owner',
       name: this.characterName,
       location: this.locationName,
-      Tile: this.Tile.toStructuredCloneSafe(),
+      Tile: { __type: 'Tile' as const, x: this.Tile.x, y: this.Tile.y },
     };
   }
 }
