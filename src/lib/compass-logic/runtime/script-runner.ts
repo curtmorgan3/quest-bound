@@ -392,8 +392,15 @@ export class ScriptRunner {
       this.context.entityType === 'campaignEventLocation' &&
       this.campaignEventLocationCache
     ) {
-      // Self = the CampaignEventLocation (id, campaignEventId, locationId, tileId)
-      this.evaluator.globalEnv.define('Self', this.campaignEventLocationCache);
+      // Self = the CampaignEventLocation (id, campaignEventId, locationId, tileId) with destroy()
+      const loc = this.campaignEventLocationCache;
+      const db = this.context.db;
+      this.evaluator.globalEnv.define('Self', {
+        ...loc,
+        destroy: async () => {
+          await db.campaignEventLocations.delete(loc.id);
+        },
+      });
     }
     // entityType 'location' | 'tile' | 'archetype' | 'global' (or unknown): no Self
   }
