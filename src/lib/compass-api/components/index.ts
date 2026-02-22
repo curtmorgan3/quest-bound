@@ -4,5 +4,6 @@ export * from './event-lookup';
 export * from './attribute-lookup';
 export * from './character-lookup';
 export * from './item-lookup';
+export * from './location-lookup';
 export * from './page-lookup';
 export * from './window-lookup';

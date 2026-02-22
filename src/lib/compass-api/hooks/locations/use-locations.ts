@@ -5,6 +5,15 @@ import { useLiveQuery } from 'dexie-react-hooks';
 
 const DEFAULT_GRID_SIZE = 8;
 
+/** All locations in a world (for lookup/navigation). */
+export const useAllLocations = (worldId: string | undefined) => {
+  const locations = useLiveQuery(async () => {
+    if (!worldId) return [] as Location[];
+    return db.locations.where('worldId').equals(worldId).toArray();
+  }, [worldId]);
+  return locations ?? [];
+};
+
 /** Pass null for world root; pass a location id to get its children. */
 export const useLocations = (
   worldId: string | undefined,

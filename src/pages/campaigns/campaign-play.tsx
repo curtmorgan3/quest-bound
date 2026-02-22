@@ -10,10 +10,10 @@ import {
 import { cn } from '@/lib/utils';
 import { useCampaignContext } from '@/stores';
 import type { TileData, TileMenuPayload } from '@/types';
-import { ArrowUp, ChevronRight } from 'lucide-react';
+import { ArrowUp, ChevronRight, Map, MapPinned } from 'lucide-react';
 import { useCallback, useMemo } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { CampaignCharacterSheet, JumpToCharacter, TileMenu } from './campaign-controls';
+import { CampaignCharacterSheet, JumpTo, TileMenu } from './campaign-controls';
 import { useCampaignPlayOverlay } from './hooks';
 
 export function CampaignPlay() {
@@ -21,7 +21,7 @@ export function CampaignPlay() {
   const navigate = useNavigate();
   const campaign = useCampaign(campaignId);
   const world = useWorld(campaign?.worldId);
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const {
     viewingLocationId,
@@ -79,6 +79,14 @@ export function CampaignPlay() {
   const handleBackView = useCallback(() => {
     navigateBack();
   }, [navigateBack]);
+
+  const handleToggleMapView = useCallback(() => {
+    if (searchParams.get('view') === 'map') {
+      setSearchParams({});
+    } else {
+      setSearchParams({ view: 'map' });
+    }
+  }, [searchParams, setSearchParams]);
 
   const handleCreateTileAt = useCallback(
     async (x: number, y: number): Promise<string | null> => {
@@ -209,7 +217,19 @@ export function CampaignPlay() {
             ))}
           </div>
 
-          <JumpToCharacter />
+          <div className='flex items-center gap-1'>
+            <JumpTo />
+            {currentLocation?.hasMap && (
+              <Button
+                variant='outline'
+                size='sm'
+                onClick={handleToggleMapView}
+                aria-label={showLocationView ? 'Back to location view' : 'Open map view'}
+                title={showLocationView ? 'Back to location view' : 'Open map view'}>
+                {showLocationView ? <Map className='h-4 w-4' /> : <MapPinned className='h-4 w-4' />}
+              </Button>
+            )}
+          </div>
         </div>
       </div>
       <div className='min-h-0 flex-1 p-4'>
