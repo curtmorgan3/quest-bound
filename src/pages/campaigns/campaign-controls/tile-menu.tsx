@@ -2,6 +2,7 @@ import { ArchetypeLookup } from '@/lib/compass-api';
 import { useCampaignContext } from '@/stores';
 import type { Archetype } from '@/types';
 import { useCallback, useState } from 'react';
+import { createPortal } from 'react-dom';
 import type { TileMenu, TileMenuPayload } from '../hooks';
 
 interface TileMenuProps {
@@ -68,49 +69,49 @@ export function TileMenu({ onTileMenuRequest, tileMenu, lastClickedTileId }: Til
     : undefined;
   const isNotPassable = clickedTile ? !clickedTile.isPassable : false;
 
-  return (
-    <>
-      {tileMenu && (
-        <>
-          <div className='fixed inset-0 z-10' onClick={closeMenu} aria-hidden />
-          {showArchetypeLookup ? (
-            <div
-              className='fixed z-20 rounded-md border bg-popover p-3 shadow-md'
-              style={{ left: tileMenu.clientX, top: tileMenu.clientY }}>
-              <ArchetypeLookup
-                rulesetId={rulesetId}
-                label='Choose archetype'
-                placeholder='Search archetypes...'
-                onSelect={handleArchetypeSelect}
-                allowDefault
-              />
-            </div>
-          ) : (
-            <div
-              className='fixed z-20 rounded-md border bg-popover px-2 py-1 shadow-md'
-              style={{ left: tileMenu.clientX, top: tileMenu.clientY }}>
-              {isNotPassable ? (
-                <p className='px-2 py-1.5 text-sm text-muted-foreground border-b'>
-                  This tile is impassable.
-                </p>
-              ) : (
-                options.map((opt) => (
-                  <button
-                    key={opt.action}
-                    type='button'
-                    className='block w-full rounded px-2 py-1.5 text-left text-sm hover:bg-accent'
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleOptionClick(opt.action);
-                    }}>
-                    {opt.label}
-                  </button>
-                ))
-              )}
-            </div>
-          )}
-        </>
-      )}
-    </>
-  );
+  const menuContent =
+    tileMenu &&
+    createPortal(
+      <>
+        <div className='fixed inset-0 z-[100]' onClick={closeMenu} aria-hidden />
+        {showArchetypeLookup ? (
+          <div
+            className='fixed z-[101] rounded-md border bg-popover p-3 shadow-md'
+            style={{ left: tileMenu.clientX, top: tileMenu.clientY }}>
+            <ArchetypeLookup
+              rulesetId={rulesetId}
+              label='Choose archetype'
+              placeholder='Search archetypes...'
+              onSelect={handleArchetypeSelect}
+              allowDefault
+            />
+          </div>
+        ) : (
+          <div
+            className='fixed z-[101] rounded-md border bg-popover px-2 py-1 shadow-md'
+            style={{ left: tileMenu.clientX, top: tileMenu.clientY }}>
+            {isNotPassable ? (
+              <p className='px-2 py-1.5 text-sm text-muted-foreground border-b'>
+                This tile is impassable.
+              </p>
+            ) : (
+              options.map((opt) => (
+                <button
+                  key={opt.action}
+                  type='button'
+                  className='block w-full rounded px-2 py-1.5 text-left text-sm hover:bg-accent'
+                  onClick={() => {
+                    handleOptionClick(opt.action);
+                  }}>
+                  {opt.label}
+                </button>
+              ))
+            )}
+          </div>
+        )}
+      </>,
+      document.body,
+    );
+
+  return <>{menuContent}</>;
 }

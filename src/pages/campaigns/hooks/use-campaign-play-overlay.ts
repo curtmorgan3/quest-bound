@@ -61,8 +61,6 @@ export const useCampaignPlayOverlay = ({
       return;
     }
 
-    console.log(payload);
-
     lastClickedTileId.current = payload.tileId;
 
     setTileMenu({
