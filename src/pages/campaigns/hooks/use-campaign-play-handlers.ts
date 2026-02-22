@@ -5,6 +5,7 @@ import {
   useCampaignItems,
   useCharacter,
 } from '@/lib/compass-api';
+import { db } from '@/stores';
 import type { CampaignEventType, Location } from '@/types';
 import { useCallback } from 'react';
 
@@ -88,7 +89,13 @@ export const useCampaignPlayHandlers = ({
 
   const handleRemoveCampaignEvent = useCallback(
     async (campaignEventId: string) => {
-      await deleteCampaignEventLocation(campaignEventId);
+      const locations = await db.campaignEventLocations
+        .where('campaignEventId')
+        .equals(campaignEventId)
+        .toArray();
+      for (const loc of locations) {
+        await deleteCampaignEventLocation(loc.id);
+      }
       await deleteCampaignEvent(campaignEventId);
     },
     [deleteCampaignEventLocation, deleteCampaignEvent],

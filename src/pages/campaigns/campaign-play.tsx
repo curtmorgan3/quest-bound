@@ -58,6 +58,11 @@ export function CampaignPlay() {
       charactersInThisLocation,
     });
 
+  const eventAtClickedTile = useMemo(
+    () => eventLocationsWithEvent.find((el) => el.tileId === tileMenu?.tileId) ?? null,
+    [eventLocationsWithEvent, tileMenu?.tileId],
+  );
+
   const handleAdvanceView = useCallback(
     (locationId: string) => {
       navigateTo(locationId);
@@ -219,6 +224,7 @@ export function CampaignPlay() {
               onTileMenuRequest={onTileMenuRequest}
               tileMenu={tileMenu}
               lastClickedTileId={lastClickedTileId}
+              eventAtClickedTile={eventAtClickedTile}
             />
 
             <LocationViewer

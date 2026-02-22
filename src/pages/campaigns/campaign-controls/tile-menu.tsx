@@ -1,6 +1,23 @@
-import { ArchetypeLookup } from '@/lib/compass-api';
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { ArchetypeLookup, type EventLocationWithEvent } from '@/lib/compass-api';
 import { useCampaignContext } from '@/stores';
-import type { Archetype, ITileMenu, TileMenuPayload } from '@/types';
+import type { Archetype, CampaignEventType, ITileMenu, TileMenuPayload } from '@/types';
 import { useCallback, useState } from 'react';
 import { createPortal } from 'react-dom';
 
@@ -8,24 +25,56 @@ interface TileMenuProps {
   onTileMenuRequest: (payload: TileMenuPayload | null) => void;
   tileMenu?: ITileMenu;
   lastClickedTileId?: string | null;
+  /** When the clicked tile has an event, pass it so the menu can show "Remove Event". */
+  eventAtClickedTile?: EventLocationWithEvent | null;
 }
 
-type MenuOption = { label: string; action: 'move' | 'createCharacter' };
+type MenuOption = {
+  label: string;
+  action: 'move' | 'createCharacter' | 'createEvent' | 'removeEvent';
+};
 
 const selectedCharacterOptions: MenuOption[] = [{ label: 'Move', action: 'move' }];
-const emptyTileOptions: MenuOption[] = [{ label: 'Create Character', action: 'createCharacter' }];
+const emptyTileOptionsBase: MenuOption[] = [
+  { label: 'Create Character', action: 'createCharacter' },
+  { label: 'Create Event', action: 'createEvent' },
+];
+const emptyTileOptionsWithEvent: MenuOption[] = [
+  { label: 'Create Character', action: 'createCharacter' },
+  { label: 'Remove Event', action: 'removeEvent' },
+];
 
-export function TileMenu({ onTileMenuRequest, tileMenu, lastClickedTileId }: TileMenuProps) {
+const EVENT_TYPE_OPTIONS: { value: CampaignEventType; label: string }[] = [
+  { value: 'on_enter', label: 'On Enter' },
+  { value: 'on_leave', label: 'On Leave' },
+  { value: 'on_activate', label: 'On Activate' },
+];
+
+export function TileMenu({
+  onTileMenuRequest,
+  tileMenu,
+  lastClickedTileId,
+  eventAtClickedTile,
+}: TileMenuProps) {
   const {
     viewingLocationId,
     selectedCharacters,
     moveSelectedCharactersTo,
     rulesetId,
     handleCreateCampaignCharacter,
+    handleCreateCampaignEvent,
+    handleRemoveCampaignEvent,
     currentLocation,
   } = useCampaignContext();
 
   const [showArchetypeLookup, setShowArchetypeLookup] = useState(false);
+  const [showCreateEventDialog, setShowCreateEventDialog] = useState(false);
+  const [pendingEventTile, setPendingEventTile] = useState<{
+    locationId: string;
+    tileId: string;
+  } | null>(null);
+  const [eventName, setEventName] = useState('');
+  const [eventType, setEventType] = useState<CampaignEventType>('on_enter');
 
   const handleMoveCharacter = useCallback(() => {
     if (!tileMenu) return;
@@ -48,14 +97,50 @@ export function TileMenu({ onTileMenuRequest, tileMenu, lastClickedTileId }: Til
     [lastClickedTileId],
   );
 
+  const handleCreateEventClick = useCallback(() => {
+    if (!tileMenu || !viewingLocationId) return;
+    setPendingEventTile({ locationId: viewingLocationId, tileId: tileMenu.tileId });
+    setEventName('');
+    setEventType('on_enter');
+    setShowCreateEventDialog(true);
+    onTileMenuRequest(null);
+  }, [tileMenu, viewingLocationId]);
+
+  const handleCreateEventSave = useCallback(async () => {
+    if (!pendingEventTile || !eventName.trim()) return;
+    await handleCreateCampaignEvent(pendingEventTile, eventName.trim(), eventType);
+    setShowCreateEventDialog(false);
+    setPendingEventTile(null);
+    setEventName('');
+  }, [pendingEventTile, eventName, eventType, handleCreateCampaignEvent]);
+
+  const handleCreateEventDialogOpenChange = useCallback((open: boolean) => {
+    if (!open) {
+      setShowCreateEventDialog(false);
+      setPendingEventTile(null);
+      setEventName('');
+      setEventType('on_enter');
+    }
+  }, []);
+
+  const handleRemoveEventClick = useCallback(async () => {
+    if (!eventAtClickedTile) return;
+    await handleRemoveCampaignEvent(eventAtClickedTile.event.id);
+    onTileMenuRequest(null);
+  }, [eventAtClickedTile, handleRemoveCampaignEvent]);
+
+  const emptyTileOptions =
+    eventAtClickedTile != null ? emptyTileOptionsWithEvent : emptyTileOptionsBase;
   const options = selectedCharacters.length > 0 ? selectedCharacterOptions : emptyTileOptions;
 
   const handleOptionClick = useCallback(
     (action: MenuOption['action']) => {
       if (action === 'move') handleMoveCharacter();
       else if (action === 'createCharacter') handleCreateCharacterClick();
+      else if (action === 'createEvent') handleCreateEventClick();
+      else if (action === 'removeEvent') handleRemoveEventClick();
     },
-    [handleMoveCharacter, handleCreateCharacterClick],
+    [handleMoveCharacter, handleCreateCharacterClick, handleCreateEventClick, handleRemoveEventClick],
   );
 
   const closeMenu = useCallback(() => {
@@ -112,5 +197,53 @@ export function TileMenu({ onTileMenuRequest, tileMenu, lastClickedTileId }: Til
       document.body,
     );
 
-  return <>{menuContent}</>;
+  return (
+    <>
+      {menuContent}
+      <Dialog open={showCreateEventDialog} onOpenChange={handleCreateEventDialogOpenChange}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create Event</DialogTitle>
+          </DialogHeader>
+          <div className='grid gap-4 py-2'>
+            <div className='grid gap-2'>
+              <Label htmlFor='event-name'>Event name</Label>
+              <Input
+                id='event-name'
+                value={eventName}
+                onChange={(e) => setEventName(e.target.value)}
+                placeholder='Enter event name'
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleCreateEventSave();
+                }}
+              />
+            </div>
+            <div className='grid gap-2'>
+              <Label>Event type</Label>
+              <Select value={eventType} onValueChange={(v) => setEventType(v as CampaignEventType)}>
+                <SelectTrigger className='w-full'>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {EVENT_TYPE_OPTIONS.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant='outline' onClick={() => setShowCreateEventDialog(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleCreateEventSave} disabled={!eventName.trim()}>
+              Save
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
 }

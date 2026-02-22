@@ -35,6 +35,7 @@ export interface CampaignPlayContextValue {
     label: string,
     type: CampaignEventType,
   ) => Promise<void>;
+  handleRemoveCampaignEvent: (campaignEventId: string) => Promise<void>;
 }
 
 export const CampaignPlayContext = createContext<CampaignPlayContextValue | null>(null);
@@ -71,7 +72,8 @@ function useCampaignProvider(campaignId: string | undefined): CampaignPlayContex
     selectedCharacters,
   });
 
-  const { handleCreateCampaignCharacter, handleCreateCampaignEvent } = useCampaignPlayHandlers({
+  const { handleCreateCampaignCharacter, handleCreateCampaignEvent, handleRemoveCampaignEvent } =
+    useCampaignPlayHandlers({
     campaignId,
     currentLocation,
     rulesetId,
@@ -121,6 +123,7 @@ function useCampaignProvider(campaignId: string | undefined): CampaignPlayContex
     playerCharactersInThisLocation,
     npcsInThisLocation,
     handleCreateCampaignEvent,
+    handleRemoveCampaignEvent,
   };
 }
 
