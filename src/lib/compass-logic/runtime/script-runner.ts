@@ -80,6 +80,8 @@ export class ScriptRunner {
     tileId: string | null;
   } | null = null;
   private ownerLocationName: string = '';
+  /** Owner's current tile coordinates (from campaign character's currentTileId); null when not in campaign or no tile. */
+  private ownerCurrentTile: { x: number; y: number } | null = null;
 
   constructor(context: ScriptExecutionContext) {
     this.context = context;
@@ -209,7 +211,7 @@ export class ScriptRunner {
         : null;
     }
 
-    // Load owner's current location name when in campaign context (for Owner.location)
+    // Load owner's current location name and tile when in campaign context (for Owner.location, Owner.Tile)
     if (this.context.campaignId && this.context.ownerId) {
       const cc = await db.campaignCharacters
         .where('[campaignId+characterId]')
@@ -218,6 +220,12 @@ export class ScriptRunner {
       if (cc?.currentLocationId) {
         const location = await db.locations.get(cc.currentLocationId);
         this.ownerLocationName = location?.label ?? '';
+        if (cc.currentTileId && location?.tiles?.length) {
+          const tile = location.tiles.find((t) => t.id === cc.currentTileId);
+          if (tile) {
+            this.ownerCurrentTile = { x: tile.x, y: tile.y };
+          }
+        }
       }
     }
   }
@@ -349,6 +357,7 @@ export class ScriptRunner {
       targetId ?? null,
       this.context.executeActionEvent,
       this.ownerLocationName,
+      this.ownerCurrentTile,
     );
 
     // Create Target accessor (null if no target)

@@ -7,3 +7,4 @@ export {
   ItemInstanceProxy,
   createItemInstanceProxy,
 } from './item-instance-proxy';
+export { TileProxy } from './tile-proxy';

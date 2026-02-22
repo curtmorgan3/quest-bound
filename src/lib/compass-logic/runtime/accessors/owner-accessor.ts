@@ -1,7 +1,7 @@
 import type { Action, Attribute, CharacterAttribute, InventoryItem, Item } from '@/types';
 import type Dexie from 'dexie';
 import type { ExecuteActionEventFn } from '../proxies';
-import { ActionProxy, AttributeProxy, createItemInstanceProxy } from '../proxies';
+import { ActionProxy, AttributeProxy, createItemInstanceProxy, TileProxy } from '../proxies';
 import type { StructuredCloneSafe } from '../structured-clone-safe';
 
 /**
@@ -26,6 +26,8 @@ export class OwnerAccessor implements StructuredCloneSafe {
   protected targetId: string | null;
   protected executeActionEvent: ExecuteActionEventFn | undefined;
   protected locationName: string;
+  /** Campaign character's current tile coordinates (from currentTileId); null when not in campaign or no tile. */
+  protected currentTile: { x: number; y: number } | null;
 
   constructor(
     characterId: string,
@@ -42,6 +44,7 @@ export class OwnerAccessor implements StructuredCloneSafe {
     targetId: string | null = null,
     executeActionEvent?: ExecuteActionEventFn,
     locationName: string = '',
+    currentTile: { x: number; y: number } | null = null,
   ) {
     this.characterId = characterId;
     this.characterName = characterName;
@@ -57,6 +60,15 @@ export class OwnerAccessor implements StructuredCloneSafe {
     this.targetId = targetId;
     this.executeActionEvent = executeActionEvent;
     this.locationName = locationName;
+    this.currentTile = currentTile;
+  }
+
+  /**
+   * The character's current tile in campaign context (from campaign character's currentTileId).
+   * Exposes x and y coordinates. When the character has no current tile, x and y are 0.
+   */
+  get Tile(): TileProxy {
+    return new TileProxy(this.currentTile?.x ?? 0, this.currentTile?.y ?? 0);
   }
 
   /**
@@ -332,7 +344,17 @@ export class OwnerAccessor implements StructuredCloneSafe {
    * Return a plain object for postMessage (structured clone).
    * Called at the worker boundary when script returns or logs Owner.
    */
-  toStructuredCloneSafe(): { __type: 'Owner'; name: string; location: string } {
-    return { __type: 'Owner', name: this.characterName, location: this.locationName };
+  toStructuredCloneSafe(): {
+    __type: 'Owner';
+    name: string;
+    location: string;
+    Tile: { __type: 'Tile'; x: number; y: number };
+  } {
+    return {
+      __type: 'Owner',
+      name: this.characterName,
+      location: this.locationName,
+      Tile: this.Tile.toStructuredCloneSafe(),
+    };
   }
 }
