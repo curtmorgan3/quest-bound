@@ -9,12 +9,12 @@ import type {
   RollFn,
   Script,
 } from '@/types';
-import { executeArchetypeEvent } from '../reactive/event-handler-executor';
 import { Evaluator } from '../interpreter/evaluator';
 import { Lexer } from '../interpreter/lexer';
 import { Parser } from '../interpreter/parser';
+import { executeArchetypeEvent } from '../reactive/event-handler-executor';
 import { OwnerAccessor, RulesetAccessor, TargetAccessor } from './accessors';
-import type { ExecuteActionEventFn } from './proxies';
+import { TileProxy, type ExecuteActionEventFn } from './proxies';
 
 /**
  * Context for script execution.
@@ -25,7 +25,13 @@ export interface ScriptExecutionContext {
   rulesetId: string; // Current ruleset
   db: DB; // Database access
   scriptId?: string; // Which script is executing (for error logging)
-  triggerType?: 'load' | 'attribute_change' | 'action_click' | 'item_event' | 'archetype_event' | 'character_load';
+  triggerType?:
+    | 'load'
+    | 'attribute_change'
+    | 'action_click'
+    | 'item_event'
+    | 'archetype_event'
+    | 'character_load';
   /** When script is attached to an entity (attribute, action, item), the entity type. Enables 'Self'. */
   entityType?: string;
   /** When script is attached to an entity, the entity id. Self = Owner.Attribute/Action/Item as appropriate. */
@@ -79,6 +85,8 @@ export class ScriptRunner {
     locationId: string;
     tileId: string | null;
   } | null = null;
+  /** Tile coordinates for Self when entityType is campaignEventLocation; null if no tile. */
+  private campaignEventLocationTile: { x: number; y: number } | null = null;
   private ownerLocationName: string = '';
   /** Owner's current tile coordinates (from campaign character's currentTileId); null when not in campaign or no tile. */
   private ownerCurrentTile: { x: number; y: number } | null = null;
@@ -196,19 +204,23 @@ export class ScriptRunner {
     }
 
     // Load CampaignEventLocation when Self is the event location (campaign event scripts)
-    if (
-      this.context.entityType === 'campaignEventLocation' &&
-      this.context.entityId
-    ) {
+    if (this.context.entityType === 'campaignEventLocation' && this.context.entityId) {
       const loc = await db.campaignEventLocations.get(this.context.entityId);
-      this.campaignEventLocationCache = loc
-        ? {
-            id: loc.id,
-            campaignEventId: loc.campaignEventId,
-            locationId: loc.locationId,
-            tileId: loc.tileId ?? null,
+      if (loc) {
+        this.campaignEventLocationCache = {
+          id: loc.id,
+          campaignEventId: loc.campaignEventId,
+          locationId: loc.locationId,
+          tileId: loc.tileId ?? null,
+        };
+        if (loc.tileId) {
+          const location = await db.locations.get(loc.locationId);
+          const tile = location?.tiles?.find((t: any) => t.id === loc.tileId);
+          if (tile) {
+            this.campaignEventLocationTile = { x: tile.x, y: tile.y };
           }
-        : null;
+        }
+      }
     }
 
     // Load owner's current location name and tile when in campaign context (for Owner.location, Owner.Tile)
@@ -221,7 +233,7 @@ export class ScriptRunner {
         const location = await db.locations.get(cc.currentLocationId);
         this.ownerLocationName = location?.label ?? '';
         if (cc.currentTileId && location?.tiles?.length) {
-          const tile = location.tiles.find((t) => t.id === cc.currentTileId);
+          const tile = location.tiles.find((t: any) => t.id === cc.currentTileId);
           if (tile) {
             this.ownerCurrentTile = { x: tile.x, y: tile.y };
           }
@@ -281,9 +293,7 @@ export class ScriptRunner {
       } else if (type === 'archetypeAdd') {
         const entries = value as { characterId: string; archetypeName: string }[];
         for (const { characterId, archetypeName } of entries) {
-          const archetype = await db.archetypes
-            .where({ rulesetId, name: archetypeName })
-            .first();
+          const archetype = await db.archetypes.where({ rulesetId, name: archetypeName }).first();
           if (!archetype) continue;
           const existing = await db.characterArchetypes
             .where('[characterId+archetypeId]')
@@ -291,11 +301,12 @@ export class ScriptRunner {
             .first();
           if (existing) continue;
           const maxOrder =
-            (await db.characterArchetypes
-              .where('characterId')
-              .equals(characterId)
-              .sortBy('loadOrder'))
-              .pop()?.loadOrder ?? -1;
+            (
+              await db.characterArchetypes
+                .where('characterId')
+                .equals(characterId)
+                .sortBy('loadOrder')
+            ).pop()?.loadOrder ?? -1;
           const now = new Date().toISOString();
           await db.characterArchetypes.add({
             id: crypto.randomUUID(),
@@ -313,9 +324,7 @@ export class ScriptRunner {
       } else if (type === 'archetypeRemove') {
         const entries = value as { characterId: string; archetypeName: string }[];
         for (const { characterId, archetypeName } of entries) {
-          const archetype = await db.archetypes
-            .where({ rulesetId, name: archetypeName })
-            .first();
+          const archetype = await db.archetypes.where({ rulesetId, name: archetypeName }).first();
           if (!archetype) continue;
           const ca = await db.characterArchetypes
             .where('[characterId+archetypeId]')
@@ -417,11 +426,13 @@ export class ScriptRunner {
       this.context.entityType === 'campaignEventLocation' &&
       this.campaignEventLocationCache
     ) {
-      // Self = the CampaignEventLocation (id, campaignEventId, locationId, tileId) with destroy()
+      // Self = the CampaignEventLocation (id, campaignEventId, locationId, tileId) with Tile and destroy()
       const loc = this.campaignEventLocationCache;
       const db = this.context.db;
+      const tile = this.campaignEventLocationTile;
       this.evaluator.globalEnv.define('Self', {
         ...loc,
+        Tile: new TileProxy(tile?.x ?? 0, tile?.y ?? 0),
         destroy: async () => {
           await db.campaignEventLocations.delete(loc.id);
         },
