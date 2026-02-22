@@ -36,6 +36,8 @@ interface ArchetypeLookupProps {
   id?: string;
   'data-testid'?: string;
   allowDefault?: boolean;
+  /** Applied to the popover content. Use e.g. z-[110] when rendered inside a portaled overlay. */
+  popoverContentClassName?: string;
 }
 
 export const ArchetypeLookup = ({
@@ -50,6 +52,7 @@ export const ArchetypeLookup = ({
   id,
   'data-testid': dataTestId,
   allowDefault = false,
+  popoverContentClassName,
 }: ArchetypeLookupProps) => {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
@@ -144,7 +147,9 @@ export const ArchetypeLookup = ({
               </>
             </Button>
           </PopoverTrigger>
-          <PopoverContent className='w-[300px] p-0' align='start'>
+          <PopoverContent
+            className={cn('w-[300px] p-0', popoverContentClassName)}
+            align='start'>
             <Command shouldFilter={false}>
               <CommandInput placeholder={placeholder} value={search} onValueChange={setSearch} />
               <CommandList>

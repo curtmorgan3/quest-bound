@@ -155,6 +155,7 @@ export function TileMenu({
               placeholder='Search archetypes...'
               onSelect={handleArchetypeSelect}
               allowDefault
+              popoverContentClassName='z-[110]'
             />
           </div>
         ) : showEventLookup ? (
