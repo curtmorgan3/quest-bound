@@ -18,6 +18,7 @@ import {
   useScripts,
 } from '@/lib/compass-api';
 import { type UseReactiveScriptExecutionResult } from '@/lib/compass-logic';
+import { activateButtonStyle } from '@/palette';
 import type { Action, Archetype, Attribute, CampaignEvent, Item, Script } from '@/types';
 import { Trash2, X, Zap } from 'lucide-react';
 import { useCallback, type Dispatch, type SetStateAction } from 'react';
@@ -228,6 +229,7 @@ export const EditorTopBar = ({
             disabled={
               scriptExecutionHook.isExecuting || !activeRuleset || !testCharacter || saveDisabled
             }
+            style={activateButtonStyle}
             variant='secondary'>
             <Zap className='h-4 w-4' />
             Run

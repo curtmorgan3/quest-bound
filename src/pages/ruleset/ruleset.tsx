@@ -1,16 +1,11 @@
-import {
-  Button,
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components';
+import { Button, Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components';
+import { PageWrapper } from '@/components/composites';
 import { useActiveRuleset, useCharts, useExportChart } from '@/lib/compass-api';
-import { Download, Loader2, Pencil } from 'lucide-react';
+import { ArrowDownToLine, Loader2, Pencil, Plus } from 'lucide-react';
 import { useState } from 'react';
 import { Navigate, useSearchParams } from 'react-router-dom';
 import { ActionChart } from './actions';
+import { ArchetypeCreateDialog } from './archetypes/archetype-create-dialog';
 import { Archetypes } from './archetypes/archetypes';
 import { AttributeChart } from './attributes/attribute-chart';
 import { ChartSelect } from './charts';
@@ -56,7 +51,7 @@ export const Ruleset = ({
   const chartId = searchParams.get('chart');
   const activeChart = chartId ? charts?.find((c) => c.id === chartId) : undefined;
   const pageLabel =
-    page === 'charts' && activeChart ? activeChart.title : pageToLabel.get(page ?? '');
+    page === 'charts' && activeChart ? activeChart.title : (pageToLabel.get(page ?? '') ?? '');
 
   if (!page) {
     return <Navigate to={`/rulesets/${activeRuleset?.id}/attributes`} replace={true} />;
@@ -118,45 +113,35 @@ export const Ruleset = ({
   };
 
   return (
-    <div className='flex flex-col p-4 gap-4'>
-      <h1 className='text-2xl'>{pageLabel}</h1>
-      <Dialog
-        open={open}
-        onOpenChange={(open) => {
-          if (!open) {
-            searchParams.set('edit', '');
-            setSearchParams(searchParams);
-          }
-          setOpen(open);
-        }}>
+    <PageWrapper
+      title={pageLabel}
+      headerActions={
         <div className='flex gap-2'>
+          {page === 'archetypes' && <ArchetypeCreateDialog />}
           {page !== 'archetypes' && (
-            <DialogTrigger asChild>
-              <Button
-                id='create-button'
-                className='w-[180px]'
-                onClick={() => setOpen(true)}
-                data-testid='ruleset-new-button'>
-                New
-              </Button>
-            </DialogTrigger>
+            <Button
+              size='sm'
+              id='create-button'
+              onClick={() => setOpen(true)}
+              data-testid='ruleset-new-button'>
+              <Plus className='h-4 w-4' />
+              {`Create ${(pageToLabel.get(page) ?? '').slice(0, -1)}`}
+            </Button>
           )}
           {page === 'charts' && chartId && (
             <div className='flex gap-2'>
-              <DialogTrigger asChild>
-                <Button
-                  size='sm'
-                  variant='outline'
-                  onClick={() => {
-                    searchParams.set('edit', chartId);
-                    setSearchParams(searchParams);
-                    setOpen(true);
-                  }}>
-                  <Pencil />
-                </Button>
-              </DialogTrigger>
+              <Button
+                size='sm'
+                variant='outline'
+                onClick={() => {
+                  searchParams.set('edit', chartId);
+                  setSearchParams(searchParams);
+                  setOpen(true);
+                }}>
+                <Pencil />
+              </Button>
               <Button onClick={() => exportChartAsTSV(chartId)} variant='outline' size='sm'>
-                <Download className='h-4 w-4' />
+                <ArrowDownToLine className='h-4 w-4' />
               </Button>
               <ChartImport chartId={chartId} onLoadingChange={setIsImporting} />
             </div>
@@ -173,7 +158,16 @@ export const Ruleset = ({
             page !== 'pages' &&
             page !== 'archetypes' && <Import type={page} onLoadingChange={setIsImporting} />}
         </div>
-
+      }>
+      <Dialog
+        open={open}
+        onOpenChange={(open) => {
+          if (!open) {
+            searchParams.set('edit', '');
+            setSearchParams(searchParams);
+          }
+          setOpen(open);
+        }}>
         {page === 'archetypes' ? (
           renderChart()
         ) : isImporting ? (
@@ -201,6 +195,6 @@ export const Ruleset = ({
           </DialogContent>
         )}
       </Dialog>
-    </div>
+    </PageWrapper>
   );
 };

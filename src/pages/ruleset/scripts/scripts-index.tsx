@@ -2,6 +2,7 @@
  * Script library - list all scripts for the active ruleset, grouped by category
  */
 
+import { PageWrapper } from '@/components/composites';
 import {
   Accordion,
   AccordionContent,
@@ -44,43 +45,11 @@ export function ScriptsIndex() {
   const options = campaignId ? CAMPAIGN_TYPE_OPTIONS : ENTITY_TYPE_OPTIONS;
 
   return (
-    <div className='flex flex-col gap-6 p-4'>
-      <div className='flex flex-col gap-2'>
-        <h1 className='text-2xl font-semibold'>Scripts</h1>
-      </div>
-
-      <div className='flex flex-wrap items-center gap-4'>
-        <div className='relative flex-1 min-w-[200px] max-w-[280px]'>
-          <Search className='absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none' />
-          <Input
-            id='script-name-filter'
-            type='search'
-            placeholder='Filter by name...'
-            value={nameFilter}
-            onChange={(e) => setNameFilter(e.target.value)}
-            className='pl-9'
-            aria-label='Filter scripts by name'
-          />
-        </div>
-        <div className='flex items-center gap-2'>
-          <Label htmlFor='script-type-filter' className='text-sm'>
-            Type
-          </Label>
-          <Select value={selectedType} onValueChange={setSelectedType}>
-            <SelectTrigger id='script-type-filter' className='w-[140px]'>
-              <SelectValue placeholder='All types' />
-            </SelectTrigger>
-            <SelectContent>
-              {options.map((opt) => (
-                <SelectItem key={opt.value} value={opt.value}>
-                  {opt.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        {rulesetId && (
-          <Button asChild>
+    <PageWrapper
+      title='Scripts'
+      headerActions={
+        rulesetId ? (
+          <Button asChild size='sm' className='gap-1'>
             <Link
               to={
                 campaignId
@@ -88,13 +57,45 @@ export function ScriptsIndex() {
                   : `/rulesets/${rulesetId}/scripts/new`
               }
               data-testid='scripts-new-script-link'>
-              <Plus className='h-4 w-4 mr-2' />
-              New Script
+              <Plus className='h-4 w-4' />
+              Create Script
             </Link>
           </Button>
-        )}
-      </div>
-
+        ) : undefined
+      }
+      filterRow={
+        <div className='flex flex-wrap items-center gap-4 px-4 py-2'>
+          <div className='relative flex-1 min-w-[200px] max-w-[280px]'>
+            <Search className='absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none' />
+            <Input
+              id='script-name-filter'
+              type='search'
+              placeholder='Filter by name...'
+              value={nameFilter}
+              onChange={(e) => setNameFilter(e.target.value)}
+              className='pl-9'
+              aria-label='Filter scripts by name'
+            />
+          </div>
+          <div className='flex items-center gap-2'>
+            <Label htmlFor='script-type-filter' className='text-sm'>
+              Type
+            </Label>
+            <Select value={selectedType} onValueChange={setSelectedType}>
+              <SelectTrigger id='script-type-filter' className='w-[140px]'>
+                <SelectValue placeholder='All types' />
+              </SelectTrigger>
+              <SelectContent>
+                {options.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      }>
       <div className='rounded-md border p-2'>
         {filteredScripts.length === 0 ? (
           <div className='flex flex-col items-center justify-center py-12 text-center'>
@@ -182,6 +183,6 @@ export function ScriptsIndex() {
           </>
         )}
       </div>
-    </div>
+    </PageWrapper>
   );
 }

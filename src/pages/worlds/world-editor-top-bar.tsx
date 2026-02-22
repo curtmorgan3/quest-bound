@@ -1,11 +1,8 @@
-import { Button, Input } from '@/components';
+import { Button } from '@/components';
 import type { Location } from '@/types';
 import { ArrowUp, ChevronRight, FileText, Plus, Waypoints } from 'lucide-react';
-import { useState } from 'react';
 
 export interface WorldEditorTopBarProps {
-  worldLabel: string;
-  onUpdateWorldLabel: (label: string) => void;
   parentStack: Location[];
   onBack: () => void;
   onAddLocation: () => void;
@@ -18,8 +15,6 @@ export interface WorldEditorTopBarProps {
 }
 
 export function WorldEditorTopBar({
-  worldLabel,
-  onUpdateWorldLabel,
   parentStack,
   onBack,
   onAddLocation,
@@ -27,49 +22,8 @@ export function WorldEditorTopBar({
   onOpenDetails,
   hasDetailsContext,
 }: WorldEditorTopBarProps) {
-  const [isEditingTitle, setIsEditingTitle] = useState(false);
-  const [titleInput, setTitleInput] = useState(worldLabel);
-
-  const startEditing = () => {
-    setTitleInput(worldLabel);
-    setIsEditingTitle(true);
-  };
-
-  const saveTitle = () => {
-    const next = titleInput.trim() || worldLabel;
-    setTitleInput(next);
-    setIsEditingTitle(false);
-    if (next !== worldLabel) onUpdateWorldLabel(next);
-  };
-
-  const cancelEditing = () => {
-    setTitleInput(worldLabel);
-    setIsEditingTitle(false);
-  };
-
   return (
-    <div className='flex shrink-0 flex-wrap items-center gap-2 border-b bg-background px-4 py-2'>
-      {isEditingTitle ? (
-        <Input
-          value={titleInput}
-          onChange={(e) => setTitleInput(e.target.value)}
-          onBlur={saveTitle}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') saveTitle();
-            if (e.key === 'Escape') cancelEditing();
-          }}
-          className='h-8 w-48 font-semibold'
-          autoFocus
-        />
-      ) : (
-        <button
-          type='button'
-          onClick={startEditing}
-          className='truncate font-semibold hover:underline'
-          data-testid='world-editor-title'>
-          {worldLabel}
-        </button>
-      )}
+    <>
       {parentStack.map((loc) => (
         <span key={loc.id} className='flex items-center gap-1 text-muted-foreground'>
           <ChevronRight className='h-4 w-4' />
@@ -118,6 +72,6 @@ export function WorldEditorTopBar({
           Add location
         </Button>
       </div>
-    </div>
+    </>
   );
 }

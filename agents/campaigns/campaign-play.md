@@ -1,3 +1,5 @@
+The campaign play page uses `PageWrapper` with title = world label, subheader = current location label (when in a location), and header actions: Campaign link, Back (when in location), character sheet, character avatars, location details, Jump to character, and map view toggle.
+
 The campaign play should have context of all campaign characters.
 
 Player characters = character's with userId == currentUser.id, rulesetId == campaign.rulesetId

@@ -13,6 +13,7 @@ import {
   Input,
   Label,
 } from '@/components';
+import { useFeatureFlag } from '@/hooks/use-feature-flag';
 import { useActiveRuleset } from '@/lib/compass-api';
 import type { Archetype } from '@/types';
 import { ChevronDown, ChevronUp, Pencil, Trash2 } from 'lucide-react';
@@ -84,6 +85,7 @@ export function ArchetypeCard({
   confirmBeforeDelete,
 }: ArchetypeCardProps) {
   const { activeRuleset } = useActiveRuleset();
+  const campaignsEnabled = useFeatureFlag('campaigns', false);
   const navigate = useNavigate();
   const imageSrc = archetype.image ?? getImageFromAssetId(archetype.assetId ?? null) ?? undefined;
 
@@ -136,66 +138,73 @@ export function ArchetypeCard({
               onChange={(e) => onEditDescriptionChange(e.target.value)}
               placeholder='Description'
             />
-            <div className='grid gap-2'>
-              <Label>Image</Label>
-              <ImageUpload
-                image={editImage || getImageFromAssetId(editAssetId)}
-                alt='Archetype image'
-                rulesetId={rulesetId}
-                onUpload={onEditImageUpload}
-                onRemove={onEditImageRemove}
-                onSetUrl={onEditSetUrl}
-              />
-            </div>
-            <div className='grid gap-2'>
-              <Label className='text-muted-foreground'>Map Size (tiles)</Label>
-              <div className='flex gap-2'>
-                <div className='flex flex-col gap-1 flex-1'>
-                  <Label className='text-muted-foreground text-xs'>Width</Label>
-                  <Input
-                    type='number'
-                    min={1}
-                    placeholder='—'
-                    value={editMapWidth ?? ''}
-                    onChange={(e) => {
-                      const v = e.target.value;
-                      onEditMapWidthChange(v === '' ? undefined : parseInt(v, 10) || 1);
-                    }}
+            <div className='flex gap-8 items-start'>
+              <div className='grid gap-2'>
+                <Label>Portrait</Label>
+                <ImageUpload
+                  image={editImage || getImageFromAssetId(editAssetId)}
+                  alt='Archetype image'
+                  rulesetId={rulesetId}
+                  onUpload={onEditImageUpload}
+                  onRemove={onEditImageRemove}
+                  onSetUrl={onEditSetUrl}
+                />
+              </div>
+              {campaignsEnabled && (
+                <div className='grid gap-2'>
+                  <Label>Map sprite</Label>
+                  <ImageUpload
+                    image={
+                      (editSprites[0]?.startsWith('http://') || editSprites[0]?.startsWith('https://')
+                        ? editSprites[0]
+                        : getImageFromAssetId(editSprites[0] ?? null)) ?? undefined
+                    }
+                    alt='Archetype map sprite'
+                    rulesetId={rulesetId}
+                    onUpload={onEditSpriteUpload}
+                    onRemove={onEditSpriteRemove}
+                    onSetUrl={onEditSpriteSetUrl}
                   />
+                  <p className='text-sm text-muted-foreground'>
+                    Optional image shown when this archetype is placed on the campaign map.
+                  </p>
                 </div>
-                <div className='flex flex-col gap-1 flex-1'>
-                  <Label className='text-muted-foreground text-xs'>Height</Label>
-                  <Input
-                    type='number'
-                    min={1}
-                    placeholder='—'
-                    value={editMapHeight ?? ''}
-                    onChange={(e) => {
-                      const v = e.target.value;
-                      onEditMapHeightChange(v === '' ? undefined : parseInt(v, 10) || 1);
-                    }}
-                  />
+              )}
+            </div>
+            {campaignsEnabled && (
+              <div className='grid gap-2'>
+                <Label className='text-muted-foreground'>Map Size (tiles)</Label>
+                <div className='flex gap-2'>
+                  <div className='flex flex-col gap-1 flex-1'>
+                    <Label className='text-muted-foreground text-xs'>Width</Label>
+                    <Input
+                      type='number'
+                      min={1}
+                      placeholder='—'
+                      value={editMapWidth ?? ''}
+                      onChange={(e) => {
+                        const v = e.target.value;
+                        onEditMapWidthChange(v === '' ? undefined : parseInt(v, 10) || 1);
+                      }}
+                    />
+                  </div>
+                  <div className='flex flex-col gap-1 flex-1'>
+                    <Label className='text-muted-foreground text-xs'>Height</Label>
+                    <Input
+                      type='number'
+                      min={1}
+                      placeholder='—'
+                      value={editMapHeight ?? ''}
+                      onChange={(e) => {
+                        const v = e.target.value;
+                        onEditMapHeightChange(v === '' ? undefined : parseInt(v, 10) || 1);
+                      }}
+                    />
+                  </div>
                 </div>
               </div>
-            </div>
-            <div className='grid gap-2'>
-              <Label className='text-muted-foreground'>Map sprite</Label>
-              <p className='text-sm text-muted-foreground'>
-                Optional image shown when this archetype is placed on the campaign map.
-              </p>
-              <ImageUpload
-                image={
-                  (editSprites[0]?.startsWith('http://') || editSprites[0]?.startsWith('https://')
-                    ? editSprites[0]
-                    : getImageFromAssetId(editSprites[0] ?? null)) ?? undefined
-                }
-                alt='Archetype map sprite'
-                rulesetId={rulesetId}
-                onUpload={onEditSpriteUpload}
-                onRemove={onEditSpriteRemove}
-                onSetUrl={onEditSpriteSetUrl}
-              />
-            </div>
+            )}
+
             <div className='flex gap-2'>
               <Button size='sm' onClick={onSaveEdit}>
                 Save

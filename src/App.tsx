@@ -1,10 +1,11 @@
+import { useFeatureFlag } from '@/hooks/use-feature-flag';
 import {
   ArchetypeSheetEditor,
   CampaignDocumentsPage,
   CampaignEvents,
   CampaignNew,
   CampaignPlay,
-  CampaignsList,
+  Campaigns,
   CharacterChartViewer,
   CharacterPage,
   Characters,
@@ -22,7 +23,6 @@ import {
   WorldEditor,
   Worlds,
 } from '@/pages';
-import { useFeatureFlag } from '@/hooks/use-feature-flag';
 import { HashRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { ErrorBoundary } from './components';
 import { Layout } from './components/layout';
@@ -80,7 +80,7 @@ function CompassRoutes() {
 
             {campaignsEnabled && (
               <>
-                <Route path={`/campaigns`} element={<CampaignsList />} />
+                <Route path={`/campaigns`} element={<Campaigns />} />
                 <Route path={`/campaigns/new`} element={<CampaignNew />} />
                 <Route
                   path={`/campaigns/:campaignId`}

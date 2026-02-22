@@ -10,6 +10,7 @@ import {
 } from '@/components';
 import { LocationLookup, useCampaign } from '@/lib/compass-api';
 import { useCampaignContext } from '@/stores';
+import { Navigation } from 'lucide-react';
 import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 
@@ -33,6 +34,7 @@ export function JumpTo() {
   return (
     <>
       <Button variant='outline' size='sm' onClick={() => setOpen(true)}>
+        <Navigation className='h-4 w-4' />
         Jump to
       </Button>
       <Dialog open={open} onOpenChange={setOpen}>

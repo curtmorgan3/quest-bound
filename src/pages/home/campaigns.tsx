@@ -17,6 +17,7 @@ import {
   Button,
   Card,
 } from '@/components';
+import { PageWrapper } from '@/components/composites';
 import {
   CharacterLookup,
   useCampaignCharacters,
@@ -26,9 +27,9 @@ import {
   useWorlds,
 } from '@/lib/compass-api';
 import type { Campaign } from '@/types';
-import { Trash2, UserMinus } from 'lucide-react';
+import { Plus, UserMinus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useCampaignPlayCharacterList } from './hooks/use-campaign-play-character-list';
+import { useCampaignPlayCharacterList } from '../campaigns/hooks';
 
 function CampaignCardCharacterSection({ campaign }: { campaign: Campaign }) {
   const { campaignCharacters, createCampaignCharacter, deleteCampaignCharacter } =
@@ -86,7 +87,7 @@ function CampaignCardCharacterSection({ campaign }: { campaign: Campaign }) {
   );
 }
 
-export function CampaignsList() {
+export function Campaigns() {
   const { campaigns, deleteCampaign } = useCampaigns();
   const { worlds } = useWorlds();
   const { rulesets } = useRulesets();
@@ -103,17 +104,19 @@ export function CampaignsList() {
   );
 
   return (
-    <div className='flex h-full w-full flex-col gap-4 p-4'>
-      <h1 className='text-4xl font-bold'>Campaigns</h1>
-      <div className='flex items-center gap-4'>
+    <PageWrapper
+      title='Campaigns'
+      headerActions={
         <Button
-          className='w-[180px]'
+          variant='outline'
+          size='sm'
+          className='gap-1'
           data-testid='campaigns-create'
           onClick={() => navigate('/campaigns/new')}>
-          Create New
+          <Plus className='h-4 w-4' />
+          Create Campaign
         </Button>
-      </div>
-
+      }>
       <div className='flex flex-col gap-3'>
         {sortedCampaigns.map((campaign) => (
           <Card key={campaign.id} className='overflow-hidden' data-testid='campaign-card'>
@@ -137,11 +140,11 @@ export function CampaignsList() {
                     <Button
                       type='button'
                       variant='outline'
-                      size='icon'
-                      className='shrink-0 text-muted-foreground hover:text-destructive'
+                      size='sm'
+                      className='shrink-0 hover:text-destructive'
                       aria-label='Delete campaign'
                       data-testid='campaign-card-delete'>
-                      <Trash2 className='h-4 w-4' />
+                      Delete
                     </Button>
                   </AlertDialogTrigger>
                   <AlertDialogContent>
@@ -183,6 +186,6 @@ export function CampaignsList() {
           <p className='text-sm'>Create a campaign by selecting a world and a ruleset</p>
         </div>
       )}
-    </div>
+    </PageWrapper>
   );
 }

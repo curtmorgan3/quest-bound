@@ -1,7 +1,7 @@
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useImport, type ImportResult } from '@/lib/compass-api';
-import { AlertCircle, CheckCircle, Upload } from 'lucide-react';
+import { AlertCircle, ArrowUpToLine, CheckCircle } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
 interface ImportProps {
@@ -62,9 +62,9 @@ export const Import = ({ type, onImportComplete, onLoadingChange }: ImportProps)
             disabled={isLoading}
             className='gap-2'>
             {isLoading ? (
-              <Upload className='h-4 w-4 animate-pulse' />
+              <ArrowUpToLine className='h-4 w-4 animate-pulse' />
             ) : (
-              <Upload className='h-4 w-4' />
+              <ArrowUpToLine className='h-4 w-4' />
             )}
           </Button>
         </div>

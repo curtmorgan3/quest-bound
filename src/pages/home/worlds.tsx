@@ -14,6 +14,7 @@ import {
   Input,
   Label,
 } from '@/components';
+import { PageWrapper } from '@/components/composites';
 import {
   Dialog,
   DialogClose,
@@ -24,6 +25,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { useAssets, useWorlds } from '@/lib/compass-api';
+import { Plus } from 'lucide-react';
 import { useRef, useState } from 'react';
 import Markdown from 'react-markdown';
 import { useNavigate } from 'react-router-dom';
@@ -98,13 +100,14 @@ export const Worlds = () => {
   const sortedWorlds = [...worlds].sort((a, b) => a.label.localeCompare(b.label));
 
   return (
-    <div className='flex h-full w-full flex-col p-4 gap-4'>
-      <h1 className='text-4xl font-bold'>Worlds</h1>
-      <div className='flex items-center gap-4'>
+    <PageWrapper
+      title='Worlds'
+      headerActions={
         <Dialog open={open} onOpenChange={handleOpenChange}>
           <DialogTrigger asChild>
-            <Button className='w-[180px]' data-testid='create-world-button'>
-              Create New
+            <Button variant='outline' size='sm' className='gap-1' data-testid='create-world-button'>
+              <Plus className='h-4 w-4' />
+              Create World
             </Button>
           </DialogTrigger>
           <DialogContent className='sm:max-w-[425px]'>
@@ -149,8 +152,7 @@ export const Worlds = () => {
             </DialogFooter>
           </DialogContent>
         </Dialog>
-      </div>
-
+      }>
       <div className='flex flex-col gap-3'>
         {sortedWorlds.map((world) => {
           const doNotAsk = localStorage.getItem('qb.confirmOnDelete') === 'false';
@@ -243,6 +245,6 @@ export const Worlds = () => {
           <p className='text-sm'>Create a world to get started</p>
         </div>
       )}
-    </div>
+    </PageWrapper>
   );
 };

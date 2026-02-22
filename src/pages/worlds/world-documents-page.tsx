@@ -40,7 +40,7 @@ export function WorldDocumentsPage() {
           onClick={() => setCreateOpen(true)}
           data-testid='create-document-button'>
           <Plus className='h-4 w-4' />
-          New
+          Create Document
         </Button>
       }>
       <Documents worldId={worldId} />

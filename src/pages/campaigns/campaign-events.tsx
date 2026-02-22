@@ -9,6 +9,7 @@ import {
   Input,
   Label,
 } from '@/components';
+import { PageWrapper } from '@/components/composites';
 import { CategoryField } from '@/components/composites/category-field';
 import {
   Select,
@@ -104,14 +105,14 @@ export function CampaignEvents() {
   };
 
   return (
-    <div className='flex flex-col gap-4 p-4'>
-      <h1 className='text-2xl'>Campaign Events</h1>
-      <div className='flex flex-wrap items-center gap-4'>
+    <PageWrapper
+      title='Campaign Events'
+      headerActions={
         <Dialog open={createOpen} onOpenChange={handleCreateOpenChange}>
           <DialogTrigger asChild>
-            <Button className='w-[180px]' data-testid='events-new-button'>
+            <Button variant='outline' size='sm' className='gap-1' data-testid='events-new-button'>
               <Plus className='h-4 w-4' />
-              New Event
+              Create Event
             </Button>
           </DialogTrigger>
           <DialogContent>
@@ -145,8 +146,9 @@ export function CampaignEvents() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
-
-        <div className='flex items-center gap-2'>
+      }
+      filterRow={
+        <div className='flex items-center gap-2 px-4 py-2'>
           <Label htmlFor='events-category-filter' className='text-sm'>
             Category
           </Label>
@@ -165,8 +167,7 @@ export function CampaignEvents() {
             </SelectContent>
           </Select>
         </div>
-      </div>
-
+      }>
       <div className='flex flex-col gap-2' data-testid='events-list'>
         {filteredEvents.map((event) => (
           <div
@@ -239,6 +240,6 @@ export function CampaignEvents() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </PageWrapper>
   );
 }

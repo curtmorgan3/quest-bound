@@ -1,3 +1,4 @@
+import { PageWrapper } from '@/components/composites';
 import { useLocation, useLocations, useWorld, useWorlds } from '@/lib/compass-api';
 import type { Location } from '@/types';
 import { useEffect, useMemo, useState } from 'react';
@@ -135,17 +136,20 @@ export function WorldEditor() {
   }
 
   return (
-    <div className='flex h-full w-full flex-col'>
-      <WorldEditorTopBar
-        worldLabel={world.label}
-        onUpdateWorldLabel={(label) => worldId && updateWorld(worldId, { label })}
-        parentStack={parentStack}
-        onBack={handleBack}
-        onAddLocation={() => handleAddLocationAt(200, 200)}
-        onAddParentToCurrent={handleAddParentToCurrent}
-        onOpenDetails={() => setDetailsPanelOpen(true)}
-        hasDetailsContext={!!detailsLocation}
-      />
+    <PageWrapper
+      title={world.label}
+      onTitleChange={(label) => worldId && updateWorld(worldId, { label })}
+      headerActions={
+        <WorldEditorTopBar
+          parentStack={parentStack}
+          onBack={handleBack}
+          onAddLocation={() => handleAddLocationAt(200, 200)}
+          onAddParentToCurrent={handleAddParentToCurrent}
+          onOpenDetails={() => setDetailsPanelOpen(true)}
+          hasDetailsContext={!!detailsLocation}
+        />
+      }
+      contentClassName='flex min-h-0 flex-1 flex-row gap-0 p-0 overflow-hidden'>
       <div className='flex min-h-0 flex-1'>
         <div className='min-h-0 flex-1' id='world-canvas-wrap'>
           <WorldEditorCanvas
@@ -211,6 +215,6 @@ export function WorldEditor() {
         locationId={detailsLocation?.id}
         locationLabel={detailsLocation?.label}
       />
-    </div>
+    </PageWrapper>
   );
 }

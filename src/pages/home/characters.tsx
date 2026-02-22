@@ -14,6 +14,7 @@ import {
   Input,
   Label,
 } from '@/components';
+import { PageWrapper } from '@/components/composites';
 import {
   Dialog,
   DialogClose,
@@ -43,9 +44,7 @@ export const Characters = () => {
   const { rulesets } = useRulesets();
   const { assets, deleteAsset } = useAssets();
 
-  const selectableCharacters = characters.filter(
-    (c) => !c.isTestCharacter && c.isNpc !== true,
-  );
+  const selectableCharacters = characters.filter((c) => !c.isTestCharacter && c.isNpc !== true);
 
   const [step, setStep] = useState<1 | 2>(1);
   const [name, setName] = useState('');
@@ -165,13 +164,18 @@ export const Characters = () => {
   };
 
   return (
-    <div className='flex h-full w-full flex-col p-4 gap-4'>
-      <h1 className='text-4xl font-bold'>Characters</h1>
-      <div className='flex items-center gap-4'>
+    <PageWrapper
+      title='Characters'
+      headerActions={
         <Dialog open={open} onOpenChange={handleOpenChange}>
           <DialogTrigger asChild>
-            <Button className='w-[180px]' data-testid='create-character-button'>
-              Create New
+            <Button
+              variant='outline'
+              size='sm'
+              className='gap-1'
+              data-testid='create-character-button'>
+              <Plus className='h-4 w-4' />
+              Create Character
             </Button>
           </DialogTrigger>
           <DialogContent className='sm:max-w-[425px]'>
@@ -326,8 +330,7 @@ export const Characters = () => {
             </DialogFooter>
           </DialogContent>
         </Dialog>
-      </div>
-
+      }>
       <div className='flex flex-col gap-3'>
         {selectableCharacters.map((character) => {
           const doNotAsk = localStorage.getItem('qb.confirmOnDelete') === 'false';
@@ -414,6 +417,6 @@ export const Characters = () => {
           <p className='text-sm'>Create your first character to get started</p>
         </div>
       )}
-    </div>
+    </PageWrapper>
   );
 };

@@ -11,6 +11,7 @@ import {
 } from '@/components';
 import { useActions, useAttributes, useCharacterAttributes, useItems } from '@/lib/compass-api';
 import { injectCharacterData } from '@/lib/compass-planes/utils';
+import { activateButtonStyle } from '@/palette';
 import { CharacterContext, DiceContext, type InventoryItemWithData } from '@/stores';
 import { parseTextForDiceRolls, useKeyListeners } from '@/utils';
 import { Check, Drumstick, Shirt, Trash, Zap } from 'lucide-react';
@@ -575,17 +576,8 @@ export const ItemContextMenu = ({
             }}
             onPointerDown={(e) => e.stopPropagation()}
             style={{
+              ...activateButtonStyle,
               width: '32px',
-              display: 'flex',
-              padding: '8px',
-              justifyContent: 'center',
-              alignItems: 'center',
-              backgroundColor: '#2a4a2a',
-              border: '1px solid #363',
-              borderRadius: 4,
-              color: '#8f8',
-              fontSize: 13,
-              cursor: 'pointer',
             }}>
             <Zap size={16} />
           </button>

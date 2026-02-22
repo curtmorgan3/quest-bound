@@ -1,4 +1,5 @@
 import { Avatar, AvatarFallback, AvatarImage, Button } from '@/components';
+import { PageWrapper } from '@/components/composites';
 import { getTopTileDataAt, LocationViewer } from '@/components/locations';
 import { WorldViewer } from '@/components/worlds/world-viewer';
 import {
@@ -10,7 +11,7 @@ import {
 import { cn } from '@/lib/utils';
 import { useCampaignContext } from '@/stores';
 import type { TileData, TileMenuPayload } from '@/types';
-import { ArrowUp, ChevronRight, FileText, Map, MapPinned } from 'lucide-react';
+import { ArrowUp, FileText, Map, MapPinned } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { CampaignCharacterSheet, JumpTo, TileMenu } from './campaign-controls';
@@ -169,20 +170,13 @@ export function CampaignPlay() {
   }
 
   return (
-    <div className='flex h-full w-full flex-col'>
-      <div className='flex shrink-0 flex-wrap items-center gap-2 border-b bg-background px-4 py-2'>
-        <button
-          type='button'
-          className='text-muted-foreground hover:text-foreground'
-          onClick={() => navigate(`/campaigns/${campaignId}`)}>
-          Campaign
-        </button>
-        <ChevronRight className='h-4 w-4 text-muted-foreground' />
-        <span className='font-medium text-foreground'>{world.label}</span>
-        {currentLocation && (
-          <>
-            <ChevronRight className='h-4 w-4 text-muted-foreground' />
-            <span className='font-medium text-foreground'>{currentLocation.label}</span>
+    <PageWrapper
+      title={world.label}
+      subheader={currentLocation?.label}
+      contentClassName='min-h-0 flex-1 flex flex-col gap-0 p-0 overflow-hidden'
+      headerActions={
+        <div className='flex'>
+          {currentLocation && (
             <Button
               variant='ghost'
               size='sm'
@@ -191,57 +185,63 @@ export function CampaignPlay() {
               className='clickable'>
               <ArrowUp className='h-4 w-4' />
             </Button>
-          </>
-        )}
-        <div className='ml-auto flex gap-2'>
-          <CampaignCharacterSheet />
-          <div className='flex gap-2'>
-            {playerCharactersInThisLocation.map((character) => (
-              <button
-                type='button'
-                key={character.id}
-                onClick={() => toggleCharacterSelection(character.id)}
-                className='rounded-md focus:outline-none focus-visible:ring-2 focus-visible:ring-ring'
-                aria-label={
-                  selectedIds.has(character.id) ? 'Deselect character' : 'Select character'
-                }>
-                <Avatar
-                  className={cn(
-                    'size-8 shrink-0 rounded-md',
-                    selectedIds.has(character.id) && 'ring-2 ring-primary',
-                  )}>
-                  <AvatarImage src={character?.image ?? ''} alt={character?.name ?? 'Character'} />
-                  <AvatarFallback className='rounded-md text-xs'>
-                    {(character?.name ?? '?').slice(0, 1).toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-              </button>
-            ))}
-          </div>
-
-          <div className='flex items-center gap-1'>
-            <Button
-              variant='outline'
-              size='sm'
-              onClick={() => setDetailsPanelOpen(true)}
-              aria-label='Open location details'
-              title='Location details'>
-              <FileText className='h-4 w-4' />
-            </Button>
-            <JumpTo />
-            {currentLocation?.hasMap && (
+          )}
+          <div className='flex flex-1 justify-end gap-2'>
+            <CampaignCharacterSheet />
+            <div className='flex gap-2'>
+              {playerCharactersInThisLocation.map((character) => (
+                <button
+                  type='button'
+                  key={character.id}
+                  onClick={() => toggleCharacterSelection(character.id)}
+                  className='rounded-md focus:outline-none focus-visible:ring-2 focus-visible:ring-ring'
+                  aria-label={
+                    selectedIds.has(character.id) ? 'Deselect character' : 'Select character'
+                  }>
+                  <Avatar
+                    className={cn(
+                      'size-8 shrink-0 rounded-md',
+                      selectedIds.has(character.id) && 'ring-2 ring-primary',
+                    )}>
+                    <AvatarImage
+                      src={character?.image ?? ''}
+                      alt={character?.name ?? 'Character'}
+                    />
+                    <AvatarFallback className='rounded-md text-xs'>
+                      {(character?.name ?? '?').slice(0, 1).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                </button>
+              ))}
+            </div>
+            <div className='flex items-center gap-1'>
+              <JumpTo />
               <Button
                 variant='outline'
                 size='sm'
-                onClick={handleToggleMapView}
-                aria-label={showLocationView ? 'Back to location view' : 'Open map view'}
-                title={showLocationView ? 'Back to location view' : 'Open map view'}>
-                {showLocationView ? <Map className='h-4 w-4' /> : <MapPinned className='h-4 w-4' />}
+                onClick={() => setDetailsPanelOpen(true)}
+                aria-label='Open location details'
+                title='Location details'>
+                <FileText className='h-4 w-4' />
               </Button>
-            )}
+              {currentLocation?.hasMap && (
+                <Button
+                  variant='outline'
+                  size='sm'
+                  onClick={handleToggleMapView}
+                  aria-label={showLocationView ? 'Back to location view' : 'Open map view'}
+                  title={showLocationView ? 'Back to location view' : 'Open map view'}>
+                  {showLocationView ? (
+                    <Map className='h-4 w-4' />
+                  ) : (
+                    <MapPinned className='h-4 w-4' />
+                  )}
+                </Button>
+              )}
+            </div>
           </div>
         </div>
-      </div>
+      }>
       <LocationDetailsPanel
         open={detailsPanelOpen}
         onOpenChange={setDetailsPanelOpen}
@@ -290,6 +290,6 @@ export function CampaignPlay() {
           </div>
         )}
       </div>
-    </div>
+    </PageWrapper>
   );
 }

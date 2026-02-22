@@ -1,6 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { useExport } from '@/lib/compass-api';
-import { Download } from 'lucide-react';
+import { ArrowDownToLine } from 'lucide-react';
 
 interface ExportProps {
   type: 'attributes' | 'items' | 'actions';
@@ -37,7 +37,7 @@ export const Export = ({ type }: ExportProps) => {
       onClick={handleExport}
       disabled={isLoading}
       className='gap-2'>
-      <Download className='h-4 w-4' />
+      <ArrowDownToLine className='h-4 w-4' />
     </Button>
   );
 };
