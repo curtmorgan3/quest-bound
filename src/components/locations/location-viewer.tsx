@@ -116,6 +116,7 @@ export function LocationViewer({
     locationId,
     zoom,
     overrideTileRendersize: tileRenderSizeProp,
+    tileDataList: loc?.tiles ?? [],
   });
 
   const tilesByKey = useMemo(() => getTilesByKey(loc?.tiles ?? []), [loc?.tiles]);
@@ -124,7 +125,6 @@ export function LocationViewer({
     (loc?.tiles ?? []).forEach((td) => map.set(td.id, { x: td.x, y: td.y }));
     return map;
   }, [loc?.tiles]);
-  const mapImageUrl = loc?.mapAsset ?? null;
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const gridStateRef = useRef({
@@ -225,6 +225,40 @@ export function LocationViewer({
     ],
   );
 
+  // Single delegated handlers for grid (avoids N handlers for large grids)
+  const handleGridClick = useCallback(
+    (e: React.MouseEvent<HTMLDivElement>) => {
+      const cell = (e.target as HTMLElement).closest<HTMLElement>('[data-cell]');
+      if (!cell) return;
+      const x = Number(cell.dataset.x);
+      const y = Number(cell.dataset.y);
+      if (Number.isNaN(x) || Number.isNaN(y)) return;
+      handleCellClick(x, y, e);
+    },
+    [handleCellClick],
+  );
+  const handleGridDragOver = useCallback(
+    (e: React.DragEvent<HTMLDivElement>) => {
+      if (!onDrop) return;
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+    },
+    [onDrop],
+  );
+  const handleGridDrop = useCallback(
+    (e: React.DragEvent<HTMLDivElement>) => {
+      if (!onDrop) return;
+      const cell = (e.target as HTMLElement).closest<HTMLElement>('[data-cell]');
+      if (!cell) return;
+      e.preventDefault();
+      const x = Number(cell.dataset.x);
+      const y = Number(cell.dataset.y);
+      if (Number.isNaN(x) || Number.isNaN(y)) return;
+      onDrop(x, y, e);
+    },
+    [onDrop],
+  );
+
   if (!locationId || !worldId) return null;
   if (location === undefined) {
     return (
@@ -269,19 +303,20 @@ export function LocationViewer({
       </div>
       <div ref={scrollContainerRef} className='h-full w-full overflow-auto flex'>
         <div className='relative' style={mapImageStyle}>
-          {mapImageUrl && (
-            <img
-              src={mapImageUrl}
-              alt='Location map'
-              className='absolute inset-0 size-full pointer-events-none'
-            />
-          )}
           <div
             className='inline-grid bg-muted-foreground/20'
             style={{
               gridTemplateColumns: `repeat(${gridWidth}, ${effectiveTileSize}px)`,
               gridTemplateRows: `repeat(${gridHeight}, ${effectiveTileSize}px)`,
-            }}>
+            }}
+            role={
+              onSelectCell || (playMode && (onMoveCharacter || onTileMenuRequest))
+                ? 'grid'
+                : undefined
+            }
+            onClick={handleGridClick}
+            onDragOver={handleGridDragOver}
+            onDrop={handleGridDrop}>
             {Array.from({ length: gridHeight }, (_, y) =>
               Array.from({ length: gridWidth }, (_, x) => {
                 const key = `${x},${y}`;
@@ -289,33 +324,18 @@ export function LocationViewer({
                 const hasEvent = layers.some((td) => eventTileIds.includes(td.id));
                 const isHighlighted =
                   highlightedTileId != null && layers.some((td) => td.id === highlightedTileId);
+                const isInteractive =
+                  onSelectCell || (playMode && (onMoveCharacter || onTileMenuRequest));
                 return (
                   <div
                     key={key}
-                    role={
-                      onSelectCell || (playMode && (onMoveCharacter || onTileMenuRequest))
-                        ? 'button'
-                        : undefined
-                    }
+                    data-cell
+                    data-x={x}
+                    data-y={y}
+                    role={isInteractive ? 'gridcell' : undefined}
                     className='shrink-0 hover:bg-muted/50 relative'
                     style={{ width: effectiveTileSize, height: effectiveTileSize }}
-                    onClick={(e) => handleCellClick(x, y, e)}
-                    onDragOver={
-                      onDrop
-                        ? (e) => {
-                            e.preventDefault();
-                            e.dataTransfer.dropEffect = 'move';
-                          }
-                        : undefined
-                    }
-                    onDrop={
-                      onDrop
-                        ? (e) => {
-                            e.preventDefault();
-                            onDrop(x, y, e);
-                          }
-                        : undefined
-                    }>
+                    tabIndex={isInteractive ? 0 : undefined}>
                     {layers.length > 0 && (
                       <span className='relative block size-full overflow-hidden'>
                         {layers.map((td) => (

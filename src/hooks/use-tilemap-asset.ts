@@ -26,6 +26,7 @@ export const useTilemapAsset = ({
   overrideTileRendersize,
   zoom = 1,
   imageUrl: imageUrlOverride,
+  tileDataList,
 }: {
   worldId?: string;
   locationId?: string;
@@ -33,6 +34,8 @@ export const useTilemapAsset = ({
   zoom?: number;
   /** When set, used for mapImageDimensions instead of the location's map asset (e.g. tilemap editor). */
   imageUrl?: string | null;
+  /** Optional: when provided, tile styles are precomputed for stable refs (better perf for large grids). */
+  tileDataList?: TileData[];
 }) => {
   const { tilemaps } = useTilemaps(worldId);
   const location = useLocation(locationId);
@@ -135,7 +138,44 @@ export const useTilemapAsset = ({
     };
   }, [mapImageUrl]);
 
+  const tileStyleMap = useMemo(() => {
+    if (!tileDataList?.length) return null;
+    const map = new Map<string, CSSProperties>();
+    for (const td of tileDataList) {
+      if (!td?.tileId) continue;
+      const t = tilesById?.get(td.tileId);
+      if (!t) continue;
+      if (!t.tilemapId) continue;
+      const tm = tilemapsById.get(t.tilemapId);
+      if (!tm) continue;
+      const data = tm.image ?? null;
+      if (!data) continue;
+      const tw = tm.tileWidth;
+      const th = tm.tileHeight;
+      const tileX = t.tileX ?? 0;
+      const tileY = t.tileY ?? 0;
+      const dim = assetDimensions[tm.assetId];
+      const backgroundSize =
+        dim != null
+          ? `${(dim.w * effectiveTileSize) / tw}px ${(dim.h * effectiveTileSize) / th}px`
+          : 'auto';
+      const posX = tileX * effectiveTileSize;
+      const posY = tileY * effectiveTileSize;
+      map.set(td.id, {
+        backgroundImage: `url(${data})`,
+        backgroundPosition: `-${posX}px -${posY}px`,
+        backgroundSize,
+        backgroundRepeat: 'no-repeat',
+      });
+    }
+    return map;
+  }, [tileDataList, tilesById, tilemapsById, assetDimensions, effectiveTileSize]);
+
   function getTileStyle(td: TileData): React.CSSProperties {
+    if (tileStyleMap) {
+      const style = tileStyleMap.get(td.id);
+      if (style) return style;
+    }
     if (!td?.tileId) return {};
     const t = tilesById?.get(td.tileId);
     if (!t) return {};
@@ -183,9 +223,12 @@ export const useTilemapAsset = ({
   if (mapImageUrl && mapImageDimensions) {
     mapImageStyle = {
       backgroundImage: `url(${mapImageUrl})`,
-      width: `${mapImageDimensions.scaled.w}px`,
-      height: `${mapImageDimensions.scaled.h}px`,
-      backgroundSize: `${mapImageDimensions.scaled.w}px ${mapImageDimensions.scaled.h}px`,
+      width: gridWidth * effectiveTileSize,
+      height: gridHeight * effectiveTileSize,
+      backgroundSize: 'cover',
+      // width: `${mapImageDimensions.scaled.w}px`,
+      // height: `${mapImageDimensions.scaled.h}px`,
+      // backgroundSize: `${mapImageDimensions.scaled.w}px ${mapImageDimensions.scaled.h}px`,
       backgroundPosition: '0 0',
       backgroundRepeat: 'no-repeat',
     };
