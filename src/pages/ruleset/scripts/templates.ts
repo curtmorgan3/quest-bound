@@ -1,10 +1,10 @@
-import type { Script } from '@/types';
+import type { ScriptEntityType } from '@/types';
 
 /**
  * Default source code templates for new scripts, keyed by entity type.
  * Used to prepopulate the editor when creating a new script.
  */
-export const SCRIPT_TEMPLATES: Record<Script['entityType'], string> = {
+export const SCRIPT_TEMPLATES: Record<ScriptEntityType, string> = {
   attribute: `
 // Attribute scripts run on load and when subscribed attributes change
 // Subscribe to other attributes to trigger this script when they change
@@ -72,5 +72,11 @@ if Owner.hasArchetype('Warrior'):
     Owner.Attribute('Health').set(12)
 else:
     Owner.Attribute('Health').set(8)
+`,
+  location: `
+// location script
+`,
+  tile: `
+// tile script
 `,
 };

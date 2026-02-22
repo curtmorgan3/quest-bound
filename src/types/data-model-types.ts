@@ -331,11 +331,21 @@ export type Window = BaseDetails & {
   moduleName?: string;
 };
 
+export type ScriptEntityType =
+  | 'attribute'
+  | 'action'
+  | 'item'
+  | 'archetype'
+  | 'global'
+  | 'characterLoader'
+  | 'location'
+  | 'tile';
+
 export type Script = BaseDetails & {
   rulesetId: string; // Which ruleset this script belongs to
   name: string; // Script name (e.g., "hit_points", "cast_fireball")
   sourceCode: string; // Full QBScript source code
-  entityType: 'attribute' | 'action' | 'item' | 'archetype' | 'global' | 'characterLoader';
+  entityType: ScriptEntityType;
   entityId: string | null; // ID of associated entity (null for global and characterLoader scripts)
   isGlobal: boolean; // Whether this is a global utility script
   enabled: boolean; // Allow disabling scripts without deleting
@@ -371,7 +381,7 @@ export type ScriptLog = BaseDetails & {
 export type DependencyGraphNode = BaseDetails & {
   rulesetId: string; // Which ruleset this node belongs to
   scriptId: string; // Script that this node represents
-  entityType: 'attribute' | 'action' | 'item' | 'archetype' | 'global' | 'characterLoader';
+  entityType: ScriptEntityType;
   entityId: string | null; // ID of associated entity
   dependencies: string[]; // Array of attribute IDs this script depends on
   dependents: string[]; // Array of script IDs that depend on this script's entity

@@ -1,4 +1,4 @@
-import type { Script } from '@/types';
+import type { Script, ScriptEntityType } from '@/types';
 
 /**
  * Sanitizes a filename for filesystem compatibility.
@@ -34,7 +34,7 @@ export function sanitizeFileName(name: string): string {
  * Returns: { entityType: 'attribute', name: 'hit_points' }
  */
 export function parseScriptPath(path: string): {
-  entityType: 'attribute' | 'action' | 'item' | 'archetype' | 'global' | 'characterLoader';
+  entityType: ScriptEntityType;
   name: string;
 } | null {
   // Remove leading/trailing slashes and normalize
@@ -50,7 +50,7 @@ export function parseScriptPath(path: string): {
   const [, typeFolder, filename] = match;
 
   // Map folder names to entity types
-  let entityType: 'attribute' | 'action' | 'item' | 'archetype' | 'global' | 'characterLoader';
+  let entityType: ScriptEntityType;
   switch (typeFolder) {
     case 'attributes':
       entityType = 'attribute';
@@ -85,10 +85,7 @@ export function parseScriptPath(path: string): {
  * Example: generateScriptPath('attribute', 'Max Hit Points')
  * Returns: scripts/attributes/max_hit_points.qbs
  */
-export function generateScriptPath(
-  entityType: 'attribute' | 'action' | 'item' | 'archetype' | 'global' | 'characterLoader',
-  name: string,
-): string {
+export function generateScriptPath(entityType: ScriptEntityType, name: string): string {
   const sanitizedName = sanitizeFileName(name);
 
   // Map entity types to folder names
@@ -111,6 +108,12 @@ export function generateScriptPath(
       break;
     case 'characterLoader':
       folderName = 'character_loaders';
+      break;
+    case 'location':
+      folderName = 'locations';
+      break;
+    case 'tile':
+      folderName = 'tiles';
       break;
   }
 

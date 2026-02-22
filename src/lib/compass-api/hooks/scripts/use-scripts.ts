@@ -1,13 +1,11 @@
 import { useErrorHandler } from '@/hooks';
 import { db, useApiLoadingStore } from '@/stores';
-import type { Script } from '@/types';
+import type { Script, ScriptEntityType } from '@/types';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useActiveRuleset } from '../rulesets/use-active-ruleset';
 
-function getEntityTable(
-  entityType: 'attribute' | 'action' | 'item' | 'archetype' | 'global' | 'characterLoader',
-) {
+function getEntityTable(entityType: ScriptEntityType) {
   if (entityType === 'global' || entityType === 'characterLoader') return;
   return entityType === 'attribute'
     ? db.attributes

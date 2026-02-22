@@ -8,20 +8,21 @@ import {
   SidebarTrigger,
   useSidebar,
 } from '@/components/ui/sidebar';
-import { BookOpen, Globe, Map, Users } from 'lucide-react';
-import { Link, useLocation } from 'react-router-dom';
-
-/** Campaign nav only – no ruleset items when viewing a campaign. */
-const CAMPAIGN_NAV_ITEMS = [
-  { title: 'Rulesets', url: '/rulesets', icon: BookOpen },
-  { title: 'Characters', url: '/characters', icon: Users },
-  { title: 'Worlds', url: '/worlds', icon: Globe },
-  { title: 'Campaigns', url: '/campaigns', icon: Map },
-];
+import { FileCode, Map } from 'lucide-react';
+import { Link, useLocation, useParams } from 'react-router-dom';
 
 export function CampaignSidebar() {
   const { open } = useSidebar();
+  const { campaignId } = useParams<{ campaignId?: string }>();
   const location = useLocation();
+
+  const isCampaignActive =
+    location.pathname === '/campaigns' || /^\/campaigns\/[^/]+$/.test(location.pathname);
+
+  const items = [
+    { title: 'Campaign', url: `/campaigns/${campaignId}`, icon: Map },
+    { title: 'Scripts', url: `/campaigns/${campaignId}/scripts`, icon: FileCode },
+  ];
 
   return (
     <SidebarGroup>
@@ -42,8 +43,11 @@ export function CampaignSidebar() {
               </SidebarMenuButton>
             </SidebarMenuItem>
           )}
-          {CAMPAIGN_NAV_ITEMS.map((item) => {
-            const isActive = location.pathname.includes(item.title.toLowerCase());
+          {items.map((item) => {
+            const isActive =
+              item.url === `/campaigns/${campaignId}`
+                ? isCampaignActive
+                : location.pathname.includes(item.title.toLowerCase());
             return (
               <SidebarMenuItem key={item.title} className={isActive ? 'text-primary' : ''}>
                 <SidebarMenuButton asChild>
