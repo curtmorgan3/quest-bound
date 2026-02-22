@@ -7,7 +7,7 @@ import { useLocation, useTilemaps } from '@/lib/compass-api';
 import { db } from '@/stores';
 import type { Tile, TileData, Tilemap } from '@/types';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 
 type AssetSize = {
   w: number;
@@ -37,6 +37,9 @@ export const useTilemapAsset = ({
   const { tilemaps } = useTilemaps(worldId);
   const location = useLocation(locationId);
   const mapImageUrl = imageUrlOverride ?? location?.mapAsset ?? null;
+
+  const gridWidth = location?.gridWidth ?? 1;
+  const gridHeight = location?.gridHeight ?? 1;
 
   const [assetDimensions, setAssetDimensions] = useState<Record<string, AssetSize>>({});
   const assetDimensionsRef = useRef(assetDimensions);
@@ -163,10 +166,36 @@ export const useTilemapAsset = ({
     };
   }
 
+  let mapImageStyle: CSSProperties = {
+    width: gridWidth * effectiveTileSize,
+    height: gridHeight * effectiveTileSize,
+  };
+
+  if (mapImageUrl) {
+    mapImageStyle = {
+      backgroundImage: `url(${mapImageUrl})`,
+      backgroundSize: 'cover',
+      backgroundPosition: '0 0',
+      backgroundRepeat: 'no-repeat',
+    };
+  }
+
+  if (mapImageUrl && mapImageDimensions) {
+    mapImageStyle = {
+      backgroundImage: `url(${mapImageUrl})`,
+      width: `${mapImageDimensions.scaled.w}px`,
+      height: `${mapImageDimensions.scaled.h}px`,
+      backgroundSize: `${mapImageDimensions.scaled.w}px ${mapImageDimensions.scaled.h}px`,
+      backgroundPosition: '0 0',
+      backgroundRepeat: 'no-repeat',
+    };
+  }
+
   return {
     getTileStyle,
     assetDimensions,
     effectiveTileSize,
     mapImageDimensions,
+    mapImageStyle,
   };
 };

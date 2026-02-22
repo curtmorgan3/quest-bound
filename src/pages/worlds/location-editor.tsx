@@ -18,7 +18,7 @@ export function LocationEditor() {
 
   const mapImageUrl = location?.mapAsset ?? null;
 
-  const { getTileStyle, mapImageDimensions } = useTilemapAsset({
+  const { getTileStyle, mapImageStyle } = useTilemapAsset({
     worldId,
     locationId,
   });
@@ -289,7 +289,7 @@ export function LocationEditor() {
         </div>
         {/* Grid + cell panel */}
         <div className='flex min-h-0 flex-1 gap-4 p-4 max-h-[60dvh]'>
-          <div className='flex min-w-0 flex-1 flex-col gap-2 max-w-[60dvw] overflow-x-auto'>
+          <div className='flex min-w-0 flex-1 flex-col gap-2 max-w-[90dvw] overflow-x-auto'>
             <p className='text-xs text-muted-foreground'>
               {selectedTiles.length > 0
                 ? 'Click or drag over cells to paint. Top-left of selection aligns to cell. Click without a tile to select cell.'
@@ -301,24 +301,7 @@ export function LocationEditor() {
               style={{
                 gridTemplateColumns: `repeat(${gridWidth}, ${tileRenderSize}px)`,
                 gridTemplateRows: `repeat(${gridHeight}, ${tileRenderSize}px)`,
-
-                ...(mapImageUrl && mapImageDimensions
-                  ? {
-                      backgroundImage: `url(${mapImageUrl})`,
-                      width: `${mapImageDimensions.scaled.w}px`,
-                      height: `${mapImageDimensions.scaled.h}px`,
-                      backgroundSize: `${mapImageDimensions.scaled.w}px ${mapImageDimensions.scaled.h}px`,
-                      backgroundPosition: '0 0',
-                      backgroundRepeat: 'no-repeat',
-                    }
-                  : mapImageUrl
-                    ? {
-                        backgroundImage: `url(${mapImageUrl})`,
-                        backgroundSize: 'cover',
-                        backgroundPosition: '0 0',
-                        backgroundRepeat: 'no-repeat',
-                      }
-                    : {}),
+                ...mapImageStyle,
               }}>
               {Array.from({ length: gridHeight }, (_, y) =>
                 Array.from({ length: gridWidth }, (_, x) => {

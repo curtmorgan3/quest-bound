@@ -111,7 +111,7 @@ export function LocationViewer({
     return () => window.removeEventListener('keydown', handleKeyDown, { capture: true });
   }, []);
 
-  const { getTileStyle, effectiveTileSize } = useTilemapAsset({
+  const { getTileStyle, effectiveTileSize, mapImageStyle } = useTilemapAsset({
     worldId,
     locationId,
     zoom,
@@ -241,6 +241,10 @@ export function LocationViewer({
     );
   }
 
+  console.log('effective: ', effectiveTileSize);
+  console.log('w: ', gridWidth, 'h: ', gridHeight);
+  console.log('dim: ', gridWidth * effectiveTileSize, gridHeight * effectiveTileSize);
+
   return (
     <div className='relative h-full w-full flex justify-center items-center'>
       <div className='fixed bottom-12 right-2 z-10 flex flex-col gap-0.5'>
@@ -268,17 +272,12 @@ export function LocationViewer({
         </Button>
       </div>
       <div ref={scrollContainerRef} className='h-full w-full overflow-auto flex'>
-        <div
-          className='relative'
-          style={{
-            width: gridWidth * effectiveTileSize,
-            height: gridHeight * effectiveTileSize,
-          }}>
+        <div className='relative' style={mapImageStyle}>
           {mapImageUrl && (
             <img
               src={mapImageUrl}
               alt='Location map'
-              className='absolute inset-0 size-full object-cover pointer-events-none'
+              className='absolute inset-0 size-full pointer-events-none'
             />
           )}
           <div
@@ -293,8 +292,7 @@ export function LocationViewer({
                 const layers = tilesByKey.get(key) ?? [];
                 const hasEvent = layers.some((td) => eventTileIds.includes(td.id));
                 const isHighlighted =
-                  highlightedTileId != null &&
-                  layers.some((td) => td.id === highlightedTileId);
+                  highlightedTileId != null && layers.some((td) => td.id === highlightedTileId);
                 return (
                   <div
                     key={key}
