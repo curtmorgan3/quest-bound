@@ -441,7 +441,8 @@ export class ScriptRunner {
       const match =
         key.startsWith('characterAttribute:') ||
         key.startsWith('characterAttributeMax:') ||
-        key.startsWith('characterAttributeMin:');
+        key.startsWith('characterAttributeMin:') ||
+        key.startsWith('characterAttributeOptions:');
       if (match) {
         const characterAttributeId = key.split(':')[1];
         const charAttr = this.characterAttributesCache.get(characterAttributeId);
@@ -469,6 +470,8 @@ export class ScriptRunner {
         await db.characterAttributes.update(id, { max: value });
       } else if (type === 'characterAttributeMin') {
         await db.characterAttributes.update(id, { min: value });
+      } else if (type === 'characterAttributeOptions') {
+        await db.characterAttributes.update(id, { options: value });
       } else if (type === 'inventoryAdd') {
         const items = value as InventoryItem[];
         for (const item of items) {
