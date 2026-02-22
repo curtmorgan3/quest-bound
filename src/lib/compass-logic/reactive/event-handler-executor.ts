@@ -4,10 +4,7 @@ import type { ASTNode } from '../interpreter/ast';
 import { functionDefToExecutableSource } from '../interpreter/ast-to-source';
 import { Lexer } from '../interpreter/lexer';
 import { Parser } from '../interpreter/parser';
-import type {
-  ScriptExecutionContext,
-  ScriptExecutionResult,
-} from '../runtime/script-runner';
+import type { ScriptExecutionContext, ScriptExecutionResult } from '../runtime/script-runner';
 import { ScriptRunner } from '../runtime/script-runner';
 
 /**
@@ -156,11 +153,7 @@ export class EventHandlerExecutor {
       : await new ScriptRunner(context).run(scriptToRun);
 
     if (!result.error && result.modifiedAttributeIds?.length && this.onAttributesModified) {
-      await this.onAttributesModified(
-        result.modifiedAttributeIds,
-        characterId,
-        item.rulesetId,
-      );
+      await this.onAttributesModified(result.modifiedAttributeIds, characterId, item.rulesetId);
     }
 
     return {
@@ -259,11 +252,7 @@ export class EventHandlerExecutor {
         : await new ScriptRunner(context).run(scriptToRun);
 
       if (!result.error && result.modifiedAttributeIds?.length && this.onAttributesModified) {
-        await this.onAttributesModified(
-          result.modifiedAttributeIds,
-          characterId,
-          action.rulesetId,
-        );
+        await this.onAttributesModified(result.modifiedAttributeIds, characterId, action.rulesetId);
       }
 
       return {
@@ -479,19 +468,10 @@ export class EventHandlerExecutor {
       : await new ScriptRunner(context).run(script.sourceCode);
 
     if (!result.error && result.modifiedAttributeIds?.length && this.onAttributesModified) {
-      await this.onAttributesModified(
-        result.modifiedAttributeIds,
-        characterId,
-        rulesetId,
-      );
+      await this.onAttributesModified(result.modifiedAttributeIds, characterId, rulesetId);
     }
 
-    await this.persistCharacterLoaderLogs(
-      rulesetId,
-      script.id,
-      characterId,
-      result.logMessages,
-    );
+    await this.persistCharacterLoaderLogs(rulesetId, script.id, characterId, result.logMessages);
 
     return {
       success: !result.error,
@@ -594,9 +574,9 @@ export class EventHandlerExecutor {
     const fullScript = `
 ${sourceCode}
 
-# Call the event handler
-if ${eventType} != null
-  ${eventType}()
+// Call the event handler
+if ${eventType}:
+    ${eventType}()
 end
 `;
 
@@ -604,11 +584,7 @@ end
       ? await this.runScriptForTest(context, fullScript)
       : await new ScriptRunner(context).run(fullScript);
 
-    if (
-      !result.error &&
-      result.modifiedAttributeIds?.length &&
-      this.onAttributesModified
-    ) {
+    if (!result.error && result.modifiedAttributeIds?.length && this.onAttributesModified) {
       await this.onAttributesModified(
         result.modifiedAttributeIds,
         context.ownerId,
