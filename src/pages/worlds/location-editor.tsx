@@ -29,6 +29,8 @@ export function LocationEditor() {
   const gridWidth = loc?.gridWidth ?? 1;
   const gridHeight = loc?.gridHeight ?? 1;
 
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+
   const [selectedTiles, setSelectedTiles] = useState<Tile[]>([]);
 
   const [selectedCell, setSelectedCell] = useState<{ x: number; y: number } | null>(null);
@@ -310,49 +312,58 @@ export function LocationEditor() {
               ? 'Click or drag over cells to paint. Top-left of selection aligns to cell. Click without a tile to select cell.'
               : 'Select one or more (Shift+click) tiles in the tile paint panel, then click or drag to paint.'}
           </p>
-          <div
-            id='location-editor-grid'
-            className='inline-grid w-fit border bg-muted-foreground/20'
-            style={{
-              gridTemplateColumns: `repeat(${gridWidth}, ${tileRenderSize}px)`,
-              gridTemplateRows: `repeat(${gridHeight}, ${tileRenderSize}px)`,
-              ...mapImageStyle,
-            }}>
-            {Array.from({ length: gridHeight }, (_, y) =>
-              Array.from({ length: gridWidth }, (_, x) => {
-                const key = `${x},${y}`;
-                const layers = tilesByKey.get(key) ?? [];
-                const isSelected = selectedCell?.x === x && selectedCell?.y === y;
-                return (
-                  <button
-                    key={key}
-                    type='button'
-                    className={`group relative shrink-0 cursor-pointer transition-colors ${
-                      mapImageUrl ? 'bg-muted/20' : 'border border-border bg-muted'
-                    } ${isSelected ? 'ring-2 ring-primary ring-inset' : ''}`}
-                    style={{ width: tileRenderSize, height: tileRenderSize }}
-                    onClick={() => handleCellClick(x, y)}
-                    onMouseDown={() => handleCellMouseDown(x, y)}
-                    onMouseEnter={() => handleCellMouseEnter(x, y)}>
-                    <span
-                      className='pointer-events-none absolute inset-0 bg-primary/25 opacity-0 transition-opacity group-hover:opacity-100'
-                      aria-hidden
-                    />
-                    {layers.length > 0 && (
-                      <span className='relative block size-full overflow-hidden pointer-events-none'>
-                        {layers.map((td) => (
-                          <span
-                            key={td.id}
-                            className='absolute inset-0 bg-no-repeat'
-                            style={getTileStyle(td)}
-                          />
-                        ))}
-                      </span>
-                    )}
-                  </button>
-                );
-              }),
-            )}
+          <div ref={scrollContainerRef} className='h-full w-full overflow-auto flex'>
+            <div className='relative' style={mapImageStyle}>
+              {mapImageUrl && (
+                <img
+                  src={mapImageUrl}
+                  alt='Location map'
+                  className='absolute inset-0 size-full pointer-events-none'
+                />
+              )}
+              <div
+                className='inline-grid bg-muted-foreground/20'
+                style={{
+                  gridTemplateColumns: `repeat(${gridWidth}, ${tileRenderSize}px)`,
+                  gridTemplateRows: `repeat(${gridHeight}, ${tileRenderSize}px)`,
+                }}>
+                {Array.from({ length: gridHeight }, (_, y) =>
+                  Array.from({ length: gridWidth }, (_, x) => {
+                    const key = `${x},${y}`;
+                    const layers = tilesByKey.get(key) ?? [];
+                    const isSelected = selectedCell?.x === x && selectedCell?.y === y;
+                    return (
+                      <button
+                        key={key}
+                        type='button'
+                        className={`group relative shrink-0 cursor-pointer transition-colors ${
+                          mapImageUrl ? 'bg-muted/20' : 'border border-border bg-muted'
+                        } ${isSelected ? 'ring-2 ring-primary ring-inset' : ''}`}
+                        style={{ width: tileRenderSize, height: tileRenderSize }}
+                        onClick={() => handleCellClick(x, y)}
+                        onMouseDown={() => handleCellMouseDown(x, y)}
+                        onMouseEnter={() => handleCellMouseEnter(x, y)}>
+                        <span
+                          className='pointer-events-none absolute inset-0 bg-primary/25 opacity-0 transition-opacity group-hover:opacity-100'
+                          aria-hidden
+                        />
+                        {layers.length > 0 && (
+                          <span className='relative block size-full overflow-hidden pointer-events-none'>
+                            {layers.map((td) => (
+                              <span
+                                key={td.id}
+                                className='absolute inset-0 bg-no-repeat'
+                                style={getTileStyle(td)}
+                              />
+                            ))}
+                          </span>
+                        )}
+                      </button>
+                    );
+                  }),
+                )}
+              </div>
+            </div>
           </div>
         </div>
 
