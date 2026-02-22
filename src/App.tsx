@@ -92,6 +92,15 @@ function CompassRoutes() {
             />
 
             <Route
+              path={`/campaigns/:campaignId/scripts/:scriptId`}
+              element={
+                <CampaignProvider>
+                  <ScriptEditorPage />
+                </CampaignProvider>
+              }
+            />
+
+            <Route
               path={`/campaigns/:campaignId/locations/:locationId`}
               element={
                 <CampaignProvider>

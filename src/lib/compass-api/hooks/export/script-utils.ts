@@ -109,11 +109,8 @@ export function generateScriptPath(entityType: ScriptEntityType, name: string): 
     case 'characterLoader':
       folderName = 'character_loaders';
       break;
-    case 'location':
-      folderName = 'locations';
-      break;
-    case 'tile':
-      folderName = 'tiles';
+    case 'campaignEvent':
+      folderName = 'campaign_events';
       break;
   }
 

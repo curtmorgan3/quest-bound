@@ -8,8 +8,8 @@ import {
 } from '@/components/ui/command';
 import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { cn } from '@/lib/utils';
 import { useScripts } from '@/lib/compass-api';
+import { cn } from '@/lib/utils';
 import { Check, ChevronsUpDown, Plus, XIcon } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 
@@ -20,6 +20,7 @@ export interface CategoryFieldProps {
   className?: string;
   disabled?: boolean;
   label?: string;
+  campaignScripts?: boolean;
 }
 
 /**
@@ -34,10 +35,15 @@ export function CategoryField({
   className,
   disabled = false,
   label = 'Category',
+  campaignScripts = false,
 }: CategoryFieldProps) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
-  const { scripts } = useScripts();
+  const { scripts: allScripts } = useScripts();
+
+  const scripts = campaignScripts
+    ? allScripts.filter((s) => s.campaignId)
+    : allScripts.filter((s) => !s.campaignId);
 
   const allCategories = useMemo(() => {
     const categories = new Set<string>();
@@ -45,7 +51,9 @@ export function CategoryField({
       const cat = script.category?.trim();
       if (cat) categories.add(cat);
     }
-    return Array.from(categories).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+    return Array.from(categories).sort((a, b) =>
+      a.localeCompare(b, undefined, { sensitivity: 'base' }),
+    );
   }, [scripts]);
 
   const searchLower = search.toLowerCase().trim();
@@ -55,8 +63,7 @@ export function CategoryField({
   }, [allCategories, searchLower]);
 
   const canCreateFromSearch =
-    searchLower.length > 0 &&
-    !allCategories.some((c) => c.toLowerCase() === searchLower);
+    searchLower.length > 0 && !allCategories.some((c) => c.toLowerCase() === searchLower);
   const displayValue = value ?? '';
 
   useEffect(() => {
@@ -116,7 +123,9 @@ export function CategoryField({
                 )}
                 {filteredCategories.map((cat) => (
                   <CommandItem key={cat} value={cat} onSelect={() => handleSelect(cat)}>
-                    <Check className={cn('mr-2 h-4 w-4', value === cat ? 'opacity-100' : 'opacity-0')} />
+                    <Check
+                      className={cn('mr-2 h-4 w-4', value === cat ? 'opacity-100' : 'opacity-0')}
+                    />
                     {cat}
                   </CommandItem>
                 ))}

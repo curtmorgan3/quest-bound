@@ -73,10 +73,7 @@ if Owner.hasArchetype('Warrior'):
 else:
     Owner.Attribute('Health').set(8)
 `,
-  location: `
-// location script
-`,
-  tile: `
-// tile script
+  campaignEvent: `
+// campaign event script
 `,
 };

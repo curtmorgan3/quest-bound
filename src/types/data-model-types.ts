@@ -338,8 +338,7 @@ export type ScriptEntityType =
   | 'archetype'
   | 'global'
   | 'characterLoader'
-  | 'location'
-  | 'tile';
+  | 'campaignEvent';
 
 export type Script = BaseDetails & {
   rulesetId: string; // Which ruleset this script belongs to

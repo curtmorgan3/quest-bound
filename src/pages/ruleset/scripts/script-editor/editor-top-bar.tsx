@@ -21,26 +21,12 @@ import type { Action, Archetype, Attribute, Item, Script } from '@/types';
 import { Trash2, X, Zap } from 'lucide-react';
 import { useCallback, type Dispatch, type SetStateAction } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { CAMPAIGN_TYPE_OPTIONS, ENTITY_TYPE_OPTIONS } from '../utils';
 import { CategoryField } from './category-field';
-
-const RULEST_ENTITY_TYPES = [
-  { value: 'attribute', label: 'Attribute' },
-  { value: 'action', label: 'Action' },
-  { value: 'item', label: 'Item' },
-  { value: 'archetype', label: 'Archetype' },
-  { value: 'global', label: 'Global' },
-  { value: 'characterLoader', label: 'Character Loader' },
-] as const;
-
-const WORLD_ENTITY_TYPES = [
-  { value: 'location', label: 'Location' },
-  { value: 'tile', label: 'Tile' },
-  { value: 'global', label: 'Global' },
-] as const;
 
 interface EditorTopBar {
   rulesetId: string;
-  worldId?: string;
+  campaignId?: string;
   name: string;
   setName: (name: string) => void;
   entityType: Script['entityType'];
@@ -56,7 +42,7 @@ interface EditorTopBar {
 
 export const EditorTopBar = ({
   rulesetId,
-  worldId,
+  campaignId,
   name,
   setName,
   entityType,
@@ -71,13 +57,13 @@ export const EditorTopBar = ({
 }: EditorTopBar) => {
   const navigate = useNavigate();
   const { scriptId } = useParams<{ scriptId: string }>();
-  const { scripts, createScript, updateScript, deleteScript } = useScripts(worldId);
+  const { scripts, createScript, updateScript, deleteScript } = useScripts(campaignId);
   const { activeRuleset, testCharacter } = useRulesets();
 
   const isNew = scriptId === 'new';
   const script = isNew ? null : (scripts.find((s) => s.id === scriptId) ?? null);
 
-  const entityTypes = worldId ? WORLD_ENTITY_TYPES : RULEST_ENTITY_TYPES;
+  const entityTypes = campaignId ? CAMPAIGN_TYPE_OPTIONS : ENTITY_TYPE_OPTIONS;
 
   const handleRun = useCallback(async () => {
     if (!activeRuleset) throw new Error('No ruleset found.');
@@ -114,13 +100,17 @@ export const EditorTopBar = ({
       isGlobal: entityType === 'global',
       enabled: true,
       category: category ?? undefined,
+      campaignId,
     };
     if (isNew) {
       const id = await createScript(payload);
       if (id) {
-        navigate(`/${worldId ? 'worlds' : 'rulesets'}/${worldId ?? rulesetId}/scripts/${id}`, {
-          replace: true,
-        });
+        navigate(
+          `/${campaignId ? 'campaigns' : 'rulesets'}/${campaignId ?? rulesetId}/scripts/${id}`,
+          {
+            replace: true,
+          },
+        );
       }
     } else if (script) {
       await updateScript(script.id, payload);
@@ -128,13 +118,13 @@ export const EditorTopBar = ({
   };
 
   const handleCancel = () =>
-    navigate(worldId ? `/worlds/${worldId}/scripts` : `/rulesets/${rulesetId}/scripts`);
+    navigate(campaignId ? `/campaigns/${campaignId}/scripts` : `/rulesets/${rulesetId}/scripts`);
 
   const handleDelete = async () => {
     if (!script || isNew) return;
     if (window.confirm('Delete this script? This cannot be undone.')) {
       await deleteScript(script.id);
-      navigate(worldId ? `/worlds/${worldId}/scripts` : `/rulesets/${rulesetId}/scripts`);
+      navigate(campaignId ? `/campaigns/${campaignId}/scripts` : `/rulesets/${rulesetId}/scripts`);
     }
   };
 
@@ -170,7 +160,7 @@ export const EditorTopBar = ({
         </Select>
       </div>
       <div className='w-[200px]'>
-        <CategoryField value={category} onChange={setCategory} />
+        <CategoryField value={category} onChange={setCategory} campaignScripts={!!campaignId} />
       </div>
       {entityType === 'attribute' && (
         <div className='w-[240px]'>

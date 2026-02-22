@@ -10,11 +10,27 @@ export const ENTITY_TYPE_OPTIONS = [
   { value: 'action', label: 'Action' },
   { value: 'item', label: 'Item' },
   { value: 'archetype', label: 'Archetype' },
-  { value: 'global', label: 'Global' },
   { value: 'characterLoader', label: 'Character Loader' },
+  { value: 'global', label: 'Global' },
 ] as const;
 
-const VALID_TYPES = new Set(ENTITY_TYPE_OPTIONS.map((o) => o.value));
+export const CAMPAIGN_TYPE_OPTIONS = [
+  { value: 'all', label: 'All types' },
+  { value: 'campaignEvent', label: 'Campaign Event' },
+  { value: 'global', label: 'Global' },
+];
+
+export const SCRIPT_EDITOR_AUTOCOMPLETE_KEY = 'quest-bound/script-editor/autocomplete';
+
+export function getAutocompletePreference(): boolean {
+  try {
+    const stored = localStorage.getItem(SCRIPT_EDITOR_AUTOCOMPLETE_KEY);
+    if (stored === null) return true;
+    return stored === 'true';
+  } catch {
+    return true;
+  }
+}
 
 export function groupScriptsByCategory(
   scripts: Script[],
@@ -40,8 +56,16 @@ export function groupScriptsByCategory(
   return categories.map(([category, scripts]) => ({ category, scripts }));
 }
 
-export function typeFromParams(searchParams: URLSearchParams): EntityTypeFilter {
+export function typeFromParams(
+  searchParams: URLSearchParams,
+  editorType?: 'campaigns' | 'rulesets',
+): EntityTypeFilter {
   const type = searchParams.get('type') ?? 'all';
+
+  const types = editorType === 'campaigns' ? CAMPAIGN_TYPE_OPTIONS : ENTITY_TYPE_OPTIONS;
+
+  const VALID_TYPES = new Set(types.map((o) => o.value));
+
   return VALID_TYPES.has(type as EntityTypeFilter) ? (type as EntityTypeFilter) : 'all';
 }
 

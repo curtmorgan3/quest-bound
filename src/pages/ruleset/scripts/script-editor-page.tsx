@@ -1,7 +1,6 @@
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { useRulesets } from '@/lib/compass-api';
+import { useCampaign, useRulesets } from '@/lib/compass-api';
 import { useScripts } from '@/lib/compass-api/hooks/scripts/use-scripts';
-import { useWorld } from '@/lib/compass-api/hooks/worlds/use-world';
 import {
   useExecuteActionEvent,
   useExecuteArchetypeEvent,
@@ -22,32 +21,24 @@ import { EditorTopBar } from './script-editor/editor-top-bar';
 import { EventControls } from './script-editor/event-controls';
 import { SCRIPT_TEMPLATES } from './templates';
 import { useAutoSave } from './use-auto-save';
-
-const SCRIPT_EDITOR_AUTOCOMPLETE_KEY = 'quest-bound/script-editor/autocomplete';
-
-function getAutocompletePreference(): boolean {
-  try {
-    const stored = localStorage.getItem(SCRIPT_EDITOR_AUTOCOMPLETE_KEY);
-    if (stored === null) return true;
-    return stored === 'true';
-  } catch {
-    return true;
-  }
-}
+import { getAutocompletePreference, SCRIPT_EDITOR_AUTOCOMPLETE_KEY } from './utils';
 
 export function ScriptEditorPage() {
   const {
     rulesetId: rulesetIdParam,
     scriptId,
-    worldId,
+    campaignId,
   } = useParams<{
     rulesetId?: string;
     scriptId: string;
-    worldId?: string;
+    campaignId?: string;
   }>();
-  const world = useWorld(worldId);
-  const effectiveRulesetId = rulesetIdParam ?? world?.rulesetId ?? '';
-  const { scripts } = useScripts(worldId);
+
+  const campaign = useCampaign(campaignId);
+
+  const effectiveRulesetId = rulesetIdParam ?? campaign?.rulesetId ?? '';
+
+  const { scripts } = useScripts(campaignId);
   const isNew = scriptId === 'new';
   const script = isNew ? null : (scripts.find((s) => s.id === scriptId) ?? null);
 
@@ -78,7 +69,7 @@ export function ScriptEditorPage() {
     ...archetypeEventAnnouncements,
   ];
 
-  const defaultEntityType = 'attribute';
+  const defaultEntityType = campaignId ? 'campaignEvent' : 'attribute';
 
   const [name, setName] = useState('');
   const [entityType, setEntityType] = useState<Script['entityType']>(defaultEntityType);
@@ -142,7 +133,7 @@ export function ScriptEditorPage() {
     <div className='flex flex-col h-full min-h-0'>
       <EditorTopBar
         rulesetId={effectiveRulesetId}
-        worldId={worldId}
+        campaignId={campaignId}
         sourceCode={sourceCode}
         scriptExecutionHook={workerHook}
         {...{

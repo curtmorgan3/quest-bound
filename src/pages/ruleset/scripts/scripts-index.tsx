@@ -22,7 +22,7 @@ import { useScripts } from '@/lib/compass-api/hooks/scripts/use-scripts';
 import { FileCode, Plus, Search } from 'lucide-react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { useScriptFilters } from './use-script-filters';
-import { ENTITY_TYPE_OPTIONS, typeFromParams } from './utils';
+import { CAMPAIGN_TYPE_OPTIONS, ENTITY_TYPE_OPTIONS, typeFromParams } from './utils';
 
 export function ScriptsIndex() {
   const { rulesetId: rulesetIdParam, campaignId } = useParams<{
@@ -33,13 +33,15 @@ export function ScriptsIndex() {
   const [searchParams] = useSearchParams();
   const { rulesetId: rulesetIdFromHook } = useScripts();
   const rulesetId = rulesetIdParam ?? rulesetIdFromHook ?? '';
-  const selectedType = typeFromParams(searchParams);
+  const selectedType = typeFromParams(searchParams, 'campaigns');
 
   const { nameFilter, setNameFilter, setSelectedType, scriptsByCategory, filteredScripts } =
     useScriptFilters();
 
   const uncategorized = scriptsByCategory.filter((cat) => cat.category === 'Uncategorized');
   const categorized = scriptsByCategory.filter((cat) => cat.category !== 'Uncategorized');
+
+  const options = campaignId ? CAMPAIGN_TYPE_OPTIONS : ENTITY_TYPE_OPTIONS;
 
   return (
     <div className='flex flex-col gap-6 p-4'>
@@ -69,7 +71,7 @@ export function ScriptsIndex() {
               <SelectValue placeholder='All types' />
             </SelectTrigger>
             <SelectContent>
-              {ENTITY_TYPE_OPTIONS.map((opt) => (
+              {options.map((opt) => (
                 <SelectItem key={opt.value} value={opt.value}>
                   {opt.label}
                 </SelectItem>
