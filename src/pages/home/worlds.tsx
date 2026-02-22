@@ -34,6 +34,7 @@ export const Worlds = () => {
 
   const [label, setLabel] = useState('');
   const [assetId, setAssetId] = useState<string | null>(null);
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
 
   const pendingAssetIdRef = useRef<string | null>(null);
@@ -50,6 +51,8 @@ export const Worlds = () => {
 
     const id = await createWorld({
       label: label.trim(),
+      image: imageUrl ?? undefined,
+      assetId,
     });
 
     if (id) {
@@ -124,10 +127,11 @@ export const Worlds = () => {
               <div className='grid gap-3'>
                 <Label>Image</Label>
                 <ImageUpload
-                  image={getImageFromAssetId(assetId)}
+                  image={imageUrl ?? getImageFromAssetId(assetId)}
                   alt={label || 'World image'}
                   onUpload={handleImageUpload}
                   onRemove={handleImageRemove}
+                  onSetUrl={setImageUrl}
                   rulesetId={undefined}
                 />
               </div>

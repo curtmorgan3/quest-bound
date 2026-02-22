@@ -9,7 +9,7 @@ import {
   useSidebar,
 } from '@/components/ui/sidebar';
 import { useWorld } from '@/lib/compass-api';
-import { Globe, Layers } from 'lucide-react';
+import { Globe, Layers, Map } from 'lucide-react';
 import { Link, useLocation, useParams } from 'react-router-dom';
 
 export function WorldSidebar() {
@@ -19,11 +19,9 @@ export function WorldSidebar() {
 
   const world = useWorld(worldId);
 
-  const isWorldsGlobeActive =
-    location.pathname === '/worlds' || /^\/worlds\/[^/]+$/.test(location.pathname);
-
   const items = [
-    { title: 'World', url: `/worlds/${worldId}`, icon: Globe },
+    { title: 'Worlds', url: `/worlds`, icon: Globe },
+    { title: `${world?.label ?? 'World'}`, url: `/worlds/${worldId}`, icon: Map },
     { title: 'Tilemaps', url: `/worlds/${worldId}/tilemaps`, icon: Layers },
   ];
 
@@ -49,10 +47,7 @@ export function WorldSidebar() {
             </SidebarMenuItem>
           )}
           {items.map((item) => {
-            const isActive =
-              item.url === `/worlds/${worldId}`
-                ? isWorldsGlobeActive
-                : location.pathname.includes(item.title.toLowerCase());
+            const isActive = location.pathname === item.url;
             return (
               <SidebarMenuItem key={item.title} className={isActive ? 'text-primary' : ''}>
                 <SidebarMenuButton asChild>
