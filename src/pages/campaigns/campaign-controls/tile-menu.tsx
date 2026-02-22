@@ -82,7 +82,6 @@ export function TileMenu({
 
   const handleEventSelect = useCallback(
     async (event: CampaignEvent) => {
-      console.log('event: ', event);
       if (!pendingEventTile) return;
       await handleAddEventToTile(pendingEventTile, event.id);
       setShowEventLookup(false);
@@ -150,6 +149,7 @@ export function TileMenu({
               label='Choose event'
               placeholder='Search events...'
               onSelect={handleEventSelect}
+              popoverContentClassName='z-[110]'
             />
           </div>
         ) : (

@@ -25,6 +25,8 @@ interface EventLookupProps {
   onSelect: (event: CampaignEvent) => void;
   placeholder?: string;
   className?: string;
+  /** Applied to the popover content. Use e.g. z-[110] when rendered inside a portaled overlay so the popover is clickable. */
+  popoverContentClassName?: string;
   disabled?: boolean;
   label?: string;
   id?: string;
@@ -36,6 +38,7 @@ export const EventLookup = ({
   onSelect,
   placeholder = 'Search events...',
   className,
+  popoverContentClassName,
   disabled = false,
   label = 'Event',
   id,
@@ -60,7 +63,6 @@ export const EventLookup = ({
   }, [open]);
 
   const handleSelect = (event: CampaignEvent) => {
-    console.log('select: ', event);
     onSelect(event);
     setOpen(false);
   };
@@ -81,7 +83,9 @@ export const EventLookup = ({
             <ChevronsUpDown className='ml-2 h-4 w-4 shrink-0 opacity-50' />
           </Button>
         </PopoverTrigger>
-        <PopoverContent className='w-[300px] p-0' align='start'>
+        <PopoverContent
+          className={cn('w-[300px] p-0', popoverContentClassName)}
+          align='start'>
           <Command shouldFilter={false}>
             <CommandInput placeholder={placeholder} value={search} onValueChange={setSearch} />
             <CommandList>

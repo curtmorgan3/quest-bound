@@ -71,7 +71,6 @@ export const useCampaignPlayHandlers = ({
 
   const handleAddEventToTile = useCallback(
     async (tile: { locationId: string; tileId: string }, campaignEventId: string) => {
-      console.log(tile, campaignEventId);
       await createCampaignEventLocation(campaignEventId, tile.locationId, tile.tileId);
     },
     [createCampaignEventLocation],
