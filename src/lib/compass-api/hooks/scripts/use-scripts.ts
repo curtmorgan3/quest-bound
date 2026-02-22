@@ -16,7 +16,7 @@ function getEntityTable(entityType: ScriptEntityType) {
         : db.archetypes;
 }
 
-export const useScripts = (worldId?: string) => {
+export const useScripts = (campaignId?: string) => {
   const { activeRuleset } = useActiveRuleset();
   const { handleError } = useErrorHandler();
 
@@ -25,13 +25,13 @@ export const useScripts = (worldId?: string) => {
   const scripts = useLiveQuery(async () => {
     if (!rulesetId) return [];
     const list = await db.scripts.where('rulesetId').equals(rulesetId).toArray();
-    if (worldId != null) {
+    if (campaignId != null) {
       // World scripts index: only show scripts for this world
-      return list.filter((s) => s.worldId === worldId);
+      return list.filter((s) => s.campaignId === campaignId);
     }
     // Ruleset-level scripts index: only show scripts without a world
-    return list.filter((s) => s.worldId == null);
-  }, [rulesetId, worldId]);
+    return list.filter((s) => s.campaignId == null);
+  }, [rulesetId, campaignId]);
 
   /** True while the initial query or a dependency-driven re-query is in flight. */
   const isLoading = scripts === undefined;

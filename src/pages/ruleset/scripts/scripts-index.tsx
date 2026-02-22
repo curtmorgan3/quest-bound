@@ -19,114 +19,24 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useScripts } from '@/lib/compass-api/hooks/scripts/use-scripts';
-import type { Script } from '@/types';
 import { FileCode, Plus, Search } from 'lucide-react';
-import { useMemo } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
-
-const ENTITY_TYPE_OPTIONS = [
-  { value: 'all', label: 'All types' },
-  { value: 'attribute', label: 'Attribute' },
-  { value: 'action', label: 'Action' },
-  { value: 'item', label: 'Item' },
-  { value: 'archetype', label: 'Archetype' },
-  { value: 'global', label: 'Global' },
-  { value: 'characterLoader', label: 'Character Loader' },
-] as const;
-
-const VALID_TYPES = new Set(ENTITY_TYPE_OPTIONS.map((o) => o.value));
-
-type EntityTypeFilter = (typeof ENTITY_TYPE_OPTIONS)[number]['value'];
-
-function typeFromParams(searchParams: URLSearchParams): EntityTypeFilter {
-  const type = searchParams.get('type') ?? 'all';
-  return VALID_TYPES.has(type as EntityTypeFilter) ? (type as EntityTypeFilter) : 'all';
-}
-
-function nameFromParams(searchParams: URLSearchParams): string {
-  return searchParams.get('q') ?? '';
-}
-
-const UNCATEGORIZED = 'Uncategorized';
-
-function groupScriptsByCategory(scripts: Script[]): { category: string; scripts: Script[] }[] {
-  const byCategory = new Map<string, Script[]>();
-  for (const script of scripts) {
-    const category = script.category?.trim() || UNCATEGORIZED;
-    const list = byCategory.get(category) ?? [];
-    list.push(script);
-    byCategory.set(category, list);
-  }
-  for (const list of byCategory.values()) {
-    list.sort((a, b) =>
-      (a.name ?? '').localeCompare(b.name ?? '', undefined, { sensitivity: 'base' }),
-    );
-  }
-  const categories = Array.from(byCategory.entries());
-  categories.sort(([a], [b]) => {
-    if (a === UNCATEGORIZED) return 1;
-    if (b === UNCATEGORIZED) return -1;
-    return a.localeCompare(b, undefined, { sensitivity: 'base' });
-  });
-  return categories.map(([category, scripts]) => ({ category, scripts }));
-}
+import { useScriptFilters } from './use-script-filters';
+import { ENTITY_TYPE_OPTIONS, typeFromParams } from './utils';
 
 export function ScriptsIndex() {
-  const { rulesetId: rulesetIdParam, worldId } = useParams<{
+  const { rulesetId: rulesetIdParam, campaignId } = useParams<{
     rulesetId?: string;
-    worldId?: string;
+    campaignId?: string;
   }>();
 
-  const [searchParams, setSearchParams] = useSearchParams();
-  const { scripts, rulesetId: rulesetIdFromHook } = useScripts(worldId);
+  const [searchParams] = useSearchParams();
+  const { rulesetId: rulesetIdFromHook } = useScripts();
   const rulesetId = rulesetIdParam ?? rulesetIdFromHook ?? '';
   const selectedType = typeFromParams(searchParams);
-  const setSelectedType = (value: string) => {
-    setSearchParams(
-      (prev) => {
-        const next = new URLSearchParams(prev);
-        if (value === 'all') {
-          next.delete('type');
-        } else {
-          next.set('type', value);
-        }
-        return next;
-      },
-      { replace: true },
-    );
-  };
-  const nameFilter = nameFromParams(searchParams);
-  const setNameFilter = (value: string) => {
-    setSearchParams(
-      (prev) => {
-        const next = new URLSearchParams(prev);
-        if (value.trim() === '') {
-          next.delete('q');
-        } else {
-          next.set('q', value);
-        }
-        return next;
-      },
-      { replace: true },
-    );
-  };
 
-  const filteredScripts = useMemo(() => {
-    let result = scripts;
-    if (selectedType !== 'all') {
-      result = result.filter((s) => s.entityType === selectedType);
-    }
-    const query = nameFilter.trim().toLowerCase();
-    if (query) {
-      result = result.filter((s) => (s.name ?? '').toLowerCase().includes(query));
-    }
-    return result;
-  }, [scripts, selectedType, nameFilter]);
-
-  const scriptsByCategory = useMemo(
-    () => groupScriptsByCategory(filteredScripts),
-    [filteredScripts],
-  );
+  const { nameFilter, setNameFilter, setSelectedType, scriptsByCategory, filteredScripts } =
+    useScriptFilters();
 
   const uncategorized = scriptsByCategory.filter((cat) => cat.category === 'Uncategorized');
   const categorized = scriptsByCategory.filter((cat) => cat.category !== 'Uncategorized');
@@ -170,7 +80,11 @@ export function ScriptsIndex() {
         {rulesetId && (
           <Button asChild>
             <Link
-              to={worldId ? `/worlds/${worldId}/scripts/new` : `/rulesets/${rulesetId}/scripts/new`}
+              to={
+                campaignId
+                  ? `/campaigns/${campaignId}/scripts/new`
+                  : `/rulesets/${rulesetId}/scripts/new`
+              }
               data-testid='scripts-new-script-link'>
               <Plus className='h-4 w-4 mr-2' />
               New Script
@@ -193,8 +107,8 @@ export function ScriptsIndex() {
               <Button asChild>
                 <Link
                   to={
-                    worldId
-                      ? `/worlds/${worldId}/scripts/new`
+                    campaignId
+                      ? `/campaigns/${campaignId}/scripts/new`
                       : `/rulesets/${rulesetId}/scripts/new`
                   }
                   data-testid='scripts-new-script-link'>
@@ -219,8 +133,8 @@ export function ScriptsIndex() {
                           <li key={script.id}>
                             <Link
                               to={
-                                worldId
-                                  ? `/worlds/${worldId}/scripts/${script.id}`
+                                campaignId
+                                  ? `/campaigns/${campaignId}/scripts/${script.id}`
                                   : rulesetId
                                     ? `/rulesets/${rulesetId}/scripts/${script.id}`
                                     : '#'
@@ -247,8 +161,8 @@ export function ScriptsIndex() {
                     <li key={script.id}>
                       <Link
                         to={
-                          worldId
-                            ? `/worlds/${worldId}/scripts/${script.id}`
+                          campaignId
+                            ? `/campaigns/${campaignId}/scripts/${script.id}`
                             : rulesetId
                               ? `/rulesets/${rulesetId}/scripts/${script.id}`
                               : '#'
