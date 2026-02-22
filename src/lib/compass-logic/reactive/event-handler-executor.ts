@@ -559,6 +559,43 @@ export class EventHandlerExecutor {
   }
 
   /**
+   * Persist campaign event log messages to scriptLogs so they appear in useScriptLogs.
+   */
+  private async persistCampaignEventLogs(
+    rulesetId: string,
+    scriptId: string,
+    characterId: string,
+    logMessages: any[][],
+  ): Promise<void> {
+    if (logMessages.length === 0) return;
+    const now = new Date().toISOString();
+    const timestamp = Date.now();
+    try {
+      for (const args of logMessages) {
+        let argsJson: string;
+        try {
+          argsJson = JSON.stringify(args);
+        } catch {
+          argsJson = JSON.stringify(args.map((a) => String(a)));
+        }
+        await this.db.scriptLogs.add({
+          id: crypto.randomUUID(),
+          rulesetId,
+          scriptId,
+          characterId,
+          argsJson,
+          timestamp,
+          context: 'campaign_event',
+          createdAt: now,
+          updatedAt: now,
+        } as any);
+      }
+    } catch (e) {
+      console.warn('[QBScript] Failed to persist campaign event logs:', e);
+    }
+  }
+
+  /**
    * Execute a campaign event's script handler (e.g. on_enter when a character moves onto a tile with that event).
    * Call only for events whose type matches (e.g. type === 'on_enter' when firing on enter).
    */
@@ -632,7 +669,20 @@ export class EventHandlerExecutor {
 
     const result = await this.executeEventHandlerByCall(script.sourceCode, eventType, context);
 
-    return result;
+    await this.persistCampaignEventLogs(
+      campaign.rulesetId,
+      script.id,
+      characterId,
+      result.logMessages,
+    );
+
+    return {
+      success: !result.error,
+      value: result.value,
+      announceMessages: result.announceMessages,
+      logMessages: result.logMessages,
+      error: result.error,
+    };
   }
 
   /**
