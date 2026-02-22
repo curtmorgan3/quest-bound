@@ -50,8 +50,6 @@ export const useCampaignPlayHandlers = ({
     [campaignId, rulesetId, currentLocation?.id, createCharacter, createCampaignCharacter],
   );
 
-  const handleUpdateCampaignCharacter = () => {};
-
   return {
     handleTileClick,
     handleCreateCampaignCharacter,

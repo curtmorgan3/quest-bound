@@ -61,6 +61,7 @@ export const CharacterPage = ({
   const roll = async (diceString: string) => rollDice(diceString).then((res) => res.total);
 
   const { character, updateCharacter } = useCharacter(id ?? characterId);
+
   const { characterAttributes, updateCharacterAttribute } = useCharacterAttributes(character?.id);
   const { handleUpdateWindow, handleDeleteWindow } = useCharacterWindowHandlers(
     character?.id ?? '',
