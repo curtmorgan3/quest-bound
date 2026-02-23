@@ -4,6 +4,7 @@ import type {
   Attribute,
   CharacterAttribute,
   Chart,
+  CustomProperty,
   InventoryItem,
   Item,
   RollFn,
@@ -77,6 +78,7 @@ export class ScriptRunner {
   private actionsCache: Map<string, Action>;
   private chartsCache: Map<string, Chart>;
   private itemsCache: Map<string, Item>;
+  private customPropertiesCache: CustomProperty[] = [];
   private ownerInventoryItems: InventoryItem[];
   private targetInventoryItems: InventoryItem[] | null;
   private ownerCharacterName: string;
@@ -163,6 +165,12 @@ export class ScriptRunner {
     for (const action of actions) {
       this.actionsCache.set(action.id, action);
     }
+
+    // Load custom properties for this ruleset (for item/character custom property lookup)
+    this.customPropertiesCache = await db.customProperties
+      .where('rulesetId')
+      .equals(rulesetId)
+      .toArray();
 
     // Load owner character and inventory items
     const ownerCharacter = await db.characters.get(ownerId);
@@ -383,6 +391,7 @@ export class ScriptRunner {
               locationLabel,
               currentTile,
               null, // tileWithContext set later in setupAccessors
+              this.customPropertiesCache,
             )
           : isTarget
             ? new TargetAccessor(
@@ -402,6 +411,7 @@ export class ScriptRunner {
                 locationLabel,
                 currentTile,
                 null,
+                this.customPropertiesCache,
               )
             : new CharacterAccessor(
                 characterId,
@@ -420,6 +430,7 @@ export class ScriptRunner {
                 locationLabel,
                 currentTile,
                 null,
+                this.customPropertiesCache,
               );
       characters.push(accessor);
     }
@@ -595,6 +606,7 @@ export class ScriptRunner {
         this.ownerLocationName,
         this.ownerCurrentTile,
         null,
+        this.customPropertiesCache,
       );
     }
 
@@ -620,6 +632,7 @@ export class ScriptRunner {
           '',
           null,
           null,
+          this.customPropertiesCache,
         );
       }
     }

@@ -1,4 +1,11 @@
-import type { Action, Attribute, CharacterAttribute, InventoryItem, Item } from '@/types';
+import type {
+  Action,
+  Attribute,
+  CharacterAttribute,
+  CustomProperty,
+  InventoryItem,
+  Item,
+} from '@/types';
 import type Dexie from 'dexie';
 import type { ExecuteActionEventFn } from '../proxies';
 import { TileProxy } from '../proxies';
@@ -26,6 +33,7 @@ export class OwnerAccessor extends CharacterAccessor {
     locationName: string = '',
     currentTile: { x: number; y: number } | null = null,
     tileWithContext: TileProxy | null = null,
+    customProperties: CustomProperty[] = [],
   ) {
     super(
       characterId,
@@ -44,6 +52,7 @@ export class OwnerAccessor extends CharacterAccessor {
       locationName,
       currentTile,
       tileWithContext,
+      customProperties,
     );
   }
 

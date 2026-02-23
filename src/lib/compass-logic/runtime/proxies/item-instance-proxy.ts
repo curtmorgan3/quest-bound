@@ -1,11 +1,33 @@
-import type { InventoryItem, Item } from '@/types';
+import type { CustomProperty, InventoryItem, Item } from '@/types';
 import type { StructuredCloneSafe } from '../structured-clone-safe';
 
 /**
  * Callback to persist a custom property change for an inventory item instance.
- * When provided, the proxy returns accessors with .set(value) for custom properties.
+ * Receives customPropertyId and value. When provided, the proxy returns accessors with .set(value) for qbscript.
  */
-export type SetItemCustomPropertyFn = (propName: string, value: string | number | boolean) => void;
+export type SetItemCustomPropertyFn = (
+  customPropertyId: string,
+  value: string | number | boolean,
+) => void;
+
+/** Lookup to resolve label -> customPropertyId and customPropertyId -> label for script runtime. */
+export type CustomPropertyLookup = {
+  resolveLabelToId: (label: string) => string | undefined;
+  resolveIdToLabel: (id: string) => string | undefined;
+};
+
+function createCustomPropertyLookup(customProperties: CustomProperty[]): CustomPropertyLookup {
+  const labelToId = new Map<string, string>();
+  const idToLabel = new Map<string, string>();
+  for (const cp of customProperties) {
+    labelToId.set(cp.label, cp.id);
+    idToLabel.set(cp.id, cp.label);
+  }
+  return {
+    resolveLabelToId: (label) => labelToId.get(label),
+    resolveIdToLabel: (id) => idToLabel.get(id),
+  };
+}
 
 /**
  * Wrapper for a custom property so that Owner.Item('x').prop_name.set(value) works in qbscript.
@@ -16,7 +38,8 @@ export type SetItemCustomPropertyFn = (propName: string, value: string | number 
 function createCustomPropertyAccessor(
   getValue: () => string | number | boolean | undefined,
   setValue: SetItemCustomPropertyFn | undefined,
-  propName: string,
+  label: string,
+  lookup: CustomPropertyLookup,
 ): {
   set: (value: string | number | boolean) => void;
   valueOf: () => string | number | boolean | undefined;
@@ -30,7 +53,8 @@ function createCustomPropertyAccessor(
           'Cannot set item custom property in this context (e.g. from Items() array); use Owner.Item() for a single item to set properties',
         );
       }
-      setValue(propName, value);
+      const customPropertyId = lookup.resolveLabelToId(label);
+      if (customPropertyId) setValue(customPropertyId, value);
     },
     valueOf() {
       return getValue();
@@ -66,10 +90,16 @@ export type ItemInstancePlain = {
 export class ItemInstanceProxy implements StructuredCloneSafe {
   readonly inventoryItem: InventoryItem;
   readonly item: Item;
+  private readonly customPropertyLookup: CustomPropertyLookup;
 
-  constructor(inventoryItem: InventoryItem, item: Item) {
+  constructor(
+    inventoryItem: InventoryItem,
+    item: Item,
+    customPropertyLookup: CustomPropertyLookup,
+  ) {
     this.inventoryItem = inventoryItem;
     this.item = item;
+    this.customPropertyLookup = customPropertyLookup;
   }
 
   get title(): string {
@@ -93,14 +123,15 @@ export class ItemInstanceProxy implements StructuredCloneSafe {
   }
 
   getCustomProperty(name: string): string | number | boolean | undefined {
-    const instanceVal = this.inventoryItem.customProperties?.[name];
-    if (instanceVal !== undefined) return instanceVal;
-    return this.item.customProperties?.[name];
+    const customPropertyId = this.customPropertyLookup.resolveLabelToId(name);
+    if (!customPropertyId) return undefined;
+    return this.inventoryItem.customProperties?.[customPropertyId];
   }
 
   /**
    * Return a plain object for postMessage (structured clone).
    * Called at the worker boundary so the main thread receives cloneable data.
+   * Resolves customProperties (keyed by customPropertyId) to label-keyed for readability.
    */
   toStructuredCloneSafe(): ItemInstancePlain {
     const base: ItemInstancePlain = {
@@ -109,25 +140,31 @@ export class ItemInstanceProxy implements StructuredCloneSafe {
       quantity: this.inventoryItem.quantity,
       isEquipped: this.inventoryItem.isEquipped ?? false,
     };
-    const definitionCustom = this.item.customProperties ?? {};
     const instanceCustom = this.inventoryItem.customProperties ?? {};
-    return { ...base, ...definitionCustom, ...instanceCustom };
+    const byLabel: Record<string, string | number | boolean> = {};
+    for (const [id, value] of Object.entries(instanceCustom)) {
+      const label = this.customPropertyLookup.resolveIdToLabel(id);
+      if (label) byLabel[label] = value;
+    }
+    return { ...base, ...byLabel };
   }
 }
 
 /**
  * Returns an ItemInstanceProxy wrapped in a Proxy so that property access for
  * unknown keys (e.g. armor_value) returns an accessor with .set(value) for qbscript.
- * Reading uses instance customProperties then item definition defaults.
+ * Reading uses instance customProperties (keyed by customPropertyId) via label lookup.
  * The result is serialized only when sent across the worker boundary via prepareForStructuredClone().
  */
 export function createItemInstanceProxy(
   inventoryItem: InventoryItem,
   item: Item,
+  customProperties: CustomProperty[],
   onSetCustomProperty?: SetItemCustomPropertyFn,
 ): ItemInstanceProxy &
   Record<string, string | number | boolean | { set: (v: string | number | boolean) => void }> {
-  const proxy = new ItemInstanceProxy(inventoryItem, item);
+  const lookup = createCustomPropertyLookup(customProperties);
+  const proxy = new ItemInstanceProxy(inventoryItem, item, lookup);
   return new Proxy(proxy, {
     get(target, prop: string) {
       // Must return the real method so prepareForStructuredClone() can serialize this proxy
@@ -142,6 +179,7 @@ export function createItemInstanceProxy(
             () => target.getCustomProperty(name),
             onSetCustomProperty,
             name,
+            lookup,
           );
       }
       if (prop in target) {
@@ -151,6 +189,7 @@ export function createItemInstanceProxy(
         () => target.getCustomProperty(prop),
         onSetCustomProperty,
         prop,
+        lookup,
       );
     },
   }) as ItemInstanceProxy &

@@ -1,4 +1,11 @@
-import type { Action, Attribute, CharacterAttribute, InventoryItem, Item } from '@/types';
+import type {
+  Action,
+  Attribute,
+  CharacterAttribute,
+  CustomProperty,
+  InventoryItem,
+  Item,
+} from '@/types';
 import type Dexie from 'dexie';
 import type { ExecuteActionEventFn } from '../proxies';
 import { ActionProxy, AttributeProxy, createItemInstanceProxy, TileProxy } from '../proxies';
@@ -22,6 +29,7 @@ export class CharacterAccessor implements StructuredCloneSafe {
   protected itemsCache: Map<string, Item>;
   protected inventoryItems: InventoryItem[];
   protected archetypeNamesCache: Set<string>;
+  protected customProperties: CustomProperty[];
   protected targetId: string | null;
   protected executeActionEvent: ExecuteActionEventFn | undefined;
   protected locationName: string;
@@ -47,6 +55,7 @@ export class CharacterAccessor implements StructuredCloneSafe {
     locationName: string = '',
     currentTile: { x: number; y: number } | null = null,
     tileWithContext: TileProxy | null = null,
+    customProperties: CustomProperty[] = [],
   ) {
     this.id = characterId;
     this.characterName = characterName;
@@ -64,6 +73,7 @@ export class CharacterAccessor implements StructuredCloneSafe {
     this.locationName = locationName;
     this.currentTile = currentTile;
     this.tileWithContext = tileWithContext ?? null;
+    this.customProperties = customProperties;
   }
 
   /**
@@ -137,14 +147,19 @@ export class CharacterAccessor implements StructuredCloneSafe {
       (inv) => inv.entityId === item.id && inv.type === 'item',
     );
     if (!inventoryItem) return undefined;
-    const onSetCustomProperty = (propName: string, value: string | number | boolean) => {
+    const onSetCustomProperty = (customPropertyId: string, value: string | number | boolean) => {
       if (!inventoryItem.customProperties) inventoryItem.customProperties = {};
-      inventoryItem.customProperties[propName] = value;
+      inventoryItem.customProperties[customPropertyId] = value;
       this.pendingUpdates.set(`inventoryUpdate:${inventoryItem.id}`, {
         customProperties: inventoryItem.customProperties,
       });
     };
-    return createItemInstanceProxy(inventoryItem, item, onSetCustomProperty);
+    return createItemInstanceProxy(
+      inventoryItem,
+      item,
+      this.customProperties,
+      onSetCustomProperty,
+    );
   }
 
   Items(name: string): ReturnType<typeof createItemInstanceProxy>[] {
@@ -154,14 +169,14 @@ export class CharacterAccessor implements StructuredCloneSafe {
       (inv) => inv.entityId === item.id && inv.type === 'item',
     );
     return matching.map((inv) => {
-      const onSetCustomProperty = (propName: string, value: string | number | boolean) => {
+      const onSetCustomProperty = (customPropertyId: string, value: string | number | boolean) => {
         if (!inv.customProperties) inv.customProperties = {};
-        inv.customProperties[propName] = value;
+        inv.customProperties[customPropertyId] = value;
         this.pendingUpdates.set(`inventoryUpdate:${inv.id}`, {
           customProperties: inv.customProperties,
         });
       };
-      return createItemInstanceProxy(inv, item, onSetCustomProperty);
+      return createItemInstanceProxy(inv, item, this.customProperties, onSetCustomProperty);
     });
   }
 
