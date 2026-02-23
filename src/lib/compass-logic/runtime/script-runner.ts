@@ -79,6 +79,8 @@ export class ScriptRunner {
   private chartsCache: Map<string, Chart>;
   private itemsCache: Map<string, Item>;
   private customPropertiesCache: CustomProperty[] = [];
+  private ownerCharacterCustomProperties: Record<string, string | number | boolean> = {};
+  private targetCharacterCustomProperties: Record<string, string | number | boolean> = {};
   private ownerInventoryItems: InventoryItem[];
   private targetInventoryItems: InventoryItem[] | null;
   private ownerCharacterName: string;
@@ -176,6 +178,7 @@ export class ScriptRunner {
     const ownerCharacter = await db.characters.get(ownerId);
     this.ownerCharacterName = ownerCharacter?.name ?? 'Character';
     this.ownerInventoryId = ownerCharacter?.inventoryId ?? '';
+    this.ownerCharacterCustomProperties = ownerCharacter?.customProperties ?? {};
     if (ownerCharacter?.inventoryId) {
       this.ownerInventoryItems = await db.inventoryItems
         .where('inventoryId')
@@ -188,12 +191,15 @@ export class ScriptRunner {
       const targetCharacter = await db.characters.get(targetId);
       this.targetCharacterName = targetCharacter?.name ?? 'Character';
       this.targetInventoryId = targetCharacter?.inventoryId ?? '';
+      this.targetCharacterCustomProperties = targetCharacter?.customProperties ?? {};
       if (targetCharacter?.inventoryId) {
         this.targetInventoryItems = await db.inventoryItems
           .where('inventoryId')
           .equals(targetCharacter.inventoryId)
           .toArray();
       }
+    } else {
+      this.targetCharacterCustomProperties = {};
     }
 
     // Load character attributes for owner
@@ -392,6 +398,7 @@ export class ScriptRunner {
               currentTile,
               null, // tileWithContext set later in setupAccessors
               this.customPropertiesCache,
+              character?.customProperties ?? {},
             )
           : isTarget
             ? new TargetAccessor(
@@ -412,6 +419,7 @@ export class ScriptRunner {
                 currentTile,
                 null,
                 this.customPropertiesCache,
+                character?.customProperties ?? {},
               )
             : new CharacterAccessor(
                 characterId,
@@ -431,6 +439,7 @@ export class ScriptRunner {
                 currentTile,
                 null,
                 this.customPropertiesCache,
+                character?.customProperties ?? {},
               );
       characters.push(accessor);
     }
@@ -478,6 +487,9 @@ export class ScriptRunner {
 
       if (type === 'characterAttribute') {
         await db.characterAttributes.update(id, { value });
+      } else if (type === 'characterUpdate') {
+        const { customProperties } = value as { customProperties: Record<string, string | number | boolean> };
+        await db.characters.update(id, { customProperties, updatedAt: new Date().toISOString() });
       } else if (type === 'characterAttributeMax') {
         await db.characterAttributes.update(id, { max: value });
       } else if (type === 'characterAttributeMin') {
@@ -607,6 +619,7 @@ export class ScriptRunner {
         this.ownerCurrentTile,
         null,
         this.customPropertiesCache,
+        this.ownerCharacterCustomProperties,
       );
     }
 
@@ -633,6 +646,7 @@ export class ScriptRunner {
           null,
           null,
           this.customPropertiesCache,
+          this.targetCharacterCustomProperties,
         );
       }
     }

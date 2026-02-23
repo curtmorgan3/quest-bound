@@ -43,7 +43,8 @@ export class AttributeDefinitionProxy {
 
 /**
  * Proxy for item definitions (ruleset-level, not character inventory instances).
- * Provides access to item metadata like title, description, customProperties, etc.
+ * Provides access to item metadata like title, description, etc.
+ * Custom properties are instance-only (on Owner.Item('x')); item definitions no longer have customProperties.
  */
 export class ItemDefinitionProxy {
   private item: Item;
@@ -60,8 +61,9 @@ export class ItemDefinitionProxy {
     return this.item.title;
   }
 
-  get customProperties(): Record<string, string | number | boolean> | undefined {
-    return this.item.customProperties;
+  /** @deprecated Item definitions no longer have custom properties. Use Owner.Item('name') for instance values. */
+  get customProperties(): undefined {
+    return undefined;
   }
 
   get weight(): number {

@@ -30,6 +30,8 @@ export class CharacterAccessor implements StructuredCloneSafe {
   protected inventoryItems: InventoryItem[];
   protected archetypeNamesCache: Set<string>;
   protected customProperties: CustomProperty[];
+  /** Character's custom property values (keyed by customPropertyId). Mutable reference for setProperty. */
+  protected characterCustomProperties: Record<string, string | number | boolean>;
   protected targetId: string | null;
   protected executeActionEvent: ExecuteActionEventFn | undefined;
   protected locationName: string;
@@ -56,6 +58,7 @@ export class CharacterAccessor implements StructuredCloneSafe {
     currentTile: { x: number; y: number } | null = null,
     tileWithContext: TileProxy | null = null,
     customProperties: CustomProperty[] = [],
+    characterCustomProperties: Record<string, string | number | boolean> = {},
   ) {
     this.id = characterId;
     this.characterName = characterName;
@@ -74,6 +77,30 @@ export class CharacterAccessor implements StructuredCloneSafe {
     this.currentTile = currentTile;
     this.tileWithContext = tileWithContext ?? null;
     this.customProperties = customProperties;
+    this.characterCustomProperties = characterCustomProperties;
+  }
+
+  /**
+   * Get a character custom property by label (e.g. Owner.getProperty('Level')).
+   * Returns the first matching CustomProperty value; undefined if not found.
+   */
+  getProperty(name: string): string | number | boolean | undefined {
+    const cp = this.customProperties.find((c) => c.label === name);
+    if (!cp) return undefined;
+    return this.characterCustomProperties[cp.id];
+  }
+
+  /**
+   * Set a character custom property by label (e.g. Owner.setProperty('Level', 5)).
+   * Persists via pendingUpdates on flush.
+   */
+  setProperty(name: string, value: string | number | boolean): void {
+    const cp = this.customProperties.find((c) => c.label === name);
+    if (!cp) return;
+    this.characterCustomProperties[cp.id] = value;
+    this.pendingUpdates.set(`characterUpdate:${this.id}`, {
+      customProperties: this.characterCustomProperties,
+    });
   }
 
   /**

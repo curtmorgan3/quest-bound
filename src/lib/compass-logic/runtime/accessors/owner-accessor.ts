@@ -34,6 +34,7 @@ export class OwnerAccessor extends CharacterAccessor {
     currentTile: { x: number; y: number } | null = null,
     tileWithContext: TileProxy | null = null,
     customProperties: CustomProperty[] = [],
+    characterCustomProperties: Record<string, string | number | boolean> = {},
   ) {
     super(
       characterId,
@@ -53,6 +54,7 @@ export class OwnerAccessor extends CharacterAccessor {
       currentTile,
       tileWithContext,
       customProperties,
+      characterCustomProperties,
     );
   }
 
