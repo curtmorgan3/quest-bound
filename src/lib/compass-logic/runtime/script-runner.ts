@@ -503,6 +503,8 @@ export class ScriptRunner {
           if (item.type === 'item' && item.entityId) {
             const customProperties = await buildItemCustomProperties(db, item.entityId);
             itemToAdd = { ...item, customProperties };
+          } else {
+            itemToAdd = { ...item, customProperties: item.customProperties ?? {} };
           }
           await db.inventoryItems.add(itemToAdd);
         }

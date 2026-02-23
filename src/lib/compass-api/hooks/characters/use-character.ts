@@ -149,10 +149,12 @@ export const useCharacter = (_id?: string) => {
         sprites: data.sprites ?? firstArchetype?.sprites ?? [],
       } as Character);
 
-      // Instantiate customProperties from first non-default archetype's ArchetypeCustomProperties
+      // Instantiate customProperties from first non-default archetype's ArchetypeCustomProperties.
+      // When no non-default archetype exists, use empty object.
       const firstNonDefaultArchetype = archetypeRecords
         .filter((a) => !a.isDefault)
         .sort((a, b) => a.loadOrder - b.loadOrder)[0];
+      let customProperties: Record<string, string | number | boolean> = {};
       if (firstNonDefaultArchetype) {
         const archetypeCustomProps = await db.archetypeCustomProperties
           .where('archetypeId')
@@ -161,7 +163,6 @@ export const useCharacter = (_id?: string) => {
         const customProps = await Promise.all(
           archetypeCustomProps.map((acp) => db.customProperties.get(acp.customPropertyId)),
         );
-        const customProperties: Record<string, string | number | boolean> = {};
         for (const cp of customProps) {
           if (cp) {
             const defaultValue =
@@ -175,10 +176,8 @@ export const useCharacter = (_id?: string) => {
             customProperties[cp.id] = defaultValue;
           }
         }
-        if (Object.keys(customProperties).length > 0) {
-          await db.characters.update(characterId, { customProperties });
-        }
       }
+      await db.characters.update(characterId, { customProperties });
 
       await duplicateCharacterFromTemplate(testCharacter.id, characterId, inventoryId);
 

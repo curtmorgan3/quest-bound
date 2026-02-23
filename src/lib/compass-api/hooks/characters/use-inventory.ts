@@ -61,7 +61,8 @@ export const useInventory = (inventoryId: string, characterId: string) => {
     if (!inventory) return;
     const now = new Date().toISOString();
     try {
-      let customProperties = data.customProperties;
+      let customProperties: Record<string, string | number | boolean> =
+        data.customProperties ?? {};
       if (data.type === 'item' && data.entityId) {
         customProperties = await buildItemCustomProperties(db, data.entityId);
       }

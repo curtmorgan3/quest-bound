@@ -238,7 +238,7 @@ Let's add a `defaultValue` field on the CustomProperty model. In the UI, it will
     - Audit codebase for `item.customProperties`; remove or replace with ItemCustomProperty + CustomProperty lookup
     - Update `use-inventory.ts` `inventoryItemsWithImages`: `customProperties` should come from `inventoryItem.customProperties` (and optionally resolve labels for display); no longer from `itemRef?.customProperties`
 
-### Phase 9: Testing and edge cases
+### Phase 9: Testing and edge cases ✅
 
 18. **Edge cases**
     - Character with no non-default archetype: `customProperties = {}`
