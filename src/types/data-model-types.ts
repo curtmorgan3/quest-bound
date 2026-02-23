@@ -107,6 +107,7 @@ export type Archetype = BaseDetails & {
   name: string;
   description: string;
   assetId?: string | null;
+  category?: string;
   image?: string | null;
   scriptId?: string | null;
   testCharacterId: string;

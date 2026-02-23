@@ -9,6 +9,8 @@ import {
   AlertDialogTrigger,
   Button,
   Card,
+  CategoryField,
+  DescriptionEditor,
   ImageUpload,
   Input,
   Label,
@@ -16,7 +18,7 @@ import {
 import { useFeatureFlag } from '@/hooks/use-feature-flag';
 import { useActiveRuleset } from '@/lib/compass-api';
 import type { Archetype } from '@/types';
-import { ChevronDown, ChevronUp, Pencil, Trash2 } from 'lucide-react';
+import { ChevronDown, ChevronUp, FileCode, Pencil, Trash2 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 
 export interface ArchetypeCardProps {
@@ -33,6 +35,8 @@ export interface ArchetypeCardProps {
   editMapWidth: number | undefined;
   editMapHeight: number | undefined;
   editSprites: string[];
+  editCategory: string | null;
+  existingCategories: string[];
   onMoveUp: () => void;
   onMoveDown: () => void;
   onStartEdit: () => void;
@@ -48,6 +52,7 @@ export interface ArchetypeCardProps {
   onEditSpriteUpload: (assetId: string) => void;
   onEditSpriteRemove: () => void;
   onEditSpriteSetUrl: (url: string) => void;
+  onEditCategoryChange: (value: string | null) => void;
   onDelete: () => void;
   confirmBeforeDelete: boolean;
 }
@@ -66,6 +71,8 @@ export function ArchetypeCard({
   editMapWidth,
   editMapHeight,
   editSprites,
+  editCategory,
+  existingCategories,
   onMoveUp,
   onMoveDown,
   onStartEdit,
@@ -81,6 +88,7 @@ export function ArchetypeCard({
   onEditSpriteUpload,
   onEditSpriteRemove,
   onEditSpriteSetUrl,
+  onEditCategoryChange,
   onDelete,
   confirmBeforeDelete,
 }: ArchetypeCardProps) {
@@ -133,10 +141,11 @@ export function ArchetypeCard({
               onChange={(e) => onEditNameChange(e.target.value)}
               placeholder='Name'
             />
-            <Input
-              value={editDescription}
-              onChange={(e) => onEditDescriptionChange(e.target.value)}
-              placeholder='Description'
+            <CategoryField
+              value={editCategory}
+              onChange={onEditCategoryChange}
+              existingCategories={existingCategories}
+              placeholder='Search categories...'
             />
             <div className='flex gap-8 items-start'>
               <div className='grid gap-2'>
@@ -150,6 +159,12 @@ export function ArchetypeCard({
                   onSetUrl={onEditSetUrl}
                 />
               </div>
+              <DescriptionEditor
+                className='flex-1'
+                value={editDescription}
+                onChange={onEditDescriptionChange}
+                placeholder='Description'
+              />
               {campaignsEnabled && (
                 <div className='grid gap-2'>
                   <Label>Map sprite</Label>
@@ -219,15 +234,11 @@ export function ArchetypeCard({
             <div className={`font-medium ${archetype.isDefault ? 'text-muted-foreground' : ''}`}>
               {archetype.name}
             </div>
+            {archetype.category && (
+              <p className='text-sm text-muted-foreground mt-0.5'>{archetype.category}</p>
+            )}
             {archetype.description && (
               <p className='text-sm text-muted-foreground mt-0.5'>{archetype.description}</p>
-            )}
-            {archetype.scriptId && (
-              <Link
-                to={`/rulesets/${rulesetId}/scripts/${archetype.scriptId}`}
-                className='text-sm text-primary hover:underline'>
-                View script
-              </Link>
             )}
           </div>
         )}
@@ -241,6 +252,13 @@ export function ArchetypeCard({
             data-testid='archetype-edit-default-sheet'>
             Edit Default Sheet
           </Button>
+          {archetype.scriptId && (
+            <Button variant='ghost' size='sm' asChild aria-label='View script'>
+              <Link to={`/rulesets/${rulesetId}/scripts/${archetype.scriptId}`}>
+                <FileCode className='h-4 w-4' />
+              </Link>
+            </Button>
+          )}
           {!archetype.isDefault && (
             <Button disabled={archetype.isDefault} variant='ghost' size='sm' onClick={onStartEdit}>
               <Pencil className='h-4 w-4' />

@@ -101,7 +101,7 @@ export const useArchetypes = (rulesetId: string | undefined) => {
     }
   };
 
-  const updateArchetype = async (id: string, updates: Partial<Pick<Archetype, 'name' | 'description' | 'assetId' | 'image' | 'scriptId' | 'mapWidth' | 'mapHeight' | 'sprites'>>) => {
+  const updateArchetype = async (id: string, updates: Partial<Pick<Archetype, 'name' | 'description' | 'assetId' | 'image' | 'scriptId' | 'mapWidth' | 'mapHeight' | 'sprites' | 'category'>>) => {
     try {
       await db.archetypes.update(id, {
         ...updates,

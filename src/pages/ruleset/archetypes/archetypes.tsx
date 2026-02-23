@@ -1,7 +1,17 @@
+import {
+  Input,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components';
 import { useArchetypes, useAssets } from '@/lib/compass-api';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { ArchetypeCard } from './archetype-card';
+
+const ALL_CATEGORIES = 'all';
 
 export const Archetypes = () => {
   const { rulesetId } = useParams();
@@ -17,6 +27,9 @@ export const Archetypes = () => {
   const [editMapWidth, setEditMapWidth] = useState<number | undefined>(undefined);
   const [editMapHeight, setEditMapHeight] = useState<number | undefined>(undefined);
   const [editSprites, setEditSprites] = useState<string[]>([]);
+  const [editCategory, setEditCategory] = useState<string | null>(null);
+  const [filterValue, setFilterValue] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState(ALL_CATEGORIES);
 
   const getImageFromAssetId = (id: string | null) => {
     if (!id) return null;
@@ -35,6 +48,7 @@ export const Archetypes = () => {
       setEditMapWidth(a.mapWidth);
       setEditMapHeight(a.mapHeight);
       setEditSprites(a.sprites ?? []);
+      setEditCategory(a.category ?? null);
     }
   };
 
@@ -48,6 +62,7 @@ export const Archetypes = () => {
       mapWidth: editMapWidth,
       mapHeight: editMapHeight,
       sprites: editSprites,
+      category: editCategory ?? undefined,
     });
     setEditingId(null);
   };
@@ -102,16 +117,63 @@ export const Archetypes = () => {
 
   const doNotAsk = localStorage.getItem('qb.confirmOnDelete') === 'false';
 
+  const categories = useMemo(() => {
+    const set = new Set<string>();
+    for (const a of archetypes) {
+      if (a.category?.trim()) set.add(a.category.trim());
+    }
+    return [...set].sort((a, b) => a.localeCompare(b));
+  }, [archetypes]);
+
+  const existingCategories = [
+    ...new Set(
+      archetypes
+        .map((a) => a.category)
+        .filter((c): c is string => !!c && c.trim() !== ''),
+    ),
+  ];
+
+  const filteredArchetypes = archetypes.filter((a) => {
+    const matchesText = a.name.toLowerCase().includes(filterValue.toLowerCase());
+    const matchesCategory =
+      categoryFilter === ALL_CATEGORIES || a.category?.trim() === categoryFilter;
+    return matchesText && matchesCategory;
+  });
+
   return (
     <div className='flex flex-col gap-4'>
+      <div className='flex flex-wrap items-center gap-2'>
+        <Input
+          className='max-w-md'
+          data-testid='preview-filter'
+          placeholder='Filter by name'
+          value={filterValue}
+          onChange={(e) => setFilterValue(e.target.value)}
+        />
+        <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+          <SelectTrigger className='w-[180px]' data-testid='category-filter'>
+            <SelectValue placeholder='Category' />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value={ALL_CATEGORIES}>All categories</SelectItem>
+            {categories.map((cat) => (
+              <SelectItem key={cat} value={cat}>
+                {cat}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
       <div className='flex flex-col gap-2' data-testid='archetypes-list'>
         {archetypes.length > 0 && (
           <p className='italic text-sm text-muted-foreground'>
             Order determines the load order of archetype scripts
           </p>
         )}
-        {archetypes.map((archetype, index) => (
-          <ArchetypeCard
+        {filteredArchetypes.map((archetype) => {
+          const index = archetypes.findIndex((a) => a.id === archetype.id);
+          return (
+            <ArchetypeCard
             key={archetype.id}
             archetype={archetype}
             index={index}
@@ -126,6 +188,8 @@ export const Archetypes = () => {
             editMapWidth={editMapWidth}
             editMapHeight={editMapHeight}
             editSprites={editSprites}
+            editCategory={editCategory}
+            existingCategories={existingCategories}
             onMoveUp={() => moveUp(index)}
             onMoveDown={() => moveDown(index)}
             onStartEdit={() => startEdit(archetype.id)}
@@ -141,10 +205,12 @@ export const Archetypes = () => {
             onEditSpriteUpload={handleEditSpriteUpload}
             onEditSpriteRemove={handleEditSpriteRemove}
             onEditSpriteSetUrl={handleEditSpriteSetUrl}
+            onEditCategoryChange={setEditCategory}
             onDelete={() => deleteArchetype(archetype.id)}
             confirmBeforeDelete={doNotAsk}
-          />
-        ))}
+            />
+          );
+        })}
       </div>
 
       {archetypes.length === 0 && (
