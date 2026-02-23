@@ -1,7 +1,7 @@
 import { ImageUpload, Input, Label } from '@/components';
 import { useFeatureFlag } from '@/hooks/use-feature-flag';
 import { useAssets } from '@/lib/compass-api';
-import { Boxes, Drumstick, PackageOpen, Shirt } from 'lucide-react';
+import { Drumstick, Shirt } from 'lucide-react';
 import { type Dispatch, type SetStateAction } from 'react';
 import { useParams } from 'react-router-dom';
 
@@ -134,10 +134,11 @@ export const ItemCreate = ({
             onSetUrl={handleSetUrl}
           />
         </div>
-        <div className='flex flex-col gap-4 flex-1 items-center'>
+        <div className='flex flex-col gap-4 justify-center items-center'>
           <Label className='text-muted-foreground'>Properties</Label>
-          <div className='w-full flex flex-row justify-between'>
-            <div
+          <div className='flex flex-row gap-4 flex-1 items-center w-[80%]'>
+            <div className='flex flex-col items-start h-full gap-4'>
+              {/* <div
               className='flex flex-col gap-2 items-center cursor-pointer'
               data-testid='item-create-container'
               onClick={() => setIsContainer((prev) => !prev)}>
@@ -150,50 +151,52 @@ export const ItemCreate = ({
               onClick={() => setIsStorable((prev) => !prev)}>
               <Label htmlFor='is-storable'>Storable</Label>
               <Boxes className={isStorable ? 'text-primary' : ''} />
+            </div> */}
+              <div
+                data-testid='item-create-equippable'
+                className='flex flex-col gap-2 items-center cursor-pointer'
+                onClick={() => setIsEquippable((prev) => !prev)}>
+                <Label htmlFor='is-equippable'>Equippable</Label>
+                <Shirt className={isEquippable ? 'text-primary' : ''} />
+              </div>
+              <div
+                role='button'
+                data-testid='item-create-consumable'
+                className='flex flex-col gap-2 items-center cursor-pointer'
+                onClick={() => setIsConsumable((prev) => !prev)}>
+                <Label htmlFor='is-consumable'>Consumable</Label>
+                <Drumstick className={isConsumable ? 'text-primary' : ''} />
+              </div>
             </div>
-            <div
-              data-testid='item-create-equippable'
-              className='flex flex-col gap-2 items-center cursor-pointer'
-              onClick={() => setIsEquippable((prev) => !prev)}>
-              <Label htmlFor='is-equippable'>Equippable</Label>
-              <Shirt className={isEquippable ? 'text-primary' : ''} />
-            </div>
-            <div
-              role='button'
-              data-testid='item-create-consumable'
-              className='flex flex-col gap-2 items-center cursor-pointer'
-              onClick={() => setIsConsumable((prev) => !prev)}>
-              <Label htmlFor='is-consumable'>Consumable</Label>
-              <Drumstick className={isConsumable ? 'text-primary' : ''} />
-            </div>
-          </div>
-          <div className='flex gap-4'>
-            <div className='flex flex-col gap-4 w-[80px]'>
-              <Label>Weight</Label>
-              <Input
-                type='number'
-                value={weight}
-                className='w-[80px]'
-                onChange={(e) => setWeight(parseFloat(e.target.value))}
-              />
-            </div>
-            <div className='flex flex-col gap-4 w-[120px]'>
-              <Label>Default Quantity</Label>
-              <Input
-                type='number'
-                className='w-[120px]'
-                value={defaultQuantity}
-                onChange={(e) => setDefaultQuantity(parseFloat(e.target.value))}
-              />
-            </div>
-            <div className='flex flex-col gap-4 w-[80px]'>
-              <Label>Stack Size</Label>
-              <Input
-                type='number'
-                className='w-[80px]'
-                value={stackSize}
-                onChange={(e) => setStackSize(parseFloat(e.target.value))}
-              />
+
+            <div className='flex gap-4 flex-wrap justify-end'>
+              <div className='flex flex-col gap-4 w-[80px]'>
+                <Label>Weight</Label>
+                <Input
+                  type='number'
+                  value={weight}
+                  className='w-[80px]'
+                  onChange={(e) => setWeight(parseFloat(e.target.value))}
+                />
+              </div>
+              <div className='flex flex-col gap-4 w-[120px]'>
+                <Label>Default Quantity</Label>
+                <Input
+                  type='number'
+                  className='w-[120px]'
+                  value={defaultQuantity}
+                  onChange={(e) => setDefaultQuantity(parseFloat(e.target.value))}
+                />
+              </div>
+              <div className='flex flex-col gap-4 w-[80px]'>
+                <Label>Stack Size</Label>
+                <Input
+                  type='number'
+                  className='w-[80px]'
+                  value={stackSize}
+                  onChange={(e) => setStackSize(parseFloat(e.target.value))}
+                />
+              </div>
             </div>
           </div>
         </div>
@@ -223,37 +226,39 @@ export const ItemCreate = ({
         </div>
       </div>
 
-      <div className='flex flex-col gap-2'>
-        <Label className='text-muted-foreground'>Map Size (tiles)</Label>
-        <div className='flex gap-4'>
-          <div className='flex flex-col gap-4 w-full'>
-            <Label>Width</Label>
-            <Input
-              type='number'
-              min={1}
-              placeholder='—'
-              value={mapWidth ?? ''}
-              onChange={(e) => {
-                const v = e.target.value;
-                setMapWidth(v === '' ? undefined : parseInt(v, 10) || 1);
-              }}
-            />
-          </div>
-          <div className='flex flex-col gap-4 w-full'>
-            <Label>Height</Label>
-            <Input
-              type='number'
-              min={1}
-              placeholder='—'
-              value={mapHeight ?? ''}
-              onChange={(e) => {
-                const v = e.target.value;
-                setMapHeight(v === '' ? undefined : parseInt(v, 10) || 1);
-              }}
-            />
+      {campaignsEnabled && (
+        <div className='flex flex-col gap-2'>
+          <Label className='text-muted-foreground'>Map Size (tiles)</Label>
+          <div className='flex gap-4'>
+            <div className='flex flex-col gap-4 w-full'>
+              <Label>Width</Label>
+              <Input
+                type='number'
+                min={1}
+                placeholder='—'
+                value={mapWidth ?? ''}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  setMapWidth(v === '' ? undefined : parseInt(v, 10) || 1);
+                }}
+              />
+            </div>
+            <div className='flex flex-col gap-4 w-full'>
+              <Label>Height</Label>
+              <Input
+                type='number'
+                min={1}
+                placeholder='—'
+                value={mapHeight ?? ''}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  setMapHeight(v === '' ? undefined : parseInt(v, 10) || 1);
+                }}
+              />
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {campaignsEnabled && (
         <div className='flex flex-col gap-2'>
