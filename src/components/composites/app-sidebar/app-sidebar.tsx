@@ -77,7 +77,8 @@ export function AppSidebar() {
     location.pathname === '/worlds' ||
     location.pathname === '/campaigns';
   const isWorldsRoute = location.pathname.startsWith('/worlds/');
-  const isCampaignsRoute = location.pathname.startsWith('/campaigns');
+  const isCampaignsRoute =
+    location.pathname.startsWith('/campaigns/') && location.pathname !== '/campaigns/new';
 
   useEffect(() => {
     const storedState = localStorage.getItem('qb.sidebarCollapsed');

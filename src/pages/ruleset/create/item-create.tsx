@@ -1,4 +1,5 @@
 import { ImageUpload, Input, Label } from '@/components';
+import { useFeatureFlag } from '@/hooks/use-feature-flag';
 import { useAssets } from '@/lib/compass-api';
 import { Boxes, Drumstick, PackageOpen, Shirt } from 'lucide-react';
 import { type Dispatch, type SetStateAction } from 'react';
@@ -66,6 +67,7 @@ export const ItemCreate = ({
   setAssetId,
 }: ItemCreateProps) => {
   const { rulesetId } = useParams();
+  const campaignsEnabled = useFeatureFlag('campaigns', false);
   const { assets, deleteAsset } = useAssets();
   const spriteAssetId = sprites[0] ?? null;
 
@@ -253,20 +255,22 @@ export const ItemCreate = ({
         </div>
       </div>
 
-      <div className='flex flex-col gap-2'>
-        <Label className='text-muted-foreground'>Map sprite</Label>
-        <p className='text-sm text-muted-foreground'>
-          Optional image shown when this item is placed on the map.
-        </p>
-        <ImageUpload
-          image={displaySpriteImage}
-          alt='Item map sprite'
-          rulesetId={rulesetId}
-          onUpload={handleSpriteUpload}
-          onRemove={handleSpriteRemove}
-          onSetUrl={handleSpriteSetUrl}
-        />
-      </div>
+      {campaignsEnabled && (
+        <div className='flex flex-col gap-2'>
+          <Label className='text-muted-foreground'>Map sprite</Label>
+          <p className='text-sm text-muted-foreground'>
+            Optional image shown when this item is placed on the map.
+          </p>
+          <ImageUpload
+            image={displaySpriteImage}
+            alt='Item map sprite'
+            rulesetId={rulesetId}
+            onUpload={handleSpriteUpload}
+            onRemove={handleSpriteRemove}
+            onSetUrl={handleSpriteSetUrl}
+          />
+        </div>
+      )}
     </div>
   );
 };
