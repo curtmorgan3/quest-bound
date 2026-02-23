@@ -12,6 +12,7 @@ import type {
 import { Evaluator } from '../interpreter/evaluator';
 import { Lexer } from '../interpreter/lexer';
 import { Parser } from '../interpreter/parser';
+import { buildItemCustomProperties } from '@/utils/custom-property-utils';
 import { executeArchetypeEvent } from '../reactive/event-handler-executor';
 import {
   CharacterAccessor,
@@ -475,7 +476,12 @@ export class ScriptRunner {
       } else if (type === 'inventoryAdd') {
         const items = value as InventoryItem[];
         for (const item of items) {
-          await db.inventoryItems.add(item);
+          let itemToAdd = item;
+          if (item.type === 'item' && item.entityId) {
+            const customProperties = await buildItemCustomProperties(db, item.entityId);
+            itemToAdd = { ...item, customProperties };
+          }
+          await db.inventoryItems.add(itemToAdd);
         }
       } else if (type === 'inventoryUpdate') {
         const now = new Date().toISOString();

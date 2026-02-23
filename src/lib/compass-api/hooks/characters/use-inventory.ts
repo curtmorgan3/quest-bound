@@ -1,6 +1,7 @@
 import { useErrorHandler } from '@/hooks';
 import { db, type InventoryItemWithData } from '@/stores';
 import type { Inventory, InventoryItem } from '@/types';
+import { buildItemCustomProperties } from '@/utils/custom-property-utils';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useActions, useAttributes, useItems } from '../rulesets';
 import { useCharacterAttributes } from './use-character-attributes';
@@ -60,8 +61,13 @@ export const useInventory = (inventoryId: string, characterId: string) => {
     if (!inventory) return;
     const now = new Date().toISOString();
     try {
+      let customProperties = data.customProperties;
+      if (data.type === 'item' && data.entityId) {
+        customProperties = await buildItemCustomProperties(db, data.entityId);
+      }
       await db.inventoryItems.add({
         ...data,
+        customProperties,
         id: crypto.randomUUID(),
         inventoryId: inventory.id,
         createdAt: now,
