@@ -311,9 +311,9 @@ result
       );
 
       const attrProxy = owner.Attribute('HP');
-      expect(attrProxy.value).toBe(50);
-      expect(attrProxy.title).toBe('HP');
-      expect(attrProxy.description).toBe('Hit Points');
+      expect(attrProxy?.value).toBe(50);
+      expect(attrProxy?.title).toBe('HP');
+      expect(attrProxy?.description).toBe('Hit Points');
     });
 
     it('should modify attributes through accessor', () => {
@@ -360,9 +360,9 @@ result
       );
 
       const attrProxy = owner.Attribute('HP');
-      attrProxy.add(10);
+      attrProxy?.add(10);
 
-      expect(attrProxy.value).toBe(60);
+      expect(attrProxy?.value).toBe(60);
       expect(pendingUpdates.get('characterAttribute:char_hp')).toBe(60);
     });
 

@@ -73,6 +73,17 @@ export class ChartProxy {
   }
 
   /**
+   * Get the column names (header row values) of the chart.
+   * @returns Array of header row values
+   */
+  getColumnNames(): string[] {
+    if (!this.data || this.data.length === 0) {
+      return [];
+    }
+    return this.data[0].map((h: unknown) => String(h ?? ''));
+  }
+
+  /**
    * Get all values from a specific column.
    * @param columnName - The name of the column (header)
    * @returns Array of values in that column (excluding header row)
@@ -91,6 +102,11 @@ export class ChartProxy {
 
     // Return all values in column (skip header row), coerced to number/boolean/string
     return this.data.slice(1).map((row) => coerceCellValue(row[columnIndex]));
+  }
+
+  /** Alias for get. Get all values from a specific column. */
+  columnWhere(columnName: string): any[] {
+    return this.get(columnName);
   }
 
   /**

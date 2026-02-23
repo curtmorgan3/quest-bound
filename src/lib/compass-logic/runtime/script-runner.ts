@@ -636,7 +636,10 @@ export class ScriptRunner {
     if (this.context.entityType === 'attribute' && this.context.entityId) {
       const attribute = this.attributesCache.get(this.context.entityId);
       if (attribute) {
-        this.evaluator.globalEnv.define('Self', owner.Attribute(attribute.title));
+        const attrRef = owner.Attribute(attribute.title);
+        if (attrRef !== null) {
+          this.evaluator.globalEnv.define('Self', attrRef);
+        }
       }
     } else if (this.context.entityType === 'action' && this.context.entityId) {
       const action = this.actionsCache.get(this.context.entityId);

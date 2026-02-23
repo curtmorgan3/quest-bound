@@ -70,7 +70,9 @@ export class CharacterAccessor implements StructuredCloneSafe {
    * The character's current tile. When tileWithContext is set (e.g. Owner in campaign with location), returns that Tile (with character/characters). Otherwise x, y only.
    */
   get Tile(): TileProxy {
-    return this.tileWithContext ?? new TileProxy(this.currentTile?.x ?? 0, this.currentTile?.y ?? 0);
+    return (
+      this.tileWithContext ?? new TileProxy(this.currentTile?.x ?? 0, this.currentTile?.y ?? 0)
+    );
   }
 
   /** Set by ScriptRunner when building Owner.Tile with character/characters. */
@@ -114,17 +116,16 @@ export class CharacterAccessor implements StructuredCloneSafe {
     return new ActionProxy(action.id, this.id, this.targetId, this.executeActionEvent);
   }
 
-  Attribute(name: string): AttributeProxy {
+  Attribute(name: string): AttributeProxy | null {
     const attribute = Array.from(this.attributesCache.values()).find((attr) => attr.title === name);
     if (!attribute) {
-      throw new Error(`Attribute '${name}' not found`);
+      return null;
     }
     const characterAttribute = Array.from(this.characterAttributesCache.values()).find(
-      (charAttr) =>
-        charAttr.attributeId === attribute.id && charAttr.characterId === this.id,
+      (charAttr) => charAttr.attributeId === attribute.id && charAttr.characterId === this.id,
     );
     if (!characterAttribute) {
-      throw new Error(`Character attribute '${name}' not found for this character`);
+      return null;
     }
     return new AttributeProxy(characterAttribute, attribute, this.pendingUpdates);
   }
