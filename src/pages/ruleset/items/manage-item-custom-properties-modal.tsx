@@ -11,15 +11,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components';
-import {
-  useItems,
-  useCustomProperties,
-  useActiveRuleset,
-} from '@/lib/compass-api';
+import { useActiveRuleset, useCustomProperties, useItems } from '@/lib/compass-api';
 import { db } from '@/stores';
 import type { ItemCustomProperty } from '@/types';
-import { SlidersHorizontal, Trash2 } from 'lucide-react';
 import { useLiveQuery } from 'dexie-react-hooks';
+import { SlidersHorizontal, Trash2 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { CustomPropertyPicker } from './custom-property-picker';
 
@@ -46,14 +42,11 @@ export function ManageItemCustomPropertiesModal() {
     return items.filter((i) => i.category?.trim() === scope);
   }, [items, scope]);
 
-  const itemCustomPropertiesByItem = useLiveQuery(
-    async () => {
+  const itemCustomPropertiesByItem =
+    useLiveQuery(async () => {
       if (targetItems.length === 0) return new Map<string, ItemCustomProperty[]>();
       const itemIds = targetItems.map((i) => i.id);
-      const all = await db.itemCustomProperties
-        .where('itemId')
-        .anyOf(itemIds)
-        .toArray();
+      const all = await db.itemCustomProperties.where('itemId').anyOf(itemIds).toArray();
       const map = new Map<string, ItemCustomProperty[]>();
       for (const icp of all) {
         const list = map.get(icp.itemId) ?? [];
@@ -61,9 +54,7 @@ export function ManageItemCustomPropertiesModal() {
         map.set(icp.itemId, list);
       }
       return map;
-    },
-    [targetItems],
-  ) ?? new Map();
+    }, [targetItems]) ?? new Map();
 
   const customPropertiesById = useMemo(() => {
     const m = new Map<string, (typeof customProperties)[0]>();
@@ -123,7 +114,8 @@ export function ManageItemCustomPropertiesModal() {
         <DialogContent className='min-w-[520px] max-w-[90vw] max-h-[85vh] overflow-hidden flex flex-col'>
           <DialogTitle>Manage item custom properties</DialogTitle>
           <p className='text-sm text-muted-foreground'>
-            Assign custom properties to items. New inventory instances will get default values.
+            Assign custom properties to items definitions. Items will have these properties when
+            added to an inventory.
           </p>
           <div className='flex flex-col gap-4 flex-1 min-h-0 overflow-auto'>
             <div className='flex flex-wrap items-end gap-4'>
@@ -168,7 +160,11 @@ export function ManageItemCustomPropertiesModal() {
             ) : (
               <div className='flex flex-col gap-2'>
                 <Label className='text-xs text-muted-foreground'>
-                  Items ({selectedItemIds.size > 0 ? `${selectedItemIds.size} selected` : 'click to select'})
+                  Items (
+                  {selectedItemIds.size > 0
+                    ? `${selectedItemIds.size} selected`
+                    : 'click to select'}
+                  )
                 </Label>
                 <div className='flex flex-col gap-1 max-h-[280px] overflow-auto border rounded-md p-2'>
                   {targetItems.map((item) => {

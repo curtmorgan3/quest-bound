@@ -1,6 +1,7 @@
 import {
   Button,
   CategoryField,
+  Checkbox,
   Dialog,
   DialogContent,
   DialogFooter,
@@ -17,8 +18,8 @@ import {
 } from '@/components';
 import { useActiveRuleset, useCustomProperties } from '@/lib/compass-api';
 import type { CustomPropertyType } from '@/types';
-import { Plus } from 'lucide-react';
-import { useCallback, useEffect, useState } from 'react';
+import { Plus, Search } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { RGBColor } from 'react-color';
 
 const PROP_TYPES: CustomPropertyType[] = ['string', 'number', 'boolean', 'color'];
@@ -55,8 +56,15 @@ export function CustomPropertyPicker({
   const { customProperties, createCustomProperty } = useCustomProperties(activeRuleset?.id);
   const [mode, setMode] = useState<'select' | 'create'>(initialMode);
 
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
   useEffect(() => {
-    if (open) setMode(initialMode);
+    if (open) {
+      setMode(initialMode);
+      setLabelFilter('');
+      setCategoryFilter('__all__');
+      setSelectedIds(new Set());
+    }
   }, [open, initialMode]);
 
   const [createLabel, setCreateLabel] = useState('');
@@ -67,13 +75,55 @@ export function CustomPropertyPicker({
 
   const available = customProperties.filter((cp) => !excludeIds.includes(cp.id));
 
-  const handleSelect = useCallback(
-    (id: string) => {
-      onSelect(id);
-      onOpenChange(false);
-    },
-    [onSelect, onOpenChange],
+  const [labelFilter, setLabelFilter] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState<string>('__all__');
+
+  const existingCategories = useMemo(
+    () =>
+      [...new Set(available.map((cp) => cp.category).filter((c): c is string => !!c))].sort(
+        (a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }),
+      ),
+    [available],
   );
+
+  const categoryFilterOptions = useMemo(
+    () => [
+      { value: '__all__', label: 'All categories' },
+      ...existingCategories.map((c) => ({ value: c, label: c })),
+    ],
+    [existingCategories],
+  );
+
+  const filteredAvailable = useMemo(() => {
+    let filtered = available;
+    if (labelFilter.trim()) {
+      filtered = filtered.filter((cp) =>
+        cp.label.toLowerCase().includes(labelFilter.toLowerCase().trim()),
+      );
+    }
+    if (categoryFilter && categoryFilter !== '__all__') {
+      filtered = filtered.filter((cp) => (cp.category?.trim() ?? '') === categoryFilter);
+    }
+    return [...filtered].sort((a, b) =>
+      a.label.localeCompare(b.label, undefined, { sensitivity: 'base' }),
+    );
+  }, [available, labelFilter, categoryFilter]);
+
+  const toggleSelected = useCallback((id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }, []);
+
+  const handleAddSelected = useCallback(async () => {
+    for (const id of selectedIds) {
+      await Promise.resolve(onSelect(id));
+    }
+    onOpenChange(false);
+  }, [selectedIds, onSelect, onOpenChange]);
 
   const handleCreate = useCallback(async () => {
     if (!createLabel.trim() || !activeRuleset) return;
@@ -96,7 +146,8 @@ export function CustomPropertyPicker({
         defaultValue,
       });
       if (id) {
-        handleSelect(id);
+        onSelect(id);
+        onOpenChange(false);
       }
       setCreateLabel('');
       setCreateCategory('');
@@ -112,7 +163,8 @@ export function CustomPropertyPicker({
     createDefaultValue,
     activeRuleset,
     createCustomProperty,
-    handleSelect,
+    onSelect,
+    onOpenChange,
   ]);
 
   const handleClose = useCallback(() => {
@@ -120,6 +172,9 @@ export function CustomPropertyPicker({
     setCreateLabel('');
     setCreateCategory('');
     setCreateDefaultValue('');
+    setLabelFilter('');
+    setCategoryFilter('__all__');
+    setSelectedIds(new Set());
     onOpenChange(false);
   }, [onOpenChange]);
 
@@ -134,27 +189,89 @@ export function CustomPropertyPicker({
         {mode === 'select' ? (
           <div className='flex flex-col gap-4'>
             {available.length === 0 ? (
-              <p className='text-sm text-muted-foreground'>
-                No unused custom properties in this ruleset. Create one first.
-              </p>
+              <>
+                <p className='text-sm text-muted-foreground'>
+                  No unused custom properties in this ruleset. Create one first.
+                </p>
+                <Button variant='outline' size='sm' className='gap-1 w-fit' onClick={() => setMode('create')}>
+                  <Plus className='h-4 w-4' />
+                  Create new
+                </Button>
+              </>
             ) : (
-              <div className='flex flex-col gap-1 max-h-[240px] overflow-auto'>
-                {available.map((cp) => (
+              <>
+                <div className='flex flex-col gap-2'>
+                  <div className='relative'>
+                    <Search className='absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground' />
+                    <Input
+                      placeholder='Filter by label'
+                      value={labelFilter}
+                      onChange={(e) => setLabelFilter(e.target.value)}
+                      className='h-8 pl-8'
+                      aria-label='Filter by label'
+                    />
+                  </div>
+                  <div className='grid gap-1.5'>
+                    <Label htmlFor='custom-property-picker-category' className='text-xs'>
+                      Category
+                    </Label>
+                    <Select
+                      value={categoryFilter}
+                      onValueChange={setCategoryFilter}>
+                      <SelectTrigger id='custom-property-picker-category' className='h-8'>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {categoryFilterOptions.map((opt) => (
+                          <SelectItem key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                {filteredAvailable.length === 0 ? (
+                  <p className='text-sm text-muted-foreground'>
+                    No properties match the filter.
+                  </p>
+                ) : (
+                  <div className='flex flex-col gap-1 max-h-[240px] overflow-auto'>
+                    {filteredAvailable.map((cp) => (
+                      <label
+                        key={cp.id}
+                        className='flex cursor-pointer items-center gap-2 rounded-md border px-3 py-2 hover:bg-accent/50 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring'>
+                        <Checkbox
+                          checked={selectedIds.has(cp.id)}
+                          onCheckedChange={() => toggleSelected(cp.id)}
+                          onKeyDown={(e) => e.key === 'Enter' && toggleSelected(cp.id)}
+                        />
+                        <span className='flex-1 text-left'>
+                          {cp.label}
+                          <span className='ml-2 text-xs text-muted-foreground'>({cp.type})</span>
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                )}
+                <DialogFooter>
                   <Button
-                    key={cp.id}
                     variant='outline'
-                    className='justify-start font-normal'
-                    onClick={() => handleSelect(cp.id)}>
-                    {cp.label}
-                    <span className='ml-2 text-xs text-muted-foreground'>({cp.type})</span>
+                    size='sm'
+                    className='gap-1'
+                    onClick={() => setMode('create')}>
+                    <Plus className='h-4 w-4' />
+                    Create new
                   </Button>
-                ))}
-              </div>
+                  <Button
+                    size='sm'
+                    onClick={handleAddSelected}
+                    disabled={selectedIds.size === 0}>
+                    Add {selectedIds.size > 0 ? `(${selectedIds.size})` : ''}
+                  </Button>
+                </DialogFooter>
+              </>
             )}
-            <Button variant='outline' size='sm' className='gap-1' onClick={() => setMode('create')}>
-              <Plus className='h-4 w-4' />
-              Create new
-            </Button>
           </div>
         ) : (
           <div className='flex flex-col gap-4'>
