@@ -19,6 +19,7 @@ export const ItemChart = () => {
               id={params.data.id}
               handleDelete={handleDelete}
               handleEdit={(id) => setSearchParams({ edit: id })}
+              item={params.data}
             />
           ),
         };

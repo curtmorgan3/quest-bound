@@ -64,10 +64,39 @@ export const useItemCustomProperties = (itemId: string | undefined) => {
     }
   };
 
+  const updateItemCustomProperty = async (
+    id: string,
+    updates: Partial<Pick<ItemCustomProperty, 'defaultValue'>>,
+  ) => {
+    try {
+      const updatedAt = new Date().toISOString();
+      if ('defaultValue' in updates && updates.defaultValue === undefined) {
+        await db.itemCustomProperties
+          .where('id')
+          .equals(id)
+          .modify((record) => {
+            delete (record as Record<string, unknown>).defaultValue;
+            record.updatedAt = updatedAt;
+          });
+      } else {
+        await db.itemCustomProperties.update(id, {
+          ...updates,
+          updatedAt,
+        });
+      }
+    } catch (e) {
+      handleError(e as Error, {
+        component: 'useItemCustomProperties/updateItemCustomProperty',
+        severity: 'medium',
+      });
+    }
+  };
+
   return {
     itemCustomProperties,
     customProperties,
     addItemCustomProperty,
     removeItemCustomProperty,
+    updateItemCustomProperty,
   };
 };

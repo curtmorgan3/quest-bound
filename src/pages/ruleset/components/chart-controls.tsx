@@ -10,16 +10,20 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { useScripts } from '@/lib/compass-api';
-import { FileCode, Pencil, Trash } from 'lucide-react';
+import type { Item } from '@/types';
+import { FileCode, Pencil, SlidersHorizontal, Trash } from 'lucide-react';
 import { Link, useParams } from 'react-router-dom';
+import { ManageItemCustomPropertiesPanel } from '../items/manage-item-custom-properties-panel';
 
 interface ChartControlsProps {
   id: string;
   handleDelete: (id: string) => void;
   handleEdit: (id: string) => void;
+  /** When provided (e.g. in item chart), shows a button to manage item custom properties. */
+  item?: Item;
 }
 
-export const ChartControls = ({ id, handleDelete, handleEdit }: ChartControlsProps) => {
+export const ChartControls = ({ id, handleDelete, handleEdit, item }: ChartControlsProps) => {
   const { rulesetId } = useParams<{ rulesetId: string }>();
   const { getScriptIdForEntity } = useScripts();
   const scriptId = getScriptIdForEntity(id);
@@ -72,6 +76,17 @@ export const ChartControls = ({ id, handleDelete, handleEdit }: ChartControlsPro
           className='text-neutral-400 h-[18px] w-[18px] clickable'
         />
       </DialogTrigger>
+      {item && (
+        <ManageItemCustomPropertiesPanel
+          item={item}
+          trigger={
+            <SlidersHorizontal
+              className='text-neutral-400 h-[18px] w-[18px] clickable'
+              aria-label='Manage custom properties'
+            />
+          }
+        />
+      )}
       {scriptId && (
         <Link to={`/rulesets/${rulesetId}/scripts/${scriptId}`}>
           <FileCode className='text-neutral-400 h-[18px] w-[18px] clickable' />
