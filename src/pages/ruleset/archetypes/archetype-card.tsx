@@ -19,6 +19,7 @@ import { useFeatureFlag } from '@/hooks/use-feature-flag';
 import { useActiveRuleset } from '@/lib/compass-api';
 import type { Archetype } from '@/types';
 import { ChevronDown, ChevronUp, FileCode, Pencil, Trash2 } from 'lucide-react';
+import { ManageArchetypeCustomPropertiesModal } from './manage-archetype-custom-properties-modal';
 import { Link, useNavigate } from 'react-router-dom';
 
 export interface ArchetypeCardProps {
@@ -252,6 +253,7 @@ export function ArchetypeCard({
             data-testid='archetype-edit-default-sheet'>
             Edit Default Sheet
           </Button>
+          <ManageArchetypeCustomPropertiesModal archetype={archetype} />
           {archetype.scriptId && (
             <Button variant='ghost' size='sm' asChild aria-label='View script'>
               <Link to={`/rulesets/${rulesetId}/scripts/${archetype.scriptId}`}>

@@ -31,14 +31,15 @@ export const useCustomProperties = (rulesetId: string | undefined) => {
     type: CustomPropertyType;
     category?: string;
     defaultValue?: string | number | boolean;
-  }) => {
-    if (!rulesetId) return;
+  }): Promise<string | undefined> => {
+    if (!rulesetId) return undefined;
     const now = new Date().toISOString();
+    const id = crypto.randomUUID();
     const defaultValue =
       data.defaultValue ?? getTypeDefault(data.type);
     try {
       await db.customProperties.add({
-        id: crypto.randomUUID(),
+        id,
         rulesetId,
         label: data.label.trim(),
         type: data.type,
@@ -47,11 +48,13 @@ export const useCustomProperties = (rulesetId: string | undefined) => {
         createdAt: now,
         updatedAt: now,
       } as CustomProperty);
+      return id;
     } catch (e) {
       handleError(e as Error, {
         component: 'useCustomProperties/createCustomProperty',
         severity: 'medium',
       });
+      return undefined;
     }
   };
 

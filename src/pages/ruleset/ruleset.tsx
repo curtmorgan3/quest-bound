@@ -12,7 +12,7 @@ import { ChartSelect } from './charts';
 import { ChartImport, Export, Import } from './components';
 import { BaseCreate } from './create';
 import { Documents } from './documents';
-import { BulkCustomProperties } from './items/bulk-custom-properties';
+import { ManageItemCustomPropertiesModal } from './items/manage-item-custom-properties-modal';
 import { ItemChart } from './items/item-chart';
 import { PageSelect } from './pages';
 import { WindowSelect } from './windows';
@@ -146,7 +146,7 @@ export const Ruleset = ({
               <ChartImport chartId={chartId} onLoadingChange={setIsImporting} />
             </div>
           )}
-          {page === 'items' && <BulkCustomProperties />}
+          {page === 'items' && <ManageItemCustomPropertiesModal />}
           {page !== 'charts' &&
             page !== 'windows' &&
             page !== 'documents' &&
