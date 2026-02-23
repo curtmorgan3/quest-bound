@@ -12,17 +12,20 @@ export function registerItemDbHooks(db: DB) {
     }
   });
 
-  // Delete associated asset when an item is deleted
-  db.items.hook('deleting', (_primKey, obj) => {
-    if (obj?.assetId) {
-      setTimeout(async () => {
-        try {
-          await db.assets.delete(obj.assetId);
-        } catch (error) {
-          console.error('Failed to delete asset for item:', error);
+  // Delete itemCustomProperties and associated asset when an item is deleted
+  db.items.hook('deleting', (primKey, obj) => {
+    const itemId = primKey as string;
+    const assetId = obj?.assetId;
+    setTimeout(async () => {
+      try {
+        await db.itemCustomProperties.where('itemId').equals(itemId).delete();
+        if (assetId) {
+          await db.assets.delete(assetId);
         }
-      }, 0);
-    }
+      } catch (error) {
+        console.error('Failed to delete item custom properties or asset for item:', error);
+      }
+    }, 0);
   });
 
   // Delete old asset when an item's asset is removed

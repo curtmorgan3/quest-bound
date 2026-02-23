@@ -8,8 +8,9 @@ export function registerArchetypeDbHooks(db: DB) {
 
     setTimeout(async () => {
       try {
-        // Delete all CharacterArchetype rows for this archetype
+        // Delete all CharacterArchetype and ArchetypeCustomProperty rows for this archetype
         await db.characterArchetypes.where('archetypeId').equals(archetypeId).delete();
+        await db.archetypeCustomProperties.where('archetypeId').equals(archetypeId).delete();
 
         // Clear Script.entityId for scripts that pointed to this archetype
         const scripts = await db.scripts

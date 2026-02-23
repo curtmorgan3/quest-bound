@@ -87,6 +87,10 @@ export function registerRulesetDbHooks(db: DB) {
 
         // Delete ruleset-level entities
         await db.attributes.where('rulesetId').equals(rulesetId).delete();
+        const items = await db.items.where('rulesetId').equals(rulesetId).toArray();
+        for (const item of items) {
+          await db.itemCustomProperties.where('itemId').equals(item.id).delete();
+        }
         await db.items.where('rulesetId').equals(rulesetId).delete();
         await db.actions.where('rulesetId').equals(rulesetId).delete();
         await db.charts.where('rulesetId').equals(rulesetId).delete();
@@ -101,10 +105,14 @@ export function registerRulesetDbHooks(db: DB) {
         await db.scriptLogs.where('rulesetId').equals(rulesetId).delete();
         await db.dependencyGraphNodes.where('rulesetId').equals(rulesetId).delete();
 
-        // Delete characterArchetypes for archetypes in this ruleset, then delete archetypes
+        // Delete custom properties for this ruleset
+        await db.customProperties.where('rulesetId').equals(rulesetId).delete();
+
+        // Delete characterArchetypes and archetypeCustomProperties for archetypes in this ruleset, then delete archetypes
         const archetypes = await db.archetypes.where('rulesetId').equals(rulesetId).toArray();
         for (const archetype of archetypes) {
           await db.characterArchetypes.where('archetypeId').equals(archetype.id).delete();
+          await db.archetypeCustomProperties.where('archetypeId').equals(archetype.id).delete();
         }
         await db.archetypes.where('rulesetId').equals(rulesetId).delete();
 

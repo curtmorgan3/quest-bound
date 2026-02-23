@@ -71,6 +71,27 @@ export type Chart = BaseDetails & {
   moduleName?: string;
 };
 
+export type CustomPropertyType = 'string' | 'number' | 'boolean';
+
+export type CustomProperty = BaseDetails & {
+  rulesetId: string;
+  label: string;
+  type: CustomPropertyType;
+  category?: string;
+  /** Optional in UI; when absent, use '', 0, or false by type. */
+  defaultValue?: string | number | boolean;
+};
+
+export type ArchetypeCustomProperty = BaseDetails & {
+  archetypeId: string;
+  customPropertyId: string;
+};
+
+export type ItemCustomProperty = BaseDetails & {
+  itemId: string;
+  customPropertyId: string;
+};
+
 export type Character = BaseDetails & {
   userId: string;
   rulesetId: string;
@@ -93,6 +114,8 @@ export type Character = BaseDetails & {
   moduleName?: string;
   /** Asset IDs for map sprites (stacked by z-index). */
   sprites?: string[];
+  /** Keyed by customPropertyId. Instantiated from first archetype's ArchetypeCustomProperties at creation. */
+  customProperties?: Record<string, string | number | boolean>;
 };
 
 export type CharacterAttribute = Attribute & {
@@ -266,6 +289,7 @@ export type Item = BaseDetails & {
   assetId?: string | null;
   image?: string | null;
   scriptId?: string | null;
+  /** @deprecated Use ItemCustomProperty + CustomProperty instead. Kept for backward compatibility until migration. */
   customProperties?: Record<string, string | number | boolean>;
   mapHeight?: number;
   mapWidth?: number;
@@ -294,7 +318,7 @@ export type InventoryItem = BaseDetails & {
   label?: string; // User provided custom name
   value?: string | number | boolean;
   isEquipped?: boolean;
-  /** Per-instance overrides for item definition custom properties (e.g. armor_value). */
+  /** Per-instance values keyed by customPropertyId. Instantiated from item's ItemCustomProperties when added to inventory. */
   customProperties?: Record<string, string | number | boolean>;
 };
 

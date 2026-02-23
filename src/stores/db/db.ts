@@ -1,6 +1,7 @@
 import type {
   Action,
   Archetype,
+  ArchetypeCustomProperty,
   Asset,
   Attribute,
   Campaign,
@@ -15,6 +16,7 @@ import type {
   CharacterWindow,
   Chart,
   Component,
+  CustomProperty,
   DependencyGraphNode,
   DiceRoll,
   Document,
@@ -22,6 +24,7 @@ import type {
   Inventory,
   InventoryItem,
   Item,
+  ItemCustomProperty,
   Location,
   Page,
   Ruleset,
@@ -74,6 +77,9 @@ const db = new Dexie('qbdb') as Dexie & {
   dependencyGraphNodes: EntityTable<DependencyGraphNode, 'id'>;
   archetypes: EntityTable<Archetype, 'id'>;
   characterArchetypes: EntityTable<CharacterArchetype, 'id'>;
+  customProperties: EntityTable<CustomProperty, 'id'>;
+  archetypeCustomProperties: EntityTable<ArchetypeCustomProperty, 'id'>;
+  itemCustomProperties: EntityTable<ItemCustomProperty, 'id'>;
   worlds: EntityTable<World, 'id'>;
   tilemaps: EntityTable<Tilemap, 'id'>;
   tiles: EntityTable<Tile, 'id'>;
@@ -85,7 +91,7 @@ const db = new Dexie('qbdb') as Dexie & {
   campaignEventLocations: EntityTable<CampaignEventLocation, 'id'>;
 };
 
-db.version(40).stores(dbSchema);
+db.version(41).stores(dbSchema);
 
 db.version(39).stores(dbSchema).upgrade((tx) => {
   // Create a Campaign for each world that had rulesetId (upgrading from pre-Phase-7)

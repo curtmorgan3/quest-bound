@@ -14,6 +14,9 @@ export type DB = Dexie & {
   fonts: Dexie.Table;
   characters: Dexie.Table;
   characterArchetypes: Dexie.Table;
+  customProperties: Dexie.Table;
+  archetypeCustomProperties: Dexie.Table;
+  itemCustomProperties: Dexie.Table;
   inventories: Dexie.Table;
   inventoryItems: Dexie.Table;
   characterAttributes: Dexie.Table;

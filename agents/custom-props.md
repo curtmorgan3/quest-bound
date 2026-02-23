@@ -135,7 +135,7 @@ Let's add a `defaultValue` field on the CustomProperty model. In the UI, it will
    - Add `CustomProperty`, `ArchetypeCustomProperty`, `ItemCustomProperty` types (as in spec)
    - Add `customProperties?: Record<string, string | number | boolean>` to `Character` (keyed by `customPropertyId`)
    - Update `InventoryItem.customProperties` type comment to note it's keyed by `customPropertyId`
-   - Remove `customProperties` from `Item` type
+   - Mark `customProperties` on `Item` as `@deprecated` (kept for backward compatibility until Phase 8)
 
 2. **Add Dexie schema** (`src/stores/db/schema.ts`, `src/stores/db/db.ts`)
    - Add tables: `customProperties`, `archetypeCustomProperties`, `itemCustomProperties`
