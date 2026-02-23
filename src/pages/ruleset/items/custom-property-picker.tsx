@@ -15,10 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components';
-import {
-  useCustomProperties,
-  useActiveRuleset,
-} from '@/lib/compass-api';
+import { useActiveRuleset, useCustomProperties } from '@/lib/compass-api';
 import type { CustomPropertyType } from '@/types';
 import { Plus } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
@@ -138,7 +135,7 @@ export function CustomPropertyPicker({
           <div className='flex flex-col gap-4'>
             {available.length === 0 ? (
               <p className='text-sm text-muted-foreground'>
-                No custom properties in this ruleset. Create one first.
+                No unused custom properties in this ruleset. Create one first.
               </p>
             ) : (
               <div className='flex flex-col gap-1 max-h-[240px] overflow-auto'>
@@ -154,11 +151,7 @@ export function CustomPropertyPicker({
                 ))}
               </div>
             )}
-            <Button
-              variant='outline'
-              size='sm'
-              className='gap-1'
-              onClick={() => setMode('create')}>
+            <Button variant='outline' size='sm' className='gap-1' onClick={() => setMode('create')}>
               <Plus className='h-4 w-4' />
               Create new
             </Button>
@@ -207,9 +200,7 @@ export function CustomPropertyPicker({
             <div className='grid gap-2'>
               <Label>Default value (optional)</Label>
               {createType === 'boolean' ? (
-                <Select
-                  value={createDefaultValue || 'false'}
-                  onValueChange={setCreateDefaultValue}>
+                <Select value={createDefaultValue || 'false'} onValueChange={setCreateDefaultValue}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -240,9 +231,7 @@ export function CustomPropertyPicker({
               <Button variant='outline' onClick={() => setMode('select')}>
                 Back
               </Button>
-              <Button
-                onClick={handleCreate}
-                disabled={!createLabel.trim() || creating}>
+              <Button onClick={handleCreate} disabled={!createLabel.trim() || creating}>
                 {creating ? 'Creating…' : 'Create'}
               </Button>
             </DialogFooter>

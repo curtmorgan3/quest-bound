@@ -67,10 +67,39 @@ export const useArchetypeCustomProperties = (archetypeId: string | undefined) =>
     }
   };
 
+  const updateArchetypeCustomProperty = async (
+    id: string,
+    updates: Partial<Pick<ArchetypeCustomProperty, 'defaultValue'>>,
+  ) => {
+    try {
+      const updatedAt = new Date().toISOString();
+      if ('defaultValue' in updates && updates.defaultValue === undefined) {
+        await db.archetypeCustomProperties
+          .where('id')
+          .equals(id)
+          .modify((record) => {
+            delete (record as Record<string, unknown>).defaultValue;
+            record.updatedAt = updatedAt;
+          });
+      } else {
+        await db.archetypeCustomProperties.update(id, {
+          ...updates,
+          updatedAt,
+        });
+      }
+    } catch (e) {
+      handleError(e as Error, {
+        component: 'useArchetypeCustomProperties/updateArchetypeCustomProperty',
+        severity: 'medium',
+      });
+    }
+  };
+
   return {
     archetypeCustomProperties,
     customProperties,
     addArchetypeCustomProperty,
     removeArchetypeCustomProperty,
+    updateArchetypeCustomProperty,
   };
 };

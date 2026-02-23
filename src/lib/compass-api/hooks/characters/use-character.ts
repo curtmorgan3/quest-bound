@@ -160,19 +160,21 @@ export const useCharacter = (_id?: string) => {
           .where('archetypeId')
           .equals(firstNonDefaultArchetype.id)
           .toArray();
-        const customProps = await Promise.all(
-          archetypeCustomProps.map((acp) => db.customProperties.get(acp.customPropertyId)),
-        );
-        for (const cp of customProps) {
+        for (const acp of archetypeCustomProps) {
+          const cp = await db.customProperties.get(acp.customPropertyId);
           if (cp) {
             const defaultValue =
-              cp.defaultValue !== undefined
-                ? cp.defaultValue
-                : cp.type === 'number'
-                  ? 0
-                  : cp.type === 'boolean'
-                    ? false
-                    : '';
+              acp.defaultValue !== undefined
+                ? acp.defaultValue
+                : cp.defaultValue !== undefined
+                  ? cp.defaultValue
+                  : cp.type === 'number'
+                    ? 0
+                    : cp.type === 'boolean'
+                      ? false
+                      : cp.type === 'color'
+                        ? ''
+                        : '';
             customProperties[cp.id] = defaultValue;
           }
         }

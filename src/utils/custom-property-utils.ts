@@ -27,16 +27,16 @@ export async function buildItemCustomProperties(
     .where('itemId')
     .equals(itemId)
     .toArray();
-  const customProps = await Promise.all(
-    itemCustomProps.map((icp) => db.customProperties.get(icp.customPropertyId)),
-  );
   const customProperties: Record<string, string | number | boolean> = {};
-  for (const cp of customProps) {
+  for (const icp of itemCustomProps) {
+    const cp = await db.customProperties.get(icp.customPropertyId);
     if (cp) {
       const defaultValue =
-        cp.defaultValue !== undefined
-          ? cp.defaultValue
-          : getTypeDefault(cp.type);
+        icp.defaultValue !== undefined
+          ? icp.defaultValue
+          : cp.defaultValue !== undefined
+            ? cp.defaultValue
+            : getTypeDefault(cp.type);
       customProperties[cp.id] = defaultValue;
     }
   }

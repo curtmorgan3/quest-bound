@@ -85,11 +85,15 @@ export type CustomProperty = BaseDetails & {
 export type ArchetypeCustomProperty = BaseDetails & {
   archetypeId: string;
   customPropertyId: string;
+  /** Override for CustomProperty.defaultValue when creating characters. */
+  defaultValue?: string | number | boolean;
 };
 
 export type ItemCustomProperty = BaseDetails & {
   itemId: string;
   customPropertyId: string;
+  /** Override for CustomProperty.defaultValue when adding item to inventory. */
+  defaultValue?: string | number | boolean;
 };
 
 export type Character = BaseDetails & {
