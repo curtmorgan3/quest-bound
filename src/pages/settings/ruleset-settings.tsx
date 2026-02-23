@@ -35,9 +35,10 @@ import {
   removeModuleFromRuleset,
 } from '@/lib/compass-api/hooks/export/remove-module-from-ruleset';
 import type { Ruleset, RulesetModuleEntry } from '@/types';
-import { Download, Package, Plus, Trash, Upload } from 'lucide-react';
+import { Download, Package, Plus, Sliders, Trash, Upload } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import type { RGBColor } from 'react-color';
+import { Link } from 'react-router-dom';
 
 function rgbToHex(r: number, g: number, b: number): string {
   return (
@@ -79,9 +80,10 @@ export const RulesetSettings = ({ activeRuleset }: RulesetSettingsProps) => {
   } | null>(null);
   const [removingModule, setRemovingModule] = useState(false);
   const [conflictDialogOpen, setConflictDialogOpen] = useState(false);
-  const [conflictDetails, setConflictDetails] = useState<
-    Record<string, Array<{ id: string; title?: string }>> | null
-  >(null);
+  const [conflictDetails, setConflictDetails] = useState<Record<
+    string,
+    Array<{ id: string; title?: string }>
+  > | null>(null);
 
   const [title, setTitle] = useState(activeRuleset.title);
   const [version, setVersion] = useState(activeRuleset.version);
@@ -260,6 +262,7 @@ export const RulesetSettings = ({ activeRuleset }: RulesetSettingsProps) => {
     <Tabs defaultValue='details' className='flex flex-col gap-4'>
       <TabsList>
         <TabsTrigger value='details'>Details</TabsTrigger>
+        <TabsTrigger value='defaults'>Defaults</TabsTrigger>
         <TabsTrigger value='modules'>Modules</TabsTrigger>
       </TabsList>
 
@@ -297,7 +300,55 @@ export const RulesetSettings = ({ activeRuleset }: RulesetSettingsProps) => {
 
           <DescriptionEditor className='flex-1' value={description} onChange={setDescription} />
         </div>
+      </TabsContent>
 
+      <TabsContent value='defaults' className='flex flex-col gap-6 mt-0'>
+        <div className='flex flex-col gap-3'>
+          <Label>Custom Properties</Label>
+          <p className='text-sm text-muted-foreground'>
+            Define custom properties that can be applied to Archetypes and Items
+          </p>
+          <Button variant='outline' size='sm' className='gap-2 w-fit' asChild>
+            <Link to={`/rulesets/${activeRuleset.id}/custom-properties`}>
+              <Sliders className='h-4 w-4' />
+              Manage Custom Properties
+            </Link>
+          </Button>
+        </div>
+        <div className='flex flex-col gap-3'>
+          <Label>Fonts</Label>
+          <div className='flex flex-col gap-2'>
+            {fonts.map((font) => (
+              <div
+                key={font.id}
+                className='flex items-center justify-between bg-muted px-3 py-2 rounded-md'>
+                <span className='text-sm'>{font.label}</span>
+                <Button
+                  variant='ghost'
+                  size='sm'
+                  onClick={() => deleteFont(font.id)}
+                  className='h-8 w-8 p-0'>
+                  <Trash className='h-4 w-4 text-destructive' />
+                </Button>
+              </div>
+            ))}
+          </div>
+          <Button
+            variant='outline'
+            className='gap-2 w-fit'
+            disabled={fontLoading}
+            onClick={() => fontInputRef.current?.click()}>
+            <Upload className='h-4 w-4' />
+            {fontLoading ? 'Uploading...' : 'Upload Font'}
+          </Button>
+          <input
+            ref={fontInputRef}
+            type='file'
+            accept='.ttf,.otf,.woff,.woff2'
+            className='hidden'
+            onChange={handleFontUpload}
+          />
+        </div>
         <div className='flex flex-col gap-3'>
           <Label>Palette</Label>
           <div className='flex flex-col gap-4'>
@@ -347,41 +398,6 @@ export const RulesetSettings = ({ activeRuleset }: RulesetSettingsProps) => {
             </Popover>
           </div>
         </div>
-
-        <div className='flex flex-col gap-3'>
-          <Label>Fonts</Label>
-          <div className='flex flex-col gap-2'>
-            {fonts.map((font) => (
-              <div
-                key={font.id}
-                className='flex items-center justify-between bg-muted px-3 py-2 rounded-md'>
-                <span className='text-sm'>{font.label}</span>
-                <Button
-                  variant='ghost'
-                  size='sm'
-                  onClick={() => deleteFont(font.id)}
-                  className='h-8 w-8 p-0'>
-                  <Trash className='h-4 w-4 text-destructive' />
-                </Button>
-              </div>
-            ))}
-          </div>
-          <Button
-            variant='outline'
-            className='gap-2 w-fit'
-            disabled={fontLoading}
-            onClick={() => fontInputRef.current?.click()}>
-            <Upload className='h-4 w-4' />
-            {fontLoading ? 'Uploading...' : 'Upload Font'}
-          </Button>
-          <input
-            ref={fontInputRef}
-            type='file'
-            accept='.ttf,.otf,.woff,.woff2'
-            className='hidden'
-            onChange={handleFontUpload}
-          />
-        </div>
       </TabsContent>
 
       <TabsContent value='modules' className='flex flex-col gap-6 mt-0'>
@@ -414,7 +430,11 @@ export const RulesetSettings = ({ activeRuleset }: RulesetSettingsProps) => {
                     key={mod.id}
                     className='flex items-center gap-3 rounded-md border border-border bg-muted/50 px-3 py-2'>
                     {mod.image ? (
-                      <img src={mod.image} alt='' className='h-8 w-8 shrink-0 rounded object-cover' />
+                      <img
+                        src={mod.image}
+                        alt=''
+                        className='h-8 w-8 shrink-0 rounded object-cover'
+                      />
                     ) : (
                       <div className='flex h-8 w-8 shrink-0 items-center justify-center rounded bg-muted'>
                         <Package className='h-4 w-4 text-muted-foreground' />

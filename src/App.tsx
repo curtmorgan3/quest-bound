@@ -12,6 +12,7 @@ import {
   DevTools,
   ErrorPage,
   LocationEditor,
+  ManageCustomProperties,
   Ruleset,
   RulesetPageEditorPage,
   Rulesets,
@@ -77,6 +78,11 @@ function CompassRoutes() {
             <Route path={`/rulesets/:rulesetId/scripts`} element={<ScriptsIndex />} />
 
             <Route path={`/rulesets/:rulesetId/scripts/:scriptId`} element={<ScriptEditorPage />} />
+
+            <Route
+              path={`/rulesets/:rulesetId/custom-properties`}
+              element={<ManageCustomProperties />}
+            />
 
             {campaignsEnabled && (
               <>

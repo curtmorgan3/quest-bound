@@ -26,7 +26,7 @@ import {
   CharacterInventoryPanelContext,
   DiceContext,
 } from '@/stores';
-import { useContext, useEffect } from 'react';
+import { useContext, useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Avatar, AvatarFallback, AvatarImage } from '../../ui/avatar';
 import { Button } from '../../ui/button';
@@ -89,6 +89,12 @@ export function AppSidebar() {
 
   const helpDocsUrl = `https://docs.questbound.com/docs/${docsPageFromRoute(location.pathname)}`;
 
+  const [settingsOpen, setSettingsOpen] = useState(false);
+
+  useEffect(() => {
+    setSettingsOpen(false);
+  }, [location.pathname]);
+
   const sidebarContent = character ? (
     <CharacterSidebar />
   ) : isWorldsRoute && worldsEnabled ? (
@@ -100,7 +106,7 @@ export function AppSidebar() {
   );
 
   return (
-    <Drawer direction='bottom'>
+    <Drawer direction='bottom' open={settingsOpen} onOpenChange={setSettingsOpen}>
       <Sidebar collapsible='icon'>
         <SidebarContent>{sidebarContent}</SidebarContent>
         <SidebarFooter>

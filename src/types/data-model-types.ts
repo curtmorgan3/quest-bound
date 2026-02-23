@@ -71,7 +71,7 @@ export type Chart = BaseDetails & {
   moduleName?: string;
 };
 
-export type CustomPropertyType = 'string' | 'number' | 'boolean';
+export type CustomPropertyType = 'string' | 'number' | 'boolean' | 'color';
 
 export type CustomProperty = BaseDetails & {
   rulesetId: string;

@@ -1,5 +1,6 @@
 import {
   Button,
+  CategoryField,
   Dialog,
   DialogContent,
   DialogFooter,
@@ -7,6 +8,7 @@ import {
   DialogTitle,
   Input,
   Label,
+  RulesetColorPicker,
   Select,
   SelectContent,
   SelectItem,
@@ -19,15 +21,30 @@ import {
 } from '@/lib/compass-api';
 import type { CustomPropertyType } from '@/types';
 import { Plus } from 'lucide-react';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import type { RGBColor } from 'react-color';
 
-const PROP_TYPES: CustomPropertyType[] = ['string', 'number', 'boolean'];
+const PROP_TYPES: CustomPropertyType[] = ['string', 'number', 'boolean', 'color'];
+
+function rgbToHex(r: number, g: number, b: number): string {
+  return (
+    '#' +
+    [r, g, b]
+      .map((x) => {
+        const hex = Math.round(Math.max(0, Math.min(255, x))).toString(16);
+        return hex.length === 1 ? '0' + hex : hex;
+      })
+      .join('')
+  );
+}
 
 interface CustomPropertyPickerProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSelect: (customPropertyId: string) => void;
   excludeIds?: string[];
+  /** When set, open directly in create mode instead of select. */
+  initialMode?: 'select' | 'create';
 }
 
 export function CustomPropertyPicker({
@@ -35,10 +52,16 @@ export function CustomPropertyPicker({
   onOpenChange,
   onSelect,
   excludeIds = [],
+  initialMode = 'select',
 }: CustomPropertyPickerProps) {
   const { activeRuleset } = useActiveRuleset();
   const { customProperties, createCustomProperty } = useCustomProperties(activeRuleset?.id);
-  const [mode, setMode] = useState<'select' | 'create'>('select');
+  const [mode, setMode] = useState<'select' | 'create'>(initialMode);
+
+  useEffect(() => {
+    if (open) setMode(initialMode);
+  }, [open, initialMode]);
+
   const [createLabel, setCreateLabel] = useState('');
   const [createType, setCreateType] = useState<CustomPropertyType>('string');
   const [createCategory, setCreateCategory] = useState('');
@@ -66,7 +89,9 @@ export function CustomPropertyPicker({
             : Number(createDefaultValue)
           : createType === 'boolean'
             ? createDefaultValue === 'true'
-            : createDefaultValue;
+            : createType === 'color'
+              ? createDefaultValue || ''
+              : createDefaultValue;
       const id = await createCustomProperty({
         label: createLabel.trim(),
         type: createType,
@@ -152,7 +177,10 @@ export function CustomPropertyPicker({
               <Label>Type</Label>
               <Select
                 value={createType}
-                onValueChange={(v) => setCreateType(v as CustomPropertyType)}>
+                onValueChange={(v) => {
+                  setCreateType(v as CustomPropertyType);
+                  setCreateDefaultValue('');
+                }}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -165,14 +193,17 @@ export function CustomPropertyPicker({
                 </SelectContent>
               </Select>
             </div>
-            <div className='grid gap-2'>
-              <Label>Category (optional)</Label>
-              <Input
-                placeholder='e.g. Combat'
-                value={createCategory}
-                onChange={(e) => setCreateCategory(e.target.value)}
-              />
-            </div>
+            <CategoryField
+              value={createCategory || null}
+              onChange={(v) => setCreateCategory(v ?? '')}
+              existingCategories={[
+                ...new Set(
+                  customProperties.map((cp) => cp.category).filter((c): c is string => !!c),
+                ),
+              ]}
+              placeholder='e.g. Combat'
+              label='Category (optional)'
+            />
             <div className='grid gap-2'>
               <Label>Default value (optional)</Label>
               {createType === 'boolean' ? (
@@ -187,6 +218,15 @@ export function CustomPropertyPicker({
                     <SelectItem value='true'>true</SelectItem>
                   </SelectContent>
                 </Select>
+              ) : createType === 'color' ? (
+                <RulesetColorPicker
+                  color={createDefaultValue || undefined}
+                  label='Default color'
+                  disableAlpha
+                  onUpdate={(color: RGBColor) =>
+                    setCreateDefaultValue(rgbToHex(color.r, color.g, color.b))
+                  }
+                />
               ) : (
                 <Input
                   type={createType === 'number' ? 'number' : 'text'}

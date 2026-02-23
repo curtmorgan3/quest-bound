@@ -250,3 +250,5 @@ Let's add a `defaultValue` field on the CustomProperty model. In the UI, it will
 
 - **`getTypeDefault(type: 'string' | 'number' | 'boolean')`**: return `''`, `0`, or `false`
 - **`resolveCustomPropertyId(customProperties: CustomProperty[], label: string): string | undefined`**: find by label, return id
+
+## Implementation Follow Up
