@@ -149,6 +149,37 @@ export const useCharacter = (_id?: string) => {
         sprites: data.sprites ?? firstArchetype?.sprites ?? [],
       } as Character);
 
+      // Instantiate customProperties from first non-default archetype's ArchetypeCustomProperties
+      const firstNonDefaultArchetype = archetypeRecords
+        .filter((a) => !a.isDefault)
+        .sort((a, b) => a.loadOrder - b.loadOrder)[0];
+      if (firstNonDefaultArchetype) {
+        const archetypeCustomProps = await db.archetypeCustomProperties
+          .where('archetypeId')
+          .equals(firstNonDefaultArchetype.id)
+          .toArray();
+        const customProps = await Promise.all(
+          archetypeCustomProps.map((acp) => db.customProperties.get(acp.customPropertyId)),
+        );
+        const customProperties: Record<string, string | number | boolean> = {};
+        for (const cp of customProps) {
+          if (cp) {
+            const defaultValue =
+              cp.defaultValue !== undefined
+                ? cp.defaultValue
+                : cp.type === 'number'
+                  ? 0
+                  : cp.type === 'boolean'
+                    ? false
+                    : '';
+            customProperties[cp.id] = defaultValue;
+          }
+        }
+        if (Object.keys(customProperties).length > 0) {
+          await db.characters.update(characterId, { customProperties });
+        }
+      }
+
       await duplicateCharacterFromTemplate(testCharacter.id, characterId, inventoryId);
 
       // Add CharacterArchetype rows in sorted order
