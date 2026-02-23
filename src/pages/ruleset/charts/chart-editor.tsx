@@ -29,7 +29,9 @@ function normalizeFieldName(name: string) {
 export const ChartEditor = ({ chartId, readOnly = false, rulesetId }: ChartEditorProps) => {
   const { charts, updateChart } = useCharts(rulesetId);
   const [editColumnsOpen, setEditColumnsOpen] = useState(false);
-  const [editedHeaders, setEditedHeaders] = useState<string[]>([]);
+  const [editedColumns, setEditedColumns] = useState<Array<{ header: string; originalIndex: number }>>(
+    [],
+  );
 
   const chart = charts.find((c) => c.id === chartId);
   if (!chart) return null;
@@ -65,24 +67,26 @@ export const ChartEditor = ({ chartId, readOnly = false, rulesetId }: ChartEdito
   };
 
   const openEditColumns = () => {
-    setEditedHeaders([...headerRow]);
+    setEditedColumns(
+      headerRow.map((header, originalIndex) => ({ header, originalIndex })),
+    );
     setEditColumnsOpen(true);
   };
 
   const updateHeaderAt = (index: number, value: string) => {
-    setEditedHeaders((prev) => {
+    setEditedColumns((prev) => {
       const next = [...prev];
-      next[index] = value;
+      next[index] = { ...next[index], header: value };
       return next;
     });
   };
 
   const removeHeaderAt = (index: number) => {
-    setEditedHeaders((prev) => prev.filter((_, i) => i !== index));
+    setEditedColumns((prev) => prev.filter((_, i) => i !== index));
   };
 
   const moveHeader = (index: number, direction: 'up' | 'down') => {
-    setEditedHeaders((prev) => {
+    setEditedColumns((prev) => {
       const next = [...prev];
       const target = direction === 'up' ? index - 1 : index + 1;
       if (target < 0 || target >= next.length) return prev;
@@ -92,18 +96,18 @@ export const ChartEditor = ({ chartId, readOnly = false, rulesetId }: ChartEdito
   };
 
   const addHeader = () => {
-    setEditedHeaders((prev) => [...prev, 'New column']);
+    setEditedColumns((prev) => [...prev, { header: 'New column', originalIndex: -1 }]);
   };
 
   const saveEditedColumns = () => {
-    const newHeaders = editedHeaders.map((h) => h.trim() || 'New column');
+    const newHeaders = editedColumns.map((c) => c.header.trim() || 'New column');
     const dataRows = chartData.slice(1);
     const newDataRows = dataRows.map((oldRow) =>
-      newHeaders.map((newH) => {
-        const oldIndex = headerRow.indexOf(newH);
-        if (oldIndex >= 0 && oldIndex < oldRow.length) return oldRow[oldIndex];
-        return '';
-      }),
+      editedColumns.map((col) =>
+        col.originalIndex >= 0 && col.originalIndex < oldRow.length
+          ? (oldRow[col.originalIndex] ?? '')
+          : '',
+      ),
     );
     const updatedChartData = [newHeaders, ...newDataRows];
     updateChart(chartId, { data: JSON.stringify(updatedChartData) });
@@ -190,10 +194,10 @@ export const ChartEditor = ({ chartId, readOnly = false, rulesetId }: ChartEdito
             <DialogTitle>Edit columns</DialogTitle>
           </DialogHeader>
           <div className='flex flex-col gap-2 py-4'>
-            {editedHeaders.map((header, index) => (
+            {editedColumns.map((col, index) => (
               <div key={index} className='flex items-center gap-2'>
                 <Input
-                  value={header}
+                  value={col.header}
                   onChange={(e) => updateHeaderAt(index, e.target.value)}
                   placeholder='Column name'
                   className='flex-1'
@@ -215,7 +219,7 @@ export const ChartEditor = ({ chartId, readOnly = false, rulesetId }: ChartEdito
                     size='icon'
                     className='h-8 w-8'
                     onClick={() => moveHeader(index, 'down')}
-                    disabled={index === editedHeaders.length - 1}
+                    disabled={index === editedColumns.length - 1}
                     aria-label='Move down'>
                     <ChevronDown className='h-4 w-4' />
                   </Button>
@@ -240,7 +244,7 @@ export const ChartEditor = ({ chartId, readOnly = false, rulesetId }: ChartEdito
             <Button type='button' variant='outline' onClick={() => setEditColumnsOpen(false)}>
               Cancel
             </Button>
-            <Button type='button' onClick={saveEditedColumns} disabled={editedHeaders.length === 0}>
+            <Button type='button' onClick={saveEditedColumns} disabled={editedColumns.length === 0}>
               Save
             </Button>
           </DialogFooter>
