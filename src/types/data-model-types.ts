@@ -289,8 +289,6 @@ export type Item = BaseDetails & {
   assetId?: string | null;
   image?: string | null;
   scriptId?: string | null;
-  /** @deprecated Use ItemCustomProperty + CustomProperty instead. Kept for backward compatibility until migration. */
-  customProperties?: Record<string, string | number | boolean>;
   mapHeight?: number;
   mapWidth?: number;
   /** Asset IDs or urls for map sprites (stacked by z-index). */

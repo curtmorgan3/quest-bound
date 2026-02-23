@@ -2,6 +2,7 @@ import { db } from '@/stores';
 import type {
   Action,
   Archetype,
+  ArchetypeCustomProperty,
   Asset,
   Attribute,
   Character,
@@ -10,11 +11,13 @@ import type {
   CharacterWindow,
   Chart,
   Component,
+  CustomProperty,
   Document,
   Font,
   Inventory,
   InventoryItem,
   Item,
+  ItemCustomProperty,
   Page,
   Window,
   Script,
@@ -42,6 +45,9 @@ export interface RulesetDuplicationCounts {
   rulesetPages: number;
   rulesetWindows: number;
   archetypes: number;
+  customProperties: number;
+  archetypeCustomProperties: number;
+  itemCustomProperties: number;
   characters: number;
   characterAttributes: number;
   inventories: number;
@@ -79,6 +85,7 @@ export async function duplicateRuleset({
     sourceScripts,
     sourceRulesetPages,
     sourceRulesetWindows,
+    sourceCustomProperties,
   ] = await Promise.all([
     db.attributes.where('rulesetId').equals(sourceRulesetId).toArray(),
     db.actions.where('rulesetId').equals(sourceRulesetId).toArray(),
@@ -95,6 +102,7 @@ export async function duplicateRuleset({
     db.scripts.where('rulesetId').equals(sourceRulesetId).toArray(),
     db.rulesetPages.where('rulesetId').equals(sourceRulesetId).toArray(),
     db.rulesetWindows.where('rulesetId').equals(sourceRulesetId).toArray(),
+    db.customProperties.where('rulesetId').equals(sourceRulesetId).toArray(),
   ]);
 
   const windowIds = sourceWindows.map((w) => w.id);
@@ -146,6 +154,7 @@ export async function duplicateRuleset({
   const characterPageIdMap = new Map<string, string>();
   const inventoryIdMap = new Map<string, string>();
   const archetypeIdMap = new Map<string, string>();
+  const customPropertyIdMap = new Map<string, string>();
   /** Maps source page id -> new page id for ruleset template pages (shared with test character pages when same) */
   const rulesetPageIdMap = new Map<string, string>();
   /** Maps old rulesetPage join id -> new rulesetPage join id (for rulesetWindows) */
@@ -164,6 +173,9 @@ export async function duplicateRuleset({
     rulesetPages: 0,
     rulesetWindows: 0,
     archetypes: 0,
+    customProperties: 0,
+    archetypeCustomProperties: 0,
+    itemCustomProperties: 0,
     characters: 0,
     characterAttributes: 0,
     inventories: 0,
@@ -288,6 +300,22 @@ export async function duplicateRuleset({
       updatedAt: now,
     } as Item);
     counts.items++;
+  }
+
+  // 6b. Custom properties (ruleset-scoped; needed before archetype/item custom property links)
+  for (const cp of sourceCustomProperties as CustomProperty[]) {
+    const newId = crypto.randomUUID();
+    customPropertyIdMap.set(cp.id, newId);
+
+    const { id, rulesetId, createdAt, updatedAt, ...rest } = cp;
+    await db.customProperties.add({
+      ...rest,
+      id: newId,
+      rulesetId: targetRulesetId,
+      createdAt: now,
+      updatedAt: now,
+    } as CustomProperty);
+    counts.customProperties++;
   }
 
   // 7. Documents (map assetId and pdfAssetId)
@@ -610,6 +638,50 @@ export async function duplicateRuleset({
       updatedAt: now,
     } as Archetype);
     counts.archetypes++;
+  }
+
+  // 12b. Archetype custom properties (after archetypes)
+  const sourceArchetypeCustomProperties = await db.archetypeCustomProperties
+    .where('archetypeId')
+    .anyOf(sourceArchetypes.map((a) => a.id))
+    .toArray();
+  for (const acp of sourceArchetypeCustomProperties as ArchetypeCustomProperty[]) {
+    const newArchId = archetypeIdMap.get(acp.archetypeId);
+    const newCpId = customPropertyIdMap.get(acp.customPropertyId);
+    if (!newArchId || !newCpId) continue;
+    const newId = crypto.randomUUID();
+    const { id, createdAt, updatedAt, ...rest } = acp;
+    await db.archetypeCustomProperties.add({
+      ...rest,
+      id: newId,
+      archetypeId: newArchId,
+      customPropertyId: newCpId,
+      createdAt: now,
+      updatedAt: now,
+    } as ArchetypeCustomProperty);
+    counts.archetypeCustomProperties++;
+  }
+
+  // 12c. Item custom properties (after items and custom properties)
+  const sourceItemCustomProperties = await db.itemCustomProperties
+    .where('itemId')
+    .anyOf(sourceItems.map((i) => i.id))
+    .toArray();
+  for (const icp of sourceItemCustomProperties as ItemCustomProperty[]) {
+    const newItemId = itemIdMap.get(icp.itemId);
+    const newCpId = customPropertyIdMap.get(icp.customPropertyId);
+    if (!newItemId || !newCpId) continue;
+    const newId = crypto.randomUUID();
+    const { id, createdAt, updatedAt, ...rest } = icp;
+    await db.itemCustomProperties.add({
+      ...rest,
+      id: newId,
+      itemId: newItemId,
+      customPropertyId: newCpId,
+      createdAt: now,
+      updatedAt: now,
+    } as ItemCustomProperty);
+    counts.itemCustomProperties++;
   }
 
   // 13. Scripts (map entityId based on entityType)

@@ -3,6 +3,7 @@ import { db } from '@/stores';
 import type {
   Action,
   Archetype,
+  ArchetypeCustomProperty,
   Asset,
   Attribute,
   Character,
@@ -11,11 +12,13 @@ import type {
   CharacterWindow,
   Chart,
   Component,
+  CustomProperty,
   Document,
   Font,
   Inventory,
   InventoryItem,
   Item,
+  ItemCustomProperty,
   Page,
   Ruleset,
   RulesetPage,
@@ -66,6 +69,9 @@ export interface ImportRulesetResult {
     fonts: number;
     documents: number;
     archetypes: number;
+    customProperties: number;
+    archetypeCustomProperties: number;
+    itemCustomProperties: number;
     characterAttributes: number;
     inventories: number;
     characterWindows: number;
@@ -116,6 +122,9 @@ interface ImportedMetadata {
     rulesetWindows?: number;
     inventoryItems?: number;
     scripts?: number;
+    customProperties?: number;
+    archetypeCustomProperties?: number;
+    itemCustomProperties?: number;
   };
   scripts?: ScriptMetadata[];
 }
@@ -168,7 +177,10 @@ export const useImportRuleset = () => {
       | 'rulesetPages'
       | 'rulesetWindows'
       | 'pages'
-      | 'inventoryItems',
+      | 'inventoryItems'
+      | 'customProperties'
+      | 'archetypeCustomProperties'
+      | 'itemCustomProperties',
   ): { isValid: boolean; errors: string[] } => {
     const errors: string[] = [];
 
@@ -243,6 +255,46 @@ export const useImportRuleset = () => {
           }
           if (!item.data || typeof item.data !== 'string') {
             errors.push(`Chart ${index + 1}: data is required and must be a string`);
+          }
+          break;
+
+        case 'customProperties':
+          if (!item.id || typeof item.id !== 'string') {
+            errors.push(`CustomProperty ${index + 1}: id is required and must be a string`);
+          }
+          if (!item.label || typeof item.label !== 'string') {
+            errors.push(`CustomProperty ${index + 1}: label is required and must be a string`);
+          }
+          if (!item.type || !['string', 'number', 'boolean'].includes(item.type)) {
+            errors.push(
+              `CustomProperty ${index + 1}: type must be one of: string, number, boolean`,
+            );
+          }
+          break;
+
+        case 'archetypeCustomProperties':
+          if (!item.archetypeId || typeof item.archetypeId !== 'string') {
+            errors.push(
+              `ArchetypeCustomProperty ${index + 1}: archetypeId is required and must be a string`,
+            );
+          }
+          if (!item.customPropertyId || typeof item.customPropertyId !== 'string') {
+            errors.push(
+              `ArchetypeCustomProperty ${index + 1}: customPropertyId is required and must be a string`,
+            );
+          }
+          break;
+
+        case 'itemCustomProperties':
+          if (!item.itemId || typeof item.itemId !== 'string') {
+            errors.push(
+              `ItemCustomProperty ${index + 1}: itemId is required and must be a string`,
+            );
+          }
+          if (!item.customPropertyId || typeof item.customPropertyId !== 'string') {
+            errors.push(
+              `ItemCustomProperty ${index + 1}: customPropertyId is required and must be a string`,
+            );
           }
           break;
 
@@ -450,6 +502,9 @@ export const useImportRuleset = () => {
             fonts: 0,
             documents: 0,
             archetypes: 0,
+            customProperties: 0,
+            archetypeCustomProperties: 0,
+            itemCustomProperties: 0,
             characterAttributes: 0,
             inventories: 0,
             characterWindows: 0,
@@ -486,6 +541,9 @@ export const useImportRuleset = () => {
             fonts: 0,
             documents: 0,
             archetypes: 0,
+            customProperties: 0,
+            archetypeCustomProperties: 0,
+            itemCustomProperties: 0,
             characterAttributes: 0,
             inventories: 0,
             characterWindows: 0,
@@ -578,18 +636,21 @@ export const useImportRuleset = () => {
                 components: 0,
                 assets: 0,
                 fonts: 0,
-                  documents: 0,
-                  archetypes: 0,
-                  characterAttributes: 0,
-                  inventories: 0,
-                  characterWindows: 0,
-                  characterPages: 0,
-                  rulesetPages: 0,
-                  rulesetWindows: 0,
-                  inventoryItems: 0,
-                  scripts: 0,
-                },
-                errors: ['Duplicate ruleset: same id and version as an existing ruleset'],
+                documents: 0,
+                archetypes: 0,
+                customProperties: 0,
+                archetypeCustomProperties: 0,
+                itemCustomProperties: 0,
+                characterAttributes: 0,
+                inventories: 0,
+                characterWindows: 0,
+                characterPages: 0,
+                rulesetPages: 0,
+                rulesetWindows: 0,
+                inventoryItems: 0,
+                scripts: 0,
+              },
+              errors: ['Duplicate ruleset: same id and version as an existing ruleset'],
             };
           }
           if (compareVersion(newRuleset.version, existingRuleset.version) > 0) {
@@ -613,6 +674,9 @@ export const useImportRuleset = () => {
                   fonts: 0,
                   documents: 0,
                   archetypes: 0,
+                  customProperties: 0,
+                  archetypeCustomProperties: 0,
+                  itemCustomProperties: 0,
                   characterAttributes: 0,
                   inventories: 0,
                   characterWindows: 0,
@@ -643,6 +707,9 @@ export const useImportRuleset = () => {
                 fonts: 0,
                 documents: 0,
                 archetypes: 0,
+                customProperties: 0,
+                archetypeCustomProperties: 0,
+                itemCustomProperties: 0,
                 characterAttributes: 0,
                 inventories: 0,
                 characterWindows: 0,
@@ -671,6 +738,9 @@ export const useImportRuleset = () => {
         fonts: 0,
         documents: 0,
         archetypes: 0,
+        customProperties: 0,
+        archetypeCustomProperties: 0,
+        itemCustomProperties: 0,
         characterAttributes: 0,
         inventories: 0,
         characterWindows: 0,
@@ -932,6 +1002,64 @@ export const useImportRuleset = () => {
         } catch (error) {
           allErrors.push(
             `Failed to import charts: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          );
+        }
+      }
+
+      // Import customProperties (ruleset-scoped; legacy exports may not have this file)
+      const customPropertiesFile = getZipFile('application data/customProperties.json');
+      if (customPropertiesFile) {
+        try {
+          const customPropertiesText = await customPropertiesFile.async('text');
+          const customPropertiesToImport: CustomProperty[] = JSON.parse(customPropertiesText);
+
+          const validation = validateData(customPropertiesToImport, 'customProperties');
+          if (validation.isValid) {
+            for (const cp of customPropertiesToImport) {
+              const newCp: CustomProperty = {
+                ...cp,
+                rulesetId: newRulesetId,
+                createdAt: now,
+                updatedAt: now,
+              };
+              await db.customProperties.add(newCp);
+              importedCounts.customProperties++;
+            }
+          } else {
+            allErrors.push(...validation.errors);
+          }
+        } catch (error) {
+          allErrors.push(
+            `Failed to import customProperties: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          );
+        }
+      }
+
+      // Import itemCustomProperties (after items and customProperties; legacy exports may not have this file)
+      const itemCustomPropertiesFile = getZipFile('application data/itemCustomProperties.json');
+      if (itemCustomPropertiesFile) {
+        try {
+          const itemCustomPropertiesText = await itemCustomPropertiesFile.async('text');
+          const itemCustomPropertiesToImport: ItemCustomProperty[] =
+            JSON.parse(itemCustomPropertiesText);
+
+          const validation = validateData(itemCustomPropertiesToImport, 'itemCustomProperties');
+          if (validation.isValid) {
+            for (const icp of itemCustomPropertiesToImport) {
+              const newIcp: ItemCustomProperty = {
+                ...icp,
+                createdAt: now,
+                updatedAt: now,
+              };
+              await db.itemCustomProperties.add(newIcp);
+              importedCounts.itemCustomProperties++;
+            }
+          } else {
+            allErrors.push(...validation.errors);
+          }
+        } catch (error) {
+          allErrors.push(
+            `Failed to import itemCustomProperties: ${error instanceof Error ? error.message : 'Unknown error'}`,
           );
         }
       }
@@ -1436,6 +1564,42 @@ export const useImportRuleset = () => {
           );
         }
       }
+
+      // Import archetypeCustomProperties (after archetypes and customProperties; legacy exports may not have this file)
+      const archetypeCustomPropertiesFile = getZipFile(
+        'application data/archetypeCustomProperties.json',
+      );
+      if (archetypeCustomPropertiesFile) {
+        try {
+          const archetypeCustomPropertiesText = await archetypeCustomPropertiesFile.async('text');
+          const archetypeCustomPropertiesToImport: ArchetypeCustomProperty[] = JSON.parse(
+            archetypeCustomPropertiesText,
+          );
+
+          const validation = validateData(
+            archetypeCustomPropertiesToImport,
+            'archetypeCustomProperties',
+          );
+          if (validation.isValid) {
+            for (const acp of archetypeCustomPropertiesToImport) {
+              const newAcp: ArchetypeCustomProperty = {
+                ...acp,
+                createdAt: now,
+                updatedAt: now,
+              };
+              await db.archetypeCustomProperties.add(newAcp);
+              importedCounts.archetypeCustomProperties++;
+            }
+          } else {
+            allErrors.push(...validation.errors);
+          }
+        } catch (error) {
+          allErrors.push(
+            `Failed to import archetypeCustomProperties: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          );
+        }
+      }
+
       // Legacy export (no archetypes.json): ruleset creation hook creates default archetype from first test character
 
       // Create ruleset after importing characters so test character isn't duplicated (skip when content-only import)
@@ -1510,6 +1674,9 @@ export const useImportRuleset = () => {
         importedCounts.fonts +
         importedCounts.documents +
         importedCounts.archetypes +
+        importedCounts.customProperties +
+        importedCounts.archetypeCustomProperties +
+        importedCounts.itemCustomProperties +
         importedCounts.characterAttributes +
         importedCounts.inventories +
         importedCounts.characterWindows +
@@ -1547,6 +1714,9 @@ export const useImportRuleset = () => {
           fonts: 0,
           documents: 0,
           archetypes: 0,
+          customProperties: 0,
+          archetypeCustomProperties: 0,
+          itemCustomProperties: 0,
           characterAttributes: 0,
           inventories: 0,
           characterWindows: 0,

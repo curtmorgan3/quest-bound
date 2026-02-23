@@ -83,6 +83,35 @@ export const useExportRuleset = (rulesetId: string) => {
     [rulesetId],
   );
 
+  const customProperties = useLiveQuery(
+    () =>
+      rulesetId
+        ? db.customProperties.where('rulesetId').equals(rulesetId).toArray()
+        : Promise.resolve([] as import('@/types').CustomProperty[]),
+    [rulesetId],
+  );
+
+  const archetypeCustomProperties = useLiveQuery(
+    async () => {
+      if (!archetypes || archetypes.length === 0) return [];
+      const archetypeIds = archetypes.map((a) => a.id);
+      return db.archetypeCustomProperties
+        .where('archetypeId')
+        .anyOf(archetypeIds)
+        .toArray();
+    },
+    [archetypes],
+  );
+
+  const itemCustomProperties = useLiveQuery(
+    async () => {
+      if (!items || items.length === 0) return [];
+      const itemIds = items.map((i) => i.id);
+      return db.itemCustomProperties.where('itemId').anyOf(itemIds).toArray();
+    },
+    [items],
+  );
+
   const testCharacters = useLiveQuery(
     async () => {
       if (!rulesetId || !archetypes || archetypes.length === 0) return [];
@@ -184,6 +213,9 @@ export const useExportRuleset = (rulesetId: string) => {
     fonts === undefined ||
     documents === undefined ||
     archetypes === undefined ||
+    customProperties === undefined ||
+    archetypeCustomProperties === undefined ||
+    itemCustomProperties === undefined ||
     testCharacters === undefined ||
     characterAttributes === undefined ||
     inventories === undefined ||
@@ -235,6 +267,9 @@ export const useExportRuleset = (rulesetId: string) => {
           fonts: fonts?.length || 0,
           documents: documents?.length || 0,
           archetypes: archetypes?.length || 0,
+          customProperties: customProperties?.length || 0,
+          archetypeCustomProperties: archetypeCustomProperties?.length || 0,
+          itemCustomProperties: itemCustomProperties?.length || 0,
           characterAttributes: characterAttributes?.length || 0,
           inventories: inventories?.length || 0,
           characterWindows: characterWindows?.length || 0,
@@ -291,6 +326,24 @@ export const useExportRuleset = (rulesetId: string) => {
 
       if (archetypes && archetypes.length > 0) {
         appDataFolder.file('archetypes.json', JSON.stringify(archetypes, null, 2));
+      }
+
+      if (customProperties && customProperties.length > 0) {
+        appDataFolder.file('customProperties.json', JSON.stringify(customProperties, null, 2));
+      }
+
+      if (archetypeCustomProperties && archetypeCustomProperties.length > 0) {
+        appDataFolder.file(
+          'archetypeCustomProperties.json',
+          JSON.stringify(archetypeCustomProperties, null, 2),
+        );
+      }
+
+      if (itemCustomProperties && itemCustomProperties.length > 0) {
+        appDataFolder.file(
+          'itemCustomProperties.json',
+          JSON.stringify(itemCustomProperties, null, 2),
+        );
       }
 
       if (testCharacters && testCharacters.length > 0) {

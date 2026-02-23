@@ -50,7 +50,7 @@ export const useInventory = (inventoryId: string, characterId: string) => {
       value: characterAttributeRef?.value,
       isEquippable: itemRef?.isEquippable ?? false,
       isConsumable: itemRef?.isConsumable ?? false,
-      customProperties: itemRef?.customProperties ?? {},
+      customProperties: entity.customProperties ?? {},
       weight: itemRef?.weight ?? 0,
     };
   });

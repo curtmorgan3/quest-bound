@@ -228,7 +228,7 @@ Let's add a `defaultValue` field on the CustomProperty model. In the UI, it will
     - Items page: replace or augment `BulkCustomProperties` with new modal; ensure items page has a way to open it (e.g. per-item or page-level button)
     - Archetypes page: add “Manage custom properties” entry point (e.g. on `ArchetypeCard` or in header)
 
-### Phase 8: Import/export and cleanup
+### Phase 8: Import/export and cleanup ✅
 
 16. **Import/export**
     - Update ruleset import/export to include `customProperties`, `archetypeCustomProperties`, `itemCustomProperties`
