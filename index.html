@@ -1,6 +1,20 @@
 <!doctype html>
 <html lang="en" class="dark">
   <head>
+    <script>
+      if (window.location.hostname === 'app.questbound.com') {
+        var s = document.createElement('script');
+        s.async = true;
+        s.src = 'https://www.googletagmanager.com/gtag/js?id=G-ZYFYYYYXY1';
+        document.head.appendChild(s);
+        window.dataLayer = window.dataLayer || [];
+        function gtag() {
+          dataLayer.push(arguments);
+        }
+        gtag('js', new Date());
+        gtag('config', 'G-ZYFYYYYXY1');
+      }
+    </script>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/qb-monogram.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />

@@ -1,6 +1,10 @@
 /// <reference types="vite/client" />
 /// <reference types="cypress" />
 
+interface ImportMetaEnv {
+  readonly VITE_PLAUSIBLE_DOMAIN?: string;
+}
+
 declare namespace Cypress {
   interface Chainable {
     /**

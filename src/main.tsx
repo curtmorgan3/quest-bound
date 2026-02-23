@@ -1,8 +1,11 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App.tsx';
+import { initAnalytics } from './lib/analytics';
 import './index.css';
 import './stores/loggers/global-error-handler';
+
+initAnalytics();
 
 // Register service worker for PWA
 if ('serviceWorker' in navigator) {
