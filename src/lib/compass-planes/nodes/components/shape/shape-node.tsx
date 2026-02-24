@@ -26,6 +26,8 @@ export const ViewShapeNode = ({ component }: { component: Component }) => {
   const outlineWidth = Math.max(0, css.outlineWidth);
   const numSides = data.sides ?? 4;
 
+  console.log(css);
+
   // For rectangles, support irregular shapes
   if (numSides === 4) {
     return (

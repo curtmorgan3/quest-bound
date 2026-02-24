@@ -117,6 +117,7 @@ export const TextEdit = ({ components, handleUpdate }: Props) => {
           disabled={fontSize === MIXED_VALUE_LABEL}
           label='Font Size'
           value={fontSize}
+          styleKeyForCustomProperty='fontSize'
           step={1}
           onChange={(val) => handleUpdate('fontSize', Math.min(200, Math.max(1, parseValue(val))))}
         />

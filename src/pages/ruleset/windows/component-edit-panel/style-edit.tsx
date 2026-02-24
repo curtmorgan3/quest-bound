@@ -5,7 +5,8 @@ import { SquareRoundCorner } from 'lucide-react';
 import { useState } from 'react';
 import { type RGBColor } from 'react-color';
 import { EditPanelInput } from './component-edit-panel-input';
-import { parseValue, valueIfAllAreEqual } from './utils';
+import { useStyleValues } from './use-style-values';
+import { parseValue } from './utils';
 
 interface Props {
   components: Array<Component>;
@@ -18,19 +19,23 @@ interface Props {
 const MIXED_VALUE_LABEL = '-';
 
 export const StyleEdit = ({ components, handleUpdate }: Props) => {
-  const opacity = valueIfAllAreEqual(components, 'opacity');
-  const backgroundColor = valueIfAllAreEqual(components, 'backgroundColor') as string;
-  const color = valueIfAllAreEqual(components, 'color') as string;
-  const borderRadiusTopLeft = valueIfAllAreEqual(components, 'borderRadiusTopLeft');
-  const borderRadiusTopRight = valueIfAllAreEqual(components, 'borderRadiusTopRight');
-  const borderRadiusBottomLeft = valueIfAllAreEqual(components, 'borderRadiusBottomLeft');
-  const borderRadiusBottomRight = valueIfAllAreEqual(components, 'borderRadiusBottomRight');
-  const outlineWidth = valueIfAllAreEqual(components, 'outlineWidth');
-  const outlineColor = valueIfAllAreEqual(components, 'outlineColor') as string;
-  const paddingTop = valueIfAllAreEqual(components, 'paddingTop');
-  const paddingRight = valueIfAllAreEqual(components, 'paddingRight');
-  const paddingBottom = valueIfAllAreEqual(components, 'paddingBottom');
-  const paddingLeft = valueIfAllAreEqual(components, 'paddingLeft');
+  const style = useStyleValues(components);
+  const opacity = style.opacity.raw;
+  const backgroundColor = style.backgroundColor.raw as string;
+  const backgroundColorResolved = style.backgroundColor.resolved as string;
+  const color = style.color.raw as string;
+  const colorResolved = style.color.resolved as string;
+  const borderRadiusTopLeft = style.borderRadiusTopLeft.raw;
+  const borderRadiusTopRight = style.borderRadiusTopRight.raw;
+  const borderRadiusBottomLeft = style.borderRadiusBottomLeft.raw;
+  const borderRadiusBottomRight = style.borderRadiusBottomRight.raw;
+  const outlineWidth = style.outlineWidth.raw;
+  const outlineColor = style.outlineColor.raw as string;
+  const outlineColorResolved = style.outlineColor.resolved as string;
+  const paddingTop = style.paddingTop.raw;
+  const paddingRight = style.paddingRight.raw;
+  const paddingBottom = style.paddingBottom.raw;
+  const paddingLeft = style.paddingLeft.raw;
 
   // Check if all corners have the same value
   const allCornersEqual =
@@ -96,6 +101,7 @@ export const StyleEdit = ({ components, handleUpdate }: Props) => {
           label='Background Color'
           propertyKey='backgroundColor'
           color={backgroundColor}
+          resolvedColor={backgroundColorResolved}
           onUpdate={(color) => handleUpdate('backgroundColor', color)}
           disabled={backgroundColor === MIXED_VALUE_LABEL}
         />
@@ -105,6 +111,7 @@ export const StyleEdit = ({ components, handleUpdate }: Props) => {
           label='Color'
           propertyKey='color'
           color={color}
+          resolvedColor={colorResolved}
           onUpdate={(color) => handleUpdate('color', color)}
           disabled={color === MIXED_VALUE_LABEL}
         />
@@ -141,6 +148,7 @@ export const StyleEdit = ({ components, handleUpdate }: Props) => {
               propertyKey='outlineColor'
               asIcon
               color={outlineColor}
+              resolvedColor={outlineColorResolved}
               disabled={outlineColor === MIXED_VALUE_LABEL}
               onUpdate={(color) => handleUpdate('outlineColor', color)}
             />

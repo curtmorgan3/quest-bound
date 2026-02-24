@@ -52,6 +52,8 @@ function hexToRgb(hex: string, a = 1): RGBColor {
 
 interface RulesetColorPicker {
   color?: string;
+  /** When style is bound to a custom property (color is 'custom-prop-<id>'), use this for the displayed swatch and picker. */
+  resolvedColor?: string;
   label?: string;
   asIcon?: boolean;
   disabled?: boolean;
@@ -63,6 +65,7 @@ interface RulesetColorPicker {
 
 export const RulesetColorPicker = ({
   color,
+  resolvedColor,
   label,
   asIcon,
   disabled,
@@ -90,8 +93,9 @@ export const RulesetColorPicker = ({
     }
   };
 
-  const currentHex = colorToHex(color);
-  const opacity = colorToAlpha(color);
+  const displayColor = resolvedColor ?? color;
+  const currentHex = colorToHex(displayColor);
+  const opacity = colorToAlpha(displayColor);
 
   const handleColorChange = (hex: string) => {
     onUpdate(hexToRgb(hex, opacity));

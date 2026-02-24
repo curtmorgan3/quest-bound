@@ -48,8 +48,6 @@ export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
     selectedComponents = selectedComponents.filter((c) => !c.locked);
   }
 
-  console.log(JSON.parse(selectedComponents[0].style));
-
   const handleUpdate = (key: string | string[], value: number | string | boolean | null) => {
     const toUpdate = selectedComponents.filter((c) => (key === 'locked' ? true : !c.locked));
 
@@ -174,7 +172,6 @@ export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
   };
 
   const assignStyleToCustomProperty = (styleKey: string, customPropertyId: string) => {
-    console.log('assign: ', styleKey, customPropertyId);
     handleStyleUpdate(styleKey, `custom-prop-${customPropertyId}`);
   };
 
