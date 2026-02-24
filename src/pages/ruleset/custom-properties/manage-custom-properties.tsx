@@ -265,13 +265,6 @@ export function ManageCustomProperties() {
                             handleDefaultValueChange(cp.id, rgbToHex(color.r, color.g, color.b))
                           }
                         />
-                        <div
-                          className='h-8 w-8 shrink-0 rounded border border-border bg-muted'
-                          style={{
-                            backgroundColor: (cp.defaultValue as string) || undefined,
-                          }}
-                          title={(cp.defaultValue as string) || 'No color'}
-                        />
                         <Input
                           value={(cp.defaultValue as string) || ''}
                           onChange={(e) => handleDefaultValueChange(cp.id, e.target.value)}
