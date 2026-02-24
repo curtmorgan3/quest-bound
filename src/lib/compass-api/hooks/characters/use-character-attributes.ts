@@ -121,6 +121,7 @@ export const useCharacterAttributes = (characterId?: string) => {
             updatedAt: now,
           } as CharacterAttribute);
         } else {
+          // Does not sync value, only updates definition from Ruleset
           toUpdate.push({
             id: existing.id,
             data: {

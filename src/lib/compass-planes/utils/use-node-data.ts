@@ -18,6 +18,44 @@ type NodeData = ComponentData & {
   allowMultiSelect?: boolean;
 };
 
+const coerceValueByComponentType = (
+  value: string | number | boolean,
+  component: Component,
+  attributeType: AttributeType,
+  componentData: ComponentData,
+): string | number | boolean => {
+  switch (component.type) {
+    case ComponentTypes.CHECKBOX: {
+      if (typeof value === 'boolean') return value;
+      if (typeof value === 'number') return value !== 0;
+      const normalized = String(value).trim().toLowerCase();
+      if (!normalized) return false;
+      if (['false', '0', 'no', 'off'].includes(normalized)) return false;
+      if (['true', '1', 'yes', 'on'].includes(normalized)) return true;
+      return Boolean(value);
+    }
+
+    case ComponentTypes.INPUT: {
+      const shouldBeNumber = attributeType === 'number' || componentData.type === 'number';
+      if (shouldBeNumber) {
+        if (value === '') return '';
+        if (typeof value === 'number') return value;
+        const parsed = Number(value);
+        return Number.isNaN(parsed) ? '' : parsed;
+      }
+      return typeof value === 'string' ? value : String(value);
+    }
+
+    case ComponentTypes.TEXT:
+    case ComponentTypes.CONTENT: {
+      return typeof value === 'string' ? value : String(value);
+    }
+
+    default:
+      return value;
+  }
+};
+
 export const useNodeData = (component: Component): NodeData => {
   const characterContext = useContext(CharacterContext);
   const { attributeId } = component;
@@ -33,12 +71,16 @@ export const useNodeData = (component: Component): NodeData => {
     ? characterComponentData[component.id]
     : null;
 
+  const attributeType: AttributeType = rulesetAttribute?.type ?? 'string';
+
   let value =
     characterAttribute?.value ??
     characterComponentDataValue ??
     rulesetAttribute?.defaultValue ??
     componentData.value ??
     '';
+
+  value = coerceValueByComponentType(value, component, attributeType, componentData);
 
   if (componentData.showSign && component.type === ComponentTypes.TEXT) {
     try {
@@ -70,7 +112,7 @@ export const useNodeData = (component: Component): NodeData => {
       attributes,
       getCharacterAttribute: characterContext?.getCharacterAttribute,
     }),
-    attributeType: rulesetAttribute?.type ?? 'string',
+    attributeType,
     characterAttributeId: characterAttribute?.id,
     options: characterAttribute?.options ?? rulesetAttribute?.options ?? [],
     min: characterAttribute?.min ?? rulesetAttribute?.min,

@@ -28,6 +28,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useNotifications } from '@/hooks';
+import { useFeatureFlag } from '@/hooks/use-feature-flag';
 import {
   useActiveRuleset,
   useCharacter,
@@ -48,6 +49,7 @@ export const CharacterSettings = ({ character }: CharacterSettingsProps) => {
   const { activeRuleset } = useActiveRuleset();
   const { syncWithRuleset } = useCharacterAttributes(character.id);
   const { addNotification } = useNotifications();
+   const campaignsEnabled = useFeatureFlag('campaigns', false);
   const navigate = useNavigate();
 
   const [name, setName] = useState(character.name);
@@ -182,22 +184,30 @@ export const CharacterSettings = ({ character }: CharacterSettingsProps) => {
           />
         </div>
 
-        <div className='flex flex-col gap-2 max-w-sm'>
-          <Label>Map sprite</Label>
-          <ImageUpload
-            image={character.sprites?.[0]}
-            alt={`${character.name} sprite`}
-            onRemove={() => updateCharacter(character.id, { sprites: [] })}
-            onUpload={(assetId) => updateCharacter(character.id, { sprites: [assetId] })}
-            onSetUrl={(url) => updateCharacter(character.id, { sprites: [url] })}
-            rulesetId={character.rulesetId}
-          />
-        </div>
+        {campaignsEnabled && (
+          <div className='flex flex-col gap-2 max-w-sm'>
+            <Label>Map sprite</Label>
+            <ImageUpload
+              image={character.sprites?.[0]}
+              alt={`${character.name} sprite`}
+              onRemove={() => updateCharacter(character.id, { sprites: [] })}
+              onUpload={(assetId) => updateCharacter(character.id, { sprites: [assetId] })}
+              onSetUrl={(url) => updateCharacter(character.id, { sprites: [url] })}
+              rulesetId={character.rulesetId}
+            />
+          </div>
+        )}
       </div>
 
-      <Button className='w-[150px]' variant='secondary' onClick={handleSyncWithRuleset}>
-        Sync with Ruleset
-      </Button>
+      <div className='flex flex-col gap-1'>
+        <Button className='w-[150px]' variant='outline' onClick={handleSyncWithRuleset}>
+          Sync with Ruleset
+        </Button>
+        <span className='text-sm text-muted-foreground'>
+          Update character attributes to align with the ruleset's definition.
+        </span>
+        <span className='text-sm text-muted-foreground'>Does not change attribute values.</span>
+      </div>
 
       <AlertDialog>
         <AlertDialogTrigger asChild>

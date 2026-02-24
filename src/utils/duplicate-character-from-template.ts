@@ -1,9 +1,11 @@
 import { db } from '@/stores';
 import type { CharacterPage, CharacterWindow, InventoryItem } from '@/types';
+import type { CharacterAttribute } from '@/types';
 
 /**
  * Duplicates character data from a source (template) character to a target character.
- * Copies characterAttributes, characterPages (sharing pages), characterWindows, and inventoryItems.
+ * Creates characterAttributes from the ruleset defaults (one per ruleset attribute).
+ * Copies characterPages (sharing pages), characterWindows, and inventoryItems.
  * Used when creating a new character from an archetype's test character.
  */
 export async function duplicateCharacterFromTemplate(
@@ -19,20 +21,27 @@ export async function duplicateCharacterFromTemplate(
   }
   const sourceInventoryId = sourceCharacter.inventoryId;
 
-  // 1. Character attributes
-  const sourceAttributes = await db.characterAttributes
-    .where('characterId')
-    .equals(sourceCharacterId)
+  const targetCharacter = await db.characters.get(targetCharacterId);
+  if (!targetCharacter?.rulesetId) {
+    throw new Error('Target character has no ruleset');
+  }
+
+  // 1. Character attributes: one per ruleset attribute, each set to its default value
+  const rulesetAttributes = await db.attributes
+    .where('rulesetId')
+    .equals(targetCharacter.rulesetId)
     .toArray();
 
   await db.characterAttributes.bulkAdd(
-    sourceAttributes.map((ca) => ({
-      ...ca,
+    rulesetAttributes.map((attr) => ({
+      ...attr,
       id: crypto.randomUUID(),
       characterId: targetCharacterId,
+      attributeId: attr.id,
+      value: attr.defaultValue,
       createdAt: now,
       updatedAt: now,
-    })),
+    } as CharacterAttribute)),
   );
 
   // 2. Character pages (share same pageIds; create new join records)
