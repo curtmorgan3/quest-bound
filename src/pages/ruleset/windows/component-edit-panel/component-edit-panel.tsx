@@ -21,16 +21,20 @@ import { getComponentData } from '@/lib/compass-planes/utils';
 import { colorBlack } from '@/palette';
 import type { ConditionalRenderLogic, TextComponentData } from '@/types';
 import type { RGBColor } from 'react-color';
+import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { ActionEdit } from './action-edit';
+import { ComponentEditPanelContext, type ComponentEditPanelContextValue } from './component-edit-panel-context';
 import { ConditionalRenderEdit, TextEdit } from './component-edits';
 import { ShapeEdit } from './component-edits/shape-edit';
+import { CustomPropertiesListModal } from './custom-properties-list-modal';
 import { PositionEdit } from './position-edit';
 import { StyleEdit } from './style-edit';
 
 export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
   const { windowId } = useParams();
   const { components, updateComponents } = useComponents(windowId);
+  const [customPropertiesModalOpen, setCustomPropertiesModalOpen] = useState(false);
   let selectedComponents = components.filter((c) => c.selected);
 
   if (selectedComponents.length === 0) return null;
@@ -163,6 +167,24 @@ export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
     );
   };
 
+  const setCustomProperty = (customPropertyId: string) => {
+    const toUpdate = selectedComponents.filter((c) => !c.locked);
+    updateComponents(
+      toUpdate.map((c) => ({
+        id: c.id,
+        data: JSON.stringify({
+          ...JSON.parse(c.data),
+          customProperty: customPropertyId,
+        }),
+      })),
+    );
+  };
+
+  const contextValue: ComponentEditPanelContextValue = {
+    openCustomPropertiesModal: () => setCustomPropertiesModalOpen(true),
+    onSelectCustomProperty: setCustomProperty,
+  };
+
   if (viewMode) return null;
 
   // Check if all selected components are image type
@@ -216,11 +238,12 @@ export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
     selectedComponents.every((c) => c.type === ComponentTypes.FRAME);
 
   return (
-    <div
-      className='w-[240px] h-[100vh] flex flex-col gap-2 items-center p-2'
-      style={{ position: 'absolute', right: 0, backgroundColor: colorBlack, overflow: 'auto' }}>
-      {selectedComponents.length > 0 ? (
-        <Tabs defaultValue='style' className='w-full flex flex-col'>
+    <ComponentEditPanelContext.Provider value={contextValue}>
+      <div
+        className='w-[240px] h-[100vh] flex flex-col gap-2 items-center p-2'
+        style={{ position: 'absolute', right: 0, backgroundColor: colorBlack, overflow: 'auto' }}>
+        {selectedComponents.length > 0 ? (
+          <Tabs defaultValue='style' className='w-full flex flex-col'>
           <TabsList className='w-full'>
             <TabsTrigger value='style' className='flex-1'>
               Style
@@ -359,9 +382,18 @@ export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
             )}
           </TabsContent>
         </Tabs>
-      ) : (
-        <p className='text-xs'>All selected components are locked</p>
-      )}
-    </div>
+        ) : (
+          <p className='text-xs'>All selected components are locked</p>
+        )}
+      </div>
+      <CustomPropertiesListModal
+        open={customPropertiesModalOpen}
+        onOpenChange={setCustomPropertiesModalOpen}
+        onSelect={(id) => {
+          setCustomProperty(id);
+          setCustomPropertiesModalOpen(false);
+        }}
+      />
+    </ComponentEditPanelContext.Provider>
   );
 };
