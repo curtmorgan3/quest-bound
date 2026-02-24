@@ -6,7 +6,7 @@ import { useActiveRuleset, useCustomProperties } from '@/lib/compass-api';
 import { ComponentEditPanelContext } from '@/pages/ruleset/windows/component-edit-panel/component-edit-panel-context';
 import { CustomPropertiesListModal } from '@/pages/ruleset/windows/component-edit-panel/custom-properties-list-modal';
 import { SlidersHorizontal, X } from 'lucide-react';
-import { useContext, useState } from 'react';
+import { useContext, useEffect, useState } from 'react';
 import type { RGBColor } from 'react-color';
 
 const CUSTOM_PROP_PREFIX = 'custom-prop-';
@@ -70,6 +70,7 @@ export const RulesetColorPicker = ({
   onUpdate,
   propertyKey,
   showLabel,
+  disableAlpha,
 }: RulesetColorPicker) => {
   const { activeRuleset } = useActiveRuleset();
   const { customProperties } = useCustomProperties(activeRuleset?.id);
@@ -80,9 +81,17 @@ export const RulesetColorPicker = ({
 
   const showCustomPropPill = isCustomPropValue(color);
   const customPropId = showCustomPropPill ? color.slice(CUSTOM_PROP_PREFIX.length) : '';
-  const customPropLabel = showCustomPropPill
-    ? customProperties.find((p) => p.id === customPropId)?.label
-    : '';
+
+  const customProp = customProperties.find((p) => p.id === customPropId);
+
+  const customPropLabel = showCustomPropPill ? customProp?.label : '';
+
+  // If we have a custom prop ID but the prop was deleted/missing, reset to black
+  useEffect(() => {
+    if (showCustomPropPill && customPropId && !customProp) {
+      onUpdate({ r: 0, g: 0, b: 0, a: 1 });
+    }
+  }, [showCustomPropPill, customPropId, customProp, onUpdate]);
 
   const openCustomPropertiesModal = () => {
     if (panelContext?.openCustomPropertiesModal) {
@@ -128,17 +137,19 @@ export const RulesetColorPicker = ({
             </Button>
           )}
         </div>
-        <div className='flex flex-col gap-2'>
-          <Label className='text-xs'>Opacity</Label>
-          <Slider
-            min={0}
-            max={100}
-            step={1}
-            value={[Math.round(opacity * 100)]}
-            onValueChange={(v) => handleOpacityChange((v[0] ?? 100) / 100)}
-            aria-label='Opacity'
-          />
-        </div>
+        {!disableAlpha && (
+          <div className='flex flex-col gap-2'>
+            <Label className='text-xs'>Opacity</Label>
+            <Slider
+              min={0}
+              max={100}
+              step={1}
+              value={[Math.round(opacity * 100)]}
+              onValueChange={(v) => handleOpacityChange((v[0] ?? 100) / 100)}
+              aria-label='Opacity'
+            />
+          </div>
+        )}
         {palette.length > 0 && (
           <div className='flex flex-wrap gap-1.5'>
             {palette.map((swatch, i) => {

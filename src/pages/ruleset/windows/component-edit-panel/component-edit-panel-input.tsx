@@ -1,7 +1,7 @@
 import { Button, Input, Label } from '@/components';
 import { useActiveRuleset, useCustomProperties } from '@/lib/compass-api';
 import { SlidersHorizontal, X } from 'lucide-react';
-import { useContext, useState } from 'react';
+import { useContext, useEffect, useState } from 'react';
 import { ComponentEditPanelContext } from './component-edit-panel-context';
 import { CustomPropertiesListModal } from './custom-properties-list-modal';
 
@@ -56,9 +56,15 @@ export const EditPanelInput = ({
 
   const showCustomPropPill = isCustomPropValue(value);
   const customPropId = showCustomPropPill ? value.slice(CUSTOM_PROP_PREFIX.length) : '';
-  const customPropLabel = showCustomPropPill
-    ? customProperties.find((p) => p.id === customPropId)?.label
-    : '';
+  const customProp = customProperties.find((p) => p.id === customPropId);
+  const customPropLabel = showCustomPropPill ? customProp?.label : '';
+
+  // If we have a custom prop ID but the prop was deleted/missing, reset to clearValue
+  useEffect(() => {
+    if (showCustomPropPill && customPropId && !customProp) {
+      onChange(clearValue);
+    }
+  }, [showCustomPropPill, customPropId, customProp, onChange, clearValue]);
 
   return (
     <div className={`grid w-[${width}]`}>
