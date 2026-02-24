@@ -1,4 +1,4 @@
-import { getComponentData, getComponentStyles } from '@/lib/compass-planes/utils';
+import { getComponentData, useComponentStyles } from '@/lib/compass-planes/utils';
 import { CharacterContext, WindowEditorContext, type InventoryItemWithData } from '@/stores';
 import type { Component, InventoryComponentData } from '@/types';
 import { useNodeId } from '@xyflow/react';
@@ -14,7 +14,7 @@ export const EditInventoryNode = () => {
   const component = getComponent(id);
   if (!component) return null;
 
-  const css = getComponentStyles(component);
+  const css = useComponentStyles(component);
   const data = getComponentData(component) as InventoryComponentData;
   const gridColor = css.color || '#ccc';
 
@@ -62,7 +62,7 @@ export const ViewInventoryNode = ({ component }: { component: Component }) => {
   const isDragging = useRef<boolean>(false);
   const dragDistance = useRef<number>(0);
 
-  const css = getComponentStyles(component);
+  const css = useComponentStyles(component);
   const data = getComponentData(component) as InventoryComponentData;
   const gridColor = css.color || '#ccc';
 

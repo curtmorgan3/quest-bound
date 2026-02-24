@@ -1,5 +1,5 @@
 import { useAssets } from '@/lib/compass-api';
-import { getComponentStyles, useNodeData } from '@/lib/compass-planes/utils';
+import { useComponentStyles, useNodeData } from '@/lib/compass-planes/utils';
 import { CharacterContext, WindowEditorContext } from '@/stores';
 import type { Component, ComponentStyle } from '@/types';
 import { useNodeId } from '@xyflow/react';
@@ -31,7 +31,7 @@ export const ViewCheckboxNode = ({
 }) => {
   const characterContext = useContext(CharacterContext);
   const data = useNodeData(component);
-  const css = getComponentStyles(component);
+  const css = useComponentStyles(component);
   const { assets } = useAssets();
 
   const isChecked = editMode ? false : Boolean(data.value);

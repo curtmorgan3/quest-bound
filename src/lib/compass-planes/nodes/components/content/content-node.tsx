@@ -1,7 +1,7 @@
 import {
   fireExternalComponentChangeEvent,
   getComponentData,
-  getComponentStyles,
+  useComponentStyles,
   useNodeData,
 } from '@/lib/compass-planes/utils';
 import { CharacterContext, DiceContext, WindowEditorContext } from '@/stores';
@@ -73,7 +73,7 @@ export const ViewContentNode = ({
   handleDoubleClick?: () => void;
 }) => {
   const data = useNodeData(component);
-  const css = getComponentStyles(component) as TextComponentStyle;
+  const css = useComponentStyles(component) as TextComponentStyle;
   const characterContext = useContext(CharacterContext);
   const { rollDice } = useContext(DiceContext);
 

@@ -8,7 +8,7 @@ import {
   DialogTitle,
   NumberInput,
 } from '@/components';
-import { getComponentStyles, useNodeData } from '@/lib/compass-planes/utils';
+import { useComponentStyles, useNodeData } from '@/lib/compass-planes/utils';
 import { CharacterContext, WindowEditorContext } from '@/stores';
 import type { Component, TextComponentStyle } from '@/types';
 import { useNodeId } from '@xyflow/react';
@@ -38,7 +38,7 @@ export const ViewInputNode = ({
   editMode?: boolean;
 }) => {
   const data = useNodeData(component);
-  const css = getComponentStyles(component) as TextComponentStyle;
+  const css = useComponentStyles(component) as TextComponentStyle;
 
   const characterContext = useContext(CharacterContext);
 

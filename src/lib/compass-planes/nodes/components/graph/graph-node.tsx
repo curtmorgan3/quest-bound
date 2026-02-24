@@ -2,7 +2,7 @@ import { CharacterContext, WindowEditorContext } from '@/stores';
 import type { Component, GraphComponentData, GraphVariant } from '@/types';
 import { useNodeId } from '@xyflow/react';
 import { useContext, useEffect, useState } from 'react';
-import { getComponentData, getComponentStyles } from '../../../utils';
+import { getComponentData, useComponentStyles } from '../../../utils';
 import { ResizableNode } from '../../decorators';
 
 function toNumber(v: string | number | boolean): number {
@@ -74,7 +74,7 @@ function GraphEditPlaceholder({
   component: Component;
   variant: GraphVariant;
 }) {
-  const css = getComponentStyles(component);
+  const css = useComponentStyles(component);
   const fillColor = (css as { color?: string }).color ?? '#7BA3C7';
   const w = component.width;
   const h = component.height;
@@ -157,7 +157,7 @@ const FILL_TRANSITION_MS = 400;
 
 export const ViewGraphNode = ({ component }: { component: Component }) => {
   const data = getComponentData(component) as GraphComponentData;
-  const css = getComponentStyles(component);
+  const css = useComponentStyles(component);
   const variant = data.graphVariant ?? 'horizontal-linear';
   const debounceMs = Math.max(0, (data.animationDebounceSeconds ?? DEFAULT_DEBOUNCE_SECONDS) * 1000);
 
@@ -179,7 +179,7 @@ function ViewGraphNodeLive({
 }: {
   component: Component;
   variant: GraphVariant;
-  css: ReturnType<typeof getComponentStyles>;
+  css: ReturnType<typeof useComponentStyles>;
   debounceMs: number;
 }) {
   const ratio = useGraphRatio(component);

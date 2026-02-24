@@ -201,7 +201,6 @@ export function ManageItemCustomPropertiesPanel({
                                 <RulesetColorPicker
                                   color={(effectiveDefault as string) || undefined}
                                   label='Default color'
-                                  asIcon
                                   disableAlpha
                                   onUpdate={(color: RGBColor) =>
                                     updateItemCustomProperty(icp.id, {

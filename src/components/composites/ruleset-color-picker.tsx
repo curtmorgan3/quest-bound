@@ -5,8 +5,7 @@ import { Slider } from '@/components/ui/slider';
 import { useActiveRuleset, useCustomProperties } from '@/lib/compass-api';
 import { ComponentEditPanelContext } from '@/pages/ruleset/windows/component-edit-panel/component-edit-panel-context';
 import { CustomPropertiesListModal } from '@/pages/ruleset/windows/component-edit-panel/custom-properties-list-modal';
-import { colorWhite } from '@/palette';
-import { Palette, SlidersHorizontal, X } from 'lucide-react';
+import { SlidersHorizontal, X } from 'lucide-react';
 import { useContext, useState } from 'react';
 import type { RGBColor } from 'react-color';
 
@@ -55,22 +54,22 @@ interface RulesetColorPicker {
   /** When style is bound to a custom property (color is 'custom-prop-<id>'), use this for the displayed swatch and picker. */
   resolvedColor?: string;
   label?: string;
-  asIcon?: boolean;
   disabled?: boolean;
   /** Called with RGBColor when user picks a color, or '' when clearing a custom property. */
-  onUpdate: (color: RGBColor | string) => void;
+  onUpdate: (color: RGBColor) => void;
   disableAlpha?: boolean;
   propertyKey?: string;
+  showLabel?: boolean;
 }
 
 export const RulesetColorPicker = ({
   color,
   resolvedColor,
   label,
-  asIcon,
   disabled,
   onUpdate,
   propertyKey,
+  showLabel,
 }: RulesetColorPicker) => {
   const { activeRuleset } = useActiveRuleset();
   const { customProperties } = useCustomProperties(activeRuleset?.id);
@@ -161,92 +160,53 @@ export const RulesetColorPicker = ({
     </div>
   );
 
-  if (asIcon) {
-    return (
-      <>
-        {showCustomPropPill ? (
-          <div className='flex flex-col items-center gap-0.5'>
-            <span
-              className='text-[10px] max-w-[50px] leading-none text-muted-foreground'
-              style={{ textAlign: 'center' }}>
-              {label ?? 'Color'}
-            </span>
-            <div className='flex h-[20px] items-center gap-1 rounded-[4px] border border-border bg-muted/50 px-1.5'>
-              <span
-                className='min-w-0 flex-1 truncate text-xs'
-                title={customPropLabel ?? customPropId}>
-                {customPropLabel ?? customPropId}
-              </span>
-              <Button
-                type='button'
-                variant='ghost'
-                size='icon'
-                className='size-4 shrink-0 rounded'
-                aria-label='Remove custom property'
-                disabled={disabled}
-                onClick={() => onUpdate('')}>
-                <X className='size-3' />
-              </Button>
-            </div>
-          </div>
-        ) : (
-          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-            <DialogTrigger asChild>
-              <button
-                type='button'
-                title={label ?? 'Color'}
-                disabled={disabled}
-                className='flex flex-col items-center gap-0.5 rounded p-0.5 disabled:opacity-50'>
-                <span className='text-[10px] max-w-[50px] leading-none text-muted-foreground'>
-                  {label ?? 'Color'}
-                </span>
-                <Palette className='h-[18px] w-[18px] cursor-pointer text-xs' color={colorWhite} />
-              </button>
-            </DialogTrigger>
-            <DialogContent>{pickerContent}</DialogContent>
-          </Dialog>
-        )}
-        {!panelContext && (
-          <CustomPropertiesListModal
-            open={customPropsModalOpen}
-            onOpenChange={setCustomPropsModalOpen}
-            onSelect={() => setCustomPropsModalOpen(false)}
-          />
-        )}
-      </>
-    );
-  }
+  const smallLabel = (
+    <span
+      className='text-[10px] w-[50px] leading-none text-muted-foreground'
+      style={{ textAlign: 'center' }}>
+      {label ?? 'Color'}
+    </span>
+  );
 
   return (
     <>
       {showCustomPropPill ? (
-        <div className='flex h-[20px] items-center gap-1 rounded-[4px] border border-border bg-muted/50 px-1.5'>
-          <span className='min-w-0 flex-1 truncate text-xs' title={customPropLabel ?? customPropId}>
-            {customPropLabel ?? customPropId}
-          </span>
-          <Button
-            type='button'
-            variant='ghost'
-            size='icon'
-            className='size-4 shrink-0 rounded'
-            aria-label='Remove custom property'
-            disabled={disabled}
-            onClick={() => onUpdate('')}>
-            <X className='size-3' />
-          </Button>
+        <div className='flex flex-col gap-0.5 items-center'>
+          {showLabel && smallLabel}
+          <div className='flex h-[20px] items-center gap-1 rounded-[4px] border border-border bg-muted/50 px-1.5'>
+            <span
+              className='min-w-0 flex-1 truncate text-xs'
+              title={customPropLabel ?? customPropId}>
+              {customPropLabel ?? customPropId}
+            </span>
+            <Button
+              type='button'
+              variant='ghost'
+              size='icon'
+              className='size-4 shrink-0 rounded'
+              aria-label='Remove custom property'
+              disabled={disabled}
+              onClick={() => onUpdate({ r: 0, g: 0, b: 0, a: 1 })}>
+              <X className='size-3' />
+            </Button>
+          </div>
         </div>
       ) : (
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogTrigger asChild>
-            <button
-              type='button'
-              className='h-8 w-full rounded border border-border shadow-sm'
-              style={{ backgroundColor: currentHex }}
-              aria-label={label ?? 'Color'}
-            />
-          </DialogTrigger>
-          <DialogContent>{pickerContent}</DialogContent>
-        </Dialog>
+        <div className='flex flex-col gap-0.5 items-center'>
+          {showLabel && smallLabel}
+          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+            <DialogTrigger asChild>
+              <button
+                type='button'
+                disabled={disabled}
+                className='h-8 w-full clickable rounded border border-border shadow-sm disabled:opacity-50'
+                style={{ backgroundColor: currentHex, height: 30, width: 30 }}
+                aria-label={label ?? 'Color'}
+              />
+            </DialogTrigger>
+            <DialogContent>{pickerContent}</DialogContent>
+          </Dialog>
+        </div>
       )}
       {!panelContext && (
         <CustomPropertiesListModal

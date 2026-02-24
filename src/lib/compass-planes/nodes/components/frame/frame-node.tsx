@@ -1,4 +1,4 @@
-import { getComponentData, getComponentStyles } from '@/lib/compass-planes/utils';
+import { getComponentData, useComponentStyles } from '@/lib/compass-planes/utils';
 import { colorWhite } from '@/palette';
 import { WindowEditorContext } from '@/stores';
 import type { Component, FrameComponentData } from '@/types';
@@ -16,7 +16,7 @@ export const EditFrameNode = () => {
   const component = getComponent(id);
   if (!component) return null;
 
-  const css = getComponentStyles(component);
+  const css = useComponentStyles(component);
 
   return (
     <ResizableNode component={component}>
@@ -37,7 +37,7 @@ export const EditFrameNode = () => {
 
 export const ViewFrameNode = ({ component }: { component: Component }) => {
   const data = getComponentData(component) as FrameComponentData;
-  const css = getComponentStyles(component);
+  const css = useComponentStyles(component);
   const url = data?.url?.trim();
 
   if (!url) {

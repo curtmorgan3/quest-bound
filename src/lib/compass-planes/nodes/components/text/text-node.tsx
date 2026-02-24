@@ -1,7 +1,7 @@
 import {
   fireExternalComponentChangeEvent,
   getComponentData,
-  getComponentStyles,
+  useComponentStyles,
   useNodeData,
 } from '@/lib/compass-planes/utils';
 import { DiceContext, WindowEditorContext } from '@/stores';
@@ -30,7 +30,7 @@ export const EditTextNode = () => {
   if (!component) return null;
 
   const data = getComponentData(component) as TextComponentData;
-  const css = getComponentStyles(component) as TextComponentStyle;
+  const css = useComponentStyles(component) as TextComponentStyle;
 
   const handleDoubleClick = () => {
     if (!component.locked) {
@@ -127,7 +127,7 @@ export const ViewTextNode = ({
   onDoubleClick?: () => void;
 }) => {
   const data = useNodeData(component);
-  const css = getComponentStyles(component) as TextComponentStyle;
+  const css = useComponentStyles(component) as TextComponentStyle;
   const { rollDice } = useContext(DiceContext);
 
   const diceRolls = parseTextForDiceRolls(data?.interpolatedValue?.toString());

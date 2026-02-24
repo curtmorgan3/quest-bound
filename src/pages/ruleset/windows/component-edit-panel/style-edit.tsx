@@ -97,7 +97,7 @@ export const StyleEdit = ({ components, handleUpdate }: Props) => {
           onChange={(val) => handleUpdate('opacity', Math.min(1, Math.max(0, parseValue(val))))}
         />
         <RulesetColorPicker
-          asIcon
+          showLabel
           label='Background Color'
           propertyKey='backgroundColor'
           color={backgroundColor}
@@ -107,7 +107,7 @@ export const StyleEdit = ({ components, handleUpdate }: Props) => {
         />
 
         <RulesetColorPicker
-          asIcon
+          showLabel
           label='Color'
           propertyKey='color'
           color={color}
@@ -143,16 +143,6 @@ export const StyleEdit = ({ components, handleUpdate }: Props) => {
               onChange={handleAllCornersChange}
             />
 
-            <RulesetColorPicker
-              label='Border Color'
-              propertyKey='outlineColor'
-              asIcon
-              color={outlineColor}
-              resolvedColor={outlineColorResolved}
-              disabled={outlineColor === MIXED_VALUE_LABEL}
-              onUpdate={(color) => handleUpdate('outlineColor', color)}
-            />
-
             <div className='flex flex-row gap-2 items-end'>
               <CollapsibleTrigger
                 title='Corner Border Radius'
@@ -162,6 +152,16 @@ export const StyleEdit = ({ components, handleUpdate }: Props) => {
                 />
               </CollapsibleTrigger>
             </div>
+
+            <RulesetColorPicker
+              label='Border Color'
+              showLabel
+              propertyKey='outlineColor'
+              color={outlineColor}
+              resolvedColor={outlineColorResolved}
+              disabled={outlineColor === MIXED_VALUE_LABEL}
+              onUpdate={(color) => handleUpdate('outlineColor', color)}
+            />
           </div>
         </div>
         <CollapsibleContent className='pt-2'>

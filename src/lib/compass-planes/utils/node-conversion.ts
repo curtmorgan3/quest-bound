@@ -1,5 +1,7 @@
 import type { Component, ComponentData, ComponentStyle } from '@/types';
 import type { Node } from '@xyflow/react';
+import { useMemo } from 'react';
+import { STYLE_KEYS, useStyleValues } from './use-style-values';
 
 export function convertComponentToNode(component: Component): Node {
   return {
@@ -34,9 +36,7 @@ export function updateComponentData(data: string, update: Record<any, any>): str
   });
 }
 
-export function getComponentStyles(component: Component): ComponentStyle {
-  const styles = JSON.parse(component.style) as ComponentStyle;
-
+function applyStyleEnrichment(styles: ComponentStyle): ComponentStyle {
   if (styles.outlineWidth === 0) {
     styles.outline = undefined;
   } else {
@@ -51,4 +51,20 @@ export function getComponentStyles(component: Component): ComponentStyle {
   if (!styles.paddingRight) styles.paddingRight = 0;
 
   return styles;
+}
+
+export function getComponentStyles(component: Component): ComponentStyle {
+  const styles = JSON.parse(component.style) as ComponentStyle;
+  return applyStyleEnrichment(styles);
+}
+
+export function useComponentStyles(component: Component): ComponentStyle {
+  const styleValues = useStyleValues([component]);
+  return useMemo(() => {
+    const styles = JSON.parse(component.style) as ComponentStyle;
+    for (const key of STYLE_KEYS) {
+      (styles as Record<string, unknown>)[key] = styleValues[key].resolved;
+    }
+    return applyStyleEnrichment(styles);
+  }, [component, styleValues]);
 }

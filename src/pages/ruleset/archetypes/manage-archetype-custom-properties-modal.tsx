@@ -200,19 +200,12 @@ export function ManageArchetypeCustomPropertiesModal({
                                 <RulesetColorPicker
                                   color={(effectiveDefault as string) || undefined}
                                   label='Default color'
-                                  asIcon
                                   disableAlpha
                                   onUpdate={(color: RGBColor) =>
                                     updateArchetypeCustomProperty(acp.id, {
                                       defaultValue: rgbToHex(color.r, color.g, color.b),
                                     })
                                   }
-                                />
-                                <div
-                                  className='h-8 w-8 shrink-0 rounded border border-border bg-muted'
-                                  style={{
-                                    backgroundColor: (effectiveDefault as string) || undefined,
-                                  }}
                                 />
                                 <Input
                                   value={(effectiveDefault as string) || ''}

@@ -2,7 +2,7 @@ import { WindowEditorContext } from '@/stores';
 import type { Component, ShapeComponentData } from '@/types';
 import { useNodeId } from '@xyflow/react';
 import { useContext } from 'react';
-import { getComponentData, getComponentStyles } from '../../../utils';
+import { getComponentData, useComponentStyles } from '../../../utils';
 import { ResizableNode } from '../../decorators';
 
 export const EditShapeNode = () => {
@@ -22,11 +22,9 @@ export const EditShapeNode = () => {
 
 export const ViewShapeNode = ({ component }: { component: Component }) => {
   const data = getComponentData(component) as ShapeComponentData;
-  const css = getComponentStyles(component);
+  const css = useComponentStyles(component);
   const outlineWidth = Math.max(0, css.outlineWidth);
   const numSides = data.sides ?? 4;
-
-  console.log(css);
 
   // For rectangles, support irregular shapes
   if (numSides === 4) {

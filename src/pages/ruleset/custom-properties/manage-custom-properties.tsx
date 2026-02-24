@@ -260,7 +260,6 @@ export function ManageCustomProperties() {
                         <RulesetColorPicker
                           color={(cp.defaultValue as string) || undefined}
                           label='Default color'
-                          asIcon
                           disableAlpha
                           onUpdate={(color: RGBColor) =>
                             handleDefaultValueChange(cp.id, rgbToHex(color.r, color.g, color.b))

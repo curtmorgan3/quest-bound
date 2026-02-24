@@ -1,5 +1,5 @@
 import { useAssets } from '@/lib/compass-api';
-import { getComponentData, getComponentStyles } from '@/lib/compass-planes/utils';
+import { getComponentData, useComponentStyles } from '@/lib/compass-planes/utils';
 import { CharacterContext, WindowEditorContext } from '@/stores';
 import type { Component, ImageComponentData } from '@/types';
 import { useNodeId } from '@xyflow/react';
@@ -17,7 +17,7 @@ export const EditImageNode = () => {
   if (!component) return null;
 
   const data = getComponentData(component) as ImageComponentData;
-  const css = getComponentStyles(component);
+  const css = useComponentStyles(component);
   const asset = assets.find((a) => a.id === data.assetId);
 
   const imageSrc = asset?.data ?? data.assetUrl;
@@ -69,7 +69,7 @@ export const EditImageNode = () => {
 };
 
 export const ViewImageNode = ({ component }: { component: Component }) => {
-  const css = getComponentStyles(component);
+  const css = useComponentStyles(component);
   const data = getComponentData(component) as ImageComponentData;
   const { assets } = useAssets();
   const characterContext = useContext(CharacterContext);
