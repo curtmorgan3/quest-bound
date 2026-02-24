@@ -20,22 +20,11 @@ import {
 } from '@/components/ui/sheet';
 import { useActiveRuleset, useArchetypeCustomProperties } from '@/lib/compass-api';
 import type { Archetype, CustomPropertyType } from '@/types';
+import { rgbToHex } from '@/utils';
 import { RotateCcw, Search, SlidersHorizontal, Trash2 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import type { RGBColor } from 'react-color';
 import { CustomPropertyPicker } from '../items/custom-property-picker';
-
-function rgbToHex(r: number, g: number, b: number): string {
-  return (
-    '#' +
-    [r, g, b]
-      .map((x) => {
-        const hex = Math.round(Math.max(0, Math.min(255, x))).toString(16);
-        return hex.length === 1 ? '0' + hex : hex;
-      })
-      .join('')
-  );
-}
 
 function getEffectiveDefault(
   acpDefault: string | number | boolean | undefined,

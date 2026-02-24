@@ -26,6 +26,7 @@ import {
 } from '@/components';
 import { useCustomProperties } from '@/lib/compass-api';
 import type { CustomPropertyType } from '@/types';
+import { rgbToHex } from '@/utils';
 import { Plus, Search, Trash } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import type { RGBColor } from 'react-color';
@@ -33,18 +34,6 @@ import { useParams } from 'react-router-dom';
 import { CustomPropertyPicker } from '../items/custom-property-picker';
 
 const PROP_TYPES: CustomPropertyType[] = ['string', 'number', 'boolean', 'color'];
-
-function rgbToHex(r: number, g: number, b: number): string {
-  return (
-    '#' +
-    [r, g, b]
-      .map((x) => {
-        const hex = Math.round(Math.max(0, Math.min(255, x))).toString(16);
-        return hex.length === 1 ? '0' + hex : hex;
-      })
-      .join('')
-  );
-}
 
 export function ManageCustomProperties() {
   const { rulesetId } = useParams<{ rulesetId: string }>();
@@ -94,8 +83,7 @@ export function ManageCustomProperties() {
   };
 
   const handleLabelChange = (id: string, label: string) => {
-    const trimmed = label.trim();
-    if (trimmed) updateCustomProperty(id, { label: trimmed });
+    updateCustomProperty(id, { label });
   };
 
   const handleTypeChange = (id: string, type: CustomPropertyType) => {
@@ -183,7 +171,7 @@ export function ManageCustomProperties() {
             <p className='text-sm text-muted-foreground mb-4'>
               {nameFilter.trim() || categoryFilter
                 ? 'Try a different filter.'
-                : 'Create custom properties to use on archetypes and items.'}
+                : 'Create custom properties for characters and items.'}
             </p>
             {!nameFilter.trim() && !categoryFilter && (
               <Button

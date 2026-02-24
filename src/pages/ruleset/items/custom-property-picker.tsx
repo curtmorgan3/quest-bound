@@ -18,23 +18,12 @@ import {
 } from '@/components';
 import { useActiveRuleset, useCustomProperties } from '@/lib/compass-api';
 import type { CustomPropertyType } from '@/types';
+import { rgbToHex } from '@/utils';
 import { Plus, Search } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { RGBColor } from 'react-color';
 
 const PROP_TYPES: CustomPropertyType[] = ['string', 'number', 'boolean', 'color'];
-
-function rgbToHex(r: number, g: number, b: number): string {
-  return (
-    '#' +
-    [r, g, b]
-      .map((x) => {
-        const hex = Math.round(Math.max(0, Math.min(255, x))).toString(16);
-        return hex.length === 1 ? '0' + hex : hex;
-      })
-      .join('')
-  );
-}
 
 interface CustomPropertyPickerProps {
   open: boolean;
@@ -193,7 +182,11 @@ export function CustomPropertyPicker({
                 <p className='text-sm text-muted-foreground'>
                   No unused custom properties in this ruleset. Create one first.
                 </p>
-                <Button variant='outline' size='sm' className='gap-1 w-fit' onClick={() => setMode('create')}>
+                <Button
+                  variant='outline'
+                  size='sm'
+                  className='gap-1 w-fit'
+                  onClick={() => setMode('create')}>
                   <Plus className='h-4 w-4' />
                   Create new
                 </Button>
@@ -215,9 +208,7 @@ export function CustomPropertyPicker({
                     <Label htmlFor='custom-property-picker-category' className='text-xs'>
                       Category
                     </Label>
-                    <Select
-                      value={categoryFilter}
-                      onValueChange={setCategoryFilter}>
+                    <Select value={categoryFilter} onValueChange={setCategoryFilter}>
                       <SelectTrigger id='custom-property-picker-category' className='h-8'>
                         <SelectValue />
                       </SelectTrigger>
@@ -232,9 +223,7 @@ export function CustomPropertyPicker({
                   </div>
                 </div>
                 {filteredAvailable.length === 0 ? (
-                  <p className='text-sm text-muted-foreground'>
-                    No properties match the filter.
-                  </p>
+                  <p className='text-sm text-muted-foreground'>No properties match the filter.</p>
                 ) : (
                   <div className='flex flex-col gap-1 max-h-[240px] overflow-auto'>
                     {filteredAvailable.map((cp) => (
@@ -263,10 +252,7 @@ export function CustomPropertyPicker({
                     <Plus className='h-4 w-4' />
                     Create new
                   </Button>
-                  <Button
-                    size='sm'
-                    onClick={handleAddSelected}
-                    disabled={selectedIds.size === 0}>
+                  <Button size='sm' onClick={handleAddSelected} disabled={selectedIds.size === 0}>
                     Add {selectedIds.size > 0 ? `(${selectedIds.size})` : ''}
                   </Button>
                 </DialogFooter>

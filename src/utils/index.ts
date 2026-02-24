@@ -1,3 +1,4 @@
+export * from './color-utils';
 export * from './debug-log';
 export * from './dice-utils';
 export * from './helpers';

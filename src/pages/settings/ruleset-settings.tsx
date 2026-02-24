@@ -35,22 +35,11 @@ import {
   removeModuleFromRuleset,
 } from '@/lib/compass-api/hooks/export/remove-module-from-ruleset';
 import type { Ruleset, RulesetModuleEntry } from '@/types';
+import { rgbToHex } from '@/utils';
 import { Download, Package, Plus, Sliders, Trash, Upload } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import type { RGBColor } from 'react-color';
 import { Link } from 'react-router-dom';
-
-function rgbToHex(r: number, g: number, b: number): string {
-  return (
-    '#' +
-    [r, g, b]
-      .map((x) => {
-        const hex = Math.round(Math.max(0, Math.min(255, x))).toString(16);
-        return hex.length === 1 ? '0' + hex : hex;
-      })
-      .join('')
-  );
-}
 
 interface RulesetSettingsProps {
   activeRuleset: Ruleset;
