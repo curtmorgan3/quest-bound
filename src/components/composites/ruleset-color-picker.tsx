@@ -86,12 +86,14 @@ export const RulesetColorPicker = ({
 
   const customPropLabel = showCustomPropPill ? customProp?.label : '';
 
-  // If we have a custom prop ID but the prop was deleted/missing, reset to black
+  // If we have a custom prop ID but the prop was deleted/missing, reset to black.
+  // Only clear when we know the list has loaded (non-empty) and the prop is missing;
+  // otherwise we might clear during initial load when customProperties is still [].
   useEffect(() => {
-    if (showCustomPropPill && customPropId && !customProp) {
+    if (showCustomPropPill && customPropId && customProperties.length > 0 && !customProp) {
       onUpdate({ r: 0, g: 0, b: 0, a: 1 });
     }
-  }, [showCustomPropPill, customPropId, customProp, onUpdate]);
+  }, [showCustomPropPill, customPropId, customProperties.length, customProp, onUpdate]);
 
   const openCustomPropertiesModal = () => {
     if (panelContext?.openCustomPropertiesModal) {
@@ -185,10 +187,8 @@ export const RulesetColorPicker = ({
         <div className='flex flex-col gap-0.5 items-center'>
           {showLabel && smallLabel}
           <div className='flex h-[20px] items-center gap-1 rounded-[4px] border border-border bg-muted/50 px-1.5'>
-            <span
-              className='min-w-0 flex-1 truncate text-xs'
-              title={customPropLabel ?? customPropId}>
-              {customPropLabel ?? customPropId}
+            <span className='min-w-0 flex-1 truncate text-xs' title={customPropLabel ?? 'unknown'}>
+              {customPropLabel ?? 'unknown'}
             </span>
             <Button
               type='button'

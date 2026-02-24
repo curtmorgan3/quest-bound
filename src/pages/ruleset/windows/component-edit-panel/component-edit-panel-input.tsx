@@ -59,12 +59,14 @@ export const EditPanelInput = ({
   const customProp = customProperties.find((p) => p.id === customPropId);
   const customPropLabel = showCustomPropPill ? customProp?.label : '';
 
-  // If we have a custom prop ID but the prop was deleted/missing, reset to clearValue
+  // If we have a custom prop ID but the prop was deleted/missing, reset to clearValue.
+  // Only clear when we know the list has loaded (non-empty) and the prop is missing;
+  // otherwise we might clear during initial load when customProperties is still [].
   useEffect(() => {
-    if (showCustomPropPill && customPropId && !customProp) {
+    if (showCustomPropPill && customPropId && customProperties.length > 0 && !customProp) {
       onChange(clearValue);
     }
-  }, [showCustomPropPill, customPropId, customProp, onChange, clearValue]);
+  }, [showCustomPropPill, customPropId, customProperties.length, customProp, onChange, clearValue]);
 
   return (
     <div className={`grid w-[${width}]`}>
@@ -74,10 +76,8 @@ export const EditPanelInput = ({
       <div className='relative'>
         {showCustomPropPill ? (
           <div className='flex h-[20px] items-center gap-1 rounded-[4px] border border-border bg-muted/50 px-1.5'>
-            <span
-              className='min-w-0 flex-1 truncate text-xs'
-              title={customPropLabel ?? customPropId}>
-              {customPropLabel ?? customPropId}
+            <span className='min-w-0 flex-1 truncate text-xs' title={customPropLabel ?? 'unknown'}>
+              {customPropLabel ?? 'unknown'}
             </span>
             <Button
               type='button'
