@@ -1,20 +1,20 @@
 import { Button } from '@/components/ui/button';
-import {
-  Dialog,
-  DialogContent,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { useActiveRuleset } from '@/lib/compass-api';
+import { useActiveRuleset, useCustomProperties } from '@/lib/compass-api';
 import { ComponentEditPanelContext } from '@/pages/ruleset/windows/component-edit-panel/component-edit-panel-context';
 import { CustomPropertiesListModal } from '@/pages/ruleset/windows/component-edit-panel/custom-properties-list-modal';
 import { colorWhite } from '@/palette';
-import { Palette, SlidersHorizontal } from 'lucide-react';
+import { Palette, SlidersHorizontal, X } from 'lucide-react';
 import { useContext, useState } from 'react';
 import type { RGBColor } from 'react-color';
+
+const CUSTOM_PROP_PREFIX = 'custom-prop-';
+
+function isCustomPropValue(value: string | undefined): value is string {
+  return typeof value === 'string' && value.startsWith(CUSTOM_PROP_PREFIX);
+}
 
 /** Parse rgba(r,g,b,a) or #hex to #rrggbb for native color input. */
 function colorToHex(color: string | undefined): string {
@@ -55,8 +55,10 @@ interface RulesetColorPicker {
   label?: string;
   asIcon?: boolean;
   disabled?: boolean;
-  onUpdate: (color: RGBColor) => void;
+  /** Called with RGBColor when user picks a color, or '' when clearing a custom property. */
+  onUpdate: (color: RGBColor | string) => void;
   disableAlpha?: boolean;
+  propertyKey?: string;
 }
 
 export const RulesetColorPicker = ({
@@ -65,16 +67,24 @@ export const RulesetColorPicker = ({
   asIcon,
   disabled,
   onUpdate,
+  propertyKey,
 }: RulesetColorPicker) => {
   const { activeRuleset } = useActiveRuleset();
+  const { customProperties } = useCustomProperties(activeRuleset?.id);
   const palette = activeRuleset?.palette ?? [];
   const [customPropsModalOpen, setCustomPropsModalOpen] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const panelContext = useContext(ComponentEditPanelContext);
 
+  const showCustomPropPill = isCustomPropValue(color);
+  const customPropId = showCustomPropPill ? color.slice(CUSTOM_PROP_PREFIX.length) : '';
+  const customPropLabel = showCustomPropPill
+    ? customProperties.find((p) => p.id === customPropId)?.label
+    : '';
+
   const openCustomPropertiesModal = () => {
     if (panelContext?.openCustomPropertiesModal) {
-      panelContext.openCustomPropertiesModal();
+      panelContext.openCustomPropertiesModal(propertyKey);
     } else {
       setCustomPropsModalOpen(true);
     }
@@ -103,20 +113,17 @@ export const RulesetColorPicker = ({
             className='h-10 flex-1 min-w-0 cursor-pointer rounded border border-border bg-transparent p-0'
             aria-label={label ?? 'Color'}
           />
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                type='button'
-                variant='outline'
-                size='icon'
-                className='size-10 rounded shrink-0'
-                aria-label={label ?? 'Color'}
-                onClick={openCustomPropertiesModal}>
-                <SlidersHorizontal className='size-4' />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>{label ?? 'Color'}</TooltipContent>
-          </Tooltip>
+          {!!propertyKey && (
+            <Button
+              type='button'
+              variant='outline'
+              size='icon'
+              className='size-10 rounded shrink-0'
+              aria-label={label ?? 'Color'}
+              onClick={openCustomPropertiesModal}>
+              <SlidersHorizontal className='size-4' />
+            </Button>
+          )}
         </div>
         <div className='flex flex-col gap-2'>
           <Label className='text-xs'>Opacity</Label>
@@ -153,25 +160,53 @@ export const RulesetColorPicker = ({
   if (asIcon) {
     return (
       <>
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogTrigger asChild>
-            <button
-              type='button'
-              title={label ?? 'Color'}
-              disabled={disabled}
-              className='rounded p-0.5 disabled:opacity-50'>
-              <Palette
-                className='text-xs h-[18px] w-[18px] cursor-pointer'
-                color={colorWhite}
-              />
-            </button>
-          </DialogTrigger>
-          <DialogContent>{pickerContent}</DialogContent>
-        </Dialog>
+        {showCustomPropPill ? (
+          <div className='flex flex-col items-center gap-0.5'>
+            <span
+              className='text-[10px] max-w-[50px] leading-none text-muted-foreground'
+              style={{ textAlign: 'center' }}>
+              {label ?? 'Color'}
+            </span>
+            <div className='flex h-[20px] items-center gap-1 rounded-[4px] border border-border bg-muted/50 px-1.5'>
+              <span
+                className='min-w-0 flex-1 truncate text-xs'
+                title={customPropLabel ?? customPropId}>
+                {customPropLabel ?? customPropId}
+              </span>
+              <Button
+                type='button'
+                variant='ghost'
+                size='icon'
+                className='size-4 shrink-0 rounded'
+                aria-label='Remove custom property'
+                disabled={disabled}
+                onClick={() => onUpdate('')}>
+                <X className='size-3' />
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+            <DialogTrigger asChild>
+              <button
+                type='button'
+                title={label ?? 'Color'}
+                disabled={disabled}
+                className='flex flex-col items-center gap-0.5 rounded p-0.5 disabled:opacity-50'>
+                <span className='text-[10px] max-w-[50px] leading-none text-muted-foreground'>
+                  {label ?? 'Color'}
+                </span>
+                <Palette className='h-[18px] w-[18px] cursor-pointer text-xs' color={colorWhite} />
+              </button>
+            </DialogTrigger>
+            <DialogContent>{pickerContent}</DialogContent>
+          </Dialog>
+        )}
         {!panelContext && (
           <CustomPropertiesListModal
             open={customPropsModalOpen}
             onOpenChange={setCustomPropsModalOpen}
+            onSelect={() => setCustomPropsModalOpen(false)}
           />
         )}
       </>
@@ -180,21 +215,40 @@ export const RulesetColorPicker = ({
 
   return (
     <>
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogTrigger asChild>
-          <button
+      {showCustomPropPill ? (
+        <div className='flex h-[20px] items-center gap-1 rounded-[4px] border border-border bg-muted/50 px-1.5'>
+          <span className='min-w-0 flex-1 truncate text-xs' title={customPropLabel ?? customPropId}>
+            {customPropLabel ?? customPropId}
+          </span>
+          <Button
             type='button'
-            className='h-8 w-full rounded border border-border shadow-sm'
-            style={{ backgroundColor: currentHex }}
-            aria-label={label ?? 'Color'}
-          />
-        </DialogTrigger>
-        <DialogContent>{pickerContent}</DialogContent>
-      </Dialog>
+            variant='ghost'
+            size='icon'
+            className='size-4 shrink-0 rounded'
+            aria-label='Remove custom property'
+            disabled={disabled}
+            onClick={() => onUpdate('')}>
+            <X className='size-3' />
+          </Button>
+        </div>
+      ) : (
+        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+          <DialogTrigger asChild>
+            <button
+              type='button'
+              className='h-8 w-full rounded border border-border shadow-sm'
+              style={{ backgroundColor: currentHex }}
+              aria-label={label ?? 'Color'}
+            />
+          </DialogTrigger>
+          <DialogContent>{pickerContent}</DialogContent>
+        </Dialog>
+      )}
       {!panelContext && (
         <CustomPropertiesListModal
           open={customPropsModalOpen}
           onOpenChange={setCustomPropsModalOpen}
+          onSelect={() => setCustomPropsModalOpen(false)}
         />
       )}
     </>

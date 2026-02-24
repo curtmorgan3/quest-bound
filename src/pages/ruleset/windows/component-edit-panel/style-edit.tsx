@@ -80,18 +80,21 @@ export const StyleEdit = ({ components, handleUpdate }: Props) => {
     <div className='flex-col w-full flex flex-col gap-3 pb-2 border-b-1'>
       <p className='text-sm'>Style</p>
 
-      <div className='w-full flex flex-row gap-4 items-end'>
+      <div className='w-full flex flex-row gap-4 items-end flex-wrap'>
         <EditPanelInput
           number={opacity !== MIXED_VALUE_LABEL}
           disabled={opacity === MIXED_VALUE_LABEL}
           label='Opacity'
+          width='80px'
           value={opacity}
+          styleKeyForCustomProperty='opacity'
           step={0.1}
           onChange={(val) => handleUpdate('opacity', Math.min(1, Math.max(0, parseValue(val))))}
         />
         <RulesetColorPicker
           asIcon
           label='Background Color'
+          propertyKey='backgroundColor'
           color={backgroundColor}
           onUpdate={(color) => handleUpdate('backgroundColor', color)}
           disabled={backgroundColor === MIXED_VALUE_LABEL}
@@ -100,6 +103,7 @@ export const StyleEdit = ({ components, handleUpdate }: Props) => {
         <RulesetColorPicker
           asIcon
           label='Color'
+          propertyKey='color'
           color={color}
           onUpdate={(color) => handleUpdate('color', color)}
           disabled={color === MIXED_VALUE_LABEL}
@@ -109,12 +113,13 @@ export const StyleEdit = ({ components, handleUpdate }: Props) => {
       <Collapsible open={isCornersOpen} onOpenChange={setIsCornersOpen}>
         <div className='w-full flex flex-col gap-2'>
           <p className='text-xs text-muted-foreground'>Border</p>
-          <div className='w-full flex flex-row gap-2 items-end'>
+          <div className='w-full flex flex-row gap-2 items-end flex-wrap'>
             <EditPanelInput
               number={outlineWidth !== MIXED_VALUE_LABEL}
               disabled={outlineWidth === MIXED_VALUE_LABEL}
               label='Width'
               value={outlineWidth}
+              styleKeyForCustomProperty='outlineWidth'
               width='80px'
               step={1}
               onChange={(val) =>
@@ -133,6 +138,7 @@ export const StyleEdit = ({ components, handleUpdate }: Props) => {
 
             <RulesetColorPicker
               label='Border Color'
+              propertyKey='outlineColor'
               asIcon
               color={outlineColor}
               disabled={outlineColor === MIXED_VALUE_LABEL}
@@ -157,6 +163,7 @@ export const StyleEdit = ({ components, handleUpdate }: Props) => {
               disabled={borderRadiusTopLeft === MIXED_VALUE_LABEL}
               label='Top Left'
               value={borderRadiusTopLeft}
+              styleKeyForCustomProperty='borderRadiusTopLeft'
               step={1}
               onChange={(val) =>
                 handleUpdate('borderRadiusTopLeft', Math.min(200, Math.max(0, parseValue(val))))
@@ -167,6 +174,7 @@ export const StyleEdit = ({ components, handleUpdate }: Props) => {
               disabled={borderRadiusTopRight === MIXED_VALUE_LABEL}
               label='Top Right'
               value={borderRadiusTopRight}
+              styleKeyForCustomProperty='borderRadiusTopRight'
               step={1}
               onChange={(val) =>
                 handleUpdate('borderRadiusTopRight', Math.min(200, Math.max(0, parseValue(val))))
@@ -176,6 +184,7 @@ export const StyleEdit = ({ components, handleUpdate }: Props) => {
               number={borderRadiusBottomLeft !== MIXED_VALUE_LABEL}
               disabled={borderRadiusBottomLeft === MIXED_VALUE_LABEL}
               label='Bottom Left'
+              styleKeyForCustomProperty='borderRadiusBottomLeft'
               value={borderRadiusBottomLeft}
               step={1}
               onChange={(val) =>
@@ -186,6 +195,7 @@ export const StyleEdit = ({ components, handleUpdate }: Props) => {
               number={borderRadiusBottomRight !== MIXED_VALUE_LABEL}
               disabled={borderRadiusBottomRight === MIXED_VALUE_LABEL}
               label='Bottom Right'
+              styleKeyForCustomProperty='borderRadiusBottomRight'
               value={borderRadiusBottomRight}
               step={1}
               onChange={(val) =>
@@ -226,6 +236,7 @@ export const StyleEdit = ({ components, handleUpdate }: Props) => {
             <EditPanelInput
               number={paddingTop !== MIXED_VALUE_LABEL}
               disabled={paddingTop === MIXED_VALUE_LABEL}
+              styleKeyForCustomProperty='paddingTop'
               label='Top'
               value={paddingTop}
               step={1}
@@ -237,6 +248,7 @@ export const StyleEdit = ({ components, handleUpdate }: Props) => {
               number={paddingRight !== MIXED_VALUE_LABEL}
               disabled={paddingRight === MIXED_VALUE_LABEL}
               label='Right'
+              styleKeyForCustomProperty='paddingRight'
               value={paddingRight}
               step={1}
               onChange={(val) =>
@@ -247,6 +259,7 @@ export const StyleEdit = ({ components, handleUpdate }: Props) => {
               number={paddingBottom !== MIXED_VALUE_LABEL}
               disabled={paddingBottom === MIXED_VALUE_LABEL}
               label='Bottom'
+              styleKeyForCustomProperty='paddingBottom'
               value={paddingBottom}
               step={1}
               onChange={(val) =>
@@ -257,6 +270,7 @@ export const StyleEdit = ({ components, handleUpdate }: Props) => {
               number={paddingLeft !== MIXED_VALUE_LABEL}
               disabled={paddingLeft === MIXED_VALUE_LABEL}
               label='Left'
+              styleKeyForCustomProperty='paddingLeft'
               value={paddingLeft}
               step={1}
               onChange={(val) =>
