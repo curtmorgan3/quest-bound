@@ -80,14 +80,43 @@ export class CharacterAccessor implements StructuredCloneSafe {
     this.characterCustomProperties = characterCustomProperties;
   }
 
+  private getDefaultValueForCustomProperty(
+    customProperty: CustomProperty,
+  ): string | number | boolean {
+    if (customProperty.defaultValue !== undefined) {
+      return customProperty.defaultValue;
+    }
+    switch (customProperty.type) {
+      case 'number':
+        return 0;
+      case 'boolean':
+        return false;
+      case 'string':
+      case 'color':
+      default:
+        return '';
+    }
+  }
+
   /**
    * Get a character custom property by label (e.g. Owner.getProperty('Level')).
-   * Returns the first matching CustomProperty value; undefined if not found.
+   * Returns the first matching CustomProperty value; null if not found.
    */
-  getProperty(name: string): string | number | boolean | undefined {
+  getProperty(name: string): string | number | boolean | null {
     const cp = this.customProperties.find((c) => c.label === name);
-    if (!cp) return undefined;
-    return this.characterCustomProperties[cp.id];
+    if (!cp) return null;
+    const current = this.characterCustomProperties[cp.id];
+    if (current !== undefined) {
+      return current as string | number | boolean;
+    }
+
+    const defaultValue = this.getDefaultValueForCustomProperty(cp);
+    this.characterCustomProperties[cp.id] = defaultValue;
+    this.pendingUpdates.set(`characterUpdate:${this.id}`, {
+      customProperties: this.characterCustomProperties,
+    });
+
+    return defaultValue;
   }
 
   /**

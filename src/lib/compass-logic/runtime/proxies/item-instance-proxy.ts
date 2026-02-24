@@ -52,17 +52,20 @@ export class ItemInstanceProxy implements StructuredCloneSafe {
   readonly inventoryItem: InventoryItem;
   readonly item: Item;
   private readonly customPropertyLookup: CustomPropertyLookup;
+  private readonly customProperties: CustomProperty[];
   private readonly onSetCustomProperty?: SetItemCustomPropertyFn;
 
   constructor(
     inventoryItem: InventoryItem,
     item: Item,
     customPropertyLookup: CustomPropertyLookup,
+    customProperties: CustomProperty[],
     onSetCustomProperty?: SetItemCustomPropertyFn,
   ) {
     this.inventoryItem = inventoryItem;
     this.item = item;
     this.customPropertyLookup = customPropertyLookup;
+    this.customProperties = customProperties;
     this.onSetCustomProperty = onSetCustomProperty;
   }
 
@@ -86,6 +89,24 @@ export class ItemInstanceProxy implements StructuredCloneSafe {
     return this.inventoryItem.isEquipped ?? false;
   }
 
+  private getDefaultValueForCustomProperty(
+    customProperty: CustomProperty,
+  ): string | number | boolean {
+    if (customProperty.defaultValue !== undefined) {
+      return customProperty.defaultValue;
+    }
+    switch (customProperty.type) {
+      case 'number':
+        return 0;
+      case 'boolean':
+        return false;
+      case 'string':
+      case 'color':
+      default:
+        return '';
+    }
+  }
+
   /**
    * Get an item instance custom property by label (e.g. item.getProperty('Armor Value')).
    * Returns null if the property is not defined on the item or has no value.
@@ -93,8 +114,25 @@ export class ItemInstanceProxy implements StructuredCloneSafe {
   getProperty(name: string): string | number | boolean | null {
     const customPropertyId = this.customPropertyLookup.resolveLabelToId(name);
     if (!customPropertyId) return null;
-    const value = this.inventoryItem.customProperties?.[customPropertyId];
-    return (value ?? null) as string | number | boolean | null;
+    const current = this.inventoryItem.customProperties?.[customPropertyId];
+    if (current !== undefined) {
+      return current as string | number | boolean;
+    }
+
+    const definition = this.customProperties.find((cp) => cp.id === customPropertyId);
+    if (!definition) return null;
+    const defaultValue = this.getDefaultValueForCustomProperty(definition);
+
+    if (this.onSetCustomProperty) {
+      this.onSetCustomProperty(customPropertyId, defaultValue);
+    } else {
+      if (!this.inventoryItem.customProperties) {
+        this.inventoryItem.customProperties = {};
+      }
+      this.inventoryItem.customProperties[customPropertyId] = defaultValue;
+    }
+
+    return defaultValue;
   }
 
   /**
@@ -145,5 +183,5 @@ export function createItemInstanceProxy(
   onSetCustomProperty?: SetItemCustomPropertyFn,
 ): ItemInstanceProxy {
   const lookup = createCustomPropertyLookup(customProperties);
-  return new ItemInstanceProxy(inventoryItem, item, lookup, onSetCustomProperty);
+  return new ItemInstanceProxy(inventoryItem, item, lookup, customProperties, onSetCustomProperty);
 }
