@@ -197,12 +197,6 @@ export function ManageItemCustomPropertiesPanel({
                                     })
                                   }
                                 />
-                                <div
-                                  className='h-8 w-8 shrink-0 rounded border border-border bg-muted'
-                                  style={{
-                                    backgroundColor: (effectiveDefault as string) || undefined,
-                                  }}
-                                />
                                 <Input
                                   value={(effectiveDefault as string) || ''}
                                   onChange={(e) =>

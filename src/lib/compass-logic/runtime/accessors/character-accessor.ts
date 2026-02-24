@@ -181,12 +181,7 @@ export class CharacterAccessor implements StructuredCloneSafe {
         customProperties: inventoryItem.customProperties,
       });
     };
-    return createItemInstanceProxy(
-      inventoryItem,
-      item,
-      this.customProperties,
-      onSetCustomProperty,
-    );
+    return createItemInstanceProxy(inventoryItem, item, this.customProperties, onSetCustomProperty);
   }
 
   Items(name: string): ReturnType<typeof createItemInstanceProxy>[] {

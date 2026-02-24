@@ -303,12 +303,12 @@ xp_needed = getChart('Level Table').rowWhere('Level', 5).valueInColumn('XP Requi
 - `item.isEquipped` — whether the item is equipped
 - `item.isConsumable` — whether the item is consumable
 
-**Custom properties (defined on the Item):** Access by property name. Use `.property('label')` for names with spaces.
+**Custom properties (defined on the Item):** Use `getProperty(name)` and `setProperty(name, value)` (same as character custom properties).
 
 ```javascript
 armor = Owner.Item('Plate Mail');
-armor_value = armor.property('Armor Value'); // Read custom property
-Owner.Item('item name').property('Armor value').set(15); // Set instance custom property
+armor_value = armor.getProperty('Armor Value'); // Read custom property (null if not found)
+Owner.Item('item name').setProperty('Armor Value', 15); // Set instance custom property
 ```
 
 ### Actions
