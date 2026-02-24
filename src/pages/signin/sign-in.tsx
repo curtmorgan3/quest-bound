@@ -1,13 +1,6 @@
 import DiscordImage from '@/assets/discord-icon.png';
 import videoSrc from '@/assets/logo-animation.mp4';
 import { Button, Input, Link, PWAInstallPrompt } from '@/components';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { useRegisterEmail, useUsers } from '@/lib/compass-api';
 import { isRunningLocally } from '@/utils';
 import { motion } from 'framer-motion';
@@ -23,7 +16,6 @@ export const SignIn = () => {
     loading: emailLoading,
   } = useRegisterEmail();
 
-  const [selectedUserId, setSelectedUserId] = useState<string>('');
   const [newUsername, setNewUsername] = useState<string>('');
 
   const handleEmailSubmit = () => {
@@ -32,13 +24,16 @@ export const SignIn = () => {
 
   const handleLogin = async () => {
     try {
-      if (selectedUserId === '_new') {
-        if (!newUsername) {
+      if (!users?.length) {
+        if (!newUsername.trim()) {
           return;
         }
-        createUser(newUsername);
+        await createUser(newUsername.trim());
       } else {
-        setCurrentUserById(selectedUserId);
+        const firstUser = users[0];
+        if (firstUser) {
+          setCurrentUserById(firstUser.id);
+        }
       }
     } catch (e: any) {
       console.error('Login failed', e);
@@ -84,37 +79,24 @@ export const SignIn = () => {
           </div>
         )}
         {(emailRegistered || isRunningLocally()) && (
-          <div className='flex gap-4 items-center'>
-            <Select onValueChange={(value) => setSelectedUserId(value)} value={selectedUserId}>
-              <SelectTrigger className='w-[200px]' data-testid='user-select'>
-                <SelectValue placeholder='Select a user' />
-              </SelectTrigger>
-              <SelectContent>
-                {users?.map((user) => (
-                  <SelectItem className='w-[200px]' key={user.id} value={user.id}>
-                    {user.username}
-                  </SelectItem>
-                ))}
-                <SelectItem className='w-[200px]' value='_new'>
-                  New User
-                </SelectItem>
-              </SelectContent>
-            </Select>
-            {selectedUserId === '_new' && (
+          <div className='flex gap-4 flex-col items-center'>
+            {!users?.length ? (
               <Input
                 className='w-[200px]'
-                placeholder='Username'
+                placeholder='username'
                 value={newUsername}
                 onChange={(e) => setNewUsername(e.target.value)}
                 data-testid='username-input'
               />
+            ) : (
+              <span data-testid='current-user-text'>{users[0]?.username}</span>
             )}
             <Button
               loading={loading}
               onClick={handleLogin}
-              disabled={!selectedUserId || (selectedUserId === '_new' && !newUsername)}
+              disabled={!users?.length && !newUsername.trim()}
               data-testid='submit-button'>
-              Submit
+              Launch
             </Button>
           </div>
         )}
