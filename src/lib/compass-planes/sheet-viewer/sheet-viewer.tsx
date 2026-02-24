@@ -61,7 +61,9 @@ export const SheetViewer = ({
 
   const [locked, setLockedState] = useState<boolean>(initialLocked ?? lockByDefault ?? false);
 
-  const currentPage = characterPages.find((p) => p.id === currentPageId);
+  const currentPage = editorWindowId
+    ? undefined
+    : characterPages.find((p) => p.id === currentPageId);
 
   const setLocked = (next: boolean | ((prev: boolean) => boolean)) => {
     setLockedState((prev) => {
@@ -82,7 +84,7 @@ export const SheetViewer = ({
   // If editorWindowId is provided, only render that
   const windowsToRenderAsNodes = useMemo(() => {
     if (editorWindowId) {
-      return windowsForCurrentPage.filter((w) => w.windowId === editorWindowId);
+      return characterWindows.filter((w) => w.windowId === editorWindowId);
     }
     return windowsForCurrentPage;
   }, [windowsForCurrentPage, editorWindowId]);
@@ -210,7 +212,7 @@ export const SheetViewer = ({
               dispatchSheetViewerBackdropClick(e.clientX, e.clientY);
             }
           }}>
-          {!transparentBackground && currentPage?.backgroundColor != null && (
+          {!transparentBackground && !editorWindowId && currentPage?.backgroundColor != null && (
             <div
               aria-hidden
               style={{
