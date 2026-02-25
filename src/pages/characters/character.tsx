@@ -163,9 +163,8 @@ export const CharacterPage = ({
         editorWindowId={editorWindowId}
         transparentBackground={transparentBackground}
       />
-      {!editorWindowId && (
-        <GameLog className={`fixed bottom-[50px] left-${open ? '265' : '65'} z-30`} />
-      )}
+
+      <GameLog className={`fixed bottom-[50px] z-30 ${open ? 'left-[295px]' : 'left-[85px]'}`} />
       <InventoryPanel
         open={inventoryPanelConfig.open ?? false}
         onOpenChange={(open: boolean) => {
