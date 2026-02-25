@@ -1,5 +1,5 @@
 import { useRulesetPages } from '@/lib/compass-api';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 interface UsePageValuesProps {
   id?: string;
@@ -26,23 +26,42 @@ export const usePageValues = ({
 
   const active = pages.find((p) => p.id === id);
 
+  const [hideFromPlayerView, setHideFromPlayerView] = useState(false);
+
+  const resetAll = () => {
+    setHideFromPlayerView(false);
+  };
+
   useEffect(() => {
     if (isEditMode && active) {
       setTitle(active.label);
       setCategory(active.category || '');
+      setHideFromPlayerView(active.hideFromPlayerView ?? false);
+    } else {
+      resetAll();
     }
   }, [active, isEditMode]);
 
   const savePage = () => {
     if (isEditMode) {
-      updatePage(id, { label: baseProperties.title, category: baseProperties.category || undefined });
+      updatePage(id, {
+        label: baseProperties.title,
+        category: baseProperties.category || undefined,
+        hideFromPlayerView,
+      });
     } else {
-      createPage({ label: baseProperties.title, category: baseProperties.category || undefined });
+      createPage({
+        label: baseProperties.title,
+        category: baseProperties.category || undefined,
+        hideFromPlayerView,
+      });
     }
     onCreate?.();
   };
 
   return {
     savePage,
+    hideFromPlayerView,
+    setHideFromPlayerView,
   };
 };

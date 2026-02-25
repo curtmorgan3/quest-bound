@@ -67,7 +67,9 @@ export const WindowsTabs = ({
   const [selectedCategory, setSelectedCategory] = useState('');
   const [editPageId, setEditPageId] = useState<string | null>(null);
 
-  const sortedRulesetWindows = [...rulesetWindows].sort((a, b) => a.title.localeCompare(b.title));
+  const sortedRulesetWindows = [...rulesetWindows]
+    .filter((w) => !w.hideFromPlayerView)
+    .sort((a, b) => a.title.localeCompare(b.title));
   const sortedWindows = [...windows].sort((a, b) => a.title.localeCompare(b.title));
   const sortedPages = [...characterPages].sort((a, b) => a.label.localeCompare(b.label));
 
@@ -393,7 +395,9 @@ export const WindowsTabs = ({
               <div
                 className='flex flex-col gap-1 max-h-[200px] overflow-y-auto rounded-md border border-[#555] bg-[#333] p-1'
                 role='list'>
-                {rulesetPages.map((rp) => (
+                {rulesetPages
+                  .filter((rp) => !rp.hideFromPlayerView)
+                  .map((rp) => (
                   <button
                     key={rp.rulesetPageId}
                     type='button'

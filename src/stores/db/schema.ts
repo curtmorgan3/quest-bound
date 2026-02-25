@@ -10,8 +10,8 @@ export const dbSchema = {
   items: `${common}, rulesetId, title, description, category, weight, defaultQuantity, stackSize, isContainer, isStorable, isEquippable, isConsumable, inventoryWidth, inventoryHeight, scriptId, moduleId, sprites`,
   charts: `${common}, rulesetId, title, description, category, data, assetId, image, moduleId`,
   documents: `${common}, rulesetId, worldId, campaignId, title, description, category, assetId, image, pdfAssetId, pdfData, markdownData, moduleId`,
-  windows: `${common}, rulesetId, title, category, moduleId`,
-  pages: `${common}, label, category, moduleId`,
+  windows: `${common}, rulesetId, title, category, hideFromPlayerView, moduleId`,
+  pages: `${common}, label, category, hideFromPlayerView, moduleId`,
   components: `${common}, rulesetId, windowId, type, x, y, z, height, width, rotation, selected, assetId, assetUrl, groupId, attributeId, actionId, data, style`,
   characters: `${common}, rulesetId, userId, assetId, image, moduleId`,
   archetypes: `${common}, rulesetId, name, description, assetId, image, scriptId, testCharacterId, isDefault, loadOrder, moduleId, sprites, [rulesetId+name]`,
@@ -43,4 +43,4 @@ export const dbSchema = {
 };
 
 // Increment on every schema change
-export const dbSchemaVersion = 39;
+export const dbSchemaVersion = 41;

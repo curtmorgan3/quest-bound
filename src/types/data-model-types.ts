@@ -164,6 +164,8 @@ export type Page = BaseDetails & {
   backgroundOpacity?: number;
   backgroundColor?: string;
   image?: string | null;
+  /** When true, this page template is hidden from the player-facing sheet viewer. */
+  hideFromPlayerView?: boolean;
   /** Module origin: ruleset id, source entity id, and module name. */
   moduleId?: string;
   moduleEntityId?: string;
@@ -359,6 +361,8 @@ export type Window = BaseDetails & {
   title: string;
   category?: string;
   description?: string;
+  /** When true, this window is hidden from the player-facing sheet viewer. */
+  hideFromPlayerView?: boolean;
   /** Module origin: ruleset id, source entity id, and module name. */
   moduleId?: string;
   moduleEntityId?: string;

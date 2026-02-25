@@ -14,6 +14,8 @@ import { ActionCreate } from './action-create';
 import { AttributeCreate } from './attribute-create';
 import { ChartCreate } from './chart-create';
 import { DocumentCreate } from './document-create';
+import { PageCreate } from './page-create';
+import { WindowCreate } from './window-create';
 import {
   useActionValues,
   useAttributeValues,
@@ -99,7 +101,7 @@ export const BaseCreate = ({ onCreate, worldId, campaignId }: BaseCreateProps) =
     setCategory,
   });
 
-  const { saveWindow } = useWindowValues({
+  const { saveWindow, hideFromPlayerView, setHideFromPlayerView } = useWindowValues({
     id: editId || undefined,
     baseProperties,
     onCreate: () => {
@@ -110,7 +112,11 @@ export const BaseCreate = ({ onCreate, worldId, campaignId }: BaseCreateProps) =
     setDescription,
   });
 
-  const { savePage } = usePageValues({
+  const {
+    savePage,
+    hideFromPlayerView: hidePageFromPlayerView,
+    setHideFromPlayerView: setHidePageFromPlayerView,
+  } = usePageValues({
     id: editId || undefined,
     baseProperties,
     onCreate: () => {
@@ -272,6 +278,18 @@ export const BaseCreate = ({ onCreate, worldId, campaignId }: BaseCreateProps) =
         {activeType === 'items' && <ItemCreate {...itemProps} />}
         {activeType === 'charts' && <ChartCreate {...chartProps} />}
         {activeType === 'documents' && <DocumentCreate {...documentProps} />}
+        {activeType === 'windows' && (
+          <WindowCreate
+            hideFromPlayerView={hideFromPlayerView}
+            setHideFromPlayerView={setHideFromPlayerView}
+          />
+        )}
+        {activeType === 'pages' && (
+          <PageCreate
+            hideFromPlayerView={hidePageFromPlayerView}
+            setHideFromPlayerView={setHidePageFromPlayerView}
+          />
+        )}
 
         <DescriptionEditor
           id='create-description'

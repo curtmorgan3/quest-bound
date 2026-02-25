@@ -20,7 +20,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { FileText, Pencil } from 'lucide-react';
+import { EyeOff, FileText, Pencil } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useState } from 'react';
 
@@ -54,12 +54,14 @@ interface Props {
   categoryEditable?: boolean;
   /** Existing category names for the type-ahead dropdown (e.g. from documents, charts, etc.). */
   existingCategories: string[];
+  /** When true (and type is windows or pages), show EyeOff to indicate hidden from player view. */
+  hideFromPlayerView?: boolean;
 }
 
 export const PreviewCard = ({
   id,
   title,
-  type: _type,
+  type: previewType,
   category,
   image,
   descriptionExtra,
@@ -72,7 +74,10 @@ export const PreviewCard = ({
   onEditMarkdown,
   categoryEditable = true,
   existingCategories,
+  hideFromPlayerView,
 }: Props) => {
+  const showHiddenFromPlayer =
+    (previewType === 'windows' || previewType === 'pages') && hideFromPlayerView;
   const [editingTitle, setEditingTitle] = useState(false);
   const [newTitle, setNewTitle] = useState(title);
 
@@ -123,15 +128,23 @@ export const PreviewCard = ({
                 onKeyDown={(e) => handleKeyEvent(e as unknown as KeyboardEvent)}
               />
             ) : (
-              <CardTitle
-                className={`text-md cursor-pointer ${titleClassName ?? ''}`.trim()}
-                data-testid='preview-card-title'
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setEditingTitle(true);
-                }}>
-                {title}
-              </CardTitle>
+              <div className='flex items-center gap-2'>
+                <CardTitle
+                  className={`text-md cursor-pointer ${titleClassName ?? ''}`.trim()}
+                  data-testid='preview-card-title'
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setEditingTitle(true);
+                  }}>
+                  {title}
+                </CardTitle>
+                {showHiddenFromPlayer && (
+                  <EyeOff
+                    className='h-4 w-4 shrink-0 text-muted-foreground'
+                    title='Hidden from player view'
+                  />
+                )}
+              </div>
             )}
           </CardHeader>
           <CardDescription className='grow-1 max-h-[200px] overflow-y-auto mt-1'>
@@ -161,15 +174,23 @@ export const PreviewCard = ({
                 onKeyDown={(e) => handleKeyEvent(e as unknown as KeyboardEvent)}
               />
             ) : (
-              <CardTitle
-                className={`text-md cursor-pointer ${titleClassName ?? ''}`.trim()}
-                data-testid='preview-card-title'
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setEditingTitle(true);
-                }}>
-                {title}
-              </CardTitle>
+              <div className='flex items-center gap-2'>
+                <CardTitle
+                  className={`text-md cursor-pointer ${titleClassName ?? ''}`.trim()}
+                  data-testid='preview-card-title'
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setEditingTitle(true);
+                  }}>
+                  {title}
+                </CardTitle>
+                {showHiddenFromPlayer && (
+                  <EyeOff
+                    className='h-4 w-4 shrink-0 text-muted-foreground'
+                    title='Hidden from player view'
+                  />
+                )}
+              </div>
             )}
           </CardHeader>
           <CardDescription className='grow-1 max-h-[200px] overflow-y-auto'>

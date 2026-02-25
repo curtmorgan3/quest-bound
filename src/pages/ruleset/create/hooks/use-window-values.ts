@@ -1,10 +1,11 @@
 import { useWindows } from '@/lib/compass-api';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 interface UseActionValueProps {
   id?: string;
   baseProperties: {
     title: string;
+    description: string;
     category: string;
   };
   onCreate?: () => void;
@@ -22,21 +23,30 @@ export const useWindowValues = ({
   setDescription,
 }: UseActionValueProps) => {
   const { windows, createWindow, updateWindow } = useWindows();
+  const [hideFromPlayerView, setHideFromPlayerView] = useState(false);
   const isEditMode = !!id;
 
   const active = windows.find((a) => a.id === id);
+
+  const resetAll = () => {
+    setHideFromPlayerView(false);
+  };
 
   useEffect(() => {
     if (isEditMode && active) {
       setTitle(active.title);
       setCategory(active.category || '');
       setDescription(active.description || '');
+      setHideFromPlayerView(active.hideFromPlayerView ?? false);
+    } else {
+      resetAll();
     }
   }, [active]);
 
   const saveWindow = () => {
     const data = {
       ...baseProperties,
+      hideFromPlayerView,
     };
 
     if (isEditMode) {
@@ -50,5 +60,7 @@ export const useWindowValues = ({
 
   return {
     saveWindow,
+    hideFromPlayerView,
+    setHideFromPlayerView,
   };
 };

@@ -42,6 +42,7 @@ interface CharacterPage {
   onClose?: () => void;
   /** When provided with onClose, renders floating action buttons (e.g. inventory + close) in the top-right. */
   renderFloatingActions?: (actions: CharacterPageFloatingActions) => React.ReactNode;
+  hideGameLog?: boolean;
 }
 
 export const CharacterPage = ({
@@ -52,6 +53,7 @@ export const CharacterPage = ({
   transparentBackground,
   onClose,
   renderFloatingActions,
+  hideGameLog = false,
 }: CharacterPage) => {
   const { open } = useSidebar();
   const { characterId } = useParams<{ characterId: string }>();
@@ -164,7 +166,9 @@ export const CharacterPage = ({
         transparentBackground={transparentBackground}
       />
 
-      <GameLog className={`fixed bottom-[50px] z-30 ${open ? 'left-[295px]' : 'left-[85px]'}`} />
+      {!hideGameLog && (
+        <GameLog className={`fixed bottom-[50px] z-30 ${open ? 'left-[295px]' : 'left-[85px]'}`} />
+      )}
       <InventoryPanel
         open={inventoryPanelConfig.open ?? false}
         onOpenChange={(open: boolean) => {
