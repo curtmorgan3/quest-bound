@@ -9,15 +9,14 @@ import {
   NumberInput,
 } from '@/components';
 import {
-  useAttributeChangedByScript,
   useComponentStyles,
   useNodeData,
+  useRegisterAnimation,
 } from '@/lib/compass-planes/utils';
 import { CharacterContext, WindowEditorContext } from '@/stores';
 import type { Component, TextComponentStyle } from '@/types';
 import { useNodeId } from '@xyflow/react';
-import { motion } from 'framer-motion';
-import { useContext, useLayoutEffect, useRef, useState } from 'react';
+import { useContext, useState } from 'react';
 import { ResizableNode } from '../../decorators';
 
 export const EditInputNode = () => {
@@ -46,24 +45,11 @@ export const ViewInputNode = ({
   const css = useComponentStyles(component) as TextComponentStyle;
   const characterContext = useContext(CharacterContext);
   const characterId = characterContext?.character?.id ?? '';
-  const { changedByScript, clearModified } = useAttributeChangedByScript(
+  const { flashKey, scriptChangeFlash } = useRegisterAnimation(
     characterId,
     component.attributeId ?? '',
     data.value,
   );
-  const [scriptChangeFlash, setScriptChangeFlash] = useState(false);
-  const requestFlashRef = useRef(false);
-  if (changedByScript) requestFlashRef.current = true;
-
-  useLayoutEffect(() => {
-    if (requestFlashRef.current) {
-      requestFlashRef.current = false;
-      clearModified();
-      setScriptChangeFlash(true);
-      const t = setTimeout(() => setScriptChangeFlash(false), 400);
-      return () => clearTimeout(t);
-    }
-  });
 
   const handleChange = (value: string | number) => {
     if (!characterContext) return;
@@ -138,18 +124,11 @@ export const ViewInputNode = ({
   } as React.CSSProperties;
 
   return (
-    <motion.section
+    <section
+      key={flashKey}
+      className={scriptChangeFlash ? 'script-change-flash' : undefined}
       style={sectionStyle}
-      data-attribute-name={data.name}
-      initial={false}
-      animate={
-        scriptChangeFlash
-          ? {
-              boxShadow: ['0 0 0 0 transparent', '0 0 0 3px var(--primary)', '0 0 0 0 transparent'],
-            }
-          : {}
-      }
-      transition={{ duration: 0.4 }}>
+      data-attribute-name={data.name}>
       {isMultiSelectList && !editMode ? (
         <>
           <button
@@ -221,6 +200,6 @@ export const ViewInputNode = ({
           max={data.max}
         />
       )}
-    </motion.section>
+    </section>
   );
 };

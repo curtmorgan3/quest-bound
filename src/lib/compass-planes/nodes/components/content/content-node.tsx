@@ -1,16 +1,15 @@
 import {
   fireExternalComponentChangeEvent,
   getComponentData,
-  useAttributeChangedByScript,
   useComponentStyles,
   useNodeData,
+  useRegisterAnimation,
 } from '@/lib/compass-planes/utils';
 import { CharacterContext, DiceContext, WindowEditorContext } from '@/stores';
 import type { Component, ContentComponentData, TextComponentStyle } from '@/types';
 import { parseTextForDiceRolls } from '@/utils';
 import { useNodeId } from '@xyflow/react';
-import { motion } from 'framer-motion';
-import { useContext, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useContext, useEffect, useRef, useState } from 'react';
 import Markdown from 'react-markdown';
 import { ResizableNode } from '../../decorators';
 
@@ -79,24 +78,11 @@ export const ViewContentNode = ({
   const characterContext = useContext(CharacterContext);
   const { rollDice } = useContext(DiceContext);
   const characterId = characterContext?.character?.id ?? '';
-  const { changedByScript, clearModified } = useAttributeChangedByScript(
+  const { flashKey, scriptChangeFlash } = useRegisterAnimation(
     characterId,
     component.attributeId ?? '',
     data.value,
   );
-  const [scriptChangeFlash, setScriptChangeFlash] = useState(false);
-  const requestFlashRef = useRef(false);
-  if (changedByScript) requestFlashRef.current = true;
-
-  useLayoutEffect(() => {
-    if (requestFlashRef.current) {
-      requestFlashRef.current = false;
-      clearModified();
-      setScriptChangeFlash(true);
-      const t = setTimeout(() => setScriptChangeFlash(false), 400);
-      return () => clearTimeout(t);
-    }
-  });
 
   const diceRolls = parseTextForDiceRolls(data?.interpolatedValue?.toString());
 
@@ -174,7 +160,9 @@ export const ViewContentNode = ({
       />
     </section>
   ) : (
-    <motion.section
+    <section
+      key={flashKey}
+      className={scriptChangeFlash ? 'script-change-flash' : undefined}
       onDoubleClick={() => {
         if (!windowEditorMode && !characterContext) return;
         setIsEditing(true);
@@ -192,20 +180,7 @@ export const ViewContentNode = ({
         outlineColor: css.outlineColor,
         outlineWidth: css.outlineWidth,
         overflow: 'auto',
-      }}
-      initial={false}
-      animate={
-        scriptChangeFlash
-          ? {
-              boxShadow: [
-                '0 0 0 0 transparent',
-                '0 0 0 3px var(--primary)',
-                '0 0 0 0 transparent',
-              ],
-            }
-          : {}
-      }
-      transition={{ duration: 0.4 }}>
+      }}>
       <div
         style={{
           ...css,
@@ -216,6 +191,6 @@ export const ViewContentNode = ({
         className={`prose prose-invert max-w-none editor-content md-content ${diceRolls.length ? 'clickable' : ''}`}>
         <Markdown>{data?.interpolatedValue?.toString() ?? ''}</Markdown>
       </div>
-    </motion.section>
+    </section>
   );
 };

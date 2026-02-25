@@ -1,15 +1,15 @@
 import {
   fireExternalComponentChangeEvent,
   getComponentData,
-  useAttributeChangedByScript,
   useComponentStyles,
   useNodeData,
+  useRegisterAnimation,
 } from '@/lib/compass-planes/utils';
 import { CharacterContext, DiceContext, WindowEditorContext } from '@/stores';
 import type { Component, TextComponentData, TextComponentStyle } from '@/types';
 import { parseTextForDiceRolls } from '@/utils';
 import { useNodeId } from '@xyflow/react';
-import { useContext, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useContext, useEffect, useRef, useState } from 'react';
 import { ResizableNode } from '../../decorators';
 
 export const EditTextNode = () => {
@@ -132,29 +132,11 @@ export const ViewTextNode = ({
   const characterContext = useContext(CharacterContext);
   const { rollDice } = useContext(DiceContext);
   const characterId = characterContext?.character?.id ?? '';
-  const { changedByScript, clearModified } = useAttributeChangedByScript(
+  const { flashKey, scriptChangeFlash } = useRegisterAnimation(
     characterId,
     component.attributeId ?? '',
     data.value,
   );
-
-  const [scriptChangeFlash, setScriptChangeFlash] = useState(false);
-  const [flashKey, setFlashKey] = useState(0);
-  const requestFlashRef = useRef(false);
-  if (changedByScript) requestFlashRef.current = true;
-
-  // Run every commit: if we requested a flash during render, apply it and clear the store.
-  // Incrementing flashKey remounts the section so the CSS animation runs again (browsers don't re-run when re-adding the same class).
-  useLayoutEffect(() => {
-    if (requestFlashRef.current) {
-      requestFlashRef.current = false;
-      clearModified();
-      setFlashKey((k) => k + 1);
-      setScriptChangeFlash(true);
-      const t = setTimeout(() => setScriptChangeFlash(false), 400);
-      return () => clearTimeout(t);
-    }
-  });
 
   const diceRolls = parseTextForDiceRolls(data?.interpolatedValue?.toString());
 
