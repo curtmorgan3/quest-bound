@@ -22,6 +22,8 @@ export type InventoryItemWithData = InventoryItem & {
   image?: string | null;
   title: string;
   description?: string;
+  /** Category inherited from the referenced item/action/attribute, when present. */
+  category?: string;
   inventoryWidth: number;
   inventoryHeight: number;
   stackSize: number;

@@ -19,6 +19,8 @@ export type InventoryDropTargetConfig = {
   cellHeight: number;
   gridCols: number;
   gridRows: number;
+  typeRestriction?: 'item' | 'action' | 'attribute';
+  categoryRestriction?: string;
 };
 
 type RegisteredTarget = {

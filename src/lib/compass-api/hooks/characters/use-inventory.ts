@@ -38,6 +38,7 @@ export const useInventory = (inventoryId: string, characterId: string) => {
       title: itemRef?.title ?? actionRef?.title ?? attributeRef?.title ?? '',
       description:
         itemRef?.description ?? actionRef?.description ?? attributeRef?.description ?? '',
+      category: itemRef?.category ?? actionRef?.category ?? attributeRef?.category,
       image: itemRef?.image ?? actionRef?.image ?? attributeRef?.image ?? undefined,
       inventoryWidth:
         itemRef?.inventoryWidth ?? actionRef?.inventoryWidth ?? attributeRef?.inventoryWidth ?? 2,

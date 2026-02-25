@@ -56,6 +56,8 @@ export const ViewInventoryNode = ({ component }: { component: Component }) => {
   const gridCols = Math.floor(component.width / cellWidth);
   const gridRows = Math.floor(component.height / cellHeight);
   const showItemAs = data.showItemAs ?? 'image';
+  const typeRestriction = data.typeRestriction;
+  const categoryRestriction = data.categoryRestriction;
 
   const inventoryItems = (characterContext?.inventoryItems ?? []).filter(
     (item) => item.componentId === component.id,
@@ -70,6 +72,8 @@ export const ViewInventoryNode = ({ component }: { component: Component }) => {
       cellHeight,
       gridCols,
       gridRows,
+      typeRestriction,
+      categoryRestriction,
     });
 
     return () => {

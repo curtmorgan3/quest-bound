@@ -1,3 +1,4 @@
+import { CategoryField } from '@/components/composites/category-field';
 import { Input } from '@/components/ui/input';
 import {
   Select,
@@ -7,12 +8,14 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import type { ComponentUpdate } from '@/lib/compass-api';
+import { useActions, useAttributes, useItems } from '@/lib/compass-api';
 import {
   fireExternalComponentChangeEvent,
   getComponentData,
   updateComponentData,
 } from '@/lib/compass-planes/utils';
 import type { Component, InventoryComponentData } from '@/types';
+import { useMemo } from 'react';
 
 interface InventoryDataEditProps {
   components: Array<Component>;
@@ -28,16 +31,44 @@ export const InventoryDataEdit = ({ components, updateComponents }: InventoryDat
     ? (getComponentData(components[0]) as InventoryComponentData)
     : null;
 
+  const { items } = useItems();
+  const { actions } = useActions();
+  const { attributes } = useAttributes();
+
   const currentType = firstComponentData?.typeRestriction;
   const cellWidth = firstComponentData?.cellWidth ?? 1;
   const cellHeight = firstComponentData?.cellHeight ?? 1;
   const categoryRestriction = firstComponentData?.categoryRestriction ?? '';
   const showItemAs = firstComponentData?.showItemAs ?? 'image';
 
+  const existingCategories = useMemo(() => {
+    if (!currentType) return [];
+
+    const source =
+      currentType === 'item'
+        ? items
+        : currentType === 'action'
+          ? actions
+          : currentType === 'attribute'
+            ? attributes
+            : [];
+
+    const categories = new Set<string>();
+    for (const entry of source) {
+      const cat = entry.category?.trim();
+      if (cat) categories.add(cat);
+    }
+
+    return Array.from(categories).sort((a, b) =>
+      a.localeCompare(b, undefined, { sensitivity: 'base' }),
+    );
+  }, [currentType, items, actions, attributes]);
+
   const handleTypeChange = async (value: string) => {
     if (editableComponents.length === 0) return;
 
-    const typeRestriction = value === 'none' ? undefined : (value as 'item' | 'action');
+    const typeRestriction =
+      value === 'none' ? undefined : (value as InventoryComponentData['typeRestriction']);
 
     const update: Record<any, any> = { typeRestriction };
 
@@ -141,12 +172,12 @@ export const InventoryDataEdit = ({ components, updateComponents }: InventoryDat
       </div>
 
       <div className='flex flex-col gap-1'>
-        <label className='text-xs text-muted-foreground'>Category Restriction</label>
-        <Input
-          type='text'
+        <CategoryField
+          value={categoryRestriction || null}
+          onChange={(v) => handleCategoryRestrictionChange(v ?? '')}
+          existingCategories={existingCategories}
           placeholder='Enter category...'
-          value={categoryRestriction}
-          onChange={(e) => handleCategoryRestrictionChange(e.target.value)}
+          label='Category Restriction'
           disabled={isDisabled || !currentType}
         />
       </div>

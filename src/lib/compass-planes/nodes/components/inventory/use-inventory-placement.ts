@@ -21,6 +21,14 @@ export const useInventoryPlacement = () => {
 
       const { inventoryItems, updateInventoryItem, removeInventoryItem } = characterContext;
 
+      // Enforce type/category restrictions for the target inventory node.
+      if (config.typeRestriction && item.type !== config.typeRestriction) {
+        return;
+      }
+      if (config.categoryRestriction && item.category !== config.categoryRestriction) {
+        return;
+      }
+
       const targetItems = inventoryItems.filter((entry) => entry.componentId === targetComponentId);
 
       const itemWidthInPixels = item.inventoryWidth * 20;
