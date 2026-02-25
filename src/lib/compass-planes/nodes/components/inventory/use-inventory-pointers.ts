@@ -170,6 +170,14 @@ export const useInventoryPointers = ({
     dragDistance.current = 0;
     if (!dragState || !characterContext) return;
 
+    // If the pointer was released without ever exceeding the drag
+    // threshold, treat this as a simple click, not a drag/drop.
+    if (!isDragging.current) {
+      setDragState(null);
+      cancelDrag();
+      return;
+    }
+
     const target = e.currentTarget as HTMLElement;
     target.releasePointerCapture(e.pointerId);
 
@@ -183,6 +191,7 @@ export const useInventoryPointers = ({
     const resolved = resolveDrop(e.clientX, e.clientY);
 
     if (!resolved) {
+      justDroppedRef.current = true;
       setDragState(null);
       cancelDrag();
       return;
