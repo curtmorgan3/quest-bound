@@ -1,5 +1,6 @@
 import {
   fireExternalComponentChangeEvent,
+  formatScriptChangeDisplay,
   getComponentData,
   useComponentStyles,
   useNodeData,
@@ -138,6 +139,24 @@ export const ViewTextNode = ({
     data.value,
   );
 
+  const prevValue = useRef(data.value);
+  const [diff, setDiff] = useState<number | string>('');
+
+  console.log(diff);
+
+  useEffect(() => {
+    const diff = formatScriptChangeDisplay({
+      from: parseInt(`${prevValue.current}`),
+      to: parseInt(`${data.value}`),
+    });
+    setDiff(diff);
+
+    setTimeout(() => {
+      setDiff('');
+    }, 2000);
+    prevValue.current = data.value;
+  }, [data.value]);
+
   const diceRolls = parseTextForDiceRolls(data?.interpolatedValue?.toString());
 
   const handleClick = () => {
@@ -163,6 +182,7 @@ export const ViewTextNode = ({
         outlineWidth: css.outlineWidth,
         overflow: 'hidden',
       }}>
+      {diff && <span>{diff}</span>}
       <span
         onDoubleClick={onDoubleClick}
         onClick={handleClick}
