@@ -1,79 +1,74 @@
-import { useLayoutEffect, useRef, useState } from 'react';
-import type { AttributeChangeDiff } from './use-attribute-changed-by-script';
+import { useEffect, useRef, useState } from 'react';
 import { useAttributeChangedByScript } from './use-attribute-changed-by-script';
 
-const FLASH_DURATION_MS = 400;
+const FLASH_DURATION_MS = 800;
+
+function formatScriptChangeDisplay(
+  from: number | string | boolean,
+  to: number | string | boolean,
+): string {
+  const delta = to - from;
+  if (delta > 0) return `+${delta}`;
+  if (delta < 0) return `${delta}`;
+  return '0';
+}
 
 export type UseRegisterAnimationResult = {
   /** Use as key on the animated element so it remounts and the CSS animation runs again each time. */
   flashKey: number;
   /** True while the flash is active. Apply className "script-change-flash" when true. */
   scriptChangeFlash: boolean;
-  /** Diff for the current flash (when scriptChangeFlash is true). Use to render floating label. */
-  displayDiff: AttributeChangeDiff<string | number | boolean> | null;
+  diff: string;
 };
 
 /**
- * Formats the script-change diff for the floating label: numbers show delta (+N / -N), text/boolean show new value.
- */
-export function formatScriptChangeDisplay(
-  diff: AttributeChangeDiff<string | number | boolean>,
-): string {
-  const { from, to } = diff;
-  if (typeof to === 'number' && (from === undefined || typeof from === 'number')) {
-    const delta = (to as number) - ((from as number | undefined) ?? 0);
-    if (delta > 0) return `+${delta}`;
-    if (delta < 0) return `${delta}`;
-    return '0';
-  }
-  if (typeof to === 'boolean') return to ? 'true' : 'false';
-  return String(to ?? '');
-}
-
-/**
  * Registers the component for script-change animation. Calls useAttributeChangedByScript,
- * holds the effect that triggers the flash, and returns flashKey + scriptChangeFlash + displayDiff
- * so the component can re-render, run the CSS animation, and show a floating diff/value label.
+ * holds the effect that triggers the flash, and returns flashKey + scriptChangeFlash.
  */
 export function useRegisterAnimation(
   characterId: string,
   attributeId: string,
   currentVal: string | number | boolean,
+  shouldAnimate: boolean,
 ): UseRegisterAnimationResult {
-  const { changedByScript, clearModified, diff } = useAttributeChangedByScript(
+  const { changedByScript, clearModified } = useAttributeChangedByScript(
     characterId,
     attributeId,
     currentVal,
   );
 
   const [scriptChangeFlash, setScriptChangeFlash] = useState(false);
-  const [displayDiff, setDisplayDiff] = useState<AttributeChangeDiff<
-    string | number | boolean
-  > | null>(null);
   const [flashKey, setFlashKey] = useState(0);
   const requestFlashRef = useRef(false);
-  const pendingDiffRef = useRef<AttributeChangeDiff<string | number | boolean> | null>(null);
 
-  if (changedByScript && diff) {
+  if (changedByScript) {
     requestFlashRef.current = true;
-    pendingDiffRef.current = diff;
   }
 
-  useLayoutEffect(() => {
+  const prevValue = useRef(currentVal);
+  const [diff, setDiff] = useState<string>('');
+
+  useEffect(() => {
     if (requestFlashRef.current) {
       requestFlashRef.current = false;
       clearModified();
-      setDisplayDiff(pendingDiffRef.current);
-      pendingDiffRef.current = null;
       setFlashKey((k) => k + 1);
       setScriptChangeFlash(true);
+
+      if (shouldAnimate) {
+        const from = parseInt(`${prevValue.current}`);
+        const to = parseInt(`${currentVal}`);
+        prevValue.current = currentVal;
+        setDiff(formatScriptChangeDisplay(from, to));
+      }
+
       const t = setTimeout(() => {
+        setDiff('');
         setScriptChangeFlash(false);
-        setDisplayDiff(null);
       }, FLASH_DURATION_MS);
       return () => clearTimeout(t);
     }
-  });
+  }, [currentVal]);
 
-  return { flashKey, scriptChangeFlash, displayDiff };
+  return { flashKey, scriptChangeFlash, diff };
 }

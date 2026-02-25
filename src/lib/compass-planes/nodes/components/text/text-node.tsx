@@ -1,6 +1,5 @@
 import {
   fireExternalComponentChangeEvent,
-  formatScriptChangeDisplay,
   getComponentData,
   useComponentStyles,
   useNodeData,
@@ -12,6 +11,13 @@ import { parseTextForDiceRolls } from '@/utils';
 import { useNodeId } from '@xyflow/react';
 import { useContext, useEffect, useRef, useState } from 'react';
 import { ResizableNode } from '../../decorators';
+
+function formatScriptChangeDisplay(from: number, to: number): string {
+  const delta = to - from;
+  if (delta > 0) return `+${delta}`;
+  if (delta < 0) return `${delta}`;
+  return '0';
+}
 
 export const EditTextNode = () => {
   const { getComponent, updateComponent } = useContext(WindowEditorContext);
@@ -115,7 +121,11 @@ export const EditTextNode = () => {
           />
         </section>
       ) : (
-        <ViewTextNode component={component} onDoubleClick={handleDoubleClick} />
+        <ViewTextNode
+          component={component}
+          onDoubleClick={handleDoubleClick}
+          shouldAnimate={false}
+        />
       )}
     </ResizableNode>
   );
@@ -124,34 +134,23 @@ export const EditTextNode = () => {
 export const ViewTextNode = ({
   component,
   onDoubleClick,
+  shouldAnimate = true,
 }: {
   component: Component;
   onDoubleClick?: () => void;
+  shouldAnimate?: boolean;
 }) => {
   const data = useNodeData(component);
   const css = useComponentStyles(component) as TextComponentStyle;
   const characterContext = useContext(CharacterContext);
   const { rollDice } = useContext(DiceContext);
   const characterId = characterContext?.character?.id ?? '';
-  const { flashKey, scriptChangeFlash } = useRegisterAnimation(
+  const { flashKey, scriptChangeFlash, diff } = useRegisterAnimation(
     characterId,
     component.attributeId ?? '',
     data.value,
+    shouldAnimate,
   );
-
-  const prevValue = useRef(data.value);
-  const [diff, setDiff] = useState<number | string>('');
-
-  useEffect(() => {
-    const nextDiff = formatScriptChangeDisplay({
-      from: parseInt(`${prevValue.current}`),
-      to: parseInt(`${data.value}`),
-    });
-    prevValue.current = data.value;
-    setDiff(nextDiff);
-    const timeout = setTimeout(() => setDiff(''), 2000);
-    return () => clearTimeout(timeout);
-  }, [data.value]);
 
   const diceRolls = parseTextForDiceRolls(data?.interpolatedValue?.toString());
 
@@ -169,8 +168,8 @@ export const ViewTextNode = ({
         width: component.width,
         overflow: 'visible',
       }}>
-      {diff ? (
-        <span key={diff} className="script-change-float">
+      {diff && shouldAnimate ? (
+        <span key={diff} className='script-change-float'>
           {diff}
         </span>
       ) : null}
