@@ -96,6 +96,7 @@ export const ViewInputNode = ({
   };
 
   const sectionStyle = {
+    position: 'relative' as const,
     height: component.height,
     width: component.width,
     pointerEvents: editMode ? 'none' : undefined,

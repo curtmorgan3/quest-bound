@@ -70,6 +70,7 @@ export const ViewCheckboxNode = ({
       className={scriptChangeFlash ? 'script-change-flash' : undefined}
       onClick={editMode ? undefined : handleChange}
       style={{
+        position: 'relative',
         height: component.height,
         width: component.width,
         pointerEvents: editMode ? 'none' : undefined,

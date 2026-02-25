@@ -169,6 +169,7 @@ export const ViewContentNode = ({
         handleDoubleClick?.();
       }}
       style={{
+        position: 'relative',
         height: component.height,
         width: component.width,
         display: 'flex',

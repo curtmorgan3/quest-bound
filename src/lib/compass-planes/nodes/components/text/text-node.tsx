@@ -150,6 +150,7 @@ export const ViewTextNode = ({
       key={flashKey}
       className={scriptChangeFlash ? 'script-change-flash' : undefined}
       style={{
+        position: 'relative',
         height: component.height,
         width: component.width,
         display: 'flex',

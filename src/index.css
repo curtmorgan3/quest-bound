@@ -275,3 +275,46 @@ code {
 .script-change-flash {
   animation: script-change-flash 0.4s ease-out;
 }
+
+@keyframes script-change-float {
+  0% {
+    transform: translate(-50%, 0) translateX(0);
+    opacity: 1;
+  }
+  25% {
+    transform: translate(-50%, -12px) translateX(4px);
+    opacity: 0.95;
+  }
+  50% {
+    transform: translate(-50%, -24px) translateX(-4px);
+    opacity: 0.85;
+  }
+  75% {
+    transform: translate(-50%, -36px) translateX(3px);
+    opacity: 0.5;
+  }
+  100% {
+    transform: translate(-50%, -48px) translateX(-2px);
+    opacity: 0;
+  }
+}
+
+.script-change-float {
+  position: absolute;
+  left: 50%;
+  bottom: 100%;
+  margin-bottom: 2px;
+  padding: 2px 6px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--primary);
+  background: var(--background);
+  border-radius: 4px;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.2);
+  max-width: 200px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: none;
+  animation: script-change-float 1.2s ease-out forwards;
+}

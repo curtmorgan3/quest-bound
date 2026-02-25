@@ -38,8 +38,7 @@ export function useAttributeChangedByScript<T = string | number | boolean>(
 
   const hasValidIds = Boolean(characterId && attributeId);
   const key = hasValidIds ? scriptModifiedKey(characterId, attributeId) : '';
-  // Select a primitive so we only re-render when it changes (object selectors cause infinite loop).
-  // When key is in the set we get generation; when not we get 0. Re-renders when add/remove or generation bumps.
+  // Single subscription on a primitive so we only re-render when this attribute is added/removed or generation bumps.
   const trigger = useScriptModifiedAttributesStore((state) =>
     key && state.modifiedKeys.has(key) ? state.generation : 0,
   );
@@ -51,8 +50,6 @@ export function useAttributeChangedByScript<T = string | number | boolean>(
     const from = previousValRef.current;
     const to = currentVal;
     previousValRef.current = currentVal;
-    // Report changedByScript whenever the key is in the set so we animate every time
-    // (not only when from !== to), so we don't miss animations due to LiveQuery timing.
     result = { changedByScript: true, diff: { from, to } };
   } else {
     previousValRef.current = currentVal;
