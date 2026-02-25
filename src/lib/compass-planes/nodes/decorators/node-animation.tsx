@@ -12,17 +12,16 @@ export const NodeAnimation = ({ component, children }: NodeAnimationProps) => {
   const context = useContext(CharacterContext);
   const character = context?.character;
 
-  const { value } = useNodeData(component);
+  const { value, attributeType } = useNodeData(component);
 
   const { flashKey, diff } = useRegisterAnimation(
     character?.id,
     component.attributeId ?? '',
-    value,
-    true,
+    attributeType === 'number' ? parseInt(`${value}`) : value,
   );
 
   return (
-    <div key={flashKey} className='node-animator'>
+    <div key={flashKey}>
       {children}
       {diff ? (
         <span key={diff} className='script-change-float'>

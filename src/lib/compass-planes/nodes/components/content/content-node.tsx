@@ -3,7 +3,6 @@ import {
   getComponentData,
   useComponentStyles,
   useNodeData,
-  useRegisterAnimation,
 } from '@/lib/compass-planes/utils';
 import { CharacterContext, DiceContext, WindowEditorContext } from '@/stores';
 import type { Component, ContentComponentData, TextComponentStyle } from '@/types';
@@ -77,12 +76,6 @@ export const ViewContentNode = ({
   const css = useComponentStyles(component) as TextComponentStyle;
   const characterContext = useContext(CharacterContext);
   const { rollDice } = useContext(DiceContext);
-  const characterId = characterContext?.character?.id ?? '';
-  const { flashKey, scriptChangeFlash } = useRegisterAnimation(
-    characterId,
-    component.attributeId ?? '',
-    data.value,
-  );
 
   const diceRolls = parseTextForDiceRolls(data?.interpolatedValue?.toString());
 
@@ -161,8 +154,6 @@ export const ViewContentNode = ({
     </section>
   ) : (
     <section
-      key={flashKey}
-      className={scriptChangeFlash ? 'script-change-flash' : undefined}
       onDoubleClick={() => {
         if (!windowEditorMode && !characterContext) return;
         setIsEditing(true);

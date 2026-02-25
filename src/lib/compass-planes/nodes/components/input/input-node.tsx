@@ -8,11 +8,7 @@ import {
   DialogTitle,
   NumberInput,
 } from '@/components';
-import {
-  useComponentStyles,
-  useNodeData,
-  useRegisterAnimation,
-} from '@/lib/compass-planes/utils';
+import { useComponentStyles, useNodeData } from '@/lib/compass-planes/utils';
 import { CharacterContext, WindowEditorContext } from '@/stores';
 import type { Component, TextComponentStyle } from '@/types';
 import { useNodeId } from '@xyflow/react';
@@ -44,12 +40,6 @@ export const ViewInputNode = ({
   const data = useNodeData(component);
   const css = useComponentStyles(component) as TextComponentStyle;
   const characterContext = useContext(CharacterContext);
-  const characterId = characterContext?.character?.id ?? '';
-  const { flashKey, scriptChangeFlash } = useRegisterAnimation(
-    characterId,
-    component.attributeId ?? '',
-    data.value,
-  );
 
   const handleChange = (value: string | number) => {
     if (!characterContext) return;
@@ -126,8 +116,6 @@ export const ViewInputNode = ({
 
   return (
     <section
-      key={flashKey}
-      className={scriptChangeFlash ? 'script-change-flash' : undefined}
       style={sectionStyle}
       data-attribute-name={data.name}>
       {isMultiSelectList && !editMode ? (

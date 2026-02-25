@@ -1,9 +1,5 @@
 import { useAssets } from '@/lib/compass-api';
-import {
-  useComponentStyles,
-  useNodeData,
-  useRegisterAnimation,
-} from '@/lib/compass-planes/utils';
+import { useComponentStyles, useNodeData } from '@/lib/compass-planes/utils';
 import { CharacterContext, WindowEditorContext } from '@/stores';
 import type { Component, ComponentStyle } from '@/types';
 import { useNodeId } from '@xyflow/react';
@@ -37,12 +33,6 @@ export const ViewCheckboxNode = ({
   const data = useNodeData(component);
   const css = useComponentStyles(component);
   const { assets } = useAssets();
-  const characterId = characterContext?.character?.id ?? '';
-  const { flashKey, scriptChangeFlash } = useRegisterAnimation(
-    characterId,
-    component.attributeId ?? '',
-    data.value,
-  );
 
   const isChecked = editMode ? false : Boolean(data.value);
 
@@ -66,8 +56,6 @@ export const ViewCheckboxNode = ({
 
   return (
     <section
-      key={flashKey}
-      className={scriptChangeFlash ? 'script-change-flash' : undefined}
       onClick={editMode ? undefined : handleChange}
       style={{
         position: 'relative',

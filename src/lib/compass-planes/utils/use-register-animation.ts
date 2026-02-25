@@ -34,7 +34,6 @@ export function useRegisterAnimation(
   characterId: string,
   attributeId: string,
   currentVal: string | number | boolean,
-  shouldAnimate: boolean,
 ): UseRegisterAnimationResult {
   const { changedByScript, clearModified } = useAttributeChangedByScript(
     characterId,
@@ -60,10 +59,8 @@ export function useRegisterAnimation(
       setFlashKey((k) => k + 1);
       setScriptChangeFlash(true);
 
-      if (shouldAnimate) {
-        setDiff(formatScriptChangeDisplay(prevValue.current, currentVal));
-        prevValue.current = currentVal;
-      }
+      setDiff(formatScriptChangeDisplay(prevValue.current, currentVal));
+      prevValue.current = currentVal;
 
       const t = setTimeout(() => {
         setDiff('');
