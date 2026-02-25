@@ -114,12 +114,34 @@ export const InventoryDragProvider = ({ children }: PropsWithChildren) => {
           const localX = clientX - rect.left;
           const localY = clientY - rect.top;
 
-          const cellX = Math.floor(
-            (localX + target.config.cellWidth / 2) / target.config.cellWidth,
-          );
-          const cellY = Math.floor(
-            (localY + target.config.cellHeight / 2) / target.config.cellHeight,
-          );
+          let cellX: number;
+          let cellY: number;
+
+          if (activeDrag) {
+            const itemWidthInPixels = activeDrag.item.inventoryWidth * 20;
+            const itemHeightInPixels = activeDrag.item.inventoryHeight * 20;
+
+            // Pointer is at the visual center of the dragged item.
+            // Convert to the item's top-left, then snap using a majority rule
+            // similar to in-grid dragging.
+            const leftPixel = localX - itemWidthInPixels / 2;
+            const topPixel = localY - itemHeightInPixels / 2;
+
+            cellX = Math.floor(
+              (leftPixel + target.config.cellWidth / 2) / target.config.cellWidth,
+            );
+            cellY = Math.floor(
+              (topPixel + target.config.cellHeight / 2) / target.config.cellHeight,
+            );
+          } else {
+            // Fallback: center-based snapping if we somehow have no active drag.
+            cellX = Math.floor(
+              (localX + target.config.cellWidth / 2) / target.config.cellWidth,
+            );
+            cellY = Math.floor(
+              (localY + target.config.cellHeight / 2) / target.config.cellHeight,
+            );
+          }
 
           return {
             targetComponentId: target.config.componentId,
@@ -132,7 +154,7 @@ export const InventoryDragProvider = ({ children }: PropsWithChildren) => {
 
       return null;
     },
-    [],
+    [activeDrag],
   );
 
   const value = useMemo<InventoryDragContextValue>(
