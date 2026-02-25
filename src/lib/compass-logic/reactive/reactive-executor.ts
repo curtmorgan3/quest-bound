@@ -36,6 +36,8 @@ export interface ReactiveExecutionResult {
   executionCount: number;
   error?: Error;
   rollbackPerformed: boolean;
+  /** Ruleset attribute IDs whose character values were updated by the script chain. */
+  modifiedAttributeIds?: string[];
 }
 
 /**
@@ -88,6 +90,7 @@ export class ReactiveExecutor {
         scriptsExecuted: [],
         executionCount: 0,
         rollbackPerformed: false,
+        modifiedAttributeIds: [],
       };
     }
     if (this.graph.isEmpty()) {
@@ -100,6 +103,7 @@ export class ReactiveExecutor {
         scriptsExecuted: [],
         executionCount: 0,
         rollbackPerformed: false,
+        modifiedAttributeIds: [],
       };
     }
 
@@ -114,7 +118,13 @@ export class ReactiveExecutor {
     }
 
     try {
-      await this.executeScriptChain(scriptIds, characterId, rulesetId, executionId, options);
+      const modifiedAttributeIds = await this.executeScriptChain(
+        scriptIds,
+        characterId,
+        rulesetId,
+        executionId,
+        options,
+      );
       this.transactionManager.commit(executionId);
       this.executionTracker.endExecution(executionId);
       return {
@@ -122,6 +132,7 @@ export class ReactiveExecutor {
         scriptsExecuted: scriptIds,
         executionCount: scriptIds.length,
         rollbackPerformed: false,
+        modifiedAttributeIds,
       };
     } catch (error) {
       let rollbackPerformed = false;
@@ -140,6 +151,7 @@ export class ReactiveExecutor {
         executionCount: context?.executionChain?.length ?? 0,
         error: error as Error,
         rollbackPerformed,
+        modifiedAttributeIds: [],
       };
     }
   }
@@ -169,18 +181,20 @@ export class ReactiveExecutor {
         scriptsExecuted: [],
         executionCount: 0,
         rollbackPerformed: false,
+        modifiedAttributeIds: [],
       };
     }
 
     // Get execution order
     const scriptIds = this.graph.getExecutionOrder(attributeId);
-    
+
     if (scriptIds.length === 0) {
       return {
         success: true,
         scriptsExecuted: [],
         executionCount: 0,
         rollbackPerformed: false,
+        modifiedAttributeIds: [],
       };
     }
 
@@ -206,7 +220,13 @@ export class ReactiveExecutor {
 
     try {
       // Execute script chain
-      await this.executeScriptChain(scriptIds, characterId, rulesetId, executionId, options);
+      const modifiedAttributeIds = await this.executeScriptChain(
+        scriptIds,
+        characterId,
+        rulesetId,
+        executionId,
+        options,
+      );
 
       // Commit transaction
       this.transactionManager.commit(executionId);
@@ -217,6 +237,7 @@ export class ReactiveExecutor {
         scriptsExecuted: scriptIds,
         executionCount: scriptIds.length,
         rollbackPerformed: false,
+        modifiedAttributeIds,
       };
     } catch (error) {
       // Rollback on error
@@ -242,6 +263,7 @@ export class ReactiveExecutor {
         executionCount: context?.executionChain.length || 0,
         error: error as Error,
         rollbackPerformed,
+        modifiedAttributeIds: [],
       };
     }
   }
@@ -252,6 +274,7 @@ export class ReactiveExecutor {
    * @param characterId - ID of the character
    * @param rulesetId - ID of the ruleset
    * @param executionId - ID of the execution context
+   * @returns Ruleset attribute IDs that were modified by the script chain
    */
   private async executeScriptChain(
     scriptIds: string[],
@@ -259,7 +282,8 @@ export class ReactiveExecutor {
     rulesetId: string,
     executionId: string,
     options: ReactiveExecutionOptions = {},
-  ): Promise<void> {
+  ): Promise<string[]> {
+    const allModifiedIds: string[] = [];
     for (const scriptId of scriptIds) {
       // Record execution
       this.executionTracker.recordExecution(executionId, scriptId);
@@ -291,6 +315,11 @@ export class ReactiveExecutor {
         throw result.error;
       }
 
+      const modified = result.modifiedAttributeIds ?? [];
+      for (const id of modified) {
+        if (!allModifiedIds.includes(id)) allModifiedIds.push(id);
+      }
+
       await this.persistScriptLogs(
         rulesetId,
         scriptId,
@@ -303,6 +332,7 @@ export class ReactiveExecutor {
       // If so, we would recursively execute those scripts
       // For now, we rely on the topological sort to handle this
     }
+    return allModifiedIds;
   }
 
   /**

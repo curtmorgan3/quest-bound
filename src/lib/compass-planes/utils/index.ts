@@ -1,4 +1,5 @@
 export * from './editor-emitter';
+export * from './use-attribute-changed-by-script';
 export * from './inject-character-data';
 export * from './node-change-handler';
 export * from './node-conversion';

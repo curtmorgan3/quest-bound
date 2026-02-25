@@ -141,7 +141,8 @@ export type WorkerToMainSignal =
   | ValidationResultSignal
   | WorkerErrorSignal
   | WorkerReadySignal
-  | RollRequestSignal;
+  | RollRequestSignal
+  | AttributesModifiedByScriptSignal;
 
 export interface RollRequestSignal {
   type: 'ROLL_REQUEST';
@@ -211,6 +212,17 @@ export interface WorkerReadySignal {
   };
 }
 
+/** Sent when attributes were modified by script (for UI animation). */
+export interface AttributesModifiedByScriptSignal {
+  type: 'ATTRIBUTES_MODIFIED_BY_SCRIPT';
+  payload: AttributesModifiedByScriptPayload;
+}
+
+export interface AttributesModifiedByScriptPayload {
+  characterId: string;
+  attributeIds: string[];
+}
+
 // ============================================================================
 // Payload Definitions
 // ============================================================================
@@ -248,6 +260,10 @@ export interface ScriptResultPayload {
   announceMessages: string[];
   logMessages: any[][];
   executionTime: number;
+  /** Ruleset attribute IDs modified by this script run (for UI animation). */
+  modifiedAttributeIds?: string[];
+  /** Character whose attributes were modified (for UI animation). */
+  characterId?: string;
 }
 
 export interface ScriptErrorPayload {

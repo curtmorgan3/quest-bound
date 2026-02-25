@@ -20,6 +20,7 @@ import { ScriptRunner, type ScriptExecutionContext } from '../runtime/script-run
 import { prepareForStructuredClone } from '../runtime/structured-clone-safe';
 import type {
   AttributeChangedPayload,
+  AttributesModifiedByScriptPayload,
   ExecuteScriptPayload,
   MainToWorkerSignal,
   WorkerToMainSignal,
@@ -282,6 +283,7 @@ async function handleExecuteScript(payload: ExecuteScriptPayload): Promise<void>
       // Trigger reactive scripts for any attributes modified by this script (e.g. action script
       // changing an attribute). The main thread's Dexie hooks only run for updates from the main
       // thread, so when the worker updates characterAttributes we must run the dependency chain here.
+      const allModifiedIds = new Set<string>(result.modifiedAttributeIds ?? []);
       const modifiedIds = result.modifiedAttributeIds ?? [];
       if (modifiedIds.length > 0) {
         if (!reactiveExecutor) {
@@ -298,12 +300,13 @@ async function handleExecuteScript(payload: ExecuteScriptPayload): Promise<void>
         };
         for (const attributeId of modifiedIds) {
           try {
-            await reactiveExecutor.onAttributeChange(
+            const reactiveResult = await reactiveExecutor.onAttributeChange(
               attributeId,
               payload.characterId,
               payload.rulesetId,
               reactiveOptions,
             );
+            (reactiveResult.modifiedAttributeIds ?? []).forEach((id) => allModifiedIds.add(id));
           } catch (reactiveError) {
             console.warn(
               '[QBScript] Reactive execution failed for attribute',
@@ -314,6 +317,17 @@ async function handleExecuteScript(payload: ExecuteScriptPayload): Promise<void>
         }
       }
 
+      const modifiedAttributeIds = Array.from(allModifiedIds);
+      if (modifiedAttributeIds.length > 0) {
+        sendSignal({
+          type: 'ATTRIBUTES_MODIFIED_BY_SCRIPT',
+          payload: {
+            characterId: payload.characterId,
+            attributeIds: modifiedAttributeIds,
+          } satisfies AttributesModifiedByScriptPayload,
+        });
+      }
+
       sendSignal({
         type: 'SCRIPT_RESULT',
         payload: {
@@ -322,6 +336,8 @@ async function handleExecuteScript(payload: ExecuteScriptPayload): Promise<void>
           announceMessages: result.announceMessages,
           logMessages: result.logMessages.map((args) => prepareForStructuredClone(args)),
           executionTime,
+          modifiedAttributeIds,
+          characterId: payload.characterId,
         },
       });
     }
@@ -437,6 +453,16 @@ async function handleAttributeChanged(payload: AttributeChangedPayload): Promise
     );
 
     if (result.success) {
+      const modifiedAttributeIds = result.modifiedAttributeIds ?? [];
+      if (modifiedAttributeIds.length > 0) {
+        sendSignal({
+          type: 'ATTRIBUTES_MODIFIED_BY_SCRIPT',
+          payload: {
+            characterId: payload.characterId,
+            attributeIds: modifiedAttributeIds,
+          } satisfies AttributesModifiedByScriptPayload,
+        });
+      }
       sendSignal({
         type: 'SCRIPT_RESULT',
         payload: {
@@ -509,6 +535,16 @@ async function handleInitialAttributeSync(payload: {
     );
 
     if (result.success) {
+      const modifiedAttributeIds = result.modifiedAttributeIds ?? [];
+      if (modifiedAttributeIds.length > 0) {
+        sendSignal({
+          type: 'ATTRIBUTES_MODIFIED_BY_SCRIPT',
+          payload: {
+            characterId: payload.characterId,
+            attributeIds: modifiedAttributeIds,
+          } satisfies AttributesModifiedByScriptPayload,
+        });
+      }
       sendSignal({
         type: 'SCRIPT_RESULT',
         payload: {

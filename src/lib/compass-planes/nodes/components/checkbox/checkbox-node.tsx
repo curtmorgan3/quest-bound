@@ -1,10 +1,15 @@
 import { useAssets } from '@/lib/compass-api';
-import { useComponentStyles, useNodeData } from '@/lib/compass-planes/utils';
+import {
+  useAttributeChangedByScript,
+  useComponentStyles,
+  useNodeData,
+} from '@/lib/compass-planes/utils';
 import { CharacterContext, WindowEditorContext } from '@/stores';
 import type { Component, ComponentStyle } from '@/types';
 import { useNodeId } from '@xyflow/react';
+import { motion } from 'framer-motion';
 import { CheckIcon, SquareIcon } from 'lucide-react';
-import { useContext } from 'react';
+import { useContext, useEffect, useState } from 'react';
 import { ResizableNode } from '../../decorators';
 
 export const EditCheckboxNode = () => {
@@ -33,6 +38,20 @@ export const ViewCheckboxNode = ({
   const data = useNodeData(component);
   const css = useComponentStyles(component);
   const { assets } = useAssets();
+  const characterId = characterContext?.character?.id ?? '';
+  const { changedByScript } = useAttributeChangedByScript(
+    characterId,
+    component.attributeId ?? '',
+    data.value,
+  );
+  const [scriptChangeFlash, setScriptChangeFlash] = useState(false);
+  useEffect(() => {
+    if (changedByScript) {
+      setScriptChangeFlash(true);
+      const t = setTimeout(() => setScriptChangeFlash(false), 400);
+      return () => clearTimeout(t);
+    }
+  }, [changedByScript]);
 
   const isChecked = editMode ? false : Boolean(data.value);
 
@@ -55,7 +74,7 @@ export const ViewCheckboxNode = ({
   };
 
   return (
-    <section
+    <motion.section
       onClick={editMode ? undefined : handleChange}
       style={{
         height: component.height,
@@ -70,13 +89,26 @@ export const ViewCheckboxNode = ({
         outlineColor: css.outlineColor,
         outlineWidth: css.outlineWidth,
         cursor: editMode ? 'default' : 'pointer',
-      }}>
+      }}
+      initial={false}
+      animate={
+        scriptChangeFlash
+          ? {
+              boxShadow: [
+                '0 0 0 0 transparent',
+                '0 0 0 3px var(--primary)',
+                '0 0 0 0 transparent',
+              ],
+            }
+          : {}
+      }
+      transition={{ duration: 0.4 }}>
       {isChecked ? (
         <Checked url={checkedImageUrl} css={css} />
       ) : (
         <Unchecked url={uncheckedImageUrl} css={css} />
       )}
-    </section>
+    </motion.section>
   );
 };
 

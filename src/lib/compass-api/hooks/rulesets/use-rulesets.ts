@@ -228,6 +228,48 @@ export const useRulesets = () => {
     }
   };
 
+  const resetTestCharacter = async (targetRulesetId?: string) => {
+    const id = targetRulesetId ?? activeRuleset?.id;
+    if (!id) return;
+
+    try {
+      const defaultArchetype = await db.archetypes
+        .where('rulesetId')
+        .equals(id)
+        .filter((a) => a.isDefault)
+        .first();
+
+      if (!defaultArchetype?.testCharacterId) return;
+
+      const testChar = await db.characters.get(defaultArchetype.testCharacterId);
+      if (!testChar?.isTestCharacter) return;
+
+      const rulesetAttributes = await db.attributes.where('rulesetId').equals(id).toArray();
+      const characterAttributes = await db.characterAttributes
+        .where('characterId')
+        .equals(testChar.id)
+        .toArray();
+
+      const byAttributeId = new Map(characterAttributes.map((ca) => [ca.attributeId, ca]));
+      const now = new Date().toISOString();
+
+      for (const attr of rulesetAttributes) {
+        const charAttr = byAttributeId.get(attr.id);
+        if (charAttr) {
+          await db.characterAttributes.update(charAttr.id, {
+            value: attr.defaultValue,
+            updatedAt: now,
+          });
+        }
+      }
+    } catch (e) {
+      handleError(e as Error, {
+        component: 'useRulesets/resetTestCharacter',
+        severity: 'medium',
+      });
+    }
+  };
+
   return {
     rulesets,
     activeRuleset,
@@ -242,5 +284,6 @@ export const useRulesets = () => {
     createRuleset,
     deleteRuleset,
     updateRuleset,
+    resetTestCharacter,
   };
 };

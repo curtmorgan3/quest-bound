@@ -8,11 +8,16 @@ import {
   DialogTitle,
   NumberInput,
 } from '@/components';
-import { useComponentStyles, useNodeData } from '@/lib/compass-planes/utils';
+import {
+  useAttributeChangedByScript,
+  useComponentStyles,
+  useNodeData,
+} from '@/lib/compass-planes/utils';
 import { CharacterContext, WindowEditorContext } from '@/stores';
 import type { Component, TextComponentStyle } from '@/types';
 import { useNodeId } from '@xyflow/react';
-import { useContext, useState } from 'react';
+import { motion } from 'framer-motion';
+import { useContext, useEffect, useState } from 'react';
 import { ResizableNode } from '../../decorators';
 
 export const EditInputNode = () => {
@@ -39,8 +44,21 @@ export const ViewInputNode = ({
 }) => {
   const data = useNodeData(component);
   const css = useComponentStyles(component) as TextComponentStyle;
-
   const characterContext = useContext(CharacterContext);
+  const characterId = characterContext?.character?.id ?? '';
+  const { changedByScript } = useAttributeChangedByScript(
+    characterId,
+    component.attributeId ?? '',
+    data.value,
+  );
+  const [scriptChangeFlash, setScriptChangeFlash] = useState(false);
+  useEffect(() => {
+    if (changedByScript) {
+      setScriptChangeFlash(true);
+      const t = setTimeout(() => setScriptChangeFlash(false), 400);
+      return () => clearTimeout(t);
+    }
+  }, [changedByScript]);
 
   const handleChange = (value: string | number) => {
     if (!characterContext) return;
@@ -115,7 +133,22 @@ export const ViewInputNode = ({
   } as React.CSSProperties;
 
   return (
-    <section style={sectionStyle} data-attribute-name={data.name}>
+    <motion.section
+      style={sectionStyle}
+      data-attribute-name={data.name}
+      initial={false}
+      animate={
+        scriptChangeFlash
+          ? {
+              boxShadow: [
+                '0 0 0 0 transparent',
+                '0 0 0 3px var(--primary)',
+                '0 0 0 0 transparent',
+              ],
+            }
+          : {}
+      }
+      transition={{ duration: 0.4 }}>
       {isMultiSelectList && !editMode ? (
         <>
           <button
@@ -187,6 +220,6 @@ export const ViewInputNode = ({
           max={data.max}
         />
       )}
-    </section>
+    </motion.section>
   );
 };

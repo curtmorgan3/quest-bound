@@ -5,6 +5,7 @@
  * Provides a clean async API for script execution and reactive updates.
  */
 
+import { useScriptModifiedAttributesStore } from '@/stores/script-modified-attributes-store';
 import type { RollFn } from '@/types';
 import { defaultScriptDiceRoller } from '@/utils/dice-utils';
 import type {
@@ -175,8 +176,21 @@ export class QBScriptClient {
         this.handleRollRequest(signal.payload);
         break;
 
+      case 'ATTRIBUTES_MODIFIED_BY_SCRIPT':
+        this.handleAttributesModifiedByScript(signal.payload);
+        break;
+
       default:
         console.warn('Unknown signal type:', (signal as any).type);
+    }
+  }
+
+  private handleAttributesModifiedByScript(payload: {
+    characterId: string;
+    attributeIds: string[];
+  }): void {
+    if (payload.attributeIds.length > 0) {
+      useScriptModifiedAttributesStore.getState().addModified(payload.characterId, payload.attributeIds);
     }
   }
 
@@ -215,6 +229,10 @@ export class QBScriptClient {
   }
 
   private handleScriptResult(payload: ScriptResultPayload): void {
+    if (payload.modifiedAttributeIds?.length && payload.characterId) {
+      useScriptModifiedAttributesStore.getState().addModified(payload.characterId, payload.modifiedAttributeIds);
+    }
+
     const pending = this.pendingRequests.get(payload.requestId);
     if (pending) {
       if (pending.timeout) {

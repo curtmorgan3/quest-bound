@@ -1,13 +1,15 @@
 import {
   fireExternalComponentChangeEvent,
   getComponentData,
+  useAttributeChangedByScript,
   useComponentStyles,
   useNodeData,
 } from '@/lib/compass-planes/utils';
-import { DiceContext, WindowEditorContext } from '@/stores';
+import { CharacterContext, DiceContext, WindowEditorContext } from '@/stores';
 import type { Component, TextComponentData, TextComponentStyle } from '@/types';
 import { parseTextForDiceRolls } from '@/utils';
 import { useNodeId } from '@xyflow/react';
+import { motion } from 'framer-motion';
 import { useContext, useEffect, useRef, useState } from 'react';
 import { ResizableNode } from '../../decorators';
 
@@ -128,7 +130,24 @@ export const ViewTextNode = ({
 }) => {
   const data = useNodeData(component);
   const css = useComponentStyles(component) as TextComponentStyle;
+  const characterContext = useContext(CharacterContext);
   const { rollDice } = useContext(DiceContext);
+  const characterId = characterContext?.character?.id ?? '';
+  const { changedByScript } = useAttributeChangedByScript(
+    characterId,
+    component.attributeId ?? '',
+    data.value,
+  );
+
+  const [scriptChangeFlash, setScriptChangeFlash] = useState(false);
+  useEffect(() => {
+    if (changedByScript) {
+      console.log('changed');
+      setScriptChangeFlash(true);
+      const t = setTimeout(() => setScriptChangeFlash(false), 400);
+      return () => clearTimeout(t);
+    }
+  }, [changedByScript]);
 
   const diceRolls = parseTextForDiceRolls(data?.interpolatedValue?.toString());
 
@@ -138,7 +157,7 @@ export const ViewTextNode = ({
   };
 
   return (
-    <section
+    <motion.section
       style={{
         height: component.height,
         width: component.width,
@@ -151,7 +170,16 @@ export const ViewTextNode = ({
         outlineColor: css.outlineColor,
         outlineWidth: css.outlineWidth,
         overflow: 'hidden',
-      }}>
+      }}
+      initial={false}
+      animate={
+        scriptChangeFlash
+          ? {
+              boxShadow: ['0 0 0 0 transparent', '0 0 0 3px var(--primary)', '0 0 0 0 transparent'],
+            }
+          : {}
+      }
+      transition={{ duration: 0.4 }}>
       <span
         onDoubleClick={onDoubleClick}
         onClick={handleClick}
@@ -164,6 +192,6 @@ export const ViewTextNode = ({
         }}>
         {data?.interpolatedValue}
       </span>
-    </section>
+    </motion.section>
   );
 };

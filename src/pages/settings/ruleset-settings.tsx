@@ -46,7 +46,7 @@ interface RulesetSettingsProps {
 }
 
 export const RulesetSettings = ({ activeRuleset }: RulesetSettingsProps) => {
-  const { updateRuleset, rulesets } = useRulesets();
+  const { updateRuleset, rulesets, resetTestCharacter } = useRulesets();
   const { exportRuleset } = useExportRuleset(activeRuleset.id);
   const { importRuleset } = useImportRuleset();
   const { fonts, createFont, deleteFont } = useFonts(activeRuleset.id);
@@ -68,6 +68,7 @@ export const RulesetSettings = ({ activeRuleset }: RulesetSettingsProps) => {
     items: number;
   } | null>(null);
   const [removingModule, setRemovingModule] = useState(false);
+  const [resettingTestValues, setResettingTestValues] = useState(false);
   const [conflictDialogOpen, setConflictDialogOpen] = useState(false);
   const [conflictDetails, setConflictDetails] = useState<Record<
     string,
@@ -292,6 +293,30 @@ export const RulesetSettings = ({ activeRuleset }: RulesetSettingsProps) => {
       </TabsContent>
 
       <TabsContent value='defaults' className='flex flex-col gap-6 mt-0'>
+        <div className='flex flex-col gap-3'>
+          <Label>Test character</Label>
+          <p className='text-sm text-muted-foreground'>
+            Reset the attribute values stored when testing this ruleset to their defaults.
+          </p>
+          <Button
+            variant='outline'
+            size='sm'
+            className='gap-2 w-fit'
+            disabled={resettingTestValues}
+            onClick={async () => {
+              setResettingTestValues(true);
+              try {
+                await resetTestCharacter(activeRuleset.id);
+                addNotification('Test values reset.', { type: 'success' });
+              } catch (e) {
+                addNotification((e as Error).message, { type: 'error' });
+              } finally {
+                setResettingTestValues(false);
+              }
+            }}>
+            {resettingTestValues ? 'Resetting...' : 'Reset Test Values'}
+          </Button>
+        </div>
         <div className='flex flex-col gap-3'>
           <Label>Custom Properties</Label>
           <p className='text-sm text-muted-foreground'>
