@@ -1,6 +1,8 @@
+import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import type { UseReactiveScriptExecutionResult } from '@/lib/compass-logic/worker';
+import { Eraser } from 'lucide-react';
 import { ScriptErrorLog } from './editor-error-log';
 
 interface EditorConsole {
@@ -9,6 +11,7 @@ interface EditorConsole {
   announceMessages?: string[];
   error?: Error | null;
   result?: any;
+  onClearLogs?: () => void;
 }
 
 export const EditorConsole = ({
@@ -17,6 +20,7 @@ export const EditorConsole = ({
   announceMessages,
   error,
   result,
+  onClearLogs,
 }: EditorConsole) => {
   const hasReactiveExecution = scriptExecutionHook.reactiveExecutionCount > 0;
 
@@ -42,6 +46,18 @@ export const EditorConsole = ({
           <div className='flex items-center justify-between px-3 py-2 border-b'>
             <h3 className='text-sm font-semibold'>Last run</h3>
             <div className='flex items-center gap-3'>
+              {onClearLogs && (
+                <Button
+                  type='button'
+                  variant='ghost'
+                  size='icon'
+                  className='h-8 w-8 shrink-0'
+                  onClick={onClearLogs}
+                  title='Clear console'
+                  aria-label='Clear console'>
+                  <Eraser className='h-4 w-4' />
+                </Button>
+              )}
               {hasReactiveExecution && (
                 <p className='text-xs text-muted-foreground'>
                   <span style={{ color: '#c678dd' }}>
@@ -57,7 +73,7 @@ export const EditorConsole = ({
               )}
             </div>
           </div>
-          <ScrollArea className='h-48'>
+          <ScrollArea className='flex-1 min-h-0'>
             <div className='space-y-2 p-3'>
               {executionError ? (
                 <div className='text-xs font-mono flex items-start gap-2'>

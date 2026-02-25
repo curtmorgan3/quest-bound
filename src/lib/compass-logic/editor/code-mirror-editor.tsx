@@ -157,8 +157,8 @@ export function CodeMirrorEditor({
       ref={containerRef}
       className={className}
       style={{
-        height: '355px',
-        minHeight: height,
+        height: height ?? '400px',
+        minHeight: height === '100%' ? 0 : undefined,
         backgroundColor: '#282c34',
       }}
     />

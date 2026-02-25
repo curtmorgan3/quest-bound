@@ -12,7 +12,8 @@ import { colorPrimary } from '@/palette';
 import { db } from '@/stores';
 import type { Script } from '@/types';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { AlertCircle } from 'lucide-react';
+import { AnimatePresence, motion } from 'framer-motion';
+import { AlertCircle, ChevronDown, ChevronUp, Terminal } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { AttributeControls } from './script-editor/attribute-controls';
@@ -48,18 +49,21 @@ export function ScriptEditorPage() {
     logMessages: actionEventLogs,
     announceMessages: actionEventAnnouncements,
     error: actionEventError,
+    reset: resetActionEvent,
   } = useExecuteActionEvent();
   const {
     executeItemEvent,
     logMessages: itemEventLogs,
     announceMessages: itemEventAnnouncements,
     error: itemEventError,
+    reset: resetItemEvent,
   } = useExecuteItemEvent();
   const {
     executeArchetypeEvent,
     logMessages: archetypeEventLogs,
     announceMessages: archetypeEventAnnouncements,
     error: archetypeEventError,
+    reset: resetArchetypeEvent,
   } = useExecuteArchetypeEvent();
 
   const consoleLogs = [...actionEventLogs, ...itemEventLogs, ...archetypeEventLogs];
@@ -78,6 +82,7 @@ export function ScriptEditorPage() {
   const [entityId, setEntityId] = useState<string | null>(null);
   const [sourceCode, setSourceCode] = useState('');
   const [autocompleteEnabled, setAutocompleteEnabled] = useState(getAutocompletePreference);
+  const [consolePanelOpen, setConsolePanelOpen] = useState(false);
 
   const setAutocompleteEnabledWithStorage = useCallback((enabled: boolean) => {
     setAutocompleteEnabled(enabled);
@@ -158,12 +163,12 @@ export function ScriptEditorPage() {
               <span style={{ fontSize: '18px', fontFamily: 'CygniRoMonoPro' }}>Script</span>
             </div>
           </div>
-          <div className='flex gap-2'>
+          <div className='flex gap-2 flex-1 min-h-0'>
             <CodeMirrorEditor
               key={scriptId ?? 'new'}
               value={sourceCode}
               onChange={setSourceCode}
-              height='320px'
+              height='100%'
               readOnly={!activeRuleset || !testCharacter}
               className='flex-1 min-h-0 rounded-md border overflow-hidden'
               autocomplete={autocompleteEnabled}
@@ -188,8 +193,8 @@ export function ScriptEditorPage() {
           </div>
         </div>
 
-        {/* Editor + panels */}
-        <div className='flex-1 flex flex-col min-h-0 p-4 gap-4'>
+        {/* Alerts and autocomplete */}
+        <div className='shrink-0 flex flex-col p-4 gap-4'>
           {/* Validation */}
           {hasErrors && (
             <Alert variant='destructive'>
@@ -226,14 +231,48 @@ export function ScriptEditorPage() {
             onClick={() => setAutocompleteEnabledWithStorage(!autocompleteEnabled)}>
             {autocompleteEnabled ? 'Autocomplete active' : 'Autocomplete inactive'}
           </span>
-
-          <EditorConsole
-            scriptExecutionHook={workerHook}
-            logMessages={consoleLogs}
-            announceMessages={announcements}
-            error={actionEventError ?? itemEventError ?? archetypeEventError}
-          />
         </div>
+      </div>
+
+      {/* Collapsible console / script errors panel */}
+      <div className='shrink-0 flex flex-col border-t bg-background'>
+        <button
+          type='button'
+          onClick={() => setConsolePanelOpen((o) => !o)}
+          className='flex items-center gap-2 px-4 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors w-full text-left'>
+          <Terminal className='h-4 w-4 shrink-0' />
+          <span>Console & script errors</span>
+          {consolePanelOpen ? (
+            <ChevronDown className='h-4 w-4 shrink-0 ml-auto' />
+          ) : (
+            <ChevronUp className='h-4 w-4 shrink-0 ml-auto' />
+          )}
+        </button>
+        <AnimatePresence initial={false}>
+          {consolePanelOpen && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 275, opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ type: 'tween', duration: 0.2, ease: 'easeInOut' }}
+              className='overflow-hidden flex flex-col'>
+              <div className='min-h-0 flex flex-col p-4 pt-0 flex-1'>
+                <EditorConsole
+                  scriptExecutionHook={workerHook}
+                  logMessages={consoleLogs}
+                  announceMessages={announcements}
+                  error={actionEventError ?? itemEventError ?? archetypeEventError}
+                  onClearLogs={() => {
+                    workerHook.reset();
+                    resetActionEvent();
+                    resetItemEvent();
+                    resetArchetypeEvent();
+                  }}
+                />
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );
