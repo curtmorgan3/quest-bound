@@ -75,8 +75,8 @@ export const SheetViewer = ({
 
   // Windows on the current page
   const windowsForCurrentPage = useMemo(() => {
-    if (currentPageId === null) {
-      return characterWindows.filter((w) => !w.characterPageId);
+    if (currentPageId === null || currentPageId === undefined) {
+      return [];
     }
     return characterWindows.filter((w) => w.characterPageId === currentPageId);
   }, [characterWindows, currentPageId]);

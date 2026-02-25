@@ -398,18 +398,18 @@ export const WindowsTabs = ({
                 {rulesetPages
                   .filter((rp) => !rp.hideFromPlayerView)
                   .map((rp) => (
-                  <button
-                    key={rp.rulesetPageId}
-                    type='button'
-                    onClick={() => handleAddPageFromTemplate(rp.rulesetPageId)}
-                    className='text-left px-3 py-2 rounded text-sm text-white hover:bg-[#444] transition-colors'
-                    data-testid={`add-page-option-${rp.label.toLowerCase().replace(/\s+/g, '-')}`}>
-                    {rp.label}
-                    {rp.category && (
-                      <span className='text-muted-foreground ml-1 text-xs'>({rp.category})</span>
-                    )}
-                  </button>
-                ))}
+                    <button
+                      key={rp.rulesetPageId}
+                      type='button'
+                      onClick={() => handleAddPageFromTemplate(rp.rulesetPageId)}
+                      className='text-left px-3 py-2 rounded text-sm text-white hover:bg-[#444] transition-colors'
+                      data-testid={`add-page-option-${rp.label.toLowerCase().replace(/\s+/g, '-')}`}>
+                      {rp.label}
+                      {rp.category && (
+                        <span className='text-muted-foreground ml-1 text-xs'>({rp.category})</span>
+                      )}
+                    </button>
+                  ))}
               </div>
             </div>
           )}

@@ -10,19 +10,16 @@ export type RulesetPageWithPage = Page & { rulesetPageId: string };
 
 /** Returns ruleset pages (templates) for a given ruleset id. Use when not in active-ruleset context (e.g. character sheet). */
 export const useRulesetPagesForRuleset = (rulesetId?: string) => {
-  const pagesWithJoinId = useLiveQuery(
-    async (): Promise<RulesetPageWithPage[]> => {
-      if (!rulesetId) return [];
-      const joins = await db.rulesetPages.where('rulesetId').equals(rulesetId).toArray();
-      const result: RulesetPageWithPage[] = [];
-      for (const j of joins) {
-        const page = await db.pages.get(j.pageId);
-        if (page) result.push({ ...page, rulesetPageId: j.id });
-      }
-      return result;
-    },
-    [rulesetId],
-  );
+  const pagesWithJoinId = useLiveQuery(async (): Promise<RulesetPageWithPage[]> => {
+    if (!rulesetId) return [];
+    const joins = await db.rulesetPages.where('rulesetId').equals(rulesetId).toArray();
+    const result: RulesetPageWithPage[] = [];
+    for (const j of joins) {
+      const page = await db.pages.get(j.pageId);
+      if (page) result.push({ ...page, rulesetPageId: j.id });
+    }
+    return result;
+  }, [rulesetId]);
   return pagesWithJoinId ?? [];
 };
 
@@ -30,22 +27,16 @@ export const useRulesetPages = () => {
   const { activeRuleset } = useActiveRuleset();
   const { handleError } = useErrorHandler();
 
-  const pagesWithJoinId = useLiveQuery(
-    async () => {
-      if (!activeRuleset?.id) return [];
-      const joins = await db.rulesetPages
-        .where('rulesetId')
-        .equals(activeRuleset.id)
-        .toArray();
-      const result: RulesetPageWithPage[] = [];
-      for (const j of joins) {
-        const page = await db.pages.get(j.pageId);
-        if (page) result.push({ ...page, rulesetPageId: j.id });
-      }
-      return result;
-    },
-    [activeRuleset?.id],
-  );
+  const pagesWithJoinId = useLiveQuery(async () => {
+    if (!activeRuleset?.id) return [];
+    const joins = await db.rulesetPages.where('rulesetId').equals(activeRuleset.id).toArray();
+    const result: RulesetPageWithPage[] = [];
+    for (const j of joins) {
+      const page = await db.pages.get(j.pageId);
+      if (page) result.push({ ...page, rulesetPageId: j.id });
+    }
+    return result;
+  }, [activeRuleset?.id]);
 
   const pages = pagesWithJoinId ?? [];
 
@@ -78,9 +69,7 @@ export const useRulesetPages = () => {
     }
   };
 
-  const createPage = async (
-    data: Omit<Page, 'id' | 'createdAt' | 'updatedAt'>,
-  ) => {
+  const createPage = async (data: Omit<Page, 'id' | 'createdAt' | 'updatedAt'>) => {
     if (!activeRuleset) return;
     const now = new Date().toISOString();
     const pageId = crypto.randomUUID();
@@ -108,7 +97,19 @@ export const useRulesetPages = () => {
 
   const updatePage = async (
     id: string,
-    data: Partial<Pick<Page, 'label' | 'category' | 'assetId' | 'assetUrl' | 'backgroundOpacity' | 'backgroundColor' | 'image'>>,
+    data: Partial<
+      Pick<
+        Page,
+        | 'label'
+        | 'category'
+        | 'assetId'
+        | 'assetUrl'
+        | 'backgroundOpacity'
+        | 'backgroundColor'
+        | 'image'
+        | 'hideFromPlayerView'
+      >
+    >,
   ) => {
     const now = new Date().toISOString();
     try {

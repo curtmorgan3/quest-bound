@@ -139,10 +139,7 @@ export const PreviewCard = ({
                   {title}
                 </CardTitle>
                 {showHiddenFromPlayer && (
-                  <EyeOff
-                    className='h-4 w-4 shrink-0 text-muted-foreground'
-                    title='Hidden from player view'
-                  />
+                  <EyeOff className='h-4 w-4 shrink-0 text-muted-foreground' />
                 )}
               </div>
             )}
@@ -185,10 +182,7 @@ export const PreviewCard = ({
                   {title}
                 </CardTitle>
                 {showHiddenFromPlayer && (
-                  <EyeOff
-                    className='h-4 w-4 shrink-0 text-muted-foreground'
-                    title='Hidden from player view'
-                  />
+                  <EyeOff className='h-4 w-4 shrink-0 text-muted-foreground' />
                 )}
               </div>
             )}
