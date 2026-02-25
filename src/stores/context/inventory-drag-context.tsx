@@ -4,6 +4,7 @@ import {
   type PropsWithChildren,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useRef,
   useState,
@@ -156,6 +157,28 @@ export const InventoryDragProvider = ({ children }: PropsWithChildren) => {
     },
     [activeDrag],
   );
+
+  // Global safeguard: if a drag is active but no specific drop handler fires
+  // (e.g. pointerup outside expected elements), ensure we clear the drag
+  // state on the next pointerup/pointercancel at the window level.
+  useEffect(() => {
+    if (!activeDrag) return;
+
+    const handleWindowPointerEnd = () => {
+      // Defer to allow any component-level handlers to run first.
+      setTimeout(() => {
+        cancelDrag();
+      }, 0);
+    };
+
+    window.addEventListener('pointerup', handleWindowPointerEnd);
+    window.addEventListener('pointercancel', handleWindowPointerEnd);
+
+    return () => {
+      window.removeEventListener('pointerup', handleWindowPointerEnd);
+      window.removeEventListener('pointercancel', handleWindowPointerEnd);
+    };
+  }, [activeDrag, cancelDrag]);
 
   const value = useMemo<InventoryDragContextValue>(
     () => ({

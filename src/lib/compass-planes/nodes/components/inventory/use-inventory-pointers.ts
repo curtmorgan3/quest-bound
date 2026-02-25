@@ -37,9 +37,11 @@ export const useInventoryPointers = ({
 
   const isDragging = useRef<boolean>(false);
   const dragDistance = useRef<number>(0);
+  const justDroppedRef = useRef<boolean>(false);
 
   const { placeItemInTargetGrid } = useInventoryPlacement();
-  const { beginDrag, cancelDrag, resolveDrop, updateDragPosition } = useInventoryDragContext();
+  const { activeDrag, beginDrag, cancelDrag, resolveDrop, updateDragPosition } =
+    useInventoryDragContext();
 
   // Clear drag state once the database update has propagated
   useEffect(() => {
@@ -63,6 +65,10 @@ export const useInventoryPointers = ({
     e.stopPropagation();
     e.preventDefault();
 
+    if (justDroppedRef.current) {
+      justDroppedRef.current = false;
+      return;
+    }
     if (isDragging.current) {
       isDragging.current = false;
       return;
@@ -74,6 +80,15 @@ export const useInventoryPointers = ({
       y: e.clientY,
     });
   };
+
+  // Clear any local drag state whenever the global drag context is cleared.
+  useEffect(() => {
+    if (!activeDrag) {
+      setDragState(null);
+      isDragging.current = false;
+      dragDistance.current = 0;
+    }
+  }, [activeDrag]);
 
   const handlePointerDown = (e: React.PointerEvent, item: InventoryItemWithData) => {
     e.stopPropagation();
@@ -115,6 +130,11 @@ export const useInventoryPointers = ({
 
   const handlePointerMove = (e: React.PointerEvent) => {
     if (!dragState) return;
+
+    // Ignore moves after the pointer is released (prevents the
+    // preview from continuing to follow the cursor if capture
+    // isn't fully cleared yet).
+    if (e.buttons === 0) return;
 
     const rect = containerRef.current?.getBoundingClientRect();
     if (!rect) return;
@@ -183,6 +203,7 @@ export const useInventoryPointers = ({
       );
     }
 
+    justDroppedRef.current = true;
     placeItemInTargetGrid({
       item,
       targetComponentId: resolved.targetComponentId,
