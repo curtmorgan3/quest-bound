@@ -276,7 +276,13 @@ export function useExecuteItemEvent(timeout = 10000): UseExecuteItemEventResult 
   const [error, setError] = useState<Error | null>(null);
 
   const executeItemEvent = useCallback(
-    async (itemId: string, characterId: string, eventType: string, roll?: RollFn, campaignId?: string) => {
+    async (
+      itemId: string,
+      characterId: string,
+      eventType: string,
+      roll?: RollFn,
+      campaignId?: string,
+    ) => {
       setIsExecuting(true);
       setError(null);
 
@@ -519,6 +525,7 @@ export function useScriptAnnouncements(onAnnounce?: (message: string) => void): 
     const handleAnnounce = (event: Event) => {
       const customEvent = event as CustomEvent<{ message: string }>;
       if (onAnnounce) {
+        console.log('announce');
         onAnnounce(customEvent.detail.message);
       }
     };

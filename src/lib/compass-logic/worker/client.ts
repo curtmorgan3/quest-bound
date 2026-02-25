@@ -239,19 +239,8 @@ export class QBScriptClient {
         clearTimeout(pending.timeout);
       }
 
-      // Log any messages
-      payload.logMessages.forEach((args) => {
-        console.log('[QBScript]', ...args);
-      });
-
-      // Dispatch announce messages as events
-      payload.announceMessages.forEach((message) => {
-        window.dispatchEvent(
-          new CustomEvent('qbscript:announce', {
-            detail: { message },
-          }),
-        );
-      });
+      // Do not log or dispatch here: the evaluator already sends CONSOLE_LOG and ANNOUNCE
+      // in real time as the script runs, so we would duplicate every message.
 
       pending.resolve({
         value: payload.result,
