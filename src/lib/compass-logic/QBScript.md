@@ -138,9 +138,10 @@ getMaxHP(con, level):
 
 ### Dice
 
-| Function           | Description                                                                                                                   |
-| ------------------ | ----------------------------------------------------------------------------------------------------------------------------- |
-| `roll(expression)` | Roll dice from a string (e.g. `'1d8'`, `'2d6+4'`). Returns a number. Expression can use interpolation: `roll('{{level}}d4')`. |
+| Function               | Description                                                                                                                   |
+| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `roll(expression)`     | Roll dice from a string (e.g. `'1d8'`, `'2d6+4'`). Returns a number. Uses the roll function registered by the script runner (e.g. dice panel, 3D dice). Expression can use interpolation: `roll('{{level}}d4')`. |
+| `rollQuiet(expression)` | Same as `roll()` but always uses the default local roll (no UI, no script-runner override). Use for hidden or internal rolls. Returns a number. |
 
 **Examples:**
 
@@ -148,6 +149,8 @@ getMaxHP(con, level):
 roll('1d8');
 roll('2d6+4');
 damage = roll('1d8');
+// Hidden roll, no dice panel or custom roll handler
+stealth = rollQuiet('1d20+5');
 ```
 
 ### Math

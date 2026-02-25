@@ -478,6 +478,27 @@ foo()`);
       });
     });
 
+    describe('rollQuiet()', () => {
+      it('should roll dice and return number (no injected roll)', async () => {
+        const result = await evaluate('rollQuiet("1d6")');
+        expect(typeof result).toBe('number');
+        expect(result).toBeGreaterThanOrEqual(1);
+        expect(result).toBeLessThanOrEqual(6);
+      });
+
+      it('should ignore script runner roll and use default local roll', async () => {
+        const customRoll = async () => 999;
+        const evalWithRoll = new Evaluator({ roll: customRoll });
+        const rollAst = new Parser(new Lexer('roll("1d6")').tokenize()).parse();
+        const quietAst = new Parser(new Lexer('rollQuiet("1d6")').tokenize()).parse();
+        const rollResult = await evalWithRoll.eval(rollAst);
+        expect(rollResult).toBe(999);
+        const quietValue = await evalWithRoll.eval(quietAst);
+        expect(quietValue).toBeGreaterThanOrEqual(1);
+        expect(quietValue).toBeLessThanOrEqual(6);
+      });
+    });
+
     describe('Math functions', async () => {
       it('should floor number', async () => {
         expect(await evaluate('floor(3.7)')).toBe(3);

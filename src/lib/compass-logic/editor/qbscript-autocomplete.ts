@@ -47,7 +47,12 @@ const qbscriptCompletions = [
     type: 'function',
     info: "Get a column's value from a chart row. Example: hp = chart.rowWhere('Level', 5).valueInColumn('HP')",
   },
-  { label: 'roll', type: 'function', info: 'Roll dice (e.g. roll("2d6+3"))' },
+  { label: 'roll', type: 'function', info: 'Roll dice (e.g. roll("2d6+3")). Uses script runner roll (e.g. dice panel).' },
+  {
+    label: 'rollQuiet',
+    type: 'function',
+    info: 'Roll dice with default local roll only (no UI, no script-runner override). e.g. rollQuiet("1d20+5")',
+  },
   { label: 'announce', type: 'function', info: 'Display notification message to player' },
   { label: 'log', type: 'function', info: 'Log to editor console and game log' },
   { label: 'floor', type: 'function', info: 'Round down to nearest whole integer' },

@@ -57,7 +57,7 @@ const qbscriptParser = StreamLanguage.define<QBScriptState>({
     }
 
     // Built-in functions (when not in call position; call position is handled below)
-    if (stream.match(/\b(roll|floor|ceil|round|announce|log|getAttr|getChart|number|text)\b/)) {
+    if (stream.match(/\b(roll|rollQuiet|floor|ceil|round|announce|log|getAttr|getChart|number|text)\b/)) {
       stream.eatSpace();
       if (stream.peek() === '(') return 'function';
       return 'builtin';

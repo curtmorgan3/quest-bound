@@ -434,6 +434,24 @@ export class Evaluator {
     });
   }
 
+  /** Local roll implementation: no UI, no injected rollFn. Used by roll() fallback and always by rollQuiet(). */
+  private defaultLocalRoll(expression: string): number {
+    const segments = parseDiceExpression(expression);
+    let total = 0;
+    for (const segment of segments) {
+      for (const token of segment) {
+        if (token.type === 'dice') {
+          for (let i = 0; i < token.count; i++) {
+            total += rollDie(token.sides);
+          }
+        } else if (token.type === 'modifier') {
+          total += token.value;
+        }
+      }
+    }
+    return total;
+  }
+
   private registerBuiltins(): void {
     // Dice rolling: use injected roll when provided, otherwise default local implementation
     this.globalEnv.define('roll', async (expression: string): Promise<number> => {
@@ -441,22 +459,12 @@ export class Evaluator {
         const result = await this.rollFn(expression);
         return result;
       }
-      const segments = parseDiceExpression(expression);
-      let total = 0;
+      return this.defaultLocalRoll(expression);
+    });
 
-      for (const segment of segments) {
-        for (const token of segment) {
-          if (token.type === 'dice') {
-            for (let i = 0; i < token.count; i++) {
-              total += rollDie(token.sides);
-            }
-          } else if (token.type === 'modifier') {
-            total += token.value;
-          }
-        }
-      }
-
-      return total;
+    // Always use default local roll (no UI, no script-runner-registered roll)
+    this.globalEnv.define('rollQuiet', (expression: string): number => {
+      return this.defaultLocalRoll(expression);
     });
 
     // Math functions
