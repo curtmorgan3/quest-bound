@@ -16,7 +16,7 @@ import {
 } from '@/components/ui/sheet';
 import { useCharacter, useInventory } from '@/lib/compass-api';
 import { ItemContextMenu } from '@/lib/compass-planes/nodes/components/inventory/item-context-menu';
-import { PopoverScrollContainerContext, useInventoryDragContext } from '@/stores';
+import { PopoverScrollContainerContext } from '@/stores';
 import type { InventoryItemType } from '@/types';
 import { Plus, SearchIcon } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
@@ -49,7 +49,6 @@ export const CharacterInventoryPanel = ({
     inventoryItems.reduce((acc, current) => (acc += current.weight), 0).toFixed(2),
   );
   const parentRef = useRef<HTMLDivElement>(null);
-  const { activeDrag, resolveDrop, cancelDrag } = useInventoryDragContext();
 
   const {
     contextMenu,
