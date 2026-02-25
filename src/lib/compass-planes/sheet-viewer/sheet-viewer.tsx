@@ -81,13 +81,31 @@ export const SheetViewer = ({
     return characterWindows.filter((w) => w.characterPageId === currentPageId);
   }, [characterWindows, currentPageId]);
 
-  // If editorWindowId is provided, only render that
+  // When editorWindowId is set, track which sub-windows were opened from this view so we render them too
+  const [openedChildRulesetWindowIds, setOpenedChildRulesetWindowIds] = useState<Set<string>>(
+    () => new Set(),
+  );
+
+  // If editorWindowId is provided, render that window plus any sub-windows opened from it
   const windowsToRenderAsNodes = useMemo(() => {
     if (editorWindowId) {
-      return characterWindows.filter((w) => w.windowId === editorWindowId);
+      const root = characterWindows.filter(
+        (w) => w.windowId === editorWindowId && !w.characterPageId,
+      );
+      const children = characterWindows.filter(
+        (w) =>
+          !w.characterPageId &&
+          openedChildRulesetWindowIds.has(w.windowId),
+      );
+      return [...root, ...children];
     }
     return windowsForCurrentPage;
-  }, [windowsForCurrentPage, editorWindowId]);
+  }, [
+    windowsForCurrentPage,
+    editorWindowId,
+    characterWindows,
+    openedChildRulesetWindowIds,
+  ]);
 
   // Windows that are open
   const openWindows = new Set(
@@ -112,9 +130,20 @@ export const SheetViewer = ({
       parentWindow: { x: number; y: number },
       characterWindow: CharacterWindow,
     ) => {
-      const existing = windowsForCurrentPage.find((cw) => cw.windowId === childWindowId);
+      const existing = editorWindowId
+        ? characterWindows.find(
+            (cw) => !cw.characterPageId && cw.windowId === childWindowId,
+          )
+        : windowsForCurrentPage.find((cw) => cw.windowId === childWindowId);
       if (existing) {
         deleteCharacterWindow(existing.id);
+        if (editorWindowId) {
+          setOpenedChildRulesetWindowIds((prev) => {
+            const next = new Set(prev);
+            next.delete(childWindowId);
+            return next;
+          });
+        }
         return;
       }
       const w = rulesetWindowDefs.find((r) => r.id === childWindowId);
@@ -128,9 +157,14 @@ export const SheetViewer = ({
         y: parentWindow.y + 150,
         isCollapsed: false,
       });
+      if (editorWindowId) {
+        setOpenedChildRulesetWindowIds((prev) => new Set(prev).add(childWindowId));
+      }
     },
     [
+      editorWindowId,
       windowsForCurrentPage,
+      characterWindows,
       rulesetWindowDefs,
       createCharacterWindow,
       deleteCharacterWindow,
