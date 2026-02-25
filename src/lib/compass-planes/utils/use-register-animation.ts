@@ -4,13 +4,18 @@ import { useAttributeChangedByScript } from './use-attribute-changed-by-script';
 const FLASH_DURATION_MS = 800;
 
 function formatScriptChangeDisplay(
-  from: number | string | boolean,
-  to: number | string | boolean,
+  from: string | number | boolean | undefined,
+  to: string | number | boolean,
 ): string {
-  const delta = to - from;
-  if (delta > 0) return `+${delta}`;
-  if (delta < 0) return `${delta}`;
-  return '0';
+  if (typeof to === 'number' && (from === undefined || typeof from === 'number')) {
+    const fromNum = from !== undefined ? (from as number) : 0;
+    const delta = to - fromNum;
+    if (delta > 0) return `+${delta}`;
+    if (delta < 0) return `${delta}`;
+    return '0';
+  }
+  if (typeof to === 'boolean') return to ? 'true' : 'false';
+  return String(to ?? '');
 }
 
 export type UseRegisterAnimationResult = {
@@ -56,10 +61,8 @@ export function useRegisterAnimation(
       setScriptChangeFlash(true);
 
       if (shouldAnimate) {
-        const from = parseInt(`${prevValue.current}`);
-        const to = parseInt(`${currentVal}`);
+        setDiff(formatScriptChangeDisplay(prevValue.current, currentVal));
         prevValue.current = currentVal;
-        setDiff(formatScriptChangeDisplay(from, to));
       }
 
       const t = setTimeout(() => {

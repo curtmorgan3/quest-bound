@@ -12,7 +12,12 @@ import {
   ViewShapeNode,
   ViewTextNode,
 } from '../nodes/components';
-import { NodeActionCaller, NodeConditionalRender, NodePageRouter } from './decorators';
+import {
+  NodeActionCaller,
+  NodeAnimation,
+  NodeConditionalRender,
+  NodePageRouter,
+} from './decorators';
 
 export const renderViewComponent = (
   component: Component,
@@ -117,11 +122,11 @@ function WrapDecorators({
   characterAttributes?: CharacterAttribute[];
 }) {
   return (
-    <NodeConditionalRender
-      component={component}
-      characterAttributes={characterAttributes}>
+    <NodeConditionalRender component={component} characterAttributes={characterAttributes}>
       <NodePageRouter component={component}>
-        <NodeActionCaller component={component}>{children}</NodeActionCaller>
+        <NodeActionCaller component={component}>
+          <NodeAnimation component={component}>{children}</NodeAnimation>
+        </NodeActionCaller>
       </NodePageRouter>
     </NodeConditionalRender>
   );

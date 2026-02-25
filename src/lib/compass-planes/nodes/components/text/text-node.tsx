@@ -3,21 +3,13 @@ import {
   getComponentData,
   useComponentStyles,
   useNodeData,
-  useRegisterAnimation,
 } from '@/lib/compass-planes/utils';
-import { CharacterContext, DiceContext, WindowEditorContext } from '@/stores';
+import { DiceContext, WindowEditorContext } from '@/stores';
 import type { Component, TextComponentData, TextComponentStyle } from '@/types';
 import { parseTextForDiceRolls } from '@/utils';
 import { useNodeId } from '@xyflow/react';
 import { useContext, useEffect, useRef, useState } from 'react';
 import { ResizableNode } from '../../decorators';
-
-function formatScriptChangeDisplay(from: number, to: number): string {
-  const delta = to - from;
-  if (delta > 0) return `+${delta}`;
-  if (delta < 0) return `${delta}`;
-  return '0';
-}
 
 export const EditTextNode = () => {
   const { getComponent, updateComponent } = useContext(WindowEditorContext);
@@ -121,11 +113,7 @@ export const EditTextNode = () => {
           />
         </section>
       ) : (
-        <ViewTextNode
-          component={component}
-          onDoubleClick={handleDoubleClick}
-          shouldAnimate={false}
-        />
+        <ViewTextNode component={component} onDoubleClick={handleDoubleClick} />
       )}
     </ResizableNode>
   );
@@ -134,23 +122,13 @@ export const EditTextNode = () => {
 export const ViewTextNode = ({
   component,
   onDoubleClick,
-  shouldAnimate = true,
 }: {
   component: Component;
   onDoubleClick?: () => void;
-  shouldAnimate?: boolean;
 }) => {
   const data = useNodeData(component);
   const css = useComponentStyles(component) as TextComponentStyle;
-  const characterContext = useContext(CharacterContext);
   const { rollDice } = useContext(DiceContext);
-  const characterId = characterContext?.character?.id ?? '';
-  const { flashKey, scriptChangeFlash, diff } = useRegisterAnimation(
-    characterId,
-    component.attributeId ?? '',
-    data.value,
-    shouldAnimate,
-  );
 
   const diceRolls = parseTextForDiceRolls(data?.interpolatedValue?.toString());
 
@@ -161,20 +139,13 @@ export const ViewTextNode = ({
 
   return (
     <div
-      key={flashKey}
       style={{
         position: 'relative',
         height: component.height,
         width: component.width,
         overflow: 'visible',
       }}>
-      {diff && shouldAnimate ? (
-        <span key={diff} className='script-change-float'>
-          {diff}
-        </span>
-      ) : null}
       <section
-        className={scriptChangeFlash ? 'script-change-flash' : undefined}
         style={{
           position: 'absolute',
           inset: 0,
