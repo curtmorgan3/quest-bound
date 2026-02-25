@@ -4,6 +4,7 @@ import {
   AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
+  AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
@@ -48,6 +49,7 @@ export const ChartControls = ({ id, handleDelete, handleEdit, item }: ChartContr
           <AlertDialogContent>
             <AlertDialogHeader>
               <AlertDialogTitle>Permanently delete this content?</AlertDialogTitle>
+              <AlertDialogDescription>Permanently delete this content?</AlertDialogDescription>
               <div className='flex gap-2'>
                 <Label htmlFor='do-not-ask-again'>Do not ask again</Label>
                 <Checkbox

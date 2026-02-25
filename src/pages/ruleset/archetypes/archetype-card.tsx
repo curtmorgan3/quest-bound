@@ -3,6 +3,7 @@ import {
   AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
+  AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
@@ -294,8 +295,10 @@ export function ArchetypeCard({
                   <AlertDialogContent>
                     <AlertDialogHeader>
                       <AlertDialogTitle>Delete archetype?</AlertDialogTitle>
-                      This will delete the test character and all character associations. This
-                      cannot be undone.
+                      <AlertDialogDescription>
+                        This will delete the test character and all character associations. This
+                        cannot be undone.
+                      </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                       <AlertDialogCancel>Cancel</AlertDialogCancel>

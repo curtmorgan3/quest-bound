@@ -4,6 +4,7 @@ import {
   DescriptionViewer,
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -479,6 +480,9 @@ export const ItemContextMenu = ({
                 <DialogContent>
                   <DialogHeader>
                     <DialogTitle>{inventoryAttribute.title ?? 'Select options'}</DialogTitle>
+                    <DialogDescription>
+                      {inventoryAttribute.title ?? 'Select options'}
+                    </DialogDescription>
                   </DialogHeader>
                   <div className='flex flex-col gap-2 max-h-[60vh] overflow-y-auto py-2'>
                     {inventoryAttribute.options?.map((option) => (

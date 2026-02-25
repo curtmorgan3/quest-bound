@@ -3,6 +3,7 @@ import {
   AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
+  AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
@@ -19,6 +20,7 @@ import {
   Dialog,
   DialogClose,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -214,6 +216,7 @@ export const Rulesets = () => {
               <DialogContent className='sm:max-w-[425px]'>
                 <DialogHeader>
                   <DialogTitle>New Ruleset</DialogTitle>
+                  <DialogDescription>New Ruleset</DialogDescription>
                 </DialogHeader>
                 <div className='grid gap-4'>
                   <div className='grid gap-3'>
@@ -280,6 +283,7 @@ export const Rulesets = () => {
             <DialogContent className='sm:max-w-[425px]'>
               <DialogHeader>
                 <DialogTitle>Replace existing ruleset?</DialogTitle>
+                <DialogDescription>{pendingReplaceResult?.message}</DialogDescription>
               </DialogHeader>
               <p className='text-sm text-muted-foreground'>{pendingReplaceResult?.message}</p>
               <DialogFooter>
@@ -297,6 +301,7 @@ export const Rulesets = () => {
             <DialogContent className='sm:max-w-[425px]'>
               <DialogHeader>
                 <DialogTitle>Save as new ruleset?</DialogTitle>
+                <DialogDescription>{pendingDuplicateResult?.message}</DialogDescription>
               </DialogHeader>
               <p className='text-sm text-muted-foreground'>{pendingDuplicateResult?.message}</p>
               <div className='mt-4 grid gap-4'>
@@ -376,6 +381,7 @@ export const Rulesets = () => {
                       <AlertDialogContent>
                         <AlertDialogHeader>
                           <AlertDialogTitle>Permanently delete this content?</AlertDialogTitle>
+                          <AlertDialogDescription>Permanently delete this content?</AlertDialogDescription>
                           <div className='flex gap-2'>
                             <Label htmlFor='preview-card-do-not-ask-again'>Do not ask again</Label>
                             <Checkbox

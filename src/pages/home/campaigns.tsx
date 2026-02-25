@@ -7,6 +7,7 @@ import {
   AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
+  AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
@@ -150,10 +151,10 @@ export function Campaigns() {
                   <AlertDialogContent>
                     <AlertDialogHeader>
                       <AlertDialogTitle>Delete campaign?</AlertDialogTitle>
-                      <p className='text-sm text-muted-foreground'>
+                      <AlertDialogDescription>
                         This will permanently delete the campaign and its characters, items, and
                         events. This cannot be undone.
-                      </p>
+                      </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                       <AlertDialogCancel>Cancel</AlertDialogCancel>

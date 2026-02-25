@@ -3,6 +3,7 @@ import {
   AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
+  AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
@@ -16,6 +17,7 @@ import { PageWrapper } from '@/components/composites';
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -120,10 +122,10 @@ export function TilemapListPage() {
                 <AlertDialogContent>
                   <AlertDialogHeader>
                     <AlertDialogTitle>Delete this tilemap?</AlertDialogTitle>
-                    <p className='text-sm text-muted-foreground'>
+                    <AlertDialogDescription>
                       All tiles in this tilemap will be removed. Locations that used these tiles
                       will keep their layout but the tile reference may be broken.
-                    </p>
+                    </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
                     <AlertDialogCancel>Cancel</AlertDialogCancel>
@@ -147,6 +149,7 @@ export function TilemapListPage() {
         <DialogContent className='sm:max-w-md'>
           <DialogHeader>
             <DialogTitle>Create tilemap</DialogTitle>
+            <DialogDescription>Create tilemap</DialogDescription>
           </DialogHeader>
           <div className='grid gap-4'>
             <p className='text-sm text-muted-foreground'>

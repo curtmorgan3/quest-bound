@@ -2,6 +2,7 @@ import {
   Button,
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -118,6 +119,7 @@ export function CampaignEvents() {
           <DialogContent>
             <DialogHeader>
               <DialogTitle>New Event</DialogTitle>
+              <DialogDescription>New Event</DialogDescription>
             </DialogHeader>
             <div className='grid gap-4 py-4'>
               <div className='grid gap-2'>
@@ -212,6 +214,7 @@ export function CampaignEvents() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Edit Event</DialogTitle>
+            <DialogDescription>Edit Event</DialogDescription>
           </DialogHeader>
           <div className='grid gap-4 py-4'>
             <div className='grid gap-2'>

@@ -8,6 +8,7 @@ import {
   AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
+  AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
@@ -307,6 +308,9 @@ export function ManageCustomProperties() {
                           <AlertDialogTitle>
                             Delete custom property &quot;{cp.label}&quot;?
                           </AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Delete custom property &quot;{cp.label}&quot;?
+                          </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
                           <AlertDialogCancel>Cancel</AlertDialogCancel>

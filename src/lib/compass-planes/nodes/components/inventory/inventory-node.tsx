@@ -5,6 +5,7 @@ import { useNodeId } from '@xyflow/react';
 import { useContext, useEffect, useRef, useState } from 'react';
 import { ResizableNode } from '../../decorators';
 import { ItemContextMenu, type ContextMenuState } from './item-context-menu';
+import { findCollidingItem, findFirstEmptySlot } from './utils';
 
 export const EditInventoryNode = () => {
   const { getComponent } = useContext(WindowEditorContext);
@@ -126,49 +127,6 @@ export const ViewInventoryNode = ({ component }: { component: Component }) => {
     });
   };
 
-  const findFirstEmptySlot = (
-    itemWidthIn20px: number,
-    itemHeightIn20px: number,
-    excludeItemId?: string,
-    excludePosition?: { x: number; y: number },
-  ): { x: number; y: number } | null => {
-    const itemWidthInPixels = itemWidthIn20px * 20;
-    const itemHeightInPixels = itemHeightIn20px * 20;
-    const itemWidthInCells = Math.ceil(itemWidthInPixels / cellWidth);
-    const itemHeightInCells = Math.ceil(itemHeightInPixels / cellHeight);
-
-    const existingItems = inventoryItems.filter((item) => item.id !== excludeItemId);
-
-    const hasCollision = (x: number, y: number): boolean => {
-      if (excludePosition?.x === x && excludePosition?.y === y) return true;
-      for (const other of existingItems) {
-        const otherWidthInPixels = other.inventoryWidth * 20;
-        const otherHeightInPixels = other.inventoryHeight * 20;
-        const otherWidthInCells = Math.ceil(otherWidthInPixels / cellWidth);
-        const otherHeightInCells = Math.ceil(otherHeightInPixels / cellHeight);
-
-        const noOverlap =
-          x >= other.x + otherWidthInCells ||
-          x + itemWidthInCells <= other.x ||
-          y >= other.y + otherHeightInCells ||
-          y + itemHeightInCells <= other.y;
-
-        if (!noOverlap) return true;
-      }
-      return false;
-    };
-
-    for (let y = 0; y <= gridRows - itemHeightInCells; y++) {
-      for (let x = 0; x <= gridCols - itemWidthInCells; x++) {
-        if (!hasCollision(x, y)) {
-          return { x, y };
-        }
-      }
-    }
-
-    return null;
-  };
-
   const handleItemClick = (e: React.MouseEvent, item: InventoryItemWithData) => {
     e.stopPropagation();
     e.preventDefault();
@@ -219,10 +177,18 @@ export const ViewInventoryNode = ({ component }: { component: Component }) => {
     // Find first empty slot for the new stack
     // Exclude the item pos being split, since that will be removed. Otherwise, splitting from
     // the first available position will cause the stacks to appear in the same slot.
-    const slot = findFirstEmptySlot(item.inventoryWidth, item.inventoryHeight, item.id, {
-      x: item.x,
-      y: item.y,
+    const slot = findFirstEmptySlot({
+      inventoryItems,
+      itemHeightIn20px: item.inventoryHeight,
+      itemWidthIn20px: item.inventoryWidth,
+      excludeItemId: item.id,
+      excludePosition: { x: item.x, y: item.y },
+      cellWidth,
+      cellHeight,
+      gridCols,
+      gridRows,
     });
+
     if (!slot) {
       console.warn('No empty slot available for split stack');
       setContextMenu(null);
@@ -243,39 +209,6 @@ export const ViewInventoryNode = ({ component }: { component: Component }) => {
     });
 
     setContextMenu(null);
-  };
-
-  // Check if placing an item at (x, y) would collide with any other items
-  // Returns the colliding item if found, or null if no collision
-  const findCollidingItem = (
-    movingItemId: string,
-    x: number,
-    y: number,
-    widthInCells: number,
-    heightInCells: number,
-  ): InventoryItemWithData | null => {
-    for (const other of inventoryItems) {
-      // Skip the item being moved
-      if (other.id === movingItemId) continue;
-
-      // Calculate other item's size in cells
-      const otherWidthInPixels = other.inventoryWidth * 20;
-      const otherHeightInPixels = other.inventoryHeight * 20;
-      const otherWidthInCells = Math.ceil(otherWidthInPixels / cellWidth);
-      const otherHeightInCells = Math.ceil(otherHeightInPixels / cellHeight);
-
-      // Check for rectangle overlap
-      const noOverlap =
-        x >= other.x + otherWidthInCells || // moving item is to the right
-        x + widthInCells <= other.x || // moving item is to the left
-        y >= other.y + otherHeightInCells || // moving item is below
-        y + heightInCells <= other.y; // moving item is above
-
-      if (!noOverlap) {
-        return other; // collision detected, return the colliding item
-      }
-    }
-    return null;
   };
 
   const handlePointerDown = (e: React.PointerEvent, item: InventoryItemWithData) => {
@@ -374,13 +307,16 @@ export const ViewInventoryNode = ({ component }: { component: Component }) => {
     const clampedY = Math.max(0, Math.min(snappedY, maxY));
 
     // Check for collision with other items
-    const collidingItem = findCollidingItem(
-      dragState.itemId,
-      clampedX,
-      clampedY,
-      itemWidthInCells,
-      itemHeightInCells,
-    );
+    const collidingItem = findCollidingItem({
+      movingItemId: dragState.itemId,
+      x: clampedX,
+      y: clampedY,
+      widthInCells: itemWidthInCells,
+      heightInCells: itemHeightInCells,
+      inventoryItems,
+      cellHeight,
+      cellWidth,
+    });
 
     if (collidingItem) {
       // Check if items can be stacked (same entityId and stackable)

@@ -1,6 +1,7 @@
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogTitle,
   Input,
   Label,
@@ -61,9 +62,9 @@ export function CustomPropertiesListModal({ open, onOpenChange, onSelect }: Prop
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className='min-w-[420px] max-w-[90vw] max-h-[85vh] overflow-hidden flex flex-col'>
         <DialogTitle>Custom properties</DialogTitle>
-        <p className='text-sm text-muted-foreground'>
+        <DialogDescription>
           Assign a character's custom property to this value.
-        </p>
+        </DialogDescription>
         <div className='flex flex-wrap items-end gap-4 py-2'>
           <div className='relative flex-1 min-w-[200px] max-w-[280px]'>
             <Search className='absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none' />

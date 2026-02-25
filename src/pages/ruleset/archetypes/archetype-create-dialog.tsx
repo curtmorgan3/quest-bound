@@ -2,6 +2,7 @@ import {
   Button,
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -91,6 +92,7 @@ export function ArchetypeCreateDialog() {
       <DialogContent>
         <DialogHeader>
           <DialogTitle>New Archetype</DialogTitle>
+          <DialogDescription>New Archetype</DialogDescription>
         </DialogHeader>
         <div className='grid gap-4 py-4'>
           <div className='grid gap-2'>

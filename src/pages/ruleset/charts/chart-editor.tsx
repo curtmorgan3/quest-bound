@@ -2,6 +2,7 @@ import {
   Button,
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -192,6 +193,7 @@ export const ChartEditor = ({ chartId, readOnly = false, rulesetId }: ChartEdito
         <DialogContent className='max-w-md'>
           <DialogHeader>
             <DialogTitle>Edit columns</DialogTitle>
+            <DialogDescription>Edit columns</DialogDescription>
           </DialogHeader>
           <div className='flex flex-col gap-2 py-4'>
             {editedColumns.map((col, index) => (

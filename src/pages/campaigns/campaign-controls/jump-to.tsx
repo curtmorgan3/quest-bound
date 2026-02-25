@@ -5,6 +5,7 @@ import {
   Button,
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from '@/components';
@@ -41,6 +42,7 @@ export function JumpTo() {
         <DialogContent className='max-w-sm'>
           <DialogHeader>
             <DialogTitle>Jump to</DialogTitle>
+            <DialogDescription>Jump to</DialogDescription>
           </DialogHeader>
           <div className='flex flex-col gap-4'>
             <div className='space-y-2'>

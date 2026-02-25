@@ -16,6 +16,7 @@ import {
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -156,6 +157,7 @@ export const CharacterSettings = ({ character }: CharacterSettingsProps) => {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Non-Standard Ruleset Assignment</DialogTitle>
+            <DialogDescription>Non-Standard Ruleset Assignment</DialogDescription>
           </DialogHeader>
           <p className='text-sm text-muted-foreground'>
             This character was created with <strong>{getRulesetTitle(character.rulesetId)}</strong>.

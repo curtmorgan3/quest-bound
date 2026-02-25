@@ -3,6 +3,7 @@ import {
   AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
+  AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
@@ -19,6 +20,7 @@ import {
   Dialog,
   DialogClose,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -177,6 +179,9 @@ export const Characters = () => {
           <DialogContent className='sm:max-w-[425px]'>
             <DialogHeader>
               <DialogTitle>{step === 1 ? 'New Character' : 'Select Archetypes'}</DialogTitle>
+              <DialogDescription>
+                {step === 1 ? 'New Character' : 'Select Archetypes'}
+              </DialogDescription>
             </DialogHeader>
             {step === 1 ? (
               <div className='grid gap-4'>
@@ -371,6 +376,7 @@ export const Characters = () => {
                       <AlertDialogContent>
                         <AlertDialogHeader>
                           <AlertDialogTitle>Permanently delete this content?</AlertDialogTitle>
+                          <AlertDialogDescription>Permanently delete this content?</AlertDialogDescription>
                           <div className='flex gap-2'>
                             <Label htmlFor='preview-card-do-not-ask-again'>Do not ask again</Label>
                             <Checkbox

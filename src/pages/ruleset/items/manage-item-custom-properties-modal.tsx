@@ -2,6 +2,7 @@ import {
   Button,
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogTitle,
   DialogTrigger,
   Label,
@@ -113,10 +114,10 @@ export function ManageItemCustomPropertiesModal() {
         </DialogTrigger>
         <DialogContent className='min-w-[520px] max-w-[90vw] max-h-[85vh] overflow-hidden flex flex-col'>
           <DialogTitle>Manage item custom properties</DialogTitle>
-          <p className='text-sm text-muted-foreground'>
-            Assign custom properties to items definitions. Items will have these properties when
+          <DialogDescription>
+            Assign custom properties to item definitions. Items will have these properties when
             added to an inventory.
-          </p>
+          </DialogDescription>
           <div className='flex flex-col gap-4 flex-1 min-h-0 overflow-auto'>
             <div className='flex flex-wrap items-end gap-4'>
               <div className='flex flex-col gap-2'>

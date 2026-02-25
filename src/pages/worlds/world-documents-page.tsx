@@ -1,4 +1,4 @@
-import { Button, Dialog, DialogContent, DialogTitle } from '@/components';
+import { Button, Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components';
 import { PageWrapper } from '@/components/composites';
 import { useWorld } from '@/lib/compass-api';
 import { Loader2, Plus } from 'lucide-react';
@@ -48,6 +48,7 @@ export function WorldDocumentsPage() {
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
         <DialogContent className='min-w-[600px] max-w-[80vw] min-h-[50vh]'>
           <DialogTitle className='hidden'>New document</DialogTitle>
+          <DialogDescription className='hidden'>New document</DialogDescription>
           <BaseCreate
             worldId={worldId}
             onCreate={() => {

@@ -3,6 +3,7 @@ import {
   Checkbox,
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -131,6 +132,7 @@ export const ViewInputNode = ({
             <DialogContent>
               <DialogHeader>
                 <DialogTitle>{data.name ?? 'Select options'}</DialogTitle>
+                <DialogDescription>{data.name ?? 'Select options'}</DialogDescription>
               </DialogHeader>
               <div className='flex flex-col gap-2 max-h-[400px] overflow-y-auto py-2'>
                 {data.options?.map((option) => (

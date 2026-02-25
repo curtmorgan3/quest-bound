@@ -1,5 +1,11 @@
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import {
   useActiveRuleset,
@@ -206,6 +212,7 @@ export const RulesetPageEditor = ({ pageId }: RulesetPageEditorProps) => {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Edit page details</DialogTitle>
+            <DialogDescription>Edit page details</DialogDescription>
           </DialogHeader>
           {currentPage && (
             <PageDetailsForm
@@ -232,6 +239,7 @@ export const RulesetPageEditor = ({ pageId }: RulesetPageEditorProps) => {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Add window</DialogTitle>
+            <DialogDescription>Add window</DialogDescription>
           </DialogHeader>
           <Input
             placeholder='Filter by name'

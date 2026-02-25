@@ -4,6 +4,7 @@ import {
   Checkbox,
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -174,6 +175,9 @@ export function CustomPropertyPicker({
           <DialogTitle>
             {mode === 'select' ? 'Select custom property' : 'Create custom property'}
           </DialogTitle>
+          <DialogDescription>
+            {mode === 'select' ? 'Select custom property' : 'Create custom property'}
+          </DialogDescription>
         </DialogHeader>
         {mode === 'select' ? (
           <div className='flex flex-col gap-4'>

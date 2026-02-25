@@ -2,6 +2,7 @@ import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -309,6 +310,7 @@ export const WindowsTabs = ({
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Add Window</DialogTitle>
+            <DialogDescription>Add Window</DialogDescription>
           </DialogHeader>
           <div className='flex flex-col gap-2 mb-2'>
             <select
@@ -388,6 +390,7 @@ export const WindowsTabs = ({
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Add Page</DialogTitle>
+            <DialogDescription>Add Page</DialogDescription>
           </DialogHeader>
           {rulesetPages.length > 0 && (
             <div className='flex flex-col gap-2'>
@@ -443,6 +446,7 @@ export const WindowsTabs = ({
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Edit page details</DialogTitle>
+            <DialogDescription>Edit page details</DialogDescription>
           </DialogHeader>
           {editPageId && page && (
             <PageDetailsForm

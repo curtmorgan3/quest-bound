@@ -3,6 +3,7 @@ import {
   AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
+  AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
@@ -19,6 +20,7 @@ import {
   Dialog,
   DialogClose,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -113,6 +115,7 @@ export const Worlds = () => {
           <DialogContent className='sm:max-w-[425px]'>
             <DialogHeader>
               <DialogTitle>New World</DialogTitle>
+              <DialogDescription>New World</DialogDescription>
             </DialogHeader>
             <div className='grid gap-4'>
               <div className='grid gap-3'>
@@ -203,6 +206,7 @@ export const Worlds = () => {
                       <AlertDialogContent>
                         <AlertDialogHeader>
                           <AlertDialogTitle>Permanently delete this content?</AlertDialogTitle>
+                          <AlertDialogDescription>Permanently delete this content?</AlertDialogDescription>
                           <div className='flex gap-2'>
                             <Label htmlFor='world-card-do-not-ask-again'>Do not ask again</Label>
                             <Checkbox

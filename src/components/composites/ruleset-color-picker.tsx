@@ -1,5 +1,11 @@
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
 import { useActiveRuleset, useCustomProperties } from '@/lib/compass-api';
@@ -118,6 +124,7 @@ export const RulesetColorPicker = ({
   const pickerContent = (
     <div className='flex flex-col gap-4'>
       <DialogTitle className='text-base'>{label ?? 'Color'}</DialogTitle>
+      <DialogDescription>{label ?? 'Color'}</DialogDescription>
       <div className='flex flex-col gap-3'>
         <div className='flex items-center gap-2'>
           <input
