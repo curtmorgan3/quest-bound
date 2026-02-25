@@ -1,5 +1,5 @@
 import { useScriptModifiedAttributesStore } from '@/stores/script-modified-attributes-store';
-import { useEffect, useRef } from 'react';
+import { useRef } from 'react';
 
 function scriptModifiedKey(characterId: string, attributeId: string): string {
   return `${characterId}:${attributeId}`;
@@ -15,6 +15,8 @@ export type UseAttributeChangedByScriptResult<T = string | number | boolean> = {
   changedByScript: boolean;
   /** When changedByScript is true, the previous and new value for animation. */
   diff: AttributeChangeDiff<T> | null;
+  /** Call when you have consumed the change (e.g. started animation). Clears this attribute from the script-modified set so it is only reported once. */
+  clearModified: () => void;
 };
 
 /**
@@ -32,39 +34,40 @@ export function useAttributeChangedByScript<T = string | number | boolean>(
   currentVal: T,
 ): UseAttributeChangedByScriptResult<T> {
   const previousValRef = useRef<T | undefined>(undefined);
-  const modifiedKeys = useScriptModifiedAttributesStore((state) => state.modifiedKeys);
   const removeModified = useScriptModifiedAttributesStore((state) => state.removeModified);
-  const pendingRemoveRef = useRef(false);
 
   const hasValidIds = Boolean(characterId && attributeId);
   const key = hasValidIds ? scriptModifiedKey(characterId, attributeId) : '';
-  const isInSet = hasValidIds && modifiedKeys.has(key);
+  // Select a primitive so we only re-render when it changes (object selectors cause infinite loop).
+  // When key is in the set we get generation; when not we get 0. Re-renders when add/remove or generation bumps.
+  const trigger = useScriptModifiedAttributesStore((state) =>
+    key && state.modifiedKeys.has(key) ? state.generation : 0,
+  );
+  const isInSet = hasValidIds && trigger !== 0;
 
-  let result: UseAttributeChangedByScriptResult<T>;
+  let result: Omit<UseAttributeChangedByScriptResult<T>, 'clearModified'>;
 
   if (isInSet) {
     const from = previousValRef.current;
     const to = currentVal;
-    const valueChanged = from !== to;
-    if (valueChanged) {
-      previousValRef.current = currentVal;
-      pendingRemoveRef.current = true;
-      result = { changedByScript: true, diff: { from, to } };
-    } else {
-      previousValRef.current = currentVal;
-      result = { changedByScript: false, diff: null };
-    }
+    previousValRef.current = currentVal;
+    // Report changedByScript whenever the key is in the set so we animate every time
+    // (not only when from !== to), so we don't miss animations due to LiveQuery timing.
+    result = { changedByScript: true, diff: { from, to } };
   } else {
     previousValRef.current = currentVal;
     result = { changedByScript: false, diff: null };
   }
 
-  useEffect(() => {
-    if (pendingRemoveRef.current && characterId && attributeId) {
-      pendingRemoveRef.current = false;
-      removeModified(characterId, attributeId);
-    }
-  }, [characterId, attributeId, removeModified]);
+  const clearModifiedRef = useRef(() => {
+    if (characterId && attributeId) removeModified(characterId, attributeId);
+  });
+  clearModifiedRef.current = () => {
+    if (characterId && attributeId) removeModified(characterId, attributeId);
+  };
 
-  return result;
+  return {
+    ...result,
+    clearModified: clearModifiedRef.current,
+  };
 }

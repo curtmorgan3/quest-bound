@@ -7,6 +7,8 @@ function key(characterId: string, attributeId: string): string {
 export type ScriptModifiedAttributesStore = {
   /** Set of "characterId:attributeId" for attributes just modified by script. */
   modifiedKeys: Set<string>;
+  /** Incremented on every addModified so subscribers always re-render when we add (even same key again). */
+  generation: number;
   /** Add (characterId, attributeId) pairs. Causes subscribers to re-render. */
   addModified: (characterId: string, attributeIds: string[]) => void;
   /** Remove one pair. Returns true if it was present. */
@@ -18,14 +20,14 @@ export type ScriptModifiedAttributesStore = {
 export const useScriptModifiedAttributesStore = create<ScriptModifiedAttributesStore>()(
   (set, get) => ({
     modifiedKeys: new Set(),
+    generation: 0,
 
     addModified(characterId: string, attributeIds: string[]) {
-      console.log('add: ', attributeIds);
       if (attributeIds.length === 0) return;
       set((state) => {
         const next = new Set(state.modifiedKeys);
         attributeIds.forEach((attrId) => next.add(key(characterId, attrId)));
-        return { modifiedKeys: next };
+        return { modifiedKeys: next, generation: state.generation + 1 };
       });
     },
 
@@ -37,7 +39,7 @@ export const useScriptModifiedAttributesStore = create<ScriptModifiedAttributesS
         removed = true;
         const next = new Set(state.modifiedKeys);
         next.delete(k);
-        return { modifiedKeys: next };
+        return { ...state, modifiedKeys: next };
       });
       return removed;
     },

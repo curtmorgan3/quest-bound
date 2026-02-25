@@ -10,7 +10,7 @@ import type { Component, ContentComponentData, TextComponentStyle } from '@/type
 import { parseTextForDiceRolls } from '@/utils';
 import { useNodeId } from '@xyflow/react';
 import { motion } from 'framer-motion';
-import { useContext, useEffect, useRef, useState } from 'react';
+import { useContext, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import Markdown from 'react-markdown';
 import { ResizableNode } from '../../decorators';
 
@@ -79,19 +79,24 @@ export const ViewContentNode = ({
   const characterContext = useContext(CharacterContext);
   const { rollDice } = useContext(DiceContext);
   const characterId = characterContext?.character?.id ?? '';
-  const { changedByScript } = useAttributeChangedByScript(
+  const { changedByScript, clearModified } = useAttributeChangedByScript(
     characterId,
     component.attributeId ?? '',
     data.value,
   );
   const [scriptChangeFlash, setScriptChangeFlash] = useState(false);
-  useEffect(() => {
-    if (changedByScript) {
+  const requestFlashRef = useRef(false);
+  if (changedByScript) requestFlashRef.current = true;
+
+  useLayoutEffect(() => {
+    if (requestFlashRef.current) {
+      requestFlashRef.current = false;
+      clearModified();
       setScriptChangeFlash(true);
       const t = setTimeout(() => setScriptChangeFlash(false), 400);
       return () => clearTimeout(t);
     }
-  }, [changedByScript]);
+  });
 
   const diceRolls = parseTextForDiceRolls(data?.interpolatedValue?.toString());
 

@@ -9,8 +9,7 @@ import { CharacterContext, DiceContext, WindowEditorContext } from '@/stores';
 import type { Component, TextComponentData, TextComponentStyle } from '@/types';
 import { parseTextForDiceRolls } from '@/utils';
 import { useNodeId } from '@xyflow/react';
-import { motion } from 'framer-motion';
-import { useContext, useEffect, useRef, useState } from 'react';
+import { useContext, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { ResizableNode } from '../../decorators';
 
 export const EditTextNode = () => {
@@ -133,21 +132,29 @@ export const ViewTextNode = ({
   const characterContext = useContext(CharacterContext);
   const { rollDice } = useContext(DiceContext);
   const characterId = characterContext?.character?.id ?? '';
-  const { changedByScript } = useAttributeChangedByScript(
+  const { changedByScript, clearModified } = useAttributeChangedByScript(
     characterId,
     component.attributeId ?? '',
     data.value,
   );
 
   const [scriptChangeFlash, setScriptChangeFlash] = useState(false);
-  useEffect(() => {
-    if (changedByScript) {
-      console.log('changed');
+  const [flashKey, setFlashKey] = useState(0);
+  const requestFlashRef = useRef(false);
+  if (changedByScript) requestFlashRef.current = true;
+
+  // Run every commit: if we requested a flash during render, apply it and clear the store.
+  // Incrementing flashKey remounts the section so the CSS animation runs again (browsers don't re-run when re-adding the same class).
+  useLayoutEffect(() => {
+    if (requestFlashRef.current) {
+      requestFlashRef.current = false;
+      clearModified();
+      setFlashKey((k) => k + 1);
       setScriptChangeFlash(true);
       const t = setTimeout(() => setScriptChangeFlash(false), 400);
       return () => clearTimeout(t);
     }
-  }, [changedByScript]);
+  });
 
   const diceRolls = parseTextForDiceRolls(data?.interpolatedValue?.toString());
 
@@ -157,7 +164,9 @@ export const ViewTextNode = ({
   };
 
   return (
-    <motion.section
+    <section
+      key={flashKey}
+      className={scriptChangeFlash ? 'script-change-flash' : undefined}
       style={{
         height: component.height,
         width: component.width,
@@ -170,16 +179,7 @@ export const ViewTextNode = ({
         outlineColor: css.outlineColor,
         outlineWidth: css.outlineWidth,
         overflow: 'hidden',
-      }}
-      initial={false}
-      animate={
-        scriptChangeFlash
-          ? {
-              boxShadow: ['0 0 0 0 transparent', '0 0 0 3px var(--primary)', '0 0 0 0 transparent'],
-            }
-          : {}
-      }
-      transition={{ duration: 0.4 }}>
+      }}>
       <span
         onDoubleClick={onDoubleClick}
         onClick={handleClick}
@@ -192,6 +192,6 @@ export const ViewTextNode = ({
         }}>
         {data?.interpolatedValue}
       </span>
-    </motion.section>
+    </section>
   );
 };

@@ -261,3 +261,17 @@ code {
 .onboarding-highlight-box {
   animation: onboarding-highlight-pulse 2s ease-in-out infinite;
 }
+
+@keyframes script-change-flash {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 transparent;
+  }
+  50% {
+    box-shadow: 0 0 0 3px var(--primary);
+  }
+}
+
+.script-change-flash {
+  animation: script-change-flash 0.4s ease-out;
+}

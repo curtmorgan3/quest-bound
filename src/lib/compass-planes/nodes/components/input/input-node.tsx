@@ -17,7 +17,7 @@ import { CharacterContext, WindowEditorContext } from '@/stores';
 import type { Component, TextComponentStyle } from '@/types';
 import { useNodeId } from '@xyflow/react';
 import { motion } from 'framer-motion';
-import { useContext, useEffect, useState } from 'react';
+import { useContext, useLayoutEffect, useRef, useState } from 'react';
 import { ResizableNode } from '../../decorators';
 
 export const EditInputNode = () => {
@@ -46,19 +46,24 @@ export const ViewInputNode = ({
   const css = useComponentStyles(component) as TextComponentStyle;
   const characterContext = useContext(CharacterContext);
   const characterId = characterContext?.character?.id ?? '';
-  const { changedByScript } = useAttributeChangedByScript(
+  const { changedByScript, clearModified } = useAttributeChangedByScript(
     characterId,
     component.attributeId ?? '',
     data.value,
   );
   const [scriptChangeFlash, setScriptChangeFlash] = useState(false);
-  useEffect(() => {
-    if (changedByScript) {
+  const requestFlashRef = useRef(false);
+  if (changedByScript) requestFlashRef.current = true;
+
+  useLayoutEffect(() => {
+    if (requestFlashRef.current) {
+      requestFlashRef.current = false;
+      clearModified();
       setScriptChangeFlash(true);
       const t = setTimeout(() => setScriptChangeFlash(false), 400);
       return () => clearTimeout(t);
     }
-  }, [changedByScript]);
+  });
 
   const handleChange = (value: string | number) => {
     if (!characterContext) return;
@@ -140,11 +145,7 @@ export const ViewInputNode = ({
       animate={
         scriptChangeFlash
           ? {
-              boxShadow: [
-                '0 0 0 0 transparent',
-                '0 0 0 3px var(--primary)',
-                '0 0 0 0 transparent',
-              ],
+              boxShadow: ['0 0 0 0 transparent', '0 0 0 3px var(--primary)', '0 0 0 0 transparent'],
             }
           : {}
       }
