@@ -1,8 +1,8 @@
-import { CharacterContext, type InventoryItemWithData } from '@/stores';
+import { CharacterContext, type InventoryItemWithData, useInventoryDragContext } from '@/stores';
 import type { Component } from '@/types';
 import { useContext, useEffect, useRef, useState } from 'react';
 import type { ContextMenuState } from './item-context-menu';
-import { findCollidingItem } from './utils';
+import { useInventoryPlacement } from './use-inventory-placement';
 
 type DragState = {
   itemId: string;
@@ -37,6 +37,9 @@ export const useInventoryPointers = ({
 
   const isDragging = useRef<boolean>(false);
   const dragDistance = useRef<number>(0);
+
+  const { placeItemInTargetGrid } = useInventoryPlacement();
+  const { beginDrag, cancelDrag, resolveDrop, updateDragPosition } = useInventoryDragContext();
 
   // Clear drag state once the database update has propagated
   useEffect(() => {
@@ -100,6 +103,14 @@ export const useInventoryPointers = ({
       currentX: item.x * cellWidth,
       currentY: item.y * cellHeight,
     });
+
+    beginDrag(
+      {
+        item,
+        source: 'node',
+      },
+      { clientX: e.clientX, clientY: e.clientY },
+    );
   };
 
   const handlePointerMove = (e: React.PointerEvent) => {
@@ -129,6 +140,8 @@ export const useInventoryPointers = ({
           }
         : null,
     );
+
+    updateDragPosition({ clientX: e.clientX, clientY: e.clientY });
   };
 
   const handlePointerUp = (e: React.PointerEvent) => {
@@ -140,101 +153,27 @@ export const useInventoryPointers = ({
     const target = e.currentTarget as HTMLElement;
     target.releasePointerCapture(e.pointerId);
 
-    // Get the dragged item to check bounds
     const item = inventoryItems.find((i) => i.id === dragState.itemId);
     if (!item) {
       setDragState(null);
+      cancelDrag();
       return;
     }
 
-    // Item dimensions are in 20px units, convert to pixels then to cells
-    const itemWidthInPixels = item.inventoryWidth * 20;
-    const itemHeightInPixels = item.inventoryHeight * 20;
-    const itemWidthInCells = Math.ceil(itemWidthInPixels / cellWidth);
-    const itemHeightInCells = Math.ceil(itemHeightInPixels / cellHeight);
+    const resolved = resolveDrop(e.clientX, e.clientY);
 
-    // Calculate grid dimensions
-    const gridCols = Math.floor(component.width / cellWidth);
-    const gridRows = Math.floor(component.height / cellHeight);
-
-    // Snap to nearest cell (add half cell for proper rounding)
-    const snappedX = Math.floor((dragState.currentX + cellWidth / 2) / cellWidth);
-    const snappedY = Math.floor((dragState.currentY + cellHeight / 2) / cellHeight);
-
-    // Clamp to valid range using item size in cells
-    const maxX = gridCols - itemWidthInCells;
-    const maxY = gridRows - itemHeightInCells;
-    const clampedX = Math.max(0, Math.min(snappedX, maxX));
-    const clampedY = Math.max(0, Math.min(snappedY, maxY));
-
-    // Check for collision with other items
-    const collidingItem = findCollidingItem({
-      movingItemId: dragState.itemId,
-      x: clampedX,
-      y: clampedY,
-      widthInCells: itemWidthInCells,
-      heightInCells: itemHeightInCells,
-      inventoryItems,
-      cellHeight,
-      cellWidth,
-    });
-
-    if (collidingItem) {
-      // Check if items can be stacked (same entityId and stackable)
-      const canStack =
-        collidingItem.entityId === item.entityId &&
-        collidingItem.stackSize > 1 &&
-        collidingItem.quantity < collidingItem.stackSize;
-
-      if (canStack) {
-        // Calculate how many can be added to the stack
-        const spaceInStack = collidingItem.stackSize - collidingItem.quantity;
-        const amountToAdd = Math.min(item.quantity, spaceInStack);
-        const remainder = item.quantity - amountToAdd;
-
-        // Update the existing stack's quantity
-        characterContext.updateInventoryItem(collidingItem.id, {
-          quantity: collidingItem.quantity + amountToAdd,
-        });
-
-        if (remainder > 0) {
-          // Update the dragged item with remaining quantity (stays in original position)
-          characterContext.updateInventoryItem(item.id, {
-            quantity: remainder,
-          });
-          // Set committed position to original position for optimistic UI
-          setDragState((prev) =>
-            prev ? { ...prev, committedX: dragState.startX, committedY: dragState.startY } : null,
-          );
-        } else {
-          // Remove the dragged item entirely
-          characterContext.removeInventoryItem(item.id);
-          // Clear drag state immediately since item is removed
-          setDragState(null);
-        }
-      } else {
-        // If collision but can't stack, item stays in original position
-        // Set committed position to original position for optimistic UI
-        setDragState((prev) =>
-          prev ? { ...prev, committedX: dragState.startX, committedY: dragState.startY } : null,
-        );
-      }
-    } else {
-      // No collision - update position if changed
-      if (clampedX !== dragState.startX || clampedY !== dragState.startY) {
-        characterContext.updateInventoryItem(dragState.itemId, {
-          x: clampedX,
-          y: clampedY,
-        });
-        // Set committed position for optimistic UI
-        setDragState((prev) =>
-          prev ? { ...prev, committedX: clampedX, committedY: clampedY } : null,
-        );
-      } else {
-        // Position didn't change, just clear drag state
-        setDragState(null);
-      }
+    if (resolved) {
+      placeItemInTargetGrid({
+        item,
+        targetComponentId: resolved.targetComponentId,
+        cellX: resolved.cellX,
+        cellY: resolved.cellY,
+        config: resolved.config,
+      });
     }
+
+    setDragState(null);
+    cancelDrag();
   };
 
   const getItemPosition = (item: InventoryItemWithData) => {

@@ -7,6 +7,7 @@ import {
   CharacterInventoryPanelContext,
   CharacterProvider,
   DiceContext,
+  InventoryDragProvider,
   type InventoryPanelConfig,
 } from '@/stores';
 import { type CharacterAttribute } from '@/types';
@@ -15,6 +16,7 @@ import { useParams } from 'react-router-dom';
 import { CharacterArchetypesPanel } from './character-archetypes-panel';
 import { CharacterInventoryPanel } from './character-inventory-panel';
 import { GameLog } from './game-log';
+import { InventoryDragPreview } from '@/lib/compass-planes/nodes/components/inventory/inventory-drag-preview';
 import {
   useCharacterInventoryHandlers,
   useCharacterWindowHandlers,
@@ -145,53 +147,58 @@ export const CharacterPage = ({
         consumeItem,
         activateItem,
       }}>
-      {showFloatingActions && (
-        <div className='absolute right-2 top-2 z-40 flex gap-2'>
-          {renderFloatingActions!({
-            onOpenInventory: openInventory,
-            onClose: onClose!,
-          })}
-        </div>
-      )}
-      <SheetViewer
-        key={character.id}
-        characterId={character.id}
-        lockByDefault={lockByDefault ?? false}
-        initialCurrentPageId={character.lastViewedPageId ?? null}
-        initialLocked={character.sheetLocked}
-        onLockedChange={sheetViewerPersistence?.onLockedChange}
-        onWindowUpdated={handleUpdateWindow}
-        onWindowDeleted={handleDeleteWindow}
-        editorWindowId={editorWindowId}
-        transparentBackground={transparentBackground}
-      />
+      <InventoryDragProvider>
+        {showFloatingActions && (
+          <div className='absolute right-2 top-2 z-40 flex gap-2'>
+            {renderFloatingActions!({
+              onOpenInventory: openInventory,
+              onClose: onClose!,
+            })}
+          </div>
+        )}
+        <SheetViewer
+          key={character.id}
+          characterId={character.id}
+          lockByDefault={lockByDefault ?? false}
+          initialCurrentPageId={character.lastViewedPageId ?? null}
+          initialLocked={character.sheetLocked}
+          onLockedChange={sheetViewerPersistence?.onLockedChange}
+          onWindowUpdated={handleUpdateWindow}
+          onWindowDeleted={handleDeleteWindow}
+          editorWindowId={editorWindowId}
+          transparentBackground={transparentBackground}
+        />
 
-      {!hideGameLog && (
-        <GameLog className={`fixed bottom-[50px] z-30 ${open ? 'left-[295px]' : 'left-[85px]'}`} />
-      )}
-      <InventoryPanel
-        open={inventoryPanelConfig.open ?? false}
-        onOpenChange={(open: boolean) => {
-          if (!open) setInventoryPanelConfig({});
-        }}
-        type={inventoryPanelConfig.type}
-        includeIds={inventoryPanelConfig.includeIds}
-        excludeIds={inventoryPanelConfig.excludeIds}
-        onSelect={handleSelectInventoryEntity}
-      />
-      {characterInventoryPanel && (
-        <CharacterInventoryPanel
-          open={characterInventoryPanel.open}
-          onOpenChange={characterInventoryPanel.setOpen}
-          characterId={id}
+        {!hideGameLog && (
+          <GameLog
+            className={`fixed bottom-[50px] z-30 ${open ? 'left-[295px]' : 'left-[85px]'}`}
+          />
+        )}
+        <InventoryPanel
+          open={inventoryPanelConfig.open ?? false}
+          onOpenChange={(open: boolean) => {
+            if (!open) setInventoryPanelConfig({});
+          }}
+          type={inventoryPanelConfig.type}
+          includeIds={inventoryPanelConfig.includeIds}
+          excludeIds={inventoryPanelConfig.excludeIds}
+          onSelect={handleSelectInventoryEntity}
         />
-      )}
-      {characterArchetypesPanel && (
-        <CharacterArchetypesPanel
-          open={characterArchetypesPanel.open}
-          onOpenChange={characterArchetypesPanel.setOpen}
-        />
-      )}
+        {characterInventoryPanel && (
+          <CharacterInventoryPanel
+            open={characterInventoryPanel.open}
+            onOpenChange={characterInventoryPanel.setOpen}
+            characterId={id}
+          />
+        )}
+        {characterArchetypesPanel && (
+          <CharacterArchetypesPanel
+            open={characterArchetypesPanel.open}
+            onOpenChange={characterArchetypesPanel.setOpen}
+          />
+        )}
+        <InventoryDragPreview />
+      </InventoryDragProvider>
     </CharacterProvider>
   );
 };

@@ -1,0 +1,169 @@
+import { type InventoryItemWithData } from '@/stores';
+import {
+  createContext,
+  type PropsWithChildren,
+  useCallback,
+  useContext,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
+
+type DragSource = 'node' | 'panel';
+
+export type InventoryDropTargetConfig = {
+  componentId: string;
+  getBounds: () => DOMRect | null;
+  cellWidth: number;
+  cellHeight: number;
+  gridCols: number;
+  gridRows: number;
+};
+
+type RegisteredTarget = {
+  id: string;
+  config: InventoryDropTargetConfig;
+};
+
+export type ActiveInventoryDrag = {
+  item: InventoryItemWithData;
+  source: DragSource;
+};
+
+export type ResolvedInventoryDrop = {
+  targetComponentId: string;
+  cellX: number;
+  cellY: number;
+  config: InventoryDropTargetConfig;
+};
+
+type InventoryDragContextValue = {
+  activeDrag: ActiveInventoryDrag | null;
+  dragPosition: { clientX: number; clientY: number } | null;
+  beginDrag: (
+    drag: ActiveInventoryDrag,
+    initialPosition?: { clientX: number; clientY: number },
+  ) => void;
+  updateDragPosition: (position: { clientX: number; clientY: number } | null) => void;
+  cancelDrag: () => void;
+  resolveDrop: (clientX: number, clientY: number) => ResolvedInventoryDrop | null;
+  registerDropTarget: (id: string, config: InventoryDropTargetConfig) => void;
+  unregisterDropTarget: (id: string) => void;
+};
+
+const InventoryDragContext = createContext<InventoryDragContextValue | null>(null);
+
+export const InventoryDragProvider = ({ children }: PropsWithChildren) => {
+  const [activeDrag, setActiveDrag] = useState<ActiveInventoryDrag | null>(null);
+  const [dragPosition, setDragPosition] = useState<{ clientX: number; clientY: number } | null>(
+    null,
+  );
+  const targetsRef = useRef<RegisteredTarget[]>([]);
+
+  const beginDrag = useCallback(
+    (drag: ActiveInventoryDrag, initialPosition?: { clientX: number; clientY: number }) => {
+      setActiveDrag(drag);
+      if (initialPosition) {
+        setDragPosition(initialPosition);
+      } else {
+        setDragPosition(null);
+      }
+    },
+    [],
+  );
+
+  const updateDragPosition = useCallback(
+    (position: { clientX: number; clientY: number } | null) => {
+      setDragPosition(position);
+    },
+    [],
+  );
+
+  const cancelDrag = useCallback(() => {
+    setActiveDrag(null);
+    setDragPosition(null);
+  }, []);
+
+  const registerDropTarget = useCallback((id: string, config: InventoryDropTargetConfig) => {
+    targetsRef.current = [
+      ...targetsRef.current.filter((t) => t.id !== id),
+      {
+        id,
+        config,
+      },
+    ];
+  }, []);
+
+  const unregisterDropTarget = useCallback((id: string) => {
+    targetsRef.current = targetsRef.current.filter((t) => t.id !== id);
+  }, []);
+
+  const resolveDrop = useCallback(
+    (clientX: number, clientY: number): ResolvedInventoryDrop | null => {
+      // Find the first target whose bounds contain the point.
+      for (const target of targetsRef.current) {
+        const rect = target.config.getBounds();
+        if (!rect) continue;
+
+        if (
+          clientX >= rect.left &&
+          clientX <= rect.right &&
+          clientY >= rect.top &&
+          clientY <= rect.bottom
+        ) {
+          const localX = clientX - rect.left;
+          const localY = clientY - rect.top;
+
+          const cellX = Math.floor(
+            (localX + target.config.cellWidth / 2) / target.config.cellWidth,
+          );
+          const cellY = Math.floor(
+            (localY + target.config.cellHeight / 2) / target.config.cellHeight,
+          );
+
+          return {
+            targetComponentId: target.config.componentId,
+            cellX,
+            cellY,
+            config: target.config,
+          };
+        }
+      }
+
+      return null;
+    },
+    [],
+  );
+
+  const value = useMemo<InventoryDragContextValue>(
+    () => ({
+      activeDrag,
+      dragPosition,
+      beginDrag,
+      updateDragPosition,
+      cancelDrag,
+      resolveDrop,
+      registerDropTarget,
+      unregisterDropTarget,
+    }),
+    [
+      activeDrag,
+      dragPosition,
+      beginDrag,
+      cancelDrag,
+      resolveDrop,
+      registerDropTarget,
+      unregisterDropTarget,
+    ],
+  );
+
+  return <InventoryDragContext.Provider value={value}>{children}</InventoryDragContext.Provider>;
+};
+
+export const useInventoryDragContext = () => {
+  const ctx = useContext(InventoryDragContext);
+  if (!ctx) {
+    throw new Error('useInventoryDragContext must be used within an InventoryDragProvider');
+  }
+  return ctx;
+};

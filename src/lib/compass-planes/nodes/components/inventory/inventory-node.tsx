@@ -1,5 +1,5 @@
 import { getComponentData, useComponentStyles } from '@/lib/compass-planes/utils';
-import { CharacterContext, WindowEditorContext } from '@/stores';
+import { CharacterContext, WindowEditorContext, useInventoryDragContext } from '@/stores';
 import type { Component, InventoryComponentData } from '@/types';
 import { useNodeId } from '@xyflow/react';
 import { useContext, useEffect, useState } from 'react';
@@ -46,6 +46,7 @@ export const EditInventoryNode = () => {
 export const ViewInventoryNode = ({ component }: { component: Component }) => {
   const characterContext = useContext(CharacterContext);
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
+  const { registerDropTarget, unregisterDropTarget } = useInventoryDragContext();
 
   const css = useComponentStyles(component);
   const data = getComponentData(component) as InventoryComponentData;
@@ -60,6 +61,22 @@ export const ViewInventoryNode = ({ component }: { component: Component }) => {
   const inventoryItems = (characterContext?.inventoryItems ?? []).filter(
     (item) => item.componentId === component.id,
   );
+
+  useEffect(() => {
+    const id = component.id;
+    registerDropTarget(id, {
+      componentId: component.id,
+      getBounds: () => containerRef.current?.getBoundingClientRect() ?? null,
+      cellWidth,
+      cellHeight,
+      gridCols,
+      gridRows,
+    });
+
+    return () => {
+      unregisterDropTarget(id);
+    };
+  }, [component.id, cellWidth, cellHeight, gridCols, gridRows, registerDropTarget, unregisterDropTarget]);
 
   useEffect(() => {
     if (!contextMenu) return;
