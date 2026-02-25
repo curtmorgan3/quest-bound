@@ -1,5 +1,8 @@
-import { ViewInventoryNode } from '@/lib/compass-planes/nodes/components/inventory/inventory-node';
-import { CharacterContext } from '@/stores';
+import {
+  EditInventoryNode,
+  ViewInventoryNode,
+} from '@/lib/compass-planes/nodes/components/inventory/inventory-node';
+import { CharacterContext, WindowEditorContext } from '@/stores';
 import type { Component } from '@/types';
 
 describe('InventoryNode Component', () => {
@@ -40,7 +43,7 @@ describe('InventoryNode Component', () => {
     setInventoryPanelConfig: cy.stub().as('setInventoryPanelConfig'),
   });
 
-  it('should render inventory grid', () => {
+  it('should render inventory grid for view node', () => {
     const component = createInventoryComponent({});
     const mockContext = createMockCharacterContext();
 
@@ -53,6 +56,34 @@ describe('InventoryNode Component', () => {
     cy.get('div').first().should('have.css', 'width', '400px');
     cy.get('div').first().should('have.css', 'height', '300px');
     cy.get('div').first().should('have.css', 'background-color', 'rgb(245, 245, 245)');
+  });
+
+  it('EditInventoryNode should render only the styled grid and not items', () => {
+    const component = createInventoryComponent({});
+
+    const windowEditorContext = {
+      components: [component],
+      viewMode: false,
+      getComponent: (id: string) => (id === component.id ? component : null),
+      updateComponent: cy.stub(),
+      updateComponents: cy.stub(),
+    } as any;
+
+    cy.stub(require('@xyflow/react'), 'useNodeId').returns(component.id);
+
+    cy.mount(
+      <WindowEditorContext.Provider value={windowEditorContext}>
+        <EditInventoryNode />
+      </WindowEditorContext.Provider>,
+    );
+
+    // The root of the ResizableNode content should have the styled grid
+    cy.get('div')
+      .first()
+      .should('have.css', 'background-color', 'rgb(245, 245, 245)');
+
+    // No inventory item buttons should be rendered in edit mode
+    cy.get('div[role="button"]').should('not.exist');
   });
 
   it('should display items in correct positions', () => {

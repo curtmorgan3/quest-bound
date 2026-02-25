@@ -25,11 +25,10 @@ export const EditInventoryNode = () => {
 
   return (
     <ResizableNode component={component}>
-      <ViewInventoryNode component={component} />
       <div
         style={{
-          height: '100%',
-          width: '100%',
+          height: component.height,
+          width: component.width,
           backgroundColor: css.backgroundColor,
           borderRadius: css.borderRadius,
           backgroundSize: `${cellWidth}px ${cellHeight}px`,
@@ -76,7 +75,15 @@ export const ViewInventoryNode = ({ component }: { component: Component }) => {
     return () => {
       unregisterDropTarget(id);
     };
-  }, [component.id, cellWidth, cellHeight, gridCols, gridRows, registerDropTarget, unregisterDropTarget]);
+  }, [
+    component.id,
+    cellWidth,
+    cellHeight,
+    gridCols,
+    gridRows,
+    registerDropTarget,
+    unregisterDropTarget,
+  ]);
 
   useEffect(() => {
     if (!contextMenu) return;
@@ -154,8 +161,7 @@ export const ViewInventoryNode = ({ component }: { component: Component }) => {
         }}>
         {inventoryItems.map((invItem) => {
           const pos = getItemPosition(invItem);
-          const isDragging =
-            dragState?.itemId === invItem.id && activeDrag?.item.id === invItem.id;
+          const isDragging = dragState?.itemId === invItem.id && activeDrag?.item.id === invItem.id;
 
           return (
             <div
