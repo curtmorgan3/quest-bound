@@ -173,7 +173,9 @@ export const ViewInventoryNode = ({ component }: { component: Component }) => {
                 width: 20 * invItem.inventoryWidth,
                 height: 20 * invItem.inventoryHeight,
                 cursor: isDragging ? 'grabbing' : 'grab',
-                opacity: isDragging ? 0.8 : 1,
+                // Hide the in-grid item while dragging so only the
+                // global drag preview is visible.
+                opacity: isDragging ? 0 : 1,
                 zIndex: isDragging ? 10 : 1,
                 touchAction: 'none',
                 userSelect: 'none',

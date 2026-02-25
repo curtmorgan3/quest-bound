@@ -9,13 +9,16 @@ export const InventoryDragPreview = () => {
   const { item } = activeDrag;
   const image = item.image ?? null;
 
+  const previewWidth = item.inventoryWidth * 20;
+  const previewHeight = item.inventoryHeight * 20;
+
   const style: React.CSSProperties = {
     position: 'fixed',
     pointerEvents: 'none',
-    left: dragPosition.clientX + 8,
-    top: dragPosition.clientY + 8,
-    width: 40,
-    height: 40,
+    left: dragPosition.clientX - previewWidth / 2,
+    top: dragPosition.clientY - previewHeight / 2,
+    width: previewWidth,
+    height: previewHeight,
     zIndex: 9999,
     borderRadius: 4,
     overflow: 'hidden',
