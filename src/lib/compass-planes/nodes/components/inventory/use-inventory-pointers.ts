@@ -162,17 +162,37 @@ export const useInventoryPointers = ({
 
     const resolved = resolveDrop(e.clientX, e.clientY);
 
-    if (resolved) {
-      placeItemInTargetGrid({
-        item,
-        targetComponentId: resolved.targetComponentId,
-        cellX: resolved.cellX,
-        cellY: resolved.cellY,
-        config: resolved.config,
-      });
+    if (!resolved) {
+      setDragState(null);
+      cancelDrag();
+      return;
     }
 
-    setDragState(null);
+    // For drops onto this same component, set a committed position so the
+    // item appears at its new location while waiting for the database
+    // update to propagate.
+    if (resolved.targetComponentId === component.id) {
+      setDragState((prev) =>
+        prev
+          ? {
+              ...prev,
+              committedX: resolved.cellX,
+              committedY: resolved.cellY,
+            }
+          : prev,
+      );
+    }
+
+    placeItemInTargetGrid({
+      item,
+      targetComponentId: resolved.targetComponentId,
+      cellX: resolved.cellX,
+      cellY: resolved.cellY,
+      config: resolved.config,
+    });
+
+    // Hide the global preview immediately, but keep dragState until
+    // inventoryItems reflect the new position/component.
     cancelDrag();
   };
 

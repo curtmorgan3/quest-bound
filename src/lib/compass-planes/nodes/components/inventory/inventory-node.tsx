@@ -46,7 +46,7 @@ export const EditInventoryNode = () => {
 export const ViewInventoryNode = ({ component }: { component: Component }) => {
   const characterContext = useContext(CharacterContext);
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
-  const { registerDropTarget, unregisterDropTarget } = useInventoryDragContext();
+  const { registerDropTarget, unregisterDropTarget, activeDrag } = useInventoryDragContext();
 
   const css = useComponentStyles(component);
   const data = getComponentData(component) as InventoryComponentData;
@@ -154,7 +154,8 @@ export const ViewInventoryNode = ({ component }: { component: Component }) => {
         }}>
         {inventoryItems.map((invItem) => {
           const pos = getItemPosition(invItem);
-          const isDragging = dragState?.itemId === invItem.id;
+          const isDragging =
+            dragState?.itemId === invItem.id && activeDrag?.item.id === invItem.id;
 
           return (
             <div
