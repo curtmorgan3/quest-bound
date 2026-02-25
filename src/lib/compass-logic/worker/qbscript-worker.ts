@@ -203,20 +203,34 @@ async function persistScriptLogs(
 function createOnAttributesModified(
   rollFn: RollFn,
   getExecutor: () => EventHandlerExecutor,
+  /** When provided, collect all attribute IDs modified by script (direct + reactive) for UI animation. */
+  getModifiedIdsCollector?: () => Set<string>,
 ): OnAttributesModifiedFn {
   return async (attributeIds: string[], characterId: string, rulesetId: string) => {
     if (attributeIds.length === 0) return;
+    const collector = getModifiedIdsCollector?.();
+    if (collector) {
+      attributeIds.forEach((id) => collector.add(id));
+    }
     if (!reactiveExecutor) {
       reactiveExecutor = new ReactiveExecutor(db);
     }
     const executor = getExecutor();
     for (const attributeId of attributeIds) {
       try {
-        await reactiveExecutor.onAttributeChange(attributeId, characterId, rulesetId, {
-          roll: rollFn,
-          executeActionEvent: (actionId, cId, targetId, eventType) =>
-            executor.executeActionEvent(actionId, cId, targetId, eventType, rollFn),
-        });
+        const reactiveResult = await reactiveExecutor.onAttributeChange(
+          attributeId,
+          characterId,
+          rulesetId,
+          {
+            roll: rollFn,
+            executeActionEvent: (actionId, cId, targetId, eventType) =>
+              executor.executeActionEvent(actionId, cId, targetId, eventType, rollFn),
+          },
+        );
+        if (collector && reactiveResult.modifiedAttributeIds?.length) {
+          reactiveResult.modifiedAttributeIds.forEach((id) => collector.add(id));
+        }
       } catch (e) {
         console.warn('[QBScript] Reactive execution failed for attribute', attributeId, e);
       }
@@ -656,8 +670,13 @@ async function handleExecuteActionEvent(payload: {
     const rollFn: RollFn = (expression: string) =>
       rollBridge.requestRoll(expression, payload.requestId);
 
+    const allModifiedIds = new Set<string>();
+    const getCollector = () => allModifiedIds;
     let executor: EventHandlerExecutor;
-    executor = new EventHandlerExecutor(db, createOnAttributesModified(rollFn, () => executor));
+    executor = new EventHandlerExecutor(
+      db,
+      createOnAttributesModified(rollFn, () => executor, getCollector),
+    );
     const result = await executor.executeActionEvent(
       payload.actionId,
       payload.characterId,
@@ -693,6 +712,16 @@ async function handleExecuteActionEvent(payload: {
         },
       });
     } else {
+      const modifiedAttributeIds = Array.from(allModifiedIds);
+      if (modifiedAttributeIds.length > 0) {
+        sendSignal({
+          type: 'ATTRIBUTES_MODIFIED_BY_SCRIPT',
+          payload: {
+            characterId: payload.characterId,
+            attributeIds: modifiedAttributeIds,
+          } satisfies AttributesModifiedByScriptPayload,
+        });
+      }
       sendSignal({
         type: 'SCRIPT_RESULT',
         payload: {
@@ -734,8 +763,13 @@ async function handleExecuteItemEvent(payload: {
     const rollFn: RollFn = (expression: string) =>
       rollBridge.requestRoll(expression, payload.requestId);
 
+    const allModifiedIds = new Set<string>();
+    const getCollector = () => allModifiedIds;
     let executor: EventHandlerExecutor;
-    executor = new EventHandlerExecutor(db, createOnAttributesModified(rollFn, () => executor));
+    executor = new EventHandlerExecutor(
+      db,
+      createOnAttributesModified(rollFn, () => executor, getCollector),
+    );
     const result = await executor.executeItemEvent(
       payload.itemId,
       payload.characterId,
@@ -768,6 +802,16 @@ async function handleExecuteItemEvent(payload: {
         },
       });
     } else {
+      const modifiedAttributeIds = Array.from(allModifiedIds);
+      if (modifiedAttributeIds.length > 0) {
+        sendSignal({
+          type: 'ATTRIBUTES_MODIFIED_BY_SCRIPT',
+          payload: {
+            characterId: payload.characterId,
+            attributeIds: modifiedAttributeIds,
+          } satisfies AttributesModifiedByScriptPayload,
+        });
+      }
       sendSignal({
         type: 'SCRIPT_RESULT',
         payload: {
@@ -809,8 +853,13 @@ async function handleExecuteArchetypeEvent(payload: {
     const rollFn: RollFn = (expression: string) =>
       rollBridge.requestRoll(expression, payload.requestId);
 
+    const allModifiedIds = new Set<string>();
+    const getCollector = () => allModifiedIds;
     let executor: EventHandlerExecutor;
-    executor = new EventHandlerExecutor(db, createOnAttributesModified(rollFn, () => executor));
+    executor = new EventHandlerExecutor(
+      db,
+      createOnAttributesModified(rollFn, () => executor, getCollector),
+    );
     const result = await executor.executeArchetypeEvent(
       payload.archetypeId,
       payload.characterId,
@@ -835,6 +884,16 @@ async function handleExecuteArchetypeEvent(payload: {
         },
       });
     } else {
+      const modifiedAttributeIds = Array.from(allModifiedIds);
+      if (modifiedAttributeIds.length > 0) {
+        sendSignal({
+          type: 'ATTRIBUTES_MODIFIED_BY_SCRIPT',
+          payload: {
+            characterId: payload.characterId,
+            attributeIds: modifiedAttributeIds,
+          } satisfies AttributesModifiedByScriptPayload,
+        });
+      }
       sendSignal({
         type: 'SCRIPT_RESULT',
         payload: {
@@ -870,8 +929,13 @@ async function handleExecuteCampaignEventEvent(payload: {
     const rollFn: RollFn = (expression: string) =>
       rollBridge.requestRoll(expression, payload.requestId);
 
+    const allModifiedIds = new Set<string>();
+    const getCollector = () => allModifiedIds;
     let executor: EventHandlerExecutor;
-    executor = new EventHandlerExecutor(db, createOnAttributesModified(rollFn, () => executor));
+    executor = new EventHandlerExecutor(
+      db,
+      createOnAttributesModified(rollFn, () => executor, getCollector),
+    );
     const result = await executor.executeCampaignEventEvent(
       payload.campaignEventLocationId,
       payload.characterId,
@@ -892,6 +956,16 @@ async function handleExecuteCampaignEventEvent(payload: {
         },
       });
     } else {
+      const modifiedAttributeIds = Array.from(allModifiedIds);
+      if (modifiedAttributeIds.length > 0) {
+        sendSignal({
+          type: 'ATTRIBUTES_MODIFIED_BY_SCRIPT',
+          payload: {
+            characterId: payload.characterId,
+            attributeIds: modifiedAttributeIds,
+          } satisfies AttributesModifiedByScriptPayload,
+        });
+      }
       sendSignal({
         type: 'SCRIPT_RESULT',
         payload: {
