@@ -305,7 +305,7 @@ code {
   bottom: 100%;
   margin-bottom: 2px;
   padding: 2px 6px;
-  font-size: 0.875rem;
+  font-size: 0.75rem;
   font-weight: 600;
   color: var(--primary);
   background: var(--background);
@@ -316,5 +316,6 @@ code {
   overflow: hidden;
   text-overflow: ellipsis;
   pointer-events: none;
-  animation: script-change-float 1.2s ease-out forwards;
+  z-index: 10;
+  animation: script-change-float 2s ease-out forwards;
 }

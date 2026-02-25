@@ -142,19 +142,15 @@ export const ViewTextNode = ({
   const prevValue = useRef(data.value);
   const [diff, setDiff] = useState<number | string>('');
 
-  console.log(diff);
-
   useEffect(() => {
-    const diff = formatScriptChangeDisplay({
+    const nextDiff = formatScriptChangeDisplay({
       from: parseInt(`${prevValue.current}`),
       to: parseInt(`${data.value}`),
     });
-    setDiff(diff);
-
-    setTimeout(() => {
-      setDiff('');
-    }, 2000);
     prevValue.current = data.value;
+    setDiff(nextDiff);
+    const timeout = setTimeout(() => setDiff(''), 2000);
+    return () => clearTimeout(timeout);
   }, [data.value]);
 
   const diceRolls = parseTextForDiceRolls(data?.interpolatedValue?.toString());
@@ -165,36 +161,47 @@ export const ViewTextNode = ({
   };
 
   return (
-    <section
+    <div
       key={flashKey}
-      className={scriptChangeFlash ? 'script-change-flash' : undefined}
       style={{
         position: 'relative',
         height: component.height,
         width: component.width,
-        display: 'flex',
-        justifyContent: css.textAlign ?? 'start',
-        alignItems: css.verticalAlign ?? 'start',
-        backgroundColor: css.backgroundColor,
-        borderRadius: css.borderRadius,
-        outline: css.outline,
-        outlineColor: css.outlineColor,
-        outlineWidth: css.outlineWidth,
-        overflow: 'hidden',
+        overflow: 'visible',
       }}>
-      {diff && <span>{diff}</span>}
-      <span
-        onDoubleClick={onDoubleClick}
-        onClick={handleClick}
-        className={diceRolls.length ? 'clickable' : undefined}
+      {diff ? (
+        <span key={diff} className="script-change-float">
+          {diff}
+        </span>
+      ) : null}
+      <section
+        className={scriptChangeFlash ? 'script-change-flash' : undefined}
         style={{
-          ...css,
-          outline: 'none',
-          outlineColor: 'unset',
-          outlineWidth: 'unset',
+          position: 'absolute',
+          inset: 0,
+          display: 'flex',
+          justifyContent: css.textAlign ?? 'start',
+          alignItems: css.verticalAlign ?? 'start',
+          backgroundColor: css.backgroundColor,
+          borderRadius: css.borderRadius,
+          outline: css.outline,
+          outlineColor: css.outlineColor,
+          outlineWidth: css.outlineWidth,
+          overflow: 'hidden',
         }}>
-        {data?.interpolatedValue}
-      </span>
-    </section>
+        <span
+          onDoubleClick={onDoubleClick}
+          onClick={handleClick}
+          className={diceRolls.length ? 'clickable' : undefined}
+          style={{
+            ...css,
+            outline: 'none',
+            outlineColor: 'unset',
+            outlineWidth: 'unset',
+          }}>
+          {data?.interpolatedValue}
+        </span>
+      </section>
+    </div>
   );
 };
