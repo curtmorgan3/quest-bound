@@ -2,6 +2,8 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import type { InventoryItemWithData } from '@/stores';
 import { GaugeIcon, GripVertical, PackageIcon, ZapIcon } from 'lucide-react';
 import { useInventoryDragContext } from '@/stores';
+import { useInventoryPlacement } from '@/lib/compass-planes/nodes/components/inventory/use-inventory-placement';
+import { useRef } from 'react';
 
 export function DefaultInventoryEntryRow({
   item,
@@ -10,7 +12,10 @@ export function DefaultInventoryEntryRow({
   item: InventoryItemWithData;
   onItemClick: (e: React.MouseEvent, item: InventoryItemWithData) => void;
 }) {
-  const { beginDrag, updateDragPosition, cancelDrag } = useInventoryDragContext();
+  const { beginDrag, updateDragPosition, cancelDrag, resolveDrop, activeDrag } =
+    useInventoryDragContext();
+  const { placeItemInTargetGrid } = useInventoryPlacement();
+  const isPointerDownRef = useRef(false);
 
   const Icon = item.type === 'item' ? PackageIcon : item.type === 'action' ? ZapIcon : GaugeIcon;
   const image = item.image ?? null;
@@ -29,18 +34,50 @@ export function DefaultInventoryEntryRow({
         onPointerDown={(e) => {
           e.stopPropagation();
           e.preventDefault();
+          const target = e.currentTarget as HTMLElement;
+          try {
+            target.setPointerCapture(e.pointerId);
+          } catch {
+            // ignore
+          }
+          isPointerDownRef.current = true;
           beginDrag(
             { item, source: 'panel' },
             { clientX: e.clientX, clientY: e.clientY },
           );
         }}
         onPointerMove={(e) => {
-          if (e.buttons === 0) return;
+          if (!isPointerDownRef.current || e.buttons === 0) return;
           updateDragPosition({ clientX: e.clientX, clientY: e.clientY });
         }}
         onPointerUp={(e) => {
           e.stopPropagation();
           e.preventDefault();
+          isPointerDownRef.current = false;
+          const target = e.currentTarget as HTMLElement;
+          try {
+            target.releasePointerCapture(e.pointerId);
+          } catch {
+            // ignore
+          }
+
+          const drag = activeDrag;
+          if (!drag || drag.source !== 'panel' || drag.item.id !== item.id) {
+            cancelDrag();
+            return;
+          }
+
+          const resolved = resolveDrop(e.clientX, e.clientY);
+          if (resolved) {
+            placeItemInTargetGrid({
+              item: drag.item,
+              targetComponentId: resolved.targetComponentId,
+              cellX: resolved.cellX,
+              cellY: resolved.cellY,
+              config: resolved.config,
+            });
+          }
+
           cancelDrag();
         }}
         className='h-8 w-6 flex items-center justify-center rounded-md cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground'>
