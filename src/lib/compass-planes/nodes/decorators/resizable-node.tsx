@@ -1,5 +1,5 @@
 import type { Component } from '@/types';
-import { NodeResizer, useKeyPress, useReactFlow } from '@xyflow/react';
+import { NodeResizer, useKeyPress, useNodeId, useReactFlow } from '@xyflow/react';
 import { useComponentPosition } from '../../utils';
 import { componentTypes } from '../constants';
 
@@ -26,9 +26,10 @@ export const ResizableNode = ({
   props,
   className,
 }: ResizableNodeSelectedProps) => {
+  const nodeId = useNodeId();
   const reactFlow = useReactFlow();
-  const nodes = reactFlow.getNodes();
-  const selected = nodes.some((node) => node.id === component?.id && node.selected) || false;
+  const selected =
+    nodeId != null ? Boolean(reactFlow.getNode(nodeId)?.selected) : false;
   const pos = useComponentPosition(component);
 
   const keepAspectRatio = useKeyPress('Shift');
