@@ -66,22 +66,18 @@ export const EventLookup = ({
   };
 
   return (
-    <div className='flex flex-col gap-2' id={id}>
-      <Label>{label}</Label>
+    <div className='flex flex-col gap-1' id={id}>
+      <Label className='text-xs text-muted-foreground'>{label}</Label>
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <Button
             variant='outline'
             role='combobox'
             aria-expanded={open}
-            className={cn('w-full justify-between', className)}
+            className={cn('w-full justify-between h-[32px]', className)}
             disabled={disabled || !campaignId}
             data-testid={dataTestId}>
-            {selectedEvent ? (
-              <span className='truncate'>{selectedEvent.label}</span>
-            ) : (
-              placeholder
-            )}
+            {selectedEvent ? <span className='truncate'>{selectedEvent.label}</span> : placeholder}
             <>
               {selectedEvent && onDelete && (
                 <div
@@ -106,9 +102,7 @@ export const EventLookup = ({
             </>
           </Button>
         </PopoverTrigger>
-        <PopoverContent
-          className={cn('w-[300px] p-0', popoverContentClassName)}
-          align='start'>
+        <PopoverContent className={cn('w-[300px] p-0', popoverContentClassName)} align='start'>
           <Command shouldFilter={false}>
             <CommandInput placeholder={placeholder} value={search} onValueChange={setSearch} />
             <CommandList>

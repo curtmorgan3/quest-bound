@@ -127,8 +127,8 @@ export const ActionLookup = ({
   };
 
   return (
-    <div className='flex flex-col gap-2' id={id}>
-      <Label>{label}</Label>
+    <div className='flex flex-col gap-1' id={id}>
+      <Label className='text-xs text-muted-foreground'>{label}</Label>
       <div className='flex gap-2'>
         <Popover open={open} onOpenChange={setOpen}>
           <PopoverTrigger asChild>
@@ -136,7 +136,7 @@ export const ActionLookup = ({
               variant='outline'
               role='combobox'
               aria-expanded={open}
-              className={cn('w-full justify-between', className)}
+              className={cn('w-full justify-between h-[32px]', className)}
               disabled={disabled}
               data-testid={dataTestId}>
               {selectedAction ? selectedAction.title : placeholder}

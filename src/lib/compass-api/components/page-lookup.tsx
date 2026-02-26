@@ -119,8 +119,8 @@ export const PageLookup = ({
   };
 
   return (
-    <div className='flex flex-col gap-2'>
-      <Label>{label}</Label>
+    <div className='flex flex-col gap-1'>
+      <Label className='text-xs text-muted-foreground'>{label}</Label>
       <div className='flex gap-2'>
         <Popover open={open} onOpenChange={setOpen}>
           <PopoverTrigger asChild>
@@ -128,7 +128,7 @@ export const PageLookup = ({
               variant='outline'
               role='combobox'
               aria-expanded={open}
-              className={cn('w-full justify-between', className)}
+              className={cn('w-full justify-between h-[32px]', className)}
               disabled={disabled}>
               {selectedPage ? selectedPage.label : placeholder}
               <>

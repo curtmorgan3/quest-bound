@@ -124,8 +124,8 @@ export const ItemLookup = ({
   };
 
   return (
-    <div className='flex flex-col gap-2'>
-      <Label>{label}</Label>
+    <div className='flex flex-col gap-1'>
+      <Label className='text-xs text-muted-foreground'>{label}</Label>
       <div className='flex gap-2'>
         <Popover open={open} onOpenChange={setOpen}>
           <PopoverTrigger asChild>
@@ -133,7 +133,7 @@ export const ItemLookup = ({
               variant='outline'
               role='combobox'
               aria-expanded={open}
-              className={cn('w-full justify-between', className)}
+              className={cn('w-full justify-between h-[32px]', className)}
               disabled={disabled}
               data-testid={dataTestId}>
               {selectedItem ? selectedItem.title : placeholder}
@@ -154,11 +154,7 @@ export const ItemLookup = ({
           </PopoverTrigger>
           <PopoverContent className='w-[300px] p-0' align='start'>
             <Command shouldFilter={false}>
-              <CommandInput
-                placeholder={placeholder}
-                value={search}
-                onValueChange={setSearch}
-              />
+              <CommandInput placeholder={placeholder} value={search} onValueChange={setSearch} />
               <CommandList>
                 <CommandEmpty>No items found.</CommandEmpty>
                 {rows.length > 0 && (
@@ -200,9 +196,7 @@ export const ItemLookup = ({
                                 <Check
                                   className={cn(
                                     'mr-2 h-4 w-4',
-                                    selectedItem?.id === row.entry.id
-                                      ? 'opacity-100'
-                                      : 'opacity-0',
+                                    selectedItem?.id === row.entry.id ? 'opacity-100' : 'opacity-0',
                                   )}
                                 />
                                 <div className='flex flex-col'>

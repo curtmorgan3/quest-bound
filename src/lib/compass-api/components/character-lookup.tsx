@@ -49,9 +49,7 @@ export const CharacterLookup = ({
   const { characters } = useCharacter();
   const { campaignCharacters } = useCampaignCharacters(campaignId);
 
-  const alreadyInCampaignIds = new Set(
-    campaignCharacters.map((cc) => cc.characterId),
-  );
+  const alreadyInCampaignIds = new Set(campaignCharacters.map((cc) => cc.characterId));
   const playerCharactersForRuleset = characters.filter(
     (c) => c.rulesetId === rulesetId && c.isNpc !== true,
   );
@@ -61,9 +59,7 @@ export const CharacterLookup = ({
 
   const searchLower = search.toLowerCase().trim();
   const filteredCharacters = searchLower
-    ? addableCharacters.filter((c) =>
-        (c.name ?? '').toLowerCase().includes(searchLower),
-      )
+    ? addableCharacters.filter((c) => (c.name ?? '').toLowerCase().includes(searchLower))
     : addableCharacters;
 
   useEffect(() => {
@@ -76,15 +72,15 @@ export const CharacterLookup = ({
   };
 
   return (
-    <div className='flex flex-col gap-2' id={id}>
-      <Label>{label}</Label>
+    <div className='flex flex-col gap-1' id={id}>
+      <Label className='text-xs text-muted-foreground'>{label}</Label>
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <Button
             variant='outline'
             role='combobox'
             aria-expanded={open}
-            className={cn('w-full justify-between', className)}
+            className={cn('w-full justify-between h-[32px]', className)}
             disabled={disabled}
             data-testid={dataTestId ?? 'character-lookup'}>
             {placeholder}

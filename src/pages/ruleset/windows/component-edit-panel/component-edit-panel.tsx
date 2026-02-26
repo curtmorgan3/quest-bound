@@ -335,7 +335,9 @@ export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
                     onDelete={() => setPageId(null)}
                   />
                   <div className='flex flex-col gap-2'>
-                    <Label htmlFor='component-edit-href'>Link</Label>
+                    <Label htmlFor='component-edit-href' className='text-xs text-muted-foreground'>
+                      Link
+                    </Label>
                     <Input
                       id='component-edit-href'
                       className='h-8 rounded-[4px]'

@@ -130,8 +130,8 @@ export const WindowLookup = ({
   };
 
   return (
-    <div className='flex flex-col gap-2'>
-      <Label>{label}</Label>
+    <div className='flex flex-col gap-1'>
+      <Label className='text-xs text-muted-foreground'>{label}</Label>
       <div className='flex gap-2'>
         <Popover open={open} onOpenChange={setOpen}>
           <PopoverTrigger asChild>
@@ -139,7 +139,7 @@ export const WindowLookup = ({
               variant='outline'
               role='combobox'
               aria-expanded={open}
-              className={cn('w-full justify-between', className)}
+              className={cn('w-full justify-between h-[32px]', className)}
               disabled={disabled}>
               {selectedWindow ? selectedWindow.title : placeholder}
               <>
@@ -159,11 +159,7 @@ export const WindowLookup = ({
           </PopoverTrigger>
           <PopoverContent className='w-[300px] p-0' align='start'>
             <Command shouldFilter={false}>
-              <CommandInput
-                placeholder={placeholder}
-                value={search}
-                onValueChange={setSearch}
-              />
+              <CommandInput placeholder={placeholder} value={search} onValueChange={setSearch} />
               <CommandList>
                 <CommandEmpty>No windows found.</CommandEmpty>
                 {rows.length > 0 && (

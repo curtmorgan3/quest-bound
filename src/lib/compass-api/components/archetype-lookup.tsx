@@ -110,8 +110,8 @@ export const ArchetypeLookup = ({
   };
 
   return (
-    <div className='flex flex-col gap-2' id={id}>
-      <Label>{label}</Label>
+    <div className='flex flex-col gap-1' id={id}>
+      <Label className='text-xs text-muted-foreground'>{label}</Label>
       <div className='flex gap-2'>
         <Popover open={open} onOpenChange={setOpen}>
           <PopoverTrigger asChild>
@@ -119,7 +119,7 @@ export const ArchetypeLookup = ({
               variant='outline'
               role='combobox'
               aria-expanded={open}
-              className={cn('w-full justify-between', className)}
+              className={cn('w-full justify-between h-[32px]', className)}
               disabled={disabled || !rulesetId}
               data-testid={dataTestId}>
               {selectedArchetype ? (
@@ -147,9 +147,7 @@ export const ArchetypeLookup = ({
               </>
             </Button>
           </PopoverTrigger>
-          <PopoverContent
-            className={cn('w-[300px] p-0', popoverContentClassName)}
-            align='start'>
+          <PopoverContent className={cn('w-[300px] p-0', popoverContentClassName)} align='start'>
             <Command shouldFilter={false}>
               <CommandInput placeholder={placeholder} value={search} onValueChange={setSearch} />
               <CommandList>
