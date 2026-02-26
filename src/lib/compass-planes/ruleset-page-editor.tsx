@@ -20,7 +20,9 @@ import { applyNodeChanges } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { Pencil, Plus } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { InventoryDragProvider } from '@/stores';
 import { BaseEditor } from './base-editor';
+import { InventoryDragPreview } from './nodes/components/inventory/inventory-drag-preview';
 import { WindowNode } from './sheet-viewer/window-node';
 
 const windowNodeTypes = {
@@ -156,8 +158,9 @@ export const RulesetPageEditor = ({ pageId }: RulesetPageEditorProps) => {
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', position: 'relative' }}>
-      <BaseEditor
+    <InventoryDragProvider>
+      <div style={{ display: 'flex', flexDirection: 'column', height: '100%', position: 'relative' }}>
+        <BaseEditor
         nodes={nodes}
         onNodesChange={onNodesChange}
         nodeTypes={windowNodeTypes}
@@ -291,6 +294,8 @@ export const RulesetPageEditor = ({ pageId }: RulesetPageEditorProps) => {
           </div>
         </DialogContent>
       </Dialog>
+      <InventoryDragPreview />
     </div>
+    </InventoryDragProvider>
   );
 };
