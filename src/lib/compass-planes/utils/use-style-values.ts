@@ -68,11 +68,23 @@ function resolveCustomProp(
   return raw;
 }
 
+function makeStyleSignature(components: Array<Component>): string {
+  if (!components.length) return '';
+  return components
+    .map((c) => `${c.id}:${c.style}:${c.locked ? '1' : '0'}`)
+    .join('|');
+}
+
 export function useStyleValues(components: Array<Component>): StyleValues {
   const characterContext = useContext(CharacterContext);
   const character = characterContext?.character ?? null;
   const { activeRuleset } = useActiveRuleset();
   const { customProperties } = useCustomProperties(activeRuleset?.id);
+
+  const componentsKey = useMemo(
+    () => makeStyleSignature(components),
+    [components],
+  );
 
   return useMemo(() => {
     const result = {} as StyleValues;
@@ -82,7 +94,7 @@ export function useStyleValues(components: Array<Component>): StyleValues {
       result[key] = { raw, resolved };
     }
     return result;
-  }, [components, character, customProperties]);
+  }, [componentsKey, components, character, customProperties]);
 }
 
 function toPositionNumber(value: string | number): number {
@@ -96,6 +108,17 @@ export function usePositionValues(components: Array<Component>): PositionValues 
   const { activeRuleset } = useActiveRuleset();
   const { customProperties } = useCustomProperties(activeRuleset?.id);
 
+  const componentsKey = useMemo(
+    () =>
+      components
+        .map(
+          (c) =>
+            `${c.id}:${c.x}:${c.y}:${c.height}:${c.width}:${c.rotation}:${c.z}`,
+        )
+        .join('|'),
+    [components],
+  );
+
   return useMemo(() => {
     const result = {} as PositionValues;
     for (const key of POSITION_KEYS) {
@@ -104,7 +127,7 @@ export function usePositionValues(components: Array<Component>): PositionValues 
       result[key] = toPositionNumber(resolved);
     }
     return result;
-  }, [components, character, customProperties]);
+  }, [componentsKey, components, character, customProperties]);
 }
 
 function getPositionValuesForComponent(
@@ -127,6 +150,17 @@ export function usePositionValuesMap(components: Array<Component>): Map<string, 
   const { activeRuleset } = useActiveRuleset();
   const { customProperties } = useCustomProperties(activeRuleset?.id);
 
+  const componentsKey = useMemo(
+    () =>
+      components
+        .map(
+          (c) =>
+            `${c.id}:${c.x}:${c.y}:${c.height}:${c.width}:${c.rotation}:${c.z}`,
+        )
+        .join('|'),
+    [components],
+  );
+
   return useMemo(() => {
     const map = new Map<string, PositionValues>();
     for (const component of components) {
@@ -136,5 +170,5 @@ export function usePositionValuesMap(components: Array<Component>): Map<string, 
       );
     }
     return map;
-  }, [components, character, customProperties]);
+  }, [componentsKey, components, character, customProperties]);
 }
