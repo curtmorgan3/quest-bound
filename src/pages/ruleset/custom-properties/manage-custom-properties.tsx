@@ -167,7 +167,7 @@ export function ManageCustomProperties() {
             <p className='text-sm font-medium'>
               {nameFilter.trim() || categoryFilter
                 ? 'No matching custom properties'
-                : 'No custom properties yet'}
+                : 'Add custom properties in ruleset settings'}
             </p>
             <p className='text-sm text-muted-foreground mb-4'>
               {nameFilter.trim() || categoryFilter

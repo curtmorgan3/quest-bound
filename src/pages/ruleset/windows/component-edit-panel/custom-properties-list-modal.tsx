@@ -62,9 +62,7 @@ export function CustomPropertiesListModal({ open, onOpenChange, onSelect }: Prop
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className='min-w-[420px] max-w-[90vw] max-h-[85vh] overflow-hidden flex flex-col'>
         <DialogTitle>Custom properties</DialogTitle>
-        <DialogDescription>
-          Assign a character's custom property to this value.
-        </DialogDescription>
+        <DialogDescription>Assign a character's custom property to this value.</DialogDescription>
         <div className='flex flex-wrap items-end gap-4 py-2'>
           <div className='relative flex-1 min-w-[200px] max-w-[280px]'>
             <Search className='absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none' />
@@ -103,7 +101,7 @@ export function CustomPropertiesListModal({ open, onOpenChange, onSelect }: Prop
               <p className='text-sm text-muted-foreground'>
                 {nameFilter.trim() || categoryFilter
                   ? 'No matching custom properties'
-                  : 'No custom properties yet'}
+                  : 'Add custom properties in ruleset settings'}
               </p>
             </div>
           ) : (
