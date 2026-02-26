@@ -1,6 +1,6 @@
 import { fireExternalComponentChangeEvent } from '@/lib/compass-planes/utils';
 import type { Component } from '@/types';
-import { RotateCw } from 'lucide-react';
+import { RotateCcw, RotateCw } from 'lucide-react';
 import { EditPanelInput } from './component-edit-panel-input';
 import { parseValue, valueIfAllAreEqual } from './utils';
 
@@ -79,15 +79,26 @@ export const PositionEdit = ({ components, handleUpdate }: Props) => {
           onChange={(val) => handleUpdate('rotation', parseValue(val))}
         />
         {!`${rotation}`.includes('custom-prop') && (
-          <RotateCw
-            role='button'
-            aria-label='Rotate'
-            className={`text-xs h-[18px] w-[18px] cursor-${rotation !== MIXED_VALUE_LABEL ? 'pointer' : 'not-allowed'}`}
-            onClick={() => {
-              if (rotation === MIXED_VALUE_LABEL) return;
-              handleUpdate('rotation', (rotation as number) + 45);
-            }}
-          />
+          <div className='flex gap-2'>
+            <RotateCcw
+              role='button'
+              aria-label='Rotate'
+              className={`text-xs h-[18px] w-[18px] cursor-${rotation !== MIXED_VALUE_LABEL ? 'pointer' : 'not-allowed'}`}
+              onClick={() => {
+                if (rotation === MIXED_VALUE_LABEL) return;
+                handleUpdate('rotation', (rotation as number) - 45);
+              }}
+            />
+            <RotateCw
+              role='button'
+              aria-label='Rotate'
+              className={`text-xs h-[18px] w-[18px] cursor-${rotation !== MIXED_VALUE_LABEL ? 'pointer' : 'not-allowed'}`}
+              onClick={() => {
+                if (rotation === MIXED_VALUE_LABEL) return;
+                handleUpdate('rotation', (rotation as number) + 45);
+              }}
+            />
+          </div>
         )}
       </div>
       <div className='w-full flex flex-row gap-4 items-end'>
