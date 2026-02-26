@@ -56,6 +56,7 @@ export const PositionEdit = ({ components, handleUpdate }: Props) => {
           disabled={width === MIXED_VALUE_LABEL}
           label='Width'
           value={width}
+          clearValue={0}
           onChange={(val) => handleUpdate('width', parseValue(val))}
         />
         <EditPanelInput
@@ -63,6 +64,7 @@ export const PositionEdit = ({ components, handleUpdate }: Props) => {
           disabled={height === MIXED_VALUE_LABEL}
           label='Height'
           value={height}
+          clearValue={0}
           onChange={(val) => handleUpdate('height', parseValue(val))}
         />
       </div>
@@ -72,17 +74,21 @@ export const PositionEdit = ({ components, handleUpdate }: Props) => {
           disabled={rotation === MIXED_VALUE_LABEL}
           label='Rotation'
           value={rotation}
+          styleKeyForCustomProperty='rotation'
+          clearValue={0}
           onChange={(val) => handleUpdate('rotation', parseValue(val))}
         />
-        <RotateCw
-          role='button'
-          aria-label='Rotate'
-          className={`text-xs h-[18px] w-[18px] cursor-${rotation !== MIXED_VALUE_LABEL ? 'pointer' : 'not-allowed'}`}
-          onClick={() => {
-            if (rotation === MIXED_VALUE_LABEL) return;
-            handleUpdate('rotation', (rotation as number) + 45);
-          }}
-        />
+        {!`${rotation}`.includes('custom-prop') && (
+          <RotateCw
+            role='button'
+            aria-label='Rotate'
+            className={`text-xs h-[18px] w-[18px] cursor-${rotation !== MIXED_VALUE_LABEL ? 'pointer' : 'not-allowed'}`}
+            onClick={() => {
+              if (rotation === MIXED_VALUE_LABEL) return;
+              handleUpdate('rotation', (rotation as number) + 45);
+            }}
+          />
+        )}
       </div>
       <div className='w-full flex flex-row gap-4 items-end'>
         <EditPanelInput
@@ -90,6 +96,8 @@ export const PositionEdit = ({ components, handleUpdate }: Props) => {
           disabled={layer === MIXED_VALUE_LABEL}
           label='Layer'
           value={layer}
+          styleKeyForCustomProperty='z'
+          clearValue={0}
           onChange={(val) => handlePositionChange('z', Math.max(0, parseValue(val)))}
         />
       </div>

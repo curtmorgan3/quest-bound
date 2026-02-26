@@ -1,7 +1,13 @@
 import type { Component, ComponentData, ComponentStyle } from '@/types';
 import type { Node } from '@xyflow/react';
 import { useMemo } from 'react';
-import { STYLE_KEYS, useStyleValues } from './use-style-values';
+import {
+  type PositionValues,
+  STYLE_KEYS,
+  usePositionValues,
+  usePositionValuesMap,
+  useStyleValues,
+} from './use-style-values';
 
 export function convertComponentToNode(component: Component): Node {
   return {
@@ -25,7 +31,6 @@ export function convertComponentsToNodes(components: Component[]): Node[] {
 
 export function getComponentData(component: Component): ComponentData {
   const data = JSON.parse(component.data);
-
   return data;
 }
 
@@ -67,4 +72,15 @@ export function useComponentStyles(component: Component): ComponentStyle {
     }
     return applyStyleEnrichment(styles);
   }, [component, styleValues]);
+}
+
+export function useComponentPosition(component?: Component): PositionValues {
+  if (!component) return { rotation: 0, height: 0, width: 0, z: 1 };
+  return usePositionValues([component]);
+}
+
+export function useComponentPositionMap(
+  components: Component[],
+): Map<string, PositionValues> {
+  return usePositionValuesMap(components);
 }

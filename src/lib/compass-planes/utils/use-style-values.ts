@@ -26,7 +26,15 @@ export const STYLE_KEYS = [
   'paddingLeft',
 ] as const;
 
+export const POSITION_KEYS = ['height', 'width', 'rotation', 'z'] as const;
+
 export type StyleKey = (typeof STYLE_KEYS)[number];
+
+export type PositionKey = (typeof POSITION_KEYS)[number];
+
+export type PositionValues = {
+  [K in PositionKey]: number;
+};
 
 export type StyleValueEntry = {
   raw: string | number;
@@ -74,5 +82,59 @@ export function useStyleValues(components: Array<Component>): StyleValues {
       result[key] = { raw, resolved };
     }
     return result;
+  }, [components, character, customProperties]);
+}
+
+function toPositionNumber(value: string | number): number {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : 0;
+}
+
+export function usePositionValues(components: Array<Component>): PositionValues {
+  const characterContext = useContext(CharacterContext);
+  const character = characterContext?.character ?? null;
+  const { activeRuleset } = useActiveRuleset();
+  const { customProperties } = useCustomProperties(activeRuleset?.id);
+
+  return useMemo(() => {
+    const result = {} as PositionValues;
+    for (const key of POSITION_KEYS) {
+      const raw = valueIfAllAreEqual(components, key);
+      const resolved = resolveCustomProp(raw, character, customProperties);
+      result[key] = toPositionNumber(resolved);
+    }
+    return result;
+  }, [components, character, customProperties]);
+}
+
+function getPositionValuesForComponent(
+  component: Component,
+  character: { customProperties?: Record<string, string | number | boolean> } | null,
+  customProperties: Array<{ id: string; defaultValue?: string | number | boolean }>,
+): PositionValues {
+  const result = {} as PositionValues;
+  for (const key of POSITION_KEYS) {
+    const raw = component[key as keyof Component] as string | number;
+    const resolved = resolveCustomProp(raw, character, customProperties);
+    result[key] = toPositionNumber(resolved);
+  }
+  return result;
+}
+
+export function usePositionValuesMap(components: Array<Component>): Map<string, PositionValues> {
+  const characterContext = useContext(CharacterContext);
+  const character = characterContext?.character ?? null;
+  const { activeRuleset } = useActiveRuleset();
+  const { customProperties } = useCustomProperties(activeRuleset?.id);
+
+  return useMemo(() => {
+    const map = new Map<string, PositionValues>();
+    for (const component of components) {
+      map.set(
+        component.id,
+        getPositionValuesForComponent(component, character, customProperties),
+      );
+    }
+    return map;
   }, [components, character, customProperties]);
 }

@@ -172,6 +172,13 @@ export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
   };
 
   const assignStyleToCustomProperty = (styleKey: string, customPropertyId: string) => {
+    const nonstyleKeys = ['width', 'height', 'rotation', 'z'];
+
+    if (nonstyleKeys.includes(styleKey)) {
+      handleUpdate(styleKey, `custom-prop-${customPropertyId}`);
+      return;
+    }
+
     handleStyleUpdate(styleKey, `custom-prop-${customPropertyId}`);
   };
 

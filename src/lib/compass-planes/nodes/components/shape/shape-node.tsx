@@ -33,7 +33,6 @@ export const ViewShapeNode = ({ component }: { component: Component }) => {
         style={{
           height: `${component.height}px`,
           width: `${component.width}px`,
-          zIndex: component.z,
           ...css,
         }}
       />

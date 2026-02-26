@@ -5,6 +5,7 @@ import { ExternalLink, OctagonMinus, OctagonX } from 'lucide-react';
 import { useCallback, useContext, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { renderViewComponent } from '../nodes';
+import { useComponentPositionMap } from '../utils';
 
 /** Minimal window shape shared by CharacterWindow and RulesetWindow. */
 export interface WindowNodeWindow {
@@ -37,6 +38,7 @@ export const WindowNode = ({ data }: { data: WindowNodeData }) => {
     editWindowHref,
   } = data;
   const { components } = useComponents(windowData.windowId);
+  const positionMap = useComponentPositionMap(components);
 
   const handleChildWindowClick = useCallback(
     (childWindowId: string) => {
@@ -142,8 +144,7 @@ export const WindowNode = ({ data }: { data: WindowNodeData }) => {
               top: component.y - minY,
               width: component.width,
               height: component.height,
-              zIndex: component.z,
-              transform: `rotate(${component.rotation}deg)`,
+              zIndex: positionMap.get(component.id)?.z ?? component.z,
               cursor: component.childWindowId ? 'pointer' : undefined,
             }}
             onClick={

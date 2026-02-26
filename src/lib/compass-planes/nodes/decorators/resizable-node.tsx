@@ -1,5 +1,6 @@
 import type { Component } from '@/types';
 import { NodeResizer, useKeyPress, useReactFlow } from '@xyflow/react';
+import { useComponentPosition } from '../../utils';
 import { componentTypes } from '../constants';
 
 type OverrideProps = {
@@ -28,6 +29,7 @@ export const ResizableNode = ({
   const reactFlow = useReactFlow();
   const nodes = reactFlow.getNodes();
   const selected = nodes.some((node) => node.id === component?.id && node.selected) || false;
+  const pos = useComponentPosition(component);
 
   const keepAspectRatio = useKeyPress('Shift');
 
@@ -39,7 +41,8 @@ export const ResizableNode = ({
     <div
       className={`${(component?.locked ?? props?.locked) ? 'nodrag' : className}`}
       style={{
-        transform: `rotate(${component?.rotation ?? 0}deg)`,
+        transform: `rotate(${pos.rotation}deg)`,
+        zIndex: pos.z,
       }}>
       {!disabled && (
         <NodeResizer
@@ -47,8 +50,8 @@ export const ResizableNode = ({
           color={component?.locked ? '#E66A3C' : '#417090'}
           isVisible={selected}
           keepAspectRatio={keepAspectRatio}
-          handleClassName={component?.locked || component?.rotation !== 0 ? 'hidden' : undefined}
-          shouldResize={() => !component?.locked && component?.rotation === 0}
+          handleClassName={component?.locked || pos?.rotation !== 0 ? 'hidden' : undefined}
+          shouldResize={() => !component?.locked && pos?.rotation === 0}
           minWidth={componentType?.minWidth ?? props?.width ?? 0}
           minHeight={componentType?.minHeight ?? props?.height ?? 0}
           maxHeight={componentType?.maxHeight ?? 0}

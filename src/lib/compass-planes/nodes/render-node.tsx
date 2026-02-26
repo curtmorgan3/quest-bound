@@ -18,6 +18,7 @@ import {
   NodeConditionalRender,
   NodePageRouter,
 } from './decorators';
+import { NodeRotation } from './decorators/node-rotation';
 
 export const renderViewComponent = (
   component: Component,
@@ -125,7 +126,9 @@ function WrapDecorators({
     <NodeConditionalRender component={component} characterAttributes={characterAttributes}>
       <NodePageRouter component={component}>
         <NodeActionCaller component={component}>
-          <NodeAnimation component={component}>{children}</NodeAnimation>
+          <NodeRotation component={component}>
+            <NodeAnimation component={component}>{children}</NodeAnimation>
+          </NodeRotation>
         </NodeActionCaller>
       </NodePageRouter>
     </NodeConditionalRender>
