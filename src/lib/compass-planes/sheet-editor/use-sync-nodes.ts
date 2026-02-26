@@ -19,24 +19,26 @@ export const useSyncNodes = ({
   components,
   shouldRecreateNodes,
 }: UseSyncNodes) => {
-  const componentLengthRef = useRef<number>(0);
+  const componentLengthRef = useRef<number>(components.length);
 
   useEffect(() => {
     if (!nodes.length || shouldRecreateNodes) {
       setNodes(convertComponentsToNodes(components));
       componentLengthRef.current = components.length;
+      return;
     }
 
-    if (nodes.length !== componentLengthRef.current) {
-      const componentIds = components.map((c) => c.id);
-      const newComponents = componentIds
-        .filter((key) => !nodes.find((node) => node.id === key))
-        .map((id) => components.find((c) => c.id === id))
-        .filter(Boolean);
+    if (components.length !== componentLengthRef.current) {
+      const existingNodeIds = new Set(nodes.map((node) => node.id));
+      const newComponents = components.filter((component) => !existingNodeIds.has(component.id));
 
-      setNodes((prev) => [...prev, ...convertComponentsToNodes(newComponents as Component[])]);
+      if (newComponents.length > 0) {
+        setNodes((prev) => [...prev, ...convertComponentsToNodes(newComponents)]);
+      }
+
+      componentLengthRef.current = components.length;
     }
-  }, [JSON.stringify(components)]);
+  }, [components, nodes.length, shouldRecreateNodes, setNodes]);
 
   const onComponentsChangedExternally = (updateMap: ExternalComponentChangeCallback) => {
     setNodes((prev) =>
