@@ -1,7 +1,7 @@
 import { useAttributes } from '@/lib/compass-api';
 import { CharacterContext } from '@/stores';
 import type { AttributeType, Component, ComponentData } from '@/types';
-import { useContext } from 'react';
+import { useContext, useMemo } from 'react';
 import { ComponentTypes } from '../nodes';
 import { injectCharacterData } from './inject-character-data';
 import { getComponentData } from './node-conversion';
@@ -60,63 +60,69 @@ export const useNodeData = (component: Component): NodeData => {
   const characterContext = useContext(CharacterContext);
   const { attributeId } = component;
   const { attributes } = useAttributes();
+  const character = characterContext?.character ?? null;
+  const getCharacterAttribute = characterContext?.getCharacterAttribute;
 
-  const componentData = getComponentData(component);
-  const rulesetAttribute = attributeId ? attributes.find((attr) => attr.id === attributeId) : null;
-  const characterAttribute =
-    attributeId && characterContext ? characterContext.getCharacterAttribute(attributeId) : null;
-  const characterComponentData = characterContext?.character?.componentData;
+  return useMemo(() => {
+    const componentData = getComponentData(component);
+    const rulesetAttribute = attributeId
+      ? attributes.find((attr) => attr.id === attributeId)
+      : null;
+    const characterAttribute =
+      attributeId && getCharacterAttribute ? getCharacterAttribute(attributeId) : null;
+    const characterComponentData = character?.componentData;
 
-  const characterComponentDataValue = characterComponentData
-    ? characterComponentData[component.id]
-    : null;
+    const characterComponentDataValue = characterComponentData
+      ? characterComponentData[component.id]
+      : null;
 
-  const attributeType: AttributeType = rulesetAttribute?.type ?? 'string';
+    const attributeType: AttributeType = rulesetAttribute?.type ?? 'string';
 
-  let value =
-    characterAttribute?.value ??
-    characterComponentDataValue ??
-    rulesetAttribute?.defaultValue ??
-    componentData.value ??
-    '';
+    let value =
+      characterAttribute?.value ??
+      characterComponentDataValue ??
+      rulesetAttribute?.defaultValue ??
+      componentData.value ??
+      '';
 
-  value = coerceValueByComponentType(value, component, attributeType, componentData);
+    value = coerceValueByComponentType(value, component, attributeType, componentData);
 
-  if (componentData.showSign && component.type === ComponentTypes.TEXT) {
-    try {
-      const val = typeof value === 'string' ? parseFloat(value) : value;
-      const sign = val > 0 ? '+' : ''; //- is auto included
-      value = `${sign}${value}`;
-    } catch (e) {
-      console.warn('Unable to parse number for sign interpolation');
+    if (componentData.showSign && component.type === ComponentTypes.TEXT) {
+      try {
+        const val = typeof value === 'string' ? parseFloat(value) : value;
+        const sign = val > 0 ? '+' : ''; //- is auto included
+        value = `${sign}${value}`;
+      } catch (e) {
+        console.warn('Unable to parse number for sign interpolation');
+      }
     }
-  }
 
-  let name = characterAttribute?.title ?? rulesetAttribute?.title;
+    let name = characterAttribute?.title ?? rulesetAttribute?.title;
 
-  if (component.type === ComponentTypes.INPUT && !component?.attributeId) {
-    if (componentData?.placeholder === 'Input' && !!componentData?.type) {
-      name = `${componentData.type}`;
-    } else {
-      name = 'Input';
+    if (component.type === ComponentTypes.INPUT && !component?.attributeId) {
+      if (componentData?.placeholder === 'Input' && !!componentData?.type) {
+        name = `${componentData.type}`;
+      } else {
+        name = 'Input';
+      }
     }
-  }
 
-  return {
-    ...componentData,
-    name: name ?? component.type,
-    value,
-    interpolatedValue: injectCharacterData({
+    return {
+      ...componentData,
+      name: name ?? component.type,
       value,
-      characterData: characterContext?.character,
-      attributes,
-      getCharacterAttribute: characterContext?.getCharacterAttribute,
-    }),
-    attributeType,
-    characterAttributeId: characterAttribute?.id,
-    options: characterAttribute?.options ?? rulesetAttribute?.options ?? [],
-    min: characterAttribute?.min ?? rulesetAttribute?.min,
-    max: characterAttribute?.max ?? rulesetAttribute?.max,
-    allowMultiSelect: rulesetAttribute?.allowMultiSelect,
-  };
+      interpolatedValue: injectCharacterData({
+        value,
+        characterData: character,
+        attributes,
+        getCharacterAttribute,
+      }),
+      attributeType,
+      characterAttributeId: characterAttribute?.id,
+      options: characterAttribute?.options ?? rulesetAttribute?.options ?? [],
+      min: characterAttribute?.min ?? rulesetAttribute?.min,
+      max: characterAttribute?.max ?? rulesetAttribute?.max,
+      allowMultiSelect: rulesetAttribute?.allowMultiSelect,
+    };
+  }, [component, attributeId, attributes, character, getCharacterAttribute]);
 };
