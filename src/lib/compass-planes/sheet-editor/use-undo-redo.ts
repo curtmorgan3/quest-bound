@@ -5,7 +5,9 @@ const MAX_HISTORY = 50;
 const PUSH_DEBOUNCE_MS = 300;
 
 function deepCopyComponents(components: Component[]): Component[] {
-  return components.map((c) => ({ ...c }));
+  // Components are plain data (no functions), so JSON clone is safe and gives
+  // us a true deep copy for nested fields like style/data.
+  return JSON.parse(JSON.stringify(components));
 }
 
 /**
@@ -71,8 +73,17 @@ export const useUndoRedo = ({
   const pushTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const actionIsUndoRedo = useRef<boolean>(false);
 
-  const [, setVersion] = useState(0);
-  const triggerRender = useCallback(() => setVersion((v) => v + 1), []);
+  const [historyState, setHistoryState] = useState<{ canUndo: boolean; canRedo: boolean }>({
+    canUndo: false,
+    canRedo: false,
+  });
+
+  const updateHistoryState = useCallback(() => {
+    setHistoryState({
+      canUndo: undoStackRef.current.length > 0,
+      canRedo: redoStackRef.current.length > 0,
+    });
+  }, []);
 
   useEffect(() => {
     componentsRef.current = components;
@@ -102,9 +113,9 @@ export const useUndoRedo = ({
         -MAX_HISTORY,
       );
       redoStackRef.current = [];
-      triggerRender();
+      updateHistoryState();
     }
-  }, [onComponentsRestored, triggerRender]);
+  }, [onComponentsRestored, updateHistoryState]);
 
   const pushUndoSnapshot = useCallback(() => {
     if (actionIsUndoRedo.current) {
@@ -137,9 +148,9 @@ export const useUndoRedo = ({
     redoStackRef.current = [...redoStackRef.current, redoCommand].slice(
       -MAX_HISTORY,
     );
-    triggerRender();
+    updateHistoryState();
     queueMicrotask(() => command.undo());
-  }, [onComponentsRestored, triggerRender]);
+  }, [onComponentsRestored, updateHistoryState]);
 
   const redo = useCallback(() => {
     if (!onComponentsRestored) return;
@@ -157,15 +168,15 @@ export const useUndoRedo = ({
     undoStackRef.current = [...undoStackRef.current, undoCommand].slice(
       -MAX_HISTORY,
     );
-    triggerRender();
+    updateHistoryState();
     queueMicrotask(() => command.execute());
-  }, [onComponentsRestored, triggerRender]);
+  }, [onComponentsRestored, updateHistoryState]);
 
   return {
     pushUndoSnapshot,
     undo,
     redo,
-    canUndo: undoStackRef.current.length > 0,
-    canRedo: redoStackRef.current.length > 0,
+    canUndo: historyState.canUndo,
+    canRedo: historyState.canRedo,
   };
 };
