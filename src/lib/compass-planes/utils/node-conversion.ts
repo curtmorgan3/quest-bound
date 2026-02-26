@@ -9,6 +9,9 @@ import {
   useStyleValues,
 } from './use-style-values';
 
+const componentDataCache = new Map<string, ComponentData>();
+const componentStyleCache = new Map<string, ComponentStyle>();
+
 export function convertComponentToNode(component: Component): Node {
   return {
     id: component.id,
@@ -30,8 +33,13 @@ export function convertComponentsToNodes(components: Component[]): Node[] {
 }
 
 export function getComponentData(component: Component): ComponentData {
-  const data = JSON.parse(component.data);
-  return data;
+  const key = component.data;
+  const cached = componentDataCache.get(key);
+  if (cached) return cached;
+
+  const parsed = JSON.parse(key) as ComponentData;
+  componentDataCache.set(key, parsed);
+  return parsed;
 }
 
 export function updateComponentData(data: string, update: Record<any, any>): string {
@@ -59,8 +67,14 @@ function applyStyleEnrichment(styles: ComponentStyle): ComponentStyle {
 }
 
 export function getComponentStyles(component: Component): ComponentStyle {
-  const styles = JSON.parse(component.style) as ComponentStyle;
-  return applyStyleEnrichment(styles);
+  const key = component.style;
+  const cached = componentStyleCache.get(key);
+  if (cached) return cached;
+
+  const styles = JSON.parse(key) as ComponentStyle;
+  const enriched = applyStyleEnrichment(styles);
+  componentStyleCache.set(key, enriched);
+  return enriched;
 }
 
 export function useComponentStyles(component: Component): ComponentStyle {
