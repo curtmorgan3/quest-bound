@@ -1,7 +1,7 @@
 import { CharacterContext, WindowEditorContext } from '@/stores';
 import type { Component, GraphComponentData, GraphVariant } from '@/types';
 import { useNodeId } from '@xyflow/react';
-import { useContext, useEffect, useState } from 'react';
+import { memo, useContext, useEffect, useState } from 'react';
 import { getComponentData, useComponentStyles } from '../../../utils';
 import { ResizableNode } from '../../decorators';
 
@@ -155,23 +155,21 @@ function GraphEditPlaceholder({
 const DEFAULT_DEBOUNCE_SECONDS = 0.15;
 const FILL_TRANSITION_MS = 400;
 
-export const ViewGraphNode = ({ component }: { component: Component }) => {
+const ViewGraphNodeComponent = ({ component }: { component: Component }) => {
   const data = getComponentData(component) as GraphComponentData;
   const css = useComponentStyles(component);
   const variant = data.graphVariant ?? 'horizontal-linear';
-  const debounceMs = Math.max(0, (data.animationDebounceSeconds ?? DEFAULT_DEBOUNCE_SECONDS) * 1000);
+  const debounceMs = Math.max(
+    0,
+    (data.animationDebounceSeconds ?? DEFAULT_DEBOUNCE_SECONDS) * 1000,
+  );
 
   return (
-    <ViewGraphNodeLive
-      component={component}
-      variant={variant}
-      css={css}
-      debounceMs={debounceMs}
-    />
+    <ViewGraphNodeLive component={component} variant={variant} css={css} debounceMs={debounceMs} />
   );
 };
 
-function ViewGraphNodeLive({
+const ViewGraphNodeLive = memo(function ViewGraphNodeLive({
   component,
   variant,
   css,
@@ -258,4 +256,9 @@ function ViewGraphNodeLive({
       </svg>
     </div>
   );
-}
+});
+
+export const ViewGraphNode = memo(
+  ViewGraphNodeComponent,
+  (prev, next) => prev.component === next.component,
+);

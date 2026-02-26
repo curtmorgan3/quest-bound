@@ -4,7 +4,7 @@ import { CharacterContext, WindowEditorContext } from '@/stores';
 import type { Component, ComponentStyle } from '@/types';
 import { useNodeId } from '@xyflow/react';
 import { CheckIcon, SquareIcon } from 'lucide-react';
-import { useContext } from 'react';
+import { memo, useContext } from 'react';
 import { ResizableNode } from '../../decorators';
 
 export const EditCheckboxNode = () => {
@@ -22,7 +22,7 @@ export const EditCheckboxNode = () => {
   );
 };
 
-export const ViewCheckboxNode = ({
+const ViewCheckboxNodeComponent = ({
   component,
   editMode,
 }: {
@@ -80,6 +80,11 @@ export const ViewCheckboxNode = ({
     </section>
   );
 };
+
+export const ViewCheckboxNode = memo(
+  ViewCheckboxNodeComponent,
+  (prev, next) => prev.component === next.component && prev.editMode === next.editMode,
+);
 
 function Checked({ url, css }: { url?: string; css: ComponentStyle }) {
   if (url) {

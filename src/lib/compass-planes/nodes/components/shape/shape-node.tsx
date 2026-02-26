@@ -1,7 +1,7 @@
 import { WindowEditorContext } from '@/stores';
 import type { Component, ShapeComponentData } from '@/types';
 import { useNodeId } from '@xyflow/react';
-import { useContext } from 'react';
+import { memo, useContext } from 'react';
 import { getComponentData, useComponentStyles } from '../../../utils';
 import { ResizableNode } from '../../decorators';
 
@@ -20,7 +20,7 @@ export const EditShapeNode = () => {
   );
 };
 
-export const ViewShapeNode = ({ component }: { component: Component }) => {
+const ViewShapeNodeComponent = ({ component }: { component: Component }) => {
   const data = getComponentData(component) as ShapeComponentData;
   const css = useComponentStyles(component);
   const outlineWidth = Math.max(0, css.outlineWidth);
@@ -51,6 +51,11 @@ export const ViewShapeNode = ({ component }: { component: Component }) => {
     />
   );
 };
+
+export const ViewShapeNode = memo(
+  ViewShapeNodeComponent,
+  (prev, next) => prev.component === next.component,
+);
 
 const Polygon = ({
   sides,

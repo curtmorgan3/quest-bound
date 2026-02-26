@@ -2,7 +2,7 @@ import { getComponentData, useComponentStyles } from '@/lib/compass-planes/utils
 import { CharacterContext, WindowEditorContext, useInventoryDragContext } from '@/stores';
 import type { Component, InventoryComponentData } from '@/types';
 import { useNodeId } from '@xyflow/react';
-import { useContext, useEffect, useState } from 'react';
+import { memo, useContext, useEffect, useState } from 'react';
 import { ResizableNode } from '../../decorators';
 import { ItemContextMenu, type ContextMenuState } from './item-context-menu';
 import { useInventoryHandlers } from './use-inventory-handlers';
@@ -42,7 +42,7 @@ export const EditInventoryNode = () => {
   );
 };
 
-export const ViewInventoryNode = ({ component }: { component: Component }) => {
+const ViewInventoryNodeComponent = ({ component }: { component: Component }) => {
   const characterContext = useContext(CharacterContext);
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
   const { registerDropTarget, unregisterDropTarget, activeDrag } = useInventoryDragContext();
@@ -270,3 +270,8 @@ export const ViewInventoryNode = ({ component }: { component: Component }) => {
     </>
   );
 };
+
+export const ViewInventoryNode = memo(
+  ViewInventoryNodeComponent,
+  (prev, next) => prev.component === next.component,
+);

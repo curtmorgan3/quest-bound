@@ -8,7 +8,7 @@ import { DiceContext, WindowEditorContext } from '@/stores';
 import type { Component, TextComponentData, TextComponentStyle } from '@/types';
 import { parseTextForDiceRolls } from '@/utils';
 import { useNodeId } from '@xyflow/react';
-import { useContext, useEffect, useRef, useState } from 'react';
+import { memo, useContext, useEffect, useRef, useState } from 'react';
 import { ResizableNode } from '../../decorators';
 
 export const EditTextNode = () => {
@@ -119,7 +119,7 @@ export const EditTextNode = () => {
   );
 };
 
-export const ViewTextNode = ({
+const ViewTextNodeComponent = ({
   component,
   onDoubleClick,
 }: {
@@ -175,3 +175,9 @@ export const ViewTextNode = ({
     </div>
   );
 };
+
+export const ViewTextNode = memo(
+  ViewTextNodeComponent,
+  (prev, next) =>
+    prev.component === next.component && prev.onDoubleClick === next.onDoubleClick,
+);

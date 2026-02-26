@@ -8,7 +8,7 @@ import { CharacterContext, DiceContext, WindowEditorContext } from '@/stores';
 import type { Component, ContentComponentData, TextComponentStyle } from '@/types';
 import { parseTextForDiceRolls } from '@/utils';
 import { useNodeId } from '@xyflow/react';
-import { useContext, useEffect, useRef, useState } from 'react';
+import { memo, useContext, useEffect, useRef, useState } from 'react';
 import Markdown from 'react-markdown';
 import { ResizableNode } from '../../decorators';
 
@@ -61,7 +61,7 @@ export const EditContentNode = () => {
   );
 };
 
-export const ViewContentNode = ({
+const ViewContentNodeComponent = ({
   component,
   windowEditorMode,
   handleComponentUpdate,
@@ -186,3 +186,12 @@ export const ViewContentNode = ({
     </section>
   );
 };
+
+export const ViewContentNode = memo(
+  ViewContentNodeComponent,
+  (prev, next) =>
+    prev.component === next.component &&
+    prev.windowEditorMode === next.windowEditorMode &&
+    prev.handleComponentUpdate === next.handleComponentUpdate &&
+    prev.handleDoubleClick === next.handleDoubleClick,
+);

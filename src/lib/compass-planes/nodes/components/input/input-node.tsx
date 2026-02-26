@@ -13,7 +13,7 @@ import { useComponentStyles, useNodeData } from '@/lib/compass-planes/utils';
 import { CharacterContext, WindowEditorContext } from '@/stores';
 import type { Component, TextComponentStyle } from '@/types';
 import { useNodeId } from '@xyflow/react';
-import { useContext, useState } from 'react';
+import { memo, useContext, useState } from 'react';
 import { ResizableNode } from '../../decorators';
 
 export const EditInputNode = () => {
@@ -31,7 +31,7 @@ export const EditInputNode = () => {
   );
 };
 
-export const ViewInputNode = ({
+const ViewInputNodeComponent = ({
   component,
   editMode,
 }: {
@@ -194,3 +194,8 @@ export const ViewInputNode = ({
     </section>
   );
 };
+
+export const ViewInputNode = memo(
+  ViewInputNodeComponent,
+  (prev, next) => prev.component === next.component && prev.editMode === next.editMode,
+);

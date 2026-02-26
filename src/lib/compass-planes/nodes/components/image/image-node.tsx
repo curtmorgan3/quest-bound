@@ -3,7 +3,7 @@ import { getComponentData, useComponentStyles } from '@/lib/compass-planes/utils
 import { CharacterContext, WindowEditorContext } from '@/stores';
 import type { Component, ImageComponentData } from '@/types';
 import { useNodeId } from '@xyflow/react';
-import { useContext } from 'react';
+import { memo, useContext } from 'react';
 import { ResizableNode } from '../../decorators';
 
 export const EditImageNode = () => {
@@ -68,7 +68,7 @@ export const EditImageNode = () => {
   );
 };
 
-export const ViewImageNode = ({ component }: { component: Component }) => {
+const ViewImageNodeComponent = ({ component }: { component: Component }) => {
   const css = useComponentStyles(component);
   const data = getComponentData(component) as ImageComponentData;
   const { assets } = useAssets();
@@ -103,3 +103,8 @@ export const ViewImageNode = ({ component }: { component: Component }) => {
     />
   );
 };
+
+export const ViewImageNode = memo(
+  ViewImageNodeComponent,
+  (prev, next) => prev.component === next.component,
+);

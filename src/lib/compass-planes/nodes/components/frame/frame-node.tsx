@@ -4,7 +4,7 @@ import { WindowEditorContext } from '@/stores';
 import type { Component, FrameComponentData } from '@/types';
 import { useNodeId } from '@xyflow/react';
 import { Frame as FrameIcon } from 'lucide-react';
-import { useContext } from 'react';
+import { memo, useContext } from 'react';
 import { ResizableNode } from '../../decorators';
 
 export const EditFrameNode = () => {
@@ -35,7 +35,7 @@ export const EditFrameNode = () => {
   );
 };
 
-export const ViewFrameNode = ({ component }: { component: Component }) => {
+const ViewFrameNodeComponent = ({ component }: { component: Component }) => {
   const data = getComponentData(component) as FrameComponentData;
   const css = useComponentStyles(component);
   const url = data?.url?.trim();
@@ -57,3 +57,8 @@ export const ViewFrameNode = ({ component }: { component: Component }) => {
     />
   );
 };
+
+export const ViewFrameNode = memo(
+  ViewFrameNodeComponent,
+  (prev, next) => prev.component === next.component,
+);
