@@ -135,7 +135,9 @@ export const WindowNode = ({ data }: { data: WindowNodeData }) => {
           width: '100%',
           height: windowHeight,
         }}>
-        {components.map((component) => (
+        {components.map((component) => {
+          const pos = positionMap.get(component.id);
+          return (
           <div
             key={component.id}
             style={{
@@ -144,7 +146,7 @@ export const WindowNode = ({ data }: { data: WindowNodeData }) => {
               top: component.y - minY,
               width: component.width,
               height: component.height,
-              zIndex: positionMap.get(component.id)?.z ?? component.z,
+              zIndex: pos?.z ?? component.z,
               cursor: component.childWindowId ? 'pointer' : undefined,
             }}
             onClick={
@@ -155,9 +157,10 @@ export const WindowNode = ({ data }: { data: WindowNodeData }) => {
                   }
                 : undefined
             }>
-            {renderViewComponent(component, characterContext?.characterAttributes)}
+            {renderViewComponent(component, characterContext?.characterAttributes, pos)}
           </div>
-        ))}
+        );
+        })}
       </div>
     </div>
   );

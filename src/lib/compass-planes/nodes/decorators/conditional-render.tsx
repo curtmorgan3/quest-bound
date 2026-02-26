@@ -1,6 +1,7 @@
 import type {
   CharacterAttribute,
   Component,
+  ComponentData,
   ConditionalRenderLogic,
   ConditionalRenderOperator,
 } from '@/types';
@@ -46,14 +47,16 @@ interface NodeConditionalRenderProps {
   children: ReactNode;
   component: Component;
   characterAttributes?: CharacterAttribute[];
+  componentData?: ComponentData;
 }
 
 export const NodeConditionalRender = ({
   children,
   component,
   characterAttributes,
+  componentData,
 }: NodeConditionalRenderProps) => {
-  const data = getComponentData(component);
+  const data = componentData ?? getComponentData(component);
   const attributeId = data.conditionalRenderAttributeId;
   const logic = data.conditionalRenderLogic;
 

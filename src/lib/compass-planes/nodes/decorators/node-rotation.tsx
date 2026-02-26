@@ -1,21 +1,18 @@
-import type { Component } from '@/types';
 import { type CSSProperties, type ReactNode } from 'react';
-import { useComponentPosition } from '../../utils';
 
 interface NodeRotation {
   children: ReactNode;
-  component: Component;
   style?: CSSProperties;
+  rotation?: number;
+  z?: number;
 }
 
-export const NodeRotation = ({ children, component }: NodeRotation) => {
-  const pos = useComponentPosition(component);
-
+export const NodeRotation = ({ children, rotation = 0, z = 1 }: NodeRotation) => {
   return (
     <div
       style={{
-        transform: `rotate(${pos.rotation}deg)`,
-        zIndex: pos.z,
+        transform: `rotate(${rotation}deg)`,
+        zIndex: z,
       }}>
       {children}
     </div>

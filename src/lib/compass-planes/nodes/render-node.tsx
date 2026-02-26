@@ -1,5 +1,6 @@
-import type { CharacterAttribute, Component } from '@/types';
+import type { CharacterAttribute, Component, ComponentData } from '@/types';
 import type { ReactNode } from 'react';
+import type { PositionValues } from '../utils';
 import { ComponentTypes } from '../nodes';
 import {
   ViewCheckboxNode,
@@ -19,17 +20,23 @@ import {
   NodePageRouter,
 } from './decorators';
 import { NodeRotation } from './decorators/node-rotation';
+import { getComponentData } from '../utils';
 
 export const renderViewComponent = (
   component: Component,
   characterAttributes?: CharacterAttribute[],
+  position?: PositionValues,
 ) => {
+  const componentData = getComponentData(component);
+
   switch (component.type) {
     case ComponentTypes.TEXT:
       return (
         <WrapDecorators
           key={component.id}
           component={component}
+          componentData={componentData}
+          position={position}
           characterAttributes={characterAttributes}>
           <ViewTextNode key={component.id} component={component} />
         </WrapDecorators>
@@ -39,6 +46,8 @@ export const renderViewComponent = (
         <WrapDecorators
           key={component.id}
           component={component}
+          componentData={componentData}
+          position={position}
           characterAttributes={characterAttributes}>
           <ViewShapeNode component={component} />
         </WrapDecorators>
@@ -48,6 +57,8 @@ export const renderViewComponent = (
         <WrapDecorators
           key={component.id}
           component={component}
+          componentData={componentData}
+          position={position}
           characterAttributes={characterAttributes}>
           <ViewImageNode key={component.id} component={component} />
         </WrapDecorators>
@@ -57,6 +68,8 @@ export const renderViewComponent = (
         <WrapDecorators
           key={component.id}
           component={component}
+          componentData={componentData}
+          position={position}
           characterAttributes={characterAttributes}>
           <ViewInputNode key={component.id} component={component} />
         </WrapDecorators>
@@ -66,6 +79,8 @@ export const renderViewComponent = (
         <WrapDecorators
           key={component.id}
           component={component}
+          componentData={componentData}
+          position={position}
           characterAttributes={characterAttributes}>
           <ViewCheckboxNode key={component.id} component={component} />
         </WrapDecorators>
@@ -76,6 +91,8 @@ export const renderViewComponent = (
         <WrapDecorators
           key={component.id}
           component={component}
+          componentData={componentData}
+          position={position}
           characterAttributes={characterAttributes}>
           <ViewContentNode key={component.id} component={component} />
         </WrapDecorators>
@@ -85,6 +102,8 @@ export const renderViewComponent = (
         <WrapDecorators
           key={component.id}
           component={component}
+          componentData={componentData}
+          position={position}
           characterAttributes={characterAttributes}>
           <ViewInventoryNode key={component.id} component={component} />
         </WrapDecorators>
@@ -94,6 +113,8 @@ export const renderViewComponent = (
         <WrapDecorators
           key={component.id}
           component={component}
+          componentData={componentData}
+          position={position}
           characterAttributes={characterAttributes}>
           <ViewGraphNode key={component.id} component={component} />
         </WrapDecorators>
@@ -103,6 +124,8 @@ export const renderViewComponent = (
         <WrapDecorators
           key={component.id}
           component={component}
+          componentData={componentData}
+          position={position}
           characterAttributes={characterAttributes}>
           <ViewFrameNode key={component.id} component={component} />
         </WrapDecorators>
@@ -117,16 +140,23 @@ function WrapDecorators({
   children,
   component,
   characterAttributes,
+  componentData,
+  position,
 }: {
   children: ReactNode;
   component: Component;
   characterAttributes?: CharacterAttribute[];
+  componentData: ComponentData;
+  position?: PositionValues;
 }) {
   return (
-    <NodeConditionalRender component={component} characterAttributes={characterAttributes}>
-      <NodePageRouter component={component}>
+    <NodeConditionalRender
+      component={component}
+      componentData={componentData}
+      characterAttributes={characterAttributes}>
+      <NodePageRouter component={component} componentData={componentData}>
         <NodeActionCaller component={component}>
-          <NodeRotation component={component}>
+          <NodeRotation rotation={position?.rotation} z={position?.z}>
             <NodeAnimation component={component}>{children}</NodeAnimation>
           </NodeRotation>
         </NodeActionCaller>
