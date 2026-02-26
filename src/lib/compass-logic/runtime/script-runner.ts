@@ -685,9 +685,7 @@ export class ScriptRunner {
       const item = this.itemsCache.get(this.context.entityId);
       if (item) {
         const itemRef = owner.Item(item.title);
-        if (itemRef !== undefined) {
-          this.evaluator.globalEnv.define('Self', itemRef);
-        }
+        this.evaluator.globalEnv.define('Self', itemRef ?? null);
       }
     } else if (
       this.context.entityType === 'campaignEventLocation' &&
