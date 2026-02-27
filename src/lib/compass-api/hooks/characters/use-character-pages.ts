@@ -2,27 +2,14 @@ import { useErrorHandler } from '@/hooks';
 import { db } from '@/stores';
 import type { CharacterPage, Page } from '@/types';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { useRulesetPages } from '../rulesets';
 
 export const useCharacterPages = (characterId?: string) => {
   const { handleError } = useErrorHandler();
-  const { pages } = useRulesetPages();
 
-  const _characterPages = useLiveQuery(async (): Promise<CharacterPage[]> => {
+  const characterPages = useLiveQuery(async (): Promise<CharacterPage[]> => {
     if (!characterId) return [];
     return db.characterPages.where('characterId').equals(characterId).sortBy('createdAt');
   }, [characterId]);
-
-  console.log('P: ', pages);
-
-  const characterPages = _characterPages?.map((cPage) => {
-    // Backwards compatability
-    const page = pages.find((p) => p.id === cPage.pageId);
-    return {
-      ...cPage,
-      label: page?.label ?? '',
-    };
-  });
 
   const createCharacterPage = async (
     data: { label: string } | { fromPageId: string },

@@ -1,4 +1,4 @@
-import { useCharacterPages, useRulesetPages } from '@/lib/compass-api';
+import { useCharacterPages } from '@/lib/compass-api';
 import { CharacterContext } from '@/stores';
 import type { Component, ComponentData } from '@/types';
 import { useContext, type ReactNode } from 'react';
@@ -20,24 +20,19 @@ export const NodePageRouter = ({ children, component, componentData }: NodePageR
   const { pageId, href } = componentData ?? getComponentData(component);
 
   const characterContext = useContext(CharacterContext);
-
-  const { pages: rulesetPages } = useRulesetPages();
   const { characterPages } = useCharacterPages(characterContext?.character?.id);
 
-  console.log('char: ', characterPages);
-
-  console.log(pageId);
-  console.log(rulesetPages);
+  const characterPageId = characterPages.find((cPage) => cPage.pageId === pageId)?.id;
 
   const handleClick = (e: React.MouseEvent) => {
-    if (!pageId) return;
+    if (!characterPageId) return;
     e.preventDefault();
     const next = new URLSearchParams(searchParams);
-    next.set('pageId', pageId);
+    next.set('pageId', characterPageId);
     setSearchParams(next);
   };
 
-  if (pageId) {
+  if (characterPageId) {
     return (
       <div onClick={handleClick} className='cursor-pointer'>
         {children}

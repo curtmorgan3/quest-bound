@@ -46,6 +46,60 @@ interface OldCharacterPage {
   updatedAt: string;
 }
 
+/**
+ * Migration task: for every RulesetPage in the DB, find the Page and set Page.rulesetId = RulesetPage.rulesetId.
+ * If a page is linked to multiple rulesets (multiple RulesetPage rows), the first wins for the original page
+ * and duplicates are created for each additional ruleset.
+ * @returns Map from original page id -> (ruleset id -> page id to use), for downstream steps (rulesetWindows, characterPages).
+ */
+export async function transferRulesetIdFromRulesetPagesToPages(tx: Transaction): Promise<Map<string, Map<string, string>>> {
+  const rulesetPagesTable = tx.table('rulesetPages');
+  const pagesTable = tx.table('pages');
+
+  const joins = (await rulesetPagesTable.toArray()) as OldRulesetPage[];
+  const pageIdByRuleset = new Map<string, Map<string, string>>();
+  if (joins.length === 0) {
+    return pageIdByRuleset;
+  }
+
+  const pageIdToJoins = new Map<string, OldRulesetPage[]>();
+  for (const j of joins) {
+    const list = pageIdToJoins.get(j.pageId) ?? [];
+    list.push(j);
+    pageIdToJoins.set(j.pageId, list);
+  }
+
+  const now = new Date().toISOString();
+
+  for (const [pageId, list] of pageIdToJoins) {
+    const page = (await pagesTable.get(pageId)) as OldPage | undefined;
+    if (!page) continue;
+
+    const rulesetToPageId = new Map<string, string>();
+    pageIdByRuleset.set(pageId, rulesetToPageId);
+
+    for (let i = 0; i < list.length; i++) {
+      const j = list[i]!;
+      if (i === 0) {
+        await pagesTable.update(pageId, { rulesetId: j.rulesetId });
+        rulesetToPageId.set(j.rulesetId, pageId);
+      } else {
+        const newId = crypto.randomUUID();
+        await pagesTable.add({
+          ...page,
+          id: newId,
+          rulesetId: j.rulesetId,
+          createdAt: now,
+          updatedAt: now,
+        });
+        rulesetToPageId.set(j.rulesetId, newId);
+      }
+    }
+  }
+
+  return pageIdByRuleset;
+}
+
 /** Migrate from RulesetPage join model to Page.rulesetId and CharacterPage embedding. */
 export async function migrate41to42(tx: Transaction): Promise<void> {
   const rulesetPagesTable = tx.table('rulesetPages');
@@ -59,49 +113,7 @@ export async function migrate41to42(tx: Transaction): Promise<void> {
     return;
   }
 
-  // Build pageId -> list of (rulesetId, joinId); then for each page assign rulesetId or duplicate
-  const pageIdToJoins = new Map<string, OldRulesetPage[]>();
-  for (const j of joins) {
-    const list = pageIdToJoins.get(j.pageId) ?? [];
-    list.push(j);
-    pageIdToJoins.set(j.pageId, list);
-  }
-
-  /** Map: old page id -> (ruleset id -> page id to use for that ruleset) */
-  const pageIdByRuleset = new Map<string, Map<string, string>>();
-  const now = new Date().toISOString();
-
-  for (const [pageId, list] of pageIdToJoins) {
-    const page = (await pagesTable.get(pageId)) as OldPage | undefined;
-    if (!page) continue;
-
-    const rulesetToPageId = new Map<string, string>();
-    pageIdByRuleset.set(pageId, rulesetToPageId);
-
-    const first = list[0]!;
-    if (list.length === 1) {
-      await pagesTable.update(pageId, { rulesetId: first.rulesetId });
-      rulesetToPageId.set(first.rulesetId, pageId);
-    } else {
-      for (let i = 0; i < list.length; i++) {
-        const j = list[i]!;
-        if (i === 0) {
-          await pagesTable.update(pageId, { rulesetId: j.rulesetId });
-          rulesetToPageId.set(j.rulesetId, pageId);
-        } else {
-          const newId = crypto.randomUUID();
-          await pagesTable.add({
-            ...page,
-            id: newId,
-            rulesetId: j.rulesetId,
-            createdAt: now,
-            updatedAt: now,
-          });
-          rulesetToPageId.set(j.rulesetId, newId);
-        }
-      }
-    }
-  }
+  const pageIdByRuleset = await transferRulesetIdFromRulesetPagesToPages(tx);
 
   // Update rulesetWindows: set pageId from join
   const rulesetWindows = (await rulesetWindowsTable.toArray()) as OldRulesetWindow[];
@@ -118,7 +130,7 @@ export async function migrate41to42(tx: Transaction): Promise<void> {
     }
   }
 
-  // Expand characterPages with page content; set pageId to template (ruleset page) id
+  // Expand characterPages with page content (including label from Page); set pageId to template (ruleset page) id
   const characterPages = (await characterPagesTable.toArray()) as OldCharacterPage[];
   for (const cp of characterPages) {
     const page = (await pagesTable.get(cp.pageId)) as OldPage | undefined;

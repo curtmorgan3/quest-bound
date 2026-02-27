@@ -1,6 +1,5 @@
 import { db } from '@/stores';
-import type { CharacterPage, CharacterWindow, InventoryItem } from '@/types';
-import type { CharacterAttribute } from '@/types';
+import type { CharacterAttribute, CharacterPage, CharacterWindow, InventoryItem } from '@/types';
 
 /**
  * Duplicates character data from a source (template) character to a target character.
@@ -33,15 +32,18 @@ export async function duplicateCharacterFromTemplate(
     .toArray();
 
   await db.characterAttributes.bulkAdd(
-    rulesetAttributes.map((attr) => ({
-      ...attr,
-      id: crypto.randomUUID(),
-      characterId: targetCharacterId,
-      attributeId: attr.id,
-      value: attr.defaultValue,
-      createdAt: now,
-      updatedAt: now,
-    } as CharacterAttribute)),
+    rulesetAttributes.map(
+      (attr) =>
+        ({
+          ...attr,
+          id: crypto.randomUUID(),
+          characterId: targetCharacterId,
+          attributeId: attr.id,
+          value: attr.defaultValue,
+          createdAt: now,
+          updatedAt: now,
+        }) as CharacterAttribute,
+    ),
   );
 
   // 2. Character pages (share same pageIds; create new join records)
@@ -59,6 +61,7 @@ export async function duplicateCharacterFromTemplate(
       id: newJoinId,
       characterId: targetCharacterId,
       pageId: cp.pageId,
+      label: cp.label,
       createdAt: now,
       updatedAt: now,
     } as CharacterPage);
@@ -72,7 +75,7 @@ export async function duplicateCharacterFromTemplate(
 
   for (const cw of sourceWindows) {
     const mappedCharacterPageId = cw.characterPageId
-      ? characterPageIdMap.get(cw.characterPageId) ?? cw.characterPageId
+      ? (characterPageIdMap.get(cw.characterPageId) ?? cw.characterPageId)
       : cw.characterPageId;
 
     await db.characterWindows.add({
