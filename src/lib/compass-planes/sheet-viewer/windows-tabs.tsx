@@ -71,7 +71,7 @@ export const WindowsTabs = ({
     .filter((w) => !w.hideFromPlayerView)
     .sort((a, b) => a.title.localeCompare(b.title));
   const sortedWindows = [...windows].sort((a, b) => a.title.localeCompare(b.title));
-  const sortedPages = [...characterPages].sort((a, b) => a.label.localeCompare(b.label));
+  const sortedPages = [...characterPages].sort((a, b) => a.label?.localeCompare(b.label));
 
   const allCategories = [
     ...new Set(

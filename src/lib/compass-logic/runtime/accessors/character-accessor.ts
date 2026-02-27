@@ -106,11 +106,12 @@ export class CharacterAccessor implements StructuredCloneSafe {
     const cp = this.customProperties.find((c) => c.label === name);
     if (!cp) return null;
     const current = this.characterCustomProperties[cp.id];
-    if (current !== undefined) {
+    if (current !== undefined && current != null) {
       return current as string | number | boolean;
     }
 
     const defaultValue = this.getDefaultValueForCustomProperty(cp);
+    console.log('def: ', defaultValue);
     this.characterCustomProperties[cp.id] = defaultValue;
     this.pendingUpdates.set(`characterUpdate:${this.id}`, {
       customProperties: this.characterCustomProperties,

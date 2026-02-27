@@ -48,7 +48,9 @@ export const SheetViewer = ({
 }: SheetViewerProps) => {
   const { characterPages } = useCharacterPages(characterId);
 
-  const sortedCharacterPages = [...characterPages.sort((a, b) => a.label.localeCompare(b.label))];
+  const sortedCharacterPages = [
+    ...characterPages.sort((a, b) => a.label?.localeCompare(b.label ?? '')),
+  ];
   const {
     windows: characterWindows,
     createCharacterWindow,
