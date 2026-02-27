@@ -36,8 +36,22 @@ export const useInventoryPointers = ({
   const containerRef = useRef<HTMLDivElement>(null);
 
   const isDragging = useRef<boolean>(false);
-  const dragDistance = useRef<number>(0);
   const justDroppedRef = useRef<boolean>(false);
+
+  /** Pending pointer: we have pointer down but haven't committed to drag yet. */
+  const pendingPointerRef = useRef<{
+    item: InventoryItemWithData;
+    startClientX: number;
+    startClientY: number;
+    lastClientX: number;
+    lastClientY: number;
+    pointerId: number;
+    target: HTMLElement;
+  } | null>(null);
+  const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const DRAG_DISTANCE_THRESHOLD_PX = 10;
+  const LONG_PRESS_MS = 500;
 
   const { placeItemInTargetGrid } = useInventoryPlacement();
   const { activeDrag, beginDrag, cancelDrag, resolveDrop, updateDragPosition } =
@@ -86,7 +100,11 @@ export const useInventoryPointers = ({
     if (!activeDrag) {
       setDragState(null);
       isDragging.current = false;
-      dragDistance.current = 0;
+      if (longPressTimerRef.current) {
+        clearTimeout(longPressTimerRef.current);
+        longPressTimerRef.current = null;
+      }
+      pendingPointerRef.current = null;
     }
   }, [activeDrag]);
 
@@ -96,57 +114,92 @@ export const useInventoryPointers = ({
 
     const target = e.currentTarget as HTMLElement;
 
-    // Ensure pointer capture is set immediately for touch devices
     try {
       target.setPointerCapture(e.pointerId);
     } catch (error) {
       console.warn('Failed to set pointer capture:', error);
     }
 
-    const rect = containerRef.current?.getBoundingClientRect();
-    if (!rect) return;
+    const clientX = e.clientX;
+    const clientY = e.clientY;
 
-    const pointerX = e.clientX - rect.left;
-    const pointerY = e.clientY - rect.top;
+    pendingPointerRef.current = {
+      item,
+      startClientX: clientX,
+      startClientY: clientY,
+      lastClientX: clientX,
+      lastClientY: clientY,
+      pointerId: e.pointerId,
+      target,
+    };
 
-    setDragState({
-      itemId: item.id,
-      startX: item.x,
-      startY: item.y,
-      offsetX: pointerX - item.x * cellWidth,
-      offsetY: pointerY - item.y * cellHeight,
-      currentX: item.x * cellWidth,
-      currentY: item.y * cellHeight,
-    });
-
-    beginDrag(
-      {
-        item,
-        source: 'node',
-      },
-      { clientX: e.clientX, clientY: e.clientY },
-    );
+    if (e.pointerType === 'touch') {
+      longPressTimerRef.current = setTimeout(() => {
+        longPressTimerRef.current = null;
+        const pending = pendingPointerRef.current;
+        if (!pending) return;
+        setContextMenu({
+          item: pending.item,
+          x: pending.lastClientX,
+          y: pending.lastClientY,
+        });
+        try {
+          pending.target.releasePointerCapture(pending.pointerId);
+        } catch {
+          // ignore
+        }
+        pendingPointerRef.current = null;
+      }, LONG_PRESS_MS);
+    }
   };
 
   const handlePointerMove = (e: React.PointerEvent) => {
-    if (!dragState) return;
-
-    // Ignore moves after the pointer is released (prevents the
-    // preview from continuing to follow the cursor if capture
-    // isn't fully cleared yet).
-    if (e.buttons === 0) return;
-
     const rect = containerRef.current?.getBoundingClientRect();
     if (!rect) return;
 
-    dragDistance.current = dragDistance.current + 1;
+    const clientX = e.clientX;
+    const clientY = e.clientY;
+    const pointerX = clientX - rect.left;
+    const pointerY = clientY - rect.top;
 
-    if (dragDistance.current > 15) {
-      isDragging.current = true;
+    const pending = pendingPointerRef.current;
+    if (pending) {
+      pending.lastClientX = clientX;
+      pending.lastClientY = clientY;
+      const distance = Math.hypot(
+        clientX - pending.startClientX,
+        clientY - pending.startClientY,
+      );
+      if (distance >= DRAG_DISTANCE_THRESHOLD_PX) {
+        if (longPressTimerRef.current) {
+          clearTimeout(longPressTimerRef.current);
+          longPressTimerRef.current = null;
+        }
+        pendingPointerRef.current = null;
+        isDragging.current = true;
+        const { item } = pending;
+        const offsetX = pointerX - item.x * cellWidth;
+        const offsetY = pointerY - item.y * cellHeight;
+        setDragState({
+          itemId: item.id,
+          startX: item.x,
+          startY: item.y,
+          offsetX,
+          offsetY,
+          currentX: pointerX - offsetX,
+          currentY: pointerY - offsetY,
+        });
+        beginDrag(
+          { item, source: 'node' },
+          { clientX, clientY },
+        );
+        updateDragPosition({ clientX, clientY });
+      }
+      return;
     }
 
-    const pointerX = e.clientX - rect.left;
-    const pointerY = e.clientY - rect.top;
+    if (!dragState) return;
+    if (e.buttons === 0) return;
 
     const newX = pointerX - dragState.offsetX;
     const newY = pointerY - dragState.offsetY;
@@ -161,17 +214,25 @@ export const useInventoryPointers = ({
         : null,
     );
 
-    updateDragPosition({ clientX: e.clientX, clientY: e.clientY });
+    updateDragPosition({ clientX, clientY });
   };
 
   const handlePointerUp = (e: React.PointerEvent) => {
     e.stopPropagation();
     e.preventDefault();
-    dragDistance.current = 0;
+
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+
+    if (pendingPointerRef.current) {
+      pendingPointerRef.current = null;
+      return;
+    }
+
     if (!dragState || !characterContext) return;
 
-    // If the pointer was released without ever exceeding the drag
-    // threshold, treat this as a simple click, not a drag/drop.
     if (!isDragging.current) {
       setDragState(null);
       cancelDrag();
