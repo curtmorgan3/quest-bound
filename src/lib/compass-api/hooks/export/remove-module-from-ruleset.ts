@@ -331,31 +331,17 @@ export async function deleteModuleContentFromRuleset(
   // 7. Ruleset windows (by moduleId)
   await db.rulesetWindows.where('moduleId').equals(moduleIdToRemove).delete();
 
-  // 8. Ruleset pages that point to removed pages
-  if (removed.pageIds.size > 0) {
-    const rulesetPageJoins = await db.rulesetPages
-      .where('rulesetId')
-      .equals(targetRulesetId)
-      .toArray();
-    const toDelete = rulesetPageJoins
-      .filter((rp) => removed.pageIds.has(rp.pageId))
-      .map((rp) => rp.id);
-    if (toDelete.length > 0) {
-      await db.rulesetPages.bulkDelete(toDelete);
-    }
-  }
-
-  // 9. Pages (by moduleId)
+  // 8. Pages (by moduleId)
   await db.pages.where('moduleId').equals(moduleIdToRemove).delete();
 
-  // 10. Windows (by moduleId)
+  // 9. Windows (by moduleId)
   await db.windows
     .where('rulesetId')
     .equals(targetRulesetId)
     .filter((w) => (w as { moduleId?: string }).moduleId === moduleIdToRemove)
     .delete();
 
-  // 11. Attributes, actions, items, charts, documents, scripts, diceRolls, assets, fonts (by moduleId)
+  // 10. Attributes, actions, items, charts, documents, scripts, diceRolls, assets, fonts (by moduleId)
   await db.attributes
     .where('rulesetId')
     .equals(targetRulesetId)

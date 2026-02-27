@@ -47,6 +47,7 @@ export const SheetViewer = ({
   transparentBackground = false,
 }: SheetViewerProps) => {
   const { characterPages } = useCharacterPages(characterId);
+
   const sortedCharacterPages = [...characterPages.sort((a, b) => a.label.localeCompare(b.label))];
   const {
     windows: characterWindows,
@@ -93,19 +94,12 @@ export const SheetViewer = ({
         (w) => w.windowId === editorWindowId && !w.characterPageId,
       );
       const children = characterWindows.filter(
-        (w) =>
-          !w.characterPageId &&
-          openedChildRulesetWindowIds.has(w.windowId),
+        (w) => !w.characterPageId && openedChildRulesetWindowIds.has(w.windowId),
       );
       return [...root, ...children];
     }
     return windowsForCurrentPage;
-  }, [
-    windowsForCurrentPage,
-    editorWindowId,
-    characterWindows,
-    openedChildRulesetWindowIds,
-  ]);
+  }, [windowsForCurrentPage, editorWindowId, characterWindows, openedChildRulesetWindowIds]);
 
   // Windows that are open
   const openWindows = new Set(
@@ -131,9 +125,7 @@ export const SheetViewer = ({
       characterWindow: CharacterWindow,
     ) => {
       const existing = editorWindowId
-        ? characterWindows.find(
-            (cw) => !cw.characterPageId && cw.windowId === childWindowId,
-          )
+        ? characterWindows.find((cw) => !cw.characterPageId && cw.windowId === childWindowId)
         : windowsForCurrentPage.find((cw) => cw.windowId === childWindowId);
       if (existing) {
         deleteCharacterWindow(existing.id);

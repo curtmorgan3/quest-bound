@@ -31,7 +31,7 @@ export async function deleteRulesetAndRelatedData(rulesetId: string): Promise<vo
   await db.charts.where('rulesetId').equals(rulesetId).delete();
   await db.assets.where('rulesetId').equals(rulesetId).delete();
   await db.windows.where('rulesetId').equals(rulesetId).delete();
-  await db.rulesetPages.where('rulesetId').equals(rulesetId).delete();
+  await db.pages.where('rulesetId').equals(rulesetId).delete();
   await db.rulesetWindows.where('rulesetId').equals(rulesetId).delete();
   await db.fonts.where('rulesetId').equals(rulesetId).delete();
   await db.documents

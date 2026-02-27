@@ -2,87 +2,74 @@ import { useErrorHandler } from '@/hooks';
 import { db } from '@/stores';
 import type { CharacterPage, Page } from '@/types';
 import { useLiveQuery } from 'dexie-react-hooks';
-
-/** Character page join row with Page data merged. `id` is the join row id (for characterPageId, lastViewedPageId). */
-export type CharacterPageWithPage = Omit<Page, 'id'> & {
-  id: string;
-  pageId: string;
-};
+import { useRulesetPages } from '../rulesets';
 
 export const useCharacterPages = (characterId?: string) => {
   const { handleError } = useErrorHandler();
+  const { pages } = useRulesetPages();
 
-  const characterPages = useLiveQuery(
-    async (): Promise<CharacterPageWithPage[]> => {
-      if (!characterId) return [];
-      const joins = await db.characterPages
-        .where('characterId')
-        .equals(characterId)
-        .sortBy('createdAt');
-      const result: CharacterPageWithPage[] = [];
-      for (const j of joins) {
-        const page = await db.pages.get(j.pageId);
-        if (page) {
-          const { id: _pageId, ...pageRest } = page;
-          result.push({
-            ...pageRest,
-            id: j.id,
-            pageId: page.id,
-          });
-        }
-      }
-      return result;
-    },
-    [characterId],
-  );
+  const _characterPages = useLiveQuery(async (): Promise<CharacterPage[]> => {
+    if (!characterId) return [];
+    return db.characterPages.where('characterId').equals(characterId).sortBy('createdAt');
+  }, [characterId]);
+
+  console.log('P: ', pages);
+
+  const characterPages = _characterPages?.map((cPage) => {
+    // Backwards compatability
+    const page = pages.find((p) => p.id === cPage.pageId);
+    return {
+      ...cPage,
+      label: page?.label ?? '',
+    };
+  });
 
   const createCharacterPage = async (
-    data: { label: string } | { fromRulesetPageId: string },
+    data: { label: string } | { fromPageId: string },
   ): Promise<string | undefined> => {
     if (!characterId) return undefined;
     const now = new Date().toISOString();
     try {
-      let pageId: string;
-      if ('fromRulesetPageId' in data) {
-        const rulesetPageJoin = await db.rulesetPages.get(data.fromRulesetPageId);
-        if (!rulesetPageJoin) return undefined;
-        const sourcePage = await db.pages.get(rulesetPageJoin.pageId);
+      let newRow: Omit<CharacterPage, 'id' | 'createdAt' | 'updatedAt'>;
+      if ('fromPageId' in data) {
+        const sourcePage = await db.pages.get(data.fromPageId);
         if (!sourcePage) return undefined;
-        pageId = crypto.randomUUID();
         const { id: _id, createdAt: _c, updatedAt: _u, ...pageRest } = sourcePage;
-        await db.pages.add({
+        newRow = {
           ...pageRest,
-          id: pageId,
-          createdAt: now,
-          updatedAt: now,
-        });
+          characterId,
+          pageId: data.fromPageId,
+        };
       } else {
-        pageId = crypto.randomUUID();
-        await db.pages.add({
-          id: pageId,
+        const character = await db.characters.get(characterId);
+        newRow = {
+          rulesetId: character?.rulesetId ?? '',
           label: data.label,
-          createdAt: now,
-          updatedAt: now,
-        });
+          characterId,
+          pageId: '',
+        };
       }
-      const characterPageId = crypto.randomUUID();
+      const id = crypto.randomUUID();
       await db.characterPages.add({
-        id: characterPageId,
-        characterId,
-        pageId,
+        ...newRow,
+        id,
         createdAt: now,
         updatedAt: now,
       } as CharacterPage);
-      if ('fromRulesetPageId' in data) {
+      if ('fromPageId' in data) {
+        const character = await db.characters.get(characterId);
+        if (character) {
+          await db.characterPages.update(id, { rulesetId: character.rulesetId });
+        }
         const rulesetWindows = await db.rulesetWindows
-          .where('rulesetPageId')
-          .equals(data.fromRulesetPageId)
+          .where('pageId')
+          .equals(data.fromPageId)
           .toArray();
         for (const rw of rulesetWindows) {
           await db.characterWindows.add({
             id: crypto.randomUUID(),
             characterId,
-            characterPageId,
+            characterPageId: id,
             windowId: rw.windowId,
             title: rw.title,
             x: rw.x,
@@ -93,7 +80,7 @@ export const useCharacterPages = (characterId?: string) => {
           });
         }
       }
-      return characterPageId;
+      return id;
     } catch (e) {
       handleError(e as Error, {
         component: 'useCharacterPages/createCharacterPage',
@@ -105,13 +92,16 @@ export const useCharacterPages = (characterId?: string) => {
 
   const updateCharacterPage = async (
     characterPageId: string,
-    data: Partial<Pick<Page, 'label' | 'assetId' | 'assetUrl' | 'backgroundOpacity' | 'backgroundColor' | 'image'>>,
+    data: Partial<
+      Pick<
+        Page,
+        'label' | 'assetId' | 'assetUrl' | 'backgroundOpacity' | 'backgroundColor' | 'image'
+      >
+    >,
   ) => {
-    const join = await db.characterPages.get(characterPageId);
-    if (!join) return;
     const now = new Date().toISOString();
     try {
-      await db.pages.update(join.pageId, {
+      await db.characterPages.update(characterPageId, {
         ...data,
         updatedAt: now,
       });
@@ -125,6 +115,7 @@ export const useCharacterPages = (characterId?: string) => {
 
   const deleteCharacterPage = async (characterPageId: string) => {
     try {
+      await db.characterWindows.where('characterPageId').equals(characterPageId).delete();
       await db.characterPages.delete(characterPageId);
     } catch (e) {
       handleError(e as Error, {

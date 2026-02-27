@@ -5,85 +5,38 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { useEffect } from 'react';
 import { useActiveRuleset } from './use-active-ruleset';
 
-/** Page with its ruleset join id (for remove operations). */
-export type RulesetPageWithPage = Page & { rulesetPageId: string };
-
 /** Returns ruleset pages (templates) for a given ruleset id. Use when not in active-ruleset context (e.g. character sheet). */
 export const useRulesetPagesForRuleset = (rulesetId?: string) => {
-  const pagesWithJoinId = useLiveQuery(async (): Promise<RulesetPageWithPage[]> => {
+  const pages = useLiveQuery(async (): Promise<Page[]> => {
     if (!rulesetId) return [];
-    const joins = await db.rulesetPages.where('rulesetId').equals(rulesetId).toArray();
-    const result: RulesetPageWithPage[] = [];
-    for (const j of joins) {
-      const page = await db.pages.get(j.pageId);
-      if (page) result.push({ ...page, rulesetPageId: j.id });
-    }
-    return result;
+    return db.pages.where('rulesetId').equals(rulesetId).toArray();
   }, [rulesetId]);
-  return pagesWithJoinId ?? [];
+  return pages ?? [];
 };
 
 export const useRulesetPages = () => {
   const { activeRuleset } = useActiveRuleset();
   const { handleError } = useErrorHandler();
 
-  const pagesWithJoinId = useLiveQuery(async () => {
+  const pages = useLiveQuery(async () => {
     if (!activeRuleset?.id) return [];
-    const joins = await db.rulesetPages.where('rulesetId').equals(activeRuleset.id).toArray();
-    const result: RulesetPageWithPage[] = [];
-    for (const j of joins) {
-      const page = await db.pages.get(j.pageId);
-      if (page) result.push({ ...page, rulesetPageId: j.id });
-    }
-    return result;
+    return db.pages.where('rulesetId').equals(activeRuleset.id).toArray();
   }, [activeRuleset?.id]);
 
-  const pages = pagesWithJoinId ?? [];
-
-  const isLoading = pagesWithJoinId === undefined;
+  const list = pages ?? [];
+  const isLoading = pages === undefined;
   useEffect(() => {
     useApiLoadingStore.getState().setLoading('rulesetPages', isLoading);
   }, [isLoading]);
 
-  const addPageToRuleset = async (pageId: string) => {
+  const createPage = async (data: Omit<Page, 'id' | 'createdAt' | 'updatedAt' | 'rulesetId'>) => {
     if (!activeRuleset) return;
     const now = new Date().toISOString();
-    try {
-      const existing = await db.rulesetPages
-        .where('[rulesetId+pageId]')
-        .equals([activeRuleset.id, pageId])
-        .first();
-      if (existing) return;
-      await db.rulesetPages.add({
-        id: crypto.randomUUID(),
-        rulesetId: activeRuleset.id,
-        pageId,
-        createdAt: now,
-        updatedAt: now,
-      });
-    } catch (e) {
-      handleError(e as Error, {
-        component: 'useRulesetPages/addPageToRuleset',
-        severity: 'medium',
-      });
-    }
-  };
-
-  const createPage = async (data: Omit<Page, 'id' | 'createdAt' | 'updatedAt'>) => {
-    if (!activeRuleset) return;
-    const now = new Date().toISOString();
-    const pageId = crypto.randomUUID();
     try {
       await db.pages.add({
         ...data,
-        id: pageId,
-        createdAt: now,
-        updatedAt: now,
-      });
-      await db.rulesetPages.add({
         id: crypto.randomUUID(),
         rulesetId: activeRuleset.id,
-        pageId,
         createdAt: now,
         updatedAt: now,
       });
@@ -126,13 +79,9 @@ export const useRulesetPages = () => {
   };
 
   const removePageFromRuleset = async (pageId: string) => {
-    if (!activeRuleset) return;
     try {
-      const join = await db.rulesetPages
-        .where('[rulesetId+pageId]')
-        .equals([activeRuleset.id, pageId])
-        .first();
-      if (join) await db.rulesetPages.delete(join.id);
+      await db.rulesetWindows.where('pageId').equals(pageId).delete();
+      await db.pages.delete(pageId);
     } catch (e) {
       handleError(e as Error, {
         component: 'useRulesetPages/removePageFromRuleset',
@@ -142,9 +91,8 @@ export const useRulesetPages = () => {
   };
 
   return {
-    pages,
+    pages: list,
     isLoading,
-    addPageToRuleset,
     createPage,
     updatePage,
     removePageFromRuleset,

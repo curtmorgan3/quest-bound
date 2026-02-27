@@ -54,8 +54,7 @@ export const usePages = () => {
 
   const deletePage = async (id: string) => {
     try {
-      const rulesetPage = await db.rulesetPages.where('pageId').equals(id).first();
-      if (rulesetPage) await db.rulesetPages.delete(rulesetPage.id);
+      await db.rulesetWindows.where('pageId').equals(id).delete();
       const characterPages = await db.characterPages.where('pageId').equals(id).toArray();
       for (const cp of characterPages) await db.characterPages.delete(cp.id);
       await db.pages.delete(id);

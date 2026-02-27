@@ -22,18 +22,17 @@ import {
   useCharacterWindows,
   useRulesetPagesForRuleset,
   useWindows,
-  type CharacterPageWithPage,
 } from '@/lib/compass-api';
 import { PageDetailsForm } from '@/lib/compass-planes/page-details-form';
 import { colorPrimary } from '@/palette';
-import type { CharacterWindow, Window } from '@/types';
+import type { CharacterPage, CharacterWindow, Window } from '@/types';
 import { Lock, Pencil, Plus, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
 interface WindowsTabsProps {
   characterId?: string;
-  characterPages: CharacterPageWithPage[];
+  characterPages: CharacterPage[];
   windows: CharacterWindow[];
   toggleWindow: (id: string) => void;
   openWindows: Set<string>;
@@ -127,8 +126,8 @@ export const WindowsTabs = ({
     }
   };
 
-  const handleAddPageFromTemplate = async (rulesetPageId: string) => {
-    const newId = await createCharacterPage({ fromRulesetPageId: rulesetPageId });
+  const handleAddPageFromTemplate = async (pageId: string) => {
+    const newId = await createCharacterPage({ fromPageId: pageId });
     setIsAddPageModalOpen(false);
     if (newId) {
       handleNavigate(newId);
@@ -402,9 +401,9 @@ export const WindowsTabs = ({
                   .filter((rp) => !rp.hideFromPlayerView)
                   .map((rp) => (
                     <button
-                      key={rp.rulesetPageId}
+                      key={rp.id}
                       type='button'
-                      onClick={() => handleAddPageFromTemplate(rp.rulesetPageId)}
+                      onClick={() => handleAddPageFromTemplate(rp.id)}
                       className='text-left px-3 py-2 rounded text-sm text-white hover:bg-[#444] transition-colors'
                       data-testid={`add-page-option-${rp.label.toLowerCase().replace(/\s+/g, '-')}`}>
                       {rp.label}

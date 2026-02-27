@@ -1,5 +1,7 @@
+import { useCharacterPages, useRulesetPages } from '@/lib/compass-api';
+import { CharacterContext } from '@/stores';
 import type { Component, ComponentData } from '@/types';
-import type { ReactNode } from 'react';
+import { useContext, type ReactNode } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { getComponentData } from '../../utils';
 
@@ -16,6 +18,16 @@ interface NodePageRouterProps {
 export const NodePageRouter = ({ children, component, componentData }: NodePageRouterProps) => {
   const [searchParams, setSearchParams] = useSearchParams();
   const { pageId, href } = componentData ?? getComponentData(component);
+
+  const characterContext = useContext(CharacterContext);
+
+  const { pages: rulesetPages } = useRulesetPages();
+  const { characterPages } = useCharacterPages(characterContext?.character?.id);
+
+  console.log('char: ', characterPages);
+
+  console.log(pageId);
+  console.log(rulesetPages);
 
   const handleClick = (e: React.MouseEvent) => {
     if (!pageId) return;

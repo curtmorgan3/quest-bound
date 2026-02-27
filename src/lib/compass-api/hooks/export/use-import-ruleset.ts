@@ -21,7 +21,6 @@ import type {
   ItemCustomProperty,
   Page,
   Ruleset,
-  RulesetPage,
   RulesetWindow,
   Window,
 } from '@/types';
@@ -76,7 +75,6 @@ export interface ImportRulesetResult {
     inventories: number;
     characterWindows: number;
     characterPages: number;
-    rulesetPages: number;
     rulesetWindows: number;
     inventoryItems: number;
     scripts: number;
@@ -118,7 +116,6 @@ interface ImportedMetadata {
     characterInventories: number;
     characterWindows: number;
     characterPages?: number;
-    rulesetPages?: number;
     rulesetWindows?: number;
     inventoryItems?: number;
     scripts?: number;
@@ -406,15 +403,6 @@ export const useImportRuleset = () => {
           }
           break;
 
-        case 'rulesetPages':
-          if (!item.rulesetId || typeof item.rulesetId !== 'string') {
-            errors.push(`RulesetPage ${index + 1}: rulesetId is required and must be a string`);
-          }
-          if (!item.pageId || typeof item.pageId !== 'string') {
-            errors.push(`RulesetPage ${index + 1}: pageId is required and must be a string`);
-          }
-          break;
-
         case 'rulesetWindows':
           if (!item.rulesetId || typeof item.rulesetId !== 'string') {
             errors.push(`RulesetWindow ${index + 1}: rulesetId is required and must be a string`);
@@ -509,7 +497,6 @@ export const useImportRuleset = () => {
             inventories: 0,
             characterWindows: 0,
             characterPages: 0,
-            rulesetPages: 0,
             rulesetWindows: 0,
             inventoryItems: 0,
             scripts: 0,
@@ -548,7 +535,6 @@ export const useImportRuleset = () => {
             inventories: 0,
             characterWindows: 0,
             characterPages: 0,
-            rulesetPages: 0,
             rulesetWindows: 0,
             inventoryItems: 0,
             scripts: 0,
@@ -645,7 +631,6 @@ export const useImportRuleset = () => {
                 inventories: 0,
                 characterWindows: 0,
                 characterPages: 0,
-                rulesetPages: 0,
                 rulesetWindows: 0,
                 inventoryItems: 0,
                 scripts: 0,
@@ -681,7 +666,6 @@ export const useImportRuleset = () => {
                   inventories: 0,
                   characterWindows: 0,
                   characterPages: 0,
-                  rulesetPages: 0,
                   rulesetWindows: 0,
                   inventoryItems: 0,
                   scripts: 0,
@@ -714,7 +698,6 @@ export const useImportRuleset = () => {
                 inventories: 0,
                 characterWindows: 0,
                 characterPages: 0,
-                rulesetPages: 0,
                 rulesetWindows: 0,
                 inventoryItems: 0,
                 scripts: 0,
@@ -1372,6 +1355,7 @@ export const useImportRuleset = () => {
             for (const page of pagesToImport) {
               const newPage: Page = {
                 ...page,
+                rulesetId: newRulesetId,
                 createdAt: now,
                 updatedAt: now,
               };
@@ -1387,41 +1371,22 @@ export const useImportRuleset = () => {
         }
       }
 
-      // Import rulesetPages (joins; require pages to be imported first). Build oldId->newId map for rulesetWindows.
-      const rulesetPageIdMap = new Map<string, string>();
+      // Legacy: build rulesetPageId (old join id) -> pageId for rulesetWindows from old exports
+      const rulesetPageIdToPageId = new Map<string, string>();
       const rulesetPagesFile = getZipFile('application data/rulesetPages.json');
       if (rulesetPagesFile) {
         try {
           const rulesetPagesText = await rulesetPagesFile.async('text');
-          const rulesetPagesToImport: RulesetPage[] = JSON.parse(rulesetPagesText);
-
-          const validation = validateData(rulesetPagesToImport, 'rulesetPages');
-          if (validation.isValid) {
-            for (const rulesetPage of rulesetPagesToImport) {
-              const newId = crypto.randomUUID();
-              rulesetPageIdMap.set(rulesetPage.id, newId);
-              const newRulesetPage: RulesetPage = {
-                ...rulesetPage,
-                id: newId,
-                rulesetId: newRulesetId,
-                pageId: rulesetPage.pageId,
-                createdAt: now,
-                updatedAt: now,
-              };
-              await db.rulesetPages.add(newRulesetPage);
-              importedCounts.rulesetPages++;
-            }
-          } else {
-            allErrors.push(...validation.errors);
+          const legacyJoins: { id: string; pageId: string }[] = JSON.parse(rulesetPagesText);
+          for (const j of legacyJoins) {
+            rulesetPageIdToPageId.set(j.id, j.pageId);
           }
-        } catch (error) {
-          allErrors.push(
-            `Failed to import rulesetPages: ${error instanceof Error ? error.message : 'Unknown error'}`,
-          );
+        } catch {
+          // Ignore invalid or missing legacy file
         }
       }
 
-      // Import rulesetWindows (require rulesetPages and windows to be imported first)
+      // Import rulesetWindows (require pages and windows to be imported first)
       const rulesetWindowsFile = getZipFile('application data/rulesetWindows.json');
       if (rulesetWindowsFile) {
         try {
@@ -1431,13 +1396,15 @@ export const useImportRuleset = () => {
           const validation = validateData(rulesetWindowsToImport, 'rulesetWindows');
           if (validation.isValid) {
             for (const rw of rulesetWindowsToImport) {
+              const legacyPageId = (rw as { rulesetPageId?: string | null }).rulesetPageId;
+              const pageId =
+                rw.pageId ??
+                (legacyPageId != null ? rulesetPageIdToPageId.get(legacyPageId) ?? null : null);
               const newRulesetWindow: RulesetWindow = {
                 ...rw,
                 id: crypto.randomUUID(),
                 rulesetId: newRulesetId,
-                rulesetPageId: rw.rulesetPageId
-                  ? (rulesetPageIdMap.get(rw.rulesetPageId) ?? null)
-                  : null,
+                pageId: pageId ?? undefined,
                 windowId: rw.windowId,
                 createdAt: now,
                 updatedAt: now,
@@ -1455,18 +1422,19 @@ export const useImportRuleset = () => {
         }
       }
 
-      // Import characterPages (joins; require pages to be imported first)
+      // Import characterPages (full content; map characterId to new id)
       const characterPagesFile = getZipFile('application data/characterPages.json');
       if (characterPagesFile) {
         try {
           const characterPagesText = await characterPagesFile.async('text');
-          const characterPages: CharacterPage[] = JSON.parse(characterPagesText);
+          const characterPagesToImport: CharacterPage[] = JSON.parse(characterPagesText);
 
-          const validation = validateData(characterPages, 'characterPages');
+          const validation = validateData(characterPagesToImport, 'characterPages');
           if (validation.isValid) {
-            for (const characterPage of characterPages) {
+            for (const cp of characterPagesToImport) {
               const newCharacterPage: CharacterPage = {
-                ...characterPage,
+                ...cp,
+                rulesetId: newRulesetId,
                 createdAt: now,
                 updatedAt: now,
               };
@@ -1721,7 +1689,6 @@ export const useImportRuleset = () => {
           inventories: 0,
           characterWindows: 0,
           characterPages: 0,
-          rulesetPages: 0,
           rulesetWindows: 0,
           inventoryItems: 0,
           scripts: 0,

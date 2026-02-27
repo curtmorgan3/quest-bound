@@ -1,6 +1,7 @@
 const common = '++id, createdAt, updatedAt';
 
-export const dbSchema = {
+/** Original schema at v41 (before Page/rulesetId and CharacterPage embedding). */
+export const dbSchemaV41 = {
   users: `${common}, username, assetId, image, preferences`,
   assets: `${common}, rulesetId, [directory+filename], data, type, moduleId`,
   rulesets: `${common}, version, createdBy, title, description, details, assetId, image, palette, isModule, modules`,
@@ -42,5 +43,53 @@ export const dbSchema = {
   campaignEventLocations: `${common}, campaignEventId, locationId, tileId, [campaignEventId], [locationId]`,
 };
 
+export const dbSchema = {
+  users: `${common}, username, assetId, image, preferences`,
+  assets: `${common}, rulesetId, [directory+filename], data, type, moduleId`,
+  rulesets: `${common}, version, createdBy, title, description, details, assetId, image, palette, isModule, modules`,
+  fonts: `${common}, rulesetId, label, data, moduleId`,
+  attributes: `${common}, rulesetId, title, description, category, type, options, defaultValue, optionsChartRef, optionsChartColumnHeader, min, max, scriptId, moduleId`,
+  actions: `${common}, rulesetId, title, description, category, scriptId, moduleId`,
+  items: `${common}, rulesetId, title, description, category, weight, defaultQuantity, stackSize, isContainer, isStorable, isEquippable, isConsumable, inventoryWidth, inventoryHeight, scriptId, moduleId, sprites`,
+  charts: `${common}, rulesetId, title, description, category, data, assetId, image, moduleId`,
+  documents: `${common}, rulesetId, worldId, campaignId, title, description, category, assetId, image, pdfAssetId, pdfData, markdownData, moduleId`,
+  windows: `${common}, rulesetId, title, category, hideFromPlayerView, moduleId`,
+  pages: `${common}, rulesetId, label, category, hideFromPlayerView, moduleId`,
+  components: `${common}, rulesetId, windowId, type, x, y, z, height, width, rotation, selected, assetId, assetUrl, groupId, attributeId, actionId, data, style`,
+  characters: `${common}, rulesetId, userId, assetId, image, moduleId`,
+  archetypes: `${common}, rulesetId, name, description, assetId, image, scriptId, testCharacterId, isDefault, loadOrder, moduleId, sprites, [rulesetId+name]`,
+  customProperties: `${common}, rulesetId, label, type, category, defaultValue, &[rulesetId+label]`,
+  archetypeCustomProperties: `${common}, archetypeId, customPropertyId, defaultValue, [archetypeId], &[archetypeId+customPropertyId]`,
+  itemCustomProperties: `${common}, itemId, customPropertyId, defaultValue, [itemId], &[itemId+customPropertyId]`,
+  inventories: `${common}, rulesetId, characterId, title, category, type`,
+  inventoryItems: `${common}, characterId, inventoryId, entityId, quantity`,
+  characterPages: `${common}, characterId, pageId, rulesetId, label, category, assetId, assetUrl, backgroundOpacity, backgroundColor, image, hideFromPlayerView, [characterId+pageId]`,
+  characterWindows: `${common}, characterId, characterPageId, windowId, title, x, y, isCollapsed, moduleId`,
+  rulesetWindows: `${common}, rulesetId, pageId, windowId, title, x, y, isCollapsed, moduleId`,
+  characterAttributes: `${common}, characterId, attributeId, &[characterId+attributeId], scriptDisabled`,
+  characterArchetypes: `${common}, characterId, archetypeId, loadOrder, &[characterId+archetypeId]`,
+  diceRolls: `${common}, rulesetId, userId, value, label, moduleId`,
+  scripts: `${common}, rulesetId, name, entityType, entityId, isGlobal, enabled, category, moduleId, [entityId+entityType], [rulesetId+entityType]`,
+  scriptErrors: `${common}, rulesetId, scriptId, characterId, timestamp`,
+  scriptLogs: `${common}, rulesetId, scriptId, characterId, timestamp, [entityId+entityType]`,
+  dependencyGraphNodes: `${common}, rulesetId, scriptId, entityType, entityId`,
+  worlds: `${common}, label, rulesetId, assetId, backgroundAssetId, backgroundOpacity, backgroundSize, backgroundPosition`,
+  tilemaps: `${common}, label, worldId, assetId, tileHeight, tileWidth`,
+  tiles: `${common}, tilemapId, tileX, tileY`,
+  locations: `${common}, label, worldId, nodeX, nodeY, nodeWidth, nodeHeight, parentLocationId, gridWidth, gridHeight, tiles, hasMap, tileRenderSize, labelVisible, backgroundColor, opacity, sides, backgroundAssetId, backgroundSize, backgroundPosition, mapAssetId, [worldId+parentLocationId]`,
+  campaigns: `${common}, label, rulesetId, worldId, [rulesetId], [worldId]`,
+  campaignCharacters: `${common}, characterId, campaignId, currentLocationId, currentTileId, [campaignId], [characterId], [campaignId+characterId]`,
+  campaignItems: `${common}, itemId, campaignId, currentLocationId, currentTileId, [campaignId]`,
+  campaignEvents: `${common}, label, campaignId, scriptId, category, [campaignId]`,
+  campaignEventLocations: `${common}, campaignEventId, locationId, tileId, [campaignEventId], [locationId]`,
+};
+
+/** Schema for v42 migration only: keeps rulesetPages, rulesetWindows has both rulesetPageId and pageId. */
+export const dbSchemaV42 = {
+  ...dbSchema,
+  rulesetPages: `${common}, rulesetId, pageId, [rulesetId+pageId]`,
+  rulesetWindows: `${common}, rulesetId, rulesetPageId, pageId, windowId, title, x, y, isCollapsed, moduleId`,
+};
+
 // Increment on every schema change
-export const dbSchemaVersion = 41;
+export const dbSchemaVersion = 43;

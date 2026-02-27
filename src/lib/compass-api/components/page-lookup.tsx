@@ -13,12 +13,11 @@ import type { Page } from '@/types';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { Check, ChevronsUpDown, XIcon } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import type { RulesetPageWithPage } from '../hooks/rulesets/use-ruleset-pages';
 import { useRulesetPages } from '../hooks/rulesets/use-ruleset-pages';
 
 type ListRow =
   | { type: 'category'; label: string; estimatedSize: number }
-  | { type: 'entry'; entry: RulesetPageWithPage; estimatedSize: number };
+  | { type: 'entry'; entry: Page; estimatedSize: number };
 
 interface PageLookupProps {
   /** Callback fired when a page is selected */
@@ -71,7 +70,7 @@ export const PageLookup = ({
         acc[category].push(page);
         return acc;
       },
-      {} as Record<string, RulesetPageWithPage[]>,
+      {} as Record<string, Page[]>,
     );
   }, [pages, searchLower]);
 
@@ -113,7 +112,7 @@ export const PageLookup = ({
     return () => cancelAnimationFrame(raf);
   }, [open, rows.length, virtualizer]);
 
-  const handleSelect = (page: RulesetPageWithPage) => {
+  const handleSelect = (page: Page) => {
     onSelect(page);
     setOpen(false);
   };

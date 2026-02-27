@@ -28,7 +28,6 @@ import type {
   Location,
   Page,
   Ruleset,
-  RulesetPage,
   RulesetWindow,
   Script,
   ScriptError,
@@ -44,7 +43,8 @@ import { assetInjectorMiddleware } from './asset-injector-middleware';
 import { chartOptionsMiddleware, memoizedCharts } from './chart-options-middleware';
 import { registerDbHooks } from './hooks/db-hooks';
 import { memoizedAssets } from './memoization-cache';
-import { dbSchema, dbSchemaVersion } from './schema';
+import { dbSchema, dbSchemaVersion, dbSchemaV41, dbSchemaV42 } from './schema';
+import { migrate41to42 } from './migrations/migrate-41-to-42';
 
 const db = new Dexie('qbdb') as Dexie & {
   users: EntityTable<
@@ -64,7 +64,6 @@ const db = new Dexie('qbdb') as Dexie & {
   characters: EntityTable<Character, 'id'>;
   characterAttributes: EntityTable<CharacterAttribute, 'id'>;
   pages: EntityTable<Page, 'id'>;
-  rulesetPages: EntityTable<RulesetPage, 'id'>;
   characterPages: EntityTable<CharacterPage, 'id'>;
   characterWindows: EntityTable<CharacterWindow, 'id'>;
   rulesetWindows: EntityTable<RulesetWindow, 'id'>;
@@ -91,7 +90,9 @@ const db = new Dexie('qbdb') as Dexie & {
   campaignEventLocations: EntityTable<CampaignEventLocation, 'id'>;
 };
 
-db.version(41).stores(dbSchema);
+db.version(41).stores(dbSchemaV41);
+
+db.version(42).stores(dbSchemaV42).upgrade(migrate41to42);
 
 db.version(39).stores(dbSchema).upgrade((tx) => {
   // Create a Campaign for each world that had rulesetId (upgrading from pre-Phase-7)

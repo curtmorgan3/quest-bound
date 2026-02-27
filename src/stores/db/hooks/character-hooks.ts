@@ -69,23 +69,12 @@ export function registerCharacterDbHooks(db: DB) {
     }, 0);
   });
 
-  // Delete character windows when a character page (join) is deleted; optionally delete orphaned Page
-  db.characterPages.hook('deleting', (primKey, obj) => {
+  // Delete character windows when a character page is deleted
+  db.characterPages.hook('deleting', (primKey) => {
     setTimeout(async () => {
       try {
         const characterPageId = primKey as string;
-        const pageId = (obj as { pageId?: string })?.pageId;
         await db.characterWindows.where('characterPageId').equals(characterPageId).delete();
-        if (pageId) {
-          const otherCharacterPage = await db.characterPages
-            .where('pageId')
-            .equals(pageId)
-            .first();
-          const rulesetPage = await db.rulesetPages.where('pageId').equals(pageId).first();
-          if (!otherCharacterPage && !rulesetPage) {
-            await db.pages.delete(pageId);
-          }
-        }
       } catch (error) {
         console.error('Failed to delete character windows for character page:', error);
       }

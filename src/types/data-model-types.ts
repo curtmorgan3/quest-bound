@@ -157,6 +157,7 @@ export type CharacterArchetype = BaseDetails & {
 };
 
 export type Page = BaseDetails & {
+  rulesetId: string;
   label: string;
   category?: string;
   assetId?: string;
@@ -172,14 +173,10 @@ export type Page = BaseDetails & {
   moduleName?: string;
 };
 
-export type RulesetPage = BaseDetails & {
-  rulesetId: string;
-  pageId: string;
-};
-
-/** Join table: character ↔ page. */
-export type CharacterPage = BaseDetails & {
+/** Character sheet page: full page content plus link to ruleset template. */
+export type CharacterPage = Page & {
   characterId: string;
+  /** Ruleset template page id this was created from (for "from template" pages). */
   pageId: string;
 };
 
@@ -201,8 +198,8 @@ export type CharacterWindow = BaseDetails & {
 export type RulesetWindow = BaseDetails & {
   title: string;
   rulesetId: string;
-  /** Optional link to a specific ruleset-page join; null for windows not bound to a page. */
-  rulesetPageId?: string | null;
+  /** Optional link to a ruleset page; null for windows not bound to a page. */
+  pageId?: string | null;
   windowId: string;
   x: number;
   y: number;

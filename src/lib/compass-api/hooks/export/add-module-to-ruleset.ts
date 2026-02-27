@@ -19,7 +19,6 @@ import type {
   Item,
   Page,
   Ruleset,
-  RulesetPage,
   RulesetWindow,
   Script,
   Window,
@@ -41,7 +40,6 @@ export interface AddModuleResult {
     assets: number;
     fonts: number;
     documents: number;
-    rulesetPages: number;
     rulesetWindows: number;
     archetypes: number;
     characters: number;
@@ -185,7 +183,7 @@ export async function addModuleToRuleset({
     sourceAssets,
     sourceFonts,
     sourceScripts,
-    sourceRulesetPages,
+    sourcePages,
     sourceRulesetWindows,
     sourceDiceRolls,
   ] = await Promise.all([
@@ -202,7 +200,7 @@ export async function addModuleToRuleset({
     db.assets.where('rulesetId').equals(sourceRulesetId).toArray(),
     db.fonts.where('rulesetId').equals(sourceRulesetId).toArray(),
     db.scripts.where('rulesetId').equals(sourceRulesetId).toArray(),
-    db.rulesetPages.where('rulesetId').equals(sourceRulesetId).toArray(),
+    db.pages.where('rulesetId').equals(sourceRulesetId).toArray(),
     db.rulesetWindows.where('rulesetId').equals(sourceRulesetId).toArray(),
     db.diceRolls.where('rulesetId').equals(sourceRulesetId).toArray(),
   ]);
@@ -271,8 +269,6 @@ export async function addModuleToRuleset({
   const characterPageIdMap = new Map<string, string>();
   const inventoryIdMap = new Map<string, string>();
   const archetypeIdMap = new Map<string, string>();
-  const rulesetPageIdMap = new Map<string, string>();
-  const rulesetPageJoinIdMap = new Map<string, string>();
   const pageIdMap = new Map<string, string>();
 
   const counts = {
@@ -285,7 +281,6 @@ export async function addModuleToRuleset({
     assets: 0,
     fonts: 0,
     documents: 0,
-    rulesetPages: 0,
     rulesetWindows: 0,
     archetypes: 0,
     characters: 0,
@@ -573,7 +568,7 @@ export async function addModuleToRuleset({
         }
         if (parsed.pageId && typeof parsed.pageId === 'string') {
           parsed.pageId =
-            pageIdMap.get(parsed.pageId) ?? rulesetPageIdMap.get(parsed.pageId) ?? parsed.pageId;
+            pageIdMap.get(parsed.pageId) ?? parsed.pageId;
         }
         mappedData = JSON.stringify(parsed);
       } catch {
@@ -595,48 +590,34 @@ export async function addModuleToRuleset({
     counts.components++;
   }
 
-  // 11. Ruleset pages (template pages + joins)
-  for (const join of sourceRulesetPages as RulesetPage[]) {
-    const sourcePage = await db.pages.get(join.pageId);
-    if (!sourcePage) continue;
+  // 11. Pages (ruleset templates)
+  for (const sourcePage of sourcePages as Page[]) {
     const newPageId = crypto.randomUUID();
-    const newJoinId = crypto.randomUUID();
-    rulesetPageIdMap.set(join.pageId, newPageId);
-    pageIdMap.set(join.pageId, newPageId);
-    rulesetPageJoinIdMap.set(join.id, newJoinId);
+    pageIdMap.set(sourcePage.id, newPageId);
     const { id: _pageId, createdAt: _c, updatedAt: _u, ...pageRest } = sourcePage;
     await db.pages.add({
       ...pageRest,
       id: newPageId,
+      rulesetId: targetRulesetId,
       moduleId: sourceRulesetId,
       moduleEntityId: sourcePage.id,
       moduleName,
       createdAt: now,
       updatedAt: now,
     } as Page & { moduleId: string; moduleEntityId: string; moduleName: string });
-    await db.rulesetPages.add({
-      id: newJoinId,
-      rulesetId: targetRulesetId,
-      pageId: newPageId,
-      createdAt: now,
-      updatedAt: now,
-    } as RulesetPage);
-    counts.rulesetPages++;
     counts.pages++;
   }
 
   // 12. Ruleset windows
   for (const rw of sourceRulesetWindows as RulesetWindow[]) {
     const newId = crypto.randomUUID();
-    const { id, rulesetId, rulesetPageId, windowId, createdAt, updatedAt, ...rest } = rw;
-    const mappedRulesetPageId = rulesetPageId
-      ? (rulesetPageJoinIdMap.get(rulesetPageId) ?? null)
-      : null;
+    const { id, rulesetId, pageId, windowId, createdAt, updatedAt, ...rest } = rw;
+    const mappedPageId = pageId ? (pageIdMap.get(pageId) ?? null) : null;
     const mappedWindowId = windowIdMap.get(windowId) ?? windowId;
     await db.rulesetWindows.add({
       id: newId,
       rulesetId: targetRulesetId,
-      rulesetPageId: mappedRulesetPageId,
+      pageId: mappedPageId,
       windowId: mappedWindowId,
       ...rest,
       moduleId: sourceRulesetId,
@@ -693,34 +674,23 @@ export async function addModuleToRuleset({
     } as Character & { moduleId: string; moduleEntityId: string; moduleName: string });
     counts.characters++;
 
-    for (const join of charPages as CharacterPage[]) {
-      const sourcePage = await db.pages.get(join.pageId);
-      if (!sourcePage) continue;
-      const newJoinId = crypto.randomUUID();
-      characterPageIdMap.set(join.id, newJoinId);
-      const existingNewPageId = rulesetPageIdMap.get(join.pageId);
-      const newPageId = existingNewPageId ?? crypto.randomUUID();
-      if (!existingNewPageId) {
-        const { id: _pageId, createdAt: _c, updatedAt: _u, ...pageRest } = sourcePage;
-        pageIdMap.set(join.pageId, newPageId);
-        await db.pages.add({
-          ...pageRest,
-          id: newPageId,
-          moduleId: sourceRulesetId,
-          moduleEntityId: sourcePage.id,
-          moduleName,
-          createdAt: now,
-          updatedAt: now,
-        } as Page & { moduleId: string; moduleEntityId: string; moduleName: string });
-        counts.pages++;
-      }
+    for (const cp of charPages as CharacterPage[]) {
+      const newCpId = crypto.randomUUID();
+      characterPageIdMap.set(cp.id, newCpId);
+      const mappedTemplatePageId = pageIdMap.get(cp.pageId) ?? cp.pageId;
+      const { id: _cpid, createdAt: _cpc, updatedAt: _cpu, characterId: _cid2, ...cpRest } = cp;
       await db.characterPages.add({
-        id: newJoinId,
+        ...cpRest,
+        id: newCpId,
         characterId: newCharacterId,
-        pageId: newPageId,
+        pageId: mappedTemplatePageId,
+        rulesetId: targetRulesetId,
+        moduleId: sourceRulesetId,
+        moduleEntityId: cp.id,
+        moduleName,
         createdAt: now,
         updatedAt: now,
-      } as CharacterPage);
+      } as CharacterPage & { moduleId: string; moduleEntityId: string; moduleName: string });
       counts.characterPages++;
     }
 

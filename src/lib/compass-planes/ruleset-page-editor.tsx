@@ -38,13 +38,13 @@ export const RulesetPageEditor = ({ pageId }: RulesetPageEditorProps) => {
   const { activeRuleset } = useActiveRuleset();
   const { pages, updatePage } = useRulesetPages();
   const currentPage = pages.find((p) => p.id === pageId);
-  const effectiveRulesetPageId = currentPage?.rulesetPageId ?? null;
+  const effectivePageId = currentPage?.id ?? null;
   const {
     windows: templateWindows,
     updateRulesetWindow,
     createRulesetWindow,
     deleteRulesetWindow,
-  } = useRulesetWindows(effectiveRulesetPageId);
+  } = useRulesetWindows(effectivePageId);
 
   const [editPageOpen, setEditPageOpen] = useState(false);
   const [addWindowOpen, setAddWindowOpen] = useState(false);
@@ -69,10 +69,10 @@ export const RulesetPageEditor = ({ pageId }: RulesetPageEditorProps) => {
         return;
       }
       const w = rulesetWindowDefs.find((r) => r.id === childWindowId);
-      if (!w || !effectiveRulesetPageId) return;
+      if (!w || !effectivePageId) return;
       createRulesetWindow({
         windowId: w.id,
-        rulesetPageId: effectiveRulesetPageId,
+        pageId: effectivePageId,
         title: w.title,
         x: parentWindow.x + 200,
         y: parentWindow.y + 150,
@@ -82,7 +82,7 @@ export const RulesetPageEditor = ({ pageId }: RulesetPageEditorProps) => {
     [
       templateWindows,
       rulesetWindowDefs,
-      effectiveRulesetPageId,
+      effectivePageId,
       createRulesetWindow,
       deleteRulesetWindow,
     ],
@@ -144,10 +144,10 @@ export const RulesetPageEditor = ({ pageId }: RulesetPageEditorProps) => {
   };
 
   const handleAddWindow = async (windowDef: { id: string; title: string }) => {
-    if (!effectiveRulesetPageId) return;
+    if (!effectivePageId) return;
     await createRulesetWindow({
       title: windowDef.title,
-      rulesetPageId: effectiveRulesetPageId,
+      pageId: effectivePageId,
       windowId: windowDef.id,
       x: 100,
       y: 100,

@@ -21,7 +21,6 @@ import type {
   Page,
   Window,
   Script,
-  RulesetPage,
   RulesetWindow,
 } from '@/types';
 
@@ -42,7 +41,7 @@ export interface RulesetDuplicationCounts {
   assets: number;
   fonts: number;
   documents: number;
-  rulesetPages: number;
+  pages: number;
   rulesetWindows: number;
   archetypes: number;
   customProperties: number;
@@ -83,7 +82,7 @@ export async function duplicateRuleset({
     sourceAssets,
     sourceFonts,
     sourceScripts,
-    sourceRulesetPages,
+    sourcePages,
     sourceRulesetWindows,
     sourceCustomProperties,
   ] = await Promise.all([
@@ -100,7 +99,7 @@ export async function duplicateRuleset({
     db.assets.where('rulesetId').equals(sourceRulesetId).toArray(),
     db.fonts.where('rulesetId').equals(sourceRulesetId).toArray(),
     db.scripts.where('rulesetId').equals(sourceRulesetId).toArray(),
-    db.rulesetPages.where('rulesetId').equals(sourceRulesetId).toArray(),
+    db.pages.where('rulesetId').equals(sourceRulesetId).toArray(),
     db.rulesetWindows.where('rulesetId').equals(sourceRulesetId).toArray(),
     db.customProperties.where('rulesetId').equals(sourceRulesetId).toArray(),
   ]);
@@ -156,9 +155,7 @@ export async function duplicateRuleset({
   const archetypeIdMap = new Map<string, string>();
   const customPropertyIdMap = new Map<string, string>();
   /** Maps source page id -> new page id for ruleset template pages (shared with test character pages when same) */
-  const rulesetPageIdMap = new Map<string, string>();
-  /** Maps old rulesetPage join id -> new rulesetPage join id (for rulesetWindows) */
-  const rulesetPageJoinIdMap = new Map<string, string>();
+  const pageIdMap = new Map<string, string>();
 
   const counts: RulesetDuplicationCounts = {
     attributes: 0,
@@ -170,7 +167,7 @@ export async function duplicateRuleset({
     assets: 0,
     fonts: 0,
     documents: 0,
-    rulesetPages: 0,
+    pages: 0,
     rulesetWindows: 0,
     archetypes: 0,
     customProperties: 0,
@@ -399,43 +396,31 @@ export async function duplicateRuleset({
     counts.components++;
   }
 
-  // 10. Ruleset pages (template pages + joins; builds rulesetPageIdMap and rulesetPageJoinIdMap)
-  for (const join of sourceRulesetPages as RulesetPage[]) {
-    const sourcePage = await db.pages.get(join.pageId);
-    if (!sourcePage) continue;
+  // 10. Pages (ruleset templates; builds pageIdMap)
+  for (const sourcePage of sourcePages as Page[]) {
     const newPageId = crypto.randomUUID();
-    const newJoinId = crypto.randomUUID();
-    rulesetPageIdMap.set(join.pageId, newPageId);
-    rulesetPageJoinIdMap.set(join.id, newJoinId);
+    pageIdMap.set(sourcePage.id, newPageId);
     const { id: _pageId, createdAt: _c, updatedAt: _u, ...pageRest } = sourcePage;
     await db.pages.add({
       ...pageRest,
       id: newPageId,
+      rulesetId: targetRulesetId,
       createdAt: now,
       updatedAt: now,
     } as Page);
-    await db.rulesetPages.add({
-      id: newJoinId,
-      rulesetId: targetRulesetId,
-      pageId: newPageId,
-      createdAt: now,
-      updatedAt: now,
-    } as RulesetPage);
-    counts.rulesetPages++;
+    counts.pages++;
   }
 
-  // 11. Ruleset windows (layout; map rulesetPageId and windowId)
+  // 11. Ruleset windows (layout; map pageId and windowId)
   for (const rw of sourceRulesetWindows as RulesetWindow[]) {
     const newId = crypto.randomUUID();
-    const { id, rulesetId, rulesetPageId, windowId, createdAt, updatedAt, ...rest } = rw;
-    const mappedRulesetPageId = rulesetPageId
-      ? (rulesetPageJoinIdMap.get(rulesetPageId) ?? null)
-      : null;
+    const { id, rulesetId, pageId, windowId, createdAt, updatedAt, ...rest } = rw;
+    const mappedPageId = pageId ? (pageIdMap.get(pageId) ?? null) : null;
     const mappedWindowId = windowIdMap.get(windowId) ?? windowId;
     await db.rulesetWindows.add({
       id: newId,
       rulesetId: targetRulesetId,
-      rulesetPageId: mappedRulesetPageId,
+      pageId: mappedPageId,
       windowId: mappedWindowId,
       ...rest,
       createdAt: now,
@@ -444,7 +429,7 @@ export async function duplicateRuleset({
     counts.rulesetWindows++;
   }
 
-  // 12. Test characters and archetypes (after ruleset pages so rulesetPageIdMap is available)
+  // 12. Test characters and archetypes (after pages so pageIdMap is available)
   for (const testCharId of testCharacterIds) {
     const srcChar = await db.characters.get(testCharId);
     if (!srcChar || !srcChar.isTestCharacter) continue;
@@ -493,27 +478,17 @@ export async function duplicateRuleset({
     } as Character);
     counts.characters++;
 
-    for (const join of srcCharPages as CharacterPage[]) {
-      const sourcePage = await db.pages.get(join.pageId);
-      if (!sourcePage) continue;
-      const newJoinId = crypto.randomUUID();
-      characterPageIdMap.set(join.id, newJoinId);
-      const existingNewPageId = rulesetPageIdMap.get(join.pageId);
-      const newPageId = existingNewPageId ?? crypto.randomUUID();
-      if (!existingNewPageId) {
-        const { id: _pid, createdAt: _pc, updatedAt: _pu, ...pageRest } = sourcePage;
-        rulesetPageIdMap.set(join.pageId, newPageId);
-        await db.pages.add({
-          ...pageRest,
-          id: newPageId,
-          createdAt: now,
-          updatedAt: now,
-        } as Page);
-      }
+    for (const cp of srcCharPages as CharacterPage[]) {
+      const newCpId = crypto.randomUUID();
+      characterPageIdMap.set(cp.id, newCpId);
+      const mappedTemplatePageId = pageIdMap.get(cp.pageId) ?? cp.pageId;
+      const { id: _cpid, createdAt: _cpc, updatedAt: _cpu, characterId: _cid2, ...cpRest } = cp;
       await db.characterPages.add({
-        id: newJoinId,
+        ...cpRest,
+        id: newCpId,
         characterId: newCharacterId,
-        pageId: newPageId,
+        pageId: mappedTemplatePageId,
+        rulesetId: targetRulesetId,
         createdAt: now,
         updatedAt: now,
       } as CharacterPage);
