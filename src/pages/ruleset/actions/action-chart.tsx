@@ -17,8 +17,10 @@ export const ActionChart = () => {
           cellRenderer: (params: CellRendererProps<Action>) => (
             <ChartControls
               id={params.data.id}
+              type='action'
               handleDelete={handleDelete}
               handleEdit={(id) => setSearchParams({ edit: id })}
+              title={params.data.title}
             />
           ),
         };
@@ -42,12 +44,7 @@ export const ActionChart = () => {
           cellRenderer: (params: CellRendererProps<Action>) => {
             const value = (params as { value?: string }).value ?? params.data.title;
             return (
-              <span
-                className={
-                  params.data.moduleId
-                    ? 'text-module-origin'
-                    : undefined
-                }>
+              <span className={params.data.moduleId ? 'text-module-origin' : undefined}>
                 {value}
               </span>
             );

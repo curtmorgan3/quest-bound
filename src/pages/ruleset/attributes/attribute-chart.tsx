@@ -44,8 +44,10 @@ export const AttributeChart = () => {
           cellRenderer: (params: CellRendererProps<Attribute>) => (
             <ChartControls
               id={params.data.id}
+              type='attribute'
               handleDelete={handleDelete}
               handleEdit={(id) => setSearchParams({ edit: id })}
+              title={params.data.title}
             />
           ),
         };
@@ -69,12 +71,7 @@ export const AttributeChart = () => {
           cellRenderer: (params: CellRendererProps<Attribute>) => {
             const value = (params as { value?: string }).value ?? params.data.title;
             return (
-              <span
-                className={
-                  params.data.moduleId
-                    ? 'text-module-origin'
-                    : undefined
-                }>
+              <span className={params.data.moduleId ? 'text-module-origin' : undefined}>
                 {value}
               </span>
             );

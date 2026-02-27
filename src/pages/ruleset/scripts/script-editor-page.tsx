@@ -15,7 +15,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { AnimatePresence, motion } from 'framer-motion';
 import { AlertCircle, ChevronDown, ChevronUp, Terminal } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useSearchParams } from 'react-router-dom';
 import { AttributeControls } from './script-editor/attribute-controls';
 import { EditorConsole } from './script-editor/editor-console';
 import { EditorTopBar } from './script-editor/editor-top-bar';
@@ -42,6 +42,13 @@ export function ScriptEditorPage() {
   const { scripts } = useScripts(campaignId);
   const isNew = scriptId === 'new';
   const script = isNew ? null : (scripts.find((s) => s.id === scriptId) ?? null);
+
+  const [search] = useSearchParams();
+  const type = (search.get('type') ?? null) as Script['entityType'] | null;
+  const paramEntityId = search.get('entityId');
+  const paramEntityName = search.get('entityName');
+
+  const entityName = paramEntityName ? paramEntityName.replace(/ /g, '_').toLowerCase() : '';
 
   const { activeRuleset, testCharacter } = useActiveRuleset();
   const {
@@ -75,11 +82,11 @@ export function ScriptEditorPage() {
 
   const defaultEntityType = campaignId ? 'campaignEvent' : 'attribute';
 
-  const [name, setName] = useState('');
-  const [entityType, setEntityType] = useState<Script['entityType']>(defaultEntityType);
+  const [name, setName] = useState(entityName);
+  const [entityType, setEntityType] = useState<Script['entityType']>(type ?? defaultEntityType);
   const [category, setCategory] = useState<string | null>(null);
 
-  const [entityId, setEntityId] = useState<string | null>(null);
+  const [entityId, setEntityId] = useState<string | null>(paramEntityId ?? null);
   const [sourceCode, setSourceCode] = useState('');
   const [autocompleteEnabled, setAutocompleteEnabled] = useState(getAutocompletePreference);
   const [consolePanelOpen, setConsolePanelOpen] = useState(false);

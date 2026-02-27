@@ -11,8 +11,9 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { useScripts } from '@/lib/compass-api';
+import { colorPrimary } from '@/palette';
 import type { Item } from '@/types';
-import { FileCode, Pencil, SlidersHorizontal, Trash } from 'lucide-react';
+import { FileCode, FilePlus, Pencil, SlidersHorizontal, Trash } from 'lucide-react';
 import { Link, useParams } from 'react-router-dom';
 import { ManageItemCustomPropertiesPanel } from '../items/manage-item-custom-properties-panel';
 
@@ -22,9 +23,18 @@ interface ChartControlsProps {
   handleEdit: (id: string) => void;
   /** When provided (e.g. in item chart), shows a button to manage item custom properties. */
   item?: Item;
+  type: 'attribute' | 'action' | 'item';
+  title?: string;
 }
 
-export const ChartControls = ({ id, handleDelete, handleEdit, item }: ChartControlsProps) => {
+export const ChartControls = ({
+  id,
+  handleDelete,
+  handleEdit,
+  item,
+  type,
+  title,
+}: ChartControlsProps) => {
   const { rulesetId } = useParams<{ rulesetId: string }>();
   const { getScriptIdForEntity } = useScripts();
   const scriptId = getScriptIdForEntity(id);
@@ -89,9 +99,17 @@ export const ChartControls = ({ id, handleDelete, handleEdit, item }: ChartContr
           }
         />
       )}
-      {scriptId && (
+      {scriptId ? (
         <Link to={`/rulesets/${rulesetId}/scripts/${scriptId}`}>
-          <FileCode className='text-neutral-400 h-[18px] w-[18px] clickable' />
+          <FileCode
+            className='text-neutral-400 h-[18px] w-[18px] clickable'
+            style={{ color: colorPrimary }}
+          />
+        </Link>
+      ) : (
+        <Link
+          to={`/rulesets/${rulesetId}/scripts/new?type=${type}&entityId=${id}&entityName=${title ?? ''}`}>
+          <FilePlus className='text-neutral-400 h-[18px] w-[18px] clickable' />
         </Link>
       )}
     </div>

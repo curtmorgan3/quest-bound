@@ -17,9 +17,11 @@ export const ItemChart = () => {
           cellRenderer: (params: CellRendererProps<Item>) => (
             <ChartControls
               id={params.data.id}
+              type='item'
               handleDelete={handleDelete}
               handleEdit={(id) => setSearchParams({ edit: id })}
               item={params.data}
+              title={params.data.title}
             />
           ),
         };
@@ -43,12 +45,7 @@ export const ItemChart = () => {
           cellRenderer: (params: CellRendererProps<Item>) => {
             const value = (params as { value?: string }).value ?? params.data.title;
             return (
-              <span
-                className={
-                  params.data.moduleId
-                    ? 'text-module-origin'
-                    : undefined
-                }>
+              <span className={params.data.moduleId ? 'text-module-origin' : undefined}>
                 {value}
               </span>
             );
