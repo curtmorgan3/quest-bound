@@ -256,6 +256,7 @@ export interface UseExecuteItemEventResult {
     eventType: string,
     roll?: RollFn,
     campaignId?: string,
+    inventoryItemInstanceId?: string,
   ) => Promise<void>;
   result: any;
   announceMessages: string[];
@@ -282,6 +283,7 @@ export function useExecuteItemEvent(timeout = 10000): UseExecuteItemEventResult 
       eventType: string,
       roll?: RollFn,
       campaignId?: string,
+      inventoryItemInstanceId?: string,
     ) => {
       setIsExecuting(true);
       setError(null);
@@ -294,6 +296,7 @@ export function useExecuteItemEvent(timeout = 10000): UseExecuteItemEventResult 
           roll,
           timeout,
           campaignId,
+          inventoryItemInstanceId,
         );
         setResult(response.value);
         setAnnounceMessages(response.announceMessages);

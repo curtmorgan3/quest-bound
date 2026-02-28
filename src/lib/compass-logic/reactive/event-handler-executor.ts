@@ -15,6 +15,7 @@ export type EventHandlerType =
   | 'on_unequip'
   | 'on_consume'
   | 'on_activate'
+  | 'on_activate'
   | 'on_deactivate'
   | 'on_add'
   | 'on_remove'
@@ -79,18 +80,21 @@ export class EventHandlerExecutor {
 
   /**
    * Execute an item event handler.
-   * @param itemId - ID of the item
+   * @param itemId - ID of the item (ruleset item id)
    * @param characterId - ID of the character
-   * @param eventType - Type of event (on_equip, on_unequip, on_consume)
+   * @param eventType - Type of event (on_equip, on_unequip, on_consume, on_activate)
    * @param roll - Optional function to handle dice rolling
+   * @param campaignId - Optional campaign id for Owner.location etc.
+   * @param inventoryItemInstanceId - When set, Self in the item script refers to this inventory item instance instead of the first match by name.
    * @returns Execution result
    */
   async executeItemEvent(
     itemId: string,
     characterId: string,
-    eventType: 'on_equip' | 'on_unequip' | 'on_consume',
+    eventType: 'on_equip' | 'on_unequip' | 'on_consume' | 'on_activate',
     roll?: RollFn,
     campaignId?: string,
+    inventoryItemInstanceId?: string,
   ): Promise<EventHandlerResult> {
     // Get item
     const item = await this.db.items.get(itemId);
@@ -146,6 +150,7 @@ export class EventHandlerExecutor {
       triggerType: 'item_event',
       entityType: 'item',
       entityId: item.id,
+      inventoryItemInstanceId,
       campaignId,
       roll,
       executeActionEvent: (actionId, ownerId, targetIdForAction, eventTypeForAction) =>

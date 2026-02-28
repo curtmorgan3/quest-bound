@@ -90,6 +90,8 @@ export interface ExecuteItemEventSignal {
     eventType: string;
     requestId: string;
     campaignId?: string;
+    /** When set, Self in the item script refers to this inventory item instance instead of the first match by name. */
+    inventoryItemInstanceId?: string;
   };
 }
 

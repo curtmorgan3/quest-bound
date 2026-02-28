@@ -84,7 +84,7 @@ export class ItemInstanceProxy implements StructuredCloneSafe {
   }
 
   get title(): string {
-    return this.item.title;
+    return this.inventoryItem.label ?? this.item.title;
   }
 
   get description(): string {

@@ -38,9 +38,20 @@ export const useCharacterInventoryHandlers = ({
     return map;
   }, [inventoryItems]);
 
-  const fireItemEvent = async (rulesetItemId: string, event: ItemEvent) => {
+  const fireItemEvent = async (
+    rulesetItemId: string,
+    event: ItemEvent,
+    inventoryItemInstanceId: string,
+  ) => {
     if (!character) return;
-    executeItemEvent(rulesetItemId, character.id, event, roll, campaignId);
+    executeItemEvent(
+      rulesetItemId,
+      character.id,
+      event,
+      roll,
+      campaignId,
+      inventoryItemInstanceId,
+    );
   };
 
   const addItemAndFireEvent = async (
@@ -52,7 +63,7 @@ export const useCharacterInventoryHandlers = ({
   const updateItemAndFireEvent = async (invItemId: string, data: Partial<InventoryItem>) => {
     const rulesetItemId = inventoryItemIdToRulesetItemId.get(invItemId);
     if (rulesetItemId) {
-      const fireEvent = (event: ItemEvent) => fireItemEvent(rulesetItemId, event);
+      const fireEvent = (event: ItemEvent) => fireItemEvent(rulesetItemId, event, invItemId);
 
       if (data.isEquipped === true) {
         fireEvent('on_equip');
@@ -73,7 +84,7 @@ export const useCharacterInventoryHandlers = ({
   const consumeItem = (invItemId: string) => {
     const rulesetItemId = inventoryItemIdToRulesetItemId.get(invItemId);
     if (rulesetItemId) {
-      fireItemEvent(rulesetItemId, 'on_consume');
+      fireItemEvent(rulesetItemId, 'on_consume', invItemId);
     }
 
     const item = inventoryItems.find((item) => item.id === invItemId);
@@ -91,7 +102,7 @@ export const useCharacterInventoryHandlers = ({
   const activateItem = (invItemId: string) => {
     const rulesetItemId = inventoryItemIdToRulesetItemId.get(invItemId);
     if (rulesetItemId) {
-      fireItemEvent(rulesetItemId, 'on_activate');
+      fireItemEvent(rulesetItemId, 'on_activate', invItemId);
     }
   };
 

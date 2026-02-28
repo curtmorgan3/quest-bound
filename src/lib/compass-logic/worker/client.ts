@@ -487,6 +487,7 @@ export class QBScriptClient {
     roll?: RollFn,
     timeout = 10000,
     campaignId?: string,
+    inventoryItemInstanceId?: string,
   ): Promise<{
     value: any;
     announceMessages: string[];
@@ -499,7 +500,14 @@ export class QBScriptClient {
       return await this.sendSignal(
         {
           type: 'EXECUTE_ITEM_EVENT',
-          payload: { itemId, characterId, eventType, requestId, campaignId },
+          payload: {
+            itemId,
+            characterId,
+            eventType,
+            requestId,
+            campaignId,
+            inventoryItemInstanceId,
+          },
         },
         requestId,
         timeout,

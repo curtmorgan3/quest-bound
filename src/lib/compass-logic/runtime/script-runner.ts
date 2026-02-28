@@ -10,17 +10,12 @@ import type {
   RollFn,
   Script,
 } from '@/types';
+import { buildItemCustomProperties } from '@/utils/custom-property-utils';
 import { Evaluator } from '../interpreter/evaluator';
 import { Lexer } from '../interpreter/lexer';
 import { Parser } from '../interpreter/parser';
-import { buildItemCustomProperties } from '@/utils/custom-property-utils';
 import { executeArchetypeEvent } from '../reactive/event-handler-executor';
-import {
-  CharacterAccessor,
-  OwnerAccessor,
-  RulesetAccessor,
-  TargetAccessor,
-} from './accessors';
+import { CharacterAccessor, OwnerAccessor, RulesetAccessor, TargetAccessor } from './accessors';
 import { TileProxy, type ExecuteActionEventFn } from './proxies';
 
 /**
@@ -43,6 +38,8 @@ export interface ScriptExecutionContext {
   entityType?: string;
   /** When script is attached to an entity, the entity id. Self = Owner.Attribute/Action/Item as appropriate. */
   entityId?: string;
+  /** When script is for an item (entityType 'item'), the inventory item instance id. Self then refers to this instance instead of the first match by name. */
+  inventoryItemInstanceId?: string;
   /** Optional roll function for script built-in roll(). When set, used instead of default local roll (e.g. from useDiceState). */
   roll?: RollFn;
   /** When set, Owner.Action('name').activate() / .deactivate() can run action event handlers (e.g. from worker or EventHandlerExecutor). */
@@ -363,7 +360,10 @@ export class ScriptRunner {
       }
 
       const archetypeNames = new Set<string>();
-      const charArchetypes = await db.characterArchetypes.where('characterId').equals(characterId).toArray();
+      const charArchetypes = await db.characterArchetypes
+        .where('characterId')
+        .equals(characterId)
+        .toArray();
       for (const ca of charArchetypes) {
         const archetype = await db.archetypes.get(ca.archetypeId);
         if (archetype?.name) archetypeNames.add(archetype.name);
@@ -378,9 +378,29 @@ export class ScriptRunner {
 
       const isOwner = characterId === ownerId;
       const isTarget = characterId === targetId;
-      const accessor =
-        isOwner
-          ? new OwnerAccessor(
+      const accessor = isOwner
+        ? new OwnerAccessor(
+            characterId,
+            characterName,
+            inventoryId,
+            db,
+            this.pendingUpdates,
+            this.characterAttributesCache,
+            this.attributesCache,
+            this.actionsCache,
+            this.itemsCache,
+            inventoryItems,
+            archetypeNames,
+            targetId ?? null,
+            this.context.executeActionEvent,
+            locationLabel,
+            currentTile,
+            null, // tileWithContext set later in setupAccessors
+            this.customPropertiesCache,
+            character?.customProperties ?? {},
+          )
+        : isTarget
+          ? new TargetAccessor(
               characterId,
               characterName,
               inventoryId,
@@ -392,55 +412,34 @@ export class ScriptRunner {
               this.itemsCache,
               inventoryItems,
               archetypeNames,
-              targetId ?? null,
+              null,
               this.context.executeActionEvent,
               locationLabel,
               currentTile,
-              null, // tileWithContext set later in setupAccessors
+              null,
               this.customPropertiesCache,
               character?.customProperties ?? {},
             )
-          : isTarget
-            ? new TargetAccessor(
-                characterId,
-                characterName,
-                inventoryId,
-                db,
-                this.pendingUpdates,
-                this.characterAttributesCache,
-                this.attributesCache,
-                this.actionsCache,
-                this.itemsCache,
-                inventoryItems,
-                archetypeNames,
-                null,
-                this.context.executeActionEvent,
-                locationLabel,
-                currentTile,
-                null,
-                this.customPropertiesCache,
-                character?.customProperties ?? {},
-              )
-            : new CharacterAccessor(
-                characterId,
-                characterName,
-                inventoryId,
-                db,
-                this.pendingUpdates,
-                this.characterAttributesCache,
-                this.attributesCache,
-                this.actionsCache,
-                this.itemsCache,
-                inventoryItems,
-                archetypeNames,
-                null,
-                this.context.executeActionEvent,
-                locationLabel,
-                currentTile,
-                null,
-                this.customPropertiesCache,
-                character?.customProperties ?? {},
-              );
+          : new CharacterAccessor(
+              characterId,
+              characterName,
+              inventoryId,
+              db,
+              this.pendingUpdates,
+              this.characterAttributesCache,
+              this.attributesCache,
+              this.actionsCache,
+              this.itemsCache,
+              inventoryItems,
+              archetypeNames,
+              null,
+              this.context.executeActionEvent,
+              locationLabel,
+              currentTile,
+              null,
+              this.customPropertiesCache,
+              character?.customProperties ?? {},
+            );
       characters.push(accessor);
     }
 
@@ -488,7 +487,9 @@ export class ScriptRunner {
       if (type === 'characterAttribute') {
         await db.characterAttributes.update(id, { value });
       } else if (type === 'characterUpdate') {
-        const { customProperties } = value as { customProperties: Record<string, string | number | boolean> };
+        const { customProperties } = value as {
+          customProperties: Record<string, string | number | boolean>;
+        };
         await db.characters.update(id, { customProperties, updatedAt: new Date().toISOString() });
       } else if (type === 'characterAttributeMax') {
         await db.characterAttributes.update(id, { max: value });
@@ -587,12 +588,14 @@ export class ScriptRunner {
       // Build Owner.Tile with character/characters and set on owner
       const idx = ownerLocationData!.characters.findIndex((c) => c.characterId === ownerId);
       const campaignChars = ownerLocationData!.campaignCharacters;
-      const ownerTileId = idx >= 0 ? campaignChars[idx]?.currentTileId ?? null : null;
+      const ownerTileId = idx >= 0 ? (campaignChars[idx]?.currentTileId ?? null) : null;
       const ownerTileCoords = this.ownerCurrentTile ?? { x: 0, y: 0 };
       const characterOnTile =
         ownerTileId != null
           ? ownerLocationData!.characters[
-              ownerLocationData!.campaignCharacters.findIndex((cc) => cc.currentTileId === ownerTileId)
+              ownerLocationData!.campaignCharacters.findIndex(
+                (cc) => cc.currentTileId === ownerTileId,
+              )
             ]
           : undefined;
       const tileWithContext = new TileProxy(
@@ -684,7 +687,9 @@ export class ScriptRunner {
     } else if (this.context.entityType === 'item' && this.context.entityId) {
       const item = this.itemsCache.get(this.context.entityId);
       if (item) {
-        const itemRef = owner.Item(item.title);
+        const itemRef = this.context.inventoryItemInstanceId
+          ? owner.getItemByInstanceId(this.context.inventoryItemInstanceId)
+          : owner.Item(item.title);
         this.evaluator.globalEnv.define('Self', itemRef ?? null);
       }
     } else if (
@@ -702,9 +707,7 @@ export class ScriptRunner {
       const eventCampaignChars = eventLocationData?.campaignCharacters ?? [];
       const characterOnEventTile =
         loc.tileId != null
-          ? eventCharacters[
-              eventCampaignChars.findIndex((cc) => cc.currentTileId === loc.tileId)
-            ]
+          ? eventCharacters[eventCampaignChars.findIndex((cc) => cc.currentTileId === loc.tileId)]
           : undefined;
       const selfTile = new TileProxy(
         tileCoords.x,

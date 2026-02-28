@@ -204,6 +204,26 @@ export class CharacterAccessor implements StructuredCloneSafe {
       (inv) => inv.entityId === item.id && inv.type === 'item',
     );
     if (!inventoryItem) return undefined;
+    return this.createItemInstanceProxyFor(inventoryItem, item);
+  }
+
+  /**
+   * Resolve a specific inventory item instance by id (used by script-runner so Self refers to the correct instance in item event scripts).
+   */
+  getItemByInstanceId(inventoryItemInstanceId: string): ReturnType<typeof createItemInstanceProxy> | undefined {
+    const inventoryItem = this.inventoryItems.find(
+      (inv) => inv.id === inventoryItemInstanceId && inv.type === 'item',
+    );
+    if (!inventoryItem) return undefined;
+    const item = this.itemsCache.get(inventoryItem.entityId);
+    if (!item) return undefined;
+    return this.createItemInstanceProxyFor(inventoryItem, item);
+  }
+
+  private createItemInstanceProxyFor(
+    inventoryItem: InventoryItem,
+    item: Item,
+  ): ReturnType<typeof createItemInstanceProxy> {
     const onSetCustomProperty = (customPropertyId: string, value: string | number | boolean) => {
       if (!inventoryItem.customProperties) inventoryItem.customProperties = {};
       inventoryItem.customProperties[customPropertyId] = value;
@@ -211,7 +231,7 @@ export class CharacterAccessor implements StructuredCloneSafe {
         customProperties: inventoryItem.customProperties,
       });
     };
-    const onDestroy = () => this.removeItem(item.title, inventoryItem.quantity);
+    const onDestroy = () => this.removeItemByInstanceId(inventoryItem.id);
     return createItemInstanceProxy(
       inventoryItem,
       item,
@@ -235,7 +255,7 @@ export class CharacterAccessor implements StructuredCloneSafe {
           customProperties: inv.customProperties,
         });
       };
-      const onDestroy = () => this.removeItem(item.title, inv.quantity);
+      const onDestroy = () => this.removeItemByInstanceId(inv.id);
       return createItemInstanceProxy(
         inv,
         item,
@@ -341,6 +361,18 @@ export class CharacterAccessor implements StructuredCloneSafe {
       }
     }
     this.inventoryItems = this.inventoryItems.filter((inv) => !idsToDelete.has(inv.id));
+  }
+
+  /**
+   * Remove a specific inventory item instance by id. Used by item-instance destroy() so Self.destroy() removes this instance only.
+   */
+  removeItemByInstanceId(inventoryItemInstanceId: string): void {
+    const inv = this.inventoryItems.find(
+      (i) => i.id === inventoryItemInstanceId && i.type === 'item',
+    );
+    if (!inv) return;
+    this.pendingUpdates.set(`inventoryDelete:${inv.id}`, true);
+    this.inventoryItems = this.inventoryItems.filter((i) => i.id !== inv.id);
   }
 
   /** Public id for script-runner (e.g. to find Owner in location list). */
