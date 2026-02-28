@@ -242,11 +242,20 @@ function createOnAttributesModified(
 // Reactive chain helper
 // ============================================================================
 
+/** Max distinct attributes to process in one reactive chain (prevents runaway / huge graphs). */
+const MAX_ATTRIBUTES_IN_REACTIVE_CHAIN = 100;
+
+/** Max wall-clock time (ms) for the entire reactive chain (prevents long-running cascades). */
+const REACTIVE_CHAIN_TIME_LIMIT_MS = 15_000;
+
 /**
  * Run the full reactive chain for a set of attribute IDs. When an attribute script
  * modifies another attribute, scripts that depend on the modified attribute must
  * run too. This helper repeatedly calls onAttributeChange for each modified ID
  * until no new attributes are modified (so e.g. a -> b -> c all refire).
+ *
+ * Safeguards: each attribute is processed at most once (no infinite A→B→A loops),
+ * and we cap the number of attributes processed and total time to avoid runaway chains.
  */
 async function runReactiveChainForModifiedAttributes(
   initialAttributeIds: string[],
@@ -258,6 +267,7 @@ async function runReactiveChainForModifiedAttributes(
   scriptsExecuted: string[];
   executionCount: number;
   lastError?: ReactiveExecutionResult['error'];
+  truncated?: boolean;
 }> {
   if (!reactiveExecutor) {
     reactiveExecutor = new ReactiveExecutor(db);
@@ -267,8 +277,30 @@ async function runReactiveChainForModifiedAttributes(
   let executionCount = 0;
   const queue = [...initialAttributeIds];
   const processed = new Set<string>();
+  const chainStartTime = Date.now();
+  let truncated = false;
 
   while (queue.length > 0) {
+    if (processed.size >= MAX_ATTRIBUTES_IN_REACTIVE_CHAIN) {
+      console.warn(
+        '[QBScript] Reactive chain truncated: max attributes reached',
+        MAX_ATTRIBUTES_IN_REACTIVE_CHAIN,
+        { characterId, rulesetId, processed: processed.size, queueRemaining: queue.length },
+      );
+      truncated = true;
+      break;
+    }
+    if (Date.now() - chainStartTime > REACTIVE_CHAIN_TIME_LIMIT_MS) {
+      console.warn(
+        '[QBScript] Reactive chain truncated: time limit exceeded',
+        REACTIVE_CHAIN_TIME_LIMIT_MS,
+        'ms',
+        { characterId, rulesetId, processed: processed.size },
+      );
+      truncated = true;
+      break;
+    }
+
     const attributeId = queue.shift()!;
     if (processed.has(attributeId)) continue;
     processed.add(attributeId);
@@ -307,6 +339,7 @@ async function runReactiveChainForModifiedAttributes(
     allModifiedIds: Array.from(allModifiedIds),
     scriptsExecuted,
     executionCount,
+    ...(truncated ? { truncated: true } : {}),
   };
 }
 
