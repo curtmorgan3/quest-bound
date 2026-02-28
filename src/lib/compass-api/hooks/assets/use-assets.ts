@@ -30,6 +30,7 @@ export const useAssets = (_rulesetId?: string | null, worldId?: string | null) =
     file: File,
     _directory?: string,
     overrideRulesetId?: string,
+    category?: string,
   ): Promise<string> => {
     const targetRulesetId = rulesetId ?? overrideRulesetId ?? null;
 
@@ -58,6 +59,7 @@ export const useAssets = (_rulesetId?: string | null, worldId?: string | null) =
             updatedAt: new Date().toISOString(),
             rulesetId: targetRulesetId,
             worldId,
+            ...(category != null && category.trim() !== '' && { category: category.trim() }),
           });
 
           resolve(id);

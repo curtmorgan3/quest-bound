@@ -70,6 +70,8 @@ export function AssetsPage() {
     filename: string;
     refCount: number;
   } | null>(null);
+  const [uploadModalOpen, setUploadModalOpen] = useState(false);
+  const [uploadCategory, setUploadCategory] = useState<string | null>(null);
 
   const handleOpenEdit = (asset: Asset) => {
     setEditingAsset(asset);
@@ -141,6 +143,10 @@ export function AssetsPage() {
   };
 
   const handleUploadClick = () => {
+    setUploadModalOpen(true);
+  };
+
+  const handleSelectFilesClick = () => {
     fileInputRef.current?.click();
   };
 
@@ -149,12 +155,15 @@ export function AssetsPage() {
     if (!files?.length) return;
     const fileList = Array.from(files);
     e.target.value = '';
+    const category = uploadCategory?.trim() || undefined;
     setUploading(true);
     try {
       const deduped = dedupeFileNames(fileList);
       for (const file of deduped) {
-        await createAsset(file);
+        await createAsset(file, undefined, undefined, category);
       }
+      setUploadModalOpen(false);
+      setUploadCategory(null);
     } finally {
       setUploading(false);
     }
@@ -311,6 +320,38 @@ export function AssetsPage() {
             className='hidden'
             onChange={handleFileChange}
           />
+          <Dialog open={uploadModalOpen} onOpenChange={setUploadModalOpen}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Upload assets</DialogTitle>
+              </DialogHeader>
+              <div className='flex flex-col gap-4'>
+                <CategoryField
+                  value={uploadCategory}
+                  onChange={setUploadCategory}
+                  existingCategories={assetCategories}
+                />
+                <Button onClick={handleSelectFilesClick} disabled={uploading}>
+                  {uploading ? (
+                    <>
+                      <Loader2 className='h-4 w-4 animate-spin' />
+                      Uploading…
+                    </>
+                  ) : (
+                    'Select Files'
+                  )}
+                </Button>
+              </div>
+              <DialogFooter>
+                <Button
+                  variant='secondary'
+                  onClick={() => setUploadModalOpen(false)}
+                  disabled={uploading}>
+                  Cancel
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
       }>
       <div className='flex flex-col gap-4'>
