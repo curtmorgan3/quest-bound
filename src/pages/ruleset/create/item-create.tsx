@@ -180,7 +180,7 @@ export const ItemCreate = ({
 
             <div className='flex flex-col gap-2 w-[120px]'>
               <div className='flex flex-col gap-1 w-full'>
-                <Label>Inventory Width (x 20px)</Label>
+                <Label>Inventory Width (20px units)</Label>
                 <Input
                   type='number'
                   className='w-[80px]'
@@ -190,7 +190,7 @@ export const ItemCreate = ({
                 />
               </div>
               <div className='flex flex-col gap-1 w-full'>
-                <Label>Inventory Height (x 20px)</Label>
+                <Label>Inventory Height (20px units)</Label>
                 <Input
                   type='number'
                   className='w-[80px]'
