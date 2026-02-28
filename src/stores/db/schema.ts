@@ -105,5 +105,13 @@ export const dbSchemaV45 = {
   assets: `${common}, rulesetId, filename, data, type, category, moduleId, [rulesetId+filename]`,
 };
 
+/** Schema for v46: items, actions, attributes have assetId index (for asset reference lookups). */
+export const dbSchemaV46 = {
+  ...dbSchemaV45,
+  items: `${common}, rulesetId, title, description, category, weight, defaultQuantity, stackSize, isContainer, isStorable, isEquippable, isConsumable, inventoryWidth, inventoryHeight, scriptId, moduleId, sprites, assetId`,
+  actions: `${common}, rulesetId, title, description, category, scriptId, moduleId, assetId`,
+  attributes: `${common}, rulesetId, title, description, category, type, options, defaultValue, optionsChartRef, optionsChartColumnHeader, min, max, scriptId, moduleId, assetId`,
+};
+
 // Increment on every schema change
-export const dbSchemaVersion = 45;
+export const dbSchemaVersion = 46;

@@ -1,4 +1,4 @@
-import { useAssets } from '@/lib/compass-api';
+import { AssetLookup, useAssets } from '@/lib/compass-api';
 import { ImagePlus, Save, Trash } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '../ui/button';
@@ -202,11 +202,31 @@ export const ImageUpload = ({
           <DialogHeader>
             <DialogTitle>Add image</DialogTitle>
             <DialogDescription>
-              Enter an image URL or select a file from your device. Names must be unique within the
-              ruleset.
+              Choose an existing asset, enter an image URL, or select a file from your device.
             </DialogDescription>
           </DialogHeader>
           <div className='flex flex-col gap-4 py-2'>
+            {rulesetId != null && rulesetId !== '' && (
+              <AssetLookup
+                rulesetId={rulesetId}
+                placeholder='Search existing assets...'
+                label='Existing asset'
+                onSelect={(asset) => {
+                  onUpload?.(asset.id);
+                  setDialogOpen(false);
+                }}
+              />
+            )}
+            {rulesetId != null && rulesetId !== '' && (
+              <div className='relative'>
+                <div className='absolute inset-0 flex items-center'>
+                  <span className='w-full border-t' />
+                </div>
+                <div className='relative flex justify-center text-muted-foreground text-xs uppercase'>
+                  or add new
+                </div>
+              </div>
+            )}
             <div className='flex flex-col gap-2'>
               <Label htmlFor={`url-name-${id}`}>
                 Name <span className='text-destructive'>*</span>
@@ -232,10 +252,15 @@ export const ImageUpload = ({
                   placeholder='https://example.com/image.png'
                   value={urlInput}
                   onChange={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
                     setUrlInput(e.target.value);
                     setUrlError(null);
                   }}
-                  onKeyDown={(e) => e.key === 'Enter' && handleUrlSubmit()}
+                  onKeyDown={(e) => {
+                    e.stopPropagation();
+                    e.key === 'Enter' && handleUrlSubmit();
+                  }}
                 />
               </div>
               <Button
