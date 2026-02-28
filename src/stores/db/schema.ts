@@ -113,5 +113,12 @@ export const dbSchemaV46 = {
   attributes: `${common}, rulesetId, title, description, category, type, options, defaultValue, optionsChartRef, optionsChartColumnHeader, min, max, scriptId, moduleId, assetId`,
 };
 
+/** Schema for v47: items have actionIds; inventoryItems have actionIds. */
+export const dbSchemaV47 = {
+  ...dbSchemaV46,
+  items: `${common}, rulesetId, title, description, category, weight, defaultQuantity, stackSize, isContainer, isStorable, isEquippable, isConsumable, inventoryWidth, inventoryHeight, scriptId, moduleId, sprites, assetId, actionIds`,
+  inventoryItems: `${common}, characterId, inventoryId, entityId, quantity, actionIds`,
+};
+
 // Increment on every schema change
-export const dbSchemaVersion = 46;
+export const dbSchemaVersion = 47;

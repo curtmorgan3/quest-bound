@@ -10,6 +10,11 @@ const qbscriptCompletions = [
     type: 'variable',
     info: 'The entity this script is attached to: Owner.Attribute(title), Owner.Action(title), or Owner.Item(title)',
   },
+  {
+    label: 'Caller',
+    type: 'variable',
+    info: 'Entity that fired the action: item instance when action fired from item context menu, else Owner',
+  },
   { label: 'Owner', type: 'variable', info: 'Character that initiated the script' },
   { label: 'Owner.Attribute', type: 'function', info: "Get owner's attribute by name" },
   { label: 'Owner.Item', type: 'function', info: "Get owner's item by name" },

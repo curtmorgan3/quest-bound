@@ -34,6 +34,8 @@ interface ActionLookupProps {
   disabled?: boolean;
   /** Filter lookup by category */
   filterCategory?: string;
+  /** Exclude these action IDs from the list (e.g. when building a multi-select) */
+  excludeIds?: string[];
   label?: string;
   id?: string;
   'data-testid'?: string;
@@ -47,6 +49,7 @@ export const ActionLookup = ({
   value,
   disabled = false,
   filterCategory,
+  excludeIds,
   label = 'Action',
   id,
   'data-testid': dataTestId,
@@ -55,9 +58,13 @@ export const ActionLookup = ({
   const [search, setSearch] = useState('');
   const parentRef = useRef<HTMLDivElement>(null);
   const { actions: allActions } = useActions();
-  const actions = filterCategory
+  let actions = filterCategory
     ? allActions.filter((a) => a.category === filterCategory)
     : allActions;
+  if (excludeIds?.length) {
+    const exclude = new Set(excludeIds);
+    actions = actions.filter((a) => !exclude.has(a.id));
+  }
 
   const selectedAction = value ? actions.find((action) => action.id === value) : undefined;
 

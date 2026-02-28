@@ -166,6 +166,7 @@ export interface UseExecuteActionEventResult {
     eventType: 'on_activate' | 'on_deactivate',
     roll?: RollFn,
     campaignId?: string,
+    callerInventoryItemInstanceId?: string,
   ) => Promise<void>;
   result: any;
   announceMessages: string[];
@@ -193,6 +194,7 @@ export function useExecuteActionEvent(timeout = 10000): UseExecuteActionEventRes
       eventType: 'on_activate' | 'on_deactivate',
       roll?: RollFn,
       campaignId?: string,
+      callerInventoryItemInstanceId?: string,
     ) => {
       setIsExecuting(true);
       setError(null);
@@ -206,6 +208,7 @@ export function useExecuteActionEvent(timeout = 10000): UseExecuteActionEventRes
           roll,
           timeout,
           campaignId,
+          callerInventoryItemInstanceId,
         );
 
         setResult(response.value);

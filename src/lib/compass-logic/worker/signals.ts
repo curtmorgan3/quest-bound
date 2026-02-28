@@ -79,6 +79,8 @@ export interface ExecuteActionEventSignal {
     eventType: 'on_activate' | 'on_deactivate';
     requestId: string;
     campaignId?: string;
+    /** When set (action fired from item context menu), Caller = itemInstanceProxy of this inventory item. */
+    callerInventoryItemInstanceId?: string;
   };
 }
 

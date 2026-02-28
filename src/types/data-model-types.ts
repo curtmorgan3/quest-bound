@@ -300,6 +300,8 @@ export type Item = BaseDetails & {
   mapWidth?: number;
   /** Asset IDs or urls for map sprites (stacked by z-index). */
   sprites?: string[];
+  /** Action IDs from the same ruleset. When an item is added to inventory, these are copied to the inventory item. */
+  actionIds?: string[];
   /** Module origin: ruleset id, source entity id, and module name. */
   moduleId?: string;
   moduleEntityId?: string;
@@ -326,6 +328,8 @@ export type InventoryItem = BaseDetails & {
   isEquipped?: boolean;
   /** Per-instance values keyed by customPropertyId. Instantiated from item's ItemCustomProperties when added to inventory. */
   customProperties?: Record<string, string | number | boolean>;
+  /** Action IDs copied from the item when created. Enables per-instance override in the future. */
+  actionIds?: string[];
 };
 
 /** Entry for a module added to this ruleset (id, name, image of the source module). */

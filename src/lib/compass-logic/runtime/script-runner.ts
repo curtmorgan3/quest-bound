@@ -40,6 +40,8 @@ export interface ScriptExecutionContext {
   entityId?: string;
   /** When script is for an item (entityType 'item'), the inventory item instance id. Self then refers to this instance instead of the first match by name. */
   inventoryItemInstanceId?: string;
+  /** When set (e.g. action fired from item context menu), Caller = itemInstanceProxy of this inventory item. When unset, Caller = Owner. */
+  callerInventoryItemInstanceId?: string;
   /** Optional roll function for script built-in roll(). When set, used instead of default local roll (e.g. from useDiceState). */
   roll?: RollFn;
   /** When set, Owner.Action('name').activate() / .deactivate() can run action event handlers (e.g. from worker or EventHandlerExecutor). */
@@ -502,8 +504,10 @@ export class ScriptRunner {
         for (const item of items) {
           let itemToAdd = item;
           if (item.type === 'item' && item.entityId) {
+            const rulesetItem = await db.items.get(item.entityId);
             const customProperties = await buildItemCustomProperties(db, item.entityId);
-            itemToAdd = { ...item, customProperties };
+            const actionIds = item.actionIds ?? rulesetItem?.actionIds ?? [];
+            itemToAdd = { ...item, customProperties, actionIds };
           } else {
             itemToAdd = { ...item, customProperties: item.customProperties ?? {} };
           }
@@ -663,6 +667,13 @@ export class ScriptRunner {
       this.chartsCache,
       this.itemsCache,
     );
+
+    // Caller: entity that fired the action. When action fired from item context menu, Caller = that item instance; else Caller = Owner.
+    const caller =
+      this.context.callerInventoryItemInstanceId != null
+        ? owner.getItemByInstanceId(this.context.callerInventoryItemInstanceId)
+        : owner;
+    this.evaluator.globalEnv.define('Caller', caller ?? owner);
 
     // Inject into interpreter environment
     this.evaluator.globalEnv.define('Owner', owner);

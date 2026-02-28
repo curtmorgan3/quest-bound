@@ -52,6 +52,7 @@ export const ITEM_FIELD_TYPES: Record<string, FieldType> = {
   inventoryWidth: 'number',
   inventoryHeight: 'number',
   image: 'string',
+  actionIds: 'array',
 };
 
 export const ITEM_COLUMNS: (keyof Item)[] = [
@@ -69,6 +70,7 @@ export const ITEM_COLUMNS: (keyof Item)[] = [
   'inventoryWidth',
   'inventoryHeight',
   'image',
+  'actionIds',
 ];
 
 export const ACTION_FIELD_TYPES: Record<string, FieldType> = {

@@ -116,6 +116,19 @@ export const CharacterPage = ({
     executeActionEvent(actionId, character.id, null, 'on_activate', roll, campaignId);
   };
 
+  const fireActionFromItem = async (actionId: string, inventoryItemId: string) => {
+    if (!character) return;
+    executeActionEvent(
+      actionId,
+      character.id,
+      null,
+      'on_activate',
+      roll,
+      campaignId,
+      inventoryItemId,
+    );
+  };
+
   if (!character) {
     return null;
   }
@@ -144,6 +157,7 @@ export const CharacterPage = ({
         updateInventoryItem: updateItemAndFireEvent,
         removeInventoryItem: removeItemAndFireEvent,
         fireAction,
+        fireActionFromItem,
         consumeItem,
         activateItem,
       }}>

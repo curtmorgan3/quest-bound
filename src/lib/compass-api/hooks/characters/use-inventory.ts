@@ -68,12 +68,18 @@ export const useInventory = (inventoryId: string, characterId: string) => {
     try {
       let customProperties: Record<string, string | number | boolean> =
         data.customProperties ?? {};
+      let actionIds = data.actionIds;
       if (data.type === 'item' && data.entityId) {
         customProperties = await buildItemCustomProperties(db, data.entityId);
+        if (actionIds === undefined) {
+          const item = await db.items.get(data.entityId);
+          actionIds = item?.actionIds ?? [];
+        }
       }
       await db.inventoryItems.add({
         ...data,
         customProperties,
+        actionIds: actionIds ?? [],
         id: crypto.randomUUID(),
         inventoryId: inventory.id,
         createdAt: now,

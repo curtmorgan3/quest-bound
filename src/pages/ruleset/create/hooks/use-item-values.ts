@@ -48,6 +48,7 @@ export const useItemValues = ({
       setSprites(activeItem.sprites ?? []);
       setImage(activeItem.image ?? null);
       setAssetId(activeItem.assetId ?? null);
+      setActionIds(activeItem.actionIds ?? []);
     } else {
       resetAll();
     }
@@ -67,6 +68,7 @@ export const useItemValues = ({
   const [sprites, setSprites] = useState<string[]>([]);
   const [image, setImage] = useState<string | null>(null);
   const [assetId, setAssetId] = useState<string | null>(null);
+  const [actionIds, setActionIds] = useState<string[]>([]);
 
   const resetAll = () => {
     setWeight(0);
@@ -79,6 +81,7 @@ export const useItemValues = ({
     setSprites([]);
     setImage(null);
     setAssetId(null);
+    setActionIds([]);
   };
 
   const itemProperties: Partial<Item> = {
@@ -96,6 +99,7 @@ export const useItemValues = ({
     sprites,
     image,
     assetId,
+    actionIds,
   };
 
   const saveItem = () => {
@@ -144,5 +148,7 @@ export const useItemValues = ({
     setMapHeight,
     setImage,
     setAssetId,
+    actionIds,
+    setActionIds,
   };
 };

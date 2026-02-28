@@ -1,7 +1,7 @@
 import { ImageUpload, Input, Label } from '@/components';
 import { useFeatureFlag } from '@/hooks/use-feature-flag';
-import { useAssets } from '@/lib/compass-api';
-import { Drumstick, Shirt } from 'lucide-react';
+import { ActionLookup, useActions, useAssets } from '@/lib/compass-api';
+import { Drumstick, Shirt, X } from 'lucide-react';
 import { type Dispatch, type SetStateAction } from 'react';
 import { useParams } from 'react-router-dom';
 
@@ -34,6 +34,8 @@ interface ItemCreateProps {
   setSprites: Dispatch<SetStateAction<string[]>>;
   setImage: Dispatch<SetStateAction<string | null>>;
   setAssetId: Dispatch<SetStateAction<string | null>>;
+  actionIds: string[];
+  setActionIds: Dispatch<SetStateAction<string[]>>;
 }
 
 export const ItemCreate = ({
@@ -65,10 +67,13 @@ export const ItemCreate = ({
   setSprites,
   setImage,
   setAssetId,
+  actionIds,
+  setActionIds,
 }: ItemCreateProps) => {
   const { rulesetId } = useParams();
   const campaignsEnabled = useFeatureFlag('campaigns', false);
   const { assets, deleteAsset } = useAssets();
+  const { actions } = useActions();
   const spriteAssetId = sprites[0] ?? null;
 
   const getImageFromAssetId = (id: string | null) => {
@@ -263,6 +268,40 @@ export const ItemCreate = ({
           />
         </div>
       )}
+
+      <div className='flex flex-col gap-2'>
+        <Label className='text-muted-foreground'>Associated Actions</Label>
+        <p className='text-sm text-muted-foreground'>
+          Actions shown as buttons in the item context menu. Only actions with a script are shown.
+        </p>
+        {actionIds.length > 0 && (
+          <ul className='flex flex-col gap-1 mb-2'>
+            {actionIds.map((id) => {
+              const action = actions.find((a) => a.id === id);
+              return (
+                <li
+                  key={id}
+                  className='flex items-center justify-between gap-2 rounded-md border px-2 py-1.5 text-sm'>
+                  <span>{action?.title ?? id}</span>
+                  <button
+                    type='button'
+                    onClick={() => setActionIds((prev) => prev.filter((x) => x !== id))}
+                    className='text-muted-foreground hover:text-foreground p-0.5 rounded'>
+                    <X size={14} />
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+        <ActionLookup
+          label='Add action'
+          placeholder='Add action...'
+          excludeIds={actionIds}
+          onSelect={(action) => setActionIds((prev) => (prev.includes(action.id) ? prev : [...prev, action.id]))}
+          data-testid='item-create-action-lookup'
+        />
+      </div>
     </div>
   );
 };

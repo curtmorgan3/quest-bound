@@ -63,9 +63,16 @@ export const ItemContextMenu = ({
 
   const inventoryAttribute = characterAttributes.find((attr) => attr.attributeId === item.entityId);
   const inventoryAction = actions.find((action) => action.id === item.entityId);
-  const inventoryItem = items.find((invItem) => invItem.id === item.entityId);
+  const rulesetItem = items.find((i) => i.id === item.entityId);
 
-  const isActionOrItemAndHasScript = Boolean(inventoryAction?.scriptId ?? inventoryItem?.scriptId);
+  const isActionOrItemAndHasScript = Boolean(inventoryAction?.scriptId ?? rulesetItem?.scriptId);
+
+  // For type 'item': actions from item.actionIds (or ruleset item fallback). Only those with scriptId.
+  const itemActionIds =
+    item.type === 'item' ? (item.actionIds ?? rulesetItem?.actionIds ?? []) : [];
+  const itemActions = itemActionIds
+    .map((id) => actions.find((a) => a.id === id))
+    .filter((a): a is NonNullable<typeof a> => Boolean(a?.scriptId));
 
   const [quantity, setQuantity] = useState(item.quantity);
 
@@ -551,7 +558,7 @@ export const ItemContextMenu = ({
         </div>
       )}
 
-      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+      <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
         <button
           onClick={onRemove}
           style={{
@@ -586,6 +593,41 @@ export const ItemContextMenu = ({
             <Zap size={16} />
           </button>
         )}
+        {itemActions.map((action) => (
+          <button
+            key={action.id}
+            type='button'
+            onClick={() => characterContext?.fireActionFromItem(action.id, item.id)}
+            onPointerDown={(e) => e.stopPropagation()}
+            title={action.title}
+            style={{
+              ...activateButtonStyle,
+              padding: action.image ? 0 : '6px 10px',
+              width: action.image ? 34 : undefined,
+              height: action.image ? 34 : undefined,
+              minWidth: action.image ? 34 : undefined,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: 12,
+            }}>
+            {action.image ? (
+              <img
+                src={action.image}
+                alt={action.title}
+                draggable={false}
+                style={{
+                  width: 32,
+                  height: 32,
+                  objectFit: 'cover',
+                  borderRadius: 4,
+                }}
+              />
+            ) : (
+              action.title
+            )}
+          </button>
+        ))}
       </div>
     </div>
   );

@@ -49,6 +49,7 @@ export const RulesetPageEditorPage = () => {
         updateInventoryItem: () => {},
         removeInventoryItem: () => {},
         fireAction: () => {},
+        fireActionFromItem: () => {},
         consumeItem: () => {},
         activateItem: () => {},
       }}>

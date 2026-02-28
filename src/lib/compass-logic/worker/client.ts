@@ -445,6 +445,7 @@ export class QBScriptClient {
   /**
    * Execute an action event handler (on_activate, on_deactivate).
    * Uses EventHandlerExecutor to run only the specified handler within the action script.
+   * @param callerInventoryItemInstanceId - When set (action fired from item context menu), Caller = itemInstanceProxy of this inventory item.
    */
   async executeActionEvent(
     actionId: string,
@@ -454,6 +455,7 @@ export class QBScriptClient {
     roll?: RollFn,
     timeout = 10000,
     campaignId?: string,
+    callerInventoryItemInstanceId?: string,
   ): Promise<{
     value: any;
     announceMessages: string[];
@@ -466,7 +468,15 @@ export class QBScriptClient {
       return await this.sendSignal(
         {
           type: 'EXECUTE_ACTION_EVENT',
-          payload: { actionId, characterId, targetId, eventType, requestId, campaignId },
+          payload: {
+            actionId,
+            characterId,
+            targetId,
+            eventType,
+            requestId,
+            campaignId,
+            callerInventoryItemInstanceId,
+          },
         },
         requestId,
         timeout,

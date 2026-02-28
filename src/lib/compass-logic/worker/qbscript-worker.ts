@@ -659,6 +659,7 @@ async function handleExecuteActionEvent(payload: {
   eventType: 'on_activate' | 'on_deactivate';
   requestId: string;
   campaignId?: string;
+  callerInventoryItemInstanceId?: string;
   roll?: RollFn;
 }): Promise<void> {
   try {
@@ -684,6 +685,7 @@ async function handleExecuteActionEvent(payload: {
       payload.eventType,
       rollFn,
       payload.campaignId,
+      payload.callerInventoryItemInstanceId,
     );
 
     const script = await db.scripts
@@ -753,6 +755,7 @@ async function handleExecuteItemEvent(payload: {
   eventType: string;
   requestId: string;
   campaignId?: string;
+  inventoryItemInstanceId?: string;
 }): Promise<void> {
   try {
     const item = await db.items.get(payload.itemId);

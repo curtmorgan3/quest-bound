@@ -50,6 +50,8 @@ type CharacterContext = {
     data: Omit<InventoryItem, 'id' | 'createdAt' | 'updatedAt' | 'inventoryId'>,
   ) => void;
   fireAction: (actionId: string) => void;
+  /** Fire action with Caller = itemInstanceProxy of that inventory item (e.g. from item context menu). */
+  fireActionFromItem: (actionId: string, inventoryItemId: string) => void;
   consumeItem: (id: string) => void;
   activateItem: (id: string) => void;
 };

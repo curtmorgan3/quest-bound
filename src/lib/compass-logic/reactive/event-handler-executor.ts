@@ -188,6 +188,8 @@ export class EventHandlerExecutor {
    * @param targetId - Optional ID of target character
    * @param eventType - Type of event (on_activate, on_deactivate)
    * @param roll - Function to handle dice rolling
+   * @param campaignId - Optional campaign id for Owner.location etc.
+   * @param callerInventoryItemInstanceId - When set (action fired from item context menu), Caller = itemInstanceProxy of this inventory item. When unset, Caller = Owner.
    * @returns Execution result
    */
   async executeActionEvent(
@@ -197,6 +199,7 @@ export class EventHandlerExecutor {
     eventType: 'on_activate' | 'on_deactivate',
     roll?: RollFn,
     campaignId?: string,
+    callerInventoryItemInstanceId?: string,
   ): Promise<EventHandlerResult> {
     // Get action
     const action = await this.db.actions.get(actionId);
@@ -258,6 +261,7 @@ export class EventHandlerExecutor {
         entityId: action.id,
         campaignId,
         roll,
+        callerInventoryItemInstanceId,
         // Only allow Owner.Action().activate() at top level to avoid infinite re-entrancy
         ...(actionEventDepth === 1 && {
           executeActionEvent: (actionId, ownerId, targetIdForAction, eventTypeForAction) =>
@@ -268,6 +272,7 @@ export class EventHandlerExecutor {
               eventTypeForAction,
               roll,
               campaignId,
+              undefined, // Nested call: Caller = Owner
             ),
         }),
       };
