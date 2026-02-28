@@ -8,12 +8,14 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   Button,
+  Checkbox,
   Dialog,
   DialogContent,
   DialogFooter,
   DialogHeader,
   DialogTitle,
   Input,
+  Label,
   Select,
   SelectContent,
   SelectItem,
@@ -25,9 +27,26 @@ import { useAssets } from '@/lib/compass-api';
 import { clearAssetReferences, db, getAssetReferenceCount } from '@/stores';
 import type { Asset } from '@/types';
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { Pencil, Plus, Trash } from 'lucide-react';
+import { Loader2, Pencil, Plus, Trash, Upload } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
+
+function dedupeFileNames(files: File[]): File[] {
+  const usedNames = new Set<string>();
+  return files.map((file) => {
+    const base = file.name.replace(/\.[^.]+$/, '');
+    const ext = file.name.match(/\.[^.]+$/)?.[0] ?? '';
+    let finalName = file.name;
+    let n = 2;
+    while (usedNames.has(finalName)) {
+      finalName = `${base} (${n})${ext}`;
+      n += 1;
+    }
+    usedNames.add(finalName);
+    if (finalName === file.name) return file;
+    return new File([file], finalName, { type: file.type });
+  });
+}
 
 const CARD_WIDTH = 180;
 const CARD_GAP = 16;
@@ -36,7 +55,9 @@ const ALL_CATEGORIES = 'all';
 
 export function AssetsPage() {
   const { rulesetId } = useParams<{ rulesetId: string }>();
-  const { assets, updateAsset, deleteAsset } = useAssets(rulesetId ?? undefined);
+  const { assets, createAsset, updateAsset, deleteAsset } = useAssets(rulesetId ?? undefined);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
   const [editingAsset, setEditingAsset] = useState<Asset | null>(null);
   const [editFilename, setEditFilename] = useState('');
   const [editUrl, setEditUrl] = useState('');
@@ -99,8 +120,14 @@ export function AssetsPage() {
     }
   };
 
+  const doNotAskAgain = localStorage.getItem('qb.confirmOnDelete') === 'false';
+
   const handleDeleteClick = async (id: string, filename: string) => {
     const refCount = await getAssetReferenceCount(db, id);
+    if (doNotAskAgain && refCount === 0) {
+      await deleteAsset(id);
+      return;
+    }
     setDeleteConfirm({ id, filename, refCount });
   };
 
@@ -111,6 +138,26 @@ export function AssetsPage() {
     }
     await deleteAsset(deleteConfirm.id);
     setDeleteConfirm(null);
+  };
+
+  const handleUploadClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files?.length) return;
+    const fileList = Array.from(files);
+    e.target.value = '';
+    setUploading(true);
+    try {
+      const deduped = dedupeFileNames(fileList);
+      for (const file of deduped) {
+        await createAsset(file);
+      }
+    } finally {
+      setUploading(false);
+    }
   };
 
   const sortedAssets = useMemo(
@@ -232,21 +279,41 @@ export function AssetsPage() {
     <PageWrapper
       title='Assets'
       headerActions={
-        <ImageUpload
-          rulesetId={rulesetId ?? undefined}
-          hideSelectAsset
-          trigger={({ openDialog }) => (
-            <Button size='sm' onClick={openDialog} data-testid='assets-create-button'>
-              <Plus className='h-4 w-4' />
-              Create Asset
-            </Button>
-          )}
-        />
+        <div className='flex gap-2'>
+          <ImageUpload
+            rulesetId={rulesetId ?? undefined}
+            hideSelectAsset
+            trigger={({ openDialog }) => (
+              <Button size='sm' onClick={openDialog} data-testid='assets-create-button'>
+                <Plus className='h-4 w-4' />
+                Create Asset
+              </Button>
+            )}
+          />
+          <Button
+            size='sm'
+            variant='outline'
+            onClick={handleUploadClick}
+            disabled={uploading}
+            data-testid='assets-upload-button'>
+            {uploading ? (
+              <Loader2 className='h-4 w-4 animate-spin' />
+            ) : (
+              <Upload className='h-4 w-4' />
+            )}
+            {uploading ? 'Uploading…' : 'Upload'}
+          </Button>
+          <input
+            ref={fileInputRef}
+            type='file'
+            accept='image/*'
+            multiple
+            className='hidden'
+            onChange={handleFileChange}
+          />
+        </div>
       }>
       <div className='flex flex-col gap-4'>
-        <p className='text-sm text-muted-foreground'>
-          Images and URL-backed assets for this ruleset. Names must be unique within the ruleset.
-        </p>
         <div className='flex flex-wrap items-center gap-2'>
           <Input
             className='max-w-md'
@@ -269,7 +336,7 @@ export function AssetsPage() {
           </Select>
         </div>
         {sortedAssets.length === 0 ? (
-          <p className='text-muted-foreground'>No assets in this ruleset yet.</p>
+          <p className='text-muted-foreground text-sm'>No assets in this ruleset</p>
         ) : filteredAssets.length === 0 ? (
           <p className='text-muted-foreground'>No assets match the current filters.</p>
         ) : (
@@ -394,6 +461,17 @@ export function AssetsPage() {
               )}
             </AlertDialogDescription>
           </AlertDialogHeader>
+          <div className='flex items-center gap-2 py-2'>
+            <Checkbox
+              id='asset-delete-do-not-ask'
+              onCheckedChange={(checked) =>
+                localStorage.setItem('qb.confirmOnDelete', String(!checked))
+              }
+            />
+            <Label htmlFor='asset-delete-do-not-ask' className='text-sm font-normal cursor-pointer'>
+              Do not ask again
+            </Label>
+          </div>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
