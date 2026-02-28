@@ -8,13 +8,18 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   Button,
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
   Input,
 } from '@/components';
-import { PageWrapper } from '@/components/composites';
+import { ImageUpload, PageWrapper } from '@/components/composites';
 import { useAssets } from '@/lib/compass-api';
 import { clearAssetReferences, db, getAssetReferenceCount } from '@/stores';
-import { useVirtualizer } from '@tanstack/react-virtual';
 import type { Asset } from '@/types';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import { Pencil, Trash } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
@@ -26,8 +31,9 @@ const ROW_HEIGHT = 170;
 export function AssetsPage() {
   const { rulesetId } = useParams<{ rulesetId: string }>();
   const { assets, updateAsset, deleteAsset } = useAssets(rulesetId ?? undefined);
-  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingAsset, setEditingAsset] = useState<Asset | null>(null);
   const [editFilename, setEditFilename] = useState('');
+  const [editUrl, setEditUrl] = useState('');
   const [editError, setEditError] = useState<string | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<{
     id: string;
@@ -35,28 +41,48 @@ export function AssetsPage() {
     refCount: number;
   } | null>(null);
 
-  const handleStartRename = (id: string, filename: string) => {
-    setEditingId(id);
-    setEditFilename(filename);
+  const handleOpenEdit = (asset: Asset) => {
+    setEditingAsset(asset);
+    setEditFilename(asset.filename);
+    setEditUrl(asset.type === 'url' ? asset.data : '');
     setEditError(null);
   };
 
-  const handleSaveRename = async () => {
-    if (!editingId || !editFilename.trim()) return;
+  const handleCloseEdit = () => {
+    setEditingAsset(null);
+    setEditFilename('');
+    setEditUrl('');
+    setEditError(null);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingAsset || !editFilename.trim()) return;
     setEditError(null);
     try {
-      await updateAsset(editingId, { filename: editFilename.trim() });
-      setEditingId(null);
-      setEditFilename('');
+      const updates: Partial<Asset> = { filename: editFilename.trim() };
+      if (editingAsset.type === 'url' && editUrl.trim()) {
+        updates.data = editUrl.trim();
+      }
+      await updateAsset(editingAsset.id, updates);
+      handleCloseEdit();
     } catch (e) {
-      setEditError(e instanceof Error ? e.message : 'Failed to rename');
+      setEditError(e instanceof Error ? e.message : 'Failed to save');
     }
   };
 
-  const handleCancelRename = () => {
-    setEditingId(null);
-    setEditFilename('');
-    setEditError(null);
+  const handleSwapImage = async (newAssetId: string) => {
+    if (!editingAsset) return;
+    const newAsset = await db.assets.get(newAssetId);
+    if (!newAsset) return;
+    try {
+      await updateAsset(editingAsset.id, { data: newAsset.data, type: newAsset.type });
+      await deleteAsset(newAssetId);
+      setEditingAsset((prev) =>
+        prev ? { ...prev, data: newAsset.data, type: newAsset.type } : null,
+      );
+    } catch (e) {
+      setEditError(e instanceof Error ? e.message : 'Failed to swap image');
+    }
   };
 
   const handleDeleteClick = async (id: string, filename: string) => {
@@ -74,7 +100,10 @@ export function AssetsPage() {
   };
 
   const sortedAssets = useMemo(
-    () => [...assets].sort((a, b) => a.filename.localeCompare(b.filename, undefined, { sensitivity: 'base' })),
+    () =>
+      [...assets].sort((a, b) =>
+        a.filename.localeCompare(b.filename, undefined, { sensitivity: 'base' }),
+      ),
     [assets],
   );
 
@@ -83,9 +112,7 @@ export function AssetsPage() {
 
   const columnCount = useMemo(() => {
     const w =
-      containerWidth > 0
-        ? containerWidth
-        : (typeof window !== 'undefined' ? window.innerWidth : 800);
+      containerWidth > 0 ? containerWidth : typeof window !== 'undefined' ? window.innerWidth : 800;
     return Math.max(1, Math.floor((w + CARD_GAP) / (CARD_WIDTH + CARD_GAP)));
   }, [containerWidth]);
 
@@ -132,9 +159,7 @@ export function AssetsPage() {
   }, [rowCount, columnCount, virtualizer]);
 
   const renderCard = (asset: Asset) => (
-    <div
-      key={asset.id}
-      className='flex w-[180px] flex-col gap-1.5 rounded-lg border bg-card p-2'>
+    <div key={asset.id} className='flex w-[180px] flex-col gap-1.5 rounded-lg border bg-card p-2'>
       <div className='h-[120px] shrink-0 overflow-hidden rounded bg-muted'>
         {asset.data && (asset.type === 'url' || asset.type.startsWith('image/')) ? (
           <img
@@ -148,64 +173,27 @@ export function AssetsPage() {
           </div>
         )}
       </div>
-      {editingId === asset.id ? (
-        <div className='flex flex-col gap-1'>
-          <Input
-            value={editFilename}
-            onChange={(e) => {
-              setEditFilename(e.target.value);
-              setEditError(null);
-            }}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') handleSaveRename();
-              if (e.key === 'Escape') handleCancelRename();
-            }}
-            className='h-7 text-xs'
-          />
-          {editError && <p className='text-xs text-destructive'>{editError}</p>}
-          <div className='flex gap-1'>
-            <Button
-              size='sm'
-              variant='secondary'
-              className='h-7 flex-1 text-xs'
-              onClick={handleCancelRename}>
-              Cancel
-            </Button>
-            <Button
-              size='sm'
-              className='h-7 flex-1 text-xs'
-              onClick={handleSaveRename}
-              disabled={!editFilename.trim()}>
-              Save
-            </Button>
-          </div>
+      <div className='flex items-center justify-between gap-0.5'>
+        <span className='min-w-0 truncate text-xs font-medium' title={asset.filename}>
+          {asset.filename}
+        </span>
+        <div className='flex shrink-0 gap-0.5'>
+          <Button
+            size='icon'
+            variant='ghost'
+            className='h-6 w-6'
+            onClick={() => handleOpenEdit(asset)}>
+            <Pencil className='h-3 w-3' />
+          </Button>
+          <Button
+            size='icon'
+            variant='ghost'
+            className='h-6 w-6 text-destructive hover:text-destructive'
+            onClick={() => handleDeleteClick(asset.id, asset.filename)}>
+            <Trash className='h-3 w-3' />
+          </Button>
         </div>
-      ) : (
-        <div className='flex items-center justify-between gap-0.5'>
-          <span className='min-w-0 truncate text-xs font-medium' title={asset.filename}>
-            {asset.filename}
-          </span>
-          <div className='flex shrink-0 gap-0.5'>
-            <Button
-              size='icon'
-              variant='ghost'
-              className='h-6 w-6'
-              onClick={() => handleStartRename(asset.id, asset.filename)}>
-              <Pencil className='h-3 w-3' />
-            </Button>
-            <Button
-              size='icon'
-              variant='ghost'
-              className='h-6 w-6 text-destructive hover:text-destructive'
-              onClick={() => handleDeleteClick(asset.id, asset.filename)}>
-              <Trash className='h-3 w-3' />
-            </Button>
-          </div>
-        </div>
-      )}
-      <span className='text-[10px] text-muted-foreground'>
-        {asset.type === 'url' ? 'URL' : asset.type}
-      </span>
+      </div>
     </div>
   );
 
@@ -221,7 +209,7 @@ export function AssetsPage() {
           <div
             ref={scrollRef}
             className='w-full overflow-auto rounded-md border'
-            style={{ height: 'calc(100vh - 220px)', contain: 'strict' }}>
+            style={{ height: 'calc(100vh - 100px)', contain: 'strict' }}>
             <div
               style={{
                 height: `${virtualizer.getTotalSize()}px`,
@@ -248,6 +236,75 @@ export function AssetsPage() {
           </div>
         )}
       </div>
+
+      <Dialog open={!!editingAsset} onOpenChange={(open) => !open && handleCloseEdit()}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit asset</DialogTitle>
+          </DialogHeader>
+          {editingAsset && (
+            <div className='flex flex-col gap-4'>
+              <div className='flex flex-col gap-2'>
+                <span className='text-sm font-medium'>Image</span>
+                <ImageUpload
+                  image={
+                    editingAsset.data &&
+                    (editingAsset.type === 'url' || editingAsset.type.startsWith('image/'))
+                      ? editingAsset.data
+                      : undefined
+                  }
+                  alt={editingAsset.filename}
+                  rulesetId={rulesetId ?? undefined}
+                  onUpload={handleSwapImage}
+                />
+              </div>
+              {editingAsset.type === 'url' && (
+                <div className='flex flex-col gap-2'>
+                  <label htmlFor='edit-url' className='text-sm font-medium'>
+                    URL
+                  </label>
+                  <Input
+                    id='edit-url'
+                    type='url'
+                    value={editUrl}
+                    onChange={(e) => {
+                      setEditUrl(e.target.value);
+                      setEditError(null);
+                    }}
+                    placeholder='https://…'
+                  />
+                </div>
+              )}
+              <div className='flex flex-col gap-2'>
+                <label htmlFor='edit-filename' className='text-sm font-medium'>
+                  Name
+                </label>
+                <Input
+                  id='edit-filename'
+                  value={editFilename}
+                  onChange={(e) => {
+                    setEditFilename(e.target.value);
+                    setEditError(null);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleSaveEdit();
+                    if (e.key === 'Escape') handleCloseEdit();
+                  }}
+                />
+                {editError && <p className='text-sm text-destructive'>{editError}</p>}
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant='secondary' onClick={handleCloseEdit}>
+              Cancel
+            </Button>
+            <Button onClick={handleSaveEdit} disabled={!editingAsset || !editFilename.trim()}>
+              Save
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <AlertDialog open={!!deleteConfirm} onOpenChange={() => setDeleteConfirm(null)}>
         <AlertDialogContent>
