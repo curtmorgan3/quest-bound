@@ -10,6 +10,9 @@ export type SetItemCustomPropertyFn = (
   value: string | number | boolean,
 ) => void;
 
+/** Callback to remove this item instance from the character's inventory (e.g. when Self.destroy() is called in an item script). */
+export type DestroyItemInstanceFn = () => void;
+
 /** Lookup to resolve label -> customPropertyId and customPropertyId -> label for script runtime. */
 export type CustomPropertyLookup = {
   resolveLabelToId: (label: string) => string | undefined;
@@ -54,6 +57,7 @@ export class ItemInstanceProxy implements StructuredCloneSafe {
   private readonly customPropertyLookup: CustomPropertyLookup;
   private readonly customProperties: CustomProperty[];
   private readonly onSetCustomProperty?: SetItemCustomPropertyFn;
+  private readonly onDestroy?: DestroyItemInstanceFn;
 
   constructor(
     inventoryItem: InventoryItem,
@@ -61,12 +65,22 @@ export class ItemInstanceProxy implements StructuredCloneSafe {
     customPropertyLookup: CustomPropertyLookup,
     customProperties: CustomProperty[],
     onSetCustomProperty?: SetItemCustomPropertyFn,
+    onDestroy?: DestroyItemInstanceFn,
   ) {
     this.inventoryItem = inventoryItem;
     this.item = item;
     this.customPropertyLookup = customPropertyLookup;
     this.customProperties = customProperties;
     this.onSetCustomProperty = onSetCustomProperty;
+    this.onDestroy = onDestroy;
+  }
+
+  /**
+   * Remove this item instance from the character's inventory.
+   * Only available when Self is an item instance (e.g. in item event scripts). Calls Owner.removeItem for this stack.
+   */
+  destroy(): void {
+    this.onDestroy?.();
   }
 
   get title(): string {
@@ -174,6 +188,7 @@ export class ItemInstanceProxy implements StructuredCloneSafe {
 /**
  * Creates an ItemInstanceProxy for a single character inventory item instance.
  * Use getProperty(name) and setProperty(name, value) for custom properties (aligned with CharacterAccessor).
+ * When onDestroy is provided (e.g. from CharacterAccessor.Item()), Self.destroy() in item scripts will remove that item from the character.
  * The result is serialized when sent across the worker boundary via prepareForStructuredClone().
  */
 export function createItemInstanceProxy(
@@ -181,7 +196,15 @@ export function createItemInstanceProxy(
   item: Item,
   customProperties: CustomProperty[],
   onSetCustomProperty?: SetItemCustomPropertyFn,
+  onDestroy?: DestroyItemInstanceFn,
 ): ItemInstanceProxy {
   const lookup = createCustomPropertyLookup(customProperties);
-  return new ItemInstanceProxy(inventoryItem, item, lookup, customProperties, onSetCustomProperty);
+  return new ItemInstanceProxy(
+    inventoryItem,
+    item,
+    lookup,
+    customProperties,
+    onSetCustomProperty,
+    onDestroy,
+  );
 }
