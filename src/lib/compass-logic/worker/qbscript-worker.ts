@@ -239,6 +239,81 @@ function createOnAttributesModified(
 }
 
 // ============================================================================
+// Reactive chain helper
+// ============================================================================
+
+/**
+ * Run the full reactive chain for a set of attribute IDs. When an attribute script
+ * modifies another attribute, scripts that depend on the modified attribute must
+ * run too. This helper repeatedly calls onAttributeChange for each modified ID
+ * until no new attributes are modified (so e.g. a -> b -> c all refire).
+ */
+async function runReactiveChainForModifiedAttributes(
+  initialAttributeIds: string[],
+  characterId: string,
+  rulesetId: string,
+  reactiveOptions: Parameters<ReactiveExecutor['onAttributeChange']>[3],
+): Promise<{
+  allModifiedIds: string[];
+  scriptsExecuted: string[];
+  executionCount: number;
+  lastError?: ReactiveExecutionResult['error'];
+}> {
+  if (!reactiveExecutor) {
+    reactiveExecutor = new ReactiveExecutor(db);
+  }
+  const allModifiedIds = new Set<string>(initialAttributeIds);
+  const scriptsExecuted: string[] = [];
+  let executionCount = 0;
+  const queue = [...initialAttributeIds];
+  const processed = new Set<string>();
+
+  while (queue.length > 0) {
+    const attributeId = queue.shift()!;
+    if (processed.has(attributeId)) continue;
+    processed.add(attributeId);
+
+    try {
+      const result = await reactiveExecutor.onAttributeChange(
+        attributeId,
+        characterId,
+        rulesetId,
+        reactiveOptions,
+      );
+      if (!result.success) {
+        return {
+          allModifiedIds: Array.from(allModifiedIds),
+          scriptsExecuted,
+          executionCount,
+          lastError: result.error as Error | undefined,
+        };
+      }
+      scriptsExecuted.push(...(result.scriptsExecuted ?? []));
+      executionCount += result.executionCount ?? 0;
+      for (const id of result.modifiedAttributeIds ?? []) {
+        allModifiedIds.add(id);
+        if (!processed.has(id)) queue.push(id);
+      }
+    } catch (reactiveError) {
+      console.warn(
+        '[QBScript] Reactive execution failed for attribute',
+        attributeId,
+        reactiveError,
+      );
+    }
+  }
+
+  return {
+    allModifiedIds: Array.from(allModifiedIds),
+    scriptsExecuted,
+    executionCount,
+  };
+}
+
+// Need ReactiveExecutionResult for the return type
+type ReactiveExecutionResult = Awaited<ReturnType<ReactiveExecutor['onAttributeChange']>>;
+
+// ============================================================================
 // Signal Handlers
 // ============================================================================
 
@@ -295,14 +370,11 @@ async function handleExecuteScript(payload: ExecuteScriptPayload): Promise<void>
       });
     } else {
       // Trigger reactive scripts for any attributes modified by this script (e.g. action script
-      // changing an attribute). The main thread's Dexie hooks only run for updates from the main
-      // thread, so when the worker updates characterAttributes we must run the dependency chain here.
-      const allModifiedIds = new Set<string>(result.modifiedAttributeIds ?? []);
-      const modifiedIds = result.modifiedAttributeIds ?? [];
-      if (modifiedIds.length > 0) {
-        if (!reactiveExecutor) {
-          reactiveExecutor = new ReactiveExecutor(db);
-        }
+      // changing an attribute). Run the full chain so when an attribute script changes another
+      // attribute, downstream dependencies refire (e.g. a's script sets b -> c's script runs).
+      const directModifiedIds = result.modifiedAttributeIds ?? [];
+      let allModifiedIds = new Set<string>(directModifiedIds);
+      if (directModifiedIds.length > 0) {
         const reactiveOptions = {
           executeActionEvent: (
             actionId: string,
@@ -312,23 +384,13 @@ async function handleExecuteScript(payload: ExecuteScriptPayload): Promise<void>
           ) => executor.executeActionEvent(actionId, characterId, targetId, eventType, rollFn),
           roll: rollFn,
         };
-        for (const attributeId of modifiedIds) {
-          try {
-            const reactiveResult = await reactiveExecutor.onAttributeChange(
-              attributeId,
-              payload.characterId,
-              payload.rulesetId,
-              reactiveOptions,
-            );
-            (reactiveResult.modifiedAttributeIds ?? []).forEach((id) => allModifiedIds.add(id));
-          } catch (reactiveError) {
-            console.warn(
-              '[QBScript] Reactive execution failed for attribute',
-              attributeId,
-              reactiveError,
-            );
-          }
-        }
+        const chainResult = await runReactiveChainForModifiedAttributes(
+          directModifiedIds,
+          payload.characterId,
+          payload.rulesetId,
+          reactiveOptions,
+        );
+        chainResult.allModifiedIds.forEach((id) => allModifiedIds.add(id));
       }
 
       const modifiedAttributeIds = Array.from(allModifiedIds);
@@ -443,37 +505,34 @@ async function handleValidateScript(payload: {
 
 async function handleAttributeChanged(payload: AttributeChangedPayload): Promise<void> {
   try {
-    // Lazy initialize reactive executor
-    if (!reactiveExecutor) {
-      reactiveExecutor = new ReactiveExecutor(db);
-    }
-
     const rollFn: RollFn = (expression: string) =>
       rollBridge.requestRoll(expression, payload.requestId);
     let executor: EventHandlerExecutor;
     executor = new EventHandlerExecutor(db, createOnAttributesModified(rollFn, () => executor));
 
-    const result = await reactiveExecutor.onAttributeChange(
-      payload.attributeId,
+    const reactiveOptions = {
+      ...(payload.options || {}),
+      campaignId: payload.campaignId,
+      executeActionEvent: (actionId: string, characterId: string, targetId: string | null, eventType: 'on_activate' | 'on_deactivate') =>
+        executor.executeActionEvent(actionId, characterId, targetId, eventType, rollFn, payload.campaignId),
+      roll: rollFn,
+    };
+
+    // Run full reactive chain so when attribute a's script changes b, scripts depending on b (e.g. c) refire
+    const chainResult = await runReactiveChainForModifiedAttributes(
+      [payload.attributeId],
       payload.characterId,
       payload.rulesetId,
-      {
-        ...(payload.options || {}),
-        campaignId: payload.campaignId,
-        executeActionEvent: (actionId, characterId, targetId, eventType) =>
-          executor.executeActionEvent(actionId, characterId, targetId, eventType, rollFn, payload.campaignId),
-        roll: rollFn,
-      },
+      reactiveOptions,
     );
 
-    if (result.success) {
-      const modifiedAttributeIds = result.modifiedAttributeIds ?? [];
-      if (modifiedAttributeIds.length > 0) {
+    if (!chainResult.lastError) {
+      if (chainResult.allModifiedIds.length > 0) {
         sendSignal({
           type: 'ATTRIBUTES_MODIFIED_BY_SCRIPT',
           payload: {
             characterId: payload.characterId,
-            attributeIds: modifiedAttributeIds,
+            attributeIds: chainResult.allModifiedIds,
           } satisfies AttributesModifiedByScriptPayload,
         });
       }
@@ -482,8 +541,8 @@ async function handleAttributeChanged(payload: AttributeChangedPayload): Promise
         payload: {
           requestId: payload.requestId,
           result: {
-            scriptsExecuted: result.scriptsExecuted,
-            executionCount: result.executionCount,
+            scriptsExecuted: chainResult.scriptsExecuted,
+            executionCount: chainResult.executionCount,
           },
           announceMessages: [],
           logMessages: [],
@@ -492,8 +551,8 @@ async function handleAttributeChanged(payload: AttributeChangedPayload): Promise
       });
     } else {
       const failedScriptId =
-        result.scriptsExecuted.length > 0
-          ? result.scriptsExecuted[result.scriptsExecuted.length - 1]
+        chainResult.scriptsExecuted.length > 0
+          ? chainResult.scriptsExecuted[chainResult.scriptsExecuted.length - 1]
           : undefined;
       const script = failedScriptId ? await db.scripts.get(failedScriptId) : null;
       sendSignal({
@@ -501,8 +560,8 @@ async function handleAttributeChanged(payload: AttributeChangedPayload): Promise
         payload: {
           requestId: payload.requestId,
           error: {
-            message: result.error?.message || 'Unknown error',
-            stackTrace: result.error?.stack,
+            message: chainResult.lastError?.message || 'Unknown error',
+            stackTrace: chainResult.lastError?.stack,
           },
           scriptId: failedScriptId,
           scriptName: script?.name,
