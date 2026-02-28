@@ -127,24 +127,10 @@ export const ItemCreate = ({
             rulesetId={rulesetId}
           />
         </div>
-        <div className='flex flex-col gap-4 justify-center items-center'>
+        <div className='flex flex-col gap-4 justify-center items-center w-[100%]'>
           <Label className='text-muted-foreground'>Properties</Label>
-          <div className='flex flex-row gap-4 flex-1 items-center w-[80%]'>
-            <div className='flex flex-col items-start h-full gap-4'>
-              {/* <div
-              className='flex flex-col gap-2 items-center cursor-pointer'
-              data-testid='item-create-container'
-              onClick={() => setIsContainer((prev) => !prev)}>
-              <Label htmlFor='is-container'>Container</Label>
-              <PackageOpen className={isContainer ? 'text-primary' : ''} />
-            </div>
-            <div
-              className='flex flex-col gap-2 items-center cursor-pointer'
-              data-testid='item-create-storable'
-              onClick={() => setIsStorable((prev) => !prev)}>
-              <Label htmlFor='is-storable'>Storable</Label>
-              <Boxes className={isStorable ? 'text-primary' : ''} />
-            </div> */}
+          <div className='flex flex-row gap-4 flex-1 items-start w-[100%] justify-between'>
+            <div className='flex flex-col items-start h-full gap-4 w-[100px]'>
               <div
                 data-testid='item-create-equippable'
                 className='flex flex-col gap-2 items-center cursor-pointer'
@@ -162,8 +148,8 @@ export const ItemCreate = ({
               </div>
             </div>
 
-            <div className='flex gap-4 flex-wrap justify-end'>
-              <div className='flex flex-col gap-4 w-[80px]'>
+            <div className='flex flex-col gap-2 justify-end w-[120px]'>
+              <div className='flex flex-col gap-1 w-[80px]'>
                 <Label>Weight</Label>
                 <Input
                   type='number'
@@ -172,16 +158,16 @@ export const ItemCreate = ({
                   onChange={(e) => setWeight(parseFloat(e.target.value))}
                 />
               </div>
-              <div className='flex flex-col gap-4 w-[120px]'>
+              <div className='flex flex-col gap-1 w-[120px]'>
                 <Label>Default Quantity</Label>
                 <Input
                   type='number'
-                  className='w-[120px]'
+                  className='w-[80px]'
                   value={defaultQuantity}
                   onChange={(e) => setDefaultQuantity(parseFloat(e.target.value))}
                 />
               </div>
-              <div className='flex flex-col gap-4 w-[80px]'>
+              <div className='flex flex-col gap-1 w-[80px]'>
                 <Label>Stack Size</Label>
                 <Input
                   type='number'
@@ -191,30 +177,29 @@ export const ItemCreate = ({
                 />
               </div>
             </div>
-          </div>
-        </div>
-      </div>
 
-      <div className='flex flex-col gap-2'>
-        <Label className='text-muted-foreground'>Inventory Size (20px units)</Label>
-        <div className='flex gap-4'>
-          <div className='flex flex-col gap-4 w-full'>
-            <Label>Width</Label>
-            <Input
-              type='number'
-              min={1}
-              value={inventoryWidth}
-              onChange={(e) => setInventoryWidth(parseInt(e.target.value) || 1)}
-            />
-          </div>
-          <div className='flex flex-col gap-4 w-full'>
-            <Label>Height</Label>
-            <Input
-              type='number'
-              min={1}
-              value={inventoryHeight}
-              onChange={(e) => setInventoryHeight(parseInt(e.target.value) || 1)}
-            />
+            <div className='flex flex-col gap-2 w-[120px]'>
+              <div className='flex flex-col gap-1 w-full'>
+                <Label>Inventory Width (x 20px)</Label>
+                <Input
+                  type='number'
+                  className='w-[80px]'
+                  min={1}
+                  value={inventoryWidth}
+                  onChange={(e) => setInventoryWidth(parseInt(e.target.value) || 1)}
+                />
+              </div>
+              <div className='flex flex-col gap-1 w-full'>
+                <Label>Inventory Height (x 20px)</Label>
+                <Input
+                  type='number'
+                  className='w-[80px]'
+                  min={1}
+                  value={inventoryHeight}
+                  onChange={(e) => setInventoryHeight(parseInt(e.target.value) || 1)}
+                />
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -270,10 +255,16 @@ export const ItemCreate = ({
       )}
 
       <div className='flex flex-col gap-2'>
-        <Label className='text-muted-foreground'>Associated Actions</Label>
-        <p className='text-sm text-muted-foreground'>
-          Actions shown as buttons in the item context menu. Only actions with a script are shown.
-        </p>
+        <ActionLookup
+          label='Assocaited actions'
+          placeholder='Add action...'
+          excludeIds={actionIds}
+          onSelect={(action) =>
+            setActionIds((prev) => (prev.includes(action.id) ? prev : [...prev, action.id]))
+          }
+          data-testid='item-create-action-lookup'
+        />
+
         {actionIds.length > 0 && (
           <ul className='flex flex-col gap-1 mb-2'>
             {actionIds.map((id) => {
@@ -294,13 +285,6 @@ export const ItemCreate = ({
             })}
           </ul>
         )}
-        <ActionLookup
-          label='Add action'
-          placeholder='Add action...'
-          excludeIds={actionIds}
-          onSelect={(action) => setActionIds((prev) => (prev.includes(action.id) ? prev : [...prev, action.id]))}
-          data-testid='item-create-action-lookup'
-        />
       </div>
     </div>
   );

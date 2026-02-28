@@ -1,4 +1,14 @@
 import { Button, DescriptionEditor, Input, Label } from '@/components';
+import { CategoryField } from '@/components/composites/category-field';
+import {
+  useActions,
+  useAttributes,
+  useCharts,
+  useDocuments,
+  useItems,
+  useRulesetPages,
+  useWindows,
+} from '@/lib/compass-api';
 import {
   AppWindow,
   FileSpreadsheet,
@@ -8,14 +18,12 @@ import {
   Sword,
   UserRoundPen,
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useParams, useSearchParams } from 'react-router-dom';
 import { ActionCreate } from './action-create';
 import { AttributeCreate } from './attribute-create';
 import { ChartCreate } from './chart-create';
 import { DocumentCreate } from './document-create';
-import { PageCreate } from './page-create';
-import { WindowCreate } from './window-create';
 import {
   useActionValues,
   useAttributeValues,
@@ -26,6 +34,8 @@ import {
   useWindowValues,
 } from './hooks';
 import { ItemCreate } from './item-create';
+import { PageCreate } from './page-create';
+import { WindowCreate } from './window-create';
 
 const iconset = {
   attributes: UserRoundPen,
@@ -55,6 +65,16 @@ export const BaseCreate = ({ onCreate, worldId, campaignId }: BaseCreateProps) =
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState('');
+
+  const { attributes } = useAttributes();
+  const { actions } = useActions();
+  const { items } = useItems();
+  const { charts } = useCharts();
+  const documentsOptions =
+    worldId != null ? { worldId } : campaignId != null ? { campaignId } : undefined;
+  const { documents } = useDocuments(documentsOptions);
+  const { windows } = useWindows();
+  const { pages } = useRulesetPages();
 
   const baseProperties = { title, description, category };
 
@@ -152,6 +172,31 @@ export const BaseCreate = ({ onCreate, worldId, campaignId }: BaseCreateProps) =
   const [activeType, setActiveType] = useState<
     'attributes' | 'items' | 'actions' | 'charts' | 'documents' | 'windows' | 'pages'
   >(initialType || 'attributes');
+
+  const existingCategories = useMemo(() => {
+    const list =
+      activeType === 'attributes'
+        ? (attributes ?? [])
+        : activeType === 'actions'
+          ? (actions ?? [])
+          : activeType === 'items'
+            ? (items ?? [])
+            : activeType === 'charts'
+              ? (charts ?? [])
+              : activeType === 'documents'
+                ? (documents ?? [])
+                : activeType === 'windows'
+                  ? (windows ?? [])
+                  : activeType === 'pages'
+                    ? (pages ?? [])
+                    : [];
+    const categories = list
+      .map((e: { category?: string }) => e.category)
+      .filter((c): c is string => Boolean(c?.trim()));
+    return [...new Set(categories)].sort((a, b) =>
+      a.localeCompare(b, undefined, { sensitivity: 'base' }),
+    );
+  }, [activeType, attributes, actions, items, charts, documents, windows, pages]);
 
   useEffect(() => {
     resetAll();
@@ -252,7 +297,7 @@ export const BaseCreate = ({ onCreate, worldId, campaignId }: BaseCreateProps) =
 
       <div className='grid gap-4'>
         <div className='w-full flex flex-row gap-4'>
-          <div className='grid gap-3 w-[50%]'>
+          <div className='grid gap-2 w-[50%]'>
             <Label htmlFor='create-title'>Title</Label>
             <Input
               autoFocus
@@ -264,17 +309,17 @@ export const BaseCreate = ({ onCreate, worldId, campaignId }: BaseCreateProps) =
             />
           </div>
           <div className='grid gap-3 w-[50%]'>
-            <Label htmlFor='create-category'>Category</Label>
-            <Input
-              id='create-category'
-              name='category'
-              onChange={(e) => setCategory(e.target.value)}
-              value={category}
-              onKeyDown={(e) => handleKeySubmit(e)}
+            <CategoryField
+              value={category || null}
+              onChange={(v) => setCategory(v ?? '')}
+              existingCategories={existingCategories}
+              label='Category'
             />
           </div>
         </div>
-        {activeType === 'attributes' && <AttributeCreate {...attributeProps} rulesetId={rulesetId} />}
+        {activeType === 'attributes' && (
+          <AttributeCreate {...attributeProps} rulesetId={rulesetId} />
+        )}
         {activeType === 'actions' && <ActionCreate {...actionProps} rulesetId={rulesetId} />}
         {activeType === 'items' && <ItemCreate {...itemProps} />}
         {activeType === 'charts' && <ChartCreate {...chartProps} rulesetId={rulesetId} />}

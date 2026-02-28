@@ -148,7 +148,7 @@ export const InventoryDataEdit = ({ components, updateComponents }: InventoryDat
     <div className='flex flex-col w-full gap-2 pb-2 border-b-1'>
       <div className='flex gap-2'>
         <div className='flex flex-col gap-1 flex-1'>
-          <label className='text-xs text-muted-foreground'>Cell Width</label>
+          <label className='text-xs text-muted-foreground'>Cell Unit Width</label>
           <Input
             type='number'
             min={1}
@@ -158,7 +158,7 @@ export const InventoryDataEdit = ({ components, updateComponents }: InventoryDat
           />
         </div>
         <div className='flex flex-col gap-1 flex-1'>
-          <label className='text-xs text-muted-foreground'>Cell Height</label>
+          <label className='text-xs text-muted-foreground'>Cell Unit Height</label>
           <Input
             type='number'
             min={1}
