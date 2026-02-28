@@ -2,8 +2,10 @@ import { Evaluator } from '@/lib/compass-logic/interpreter/evaluator';
 import { Lexer } from '@/lib/compass-logic/interpreter/lexer';
 import { Parser } from '@/lib/compass-logic/interpreter/parser';
 import { OwnerAccessor, RulesetAccessor } from '@/lib/compass-logic/runtime/accessors';
+import { ScriptRunner } from '@/lib/compass-logic/runtime/script-runner';
 import type { Attribute, CharacterAttribute, Chart, InventoryItem, Item } from '@/types';
 import { describe, expect, it } from 'vitest';
+import type { DB } from '@/stores/db/hooks/types';
 
 /**
  * These are simplified integration tests that test the script execution
@@ -568,6 +570,333 @@ result
       expect(owner.Items('Potion').reduce((sum, i) => sum + i.quantity, 0)).toBe(3);
       owner.removeItem('Potion', 2);
       expect(owner.Items('Potion').reduce((sum, i) => sum + i.quantity, 0)).toBe(1);
+    });
+  });
+
+  describe('Self on item instance', () => {
+    const potionItem: Item = {
+      id: 'item_potion',
+      rulesetId: 'ruleset1',
+      title: 'Potion',
+      description: 'Restores HP',
+      weight: 0,
+      defaultQuantity: 1,
+      stackSize: 10,
+      isContainer: false,
+      isStorable: true,
+      isEquippable: false,
+      isConsumable: true,
+      inventoryWidth: 1,
+      inventoryHeight: 1,
+      createdAt: '2024-01-01',
+      updatedAt: '2024-01-01',
+    };
+
+    it('getItemByInstanceId returns the correct instance when character has multiple instances of same item', () => {
+      const itemsCache = new Map<string, Item>();
+      itemsCache.set('item_potion', potionItem);
+      const invFirst: InventoryItem = {
+        id: 'inv_first',
+        type: 'item',
+        entityId: 'item_potion',
+        inventoryId: 'inv1',
+        componentId: '',
+        quantity: 2,
+        x: 0,
+        y: 0,
+        createdAt: '2024-01-01',
+        updatedAt: '2024-01-01',
+      };
+      const invSecond: InventoryItem = {
+        id: 'inv_second',
+        type: 'item',
+        entityId: 'item_potion',
+        inventoryId: 'inv1',
+        componentId: '',
+        quantity: 5,
+        x: 1,
+        y: 0,
+        createdAt: '2024-01-01',
+        updatedAt: '2024-01-01',
+      };
+      const owner = new OwnerAccessor(
+        'char1',
+        'Test',
+        'inv1',
+        null as any,
+        new Map(),
+        new Map(),
+        new Map(),
+        new Map(),
+        itemsCache,
+        [invFirst, invSecond],
+      );
+
+      const byFirst = owner.getItemByInstanceId('inv_first');
+      const bySecond = owner.getItemByInstanceId('inv_second');
+
+      expect(byFirst).toBeDefined();
+      expect(bySecond).toBeDefined();
+      expect(byFirst?.quantity).toBe(2);
+      expect(bySecond?.quantity).toBe(5);
+      expect(byFirst?.title).toBe('Potion');
+      expect(bySecond?.title).toBe('Potion');
+    });
+
+    it('Owner.Item(name) returns first instance when multiple exist (unchanged behavior)', () => {
+      const itemsCache = new Map<string, Item>();
+      itemsCache.set('item_potion', potionItem);
+      const invFirst: InventoryItem = {
+        id: 'inv_first',
+        type: 'item',
+        entityId: 'item_potion',
+        inventoryId: 'inv1',
+        componentId: '',
+        quantity: 2,
+        x: 0,
+        y: 0,
+        createdAt: '2024-01-01',
+        updatedAt: '2024-01-01',
+      };
+      const invSecond: InventoryItem = {
+        id: 'inv_second',
+        type: 'item',
+        entityId: 'item_potion',
+        inventoryId: 'inv1',
+        componentId: '',
+        quantity: 5,
+        x: 1,
+        y: 0,
+        createdAt: '2024-01-01',
+        updatedAt: '2024-01-01',
+      };
+      const owner = new OwnerAccessor(
+        'char1',
+        'Test',
+        'inv1',
+        null as any,
+        new Map(),
+        new Map(),
+        new Map(),
+        new Map(),
+        itemsCache,
+        [invFirst, invSecond],
+      );
+
+      const firstByTitle = owner.Item('Potion');
+      expect(firstByTitle?.quantity).toBe(2);
+      expect(firstByTitle?.title).toBe('Potion');
+    });
+
+    it('removeItemByInstanceId removes only the specified instance', () => {
+      const pendingUpdates = new Map<string, any>();
+      const itemsCache = new Map<string, Item>();
+      itemsCache.set('item_potion', potionItem);
+      const invFirst: InventoryItem = {
+        id: 'inv_first',
+        type: 'item',
+        entityId: 'item_potion',
+        inventoryId: 'inv1',
+        componentId: '',
+        quantity: 2,
+        x: 0,
+        y: 0,
+        createdAt: '2024-01-01',
+        updatedAt: '2024-01-01',
+      };
+      const invSecond: InventoryItem = {
+        id: 'inv_second',
+        type: 'item',
+        entityId: 'item_potion',
+        inventoryId: 'inv1',
+        componentId: '',
+        quantity: 5,
+        x: 1,
+        y: 0,
+        createdAt: '2024-01-01',
+        updatedAt: '2024-01-01',
+      };
+      const owner = new OwnerAccessor(
+        'char1',
+        'Test',
+        'inv1',
+        null as any,
+        pendingUpdates,
+        new Map(),
+        new Map(),
+        new Map(),
+        itemsCache,
+        [invFirst, invSecond],
+      );
+
+      owner.removeItemByInstanceId('inv_second');
+
+      expect(owner.Items('Potion')).toHaveLength(1);
+      expect(owner.Items('Potion')[0].quantity).toBe(2);
+      expect(owner.Items('Potion')[0].title).toBe('Potion');
+      expect(pendingUpdates.get('inventoryDelete:inv_second')).toBe(true);
+      expect(pendingUpdates.has('inventoryDelete:inv_first')).toBe(false);
+    });
+
+    it('Self.destroy() removes only that instance (via getItemByInstanceId proxy)', () => {
+      const pendingUpdates = new Map<string, any>();
+      const itemsCache = new Map<string, Item>();
+      itemsCache.set('item_potion', potionItem);
+      const invFirst: InventoryItem = {
+        id: 'inv_first',
+        type: 'item',
+        entityId: 'item_potion',
+        inventoryId: 'inv1',
+        componentId: '',
+        quantity: 2,
+        x: 0,
+        y: 0,
+        createdAt: '2024-01-01',
+        updatedAt: '2024-01-01',
+      };
+      const invSecond: InventoryItem = {
+        id: 'inv_second',
+        type: 'item',
+        entityId: 'item_potion',
+        inventoryId: 'inv1',
+        componentId: '',
+        quantity: 5,
+        x: 1,
+        y: 0,
+        createdAt: '2024-01-01',
+        updatedAt: '2024-01-01',
+      };
+      const owner = new OwnerAccessor(
+        'char1',
+        'Test',
+        'inv1',
+        null as any,
+        pendingUpdates,
+        new Map(),
+        new Map(),
+        new Map(),
+        itemsCache,
+        [invFirst, invSecond],
+      );
+
+      const secondInstance = owner.getItemByInstanceId('inv_second');
+      expect(secondInstance).toBeDefined();
+      secondInstance!.destroy();
+
+      expect(owner.Items('Potion')).toHaveLength(1);
+      expect(owner.Items('Potion')[0].quantity).toBe(2);
+      expect(pendingUpdates.get('inventoryDelete:inv_second')).toBe(true);
+      expect(pendingUpdates.has('inventoryDelete:inv_first')).toBe(false);
+    });
+
+    it('getItemByInstanceId returns undefined for unknown id', () => {
+      const itemsCache = new Map<string, Item>();
+      itemsCache.set('item_potion', potionItem);
+      const invEntry: InventoryItem = {
+        id: 'inv_1',
+        type: 'item',
+        entityId: 'item_potion',
+        inventoryId: 'inv1',
+        componentId: '',
+        quantity: 1,
+        x: 0,
+        y: 0,
+        createdAt: '2024-01-01',
+        updatedAt: '2024-01-01',
+      };
+      const owner = new OwnerAccessor(
+        'char1',
+        'Test',
+        'inv1',
+        null as any,
+        new Map(),
+        new Map(),
+        new Map(),
+        new Map(),
+        itemsCache,
+        [invEntry],
+      );
+
+      expect(owner.getItemByInstanceId('nonexistent')).toBeUndefined();
+    });
+
+    it('ScriptRunner with inventoryItemInstanceId sets Self to that specific instance', async () => {
+      const invFirst: InventoryItem = {
+        id: 'inv_first',
+        type: 'item',
+        entityId: 'item_potion',
+        inventoryId: 'inv1',
+        componentId: '',
+        quantity: 2,
+        x: 0,
+        y: 0,
+        createdAt: '2024-01-01',
+        updatedAt: '2024-01-01',
+      };
+      const invSecond: InventoryItem = {
+        id: 'inv_second',
+        type: 'item',
+        entityId: 'item_potion',
+        inventoryId: 'inv1',
+        componentId: '',
+        quantity: 5,
+        x: 1,
+        y: 0,
+        createdAt: '2024-01-01',
+        updatedAt: '2024-01-01',
+      };
+      const inventoryItems = [invFirst, invSecond];
+
+      const emptyArray = () => Promise.resolve([]);
+      const mockDb = {
+        attributes: { where: () => ({ toArray: emptyArray }) },
+        charts: { where: () => ({ toArray: emptyArray }) },
+        items: {
+          where: () => ({
+            toArray: () => Promise.resolve([potionItem]),
+          }),
+        },
+        actions: { where: () => ({ toArray: emptyArray }) },
+        customProperties: {
+          where: () => ({ equals: () => ({ toArray: emptyArray }) }),
+        },
+        characters: {
+          get: () =>
+            Promise.resolve({
+              name: 'Test',
+              inventoryId: 'inv1',
+              customProperties: {},
+            }),
+        },
+        inventoryItems: {
+          where: () => ({
+            equals: () => ({ toArray: () => Promise.resolve(inventoryItems) }),
+          }),
+        },
+        characterAttributes: { where: () => ({ toArray: emptyArray }) },
+        characterArchetypes: {
+          where: () => ({ equals: () => ({ toArray: emptyArray }) }),
+        },
+        scripts: {
+          where: () => ({ filter: () => ({ toArray: emptyArray }) }),
+        },
+        archetypes: { get: () => Promise.resolve(null) },
+      } as unknown as DB;
+
+      const context = {
+        ownerId: 'char1',
+        rulesetId: 'ruleset1',
+        db: mockDb,
+        entityType: 'item' as const,
+        entityId: 'item_potion',
+        inventoryItemInstanceId: 'inv_second',
+      };
+
+      const runner = new ScriptRunner(context);
+      const result = await runner.run('Self.quantity');
+
+      expect(result.error).toBeUndefined();
+      expect(result.value).toBe(5);
     });
   });
 });
