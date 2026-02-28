@@ -11,6 +11,17 @@ import type { Component, ImageComponentData } from '@/types';
 import { Trash } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
+function filenameFromUrl(url: string): string {
+  try {
+    const u = new URL(url);
+    const seg = u.pathname.split('/').filter(Boolean).pop();
+    if (seg) return seg;
+  } catch {
+    // ignore
+  }
+  return `url-image-${crypto.randomUUID().slice(0, 8)}`;
+}
+
 interface ImageDataEditProps {
   components: Array<Component>;
   handleUpdate: (key: string, value: number | string | boolean | null) => void;
@@ -22,7 +33,9 @@ export const ImageDataEdit = ({
   handleUpdate,
   updateComponents,
 }: ImageDataEditProps) => {
-  const { createAsset, deleteAsset, assets } = useAssets();
+  const firstComponent = components[0];
+  const rulesetId = firstComponent?.rulesetId ?? null;
+  const { createAsset, createUrlAsset, deleteAsset, assets } = useAssets(rulesetId);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [isRemoving, setIsRemoving] = useState(false);
@@ -31,16 +44,20 @@ export const ImageDataEdit = ({
   // Filter out locked components (handleUpdate does this too, but we need it for UI state)
   const editableComponents = components.filter((c) => !c.locked);
 
-  // Get the assetUrl from the first component for display
-  const firstComponentData = components[0]
-    ? (getComponentData(components[0]) as ImageComponentData)
+  const firstComponentData = firstComponent
+    ? (getComponentData(firstComponent) as ImageComponentData)
     : null;
-  const currentAssetUrl = firstComponentData?.assetUrl || '';
+  const currentAssetId = firstComponentData?.assetId;
+  const currentAsset = currentAssetId ? assets.find((a) => a.id === currentAssetId) : null;
+  const currentUrlDisplay =
+    currentAsset?.data && typeof currentAsset.data === 'string' && /^https?:\/\//i.test(currentAsset.data)
+      ? currentAsset.data
+      : '';
 
-  // Sync URL value when components change
+  // Sync URL value when components change (for URL-backed assets)
   useEffect(() => {
-    setUrlValue(currentAssetUrl);
-  }, [currentAssetUrl]);
+    setUrlValue(currentUrlDisplay);
+  }, [currentUrlDisplay]);
 
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -54,7 +71,7 @@ export const ImageDataEdit = ({
           const assetId = await createAsset(file);
           return {
             id: component.id,
-            data: updateComponentData(component.data, { assetId, assetUrl: undefined }),
+            data: updateComponentData(component.data, { assetId }),
           };
         }),
       );
@@ -106,10 +123,7 @@ export const ImageDataEdit = ({
       // Create updates for all editable components
       const updates = editableComponents.map((component) => ({
         id: component.id,
-        data: updateComponentData(component.data, {
-          assetId: undefined,
-          assetUrl: undefined,
-        }),
+        data: updateComponentData(component.data, { assetId: undefined }),
       }));
 
       // Update components
@@ -132,26 +146,31 @@ export const ImageDataEdit = ({
   const handleUrlBlur = async () => {
     if (editableComponents.length === 0) return;
 
-    const urlToSave = urlValue.trim() || undefined;
+    const urlToSave = urlValue.trim();
+    if (!urlToSave) return;
 
-    // Create updates for all editable components
-    const updates = editableComponents.map((component) => ({
-      id: component.id,
-      data: updateComponentData(component.data, { assetUrl: urlToSave }),
-    }));
-
-    // Update components
-    await updateComponents(updates);
-
-    // Fire external change event for synchronization
-    fireExternalComponentChangeEvent({
-      updates,
-    });
+    setIsUploading(true);
+    try {
+      const filename = filenameFromUrl(urlToSave);
+      const assetId = await createUrlAsset(urlToSave, {
+        filename,
+        rulesetId,
+        worldId: null,
+      });
+      const updates = editableComponents.map((component) => ({
+        id: component.id,
+        data: updateComponentData(component.data, { assetId }),
+      }));
+      await updateComponents(updates);
+      fireExternalComponentChangeEvent({ updates });
+    } catch (error) {
+      console.error('Failed to add URL image:', error);
+    } finally {
+      setIsUploading(false);
+    }
   };
 
-  // Show the first component's asset as preview
-  const currentAssetId = firstComponentData?.assetId;
-  const currentAsset = currentAssetId ? assets.find((a) => a.id === currentAssetId) : null;
+  // currentAssetId, currentAsset already defined above for URL display
   const hasAsset = editableComponents.some(
     (c) => (getComponentData(c) as ImageComponentData).assetId,
   );

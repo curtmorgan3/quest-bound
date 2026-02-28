@@ -14,7 +14,6 @@ export interface PageDetailsValue {
 export interface PageDetailsUpdate {
   label?: string;
   assetId?: string;
-  assetUrl?: string;
   backgroundColor?: string;
   backgroundOpacity?: number;
 }
@@ -56,10 +55,9 @@ export function PageDetailsForm({
           <ImageUpload
             image={value.image ?? undefined}
             alt='Page background'
-            rulesetId={rulesetId}
-            onUpload={(assetId) => onUpdate({ assetId, assetUrl: undefined })}
-            onSetUrl={(url) => onUpdate({ assetUrl: url, assetId: undefined })}
-            onRemove={() => onUpdate({ assetId: undefined, assetUrl: undefined })}
+            rulesetId={rulesetId ?? null}
+            onUpload={(assetId) => onUpdate({ assetId })}
+            onRemove={() => onUpdate({ assetId: undefined })}
           />
         </div>
 

@@ -284,7 +284,6 @@ export const RulesetSettings = ({ activeRuleset }: RulesetSettingsProps) => {
             alt={activeRuleset.title}
             onRemove={() => updateRuleset(activeRuleset.id, { assetId: null })}
             onUpload={(assetId) => updateRuleset(activeRuleset.id, { assetId })}
-            onSetUrl={(url) => updateRuleset(activeRuleset.id, { image: url, assetId: null })}
             rulesetId={activeRuleset.id}
           />
 

@@ -62,8 +62,7 @@ export const WorldSettings = ({ world }: WorldSettingsProps) => {
             alt={world.label}
             onRemove={() => void updateWorld(world.id, { assetId: null })}
             onUpload={(assetId) => void updateWorld(world.id, { assetId })}
-            onSetUrl={(url) => void updateWorld(world.id, { image: url, assetId: null })}
-            rulesetId={null}
+            rulesetId={world.rulesetId ?? null}
           />
         </div>
         <DescriptionEditor

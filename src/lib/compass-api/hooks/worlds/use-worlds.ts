@@ -18,7 +18,6 @@ export const useWorlds = () => {
         label: data.label ?? 'New World',
         description: data.description,
         assetId: data.assetId ?? null,
-        image: data.image ?? null,
         createdAt: now,
         updatedAt: now,
       } as World);

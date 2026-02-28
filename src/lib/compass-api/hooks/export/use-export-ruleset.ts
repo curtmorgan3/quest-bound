@@ -383,32 +383,8 @@ export const useExportRuleset = (rulesetId: string) => {
             const fileExtension = asset.type.split('/')[1] || 'bin';
             const filename = asset.filename || `asset_${asset.id}.${fileExtension}`;
 
-            // Determine the target folder based on asset.directory
-            let targetFolder = assetsFolder;
-            if (asset.directory) {
-              // Create nested folder structure based on directory property
-              // Handle both single-level and multi-level directory paths
-              const directoryPath = asset.directory.replace(/^\/+|\/+$/g, ''); // Remove leading/trailing slashes
-              if (directoryPath) {
-                const pathSegments = directoryPath
-                  .split('/')
-                  .filter((segment) => segment.length > 0);
-                let currentFolder = assetsFolder;
-
-                // Create nested folders for each path segment
-                for (const segment of pathSegments) {
-                  const existingFolder = currentFolder.folder(segment);
-                  if (existingFolder) {
-                    currentFolder = existingFolder;
-                  } else {
-                    // If folder creation fails, fall back to root assets folder
-                    currentFolder = assetsFolder;
-                    break;
-                  }
-                }
-                targetFolder = currentFolder;
-              }
-            }
+            // All assets go in root assets folder (filename-only per v44; directory removed)
+            const targetFolder = assetsFolder;
 
             targetFolder.file(filename, uint8Array);
           });

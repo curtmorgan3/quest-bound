@@ -34,6 +34,42 @@ import { extractScriptFiles, importScripts } from './script-import';
 import { ACTION_FIELD_TYPES, ATTRIBUTE_FIELD_TYPES, ITEM_FIELD_TYPES } from './types';
 import { compareVersion, convertAttributeDefaultValue, parseTsv, tsvToObjects } from './utils';
 
+const URL_PATTERN = /^https?:\/\//i;
+
+function isUrl(s: string): boolean {
+  return URL_PATTERN.test(s);
+}
+
+function filenameFromUrlForImport(url: string): string {
+  try {
+    const u = new URL(url);
+    const seg = u.pathname.split('/').filter(Boolean).pop();
+    if (seg) return seg;
+  } catch {
+    // ignore
+  }
+  return crypto.randomUUID();
+}
+
+/** Create a URL asset for import when entity has image (URL) and no assetId. Returns new asset id. */
+async function createUrlAssetForImport(
+  url: string,
+  rulesetId: string | null,
+): Promise<string> {
+  const id = crypto.randomUUID();
+  const now = new Date().toISOString();
+  await db.assets.add({
+    id,
+    data: url,
+    type: 'url',
+    filename: filenameFromUrlForImport(url),
+    createdAt: now,
+    updatedAt: now,
+    rulesetId,
+  });
+  return id;
+}
+
 export interface ImportRulesetOptions {
   /** When true, replace an existing ruleset with the same id if the uploaded version is higher */
   replaceIfNewer?: boolean;
@@ -546,6 +582,12 @@ export const useImportRuleset = () => {
       const now = new Date().toISOString();
       let newRulesetId = metadata.ruleset.id;
 
+      const rulesetImage = metadata.ruleset.image as string | null | undefined;
+      const rulesetCoverAssetId =
+        rulesetImage && isUrl(rulesetImage.trim())
+          ? await createUrlAssetForImport(rulesetImage.trim(), newRulesetId)
+          : null;
+
       const newRuleset: Ruleset = {
         id: newRulesetId,
         title: metadata.ruleset.title,
@@ -553,9 +595,8 @@ export const useImportRuleset = () => {
         version: metadata.ruleset.version,
         createdBy: metadata.ruleset.createdBy,
         details: metadata.ruleset.details || {},
-        image: metadata.ruleset.image,
         isModule: metadata.ruleset.isModule || false,
-        assetId: null,
+        assetId: rulesetCoverAssetId,
         createdAt: now,
         updatedAt: now,
         palette: Array.isArray(metadata.ruleset.palette) ? metadata.ruleset.palette : [],
@@ -585,7 +626,7 @@ export const useImportRuleset = () => {
                 description: newRuleset.description,
                 version: duplicateVersion,
                 details: newRuleset.details || {},
-                image: newRuleset.image,
+                assetId: newRuleset.assetId ?? null,
                 createdBy: newRuleset.createdBy,
               });
 
@@ -821,7 +862,12 @@ export const useImportRuleset = () => {
           const validation = validateData(attributes, 'attributes');
           if (validation.isValid) {
             for (const attribute of attributes) {
-              await db.attributes.add(attribute);
+              const toAdd = { ...attribute };
+              if (toAdd.image && isUrl(toAdd.image) && !toAdd.assetId) {
+                toAdd.assetId = await createUrlAssetForImport(toAdd.image, newRulesetId);
+                toAdd.image = undefined;
+              }
+              await db.attributes.add(toAdd);
               importedCounts.attributes++;
             }
           } else {
@@ -863,7 +909,12 @@ export const useImportRuleset = () => {
           const validation = validateData(actions, 'actions');
           if (validation.isValid) {
             for (const action of actions) {
-              await db.actions.add(action);
+              const toAdd = { ...action };
+              if (toAdd.image && isUrl(toAdd.image) && !toAdd.assetId) {
+                toAdd.assetId = await createUrlAssetForImport(toAdd.image, newRulesetId);
+                toAdd.image = undefined;
+              }
+              await db.actions.add(toAdd);
               importedCounts.actions++;
             }
           } else {
@@ -914,7 +965,12 @@ export const useImportRuleset = () => {
           const validation = validateData(items, 'items');
           if (validation.isValid) {
             for (const item of items) {
-              await db.items.add(item);
+              const toAdd = { ...item };
+              if (toAdd.image && isUrl(toAdd.image) && !toAdd.assetId) {
+                toAdd.assetId = await createUrlAssetForImport(toAdd.image, newRulesetId);
+                toAdd.image = undefined;
+              }
+              await db.items.add(toAdd);
               importedCounts.items++;
             }
           } else {
@@ -976,6 +1032,10 @@ export const useImportRuleset = () => {
                 createdAt: now,
                 updatedAt: now,
               };
+              if (newChart.image && isUrl(newChart.image) && !newChart.assetId) {
+                newChart.assetId = await createUrlAssetForImport(newChart.image, newRulesetId);
+                newChart.image = undefined;
+              }
               await db.charts.add(newChart);
               importedCounts.charts++;
             }
@@ -1274,6 +1334,10 @@ export const useImportRuleset = () => {
                 createdAt: now,
                 updatedAt: now,
               };
+              if (newDocument.image && isUrl(newDocument.image) && !newDocument.assetId) {
+                newDocument.assetId = await createUrlAssetForImport(newDocument.image, newRulesetId);
+                newDocument.image = undefined;
+              }
               await db.documents.add(newDocument);
               importedCounts.documents++;
             }
@@ -1495,6 +1559,13 @@ export const useImportRuleset = () => {
                 createdAt: now,
                 updatedAt: now,
               };
+              if (newCharacter.image && isUrl(newCharacter.image) && !newCharacter.assetId) {
+                newCharacter.assetId = await createUrlAssetForImport(
+                  newCharacter.image,
+                  newRulesetId,
+                );
+                newCharacter.image = undefined;
+              }
               await db.characters.add(newCharacter);
               importedCounts.characters++;
             }
@@ -1523,6 +1594,13 @@ export const useImportRuleset = () => {
               createdAt: now,
               updatedAt: now,
             };
+            if (newArchetype.image && isUrl(newArchetype.image) && !newArchetype.assetId) {
+              newArchetype.assetId = await createUrlAssetForImport(
+                newArchetype.image,
+                newRulesetId,
+              );
+              newArchetype.image = undefined;
+            }
             await db.archetypes.add(newArchetype);
             importedCounts.archetypes++;
           }

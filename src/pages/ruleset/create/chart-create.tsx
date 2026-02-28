@@ -10,6 +10,7 @@ interface ChartCreateProps {
   setChartData: Dispatch<SetStateAction<string[][] | null>>;
   setImage: Dispatch<SetStateAction<string | null>>;
   setAssetId: Dispatch<SetStateAction<string | null>>;
+  rulesetId?: string;
 }
 
 function parseTSV(tsvString: string): string[][] {
@@ -25,8 +26,9 @@ export const ChartCreate = ({
   setChartData,
   setImage,
   setAssetId,
+  rulesetId,
 }: ChartCreateProps) => {
-  const { assets, deleteAsset } = useAssets();
+  const { assets, deleteAsset } = useAssets(rulesetId);
   const tsvInputRef = useRef<HTMLInputElement>(null);
   const [uploadingTsv, setUploadingTsv] = useState(false);
   const [tsvFilename, setTsvFilename] = useState<string | null>(null);
@@ -56,11 +58,6 @@ export const ChartCreate = ({
     }
     setAssetId(null);
     setImage(null);
-  };
-
-  const handleSetUrl = (url: string) => {
-    setAssetId(null);
-    setImage(url);
   };
 
   const headers = !chartData ? [] : chartData[0];
@@ -107,7 +104,7 @@ export const ChartCreate = ({
             alt='Chart image'
             onUpload={handleImageUpload}
             onRemove={handleImageRemove}
-            onSetUrl={handleSetUrl}
+            rulesetId={rulesetId}
           />
         </div>
 

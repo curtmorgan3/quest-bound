@@ -40,11 +40,6 @@ export function ArchetypeCreateDialog() {
     if (imageData) setNewImage(imageData);
   };
 
-  const handleSetUrl = (url: string) => {
-    setNewAssetId(null);
-    setNewImage(url);
-  };
-
   const handleImageRemove = async () => {
     if (newAssetId) await deleteAsset(newAssetId);
     setNewAssetId(null);
@@ -71,7 +66,6 @@ export function ArchetypeCreateDialog() {
       name: newName.trim(),
       description: newDescription.trim(),
       assetId: newAssetId,
-      image: newImage,
     });
     justCreatedRef.current = true;
     setNewName('');
@@ -121,7 +115,6 @@ export function ArchetypeCreateDialog() {
               rulesetId={rulesetId}
               onUpload={handleImageUpload}
               onRemove={handleImageRemove}
-              onSetUrl={handleSetUrl}
             />
           </div>
         </div>

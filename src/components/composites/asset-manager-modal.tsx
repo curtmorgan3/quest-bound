@@ -77,7 +77,7 @@ export const AssetManagerModal = ({ children }: AssetManagerModalProps) => {
         let currentPath = '';
         let currentParent = tree;
 
-        pathParts.forEach((part, index) => {
+        pathParts.forEach((part: string, index: number) => {
           currentPath = currentPath ? `${currentPath}/${part}` : part;
           const isLastPart = index === pathParts.length - 1;
 
@@ -122,7 +122,7 @@ export const AssetManagerModal = ({ children }: AssetManagerModalProps) => {
           let currentPath = '';
           let currentParent = tree;
 
-          pathParts.forEach((part, index) => {
+          pathParts.forEach((part: string, index: number) => {
             currentPath = currentPath ? `${currentPath}/${part}` : part;
             const isLastPart = index === pathParts.length - 1;
 

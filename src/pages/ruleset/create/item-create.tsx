@@ -86,11 +86,6 @@ export const ItemCreate = ({
     }
   };
 
-  const handleSetUrl = (url: string) => {
-    setAssetId(null);
-    setImage(url);
-  };
-
   const handleImageRemove = async () => {
     if (assetId) {
       await deleteAsset(assetId);
@@ -103,12 +98,8 @@ export const ItemCreate = ({
     setSprites([uploadedAssetId]);
   };
 
-  const handleSpriteSetUrl = (url: string) => {
-    setSprites([url]);
-  };
-
   const handleSpriteRemove = async () => {
-    if (spriteAssetId && !spriteAssetId.startsWith('http')) {
+    if (spriteAssetId) {
       await deleteAsset(spriteAssetId);
     }
     setSprites([]);
@@ -116,10 +107,7 @@ export const ItemCreate = ({
 
   // Use the image from props (edit mode) or look it up from assets (create mode)
   const displayImage = image || getImageFromAssetId(assetId);
-  const displaySpriteImage =
-    (sprites[0]?.startsWith('http://') || sprites[0]?.startsWith('https://')
-      ? sprites[0]
-      : getImageFromAssetId(spriteAssetId)) ?? null;
+  const displaySpriteImage = getImageFromAssetId(spriteAssetId) ?? null;
 
   return (
     <div className='flex flex-col gap-6'>
@@ -131,7 +119,7 @@ export const ItemCreate = ({
             alt='Item image'
             onUpload={handleImageUpload}
             onRemove={handleImageRemove}
-            onSetUrl={handleSetUrl}
+            rulesetId={rulesetId}
           />
         </div>
         <div className='flex flex-col gap-4 justify-center items-center'>
@@ -272,7 +260,6 @@ export const ItemCreate = ({
             rulesetId={rulesetId}
             onUpload={handleSpriteUpload}
             onRemove={handleSpriteRemove}
-            onSetUrl={handleSpriteSetUrl}
           />
         </div>
       )}

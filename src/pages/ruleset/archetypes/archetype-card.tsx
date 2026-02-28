@@ -48,12 +48,10 @@ export interface ArchetypeCardProps {
   onEditDescriptionChange: (value: string) => void;
   onEditImageUpload: (assetId: string) => void;
   onEditImageRemove: () => void;
-  onEditSetUrl: (url: string) => void;
   onEditMapWidthChange: (value: number | undefined) => void;
   onEditMapHeightChange: (value: number | undefined) => void;
   onEditSpriteUpload: (assetId: string) => void;
   onEditSpriteRemove: () => void;
-  onEditSpriteSetUrl: (url: string) => void;
   onEditCategoryChange: (value: string | null) => void;
   onDelete: () => void;
   confirmBeforeDelete: boolean;
@@ -84,12 +82,10 @@ export function ArchetypeCard({
   onEditDescriptionChange,
   onEditImageUpload,
   onEditImageRemove,
-  onEditSetUrl,
   onEditMapWidthChange,
   onEditMapHeightChange,
   onEditSpriteUpload,
   onEditSpriteRemove,
-  onEditSpriteSetUrl,
   onEditCategoryChange,
   onDelete,
   confirmBeforeDelete,
@@ -158,7 +154,6 @@ export function ArchetypeCard({
                   rulesetId={rulesetId}
                   onUpload={onEditImageUpload}
                   onRemove={onEditImageRemove}
-                  onSetUrl={onEditSetUrl}
                 />
               </div>
               <DescriptionEditor
@@ -171,16 +166,11 @@ export function ArchetypeCard({
                 <div className='grid gap-2'>
                   <Label>Map sprite</Label>
                   <ImageUpload
-                    image={
-                      (editSprites[0]?.startsWith('http://') || editSprites[0]?.startsWith('https://')
-                        ? editSprites[0]
-                        : getImageFromAssetId(editSprites[0] ?? null)) ?? undefined
-                    }
+                    image={getImageFromAssetId(editSprites[0] ?? null) ?? undefined}
                     alt='Archetype map sprite'
                     rulesetId={rulesetId}
                     onUpload={onEditSpriteUpload}
                     onRemove={onEditSpriteRemove}
-                    onSetUrl={onEditSpriteSetUrl}
                   />
                   <p className='text-sm text-muted-foreground'>
                     Optional image shown when this archetype is placed on the campaign map.

@@ -73,11 +73,6 @@ export const Archetypes = () => {
     if (imageData) setEditImage(imageData);
   };
 
-  const handleEditSetUrl = (url: string) => {
-    setEditAssetId(null);
-    setEditImage(url);
-  };
-
   const handleEditImageRemove = () => {
     setEditAssetId(null);
     setEditImage(null);
@@ -87,11 +82,8 @@ export const Archetypes = () => {
   const handleEditSpriteUpload = (uploadedAssetId: string) => {
     setEditSprites([uploadedAssetId]);
   };
-  const handleEditSpriteSetUrl = (url: string) => {
-    setEditSprites([url]);
-  };
   const handleEditSpriteRemove = async () => {
-    if (editSpriteAssetId && !editSpriteAssetId.startsWith('http')) {
+    if (editSpriteAssetId) {
       await deleteAsset(editSpriteAssetId);
     }
     setEditSprites([]);
@@ -199,12 +191,10 @@ export const Archetypes = () => {
             onEditDescriptionChange={setEditDescription}
             onEditImageUpload={handleEditImageUpload}
             onEditImageRemove={handleEditImageRemove}
-            onEditSetUrl={handleEditSetUrl}
             onEditMapWidthChange={setEditMapWidth}
             onEditMapHeightChange={setEditMapHeight}
             onEditSpriteUpload={handleEditSpriteUpload}
             onEditSpriteRemove={handleEditSpriteRemove}
-            onEditSpriteSetUrl={handleEditSpriteSetUrl}
             onEditCategoryChange={setEditCategory}
             onDelete={() => deleteArchetype(archetype.id)}
             confirmBeforeDelete={doNotAsk}

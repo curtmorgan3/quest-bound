@@ -13,7 +13,7 @@ export const dbSchemaV41 = {
   documents: `${common}, rulesetId, worldId, campaignId, title, description, category, assetId, image, pdfAssetId, pdfData, markdownData, moduleId`,
   windows: `${common}, rulesetId, title, category, hideFromPlayerView, moduleId`,
   pages: `${common}, label, category, hideFromPlayerView, moduleId`,
-  components: `${common}, rulesetId, windowId, type, x, y, z, height, width, rotation, selected, assetId, assetUrl, groupId, attributeId, actionId, data, style`,
+  components: `${common}, rulesetId, windowId, type, x, y, z, height, width, rotation, selected, assetId, groupId, attributeId, actionId, data, style`,
   characters: `${common}, rulesetId, userId, assetId, image, moduleId`,
   archetypes: `${common}, rulesetId, name, description, assetId, image, scriptId, testCharacterId, isDefault, loadOrder, moduleId, sprites, [rulesetId+name]`,
   customProperties: `${common}, rulesetId, label, type, category, defaultValue, &[rulesetId+label]`,
@@ -91,5 +91,13 @@ export const dbSchemaV42 = {
   rulesetWindows: `${common}, rulesetId, rulesetPageId, pageId, windowId, title, x, y, isCollapsed, moduleId`,
 };
 
+/** Schema for v44: assets filename-only (no directory), [rulesetId+filename]; characterPages/components without assetUrl. */
+export const dbSchemaV44 = {
+  ...dbSchema,
+  assets: `${common}, rulesetId, filename, data, type, moduleId, [rulesetId+filename]`,
+  characterPages: `${common}, characterId, pageId, rulesetId, label, category, assetId, backgroundOpacity, backgroundColor, image, hideFromPlayerView, [characterId+pageId]`,
+  components: `${common}, rulesetId, windowId, type, x, y, z, height, width, rotation, selected, assetId, groupId, attributeId, actionId, data, style`,
+};
+
 // Increment on every schema change
-export const dbSchemaVersion = 43;
+export const dbSchemaVersion = 44;

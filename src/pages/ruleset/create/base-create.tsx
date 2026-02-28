@@ -9,7 +9,7 @@ import {
   UserRoundPen,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { useLocation, useSearchParams } from 'react-router-dom';
+import { useLocation, useParams, useSearchParams } from 'react-router-dom';
 import { ActionCreate } from './action-create';
 import { AttributeCreate } from './attribute-create';
 import { ChartCreate } from './chart-create';
@@ -47,6 +47,7 @@ interface BaseCreateProps {
 
 export const BaseCreate = ({ onCreate, worldId, campaignId }: BaseCreateProps) => {
   const { pathname } = useLocation();
+  const { rulesetId } = useParams<{ rulesetId: string }>();
   const [searchParams] = useSearchParams();
   const editId = searchParams.get('edit');
   const isEditMode = !!editId;
@@ -273,11 +274,11 @@ export const BaseCreate = ({ onCreate, worldId, campaignId }: BaseCreateProps) =
             />
           </div>
         </div>
-        {activeType === 'attributes' && <AttributeCreate {...attributeProps} />}
-        {activeType === 'actions' && <ActionCreate {...actionProps} />}
+        {activeType === 'attributes' && <AttributeCreate {...attributeProps} rulesetId={rulesetId} />}
+        {activeType === 'actions' && <ActionCreate {...actionProps} rulesetId={rulesetId} />}
         {activeType === 'items' && <ItemCreate {...itemProps} />}
-        {activeType === 'charts' && <ChartCreate {...chartProps} />}
-        {activeType === 'documents' && <DocumentCreate {...documentProps} />}
+        {activeType === 'charts' && <ChartCreate {...chartProps} rulesetId={rulesetId} />}
+        {activeType === 'documents' && <DocumentCreate {...documentProps} rulesetId={rulesetId} />}
         {activeType === 'windows' && (
           <WindowCreate
             hideFromPlayerView={hideFromPlayerView}

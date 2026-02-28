@@ -12,6 +12,7 @@ interface DocumentCreateProps {
   setAssetId: Dispatch<SetStateAction<string | null>>;
   setPdfAssetId: Dispatch<SetStateAction<string | null>>;
   setPdfData: Dispatch<SetStateAction<string | null>>;
+  rulesetId?: string;
 }
 
 export const DocumentCreate = ({
@@ -23,8 +24,9 @@ export const DocumentCreate = ({
   setAssetId,
   setPdfAssetId,
   setPdfData,
+  rulesetId,
 }: DocumentCreateProps) => {
-  const { assets, deleteAsset } = useAssets();
+  const { assets, deleteAsset } = useAssets(rulesetId);
   const pdfInputRef = useRef<HTMLInputElement>(null);
   const [pdfFilename, setPdfFilename] = useState<string | null>(null);
   const [uploadingPdf, setUploadingPdf] = useState(false);
@@ -49,11 +51,6 @@ export const DocumentCreate = ({
     }
     setAssetId(null);
     setImage(null);
-  };
-
-  const handleSetUrl = (url: string) => {
-    setAssetId(null);
-    setImage(url);
   };
 
   const handlePdfUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -99,7 +96,7 @@ export const DocumentCreate = ({
             alt='Document cover image'
             onUpload={handleImageUpload}
             onRemove={handleImageRemove}
-            onSetUrl={handleSetUrl}
+            rulesetId={rulesetId}
           />
         </div>
 

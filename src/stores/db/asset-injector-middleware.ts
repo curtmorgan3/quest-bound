@@ -15,9 +15,7 @@ function injectImageData(record: any) {
 
   let next = record;
 
-  if (record.assetUrl) {
-    next = { ...next, image: record.assetUrl };
-  } else if (record.assetId) {
+  if (record.assetId) {
     const asset = resolveAssetUrl(record.assetId);
     if (asset) next = { ...next, image: asset };
   }
@@ -71,6 +69,8 @@ export const assetInjectorMiddleware: Middleware<DBCore> = {
             'worlds',
             'locations',
             'tilemaps',
+            'characterPages',
+            'components',
           ].indexOf(tableName) === -1
         ) {
           return downlevelTable;

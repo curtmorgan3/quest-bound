@@ -22,34 +22,26 @@ export const useAssets = (_rulesetId?: string | null, worldId?: string | null) =
   // Get all assets for the current ruleset
   const assets = useLiveQuery(query, [rulesetId]);
 
+  /** Thrown when filename already exists in the ruleset (filename uniqueness per ruleset). */
+  const duplicateFilenameError = (filename: string) =>
+    new Error(`An asset named "${filename}" already exists in this ruleset. Use a different name.`);
+
   const createAsset = async (
     file: File,
-    directory?: string,
+    _directory?: string,
     overrideRulesetId?: string,
   ): Promise<string> => {
-    const targetRulesetId = rulesetId || overrideRulesetId || null;
+    const targetRulesetId = rulesetId ?? overrideRulesetId ?? null;
 
-    // Check for duplicate filename in the same directory and ruleset
-    const assetsQuery = targetRulesetId
-      ? db.assets.where('rulesetId').equals(targetRulesetId)
-      : db.assets.filter((asset) => !asset.rulesetId);
-
-    const existingAsset = await assetsQuery
-      .filter(
-        (asset) =>
-          asset.filename === file.name &&
-          (asset.directory || undefined) === (directory || undefined),
-      )
-      .first();
-
-    if (existingAsset) {
-      addNotification(
-        `An asset named "${file.name}" already exists. Referencing that asset instead.`,
-        {
-          type: 'info',
-        },
-      );
-      return existingAsset.id;
+    if (targetRulesetId != null) {
+      const existing = await db.assets
+        .where('[rulesetId+filename]')
+        .equals([targetRulesetId, file.name])
+        .first();
+      if (existing) {
+        addNotification(duplicateFilenameError(file.name).message, { type: 'error' });
+        throw duplicateFilenameError(file.name);
+      }
     }
 
     const reader = new FileReader();
@@ -62,7 +54,6 @@ export const useAssets = (_rulesetId?: string | null, worldId?: string | null) =
             data: base64String,
             type: file.type,
             filename: file.name,
-            directory: directory || undefined,
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
             rulesetId: targetRulesetId,
@@ -81,13 +72,40 @@ export const useAssets = (_rulesetId?: string | null, worldId?: string | null) =
     });
   };
 
-  const createDirectory = async (dirName: string, parent = '', rulesetId?: string) => {
-    const folderContent = '';
-    const folderFile: File = new File([folderContent], `.folder-${dirName}`, {
-      type: 'text/plain',
-    });
+  const createUrlAsset = async (
+    url: string,
+    options: { filename: string; rulesetId?: string | null; worldId?: string | null },
+  ): Promise<string> => {
+    const { filename, rulesetId: optRulesetId, worldId: optWorldId } = options;
+    const targetRulesetId = optRulesetId ?? rulesetId ?? null;
 
-    await createAsset(folderFile, parent, rulesetId);
+    if (targetRulesetId != null) {
+      const existing = await db.assets
+        .where('[rulesetId+filename]')
+        .equals([targetRulesetId, filename])
+        .first();
+      if (existing) {
+        addNotification(duplicateFilenameError(filename).message, { type: 'error' });
+        throw duplicateFilenameError(filename);
+      }
+    }
+
+    const id = crypto.randomUUID();
+    await db.assets.add({
+      id,
+      data: url,
+      type: 'url',
+      filename,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      rulesetId: targetRulesetId,
+      worldId: optWorldId ?? worldId,
+    });
+    return id;
+  };
+
+  const createDirectory = async (_dirName: string, _parent = '', _rulesetId?: string) => {
+    throw new Error('Directories are no longer supported; use filename-only assets.');
   };
 
   const deleteAsset = async (id: string) => {
@@ -95,6 +113,19 @@ export const useAssets = (_rulesetId?: string | null, worldId?: string | null) =
   };
 
   const updateAsset = async (id: string, updates: Partial<Asset>) => {
+    if (updates.filename != null) {
+      const asset = await db.assets.get(id);
+      if (asset && asset.rulesetId != null) {
+        const existing = await db.assets
+          .where('[rulesetId+filename]')
+          .equals([asset.rulesetId, updates.filename])
+          .first();
+        if (existing && existing.id !== id) {
+          addNotification(duplicateFilenameError(updates.filename).message, { type: 'error' });
+          throw duplicateFilenameError(updates.filename);
+        }
+      }
+    }
     await db.assets.update(id, {
       ...updates,
       updatedAt: new Date().toISOString(),
@@ -104,6 +135,7 @@ export const useAssets = (_rulesetId?: string | null, worldId?: string | null) =
   return {
     assets: assets ?? ([] as Asset[]),
     createAsset,
+    createUrlAsset,
     createDirectory,
     deleteAsset,
     updateAsset,

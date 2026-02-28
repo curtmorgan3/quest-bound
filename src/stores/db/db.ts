@@ -43,8 +43,9 @@ import { assetInjectorMiddleware } from './asset-injector-middleware';
 import { chartOptionsMiddleware, memoizedCharts } from './chart-options-middleware';
 import { registerDbHooks } from './hooks/db-hooks';
 import { memoizedAssets } from './memoization-cache';
-import { dbSchema, dbSchemaVersion, dbSchemaV41, dbSchemaV42 } from './schema';
+import { dbSchema, dbSchemaVersion, dbSchemaV41, dbSchemaV42, dbSchemaV44 } from './schema';
 import { migrate41to42 } from './migrations/migrate-41-to-42';
+import { migrate43to44 } from './migrations/migrate-43-to-44';
 
 const db = new Dexie('qbdb') as Dexie & {
   users: EntityTable<
@@ -127,7 +128,7 @@ db.version(33)
     });
   });
 
-db.version(dbSchemaVersion).stores(dbSchema);
+db.version(dbSchemaVersion).stores(dbSchemaV44).upgrade(migrate43to44);
 
 // Cache assets for reference in the asset injector middleware
 db.on('ready', async () => {
@@ -154,5 +155,14 @@ db.on('ready', async () => {
 db.use(assetInjectorMiddleware);
 db.use(chartOptionsMiddleware);
 registerDbHooks(db);
+
+// Expose db and manual migration runner in dev for console use (e.g. run migration manually)
+if (import.meta.env?.DEV && typeof window !== 'undefined') {
+  (window as unknown as { __QB_DB__?: typeof db }).__QB_DB__ = db;
+  import('./migrations/run-migration-manually').then((m) => {
+    (window as unknown as { __QB_RUN_MIGRATION_43_44?: () => Promise<{ ok: boolean; message: string }> }).__QB_RUN_MIGRATION_43_44 = () =>
+      m.runMigration43to44Manually(db);
+  });
+}
 
 export { db };

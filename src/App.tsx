@@ -1,6 +1,7 @@
 import { useFeatureFlag } from '@/hooks/use-feature-flag';
 import {
   ArchetypeSheetEditor,
+  AssetsPage,
   CampaignDocumentsPage,
   CampaignEvents,
   CampaignNew,
@@ -47,6 +48,7 @@ function CompassRoutes() {
               path={`/rulesets/:rulesetId/attributes`}
               element={<Ruleset page='attributes' />}
             />
+            <Route path={`/rulesets/:rulesetId/assets`} element={<AssetsPage />} />
             <Route path={`/rulesets/:rulesetId/items`} element={<Ruleset page='items' />} />
             <Route path={`/rulesets/:rulesetId/actions`} element={<Ruleset page='actions' />} />
             <Route path={`/rulesets/:rulesetId/charts`} element={<Ruleset page='charts' />} />

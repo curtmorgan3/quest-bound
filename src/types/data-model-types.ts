@@ -18,11 +18,12 @@ export type Action = BaseDetails & {
 
 export type Asset = BaseDetails & {
   data: string; // Base64 or URL
-  type: string; // MIME type
+  type: string; // MIME type or 'url' for URL-backed assets
   filename: string;
   rulesetId: string | null; // Nullable for user assets
   /** Optional world for tracking/exporting worlds. */
   worldId?: string | null;
+  /** @deprecated Removed in v44; only filename is used. Kept for backwards-compat read of old export/metadata. */
   directory?: string;
   /** Module origin: ruleset id, source entity id, and module name. */
   moduleId?: string;
@@ -102,7 +103,8 @@ export type Character = BaseDetails & {
   inventoryId: string;
   name: string;
   assetId: string | null;
-  image: string | null;
+  /** Injected from asset.data when assetId is set; do not persist on entity. */
+  image?: string | null;
   isTestCharacter: boolean;
   isNpc?: boolean;
   componentData: Record<string, any>;
@@ -161,6 +163,7 @@ export type Page = BaseDetails & {
   label: string;
   category?: string;
   assetId?: string;
+  /** @deprecated Removed in v44; only assetId is persisted. image is injected from asset. */
   assetUrl?: string;
   backgroundOpacity?: number;
   backgroundColor?: string;
@@ -337,7 +340,8 @@ export type Ruleset = BaseDetails & {
   description: string;
   details: Record<string, any>;
   assetId: string | null;
-  image: string | null;
+  /** Injected from asset.data when assetId is set; do not persist on entity. */
+  image?: string | null;
   palette: string[];
   /** When true, this ruleset can be added as a module to other rulesets. */
   isModule?: boolean;

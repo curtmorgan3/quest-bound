@@ -11,6 +11,7 @@ interface ActionCreateProps {
   setAssetId: Dispatch<SetStateAction<string | null>>;
   setInventoryWidth: Dispatch<SetStateAction<number>>;
   setInventoryHeight: Dispatch<SetStateAction<number>>;
+  rulesetId?: string;
 }
 
 export const ActionCreate = ({
@@ -22,8 +23,9 @@ export const ActionCreate = ({
   setAssetId,
   setInventoryHeight,
   setInventoryWidth,
+  rulesetId,
 }: ActionCreateProps) => {
-  const { assets, deleteAsset } = useAssets();
+  const { assets, deleteAsset } = useAssets(rulesetId);
 
   const getImageFromAssetId = (id: string | null) => {
     if (!id) return null;
@@ -37,11 +39,6 @@ export const ActionCreate = ({
     if (imageData) {
       setImage(imageData);
     }
-  };
-
-  const handleSetUrl = (url: string) => {
-    setAssetId(null);
-    setImage(url);
   };
 
   const handleImageRemove = async () => {
@@ -64,7 +61,7 @@ export const ActionCreate = ({
             alt='Attribute image'
             onUpload={handleImageUpload}
             onRemove={handleImageRemove}
-            onSetUrl={handleSetUrl}
+            rulesetId={rulesetId}
           />
         </div>
         <div className='flex flex-col gap-2 w-[50%]'>

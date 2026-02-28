@@ -67,7 +67,6 @@ interface ImageUploadProps {
   image?: string | null;
   alt?: string;
   onUpload?: (assetId: string) => void;
-  onSetUrl?: (url: string) => void;
   onRemove?: () => void;
   rulesetId?: string | null;
   worldId?: string | null;
@@ -80,7 +79,6 @@ interface ImageUploadProps {
 export const ImageUpload = ({
   image,
   onUpload,
-  onSetUrl,
   onRemove,
   rulesetId,
   worldId,
@@ -89,11 +87,12 @@ export const ImageUpload = ({
   maxHeight,
 }: ImageUploadProps) => {
   const id = crypto.randomUUID();
-  const { createAsset } = useAssets(rulesetId);
+  const { createAsset, createUrlAsset } = useAssets(rulesetId, worldId);
   const [loading, setLoading] = useState(false);
   const [hovering, setHovering] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [urlInput, setUrlInput] = useState('');
+  const [urlNameInput, setUrlNameInput] = useState('');
   const [urlError, setUrlError] = useState<string | null>(null);
 
   const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -115,29 +114,44 @@ export const ImageUpload = ({
     e.target.value = '';
   };
 
-  const handleUrlSubmit = () => {
+  const handleUrlSubmit = async () => {
     const url = urlInput.trim();
+    const name = urlNameInput.trim();
     if (!url) {
       setUrlError('Please enter a URL');
       return;
     }
+    if (!name) {
+      setUrlError('Please enter a name for the image');
+      return;
+    }
     setUrlError(null);
-    onSetUrl?.(url);
-    setUrlInput('');
-    setDialogOpen(false);
+    setLoading(true);
+    try {
+      const assetId = await createUrlAsset(url, {
+        filename: name,
+        rulesetId: rulesetId ?? null,
+        worldId: worldId ?? null,
+      });
+      onUpload?.(assetId);
+      setUrlInput('');
+      setUrlNameInput('');
+      setDialogOpen(false);
+    } catch (e) {
+      setUrlError(e instanceof Error ? e.message : 'Failed to add image');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const isImageUrl = (src: string) => src.startsWith('http://') || src.startsWith('https://');
 
   const handleClick = () => {
     if (loading) return;
-    if (onSetUrl) {
-      setUrlError(null);
-      setUrlInput(image && isImageUrl(image) ? image : '');
-      setDialogOpen(true);
-    } else {
-      triggerFileInput();
-    }
+    setUrlError(null);
+    setUrlInput(image && isImageUrl(image) ? image : '');
+    setUrlNameInput('');
+    setDialogOpen(true);
   };
 
   const triggerFileInput = () => {
@@ -183,63 +197,78 @@ export const ImageUpload = ({
         onChange={handleImageChange}
       />
 
-      {onSetUrl && (
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogContent className='sm:max-w-md'>
-            <DialogHeader>
-              <DialogTitle>Add image</DialogTitle>
-              <DialogDescription>
-                Enter an image URL or select a file from your device.
-              </DialogDescription>
-            </DialogHeader>
-            <div className='flex flex-col gap-4 py-2'>
-              <div className='flex flex-col gap-2'>
-                <Label htmlFor={`url-input-${id}`}>Image URL</Label>
-                <div className='flex gap-2'>
-                  <Input
-                    id={`url-input-${id}`}
-                    type='url'
-                    placeholder='https://example.com/image.png'
-                    value={urlInput}
-                    onChange={(e) => {
-                      setUrlInput(e.target.value);
-                      setUrlError(null);
-                    }}
-                    onKeyDown={(e) => e.key === 'Enter' && handleUrlSubmit()}
-                  />
-                  <Button
-                    type='button'
-                    variant='secondary'
-                    size='icon'
-                    onClick={handleUrlSubmit}
-                    disabled={loading}>
-                    <Save className='size-4' />
-                  </Button>
-                </div>
-                {urlError && <p className='text-destructive text-sm'>{urlError}</p>}
-              </div>
-              <div className='relative'>
-                <div className='absolute inset-0 flex items-center'>
-                  <span className='w-full border-t' />
-                </div>
-                <div className='relative flex justify-center text-muted-foreground text-xs uppercase'>
-                  or
-                </div>
-              </div>
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className='sm:max-w-md'>
+          <DialogHeader>
+            <DialogTitle>Add image</DialogTitle>
+            <DialogDescription>
+              Enter an image URL or select a file from your device. Names must be unique within the
+              ruleset.
+            </DialogDescription>
+          </DialogHeader>
+          <div className='flex flex-col gap-4 py-2'>
+            <div className='flex flex-col gap-2'>
+              <Label htmlFor={`url-input-${id}`}>Image URL</Label>
+              <Input
+                id={`url-input-${id}`}
+                type='url'
+                placeholder='https://example.com/image.png'
+                value={urlInput}
+                onChange={(e) => {
+                  setUrlInput(e.target.value);
+                  setUrlError(null);
+                }}
+                onKeyDown={(e) => e.key === 'Enter' && handleUrlSubmit()}
+              />
+            </div>
+            <div className='flex flex-col gap-2'>
+              <Label htmlFor={`url-name-${id}`}>
+                Name <span className='text-destructive'>*</span>
+              </Label>
+              <Input
+                id={`url-name-${id}`}
+                type='text'
+                placeholder='e.g. cover.png'
+                value={urlNameInput}
+                onChange={(e) => {
+                  setUrlNameInput(e.target.value);
+                  setUrlError(null);
+                }}
+                onKeyDown={(e) => e.key === 'Enter' && handleUrlSubmit()}
+              />
+            </div>
+            {urlError && <p className='text-destructive text-sm'>{urlError}</p>}
+            <div className='flex gap-2 justify-end'>
               <Button
                 type='button'
-                variant='outline'
-                onClick={triggerFileInput}
-                disabled={loading}
-                className='w-full'>
-                <ImagePlus className='size-4 mr-2' />
-                Select file
+                variant='secondary'
+                onClick={handleUrlSubmit}
+                disabled={loading}>
+                <Save className='size-4 mr-2' />
+                Add URL
               </Button>
             </div>
-            <DialogFooter />
-          </DialogContent>
-        </Dialog>
-      )}
+            <div className='relative'>
+              <div className='absolute inset-0 flex items-center'>
+                <span className='w-full border-t' />
+              </div>
+              <div className='relative flex justify-center text-muted-foreground text-xs uppercase'>
+                or
+              </div>
+            </div>
+            <Button
+              type='button'
+              variant='outline'
+              onClick={triggerFileInput}
+              disabled={loading}
+              className='w-full'>
+              <ImagePlus className='size-4 mr-2' />
+              Select file
+            </Button>
+          </div>
+          <DialogFooter />
+        </DialogContent>
+      </Dialog>
     </>
   );
 };

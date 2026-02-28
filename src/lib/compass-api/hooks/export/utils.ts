@@ -178,19 +178,12 @@ export function convertToTsv<T extends Record<string, unknown>>(
 }
 
 /**
- * Helper to build a map of asset IDs to filenames (with directory path)
+ * Helper to build a map of asset IDs to filenames (filename-only per v44; directory no longer used).
  */
 export function buildAssetFilenameMap(assets: Asset[]): Record<string, string> {
   const map: Record<string, string> = {};
   for (const asset of assets) {
-    let fullPath = asset.filename;
-    if (asset.directory) {
-      const directoryPath = asset.directory.replace(/^\/+|\/+$/g, '');
-      if (directoryPath) {
-        fullPath = `${directoryPath}/${asset.filename}`;
-      }
-    }
-    map[asset.id] = fullPath;
+    map[asset.id] = asset.filename;
   }
   return map;
 }

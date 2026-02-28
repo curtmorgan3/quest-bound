@@ -89,7 +89,6 @@ export const UserSettings = () => {
         alt={currentUser.username}
         onRemove={() => updateUser(currentUser.id, { assetId: null })}
         onUpload={(assetId) => updateUser(currentUser.id, { assetId })}
-        onSetUrl={(url) => updateUser(currentUser.id, { assetId: null, image: url })}
         rulesetId={null}
       />
 
