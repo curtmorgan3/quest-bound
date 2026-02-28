@@ -1,4 +1,5 @@
 import { buildDependencyGraph } from '@/lib/compass-logic/reactive/dependency-graph';
+import { deleteAssetIfUnreferenced } from './asset-hooks';
 import type { DB } from './types';
 
 export function registerActionDbHooks(db: DB) {
@@ -12,30 +13,17 @@ export function registerActionDbHooks(db: DB) {
     }
   });
 
-  // Delete associated asset when an action is deleted
-  db.actions.hook('deleting', (_primKey, obj) => {
-    if (obj?.assetId) {
-      setTimeout(async () => {
-        try {
-          await db.assets.delete(obj.assetId);
-        } catch (error) {
-          console.error('Failed to delete asset for action:', error);
-        }
-      }, 0);
-    }
-  });
+  // Do not cascade-delete asset when action is deleted (asset may be shared)
 
-  // Delete old asset when an action's asset is removed
+  // Delete asset only when no longer referenced after an action clears its asset
   db.actions.hook('updating', (modifications, _primKey, obj) => {
     const mods = modifications as { assetId?: string | null };
-    // Check if assetId is being set to null/undefined and there was a previous asset
     if ('assetId' in mods && !mods.assetId && obj?.assetId) {
-      setTimeout(async () => {
-        try {
-          await db.assets.delete(obj.assetId);
-        } catch (error) {
-          console.error('Failed to delete old asset for action:', error);
-        }
+      const assetId = obj.assetId;
+      setTimeout(() => {
+        deleteAssetIfUnreferenced(db, assetId).catch((error) =>
+          console.error('Failed to delete unreferenced asset for action:', error),
+        );
       }, 0);
     }
   });

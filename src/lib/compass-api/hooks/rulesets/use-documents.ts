@@ -3,7 +3,6 @@ import { db, useApiLoadingStore } from '@/stores';
 import type { Document } from '@/types';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useEffect } from 'react';
-import { useAssets } from '../assets';
 import { useActiveRuleset } from './use-active-ruleset';
 
 export interface UseDocumentsOptions {
@@ -24,7 +23,6 @@ export interface UseDocumentsOptions {
 export const useDocuments = (rulesetIdOrOptions?: string | UseDocumentsOptions) => {
   const { activeRuleset } = useActiveRuleset();
   const { handleError } = useErrorHandler();
-  const { deleteAsset } = useAssets();
 
   const options: UseDocumentsOptions =
     typeof rulesetIdOrOptions === 'string'
@@ -93,15 +91,8 @@ export const useDocuments = (rulesetIdOrOptions?: string | UseDocumentsOptions) 
   const updateDocument = async (id: string, data: Partial<Document>) => {
     const now = new Date().toISOString();
     try {
-      if (data.assetId === null) {
-        const original = await db.documents.get(id);
-        if (original?.assetId) {
-          await deleteAsset(original.assetId);
-        }
-
-        if (!data.image) {
-          data.image = null;
-        }
+      if (data.assetId === null && !data.image) {
+        data.image = null;
       }
       await db.documents.update(id, {
         ...data,

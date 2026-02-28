@@ -11,13 +11,13 @@ export const EditImageNode = () => {
   const { assets } = useAssets();
 
   const id = useNodeId();
+  const component = getComponent(id ?? '');
+  const css = useComponentStyles(component);
 
   if (!id) return null;
-  const component = getComponent(id);
   if (!component) return null;
 
   const data = getComponentData(component) as ImageComponentData;
-  const css = useComponentStyles(component);
   const asset = assets.find((a) => a.id === data.assetId);
 
   const imageSrc = asset?.data ?? data.assetUrl;

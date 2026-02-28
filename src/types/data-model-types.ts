@@ -21,6 +21,7 @@ export type Asset = BaseDetails & {
   type: string; // MIME type or 'url' for URL-backed assets
   filename: string;
   rulesetId: string | null; // Nullable for user assets
+  category?: string;
   /** Optional world for tracking/exporting worlds. */
   worldId?: string | null;
   /** @deprecated Removed in v44; only filename is used. Kept for backwards-compat read of old export/metadata. */

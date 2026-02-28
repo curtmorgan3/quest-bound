@@ -14,8 +14,13 @@ import {
   DialogHeader,
   DialogTitle,
   Input,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from '@/components';
-import { ImageUpload, PageWrapper } from '@/components/composites';
+import { CategoryField, ImageUpload, PageWrapper } from '@/components/composites';
 import { useAssets } from '@/lib/compass-api';
 import { clearAssetReferences, db, getAssetReferenceCount } from '@/stores';
 import type { Asset } from '@/types';
@@ -27,6 +32,7 @@ import { useParams } from 'react-router-dom';
 const CARD_WIDTH = 180;
 const CARD_GAP = 16;
 const ROW_HEIGHT = 170;
+const ALL_CATEGORIES = 'all';
 
 export function AssetsPage() {
   const { rulesetId } = useParams<{ rulesetId: string }>();
@@ -34,7 +40,10 @@ export function AssetsPage() {
   const [editingAsset, setEditingAsset] = useState<Asset | null>(null);
   const [editFilename, setEditFilename] = useState('');
   const [editUrl, setEditUrl] = useState('');
+  const [editCategory, setEditCategory] = useState<string | null>(null);
   const [editError, setEditError] = useState<string | null>(null);
+  const [filterValue, setFilterValue] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState(ALL_CATEGORIES);
   const [deleteConfirm, setDeleteConfirm] = useState<{
     id: string;
     filename: string;
@@ -45,6 +54,7 @@ export function AssetsPage() {
     setEditingAsset(asset);
     setEditFilename(asset.filename);
     setEditUrl(asset.type === 'url' ? asset.data : '');
+    setEditCategory(asset.category ?? null);
     setEditError(null);
   };
 
@@ -52,6 +62,7 @@ export function AssetsPage() {
     setEditingAsset(null);
     setEditFilename('');
     setEditUrl('');
+    setEditCategory(null);
     setEditError(null);
   };
 
@@ -59,7 +70,10 @@ export function AssetsPage() {
     if (!editingAsset || !editFilename.trim()) return;
     setEditError(null);
     try {
-      const updates: Partial<Asset> = { filename: editFilename.trim() };
+      const updates: Partial<Asset> = {
+        filename: editFilename.trim(),
+        category: editCategory?.trim() || undefined,
+      };
       if (editingAsset.type === 'url' && editUrl.trim()) {
         updates.data = editUrl.trim();
       }
@@ -107,6 +121,23 @@ export function AssetsPage() {
     [assets],
   );
 
+  const assetCategories = useMemo(
+    () =>
+      Array.from(
+        new Set(assets.map((a) => a.category).filter((c): c is string => Boolean(c?.trim()))),
+      ).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' })),
+    [assets],
+  );
+
+  const filteredAssets = useMemo(() => {
+    return sortedAssets.filter((a) => {
+      const matchesName = a.filename.toLowerCase().includes(filterValue.toLowerCase());
+      const matchesCategory =
+        categoryFilter === ALL_CATEGORIES || (a.category?.trim() ?? '') === categoryFilter;
+      return matchesName && matchesCategory;
+    });
+  }, [sortedAssets, filterValue, categoryFilter]);
+
   const scrollRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState(0);
 
@@ -117,17 +148,17 @@ export function AssetsPage() {
   }, [containerWidth]);
 
   const rowCount = useMemo(
-    () => (sortedAssets.length === 0 ? 0 : Math.ceil(sortedAssets.length / columnCount)),
-    [sortedAssets.length, columnCount],
+    () => (filteredAssets.length === 0 ? 0 : Math.ceil(filteredAssets.length / columnCount)),
+    [filteredAssets.length, columnCount],
   );
 
   const rows = useMemo(() => {
     const out: Asset[][] = [];
-    for (let i = 0; i < sortedAssets.length; i += columnCount) {
-      out.push(sortedAssets.slice(i, i + columnCount));
+    for (let i = 0; i < filteredAssets.length; i += columnCount) {
+      out.push(filteredAssets.slice(i, i + columnCount));
     }
     return out;
-  }, [sortedAssets, columnCount]);
+  }, [filteredAssets, columnCount]);
 
   const virtualizer = useVirtualizer({
     count: rowCount,
@@ -150,7 +181,7 @@ export function AssetsPage() {
     ro.observe(el);
     syncWidth();
     return () => ro.disconnect();
-  }, [sortedAssets.length]);
+  }, [filteredAssets.length]);
 
   useEffect(() => {
     if (rowCount === 0) return;
@@ -203,13 +234,36 @@ export function AssetsPage() {
         <p className='text-sm text-muted-foreground'>
           Images and URL-backed assets for this ruleset. Names must be unique within the ruleset.
         </p>
+        <div className='flex flex-wrap items-center gap-2'>
+          <Input
+            className='max-w-md'
+            placeholder='Filter by name'
+            value={filterValue}
+            onChange={(e) => setFilterValue(e.target.value)}
+          />
+          <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+            <SelectTrigger className='w-[180px]'>
+              <SelectValue placeholder='Category' />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={ALL_CATEGORIES}>All categories</SelectItem>
+              {assetCategories.map((cat) => (
+                <SelectItem key={cat} value={cat}>
+                  {cat}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
         {sortedAssets.length === 0 ? (
           <p className='text-muted-foreground'>No assets in this ruleset yet.</p>
+        ) : filteredAssets.length === 0 ? (
+          <p className='text-muted-foreground'>No assets match the current filters.</p>
         ) : (
           <div
             ref={scrollRef}
             className='w-full overflow-auto rounded-md border'
-            style={{ height: 'calc(100vh - 100px)', contain: 'strict' }}>
+            style={{ height: 'calc(100vh - 180px)', contain: 'strict' }}>
             <div
               style={{
                 height: `${virtualizer.getTotalSize()}px`,
@@ -293,6 +347,11 @@ export function AssetsPage() {
                 />
                 {editError && <p className='text-sm text-destructive'>{editError}</p>}
               </div>
+              <CategoryField
+                value={editCategory}
+                onChange={setEditCategory}
+                existingCategories={assetCategories}
+              />
             </div>
           )}
           <DialogFooter>

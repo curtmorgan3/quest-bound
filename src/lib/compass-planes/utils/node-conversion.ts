@@ -77,9 +77,10 @@ export function getComponentStyles(component: Component): ComponentStyle {
   return enriched;
 }
 
-export function useComponentStyles(component: Component): ComponentStyle {
-  const styleValues = useStyleValues([component]);
+export function useComponentStyles(component: Component | null): ComponentStyle {
+  const styleValues = useStyleValues(component ? [component] : []);
   return useMemo(() => {
+    if (!component) return {} as ComponentStyle;
     const styles = JSON.parse(component.style) as ComponentStyle;
     for (const key of STYLE_KEYS) {
       (styles as Record<string, unknown>)[key] = styleValues[key].resolved;
@@ -93,8 +94,6 @@ export function useComponentPosition(component?: Component): PositionValues {
   return usePositionValues([component]);
 }
 
-export function useComponentPositionMap(
-  components: Component[],
-): Map<string, PositionValues> {
+export function useComponentPositionMap(components: Component[]): Map<string, PositionValues> {
   return usePositionValuesMap(components);
 }

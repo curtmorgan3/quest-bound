@@ -9,14 +9,12 @@ import { ResizableNode } from '../../decorators';
 
 export const EditFrameNode = () => {
   const { getComponent } = useContext(WindowEditorContext);
-
   const id = useNodeId();
+  const component = id ? getComponent(id) : null;
+  const css = useComponentStyles(component);
 
   if (!id) return null;
-  const component = getComponent(id);
   if (!component) return null;
-
-  const css = useComponentStyles(component);
 
   return (
     <ResizableNode component={component}>

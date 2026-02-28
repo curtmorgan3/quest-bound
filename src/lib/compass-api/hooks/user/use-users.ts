@@ -1,8 +1,7 @@
-import { db, useCurrentUser } from '@/stores';
+import { db, deleteAssetIfUnreferenced, useCurrentUser } from '@/stores';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { useAssets } from '../assets';
 import { useRulesets } from '../rulesets';
 
 type UpdateUser = {
@@ -15,7 +14,6 @@ type UpdateUser = {
 
 export const useUsers = () => {
   const { currentUser, setCurrentUser } = useCurrentUser();
-  const { deleteAsset } = useAssets();
   const { deleteRuleset } = useRulesets();
   const [, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -82,10 +80,8 @@ export const useUsers = () => {
         return;
       }
 
-      if (updates.assetId === null) {
-        if (user?.assetId) {
-          await deleteAsset(user.assetId);
-        }
+      if (updates.assetId === null && user?.assetId) {
+        await deleteAssetIfUnreferenced(db, user.assetId);
       }
 
       const userUpdates = {
@@ -119,10 +115,6 @@ export const useUsers = () => {
       // Delete associated rulesets
       for (const rulesetId of user.rulesets || []) {
         await deleteRuleset(rulesetId);
-      }
-
-      if (user.assetId) {
-        await deleteAsset(user.assetId);
       }
 
       await db.users.delete(id);

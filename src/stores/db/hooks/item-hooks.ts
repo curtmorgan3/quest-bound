@@ -1,4 +1,5 @@
 import { buildDependencyGraph } from '@/lib/compass-logic/reactive/dependency-graph';
+import { deleteAssetIfUnreferenced } from './asset-hooks';
 import type { DB } from './types';
 
 export function registerItemDbHooks(db: DB) {
@@ -12,33 +13,27 @@ export function registerItemDbHooks(db: DB) {
     }
   });
 
-  // Delete itemCustomProperties and associated asset when an item is deleted
-  db.items.hook('deleting', (primKey, obj) => {
+  // Delete itemCustomProperties when an item is deleted (asset is not cascade-deleted; may be shared)
+  db.items.hook('deleting', (primKey) => {
     const itemId = primKey as string;
-    const assetId = obj?.assetId;
     setTimeout(async () => {
       try {
         await db.itemCustomProperties.where('itemId').equals(itemId).delete();
-        if (assetId) {
-          await db.assets.delete(assetId);
-        }
       } catch (error) {
-        console.error('Failed to delete item custom properties or asset for item:', error);
+        console.error('Failed to delete item custom properties for item:', error);
       }
     }, 0);
   });
 
-  // Delete old asset when an item's asset is removed
+  // Delete asset only when no longer referenced after an item clears its asset
   db.items.hook('updating', (modifications, _primKey, obj) => {
     const mods = modifications as { assetId?: string | null };
-    // Check if assetId is being set to null/undefined and there was a previous asset
     if ('assetId' in mods && !mods.assetId && obj?.assetId) {
-      setTimeout(async () => {
-        try {
-          await db.assets.delete(obj.assetId);
-        } catch (error) {
-          console.error('Failed to delete old asset for item:', error);
-        }
+      const assetId = obj.assetId;
+      setTimeout(() => {
+        deleteAssetIfUnreferenced(db, assetId).catch((error) =>
+          console.error('Failed to delete unreferenced asset for item:', error),
+        );
       }, 0);
     }
   });

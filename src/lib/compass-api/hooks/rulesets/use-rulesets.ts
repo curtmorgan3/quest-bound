@@ -1,15 +1,19 @@
 import { useErrorHandler } from '@/hooks/use-error-handler';
-import { db, useApiLoadingStore, useArchetypeStore, useCurrentUser } from '@/stores';
+import {
+  db,
+  deleteAssetIfUnreferenced,
+  useApiLoadingStore,
+  useArchetypeStore,
+  useCurrentUser,
+} from '@/stores';
 import type { Archetype, Character, Inventory, Ruleset } from '@/types';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { useAssets } from '../assets';
 import { useCharacter } from '../characters';
 
 export const useRulesets = () => {
   const { currentUser } = useCurrentUser();
-  const { deleteAsset } = useAssets();
 
   const [loading, setLoading] = useState(false);
   const _rulesets = useLiveQuery(() => db.rulesets.toArray(), []);
@@ -187,7 +191,7 @@ export const useRulesets = () => {
       if (updates.assetId === null) {
         const original = await db.rulesets.get(id);
         if (original?.assetId) {
-          await deleteAsset(original.assetId);
+          await deleteAssetIfUnreferenced(db, original.assetId);
         }
 
         if (!updates.image) {

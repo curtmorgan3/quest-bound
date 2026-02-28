@@ -14,8 +14,10 @@ import { ResizableNode } from '../../decorators';
 export const EditTextNode = () => {
   const { getComponent, updateComponent } = useContext(WindowEditorContext);
   const id = useNodeId();
+  const component = id ? getComponent(id) : null;
   const [isEditing, setIsEditing] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const css = useComponentStyles(component) as TextComponentStyle;
 
   // Focus input when entering edit mode
   useEffect(() => {
@@ -26,11 +28,9 @@ export const EditTextNode = () => {
   }, [isEditing]);
 
   if (!id) return null;
-  const component = getComponent(id);
   if (!component) return null;
 
   const data = getComponentData(component) as TextComponentData;
-  const css = useComponentStyles(component) as TextComponentStyle;
 
   const handleDoubleClick = () => {
     if (!component.locked) {

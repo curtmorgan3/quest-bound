@@ -1,4 +1,16 @@
 import {
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarTrigger,
+  useSidebar,
+} from '@/components/ui/sidebar';
+import { useFeatureFlag } from '@/hooks/use-feature-flag';
+import { useActiveRuleset } from '@/lib/compass-api';
+import {
   AppWindow,
   BookOpen,
   FileCode,
@@ -14,18 +26,6 @@ import {
   UserRoundPen,
   Users,
 } from 'lucide-react';
-import {
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  SidebarTrigger,
-  useSidebar,
-} from '@/components/ui/sidebar';
-import { useFeatureFlag } from '@/hooks/use-feature-flag';
-import { useActiveRuleset } from '@/lib/compass-api';
 import { Link, useLocation } from 'react-router-dom';
 
 const HOMEPAGE_ITEMS = [
@@ -57,16 +57,20 @@ export function RulesetSidebar() {
   const items = isHomepage
     ? homepageItems
     : [
-        { title: 'Attributes', url: `/rulesets/${activeRuleset?.id}/attributes`, icon: UserRoundPen },
+        {
+          title: 'Attributes',
+          url: `/rulesets/${activeRuleset?.id}/attributes`,
+          icon: UserRoundPen,
+        },
         { title: 'Actions', url: `/rulesets/${activeRuleset?.id}/actions`, icon: HandFist },
         { title: 'Items', url: `/rulesets/${activeRuleset?.id}/items`, icon: Sword },
         { title: 'Charts', url: `/rulesets/${activeRuleset?.id}/charts`, icon: FileSpreadsheet },
-        { title: 'Assets', url: `/rulesets/${activeRuleset?.id}/assets`, icon: Image },
         { title: 'Documents', url: `/rulesets/${activeRuleset?.id}/documents`, icon: Newspaper },
         { title: 'Windows', url: `/rulesets/${activeRuleset?.id}/windows`, icon: AppWindow },
         { title: 'Pages', url: `/rulesets/${activeRuleset?.id}/pages`, icon: LayoutTemplate },
         { title: 'Archetypes', url: `/rulesets/${activeRuleset?.id}/archetypes`, icon: User },
         { title: 'Scripts', url: `/rulesets/${activeRuleset?.id}/scripts`, icon: FileCode },
+        { title: 'Assets', url: `/rulesets/${activeRuleset?.id}/assets`, icon: Image },
       ];
 
   const title = activeRuleset?.title ?? 'Quest Bound';

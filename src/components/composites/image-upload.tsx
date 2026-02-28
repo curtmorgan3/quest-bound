@@ -208,20 +208,6 @@ export const ImageUpload = ({
           </DialogHeader>
           <div className='flex flex-col gap-4 py-2'>
             <div className='flex flex-col gap-2'>
-              <Label htmlFor={`url-input-${id}`}>Image URL</Label>
-              <Input
-                id={`url-input-${id}`}
-                type='url'
-                placeholder='https://example.com/image.png'
-                value={urlInput}
-                onChange={(e) => {
-                  setUrlInput(e.target.value);
-                  setUrlError(null);
-                }}
-                onKeyDown={(e) => e.key === 'Enter' && handleUrlSubmit()}
-              />
-            </div>
-            <div className='flex flex-col gap-2'>
               <Label htmlFor={`url-name-${id}`}>
                 Name <span className='text-destructive'>*</span>
               </Label>
@@ -237,17 +223,32 @@ export const ImageUpload = ({
                 onKeyDown={(e) => e.key === 'Enter' && handleUrlSubmit()}
               />
             </div>
-            {urlError && <p className='text-destructive text-sm'>{urlError}</p>}
-            <div className='flex gap-2 justify-end'>
+            <div className='flex gap-2 items-end'>
+              <div className='flex flex-col gap-2 flex-1'>
+                <Label htmlFor={`url-input-${id}`}>Image URL</Label>
+                <Input
+                  id={`url-input-${id}`}
+                  type='url'
+                  placeholder='https://example.com/image.png'
+                  value={urlInput}
+                  onChange={(e) => {
+                    setUrlInput(e.target.value);
+                    setUrlError(null);
+                  }}
+                  onKeyDown={(e) => e.key === 'Enter' && handleUrlSubmit()}
+                />
+              </div>
               <Button
                 type='button'
-                variant='secondary'
+                className='w-[50px]'
+                variant='ghost'
                 onClick={handleUrlSubmit}
                 disabled={loading}>
                 <Save className='size-4 mr-2' />
-                Add URL
               </Button>
             </div>
+            {urlError && <p className='text-destructive text-sm'>{urlError}</p>}
+
             <div className='relative'>
               <div className='absolute inset-0 flex items-center'>
                 <span className='w-full border-t' />

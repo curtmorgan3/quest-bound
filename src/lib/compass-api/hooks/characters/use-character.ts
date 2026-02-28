@@ -4,13 +4,12 @@ import {
   executeCharacterLoader,
 } from '@/lib/compass-logic/reactive/event-handler-executor';
 import { getQBScriptClient } from '@/lib/compass-logic/worker';
-import { db, useCurrentUser } from '@/stores';
+import { db, deleteAssetIfUnreferenced, useCurrentUser } from '@/stores';
 import type { Archetype, Character, Inventory } from '@/types';
 import { duplicateCharacterFromTemplate } from '@/utils/duplicate-character-from-template';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useMemo } from 'react';
 import { useParams } from 'react-router-dom';
-import { useAssets } from '../assets';
 
 export type CharacterWithInventories = Character & {
   inventory: Inventory;
@@ -29,7 +28,6 @@ export const useCharacter = (_id?: string) => {
   const { characterId } = useParams();
   const { currentUser } = useCurrentUser();
   const { handleError } = useErrorHandler();
-  const { deleteAsset } = useAssets();
 
   const { addNotification } = useNotifications();
 
@@ -237,7 +235,7 @@ export const useCharacter = (_id?: string) => {
       if (data.assetId === null) {
         const original = await db.characters.get(id);
         if (original?.assetId) {
-          await deleteAsset(original.assetId);
+          await deleteAssetIfUnreferenced(db, original.assetId);
         }
 
         if (!data.image) {
@@ -261,10 +259,6 @@ export const useCharacter = (_id?: string) => {
     try {
       const character = await db.characters.get(id);
       if (!character) return;
-
-      if (character.assetId) {
-        await deleteAsset(character.assetId);
-      }
 
       const characterAttributes = await db.characterAttributes
         .where({ characterId: character.id })

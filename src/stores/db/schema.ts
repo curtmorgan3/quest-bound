@@ -99,5 +99,11 @@ export const dbSchemaV44 = {
   components: `${common}, rulesetId, windowId, type, x, y, z, height, width, rotation, selected, assetId, groupId, attributeId, actionId, data, style`,
 };
 
+/** Schema for v45: assets have category. */
+export const dbSchemaV45 = {
+  ...dbSchemaV44,
+  assets: `${common}, rulesetId, filename, data, type, category, moduleId, [rulesetId+filename]`,
+};
+
 // Increment on every schema change
-export const dbSchemaVersion = 44;
+export const dbSchemaVersion = 45;

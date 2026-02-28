@@ -1,15 +1,13 @@
 import { useErrorHandler } from '@/hooks/use-error-handler';
-import { db, useApiLoadingStore } from '@/stores';
+import { db, deleteAssetIfUnreferenced, useApiLoadingStore } from '@/stores';
 import type { Chart } from '@/types';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useEffect } from 'react';
-import { useAssets } from '../assets';
 import { useActiveRuleset } from './use-active-ruleset';
 
 export const useCharts = (rulesetId?: string) => {
   const { activeRuleset } = useActiveRuleset();
   const { handleError } = useErrorHandler();
-  const { deleteAsset } = useAssets();
 
   const effectiveRulesetId = rulesetId ?? activeRuleset?.id;
 
@@ -52,7 +50,7 @@ export const useCharts = (rulesetId?: string) => {
       if (data.assetId === null) {
         const original = await db.charts.get(id);
         if (original?.assetId) {
-          await deleteAsset(original.assetId);
+          await deleteAssetIfUnreferenced(db, original.assetId);
         }
 
         if (!data.image) {

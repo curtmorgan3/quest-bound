@@ -1,15 +1,13 @@
 import { useErrorHandler } from '@/hooks';
-import { db, useApiLoadingStore } from '@/stores';
+import { db, deleteAssetIfUnreferenced, useApiLoadingStore } from '@/stores';
 import type { Attribute } from '@/types';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useEffect } from 'react';
-import { useAssets } from '../assets';
 import { useActiveRuleset } from './use-active-ruleset';
 
 export const useAttributes = () => {
   const { activeRuleset } = useActiveRuleset();
   const { handleError } = useErrorHandler();
-  const { deleteAsset } = useAssets();
 
   const attributes = useLiveQuery(
     () =>
@@ -78,7 +76,7 @@ export const useAttributes = () => {
       if (data.assetId === null) {
         const original = await db.attributes.get(id);
         if (original?.assetId) {
-          await deleteAsset(original.assetId);
+          await deleteAssetIfUnreferenced(db, original.assetId);
         }
 
         if (!data.image) {

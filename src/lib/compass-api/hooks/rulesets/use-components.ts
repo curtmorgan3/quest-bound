@@ -1,7 +1,6 @@
 import { useErrorHandler } from '@/hooks';
-import { getComponentData } from '@/lib/compass-planes/utils';
 import { db, useApiLoadingStore } from '@/stores';
-import type { Component, ImageComponentData } from '@/types';
+import type { Component } from '@/types';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useEffect } from 'react';
 import { useActiveRuleset } from './use-active-ruleset';
@@ -105,15 +104,7 @@ export const useComponents = (windowId?: string) => {
 
   const deleteComponent = async (id: string) => {
     try {
-      const component = await db.components.get(id);
-
-      if (component) {
-        const data = getComponentData(component) as ImageComponentData;
-        if (data.assetId) {
-          await db.assets.delete(data.assetId);
-        }
-        await db.components.delete(id);
-      }
+      await db.components.delete(id);
     } catch (e) {
       handleError(e as Error, {
         component: 'useComponents/deleteComponent',

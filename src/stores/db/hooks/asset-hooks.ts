@@ -16,6 +16,7 @@ export async function getAssetReferenceCount(db: DB, assetId: string): Promise<n
     worldCount,
     tilemapCount,
     characterPageCount,
+    locationCount,
   ] = await Promise.all([
     db.items.filter((item) => item.assetId === assetId).count(),
     db.documents
@@ -32,6 +33,9 @@ export async function getAssetReferenceCount(db: DB, assetId: string): Promise<n
     db.worlds.filter((w) => w.assetId === assetId).count(),
     db.tilemaps.filter((tm) => tm.assetId === assetId).count(),
     db.characterPages.filter((cp) => cp.assetId === assetId).count(),
+    db.locations.filter(
+      (loc) => loc.backgroundAssetId === assetId || loc.mapAssetId === assetId,
+    ).count(),
   ]);
   return (
     itemCount +
@@ -46,8 +50,17 @@ export async function getAssetReferenceCount(db: DB, assetId: string): Promise<n
     archetypeCount +
     worldCount +
     tilemapCount +
-    characterPageCount
+    characterPageCount +
+    locationCount
   );
+}
+
+/** Delete an asset only if nothing references it. Use when an entity clears its asset reference. */
+export async function deleteAssetIfUnreferenced(db: DB, assetId: string): Promise<void> {
+  const count = await getAssetReferenceCount(db, assetId);
+  if (count === 0) {
+    await db.assets.delete(assetId);
+  }
 }
 
 /** Clear assetId (and pdfAssetId where applicable) on all entities that reference this asset. */

@@ -39,8 +39,8 @@ export const useAssets = (_rulesetId?: string | null, worldId?: string | null) =
         .equals([targetRulesetId, file.name])
         .first();
       if (existing) {
-        addNotification(duplicateFilenameError(file.name).message, { type: 'error' });
-        throw duplicateFilenameError(file.name);
+        addNotification(`Used existing asset "${file.name}"`, { type: 'info' });
+        return existing.id;
       }
     }
 
@@ -85,8 +85,8 @@ export const useAssets = (_rulesetId?: string | null, worldId?: string | null) =
         .equals([targetRulesetId, filename])
         .first();
       if (existing) {
-        addNotification(duplicateFilenameError(filename).message, { type: 'error' });
-        throw duplicateFilenameError(filename);
+        addNotification(`Used existing asset "${filename}"`, { type: 'info' });
+        return existing.id;
       }
     }
 
