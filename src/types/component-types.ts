@@ -64,6 +64,7 @@ export type CheckboxComponentData = {
 };
 
 export type InventoryComponentData = {
+  inventoryComponentId?: string; // Used to assign items to a specific inventory comp via script
   cellHeight: number;
   cellWidth: number;
   typeRestriction?: 'item' | 'action' | 'attribute';

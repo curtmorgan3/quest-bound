@@ -18,6 +18,119 @@ import { executeArchetypeEvent } from '../reactive/event-handler-executor';
 import { CharacterAccessor, OwnerAccessor, RulesetAccessor, TargetAccessor } from './accessors';
 import { TileProxy, type ExecuteActionEventFn } from './proxies';
 
+const INVENTORY_COMPONENT_TYPE = 'inventory';
+const CELL_SIZE_PX = 20;
+
+/**
+ * Resolve _inventoryComponentIdRef (data.inventoryComponentId from script) to component.id.
+ * If x or y is -1, find the first available slot in the target inventory component.
+ * Returns the item with componentId set and _inventoryComponentIdRef omitted for persistence.
+ */
+async function resolveInventoryComponentIdRef(
+  db: DB,
+  item: InventoryItem & { _inventoryComponentIdRef?: string },
+): Promise<InventoryItem> {
+  const ref = item._inventoryComponentIdRef;
+  const { _inventoryComponentIdRef: _, ...rest } = item;
+  const out: InventoryItem = { ...rest };
+
+  if (ref == null || ref === '') return out;
+
+  const inventory = await db.inventories.get(item.inventoryId);
+  const rulesetId = (inventory as { rulesetId?: string } | undefined)?.rulesetId;
+  if (!rulesetId) return out;
+
+  const components = await db.components
+    .where('rulesetId')
+    .equals(rulesetId)
+    .filter((c) => (c as { type?: string }).type === INVENTORY_COMPONENT_TYPE)
+    .toArray();
+
+  const match = components.find((c) => {
+    const data = JSON.parse((c as { data?: string }).data ?? '{}');
+    return data.inventoryComponentId === ref;
+  });
+
+  if (!match) return out;
+
+  const comp = match as { id: string; width: number; height: number; data?: string };
+  out.componentId = comp.id;
+
+  const needsSlot = item.x === -1 || item.y === -1;
+  if (!needsSlot) return out;
+
+  const compData = JSON.parse(comp.data ?? '{}') as { cellWidth?: number; cellHeight?: number };
+  const cellWidthPx = (compData.cellWidth ?? 1) * CELL_SIZE_PX;
+  const cellHeightPx = (compData.cellHeight ?? 1) * CELL_SIZE_PX;
+  const gridCols = Math.floor((comp.width ?? 0) / cellWidthPx);
+  const gridRows = Math.floor((comp.height ?? 0) / cellHeightPx);
+  if (gridCols < 1 || gridRows < 1) return out;
+
+  const entity =
+    item.type === 'item'
+      ? await db.items.get(item.entityId)
+      : item.type === 'action'
+        ? await db.actions.get(item.entityId)
+        : await db.attributes.get(item.entityId);
+  const entityData = entity as { inventoryWidth?: number; inventoryHeight?: number } | undefined;
+  const itemW = entityData?.inventoryWidth ?? 1;
+  const itemH = entityData?.inventoryHeight ?? 1;
+  const itemWidthInCells = Math.ceil((itemW * CELL_SIZE_PX) / cellWidthPx);
+  const itemHeightInCells = Math.ceil((itemH * CELL_SIZE_PX) / cellHeightPx);
+
+  const existingItems = await db.inventoryItems
+    .where('inventoryId')
+    .equals(item.inventoryId)
+    .filter((i) => (i as { componentId?: string }).componentId === comp.id)
+    .toArray();
+
+  const existingDims = await Promise.all(
+    existingItems.map(async (invItem) => {
+      const e =
+        (invItem as { type: string }).type === 'item'
+          ? await db.items.get((invItem as { entityId: string }).entityId)
+          : (invItem as { type: string }).type === 'action'
+            ? await db.actions.get((invItem as { entityId: string }).entityId)
+            : await db.attributes.get((invItem as { entityId: string }).entityId);
+      const d = e as { inventoryWidth?: number; inventoryHeight?: number } | undefined;
+      const w = d?.inventoryWidth ?? 1;
+      const h = d?.inventoryHeight ?? 1;
+      return {
+        x: (invItem as { x: number }).x,
+        y: (invItem as { y: number }).y,
+        widthInCells: Math.ceil((w * CELL_SIZE_PX) / cellWidthPx),
+        heightInCells: Math.ceil((h * CELL_SIZE_PX) / cellHeightPx),
+      };
+    }),
+  );
+
+  const hasCollision = (x: number, y: number): boolean => {
+    for (const other of existingDims) {
+      const noOverlap =
+        x >= other.x + other.widthInCells ||
+        x + itemWidthInCells <= other.x ||
+        y >= other.y + other.heightInCells ||
+        y + itemHeightInCells <= other.y;
+      if (!noOverlap) return true;
+    }
+    return false;
+  };
+
+  for (let y = 0; y <= gridRows - itemHeightInCells; y++) {
+    for (let x = 0; x <= gridCols - itemWidthInCells; x++) {
+      if (!hasCollision(x, y)) {
+        out.x = x;
+        out.y = y;
+        return out;
+      }
+    }
+  }
+
+  out.x = 0;
+  out.y = 0;
+  return out;
+}
+
 /**
  * Context for script execution.
  */
@@ -500,7 +613,7 @@ export class ScriptRunner {
       } else if (type === 'characterAttributeOptions') {
         await db.characterAttributes.update(id, { options: value });
       } else if (type === 'inventoryAdd') {
-        const items = value as InventoryItem[];
+        const items = value as (InventoryItem & { _inventoryComponentIdRef?: string })[];
         for (const item of items) {
           let itemToAdd = item;
           if (item.type === 'item' && item.entityId) {
@@ -511,7 +624,8 @@ export class ScriptRunner {
           } else {
             itemToAdd = { ...item, customProperties: item.customProperties ?? {} };
           }
-          await db.inventoryItems.add(itemToAdd);
+          const resolved = await resolveInventoryComponentIdRef(db, itemToAdd);
+          await db.inventoryItems.add(resolved);
         }
       } else if (type === 'inventoryUpdate') {
         const now = new Date().toISOString();

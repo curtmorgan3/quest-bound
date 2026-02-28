@@ -13,4 +13,3 @@ export function registerInventoryDbHooks(db: DB) {
     }, 0);
   });
 }
-

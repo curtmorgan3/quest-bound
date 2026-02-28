@@ -141,7 +141,7 @@ export const onboardingTutorial: Tutorial = [
 
       {
         description:
-          'Click the input you added to select it. In the right-hand panel, click the Data tab.',
+          'Click the input you added to select it. In the right-hand panel, click the Content tab.',
         selector: {
           selector: '[data-testid="component-edit-tab-data"]',
           shouldAdvanceOnClick: true,
@@ -149,7 +149,7 @@ export const onboardingTutorial: Tutorial = [
       },
       {
         description:
-          'Under the Data tab, open the Attribute dropdown and select the "Health" attribute to bind it to the input.',
+          'Under the Content tab, open the Attribute dropdown and select the "Health" attribute to bind it to the input.',
         selector: {
           selector: '#component-data-attribute-lookup',
           shouldAdvanceOnClick: false,
@@ -198,7 +198,7 @@ export const onboardingTutorial: Tutorial = [
           'Double click the text to change its content to Take Damage, then press Enter.',
       },
       {
-        description: 'In the right-hand panel, click the Data tab.',
+        description: 'In the right-hand panel, click the Content tab.',
         selector: {
           selector: '[data-testid="component-edit-tab-data"]',
           shouldAdvanceOnClick: true,
@@ -206,7 +206,7 @@ export const onboardingTutorial: Tutorial = [
       },
       {
         description:
-          'Under the Data tab, open the Action dropdown and select the "Take Damage" action to bind it to the input.',
+          'Under the Content tab, open the Action dropdown and select the "Take Damage" action to bind it to the input.',
         selector: {
           selector: '#component-data-action-lookup',
           shouldAdvanceOnClick: false,

@@ -254,7 +254,7 @@ export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
                 Style
               </TabsTrigger>
               <TabsTrigger value='data' className='flex-1' data-testid='component-edit-tab-data'>
-                Data
+                Content
               </TabsTrigger>
             </TabsList>
             <TabsContent value='style' className='w-full flex flex-col gap-2 mt-2'>
@@ -326,29 +326,32 @@ export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
                   excludeIds={[windowId]}
                 />
               )}
-              {selectedComponents.length === 1 && (
-                <>
-                  <PageLookup
-                    label='Open Page'
-                    value={getComponentData(selectedComponents[0]).pageId ?? null}
-                    onSelect={(page) => setPageId(page.id)}
-                    onDelete={() => setPageId(null)}
-                  />
-                  <div className='flex flex-col gap-2'>
-                    <Label htmlFor='component-edit-href' className='text-xs text-muted-foreground'>
-                      Link
-                    </Label>
-                    <Input
-                      id='component-edit-href'
-                      className='h-8 rounded-[4px]'
-                      disabled={!!getComponentData(selectedComponents[0]).pageId}
-                      placeholder='https://...'
-                      value={getComponentData(selectedComponents[0]).href ?? ''}
-                      onChange={(e) => setHref(e.target.value)}
+              {selectedComponents.length === 1 &&
+                selectedComponents[0].type !== ComponentTypes.INVENTORY && (
+                  <>
+                    <PageLookup
+                      label='Open Page'
+                      value={getComponentData(selectedComponents[0]).pageId ?? null}
+                      onSelect={(page) => setPageId(page.id)}
+                      onDelete={() => setPageId(null)}
                     />
-                  </div>
-                </>
-              )}
+                    <div className='flex flex-col gap-2'>
+                      <Label
+                        htmlFor='component-edit-href'
+                        className='text-xs text-muted-foreground'>
+                        Link
+                      </Label>
+                      <Input
+                        id='component-edit-href'
+                        className='h-8 rounded-[4px]'
+                        disabled={!!getComponentData(selectedComponents[0]).pageId}
+                        placeholder='https://...'
+                        value={getComponentData(selectedComponents[0]).href ?? ''}
+                        onChange={(e) => setHref(e.target.value)}
+                      />
+                    </div>
+                  </>
+                )}
               {allAreImages && (
                 <ImageDataEdit
                   components={selectedComponents}

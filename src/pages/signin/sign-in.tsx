@@ -1,6 +1,7 @@
 import DiscordImage from '@/assets/discord-icon.png';
 import videoSrc from '@/assets/logo-animation.mp4';
 import { Button, Input, Link, PWAInstallPrompt } from '@/components';
+import { DISCORD_URL } from '@/constants';
 import { useRegisterEmail, useUsers } from '@/lib/compass-api';
 import { isRunningLocally } from '@/utils';
 import { motion } from 'framer-motion';
@@ -109,7 +110,7 @@ export const SignIn = () => {
           <Link href='https://docs.questbound.com' target='_blank'>
             Learn More
           </Link>
-          <a target='_blank' href='https://discord.gg/Zx2jR5Q3zN' data-testid='join-discord'>
+          <a target='_blank' href={DISCORD_URL} data-testid='join-discord'>
             <Button variant='ghost' className='cursor-pointer'>
               <img alt='Discord' src={DiscordImage} style={{ height: 30, width: 30 }} />
             </Button>

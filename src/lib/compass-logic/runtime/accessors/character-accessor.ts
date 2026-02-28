@@ -210,7 +210,9 @@ export class CharacterAccessor implements StructuredCloneSafe {
   /**
    * Resolve a specific inventory item instance by id (used by script-runner so Self refers to the correct instance in item event scripts).
    */
-  getItemByInstanceId(inventoryItemInstanceId: string): ReturnType<typeof createItemInstanceProxy> | undefined {
+  getItemByInstanceId(
+    inventoryItemInstanceId: string,
+  ): ReturnType<typeof createItemInstanceProxy> | undefined {
     const inventoryItem = this.inventoryItems.find(
       (inv) => inv.id === inventoryItemInstanceId && inv.type === 'item',
     );
@@ -240,10 +242,7 @@ export class CharacterAccessor implements StructuredCloneSafe {
     };
     const onSetLabel = (label: string) => {
       inventoryItem.label = label;
-      this.pendingUpdates.set(
-        `inventoryUpdate:${inventoryItem.id}`,
-        getMergedUpdate({ label }),
-      );
+      this.pendingUpdates.set(`inventoryUpdate:${inventoryItem.id}`, getMergedUpdate({ label }));
     };
     const onSetDescription = (description: string) => {
       inventoryItem.description = description;
@@ -341,7 +340,13 @@ export class CharacterAccessor implements StructuredCloneSafe {
     return this.Items(name).length > 0;
   }
 
-  addItem(name: string, quantity: number = 1): ReturnType<typeof createItemInstanceProxy> {
+  addItem(
+    name: string,
+    quantity: number = 1,
+    inventoryCompId?: string,
+    x?: number,
+    y?: number,
+  ): ReturnType<typeof createItemInstanceProxy> {
     if (quantity < 1) {
       throw new Error('addItem quantity must be at least 1');
     }
@@ -353,19 +358,22 @@ export class CharacterAccessor implements StructuredCloneSafe {
       throw new Error('Character has no inventory');
     }
     const now = new Date().toISOString();
-    const newEntry: InventoryItem = {
+    const newEntry = {
       id: crypto.randomUUID(),
-      type: 'item',
+      type: 'item' as const,
       entityId: item.id,
       inventoryId: this.inventoryId,
       componentId: '',
       quantity,
-      x: 0,
-      y: 0,
+      x: x ?? -1,
+      y: y ?? -1,
       createdAt: now,
       updatedAt: now,
+      ...(inventoryCompId != null && inventoryCompId !== ''
+        ? { _inventoryComponentIdRef: inventoryCompId }
+        : {}),
     };
-    this.inventoryItems.push(newEntry);
+    this.inventoryItems.push(newEntry as InventoryItem);
     const key = 'inventoryAdd';
     const existing = this.pendingUpdates.get(key) as InventoryItem[] | undefined;
     this.pendingUpdates.set(key, existing ? [...existing, newEntry] : [newEntry]);
