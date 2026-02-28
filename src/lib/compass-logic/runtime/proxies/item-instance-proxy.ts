@@ -13,6 +13,9 @@ export type SetItemCustomPropertyFn = (
 /** Callback to remove this item instance from the character's inventory (e.g. when Self.destroy() is called in an item script). */
 export type DestroyItemInstanceFn = () => void;
 
+/** Callback to persist a label (display name) change for an inventory item instance. */
+export type SetItemLabelFn = (label: string) => void;
+
 /** Lookup to resolve label -> customPropertyId and customPropertyId -> label for script runtime. */
 export type CustomPropertyLookup = {
   resolveLabelToId: (label: string) => string | undefined;
@@ -57,6 +60,7 @@ export class ItemInstanceProxy implements StructuredCloneSafe {
   private readonly customPropertyLookup: CustomPropertyLookup;
   private readonly customProperties: CustomProperty[];
   private readonly onSetCustomProperty?: SetItemCustomPropertyFn;
+  private readonly onSetLabel?: SetItemLabelFn;
   private readonly onDestroy?: DestroyItemInstanceFn;
 
   constructor(
@@ -66,6 +70,7 @@ export class ItemInstanceProxy implements StructuredCloneSafe {
     customProperties: CustomProperty[],
     onSetCustomProperty?: SetItemCustomPropertyFn,
     onDestroy?: DestroyItemInstanceFn,
+    onSetLabel?: SetItemLabelFn,
   ) {
     this.inventoryItem = inventoryItem;
     this.item = item;
@@ -73,6 +78,7 @@ export class ItemInstanceProxy implements StructuredCloneSafe {
     this.customProperties = customProperties;
     this.onSetCustomProperty = onSetCustomProperty;
     this.onDestroy = onDestroy;
+    this.onSetLabel = onSetLabel;
   }
 
   /**
@@ -85,6 +91,11 @@ export class ItemInstanceProxy implements StructuredCloneSafe {
 
   get title(): string {
     return this.inventoryItem.label ?? this.item.title;
+  }
+
+  setTitle(value: string) {
+    this.inventoryItem.label = value;
+    this.onSetLabel?.(value);
   }
 
   get description(): string {
@@ -170,7 +181,7 @@ export class ItemInstanceProxy implements StructuredCloneSafe {
    */
   toStructuredCloneSafe(): ItemInstancePlain {
     const base: ItemInstancePlain = {
-      title: this.item.title,
+      title: this.title,
       description: this.item.description,
       quantity: this.inventoryItem.quantity,
       isEquipped: this.inventoryItem.isEquipped ?? false,
@@ -197,6 +208,7 @@ export function createItemInstanceProxy(
   customProperties: CustomProperty[],
   onSetCustomProperty?: SetItemCustomPropertyFn,
   onDestroy?: DestroyItemInstanceFn,
+  onSetLabel?: SetItemLabelFn,
 ): ItemInstanceProxy {
   const lookup = createCustomPropertyLookup(customProperties);
   return new ItemInstanceProxy(
@@ -206,5 +218,6 @@ export function createItemInstanceProxy(
     customProperties,
     onSetCustomProperty,
     onDestroy,
+    onSetLabel,
   );
 }

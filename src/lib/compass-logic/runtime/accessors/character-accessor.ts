@@ -224,12 +224,26 @@ export class CharacterAccessor implements StructuredCloneSafe {
     inventoryItem: InventoryItem,
     item: Item,
   ): ReturnType<typeof createItemInstanceProxy> {
+    const getMergedUpdate = (patch: Partial<InventoryItem>) => {
+      const existing = this.pendingUpdates.get(`inventoryUpdate:${inventoryItem.id}`) as
+        | Partial<InventoryItem>
+        | undefined;
+      return { ...existing, ...patch, updatedAt: new Date().toISOString() };
+    };
     const onSetCustomProperty = (customPropertyId: string, value: string | number | boolean) => {
       if (!inventoryItem.customProperties) inventoryItem.customProperties = {};
       inventoryItem.customProperties[customPropertyId] = value;
-      this.pendingUpdates.set(`inventoryUpdate:${inventoryItem.id}`, {
-        customProperties: inventoryItem.customProperties,
-      });
+      this.pendingUpdates.set(
+        `inventoryUpdate:${inventoryItem.id}`,
+        getMergedUpdate({ customProperties: inventoryItem.customProperties }),
+      );
+    };
+    const onSetLabel = (label: string) => {
+      inventoryItem.label = label;
+      this.pendingUpdates.set(
+        `inventoryUpdate:${inventoryItem.id}`,
+        getMergedUpdate({ label }),
+      );
     };
     const onDestroy = () => this.removeItemByInstanceId(inventoryItem.id);
     return createItemInstanceProxy(
@@ -238,6 +252,7 @@ export class CharacterAccessor implements StructuredCloneSafe {
       this.customProperties,
       onSetCustomProperty,
       onDestroy,
+      onSetLabel,
     );
   }
 
@@ -248,12 +263,23 @@ export class CharacterAccessor implements StructuredCloneSafe {
       (inv) => inv.entityId === item.id && inv.type === 'item',
     );
     return matching.map((inv) => {
+      const getMergedUpdate = (patch: Partial<InventoryItem>) => {
+        const existing = this.pendingUpdates.get(`inventoryUpdate:${inv.id}`) as
+          | Partial<InventoryItem>
+          | undefined;
+        return { ...existing, ...patch, updatedAt: new Date().toISOString() };
+      };
       const onSetCustomProperty = (customPropertyId: string, value: string | number | boolean) => {
         if (!inv.customProperties) inv.customProperties = {};
         inv.customProperties[customPropertyId] = value;
-        this.pendingUpdates.set(`inventoryUpdate:${inv.id}`, {
-          customProperties: inv.customProperties,
-        });
+        this.pendingUpdates.set(
+          `inventoryUpdate:${inv.id}`,
+          getMergedUpdate({ customProperties: inv.customProperties }),
+        );
+      };
+      const onSetLabel = (label: string) => {
+        inv.label = label;
+        this.pendingUpdates.set(`inventoryUpdate:${inv.id}`, getMergedUpdate({ label }));
       };
       const onDestroy = () => this.removeItemByInstanceId(inv.id);
       return createItemInstanceProxy(
@@ -262,6 +288,7 @@ export class CharacterAccessor implements StructuredCloneSafe {
         this.customProperties,
         onSetCustomProperty,
         onDestroy,
+        onSetLabel,
       );
     });
   }
@@ -282,8 +309,10 @@ export class CharacterAccessor implements StructuredCloneSafe {
     return this.Items(name).length > 0;
   }
 
-  addItem(name: string, quantity: number = 1): void {
-    if (quantity < 1) return;
+  addItem(name: string, quantity: number = 1): ReturnType<typeof createItemInstanceProxy> {
+    if (quantity < 1) {
+      throw new Error('addItem quantity must be at least 1');
+    }
     const item = Array.from(this.itemsCache.values()).find((i) => i.title === name);
     if (!item) {
       throw new Error(`Item '${name}' not found`);
@@ -308,6 +337,7 @@ export class CharacterAccessor implements StructuredCloneSafe {
     const key = 'inventoryAdd';
     const existing = this.pendingUpdates.get(key) as InventoryItem[] | undefined;
     this.pendingUpdates.set(key, existing ? [...existing, newEntry] : [newEntry]);
+    return this.createItemInstanceProxyFor(newEntry, item);
   }
 
   setItem(name: string, quantity: number = 0): void {
