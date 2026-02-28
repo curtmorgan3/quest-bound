@@ -371,8 +371,21 @@ export const useExportRuleset = (rulesetId: string) => {
         const assetsFolder = zip.folder('assets');
         if (assetsFolder) {
           assets.forEach((asset) => {
-            // Convert Base64 data URL to binary data
-            const base64Data = asset.data.split(',')[1]; // Remove data:image/...;base64, prefix
+            // Only decode when data is a base64 data URL (e.g. data:image/png;base64,...).
+            // URL-type assets store a URL string in asset.data; atob() would throw on that.
+            const isDataUrl =
+              typeof asset.data === 'string' &&
+              asset.data.startsWith('data:') &&
+              asset.data.includes(';base64,');
+
+            if (!isDataUrl) {
+              // Skip binary export for URL/blob assets; metadata is still in assets.json
+              return;
+            }
+
+            const base64Data = asset.data.split(',')[1];
+            if (!base64Data) return;
+
             const binaryData = atob(base64Data);
             const uint8Array = new Uint8Array(binaryData.length);
             for (let i = 0; i < binaryData.length; i++) {

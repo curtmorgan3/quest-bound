@@ -252,7 +252,7 @@ export const RulesetSettings = ({ activeRuleset }: RulesetSettingsProps) => {
     <Tabs defaultValue='details' className='flex flex-col gap-4'>
       <TabsList>
         <TabsTrigger value='details'>Details</TabsTrigger>
-        <TabsTrigger value='defaults'>Defaults</TabsTrigger>
+        <TabsTrigger value='defaults'>Content</TabsTrigger>
         <TabsTrigger value='modules'>Modules</TabsTrigger>
       </TabsList>
 
