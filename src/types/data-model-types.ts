@@ -321,6 +321,7 @@ export type InventoryItem = BaseDetails & {
   x: number;
   y: number;
   label?: string; // User provided custom name
+  description?: string; // User provided description override for item instance
   value?: string | number | boolean;
   isEquipped?: boolean;
   /** Per-instance values keyed by customPropertyId. Instantiated from item's ItemCustomProperties when added to inventory. */

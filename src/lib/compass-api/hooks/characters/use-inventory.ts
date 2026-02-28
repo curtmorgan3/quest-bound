@@ -37,7 +37,11 @@ export const useInventory = (inventoryId: string, characterId: string) => {
       ...entity,
       title: itemRef?.title ?? actionRef?.title ?? attributeRef?.title ?? '',
       description:
-        itemRef?.description ?? actionRef?.description ?? attributeRef?.description ?? '',
+        entity.description ??
+        itemRef?.description ??
+        actionRef?.description ??
+        attributeRef?.description ??
+        '',
       category: itemRef?.category ?? actionRef?.category ?? attributeRef?.category,
       image: itemRef?.image ?? actionRef?.image ?? attributeRef?.image ?? undefined,
       inventoryWidth:

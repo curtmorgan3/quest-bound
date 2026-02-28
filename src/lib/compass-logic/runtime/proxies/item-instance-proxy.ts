@@ -16,6 +16,9 @@ export type DestroyItemInstanceFn = () => void;
 /** Callback to persist a label (display name) change for an inventory item instance. */
 export type SetItemLabelFn = (label: string) => void;
 
+/** Callback to persist a description change for an inventory item instance. */
+export type SetItemDescriptionFn = (description: string) => void;
+
 /** Lookup to resolve label -> customPropertyId and customPropertyId -> label for script runtime. */
 export type CustomPropertyLookup = {
   resolveLabelToId: (label: string) => string | undefined;
@@ -61,6 +64,7 @@ export class ItemInstanceProxy implements StructuredCloneSafe {
   private readonly customProperties: CustomProperty[];
   private readonly onSetCustomProperty?: SetItemCustomPropertyFn;
   private readonly onSetLabel?: SetItemLabelFn;
+  private readonly onSetDescription?: SetItemDescriptionFn;
   private readonly onDestroy?: DestroyItemInstanceFn;
 
   constructor(
@@ -71,6 +75,7 @@ export class ItemInstanceProxy implements StructuredCloneSafe {
     onSetCustomProperty?: SetItemCustomPropertyFn,
     onDestroy?: DestroyItemInstanceFn,
     onSetLabel?: SetItemLabelFn,
+    onSetDescription?: SetItemDescriptionFn,
   ) {
     this.inventoryItem = inventoryItem;
     this.item = item;
@@ -79,6 +84,7 @@ export class ItemInstanceProxy implements StructuredCloneSafe {
     this.onSetCustomProperty = onSetCustomProperty;
     this.onDestroy = onDestroy;
     this.onSetLabel = onSetLabel;
+    this.onSetDescription = onSetDescription;
   }
 
   /**
@@ -99,7 +105,12 @@ export class ItemInstanceProxy implements StructuredCloneSafe {
   }
 
   get description(): string {
-    return this.item.description;
+    return this.inventoryItem.description ?? this.item.description;
+  }
+
+  setDescription(value: string): void {
+    this.inventoryItem.description = value;
+    this.onSetDescription?.(value);
   }
 
   get quantity(): number {
@@ -182,7 +193,7 @@ export class ItemInstanceProxy implements StructuredCloneSafe {
   toStructuredCloneSafe(): ItemInstancePlain {
     const base: ItemInstancePlain = {
       title: this.title,
-      description: this.item.description,
+      description: this.description,
       quantity: this.inventoryItem.quantity,
       isEquipped: this.inventoryItem.isEquipped ?? false,
     };
@@ -209,6 +220,7 @@ export function createItemInstanceProxy(
   onSetCustomProperty?: SetItemCustomPropertyFn,
   onDestroy?: DestroyItemInstanceFn,
   onSetLabel?: SetItemLabelFn,
+  onSetDescription?: SetItemDescriptionFn,
 ): ItemInstanceProxy {
   const lookup = createCustomPropertyLookup(customProperties);
   return new ItemInstanceProxy(
@@ -219,5 +231,6 @@ export function createItemInstanceProxy(
     onSetCustomProperty,
     onDestroy,
     onSetLabel,
+    onSetDescription,
   );
 }

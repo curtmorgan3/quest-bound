@@ -245,6 +245,13 @@ export class CharacterAccessor implements StructuredCloneSafe {
         getMergedUpdate({ label }),
       );
     };
+    const onSetDescription = (description: string) => {
+      inventoryItem.description = description;
+      this.pendingUpdates.set(
+        `inventoryUpdate:${inventoryItem.id}`,
+        getMergedUpdate({ description }),
+      );
+    };
     const onDestroy = () => this.removeItemByInstanceId(inventoryItem.id);
     return createItemInstanceProxy(
       inventoryItem,
@@ -253,6 +260,7 @@ export class CharacterAccessor implements StructuredCloneSafe {
       onSetCustomProperty,
       onDestroy,
       onSetLabel,
+      onSetDescription,
     );
   }
 
@@ -281,6 +289,10 @@ export class CharacterAccessor implements StructuredCloneSafe {
         inv.label = label;
         this.pendingUpdates.set(`inventoryUpdate:${inv.id}`, getMergedUpdate({ label }));
       };
+      const onSetDescription = (description: string) => {
+        inv.description = description;
+        this.pendingUpdates.set(`inventoryUpdate:${inv.id}`, getMergedUpdate({ description }));
+      };
       const onDestroy = () => this.removeItemByInstanceId(inv.id);
       return createItemInstanceProxy(
         inv,
@@ -289,6 +301,7 @@ export class CharacterAccessor implements StructuredCloneSafe {
         onSetCustomProperty,
         onDestroy,
         onSetLabel,
+        onSetDescription,
       );
     });
   }
