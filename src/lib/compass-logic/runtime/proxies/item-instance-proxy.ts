@@ -19,6 +19,12 @@ export type SetItemLabelFn = (label: string) => void;
 /** Callback to persist a description change for an inventory item instance. */
 export type SetItemDescriptionFn = (description: string) => void;
 
+/** Callback to persist actionIds change for an inventory item instance. */
+export type SetItemActionIdsFn = (actionIds: string[]) => void;
+
+/** Lookup to resolve action name -> action id for addAction/removeAction. */
+export type GetActionIdByNameFn = (name: string) => string | undefined;
+
 /** Lookup to resolve label -> customPropertyId and customPropertyId -> label for script runtime. */
 export type CustomPropertyLookup = {
   resolveLabelToId: (label: string) => string | undefined;
@@ -65,6 +71,8 @@ export class ItemInstanceProxy implements StructuredCloneSafe {
   private readonly onSetCustomProperty?: SetItemCustomPropertyFn;
   private readonly onSetLabel?: SetItemLabelFn;
   private readonly onSetDescription?: SetItemDescriptionFn;
+  private readonly onSetActionIds?: SetItemActionIdsFn;
+  private readonly getActionIdByName?: GetActionIdByNameFn;
   private readonly onDestroy?: DestroyItemInstanceFn;
 
   constructor(
@@ -76,6 +84,8 @@ export class ItemInstanceProxy implements StructuredCloneSafe {
     onDestroy?: DestroyItemInstanceFn,
     onSetLabel?: SetItemLabelFn,
     onSetDescription?: SetItemDescriptionFn,
+    onSetActionIds?: SetItemActionIdsFn,
+    getActionIdByName?: GetActionIdByNameFn,
   ) {
     this.inventoryItem = inventoryItem;
     this.item = item;
@@ -85,6 +95,8 @@ export class ItemInstanceProxy implements StructuredCloneSafe {
     this.onDestroy = onDestroy;
     this.onSetLabel = onSetLabel;
     this.onSetDescription = onSetDescription;
+    this.onSetActionIds = onSetActionIds;
+    this.getActionIdByName = getActionIdByName;
   }
 
   /**
@@ -186,6 +198,44 @@ export class ItemInstanceProxy implements StructuredCloneSafe {
   }
 
   /**
+   * Add an associated action to this item instance by name (e.g. item.addAction('Heal')).
+   * The action appears as a button in the item context menu.
+   */
+  addAction(name: string): void {
+    if (!this.getActionIdByName) {
+      throw new Error('addAction is not available in this context');
+    }
+    const actionId = this.getActionIdByName(name.trim());
+    if (!actionId) {
+      console.warn(`[QBScript] Action '${name}' not found`);
+      throw new Error(`Action '${name}' not found`);
+    }
+    const current = this.inventoryItem.actionIds ?? [];
+    if (current.includes(actionId)) return;
+    const next = [...current, actionId];
+    this.inventoryItem.actionIds = next;
+    this.onSetActionIds?.(next);
+  }
+
+  /**
+   * Remove an associated action from this item instance by name (e.g. item.removeAction('Heal')).
+   */
+  removeAction(name: string): void {
+    if (!this.getActionIdByName) {
+      throw new Error('removeAction is not available in this context');
+    }
+    const actionId = this.getActionIdByName(name);
+    if (!actionId) {
+      throw new Error(`Action '${name}' not found`);
+    }
+    const current = this.inventoryItem.actionIds ?? [];
+    const next = current.filter((id) => id !== actionId);
+    if (next.length === current.length) return;
+    this.inventoryItem.actionIds = next;
+    this.onSetActionIds?.(next);
+  }
+
+  /**
    * Return a plain object for postMessage (structured clone).
    * Called at the worker boundary so the main thread receives cloneable data.
    * Resolves customProperties (keyed by customPropertyId) to label-keyed for readability.
@@ -221,6 +271,8 @@ export function createItemInstanceProxy(
   onDestroy?: DestroyItemInstanceFn,
   onSetLabel?: SetItemLabelFn,
   onSetDescription?: SetItemDescriptionFn,
+  onSetActionIds?: SetItemActionIdsFn,
+  getActionIdByName?: GetActionIdByNameFn,
 ): ItemInstanceProxy {
   const lookup = createCustomPropertyLookup(customProperties);
   return new ItemInstanceProxy(
@@ -232,5 +284,7 @@ export function createItemInstanceProxy(
     onDestroy,
     onSetLabel,
     onSetDescription,
+    onSetActionIds,
+    getActionIdByName,
   );
 }

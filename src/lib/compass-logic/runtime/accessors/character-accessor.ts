@@ -252,6 +252,15 @@ export class CharacterAccessor implements StructuredCloneSafe {
         getMergedUpdate({ description }),
       );
     };
+    const onSetActionIds = (actionIds: string[]) => {
+      inventoryItem.actionIds = actionIds;
+      this.pendingUpdates.set(
+        `inventoryUpdate:${inventoryItem.id}`,
+        getMergedUpdate({ actionIds }),
+      );
+    };
+    const getActionIdByName = (actionName: string) =>
+      Array.from(this.actionsCache.values()).find((a) => a.title === actionName)?.id;
     const onDestroy = () => this.removeItemByInstanceId(inventoryItem.id);
     return createItemInstanceProxy(
       inventoryItem,
@@ -261,6 +270,8 @@ export class CharacterAccessor implements StructuredCloneSafe {
       onDestroy,
       onSetLabel,
       onSetDescription,
+      onSetActionIds,
+      getActionIdByName,
     );
   }
 
@@ -293,6 +304,12 @@ export class CharacterAccessor implements StructuredCloneSafe {
         inv.description = description;
         this.pendingUpdates.set(`inventoryUpdate:${inv.id}`, getMergedUpdate({ description }));
       };
+      const onSetActionIds = (actionIds: string[]) => {
+        inv.actionIds = actionIds;
+        this.pendingUpdates.set(`inventoryUpdate:${inv.id}`, getMergedUpdate({ actionIds }));
+      };
+      const getActionIdByName = (actionName: string) =>
+        Array.from(this.actionsCache.values()).find((a) => a.title === actionName)?.id;
       const onDestroy = () => this.removeItemByInstanceId(inv.id);
       return createItemInstanceProxy(
         inv,
@@ -302,6 +319,8 @@ export class CharacterAccessor implements StructuredCloneSafe {
         onDestroy,
         onSetLabel,
         onSetDescription,
+        onSetActionIds,
+        getActionIdByName,
       );
     });
   }

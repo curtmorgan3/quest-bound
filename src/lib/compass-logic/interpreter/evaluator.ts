@@ -476,17 +476,14 @@ export class Evaluator {
     this.globalEnv.define('max', Math.max);
 
     // Type conversion: for strings, strip commas then parse (e.g. "1,000" → 1000, "3.14" → 3.14)
-    this.globalEnv.define(
-      'number',
-      (value: any): number => {
-        if (typeof value === 'string') {
-          const stripped = value.replace(/,/g, '');
-          return Number(stripped);
-        }
-        return Number(value);
-      },
-    );
-    this.globalEnv.define('text', (value: any): string => String(value ?? ''));
+    this.globalEnv.define('number', (value: any): number => {
+      if (typeof value === 'string') {
+        const stripped = value.replace(/,/g, '');
+        return Number(stripped);
+      }
+      return Number(value);
+    });
+    this.globalEnv.define('text', (value: any): string => String(value ?? '').trim());
 
     // Attribute helper: getAttr("HP") -> Owner.Attribute("HP").value
     this.globalEnv.define('getAttr', (name: string): any => {
@@ -494,7 +491,7 @@ export class Evaluator {
       // behave consistently with direct Owner.Attribute(...) usage.
       const owner = this.currentEnv.get('Owner');
       if (!owner || typeof (owner as any).Attribute !== 'function') {
-        throw new RuntimeError("Owner.Attribute is not available in this context");
+        throw new RuntimeError('Owner.Attribute is not available in this context');
       }
       const attributeProxy = (owner as any).Attribute(name);
       return attributeProxy?.value;
@@ -504,7 +501,7 @@ export class Evaluator {
     this.globalEnv.define('getChart', (name: string): any => {
       const ruleset = this.currentEnv.get('Ruleset');
       if (!ruleset || typeof (ruleset as any).Chart !== 'function') {
-        throw new RuntimeError("Ruleset.Chart is not available in this context");
+        throw new RuntimeError('Ruleset.Chart is not available in this context');
       }
       return (ruleset as any).Chart(name);
     });

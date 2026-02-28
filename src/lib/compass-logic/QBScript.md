@@ -314,6 +314,13 @@ armor_value = armor.getProperty('Armor Value'); // Read custom property (null if
 Owner.Item('item name').setProperty('Armor Value', 15); // Set instance custom property
 ```
 
+**Associated actions (per-instance):** Use `addAction('action name')` and `removeAction('action name')` to add or remove actions from the item's context menu. Only available when `Self` or `Caller` is an item instance (e.g. in item event scripts or when calling from an action fired from an item).
+
+```javascript
+Self.addAction('Heal');   // Add Heal action to this item's context menu
+Self.removeAction('Heal'); // Remove from context menu
+```
+
 ### Actions
 
 - `Owner.Action('action name')` — get action reference
