@@ -25,7 +25,7 @@ import { useAssets } from '@/lib/compass-api';
 import { clearAssetReferences, db, getAssetReferenceCount } from '@/stores';
 import type { Asset } from '@/types';
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { Pencil, Trash } from 'lucide-react';
+import { Pencil, Plus, Trash } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 
@@ -229,7 +229,20 @@ export function AssetsPage() {
   );
 
   return (
-    <PageWrapper title='Assets'>
+    <PageWrapper
+      title='Assets'
+      headerActions={
+        <ImageUpload
+          rulesetId={rulesetId ?? undefined}
+          hideSelectAsset
+          trigger={({ openDialog }) => (
+            <Button size='sm' onClick={openDialog} data-testid='assets-create-button'>
+              <Plus className='h-4 w-4' />
+              Create Asset
+            </Button>
+          )}
+        />
+      }>
       <div className='flex flex-col gap-4'>
         <p className='text-sm text-muted-foreground'>
           Images and URL-backed assets for this ruleset. Names must be unique within the ruleset.

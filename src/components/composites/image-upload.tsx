@@ -74,6 +74,10 @@ interface ImageUploadProps {
   maxWidth?: number;
   /** When set with maxWidth, image is resized to fit within these dimensions before upload. */
   maxHeight?: number;
+  /** When provided, renders this instead of the default image/placeholder. Receives openDialog to open the upload dialog. */
+  trigger?: (props: { openDialog: () => void }) => React.ReactNode;
+  /** When true, hide the asset lookup (choose existing asset) in the dialog. Default false. */
+  hideSelectAsset?: boolean;
 }
 
 export const ImageUpload = ({
@@ -85,6 +89,8 @@ export const ImageUpload = ({
   alt = '',
   maxWidth,
   maxHeight,
+  trigger,
+  hideSelectAsset = false,
 }: ImageUploadProps) => {
   const id = crypto.randomUUID();
   const { createAsset, createUrlAsset } = useAssets(rulesetId, worldId);
@@ -160,7 +166,9 @@ export const ImageUpload = ({
 
   return (
     <>
-      {image ? (
+      {trigger ? (
+        trigger({ openDialog: handleClick })
+      ) : image ? (
         <div
           className='flex gap-2 w-[124px] h-[124px]'
           onPointerEnter={() => setHovering(true)}
@@ -200,13 +208,13 @@ export const ImageUpload = ({
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className='sm:max-w-md'>
           <DialogHeader>
-            <DialogTitle>Add image</DialogTitle>
+            <DialogTitle>Add Image</DialogTitle>
             <DialogDescription>
               Choose an existing asset, enter an image URL, or select a file from your device.
             </DialogDescription>
           </DialogHeader>
           <div className='flex flex-col gap-4 py-2'>
-            {rulesetId != null && rulesetId !== '' && (
+            {!hideSelectAsset && rulesetId != null && rulesetId !== '' && (
               <AssetLookup
                 rulesetId={rulesetId}
                 placeholder='Search existing assets...'
@@ -217,7 +225,7 @@ export const ImageUpload = ({
                 }}
               />
             )}
-            {rulesetId != null && rulesetId !== '' && (
+            {!hideSelectAsset && rulesetId != null && rulesetId !== '' && (
               <div className='relative'>
                 <div className='absolute inset-0 flex items-center'>
                   <span className='w-full border-t' />
