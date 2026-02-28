@@ -24,7 +24,7 @@ function coerceCellValue(value: unknown): string | number | boolean {
 }
 
 /**
- * Lightweight proxy for a single chart row returned from ChartProxy.rowWhere().
+ * Lightweight proxy for a single chart row returned from ChartProxy.rowWhere() or ChartProxy.randomRow().
  *
  * This class:
  * - Behaves like an array so you can call array methods directly
@@ -143,6 +143,20 @@ export class ChartProxy {
     );
     const value = column[Math.floor(Math.random() * column.length)];
     return coerceCellValue(value);
+  }
+
+  /**
+   * Get a random data row from the chart (excluding the header row).
+   * Returns a ChartRowProxy so you can chain valueInColumn(), e.g. chart.randomRow().valueInColumn('HP').
+   * @returns ChartRowProxy for a randomly selected row, or empty row if chart has no data
+   */
+  randomRow(): ChartRowProxy {
+    if (!this.data || this.data.length < 2) {
+      return new ChartRowProxy(this, []);
+    }
+    const dataRows = this.data.slice(1);
+    const row = dataRows[Math.floor(Math.random() * dataRows.length)];
+    return new ChartRowProxy(this, row);
   }
 
   rowWhere(columnName: string, cellValue: any): ChartRowProxy {
