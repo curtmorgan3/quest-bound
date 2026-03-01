@@ -261,7 +261,16 @@ function createOnAttributesModified(
             roll: rollFn,
             rollSplit: rollSplitFn,
             executeActionEvent: (actionId, cId, targetId, eventType) =>
-              executor.executeActionEvent(actionId, cId, targetId, eventType, rollFn, rollSplitFn),
+              executor.executeActionEvent(
+                actionId,
+                cId,
+                targetId,
+                eventType,
+                rollFn,
+                undefined,
+                undefined,
+                rollSplitFn,
+              ),
           },
         );
         if (collector && reactiveResult.modifiedAttributeIds?.length) {
@@ -411,7 +420,16 @@ async function handleExecuteScript(payload: ExecuteScriptPayload): Promise<void>
       roll: rollFn,
       rollSplit: rollSplitFn,
       executeActionEvent: (actionId, characterId, targetId, eventType) =>
-        executor.executeActionEvent(actionId, characterId, targetId, eventType, rollFn, rollSplitFn),
+        executor.executeActionEvent(
+          actionId,
+          characterId,
+          targetId,
+          eventType,
+          rollFn,
+          undefined,
+          undefined,
+          rollSplitFn,
+        ),
     };
 
     const runner = new ScriptRunner(context);
@@ -463,6 +481,8 @@ async function handleExecuteScript(payload: ExecuteScriptPayload): Promise<void>
               targetId,
               eventType,
               rollFn,
+              undefined,
+              undefined,
               rollSplitFn,
             ),
           roll: rollFn,
