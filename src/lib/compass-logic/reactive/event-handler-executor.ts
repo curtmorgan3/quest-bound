@@ -1,5 +1,5 @@
 import type { DB } from '@/stores/db/hooks/types';
-import type { RollFn, RollSplitFn } from '@/types';
+import type { InterruptFn, RollFn, RollSplitFn } from '@/types';
 import type { ASTNode } from '../interpreter/ast';
 import { functionDefToExecutableSource } from '../interpreter/ast-to-source';
 import { Lexer } from '../interpreter/lexer';
@@ -96,6 +96,7 @@ export class EventHandlerExecutor {
     campaignId?: string,
     inventoryItemInstanceId?: string,
     rollSplit?: RollSplitFn,
+    interrupt?: InterruptFn,
   ): Promise<EventHandlerResult> {
     // Get item
     const item = await this.db.items.get(itemId);
@@ -155,6 +156,7 @@ export class EventHandlerExecutor {
       campaignId,
       roll,
       rollSplit,
+      interrupt,
       executeActionEvent: (actionId, ownerId, targetIdForAction, eventTypeForAction) =>
         this.executeActionEvent(
           actionId,
@@ -165,6 +167,7 @@ export class EventHandlerExecutor {
           campaignId,
           undefined,
           rollSplit,
+          interrupt,
         ),
     };
 
@@ -205,6 +208,7 @@ export class EventHandlerExecutor {
     campaignId?: string,
     callerInventoryItemInstanceId?: string,
     rollSplit?: RollSplitFn,
+    interrupt?: InterruptFn,
   ): Promise<EventHandlerResult> {
     // Get action
     const action = await this.db.actions.get(actionId);
@@ -267,6 +271,7 @@ export class EventHandlerExecutor {
         campaignId,
         roll,
         rollSplit,
+        interrupt,
         callerInventoryItemInstanceId,
         // Only allow Owner.Action().activate() at top level to avoid infinite re-entrancy
         ...(actionEventDepth === 1 && {
@@ -280,6 +285,7 @@ export class EventHandlerExecutor {
               campaignId,
               undefined, // Nested call: Caller = Owner
               rollSplit,
+              interrupt,
             ),
         }),
       };
@@ -429,6 +435,7 @@ export class EventHandlerExecutor {
     roll?: RollFn,
     campaignId?: string,
     rollSplit?: RollSplitFn,
+    interrupt?: InterruptFn,
   ): Promise<EventHandlerResult> {
     const archetype = await this.db.archetypes.get(archetypeId);
     if (!archetype) {
@@ -482,6 +489,7 @@ export class EventHandlerExecutor {
       campaignId,
       roll,
       rollSplit,
+      interrupt,
       executeActionEvent: (actionId, ownerId, targetIdForAction, eventTypeForAction) =>
         this.executeActionEvent(
           actionId,
@@ -492,6 +500,7 @@ export class EventHandlerExecutor {
           campaignId,
           undefined,
           rollSplit,
+          interrupt,
         ),
     };
 
@@ -533,6 +542,7 @@ export class EventHandlerExecutor {
     rulesetId: string,
     roll?: RollFn,
     rollSplit?: RollSplitFn,
+    interrupt?: InterruptFn,
   ): Promise<EventHandlerResult> {
     const script = await this.db.scripts
       .where({ rulesetId, entityType: 'characterLoader' })
@@ -556,6 +566,7 @@ export class EventHandlerExecutor {
       entityId: undefined,
       roll,
       rollSplit,
+      interrupt,
       executeActionEvent: (actionId, ownerId, targetIdForAction, eventTypeForAction) =>
         this.executeActionEvent(
           actionId,
@@ -566,6 +577,7 @@ export class EventHandlerExecutor {
           undefined,
           undefined,
           rollSplit,
+          interrupt,
         ),
     };
 
@@ -709,6 +721,7 @@ export class EventHandlerExecutor {
     eventType: 'on_enter' | 'on_leave' | 'on_activate',
     roll?: RollFn,
     rollSplit?: RollSplitFn,
+    interrupt?: InterruptFn,
   ): Promise<EventHandlerResult> {
     const eventLocation = await this.db.campaignEventLocations.get(campaignEventLocationId);
     if (!eventLocation) {
@@ -783,6 +796,7 @@ export class EventHandlerExecutor {
       campaignId: campaignEvent.campaignId,
       roll,
       rollSplit,
+      interrupt,
       executeActionEvent: (actionId, ownerId, targetIdForAction, eventTypeForAction) =>
         this.executeActionEvent(
           actionId,
@@ -793,6 +807,7 @@ export class EventHandlerExecutor {
           campaignEvent.campaignId,
           undefined,
           rollSplit,
+          interrupt,
         ),
     };
 

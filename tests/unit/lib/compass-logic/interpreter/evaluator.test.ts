@@ -499,6 +499,22 @@ foo()`);
       });
     });
 
+    describe('interrupt()', async () => {
+      it('should call interruptFn and return selected choice when handler is set', async () => {
+        const interruptFn = async (_msg: string, _choices: string[]) => 'B';
+        const evalWithInterrupt = new Evaluator({ interrupt: interruptFn });
+        const ast = new Parser(new Lexer('interrupt("Pick one", ["A", "B", "C"])').tokenize()).parse();
+        const result = await evalWithInterrupt.eval(ast);
+        expect(result).toBe('B');
+      });
+
+      it('should throw when interrupt is called without handler', async () => {
+        const evaluator = new Evaluator();
+        const ast = new Parser(new Lexer('interrupt("Pick", ["X", "Y"])').tokenize()).parse();
+        await expect(evaluator.eval(ast)).rejects.toThrow(/interrupt.*not available/);
+      });
+    });
+
     describe('Math functions', async () => {
       it('should floor number', async () => {
         expect(await evaluate('floor(3.7)')).toBe(3);
