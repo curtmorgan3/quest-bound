@@ -51,24 +51,30 @@ export function useRegisterAnimation(
 
   const prevValue = useRef(currentVal);
   const [diff, setDiff] = useState<string>('');
+  const flashTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    if (requestFlashRef.current) {
-      requestFlashRef.current = false;
-      clearModified();
-      setFlashKey((k) => k + 1);
-      setScriptChangeFlash(true);
+    if (!requestFlashRef.current) return;
+    if (flashTimeoutRef.current) clearTimeout(flashTimeoutRef.current);
+    requestFlashRef.current = false;
+    clearModified();
+    setFlashKey((k) => k + 1);
+    setScriptChangeFlash(true);
+    setDiff(formatScriptChangeDisplay(prevValue.current, currentVal));
+    prevValue.current = currentVal;
 
-      setDiff(formatScriptChangeDisplay(prevValue.current, currentVal));
-      prevValue.current = currentVal;
+    flashTimeoutRef.current = setTimeout(() => {
+      setDiff('');
+      setScriptChangeFlash(false);
+      flashTimeoutRef.current = null;
+    }, FLASH_DURATION_MS);
+  }, [currentVal, changedByScript]);
 
-      const t = setTimeout(() => {
-        setDiff('');
-        setScriptChangeFlash(false);
-      }, FLASH_DURATION_MS);
-      return () => clearTimeout(t);
-    }
-  }, [currentVal]);
+  useEffect(() => {
+    return () => {
+      if (flashTimeoutRef.current) clearTimeout(flashTimeoutRef.current);
+    };
+  }, []);
 
   return { flashKey, scriptChangeFlash, diff };
 }

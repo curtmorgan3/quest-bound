@@ -960,6 +960,10 @@ async function handleExecuteActionEvent(payload: {
         },
       });
     } else {
+      // Ensure direct modifications from the action script are always included.
+      // When B is modified and triggers C via reactive chain, createOnAttributesModified
+      // adds both. But if the collector misses B (e.g. timing/order), merge explicitly.
+      (result.modifiedAttributeIds ?? []).forEach((id) => allModifiedIds.add(id));
       const modifiedAttributeIds = Array.from(allModifiedIds);
       if (modifiedAttributeIds.length > 0) {
         sendSignal({
