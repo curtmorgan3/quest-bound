@@ -139,6 +139,9 @@ export class Evaluator {
       case 'ForLoop':
         return this.evalForLoop(node);
 
+      case 'WhileLoop':
+        return this.evalWhileLoop(node);
+
       case 'ReturnStatement':
         return this.evalReturnStatement(node);
 
@@ -366,6 +369,27 @@ export class Evaluator {
       }
     } else {
       throw new RuntimeError(`Cannot iterate over ${typeof iterable}`);
+    }
+
+    return result;
+  }
+
+  /** Maximum iterations allowed in a while loop to prevent infinite loops. */
+  private static readonly MAX_WHILE_ITERATIONS = 100_000;
+
+  private async evalWhileLoop(node: any): Promise<any> {
+    let result = null;
+    let iterations = 0;
+
+    while (this.isTruthy(await this.eval(node.condition))) {
+      if (iterations >= Evaluator.MAX_WHILE_ITERATIONS) {
+        throw new RuntimeError(
+          `While loop exceeded maximum iterations (${Evaluator.MAX_WHILE_ITERATIONS})`,
+        );
+      }
+      iterations++;
+
+      result = await this.evalBlock(node.body);
     }
 
     return result;

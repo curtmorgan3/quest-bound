@@ -10,6 +10,7 @@ import type {
   FunctionDef,
   Identifier,
   IfStatement,
+  WhileLoop,
   MemberAccess,
   MethodCall,
   NumberLiteral,
@@ -119,6 +120,12 @@ export function astToSource(
       const forNode = node as ForLoop;
       let out = `${prefix}for ${forNode.variable} in ${exprToSource(forNode.iterable)}:\n`;
       out += blockToSource(forNode.body, safeLevel + 1, safeIndent);
+      return out;
+    }
+    case 'WhileLoop': {
+      const whileNode = node as WhileLoop;
+      let out = `${prefix}while ${exprToSource(whileNode.condition)}:\n`;
+      out += blockToSource(whileNode.body, safeLevel + 1, safeIndent);
       return out;
     }
     case 'FunctionDef': {

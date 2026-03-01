@@ -6,6 +6,7 @@ import type {
   FunctionDef,
   IfStatement,
   ForLoop,
+  WhileLoop,
   ReturnStatement,
   SubscribeCall,
   Assignment,
@@ -78,6 +79,11 @@ export class Parser {
     // For loop
     if (this.match(TokenType.FOR)) {
       return this.forLoop();
+    }
+
+    // While loop
+    if (this.match(TokenType.WHILE)) {
+      return this.whileLoop();
     }
 
     // Check for function definition (identifier followed by parentheses and colon)
@@ -204,6 +210,22 @@ export class Parser {
       type: 'ForLoop',
       variable,
       iterable,
+      body,
+    };
+  }
+
+  private whileLoop(): WhileLoop {
+    // 'while' already consumed
+    const condition = this.expression();
+    this.consume(TokenType.COLON, "Expected ':' after while condition");
+    this.consume(TokenType.NEWLINE, "Expected newline after ':'");
+    this.consume(TokenType.INDENT, 'Expected indent after while statement');
+
+    const body = this.block();
+
+    return {
+      type: 'WhileLoop',
+      condition,
       body,
     };
   }

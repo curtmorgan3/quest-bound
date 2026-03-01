@@ -105,6 +105,15 @@ for i in 10:
   do_something()
 ```
 
+**While (condition-based loop):**
+
+```javascript
+while condition:
+  // body runs until condition is false
+```
+
+While loops are limited to 100,000 iterations to prevent infinite loops from freezing the app. If the limit is exceeded, a runtime error is thrown.
+
 ### Control flow
 
 Indentation defines blocks; there is no `end` keyword. Parentheses around conditions are optional.

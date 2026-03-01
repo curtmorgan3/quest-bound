@@ -13,6 +13,7 @@ export type ASTNode =
   | FunctionDef
   | IfStatement
   | ForLoop
+  | WhileLoop
   | ReturnStatement
   | SubscribeCall
   | ArrayLiteral
@@ -105,6 +106,12 @@ export interface ForLoop {
   type: 'ForLoop';
   variable: string;
   iterable: ASTNode;
+  body: ASTNode[];
+}
+
+export interface WhileLoop {
+  type: 'WhileLoop';
+  condition: ASTNode;
   body: ASTNode[];
 }
 

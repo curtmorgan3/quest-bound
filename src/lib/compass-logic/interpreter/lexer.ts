@@ -13,6 +13,7 @@ export enum TokenType {
   FOR = 'FOR',
   IN = 'IN',
   RETURN = 'RETURN',
+  WHILE = 'WHILE',
   SUBSCRIBE = 'SUBSCRIBE',
   SELF = 'SELF',
 
@@ -77,6 +78,7 @@ const KEYWORDS: Record<string, TokenType> = {
   for: TokenType.FOR,
   in: TokenType.IN,
   return: TokenType.RETURN,
+  while: TokenType.WHILE,
   subscribe: TokenType.SUBSCRIBE,
   Self: TokenType.SELF,
   true: TokenType.BOOLEAN,

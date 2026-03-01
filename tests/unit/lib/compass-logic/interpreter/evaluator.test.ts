@@ -418,6 +418,48 @@ result`);
     });
   });
 
+  describe('While Loops', async () => {
+    it('should run body while condition is true', async () => {
+      const result = await evaluate(`n = 3
+total = 0
+while n > 0:
+    total = total + n
+    n = n - 1
+total`);
+      expect(result).toBe(3 + 2 + 1);
+    });
+
+    it('should not run body when condition is false initially', async () => {
+      const result = await evaluate(`x = 0
+while false:
+    x = 1
+x`);
+      expect(result).toBe(0);
+    });
+
+    it('should allow return from inside while', async () => {
+      const result = await evaluate(`find():
+    i = 0
+    while i < 10:
+        if i == 5:
+            return i
+        i = i + 1
+    return -1
+
+find()`);
+      expect(result).toBe(5);
+    });
+
+    it('should throw when while loop exceeds maximum iterations', async () => {
+      await expect(
+        evaluate(`x = 0
+while true:
+    x = x + 1
+x`),
+      ).rejects.toThrow(/maximum iterations \(100000\)/);
+    });
+  });
+
   describe('Return Statements', async () => {
     it('should return value from function', async () => {
       const result = await evaluate(`foo():

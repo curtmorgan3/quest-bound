@@ -78,6 +78,7 @@ const qbscriptCompletions = [
   { label: 'if', type: 'keyword', info: 'Conditional' },
   { label: 'else', type: 'keyword', info: 'Else branch' },
   { label: 'for', type: 'keyword', info: 'Loop over an array or set of numbers' },
+  { label: 'while', type: 'keyword', info: 'Loop while condition is true' },
   { label: 'in', type: 'keyword', info: 'Iteration' },
   { label: 'return', type: 'keyword', info: 'Return value' },
 ];

@@ -48,7 +48,7 @@ const qbscriptParser = StreamLanguage.define<QBScriptState>({
     if (stream.eatSpace()) return null;
 
     // Keywords
-    if (stream.match(/\b(if|else|elif|for|in|return|subscribe)\b/)) {
+    if (stream.match(/\b(if|else|elif|for|in|return|subscribe|while)\b/)) {
       return 'keyword';
     }
     // Booleans

@@ -14,6 +14,7 @@ import type {
   FunctionDef,
   IfStatement,
   ForLoop,
+  WhileLoop,
   ReturnStatement,
   SubscribeCall,
   ArrayLiteral,
@@ -513,6 +514,48 @@ else:
     });
   });
 
+  describe('While Loops', () => {
+    it('should parse simple while loop', () => {
+      const source = `while x > 0:
+    x = x - 1`;
+      const ast = parse(source);
+      const stmt = ast.statements[0] as WhileLoop;
+      expect(stmt.type).toBe('WhileLoop');
+      expect((stmt.condition as BinaryOp).operator).toBe('>');
+      expect((stmt.condition as BinaryOp).left).toMatchObject({ type: 'Identifier', name: 'x' });
+      expect(stmt.body).toHaveLength(1);
+    });
+
+    it('should parse while loop with compound condition', () => {
+      const source = `while a && b:
+    do_something()`;
+      const ast = parse(source);
+      const stmt = ast.statements[0] as WhileLoop;
+      expect(stmt.type).toBe('WhileLoop');
+      expect((stmt.condition as BinaryOp).operator).toBe('&&');
+      expect(stmt.body).toHaveLength(1);
+    });
+
+    it('should parse while loop with multiple statements', () => {
+      const source = `while n > 0:
+    n = n - 1
+    total = total + n`;
+      const ast = parse(source);
+      const stmt = ast.statements[0] as WhileLoop;
+      expect(stmt.body).toHaveLength(2);
+    });
+
+    it('should parse nested while loops', () => {
+      const source = `while outer:
+    while inner:
+        x = 1`;
+      const ast = parse(source);
+      const stmt = ast.statements[0] as WhileLoop;
+      expect(stmt.body).toHaveLength(1);
+      expect((stmt.body[0] as WhileLoop).type).toBe('WhileLoop');
+    });
+  });
+
   describe('Return Statements', () => {
     it('should parse return with value', () => {
       const source = 'return 42';
@@ -690,6 +733,10 @@ z = 3`;
 
     it('should throw error on missing colon after if', () => {
       expect(() => parse('if x > 0\n    y = 1')).toThrow();
+    });
+
+    it('should throw error on missing colon after while', () => {
+      expect(() => parse('while x > 0\n    x = x - 1')).toThrow();
     });
 
     it('should throw error on invalid assignment target', () => {
