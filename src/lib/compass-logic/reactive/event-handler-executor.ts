@@ -31,6 +31,8 @@ export interface EventHandlerResult {
   announceMessages: string[];
   logMessages: any[][];
   error?: Error;
+  /** Ruleset attribute IDs modified by the script (for UI animation). */
+  modifiedAttributeIds?: string[];
 }
 
 /**
@@ -311,6 +313,7 @@ export class EventHandlerExecutor {
         announceMessages: result.announceMessages,
         logMessages: result.logMessages,
         error: result.error,
+        modifiedAttributeIds: result.modifiedAttributeIds,
       };
     } finally {
       actionEventDepth--;
