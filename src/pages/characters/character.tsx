@@ -1,5 +1,6 @@
 import { useSidebar } from '@/components/ui/sidebar';
 import { useCharacter, useCharacterAttributes } from '@/lib/compass-api';
+import { setCurrentRollHandlerForScripts } from '@/lib/compass-logic/worker/current-roll-handler-ref';
 import { useExecuteActionEvent } from '@/lib/compass-logic';
 import { SheetViewer } from '@/lib/compass-planes';
 import {
@@ -11,7 +12,7 @@ import {
   type InventoryPanelConfig,
 } from '@/stores';
 import { type CharacterAttribute } from '@/types';
-import { useContext, useState } from 'react';
+import { useContext, useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { CharacterArchetypesPanel } from './character-archetypes-panel';
 import { CharacterInventoryPanel } from './character-inventory-panel';
@@ -64,6 +65,11 @@ export const CharacterPage = ({
 
   const { rollDice } = useContext(DiceContext);
   const roll = async (diceString: string) => rollDice(diceString).then((res) => res.total);
+
+  useEffect(() => {
+    setCurrentRollHandlerForScripts(roll);
+    return () => setCurrentRollHandlerForScripts(undefined);
+  }, [roll]);
 
   const { character, updateCharacter } = useCharacter(id ?? characterId);
 

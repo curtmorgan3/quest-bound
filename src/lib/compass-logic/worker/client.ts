@@ -51,6 +51,8 @@ export interface AttributeChangeOptions {
   maxPerScript?: number;
   timeLimit?: number;
   timeout?: number;
+  /** When set, roll() in attribute scripts uses this handler (same as executeActionEvent). */
+  roll?: RollFn;
 }
 
 export interface ValidationResult {
@@ -199,18 +201,9 @@ export class QBScriptClient {
     rollRequestId: string;
     expression: string;
   }): Promise<void> {
-    const rollFn = this.pendingRollHandlers.get(payload.executionRequestId);
+    const rollFn =
+      this.pendingRollHandlers.get(payload.executionRequestId) ?? defaultScriptDiceRoller;
     if (!this.worker) return;
-    if (!rollFn) {
-      this.worker.postMessage({
-        type: 'ROLL_RESPONSE',
-        payload: {
-          rollRequestId: payload.rollRequestId,
-          error: 'No roll handler registered for this execution',
-        },
-      });
-      return;
-    }
     try {
       const value = await Promise.resolve(rollFn(payload.expression));
       this.worker.postMessage({
@@ -369,6 +362,7 @@ export class QBScriptClient {
     executionCount: number;
   }> {
     const requestId = generateRequestId();
+    this.pendingRollHandlers.set(requestId, options.roll ?? defaultScriptDiceRoller);
 
     const payload: AttributeChangedPayload = {
       attributeId: options.attributeId,
@@ -384,13 +378,16 @@ export class QBScriptClient {
       },
     };
 
-    const result = await this.sendSignal<{ value: any }>(
-      { type: 'ATTRIBUTE_CHANGED', payload },
-      requestId,
-      options.timeout,
-    );
-
-    return result.value;
+    try {
+      const result = await this.sendSignal<{ value: any }>(
+        { type: 'ATTRIBUTE_CHANGED', payload },
+        requestId,
+        options.timeout,
+      );
+      return result.value;
+    } finally {
+      this.pendingRollHandlers.delete(requestId);
+    }
   }
 
   /**
@@ -401,19 +398,25 @@ export class QBScriptClient {
     characterId: string,
     rulesetId: string,
     timeout = 30000,
+    roll?: RollFn,
   ): Promise<{ scriptsExecuted: string[]; executionCount: number }> {
     const requestId = generateRequestId();
-    const response = await this.sendSignal<{
-      value?: { scriptsExecuted: string[]; executionCount: number };
-    }>(
-      {
-        type: 'RUN_INITIAL_ATTRIBUTE_SYNC',
-        payload: { characterId, rulesetId, requestId },
-      },
-      requestId,
-      timeout,
-    );
-    return response?.value ?? { scriptsExecuted: [], executionCount: 0 };
+    this.pendingRollHandlers.set(requestId, roll ?? defaultScriptDiceRoller);
+    try {
+      const response = await this.sendSignal<{
+        value?: { scriptsExecuted: string[]; executionCount: number };
+      }>(
+        {
+          type: 'RUN_INITIAL_ATTRIBUTE_SYNC',
+          payload: { characterId, rulesetId, requestId },
+        },
+        requestId,
+        timeout,
+      );
+      return response?.value ?? { scriptsExecuted: [], executionCount: 0 };
+    } finally {
+      this.pendingRollHandlers.delete(requestId);
+    }
   }
 
   /**
