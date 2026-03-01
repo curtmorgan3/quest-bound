@@ -29,7 +29,10 @@ export const AttributeControls = ({
   const { attributes: rulesetAttributes } = useAttributes();
 
   const usedAttributes = [
-    ...characterAttributes.filter((attr) => scriptAttributeIds.includes(attr.attributeId)),
+    ...characterAttributes.filter(
+      (attr) =>
+        scriptAttributeIds.includes(attr.attributeId) && attr.attributeId !== associatedAttributeId,
+    ),
   ].sort((a, b) => a.title.localeCompare(b.title));
 
   const associatedAttribute = characterAttributes.find(

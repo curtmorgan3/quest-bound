@@ -313,6 +313,7 @@ export const SheetViewer = ({
       )}
       {!editorWindowId && (
         <WindowsTabs
+          pageId={currentPageId}
           characterId={characterId}
           characterPages={characterPages}
           windows={windowsForCurrentPage}

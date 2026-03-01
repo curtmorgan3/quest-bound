@@ -38,6 +38,7 @@ interface WindowsTabsProps {
   openWindows: Set<string>;
   locked?: boolean;
   onToggleLock: () => void;
+  pageId?: string;
 }
 
 export const WindowsTabs = ({
@@ -48,6 +49,7 @@ export const WindowsTabs = ({
   openWindows,
   locked = false,
   onToggleLock,
+  pageId,
 }: WindowsTabsProps) => {
   const { character } = useCharacter(characterId);
   const rulesetPages = useRulesetPagesForRuleset(character?.rulesetId);
@@ -57,7 +59,7 @@ export const WindowsTabs = ({
     useCharacterPages(characterId);
 
   const [searchParams, setSearchParams] = useSearchParams();
-  const currentPageId = searchParams.get('pageId') ?? '';
+  const currentPageId = searchParams.get('pageId') ?? pageId ?? '';
 
   const { assets } = useAssets();
   const [isAddWindowModalOpen, setIsAddWindowModalOpen] = useState(false);
@@ -81,7 +83,7 @@ export const WindowsTabs = ({
 
   const page = characterPages.find((p) => p.id === editPageId);
 
-  let backgroundImage = page?.assetUrl ?? null;
+  let backgroundImage = page?.image ?? null;
 
   if (!backgroundImage && page?.assetId) {
     const asset = assets.find((a) => a.id === page.assetId);
