@@ -21,7 +21,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { EyeOff, FileText, Pencil } from 'lucide-react';
+import { Copy, EyeOff, FileText, Pencil } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useState } from 'react';
 
@@ -50,6 +50,8 @@ interface Props {
   onOpen: (id: string) => void;
   onEdit: (title: string, category?: string) => void;
   onEditDetails?: () => void;
+  /** Duplicate this item (e.g. copy window with all components). Shown as icon when provided. */
+  onDuplicate?: () => void;
   /** Edit markdown content (distinct from details). Shown as second icon when provided. */
   onEditMarkdown?: () => void;
   categoryEditable?: boolean;
@@ -72,6 +74,7 @@ export const PreviewCard = ({
   onOpen,
   onEdit,
   onEditDetails,
+  onDuplicate,
   onEditMarkdown,
   categoryEditable = true,
   existingCategories,
@@ -260,6 +263,18 @@ export const PreviewCard = ({
             {!!onEditDetails && (
               <Button variant='ghost' size='sm' onClick={onEditDetails} aria-label='Edit details'>
                 <Pencil className='h-4 w-4' />
+              </Button>
+            )}
+            {!!onDuplicate && (
+              <Button
+                variant='ghost'
+                size='sm'
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDuplicate();
+                }}
+                aria-label='Duplicate'>
+                <Copy className='h-4 w-4' />
               </Button>
             )}
             {!!onEditMarkdown && (

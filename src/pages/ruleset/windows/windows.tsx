@@ -11,7 +11,7 @@ interface WindowSelectProps {
 const ALL_CATEGORIES = 'all';
 
 export const WindowSelect = ({ onEditDetails }: WindowSelectProps) => {
-  const { windows, deleteWindow, updateWindow } = useWindows();
+  const { windows, deleteWindow, updateWindow, duplicateWindow } = useWindows();
   const { activeRuleset } = useActiveRuleset();
   const navigate = useNavigate();
   const [filterValue, setFilterValue] = useState('');
@@ -71,6 +71,7 @@ export const WindowSelect = ({ onEditDetails }: WindowSelectProps) => {
             onOpen={() => navigate(`/rulesets/${activeRuleset?.id}/windows/${c.id}`)}
             onEdit={(title, category) => updateWindow(c.id, { title, category })}
             onEditDetails={onEditDetails ? () => onEditDetails(c.id) : undefined}
+            onDuplicate={() => duplicateWindow(c.id)}
           />
         ))}
       </div>
