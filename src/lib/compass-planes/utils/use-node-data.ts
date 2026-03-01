@@ -47,6 +47,8 @@ const coerceValueByComponentType = (
     }
 
     case ComponentTypes.TEXT:
+      return attributeType === 'number' ? Number(value) : value;
+
     case ComponentTypes.CONTENT: {
       return typeof value === 'string' ? value : String(value);
     }

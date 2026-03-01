@@ -63,20 +63,22 @@ export function useRegisterAnimation(
   const flashTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    //if (!requestFlashRef.current) return; // This line will cause stale downstream animations
+    //if (!requestFlashRef.current) return; // This line will cause stale downstream animations, but will prevent triggering on manual change
 
     // Only show diff when the value has actually changed. Downstream attributes (e.g. C)
     // can get changedByScript=true before Dexie has the new value; animating then would
     // show prevValue→oldVal (stale). Skip and leave modified flag set so we run again
     // when currentVal updates and show the correct diff.
-    if (prevValue.current === currentVal) return;
+
+    if (prevValue.current == currentVal) return; // lose equality for string to number comparison
     if (flashTimeoutRef.current) clearTimeout(flashTimeoutRef.current);
     requestFlashRef.current = false;
     clearModified();
     setFlashKey((k) => k + 1);
     setScriptChangeFlash(true);
 
-    setDiff(formatScriptChangeDisplay(prevValue.current, currentVal));
+    const newDiff = formatScriptChangeDisplay(prevValue.current, currentVal);
+    setDiff(newDiff);
     prevValue.current = currentVal;
 
     flashTimeoutRef.current = setTimeout(() => {
