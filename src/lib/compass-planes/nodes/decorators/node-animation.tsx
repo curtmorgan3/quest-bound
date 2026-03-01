@@ -47,11 +47,11 @@ export const NodeAnimation = ({ component, children }: NodeAnimationProps) => {
         </div>
       );
 
-    case 'scale':
+    case 'pop':
       return (
         <div key={flashKey} className='sheet-attribute-animation-wrapper'>
           <div
-            className={scriptChangeFlash ? 'sheet-attribute-animation-scale' : undefined}
+            className={scriptChangeFlash ? 'sheet-attribute-animation-pop' : undefined}
             style={{ display: 'inline-block' }}>
             {children}
           </div>
@@ -71,6 +71,50 @@ export const NodeAnimation = ({ component, children }: NodeAnimationProps) => {
               aria-hidden
             />
           ) : null}
+        </div>
+      );
+
+    case 'glow':
+      return (
+        <div key={flashKey} className='sheet-attribute-animation-wrapper'>
+          <div
+            className={scriptChangeFlash ? 'sheet-attribute-animation-glow' : undefined}
+            style={{
+              display: 'inline-block',
+              ...(scriptChangeFlash && animationColor
+                ? { ['--sheet-animation-color' as string]: animationColor }
+                : {}),
+            }}>
+            {children}
+          </div>
+        </div>
+      );
+
+    case 'shimmer':
+      return (
+        <div
+          key={flashKey}
+          className='sheet-attribute-animation-wrapper'
+          style={
+            scriptChangeFlash && animationColor
+              ? { ['--sheet-animation-color' as string]: animationColor }
+              : undefined
+          }>
+          {children}
+          {scriptChangeFlash ? (
+            <div className='sheet-attribute-shimmer-overlay' aria-hidden />
+          ) : null}
+        </div>
+      );
+
+    case 'fade':
+      return (
+        <div key={flashKey} className='sheet-attribute-animation-wrapper'>
+          <div
+            className={scriptChangeFlash ? 'sheet-attribute-animation-fade' : undefined}
+            style={{ display: 'inline-block' }}>
+            {children}
+          </div>
         </div>
       );
 

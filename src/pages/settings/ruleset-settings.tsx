@@ -330,8 +330,18 @@ export const RulesetSettings = ({ activeRuleset }: RulesetSettingsProps) => {
               <div
                 className={cn(
                   'relative inline-block w-full',
-                  hoveredAnimation === 'scale' && 'sheet-attribute-animation-scale',
-                )}>
+                  hoveredAnimation === 'pop' && 'sheet-attribute-animation-pop',
+                  hoveredAnimation === 'glow' && 'sheet-attribute-animation-glow',
+                  hoveredAnimation === 'fade' && 'sheet-attribute-animation-fade',
+                )}
+                style={
+                  (hoveredAnimation === 'glow' || hoveredAnimation === 'shimmer') &&
+                  activeRuleset.details?.animationColor
+                    ? {
+                        ['--sheet-animation-color' as string]: activeRuleset.details.animationColor,
+                      }
+                    : undefined
+                }>
                 <SelectTrigger id='ruleset-animation' className='h-8 w-full'>
                   <SelectValue placeholder='Select animation…' />
                 </SelectTrigger>
@@ -343,6 +353,9 @@ export const RulesetSettings = ({ activeRuleset }: RulesetSettingsProps) => {
                     }}
                     aria-hidden
                   />
+                )}
+                {hoveredAnimation === 'shimmer' && (
+                  <div className='sheet-attribute-shimmer-overlay rounded-md' aria-hidden />
                 )}
                 {hoveredAnimation === 'floating-difference' && (
                   <span
@@ -370,16 +383,34 @@ export const RulesetSettings = ({ activeRuleset }: RulesetSettingsProps) => {
                   Floating difference
                 </SelectItem>
                 <SelectItem
-                  value='scale'
-                  onMouseEnter={() => setHoveredAnimation('scale')}
+                  value='pop'
+                  onMouseEnter={() => setHoveredAnimation('pop')}
                   onMouseLeave={() => setHoveredAnimation('')}>
-                  Scale
+                  Pop
                 </SelectItem>
                 <SelectItem
                   value='highlight'
                   onMouseEnter={() => setHoveredAnimation('highlight')}
                   onMouseLeave={() => setHoveredAnimation('')}>
                   Highlight
+                </SelectItem>
+                <SelectItem
+                  value='glow'
+                  onMouseEnter={() => setHoveredAnimation('glow')}
+                  onMouseLeave={() => setHoveredAnimation('')}>
+                  Glow
+                </SelectItem>
+                <SelectItem
+                  value='shimmer'
+                  onMouseEnter={() => setHoveredAnimation('shimmer')}
+                  onMouseLeave={() => setHoveredAnimation('')}>
+                  Shimmer
+                </SelectItem>
+                <SelectItem
+                  value='fade'
+                  onMouseEnter={() => setHoveredAnimation('fade')}
+                  onMouseLeave={() => setHoveredAnimation('')}>
+                  Fade
                 </SelectItem>
               </SelectContent>
             </Select>
