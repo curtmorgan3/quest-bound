@@ -39,6 +39,7 @@ import {
   getDanglingReferencesForModuleRemoval,
   removeModuleFromRuleset,
 } from '@/lib/compass-api/hooks/export/remove-module-from-ruleset';
+import { cn } from '@/lib/utils';
 import type { Ruleset, RulesetModuleEntry } from '@/types';
 import { rgbToHex } from '@/utils';
 import { Download, Package, Plus, Sliders, Trash, Upload } from 'lucide-react';
@@ -83,6 +84,8 @@ export const RulesetSettings = ({ activeRuleset }: RulesetSettingsProps) => {
   const [title, setTitle] = useState(activeRuleset.title);
   const [version, setVersion] = useState(activeRuleset.version);
   const [description, setDescription] = useState(activeRuleset.description);
+  const [animationSelectOpen, setAnimationSelectOpen] = useState(false);
+  const [hoveredAnimation, setHoveredAnimation] = useState<string>('');
   const [fontLoading, setFontLoading] = useState(false);
   const [paletteAddColor, setPaletteAddColor] = useState<string | undefined>(undefined);
   const fontInputRef = useRef<HTMLInputElement>(null);
@@ -318,15 +321,66 @@ export const RulesetSettings = ({ activeRuleset }: RulesetSettingsProps) => {
                 updateRuleset(activeRuleset.id, {
                   details: { ...activeRuleset.details, animation: value },
                 })
-              }>
-              <SelectTrigger id='ruleset-animation' className='h-8'>
-                <SelectValue placeholder='Select animation…' />
-              </SelectTrigger>
+              }
+              open={animationSelectOpen}
+              onOpenChange={(open) => {
+                setAnimationSelectOpen(open);
+                if (!open) setHoveredAnimation('');
+              }}>
+              <div
+                className={cn(
+                  'relative inline-block w-full',
+                  hoveredAnimation === 'scale' && 'sheet-attribute-animation-scale',
+                )}>
+                <SelectTrigger id='ruleset-animation' className='h-8 w-full'>
+                  <SelectValue placeholder='Select animation…' />
+                </SelectTrigger>
+                {hoveredAnimation === 'highlight' && (
+                  <div
+                    className='sheet-attribute-highlight-overlay rounded-md'
+                    style={{
+                      backgroundColor: activeRuleset.details?.animationColor ?? 'var(--primary)',
+                    }}
+                    aria-hidden
+                  />
+                )}
+                {hoveredAnimation === 'floating-difference' && (
+                  <span
+                    className='floating-difference'
+                    style={
+                      activeRuleset.details?.animationColor
+                        ? { color: activeRuleset.details.animationColor }
+                        : undefined
+                    }>
+                    +1
+                  </span>
+                )}
+              </div>
               <SelectContent>
-                <SelectItem value='none'>None</SelectItem>
-                <SelectItem value='floating-difference'>Floating difference</SelectItem>
-                <SelectItem value='scale'>Scale</SelectItem>
-                <SelectItem value='highlight'>Highlight</SelectItem>
+                <SelectItem
+                  value='none'
+                  onMouseEnter={() => setHoveredAnimation('')}
+                  onMouseLeave={() => setHoveredAnimation('')}>
+                  None
+                </SelectItem>
+                <SelectItem
+                  value='floating-difference'
+                  onMouseEnter={() => setHoveredAnimation('floating-difference')}
+                  onMouseLeave={() => setHoveredAnimation('')}>
+                  Floating difference
+                </SelectItem>
+                <SelectItem
+                  value='scale'
+                  onMouseEnter={() => setHoveredAnimation('scale')}
+                  onMouseLeave={() => setHoveredAnimation('')}>
+                  Scale
+                </SelectItem>
+                <SelectItem
+                  value='highlight'
+                  onMouseEnter={() => setHoveredAnimation('highlight')}
+                  onMouseLeave={() => setHoveredAnimation('')}>
+                  Highlight
+                </SelectItem>
               </SelectContent>
             </Select>
           </div>
