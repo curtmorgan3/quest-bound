@@ -285,6 +285,13 @@ export class EventHandlerExecutor {
         await this.onAttributesModified(result.modifiedAttributeIds, characterId, action.rulesetId);
       }
 
+      await this.persistActionEventLogs(
+        action.rulesetId,
+        script.id,
+        characterId,
+        result.logMessages,
+      );
+
       return {
         success: !result.error,
         value: result.value,
@@ -294,6 +301,44 @@ export class EventHandlerExecutor {
       };
     } finally {
       actionEventDepth--;
+    }
+  }
+
+  /**
+   * Persist action event log messages to scriptLogs so they appear in useScriptLogs (e.g. game log).
+   * Called for every action run, including when triggered via item script Owner.Action('name').activate().
+   */
+  private async persistActionEventLogs(
+    rulesetId: string,
+    scriptId: string,
+    characterId: string,
+    logMessages: any[][],
+  ): Promise<void> {
+    if (logMessages.length === 0) return;
+    const now = new Date().toISOString();
+    const timestamp = Date.now();
+    try {
+      for (const args of logMessages) {
+        let argsJson: string;
+        try {
+          argsJson = JSON.stringify(args);
+        } catch {
+          argsJson = JSON.stringify(args.map((a) => String(a)));
+        }
+        await this.db.scriptLogs.add({
+          id: crypto.randomUUID(),
+          rulesetId,
+          scriptId,
+          characterId,
+          argsJson,
+          timestamp,
+          context: 'action_event',
+          createdAt: now,
+          updatedAt: now,
+        } as any);
+      }
+    } catch (e) {
+      console.warn('[QBScript] Failed to persist action event logs:', e);
     }
   }
 

@@ -780,19 +780,6 @@ async function handleExecuteActionEvent(payload: {
       payload.callerInventoryItemInstanceId,
     );
 
-    const script = await db.scripts
-      .where({ entityId: payload.actionId, entityType: 'action' })
-      .first();
-    const scriptId = script?.id ?? payload.actionId;
-
-    await persistScriptLogs(
-      action.rulesetId,
-      scriptId,
-      payload.characterId,
-      result.logMessages,
-      'action_event',
-    );
-
     if (result.error || !result.success) {
       sendSignal({
         type: 'SCRIPT_ERROR',
