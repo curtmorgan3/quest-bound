@@ -31,7 +31,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { Avatar, AvatarFallback, AvatarImage } from '../../ui/avatar';
 import { Button } from '../../ui/button';
 import { DialogDescription } from '../../ui/dialog';
-import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger } from '../../ui/drawer';
+import { Drawer, DrawerContent, DrawerTrigger } from '../../ui/drawer';
 import { Popover, PopoverContent, PopoverTrigger } from '../../ui/popover';
 import { CampaignSidebar } from './campaign-sidebar';
 import { CharacterSidebar } from './character-sidebar';
@@ -207,9 +207,6 @@ export function AppSidebar() {
 
       <DrawerContent className='w-[100vw]'>
         <DialogDescription className='hidden'>Settings</DialogDescription>
-        <DrawerHeader>
-          <DrawerTitle className='mb-4 text-lg font-medium'>Settings</DrawerTitle>
-        </DrawerHeader>
         <Settings />
       </DrawerContent>
     </Drawer>

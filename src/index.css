@@ -276,7 +276,7 @@ code {
   animation: script-change-flash 0.4s ease-out;
 }
 
-@keyframes script-change-float {
+@keyframes floating-difference {
   0% {
     transform: translate(-50%, 0) translateX(0);
     opacity: 1;
@@ -299,7 +299,7 @@ code {
   }
 }
 
-.script-change-float {
+.floating-difference {
   position: absolute;
   left: 50%;
   bottom: 100%;
@@ -317,5 +317,43 @@ code {
   text-overflow: ellipsis;
   pointer-events: none;
   z-index: 10;
-  animation: script-change-float 2s ease-out forwards;
+  animation: floating-difference 2s ease-out forwards;
+}
+
+@keyframes sheet-attribute-scale {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.15);
+  }
+}
+
+.sheet-attribute-animation-scale {
+  display: inline-block;
+  transform-origin: center;
+  animation: sheet-attribute-scale 0.5s ease-out;
+}
+
+@keyframes sheet-attribute-highlight-overlay {
+  from {
+    opacity: 0.4;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+.sheet-attribute-highlight-overlay {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  animation: sheet-attribute-highlight-overlay 0.6s ease-out forwards;
+}
+
+.sheet-attribute-animation-wrapper {
+  position: relative;
+  display: inline-block;
 }

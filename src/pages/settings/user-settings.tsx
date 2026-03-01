@@ -99,7 +99,7 @@ export const UserSettings = () => {
           }}
         />
         <Label htmlFor='sheetAttributeAnimations' className='cursor-pointer font-normal'>
-          Sheet attribute animations
+          Animate sheet attribute changes when available
         </Label>
       </div>
 

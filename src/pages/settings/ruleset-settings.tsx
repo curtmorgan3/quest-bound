@@ -19,6 +19,11 @@ import {
   ImageUpload,
   Input,
   Label,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
   Tabs,
   TabsContent,
   TabsList,
@@ -293,30 +298,6 @@ export const RulesetSettings = ({ activeRuleset }: RulesetSettingsProps) => {
 
       <TabsContent value='defaults' className='flex flex-col gap-6 mt-0'>
         <div className='flex flex-col gap-3'>
-          <Label>Test character</Label>
-          <p className='text-sm text-muted-foreground'>
-            Reset the attribute values stored when testing this ruleset to their defaults.
-          </p>
-          <Button
-            variant='outline'
-            size='sm'
-            className='gap-2 w-fit'
-            disabled={resettingTestValues}
-            onClick={async () => {
-              setResettingTestValues(true);
-              try {
-                await resetTestCharacter(activeRuleset.id);
-                addNotification('Test values reset.', { type: 'success' });
-              } catch (e) {
-                addNotification((e as Error).message, { type: 'error' });
-              } finally {
-                setResettingTestValues(false);
-              }
-            }}>
-            {resettingTestValues ? 'Resetting...' : 'Reset Test Values'}
-          </Button>
-        </div>
-        <div className='flex flex-col gap-3'>
           <Label>Custom Properties</Label>
           <p className='text-sm text-muted-foreground'>
             Define custom properties that can be applied to Archetypes and Items
@@ -328,6 +309,40 @@ export const RulesetSettings = ({ activeRuleset }: RulesetSettingsProps) => {
             </Link>
           </Button>
         </div>
+        <div className='flex gap-4 items-end'>
+          <div className='flex flex-col gap-2 max-w-xs'>
+            <Label htmlFor='ruleset-animation'>Animation style</Label>
+            <Select
+              value={activeRuleset.details?.animation ?? ''}
+              onValueChange={(value) =>
+                updateRuleset(activeRuleset.id, {
+                  details: { ...activeRuleset.details, animation: value },
+                })
+              }>
+              <SelectTrigger id='ruleset-animation' className='h-8'>
+                <SelectValue placeholder='Select animation…' />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value='none'>None</SelectItem>
+                <SelectItem value='floating-difference'>Floating difference</SelectItem>
+                <SelectItem value='scale'>Scale</SelectItem>
+                <SelectItem value='highlight'>Highlight</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <RulesetColorPicker
+            label='Animation Color'
+            color={activeRuleset.details?.animationColor}
+            disableAlpha
+            onUpdate={(color) => {
+              const hex = rgbToHex(color.r, color.g, color.b);
+              updateRuleset(activeRuleset.id, {
+                details: { ...activeRuleset.details, animationColor: hex },
+              });
+            }}
+          />
+        </div>
+
         <div className='flex flex-col gap-3'>
           <Label>Fonts</Label>
           <div className='flex flex-col gap-2'>
@@ -362,6 +377,7 @@ export const RulesetSettings = ({ activeRuleset }: RulesetSettingsProps) => {
             onChange={handleFontUpload}
           />
         </div>
+
         <div className='flex flex-col gap-3'>
           <Label>Palette</Label>
           <div className='flex flex-col gap-4'>
@@ -411,9 +427,32 @@ export const RulesetSettings = ({ activeRuleset }: RulesetSettingsProps) => {
             </Popover>
           </div>
         </div>
+        <div className='flex flex-col gap-3'>
+          <p className='text-sm text-muted-foreground'>
+            Reset the attribute values stored when testing this ruleset to their defaults.
+          </p>
+          <Button
+            variant='outline'
+            size='sm'
+            className='gap-2 w-fit'
+            disabled={resettingTestValues}
+            onClick={async () => {
+              setResettingTestValues(true);
+              try {
+                await resetTestCharacter(activeRuleset.id);
+                addNotification('Test values reset.', { type: 'success' });
+              } catch (e) {
+                addNotification((e as Error).message, { type: 'error' });
+              } finally {
+                setResettingTestValues(false);
+              }
+            }}>
+            {resettingTestValues ? 'Resetting...' : 'Reset Test Values'}
+          </Button>
+        </div>
       </TabsContent>
 
-      <TabsContent value='modules' className='flex flex-col gap-6 mt-0'>
+      <TabsContent value='modules' className='flex flex-col gap-6 mt-0 overflow-auto'>
         <div className='flex flex-col gap-3'>
           <div className='flex items-center gap-2'>
             <Checkbox
