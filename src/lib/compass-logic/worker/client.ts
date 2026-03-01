@@ -200,12 +200,13 @@ export class QBScriptClient {
     executionRequestId: string;
     rollRequestId: string;
     expression: string;
+    rerollMessage?: string;
   }): Promise<void> {
     const rollFn =
       this.pendingRollHandlers.get(payload.executionRequestId) ?? defaultScriptDiceRoller;
     if (!this.worker) return;
     try {
-      const value = await Promise.resolve(rollFn(payload.expression));
+      const value = await Promise.resolve(rollFn(payload.expression, payload.rerollMessage));
       this.worker.postMessage({
         type: 'ROLL_RESPONSE',
         payload: { rollRequestId: payload.rollRequestId, value },

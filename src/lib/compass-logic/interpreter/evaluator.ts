@@ -454,13 +454,16 @@ export class Evaluator {
 
   private registerBuiltins(): void {
     // Dice rolling: use injected roll when provided, otherwise default local implementation
-    this.globalEnv.define('roll', async (expression: string): Promise<number> => {
-      if (this.rollFn) {
-        const result = await this.rollFn(expression);
-        return result;
-      }
-      return this.defaultLocalRoll(expression);
-    });
+    this.globalEnv.define(
+      'roll',
+      async (expression: string, rerollMessage?: string): Promise<number> => {
+        if (this.rollFn) {
+          const result = await this.rollFn(expression, rerollMessage);
+          return result;
+        }
+        return this.defaultLocalRoll(expression);
+      },
+    );
 
     // Always use default local roll (no UI, no script-runner-registered roll)
     this.globalEnv.define('rollQuiet', (expression: string): number => {

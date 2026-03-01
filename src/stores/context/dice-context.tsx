@@ -14,7 +14,11 @@ export const useDiceState = ({ canvasRef }: DiceStateProps): IDiceContext => {
   const { logEvent } = useEventLog();
   const { currentUser } = useUsers();
   const physicalRolls = currentUser?.preferences?.physicalRolls ?? false;
-  const [physicalRollModal, setPhysicalRollModal] = useState<{ notation: string } | null>(null);
+  const [physicalRollModal, setPhysicalRollModal] = useState<{
+    notation: string;
+    initialValues?: number[];
+    rerollMessage?: string;
+  } | null>(null);
   const physicalRollResolveRef = useRef<((result: DiceResult) => void) | null>(null);
   const physicalRollRejectRef = useRef<(() => void) | null>(null);
 
@@ -61,7 +65,26 @@ export const useDiceState = ({ canvasRef }: DiceStateProps): IDiceContext => {
   const rollDice = async (roll: string, opts?: DiceRollOpts) => {
     setLastResult(null);
 
-    if (physicalRolls) {
+    const hasRerollMessage =
+      opts?.rerollMessage != null && String(opts.rerollMessage).trim() !== '';
+    const usePhysicalModal = physicalRolls || hasRerollMessage;
+
+    if (hasRerollMessage) {
+      const { segmentResults } = rollDiceExpression(roll);
+      const initialValues = segmentResults.flatMap((s) => s.rolls.map((r) => r.value));
+      setIsRolling(true);
+      setPhysicalRollModal({
+        notation: roll.trim(),
+        initialValues,
+        rerollMessage: String(opts.rerollMessage).trim(),
+      });
+      return new Promise<DiceResult>((resolve, reject) => {
+        physicalRollResolveRef.current = resolve;
+        physicalRollRejectRef.current = reject;
+      });
+    }
+
+    if (usePhysicalModal) {
       setIsRolling(true);
       setPhysicalRollModal({ notation: roll.trim() });
       return new Promise<DiceResult>((resolve, reject) => {

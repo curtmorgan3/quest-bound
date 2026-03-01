@@ -64,7 +64,8 @@ export const CharacterPage = ({
   const characterArchetypesPanel = useContext(CharacterArchetypesPanelContext);
 
   const { rollDice } = useContext(DiceContext);
-  const roll = async (diceString: string) => rollDice(diceString).then((res) => res.total);
+  const roll = async (diceString: string, rerollMessage?: string) =>
+    rollDice(diceString, { rerollMessage }).then((res) => res.total);
 
   useEffect(() => {
     setCurrentRollHandlerForScripts(roll);

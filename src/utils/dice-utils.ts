@@ -109,7 +109,7 @@ export function rollDiceExpression(roll: string) {
   };
 }
 
-export function defaultScriptDiceRoller(roll: string) {
+export function defaultScriptDiceRoller(roll: string, _rerollMessage?: string): number {
   return rollDiceExpression(roll).total;
 }
 

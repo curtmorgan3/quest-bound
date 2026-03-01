@@ -150,7 +150,12 @@ export type WorkerToMainSignal =
 
 export interface RollRequestSignal {
   type: 'ROLL_REQUEST';
-  payload: { executionRequestId: string; rollRequestId: string; expression: string };
+  payload: {
+    executionRequestId: string;
+    rollRequestId: string;
+    expression: string;
+    rerollMessage?: string;
+  };
 }
 
 export interface ScriptResultSignal {

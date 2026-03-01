@@ -49,13 +49,13 @@ let messagePort: MessagePort | null = null;
 
 const rollBridge = {
   pending: new Map<string, { resolve: (value: number) => void; reject: (err: Error) => void }>(),
-  requestRoll(expression: string, executionRequestId: string): Promise<number> {
+  requestRoll(expression: string, executionRequestId: string, rerollMessage?: string): Promise<number> {
     const rollRequestId = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
     return new Promise<number>((resolve, reject) => {
       this.pending.set(rollRequestId, { resolve, reject });
       sendSignal({
         type: 'ROLL_REQUEST',
-        payload: { executionRequestId, rollRequestId, expression },
+        payload: { executionRequestId, rollRequestId, expression, rerollMessage },
       });
     });
   },
@@ -352,8 +352,8 @@ type ReactiveExecutionResult = Awaited<ReturnType<ReactiveExecutor['onAttributeC
 
 async function handleExecuteScript(payload: ExecuteScriptPayload): Promise<void> {
   const startTime = performance.now();
-  const rollFn: RollFn = (expression: string) =>
-    rollBridge.requestRoll(expression, payload.requestId);
+  const rollFn: RollFn = (expression: string, rerollMessage?: string) =>
+    rollBridge.requestRoll(expression, payload.requestId, rerollMessage);
   let executor: EventHandlerExecutor;
   executor = new EventHandlerExecutor(db, createOnAttributesModified(rollFn, () => executor));
 
@@ -538,8 +538,8 @@ async function handleValidateScript(payload: {
 
 async function handleAttributeChanged(payload: AttributeChangedPayload): Promise<void> {
   try {
-    const rollFn: RollFn = (expression: string) =>
-      rollBridge.requestRoll(expression, payload.requestId);
+    const rollFn: RollFn = (expression: string, rerollMessage?: string) =>
+      rollBridge.requestRoll(expression, payload.requestId, rerollMessage);
     let executor: EventHandlerExecutor;
     executor = new EventHandlerExecutor(db, createOnAttributesModified(rollFn, () => executor));
 
@@ -625,8 +625,8 @@ async function handleInitialAttributeSync(payload: {
       reactiveExecutor = new ReactiveExecutor(db);
     }
 
-    const rollFn: RollFn = (expression: string) =>
-      rollBridge.requestRoll(expression, payload.requestId);
+    const rollFn: RollFn = (expression: string, rerollMessage?: string) =>
+      rollBridge.requestRoll(expression, payload.requestId, rerollMessage);
     let executor: EventHandlerExecutor;
     executor = new EventHandlerExecutor(db, createOnAttributesModified(rollFn, () => executor));
 
@@ -760,8 +760,8 @@ async function handleExecuteActionEvent(payload: {
       throw new Error(`Action not found: ${payload.actionId}`);
     }
 
-    const rollFn: RollFn = (expression: string) =>
-      rollBridge.requestRoll(expression, payload.requestId);
+    const rollFn: RollFn = (expression: string, rerollMessage?: string) =>
+      rollBridge.requestRoll(expression, payload.requestId, rerollMessage);
 
     const allModifiedIds = new Set<string>();
     const getCollector = () => allModifiedIds;
@@ -842,8 +842,8 @@ async function handleExecuteItemEvent(payload: {
       throw new Error(`Item not found: ${payload.itemId}`);
     }
 
-    const rollFn: RollFn = (expression: string) =>
-      rollBridge.requestRoll(expression, payload.requestId);
+    const rollFn: RollFn = (expression: string, rerollMessage?: string) =>
+      rollBridge.requestRoll(expression, payload.requestId, rerollMessage);
 
     const allModifiedIds = new Set<string>();
     const getCollector = () => allModifiedIds;
@@ -933,8 +933,8 @@ async function handleExecuteArchetypeEvent(payload: {
       throw new Error(`Archetype not found: ${payload.archetypeId}`);
     }
 
-    const rollFn: RollFn = (expression: string) =>
-      rollBridge.requestRoll(expression, payload.requestId);
+    const rollFn: RollFn = (expression: string, rerollMessage?: string) =>
+      rollBridge.requestRoll(expression, payload.requestId, rerollMessage);
 
     const allModifiedIds = new Set<string>();
     const getCollector = () => allModifiedIds;
@@ -1009,8 +1009,8 @@ async function handleExecuteCampaignEventEvent(payload: {
   requestId: string;
 }): Promise<void> {
   try {
-    const rollFn: RollFn = (expression: string) =>
-      rollBridge.requestRoll(expression, payload.requestId);
+    const rollFn: RollFn = (expression: string, rerollMessage?: string) =>
+      rollBridge.requestRoll(expression, payload.requestId, rerollMessage);
 
     const allModifiedIds = new Set<string>();
     const getCollector = () => allModifiedIds;

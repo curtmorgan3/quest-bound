@@ -4,6 +4,10 @@ export type IDiceContext = UseThreeDDice & LocalDiceContext;
 
 export type PhysicalRollModalState = {
   notation: string;
+  /** When set (e.g. reroll flow), modal opens with these values pre-filled. */
+  initialValues?: number[];
+  /** When non-empty, shown in the modal (reroll flow). */
+  rerollMessage?: string;
 } | null;
 
 export type LocalDiceContext = {
@@ -23,10 +27,12 @@ export type DiceRollOpts = {
   openPanel?: boolean;
   delay?: number;
   autoShowResult?: boolean;
+  /** When non-empty, generate values first and show physical roll modal pre-filled with this message; use modal even if physicalRolls is false. */
+  rerollMessage?: string;
 };
 
-/** Roll function usable in scripts: takes dice expression (e.g. "2d6+3"), returns total (sync or async). */
-export type RollFn = (expression: string) => number | Promise<number>;
+/** Roll function usable in scripts: takes dice expression (e.g. "2d6+3"), optional rerollMessage to pre-fill physical roll modal and show message. Returns total (sync or async). */
+export type RollFn = (expression: string, rerollMessage?: string) => number | Promise<number>;
 
 /** A single dice term (e.g. 2d6) or modifier term (+4, -1) in order */
 export type DiceToken =

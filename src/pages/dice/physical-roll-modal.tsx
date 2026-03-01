@@ -28,9 +28,14 @@ export const PhysicalRollModal = () => {
   useEffect(() => {
     if (notation) {
       const { slots: s } = getPhysicalRollSlots(notation);
-      setValues(s.map(() => ''));
+      const initial = physicalRollModal?.initialValues;
+      setValues(
+        initial && initial.length === s.length
+          ? initial.map((n) => `${n}`)
+          : s.map(() => ''),
+      );
     }
-  }, [notation]);
+  }, [notation, physicalRollModal?.initialValues]);
 
   const open = Boolean(physicalRollModal);
 
@@ -97,6 +102,11 @@ export const PhysicalRollModal = () => {
             <DialogHeader>
               <DialogTitle>Physical roll: {notation}</DialogTitle>
               <DialogDescription>Enter the value of each die you rolled.</DialogDescription>
+              {physicalRollModal.rerollMessage ? (
+                <p className='text-sm text-muted-foreground mt-1' data-testid='physical-roll-reroll-message'>
+                  {physicalRollModal.rerollMessage}
+                </p>
+              ) : null}
             </DialogHeader>
             <div className='flex gap-3 py-2 flex-wrap'>
               {slots.map((slot, index) => (
