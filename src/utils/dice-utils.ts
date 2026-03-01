@@ -113,6 +113,12 @@ export function defaultScriptDiceRoller(roll: string, _rerollMessage?: string): 
   return rollDiceExpression(roll).total;
 }
 
+/** Returns array of each die value in dice syntax order (modifiers are not included). */
+export function defaultScriptDiceRollerSplit(roll: string, _rerollMessage?: string): number[] {
+  const { segmentResults } = rollDiceExpression(roll);
+  return segmentResults.flatMap((s) => s.rolls.map((r) => r.value));
+}
+
 export type PhysicalRollSlot = {
   label: string;
 };

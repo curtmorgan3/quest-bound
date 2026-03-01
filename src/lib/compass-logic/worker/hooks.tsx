@@ -4,7 +4,7 @@
  * Provides easy-to-use hooks for executing scripts from React components.
  */
 
-import type { RollFn } from '@/types';
+import type { RollFn, RollSplitFn } from '@/types';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { AttributeChangeOptions, ScriptExecutionOptions } from './client';
 import { getQBScriptClient } from './client';
@@ -160,14 +160,15 @@ export function useExecuteAction(timeout = 10000): UseExecuteActionResult {
 
 export interface UseExecuteActionEventResult {
   executeActionEvent: (
-    actionId: string,
-    characterId: string,
-    targetId: string | null,
-    eventType: 'on_activate' | 'on_deactivate',
-    roll?: RollFn,
-    campaignId?: string,
-    callerInventoryItemInstanceId?: string,
-  ) => Promise<void>;
+      actionId: string,
+      characterId: string,
+      targetId: string | null,
+      eventType: 'on_activate' | 'on_deactivate',
+      roll?: RollFn,
+      campaignId?: string,
+      callerInventoryItemInstanceId?: string,
+      rollSplit?: RollSplitFn,
+    ) => Promise<void>;
   result: any;
   announceMessages: string[];
   logMessages: any[][];
@@ -195,6 +196,7 @@ export function useExecuteActionEvent(timeout = 10000): UseExecuteActionEventRes
       roll?: RollFn,
       campaignId?: string,
       callerInventoryItemInstanceId?: string,
+      rollSplit?: RollSplitFn,
     ) => {
       setIsExecuting(true);
       setError(null);
@@ -209,6 +211,7 @@ export function useExecuteActionEvent(timeout = 10000): UseExecuteActionEventRes
           timeout,
           campaignId,
           callerInventoryItemInstanceId,
+          rollSplit,
         );
 
         setResult(response.value);
@@ -260,6 +263,7 @@ export interface UseExecuteItemEventResult {
     roll?: RollFn,
     campaignId?: string,
     inventoryItemInstanceId?: string,
+    rollSplit?: RollSplitFn,
   ) => Promise<void>;
   result: any;
   announceMessages: string[];
@@ -287,6 +291,7 @@ export function useExecuteItemEvent(timeout = 10000): UseExecuteItemEventResult 
       roll?: RollFn,
       campaignId?: string,
       inventoryItemInstanceId?: string,
+      rollSplit?: RollSplitFn,
     ) => {
       setIsExecuting(true);
       setError(null);
@@ -300,6 +305,7 @@ export function useExecuteItemEvent(timeout = 10000): UseExecuteItemEventResult 
           timeout,
           campaignId,
           inventoryItemInstanceId,
+          rollSplit,
         );
         setResult(response.value);
         setAnnounceMessages(response.announceMessages);
@@ -349,6 +355,7 @@ export interface UseExecuteArchetypeEventResult {
     eventType: 'on_add' | 'on_remove',
     roll?: RollFn,
     campaignId?: string,
+    rollSplit?: RollSplitFn,
   ) => Promise<void>;
   result: any;
   announceMessages: string[];
@@ -375,6 +382,7 @@ export function useExecuteArchetypeEvent(timeout = 10000): UseExecuteArchetypeEv
       eventType: 'on_add' | 'on_remove',
       roll?: RollFn,
       campaignId?: string,
+      rollSplit?: RollSplitFn,
     ) => {
       setIsExecuting(true);
       setError(null);
@@ -387,6 +395,7 @@ export function useExecuteArchetypeEvent(timeout = 10000): UseExecuteArchetypeEv
           roll,
           timeout,
           campaignId,
+          rollSplit,
         );
         setResult(response.value);
         setAnnounceMessages(response.announceMessages);

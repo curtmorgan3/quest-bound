@@ -34,6 +34,9 @@ export type DiceRollOpts = {
 /** Roll function usable in scripts: takes dice expression (e.g. "2d6+3"), optional rerollMessage to pre-fill physical roll modal and show message. Returns total (sync or async). */
 export type RollFn = (expression: string, rerollMessage?: string) => number | Promise<number>;
 
+/** Like roll but returns an array of each die value in dice syntax order (e.g. "1d6,2d20" → [d6, d20_1, d20_2]). */
+export type RollSplitFn = (expression: string, rerollMessage?: string) => number[] | Promise<number[]>;
+
 /** A single dice term (e.g. 2d6) or modifier term (+4, -1) in order */
 export type DiceToken =
   | { type: 'dice'; count: number; sides: number }

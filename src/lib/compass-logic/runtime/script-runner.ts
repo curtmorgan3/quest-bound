@@ -8,6 +8,7 @@ import type {
   InventoryItem,
   Item,
   RollFn,
+  RollSplitFn,
   Script,
 } from '@/types';
 import { buildItemCustomProperties } from '@/utils/custom-property-utils';
@@ -157,6 +158,8 @@ export interface ScriptExecutionContext {
   callerInventoryItemInstanceId?: string;
   /** Optional roll function for script built-in roll(). When set, used instead of default local roll (e.g. from useDiceState). */
   roll?: RollFn;
+  /** Optional rollSplit function for script built-in rollSplit(). When set, used instead of default local roll. */
+  rollSplit?: RollSplitFn;
   /** When set, Owner.Action('name').activate() / .deactivate() can run action event handlers (e.g. from worker or EventHandlerExecutor). */
   executeActionEvent?: ExecuteActionEventFn;
   /** When set (e.g. campaign event scripts), used to resolve Owner.location from the character's current location in the campaign. */
@@ -232,7 +235,7 @@ export class ScriptRunner {
 
   constructor(context: ScriptExecutionContext) {
     this.context = context;
-    this.evaluator = new Evaluator({ roll: context.roll });
+    this.evaluator = new Evaluator({ roll: context.roll, rollSplit: context.rollSplit });
     this.pendingUpdates = new Map();
     this.characterAttributesCache = new Map();
     this.attributesCache = new Map();

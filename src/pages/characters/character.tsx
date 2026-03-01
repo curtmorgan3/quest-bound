@@ -1,6 +1,9 @@
 import { useSidebar } from '@/components/ui/sidebar';
 import { useCharacter, useCharacterAttributes } from '@/lib/compass-api';
-import { setCurrentRollHandlerForScripts } from '@/lib/compass-logic/worker/current-roll-handler-ref';
+import {
+  setCurrentRollHandlerForScripts,
+  setCurrentRollSplitHandlerForScripts,
+} from '@/lib/compass-logic/worker/current-roll-handler-ref';
 import { useExecuteActionEvent } from '@/lib/compass-logic';
 import { SheetViewer } from '@/lib/compass-planes';
 import {
@@ -66,11 +69,19 @@ export const CharacterPage = ({
   const { rollDice } = useContext(DiceContext);
   const roll = async (diceString: string, rerollMessage?: string) =>
     rollDice(diceString, { rerollMessage }).then((res) => res.total);
+  const rollSplit = async (diceString: string, rerollMessage?: string) =>
+    rollDice(diceString, { rerollMessage }).then((res) =>
+      res.segments.flatMap((s) => s.rolls.map((r) => r.value)),
+    );
 
   useEffect(() => {
     setCurrentRollHandlerForScripts(roll);
-    return () => setCurrentRollHandlerForScripts(undefined);
-  }, [roll]);
+    setCurrentRollSplitHandlerForScripts(rollSplit);
+    return () => {
+      setCurrentRollHandlerForScripts(undefined);
+      setCurrentRollSplitHandlerForScripts(undefined);
+    };
+  }, [roll, rollSplit]);
 
   const { character, updateCharacter } = useCharacter(id ?? characterId);
 
@@ -95,6 +106,7 @@ export const CharacterPage = ({
   } = useCharacterInventoryHandlers({
     character,
     roll,
+    rollSplit,
     campaignId,
     inventoryPanelConfig,
     setInventoryPanelConfig,
@@ -120,7 +132,16 @@ export const CharacterPage = ({
 
   const fireAction = async (actionId: string) => {
     if (!character) return;
-    executeActionEvent(actionId, character.id, null, 'on_activate', roll, campaignId);
+    executeActionEvent(
+      actionId,
+      character.id,
+      null,
+      'on_activate',
+      roll,
+      campaignId,
+      undefined,
+      rollSplit,
+    );
   };
 
   const fireActionFromItem = async (actionId: string, inventoryItemId: string) => {
@@ -133,6 +154,7 @@ export const CharacterPage = ({
       roll,
       campaignId,
       inventoryItemId,
+      rollSplit,
     );
   };
 

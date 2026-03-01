@@ -21,6 +21,7 @@ export type MainToWorkerSignal =
   | ExecuteArchetypeEventSignal
   | ExecuteCampaignEventEventSignal
   | RollResponseSignal
+  | RollSplitResponseSignal
   | ClearGraphSignal;
 
 export interface ExecuteScriptSignal {
@@ -125,6 +126,11 @@ export interface RollResponseSignal {
   payload: { rollRequestId: string; value?: number; error?: string };
 }
 
+export interface RollSplitResponseSignal {
+  type: 'ROLL_SPLIT_RESPONSE';
+  payload: { rollRequestId: string; value?: number[]; error?: string };
+}
+
 export interface ClearGraphSignal {
   type: 'CLEAR_GRAPH';
   payload: {
@@ -146,10 +152,21 @@ export type WorkerToMainSignal =
   | WorkerErrorSignal
   | WorkerReadySignal
   | RollRequestSignal
+  | RollSplitRequestSignal
   | AttributesModifiedByScriptSignal;
 
 export interface RollRequestSignal {
   type: 'ROLL_REQUEST';
+  payload: {
+    executionRequestId: string;
+    rollRequestId: string;
+    expression: string;
+    rerollMessage?: string;
+  };
+}
+
+export interface RollSplitRequestSignal {
+  type: 'ROLL_SPLIT_REQUEST';
   payload: {
     executionRequestId: string;
     rollRequestId: string;

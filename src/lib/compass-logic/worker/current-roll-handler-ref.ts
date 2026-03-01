@@ -1,4 +1,4 @@
-import type { RollFn } from '@/types';
+import type { RollFn, RollSplitFn } from '@/types';
 
 /**
  * Ref for the current roll handler when the user is in a context that provides one
@@ -6,6 +6,7 @@ import type { RollFn } from '@/types';
  * (onAttributeChange from Dexie hooks) uses the same roll handler as executeActionEvent.
  */
 let currentRollHandler: RollFn | undefined;
+let currentRollSplitHandler: RollSplitFn | undefined;
 
 export function getCurrentRollHandlerForScripts(): RollFn | undefined {
   return currentRollHandler;
@@ -13,4 +14,12 @@ export function getCurrentRollHandlerForScripts(): RollFn | undefined {
 
 export function setCurrentRollHandlerForScripts(roll: RollFn | undefined): void {
   currentRollHandler = roll;
+}
+
+export function getCurrentRollSplitHandlerForScripts(): RollSplitFn | undefined {
+  return currentRollSplitHandler;
+}
+
+export function setCurrentRollSplitHandlerForScripts(rollSplit: RollSplitFn | undefined): void {
+  currentRollSplitHandler = rollSplit;
 }

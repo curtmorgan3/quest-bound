@@ -1,7 +1,15 @@
 import { useInventory } from '@/lib/compass-api';
 import { useExecuteItemEvent } from '@/lib/compass-logic';
 import type { InventoryPanelConfig } from '@/stores';
-import type { Action, Attribute, Character, InventoryItem, Item, RollFn } from '@/types';
+import type {
+  Action,
+  Attribute,
+  Character,
+  InventoryItem,
+  Item,
+  RollFn,
+  RollSplitFn,
+} from '@/types';
 import { useMemo } from 'react';
 import { findFirstEmptySlot } from '../character-inventory-panel';
 
@@ -12,6 +20,7 @@ interface UseInventoryUpdateWrapperes {
   setInventoryPanelConfig: (config: InventoryPanelConfig) => void;
   character?: Character;
   roll?: RollFn;
+  rollSplit?: RollSplitFn;
   /** When set (e.g. in campaign play), scripts get Owner.location and other campaign context. */
   campaignId?: string;
 }
@@ -19,6 +28,7 @@ interface UseInventoryUpdateWrapperes {
 export const useCharacterInventoryHandlers = ({
   character,
   roll,
+  rollSplit,
   campaignId,
   inventoryPanelConfig,
   setInventoryPanelConfig,
@@ -51,6 +61,7 @@ export const useCharacterInventoryHandlers = ({
       roll,
       campaignId,
       inventoryItemInstanceId,
+      rollSplit,
     );
   };
 

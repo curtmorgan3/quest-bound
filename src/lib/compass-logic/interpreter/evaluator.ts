@@ -1,4 +1,4 @@
-import type { RollFn } from '@/types';
+import type { RollFn, RollSplitFn } from '@/types';
 import { parseDiceExpression, rollDie } from '@/utils/dice-utils';
 import { prepareForStructuredClone } from '../runtime/structured-clone-safe';
 import type { ASTNode } from './ast';
@@ -7,6 +7,8 @@ import { isBuiltInArrayMethod, registerArrayMethod } from './built-ins';
 export interface EvaluatorOptions {
   /** When set, used as the script built-in roll() instead of the default local roll. */
   roll?: RollFn;
+  /** When set, used as the script built-in rollSplit() instead of the default local roll. */
+  rollSplit?: RollSplitFn;
 }
 
 export class RuntimeError extends Error {
@@ -75,6 +77,7 @@ export class Evaluator {
   private logMessages: any[][];
   private isWorkerContext: boolean;
   private rollFn: RollFn | undefined;
+  private rollSplitFn: RollSplitFn | undefined;
 
   constructor(options?: EvaluatorOptions) {
     this.globalEnv = new Environment(null);
@@ -82,6 +85,7 @@ export class Evaluator {
     this.announceMessages = [];
     this.logMessages = [];
     this.rollFn = options?.roll;
+    this.rollSplitFn = options?.rollSplit;
     // Detect if we're running in a worker context
     this.isWorkerContext =
       typeof self !== 'undefined' &&
@@ -452,6 +456,22 @@ export class Evaluator {
     return total;
   }
 
+  /** Local rollSplit: returns array of each die value in dice syntax order (no modifiers). */
+  private defaultLocalRollSplit(expression: string): number[] {
+    const segments = parseDiceExpression(expression);
+    const values: number[] = [];
+    for (const segment of segments) {
+      for (const token of segment) {
+        if (token.type === 'dice') {
+          for (let i = 0; i < token.count; i++) {
+            values.push(rollDie(token.sides));
+          }
+        }
+      }
+    }
+    return values;
+  }
+
   private registerBuiltins(): void {
     // Dice rolling: use injected roll when provided, otherwise default local implementation
     this.globalEnv.define(
@@ -462,6 +482,18 @@ export class Evaluator {
           return result;
         }
         return this.defaultLocalRoll(expression);
+      },
+    );
+
+    // Like roll but returns array of each die value in dice syntax order
+    this.globalEnv.define(
+      'rollSplit',
+      async (expression: string, rerollMessage?: string): Promise<number[]> => {
+        if (this.rollSplitFn) {
+          const result = await this.rollSplitFn(expression, rerollMessage);
+          return result;
+        }
+        return this.defaultLocalRollSplit(expression);
       },
     );
 

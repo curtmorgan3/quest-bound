@@ -7,7 +7,7 @@
 
 import type { DB } from '@/stores/db/hooks/types';
 import { dbSchema, dbSchemaVersion } from '@/stores/db/schema';
-import type { RollFn } from '@/types';
+import type { RollFn, RollSplitFn } from '@/types';
 import Dexie from 'dexie';
 import { Lexer } from '../interpreter/lexer';
 import { Parser } from '../interpreter/parser';
@@ -49,6 +49,10 @@ let messagePort: MessagePort | null = null;
 
 const rollBridge = {
   pending: new Map<string, { resolve: (value: number) => void; reject: (err: Error) => void }>(),
+  pendingSplit: new Map<
+    string,
+    { resolve: (value: number[]) => void; reject: (err: Error) => void }
+  >(),
   requestRoll(expression: string, executionRequestId: string, rerollMessage?: string): Promise<number> {
     const rollRequestId = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
     return new Promise<number>((resolve, reject) => {
@@ -67,6 +71,30 @@ const rollBridge = {
       entry.reject(new Error(error));
     } else {
       entry.resolve(value ?? 0);
+    }
+  },
+  requestRollSplit(
+    expression: string,
+    executionRequestId: string,
+    rerollMessage?: string,
+  ): Promise<number[]> {
+    const rollRequestId = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+    return new Promise<number[]>((resolve, reject) => {
+      this.pendingSplit.set(rollRequestId, { resolve, reject });
+      sendSignal({
+        type: 'ROLL_SPLIT_REQUEST',
+        payload: { executionRequestId, rollRequestId, expression, rerollMessage },
+      });
+    });
+  },
+  resolveRollSplit(rollRequestId: string, value?: number[], error?: string): void {
+    const entry = this.pendingSplit.get(rollRequestId);
+    if (!entry) return;
+    this.pendingSplit.delete(rollRequestId);
+    if (error != null) {
+      entry.reject(new Error(error));
+    } else {
+      entry.resolve(value ?? []);
     }
   },
 };
@@ -142,6 +170,12 @@ async function handleSignal(signal: MainToWorkerSignal): Promise<void> {
         break;
       }
 
+      case 'ROLL_SPLIT_RESPONSE': {
+        const { rollRequestId, value, error } = signal.payload;
+        rollBridge.resolveRollSplit(rollRequestId, value, error);
+        break;
+      }
+
       default:
         console.error('Unknown signal type:', (signal as any).type);
     }
@@ -202,6 +236,7 @@ async function persistScriptLogs(
 
 function createOnAttributesModified(
   rollFn: RollFn,
+  rollSplitFn: RollSplitFn,
   getExecutor: () => EventHandlerExecutor,
   /** When provided, collect all attribute IDs modified by script (direct + reactive) for UI animation. */
   getModifiedIdsCollector?: () => Set<string>,
@@ -224,8 +259,9 @@ function createOnAttributesModified(
           rulesetId,
           {
             roll: rollFn,
+            rollSplit: rollSplitFn,
             executeActionEvent: (actionId, cId, targetId, eventType) =>
-              executor.executeActionEvent(actionId, cId, targetId, eventType, rollFn),
+              executor.executeActionEvent(actionId, cId, targetId, eventType, rollFn, rollSplitFn),
           },
         );
         if (collector && reactiveResult.modifiedAttributeIds?.length) {
@@ -354,8 +390,13 @@ async function handleExecuteScript(payload: ExecuteScriptPayload): Promise<void>
   const startTime = performance.now();
   const rollFn: RollFn = (expression: string, rerollMessage?: string) =>
     rollBridge.requestRoll(expression, payload.requestId, rerollMessage);
+  const rollSplitFn: RollSplitFn = (expression: string, rerollMessage?: string) =>
+    rollBridge.requestRollSplit(expression, payload.requestId, rerollMessage);
   let executor: EventHandlerExecutor;
-  executor = new EventHandlerExecutor(db, createOnAttributesModified(rollFn, () => executor));
+  executor = new EventHandlerExecutor(
+    db,
+    createOnAttributesModified(rollFn, rollSplitFn, () => executor),
+  );
 
   try {
     const context: ScriptExecutionContext = {
@@ -368,8 +409,9 @@ async function handleExecuteScript(payload: ExecuteScriptPayload): Promise<void>
       entityType: payload.entityType,
       entityId: payload.entityId,
       roll: rollFn,
+      rollSplit: rollSplitFn,
       executeActionEvent: (actionId, characterId, targetId, eventType) =>
-        executor.executeActionEvent(actionId, characterId, targetId, eventType, rollFn),
+        executor.executeActionEvent(actionId, characterId, targetId, eventType, rollFn, rollSplitFn),
     };
 
     const runner = new ScriptRunner(context);
@@ -414,8 +456,17 @@ async function handleExecuteScript(payload: ExecuteScriptPayload): Promise<void>
             characterId: string,
             targetId: string | null,
             eventType: 'on_activate' | 'on_deactivate',
-          ) => executor.executeActionEvent(actionId, characterId, targetId, eventType, rollFn),
+          ) =>
+            executor.executeActionEvent(
+              actionId,
+              characterId,
+              targetId,
+              eventType,
+              rollFn,
+              rollSplitFn,
+            ),
           roll: rollFn,
+          rollSplit: rollSplitFn,
         };
         const chainResult = await runReactiveChainForModifiedAttributes(
           directModifiedIds,
@@ -540,15 +591,35 @@ async function handleAttributeChanged(payload: AttributeChangedPayload): Promise
   try {
     const rollFn: RollFn = (expression: string, rerollMessage?: string) =>
       rollBridge.requestRoll(expression, payload.requestId, rerollMessage);
+    const rollSplitFn: RollSplitFn = (expression: string, rerollMessage?: string) =>
+      rollBridge.requestRollSplit(expression, payload.requestId, rerollMessage);
     let executor: EventHandlerExecutor;
-    executor = new EventHandlerExecutor(db, createOnAttributesModified(rollFn, () => executor));
+    executor = new EventHandlerExecutor(
+      db,
+      createOnAttributesModified(rollFn, rollSplitFn, () => executor),
+    );
 
     const reactiveOptions = {
       ...(payload.options || {}),
       campaignId: payload.campaignId,
-      executeActionEvent: (actionId: string, characterId: string, targetId: string | null, eventType: 'on_activate' | 'on_deactivate') =>
-        executor.executeActionEvent(actionId, characterId, targetId, eventType, rollFn, payload.campaignId),
+      executeActionEvent: (
+        actionId: string,
+        characterId: string,
+        targetId: string | null,
+        eventType: 'on_activate' | 'on_deactivate',
+      ) =>
+        executor.executeActionEvent(
+          actionId,
+          characterId,
+          targetId,
+          eventType,
+          rollFn,
+          payload.campaignId,
+          undefined,
+          rollSplitFn,
+        ),
       roll: rollFn,
+      rollSplit: rollSplitFn,
     };
 
     // Run full reactive chain so when attribute a's script changes b, scripts depending on b (e.g. c) refire
@@ -627,16 +698,31 @@ async function handleInitialAttributeSync(payload: {
 
     const rollFn: RollFn = (expression: string, rerollMessage?: string) =>
       rollBridge.requestRoll(expression, payload.requestId, rerollMessage);
+    const rollSplitFn: RollSplitFn = (expression: string, rerollMessage?: string) =>
+      rollBridge.requestRollSplit(expression, payload.requestId, rerollMessage);
     let executor: EventHandlerExecutor;
-    executor = new EventHandlerExecutor(db, createOnAttributesModified(rollFn, () => executor));
+    executor = new EventHandlerExecutor(
+      db,
+      createOnAttributesModified(rollFn, rollSplitFn, () => executor),
+    );
 
     const result = await reactiveExecutor.runInitialSync(
       payload.characterId,
       payload.rulesetId,
       {
         executeActionEvent: (actionId, characterId, targetId, eventType) =>
-          executor.executeActionEvent(actionId, characterId, targetId, eventType, rollFn),
+          executor.executeActionEvent(
+            actionId,
+            characterId,
+            targetId,
+            eventType,
+            rollFn,
+            undefined,
+            undefined,
+            rollSplitFn,
+          ),
         roll: rollFn,
+        rollSplit: rollSplitFn,
       },
     );
 
@@ -762,13 +848,15 @@ async function handleExecuteActionEvent(payload: {
 
     const rollFn: RollFn = (expression: string, rerollMessage?: string) =>
       rollBridge.requestRoll(expression, payload.requestId, rerollMessage);
+    const rollSplitFn: RollSplitFn = (expression: string, rerollMessage?: string) =>
+      rollBridge.requestRollSplit(expression, payload.requestId, rerollMessage);
 
     const allModifiedIds = new Set<string>();
     const getCollector = () => allModifiedIds;
     let executor: EventHandlerExecutor;
     executor = new EventHandlerExecutor(
       db,
-      createOnAttributesModified(rollFn, () => executor, getCollector),
+      createOnAttributesModified(rollFn, rollSplitFn, () => executor, getCollector),
     );
     const result = await executor.executeActionEvent(
       payload.actionId,
@@ -778,6 +866,7 @@ async function handleExecuteActionEvent(payload: {
       rollFn,
       payload.campaignId,
       payload.callerInventoryItemInstanceId,
+      rollSplitFn,
     );
 
     if (result.error || !result.success) {
@@ -844,13 +933,15 @@ async function handleExecuteItemEvent(payload: {
 
     const rollFn: RollFn = (expression: string, rerollMessage?: string) =>
       rollBridge.requestRoll(expression, payload.requestId, rerollMessage);
+    const rollSplitFn: RollSplitFn = (expression: string, rerollMessage?: string) =>
+      rollBridge.requestRollSplit(expression, payload.requestId, rerollMessage);
 
     const allModifiedIds = new Set<string>();
     const getCollector = () => allModifiedIds;
     let executor: EventHandlerExecutor;
     executor = new EventHandlerExecutor(
       db,
-      createOnAttributesModified(rollFn, () => executor, getCollector),
+      createOnAttributesModified(rollFn, rollSplitFn, () => executor, getCollector),
     );
     const result = await executor.executeItemEvent(
       payload.itemId,
@@ -859,6 +950,7 @@ async function handleExecuteItemEvent(payload: {
       rollFn,
       payload.campaignId,
       payload.inventoryItemInstanceId,
+      rollSplitFn,
     );
 
     const script = await db.scripts.where({ entityId: payload.itemId, entityType: 'item' }).first();
@@ -935,13 +1027,15 @@ async function handleExecuteArchetypeEvent(payload: {
 
     const rollFn: RollFn = (expression: string, rerollMessage?: string) =>
       rollBridge.requestRoll(expression, payload.requestId, rerollMessage);
+    const rollSplitFn: RollSplitFn = (expression: string, rerollMessage?: string) =>
+      rollBridge.requestRollSplit(expression, payload.requestId, rerollMessage);
 
     const allModifiedIds = new Set<string>();
     const getCollector = () => allModifiedIds;
     let executor: EventHandlerExecutor;
     executor = new EventHandlerExecutor(
       db,
-      createOnAttributesModified(rollFn, () => executor, getCollector),
+      createOnAttributesModified(rollFn, rollSplitFn, () => executor, getCollector),
     );
     const result = await executor.executeArchetypeEvent(
       payload.archetypeId,
@@ -949,6 +1043,7 @@ async function handleExecuteArchetypeEvent(payload: {
       payload.eventType,
       rollFn,
       payload.campaignId,
+      rollSplitFn,
     );
 
     // Logs are persisted inside EventHandlerExecutor.executeArchetypeEvent so they
@@ -1011,19 +1106,22 @@ async function handleExecuteCampaignEventEvent(payload: {
   try {
     const rollFn: RollFn = (expression: string, rerollMessage?: string) =>
       rollBridge.requestRoll(expression, payload.requestId, rerollMessage);
+    const rollSplitFn: RollSplitFn = (expression: string, rerollMessage?: string) =>
+      rollBridge.requestRollSplit(expression, payload.requestId, rerollMessage);
 
     const allModifiedIds = new Set<string>();
     const getCollector = () => allModifiedIds;
     let executor: EventHandlerExecutor;
     executor = new EventHandlerExecutor(
       db,
-      createOnAttributesModified(rollFn, () => executor, getCollector),
+      createOnAttributesModified(rollFn, rollSplitFn, () => executor, getCollector),
     );
     const result = await executor.executeCampaignEventEvent(
       payload.campaignEventLocationId,
       payload.characterId,
       payload.eventType,
       rollFn,
+      rollSplitFn,
     );
 
     if (result.error || !result.success) {

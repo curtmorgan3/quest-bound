@@ -6,8 +6,8 @@
  */
 
 import { useScriptModifiedAttributesStore } from '@/stores/script-modified-attributes-store';
-import type { RollFn } from '@/types';
-import { defaultScriptDiceRoller } from '@/utils/dice-utils';
+import type { RollFn, RollSplitFn } from '@/types';
+import { defaultScriptDiceRoller, defaultScriptDiceRollerSplit } from '@/utils/dice-utils';
 import type {
   AttributeChangedPayload,
   ExecuteScriptPayload,
@@ -53,6 +53,8 @@ export interface AttributeChangeOptions {
   timeout?: number;
   /** When set, roll() in attribute scripts uses this handler (same as executeActionEvent). */
   roll?: RollFn;
+  /** When set, rollSplit() in attribute scripts uses this handler. */
+  rollSplit?: RollSplitFn;
 }
 
 export interface ValidationResult {
@@ -75,6 +77,8 @@ export class QBScriptClient {
   private pendingRequests: Map<string, PendingRequest> = new Map();
   /** Roll handler per execution request (for action events that need roll in worker) */
   private pendingRollHandlers: Map<string, RollFn> = new Map();
+  /** RollSplit handler per execution request */
+  private pendingRollSplitHandlers: Map<string, RollSplitFn> = new Map();
   private isReady = false;
   private readyCallbacks: Array<() => void> = [];
   private signalHandlers: Set<WorkerSignalHandler> = new Set();
@@ -178,6 +182,10 @@ export class QBScriptClient {
         this.handleRollRequest(signal.payload);
         break;
 
+      case 'ROLL_SPLIT_REQUEST':
+        this.handleRollSplitRequest(signal.payload);
+        break;
+
       case 'ATTRIBUTES_MODIFIED_BY_SCRIPT':
         this.handleAttributesModifiedByScript(signal.payload);
         break;
@@ -222,6 +230,34 @@ export class QBScriptClient {
     }
   }
 
+  private async handleRollSplitRequest(payload: {
+    executionRequestId: string;
+    rollRequestId: string;
+    expression: string;
+    rerollMessage?: string;
+  }): Promise<void> {
+    const rollSplitFn =
+      this.pendingRollSplitHandlers.get(payload.executionRequestId) ?? defaultScriptDiceRollerSplit;
+    if (!this.worker) return;
+    try {
+      const value = await Promise.resolve(
+        rollSplitFn(payload.expression, payload.rerollMessage),
+      );
+      this.worker.postMessage({
+        type: 'ROLL_SPLIT_RESPONSE',
+        payload: { rollRequestId: payload.rollRequestId, value },
+      });
+    } catch (err) {
+      this.worker.postMessage({
+        type: 'ROLL_SPLIT_RESPONSE',
+        payload: {
+          rollRequestId: payload.rollRequestId,
+          error: err instanceof Error ? err.message : String(err),
+        },
+      });
+    }
+  }
+
   private handleScriptResult(payload: ScriptResultPayload): void {
     if (payload.modifiedAttributeIds?.length && payload.characterId) {
       useScriptModifiedAttributesStore.getState().addModified(payload.characterId, payload.modifiedAttributeIds);
@@ -245,6 +281,7 @@ export class QBScriptClient {
 
       this.pendingRequests.delete(payload.requestId);
       this.pendingRollHandlers.delete(payload.requestId);
+      this.pendingRollSplitHandlers.delete(payload.requestId);
     }
   }
 
@@ -265,6 +302,7 @@ export class QBScriptClient {
       pending.reject(error);
       this.pendingRequests.delete(payload.requestId);
       this.pendingRollHandlers.delete(payload.requestId);
+      this.pendingRollSplitHandlers.delete(payload.requestId);
     }
   }
 
@@ -364,6 +402,7 @@ export class QBScriptClient {
   }> {
     const requestId = generateRequestId();
     this.pendingRollHandlers.set(requestId, options.roll ?? defaultScriptDiceRoller);
+    this.pendingRollSplitHandlers.set(requestId, options.rollSplit ?? defaultScriptDiceRollerSplit);
 
     const payload: AttributeChangedPayload = {
       attributeId: options.attributeId,
@@ -388,6 +427,7 @@ export class QBScriptClient {
       return result.value;
     } finally {
       this.pendingRollHandlers.delete(requestId);
+      this.pendingRollSplitHandlers.delete(requestId);
     }
   }
 
@@ -400,9 +440,11 @@ export class QBScriptClient {
     rulesetId: string,
     timeout = 30000,
     roll?: RollFn,
+    rollSplit?: RollSplitFn,
   ): Promise<{ scriptsExecuted: string[]; executionCount: number }> {
     const requestId = generateRequestId();
     this.pendingRollHandlers.set(requestId, roll ?? defaultScriptDiceRoller);
+    this.pendingRollSplitHandlers.set(requestId, rollSplit ?? defaultScriptDiceRollerSplit);
     try {
       const response = await this.sendSignal<{
         value?: { scriptsExecuted: string[]; executionCount: number };
@@ -417,6 +459,7 @@ export class QBScriptClient {
       return response?.value ?? { scriptsExecuted: [], executionCount: 0 };
     } finally {
       this.pendingRollHandlers.delete(requestId);
+      this.pendingRollSplitHandlers.delete(requestId);
     }
   }
 
@@ -460,6 +503,7 @@ export class QBScriptClient {
     timeout = 10000,
     campaignId?: string,
     callerInventoryItemInstanceId?: string,
+    rollSplit?: RollSplitFn,
   ): Promise<{
     value: any;
     announceMessages: string[];
@@ -468,6 +512,7 @@ export class QBScriptClient {
   }> {
     const requestId = generateRequestId();
     this.pendingRollHandlers.set(requestId, roll ?? defaultScriptDiceRoller);
+    this.pendingRollSplitHandlers.set(requestId, rollSplit ?? defaultScriptDiceRollerSplit);
     try {
       return await this.sendSignal(
         {
@@ -487,6 +532,7 @@ export class QBScriptClient {
       );
     } finally {
       this.pendingRollHandlers.delete(requestId);
+      this.pendingRollSplitHandlers.delete(requestId);
     }
   }
 
@@ -502,6 +548,7 @@ export class QBScriptClient {
     timeout = 10000,
     campaignId?: string,
     inventoryItemInstanceId?: string,
+    rollSplit?: RollSplitFn,
   ): Promise<{
     value: any;
     announceMessages: string[];
@@ -510,6 +557,7 @@ export class QBScriptClient {
   }> {
     const requestId = generateRequestId();
     this.pendingRollHandlers.set(requestId, roll ?? defaultScriptDiceRoller);
+    this.pendingRollSplitHandlers.set(requestId, rollSplit ?? defaultScriptDiceRollerSplit);
     try {
       return await this.sendSignal(
         {
@@ -528,6 +576,7 @@ export class QBScriptClient {
       );
     } finally {
       this.pendingRollHandlers.delete(requestId);
+      this.pendingRollSplitHandlers.delete(requestId);
     }
   }
 
@@ -542,6 +591,7 @@ export class QBScriptClient {
     roll?: RollFn,
     timeout = 10000,
     campaignId?: string,
+    rollSplit?: RollSplitFn,
   ): Promise<{
     value: any;
     announceMessages: string[];
@@ -550,6 +600,7 @@ export class QBScriptClient {
   }> {
     const requestId = generateRequestId();
     this.pendingRollHandlers.set(requestId, roll ?? defaultScriptDiceRoller);
+    this.pendingRollSplitHandlers.set(requestId, rollSplit ?? defaultScriptDiceRollerSplit);
     try {
       return await this.sendSignal(
         {
@@ -561,6 +612,7 @@ export class QBScriptClient {
       );
     } finally {
       this.pendingRollHandlers.delete(requestId);
+      this.pendingRollSplitHandlers.delete(requestId);
     }
   }
 
@@ -574,6 +626,7 @@ export class QBScriptClient {
     eventType: 'on_enter' | 'on_leave' | 'on_activate',
     roll?: RollFn,
     timeout = 10000,
+    rollSplit?: RollSplitFn,
   ): Promise<{
     value: any;
     announceMessages: string[];
@@ -582,6 +635,7 @@ export class QBScriptClient {
   }> {
     const requestId = generateRequestId();
     this.pendingRollHandlers.set(requestId, roll ?? defaultScriptDiceRoller);
+    this.pendingRollSplitHandlers.set(requestId, rollSplit ?? defaultScriptDiceRollerSplit);
     try {
       return await this.sendSignal(
         {
@@ -598,6 +652,7 @@ export class QBScriptClient {
       );
     } finally {
       this.pendingRollHandlers.delete(requestId);
+      this.pendingRollSplitHandlers.delete(requestId);
     }
   }
 

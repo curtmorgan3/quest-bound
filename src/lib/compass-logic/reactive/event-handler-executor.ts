@@ -1,5 +1,5 @@
 import type { DB } from '@/stores/db/hooks/types';
-import type { RollFn } from '@/types';
+import type { RollFn, RollSplitFn } from '@/types';
 import type { ASTNode } from '../interpreter/ast';
 import { functionDefToExecutableSource } from '../interpreter/ast-to-source';
 import { Lexer } from '../interpreter/lexer';
@@ -95,6 +95,7 @@ export class EventHandlerExecutor {
     roll?: RollFn,
     campaignId?: string,
     inventoryItemInstanceId?: string,
+    rollSplit?: RollSplitFn,
   ): Promise<EventHandlerResult> {
     // Get item
     const item = await this.db.items.get(itemId);
@@ -153,6 +154,7 @@ export class EventHandlerExecutor {
       inventoryItemInstanceId,
       campaignId,
       roll,
+      rollSplit,
       executeActionEvent: (actionId, ownerId, targetIdForAction, eventTypeForAction) =>
         this.executeActionEvent(
           actionId,
@@ -161,6 +163,8 @@ export class EventHandlerExecutor {
           eventTypeForAction,
           roll,
           campaignId,
+          undefined,
+          rollSplit,
         ),
     };
 
@@ -200,6 +204,7 @@ export class EventHandlerExecutor {
     roll?: RollFn,
     campaignId?: string,
     callerInventoryItemInstanceId?: string,
+    rollSplit?: RollSplitFn,
   ): Promise<EventHandlerResult> {
     // Get action
     const action = await this.db.actions.get(actionId);
@@ -261,6 +266,7 @@ export class EventHandlerExecutor {
         entityId: action.id,
         campaignId,
         roll,
+        rollSplit,
         callerInventoryItemInstanceId,
         // Only allow Owner.Action().activate() at top level to avoid infinite re-entrancy
         ...(actionEventDepth === 1 && {
@@ -273,6 +279,7 @@ export class EventHandlerExecutor {
               roll,
               campaignId,
               undefined, // Nested call: Caller = Owner
+              rollSplit,
             ),
         }),
       };
@@ -421,6 +428,7 @@ export class EventHandlerExecutor {
     eventType: 'on_add' | 'on_remove',
     roll?: RollFn,
     campaignId?: string,
+    rollSplit?: RollSplitFn,
   ): Promise<EventHandlerResult> {
     const archetype = await this.db.archetypes.get(archetypeId);
     if (!archetype) {
@@ -473,6 +481,7 @@ export class EventHandlerExecutor {
       entityId: archetype.id,
       campaignId,
       roll,
+      rollSplit,
       executeActionEvent: (actionId, ownerId, targetIdForAction, eventTypeForAction) =>
         this.executeActionEvent(
           actionId,
@@ -481,6 +490,8 @@ export class EventHandlerExecutor {
           eventTypeForAction,
           roll,
           campaignId,
+          undefined,
+          rollSplit,
         ),
     };
 
@@ -521,6 +532,7 @@ export class EventHandlerExecutor {
     characterId: string,
     rulesetId: string,
     roll?: RollFn,
+    rollSplit?: RollSplitFn,
   ): Promise<EventHandlerResult> {
     const script = await this.db.scripts
       .where({ rulesetId, entityType: 'characterLoader' })
@@ -543,8 +555,18 @@ export class EventHandlerExecutor {
       entityType: 'characterLoader',
       entityId: undefined,
       roll,
+      rollSplit,
       executeActionEvent: (actionId, ownerId, targetIdForAction, eventTypeForAction) =>
-        this.executeActionEvent(actionId, ownerId, targetIdForAction, eventTypeForAction, roll),
+        this.executeActionEvent(
+          actionId,
+          ownerId,
+          targetIdForAction,
+          eventTypeForAction,
+          roll,
+          undefined,
+          undefined,
+          rollSplit,
+        ),
     };
 
     const result = this.runScriptForTest
@@ -686,6 +708,7 @@ export class EventHandlerExecutor {
     characterId: string,
     eventType: 'on_enter' | 'on_leave' | 'on_activate',
     roll?: RollFn,
+    rollSplit?: RollSplitFn,
   ): Promise<EventHandlerResult> {
     const eventLocation = await this.db.campaignEventLocations.get(campaignEventLocationId);
     if (!eventLocation) {
@@ -759,6 +782,7 @@ export class EventHandlerExecutor {
       entityId: campaignEventLocationId,
       campaignId: campaignEvent.campaignId,
       roll,
+      rollSplit,
       executeActionEvent: (actionId, ownerId, targetIdForAction, eventTypeForAction) =>
         this.executeActionEvent(
           actionId,
@@ -767,6 +791,8 @@ export class EventHandlerExecutor {
           eventTypeForAction,
           roll,
           campaignEvent.campaignId,
+          undefined,
+          rollSplit,
         ),
     };
 
@@ -870,9 +896,19 @@ export async function executeActionEvent(
   targetId: string | null,
   eventType: 'on_activate' | 'on_deactivate',
   roll?: RollFn,
+  rollSplit?: RollSplitFn,
 ): Promise<EventHandlerResult> {
   const executor = new EventHandlerExecutor(db);
-  return executor.executeActionEvent(actionId, characterId, targetId, eventType, roll);
+  return executor.executeActionEvent(
+    actionId,
+    characterId,
+    targetId,
+    eventType,
+    roll,
+    undefined,
+    undefined,
+    rollSplit,
+  );
 }
 
 /**

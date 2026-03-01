@@ -1,5 +1,8 @@
 import { getCurrentCampaignIdForScripts } from '@/lib/compass-logic/worker/current-campaign-ref';
-import { getCurrentRollHandlerForScripts } from '@/lib/compass-logic/worker/current-roll-handler-ref';
+import {
+  getCurrentRollHandlerForScripts,
+  getCurrentRollSplitHandlerForScripts,
+} from '@/lib/compass-logic/worker/current-roll-handler-ref';
 import { getQBScriptClient } from '@/lib/compass-logic/worker';
 import type { DB } from './types';
 
@@ -24,6 +27,7 @@ export function registerCharacterDbHooks(db: DB) {
             rulesetId,
             campaignId: getCurrentCampaignIdForScripts(),
             roll: getCurrentRollHandlerForScripts(),
+            rollSplit: getCurrentRollSplitHandlerForScripts(),
           })
           .catch((err) => {
             console.warn('Reactive script execution failed:', err);

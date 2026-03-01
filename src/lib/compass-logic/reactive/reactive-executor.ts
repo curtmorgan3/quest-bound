@@ -1,4 +1,4 @@
-import type { RollFn } from '@/types';
+import type { RollFn, RollSplitFn } from '@/types';
 import type { DB } from '@/stores/db/hooks/types';
 import type { ExecuteActionEventFn } from '../runtime/proxies';
 import type { ScriptExecutionContext } from '../runtime/script-runner';
@@ -23,6 +23,8 @@ export interface ReactiveExecutionOptions {
   executeActionEvent?: ExecuteActionEventFn;
   /** Optional roll function for script built-in roll(). */
   roll?: RollFn;
+  /** Optional rollSplit function for script built-in rollSplit(). */
+  rollSplit?: RollSplitFn;
   /** When set (e.g. in campaign play), enables Owner.location and other campaign character context. */
   campaignId?: string;
 }
@@ -306,6 +308,7 @@ export class ReactiveExecutor {
         campaignId: options.campaignId,
         executeActionEvent: options.executeActionEvent,
         roll: options.roll,
+        rollSplit: options.rollSplit,
       };
 
       const runner = new ScriptRunner(context);
