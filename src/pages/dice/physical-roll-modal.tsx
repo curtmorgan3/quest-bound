@@ -15,6 +15,7 @@ import {
   getPhysicalRollSlots,
   rollDie,
 } from '@/utils/dice-utils';
+import { Undo2 } from 'lucide-react';
 import { useContext, useEffect, useRef, useState } from 'react';
 
 export const PhysicalRollModal = () => {
@@ -24,16 +25,17 @@ export const PhysicalRollModal = () => {
   const notation = physicalRollModal?.notation ?? '';
   const { slots } = getPhysicalRollSlots(notation);
   const [values, setValues] = useState<string[]>([]);
+  /** Per-slot previous value before the user clicked Roll (for revert). */
+  const [previousValues, setPreviousValues] = useState<(string | null)[]>([]);
 
   useEffect(() => {
     if (notation) {
       const { slots: s } = getPhysicalRollSlots(notation);
       const initial = physicalRollModal?.initialValues;
       setValues(
-        initial && initial.length === s.length
-          ? initial.map((n) => `${n}`)
-          : s.map(() => ''),
+        initial && initial.length === s.length ? initial.map((n) => `${n}`) : s.map(() => ''),
       );
+      setPreviousValues(s.map(() => null));
     }
   }, [notation, physicalRollModal?.initialValues]);
 
@@ -56,9 +58,27 @@ export const PhysicalRollModal = () => {
   const handleRollSlot = (index: number) => {
     const slot = slots[index];
     if (!slot) return;
+    const current = values[index]?.trim() ?? '';
+    setPreviousValues((prev) => {
+      const next = [...prev];
+      next[index] = current !== '' ? current : null;
+      return next;
+    });
     const sides = parseInt(slot.label.slice(1), 10) || 20;
     const rolled = rollDie(sides);
     setSlotValue(index, `${rolled}`);
+  };
+
+  const handleRevertSlot = (index: number) => {
+    const prev = previousValues[index];
+    if (prev != null) {
+      setSlotValue(index, prev);
+      setPreviousValues((p) => {
+        const next = [...p];
+        next[index] = null;
+        return next;
+      });
+    }
   };
 
   const handleRollRemainder = () => {
@@ -100,17 +120,23 @@ export const PhysicalRollModal = () => {
         <div ref={dialogContentRef} className='contents'>
           <PopoverScrollContainerContext.Provider value={dialogContentRef}>
             <DialogHeader>
-              <DialogTitle>Physical roll: {notation}</DialogTitle>
-              <DialogDescription>Enter the value of each die you rolled.</DialogDescription>
+              <DialogTitle>
+                {physicalRollModal.rerollMessage ? 'Re-Roll' : `Physical roll: ${notation}`}
+              </DialogTitle>
+              <DialogDescription>
+                {physicalRollModal.rerollMessage ? '' : 'Enter the value of each die you rolled.'}
+              </DialogDescription>
               {physicalRollModal.rerollMessage ? (
-                <p className='text-sm text-muted-foreground mt-1' data-testid='physical-roll-reroll-message'>
+                <p
+                  className='text-sm text-muted-foreground mt-1'
+                  data-testid='physical-roll-reroll-message'>
                   {physicalRollModal.rerollMessage}
                 </p>
               ) : null}
             </DialogHeader>
             <div className='flex gap-3 py-2 flex-wrap'>
               {slots.map((slot, index) => (
-                <div key={index} className='flex flex-col gap-1.5'>
+                <div key={index} className='flex flex-col gap-1.5 items-center'>
                   <Label htmlFor={`physical-roll-${index}`}>{slot.label}</Label>
                   <NumberInput
                     className='w-[64px] h-[64px] border'
@@ -120,15 +146,29 @@ export const PhysicalRollModal = () => {
                     onChange={(value) => setSlotValue(index, `${value}`)}
                     data-testid={`physical-roll-input-${index}`}
                   />
-                  <Button
-                    type='button'
-                    variant='ghost'
-                    size='sm'
-                    className='h-7 text-xs'
-                    onClick={() => handleRollSlot(index)}
-                    data-testid={`physical-roll-roll-${index}`}>
-                    Roll
-                  </Button>
+                  <div className='flex items-center gap-1'>
+                    <Button
+                      type='button'
+                      variant='ghost'
+                      size='sm'
+                      className='h-7 text-xs'
+                      onClick={() => handleRollSlot(index)}
+                      data-testid={`physical-roll-roll-${index}`}>
+                      Roll
+                    </Button>
+                    {values[index]?.trim() !== '' && previousValues[index] != null ? (
+                      <Button
+                        type='button'
+                        variant='ghost'
+                        size='icon'
+                        className='h-7 w-7 shrink-0'
+                        onClick={() => handleRevertSlot(index)}
+                        aria-label='Revert to previous value'
+                        data-testid={`physical-roll-revert-${index}`}>
+                        <Undo2 className='h-4 w-4' />
+                      </Button>
+                    ) : null}
+                  </div>
                 </div>
               ))}
             </div>

@@ -37,18 +37,7 @@ export const useDiceState = ({ canvasRef }: DiceStateProps): IDiceContext => {
   });
 
   const submitPhysicalRollResult = async (result: DiceResult) => {
-    await diceRollLogger.logRoll(result, {
-      source: 'Dice Panel',
-    });
-    setLastResult(result);
     setPhysicalRollModal(null);
-    setIsRolling(false);
-    const breakdown = result.segments.map(formatSegmentResult).join('; ');
-    logEvent({
-      type: LogType.DICE,
-      source: 'Dice Panel',
-      message: `${breakdown} → Total: ${result.total}`,
-    });
     physicalRollResolveRef.current?.(result);
     physicalRollResolveRef.current = null;
     physicalRollRejectRef.current = null;
@@ -64,83 +53,70 @@ export const useDiceState = ({ canvasRef }: DiceStateProps): IDiceContext => {
 
   const rollDice = async (roll: string, opts?: DiceRollOpts) => {
     setLastResult(null);
-
     const hasRerollMessage =
       opts?.rerollMessage != null && String(opts.rerollMessage).trim() !== '';
-    const usePhysicalModal = physicalRolls || hasRerollMessage;
-
-    if (hasRerollMessage) {
-      const { segmentResults } = rollDiceExpression(roll);
-      const initialValues = segmentResults.flatMap((s) => s.rolls.map((r) => r.value));
-      setIsRolling(true);
-      setPhysicalRollModal({
-        notation: roll.trim(),
-        initialValues,
-        rerollMessage: String(opts.rerollMessage).trim(),
-      });
-      return new Promise<DiceResult>((resolve, reject) => {
-        physicalRollResolveRef.current = resolve;
-        physicalRollRejectRef.current = reject;
-      });
-    }
-
-    if (usePhysicalModal) {
-      setIsRolling(true);
-      setPhysicalRollModal({ notation: roll.trim() });
-      return new Promise<DiceResult>((resolve, reject) => {
-        physicalRollResolveRef.current = resolve;
-        physicalRollRejectRef.current = reject;
-      });
-    }
-
-    if (opts?.openPanel !== false) {
-      setDicePanelOpen(true);
-    }
-
+    const physicalDice = physicalRolls;
     setIsRolling(true);
-    const delay = opts?.delay ?? 2000;
 
-    const { total, segmentResults } = rollDiceExpression(roll);
+    try {
+      // 1. If physicalDice, prompt for input; else generate result
+      let result: DiceResult;
+      if (physicalDice) {
+        setPhysicalRollModal({ notation: roll.trim() });
+        result = await new Promise<DiceResult>((resolve, reject) => {
+          physicalRollResolveRef.current = resolve;
+          physicalRollRejectRef.current = reject;
+        });
+      } else {
+        if (opts?.openPanel !== false) {
+          setDicePanelOpen(true);
+        }
+        const { total, segmentResults } = rollDiceExpression(roll);
+        result = { total, segments: segmentResults, notation: roll.trim() };
+      }
 
-    const result: DiceResult = { total, segments: segmentResults, notation: roll.trim() };
-
-    // Log the dice roll to IndexedDB
-    await diceRollLogger.logRoll(result, {
-      source: 'Dice Panel',
-    });
-
-    if (dddiceState.username) {
-      setDddiceRolling(true);
-      const diceRollSegments = result.segments.filter((segment) => segment.notation.includes('d'));
-      const diceRolls: RollResult[] = diceRollSegments.flatMap((segment) => segment.rolls);
-      await dddiceState.rollThreeDDice(diceRolls);
-
-      // We need to await a promise so the script evaluator can delay its execution
-      // Separetly, setState does better in a timeout. These don't need to sync. Prefer to delay
-      // result text for 3D dice result for a better UX.
-      setTimeout(() => {
-        setLastResult(result);
-        setIsRolling(false);
+      // 2. If dddice username, trigger and wait for dddice roll
+      if (dddiceState.username) {
+        setDddiceRolling(true);
+        const diceRollSegments = result.segments.filter((segment) =>
+          segment.notation.includes('d'),
+        );
+        const diceRolls: RollResult[] = diceRollSegments.flatMap((segment) => segment.rolls);
+        await dddiceState.rollThreeDDice(diceRolls);
+        await new Promise((res) => setTimeout(res, 2000));
         setDddiceRolling(false);
-      }, 3000);
+      }
 
-      await new Promise((res) => setTimeout(res, 2000));
-    } else {
-      setTimeout(() => {
-        setLastResult(result);
-        setIsRolling(false);
-      }, delay);
-      await new Promise((res) => setTimeout(res, 2000));
+      // 3. If hasRerollMessage, prompt for re-roll input to overwrite result
+      if (hasRerollMessage) {
+        const initialValues = result.segments.flatMap((s) => s.rolls.map((r) => r.value));
+        setPhysicalRollModal({
+          notation: roll.trim(),
+          initialValues,
+          rerollMessage: String(opts!.rerollMessage).trim(),
+        });
+        result = await new Promise<DiceResult>((resolve, reject) => {
+          physicalRollResolveRef.current = resolve;
+          physicalRollRejectRef.current = reject;
+        });
+      }
+
+      // 4. Persist and return
+      await diceRollLogger.logRoll(result, {
+        source: 'Dice Panel',
+      });
+      setLastResult(result);
+      const breakdown = result.segments.map(formatSegmentResult).join('; ');
+      logEvent({
+        type: LogType.DICE,
+        source: 'Dice Panel',
+        message: `${breakdown} → Total: ${result.total}`,
+      });
+      return result;
+    } finally {
+      setIsRolling(false);
+      setDddiceRolling(false);
     }
-
-    const breakdown = segmentResults.map(formatSegmentResult).join('; ');
-    logEvent({
-      type: LogType.DICE,
-      source: 'Dice Panel',
-      message: `${breakdown} → Total: ${total}`,
-    });
-
-    return result;
   };
 
   const reset = () => {
