@@ -1,11 +1,5 @@
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useInterruptModalStore } from '@/stores/interrupt-modal-store';
 
 export function InterruptModal() {
@@ -19,24 +13,21 @@ export function InterruptModal() {
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent
-        showCloseButton={false}
-        className='z-[1100]'
-        overlayClassName='z-[1100]'>
+      <DialogContent showCloseButton={false} className='z-[1100]' overlayClassName='z-[1100]'>
         <DialogHeader>
           <DialogTitle>{msg || 'Choose an option'}</DialogTitle>
         </DialogHeader>
-        <DialogFooter className="flex-col gap-2 sm:flex-col">
+        <div className='flex gap-2 flex-wrap justify-start'>
           {choices.map((choice) => (
             <Button
               key={choice}
-              variant="default"
-              className="w-full sm:w-auto"
+              variant='outline'
+              className='sm:w-auto'
               onClick={() => select(choice)}>
               {choice}
             </Button>
           ))}
-        </DialogFooter>
+        </div>
       </DialogContent>
     </Dialog>
   );
