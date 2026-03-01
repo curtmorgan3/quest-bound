@@ -1,4 +1,3 @@
-import { useFeatureFlag } from '@/hooks/use-feature-flag';
 import { useActiveRuleset } from '@/lib/compass-api';
 import { CharacterContext, useCurrentUser } from '@/stores';
 import type { Component } from '@/types';
@@ -11,7 +10,6 @@ interface NodeAnimationProps {
 }
 
 export const NodeAnimation = ({ component, children }: NodeAnimationProps) => {
-  const animationEnabled = useFeatureFlag('animation', false);
   const { currentUser } = useCurrentUser();
   const { activeRuleset } = useActiveRuleset();
   const sheetAttributeAnimations = currentUser?.preferences?.sheetAttributeAnimations ?? true;
@@ -27,7 +25,7 @@ export const NodeAnimation = ({ component, children }: NodeAnimationProps) => {
   const animation = activeRuleset?.details?.animation;
   const animationColor = activeRuleset?.details?.animationColor;
 
-  if (!animationEnabled || !sheetAttributeAnimations) {
+  if (!sheetAttributeAnimations) {
     return <>{children}</>;
   }
 

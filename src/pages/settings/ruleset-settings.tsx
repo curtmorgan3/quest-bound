@@ -312,120 +312,126 @@ export const RulesetSettings = ({ activeRuleset }: RulesetSettingsProps) => {
             </Link>
           </Button>
         </div>
-        <div className='flex gap-4 items-end'>
-          <div className='flex flex-col gap-2 max-w-xs'>
-            <Label htmlFor='ruleset-animation'>Animation style</Label>
-            <Select
-              value={activeRuleset.details?.animation ?? ''}
-              onValueChange={(value) =>
+        <div className='flex flex-col gap-1'>
+          <div className='flex gap-4 items-end'>
+            <div className='flex flex-col gap-2 max-w-xs'>
+              <Label htmlFor='ruleset-animation'>Animation style</Label>
+              <Select
+                value={activeRuleset.details?.animation ?? ''}
+                onValueChange={(value) =>
+                  updateRuleset(activeRuleset.id, {
+                    details: { ...activeRuleset.details, animation: value },
+                  })
+                }
+                open={animationSelectOpen}
+                onOpenChange={(open) => {
+                  setAnimationSelectOpen(open);
+                  if (!open) setHoveredAnimation('');
+                }}>
+                <div
+                  className={cn(
+                    'relative inline-block w-full',
+                    hoveredAnimation === 'pop' && 'sheet-attribute-animation-pop',
+                    hoveredAnimation === 'glow' && 'sheet-attribute-animation-glow',
+                    hoveredAnimation === 'fade' && 'sheet-attribute-animation-fade',
+                  )}
+                  style={
+                    (hoveredAnimation === 'glow' || hoveredAnimation === 'shimmer') &&
+                    activeRuleset.details?.animationColor
+                      ? {
+                          ['--sheet-animation-color' as string]:
+                            activeRuleset.details.animationColor,
+                        }
+                      : undefined
+                  }>
+                  <SelectTrigger id='ruleset-animation' className='h-8 w-full'>
+                    <SelectValue placeholder='Select animation…' />
+                  </SelectTrigger>
+                  {hoveredAnimation === 'highlight' && (
+                    <div
+                      className='sheet-attribute-highlight-overlay rounded-md'
+                      style={{
+                        backgroundColor: activeRuleset.details?.animationColor ?? 'var(--primary)',
+                      }}
+                      aria-hidden
+                    />
+                  )}
+                  {hoveredAnimation === 'shimmer' && (
+                    <div className='sheet-attribute-shimmer-overlay rounded-md' aria-hidden />
+                  )}
+                  {hoveredAnimation === 'floating-difference' && (
+                    <span
+                      className='floating-difference'
+                      style={
+                        activeRuleset.details?.animationColor
+                          ? { color: activeRuleset.details.animationColor }
+                          : undefined
+                      }>
+                      +1
+                    </span>
+                  )}
+                </div>
+                <SelectContent>
+                  <SelectItem
+                    value='none'
+                    onMouseEnter={() => setHoveredAnimation('')}
+                    onMouseLeave={() => setHoveredAnimation('')}>
+                    None
+                  </SelectItem>
+                  <SelectItem
+                    value='floating-difference'
+                    onMouseEnter={() => setHoveredAnimation('floating-difference')}
+                    onMouseLeave={() => setHoveredAnimation('')}>
+                    Floating difference
+                  </SelectItem>
+                  <SelectItem
+                    value='pop'
+                    onMouseEnter={() => setHoveredAnimation('pop')}
+                    onMouseLeave={() => setHoveredAnimation('')}>
+                    Pop
+                  </SelectItem>
+                  <SelectItem
+                    value='highlight'
+                    onMouseEnter={() => setHoveredAnimation('highlight')}
+                    onMouseLeave={() => setHoveredAnimation('')}>
+                    Highlight
+                  </SelectItem>
+                  <SelectItem
+                    value='glow'
+                    onMouseEnter={() => setHoveredAnimation('glow')}
+                    onMouseLeave={() => setHoveredAnimation('')}>
+                    Glow
+                  </SelectItem>
+                  <SelectItem
+                    value='shimmer'
+                    onMouseEnter={() => setHoveredAnimation('shimmer')}
+                    onMouseLeave={() => setHoveredAnimation('')}>
+                    Shimmer
+                  </SelectItem>
+                  <SelectItem
+                    value='fade'
+                    onMouseEnter={() => setHoveredAnimation('fade')}
+                    onMouseLeave={() => setHoveredAnimation('')}>
+                    Fade
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <RulesetColorPicker
+              label='Animation Color'
+              color={activeRuleset.details?.animationColor}
+              disableAlpha
+              onUpdate={(color) => {
+                const hex = rgbToHex(color.r, color.g, color.b);
                 updateRuleset(activeRuleset.id, {
-                  details: { ...activeRuleset.details, animation: value },
-                })
-              }
-              open={animationSelectOpen}
-              onOpenChange={(open) => {
-                setAnimationSelectOpen(open);
-                if (!open) setHoveredAnimation('');
-              }}>
-              <div
-                className={cn(
-                  'relative inline-block w-full',
-                  hoveredAnimation === 'pop' && 'sheet-attribute-animation-pop',
-                  hoveredAnimation === 'glow' && 'sheet-attribute-animation-glow',
-                  hoveredAnimation === 'fade' && 'sheet-attribute-animation-fade',
-                )}
-                style={
-                  (hoveredAnimation === 'glow' || hoveredAnimation === 'shimmer') &&
-                  activeRuleset.details?.animationColor
-                    ? {
-                        ['--sheet-animation-color' as string]: activeRuleset.details.animationColor,
-                      }
-                    : undefined
-                }>
-                <SelectTrigger id='ruleset-animation' className='h-8 w-full'>
-                  <SelectValue placeholder='Select animation…' />
-                </SelectTrigger>
-                {hoveredAnimation === 'highlight' && (
-                  <div
-                    className='sheet-attribute-highlight-overlay rounded-md'
-                    style={{
-                      backgroundColor: activeRuleset.details?.animationColor ?? 'var(--primary)',
-                    }}
-                    aria-hidden
-                  />
-                )}
-                {hoveredAnimation === 'shimmer' && (
-                  <div className='sheet-attribute-shimmer-overlay rounded-md' aria-hidden />
-                )}
-                {hoveredAnimation === 'floating-difference' && (
-                  <span
-                    className='floating-difference'
-                    style={
-                      activeRuleset.details?.animationColor
-                        ? { color: activeRuleset.details.animationColor }
-                        : undefined
-                    }>
-                    +1
-                  </span>
-                )}
-              </div>
-              <SelectContent>
-                <SelectItem
-                  value='none'
-                  onMouseEnter={() => setHoveredAnimation('')}
-                  onMouseLeave={() => setHoveredAnimation('')}>
-                  None
-                </SelectItem>
-                <SelectItem
-                  value='floating-difference'
-                  onMouseEnter={() => setHoveredAnimation('floating-difference')}
-                  onMouseLeave={() => setHoveredAnimation('')}>
-                  Floating difference
-                </SelectItem>
-                <SelectItem
-                  value='pop'
-                  onMouseEnter={() => setHoveredAnimation('pop')}
-                  onMouseLeave={() => setHoveredAnimation('')}>
-                  Pop
-                </SelectItem>
-                <SelectItem
-                  value='highlight'
-                  onMouseEnter={() => setHoveredAnimation('highlight')}
-                  onMouseLeave={() => setHoveredAnimation('')}>
-                  Highlight
-                </SelectItem>
-                <SelectItem
-                  value='glow'
-                  onMouseEnter={() => setHoveredAnimation('glow')}
-                  onMouseLeave={() => setHoveredAnimation('')}>
-                  Glow
-                </SelectItem>
-                <SelectItem
-                  value='shimmer'
-                  onMouseEnter={() => setHoveredAnimation('shimmer')}
-                  onMouseLeave={() => setHoveredAnimation('')}>
-                  Shimmer
-                </SelectItem>
-                <SelectItem
-                  value='fade'
-                  onMouseEnter={() => setHoveredAnimation('fade')}
-                  onMouseLeave={() => setHoveredAnimation('')}>
-                  Fade
-                </SelectItem>
-              </SelectContent>
-            </Select>
+                  details: { ...activeRuleset.details, animationColor: hex },
+                });
+              }}
+            />
           </div>
-          <RulesetColorPicker
-            label='Animation Color'
-            color={activeRuleset.details?.animationColor}
-            disableAlpha
-            onUpdate={(color) => {
-              const hex = rgbToHex(color.r, color.g, color.b);
-              updateRuleset(activeRuleset.id, {
-                details: { ...activeRuleset.details, animationColor: hex },
-              });
-            }}
-          />
+          <span className='text-xs text-muted-foreground'>
+            Window components animate when their attribute's value changes
+          </span>
         </div>
 
         <div className='flex flex-col gap-3'>
