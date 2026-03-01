@@ -1,4 +1,5 @@
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -10,7 +11,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet';
-import { useDiceRolls } from '@/lib/compass-api';
+import { useDiceRolls, useUsers } from '@/lib/compass-api';
 import { DiceContext } from '@/stores';
 import type { DiceRoll } from '@/types';
 import { formatSegmentResult } from '@/utils';
@@ -23,6 +24,17 @@ export const DicePanel = () => {
   const { rollDice, isRolling, lastResult, reset, dicePanelOpen, setDicePanelOpen, username } =
     useContext(DiceContext);
   const { diceRolls, createDiceRoll, deleteDiceRoll } = useDiceRolls();
+  const { currentUser, updateUser } = useUsers();
+
+  const physicalRolls = currentUser?.preferences?.physicalRolls ?? false;
+
+  const handlePhysicalRollsChange = (checked: boolean) => {
+    if (currentUser) {
+      updateUser(currentUser.id, {
+        preferences: { ...currentUser.preferences, physicalRolls: checked },
+      });
+    }
+  };
 
   const [label, setLabel] = useState('');
   const [value, setValue] = useState('');
@@ -62,6 +74,19 @@ export const DicePanel = () => {
             </SheetTitle>
             <SheetDescription style={{ opacity: 0, height: 0 }}>Dice Panel</SheetDescription>
           </SheetHeader>
+          {currentUser && (
+            <div className='flex items-center space-x-2 gap-2'>
+              <Checkbox
+                id='physical-rolls'
+                data-testid='dice-panel-physical-rolls'
+                checked={physicalRolls}
+                onCheckedChange={(checked) => handlePhysicalRollsChange(checked === true)}
+              />
+              <Label htmlFor='physical-rolls' className='text-sm font-normal cursor-pointer'>
+                Using physical dice
+              </Label>
+            </div>
+          )}
 
           <div className='flex flex-1 flex-col gap-4 overflow-hidden py-4'>
             <div className='flex flex-col gap-2'>

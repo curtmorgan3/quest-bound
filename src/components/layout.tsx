@@ -5,7 +5,7 @@ import { useNotifications } from '@/hooks';
 import { useFontLoader, useUsers } from '@/lib/compass-api';
 import { useScriptAnnouncements } from '@/lib/compass-logic';
 import { SignIn } from '@/pages';
-import { DicePanel } from '@/pages/dice';
+import { DicePanel, PhysicalRollModal } from '@/pages/dice';
 import {
   CharacterArchetypesPanelContext,
   CharacterInventoryPanelContext,
@@ -91,6 +91,7 @@ export function Layout() {
               <Outlet />
             </main>
             <DicePanel />
+            <PhysicalRollModal />
             <canvas
               id='threeddice'
               ref={diceRef}

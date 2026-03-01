@@ -1,7 +1,8 @@
 import { useDddice } from '@/pages';
 import { diceRollLogger, LogType, useEventLog } from '@/stores';
 import type { DiceResult, DiceRollOpts, IDiceContext, RollResult, SegmentResult } from '@/types';
-import { createContext, useState } from 'react';
+import { createContext, useRef, useState } from 'react';
+import { useUsers } from '@/lib/compass-api';
 import { formatSegmentResult, rollDiceExpression } from '../../utils';
 
 interface DiceStateProps {
@@ -11,6 +12,12 @@ interface DiceStateProps {
 export const useDiceState = ({ canvasRef }: DiceStateProps): IDiceContext => {
   const [dicePanelOpen, setDicePanelOpen] = useState(false);
   const { logEvent } = useEventLog();
+  const { currentUser } = useUsers();
+  const physicalRolls = currentUser?.preferences?.physicalRolls ?? false;
+  const [physicalRollModal, setPhysicalRollModal] = useState<{ notation: string } | null>(null);
+  const physicalRollResolveRef = useRef<((result: DiceResult) => void) | null>(null);
+  const physicalRollRejectRef = useRef<(() => void) | null>(null);
+
   const [lastResult, setLastResult] = useState<{
     total: number;
     segments: SegmentResult[];
@@ -25,15 +32,50 @@ export const useDiceState = ({ canvasRef }: DiceStateProps): IDiceContext => {
     canvasRef,
   });
 
+  const submitPhysicalRollResult = async (result: DiceResult) => {
+    await diceRollLogger.logRoll(result, {
+      source: 'Dice Panel',
+    });
+    setLastResult(result);
+    setPhysicalRollModal(null);
+    setIsRolling(false);
+    const breakdown = result.segments.map(formatSegmentResult).join('; ');
+    logEvent({
+      type: LogType.DICE,
+      source: 'Dice Panel',
+      message: `${breakdown} → Total: ${result.total}`,
+    });
+    physicalRollResolveRef.current?.(result);
+    physicalRollResolveRef.current = null;
+    physicalRollRejectRef.current = null;
+  };
+
+  const dismissPhysicalRollModal = () => {
+    setPhysicalRollModal(null);
+    setIsRolling(false);
+    physicalRollRejectRef.current?.();
+    physicalRollResolveRef.current = null;
+    physicalRollRejectRef.current = null;
+  };
+
   const rollDice = async (roll: string, opts?: DiceRollOpts) => {
-    setIsRolling(true);
     if (opts?.openPanel !== false) {
       setDicePanelOpen(true);
     }
 
-    const delay = opts?.delay ?? 2000;
-
     setLastResult(null);
+
+    if (physicalRolls) {
+      setIsRolling(true);
+      setPhysicalRollModal({ notation: roll.trim() });
+      return new Promise<DiceResult>((resolve, reject) => {
+        physicalRollResolveRef.current = resolve;
+        physicalRollRejectRef.current = reject;
+      });
+    }
+
+    setIsRolling(true);
+    const delay = opts?.delay ?? 2000;
 
     const { total, segmentResults } = rollDiceExpression(roll);
 
@@ -90,6 +132,9 @@ export const useDiceState = ({ canvasRef }: DiceStateProps): IDiceContext => {
     setLastResult,
     isRolling: rolling,
     reset,
+    physicalRollModal,
+    submitPhysicalRollResult,
+    dismissPhysicalRollModal,
     ...dddiceState,
   };
 };

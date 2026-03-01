@@ -1,4 +1,4 @@
-import type { DiceToken, RollResult, SegmentResult } from '@/types';
+import type { DiceResult, DiceToken, RollResult, SegmentResult } from '@/types';
 
 /** Matches dice (e.g. 2d6) or modifiers (+4, -1) in order */
 export const DICE_OR_MODIFIER_REGEX = /(\d+)\s*d\s*(\d+)|([+-])\s*(\d+)/gi;
@@ -111,4 +111,86 @@ export function rollDiceExpression(roll: string) {
 
 export function defaultScriptDiceRoller(roll: string) {
   return rollDiceExpression(roll).total;
+}
+
+export type PhysicalRollSlot = {
+  label: string;
+};
+
+export type PhysicalRollSegmentInfo =
+  | { notation: string; rollCount: number }
+  | { notation: string; modifier: number };
+
+/**
+ * Returns one slot per die to be filled for physical roll input, plus segment metadata
+ * to reconstruct DiceResult from the entered values.
+ */
+export function getPhysicalRollSlots(notation: string): {
+  slots: PhysicalRollSlot[];
+  segmentInfos: PhysicalRollSegmentInfo[];
+} {
+  const tokenGroups = parseDiceExpression(notation.trim());
+  const slots: PhysicalRollSlot[] = [];
+  const segmentInfos: PhysicalRollSegmentInfo[] = [];
+
+  for (const tokens of tokenGroups) {
+    for (const token of tokens) {
+      if (token.type === 'dice') {
+        const label = `d${token.sides}`;
+        for (let i = 0; i < token.count; i++) {
+          slots.push({ label });
+        }
+        segmentInfos.push({ notation: `${token.count}d${token.sides}`, rollCount: token.count });
+      } else {
+        const notation =
+          token.value >= 0 ? `+${token.value}` : `${token.value}`;
+        segmentInfos.push({ notation, modifier: token.value });
+      }
+    }
+  }
+
+  return { slots, segmentInfos };
+}
+
+/**
+ * Builds a DiceResult from notation and the values entered for each die (in slot order).
+ */
+export function buildDiceResultFromPhysicalRolls(
+  notation: string,
+  values: number[],
+): DiceResult {
+  const { segmentInfos } = getPhysicalRollSlots(notation);
+  const segments: SegmentResult[] = [];
+  let total = 0;
+  let valueIndex = 0;
+
+  for (const info of segmentInfos) {
+    if ('rollCount' in info) {
+      const rolls: RollResult[] = [];
+      let segmentTotal = 0;
+      const type = info.notation.includes('d') ? info.notation.replace(/^\d+/, '') : 'd6';
+      for (let i = 0; i < info.rollCount; i++) {
+        const value = values[valueIndex++] ?? 0;
+        rolls.push({ type, value });
+        segmentTotal += value;
+      }
+      total += segmentTotal;
+      segments.push({
+        notation: info.notation,
+        rolls,
+        modifier: 0,
+        segmentTotal,
+      });
+    } else {
+      total += info.modifier;
+      segments.push({
+        notation: info.notation,
+        rolls: [],
+        modifier: info.modifier,
+        segmentTotal: info.modifier,
+      });
+    }
+  }
+
+  return { total, notation: notation.trim(), segments };
 }

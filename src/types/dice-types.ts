@@ -2,6 +2,10 @@ import { ThreeDDice } from 'dddice-js';
 
 export type IDiceContext = UseThreeDDice & LocalDiceContext;
 
+export type PhysicalRollModalState = {
+  notation: string;
+} | null;
+
 export type LocalDiceContext = {
   dicePanelOpen: boolean;
   setDicePanelOpen: (open: boolean) => void;
@@ -10,6 +14,9 @@ export type LocalDiceContext = {
   lastResult: DiceResult | null;
   setLastResult: (result: DiceResult) => void;
   reset: () => void;
+  physicalRollModal: PhysicalRollModalState;
+  submitPhysicalRollResult: (result: DiceResult) => Promise<void>;
+  dismissPhysicalRollModal: () => void;
 };
 
 export type DiceRollOpts = {
