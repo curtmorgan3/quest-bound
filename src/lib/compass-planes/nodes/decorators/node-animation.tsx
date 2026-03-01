@@ -15,7 +15,7 @@ export const NodeAnimation = ({ component, children }: NodeAnimationProps) => {
   const character = context?.character;
   const { value, attributeType } = useNodeData(component);
   const { flashKey, diff } = useRegisterAnimation(
-    character?.id,
+    character?.id ?? '',
     component.attributeId ?? '',
     attributeType === 'number' ? parseInt(`${value}`) : value,
   );
