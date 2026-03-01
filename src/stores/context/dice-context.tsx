@@ -76,7 +76,7 @@ export const useDiceState = ({ canvasRef }: DiceStateProps): IDiceContext => {
       }
 
       // 2. If dddice username, trigger and wait for dddice roll
-      if (dddiceState.username) {
+      if (dddiceState.username && !physicalDice) {
         setDddiceRolling(true);
         const diceRollSegments = result.segments.filter((segment) =>
           segment.notation.includes('d'),
