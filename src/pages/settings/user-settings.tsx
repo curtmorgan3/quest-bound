@@ -9,6 +9,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
   Button,
+  Checkbox,
   ImageUpload,
   Input,
   Label,
@@ -80,6 +81,26 @@ export const UserSettings = () => {
       <div className='flex flex-col gap-2 max-w-sm'>
         <Label htmlFor='username'>Username</Label>
         <Input id='username' value={username} onChange={(e) => setUsername(e.target.value)} />
+      </div>
+
+      <div className='flex items-center gap-2'>
+        <Checkbox
+          id='sheetAttributeAnimations'
+          checked={currentUser.preferences?.sheetAttributeAnimations ?? true}
+          onCheckedChange={(checked) => {
+            if (currentUser) {
+              updateUser(currentUser.id, {
+                preferences: {
+                  ...currentUser.preferences,
+                  sheetAttributeAnimations: checked === true,
+                },
+              });
+            }
+          }}
+        />
+        <Label htmlFor='sheetAttributeAnimations' className='cursor-pointer font-normal'>
+          Sheet attribute animations
+        </Label>
       </div>
 
       <PWAInstallPrompt ignoreDismissed />

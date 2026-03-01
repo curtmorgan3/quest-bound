@@ -84,20 +84,31 @@ export const AttributeControls = ({
 
       case 'list': {
         const listOptions = rulesetAttributes.find((r) => r.id === attr.attributeId)?.options ?? [];
+        const currentOption = (attr.value as string) ?? '';
+        const selectedIndex =
+          currentOption === ''
+            ? -1
+            : listOptions.findIndex((opt) => opt === currentOption);
+        const selectValue = selectedIndex >= 0 ? String(selectedIndex) : '';
         return (
           <div className='flex flex-col gap-1'>
             <Label htmlFor={id} className='text-sm' style={style}>
               {attr.title}
             </Label>
             <Select
-              value={(attr.value as string) ?? ''}
-              onValueChange={(value) => handleValueChange(attr, value)}>
+              value={selectValue}
+              onValueChange={(value) => {
+                const index = parseInt(value, 10);
+                if (index >= 0 && index < listOptions.length) {
+                  handleValueChange(attr, listOptions[index]);
+                }
+              }}>
               <SelectTrigger id={id} className='h-8 w-full'>
                 <SelectValue placeholder='Select…' />
               </SelectTrigger>
               <SelectContent>
-                {listOptions.map((option) => (
-                  <SelectItem key={option} value={option}>
+                {listOptions.map((option, i) => (
+                  <SelectItem key={i} value={String(i)}>
                     {option}
                   </SelectItem>
                 ))}
