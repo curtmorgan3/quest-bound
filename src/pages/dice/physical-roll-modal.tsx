@@ -89,7 +89,9 @@ export const PhysicalRollModal = () => {
       <DialogContent
         aria-description='Enter results from physically rolled dice'
         onPointerDownOutside={(e) => e.preventDefault()}
-        onEscapeKeyDown={() => handleOpenChange(false)}>
+        onEscapeKeyDown={() => handleOpenChange(false)}
+        className='z-[1001]'
+        overlayClassName='z-[1001]'>
         <div ref={dialogContentRef} className='contents'>
           <PopoverScrollContainerContext.Provider value={dialogContentRef}>
             <DialogHeader>

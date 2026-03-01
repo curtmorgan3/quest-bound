@@ -41,14 +41,16 @@ function DialogContent({
   children,
   showCloseButton = true,
   full = false,
+  overlayClassName,
   ...props
 }: React.ComponentProps<typeof DialogPrimitive.Content> & {
   showCloseButton?: boolean;
   full?: boolean;
+  overlayClassName?: string;
 }) {
   return (
     <DialogPortal data-slot='dialog-portal'>
-      <DialogOverlay />
+      <DialogOverlay className={overlayClassName} />
       <DialogPrimitive.Content
         style={full ? { maxWidth: 'unset' } : undefined}
         data-slot='dialog-content'

@@ -1,8 +1,8 @@
+import { useUsers } from '@/lib/compass-api';
 import { useDddice } from '@/pages';
 import { diceRollLogger, LogType, useEventLog } from '@/stores';
 import type { DiceResult, DiceRollOpts, IDiceContext, RollResult, SegmentResult } from '@/types';
 import { createContext, useRef, useState } from 'react';
-import { useUsers } from '@/lib/compass-api';
 import { formatSegmentResult, rollDiceExpression } from '../../utils';
 
 interface DiceStateProps {
@@ -59,10 +59,6 @@ export const useDiceState = ({ canvasRef }: DiceStateProps): IDiceContext => {
   };
 
   const rollDice = async (roll: string, opts?: DiceRollOpts) => {
-    if (opts?.openPanel !== false) {
-      setDicePanelOpen(true);
-    }
-
     setLastResult(null);
 
     if (physicalRolls) {
@@ -72,6 +68,10 @@ export const useDiceState = ({ canvasRef }: DiceStateProps): IDiceContext => {
         physicalRollResolveRef.current = resolve;
         physicalRollRejectRef.current = reject;
       });
+    }
+
+    if (opts?.openPanel !== false) {
+      setDicePanelOpen(true);
     }
 
     setIsRolling(true);
