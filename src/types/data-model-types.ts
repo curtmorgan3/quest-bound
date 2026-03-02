@@ -510,11 +510,11 @@ export type Location = BaseDetails & {
   scaledMapWidth?: number;
 };
 
-// --- Campaign (joins ruleset + world); placement is campaign-scoped ---
+// --- Campaign (joins ruleset; world is optional); placement is campaign-scoped ---
 export type Campaign = BaseDetails & {
   label?: string;
   rulesetId: string;
-  worldId: string;
+  worldId?: string | null;
 };
 
 export type CampaignCharacter = BaseDetails & {

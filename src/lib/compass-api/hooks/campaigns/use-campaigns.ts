@@ -21,14 +21,18 @@ export const useCampaigns = (filters?: { rulesetId?: string; worldId?: string })
     [filters?.rulesetId, filters?.worldId],
   );
 
-  const createCampaign = async (data: { rulesetId: string; worldId: string; label?: string }) => {
+  const createCampaign = async (data: {
+    rulesetId: string;
+    worldId?: string | null;
+    label?: string;
+  }) => {
     const now = new Date().toISOString();
     const id = crypto.randomUUID();
     try {
       await db.campaigns.add({
         id,
         rulesetId: data.rulesetId,
-        worldId: data.worldId,
+        ...(data.worldId != null && data.worldId !== '' && { worldId: data.worldId }),
         label: data.label ?? undefined,
         createdAt: now,
         updatedAt: now,

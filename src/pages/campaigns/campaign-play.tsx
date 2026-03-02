@@ -22,7 +22,7 @@ export function CampaignPlay() {
   const { campaignId } = useParams<{ campaignId: string; locationId?: string }>();
   const navigate = useNavigate();
   const campaign = useCampaign(campaignId);
-  const world = useWorld(campaign?.worldId);
+  const world = useWorld(campaign?.worldId ?? '');
   const [searchParams, setSearchParams] = useSearchParams();
   const [detailsPanelOpen, setDetailsPanelOpen] = useState(false);
 
@@ -48,7 +48,7 @@ export function CampaignPlay() {
   );
 
   const { locations: locationsList, updateLocation } = useLocations(
-    campaign?.worldId,
+    campaign?.worldId ?? '',
     viewingLocationId,
   );
   const eventLocationsWithEvent = useCampaignEventLocationsByLocation(
@@ -245,7 +245,7 @@ export function CampaignPlay() {
       <LocationDetailsPanel
         open={detailsPanelOpen}
         onOpenChange={setDetailsPanelOpen}
-        worldId={campaign?.worldId}
+        worldId={campaign?.worldId ?? ''}
         locationId={currentLocation?.id}
         locationLabel={currentLocation?.label}
         campaignId={campaignId ?? undefined}
@@ -276,7 +276,7 @@ export function CampaignPlay() {
 
             <LocationViewer
               locationId={viewingLocationId}
-              worldId={campaign.worldId}
+              worldId={campaign?.worldId ?? undefined}
               tileRenderSize={currentLocation?.tileRenderSize}
               overlayNodes={overlayNodes}
               eventTileIds={eventTileIds}

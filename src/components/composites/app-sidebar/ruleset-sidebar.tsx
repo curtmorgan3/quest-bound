@@ -46,7 +46,8 @@ export function RulesetSidebar() {
     location.pathname === '/rulesets' ||
     location.pathname === '/characters' ||
     location.pathname === '/worlds' ||
-    location.pathname === '/campaigns';
+    location.pathname === '/campaigns' ||
+    location.pathname === '/campaigns/new';
 
   const homepageItems = HOMEPAGE_ITEMS.filter((item) => {
     if (item.title === 'Worlds') return worldsEnabled;

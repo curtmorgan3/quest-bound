@@ -28,7 +28,7 @@ export const useMapHelpers = ({
 }: UseMapHelpers) => {
   const campaign = useCampaign(campaignId);
   const { campaignCharacters, updateCampaignCharacter } = useCampaignCharacters(campaignId);
-  const { updateLocation } = useLocations(campaign?.worldId, null);
+  const { updateLocation } = useLocations(campaign?.worldId ?? '', null);
   const { updateCampaignItem } = useCampaignItems(campaignId);
   const client = useQBScriptClient();
 
