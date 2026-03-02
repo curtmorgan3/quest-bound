@@ -15,12 +15,15 @@ import {
   useOnboardingStore,
 } from '@/stores';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useSearchParams } from 'react-router-dom';
 import { AppSidebar } from './composites/app-sidebar';
 import { SidebarProvider } from './ui/sidebar';
 import { Toaster } from './ui/sonner';
 
+const DEV_TOOLS_STORAGE_KEY = 'dev.tools';
+
 export function Layout() {
+  const [searchParams] = useSearchParams();
   const { currentUser, loading } = useUsers();
   const {
     hasCompleted,
@@ -47,12 +50,20 @@ export function Layout() {
     }
   }, [diceState.dicePanelOpen]);
 
+  useEffect(() => {
+    if (searchParams.get('dev') === 'true') {
+      localStorage.setItem(DEV_TOOLS_STORAGE_KEY, 'true');
+      setDevToolsToggled((n) => n + 1);
+    }
+  }, [searchParams]);
+
   // Load ruleset fonts into the browser
   useFontLoader();
 
   const { addNotification } = useNotifications();
   useScriptAnnouncements(addNotification);
 
+  const [, setDevToolsToggled] = useState(0);
   const [characterInventoryPanelOpen, setCharacterInventoryPanelOpen] = useState(false);
   const [characterArchetypesPanelOpen, setCharacterArchetypesPanelOpen] = useState(false);
 
