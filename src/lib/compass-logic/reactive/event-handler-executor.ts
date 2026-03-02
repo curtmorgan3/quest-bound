@@ -1,5 +1,11 @@
 import type { DB } from '@/stores/db/hooks/types';
-import type { PromptFn, RollFn, RollSplitFn } from '@/types';
+import type {
+  PromptFn,
+  RollFn,
+  RollSplitFn,
+  SelectCharacterFn,
+  SelectCharactersFn,
+} from '@/types';
 import type { ASTNode } from '../interpreter/ast';
 import { functionDefToExecutableSource } from '../interpreter/ast-to-source';
 import { Lexer } from '../interpreter/lexer';
@@ -99,6 +105,8 @@ export class EventHandlerExecutor {
     inventoryItemInstanceId?: string,
     rollSplit?: RollSplitFn,
     prompt?: PromptFn,
+    selectCharacter?: SelectCharacterFn,
+    selectCharacters?: SelectCharactersFn,
   ): Promise<EventHandlerResult> {
     // Get item
     const item = await this.db.items.get(itemId);
@@ -159,6 +167,8 @@ export class EventHandlerExecutor {
       roll,
       rollSplit,
       prompt,
+      selectCharacter,
+      selectCharacters,
       executeActionEvent: (actionId, ownerId, targetIdForAction, eventTypeForAction) =>
         this.executeActionEvent(
           actionId,
@@ -211,6 +221,8 @@ export class EventHandlerExecutor {
     callerInventoryItemInstanceId?: string,
     rollSplit?: RollSplitFn,
     prompt?: PromptFn,
+    selectCharacter?: SelectCharacterFn,
+    selectCharacters?: SelectCharactersFn,
   ): Promise<EventHandlerResult> {
     // Get action
     const action = await this.db.actions.get(actionId);
@@ -273,6 +285,8 @@ export class EventHandlerExecutor {
         roll,
         rollSplit,
         prompt,
+        selectCharacter,
+        selectCharacters,
         callerInventoryItemInstanceId,
         // Only allow Owner.Action().activate() at top level to avoid infinite re-entrancy
         ...(actionEventDepth === 1 && {
@@ -287,6 +301,8 @@ export class EventHandlerExecutor {
               undefined, // Nested call: Caller = Owner
               rollSplit,
               prompt,
+              selectCharacter,
+              selectCharacters,
             ),
         }),
       };
@@ -438,6 +454,8 @@ export class EventHandlerExecutor {
     campaignId?: string,
     rollSplit?: RollSplitFn,
     prompt?: PromptFn,
+    selectCharacter?: SelectCharacterFn,
+    selectCharacters?: SelectCharactersFn,
   ): Promise<EventHandlerResult> {
     const archetype = await this.db.archetypes.get(archetypeId);
     if (!archetype) {
@@ -492,6 +510,8 @@ export class EventHandlerExecutor {
       roll,
       rollSplit,
       prompt,
+      selectCharacter,
+      selectCharacters,
       executeActionEvent: (actionId, ownerId, targetIdForAction, eventTypeForAction) =>
         this.executeActionEvent(
           actionId,
@@ -545,6 +565,8 @@ export class EventHandlerExecutor {
     roll?: RollFn,
     rollSplit?: RollSplitFn,
     prompt?: PromptFn,
+    selectCharacter?: SelectCharacterFn,
+    selectCharacters?: SelectCharactersFn,
   ): Promise<EventHandlerResult> {
     const script = await this.db.scripts
       .where({ rulesetId, entityType: 'characterLoader' })
@@ -569,6 +591,8 @@ export class EventHandlerExecutor {
       roll,
       rollSplit,
       prompt,
+      selectCharacter,
+      selectCharacters,
       executeActionEvent: (actionId, ownerId, targetIdForAction, eventTypeForAction) =>
         this.executeActionEvent(
           actionId,

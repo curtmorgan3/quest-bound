@@ -6,6 +6,7 @@ import { registerCharacterDbHooks } from './character-hooks';
 import { registerChartDbHooks } from './chart-hooks';
 import { registerComponentDbHooks } from './component-hooks';
 import { registerDocumentDbHooks } from './document-hooks';
+import { registerCustomPropertyDbHooks } from './custom-property-hooks';
 import { registerItemDbHooks } from './item-hooks';
 import { registerInventoryDbHooks } from './inventory-hooks';
 import { registerLocationDbHooks } from './location-hooks';
@@ -19,6 +20,7 @@ export function registerDbHooks(db: DB) {
   registerArchetypeDbHooks(db);
   registerChartDbHooks(db);
   registerAttributeDbHooks(db);
+  registerCustomPropertyDbHooks(db);
   registerCharacterDbHooks(db);
   registerItemDbHooks(db);
   registerInventoryDbHooks(db);

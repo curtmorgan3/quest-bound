@@ -1,4 +1,10 @@
-import type { PromptFn, RollFn, RollSplitFn } from '@/types';
+import type {
+  PromptFn,
+  RollFn,
+  RollSplitFn,
+  SelectCharacterFn,
+  SelectCharactersFn,
+} from '@/types';
 import type { DB } from '@/stores/db/hooks/types';
 import type { ExecuteActionEventFn } from '../runtime/proxies';
 import type { ScriptExecutionContext } from '../runtime/script-runner';
@@ -29,6 +35,10 @@ export interface ReactiveExecutionOptions {
   prompt?: PromptFn;
   /** When set (e.g. in campaign play), enables Owner.location and other campaign character context. */
   campaignId?: string;
+  /** Optional character picker for selectCharacter(title?, description?). */
+  selectCharacter?: SelectCharacterFn;
+  /** Optional character picker for selectCharacters(title?, description?). */
+  selectCharacters?: SelectCharactersFn;
 }
 
 /**
@@ -312,6 +322,8 @@ export class ReactiveExecutor {
         roll: options.roll,
         rollSplit: options.rollSplit,
         prompt: options.prompt,
+        selectCharacter: options.selectCharacter,
+        selectCharacters: options.selectCharacters,
       };
 
       const runner = new ScriptRunner(context);

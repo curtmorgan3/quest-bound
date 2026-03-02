@@ -6,6 +6,7 @@
  */
 
 import { usePromptModalStore } from '@/stores/prompt-modal-store';
+import { useCharacterSelectModalStore } from '@/stores/character-select-modal-store';
 import { useScriptModifiedAttributesStore } from '@/stores/script-modified-attributes-store';
 import type { RollFn, RollSplitFn } from '@/types';
 import { defaultScriptDiceRoller, defaultScriptDiceRollerSplit } from '@/utils/dice-utils';
@@ -191,6 +192,10 @@ export class QBScriptClient {
         this.handlePromptRequest(signal.payload);
         break;
 
+      case 'SELECT_CHARACTER_REQUEST':
+        this.handleSelectCharacterRequest(signal.payload);
+        break;
+
       case 'ATTRIBUTES_MODIFIED_BY_SCRIPT':
         this.handleAttributesModifiedByScript(signal.payload);
         break;
@@ -281,6 +286,42 @@ export class QBScriptClient {
         type: 'PROMPT_RESPONSE',
         payload: {
           promptRequestId: payload.promptRequestId,
+          error: err instanceof Error ? err.message : String(err),
+        },
+      });
+    }
+  }
+
+  private async handleSelectCharacterRequest(payload: {
+    executionRequestId: string;
+    selectRequestId: string;
+    mode: 'single' | 'multi';
+    title?: string;
+    description?: string;
+    rulesetId: string;
+    campaignId?: string;
+  }): Promise<void> {
+    if (!this.worker) return;
+    try {
+      const { characterIds } = await useCharacterSelectModalStore
+        .getState()
+        .show({
+          mode: payload.mode,
+          title: payload.title,
+          description: payload.description,
+          rulesetId: payload.rulesetId,
+          campaignId: payload.campaignId,
+        });
+
+      this.worker.postMessage({
+        type: 'SELECT_CHARACTER_RESPONSE',
+        payload: { selectRequestId: payload.selectRequestId, characterIds },
+      });
+    } catch (err) {
+      this.worker.postMessage({
+        type: 'SELECT_CHARACTER_RESPONSE',
+        payload: {
+          selectRequestId: payload.selectRequestId,
           error: err instanceof Error ? err.message : String(err),
         },
       });

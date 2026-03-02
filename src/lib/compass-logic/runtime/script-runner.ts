@@ -11,6 +11,8 @@ import type {
   RollFn,
   RollSplitFn,
   Script,
+  SelectCharacterFn,
+  SelectCharactersFn,
 } from '@/types';
 import { buildItemCustomProperties } from '@/utils/custom-property-utils';
 import { Evaluator } from '../interpreter/evaluator';
@@ -162,6 +164,10 @@ export interface ScriptExecutionContext {
   rollSplit?: RollSplitFn;
   /** Optional prompt function for script built-in prompt(msg, choices). When set, used to show modal and return selected choice. */
   prompt?: PromptFn;
+  /** Optional character picker for selectCharacter(title?, description?). When set, used to show UI and return a single character accessor or null. */
+  selectCharacter?: SelectCharacterFn;
+  /** Optional character picker for selectCharacters(title?, description?). When set, used to show UI and return an array of character accessors. */
+  selectCharacters?: SelectCharactersFn;
   /** When set, Owner.Action('name').activate() / .deactivate() can run action event handlers (e.g. from worker or EventHandlerExecutor). */
   executeActionEvent?: ExecuteActionEventFn;
   /** When set (e.g. campaign event scripts), used to resolve Owner.location from the character's current location in the campaign. */
@@ -236,6 +242,8 @@ export class ScriptRunner {
       roll: context.roll,
       rollSplit: context.rollSplit,
       prompt: context.prompt,
+      selectCharacter: context.selectCharacter,
+      selectCharacters: context.selectCharacters,
     });
     this.pendingUpdates = new Map();
     this.characterAttributesCache = new Map();

@@ -187,6 +187,24 @@ stealth = rollQuiet('1d20+5');
 | `announce(message)` | Show a message to the player. Arguments are joined with spaces.                                                        |
 | `log(...)`          | Send output to the debug console and game log. Multiple arguments supported; strings are wrapped in quotes in the log. |
 
+### Character selection
+
+The following built-ins let you select characters from the active campaign context (or, in ruleset tools, from the ruleset's characters). Results are character accessors you can use like `Owner`.
+
+| Function                                      | Description                                                                                                               |
+| --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `selectCharacter(title?, description?)`       | Shows a dialog to pick a single character. Returns a character accessor or `null` if the user cancels or nothing is available. |
+| `selectCharacters(title?, description?)`      | Shows a dialog to pick one or more characters. Returns an array of character accessors (empty on cancel/none available). |
+
+**Notes:**
+
+- Both `title` and `description` are optional. When omitted or empty, the dialog titles default to **"Select Character"** or **"Select Characters"**.
+- In a campaign, the chooser lists **all player characters** plus **active NPCs** for that campaign, grouped and sorted alphabetically:
+  - Player characters in one section.
+  - Active NPCs in another section.
+- When there are **no eligible characters**, the dialog shows a message and both functions behave as if cancelled (`null` / `[]`).
+- In ruleset tools (no campaign), selection is limited to characters for that ruleset (player characters plus any active NPCs).
+
 ---
 
 ## Accessing character data

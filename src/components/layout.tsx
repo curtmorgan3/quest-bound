@@ -6,6 +6,7 @@ import { useFontLoader, useUsers } from '@/lib/compass-api';
 import { useScriptAnnouncements } from '@/lib/compass-logic';
 import { SignIn } from '@/pages';
 import { PromptModal } from '@/components/prompt-modal';
+import { CharacterSelectModal } from '@/components/character-select-modal';
 import { DicePanel, PhysicalRollModal } from '@/pages/dice';
 import {
   CharacterArchetypesPanelContext,
@@ -105,6 +106,7 @@ export function Layout() {
             <DicePanel />
             <PhysicalRollModal />
             <PromptModal />
+            <CharacterSelectModal />
             <canvas
               id='threeddice'
               ref={diceRef}

@@ -1,4 +1,10 @@
-import type { PromptFn, RollFn, RollSplitFn } from '@/types';
+import type {
+  PromptFn,
+  RollFn,
+  RollSplitFn,
+  SelectCharacterFn,
+  SelectCharactersFn,
+} from '@/types';
 import { parseDiceExpression, rollDie } from '@/utils/dice-utils';
 import { prepareForStructuredClone } from '../runtime/structured-clone-safe';
 import type { ASTNode } from './ast';
@@ -11,6 +17,10 @@ export interface EvaluatorOptions {
   rollSplit?: RollSplitFn;
   /** When set, used as the script built-in prompt(msg, choices). Required for prompt() to work (e.g. in worker via bridge). */
   prompt?: PromptFn;
+  /** When set, used as the script built-in selectCharacter(title?, description?). */
+  selectCharacter?: SelectCharacterFn;
+  /** When set, used as the script built-in selectCharacters(title?, description?). */
+  selectCharacters?: SelectCharactersFn;
 }
 
 export class RuntimeError extends Error {
@@ -81,6 +91,8 @@ export class Evaluator {
   private rollFn: RollFn | undefined;
   private rollSplitFn: RollSplitFn | undefined;
   private promptFn: PromptFn | undefined;
+  private selectCharacterFn: SelectCharacterFn | undefined;
+  private selectCharactersFn: SelectCharactersFn | undefined;
 
   constructor(options?: EvaluatorOptions) {
     this.globalEnv = new Environment(null);
@@ -90,6 +102,8 @@ export class Evaluator {
     this.rollFn = options?.roll;
     this.rollSplitFn = options?.rollSplit;
     this.promptFn = options?.prompt;
+    this.selectCharacterFn = options?.selectCharacter;
+    this.selectCharactersFn = options?.selectCharacters;
     // Detect if we're running in a worker context
     this.isWorkerContext =
       typeof self !== 'undefined' &&
@@ -541,6 +555,44 @@ export class Evaluator {
         }
         const normalizedChoices = Array.isArray(choices) ? choices.map(String) : [String(choices)];
         return this.promptFn(msg, normalizedChoices);
+      },
+    );
+
+    // Character selection: selectCharacter(title?, description?) -> character accessor or null
+    this.globalEnv.define(
+      'selectCharacter',
+      async (title?: string, description?: string): Promise<any | null> => {
+        if (!this.selectCharacterFn) {
+          throw new RuntimeError(
+            'selectCharacter(title?, description?) is not available in this context (no character selection handler)',
+          );
+        }
+        const safeTitle =
+          typeof title === 'string' && title.trim().length > 0 ? title : undefined;
+        const safeDescription =
+          typeof description === 'string' && description.trim().length > 0
+            ? description
+            : undefined;
+        return this.selectCharacterFn(safeTitle, safeDescription);
+      },
+    );
+
+    // Character selection: selectCharacters(title?, description?) -> array of character accessors
+    this.globalEnv.define(
+      'selectCharacters',
+      async (title?: string, description?: string): Promise<any[]> => {
+        if (!this.selectCharactersFn) {
+          throw new RuntimeError(
+            'selectCharacters(title?, description?) is not available in this context (no character selection handler)',
+          );
+        }
+        const safeTitle =
+          typeof title === 'string' && title.trim().length > 0 ? title : undefined;
+        const safeDescription =
+          typeof description === 'string' && description.trim().length > 0
+            ? description
+            : undefined;
+        return this.selectCharactersFn(safeTitle, safeDescription);
       },
     );
 

@@ -35,10 +35,19 @@ export type DiceRollOpts = {
 export type RollFn = (expression: string, rerollMessage?: string) => number | Promise<number>;
 
 /** Like roll but returns an array of each die value in dice syntax order (e.g. "1d6,2d20" → [d6, d20_1, d20_2]). */
-export type RollSplitFn = (expression: string, rerollMessage?: string) => number[] | Promise<number[]>;
+export type RollSplitFn = (
+  expression: string,
+  rerollMessage?: string,
+) => number[] | Promise<number[]>;
 
 /** Prompt built-in: shows modal with message and choices; returns selected choice. Used by QBScript prompt(msg, choices). */
 export type PromptFn = (msg: string, choices: string[]) => Promise<string>;
+
+/** Character selection built-in: select a single character and return its characterId, or null on cancel/none. */
+export type SelectCharacterFn = (title?: string, description?: string) => Promise<string | null>;
+
+/** Character selection built-in: select one or more characters and return their characterIds (empty on cancel/none). */
+export type SelectCharactersFn = (title?: string, description?: string) => Promise<string[]>;
 
 /** A single dice term (e.g. 2d6) or modifier term (+4, -1) in order */
 export type DiceToken =

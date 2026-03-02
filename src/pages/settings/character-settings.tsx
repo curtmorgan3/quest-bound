@@ -50,7 +50,7 @@ export const CharacterSettings = ({ character }: CharacterSettingsProps) => {
   const { activeRuleset } = useActiveRuleset();
   const { syncWithRuleset } = useCharacterAttributes(character.id);
   const { addNotification } = useNotifications();
-   const campaignsEnabled = useFeatureFlag('campaigns', false);
+  const worldsEnabled = useFeatureFlag('worlds', false);
   const navigate = useNavigate();
 
   const [name, setName] = useState(character.name);
@@ -185,7 +185,7 @@ export const CharacterSettings = ({ character }: CharacterSettingsProps) => {
           />
         </div>
 
-        {campaignsEnabled && (
+        {worldsEnabled && (
           <div className='flex flex-col gap-2 max-w-sm'>
             <Label>Map sprite</Label>
             <ImageUpload
