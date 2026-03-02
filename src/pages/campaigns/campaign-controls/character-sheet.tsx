@@ -6,26 +6,53 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { Backpack, X } from 'lucide-react';
 import { useState } from 'react';
 
-export const CampaignCharacterSheet = () => {
+export interface CampaignCharacterSheetProps {
+  /** When set, show the sheet for this character (e.g. from dashboard avatar click). */
+  characterId?: string;
+  /** When true with characterId, show the sheet open without requiring the button click. */
+  open?: boolean;
+  /** Called when the sheet is closed (used when opened via characterId/open props). */
+  onClose?: () => void;
+}
+
+export const CampaignCharacterSheet = ({
+  characterId: controlledCharacterId,
+  open: controlledOpen,
+  onClose: controlledOnClose,
+}: CampaignCharacterSheetProps = {}) => {
   const { campaignId, selectedPlayerCharacters } = useCampaignContext();
   const { state: sidebarState } = useSidebar();
   const [sheetOpen, setSheetOpen] = useState(false);
 
-  const showCharacterSheetButton = selectedPlayerCharacters.length === 1;
-  const characterId = showCharacterSheetButton ? selectedPlayerCharacters[0]!.characterId : null;
+  const contextCharacterId =
+    selectedPlayerCharacters.length === 1 ? selectedPlayerCharacters[0]!.characterId : null;
+  const characterId = controlledCharacterId ?? contextCharacterId;
+  const isControlled = controlledCharacterId != null;
+  const showSheet = isControlled ? controlledOpen && !!characterId : sheetOpen && !!characterId;
+  const showCharacterSheetButton = !isControlled && selectedPlayerCharacters.length === 1;
 
-  if (!showCharacterSheetButton) return null;
+  const handleClose = () => {
+    if (isControlled) {
+      controlledOnClose?.();
+    } else {
+      setSheetOpen(false);
+    }
+  };
+
+  if (!showCharacterSheetButton && !showSheet) return null;
 
   const overlayLeft =
     sidebarState === 'expanded' ? 'var(--sidebar-width)' : 'calc(var(--sidebar-width-icon) + 1rem)';
 
   return (
     <>
-      <Button variant='outline' size='sm' onClick={() => setSheetOpen(true)}>
-        Character sheet
-      </Button>
+      {showCharacterSheetButton && (
+        <Button variant='outline' size='sm' onClick={() => setSheetOpen(true)}>
+          Character sheet
+        </Button>
+      )}
       <AnimatePresence>
-        {sheetOpen && characterId && (
+        {showSheet && characterId && (
           <motion.div
             className='fixed bottom-0 right-0 z-30 bg-background'
             style={{
@@ -43,7 +70,7 @@ export const CampaignCharacterSheet = () => {
                 campaignId={campaignId}
                 lockByDefault
                 transparentBackground
-                onClose={() => setSheetOpen(false)}
+                onClose={handleClose}
                 renderFloatingActions={({ onOpenInventory, onClose }) => (
                   <>
                     <Button
