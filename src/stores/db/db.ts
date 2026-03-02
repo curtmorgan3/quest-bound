@@ -8,7 +8,9 @@ import type {
   CampaignCharacter,
   CampaignEvent,
   CampaignEventLocation,
+  CampaignEventScene,
   CampaignItem,
+  CampaignScene,
   Character,
   CharacterAttribute,
   CharacterArchetype,
@@ -43,7 +45,7 @@ import { assetInjectorMiddleware } from './asset-injector-middleware';
 import { chartOptionsMiddleware, memoizedCharts } from './chart-options-middleware';
 import { registerDbHooks } from './hooks/db-hooks';
 import { memoizedAssets } from './memoization-cache';
-import { dbSchema, dbSchemaVersion, dbSchemaV41, dbSchemaV42, dbSchemaV44, dbSchemaV45, dbSchemaV47 } from './schema';
+import { dbSchema, dbSchemaVersion, dbSchemaV41, dbSchemaV42, dbSchemaV44, dbSchemaV45, dbSchemaV48 } from './schema';
 import { migrate41to42 } from './migrations/migrate-41-to-42';
 import { migrate43to44 } from './migrations/migrate-43-to-44';
 
@@ -87,8 +89,10 @@ const db = new Dexie('qbdb') as Dexie & {
   campaigns: EntityTable<Campaign, 'id'>;
   campaignCharacters: EntityTable<CampaignCharacter, 'id'>;
   campaignItems: EntityTable<CampaignItem, 'id'>;
+  campaignScenes: EntityTable<CampaignScene, 'id'>;
   campaignEvents: EntityTable<CampaignEvent, 'id'>;
   campaignEventLocations: EntityTable<CampaignEventLocation, 'id'>;
+  campaignEventScenes: EntityTable<CampaignEventScene, 'id'>;
 };
 
 db.version(41).stores(dbSchemaV41);
@@ -132,7 +136,7 @@ db.version(44).stores(dbSchemaV44).upgrade(migrate43to44);
 
 db.version(45).stores(dbSchemaV45);
 
-db.version(dbSchemaVersion).stores(dbSchemaV47);
+db.version(dbSchemaVersion).stores(dbSchemaV48);
 
 // Cache assets for reference in the asset injector middleware
 db.on('ready', async () => {

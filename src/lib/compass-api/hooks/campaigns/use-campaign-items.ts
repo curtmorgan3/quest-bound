@@ -18,6 +18,7 @@ export const useCampaignItems = (campaignId: string | undefined) => {
     campaignId: string,
     data: {
       itemId: string;
+      sceneId?: string;
       currentLocationId?: string;
       currentTileId?: string;
     },
@@ -30,6 +31,7 @@ export const useCampaignItems = (campaignId: string | undefined) => {
         id,
         campaignId,
         itemId: data.itemId,
+        sceneId: data.sceneId,
         currentLocationId: data.currentLocationId ?? null,
         currentTileId: data.currentTileId ?? null,
         mapWidth: item?.mapWidth,
@@ -48,7 +50,7 @@ export const useCampaignItems = (campaignId: string | undefined) => {
 
   const updateCampaignItem = async (
     id: string,
-    data: Partial<Pick<CampaignItem, 'currentLocationId' | 'currentTileId'>>,
+    data: Partial<Pick<CampaignItem, 'sceneId' | 'currentLocationId' | 'currentTileId' | 'mapHeight' | 'mapWidth'>>,
   ) => {
     const now = new Date().toISOString();
     try {

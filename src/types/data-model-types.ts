@@ -522,6 +522,7 @@ export type Campaign = BaseDetails & {
 export type CampaignCharacter = BaseDetails & {
   characterId: string;
   campaignId: string;
+  campaignSceneId?: string;
   currentLocationId?: string | null;
   currentTileId?: string | null;
   mapHeight?: number;
@@ -529,9 +530,16 @@ export type CampaignCharacter = BaseDetails & {
   active?: boolean;
 };
 
+export type CampaignScene = BaseDetails & {
+  campaignId: string;
+  name: string;
+  category?: string;
+};
+
 export type CampaignItem = BaseDetails & {
   itemId: string;
   campaignId: string;
+  sceneId?: string;
   currentLocationId?: string | null;
   currentTileId?: string | null;
   mapHeight?: number;
@@ -543,6 +551,11 @@ export type CampaignEvent = BaseDetails & {
   campaignId: string;
   scriptId?: string | null;
   category?: string;
+};
+
+export type CampaignEventScene = BaseDetails & {
+  campaignEventId: string;
+  campaignSceneId: string;
 };
 
 export type CampaignEventLocation = BaseDetails & {

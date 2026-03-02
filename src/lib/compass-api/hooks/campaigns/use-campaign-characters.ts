@@ -17,7 +17,12 @@ export const useCampaignCharacters = (campaignId: string | undefined) => {
   const createCampaignCharacter = async (
     campaignId: string,
     characterId: string,
-    data?: { currentLocationId?: string; currentTileId?: string },
+    data?: {
+      campaignSceneId?: string;
+      currentLocationId?: string;
+      currentTileId?: string;
+      active?: boolean;
+    },
   ) => {
     const now = new Date().toISOString();
     const id = crypto.randomUUID();
@@ -33,10 +38,12 @@ export const useCampaignCharacters = (campaignId: string | undefined) => {
         id,
         campaignId,
         characterId,
+        campaignSceneId: data?.campaignSceneId,
         currentLocationId: data?.currentLocationId ?? null,
         currentTileId: data?.currentTileId ?? null,
         mapWidth: archetype?.mapWidth,
         mapHeight: archetype?.mapHeight,
+        active: data?.active,
         createdAt: now,
         updatedAt: now,
       } as CampaignCharacter);
@@ -51,7 +58,9 @@ export const useCampaignCharacters = (campaignId: string | undefined) => {
 
   const updateCampaignCharacter = async (
     id: string,
-    data: Partial<Pick<CampaignCharacter, 'active' | 'currentLocationId' | 'currentTileId'>>,
+    data: Partial<
+      Pick<CampaignCharacter, 'active' | 'campaignSceneId' | 'currentLocationId' | 'currentTileId' | 'mapHeight' | 'mapWidth'>
+    >,
   ) => {
     const now = new Date().toISOString();
     try {
