@@ -23,6 +23,8 @@ import {
   useCampaignCharacters,
   useCharacter,
 } from '@/lib/compass-api';
+import type { SheetViewerBackdropClickDetail } from '@/lib/compass-planes/sheet-viewer';
+import { SHEET_VIEWER_BACKDROP_CLICK } from '@/lib/compass-planes/sheet-viewer';
 import { CampaignCharacterSheet } from './campaign-controls';
 import { useCampaignPlayCharacterList } from './hooks';
 import { ActiveScene } from './active-scene';
@@ -47,6 +49,35 @@ export function CampaignDashboard() {
   const [hoveredCampaignCharacterId, setHoveredCampaignCharacterId] = useState<string | null>(
     null,
   );
+
+  useEffect(() => {
+    if (!sheetCharacterId) return;
+
+    const handleSheetBackdropClick = (e: CustomEvent<SheetViewerBackdropClickDetail>) => {
+      const { clientX, clientY } = e.detail;
+      if (typeof document === 'undefined' || !document.elementsFromPoint) return;
+
+      const elements = document.elementsFromPoint(clientX, clientY) as Element[];
+      const avatarEl = elements.find(
+        (el) => el instanceof HTMLElement && el.dataset.activeNpcAvatar === 'true',
+      ) as HTMLElement | undefined;
+
+      if (avatarEl) {
+        avatarEl.click();
+      }
+    };
+
+    window.addEventListener(
+      SHEET_VIEWER_BACKDROP_CLICK,
+      handleSheetBackdropClick as EventListener,
+    );
+
+    return () =>
+      window.removeEventListener(
+        SHEET_VIEWER_BACKDROP_CLICK,
+        handleSheetBackdropClick as EventListener,
+      );
+  }, [sheetCharacterId]);
 
   const playerCharacterIds = new Set(characters.map((c) => c.id));
   const campaignPlayerCharacters = withNames.filter(

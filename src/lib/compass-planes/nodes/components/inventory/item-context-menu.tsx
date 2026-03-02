@@ -204,17 +204,28 @@ export const ItemContextMenu = ({
 
     const rect = menuEl.getBoundingClientRect();
     const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
 
     let newX = position.x;
+    let newY = position.y;
+    const padding = 8;
 
     // If the menu would overflow off the right edge, shift it left so it stays on-screen.
     if (position.x + rect.width > viewportWidth) {
-      const padding = 8;
       newX = Math.max(padding, viewportWidth - rect.width - padding);
     }
 
+    // If the menu would overflow off the bottom edge, shift it up so it stays on-screen.
+    if (position.y + rect.height > viewportHeight) {
+      newY = Math.max(padding, viewportHeight - rect.height - padding);
+    }
+
+    // Ensure we never start off-screen on the left or top.
+    if (newX < padding) newX = padding;
+    if (newY < padding) newY = padding;
+
     setComputedPosition((prev) =>
-      prev.x === newX && prev.y === position.y ? prev : { x: newX, y: position.y },
+      prev.x === newX && prev.y === newY ? prev : { x: newX, y: newY },
     );
   }, [inline, position.x, position.y]);
 

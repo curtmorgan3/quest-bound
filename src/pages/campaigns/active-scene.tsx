@@ -46,6 +46,7 @@ export function ActiveScene({
           <button
             type='button'
             key={cc.id}
+            data-active-npc-avatar='true'
             onClick={() => character?.id && onAvatarClick?.(character.id)}
             className={`size-20 shrink-0 overflow-hidden rounded-md border bg-muted transition-shadow duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
               hoveredCampaignCharacterId === cc.id
