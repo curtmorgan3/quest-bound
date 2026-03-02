@@ -30,7 +30,7 @@ export function ActiveScene({
   if (activeNpcs.length === 0) {
     return (
       <div className='flex min-h-0 w-[200px] shrink-0 flex-col border-r bg-muted/20 p-3'>
-        <p className='text-sm text-muted-foreground'>Active scene</p>
+        <p className='text-sm text-muted-foreground'>Active Scene</p>
         <div className='flex flex-1 items-center justify-center'>
           <p className='text-xs text-muted-foreground'>No active NPCs</p>
         </div>
@@ -40,7 +40,7 @@ export function ActiveScene({
 
   return (
     <div className='flex min-h-0 w-[200px] max-w-[400px] shrink-0 flex-col border-r bg-muted/20 p-3 flex-1'>
-      <p className='mb-2 text-sm text-muted-foreground'>Active scene</p>
+      <p className='mb-2 text-sm text-muted-foreground'>Active Scene</p>
       <div className='flex flex-wrap gap-2'>
         {activeNpcs.map(({ cc, character }) => (
           <button

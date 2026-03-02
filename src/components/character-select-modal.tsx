@@ -86,13 +86,13 @@ export function CharacterSelectModal() {
           ) : (
             <ScrollArea className='max-h-[280px] rounded-md border px-2 py-2'>
               <div className='flex flex-col gap-3'>
-                {pcs.length > 0 && (
+                {npcs.length > 0 && (
                   <div>
-                    <p className='mb-1 text-xs font-semibold uppercase text-muted-foreground'>
-                      Player Characters
+                    <p className='mb-1 mt-2 text-xs font-semibold uppercase text-muted-foreground'>
+                      NPCs
                     </p>
                     <div className='flex flex-col gap-1'>
-                      {pcs.map((entry) => (
+                      {npcs.map((entry) => (
                         <CharacterRow
                           key={entry.character.id}
                           mode={mode}
@@ -109,13 +109,13 @@ export function CharacterSelectModal() {
                   </div>
                 )}
 
-                {npcs.length > 0 && (
+                {pcs.length > 0 && (
                   <div>
-                    <p className='mb-1 mt-2 text-xs font-semibold uppercase text-muted-foreground'>
-                      NPCs
+                    <p className='mb-1 text-xs font-semibold uppercase text-muted-foreground'>
+                      Player Characters
                     </p>
                     <div className='flex flex-col gap-1'>
-                      {npcs.map((entry) => (
+                      {pcs.map((entry) => (
                         <CharacterRow
                           key={entry.character.id}
                           mode={mode}
