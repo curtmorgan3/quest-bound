@@ -222,6 +222,12 @@ export class ScriptRunner {
   /** Owner's current location id (from campaign character); set when in campaign. */
   private ownerCurrentLocationId: string | null = null;
 
+  /** Cached Owner accessor instance (set in setupAccessors). */
+  private ownerAccessor: OwnerAccessor | null = null;
+
+  /** Lazily-created accessors for characters selected via selectCharacter(s). */
+  private otherCharacterAccessors: Map<string, CharacterAccessor | OwnerAccessor> = new Map();
+
   /**
    * Per-location character accessors (event location and/or owner's location).
    * Key = locationId. Value = characters in DB order and campaign char data for resolving character on tile.
@@ -238,12 +244,34 @@ export class ScriptRunner {
 
   constructor(context: ScriptExecutionContext) {
     this.context = context;
+    const selectCharacterHost =
+      context.selectCharacter != null
+        ? async (title?: string, description?: string): Promise<any | null> => {
+            const id = await context.selectCharacter!(title, description);
+            if (!id) return null;
+            return this.getCharacterAccessorById(String(id));
+          }
+        : undefined;
+
+    const selectCharactersHost =
+      context.selectCharacters != null
+        ? async (title?: string, description?: string): Promise<any[]> => {
+            const ids = await context.selectCharacters!(title, description);
+            const results: any[] = [];
+            for (const rawId of ids ?? []) {
+              const acc = await this.getCharacterAccessorById(String(rawId));
+              if (acc) results.push(acc);
+            }
+            return results;
+          }
+        : undefined;
+
     this.evaluator = new Evaluator({
       roll: context.roll,
       rollSplit: context.rollSplit,
       prompt: context.prompt,
-      selectCharacter: context.selectCharacter,
-      selectCharacters: context.selectCharacters,
+      selectCharacter: selectCharacterHost,
+      selectCharacters: selectCharactersHost,
     });
     this.pendingUpdates = new Map();
     this.characterAttributesCache = new Map();
@@ -515,6 +543,82 @@ export class ScriptRunner {
   }
 
   /**
+   * Resolve a character accessor by characterId.
+   * Reuses Owner or location characters when possible; otherwise lazily creates
+   * a new CharacterAccessor wired to this ScriptRunner's caches and pendingUpdates.
+   */
+  private async getCharacterAccessorById(
+    characterId: string,
+  ): Promise<CharacterAccessor | OwnerAccessor | null> {
+    // Owner
+    if (characterId === this.context.ownerId && this.ownerAccessor) {
+      return this.ownerAccessor;
+    }
+
+    // Previously created via selection
+    const fromCache = this.otherCharacterAccessors.get(characterId);
+    if (fromCache) return fromCache;
+
+    // Characters loaded for locations (Owner location or campaign event locations)
+    for (const data of this.locationCharactersData.values()) {
+      const found = data.characters.find((c) => c.characterId === characterId);
+      if (found) {
+        this.otherCharacterAccessors.set(characterId, found);
+        return found;
+      }
+    }
+
+    // Fallback: load character data on demand
+    const { db } = this.context;
+    const character = await db.characters.get(characterId);
+    if (!character) return null;
+
+    const characterName = character.name ?? 'Character';
+    const inventoryId = character.inventoryId ?? '';
+
+    let inventoryItems: InventoryItem[] = [];
+    if (inventoryId) {
+      inventoryItems = await db.inventoryItems.where('inventoryId').equals(inventoryId).toArray();
+    }
+
+    const charAttrs = await db.characterAttributes.where({ characterId }).toArray();
+    for (const charAttr of charAttrs) {
+      this.characterAttributesCache.set(charAttr.id, charAttr);
+    }
+
+    const archetypeNames = new Set<string>();
+    const charArchetypes = await db.characterArchetypes.where('characterId').equals(characterId).toArray();
+    for (const ca of charArchetypes) {
+      const archetype = await db.archetypes.get(ca.archetypeId);
+      if (archetype?.name) archetypeNames.add(archetype.name);
+    }
+
+    const accessor = new CharacterAccessor(
+      characterId,
+      characterName,
+      inventoryId,
+      db,
+      this.pendingUpdates,
+      this.characterAttributesCache,
+      this.attributesCache,
+      this.actionsCache,
+      this.itemsCache,
+      inventoryItems,
+      archetypeNames,
+      null,
+      this.context.executeActionEvent,
+      '',
+      null,
+      null,
+      this.customPropertiesCache,
+      character.customProperties ?? {},
+    );
+
+    this.otherCharacterAccessors.set(characterId, accessor);
+    return accessor;
+  }
+
+  /**
    * Collect attribute IDs (ruleset attribute ids) that have pending value updates.
    * Must be called before flushCache() since flush clears pendingUpdates.
    */
@@ -692,6 +796,8 @@ export class ScriptRunner {
         this.ownerCharacterCustomProperties,
       );
     }
+
+    this.ownerAccessor = owner;
 
     // Create Ruleset accessor
     const ruleset = new RulesetAccessor(

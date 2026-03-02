@@ -1,4 +1,5 @@
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Dialog,
   DialogContent,
@@ -7,11 +8,10 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Checkbox } from '@/components/ui/checkbox';
-import { useCharacterSelectModalStore } from '@/stores/character-select-modal-store';
-import { db } from '@/stores';
-import type { CampaignCharacter, Character } from '@/types';
 import { cn } from '@/lib/utils';
+import { db } from '@/stores';
+import { useCharacterSelectModalStore } from '@/stores/character-select-modal-store';
+import type { CampaignCharacter, Character } from '@/types';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useMemo, useState } from 'react';
 
@@ -66,7 +66,8 @@ export function CharacterSelectModal() {
 
   const hasAnyCharacters = pcs.length > 0 || npcs.length > 0;
   const modalTitle =
-    (title && title.trim().length > 0 && title) || (mode === 'single' ? 'Select Character' : 'Select Characters');
+    (title && title.trim().length > 0 && title) ||
+    (mode === 'single' ? 'Select Character' : 'Select Characters');
 
   const disableConfirm = mode === 'multi' && selectedIds.size === 0;
 
@@ -75,9 +76,7 @@ export function CharacterSelectModal() {
       <DialogContent className='z-[1100] max-w-lg' overlayClassName='z-[1100]'>
         <DialogHeader>
           <DialogTitle>{modalTitle}</DialogTitle>
-          {description && description.trim().length > 0 && (
-            <DialogDescription>{description}</DialogDescription>
-          )}
+          <DialogDescription>{description ?? 'Character select'}</DialogDescription>
         </DialogHeader>
         <div className='mt-2 flex max-h-[360px] flex-col gap-3'>
           {!hasAnyCharacters ? (
@@ -179,7 +178,11 @@ function CharacterRow({ mode, character, checked, onCheckedChange }: CharacterRo
       )}
       <div className='flex size-8 items-center justify-center overflow-hidden rounded-md border bg-muted text-sm font-medium text-muted-foreground'>
         {character.image ? (
-          <img src={character.image} alt={character.name ?? ''} className='size-full object-cover' />
+          <img
+            src={character.image}
+            alt={character.name ?? ''}
+            className='size-full object-cover'
+          />
         ) : (
           (character.name ?? '?').slice(0, 1).toUpperCase()
         )}
@@ -208,9 +211,7 @@ function useCharacterLists(
       .toArray();
     if (campaignCharacters.length === 0) return { pcs: [], npcs: [] };
 
-    const characters = await db.characters.bulkGet(
-      campaignCharacters.map((cc) => cc.characterId),
-    );
+    const characters = await db.characters.bulkGet(campaignCharacters.map((cc) => cc.characterId));
 
     const pairs: CharacterWithCampaign[] = [];
     for (const cc of campaignCharacters) {
@@ -256,4 +257,3 @@ function useCharacterLists(
     return { pcs: [], npcs: [] };
   }, [fromCampaign, fromRuleset]);
 }
-
