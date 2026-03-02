@@ -515,6 +515,8 @@ export type Campaign = BaseDetails & {
   label?: string;
   rulesetId: string;
   worldId?: string | null;
+  pinnedSidebarDocuments?: string[];
+  pinnedSidebarCharts?: string[];
 };
 
 export type CampaignCharacter = BaseDetails & {

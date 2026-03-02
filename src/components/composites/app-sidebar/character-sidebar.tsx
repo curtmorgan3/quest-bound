@@ -114,7 +114,7 @@ export function CharacterSidebar() {
                       ) : (
                         <FileText className='w-4 h-4 shrink-0' />
                       )}
-                      <span className='truncate'>{doc.title}</span>
+                      <span className='truncate text-muted-foreground'>{doc.title}</span>
                     </Link>
                   </SidebarMenuButton>
                   {open && (
@@ -139,7 +139,7 @@ export function CharacterSidebar() {
                       to={`/characters/${character.id}/chart/${chart.id}`}
                       data-testid={`nav-pinned-chart-${chart.id}`}>
                       <FileSpreadsheet className='w-4 h-4 shrink-0' />
-                      <span className='truncate'>{chart.title}</span>
+                      <span className='truncate text-muted-foreground'>{chart.title}</span>
                     </Link>
                   </SidebarMenuButton>
                   {open && (
@@ -192,7 +192,7 @@ export function CharacterSidebar() {
                             ) : (
                               <FileText className='w-4 h-4 shrink-0' />
                             )}
-                            <span className='truncate'>{doc.title}</span>
+                            <span className='truncate text-muted-foreground'>{doc.title}</span>
                           </Link>
                         </SidebarMenuButton>
                         <Button
@@ -239,7 +239,7 @@ export function CharacterSidebar() {
                             to={`/characters/${character.id}/chart/${chart.id}`}
                             data-testid={`nav-chart-${chart.id}`}>
                             <FileSpreadsheet className='w-4 h-4 shrink-0' />
-                            <span className='truncate'>{chart.title}</span>
+                            <span className='truncate text-muted-foreground'>{chart.title}</span>
                           </Link>
                         </SidebarMenuButton>
                         <Button

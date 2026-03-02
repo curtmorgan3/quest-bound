@@ -1,7 +1,7 @@
 import { Button } from '@/components';
 import { DocumentMarkdownContent } from '@/components/composites/document-markdown-content';
 import { useIsMobileDevice } from '@/hooks/use-mobile-device';
-import { useCharacter, useDocuments } from '@/lib/compass-api';
+import { useCampaign, useCharacter, useDocuments } from '@/lib/compass-api';
 import { ArrowLeft, Download } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -33,13 +33,24 @@ const base64ToBlobUrl = (base64Data: string): string | null => {
 export const DocumentViewer = () => {
   const { documentId, characterId, worldId, campaignId } = useParams();
   const { character } = useCharacter(characterId);
-  const { documents } = useDocuments(
-    campaignId != null
-      ? { campaignId }
-      : worldId != null
-        ? { worldId }
-        : character?.rulesetId,
+  const campaign = useCampaign(campaignId);
+  const { documents: campaignDocuments } = useDocuments(
+    campaignId != null ? { campaignId } : undefined,
   );
+  const { documents: rulesetDocuments } = useDocuments(
+    campaignId != null ? campaign?.rulesetId : undefined,
+  );
+  const { documents: otherContextDocuments } = useDocuments(
+    campaignId == null
+      ? worldId != null
+        ? { worldId }
+        : character?.rulesetId
+      : undefined,
+  );
+  const documents =
+    campaignId != null
+      ? [...(campaignDocuments ?? []), ...(rulesetDocuments ?? [])]
+      : (otherContextDocuments ?? []);
   const navigate = useNavigate();
   const [blobUrl, setBlobUrl] = useState<string | null>(null);
   const isMobileDevice = useIsMobileDevice();

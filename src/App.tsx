@@ -2,6 +2,7 @@ import { useFeatureFlag } from '@/hooks/use-feature-flag';
 import {
   ArchetypeSheetEditor,
   AssetsPage,
+  CampaignChartViewer,
   CampaignDashboard,
   CampaignDocumentsPage,
   CampaignNew,
@@ -108,6 +109,14 @@ function CompassRoutes() {
                 <Route
                   path={`/campaigns/:campaignId/documents/:documentId`}
                   element={<DocumentViewer />}
+                />
+                <Route
+                  path={`/campaigns/:campaignId/chart/:chartId`}
+                  element={
+                    <CampaignProvider>
+                      <CampaignChartViewer />
+                    </CampaignProvider>
+                  }
                 />
               </>
             )}
