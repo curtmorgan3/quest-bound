@@ -1,9 +1,33 @@
-import { Button } from '@/components';
-import { ArchetypeLookup, useCampaignCharacters, useCharacter } from '@/lib/compass-api';
+import {
+  Button,
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  ImageUpload,
+  Input,
+  Label,
+} from '@/components';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  ArchetypeLookup,
+  useArchetypes,
+  useCampaignCharacters,
+  useCharacter,
+} from '@/lib/compass-api';
+import { useCharacterArchetypes } from '@/pages/characters/character-archetypes-panel/use-character-archetypes';
 import { db } from '@/stores';
-import type { CampaignCharacter } from '@/types';
+import type { Archetype, CampaignCharacter, Character } from '@/types';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { useCallback, useState } from 'react';
+import { ArrowRight, Check, Plus, Trash2, X } from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
 import type { CampaignCharacterWithName } from './hooks';
 import { useCampaignPlayCharacterList } from './hooks';
 
@@ -18,12 +42,22 @@ function useNpcStageEntries(campaignCharacters: CampaignCharacter[]): NpcStageEn
     (a, b) => new Date(b.cc.createdAt).getTime() - new Date(a.cc.createdAt).getTime(),
   );
 
-  console.log(sorted);
-
   const sortedIdsKey = sorted
     .map((s) => s.cc.id)
     .sort()
     .join(',');
+
+  // Re-run when character data changes (e.g. name, image) so list updates after modal edits
+  const characterDataKey = sorted
+    .map(
+      (s) => `${s.character?.id ?? ''}:${s.character?.updatedAt ?? ''}:${s.character?.name ?? ''}`,
+    )
+    .join('|');
+
+  // Re-run when campaign character data changes (e.g. active) so list updates immediately
+  const campaignCharacterDataKey = sorted
+    .map((s) => `${s.cc.id}:${s.cc.active ?? false}`)
+    .join('|');
 
   const enriched = useLiveQuery(async (): Promise<NpcStageEntry[]> => {
     const result: NpcStageEntry[] = [];
@@ -43,9 +77,156 @@ function useNpcStageEntries(campaignCharacters: CampaignCharacter[]): NpcStageEn
       result.push({ cc, character, archetypeTitle });
     }
     return result;
-  }, [sortedIdsKey]);
+  }, [sortedIdsKey, characterDataKey, campaignCharacterDataKey]);
 
   return enriched ?? [];
+}
+
+interface NpcEditModalProps {
+  character: Character | null;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}
+
+function NpcEditModal({ character, open, onOpenChange }: NpcEditModalProps) {
+  const [name, setName] = useState('');
+  const [addArchetypeId, setAddArchetypeId] = useState<string>('');
+  const { updateCharacter } = useCharacter();
+  const { archetypes } = useArchetypes(character?.rulesetId);
+  const { characterArchetypes, addArchetype, removeArchetype } = useCharacterArchetypes(
+    character?.id,
+  );
+
+  useEffect(() => {
+    if (character) {
+      setName(character.name);
+    }
+  }, [character]);
+
+  const handleSaveName = useCallback(() => {
+    if (character && name.trim()) {
+      updateCharacter(character.id, { name: name.trim() });
+    }
+  }, [character, name, updateCharacter]);
+
+  const displayedArchetypes = characterArchetypes
+    .filter((ca) => !ca.archetype.isDefault)
+    .sort((a, b) => a.archetype.name.localeCompare(b.archetype.name));
+  const addedArchetypeIds = new Set(characterArchetypes.map((ca) => ca.archetypeId));
+  const availableArchetypes = archetypes.filter(
+    (a) => !a.isDefault && !addedArchetypeIds.has(a.id),
+  );
+
+  const handleAddArchetype = useCallback(
+    (archetypeId: string) => {
+      if (!archetypeId || addedArchetypeIds.has(archetypeId)) return;
+      addArchetype(archetypeId);
+      setAddArchetypeId('');
+    },
+    [addArchetype, characterArchetypes],
+  );
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className='max-w-md' data-testid='npc-edit-modal'>
+        {!character ? null : (
+          <>
+            <DialogHeader>
+              <DialogTitle>Edit NPC</DialogTitle>
+            </DialogHeader>
+            <div className='flex flex-col gap-4'>
+              <div className='flex flex-col gap-2'>
+                <Label htmlFor='npc-edit-name'>Name</Label>
+                <Input
+                  id='npc-edit-name'
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  onBlur={handleSaveName}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSaveName()}
+                />
+              </div>
+              <div className='flex flex-col gap-2'>
+                <Label>Portrait</Label>
+                <ImageUpload
+                  image={character.image}
+                  alt={character.name}
+                  onRemove={() => updateCharacter(character.id, { assetId: null })}
+                  onUpload={(assetId) => updateCharacter(character.id, { assetId })}
+                  rulesetId={character.rulesetId}
+                />
+              </div>
+              <div className='flex flex-col gap-2'>
+                <Label>Archetypes</Label>
+                <div className='flex gap-2'>
+                  <Select
+                    value={addArchetypeId || '_none'}
+                    onValueChange={(v) => (v === '_none' ? undefined : setAddArchetypeId(v))}>
+                    <SelectTrigger
+                      id='npc-edit-archetype-add'
+                      className='flex-1'
+                      data-testid='character-archetype-select'>
+                      <SelectValue placeholder='Add archetype...' />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableArchetypes.length === 0 ? (
+                        <SelectItem value='_none' disabled>
+                          All archetypes added
+                        </SelectItem>
+                      ) : (
+                        availableArchetypes.map((a) => (
+                          <SelectItem key={a.id} value={a.id}>
+                            {a.name}
+                          </SelectItem>
+                        ))
+                      )}
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    type='button'
+                    variant='outline'
+                    size='icon'
+                    onClick={() => addArchetypeId && handleAddArchetype(addArchetypeId)}
+                    disabled={!addArchetypeId}
+                    data-testid='character-archetype-add-button'
+                    aria-label='Add archetype'>
+                    <Plus className='h-4 w-4' />
+                  </Button>
+                </div>
+                {displayedArchetypes.length > 0 ? (
+                  <div className='flex flex-col gap-1' data-testid='character-archetypes-list'>
+                    {displayedArchetypes.map((ca) => (
+                      <div
+                        key={ca.id}
+                        className='flex items-center gap-2 rounded-md border px-3 py-2'
+                        data-testid={`character-archetype-row-${ca.archetype.id}`}>
+                        <span className='flex-1 text-sm font-medium'>{ca.archetype.name}</span>
+                        <Button
+                          type='button'
+                          variant='ghost'
+                          size='icon'
+                          className='h-8 w-8 shrink-0'
+                          onClick={() => removeArchetype(ca.id)}
+                          aria-label={`Remove ${ca.archetype.name}`}>
+                          <X className='h-4 w-4' />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className='text-sm text-muted-foreground'>Archetypes are optional</p>
+                )}
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant='outline' onClick={() => onOpenChange(false)}>
+                Done
+              </Button>
+            </DialogFooter>
+          </>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
 }
 
 interface NpcStageProps {
@@ -54,33 +235,49 @@ interface NpcStageProps {
 }
 
 export function NpcStage({ campaignId, rulesetId }: NpcStageProps) {
-  const [selectedArchetypeId, setSelectedArchetypeId] = useState<string | null>(null);
-  const { campaignCharacters, createCampaignCharacter } = useCampaignCharacters(campaignId);
+  const [selectedArchetype, setSelectedArchetype] = useState<Archetype | null>(null);
+  const [editingCharacterId, setEditingCharacterId] = useState<string | null>(null);
+  const {
+    campaignCharacters,
+    createCampaignCharacter,
+    deleteCampaignCharacter,
+    updateCampaignCharacter,
+  } = useCampaignCharacters(campaignId);
   const { createCharacter } = useCharacter();
 
   const npcEntries = useNpcStageEntries(campaignCharacters);
+  const editingCharacter =
+    npcEntries.find((e) => e.character?.id === editingCharacterId)?.character ?? null;
 
   const handleAddNpc = useCallback(async () => {
-    if (!selectedArchetypeId) return;
+    if (!selectedArchetype) return;
     const newCharId = await createCharacter({
       rulesetId,
-      archetypeIds: [selectedArchetypeId],
+      archetypeIds: [selectedArchetype.id],
       isNpc: true,
+      name: selectedArchetype.name,
+      assetId: selectedArchetype.assetId ?? null,
     });
     if (newCharId) {
       await createCampaignCharacter(campaignId, newCharId, {});
-      setSelectedArchetypeId(null);
+      setSelectedArchetype(null);
     }
-  }, [campaignId, rulesetId, selectedArchetypeId, createCharacter, createCampaignCharacter]);
+  }, [campaignId, rulesetId, selectedArchetype, createCharacter, createCampaignCharacter]);
 
   return (
     <div className='flex h-full w-[280px] shrink-0 flex-col gap-3 border-r bg-muted/30 p-3'>
+      <NpcEditModal
+        character={editingCharacter}
+        open={!!editingCharacterId}
+        onOpenChange={(open) => !open && setEditingCharacterId(null)}
+      />
       <div className='shrink-0 space-y-2'>
+        <p className='text-sm text-muted-foreground'>Stage NPCs</p>
         <ArchetypeLookup
           rulesetId={rulesetId}
-          value={selectedArchetypeId}
-          onSelect={(archetype) => setSelectedArchetypeId(archetype.id)}
-          onDelete={() => setSelectedArchetypeId(null)}
+          value={selectedArchetype?.id ?? null}
+          onSelect={(archetype) => setSelectedArchetype(archetype)}
+          onDelete={() => setSelectedArchetype(null)}
           placeholder='Search archetypes...'
           label=''
           data-testid='npc-stage-archetype-lookup'
@@ -90,7 +287,7 @@ export function NpcStage({ campaignId, rulesetId }: NpcStageProps) {
           size='sm'
           className='w-full'
           onClick={handleAddNpc}
-          disabled={!selectedArchetypeId}
+          disabled={!selectedArchetype}
           data-testid='npc-stage-add-npc'>
           Add NPC
         </Button>
@@ -98,31 +295,51 @@ export function NpcStage({ campaignId, rulesetId }: NpcStageProps) {
       <div className='min-h-0 flex-1 overflow-y-auto space-y-2'>
         {npcEntries.map(({ cc, character, archetypeTitle }) => (
           <div key={cc.id} className='flex shrink-0 items-center gap-4 overflow-hidden p-2'>
-            {character?.image ? (
-              <img
-                src={character.image}
-                alt={character?.name ?? ''}
-                className='h-10 w-10 shrink-0 rounded-md object-cover'
-              />
-            ) : (
-              <div className='h-10 w-10 shrink-0 rounded-md bg-muted flex items-center justify-center text-xs text-muted-foreground'>
-                {(character?.name ?? '?').slice(0, 1).toUpperCase()}
-              </div>
-            )}
+            <Button
+              variant='ghost'
+              size='icon'
+              className='shrink-0 text-muted-foreground hover:text-destructive'
+              aria-label='Delete campaign character'
+              data-testid='npc-stage-card-delete'
+              onClick={() => deleteCampaignCharacter(cc.id)}>
+              <Trash2 className='h-4 w-4' />
+            </Button>
+            <button
+              type='button'
+              onClick={() => character && setEditingCharacterId(character.id)}
+              className='h-10 w-10 shrink-0 rounded-md overflow-hidden focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 clickable'
+              aria-label='Edit NPC'>
+              {character?.image ? (
+                <img
+                  src={character.image}
+                  alt={character?.name ?? ''}
+                  className='h-full w-full object-cover'
+                />
+              ) : (
+                <div className='h-full w-full rounded-md bg-muted flex items-center justify-center text-xs text-muted-foreground'>
+                  {(character?.name ?? '?').slice(0, 1).toUpperCase()}
+                </div>
+              )}
+            </button>
             <div className='min-w-0 flex-1'>
               <p className='truncate text-sm font-medium'>{character?.name ?? 'Unnamed'}</p>
               {archetypeTitle && (
                 <p className='truncate text-xs text-muted-foreground'>{archetypeTitle}</p>
               )}
             </div>
-            <Button
-              variant='outline'
-              size='sm'
-              className='shrink-0'
-              onClick={() => {}}
-              data-testid='npc-stage-card-add'>
-              Add
-            </Button>
+            {cc.active ? (
+              <Check className='h-4 w-4 text-green-600' />
+            ) : (
+              <Button
+                variant='outline'
+                size='sm'
+                className='shrink-0'
+                onClick={() => updateCampaignCharacter(cc.id, { active: true })}
+                aria-label={cc.active ? 'Active' : 'Set as active'}
+                data-testid='npc-stage-card-add'>
+                <ArrowRight className='h-4 w-4' />
+              </Button>
+            )}
           </div>
         ))}
       </div>

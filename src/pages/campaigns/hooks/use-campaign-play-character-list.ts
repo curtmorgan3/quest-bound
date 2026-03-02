@@ -21,7 +21,10 @@ export const useCampaignPlayCharacterList = ({
       cc,
       character: chars.find((c) => c?.id === cc.characterId) ?? null,
     }));
-  }, [campaignCharacters.map((c) => c.characterId).join(',')]);
+  }, [
+    campaignCharacters.map((c) => c.characterId).join(','),
+    campaignCharacters.map((c) => `${c.id}:${c.active ?? false}:${c.updatedAt ?? ''}`).join('|'),
+  ]);
 
   return resolved ?? [];
 };

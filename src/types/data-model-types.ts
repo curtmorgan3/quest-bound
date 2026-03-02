@@ -526,6 +526,7 @@ export type CampaignCharacter = BaseDetails & {
   currentTileId?: string | null;
   mapHeight?: number;
   mapWidth?: number;
+  active?: boolean;
 };
 
 export type CampaignItem = BaseDetails & {

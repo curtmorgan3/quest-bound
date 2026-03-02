@@ -51,7 +51,7 @@ export const useCampaignCharacters = (campaignId: string | undefined) => {
 
   const updateCampaignCharacter = async (
     id: string,
-    data: Partial<Pick<CampaignCharacter, 'currentLocationId' | 'currentTileId'>>,
+    data: Partial<Pick<CampaignCharacter, 'active' | 'currentLocationId' | 'currentTileId'>>,
   ) => {
     const now = new Date().toISOString();
     try {
@@ -70,13 +70,14 @@ export const useCampaignCharacters = (campaignId: string | undefined) => {
   const deleteCampaignCharacter = async (id: string) => {
     try {
       const campaignCharacter = await db.campaignCharacters.get(id);
-      if (campaignCharacter) {
-        const character = await db.characters.get(campaignCharacter.characterId);
+      const characterId = campaignCharacter?.characterId;
+      await db.campaignCharacters.delete(id);
+      if (characterId) {
+        const character = await db.characters.get(characterId);
         if (character?.isNpc) {
-          await deleteCharacter(character.id);
+          await deleteCharacter(characterId);
         }
       }
-      await db.campaignCharacters.delete(id);
     } catch (e) {
       handleError(e as Error, {
         component: 'useCampaignCharacters/deleteCampaignCharacter',
