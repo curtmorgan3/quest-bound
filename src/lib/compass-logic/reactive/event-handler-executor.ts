@@ -263,7 +263,6 @@ export class EventHandlerExecutor {
     try {
       const context: ScriptExecutionContext = {
         ownerId: characterId,
-        targetId: targetId,
         rulesetId: action.rulesetId,
         db: this.db,
         scriptId: script.id,

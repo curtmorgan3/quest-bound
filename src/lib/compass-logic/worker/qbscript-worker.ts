@@ -453,7 +453,6 @@ async function handleExecuteScript(payload: ExecuteScriptPayload): Promise<void>
   try {
     const context: ScriptExecutionContext = {
       ownerId: payload.characterId,
-      targetId: payload.targetId,
       rulesetId: payload.rulesetId,
       db,
       scriptId: payload.scriptId,

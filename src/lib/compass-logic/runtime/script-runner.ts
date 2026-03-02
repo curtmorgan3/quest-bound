@@ -138,7 +138,6 @@ async function resolveInventoryComponentIdRef(
  */
 export interface ScriptExecutionContext {
   ownerId: string; // Character executing the script
-  targetId?: string | null; // Optional target character
   rulesetId: string; // Current ruleset
   db: DB; // Database access
   scriptId?: string; // Which script is executing (for error logging)
@@ -468,7 +467,7 @@ export class ScriptRunner {
             this.itemsCache,
             inventoryItems,
             archetypeNames,
-            this.context.targetId ?? null,
+            null,
             this.context.executeActionEvent,
             locationLabel,
             currentTile,
@@ -631,7 +630,7 @@ export class ScriptRunner {
    * Set up accessor objects in the interpreter environment.
    */
   private setupAccessors(): void {
-    const { ownerId, targetId, rulesetId, db } = this.context;
+    const { ownerId, rulesetId, db } = this.context;
 
     const ownerLocationData = this.ownerCurrentLocationId
       ? this.locationCharactersData.get(this.ownerCurrentLocationId)
@@ -676,7 +675,7 @@ export class ScriptRunner {
         this.itemsCache,
         this.ownerInventoryItems,
         this.ownerArchetypeNames,
-        targetId ?? null,
+        null,
         this.context.executeActionEvent,
         this.ownerLocationName,
         this.ownerCurrentTile,
