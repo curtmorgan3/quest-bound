@@ -6,12 +6,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { useFeatureFlag } from '@/hooks/use-feature-flag';
 import { useCampaigns, useRulesets, useWorlds } from '@/lib/compass-api';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 export function CampaignNew() {
   const { createCampaign } = useCampaigns();
+  const worldsEnabled = useFeatureFlag('worlds', false);
   const { worlds } = useWorlds();
   const { rulesets } = useRulesets();
   const navigate = useNavigate();
@@ -31,7 +33,9 @@ export function CampaignNew() {
   };
 
   const isValid = Boolean(rulesetId);
-  const sortedWorlds = [...worlds].sort((a, b) => a.label.localeCompare(b.label));
+  const sortedWorlds = worldsEnabled
+    ? [...worlds].sort((a, b) => a.label.localeCompare(b.label))
+    : [];
   const sortedRulesets = [...rulesets].sort((a, b) => a.title.localeCompare(b.title));
 
   return (
@@ -71,24 +75,26 @@ export function CampaignNew() {
             </SelectContent>
           </Select>
         </div>
-        <div className='grid gap-2'>
-          <Label htmlFor='campaign-world'>World (optional)</Label>
-          <Select
-            value={worldId || '_none'}
-            onValueChange={(v) => setWorldId(v === '_none' ? '' : v)}>
-            <SelectTrigger id='campaign-world' data-testid='campaign-world-select'>
-              <SelectValue placeholder='None' />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value='_none'>None</SelectItem>
-              {sortedWorlds.map((w) => (
-                <SelectItem key={w.id} value={w.id}>
-                  {w.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+        {worldsEnabled && (
+          <div className='grid gap-2'>
+            <Label htmlFor='campaign-world'>World (optional)</Label>
+            <Select
+              value={worldId || '_none'}
+              onValueChange={(v) => setWorldId(v === '_none' ? '' : v)}>
+              <SelectTrigger id='campaign-world' data-testid='campaign-world-select'>
+                <SelectValue placeholder='None' />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value='_none'>None</SelectItem>
+                {sortedWorlds.map((w) => (
+                  <SelectItem key={w.id} value={w.id}>
+                    {w.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
         <div className='flex gap-2'>
           <Button variant='outline' onClick={() => navigate('/campaigns')}>
             Cancel

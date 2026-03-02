@@ -2,10 +2,9 @@ import { useFeatureFlag } from '@/hooks/use-feature-flag';
 import {
   ArchetypeSheetEditor,
   AssetsPage,
+  CampaignDashboard,
   CampaignDocumentsPage,
-  CampaignEvents,
   CampaignNew,
-  CampaignPlay,
   Campaigns,
   CharacterChartViewer,
   CharacterPage,
@@ -94,23 +93,7 @@ function CompassRoutes() {
                   path={`/campaigns/:campaignId`}
                   element={
                     <CampaignProvider>
-                      <CampaignPlay />
-                    </CampaignProvider>
-                  }
-                />
-                <Route
-                  path={`/campaigns/:campaignId/scripts`}
-                  element={
-                    <CampaignProvider>
-                      <ScriptsIndex />
-                    </CampaignProvider>
-                  }
-                />
-                <Route
-                  path={`/campaigns/:campaignId/scripts/:scriptId`}
-                  element={
-                    <CampaignProvider>
-                      <ScriptEditorPage />
+                      <CampaignDashboard />
                     </CampaignProvider>
                   }
                 />
@@ -125,22 +108,6 @@ function CompassRoutes() {
                 <Route
                   path={`/campaigns/:campaignId/documents/:documentId`}
                   element={<DocumentViewer />}
-                />
-                <Route
-                  path={`/campaigns/:campaignId/events`}
-                  element={
-                    <CampaignProvider>
-                      <CampaignEvents />
-                    </CampaignProvider>
-                  }
-                />
-                <Route
-                  path={`/campaigns/:campaignId/locations/:locationId`}
-                  element={
-                    <CampaignProvider>
-                      <CampaignPlay />
-                    </CampaignProvider>
-                  }
                 />
               </>
             )}

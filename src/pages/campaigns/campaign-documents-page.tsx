@@ -31,24 +31,23 @@ export function CampaignDocumentsPage() {
   return (
     <PageWrapper
       title={campaign.label ?? 'Campaign'}
-      subheader='Documents'
+      subheader='Notes'
       headerActions={
         <Button
-          variant='outline'
           size='sm'
           className='gap-1'
           onClick={() => setCreateOpen(true)}
           data-testid='create-document-button'>
           <Plus className='h-4 w-4' />
-          Create Document
+          Create Note
         </Button>
       }>
       <Documents campaignId={campaignId} />
 
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
         <DialogContent className='min-w-[600px] max-w-[80vw] min-h-[50vh]'>
-          <DialogTitle className='hidden'>New document</DialogTitle>
-          <DialogDescription className='hidden'>New document</DialogDescription>
+          <DialogTitle className='hidden'>New Note</DialogTitle>
+          <DialogDescription className='hidden'>New Note</DialogDescription>
           <BaseCreate
             campaignId={campaignId}
             onCreate={() => {
