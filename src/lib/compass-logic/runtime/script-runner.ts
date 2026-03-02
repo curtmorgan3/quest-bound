@@ -7,7 +7,7 @@ import type {
   CustomProperty,
   InventoryItem,
   Item,
-  InterruptFn,
+  PromptFn,
   RollFn,
   RollSplitFn,
   Script,
@@ -161,8 +161,8 @@ export interface ScriptExecutionContext {
   roll?: RollFn;
   /** Optional rollSplit function for script built-in rollSplit(). When set, used instead of default local roll. */
   rollSplit?: RollSplitFn;
-  /** Optional interrupt function for script built-in interrupt(msg, choices). When set, used to show modal and return selected choice. */
-  interrupt?: InterruptFn;
+  /** Optional prompt function for script built-in prompt(msg, choices). When set, used to show modal and return selected choice. */
+  prompt?: PromptFn;
   /** When set, Owner.Action('name').activate() / .deactivate() can run action event handlers (e.g. from worker or EventHandlerExecutor). */
   executeActionEvent?: ExecuteActionEventFn;
   /** When set (e.g. campaign event scripts), used to resolve Owner.location from the character's current location in the campaign. */
@@ -241,7 +241,7 @@ export class ScriptRunner {
     this.evaluator = new Evaluator({
       roll: context.roll,
       rollSplit: context.rollSplit,
-      interrupt: context.interrupt,
+      prompt: context.prompt,
     });
     this.pendingUpdates = new Map();
     this.characterAttributesCache = new Map();

@@ -5,7 +5,7 @@
  * Provides a clean async API for script execution and reactive updates.
  */
 
-import { useInterruptModalStore } from '@/stores/interrupt-modal-store';
+import { usePromptModalStore } from '@/stores/prompt-modal-store';
 import { useScriptModifiedAttributesStore } from '@/stores/script-modified-attributes-store';
 import type { RollFn, RollSplitFn } from '@/types';
 import { defaultScriptDiceRoller, defaultScriptDiceRollerSplit } from '@/utils/dice-utils';
@@ -187,8 +187,8 @@ export class QBScriptClient {
         this.handleRollSplitRequest(signal.payload);
         break;
 
-      case 'INTERRUPT_REQUEST':
-        this.handleInterruptRequest(signal.payload);
+      case 'PROMPT_REQUEST':
+        this.handlePromptRequest(signal.payload);
         break;
 
       case 'ATTRIBUTES_MODIFIED_BY_SCRIPT':
@@ -263,24 +263,24 @@ export class QBScriptClient {
     }
   }
 
-  private async handleInterruptRequest(payload: {
+  private async handlePromptRequest(payload: {
     executionRequestId: string;
-    interruptRequestId: string;
+    promptRequestId: string;
     msg: string;
     choices: string[];
   }): Promise<void> {
     if (!this.worker) return;
     try {
-      const value = await useInterruptModalStore.getState().show(payload.msg, payload.choices);
+      const value = await usePromptModalStore.getState().show(payload.msg, payload.choices);
       this.worker.postMessage({
-        type: 'INTERRUPT_RESPONSE',
-        payload: { interruptRequestId: payload.interruptRequestId, value },
+        type: 'PROMPT_RESPONSE',
+        payload: { promptRequestId: payload.promptRequestId, value },
       });
     } catch (err) {
       this.worker.postMessage({
-        type: 'INTERRUPT_RESPONSE',
+        type: 'PROMPT_RESPONSE',
         payload: {
-          interruptRequestId: payload.interruptRequestId,
+          promptRequestId: payload.promptRequestId,
           error: err instanceof Error ? err.message : String(err),
         },
       });

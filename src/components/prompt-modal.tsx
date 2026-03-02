@@ -1,9 +1,9 @@
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { useInterruptModalStore } from '@/stores/interrupt-modal-store';
+import { usePromptModalStore } from '@/stores/prompt-modal-store';
 
-export function InterruptModal() {
-  const { open, msg, choices, select, cancel } = useInterruptModalStore();
+export function PromptModal() {
+  const { open, msg, choices, select, cancel } = usePromptModalStore();
 
   const handleOpenChange = (open: boolean) => {
     if (!open) {

@@ -1,4 +1,4 @@
-import type { InterruptFn, RollFn, RollSplitFn } from '@/types';
+import type { PromptFn, RollFn, RollSplitFn } from '@/types';
 import { parseDiceExpression, rollDie } from '@/utils/dice-utils';
 import { prepareForStructuredClone } from '../runtime/structured-clone-safe';
 import type { ASTNode } from './ast';
@@ -9,8 +9,8 @@ export interface EvaluatorOptions {
   roll?: RollFn;
   /** When set, used as the script built-in rollSplit() instead of the default local roll. */
   rollSplit?: RollSplitFn;
-  /** When set, used as the script built-in interrupt(msg, choices). Required for interrupt() to work (e.g. in worker via bridge). */
-  interrupt?: InterruptFn;
+  /** When set, used as the script built-in prompt(msg, choices). Required for prompt() to work (e.g. in worker via bridge). */
+  prompt?: PromptFn;
 }
 
 export class RuntimeError extends Error {
@@ -80,7 +80,7 @@ export class Evaluator {
   private isWorkerContext: boolean;
   private rollFn: RollFn | undefined;
   private rollSplitFn: RollSplitFn | undefined;
-  private interruptFn: InterruptFn | undefined;
+  private promptFn: PromptFn | undefined;
 
   constructor(options?: EvaluatorOptions) {
     this.globalEnv = new Environment(null);
@@ -89,7 +89,7 @@ export class Evaluator {
     this.logMessages = [];
     this.rollFn = options?.roll;
     this.rollSplitFn = options?.rollSplit;
-    this.interruptFn = options?.interrupt;
+    this.promptFn = options?.prompt;
     // Detect if we're running in a worker context
     this.isWorkerContext =
       typeof self !== 'undefined' &&
@@ -530,17 +530,17 @@ export class Evaluator {
       return this.defaultLocalRoll(expression);
     });
 
-    // Interrupt: show modal with message and choices; returns selected choice (requires injected interruptFn, e.g. from worker bridge)
+    // Prompt: show modal with message and choices; returns selected choice (requires injected promptFn, e.g. from worker bridge)
     this.globalEnv.define(
-      'interrupt',
+      'prompt',
       async (msg: string, choices: string[]): Promise<string> => {
-        if (!this.interruptFn) {
+        if (!this.promptFn) {
           throw new RuntimeError(
-            'interrupt(msg, choices) is not available in this context (no interrupt handler)',
+            'prompt(msg, choices) is not available in this context (no prompt handler)',
           );
         }
         const normalizedChoices = Array.isArray(choices) ? choices.map(String) : [String(choices)];
-        return this.interruptFn(msg, normalizedChoices);
+        return this.promptFn(msg, normalizedChoices);
       },
     );
 

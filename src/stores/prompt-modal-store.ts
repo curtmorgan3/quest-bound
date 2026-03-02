@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-export type InterruptModalState = {
+export type PromptModalState = {
   open: boolean;
   msg: string;
   choices: string[];
@@ -8,8 +8,8 @@ export type InterruptModalState = {
   _resolve: ((value: string) => void) | undefined;
   _reject: ((err: Error) => void) | undefined;
   /**
-   * Show the interrupt modal with message and choices. Returns a promise that resolves with the selected choice.
-   * Used by QBScript interrupt(msg, choices) when running in the worker (main thread handles INTERRUPT_REQUEST).
+   * Show the prompt modal with message and choices. Returns a promise that resolves with the selected choice.
+   * Used by QBScript prompt(msg, choices) when running in the worker (main thread handles PROMPT_REQUEST).
    */
   show: (msg: string, choices: string[]) => Promise<string>;
   /** Call when the user selects a choice. Resolves the promise and closes the modal. */
@@ -18,7 +18,7 @@ export type InterruptModalState = {
   cancel: () => void;
 };
 
-export const useInterruptModalStore = create<InterruptModalState>()((set, get) => ({
+export const usePromptModalStore = create<PromptModalState>()((set, get) => ({
   open: false,
   msg: '',
   choices: [],
@@ -51,7 +51,7 @@ export const useInterruptModalStore = create<InterruptModalState>()((set, get) =
 
   cancel() {
     const { _reject } = get();
-    _reject?.(new Error('Interrupt cancelled'));
+    _reject?.(new Error('Prompt cancelled'));
     set({
       open: false,
       msg: '',

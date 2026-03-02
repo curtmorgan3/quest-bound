@@ -5,6 +5,6 @@ export * from './current-user-store';
 export * from './db';
 export * from './event-log-store';
 export * from './script-modified-attributes-store';
-export * from './interrupt-modal-store';
+export * from './prompt-modal-store';
 export * from './loggers';
 export * from './onboarding-store';

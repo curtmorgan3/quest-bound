@@ -1,4 +1,4 @@
-import type { InterruptFn, RollFn, RollSplitFn } from '@/types';
+import type { PromptFn, RollFn, RollSplitFn } from '@/types';
 import type { DB } from '@/stores/db/hooks/types';
 import type { ExecuteActionEventFn } from '../runtime/proxies';
 import type { ScriptExecutionContext } from '../runtime/script-runner';
@@ -25,8 +25,8 @@ export interface ReactiveExecutionOptions {
   roll?: RollFn;
   /** Optional rollSplit function for script built-in rollSplit(). */
   rollSplit?: RollSplitFn;
-  /** Optional interrupt function for script built-in interrupt(msg, choices). */
-  interrupt?: InterruptFn;
+  /** Optional prompt function for script built-in prompt(msg, choices). */
+  prompt?: PromptFn;
   /** When set (e.g. in campaign play), enables Owner.location and other campaign character context. */
   campaignId?: string;
 }
@@ -311,7 +311,7 @@ export class ReactiveExecutor {
         executeActionEvent: options.executeActionEvent,
         roll: options.roll,
         rollSplit: options.rollSplit,
-        interrupt: options.interrupt,
+        prompt: options.prompt,
       };
 
       const runner = new ScriptRunner(context);

@@ -22,7 +22,7 @@ export type MainToWorkerSignal =
   | ExecuteCampaignEventEventSignal
   | RollResponseSignal
   | RollSplitResponseSignal
-  | InterruptResponseSignal
+  | PromptResponseSignal
   | ClearGraphSignal;
 
 export interface ExecuteScriptSignal {
@@ -132,9 +132,9 @@ export interface RollSplitResponseSignal {
   payload: { rollRequestId: string; value?: number[]; error?: string };
 }
 
-export interface InterruptResponseSignal {
-  type: 'INTERRUPT_RESPONSE';
-  payload: { interruptRequestId: string; value?: string; error?: string };
+export interface PromptResponseSignal {
+  type: 'PROMPT_RESPONSE';
+  payload: { promptRequestId: string; value?: string; error?: string };
 }
 
 export interface ClearGraphSignal {
@@ -159,7 +159,7 @@ export type WorkerToMainSignal =
   | WorkerReadySignal
   | RollRequestSignal
   | RollSplitRequestSignal
-  | InterruptRequestSignal
+  | PromptRequestSignal
   | AttributesModifiedByScriptSignal;
 
 export interface RollRequestSignal {
@@ -182,11 +182,11 @@ export interface RollSplitRequestSignal {
   };
 }
 
-export interface InterruptRequestSignal {
-  type: 'INTERRUPT_REQUEST';
+export interface PromptRequestSignal {
+  type: 'PROMPT_REQUEST';
   payload: {
     executionRequestId: string;
-    interruptRequestId: string;
+    promptRequestId: string;
     msg: string;
     choices: string[];
   };

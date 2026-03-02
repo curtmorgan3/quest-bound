@@ -54,9 +54,9 @@ const qbscriptCompletions = [
   },
   { label: 'roll', type: 'function', info: 'Roll dice (e.g. roll("2d6+3")). Uses script runner roll (e.g. dice panel).' },
   {
-    label: 'interrupt',
+    label: 'prompt',
     type: 'function',
-    info: 'Show modal with message and choice buttons. Returns selected choice. E.g. choice = interrupt("Pick one", ["A", "B", "C"])',
+    info: 'Show modal with message and choice buttons. Returns selected choice. E.g. choice = prompt("Pick one", ["A", "B", "C"])',
   },
   {
     label: 'rollSplit',
