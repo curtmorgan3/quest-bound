@@ -22,9 +22,6 @@ export function CampaignSidebar() {
   const { documents } = useDocuments(campaign?.rulesetId);
   const { charts } = useCharts(campaign?.rulesetId);
 
-  const isViewingDocument = location.pathname.includes('/documents/') && !!campaignId;
-  const isViewingChart = location.pathname.includes('/chart/') && !!campaignId;
-
   const pinnedDocIds = campaign?.pinnedSidebarDocuments ?? [];
   const pinnedChartIds = campaign?.pinnedSidebarCharts ?? [];
   const pinnedDocuments = pinnedDocIds

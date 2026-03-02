@@ -25,13 +25,15 @@ import {
 } from '@/lib/compass-api';
 import { CampaignCharacterSheet } from './campaign-controls';
 import { useCampaignPlayCharacterList } from './hooks';
+import { ActiveScene } from './active-scene';
 import { NpcStage } from './npc-stage';
 import { UserPlus } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 
 export function CampaignDashboard() {
   const { campaignId } = useParams<{ campaignId: string }>();
+  const [searchParams, setSearchParams] = useSearchParams();
   const campaign = useCampaign(campaignId);
   const navigate = useNavigate();
   const { campaignCharacters, createCampaignCharacter } =
@@ -42,6 +44,9 @@ export function CampaignDashboard() {
   const [addCharacterOpen, setAddCharacterOpen] = useState(false);
   const [addCharacterSearch, setAddCharacterSearch] = useState('');
   const [sheetCharacterId, setSheetCharacterId] = useState<string | null>(null);
+  const [hoveredCampaignCharacterId, setHoveredCampaignCharacterId] = useState<string | null>(
+    null,
+  );
 
   const playerCharacterIds = new Set(characters.map((c) => c.id));
   const campaignPlayerCharacters = withNames.filter(
@@ -133,7 +138,14 @@ export function CampaignDashboard() {
             <CampaignCharacterSheet
               characterId={sheetCharacterId ?? undefined}
               open={!!sheetCharacterId}
-              onClose={() => setSheetCharacterId(null)}
+              onClose={() => {
+                setSheetCharacterId(null);
+                if (searchParams.has('pageId')) {
+                  const next = new URLSearchParams(searchParams);
+                  next.delete('pageId');
+                  setSearchParams(next, { replace: true });
+                }
+              }}
             />
             <Button
               variant='outline'
@@ -147,7 +159,18 @@ export function CampaignDashboard() {
           </div>
         }>
         <div className='flex min-h-0 flex-1'>
-          <NpcStage campaignId={campaign.id} rulesetId={campaign.rulesetId} />
+          <NpcStage
+            campaignId={campaign.id}
+            rulesetId={campaign.rulesetId}
+            onCardHover={setHoveredCampaignCharacterId}
+          />
+          <ActiveScene
+            campaignId={campaign.id}
+            hoveredCampaignCharacterId={hoveredCampaignCharacterId}
+            onAvatarClick={(characterId) =>
+              setSheetCharacterId((prev) => (prev === characterId ? null : characterId))
+            }
+          />
           <div className='min-h-0 flex-1 flex flex-col gap-4 p-4' />
         </div>
       </PageWrapper>

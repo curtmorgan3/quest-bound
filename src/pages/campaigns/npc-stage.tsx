@@ -26,8 +26,8 @@ import { useCharacterArchetypes } from '@/pages/characters/character-archetypes-
 import { db } from '@/stores';
 import type { Archetype, CampaignCharacter, Character } from '@/types';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { ArrowRight, Check, Plus, Trash2, X } from 'lucide-react';
-import { useCallback, useEffect, useState } from 'react';
+import { ArrowRight, OctagonMinus, Plus, Trash2, X } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { CampaignCharacterWithName } from './hooks';
 import { useCampaignPlayCharacterList } from './hooks';
 
@@ -39,7 +39,7 @@ function useNpcStageEntries(campaignCharacters: CampaignCharacter[]): NpcStageEn
   const withNames = useCampaignPlayCharacterList({ campaignCharacters });
   const npcEntries = withNames.filter((entry) => entry.character?.isNpc === true);
   const sorted = [...npcEntries].sort(
-    (a, b) => new Date(b.cc.createdAt).getTime() - new Date(a.cc.createdAt).getTime(),
+    (a, b) => new Date(b.cc.updatedAt).getTime() - new Date(a.cc.updatedAt).getTime(),
   );
 
   const sortedIdsKey = sorted
@@ -232,11 +232,13 @@ function NpcEditModal({ character, open, onOpenChange }: NpcEditModalProps) {
 interface NpcStageProps {
   campaignId: string;
   rulesetId: string;
+  onCardHover?: (campaignCharacterId: string | null) => void;
 }
 
-export function NpcStage({ campaignId, rulesetId }: NpcStageProps) {
+export function NpcStage({ campaignId, rulesetId, onCardHover }: NpcStageProps) {
   const [selectedArchetype, setSelectedArchetype] = useState<Archetype | null>(null);
   const [editingCharacterId, setEditingCharacterId] = useState<string | null>(null);
+  const [nameFilter, setNameFilter] = useState('');
   const {
     campaignCharacters,
     createCampaignCharacter,
@@ -246,6 +248,16 @@ export function NpcStage({ campaignId, rulesetId }: NpcStageProps) {
   const { createCharacter } = useCharacter();
 
   const npcEntries = useNpcStageEntries(campaignCharacters);
+  const filterLower = nameFilter.trim().toLowerCase();
+  const filteredNpcEntries = useMemo(
+    () =>
+      filterLower
+        ? npcEntries.filter(({ character }) =>
+            (character?.name ?? 'Unnamed').toLowerCase().includes(filterLower),
+          )
+        : npcEntries,
+    [npcEntries, filterLower],
+  );
   const editingCharacter =
     npcEntries.find((e) => e.character?.id === editingCharacterId)?.character ?? null;
 
@@ -260,12 +272,11 @@ export function NpcStage({ campaignId, rulesetId }: NpcStageProps) {
     });
     if (newCharId) {
       await createCampaignCharacter(campaignId, newCharId, {});
-      setSelectedArchetype(null);
     }
   }, [campaignId, rulesetId, selectedArchetype, createCharacter, createCampaignCharacter]);
 
   return (
-    <div className='flex h-full w-[280px] shrink-0 flex-col gap-3 border-r bg-muted/30 p-3'>
+    <div className='flex h-[90dvh] w-[280px] shrink-0 flex-col gap-3 border-r bg-muted/30 p-3'>
       <NpcEditModal
         character={editingCharacter}
         open={!!editingCharacterId}
@@ -273,6 +284,7 @@ export function NpcStage({ campaignId, rulesetId }: NpcStageProps) {
       />
       <div className='shrink-0 space-y-2'>
         <p className='text-sm text-muted-foreground'>Stage NPCs</p>
+
         <ArchetypeLookup
           rulesetId={rulesetId}
           value={selectedArchetype?.id ?? null}
@@ -291,10 +303,22 @@ export function NpcStage({ campaignId, rulesetId }: NpcStageProps) {
           data-testid='npc-stage-add-npc'>
           Add NPC
         </Button>
+        <Input
+          type='search'
+          placeholder='Filter by name...'
+          value={nameFilter}
+          onChange={(e) => setNameFilter(e.target.value)}
+          className='h-8'
+          data-testid='npc-stage-name-filter'
+        />
       </div>
       <div className='min-h-0 flex-1 overflow-y-auto space-y-2'>
-        {npcEntries.map(({ cc, character, archetypeTitle }) => (
-          <div key={cc.id} className='flex shrink-0 items-center gap-4 overflow-hidden p-2'>
+        {filteredNpcEntries.map(({ cc, character, archetypeTitle }) => (
+          <div
+            key={cc.id}
+            className='flex shrink-0 items-center gap-4 overflow-hidden p-2'
+            onMouseEnter={() => onCardHover?.(cc.id)}
+            onMouseLeave={() => onCardHover?.(null)}>
             <Button
               variant='ghost'
               size='icon'
@@ -327,19 +351,19 @@ export function NpcStage({ campaignId, rulesetId }: NpcStageProps) {
                 <p className='truncate text-xs text-muted-foreground'>{archetypeTitle}</p>
               )}
             </div>
-            {cc.active ? (
-              <Check className='h-4 w-4 text-green-600' />
-            ) : (
-              <Button
-                variant='outline'
-                size='sm'
-                className='shrink-0'
-                onClick={() => updateCampaignCharacter(cc.id, { active: true })}
-                aria-label={cc.active ? 'Active' : 'Set as active'}
-                data-testid='npc-stage-card-add'>
+            <Button
+              variant='outline'
+              size='sm'
+              className='shrink-0'
+              onClick={() => updateCampaignCharacter(cc.id, { active: !cc.active })}
+              aria-label={cc.active ? 'Active' : 'Set as active'}
+              data-testid='npc-stage-card-add'>
+              {cc.active ? (
+                <OctagonMinus className='h-4 w-4' />
+              ) : (
                 <ArrowRight className='h-4 w-4' />
-              </Button>
-            )}
+              )}
+            </Button>
           </div>
         ))}
       </div>
