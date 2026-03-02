@@ -21,7 +21,7 @@ export type ExecuteActionEventFn = (
 /**
  * Proxy object for script-side action references from Owner.Action('name').
  * Exposes async activate() and deactivate() that run the action's event handlers
- * using the current execution's Owner and Target.
+ * using the current execution's Owner and optional target character.
  * Implements toStructuredCloneSafe() so the worker can send it to the main thread (e.g. log or return).
  */
 export class ActionProxy implements StructuredCloneSafe {
@@ -43,7 +43,7 @@ export class ActionProxy implements StructuredCloneSafe {
   }
 
   /**
-   * Trigger the action's on_activate() handler. Uses the current execution's Target if any.
+   * Trigger the action's on_activate() handler. Uses the current execution's target character if any.
    */
   async activate(): Promise<ExecuteActionEventResult> {
     if (!this.executeActionEvent) {
@@ -58,7 +58,7 @@ export class ActionProxy implements StructuredCloneSafe {
   }
 
   /**
-   * Trigger the action's on_deactivate() handler. Uses the current execution's Target if any.
+   * Trigger the action's on_deactivate() handler. Uses the current execution's target character if any.
    */
   async deactivate(): Promise<ExecuteActionEventResult> {
     if (!this.executeActionEvent) {

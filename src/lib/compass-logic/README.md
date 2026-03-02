@@ -212,7 +212,7 @@ Errors include:
 The interpreter is designed to integrate with Quest Bound:
 
 **Phase 3 (Current):** Core interpreter running in main thread
-**Phase 4:** Owner/Target/Ruleset APIs for game entity access
+**Phase 4:** Owner/Ruleset APIs for game entity access
 **Phase 6:** Service Worker execution for non-blocking performance
 
 ## Files

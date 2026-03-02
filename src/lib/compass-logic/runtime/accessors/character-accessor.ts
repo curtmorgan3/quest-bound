@@ -12,9 +12,9 @@ import { ActionProxy, AttributeProxy, createItemInstanceProxy, TileProxy } from 
 import type { StructuredCloneSafe } from '../structured-clone-safe';
 
 /**
- * Base accessor for any character (Owner, Target, or a character in a location).
+ * Base accessor for any character (Owner or a character in a location).
  * Provides access to the character's attributes, items, Tile, actions, etc.
- * OwnerAccessor and TargetAccessor extend this; Character instances from Tile.characters use this directly.
+ * OwnerAccessor extends this; Character instances from Tile.characters use this directly.
  */
 export class CharacterAccessor implements StructuredCloneSafe {
   protected id: string;

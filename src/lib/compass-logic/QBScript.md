@@ -353,6 +353,6 @@ Self.removeAction('Heal'); // Remove from context menu
 
 **Archetype events:** `on_add()` and `on_remove()` — run when the archetype is added to or removed from a character. Can alter attributes, add/remove items, etc.
 
-**Action events:** `on_activate()` and optionally `on_deactivate()`. Include `Target` in the signature when the action needs a target character.
+**Action events:** `on_activate()` and optionally `on_deactivate()`.
 
 **Global scripts:** Mark a script as global; its variables and functions are available to all other scripts in the ruleset.

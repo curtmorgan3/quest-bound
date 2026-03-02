@@ -70,8 +70,8 @@ const qbscriptParser = StreamLanguage.define<QBScriptState>({
       return 'builtin';
     }
 
-    // Accessors (Owner, Target, Ruleset, Caller, Self - only when not followed by ()
-    if (stream.match(/\b(Owner|Target|Ruleset|Caller|Self)\b/)) {
+    // Accessors (Owner, Ruleset, Caller, Self - only when not followed by ()
+    if (stream.match(/\b(Owner|Ruleset|Caller|Self)\b/)) {
       stream.eatSpace();
       if (stream.peek() === '(') return 'function';
       return 'variable-2';

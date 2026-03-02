@@ -17,7 +17,7 @@ import { Evaluator } from '../interpreter/evaluator';
 import { Lexer } from '../interpreter/lexer';
 import { Parser } from '../interpreter/parser';
 import { executeArchetypeEvent } from '../reactive/event-handler-executor';
-import { CharacterAccessor, OwnerAccessor, RulesetAccessor, TargetAccessor } from './accessors';
+import { CharacterAccessor, OwnerAccessor, RulesetAccessor } from './accessors';
 import { TileProxy, type ExecuteActionEventFn } from './proxies';
 
 const INVENTORY_COMPONENT_TYPE = 'inventory';
@@ -198,15 +198,10 @@ export class ScriptRunner {
   private itemsCache: Map<string, Item>;
   private customPropertiesCache: CustomProperty[] = [];
   private ownerCharacterCustomProperties: Record<string, string | number | boolean> = {};
-  private targetCharacterCustomProperties: Record<string, string | number | boolean> = {};
   private ownerInventoryItems: InventoryItem[];
-  private targetInventoryItems: InventoryItem[] | null;
   private ownerCharacterName: string;
   private ownerInventoryId: string;
-  private targetCharacterName: string;
-  private targetInventoryId: string;
   private ownerArchetypeNames: Set<string>;
-  private targetArchetypeNames: Set<string>;
   private campaignEventLocationCache: {
     id: string;
     campaignEventId: string;
@@ -231,7 +226,7 @@ export class ScriptRunner {
     {
       locationLabel: string;
       locationTiles: { id: string; x: number; y: number }[];
-      characters: (CharacterAccessor | OwnerAccessor | TargetAccessor)[];
+      characters: (CharacterAccessor | OwnerAccessor)[];
       campaignCharacters: { characterId: string; currentTileId: string | null }[];
     }
   > = new Map();
@@ -250,13 +245,9 @@ export class ScriptRunner {
     this.chartsCache = new Map();
     this.itemsCache = new Map();
     this.ownerInventoryItems = [];
-    this.targetInventoryItems = null;
     this.ownerCharacterName = 'Character';
     this.ownerInventoryId = '';
-    this.targetCharacterName = 'Character';
-    this.targetInventoryId = '';
     this.ownerArchetypeNames = new Set();
-    this.targetArchetypeNames = new Set();
   }
 
   /**
@@ -264,7 +255,7 @@ export class ScriptRunner {
    * This allows accessor methods to work synchronously.
    */
   async loadCache(): Promise<void> {
-    const { db, rulesetId, ownerId, targetId } = this.context;
+    const { db, rulesetId, ownerId } = this.context;
 
     // Load all attributes for this ruleset
     const attributes = await db.attributes.where({ rulesetId }).toArray();
@@ -308,36 +299,10 @@ export class ScriptRunner {
         .toArray();
     }
 
-    // Load target character and inventory items (if any)
-    if (targetId) {
-      const targetCharacter = await db.characters.get(targetId);
-      this.targetCharacterName = targetCharacter?.name ?? 'Character';
-      this.targetInventoryId = targetCharacter?.inventoryId ?? '';
-      this.targetCharacterCustomProperties = targetCharacter?.customProperties ?? {};
-      if (targetCharacter?.inventoryId) {
-        this.targetInventoryItems = await db.inventoryItems
-          .where('inventoryId')
-          .equals(targetCharacter.inventoryId)
-          .toArray();
-      }
-    } else {
-      this.targetCharacterCustomProperties = {};
-    }
-
     // Load character attributes for owner
     const ownerAttributes = await db.characterAttributes.where({ characterId: ownerId }).toArray();
     for (const charAttr of ownerAttributes) {
       this.characterAttributesCache.set(charAttr.id, charAttr);
-    }
-
-    // Load character attributes for target (if any)
-    if (targetId) {
-      const targetAttributes = await db.characterAttributes
-        .where({ characterId: targetId })
-        .toArray();
-      for (const charAttr of targetAttributes) {
-        this.characterAttributesCache.set(charAttr.id, charAttr);
-      }
     }
 
     // Load archetype names for owner (CharacterArchetype join Archetype)
@@ -348,18 +313,6 @@ export class ScriptRunner {
     for (const ca of ownerCharArchetypes) {
       const archetype = await db.archetypes.get(ca.archetypeId);
       if (archetype?.name) this.ownerArchetypeNames.add(archetype.name);
-    }
-
-    // Load archetype names for target (if any)
-    if (targetId) {
-      const targetCharArchetypes = await db.characterArchetypes
-        .where('characterId')
-        .equals(targetId)
-        .toArray();
-      for (const ca of targetCharArchetypes) {
-        const archetype = await db.archetypes.get(ca.archetypeId);
-        if (archetype?.name) this.targetArchetypeNames.add(archetype.name);
-      }
     }
 
     // Load CampaignEventLocation when Self is the event location (campaign event scripts)
@@ -458,14 +411,14 @@ export class ScriptRunner {
     locationLabel: string,
     locationTiles: { id: string; x: number; y: number }[],
   ): Promise<void> {
-    const { db, ownerId, targetId } = this.context;
+    const { db, ownerId } = this.context;
     const campaignChars = await db.campaignCharacters
       .where('campaignId')
       .equals(campaignId)
       .filter((cc: { currentLocationId?: string | null }) => cc.currentLocationId === locationId)
       .toArray();
     const campaignCharacters: { characterId: string; currentTileId: string | null }[] = [];
-    const characters: (CharacterAccessor | OwnerAccessor | TargetAccessor)[] = [];
+    const characters: (CharacterAccessor | OwnerAccessor)[] = [];
 
     for (const cc of campaignChars) {
       const characterId = cc.characterId;
@@ -502,7 +455,6 @@ export class ScriptRunner {
         : null;
 
       const isOwner = characterId === ownerId;
-      const isTarget = characterId === targetId;
       const accessor = isOwner
         ? new OwnerAccessor(
             characterId,
@@ -516,7 +468,7 @@ export class ScriptRunner {
             this.itemsCache,
             inventoryItems,
             archetypeNames,
-            targetId ?? null,
+            this.context.targetId ?? null,
             this.context.executeActionEvent,
             locationLabel,
             currentTile,
@@ -524,47 +476,26 @@ export class ScriptRunner {
             this.customPropertiesCache,
             character?.customProperties ?? {},
           )
-        : isTarget
-          ? new TargetAccessor(
-              characterId,
-              characterName,
-              inventoryId,
-              db,
-              this.pendingUpdates,
-              this.characterAttributesCache,
-              this.attributesCache,
-              this.actionsCache,
-              this.itemsCache,
-              inventoryItems,
-              archetypeNames,
-              null,
-              this.context.executeActionEvent,
-              locationLabel,
-              currentTile,
-              null,
-              this.customPropertiesCache,
-              character?.customProperties ?? {},
-            )
-          : new CharacterAccessor(
-              characterId,
-              characterName,
-              inventoryId,
-              db,
-              this.pendingUpdates,
-              this.characterAttributesCache,
-              this.attributesCache,
-              this.actionsCache,
-              this.itemsCache,
-              inventoryItems,
-              archetypeNames,
-              null,
-              this.context.executeActionEvent,
-              locationLabel,
-              currentTile,
-              null,
-              this.customPropertiesCache,
-              character?.customProperties ?? {},
-            );
+        : new CharacterAccessor(
+            characterId,
+            characterName,
+            inventoryId,
+            db,
+            this.pendingUpdates,
+            this.characterAttributesCache,
+            this.attributesCache,
+            this.actionsCache,
+            this.itemsCache,
+            inventoryItems,
+            archetypeNames,
+            null,
+            this.context.executeActionEvent,
+            locationLabel,
+            currentTile,
+            null,
+            this.customPropertiesCache,
+            character?.customProperties ?? {},
+          );
       characters.push(accessor);
     }
 
@@ -708,7 +639,6 @@ export class ScriptRunner {
     const ownerFromList = ownerLocationData?.characters.find((c) => c.characterId === ownerId) as
       | OwnerAccessor
       | undefined;
-    const targetFromList = ownerLocationData?.characters.find((c) => c.characterId === targetId);
 
     let owner: OwnerAccessor;
     if (ownerFromList) {
@@ -756,34 +686,6 @@ export class ScriptRunner {
       );
     }
 
-    let target: TargetAccessor | null = null;
-    if (targetId) {
-      if (targetFromList && targetFromList instanceof TargetAccessor) {
-        target = targetFromList;
-      } else {
-        target = new TargetAccessor(
-          targetId,
-          this.targetCharacterName,
-          this.targetInventoryId,
-          db,
-          this.pendingUpdates,
-          this.characterAttributesCache,
-          this.attributesCache,
-          this.actionsCache,
-          this.itemsCache,
-          this.targetInventoryItems ?? [],
-          this.targetArchetypeNames,
-          null,
-          this.context.executeActionEvent,
-          '',
-          null,
-          null,
-          this.customPropertiesCache,
-          this.targetCharacterCustomProperties,
-        );
-      }
-    }
-
     // Create Ruleset accessor
     const ruleset = new RulesetAccessor(
       rulesetId,
@@ -801,7 +703,6 @@ export class ScriptRunner {
 
     // Inject into interpreter environment
     this.evaluator.globalEnv.define('Owner', owner);
-    this.evaluator.globalEnv.define('Target', target);
     this.evaluator.globalEnv.define('Ruleset', ruleset);
 
     // 'Self' refers to the entity this script is attached to (attribute, action, or item).

@@ -1,23 +1,5 @@
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-  Button,
-} from '@/components';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { Avatar, AvatarFallback, AvatarImage, Button } from '@/components';
 import { PageWrapper } from '@/components/composites';
-import {
-  Command,
-  CommandEmpty,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from '@/components/ui/command';
 import {
   useCampaign,
   useCampaignCharacters,
@@ -29,8 +11,8 @@ import { CampaignCharacterSheet } from './campaign-controls';
 import { useCampaignPlayCharacterList } from './hooks';
 import { ActiveScene } from './active-scene';
 import { NpcStage } from './npc-stage';
-import { UserPlus } from 'lucide-react';
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
+import { ManagePlayerCharacters } from './manage-player-characters';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 
 export function CampaignDashboard() {
@@ -38,13 +20,11 @@ export function CampaignDashboard() {
   const [searchParams, setSearchParams] = useSearchParams();
   const campaign = useCampaign(campaignId);
   const navigate = useNavigate();
-  const { campaignCharacters, createCampaignCharacter } =
+  const { campaignCharacters, createCampaignCharacter, deleteCampaignCharacter } =
     useCampaignCharacters(campaignId);
   const withNames = useCampaignPlayCharacterList({ campaignCharacters });
   const { characters } = useCharacter();
 
-  const [addCharacterOpen, setAddCharacterOpen] = useState(false);
-  const [addCharacterSearch, setAddCharacterSearch] = useState('');
   const [sheetCharacterId, setSheetCharacterId] = useState<string | null>(null);
   const [hoveredCampaignCharacterId, setHoveredCampaignCharacterId] = useState<string | null>(
     null,
@@ -82,34 +62,6 @@ export function CampaignDashboard() {
   const playerCharacterIds = new Set(characters.map((c) => c.id));
   const campaignPlayerCharacters = withNames.filter(
     (entry) => playerCharacterIds.has(entry.cc.characterId) && !entry.character?.isNpc,
-  );
-
-  const alreadyInCampaignIds = new Set(campaignCharacters.map((cc) => cc.characterId));
-  const playerCharactersForRuleset = (campaign?.rulesetId
-    ? characters.filter(
-        (c) => c.rulesetId === campaign.rulesetId && c.isNpc !== true,
-      )
-    : []
-  ).filter((c) => !alreadyInCampaignIds.has(c.id));
-
-  const searchLower = addCharacterSearch.toLowerCase().trim();
-  const filteredAddableCharacters = searchLower
-    ? playerCharactersForRuleset.filter((c) =>
-        (c.name ?? '').toLowerCase().includes(searchLower),
-      )
-    : playerCharactersForRuleset;
-
-  useEffect(() => {
-    if (addCharacterOpen) setAddCharacterSearch('');
-  }, [addCharacterOpen]);
-
-  const handleAddCharacter = useCallback(
-    async (characterId: string) => {
-      if (!campaign) return;
-      await createCampaignCharacter(campaign.id, characterId, {});
-      setAddCharacterOpen(false);
-    },
-    [campaign, createCampaignCharacter],
   );
 
   if (campaignId && campaign === undefined) {
@@ -178,15 +130,17 @@ export function CampaignDashboard() {
                 }
               }}
             />
-            <Button
-              variant='outline'
-              size='sm'
-              onClick={() => setAddCharacterOpen(true)}
-              data-testid='campaign-dashboard-add-character'
-              className='gap-1'>
-              <UserPlus className='h-4 w-4' />
-              Add Player Character
-            </Button>
+            <ManagePlayerCharacters
+              campaignCharacters={campaignCharacters}
+              characters={characters}
+              rulesetId={campaign.rulesetId}
+              onAddCharacter={async (characterId) => {
+                await createCampaignCharacter(campaign.id, characterId, {});
+              }}
+              onRemoveCharacter={async (campaignCharacterId) => {
+                await deleteCampaignCharacter(campaignCharacterId);
+              }}
+            />
           </div>
         }>
         <div className='flex min-h-0 flex-1'>
@@ -206,41 +160,6 @@ export function CampaignDashboard() {
         </div>
       </PageWrapper>
 
-      <Dialog open={addCharacterOpen} onOpenChange={setAddCharacterOpen}>
-        <DialogContent className='sm:max-w-md' showCloseButton>
-          <DialogHeader>
-            <DialogTitle>Add Player Character</DialogTitle>
-          </DialogHeader>
-          <Command shouldFilter={false} className='rounded-lg border'>
-            <CommandInput
-              placeholder='Search characters...'
-              value={addCharacterSearch}
-              onValueChange={setAddCharacterSearch}
-            />
-            <CommandList>
-              <CommandEmpty>No characters to add.</CommandEmpty>
-              {filteredAddableCharacters.map((character) => (
-                <CommandItem
-                  key={character.id}
-                  value={`${character.id} ${character.name ?? ''}`}
-                  onSelect={() => handleAddCharacter(character.id)}
-                  className='flex items-center gap-2'>
-                  <Avatar className='size-8 shrink-0 rounded-md'>
-                    <AvatarImage
-                      src={character.image ?? ''}
-                      alt={character.name ?? 'Character'}
-                    />
-                    <AvatarFallback className='rounded-md text-xs'>
-                      {(character.name ?? '?').slice(0, 1).toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                  <span>{character.name ?? 'Unnamed'}</span>
-                </CommandItem>
-              ))}
-            </CommandList>
-          </Command>
-        </DialogContent>
-      </Dialog>
     </>
   );
 }
