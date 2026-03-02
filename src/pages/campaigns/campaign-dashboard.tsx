@@ -25,6 +25,7 @@ import {
 } from '@/lib/compass-api';
 import { CampaignCharacterSheet } from './campaign-controls';
 import { useCampaignPlayCharacterList } from './hooks';
+import { NpcStage } from './npc-stage';
 import { UserPlus } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -145,7 +146,10 @@ export function CampaignDashboard() {
             </Button>
           </div>
         }>
-        <div className='flex flex-col gap-4 p-4'></div>
+        <div className='flex min-h-0 flex-1'>
+          <NpcStage campaignId={campaign.id} rulesetId={campaign.rulesetId} />
+          <div className='min-h-0 flex-1 flex flex-col gap-4 p-4' />
+        </div>
       </PageWrapper>
 
       <Dialog open={addCharacterOpen} onOpenChange={setAddCharacterOpen}>
