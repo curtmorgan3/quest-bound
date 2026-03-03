@@ -777,24 +777,6 @@ export class EventHandlerExecutor {
       };
     }
 
-    // Validate that this event is attached to the given scene (if linking exists).
-    const link = await this.db.campaignEventScenes
-      .where('campaignEventId')
-      .equals(campaignEventId)
-      .filter((ces: { campaignSceneId?: string }) => ces.campaignSceneId === campaignSceneId)
-      .first();
-    if (!link) {
-      return {
-        success: false,
-        value: null,
-        announceMessages: [],
-        logMessages: [],
-        error: new Error(
-          `Campaign event ${campaignEventId} is not attached to scene ${campaignSceneId}`,
-        ),
-      };
-    }
-
     const campaign = await this.db.campaigns.get(campaignEvent.campaignId);
     if (!campaign?.rulesetId) {
       return {

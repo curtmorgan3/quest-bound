@@ -379,11 +379,11 @@ export class ScriptRunner {
     // Includes both player characters and NPCs whose CampaignCharacter.active === true.
     if (this.context.campaignId && this.context.campaignSceneId) {
       const sceneCampaignCharacters = await db.campaignCharacters
-        .where('campaignSceneId')
-        .equals(this.context.campaignSceneId)
+        .where('campaignId')
+        .equals(this.context.campaignId)
         .filter(
-          (cc: { campaignId: string; active?: boolean }) =>
-            cc.campaignId === this.context.campaignId && cc.active === true,
+          (cc: { campaignSceneId?: string; active?: boolean }) =>
+            cc.campaignSceneId === this.context.campaignSceneId && cc.active === true,
         )
         .toArray();
 
