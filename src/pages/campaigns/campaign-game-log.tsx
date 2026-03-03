@@ -14,7 +14,7 @@ import {
 import { useCampaign, useCampaigns, useScriptLogs } from '@/lib/compass-api';
 import type { ScriptLog } from '@/types';
 import { format } from 'date-fns';
-import { CircleOff, ScrollText } from 'lucide-react';
+import { CircleOff, Download, ScrollText } from 'lucide-react';
 import { useState } from 'react';
 
 const AUTO_CONTEXTS = ['load', 'character_load'];
@@ -43,6 +43,17 @@ export function CampaignGameLog({ campaignId, rulesetId, limit = 250 }: Campaign
   const handleClearLogs = () => {
     clearLogs();
     setClearDialogOpen(false);
+  };
+
+  const handleExportLogs = () => {
+    const content = logs.map((log) => `[${log.time}]: ${log.msg}`).join('\n');
+    const blob = new Blob([content], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `game-log-${format(new Date(), 'yyyy-MM-dd-HHmm')}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   const filteredLogs = showAutoEntries ? scriptLogs : scriptLogs.filter((l) => !isAutoEntry(l));
@@ -76,6 +87,15 @@ export function CampaignGameLog({ campaignId, rulesetId, limit = 250 }: Campaign
           <ScrollText className='h-4 w-4 shrink-0' />
           Game log
         </p>
+        <Button
+          variant='ghost'
+          size='icon'
+          onClick={handleExportLogs}
+          aria-label='Export game log'
+          className='size-7 shrink-0'
+          disabled={logs.length === 0}>
+          <Download className='size-3.5' />
+        </Button>
         <Button
           variant='ghost'
           size='icon'
