@@ -7,4 +7,3 @@ export {
   ItemInstanceProxy,
   createItemInstanceProxy,
 } from './item-instance-proxy';
-export { TileProxy, type TileCharacterRef } from './tile-proxy';

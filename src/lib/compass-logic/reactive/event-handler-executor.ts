@@ -166,7 +166,7 @@ export class EventHandlerExecutor {
    * @param characterId - ID of the character
    * @param eventType - Type of event (on_equip, on_unequip, on_consume, on_activate)
    * @param roll - Optional function to handle dice rolling
-   * @param campaignId - Optional campaign id for Owner.location etc.
+   * @param campaignId - Optional campaign id for associating script execution with a campaign
    * @param inventoryItemInstanceId - When set, Self in the item script refers to this inventory item instance instead of the first match by name.
    * @returns Execution result
    */
@@ -306,7 +306,7 @@ export class EventHandlerExecutor {
    * @param targetId - Optional ID of target character
    * @param eventType - Type of event (on_activate, on_deactivate)
    * @param roll - Function to handle dice rolling
-   * @param campaignId - Optional campaign id for Owner.location etc.
+   * @param campaignId - Optional campaign id for associating script execution with a campaign
    * @param callerInventoryItemInstanceId - When set (action fired from item context menu), Caller = itemInstanceProxy of this inventory item. When unset, Caller = Owner.
    * @returns Execution result
    */

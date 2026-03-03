@@ -8,7 +8,7 @@ import type {
 } from '@/types';
 import type Dexie from 'dexie';
 import type { ExecuteActionEventFn } from '../proxies';
-import { ActionProxy, AttributeProxy, createItemInstanceProxy, TileProxy } from '../proxies';
+import { ActionProxy, AttributeProxy, createItemInstanceProxy } from '../proxies';
 import type { StructuredCloneSafe } from '../structured-clone-safe';
 
 /**
@@ -34,11 +34,6 @@ export class CharacterAccessor implements StructuredCloneSafe {
   protected characterCustomProperties: Record<string, string | number | boolean>;
   protected targetId: string | null;
   protected executeActionEvent: ExecuteActionEventFn | undefined;
-  protected locationName: string;
-  protected currentTile: { x: number; y: number } | null;
-
-  /** When set, this character's Tile getter returns this proxy (e.g. Owner.Tile with character/characters). Otherwise returns TileProxy(x, y) only. */
-  protected tileWithContext: TileProxy | null = null;
 
   constructor(
     characterId: string,
@@ -54,9 +49,6 @@ export class CharacterAccessor implements StructuredCloneSafe {
     archetypeNamesCache: Set<string> = new Set(),
     targetId: string | null = null,
     executeActionEvent?: ExecuteActionEventFn,
-    locationName: string = '',
-    currentTile: { x: number; y: number } | null = null,
-    tileWithContext: TileProxy | null = null,
     customProperties: CustomProperty[] = [],
     characterCustomProperties: Record<string, string | number | boolean> = {},
   ) {
@@ -73,9 +65,6 @@ export class CharacterAccessor implements StructuredCloneSafe {
     this.archetypeNamesCache = archetypeNamesCache;
     this.targetId = targetId;
     this.executeActionEvent = executeActionEvent;
-    this.locationName = locationName;
-    this.currentTile = currentTile;
-    this.tileWithContext = tileWithContext ?? null;
     this.customProperties = customProperties;
     this.characterCustomProperties = characterCustomProperties;
   }
@@ -131,20 +120,6 @@ export class CharacterAccessor implements StructuredCloneSafe {
     this.pendingUpdates.set(`characterUpdate:${this.id}`, {
       customProperties: this.characterCustomProperties,
     });
-  }
-
-  /**
-   * The character's current tile. When tileWithContext is set (e.g. Owner in campaign with location), returns that Tile (with character/characters). Otherwise x, y only.
-   */
-  get Tile(): TileProxy {
-    return (
-      this.tileWithContext ?? new TileProxy(this.currentTile?.x ?? 0, this.currentTile?.y ?? 0)
-    );
-  }
-
-  /** Set by ScriptRunner when building Owner.Tile with character/characters. */
-  setTileWithContext(tile: TileProxy): void {
-    this.tileWithContext = tile;
   }
 
   hasArchetype(name: string): boolean {
@@ -328,10 +303,6 @@ export class CharacterAccessor implements StructuredCloneSafe {
     return this.characterName;
   }
 
-  get location(): string {
-    return this.locationName;
-  }
-
   get title(): string {
     return this.characterName;
   }
@@ -451,6 +422,6 @@ export class CharacterAccessor implements StructuredCloneSafe {
   }
 
   toStructuredCloneSafe(): unknown {
-    return { __type: 'Character', name: this.characterName, location: this.locationName };
+    return { __type: 'Character', name: this.characterName };
   }
 }

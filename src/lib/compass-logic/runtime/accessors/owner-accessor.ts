@@ -8,7 +8,6 @@ import type {
 } from '@/types';
 import type Dexie from 'dexie';
 import type { ExecuteActionEventFn } from '../proxies';
-import { TileProxy } from '../proxies';
 import { CharacterAccessor } from './character-accessor';
 
 /**
@@ -30,9 +29,6 @@ export class OwnerAccessor extends CharacterAccessor {
     archetypeNamesCache: Set<string> = new Set(),
     targetId: string | null = null,
     executeActionEvent?: ExecuteActionEventFn,
-    locationName: string = '',
-    currentTile: { x: number; y: number } | null = null,
-    tileWithContext: TileProxy | null = null,
     customProperties: CustomProperty[] = [],
     characterCustomProperties: Record<string, string | number | boolean> = {},
   ) {
@@ -50,21 +46,15 @@ export class OwnerAccessor extends CharacterAccessor {
       archetypeNamesCache,
       targetId,
       executeActionEvent,
-      locationName,
-      currentTile,
-      tileWithContext,
       customProperties,
       characterCustomProperties,
     );
   }
 
   override toStructuredCloneSafe(): unknown {
-    // Serialize Tile as x,y only to avoid cycle: Tile.characters includes Owner, so full Tile.toStructuredCloneSafe() would recurse.
     return {
       __type: 'Owner',
       name: this.characterName,
-      location: this.locationName,
-      Tile: { __type: 'Tile' as const, x: this.Tile.x, y: this.Tile.y },
     };
   }
 }

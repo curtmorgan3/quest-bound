@@ -34,7 +34,7 @@ export interface ReactiveExecutionOptions {
   rollSplit?: RollSplitFn;
   /** Optional prompt function for script built-in prompt(msg, choices). */
   prompt?: PromptFn;
-  /** When set (e.g. in campaign play), enables Owner.location and other campaign character context. */
+  /** Optional campaign id for associating reactive execution with a campaign. */
   campaignId?: string;
   /** Optional character picker for selectCharacter(title?, description?). */
   selectCharacter?: SelectCharacterFn;
