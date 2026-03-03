@@ -7,7 +7,11 @@ import type {
   SelectCharactersFn,
 } from '@/types';
 import type { ASTNode } from '../interpreter/ast';
-import { persistScriptLogs } from '../script-logs';
+import {
+  getEventInvocationLogMessage,
+  persistEventInvocationLog,
+  persistScriptLogs,
+} from '../script-logs';
 import { functionDefToExecutableSource } from '../interpreter/ast-to-source';
 import { Lexer } from '../interpreter/lexer';
 import { Parser } from '../interpreter/parser';
@@ -85,6 +89,55 @@ export class EventHandlerExecutor {
     this.db = db;
     this.onAttributesModified = onAttributesModified;
     this.runScriptForTest = runScriptForTest;
+  }
+
+  /** Resolve character id to display name for event invocation logs. */
+  private async getCharacterName(characterId: string): Promise<string> {
+    const character = await this.db.characters.get(characterId);
+    return (character as { name?: string } | undefined)?.name ?? 'Someone';
+  }
+
+  /**
+   * Wrap selectCharacter/selectCharacters to record selected character(s) for event invocation log.
+   * Returns wrapped fns and a promise that resolves to their display names after script runs.
+   */
+  private createSelectCharacterCollectors(
+    selectCharacter?: SelectCharacterFn,
+    selectCharacters?: SelectCharactersFn,
+  ): {
+    selectCharacter: SelectCharacterFn;
+    selectCharacters: SelectCharactersFn;
+    getCollectedTargetNames: () => Promise<string[]>;
+  } {
+    const collected: (string | { name?: string } | null)[] = [];
+    const wrappedSelectCharacter: SelectCharacterFn = async (title?, description?) => {
+      const result = await (selectCharacter?.(title, description) ?? Promise.resolve(null));
+      if (result != null) collected.push(result);
+      return result;
+    };
+    const wrappedSelectCharacters: SelectCharactersFn = async (title?, description?) => {
+      const result = await (selectCharacters?.(title, description) ?? Promise.resolve([]));
+      const list = Array.isArray(result) ? result : [];
+      list.forEach((r) => collected.push(r));
+      return result;
+    };
+    const getCollectedTargetNames = async (): Promise<string[]> => {
+      const names: string[] = [];
+      for (const item of collected) {
+        if (item == null) continue;
+        if (typeof item === 'string') {
+          names.push(await this.getCharacterName(item));
+        } else if (typeof item === 'object' && item !== null && 'name' in item) {
+          names.push(String((item as { name?: string }).name ?? 'Someone'));
+        }
+      }
+      return names;
+    };
+    return {
+      selectCharacter: wrappedSelectCharacter,
+      selectCharacters: wrappedSelectCharacters,
+      getCollectedTargetNames,
+    };
   }
 
   /** Build callback to persist roll log as auto-generated script log. */
@@ -173,6 +226,9 @@ export class EventHandlerExecutor {
       };
     }
 
+    const { selectCharacter: selectCharacterWrapped, selectCharacters: selectCharactersWrapped, getCollectedTargetNames } =
+      this.createSelectCharacterCollectors(selectCharacter, selectCharacters);
+
     // Run full script so all definitions are in scope, then call the handler
     const scriptToRun = this.buildScriptWithHandlerCall(script.sourceCode, eventType);
     const context: ScriptExecutionContext = {
@@ -188,8 +244,8 @@ export class EventHandlerExecutor {
       roll,
       rollSplit,
       prompt,
-      selectCharacter,
-      selectCharacters,
+      selectCharacter: selectCharacterWrapped,
+      selectCharacters: selectCharactersWrapped,
       onRollComplete: this.createOnRollComplete(
         item.rulesetId,
         script.id,
@@ -213,6 +269,22 @@ export class EventHandlerExecutor {
     const result = this.runScriptForTest
       ? await this.runScriptForTest(context, scriptToRun)
       : await new ScriptRunner(context).run(scriptToRun);
+
+    const targetNames = await getCollectedTargetNames();
+    const ownerName = await this.getCharacterName(characterId);
+    const message = getEventInvocationLogMessage('item', {
+      ownerName,
+      entityName: item.title,
+      eventName: eventType,
+      targetNames: targetNames.length > 0 ? targetNames : undefined,
+    });
+    await persistEventInvocationLog(this.db, {
+      rulesetId: item.rulesetId,
+      scriptId: script.id,
+      characterId,
+      campaignId: campaignId ?? null,
+      context: 'item_event',
+    }, message);
 
     if (!result.error && result.modifiedAttributeIds?.length && this.onAttributesModified) {
       await this.onAttributesModified(result.modifiedAttributeIds, characterId, item.rulesetId);
@@ -295,6 +367,9 @@ export class EventHandlerExecutor {
       };
     }
 
+    const { selectCharacter: selectCharacterWrapped, selectCharacters: selectCharactersWrapped, getCollectedTargetNames } =
+      this.createSelectCharacterCollectors(selectCharacter, selectCharacters);
+
     // Run full script so all definitions are in scope, then call the handler
     const scriptToRun = this.buildScriptWithHandlerCall(script.sourceCode, eventType);
     actionEventDepth++;
@@ -312,8 +387,8 @@ export class EventHandlerExecutor {
         roll,
         rollSplit,
         prompt,
-        selectCharacter,
-        selectCharacters,
+        selectCharacter: selectCharacterWrapped,
+        selectCharacters: selectCharactersWrapped,
         onRollComplete: this.createOnRollComplete(
           action.rulesetId,
           script.id,
@@ -334,8 +409,8 @@ export class EventHandlerExecutor {
               undefined, // Nested call: Caller = Owner
               rollSplit,
               prompt,
-              selectCharacter,
-              selectCharacters,
+              selectCharacterWrapped,
+              selectCharactersWrapped,
             ),
         }),
       };
@@ -343,6 +418,24 @@ export class EventHandlerExecutor {
       const result = this.runScriptForTest
         ? await this.runScriptForTest(context, scriptToRun)
         : await new ScriptRunner(context).run(scriptToRun);
+
+      const actionTargetNames = targetId ? [await this.getCharacterName(targetId)] : [];
+      const selectedNames = await getCollectedTargetNames();
+      const targetNames = [...actionTargetNames, ...selectedNames];
+      const ownerName = await this.getCharacterName(characterId);
+      const message = getEventInvocationLogMessage('action', {
+        ownerName,
+        entityName: action.title,
+        eventName: eventType,
+        targetNames: targetNames.length > 0 ? targetNames : undefined,
+      });
+      await persistEventInvocationLog(this.db, {
+        rulesetId: action.rulesetId,
+        scriptId: script.id,
+        characterId,
+        campaignId: campaignId ?? null,
+        context: 'action_event',
+      }, message);
 
       if (!result.error && result.modifiedAttributeIds?.length && this.onAttributesModified) {
         await this.onAttributesModified(result.modifiedAttributeIds, characterId, action.rulesetId);
@@ -748,6 +841,20 @@ export class EventHandlerExecutor {
     };
 
     const result = await this.executeEventHandlerByCall(script.sourceCode, eventType, context);
+
+    const ownerName = await this.getCharacterName(characterId);
+    const message = getEventInvocationLogMessage('campaign_event', {
+      ownerName,
+      entityName: campaignEvent.label,
+      eventName: eventType,
+    });
+    await persistEventInvocationLog(this.db, {
+      rulesetId: campaign.rulesetId,
+      scriptId: script.id,
+      characterId,
+      campaignId: campaignEvent.campaignId,
+      context: 'campaign_event',
+    }, message);
 
     await persistScriptLogs(this.db, {
       rulesetId: campaign.rulesetId,

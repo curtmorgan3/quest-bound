@@ -152,7 +152,7 @@ export function CampaignGameLog({ campaignId, rulesetId, limit = 250 }: Campaign
           </Label>
         </div>
       )}
-      <div className='min-h-0 flex-1 overflow-y-auto'>
+      <div className='min-h-0 flex-1 overflow-y-auto max-h-[80dvh]'>
         {logs.length === 0 ? (
           <p className='text-xs text-muted-foreground'>No log entries yet.</p>
         ) : (
