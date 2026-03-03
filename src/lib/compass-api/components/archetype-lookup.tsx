@@ -38,6 +38,7 @@ interface ArchetypeLookupProps {
   allowDefault?: boolean;
   /** Applied to the popover content. Use e.g. z-[110] when rendered inside a portaled overlay. */
   popoverContentClassName?: string;
+  wrapperClassName?: string;
 }
 
 export const ArchetypeLookup = ({
@@ -46,6 +47,7 @@ export const ArchetypeLookup = ({
   onDelete,
   placeholder = 'Search archetypes...',
   className,
+  wrapperClassName = '',
   value,
   disabled = false,
   label = 'Archetype',
@@ -110,7 +112,7 @@ export const ArchetypeLookup = ({
   };
 
   return (
-    <div className='flex flex-col gap-1' id={id}>
+    <div className={`flex flex-col gap-1 ${wrapperClassName}`} id={id}>
       <Label className='text-xs text-muted-foreground'>{label}</Label>
       <div className='flex gap-2'>
         <Popover open={open} onOpenChange={setOpen}>

@@ -294,24 +294,26 @@ export function NpcStage({ campaignId, rulesetId, sceneId, onCardHover }: NpcSta
       <div className='shrink-0 space-y-2'>
         <p className='text-sm text-muted-foreground'>Stage NPCs</p>
 
-        <ArchetypeLookup
-          rulesetId={rulesetId}
-          value={selectedArchetype?.id ?? null}
-          onSelect={(archetype) => setSelectedArchetype(archetype)}
-          onDelete={() => setSelectedArchetype(null)}
-          placeholder='Search archetypes...'
-          label=''
-          data-testid='npc-stage-archetype-lookup'
-        />
-        <Button
-          variant='outline'
-          size='sm'
-          className='w-full'
-          onClick={handleAddNpc}
-          disabled={!selectedArchetype}
-          data-testid='npc-stage-add-npc'>
-          Add NPC
-        </Button>
+        <div className='flex gap-2 items-end justify-between w-[255px]'>
+          <ArchetypeLookup
+            rulesetId={rulesetId}
+            wrapperClassName='w-[100%]'
+            value={selectedArchetype?.id ?? null}
+            onSelect={(archetype) => setSelectedArchetype(archetype)}
+            onDelete={() => setSelectedArchetype(null)}
+            placeholder='Search archetypes...'
+            label=''
+            data-testid='npc-stage-archetype-lookup'
+          />
+          <Button
+            variant='outline'
+            size='sm'
+            onClick={handleAddNpc}
+            disabled={!selectedArchetype}
+            data-testid='npc-stage-add-npc'>
+            <Plus />
+          </Button>
+        </div>
         <Input
           type='search'
           placeholder='Filter by name...'

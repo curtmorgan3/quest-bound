@@ -133,13 +133,6 @@ export function Campaigns() {
                 </p>
               </div>
               <div className='flex items-center gap-2'>
-                <Button
-                  variant='outline'
-                  size='sm'
-                  onClick={() => navigate(`/campaigns/${campaign.id}/scenes`)}
-                  data-testid='campaign-card-open'>
-                  Open
-                </Button>
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
                     <Button
@@ -171,6 +164,12 @@ export function Campaigns() {
                     </AlertDialogFooter>
                   </AlertDialogContent>
                 </AlertDialog>
+                <Button
+                  size='sm'
+                  onClick={() => navigate(`/campaigns/${campaign.id}/scenes`)}
+                  data-testid='campaign-card-open'>
+                  Open
+                </Button>
               </div>
             </div>
             <Accordion type='single' collapsible className='border-t'>
