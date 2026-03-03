@@ -3,7 +3,7 @@ import { useSidebar } from '@/components/ui/sidebar';
 import { CharacterPage } from '@/pages/characters';
 import { useCampaignContext } from '@/stores';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Backpack, X } from 'lucide-react';
+import { Backpack, EyeClosed, X } from 'lucide-react';
 import { useState } from 'react';
 
 export interface CampaignCharacterSheetProps {
@@ -14,6 +14,9 @@ export interface CampaignCharacterSheetProps {
   /** Called when the sheet is closed (used when opened via characterId/open props). */
   onClose?: () => void;
   hideGameLog?: boolean;
+  /** When provided, the transparency state becomes controlled by the parent. */
+  transparentBackground?: boolean;
+  onTransparentBackgroundChange?: (transparentBackground: boolean) => void;
 }
 
 export const CampaignCharacterSheet = ({
@@ -21,10 +24,13 @@ export const CampaignCharacterSheet = ({
   open: controlledOpen,
   onClose: controlledOnClose,
   hideGameLog = false,
+  transparentBackground: controlledTransparentBackground,
+  onTransparentBackgroundChange,
 }: CampaignCharacterSheetProps = {}) => {
   const { campaignId, selectedPlayerCharacters } = useCampaignContext();
   const { state: sidebarState } = useSidebar();
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [uncontrolledTransparentBackground, setUncontrolledTransparentBackground] = useState(false);
 
   const contextCharacterId =
     selectedPlayerCharacters.length === 1 ? selectedPlayerCharacters[0]!.characterId : null;
@@ -32,6 +38,19 @@ export const CampaignCharacterSheet = ({
   const isControlled = controlledCharacterId != null;
   const showSheet = isControlled ? controlledOpen && !!characterId : sheetOpen && !!characterId;
   const showCharacterSheetButton = !isControlled && selectedPlayerCharacters.length === 1;
+
+  const isTransparentBackgroundControlled = controlledTransparentBackground != null;
+  const transparentBackground = isTransparentBackgroundControlled
+    ? controlledTransparentBackground
+    : uncontrolledTransparentBackground;
+
+  const setTransparentBackground = (next: boolean) => {
+    if (isTransparentBackgroundControlled) {
+      onTransparentBackgroundChange?.(next);
+      return;
+    }
+    setUncontrolledTransparentBackground(next);
+  };
 
   const handleClose = () => {
     if (isControlled) {
@@ -60,7 +79,7 @@ export const CampaignCharacterSheet = ({
             style={{
               left: overlayLeft,
               top: '50px',
-              background: 'transparent',
+              background: transparentBackground ? 'transparent' : undefined,
             }}
             initial={{ x: '100%' }}
             animate={{ x: 0 }}
@@ -71,7 +90,7 @@ export const CampaignCharacterSheet = ({
                 id={characterId}
                 campaignId={campaignId}
                 lockByDefault
-                transparentBackground
+                transparentBackground={transparentBackground}
                 onClose={handleClose}
                 hideGameLog={hideGameLog}
                 renderFloatingActions={({ onOpenInventory, onClose }) => (
@@ -83,6 +102,23 @@ export const CampaignCharacterSheet = ({
                       onClick={onOpenInventory}
                       aria-label='Open inventory'>
                       <Backpack className='size-4' />
+                    </Button>
+                    <Button
+                      variant='ghost'
+                      size='icon'
+                      className={`size-8 shrink-0 ${transparentBackground ? 'text-primary' : ''}`}
+                      onClick={() => setTransparentBackground(!transparentBackground)}
+                      aria-label={
+                        transparentBackground
+                          ? 'Disable transparent character sheet background'
+                          : 'Enable transparent character sheet background'
+                      }
+                      title={
+                        transparentBackground
+                          ? 'Disable transparent background'
+                          : 'Enable transparent background'
+                      }>
+                      <EyeClosed className='size-4' />
                     </Button>
                     <Button
                       variant='ghost'

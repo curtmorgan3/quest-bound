@@ -13,12 +13,12 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { ActiveScene } from './active-scene';
 import { CampaignCharacterSheet } from './campaign-controls';
+import { CampaignEventsPanel } from './campaign-events-panel';
 import { CampaignGameLog } from './campaign-game-log';
 import { useCampaignPlayCharacterList } from './hooks';
 import { ManagePlayerCharacters } from './manage-player-characters';
 import { NpcStage } from './npc-stage';
 import { SceneDocumentPanel } from './scene-document-panel';
-import { CampaignEventsPanel } from './campaign-events-panel';
 
 export function CampaignDashboard() {
   const { campaignId, sceneId } = useParams<{ campaignId: string; sceneId?: string }>();
@@ -35,6 +35,8 @@ export function CampaignDashboard() {
   const [sceneDocumentPanelOpen, setSceneDocumentPanelOpen] = useState(false);
   const [sceneEventsPanelOpen, setSceneEventsPanelOpen] = useState(false);
   const [showCampaignLog, setShowCampaignLog] = useState(true);
+  const [characterSheetTransparentBackground, setCharacterSheetTransparentBackground] =
+    useState(true);
 
   const { campaignScenes } = useCampaignScenes(campaignId);
   const currentScene = sceneId ? campaignScenes.find((s) => s.id === sceneId) : undefined;
@@ -128,6 +130,8 @@ export function CampaignDashboard() {
               hideGameLog
               characterId={sheetCharacterId ?? undefined}
               open={!!sheetCharacterId}
+              transparentBackground={characterSheetTransparentBackground}
+              onTransparentBackgroundChange={setCharacterSheetTransparentBackground}
               onClose={() => {
                 setSheetCharacterId(null);
                 if (searchParams.has('pageId')) {
