@@ -575,10 +575,48 @@ export class ScriptRunner {
       this.itemsCache,
     );
 
-    // When there is no owner (e.g. some campaign/system scripts), only Ruleset is injected.
+    // When there is no owner (e.g. some campaign/system scripts), only Ruleset is injected
+    // except for campaign event scripts, which still get Self and Scene() via CampaignEventAccessor.
     if (!ownerId) {
       this.evaluator.globalEnv.define('Ruleset', ruleset);
-      // No Owner/Caller/Self bindings in ownerless contexts.
+
+      if (this.context.entityType === 'campaignEvent' && this.context.entityId) {
+        const dbTyped = db as DB;
+        const campaignEvent = this.context.campaignEvent;
+
+        if (!campaignEvent) {
+          this.evaluator.globalEnv.define('Self', null);
+        } else {
+          const sceneAccessor =
+            this.context.campaignId && this.context.campaignSceneId
+              ? new CampaignSceneAccessor(
+                  dbTyped,
+                  this.context.campaignId,
+                  this.context.campaignSceneId,
+                  rulesetId,
+                  (id: string) => this.getCharacterAccessorById(id),
+                  this.sceneCharacterIds ? Array.from(this.sceneCharacterIds) : undefined,
+                  (id: string) => {
+                    if (!this.sceneCharacterIds) {
+                      this.sceneCharacterIds = new Set();
+                    }
+                    this.sceneCharacterIds.add(id);
+                  },
+                )
+              : null;
+
+          const eventAccessor = new CampaignEventAccessor(
+            dbTyped,
+            campaignEvent,
+            rulesetId,
+            this.context.campaignSceneId ?? null,
+            () => sceneAccessor,
+          );
+
+          this.evaluator.globalEnv.define('Self', eventAccessor);
+        }
+      }
+
       return;
     }
 
