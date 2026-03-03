@@ -1,0 +1,275 @@
+import type { DB } from '@/stores/db/hooks/types';
+import type {
+  Archetype,
+  CampaignCharacter,
+  Character,
+  CharacterAttribute,
+  CustomProperty,
+} from '@/types';
+import type Dexie from 'dexie';
+import type { CharacterAccessor } from './character-accessor';
+import type { OwnerAccessor } from './owner-accessor';
+
+type AnyCharacterAccessor = CharacterAccessor | OwnerAccessor;
+
+interface SpawnCharacterOptions {
+  archetypeName: string;
+}
+
+type GetCharacterAccessorByIdFn = (characterId: string) => Promise<AnyCharacterAccessor | null>;
+
+type RegisterSceneCharacterIdFn = (characterId: string) => void;
+
+/**
+ * Accessor for a campaign scene in campaign event scripts.
+ *
+ * Exposed via Self.Scene() in campaign event scripts.
+ * Provides:
+ * - .characters(): active characters in the scene as character accessors
+ * - .spawnCharacter('Archetype Name'): create an active NPC in the scene
+ */
+export class CampaignSceneAccessor {
+  private db: DB;
+  private campaignId: string;
+  private campaignSceneId: string;
+  private rulesetId: string;
+  private getCharacterAccessorById: GetCharacterAccessorByIdFn;
+  private registerSceneCharacterId: RegisterSceneCharacterIdFn | undefined;
+  private cachedCharacterIds: Set<string> | null;
+  private cachedAccessors: AnyCharacterAccessor[] | null;
+
+  constructor(
+    db: Dexie,
+    campaignId: string,
+    campaignSceneId: string,
+    rulesetId: string,
+    getCharacterAccessorById: GetCharacterAccessorByIdFn,
+    initialCharacterIds?: string[],
+    registerSceneCharacterId?: RegisterSceneCharacterIdFn,
+  ) {
+    this.db = db as DB;
+    this.campaignId = campaignId;
+    this.campaignSceneId = campaignSceneId;
+    this.rulesetId = rulesetId;
+    this.getCharacterAccessorById = getCharacterAccessorById;
+    this.registerSceneCharacterId = registerSceneCharacterId;
+    this.cachedCharacterIds = initialCharacterIds ? new Set(initialCharacterIds) : null;
+    this.cachedAccessors = null;
+  }
+
+  /**
+   * Return all active characters in this scene as character accessors.
+   * Includes both player characters and NPCs whose CampaignCharacter.active === true.
+   */
+  async characters(): Promise<AnyCharacterAccessor[]> {
+    if (this.cachedAccessors) {
+      return this.cachedAccessors;
+    }
+
+    let characterIds: string[] = [];
+
+    if (this.cachedCharacterIds && this.cachedCharacterIds.size > 0) {
+      characterIds = Array.from(this.cachedCharacterIds);
+    } else {
+      const rows = (await this.db.campaignCharacters
+        .where('campaignId')
+        .equals(this.campaignId)
+        .filter(
+          (cc: CampaignCharacter) =>
+            cc.campaignSceneId === this.campaignSceneId && cc.active === true,
+        )
+        .toArray()) as CampaignCharacter[];
+
+      characterIds = rows.map((cc) => cc.characterId);
+      this.cachedCharacterIds = new Set(characterIds);
+    }
+
+    const accessors: AnyCharacterAccessor[] = [];
+    for (const id of characterIds) {
+      const acc = await this.getCharacterAccessorById(id);
+      if (acc) accessors.push(acc);
+    }
+
+    this.cachedAccessors = accessors;
+    return accessors;
+  }
+
+  /**
+   * Create a new NPC character from the given archetype and attach it
+   * as an active CampaignCharacter in this scene.
+   *
+   * Returns a character accessor for the spawned NPC.
+   *
+   * Note: This helper focuses on data creation; it does not run character
+   * loader or archetype event scripts. Newly spawned NPCs will have default
+   * attributes and archetype linkage.
+   */
+  async spawnCharacter(archetypeName: string): Promise<AnyCharacterAccessor> {
+    const options: SpawnCharacterOptions = { archetypeName: archetypeName.trim() };
+    if (!options.archetypeName) {
+      throw new Error('spawnCharacter requires a non-empty archetype name');
+    }
+
+    const archetype = (await this.db.archetypes
+      .where('[rulesetId+name]')
+      .equals([this.rulesetId, options.archetypeName])
+      .first()) as Archetype | undefined;
+
+    if (!archetype) {
+      throw new Error(`Archetype '${options.archetypeName}' not found in this ruleset`);
+    }
+
+    const now = new Date().toISOString();
+
+    // Create inventory first so character can reference it.
+    const characterId = crypto.randomUUID();
+    const inventoryId = crypto.randomUUID();
+
+    await this.db.inventories.add({
+      id: inventoryId,
+      characterId,
+      rulesetId: this.rulesetId,
+      title: `${archetype.name}'s Inventory`,
+      category: null,
+      type: null,
+      items: [],
+      createdAt: now,
+      updatedAt: now,
+    } as any);
+
+    // Minimal NPC character row.
+    const character: Character = {
+      id: characterId,
+      userId: '', // NPCs spawned from scripts are not owned by a specific user
+      rulesetId: this.rulesetId,
+      inventoryId,
+      name: archetype.name,
+      assetId: null,
+      image: archetype.image ?? null,
+      isTestCharacter: false,
+      isNpc: true,
+      componentData: {},
+      pinnedSidebarDocuments: [],
+      pinnedSidebarCharts: [],
+      createdAt: now,
+      updatedAt: now,
+      lastViewedPageId: null,
+      sheetLocked: false,
+      sprites: archetype.sprites ?? [],
+      moduleId: archetype.moduleId,
+      moduleEntityId: archetype.moduleEntityId,
+      moduleName: archetype.moduleName,
+    };
+
+    await this.db.characters.add(character as any);
+
+    // Instantiate character attributes from ruleset defaults.
+    const rulesetAttributes = (await this.db.attributes
+      .where('rulesetId')
+      .equals(this.rulesetId)
+      .toArray()) as any[];
+
+    const characterAttributes: CharacterAttribute[] = rulesetAttributes.map(
+      (attr: any) =>
+        ({
+          ...attr,
+          id: crypto.randomUUID(),
+          characterId,
+          attributeId: attr.id,
+          value: attr.defaultValue,
+          createdAt: now,
+          updatedAt: now,
+        }) as CharacterAttribute,
+    );
+
+    if (characterAttributes.length > 0) {
+      await this.db.characterAttributes.bulkAdd(characterAttributes as any);
+    }
+
+    // Instantiate customProperties from archetype's ArchetypeCustomProperties.
+    const archetypeCustomProps = (await this.db.archetypeCustomProperties
+      .where('archetypeId')
+      .equals(archetype.id)
+      .toArray()) as any[];
+
+    const customPropertiesById: Record<string, string | number | boolean> = {};
+
+    for (const acp of archetypeCustomProps) {
+      const cp = (await this.db.customProperties.get(acp.customPropertyId)) as
+        | CustomProperty
+        | undefined;
+      if (!cp) continue;
+
+      const defaultValue =
+        acp.defaultValue !== undefined
+          ? acp.defaultValue
+          : cp.defaultValue !== undefined
+            ? cp.defaultValue
+            : cp.type === 'number'
+              ? 0
+              : cp.type === 'boolean'
+                ? false
+                : '';
+
+      customPropertiesById[cp.id] = defaultValue;
+    }
+
+    await this.db.characters.update(characterId, {
+      customProperties: customPropertiesById,
+      updatedAt: new Date().toISOString(),
+    });
+
+    // Attach archetype to character.
+    const characterArchetypeId = crypto.randomUUID();
+    await this.db.characterArchetypes.add({
+      id: characterArchetypeId,
+      characterId,
+      archetypeId: archetype.id,
+      loadOrder: 0,
+      createdAt: now,
+      updatedAt: now,
+    } as any);
+
+    // Create CampaignCharacter linking this NPC into the current scene.
+    const campaignCharacter: CampaignCharacter = {
+      id: crypto.randomUUID(),
+      characterId,
+      campaignId: this.campaignId,
+      campaignSceneId: this.campaignSceneId,
+      currentLocationId: null,
+      currentTileId: null,
+      mapWidth: archetype.mapWidth,
+      mapHeight: archetype.mapHeight,
+      active: true,
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    await this.db.campaignCharacters.add(campaignCharacter as any);
+
+    // Update local caches so .characters() includes this NPC.
+    if (!this.cachedCharacterIds) {
+      this.cachedCharacterIds = new Set();
+    }
+    this.cachedCharacterIds.add(characterId);
+    this.cachedAccessors = null;
+
+    if (this.registerSceneCharacterId) {
+      this.registerSceneCharacterId(characterId);
+    }
+
+    const accessor = await this.getCharacterAccessorById(characterId);
+    if (!accessor) {
+      throw new Error('Failed to create character accessor for spawned NPC');
+    }
+
+    return accessor;
+  }
+
+  toStructuredCloneSafe(): { __type: 'CampaignScene'; id: string } {
+    return {
+      __type: 'CampaignScene',
+      id: this.campaignSceneId,
+    };
+  }
+}

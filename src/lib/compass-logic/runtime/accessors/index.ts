@@ -5,3 +5,5 @@ export {
   AttributeDefinitionProxy,
   ItemDefinitionProxy,
 } from './ruleset-accessor';
+export { CampaignSceneAccessor } from './campaign-scene-accessor';
+export { CampaignEventAccessor } from './campaign-event-accessor';

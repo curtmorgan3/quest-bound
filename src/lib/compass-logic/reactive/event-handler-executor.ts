@@ -808,6 +808,7 @@ export class EventHandlerExecutor {
       entityId: campaignEventId,
       campaignId: campaignEvent.campaignId,
       campaignSceneId,
+      campaignEvent,
       roll,
       rollSplit,
       prompt,

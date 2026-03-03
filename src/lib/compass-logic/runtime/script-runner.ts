@@ -2,6 +2,8 @@ import type { DB } from '@/stores/db/hooks/types';
 import type {
   Action,
   Attribute,
+  CampaignCharacter,
+  CampaignEvent,
   CharacterAttribute,
   Chart,
   CustomProperty,
@@ -19,7 +21,13 @@ import { Evaluator } from '../interpreter/evaluator';
 import { Lexer } from '../interpreter/lexer';
 import { Parser } from '../interpreter/parser';
 import { executeArchetypeEvent } from '../reactive/event-handler-executor';
-import { CharacterAccessor, OwnerAccessor, RulesetAccessor } from './accessors';
+import {
+  CampaignEventAccessor,
+  CampaignSceneAccessor,
+  CharacterAccessor,
+  OwnerAccessor,
+  RulesetAccessor,
+} from './accessors';
 import type { ExecuteActionEventFn } from './proxies';
 
 const INVENTORY_COMPONENT_TYPE = 'inventory';
@@ -181,6 +189,8 @@ export interface ScriptExecutionContext {
   onRollComplete?: (message: string) => Promise<void>;
   /** When set (e.g. campaign scene events), identifies the CampaignScene whose active characters should be loaded into context. */
   campaignSceneId?: string;
+  /** When set (campaign event scripts), the CampaignEvent this script is attached to. */
+  campaignEvent?: CampaignEvent;
 }
 
 /**
@@ -218,6 +228,9 @@ export class ScriptRunner {
   private ownerArchetypeNames: Set<string>;
   /** Cached Owner accessor instance (set in setupAccessors). */
   private ownerAccessor: OwnerAccessor | null = null;
+
+  /** Cached character ids that are active in the current campaign scene (for campaign event scripts). */
+  private sceneCharacterIds: Set<string> | null = null;
 
   /** Lazily-created accessors for characters selected via selectCharacter(s). */
   private otherCharacterAccessors: Map<string, CharacterAccessor | OwnerAccessor> = new Map();
@@ -338,17 +351,19 @@ export class ScriptRunner {
     // Load active characters for the current campaign scene (for campaign scene events).
     // Includes both player characters and NPCs whose CampaignCharacter.active === true.
     if (this.context.campaignId && this.context.campaignSceneId) {
-      const sceneCampaignCharacters = await db.campaignCharacters
+      const sceneCampaignCharacters = (await db.campaignCharacters
         .where('campaignId')
         .equals(this.context.campaignId)
         .filter(
-          (cc: { campaignSceneId?: string; active?: boolean }) =>
+          (cc: CampaignCharacter) =>
             cc.campaignSceneId === this.context.campaignSceneId && cc.active === true,
         )
-        .toArray();
+        .toArray()) as CampaignCharacter[];
 
+      const ids = new Set<string>();
       for (const cc of sceneCampaignCharacters) {
-        const characterId = (cc as { characterId: string }).characterId;
+        const characterId = cc.characterId;
+        ids.add(characterId);
         // Owner is already loaded above; skip here to avoid duplicate accessor creation.
         if (characterId === ownerId) continue;
 
@@ -356,6 +371,8 @@ export class ScriptRunner {
         // getCharacterAccessorById merges character attributes into shared caches.
         await this.getCharacterAccessorById(characterId);
       }
+
+      this.sceneCharacterIds = ids;
     }
 
   }
@@ -365,7 +382,7 @@ export class ScriptRunner {
    * Reuses Owner or location characters when possible; otherwise lazily creates
    * a new CharacterAccessor wired to this ScriptRunner's caches and pendingUpdates.
    */
-  private async getCharacterAccessorById(
+  async getCharacterAccessorById(
     characterId: string,
   ): Promise<CharacterAccessor | OwnerAccessor | null> {
     // Owner
@@ -596,7 +613,7 @@ export class ScriptRunner {
     this.evaluator.globalEnv.define('Owner', owner);
     this.evaluator.globalEnv.define('Ruleset', ruleset);
 
-    // 'Self' refers to the entity this script is attached to (attribute, action, or item).
+    // 'Self' refers to the entity this script is attached to (attribute, action, item, or campaignEvent).
     if (this.context.entityType === 'attribute' && this.context.entityId) {
       const attribute = this.attributesCache.get(this.context.entityId);
       if (attribute) {
@@ -618,8 +635,44 @@ export class ScriptRunner {
           : owner.Item(item.title);
         this.evaluator.globalEnv.define('Self', itemRef ?? null);
       }
+    } else if (this.context.entityType === 'campaignEvent' && this.context.entityId) {
+      // For campaign event scripts, Self refers to the CampaignEvent accessor and exposes Scene().
+      const dbTyped = db as DB;
+      const campaignEvent = this.context.campaignEvent;
+
+      if (!campaignEvent) {
+        this.evaluator.globalEnv.define('Self', null);
+      } else {
+        const sceneAccessor =
+          this.context.campaignId && this.context.campaignSceneId
+            ? new CampaignSceneAccessor(
+                dbTyped,
+                this.context.campaignId,
+                this.context.campaignSceneId,
+                rulesetId,
+                (id: string) => this.getCharacterAccessorById(id),
+                this.sceneCharacterIds ? Array.from(this.sceneCharacterIds) : undefined,
+                (id: string) => {
+                  if (!this.sceneCharacterIds) {
+                    this.sceneCharacterIds = new Set();
+                  }
+                  this.sceneCharacterIds.add(id);
+                },
+              )
+            : null;
+
+        const eventAccessor = new CampaignEventAccessor(
+          dbTyped,
+          campaignEvent,
+          rulesetId,
+          this.context.campaignSceneId ?? null,
+          () => sceneAccessor,
+        );
+
+        this.evaluator.globalEnv.define('Self', eventAccessor);
+      }
     }
-    // entityType 'location' | 'tile' | 'archetype' | 'global' (or unknown): no Self
+    // entityType 'location' | 'tile' | 'archetype' | 'global' | 'characterLoader' (or unknown): no Self
   }
 
   /**
