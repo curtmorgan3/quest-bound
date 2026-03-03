@@ -13,12 +13,14 @@ export interface CampaignCharacterSheetProps {
   open?: boolean;
   /** Called when the sheet is closed (used when opened via characterId/open props). */
   onClose?: () => void;
+  hideGameLog?: boolean;
 }
 
 export const CampaignCharacterSheet = ({
   characterId: controlledCharacterId,
   open: controlledOpen,
   onClose: controlledOnClose,
+  hideGameLog = false,
 }: CampaignCharacterSheetProps = {}) => {
   const { campaignId, selectedPlayerCharacters } = useCampaignContext();
   const { state: sidebarState } = useSidebar();
@@ -71,6 +73,7 @@ export const CampaignCharacterSheet = ({
                 lockByDefault
                 transparentBackground
                 onClose={handleClose}
+                hideGameLog={hideGameLog}
                 renderFloatingActions={({ onOpenInventory, onClose }) => (
                   <>
                     <Button

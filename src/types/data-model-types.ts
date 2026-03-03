@@ -519,6 +519,8 @@ export type Campaign = BaseDetails & {
   worldId?: string | null;
   pinnedSidebarDocuments?: string[];
   pinnedSidebarCharts?: string[];
+  /** Arbitrary key-value options (e.g. showAutoEntries for game log). */
+  details?: Record<string, any>;
 };
 
 export type CampaignCharacter = BaseDetails & {

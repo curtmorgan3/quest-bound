@@ -8,15 +8,16 @@ import {
 } from '@/lib/compass-api';
 import type { SheetViewerBackdropClickDetail } from '@/lib/compass-planes/sheet-viewer';
 import { SHEET_VIEWER_BACKDROP_CLICK } from '@/lib/compass-planes/sheet-viewer';
-import { CampaignCharacterSheet } from './campaign-controls';
-import { useCampaignPlayCharacterList } from './hooks';
-import { ActiveScene } from './active-scene';
-import { NpcStage } from './npc-stage';
+import { FileText, ScrollText } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { ManagePlayerCharacters } from './manage-player-characters';
-import { SceneDocumentPanel } from './scene-document-panel';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { FileText } from 'lucide-react';
+import { ActiveScene } from './active-scene';
+import { CampaignCharacterSheet } from './campaign-controls';
+import { CampaignGameLog } from './campaign-game-log';
+import { useCampaignPlayCharacterList } from './hooks';
+import { ManagePlayerCharacters } from './manage-player-characters';
+import { NpcStage } from './npc-stage';
+import { SceneDocumentPanel } from './scene-document-panel';
 
 export function CampaignDashboard() {
   const { campaignId, sceneId } = useParams<{ campaignId: string; sceneId?: string }>();
@@ -29,10 +30,9 @@ export function CampaignDashboard() {
   const { characters } = useCharacter();
 
   const [sheetCharacterId, setSheetCharacterId] = useState<string | null>(null);
-  const [hoveredCampaignCharacterId, setHoveredCampaignCharacterId] = useState<string | null>(
-    null,
-  );
+  const [hoveredCampaignCharacterId, setHoveredCampaignCharacterId] = useState<string | null>(null);
   const [sceneDocumentPanelOpen, setSceneDocumentPanelOpen] = useState(false);
+  const [showCampaignLog, setShowCampaignLog] = useState(true);
 
   const { campaignScenes } = useCampaignScenes(campaignId);
   const currentScene = sceneId ? campaignScenes.find((s) => s.id === sceneId) : undefined;
@@ -54,10 +54,7 @@ export function CampaignDashboard() {
       }
     };
 
-    window.addEventListener(
-      SHEET_VIEWER_BACKDROP_CLICK,
-      handleSheetBackdropClick as EventListener,
-    );
+    window.addEventListener(SHEET_VIEWER_BACKDROP_CLICK, handleSheetBackdropClick as EventListener);
 
     return () =>
       window.removeEventListener(
@@ -126,6 +123,7 @@ export function CampaignDashboard() {
               ))}
             </div>
             <CampaignCharacterSheet
+              hideGameLog
               characterId={sheetCharacterId ?? undefined}
               open={!!sheetCharacterId}
               onClose={() => {
@@ -159,6 +157,16 @@ export function CampaignDashboard() {
               data-testid='scene-document-panel-trigger'>
               <FileText className='h-4 w-4' />
             </Button>
+            <Button
+              variant='ghost'
+              size='icon'
+              onClick={() => setShowCampaignLog((v) => !v)}
+              aria-label={showCampaignLog ? 'Hide game log' : 'Show game log'}
+              title={showCampaignLog ? 'Hide game log' : 'Show game log'}
+              data-testid='campaign-log-toggle'
+              className={showCampaignLog ? 'text-primary' : undefined}>
+              <ScrollText className='h-4 w-4' />
+            </Button>
             <SceneDocumentPanel
               open={sceneDocumentPanelOpen}
               onOpenChange={setSceneDocumentPanelOpen}
@@ -183,10 +191,11 @@ export function CampaignDashboard() {
               setSheetCharacterId((prev) => (prev === characterId ? null : characterId))
             }
           />
-          <div className='min-h-0 flex-1 flex flex-col gap-4 p-4' />
+          {showCampaignLog && (
+            <CampaignGameLog campaignId={campaign.id} rulesetId={campaign.rulesetId} />
+          )}
         </div>
       </PageWrapper>
-
     </>
   );
 }

@@ -4,29 +4,37 @@ import type { ScriptLog } from '@/types';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useActiveRuleset } from '../rulesets/use-active-ruleset';
 
-export const useScriptLogs = (limit = 100) => {
+/**
+ * @param limit Max number of log entries to return (newest first).
+ * @param rulesetId Optional. When set (e.g. campaign's rulesetId), query logs for this ruleset instead of active ruleset.
+ */
+export const useScriptLogs = (limit = 100, rulesetId?: string) => {
   const { activeRuleset } = useActiveRuleset();
   const { handleError } = useErrorHandler();
+  const effectiveRulesetId = rulesetId ?? activeRuleset?.id;
 
   const logs = useLiveQuery(
-    () =>
-      db.scriptLogs
-        .where('rulesetId')
-        .equals(activeRuleset?.id ?? 0)
-        .reverse()
-        .limit(limit)
-        .toArray(),
-    [activeRuleset, limit],
+    async (): Promise<ScriptLog[]> =>
+      effectiveRulesetId
+        ? db.scriptLogs
+            .where('rulesetId')
+            .equals(effectiveRulesetId)
+            .reverse()
+            .limit(limit)
+            .toArray()
+        : [],
+    [effectiveRulesetId, limit],
   );
 
   const logScriptLog = async (data: Omit<ScriptLog, 'id' | 'createdAt' | 'updatedAt'>) => {
-    if (!activeRuleset) return;
+    const targetRulesetId = rulesetId ?? activeRuleset?.id;
+    if (!targetRulesetId) return;
     const now = new Date().toISOString();
     try {
       await db.scriptLogs.add({
         ...data,
         id: crypto.randomUUID(),
-        rulesetId: activeRuleset.id,
+        rulesetId: targetRulesetId,
         createdAt: now,
         updatedAt: now,
         timestamp: data.timestamp ?? Date.now(),
@@ -40,9 +48,9 @@ export const useScriptLogs = (limit = 100) => {
   };
 
   const clearLogs = async () => {
-    if (!activeRuleset) return;
+    if (!effectiveRulesetId) return;
     try {
-      await db.scriptLogs.where('rulesetId').equals(activeRuleset.id).delete();
+      await db.scriptLogs.where('rulesetId').equals(effectiveRulesetId).delete();
     } catch (e) {
       handleError(e as Error, {
         component: 'useScriptLogs/clearLogs',
