@@ -20,10 +20,11 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useCampaignEvents } from '@/lib/compass-api';
+import { colorPrimary } from '@/palette';
 import type { CampaignEvent } from '@/types';
-import { Pencil, Plus } from 'lucide-react';
+import { FileCode, FilePlus, Pencil, Plus } from 'lucide-react';
 import { useMemo, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 
 export function CampaignEvents() {
   const { campaignId } = useParams<{ campaignId: string }>();
@@ -35,6 +36,7 @@ export function CampaignEvents() {
   const [newCategory, setNewCategory] = useState<string | null>(null);
 
   const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
+  const [nameFilter, setNameFilter] = useState('');
 
   const [editOpen, setEditOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<CampaignEvent | null>(null);
@@ -58,9 +60,19 @@ export function CampaignEvents() {
   }, [existingCategories]);
 
   const filteredEvents = useMemo(() => {
-    if (!categoryFilter || categoryFilter === '__all__') return campaignEvents;
-    return campaignEvents.filter((event) => (event.category?.trim() ?? '') === categoryFilter);
-  }, [campaignEvents, categoryFilter]);
+    let events = campaignEvents;
+
+    if (categoryFilter && categoryFilter !== '__all__') {
+      events = events.filter((event) => (event.category?.trim() ?? '') === categoryFilter);
+    }
+
+    if (nameFilter.trim()) {
+      const query = nameFilter.trim().toLowerCase();
+      events = events.filter((event) => event.label.toLowerCase().includes(query));
+    }
+
+    return events;
+  }, [campaignEvents, categoryFilter, nameFilter]);
 
   const handleCreateOpenChange = (open: boolean) => {
     setCreateOpen(open);
@@ -111,7 +123,7 @@ export function CampaignEvents() {
       headerActions={
         <Dialog open={createOpen} onOpenChange={handleCreateOpenChange}>
           <DialogTrigger asChild>
-            <Button variant='outline' size='sm' className='gap-1' data-testid='events-new-button'>
+            <Button size='sm' className='gap-1' data-testid='events-new-button'>
               <Plus className='h-4 w-4' />
               Create Event
             </Button>
@@ -151,9 +163,14 @@ export function CampaignEvents() {
       }
       filterRow={
         <div className='flex items-center gap-2 px-4 py-2'>
-          <Label htmlFor='events-category-filter' className='text-sm'>
-            Category
-          </Label>
+          <Input
+            id='events-name-filter'
+            placeholder='Filter by name'
+            className='w-[220px]'
+            value={nameFilter}
+            onChange={(e) => setNameFilter(e.target.value)}
+            data-testid='events-name-filter-input'
+          />
           <Select
             value={categoryFilter ?? '__all__'}
             onValueChange={(v) => setCategoryFilter(v === '__all__' ? null : v)}>
@@ -175,11 +192,27 @@ export function CampaignEvents() {
           <div
             key={event.id}
             className='flex items-center justify-between rounded-md border bg-card px-4 py-3'>
-            <div className='flex flex-col gap-0.5'>
-              <span className='font-medium'>{event.label}</span>
-              {event.category && (
-                <span className='text-xs text-muted-foreground'>{event.category}</span>
-              )}
+            <div className='flex gap-4 items-center'>
+              <div className='flex flex-col gap-0.5'>
+                <span className='font-medium'>{event.label}</span>
+                {event.category && (
+                  <span className='text-xs text-muted-foreground'>{event.category}</span>
+                )}
+              </div>
+              {campaignId &&
+                (event.scriptId ? (
+                  <Link to={`/campaigns/${campaignId}/scripts/${event.scriptId}`}>
+                    <FileCode
+                      className='h-4 w-4 text-neutral-400 clickable'
+                      style={{ color: colorPrimary }}
+                    />
+                  </Link>
+                ) : (
+                  <Link
+                    to={`/campaigns/${campaignId}/scripts/new?type=campaignEvent&entityId=${event.id}&entityName=${event.label ?? ''}`}>
+                    <FilePlus className='h-4 w-4 text-neutral-400 clickable' />
+                  </Link>
+                ))}
             </div>
             <div className='flex items-center gap-1'>
               <Button
@@ -203,10 +236,12 @@ export function CampaignEvents() {
       </div>
 
       {filteredEvents.length === 0 && (
-        <p className='py-8 text-muted-foreground'>
+        <p className='py-8 text-muted-foreground text-sm'>
           {campaignEvents.length === 0
-            ? 'No events yet. Create one to place on the map.'
-            : 'No events in this category.'}
+            ? 'No events'
+            : categoryFilter || nameFilter.trim()
+              ? 'No events match filters'
+              : 'No events'}
         </p>
       )}
 

@@ -10,7 +10,16 @@ import {
   useSidebar,
 } from '@/components/ui/sidebar';
 import { useCampaign, useCampaigns, useCharts, useDocuments } from '@/lib/compass-api';
-import { FileSpreadsheet, FileText, Layers, Notebook, Pin, PinOff } from 'lucide-react';
+import {
+  CalendarCheck,
+  Clapperboard,
+  FileCode,
+  FileSpreadsheet,
+  FileText,
+  Notebook,
+  Pin,
+  PinOff,
+} from 'lucide-react';
 import { Link, useLocation, useParams } from 'react-router-dom';
 
 export function CampaignSidebar() {
@@ -89,7 +98,7 @@ export function CampaignSidebar() {
               }>
               <SidebarMenuButton asChild>
                 <Link to={`/campaigns/${campaign.id}/scenes`} data-testid='nav-scenes'>
-                  <Layers className='w-4 h-4' />
+                  <Clapperboard className='w-4 h-4' />
                   <span>Scenes</span>
                 </Link>
               </SidebarMenuButton>
@@ -105,6 +114,28 @@ export function CampaignSidebar() {
                 <Link to={`/campaigns/${campaign.id}/documents`} data-testid='nav-documents'>
                   <Notebook className='w-4 h-4' />
                   <span>Notes</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem
+              className={
+                location.pathname === `/campaigns/${campaign.id}/events` ? 'text-primary' : ''
+              }>
+              <SidebarMenuButton asChild>
+                <Link to={`/campaigns/${campaign.id}/events`} data-testid='nav-events'>
+                  <CalendarCheck className='w-4 h-4' />
+                  <span>Events</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem
+              className={
+                location.pathname === `/campaigns/${campaign.id}/scripts` ? 'text-primary' : ''
+              }>
+              <SidebarMenuButton asChild>
+                <Link to={`/campaigns/${campaign.id}/scripts`} data-testid='nav-scripts'>
+                  <FileCode className='w-4 h-4' />
+                  <span>Scripts</span>
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>

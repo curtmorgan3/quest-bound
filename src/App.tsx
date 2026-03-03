@@ -5,6 +5,7 @@ import {
   CampaignChartViewer,
   CampaignDashboard,
   CampaignDocumentsPage,
+  CampaignEvents,
   CampaignNew,
   CampaignScenes,
   Campaigns,
@@ -91,7 +92,7 @@ function CompassRoutes() {
               <>
                 <Route path={`/campaigns`} element={<Campaigns />} />
                 <Route path={`/campaigns/new`} element={<CampaignNew />} />
-
+                <Route path={`/campaigns/:campaignId/events`} element={<CampaignEvents />} />
                 <Route
                   path={`/campaigns/:campaignId/scenes`}
                   element={
@@ -125,6 +126,22 @@ function CompassRoutes() {
                   element={
                     <CampaignProvider>
                       <CampaignChartViewer />
+                    </CampaignProvider>
+                  }
+                />
+                <Route
+                  path={`/campaigns/:campaignId/scripts`}
+                  element={
+                    <CampaignProvider>
+                      <ScriptsIndex />
+                    </CampaignProvider>
+                  }
+                />
+                <Route
+                  path={`/campaigns/:campaignId/scripts/:scriptId`}
+                  element={
+                    <CampaignProvider>
+                      <ScriptEditorPage />
                     </CampaignProvider>
                   }
                 />

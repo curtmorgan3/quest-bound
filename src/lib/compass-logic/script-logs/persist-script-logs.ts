@@ -12,7 +12,7 @@ export interface ScriptLogDb {
 }
 
 /** Contexts that receive an auto-generated "Script ran" log entry. */
-const AUTO_LOG_CONTEXTS = ['load', 'character_load'];
+const AUTO_LOG_CONTEXTS = [''];
 
 export interface PersistScriptLogsParams {
   rulesetId: string;
