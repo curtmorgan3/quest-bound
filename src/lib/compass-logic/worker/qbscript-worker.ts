@@ -1393,7 +1393,8 @@ async function handleExecuteArchetypeEvent(payload: {
 async function handleExecuteCampaignEventEvent(payload: {
   campaignEventId: string;
   campaignSceneId: string;
-  characterId: string;
+  /** Character that triggered the event; may be undefined for ownerless runs. */
+  characterId?: string;
   eventType: 'on_enter' | 'on_leave' | 'on_activate';
   requestId: string;
 }): Promise<void> {
@@ -1413,14 +1414,14 @@ async function handleExecuteCampaignEventEvent(payload: {
       createOnAttributesModified(rollFn, rollSplitFn, () => executor, getCollector, promptFn),
     );
     const result = await executor.executeCampaignEventEvent(
-    payload.campaignEventId,
-    payload.campaignSceneId,
-    payload.characterId,
-    payload.eventType,
-    rollFn,
-    rollSplitFn,
-    promptFn,
-  );
+      payload.campaignEventId,
+      payload.campaignSceneId,
+      payload.eventType,
+      payload.characterId,
+      rollFn,
+      rollSplitFn,
+      promptFn,
+    );
 
     if (result.error || !result.success) {
       sendSignal({
@@ -1436,7 +1437,7 @@ async function handleExecuteCampaignEventEvent(payload: {
       });
     } else {
       const modifiedAttributeIds = Array.from(allModifiedIds);
-      if (modifiedAttributeIds.length > 0) {
+      if (modifiedAttributeIds.length > 0 && payload.characterId) {
         sendSignal({
           type: 'ATTRIBUTES_MODIFIED_BY_SCRIPT',
           payload: {

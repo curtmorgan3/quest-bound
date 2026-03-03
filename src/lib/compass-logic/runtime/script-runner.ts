@@ -139,7 +139,12 @@ async function resolveInventoryComponentIdRef(
  * Context for script execution.
  */
 export interface ScriptExecutionContext {
-  ownerId: string; // Character executing the script
+  /**
+   * Character executing the script.
+   * Required for character-scoped scripts (attributes, items, actions, archetypes, character loader).
+   * May be omitted for some campaign/system scripts that do not have an owning character.
+   */
+  ownerId?: string;
   rulesetId: string; // Current ruleset
   db: DB; // Database access
   scriptId?: string; // Which script is executing (for error logging)
@@ -327,32 +332,36 @@ export class ScriptRunner {
       .equals(rulesetId)
       .toArray();
 
-    // Load owner character and inventory items
-    const ownerCharacter = await db.characters.get(ownerId);
-    this.ownerCharacterName = ownerCharacter?.name ?? 'Character';
-    this.ownerInventoryId = ownerCharacter?.inventoryId ?? '';
-    this.ownerCharacterCustomProperties = ownerCharacter?.customProperties ?? {};
-    if (ownerCharacter?.inventoryId) {
-      this.ownerInventoryItems = await db.inventoryItems
-        .where('inventoryId')
-        .equals(ownerCharacter.inventoryId)
+    // Load owner character and inventory items (when an owner is present)
+    if (ownerId) {
+      const ownerCharacter = await db.characters.get(ownerId);
+      this.ownerCharacterName = ownerCharacter?.name ?? 'Character';
+      this.ownerInventoryId = ownerCharacter?.inventoryId ?? '';
+      this.ownerCharacterCustomProperties = ownerCharacter?.customProperties ?? {};
+      if (ownerCharacter?.inventoryId) {
+        this.ownerInventoryItems = await db.inventoryItems
+          .where('inventoryId')
+          .equals(ownerCharacter.inventoryId)
+          .toArray();
+      }
+
+      // Load character attributes for owner
+      const ownerAttributes = await db.characterAttributes
+        .where({ characterId: ownerId })
         .toArray();
-    }
+      for (const charAttr of ownerAttributes) {
+        this.characterAttributesCache.set(charAttr.id, charAttr);
+      }
 
-    // Load character attributes for owner
-    const ownerAttributes = await db.characterAttributes.where({ characterId: ownerId }).toArray();
-    for (const charAttr of ownerAttributes) {
-      this.characterAttributesCache.set(charAttr.id, charAttr);
-    }
-
-    // Load archetype names for owner (CharacterArchetype join Archetype)
-    const ownerCharArchetypes = await db.characterArchetypes
-      .where('characterId')
-      .equals(ownerId)
-      .toArray();
-    for (const ca of ownerCharArchetypes) {
-      const archetype = await db.archetypes.get(ca.archetypeId);
-      if (archetype?.name) this.ownerArchetypeNames.add(archetype.name);
+      // Load archetype names for owner (CharacterArchetype join Archetype)
+      const ownerCharArchetypes = await db.characterArchetypes
+        .where('characterId')
+        .equals(ownerId)
+        .toArray();
+      for (const ca of ownerCharArchetypes) {
+        const archetype = await db.archetypes.get(ca.archetypeId);
+        if (archetype?.name) this.ownerArchetypeNames.add(archetype.name);
+      }
     }
 
     // Load CampaignEventLocation when Self is the event location (campaign event scripts)
@@ -772,6 +781,21 @@ export class ScriptRunner {
   private setupAccessors(): void {
     const { ownerId, rulesetId, db } = this.context;
 
+    // Create Ruleset accessor (available in both owner and ownerless contexts)
+    const ruleset = new RulesetAccessor(
+      rulesetId,
+      this.attributesCache,
+      this.chartsCache,
+      this.itemsCache,
+    );
+
+    // When there is no owner (e.g. some campaign/system scripts), only Ruleset is injected.
+    if (!ownerId) {
+      this.evaluator.globalEnv.define('Ruleset', ruleset);
+      // No Owner/Caller/Self bindings in ownerless contexts.
+      return;
+    }
+
     const ownerLocationData = this.ownerCurrentLocationId
       ? this.locationCharactersData.get(this.ownerCurrentLocationId)
       : undefined;
@@ -826,14 +850,6 @@ export class ScriptRunner {
     }
 
     this.ownerAccessor = owner;
-
-    // Create Ruleset accessor
-    const ruleset = new RulesetAccessor(
-      rulesetId,
-      this.attributesCache,
-      this.chartsCache,
-      this.itemsCache,
-    );
 
     // Caller: entity that fired the action. When action fired from item context menu, Caller = that item instance; else Caller = Owner.
     const caller =

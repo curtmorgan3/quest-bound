@@ -118,7 +118,8 @@ export interface ExecuteCampaignEventEventSignal {
   payload: {
     campaignEventId: string;
     campaignSceneId: string;
-    characterId: string;
+    /** Character that triggered the event; may be omitted for ownerless campaign event scripts. */
+    characterId?: string;
     eventType: 'on_enter' | 'on_leave' | 'on_activate';
     requestId: string;
   };

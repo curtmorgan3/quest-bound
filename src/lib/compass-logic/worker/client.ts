@@ -697,8 +697,9 @@ export class QBScriptClient {
   async executeCampaignEventEvent(
     campaignEventId: string,
     campaignSceneId: string,
-    characterId: string,
     eventType: 'on_enter' | 'on_leave' | 'on_activate',
+    /** Character that triggered the event; may be null/undefined for ownerless events. */
+    characterId: string | null = null,
     roll?: RollFn,
     timeout = 10000,
     rollSplit?: RollSplitFn,
@@ -718,9 +719,9 @@ export class QBScriptClient {
           payload: {
             campaignEventId,
             campaignSceneId,
-            characterId,
             eventType,
             requestId,
+            characterId: characterId ?? undefined,
           },
         },
         requestId,

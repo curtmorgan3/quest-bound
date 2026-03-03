@@ -8,11 +8,12 @@ import {
 } from '@/components/ui/sheet';
 import { EventLookup } from '@/lib/compass-api';
 import { useQBScriptClient } from '@/lib/compass-logic/worker/hooks';
+import { activateButtonStyle } from '@/palette';
 import { db } from '@/stores';
 import type { CampaignEvent, CampaignEventScene } from '@/types';
+import { useLiveQuery } from 'dexie-react-hooks';
 import { FileText, Trash2, Zap } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
-import { useLiveQuery } from 'dexie-react-hooks';
 
 type EventSceneWithEvent = CampaignEventScene & { event: CampaignEvent };
 
@@ -39,28 +40,22 @@ export function CampaignEventsPanel({
 
   const hasScene = Boolean(campaignId && sceneId);
 
-  const eventsForScene = useLiveQuery(
-    async (): Promise<EventSceneWithEvent[]> => {
-      if (!sceneId || !campaignId) return [];
+  const eventsForScene = useLiveQuery(async (): Promise<EventSceneWithEvent[]> => {
+    if (!sceneId || !campaignId) return [];
 
-      const links = await db.campaignEventScenes
-        .where('campaignSceneId')
-        .equals(sceneId)
-        .toArray();
-      if (links.length === 0) return [];
+    const links = await db.campaignEventScenes.where('campaignSceneId').equals(sceneId).toArray();
+    if (links.length === 0) return [];
 
-      const events = await db.campaignEvents.bulkGet(links.map((l) => l.campaignEventId));
-      return links
-        .map((link) => {
-          const event = events.find((e) => e?.id === link.campaignEventId);
-          return event && event.campaignId === campaignId
-            ? ({ ...link, event } as EventSceneWithEvent)
-            : null;
-        })
-        .filter((x): x is EventSceneWithEvent => x != null);
-    },
-    [sceneId, campaignId],
-  );
+    const events = await db.campaignEvents.bulkGet(links.map((l) => l.campaignEventId));
+    return links
+      .map((link) => {
+        const event = events.find((e) => e?.id === link.campaignEventId);
+        return event && event.campaignId === campaignId
+          ? ({ ...link, event } as EventSceneWithEvent)
+          : null;
+      })
+      .filter((x): x is EventSceneWithEvent => x != null);
+  }, [sceneId, campaignId]);
 
   const sortedEventsForScene = useMemo(
     () =>
@@ -95,11 +90,11 @@ export function CampaignEventsPanel({
 
   const handleActivateEvent = useCallback(
     async (event: CampaignEvent) => {
-      if (!actingCharacterId || !event.scriptId || !sceneId) return;
+      if (!event.scriptId || !sceneId) return;
       setActivatingEventId(event.id);
       try {
         await client
-          .executeCampaignEventEvent(event.id, sceneId, actingCharacterId, 'on_activate')
+          .executeCampaignEventEvent(event.id, sceneId, 'on_activate', null)
           .catch((err) => console.warn('[CampaignEventsPanel] on_activate script failed:', err));
       } finally {
         setActivatingEventId((current) => (current === event.id ? null : current));
@@ -109,7 +104,6 @@ export function CampaignEventsPanel({
   );
 
   const hasEvents = sortedEventsForScene.length > 0;
-  const canRunEvents = Boolean(actingCharacterId);
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -160,7 +154,7 @@ export function CampaignEventsPanel({
                   <div className='flex flex-col gap-2'>
                     {sortedEventsForScene.map((link) => {
                       const { event } = link;
-                      const canActivate = Boolean(event.scriptId && canRunEvents);
+                      const canActivate = Boolean(event.scriptId);
                       const isActivating = activatingEventId === event.id;
                       return (
                         <div
@@ -181,13 +175,8 @@ export function CampaignEventsPanel({
                                 variant='outline'
                                 size='icon'
                                 disabled={!canActivate || isActivating}
-                                title={
-                                  !event.scriptId
-                                    ? 'No script assigned'
-                                    : !actingCharacterId
-                                      ? 'Open a character sheet to run this event'
-                                      : 'Run on_activate'
-                                }
+                                style={activateButtonStyle}
+                                title={!event.scriptId ? 'No script assigned' : 'Run on_activate'}
                                 onClick={() => handleActivateEvent(event)}
                                 data-testid={`scene-event-zap-${event.id}`}>
                                 <Zap className='h-4 w-4' />
@@ -216,4 +205,3 @@ export function CampaignEventsPanel({
     </Sheet>
   );
 }
-

@@ -36,6 +36,11 @@ export class ReactiveScriptRunner {
     // Execute the main script
     const result = await this.runner.run(sourceCode);
 
+    // If there is no owner (e.g. ownerless/system scripts), skip reactive execution.
+    if (!this.context.ownerId) {
+      return result;
+    }
+
     // If the script failed, don't trigger reactive updates
     if (result.error) {
       return result;
