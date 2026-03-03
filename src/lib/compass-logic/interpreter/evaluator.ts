@@ -1,10 +1,4 @@
-import type {
-  PromptFn,
-  RollFn,
-  RollSplitFn,
-  SelectCharacterFn,
-  SelectCharactersFn,
-} from '@/types';
+import type { PromptFn, RollFn, RollSplitFn, SelectCharacterFn, SelectCharactersFn } from '@/types';
 import { parseDiceExpression, rollDie } from '@/utils/dice-utils';
 import { prepareForStructuredClone } from '../runtime/structured-clone-safe';
 import type { ASTNode } from './ast';
@@ -21,6 +15,8 @@ export interface EvaluatorOptions {
   selectCharacter?: SelectCharacterFn;
   /** When set, used as the script built-in selectCharacters(title?, description?). */
   selectCharacters?: SelectCharactersFn;
+  /** When set, called after roll/rollSplit with an auto-generated log message (e.g. for game log). */
+  onRollComplete?: (message: string) => Promise<void>;
 }
 
 export class RuntimeError extends Error {
@@ -93,6 +89,7 @@ export class Evaluator {
   private promptFn: PromptFn | undefined;
   private selectCharacterFn: SelectCharacterFn | undefined;
   private selectCharactersFn: SelectCharactersFn | undefined;
+  private onRollComplete: ((message: string) => Promise<void>) | undefined;
 
   constructor(options?: EvaluatorOptions) {
     this.globalEnv = new Environment(null);
@@ -104,6 +101,7 @@ export class Evaluator {
     this.promptFn = options?.prompt;
     this.selectCharacterFn = options?.selectCharacter;
     this.selectCharactersFn = options?.selectCharacters;
+    this.onRollComplete = options?.onRollComplete;
     // Detect if we're running in a worker context
     this.isWorkerContext =
       typeof self !== 'undefined' &&
@@ -514,6 +512,19 @@ export class Evaluator {
     return values;
   }
 
+  /** Persist an auto-generated log for roll/rollSplit when onRollComplete is set. */
+  private async persistRollLog(total: number): Promise<void> {
+    if (!this.onRollComplete) return;
+    try {
+      const owner = this.currentEnv.get('Owner');
+      const ownerName = owner?.name ?? 'Someone';
+      const message = `${ownerName} rolled a ${total}`;
+      await this.onRollComplete(message);
+    } catch {
+      // Owner not in env or other error; skip persisting
+    }
+  }
+
   private registerBuiltins(): void {
     // Dice rolling: use injected roll when provided, otherwise default local implementation
     this.globalEnv.define(
@@ -521,6 +532,7 @@ export class Evaluator {
       async (expression: string, rerollMessage?: string): Promise<number> => {
         if (this.rollFn) {
           const result = await this.rollFn(expression, rerollMessage);
+          await this.persistRollLog(result);
           return result;
         }
         return this.defaultLocalRoll(expression);
@@ -533,6 +545,8 @@ export class Evaluator {
       async (expression: string, rerollMessage?: string): Promise<number[]> => {
         if (this.rollSplitFn) {
           const result = await this.rollSplitFn(expression, rerollMessage);
+          const total = result.reduce((a, b) => a + b, 0);
+          await this.persistRollLog(total);
           return result;
         }
         return this.defaultLocalRollSplit(expression);
@@ -545,18 +559,15 @@ export class Evaluator {
     });
 
     // Prompt: show modal with message and choices; returns selected choice (requires injected promptFn, e.g. from worker bridge)
-    this.globalEnv.define(
-      'prompt',
-      async (msg: string, choices: string[]): Promise<string> => {
-        if (!this.promptFn) {
-          throw new RuntimeError(
-            'prompt(msg, choices) is not available in this context (no prompt handler)',
-          );
-        }
-        const normalizedChoices = Array.isArray(choices) ? choices.map(String) : [String(choices)];
-        return this.promptFn(msg, normalizedChoices);
-      },
-    );
+    this.globalEnv.define('prompt', async (msg: string, choices: string[]): Promise<string> => {
+      if (!this.promptFn) {
+        throw new RuntimeError(
+          'prompt(msg, choices) is not available in this context (no prompt handler)',
+        );
+      }
+      const normalizedChoices = Array.isArray(choices) ? choices.map(String) : [String(choices)];
+      return this.promptFn(msg, normalizedChoices);
+    });
 
     // Character selection: selectCharacter(title?, description?) -> character accessor or null
     this.globalEnv.define(
@@ -567,8 +578,7 @@ export class Evaluator {
             'selectCharacter(title?, description?) is not available in this context (no character selection handler)',
           );
         }
-        const safeTitle =
-          typeof title === 'string' && title.trim().length > 0 ? title : undefined;
+        const safeTitle = typeof title === 'string' && title.trim().length > 0 ? title : undefined;
         const safeDescription =
           typeof description === 'string' && description.trim().length > 0
             ? description
@@ -586,8 +596,7 @@ export class Evaluator {
             'selectCharacters(title?, description?) is not available in this context (no character selection handler)',
           );
         }
-        const safeTitle =
-          typeof title === 'string' && title.trim().length > 0 ? title : undefined;
+        const safeTitle = typeof title === 'string' && title.trim().length > 0 ? title : undefined;
         const safeDescription =
           typeof description === 'string' && description.trim().length > 0
             ? description

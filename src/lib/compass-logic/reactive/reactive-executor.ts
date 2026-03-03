@@ -6,6 +6,7 @@ import type {
   SelectCharactersFn,
 } from '@/types';
 import type { DB } from '@/stores/db/hooks/types';
+import { persistScriptLogs } from '../script-logs';
 import type { ExecuteActionEventFn } from '../runtime/proxies';
 import type { ScriptExecutionContext } from '../runtime/script-runner';
 import { ScriptRunner } from '../runtime/script-runner';
@@ -338,14 +339,14 @@ export class ReactiveExecutor {
         if (!allModifiedIds.includes(id)) allModifiedIds.push(id);
       }
 
-      await this.persistScriptLogs(
+      await persistScriptLogs(this.db, {
         rulesetId,
         scriptId,
         characterId,
-        result.logMessages,
-        'attribute_change',
-        options.campaignId ?? null,
-      );
+        logMessages: result.logMessages,
+        context: 'attribute_change',
+        campaignId: options.campaignId ?? null,
+      });
 
       // Check if this execution triggered more changes
       // If so, we would recursively execute those scripts
@@ -388,46 +389,6 @@ export class ReactiveExecutor {
           });
         }
       }
-    }
-  }
-
-  /**
-   * Persist script log messages to database.
-   */
-  private async persistScriptLogs(
-    rulesetId: string,
-    scriptId: string,
-    characterId: string,
-    logMessages: any[][],
-    context: string,
-    campaignId: string | null = null,
-  ): Promise<void> {
-    if (logMessages.length === 0) return;
-    const now = new Date().toISOString();
-    const timestamp = Date.now();
-    try {
-      for (const args of logMessages) {
-        let argsJson: string;
-        try {
-          argsJson = JSON.stringify(args);
-        } catch {
-          argsJson = JSON.stringify(args.map((a) => String(a)));
-        }
-        await this.db.scriptLogs.add({
-          id: crypto.randomUUID(),
-          rulesetId,
-          campaignId,
-          scriptId,
-          characterId,
-          argsJson,
-          timestamp,
-          context,
-          createdAt: now,
-          updatedAt: now,
-        } as any);
-      }
-    } catch (e) {
-      console.warn('[QBScript] Failed to persist script logs:', e);
     }
   }
 

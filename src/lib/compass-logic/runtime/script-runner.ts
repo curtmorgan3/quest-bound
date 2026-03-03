@@ -172,6 +172,8 @@ export interface ScriptExecutionContext {
   executeActionEvent?: ExecuteActionEventFn;
   /** When set (e.g. campaign event scripts), used to resolve Owner.location from the character's current location in the campaign. */
   campaignId?: string;
+  /** When set, called after roll/rollSplit with an auto-generated log message for the game log. */
+  onRollComplete?: (message: string) => Promise<void>;
 }
 
 /**
@@ -272,6 +274,7 @@ export class ScriptRunner {
       prompt: context.prompt,
       selectCharacter: selectCharacterHost,
       selectCharacters: selectCharactersHost,
+      onRollComplete: context.onRollComplete,
     });
     this.pendingUpdates = new Map();
     this.characterAttributesCache = new Map();
