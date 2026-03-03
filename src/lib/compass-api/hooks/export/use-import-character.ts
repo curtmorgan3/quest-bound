@@ -102,6 +102,8 @@ export const useImportCharacter = () => {
       const characterText = await characterFile.async('text');
       const exportedCharacter = JSON.parse(characterText) as Character;
 
+      const originalInventoryId = (exportedCharacter as { inventoryId?: string }).inventoryId;
+
       const characterId = crypto.randomUUID();
 
       const newCharacter: Character = {
@@ -277,6 +279,20 @@ export const useImportCharacter = () => {
       }
 
       const success = errors.length === 0;
+
+      // If the exported character had a primary inventory, point the new character at the
+      // corresponding imported inventory (falling back to the first imported inventory).
+      let primaryInventoryId: string | undefined;
+      if (originalInventoryId) {
+        primaryInventoryId = inventoryIdMap.get(originalInventoryId) ?? undefined;
+      }
+      if (!primaryInventoryId && inventoryIdMap.size > 0) {
+        primaryInventoryId = Array.from(inventoryIdMap.values())[0];
+      }
+      if (primaryInventoryId) {
+        await db.characters.update(characterId, { inventoryId: primaryInventoryId });
+        (newCharacter as { inventoryId?: string }).inventoryId = primaryInventoryId;
+      }
 
       return {
         success,

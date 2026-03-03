@@ -33,7 +33,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { useAssets, useCharacter, useRulesets, useImportCharacter } from '@/lib/compass-api';
+import { useAssets, useCharacter, useImportCharacter, useRulesets } from '@/lib/compass-api';
 import { db } from '@/stores';
 import type { Archetype } from '@/types';
 import { useLiveQuery } from 'dexie-react-hooks';
@@ -195,7 +195,9 @@ export const Characters = () => {
       setImportResult({
         success: false,
         message:
-          error instanceof Error ? error.message : 'Character import failed due to an unknown error.',
+          error instanceof Error
+            ? error.message
+            : 'Character import failed due to an unknown error.',
         rulesetMissing: false,
       });
     } finally {
@@ -296,7 +298,9 @@ export const Characters = () => {
                     <div className='flex gap-2'>
                       <Select
                         value={addArchetypeValue}
-                        onValueChange={(v) => (v === '_none' ? undefined : setAddArchetypeValue(v))}>
+                        onValueChange={(v) =>
+                          v === '_none' ? undefined : setAddArchetypeValue(v)
+                        }>
                         <SelectTrigger
                           id='character-archetype-add'
                           className='flex-1'
@@ -403,12 +407,12 @@ export const Characters = () => {
             {isImporting ? (
               <>
                 <Upload className='h-4 w-4 animate-pulse' />
-                Import
+                Upload
               </>
             ) : (
               <>
                 <Upload className='h-4 w-4' />
-                Import
+                Upload
               </>
             )}
           </Button>
@@ -477,7 +481,9 @@ export const Characters = () => {
                       <AlertDialogContent>
                         <AlertDialogHeader>
                           <AlertDialogTitle>Permanently delete this content?</AlertDialogTitle>
-                          <AlertDialogDescription>Permanently delete this content?</AlertDialogDescription>
+                          <AlertDialogDescription>
+                            Permanently delete this content?
+                          </AlertDialogDescription>
                           <div className='flex gap-2'>
                             <Label htmlFor='preview-card-do-not-ask-again'>Do not ask again</Label>
                             <Checkbox
