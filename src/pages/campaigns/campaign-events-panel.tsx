@@ -84,6 +84,29 @@ export function CampaignEventsPanel({
     [eventsForScene, sceneId],
   );
 
+  const handleUpdateParameterValue = useCallback(
+    async (linkId: string, paramId: string, value: string) => {
+      try {
+        const link = (await db.campaignEventScenes.get(linkId)) as CampaignEventScene | undefined;
+        if (!link) return;
+        const existing = link.parameterValues ?? {};
+        const next: Record<string, any> = { ...existing };
+        if (value === '') {
+          delete next[paramId];
+        } else {
+          next[paramId] = value;
+        }
+        await db.campaignEventScenes.update(linkId, {
+          parameterValues: next,
+          updatedAt: new Date().toISOString(),
+        } as Partial<CampaignEventScene>);
+      } catch (e) {
+        console.warn('[CampaignEventsPanel] Failed to update parameter value', e);
+      }
+    },
+    [],
+  );
+
   const handleRemoveEventFromScene = useCallback(async (linkId: string) => {
     await db.campaignEventScenes.delete(linkId);
   }, []);
@@ -166,6 +189,42 @@ export function CampaignEventsPanel({
                               <span className='text-xs text-muted-foreground'>
                                 {event.category}
                               </span>
+                            )}
+                            {event.parameters && event.parameters.length > 0 && (
+                              <div className='mt-1 flex flex-col gap-1'>
+                                {event.parameters.map((param) => (
+                                  <div
+                                    key={param.id}
+                                    className='flex items-center gap-2 text-xs text-muted-foreground'>
+                                    <span className='w-32 truncate'>
+                                      {param.name}{' '}
+                                      <span className='text-[0.7rem] uppercase'>
+                                        ({param.type})
+                                      </span>
+                                    </span>
+                                    <input
+                                      className='flex-1 rounded border px-1 py-0.5 text-xs bg-background'
+                                      value={(
+                                        (link.parameterValues ?? {})[param.id] ??
+                                        param.defaultValue ??
+                                        ''
+                                      ).toString()}
+                                      onChange={(e) =>
+                                        handleUpdateParameterValue(
+                                          link.id,
+                                          param.id,
+                                          e.target.value,
+                                        )
+                                      }
+                                      placeholder={
+                                        param.defaultValue == null
+                                          ? 'Scene value (optional)'
+                                          : `Default: ${String(param.defaultValue)}`
+                                      }
+                                    />
+                                  </div>
+                                ))}
+                              </div>
                             )}
                           </div>
                           <div className='flex items-center gap-1.5'>

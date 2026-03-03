@@ -1,5 +1,10 @@
 import type { DB } from '@/stores/db/hooks/types';
 import type {
+  CampaignEvent,
+  CampaignEventParamType,
+  CampaignEventParamValue,
+  CampaignEventParameterDefinition,
+  CampaignEventScene,
   PromptFn,
   RollFn,
   RollSplitFn,
@@ -71,6 +76,94 @@ export type RunScriptForTestFn = (
   context: ScriptExecutionContext,
   sourceCode: string,
 ) => Promise<ScriptExecutionResult>;
+
+type CampaignEventParamDescriptor = {
+  name: string;
+  type: CampaignEventParamType;
+  required?: boolean;
+  value: CampaignEventParamValue;
+};
+
+/**
+ * Build the helper object exposed to QBScript as `params` for campaign event scripts.
+ * Values are resolved by parameter definition (including defaults) plus per-scene overrides.
+ */
+export function createCampaignEventParamsHelper(
+  event: CampaignEvent,
+  link: CampaignEventScene | null | undefined,
+): {
+  get: (name: string) => CampaignEventParamValue;
+  getString: (name: string) => string | null;
+  getNumber: (name: string) => number | null;
+  getBoolean: (name: string) => boolean | null;
+  has: (name: string) => boolean;
+  entries: () => CampaignEventParamDescriptor[];
+} {
+  const definitions: CampaignEventParameterDefinition[] = event.parameters ?? [];
+  const sceneValues: Record<string, CampaignEventParamValue> = link?.parameterValues ?? {};
+
+  const byName = new Map<string, CampaignEventParamDescriptor>();
+
+  for (const def of definitions) {
+    const trimmedName = (def.name ?? '').trim();
+    if (!trimmedName) continue;
+
+    const hasSceneOverride = Object.prototype.hasOwnProperty.call(sceneValues, def.id);
+    const rawValue = hasSceneOverride ? sceneValues[def.id] : def.defaultValue ?? null;
+
+    byName.set(trimmedName, {
+      name: trimmedName,
+      type: def.type,
+      required: def.required,
+      value: rawValue ?? null,
+    });
+  }
+
+  const coerceNumber = (value: CampaignEventParamValue): number | null => {
+    if (value == null) return null;
+    if (typeof value === 'number') return Number.isFinite(value) ? value : null;
+    if (typeof value === 'boolean') return value ? 1 : 0;
+    const trimmed = String(value).trim();
+    if (!trimmed) return null;
+    const num = Number(trimmed);
+    return Number.isFinite(num) ? num : null;
+  };
+
+  const coerceBoolean = (value: CampaignEventParamValue): boolean | null => {
+    if (value == null) return null;
+    if (typeof value === 'boolean') return value;
+    if (typeof value === 'number') return value !== 0;
+    const trimmed = String(value).trim().toLowerCase();
+    if (!trimmed) return null;
+    if (trimmed === 'true' || trimmed === '1' || trimmed === 'yes' || trimmed === 'y') return true;
+    if (trimmed === 'false' || trimmed === '0' || trimmed === 'no' || trimmed === 'n') return false;
+    return null;
+  };
+
+  return {
+    get: (name: string): CampaignEventParamValue => {
+      const entry = byName.get(name.trim());
+      return entry ? entry.value : null;
+    },
+    getString: (name: string): string | null => {
+      const value = byName.get(name.trim())?.value;
+      if (value == null) return null;
+      return String(value);
+    },
+    getNumber: (name: string): number | null => {
+      const entry = byName.get(name.trim());
+      if (!entry) return null;
+      return coerceNumber(entry.value);
+    },
+    getBoolean: (name: string): boolean | null => {
+      const entry = byName.get(name.trim());
+      if (!entry) return null;
+      return coerceBoolean(entry.value);
+    },
+    has: (name: string): boolean => byName.has(name.trim()),
+    entries: (): CampaignEventParamDescriptor[] => Array.from(byName.values()),
+  };
+}
 
 /**
  * EventHandlerExecutor handles execution of event handler functions
@@ -798,6 +891,24 @@ export class EventHandlerExecutor {
       };
     }
 
+    // Resolve parameter helper for this campaign event and scene (if any).
+    let paramsHelper: ReturnType<typeof createCampaignEventParamsHelper> | undefined;
+    if ((campaignEvent.parameters?.length ?? 0) > 0) {
+      try {
+        const link = (await this.db.campaignEventScenes
+          .where('campaignSceneId')
+          .equals(campaignSceneId)
+          .filter((l: CampaignEventScene) => l.campaignEventId === campaignEventId)
+          .first()) as CampaignEventScene | undefined;
+        paramsHelper = createCampaignEventParamsHelper(campaignEvent as CampaignEvent, link ?? null);
+      } catch (e) {
+        console.warn(
+          '[EventHandlerExecutor] Failed to load CampaignEventScene for params',
+          e,
+        );
+      }
+    }
+
     const context: ScriptExecutionContext = {
       ...(characterId ? { ownerId: characterId } : {}),
       rulesetId: campaign.rulesetId,
@@ -830,6 +941,7 @@ export class EventHandlerExecutor {
           rollSplit,
           prompt,
         ),
+      ...(paramsHelper ? { campaignEventParams: paramsHelper } : {}),
     };
 
     const result = await this.executeEventHandlerByCall(script.sourceCode, eventType, context);

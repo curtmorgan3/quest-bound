@@ -544,6 +544,19 @@ export type CampaignScene = BaseDetails & {
   category?: string;
 };
 
+export type CampaignEventParamType = 'string' | 'number' | 'boolean';
+
+export type CampaignEventParamValue = string | number | boolean | null;
+
+export type CampaignEventParameterDefinition = {
+  id: string;
+  name: string;
+  type: CampaignEventParamType;
+  required?: boolean;
+  defaultValue?: CampaignEventParamValue;
+  description?: string;
+};
+
 export type CampaignItem = BaseDetails & {
   itemId: string;
   campaignId: string;
@@ -559,11 +572,15 @@ export type CampaignEvent = BaseDetails & {
   campaignId: string;
   scriptId?: string | null;
   category?: string;
+  /** Parameter definitions that can be bound per CampaignEventScene and accessed via params.get(). */
+  parameters?: CampaignEventParameterDefinition[];
 };
 
 export type CampaignEventScene = BaseDetails & {
   campaignEventId: string;
   campaignSceneId: string;
+  /** Per-scene values for this event's parameters, keyed by parameter definition id. */
+  parameterValues?: Record<string, CampaignEventParamValue>;
 };
 
 export type CampaignEventLocation = BaseDetails & {

@@ -21,7 +21,11 @@ import {
 } from '@/components/ui/select';
 import { useCampaignEvents } from '@/lib/compass-api';
 import { colorPrimary } from '@/palette';
-import type { CampaignEvent } from '@/types';
+import type {
+  CampaignEvent,
+  CampaignEventParameterDefinition,
+  CampaignEventParamType,
+} from '@/types';
 import { FileCode, FilePlus, Pencil, Plus } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
@@ -42,6 +46,7 @@ export function CampaignEvents() {
   const [editingEvent, setEditingEvent] = useState<CampaignEvent | null>(null);
   const [editLabel, setEditLabel] = useState('');
   const [editCategory, setEditCategory] = useState<string | null>(null);
+  const [editParameters, setEditParameters] = useState<CampaignEventParameterDefinition[]>([]);
 
   const existingCategories = useMemo(() => {
     const categories = new Set<string>();
@@ -97,6 +102,7 @@ export function CampaignEvents() {
     setEditingEvent(event);
     setEditLabel(event.label);
     setEditCategory(event.category ?? null);
+    setEditParameters(event.parameters ?? []);
     setEditOpen(true);
   };
 
@@ -104,17 +110,47 @@ export function CampaignEvents() {
     setEditOpen(open);
     if (!open) {
       setEditingEvent(null);
+      setEditParameters([]);
     }
   };
 
   const handleSaveEdit = async () => {
     if (!editingEvent || !editLabel.trim()) return;
+    const cleanedParams = editParameters
+      .map((p) => ({ ...p, name: p.name.trim() }))
+      .filter((p) => p.name.length > 0);
+
     await updateCampaignEvent(editingEvent.id, {
       label: editLabel.trim(),
       category: editCategory ?? undefined,
+      parameters: cleanedParams.length > 0 ? cleanedParams : undefined,
     });
     setEditOpen(false);
     setEditingEvent(null);
+  };
+
+  const handleAddParameter = () => {
+    setEditParameters((prev) => [
+      ...prev,
+      {
+        id: crypto.randomUUID(),
+        name: '',
+        type: 'string' satisfies CampaignEventParamType,
+      },
+    ]);
+  };
+
+  const handleUpdateParameter = (
+    id: string,
+    updates: Partial<Pick<CampaignEventParameterDefinition, 'name' | 'type' | 'defaultValue'>>,
+  ) => {
+    setEditParameters((prev) =>
+      prev.map((param) => (param.id === id ? { ...param, ...updates } : param)),
+    );
+  };
+
+  const handleRemoveParameter = (id: string) => {
+    setEditParameters((prev) => prev.filter((param) => param.id !== id));
   };
 
   return (
@@ -267,6 +303,80 @@ export function CampaignEvents() {
               existingCategories={existingCategories}
               label='Category'
             />
+            <div className='grid gap-2'>
+              <div className='flex items-center justify-between'>
+                <Label>Parameters</Label>
+                <Button
+                  type='button'
+                  variant='outline'
+                  size='sm'
+                  onClick={handleAddParameter}
+                  className='h-7 px-2 text-xs'>
+                  Add parameter
+                </Button>
+              </div>
+              {editParameters.length === 0 ? (
+                <p className='text-xs text-muted-foreground'>
+                  No parameters. Add parameters to pass values when this event runs in a scene.
+                </p>
+              ) : (
+                <div className='flex flex-col gap-2'>
+                  {editParameters.map((param) => (
+                    <div
+                      key={param.id}
+                      className='grid grid-cols-[1.5fr,1fr,auto] items-center gap-2'>
+                      <Input
+                        value={param.name}
+                        onChange={(e) =>
+                          handleUpdateParameter(param.id, { name: e.target.value })
+                        }
+                        placeholder='Parameter name'
+                      />
+                      <Select
+                        value={param.type}
+                        onValueChange={(v) =>
+                          handleUpdateParameter(param.id, {
+                            type: v as CampaignEventParamType,
+                          })
+                        }>
+                        <SelectTrigger>
+                          <SelectValue placeholder='Type' />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value='string'>String</SelectItem>
+                          <SelectItem value='number'>Number</SelectItem>
+                          <SelectItem value='boolean'>Boolean</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <div className='flex items-center gap-1'>
+                        <Input
+                          className='w-32'
+                          value={
+                            param.defaultValue === null || param.defaultValue === undefined
+                              ? ''
+                              : String(param.defaultValue)
+                          }
+                          onChange={(e) =>
+                            handleUpdateParameter(param.id, {
+                              defaultValue: e.target.value === '' ? undefined : e.target.value,
+                            })
+                          }
+                          placeholder='Default'
+                        />
+                        <Button
+                          type='button'
+                          variant='ghost'
+                          size='icon'
+                          onClick={() => handleRemoveParameter(param.id)}
+                          className='h-7 w-7 text-destructive hover:text-destructive'>
+                          ×
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
           <DialogFooter>
             <Button variant='outline' onClick={() => handleEditOpenChange(false)}>

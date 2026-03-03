@@ -191,6 +191,8 @@ export interface ScriptExecutionContext {
   campaignSceneId?: string;
   /** When set (campaign event scripts), the CampaignEvent this script is attached to. */
   campaignEvent?: CampaignEvent;
+  /** When set (campaign event scripts), helper exposed to QBScript as `params` (e.g. params.get('Name')). */
+  campaignEventParams?: any;
 }
 
 /**
@@ -566,6 +568,11 @@ export class ScriptRunner {
    */
   private setupAccessors(): void {
     const { ownerId, rulesetId, db } = this.context;
+
+    // Inject campaign event parameters helper (when provided) as `params` in the script environment.
+    if (this.context.campaignEventParams) {
+      this.evaluator.globalEnv.define('params', this.context.campaignEventParams);
+    }
 
     // Create Ruleset accessor (available in both owner and ownerless contexts)
     const ruleset = new RulesetAccessor(
