@@ -8,7 +8,7 @@ import {
 } from '@/lib/compass-api';
 import type { SheetViewerBackdropClickDetail } from '@/lib/compass-planes/sheet-viewer';
 import { SHEET_VIEWER_BACKDROP_CLICK } from '@/lib/compass-planes/sheet-viewer';
-import { FileText, ScrollText } from 'lucide-react';
+import { FileText, ScrollText, Zap } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { ActiveScene } from './active-scene';
@@ -18,6 +18,7 @@ import { useCampaignPlayCharacterList } from './hooks';
 import { ManagePlayerCharacters } from './manage-player-characters';
 import { NpcStage } from './npc-stage';
 import { SceneDocumentPanel } from './scene-document-panel';
+import { CampaignEventsPanel } from './campaign-events-panel';
 
 export function CampaignDashboard() {
   const { campaignId, sceneId } = useParams<{ campaignId: string; sceneId?: string }>();
@@ -32,6 +33,7 @@ export function CampaignDashboard() {
   const [sheetCharacterId, setSheetCharacterId] = useState<string | null>(null);
   const [hoveredCampaignCharacterId, setHoveredCampaignCharacterId] = useState<string | null>(null);
   const [sceneDocumentPanelOpen, setSceneDocumentPanelOpen] = useState(false);
+  const [sceneEventsPanelOpen, setSceneEventsPanelOpen] = useState(false);
   const [showCampaignLog, setShowCampaignLog] = useState(true);
 
   const { campaignScenes } = useCampaignScenes(campaignId);
@@ -160,6 +162,15 @@ export function CampaignDashboard() {
             <Button
               variant='ghost'
               size='icon'
+              onClick={() => setSceneEventsPanelOpen(true)}
+              aria-label='Scene events'
+              title={sceneId ? 'Link events to this scene' : 'Open a scene to link events'}
+              data-testid='scene-events-panel-trigger'>
+              <Zap className='h-4 w-4' />
+            </Button>
+            <Button
+              variant='ghost'
+              size='icon'
               onClick={() => setShowCampaignLog((v) => !v)}
               aria-label={showCampaignLog ? 'Hide game log' : 'Show game log'}
               title={showCampaignLog ? 'Hide game log' : 'Show game log'}
@@ -173,6 +184,14 @@ export function CampaignDashboard() {
               campaignId={campaign.id}
               sceneId={sceneId}
               sceneName={currentScene?.name}
+            />
+            <CampaignEventsPanel
+              open={sceneEventsPanelOpen}
+              onOpenChange={setSceneEventsPanelOpen}
+              campaignId={campaign.id}
+              sceneId={sceneId}
+              sceneName={currentScene?.name}
+              actingCharacterId={sheetCharacterId}
             />
           </div>
         }>
