@@ -26,6 +26,8 @@ export function getEventInvocationLogMessage(
   const hasTargets = targetNames && targetNames.length > 0;
   const targetPart = hasTargets ? ` on ${targetNames.join(', ')}` : '';
 
+  console.log(type);
+
   let verb = 'called';
   if (type === 'item') {
     switch (eventName) {

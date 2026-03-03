@@ -1,4 +1,4 @@
-import { Button } from '@/components';
+import { Button, Checkbox } from '@/components';
 import {
   Sheet,
   SheetContent,
@@ -192,38 +192,72 @@ export function CampaignEventsPanel({
                             )}
                             {event.parameters && event.parameters.length > 0 && (
                               <div className='mt-1 flex flex-col gap-1'>
-                                {event.parameters.map((param) => (
-                                  <div
-                                    key={param.id}
-                                    className='flex items-center gap-2 text-xs text-muted-foreground'>
-                                    <span className='w-32 truncate'>
-                                      {param.name}{' '}
-                                      <span className='text-[0.7rem] uppercase'>
-                                        ({param.type})
+                                {event.parameters.map((param) => {
+                                  const sceneValues = link.parameterValues ?? {};
+                                  const resolvedValue =
+                                    sceneValues[param.id] ?? param.defaultValue ?? null;
+                                  if (param.type === 'boolean') {
+                                    const checked =
+                                      resolvedValue === true ||
+                                      (typeof resolvedValue === 'string' &&
+                                        resolvedValue.trim().toLowerCase() === 'true');
+
+                                    return (
+                                      <div
+                                        key={param.id}
+                                        className='flex items-center gap-2 text-xs text-muted-foreground'>
+                                        <span className='w-32 truncate'>
+                                          {param.name}{' '}
+                                          <span className='text-[0.7rem] uppercase'>
+                                            ({param.type})
+                                          </span>
+                                        </span>
+                                        <div className='flex items-center gap-1'>
+                                          <Checkbox
+                                            checked={checked}
+                                            onCheckedChange={(next) =>
+                                              handleUpdateParameterValue(
+                                                link.id,
+                                                param.id,
+                                                next ? 'true' : 'false',
+                                              )
+                                            }
+                                          />
+                                          {param.defaultValue != null && (
+                                            <span className='text-[0.7rem] italic text-muted-foreground'>
+                                              Default: {String(param.defaultValue)}
+                                            </span>
+                                          )}
+                                        </div>
+                                      </div>
+                                    );
+                                  }
+
+                                  return (
+                                    <div
+                                      key={param.id}
+                                      className='flex items-center gap-2 text-xs text-muted-foreground'>
+                                      <span className='w-32 truncate'>
+                                        {param.name}{' '}
+                                        <span className='text-[0.7rem] uppercase'>
+                                          ({param.type})
+                                        </span>
                                       </span>
-                                    </span>
-                                    <input
-                                      className='flex-1 rounded border px-1 py-0.5 text-xs bg-background'
-                                      value={(
-                                        (link.parameterValues ?? {})[param.id] ??
-                                        param.defaultValue ??
-                                        ''
-                                      ).toString()}
-                                      onChange={(e) =>
-                                        handleUpdateParameterValue(
-                                          link.id,
-                                          param.id,
-                                          e.target.value,
-                                        )
-                                      }
-                                      placeholder={
-                                        param.defaultValue == null
-                                          ? 'Scene value (optional)'
-                                          : `Default: ${String(param.defaultValue)}`
-                                      }
-                                    />
-                                  </div>
-                                ))}
+                                      <input
+                                        className='flex-1 rounded border px-1 py-0.5 text-xs bg-background'
+                                        type={param.type === 'number' ? 'number' : 'text'}
+                                        value={resolvedValue == null ? '' : String(resolvedValue)}
+                                        onChange={(e) =>
+                                          handleUpdateParameterValue(
+                                            link.id,
+                                            param.id,
+                                            e.target.value,
+                                          )
+                                        }
+                                      />
+                                    </div>
+                                  );
+                                })}
                               </div>
                             )}
                           </div>

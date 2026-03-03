@@ -39,8 +39,8 @@ describe('createCampaignEventParamsHelper', () => {
     const helper = createCampaignEventParamsHelper(event, null);
 
     expect(helper.get('Name')).toBe('Alice');
-    expect(helper.getNumber('Count')).toBe(3);
-    expect(helper.has('Missing')).toBe(false);
+    expect(helper.get('Count')).toBe(3);
+    expect(helper.get('Missing')).toBeNull();
   });
 
   it('prefers scene parameter values over defaults', () => {
@@ -71,8 +71,7 @@ describe('createCampaignEventParamsHelper', () => {
     const helper = createCampaignEventParamsHelper(event, sceneLink);
 
     expect(helper.get('Name')).toBe('Bob');
-    expect(helper.getString('Name')).toBe('Bob');
-    expect(helper.getBoolean('Active')).toBe(true);
+    expect(helper.get('Active')).toBe(true);
   });
 
   it('can read scene values keyed by parameter name', () => {
@@ -99,7 +98,7 @@ describe('createCampaignEventParamsHelper', () => {
 
     const helper = createCampaignEventParamsHelper(event, sceneLink);
 
-    expect(helper.getNumber('Threshold')).toBe(25);
+    expect(helper.get('Threshold')).toBe(25);
   });
 
   it('looks up parameters case-insensitively by name', () => {
@@ -132,8 +131,6 @@ describe('createCampaignEventParamsHelper', () => {
     const helper = createCampaignEventParamsHelper(event, null);
 
     expect(helper.get('Unknown')).toBeNull();
-    expect(helper.getNumber('Unknown')).toBeNull();
-    expect(helper.getBoolean('Unknown')).toBeNull();
   });
 });
 

@@ -93,40 +93,7 @@ export function createCampaignEventParamsHelper(
   link: CampaignEventScene | null | undefined,
 ): {
   get: (name: string) => CampaignEventParamValue;
-  getString: (name: string) => string | null;
-  getNumber: (name: string) => number | null;
-  getBoolean: (name: string) => boolean | null;
-  has: (name: string) => boolean;
-  entries: () => CampaignEventParamDescriptor[];
 } {
-  const definitions: CampaignEventParameterDefinition[] = event.parameters ?? [];
-  const sceneValues: Record<string, CampaignEventParamValue> = link?.parameterValues ?? {};
-
-  const byName = new Map<string, CampaignEventParamDescriptor>();
-
-  for (const def of definitions) {
-    const trimmedName = (def.name ?? '').trim();
-    if (!trimmedName) continue;
-    const key = trimmedName.toLowerCase();
-
-    let valueFromScene: CampaignEventParamValue | undefined;
-    if (Object.prototype.hasOwnProperty.call(sceneValues, def.id)) {
-      valueFromScene = sceneValues[def.id];
-    } else if (Object.prototype.hasOwnProperty.call(sceneValues, trimmedName)) {
-      // Fallback: support legacy or name-keyed parameterValues
-      valueFromScene = sceneValues[trimmedName];
-    }
-
-    const rawValue = valueFromScene !== undefined ? valueFromScene : (def.defaultValue ?? null);
-
-    byName.set(key, {
-      name: trimmedName,
-      type: def.type,
-      required: def.required,
-      value: rawValue ?? null,
-    });
-  }
-
   const coerceNumber = (value: CampaignEventParamValue): number | null => {
     if (value == null) return null;
     if (typeof value === 'number') return Number.isFinite(value) ? value : null;
@@ -148,28 +115,51 @@ export function createCampaignEventParamsHelper(
     return null;
   };
 
+  const definitions: CampaignEventParameterDefinition[] = event.parameters ?? [];
+  const sceneValues: Record<string, CampaignEventParamValue> = link?.parameterValues ?? {};
+
+  const byName = new Map<string, CampaignEventParamDescriptor>();
+
+  for (const def of definitions) {
+    const trimmedName = (def.name ?? '').trim();
+    if (!trimmedName) continue;
+    const key = trimmedName.toLowerCase();
+
+    let valueFromScene: CampaignEventParamValue | undefined;
+    if (Object.prototype.hasOwnProperty.call(sceneValues, def.id)) {
+      valueFromScene = sceneValues[def.id];
+    } else if (Object.prototype.hasOwnProperty.call(sceneValues, trimmedName)) {
+      // Fallback: support legacy or name-keyed parameterValues
+      valueFromScene = sceneValues[trimmedName];
+    }
+
+    const rawValue = valueFromScene !== undefined ? valueFromScene : (def.defaultValue ?? null);
+
+    let coerced: CampaignEventParamValue = null;
+    if (def.type === 'string') {
+      coerced = rawValue == null ? null : String(rawValue);
+    } else if (def.type === 'number') {
+      coerced = coerceNumber(rawValue);
+    } else if (def.type === 'boolean') {
+      coerced = coerceBoolean(rawValue);
+    } else {
+      // Future-proof: fall back to raw value if an unknown type is introduced.
+      coerced = rawValue ?? null;
+    }
+
+    byName.set(key, {
+      name: trimmedName,
+      type: def.type,
+      required: def.required,
+      value: coerced,
+    });
+  }
+
   return {
     get: (name: string): CampaignEventParamValue => {
       const entry = byName.get(name.trim().toLowerCase());
       return entry ? entry.value : null;
     },
-    getString: (name: string): string | null => {
-      const value = byName.get(name.trim().toLowerCase())?.value;
-      if (value == null) return null;
-      return String(value);
-    },
-    getNumber: (name: string): number | null => {
-      const entry = byName.get(name.trim().toLowerCase());
-      if (!entry) return null;
-      return coerceNumber(entry.value);
-    },
-    getBoolean: (name: string): boolean | null => {
-      const entry = byName.get(name.trim().toLowerCase());
-      if (!entry) return null;
-      return coerceBoolean(entry.value);
-    },
-    has: (name: string): boolean => byName.has(name.trim().toLowerCase()),
-    entries: (): CampaignEventParamDescriptor[] => Array.from(byName.values()),
   };
 }
 
@@ -973,37 +963,6 @@ export class EventHandlerExecutor {
     };
 
     const result = await this.executeEventHandlerByCall(script.sourceCode, eventType, context);
-
-    const ownerName = characterId ? await this.getCharacterName(characterId) : 'System';
-    const message = getEventInvocationLogMessage('campaign_event', {
-      ownerName,
-      entityName: campaignEvent.label,
-      eventName: eventType,
-    });
-
-    if (characterId) {
-      await persistEventInvocationLog(
-        this.db,
-        {
-          rulesetId: campaign.rulesetId,
-          scriptId: script.id,
-          characterId,
-          campaignId: campaignEvent.campaignId,
-          context: 'campaign_event',
-        },
-        message,
-      );
-    } else {
-      await persistScriptLogs(this.db, {
-        rulesetId: campaign.rulesetId,
-        scriptId: script.id,
-        characterId: null,
-        logMessages: [[message]],
-        context: 'campaign_event',
-        campaignId: campaignEvent.campaignId,
-        autoGenerated: true,
-      });
-    }
 
     await persistScriptLogs(this.db, {
       rulesetId: campaign.rulesetId,

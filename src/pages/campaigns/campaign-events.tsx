@@ -339,7 +339,7 @@ export function CampaignEvents() {
                           <SelectValue placeholder='Type' />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value='string'>String</SelectItem>
+                          <SelectItem value='string'>Text</SelectItem>
                           <SelectItem value='number'>Number</SelectItem>
                           <SelectItem value='boolean'>Boolean</SelectItem>
                         </SelectContent>
