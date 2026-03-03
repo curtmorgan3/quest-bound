@@ -70,8 +70,6 @@ export function CampaignEventsPanel({
   const handleAddEventToScene = useCallback(
     async (event: CampaignEvent) => {
       if (!sceneId) return;
-      // Avoid duplicate links
-      if (eventsForScene?.some((link) => link.campaignEventId === event.id)) return;
       const now = new Date().toISOString();
       await db.campaignEventScenes.add({
         id: crypto.randomUUID(),
@@ -112,12 +110,22 @@ export function CampaignEventsPanel({
   }, []);
 
   const handleActivateEvent = useCallback(
-    async (event: CampaignEvent) => {
+    async (link: EventSceneWithEvent) => {
+      const { event } = link;
       if (!event.scriptId || !sceneId) return;
       setActivatingEventId(event.id);
       try {
         await client
-          .executeCampaignEventEvent(event.id, sceneId, 'on_activate', null)
+          .executeCampaignEventEvent(
+            event.id,
+            sceneId,
+            'on_activate',
+            actingCharacterId ?? null,
+            undefined,
+            undefined,
+            undefined,
+            link.id,
+          )
           .catch((err) => console.warn('[CampaignEventsPanel] on_activate script failed:', err));
       } finally {
         setActivatingEventId((current) => (current === event.id ? null : current));
@@ -270,7 +278,7 @@ export function CampaignEventsPanel({
                                 disabled={!canActivate || isActivating}
                                 style={activateButtonStyle}
                                 title={!event.scriptId ? 'No script assigned' : 'Run on_activate'}
-                                onClick={() => handleActivateEvent(event)}
+                                onClick={() => handleActivateEvent(link)}
                                 data-testid={`scene-event-zap-${event.id}`}>
                                 <Zap className='h-4 w-4' />
                               </Button>

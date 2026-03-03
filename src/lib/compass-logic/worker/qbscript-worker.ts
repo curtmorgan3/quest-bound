@@ -1397,6 +1397,8 @@ async function handleExecuteCampaignEventEvent(payload: {
   characterId?: string;
   eventType: 'on_enter' | 'on_leave' | 'on_activate';
   requestId: string;
+  /** Optional specific CampaignEventScene id when multiple links exist for the same event+scene. */
+  campaignEventSceneId?: string;
 }): Promise<void> {
   try {
     const rollFn: RollFn = (expression: string, rerollMessage?: string) =>
@@ -1421,6 +1423,7 @@ async function handleExecuteCampaignEventEvent(payload: {
       rollFn,
       rollSplitFn,
       promptFn,
+      payload.campaignEventSceneId,
     );
 
     if (result.error || !result.success) {

@@ -856,6 +856,8 @@ export class EventHandlerExecutor {
     roll?: RollFn,
     rollSplit?: RollSplitFn,
     prompt?: PromptFn,
+    /** Optional specific CampaignEventScene id when multiple links exist for the same event+scene. */
+    campaignEventSceneId?: string | null,
   ): Promise<EventHandlerResult> {
     const campaignEvent = await this.db.campaignEvents.get(campaignEventId);
     if (!campaignEvent) {
@@ -914,11 +916,30 @@ export class EventHandlerExecutor {
     try {
       const table = (this.db as any).campaignEventScenes;
       if (table && typeof table.where === 'function') {
-        const link = (await table
-          .where('campaignSceneId')
-          .equals(campaignSceneId)
-          .filter((l: CampaignEventScene) => l.campaignEventId === campaignEventId)
-          .first()) as CampaignEventScene | undefined;
+        let link: CampaignEventScene | undefined;
+
+        // Prefer an explicit CampaignEventScene when provided (disambiguates multiples in a scene).
+        if (campaignEventSceneId) {
+          link = (await table.get?.(campaignEventSceneId)) as CampaignEventScene | undefined;
+          // Basic safeguard: ensure the link matches the requested event+scene.
+          if (
+            link &&
+            (link as any).campaignEventId !== campaignEventId &&
+            (link as any).campaignSceneId !== campaignSceneId
+          ) {
+            link = undefined;
+          }
+        }
+
+        // Fallback to first match by (scene, event) for legacy callers that don't pass an id.
+        if (!link) {
+          link = (await table
+            .where('campaignSceneId')
+            .equals(campaignSceneId)
+            .filter((l: CampaignEventScene) => l.campaignEventId === campaignEventId)
+            .first()) as CampaignEventScene | undefined;
+        }
+
         if (link) {
           paramsHelper = createCampaignEventParamsHelper(campaignEvent as CampaignEvent, link);
         }
@@ -1122,6 +1143,7 @@ export async function executeCampaignEventEvent(
   eventType: 'on_enter' | 'on_leave' | 'on_activate',
   characterId: string,
   roll?: RollFn,
+  campaignEventSceneId?: string | null,
 ): Promise<EventHandlerResult> {
   const executor = new EventHandlerExecutor(db);
   return executor.executeCampaignEventEvent(
@@ -1130,5 +1152,8 @@ export async function executeCampaignEventEvent(
     eventType,
     characterId,
     roll,
+    undefined,
+    undefined,
+    campaignEventSceneId,
   );
 }
