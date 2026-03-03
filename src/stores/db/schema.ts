@@ -129,5 +129,11 @@ export const dbSchemaV48 = {
   campaignItems: `${common}, itemId, campaignId, sceneId, currentLocationId, currentTileId, mapHeight, mapWidth, [campaignId], [sceneId]`,
 };
 
+/** Schema for v49: documents get optional campaignSceneId. */
+export const dbSchemaV49 = {
+  ...dbSchemaV48,
+  documents: `${common}, rulesetId, worldId, campaignId, campaignSceneId, title, description, category, assetId, image, pdfAssetId, pdfData, markdownData, moduleId, [campaignSceneId]`,
+};
+
 // Increment on every schema change
-export const dbSchemaVersion = 48;
+export const dbSchemaVersion = 49;

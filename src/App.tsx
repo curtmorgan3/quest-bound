@@ -6,6 +6,7 @@ import {
   CampaignDashboard,
   CampaignDocumentsPage,
   CampaignNew,
+  CampaignScenes,
   Campaigns,
   CharacterChartViewer,
   CharacterPage,
@@ -90,8 +91,17 @@ function CompassRoutes() {
               <>
                 <Route path={`/campaigns`} element={<Campaigns />} />
                 <Route path={`/campaigns/new`} element={<CampaignNew />} />
+
                 <Route
-                  path={`/campaigns/:campaignId`}
+                  path={`/campaigns/:campaignId/scenes`}
+                  element={
+                    <CampaignProvider>
+                      <CampaignScenes />
+                    </CampaignProvider>
+                  }
+                />
+                <Route
+                  path={`/campaigns/:campaignId/scenes/:sceneId`}
                   element={
                     <CampaignProvider>
                       <CampaignDashboard />

@@ -95,7 +95,7 @@ export function Campaigns() {
   const navigate = useNavigate();
 
   const getWorldLabel = (id: string | null | undefined) =>
-    id ? worlds.find((w) => w.id === id)?.label ?? 'Unknown world' : null;
+    id ? (worlds.find((w) => w.id === id)?.label ?? 'Unknown world') : null;
   const getRulesetTitle = (id: string) =>
     rulesets.find((r) => r.id === id)?.title ?? 'Unknown ruleset';
 
@@ -136,7 +136,7 @@ export function Campaigns() {
                 <Button
                   variant='outline'
                   size='sm'
-                  onClick={() => navigate(`/campaigns/${campaign.id}`)}
+                  onClick={() => navigate(`/campaigns/${campaign.id}/scenes`)}
                   data-testid='campaign-card-open'>
                   Open
                 </Button>

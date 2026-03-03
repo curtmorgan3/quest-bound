@@ -254,6 +254,8 @@ export type Document = BaseDetails & {
   locationId?: string | null;
   /** When set, document belongs to a campaign (and has locationId; no worldId). */
   campaignId?: string | null;
+  /** Optional scene within the campaign; when set, document is associated with this CampaignScene. */
+  campaignSceneId?: string | null;
   title: string;
   description: string;
   category?: string;

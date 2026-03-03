@@ -4,19 +4,26 @@ import { useCampaignPlayCharacterList } from './hooks';
 
 interface ActiveSceneProps {
   campaignId: string;
+  /** When set, only active NPCs in this scene are shown. */
+  sceneId?: string;
   hoveredCampaignCharacterId?: string | null;
   onAvatarClick?: (characterId: string) => void;
 }
 
 export function ActiveScene({
   campaignId,
+  sceneId,
   hoveredCampaignCharacterId,
   onAvatarClick,
 }: ActiveSceneProps) {
   const { campaignCharacters } = useCampaignCharacters(campaignId);
   const activeCampaignCharacters = useMemo(
-    () => campaignCharacters.filter((cc) => cc.active === true),
-    [campaignCharacters],
+    () =>
+      campaignCharacters.filter(
+        (cc) =>
+          cc.active === true && (!sceneId || cc.campaignSceneId === sceneId),
+      ),
+    [campaignCharacters, sceneId],
   );
   const withNames = useCampaignPlayCharacterList({
     campaignCharacters: activeCampaignCharacters,

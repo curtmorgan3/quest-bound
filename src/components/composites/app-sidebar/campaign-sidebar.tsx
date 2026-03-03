@@ -10,7 +10,7 @@ import {
   useSidebar,
 } from '@/components/ui/sidebar';
 import { useCampaign, useCampaigns, useCharts, useDocuments } from '@/lib/compass-api';
-import { FileSpreadsheet, FileText, Map, Notebook, Pin, PinOff } from 'lucide-react';
+import { FileSpreadsheet, FileText, Layers, Notebook, Pin, PinOff } from 'lucide-react';
 import { Link, useLocation, useParams } from 'react-router-dom';
 
 export function CampaignSidebar() {
@@ -58,8 +58,6 @@ export function CampaignSidebar() {
   const sortedDocuments = [...documents].sort((a, b) => a.title.localeCompare(b.title));
   const sortedCharts = [...charts].sort((a, b) => a.title.localeCompare(b.title));
 
-  const isCampaignActive =
-    location.pathname === '/campaigns' || /^\/campaigns\/[^/]+$/.test(location.pathname);
   const documentId = location.pathname.match(/\/documents\/([^/]+)/)?.[1];
   const chartId = location.pathname.match(/\/chart\/([^/]+)/)?.[1];
 
@@ -85,11 +83,14 @@ export function CampaignSidebar() {
                 </SidebarMenuButton>
               </SidebarMenuItem>
             )}
-            <SidebarMenuItem className={isCampaignActive ? 'text-primary' : ''}>
+            <SidebarMenuItem
+              className={
+                location.pathname === `/campaigns/${campaign.id}/scenes` ? 'text-primary' : ''
+              }>
               <SidebarMenuButton asChild>
-                <Link to={`/campaigns/${campaign.id}`} data-testid='nav-campaign'>
-                  <Map className='w-4 h-4' />
-                  <span>Campaign</span>
+                <Link to={`/campaigns/${campaign.id}/scenes`} data-testid='nav-scenes'>
+                  <Layers className='w-4 h-4' />
+                  <span>Scenes</span>
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>

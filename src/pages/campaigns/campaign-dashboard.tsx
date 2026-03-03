@@ -3,6 +3,7 @@ import { PageWrapper } from '@/components/composites';
 import {
   useCampaign,
   useCampaignCharacters,
+  useCampaignScenes,
   useCharacter,
 } from '@/lib/compass-api';
 import type { SheetViewerBackdropClickDetail } from '@/lib/compass-planes/sheet-viewer';
@@ -13,10 +14,12 @@ import { ActiveScene } from './active-scene';
 import { NpcStage } from './npc-stage';
 import { useEffect, useState } from 'react';
 import { ManagePlayerCharacters } from './manage-player-characters';
+import { SceneDocumentPanel } from './scene-document-panel';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { FileText } from 'lucide-react';
 
 export function CampaignDashboard() {
-  const { campaignId } = useParams<{ campaignId: string }>();
+  const { campaignId, sceneId } = useParams<{ campaignId: string; sceneId?: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
   const campaign = useCampaign(campaignId);
   const navigate = useNavigate();
@@ -29,6 +32,10 @@ export function CampaignDashboard() {
   const [hoveredCampaignCharacterId, setHoveredCampaignCharacterId] = useState<string | null>(
     null,
   );
+  const [sceneDocumentPanelOpen, setSceneDocumentPanelOpen] = useState(false);
+
+  const { campaignScenes } = useCampaignScenes(campaignId);
+  const currentScene = sceneId ? campaignScenes.find((s) => s.id === sceneId) : undefined;
 
   useEffect(() => {
     if (!sheetCharacterId) return;
@@ -135,11 +142,29 @@ export function CampaignDashboard() {
               characters={characters}
               rulesetId={campaign.rulesetId}
               onAddCharacter={async (characterId) => {
-                await createCampaignCharacter(campaign.id, characterId, {});
+                await createCampaignCharacter(campaign.id, characterId, {
+                  ...(sceneId ? { campaignSceneId: sceneId } : {}),
+                });
               }}
               onRemoveCharacter={async (campaignCharacterId) => {
                 await deleteCampaignCharacter(campaignCharacterId);
               }}
+            />
+            <Button
+              variant='ghost'
+              size='icon'
+              onClick={() => setSceneDocumentPanelOpen(true)}
+              aria-label='Scene document'
+              title={sceneId ? 'Link a document to this scene' : 'Open a scene to link a document'}
+              data-testid='scene-document-panel-trigger'>
+              <FileText className='h-4 w-4' />
+            </Button>
+            <SceneDocumentPanel
+              open={sceneDocumentPanelOpen}
+              onOpenChange={setSceneDocumentPanelOpen}
+              campaignId={campaign.id}
+              sceneId={sceneId}
+              sceneName={currentScene?.name}
             />
           </div>
         }>
@@ -147,10 +172,12 @@ export function CampaignDashboard() {
           <NpcStage
             campaignId={campaign.id}
             rulesetId={campaign.rulesetId}
+            sceneId={sceneId}
             onCardHover={setHoveredCampaignCharacterId}
           />
           <ActiveScene
             campaignId={campaign.id}
+            sceneId={sceneId}
             hoveredCampaignCharacterId={hoveredCampaignCharacterId}
             onAvatarClick={(characterId) =>
               setSheetCharacterId((prev) => (prev === characterId ? null : characterId))

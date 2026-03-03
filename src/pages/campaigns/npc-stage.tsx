@@ -232,10 +232,12 @@ function NpcEditModal({ character, open, onOpenChange }: NpcEditModalProps) {
 interface NpcStageProps {
   campaignId: string;
   rulesetId: string;
+  /** When set, only NPCs in this scene are shown and new NPCs are assigned to this scene. */
+  sceneId?: string;
   onCardHover?: (campaignCharacterId: string | null) => void;
 }
 
-export function NpcStage({ campaignId, rulesetId, onCardHover }: NpcStageProps) {
+export function NpcStage({ campaignId, rulesetId, sceneId, onCardHover }: NpcStageProps) {
   const [selectedArchetype, setSelectedArchetype] = useState<Archetype | null>(null);
   const [editingCharacterId, setEditingCharacterId] = useState<string | null>(null);
   const [nameFilter, setNameFilter] = useState('');
@@ -247,7 +249,12 @@ export function NpcStage({ campaignId, rulesetId, onCardHover }: NpcStageProps) 
   } = useCampaignCharacters(campaignId);
   const { createCharacter } = useCharacter();
 
-  const npcEntries = useNpcStageEntries(campaignCharacters);
+  const campaignCharactersInScene = useMemo(() => {
+    if (!sceneId) return campaignCharacters;
+    return campaignCharacters.filter((cc) => cc.campaignSceneId === sceneId);
+  }, [campaignCharacters, sceneId]);
+
+  const npcEntries = useNpcStageEntries(campaignCharactersInScene);
   const filterLower = nameFilter.trim().toLowerCase();
   const filteredNpcEntries = useMemo(
     () =>
@@ -271,9 +278,11 @@ export function NpcStage({ campaignId, rulesetId, onCardHover }: NpcStageProps) 
       assetId: selectedArchetype.assetId ?? null,
     });
     if (newCharId) {
-      await createCampaignCharacter(campaignId, newCharId, {});
+      await createCampaignCharacter(campaignId, newCharId, {
+        ...(sceneId ? { campaignSceneId: sceneId } : {}),
+      });
     }
-  }, [campaignId, rulesetId, selectedArchetype, createCharacter, createCampaignCharacter]);
+  }, [campaignId, rulesetId, sceneId, selectedArchetype, createCharacter, createCampaignCharacter]);
 
   return (
     <div className='flex h-[90dvh] w-[280px] shrink-0 flex-col gap-3 border-r bg-muted/30 p-3'>

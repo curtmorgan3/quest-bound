@@ -14,6 +14,8 @@ export interface UseDocumentsOptions {
   locationId?: string;
   /** When set, return documents belonging to this campaign (have campaignId and locationId, no worldId); optionally filter by locationId. */
   campaignId?: string;
+  /** When set with campaignId, return only documents associated with this campaign scene. */
+  campaignSceneId?: string;
 }
 
 /**
@@ -33,13 +35,18 @@ export const useDocuments = (rulesetIdOrOptions?: string | UseDocumentsOptions) 
   const worldId = options.worldId;
   const locationId = options.locationId;
   const campaignId = options.campaignId;
+  const campaignSceneId = options.campaignSceneId;
 
   const documents = useLiveQuery(() => {
     if (campaignId) {
       return db.documents
         .where('campaignId')
         .equals(campaignId)
-        .filter((d) => locationId == null || d.locationId === locationId)
+        .filter(
+          (d) =>
+            (locationId == null || d.locationId === locationId) &&
+            (campaignSceneId == null || d.campaignSceneId === campaignSceneId),
+        )
         .toArray();
     }
     if (worldId) {
@@ -57,7 +64,7 @@ export const useDocuments = (rulesetIdOrOptions?: string | UseDocumentsOptions) 
         .toArray();
     }
     return Promise.resolve([] as Document[]);
-  }, [effectiveRulesetId, worldId, locationId, campaignId]);
+  }, [effectiveRulesetId, worldId, locationId, campaignId, campaignSceneId]);
 
   const isLoading = documents === undefined;
   useEffect(() => {

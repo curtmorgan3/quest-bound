@@ -45,7 +45,7 @@ import { assetInjectorMiddleware } from './asset-injector-middleware';
 import { chartOptionsMiddleware, memoizedCharts } from './chart-options-middleware';
 import { registerDbHooks } from './hooks/db-hooks';
 import { memoizedAssets } from './memoization-cache';
-import { dbSchema, dbSchemaVersion, dbSchemaV41, dbSchemaV42, dbSchemaV44, dbSchemaV45, dbSchemaV48 } from './schema';
+import { dbSchema, dbSchemaVersion, dbSchemaV41, dbSchemaV42, dbSchemaV44, dbSchemaV45, dbSchemaV49 } from './schema';
 import { migrate41to42 } from './migrations/migrate-41-to-42';
 import { migrate43to44 } from './migrations/migrate-43-to-44';
 
@@ -136,7 +136,7 @@ db.version(44).stores(dbSchemaV44).upgrade(migrate43to44);
 
 db.version(45).stores(dbSchemaV45);
 
-db.version(dbSchemaVersion).stores(dbSchemaV48);
+db.version(dbSchemaVersion).stores(dbSchemaV49);
 
 // Cache assets for reference in the asset injector middleware
 db.on('ready', async () => {
