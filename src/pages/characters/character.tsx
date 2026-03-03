@@ -215,6 +215,7 @@ export const CharacterPage = ({
         {!hideGameLog && (
           <GameLog
             className={`fixed bottom-[50px] z-30 ${open ? 'left-[295px]' : 'left-[85px]'}`}
+            characterId={character?.id ?? characterId}
           />
         )}
         <InventoryPanel

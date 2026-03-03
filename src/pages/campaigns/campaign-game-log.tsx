@@ -1,8 +1,21 @@
-import { Button, Checkbox, Label } from '@/components';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  Button,
+  Checkbox,
+  Label,
+} from '@/components';
 import { useCampaign, useCampaigns, useScriptLogs } from '@/lib/compass-api';
 import type { ScriptLog } from '@/types';
 import { format } from 'date-fns';
 import { CircleOff, ScrollText } from 'lucide-react';
+import { useState } from 'react';
 
 const AUTO_CONTEXTS = ['load', 'character_load'];
 
@@ -20,15 +33,19 @@ interface CampaignGameLogProps {
 }
 
 export function CampaignGameLog({ campaignId, rulesetId, limit = 250 }: CampaignGameLogProps) {
+  const [clearDialogOpen, setClearDialogOpen] = useState(false);
   const campaign = useCampaign(campaignId);
   const { updateCampaign } = useCampaigns();
   const { logs: scriptLogs, clearLogs } = useScriptLogs(limit, rulesetId, campaignId);
 
   const showAutoEntries = campaign?.details?.showAutoEntries !== false;
 
-  const filteredLogs = showAutoEntries
-    ? scriptLogs
-    : scriptLogs.filter((l) => !isAutoEntry(l));
+  const handleClearLogs = () => {
+    clearLogs();
+    setClearDialogOpen(false);
+  };
+
+  const filteredLogs = showAutoEntries ? scriptLogs : scriptLogs.filter((l) => !isAutoEntry(l));
 
   const logs: { msg: string; time: string }[] = [...filteredLogs]
     .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
@@ -54,7 +71,7 @@ export function CampaignGameLog({ campaignId, rulesetId, limit = 250 }: Campaign
 
   return (
     <div className='flex min-h-0 min-w-[240px] flex-1 flex-col border-r bg-muted/20 p-3'>
-      <div className='mb-2 flex items-center justify-between gap-2'>
+      <div className='mb-2 flex items-center justify-start gap-2'>
         <p className='text-sm text-muted-foreground flex items-center gap-1.5'>
           <ScrollText className='h-4 w-4 shrink-0' />
           Game log
@@ -62,13 +79,32 @@ export function CampaignGameLog({ campaignId, rulesetId, limit = 250 }: Campaign
         <Button
           variant='ghost'
           size='icon'
-          onClick={clearLogs}
+          onClick={() => setClearDialogOpen(true)}
           aria-label='Clear game log'
           className='size-7 shrink-0'
           disabled={logs.length === 0}>
           <CircleOff className='size-3.5' />
         </Button>
       </div>
+      <AlertDialog open={clearDialogOpen} onOpenChange={setClearDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Clear campaign game log?</AlertDialogTitle>
+            <AlertDialogDescription>
+              All campaign logs will be deleted. This will remove game logs from the player&apos;s
+              view.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className='bg-destructive text-destructive-foreground hover:bg-destructive/90'
+              onClick={handleClearLogs}>
+              Clear logs
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       {campaignId && campaign && (
         <div className='mb-2 flex items-center gap-2'>
           <Checkbox

@@ -4,12 +4,21 @@ import { format } from 'date-fns';
 import { CircleOff, ScrollText, X } from 'lucide-react';
 import { useState } from 'react';
 
+const GAME_LOG_LIMIT = 200;
+
 interface GameLogProps {
   className?: string;
+  /** When set, clear only resets the view for this character (no delete); only last N logs after reset are shown. */
+  characterId?: string;
 }
 
-export const GameLog = ({ className }: GameLogProps) => {
-  const { logs: scriptLogs, clearLogs } = useScriptLogs(250);
+export const GameLog = ({ className, characterId }: GameLogProps) => {
+  const { logs: scriptLogs, clearLogs } = useScriptLogs(
+    GAME_LOG_LIMIT,
+    undefined,
+    undefined,
+    characterId,
+  );
   const [open, setOpen] = useState(false);
 
   const logs: { msg: string; time: string }[] = [...scriptLogs]
