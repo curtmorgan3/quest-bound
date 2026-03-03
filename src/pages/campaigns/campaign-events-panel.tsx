@@ -95,25 +95,17 @@ export function CampaignEventsPanel({
 
   const handleActivateEvent = useCallback(
     async (event: CampaignEvent) => {
-      if (!actingCharacterId || !event.scriptId) return;
+      if (!actingCharacterId || !event.scriptId || !sceneId) return;
       setActivatingEventId(event.id);
       try {
-        const location = await db.campaignEventLocations
-          .where('campaignEventId')
-          .equals(event.id)
-          .first();
-        if (!location) {
-          console.warn('[CampaignEventsPanel] No campaignEventLocation found for event', event.id);
-          return;
-        }
         await client
-          .executeCampaignEventEvent(location.id, actingCharacterId, 'on_activate')
+          .executeCampaignEventEvent(event.id, sceneId, actingCharacterId, 'on_activate')
           .catch((err) => console.warn('[CampaignEventsPanel] on_activate script failed:', err));
       } finally {
         setActivatingEventId((current) => (current === event.id ? null : current));
       }
     },
-    [actingCharacterId, client],
+    [actingCharacterId, client, sceneId],
   );
 
   const hasEvents = sortedEventsForScene.length > 0;

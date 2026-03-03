@@ -1391,7 +1391,8 @@ async function handleExecuteArchetypeEvent(payload: {
 }
 
 async function handleExecuteCampaignEventEvent(payload: {
-  campaignEventLocationId: string;
+  campaignEventId: string;
+  campaignSceneId: string;
   characterId: string;
   eventType: 'on_enter' | 'on_leave' | 'on_activate';
   requestId: string;
@@ -1412,13 +1413,14 @@ async function handleExecuteCampaignEventEvent(payload: {
       createOnAttributesModified(rollFn, rollSplitFn, () => executor, getCollector, promptFn),
     );
     const result = await executor.executeCampaignEventEvent(
-      payload.campaignEventLocationId,
-      payload.characterId,
-      payload.eventType,
-      rollFn,
-      rollSplitFn,
-      promptFn,
-    );
+    payload.campaignEventId,
+    payload.campaignSceneId,
+    payload.characterId,
+    payload.eventType,
+    rollFn,
+    rollSplitFn,
+    promptFn,
+  );
 
     if (result.error || !result.success) {
       sendSignal({

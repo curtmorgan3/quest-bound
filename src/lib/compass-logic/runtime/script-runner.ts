@@ -174,6 +174,8 @@ export interface ScriptExecutionContext {
   campaignId?: string;
   /** When set, called after roll/rollSplit with an auto-generated log message for the game log. */
   onRollComplete?: (message: string) => Promise<void>;
+  /** When set (e.g. campaign scene events), identifies the CampaignScene whose active characters should be loaded into context. */
+  campaignSceneId?: string;
 }
 
 /**
@@ -370,6 +372,29 @@ export class ScriptRunner {
             this.campaignEventLocationTile = { x: tile.x, y: tile.y };
           }
         }
+      }
+    }
+
+    // Load active characters for the current campaign scene (for campaign scene events).
+    // Includes both player characters and NPCs whose CampaignCharacter.active === true.
+    if (this.context.campaignId && this.context.campaignSceneId) {
+      const sceneCampaignCharacters = await db.campaignCharacters
+        .where('campaignSceneId')
+        .equals(this.context.campaignSceneId)
+        .filter(
+          (cc: { campaignId: string; active?: boolean }) =>
+            cc.campaignId === this.context.campaignId && cc.active === true,
+        )
+        .toArray();
+
+      for (const cc of sceneCampaignCharacters) {
+        const characterId = (cc as { characterId: string }).characterId;
+        // Owner is already loaded above; skip here to avoid duplicate accessor creation.
+        if (characterId === ownerId) continue;
+
+        // Preload accessor by id so scene characters are available synchronously in scripts.
+        // getCharacterAccessorById merges character attributes into shared caches.
+        await this.getCharacterAccessorById(characterId);
       }
     }
 

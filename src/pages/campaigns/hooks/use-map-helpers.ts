@@ -6,7 +6,6 @@ import {
   useLocation,
   useLocations,
 } from '@/lib/compass-api';
-import { useQBScriptClient } from '@/lib/compass-logic/worker/hooks';
 import { db } from '@/stores';
 import type { ActiveCharacter, Location, TileData } from '@/types';
 import { useCallback } from 'react';
@@ -30,7 +29,6 @@ export const useMapHelpers = ({
   const { campaignCharacters, updateCampaignCharacter } = useCampaignCharacters(campaignId);
   const { updateLocation } = useLocations(campaign?.worldId ?? '', null);
   const { updateCampaignItem } = useCampaignItems(campaignId);
-  const client = useQBScriptClient();
 
   const navigate = useNavigate();
   const { campaignId: campaignIdParam, locationId: locationIdParam } = useParams<{
@@ -81,73 +79,14 @@ export const useMapHelpers = ({
         charactersInLocation,
       });
 
-      // Load event locations and events so we can fire on_leave (before move) and on_enter (after move)
-      const eventLocations = await db.campaignEventLocations
-        .where('locationId')
-        .equals(locationId)
-        .toArray();
-
-      const events = await db.campaignEvents.bulkGet([
-        ...new Set(eventLocations.map((el) => el.campaignEventId)),
-      ]);
-
-      // Fire on_leave for event locations on the tile(s) characters are leaving
-      for (const movement of movements) {
-        const selectedChar = selectedCharacters.find(
-          (c) => c.id === movement.characterId || c.campaignCharacterId === movement.characterId,
-        );
-        const characterId = selectedChar?.characterId;
-        if (!characterId) continue;
-
-        const previousTileId = charactersInLocation.find(
-          (cc) =>
-            cc.characterId === selectedChar?.characterId ||
-            cc.id === selectedChar?.campaignCharacterId,
-        )?.currentTileId;
-
-        if (previousTileId) {
-          const eventLocationsOnPreviousTile = eventLocations.filter(
-            (el) => el.tileId === previousTileId,
-          );
-          for (const el of eventLocationsOnPreviousTile) {
-            const event = events.find((e) => e?.id === el.campaignEventId);
-            if (event?.scriptId) {
-              client
-                .executeCampaignEventEvent(el.id, characterId, 'on_leave')
-                .catch((err) => console.warn('[Campaign] on_leave script failed:', err));
-            }
-          }
-        }
-      }
-
       for (const movement of movements) {
         await updateCampaignCharacter(movement.characterId, {
           currentLocationId: locationId,
           currentTileId: movement.tileId,
         });
       }
-
-      // Fire on_enter for event locations on the target tile(s) that have a script
-      for (const movement of movements) {
-        const characterId = selectedCharacters.find(
-          (c) => c.id === movement.characterId || c.campaignCharacterId === movement.characterId,
-        )?.characterId;
-
-        if (!characterId) continue;
-
-        const eventLocationsOnTile = eventLocations.filter((el) => el.tileId === movement.tileId);
-
-        for (const el of eventLocationsOnTile) {
-          const event = events.find((e) => e?.id === el.campaignEventId);
-          if (event?.scriptId) {
-            client
-              .executeCampaignEventEvent(el.id, characterId, 'on_enter')
-              .catch((err) => console.warn('[Campaign] on_enter script failed:', err));
-          }
-        }
-      }
     },
-    [selectedCharacters, campaignCharacters, updateCampaignCharacter, client],
+    [selectedCharacters, campaignCharacters, updateCampaignCharacter],
   );
 
   const navigateTo = useCallback(

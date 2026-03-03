@@ -1,8 +1,6 @@
 import { ArchetypeLookup, EventLookup, type EventLocationWithEvent } from '@/lib/compass-api';
-import { useQBScriptClient } from '@/lib/compass-logic/worker/hooks';
 import { useCampaignContext } from '@/stores';
 import type { Archetype, CampaignEvent, ITileMenu, TileMenuPayload } from '@/types';
-import { Zap } from 'lucide-react';
 import { useCallback, useState } from 'react';
 import { createPortal } from 'react-dom';
 
@@ -46,9 +44,7 @@ export function TileMenu({
     handleAddEventToTile,
     handleRemoveEventFromTile,
     currentLocation,
-    charactersInThisLocation,
   } = useCampaignContext();
-  const client = useQBScriptClient();
 
   const [showArchetypeLookup, setShowArchetypeLookup] = useState(false);
   const [showEventLookup, setShowEventLookup] = useState(false);
@@ -100,19 +96,6 @@ export function TileMenu({
     await handleRemoveEventFromTile(eventAtClickedTile.id);
     onTileMenuRequest(null);
   }, [eventAtClickedTile, handleRemoveEventFromTile]);
-
-  const actingCharacterId =
-    selectedCharacters[0]?.characterId ?? charactersInThisLocation[0]?.characterId;
-  const canActivateEvent =
-    Boolean(eventAtClickedTile?.event?.scriptId) && Boolean(actingCharacterId);
-
-  const handleActivateEventClick = useCallback(() => {
-    if (!eventAtClickedTile || !actingCharacterId) return;
-    client
-      .executeCampaignEventEvent(eventAtClickedTile.id, actingCharacterId, 'on_activate')
-      .catch((err) => console.warn('[Campaign] on_activate script failed:', err));
-    onTileMenuRequest(null);
-  }, [eventAtClickedTile, actingCharacterId, client, onTileMenuRequest]);
 
   const emptyTileOptions =
     eventAtClickedTile != null ? emptyTileOptionsWithEvent : emptyTileOptionsBase;
@@ -180,19 +163,6 @@ export function TileMenu({
               </p>
             ) : (
               <>
-                {canActivateEvent && (
-                  <div className='flex gap-2 items-center border-b border-border pb-1.5 mb-1'>
-                    <button
-                      type='button'
-                      title='Activate event'
-                      data-testid='tile-menu-activate-event'
-                      onClick={handleActivateEventClick}
-                      onPointerDown={(e) => e.stopPropagation()}
-                      className='flex size-8 shrink-0 items-center justify-center rounded border border-[#363] bg-[#2a4a2a] text-[#8f8] cursor-pointer hover:opacity-90'>
-                      <Zap size={16} />
-                    </button>
-                  </div>
-                )}
                 {options.map((opt) => (
                   <button
                     key={opt.action}

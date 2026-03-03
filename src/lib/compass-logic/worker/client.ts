@@ -692,10 +692,11 @@ export class QBScriptClient {
 
   /**
    * Execute a campaign event script (on_enter, on_leave) when a character moves onto/off a tile.
-   * Pass the CampaignEventLocation id so Self refers to that location in the script.
+   * Uses CampaignEvent and CampaignScene; location-based events are deprecated.
    */
   async executeCampaignEventEvent(
-    campaignEventLocationId: string,
+    campaignEventId: string,
+    campaignSceneId: string,
     characterId: string,
     eventType: 'on_enter' | 'on_leave' | 'on_activate',
     roll?: RollFn,
@@ -715,7 +716,8 @@ export class QBScriptClient {
         {
           type: 'EXECUTE_CAMPAIGN_EVENT_EVENT',
           payload: {
-            campaignEventLocationId,
+            campaignEventId,
+            campaignSceneId,
             characterId,
             eventType,
             requestId,

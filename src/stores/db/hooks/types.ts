@@ -35,7 +35,9 @@ export type DB = Dexie & {
   locations: Dexie.Table;
   campaigns: Dexie.Table;
   campaignCharacters: Dexie.Table;
+  campaignScenes: Dexie.Table;
   campaignEvents: Dexie.Table;
   campaignEventLocations: Dexie.Table;
+  campaignEventScenes: Dexie.Table;
   campaignItems: Dexie.Table;
 };

@@ -112,11 +112,12 @@ export interface ExecuteArchetypeEventSignal {
   };
 }
 
-/** Runs a campaign event script handler (on_enter, on_leave, on_activate) when a character moves onto/off a tile or activates it. */
+/** Runs a campaign event script handler (on_enter, on_leave, on_activate) for a campaign scene event. */
 export interface ExecuteCampaignEventEventSignal {
   type: 'EXECUTE_CAMPAIGN_EVENT_EVENT';
   payload: {
-    campaignEventLocationId: string;
+    campaignEventId: string;
+    campaignSceneId: string;
     characterId: string;
     eventType: 'on_enter' | 'on_leave' | 'on_activate';
     requestId: string;

@@ -735,36 +735,26 @@ export class EventHandlerExecutor {
   }
 
   /**
-   * Execute a campaign event's script handler (e.g. on_enter when a character moves onto a tile with that event).
-   * Uses campaignEventLocationId so Self can refer to the CampaignEventLocation.
+   * Execute a campaign event's script handler (e.g. on_activate when a scene event is triggered).
+   * Uses campaignEventId and campaignSceneId; location-based campaign events are deprecated.
    */
   async executeCampaignEventEvent(
-    campaignEventLocationId: string,
+    campaignEventId: string,
+    campaignSceneId: string,
     characterId: string,
     eventType: 'on_enter' | 'on_leave' | 'on_activate',
     roll?: RollFn,
     rollSplit?: RollSplitFn,
     prompt?: PromptFn,
   ): Promise<EventHandlerResult> {
-    const eventLocation = await this.db.campaignEventLocations.get(campaignEventLocationId);
-    if (!eventLocation) {
-      return {
-        success: false,
-        value: null,
-        announceMessages: [],
-        logMessages: [],
-        error: new Error(`Campaign event location not found: ${campaignEventLocationId}`),
-      };
-    }
-
-    const campaignEvent = await this.db.campaignEvents.get(eventLocation.campaignEventId);
+    const campaignEvent = await this.db.campaignEvents.get(campaignEventId);
     if (!campaignEvent) {
       return {
         success: false,
         value: null,
         announceMessages: [],
         logMessages: [],
-        error: new Error(`Campaign event not found: ${eventLocation.campaignEventId}`),
+        error: new Error(`Campaign event not found: ${campaignEventId}`),
       };
     }
 
@@ -784,6 +774,24 @@ export class EventHandlerExecutor {
         value: null,
         announceMessages: [],
         logMessages: [],
+      };
+    }
+
+    // Validate that this event is attached to the given scene (if linking exists).
+    const link = await this.db.campaignEventScenes
+      .where('campaignEventId')
+      .equals(campaignEventId)
+      .filter((ces: { campaignSceneId?: string }) => ces.campaignSceneId === campaignSceneId)
+      .first();
+    if (!link) {
+      return {
+        success: false,
+        value: null,
+        announceMessages: [],
+        logMessages: [],
+        error: new Error(
+          `Campaign event ${campaignEventId} is not attached to scene ${campaignSceneId}`,
+        ),
       };
     }
 
@@ -814,9 +822,10 @@ export class EventHandlerExecutor {
       db: this.db,
       scriptId: script.id,
       triggerType: 'attribute_change',
-      entityType: 'campaignEventLocation',
-      entityId: campaignEventLocationId,
+      entityType: 'campaignEvent',
+      entityId: campaignEventId,
       campaignId: campaignEvent.campaignId,
+      campaignSceneId,
       roll,
       rollSplit,
       prompt,
@@ -1000,15 +1009,22 @@ export async function executeCharacterLoader(
 
 /**
  * Execute a campaign event script (on_enter, on_leave, on_activate) when a character moves onto/off a tile or activates it.
- * Pass the CampaignEventLocation id so Self refers to that location in the script.
+ * Uses CampaignEvent and CampaignScene; location-based events are deprecated.
  */
 export async function executeCampaignEventEvent(
   db: DB,
-  campaignEventLocationId: string,
+  campaignEventId: string,
+  campaignSceneId: string,
   characterId: string,
   eventType: 'on_enter' | 'on_leave' | 'on_activate',
   roll?: RollFn,
 ): Promise<EventHandlerResult> {
   const executor = new EventHandlerExecutor(db);
-  return executor.executeCampaignEventEvent(campaignEventLocationId, characterId, eventType, roll);
+  return executor.executeCampaignEventEvent(
+    campaignEventId,
+    campaignSceneId,
+    characterId,
+    eventType,
+    roll,
+  );
 }

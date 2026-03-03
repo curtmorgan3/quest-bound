@@ -8,16 +8,10 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import {
-  DocumentLookup,
-  useCampaignEventLocationsByLocation,
-  useDocuments,
-} from '@/lib/compass-api';
-import { useQBScriptClient } from '@/lib/compass-logic/worker/hooks';
-import { CampaignPlayContext } from '@/stores';
+import { DocumentLookup, useDocuments } from '@/lib/compass-api';
 import type { Document } from '@/types';
-import { FileText, Zap } from 'lucide-react';
-import { useCallback, useContext, useEffect, useState } from 'react';
+import { FileText } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
 function base64ToBlobUrl(base64Data: string): string | null {
   try {
@@ -106,27 +100,6 @@ export function LocationDetailsPanel({
   const { documents: campaignDocuments } = useDocuments(
     campaignId && locationId ? { campaignId, locationId } : undefined,
   );
-  const eventLocationsAtLocation = useCampaignEventLocationsByLocation(locationId);
-  const campaignEventsAtLocation =
-    campaignId && locationId
-      ? eventLocationsAtLocation.filter((el) => el.event.campaignId === campaignId)
-      : [];
-
-  const campaignContext = useContext(CampaignPlayContext);
-  const client = useQBScriptClient();
-  const actingCharacterId =
-    campaignContext?.selectedCharacters?.[0]?.characterId ??
-    campaignContext?.charactersInThisLocation?.[0]?.characterId;
-
-  const handleActivateEvent = useCallback(
-    (campaignEventLocationId: string) => {
-      if (!actingCharacterId) return;
-      client
-        .executeCampaignEventEvent(campaignEventLocationId, actingCharacterId, 'on_activate')
-        .catch((err) => console.warn('[Campaign] on_activate script failed:', err));
-    },
-    [actingCharacterId, client],
-  );
 
   const { updateDocument: updateCampaignDocument } = useDocuments(
     campaignId ? { campaignId } : undefined,
@@ -212,35 +185,6 @@ export function LocationDetailsPanel({
               <TabsContent
                 value='campaign'
                 className='flex min-h-0 flex-1 flex-col data-[state=inactive]:hidden'>
-                {campaignEventsAtLocation.length > 0 && (
-                  <div className='shrink-0 border-b px-6 py-4'>
-                    <h3 className='text-sm font-medium mb-2'>Events at this location</h3>
-                    <div className='flex flex-wrap gap-2'>
-                      {campaignEventsAtLocation.map((el) => {
-                        const canActivate = Boolean(el.event.scriptId && actingCharacterId);
-                        return (
-                          <Button
-                            key={el.id}
-                            variant='outline'
-                            size='sm'
-                            className='gap-1.5'
-                            disabled={!canActivate}
-                            title={
-                              canActivate
-                                ? `Run on_activate`
-                                : !el.event.scriptId
-                                  ? 'No script assigned'
-                                  : 'No character in this location'
-                            }
-                            onClick={() => handleActivateEvent(el.id)}>
-                            <Zap className='h-4 w-4' />
-                            {el.event.label}
-                          </Button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
                 {!campaignDocument ? (
                   <div className='flex flex-1 flex-col gap-4 overflow-auto p-6'>
                     <p className='text-sm text-muted-foreground'>
