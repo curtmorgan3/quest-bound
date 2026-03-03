@@ -3,6 +3,7 @@ export * from './add-module-to-ruleset';
 export * from './remove-module-from-ruleset';
 export * from './use-export';
 export * from './use-export-chart';
+export * from './use-export-character';
 export * from './use-export-ruleset';
 export * from './use-import';
 export * from './use-import-chart';

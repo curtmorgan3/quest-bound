@@ -34,9 +34,11 @@ import {
   useActiveRuleset,
   useCharacter,
   useCharacterAttributes,
+  useExportCharacter,
   useRulesets,
 } from '@/lib/compass-api';
 import type { Character } from '@/types';
+import { Download } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -52,6 +54,7 @@ export const CharacterSettings = ({ character }: CharacterSettingsProps) => {
   const { addNotification } = useNotifications();
   const worldsEnabled = useFeatureFlag('worlds', false);
   const navigate = useNavigate();
+  const { exportCharacter, isExporting } = useExportCharacter(character.id);
 
   const [name, setName] = useState(character.name);
   const [selectedRulesetId, setSelectedRulesetId] = useState(character.rulesetId);
@@ -117,9 +120,14 @@ export const CharacterSettings = ({ character }: CharacterSettingsProps) => {
 
   return (
     <div className='flex flex-col gap-6'>
-      <div className='flex flex-col gap-2 max-w-sm'>
-        <Label htmlFor='character-name'>Name</Label>
-        <Input id='character-name' value={name} onChange={(e) => setName(e.target.value)} />
+      <div className='flex gap-2 items-end'>
+        <div className='flex flex-col gap-2 max-w-sm'>
+          <Label htmlFor='character-name'>Name</Label>
+          <Input id='character-name' value={name} onChange={(e) => setName(e.target.value)} />
+        </div>
+        <Button variant='outline' onClick={exportCharacter} disabled={isExporting}>
+          <Download className='h-4 w-4' />
+        </Button>
       </div>
 
       <div className='flex flex-col gap-2 max-w-sm'>
