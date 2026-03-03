@@ -5,8 +5,13 @@ import type {
   Character,
   CharacterAttribute,
   CustomProperty,
+  RollFn,
 } from '@/types';
 import type Dexie from 'dexie';
+import {
+  executeArchetypeEvent,
+  executeCharacterLoader,
+} from '../../reactive/event-handler-executor';
 import type { CharacterAccessor } from './character-accessor';
 import type { OwnerAccessor } from './owner-accessor';
 
@@ -37,6 +42,7 @@ export class CampaignSceneAccessor {
   private registerSceneCharacterId: RegisterSceneCharacterIdFn | undefined;
   private cachedCharacterIds: Set<string> | null;
   private cachedAccessors: AnyCharacterAccessor[] | null;
+  private roll?: RollFn;
 
   constructor(
     db: Dexie,
@@ -46,6 +52,7 @@ export class CampaignSceneAccessor {
     getCharacterAccessorById: GetCharacterAccessorByIdFn,
     initialCharacterIds?: string[],
     registerSceneCharacterId?: RegisterSceneCharacterIdFn,
+    roll?: RollFn,
   ) {
     this.db = db as DB;
     this.campaignId = campaignId;
@@ -55,6 +62,7 @@ export class CampaignSceneAccessor {
     this.registerSceneCharacterId = registerSceneCharacterId;
     this.cachedCharacterIds = initialCharacterIds ? new Set(initialCharacterIds) : null;
     this.cachedAccessors = null;
+    this.roll = roll;
   }
 
   /**
@@ -100,9 +108,8 @@ export class CampaignSceneAccessor {
    *
    * Returns a character accessor for the spawned NPC.
    *
-   * Note: This helper focuses on data creation; it does not run character
-   * loader or archetype event scripts. Newly spawned NPCs will have default
-   * attributes and archetype linkage.
+   * This helper fully initializes the character by running the Character Loader
+   * and the archetype's on_add event (when present) before resolving.
    */
   async spawnCharacter(archetypeName: string): Promise<AnyCharacterAccessor> {
     const options: SpawnCharacterOptions = { archetypeName: archetypeName.trim() };
@@ -144,7 +151,7 @@ export class CampaignSceneAccessor {
       rulesetId: this.rulesetId,
       inventoryId,
       name: archetype.name,
-      assetId: null,
+      assetId: archetype.assetId ?? null,
       image: archetype.image ?? null,
       isTestCharacter: false,
       isNpc: true,
@@ -229,6 +236,37 @@ export class CampaignSceneAccessor {
       createdAt: now,
       updatedAt: now,
     } as any);
+
+    // Run Character Loader script (if present) for this character.
+    try {
+      const loaderResult = await executeCharacterLoader(
+        this.db,
+        characterId,
+        this.rulesetId,
+        this.roll,
+      );
+      if (loaderResult.error) {
+        console.warn('Character Loader script failed for spawned NPC:', loaderResult.error);
+      }
+    } catch (err) {
+      console.warn('Character Loader execution threw for spawned NPC:', err);
+    }
+
+    // Run archetype on_add script for this archetype (if present).
+    try {
+      const archetypeResult = await executeArchetypeEvent(
+        this.db,
+        archetype.id,
+        characterId,
+        'on_add',
+        this.roll,
+      );
+      if (archetypeResult.error) {
+        console.warn('Archetype on_add script failed for spawned NPC:', archetypeResult.error);
+      }
+    } catch (err) {
+      console.warn('Archetype on_add execution threw for spawned NPC:', err);
+    }
 
     // Create CampaignCharacter linking this NPC into the current scene.
     const campaignCharacter: CampaignCharacter = {

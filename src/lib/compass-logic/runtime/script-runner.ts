@@ -602,6 +602,7 @@ export class ScriptRunner {
                     }
                     this.sceneCharacterIds.add(id);
                   },
+                  this.context.roll,
                 )
               : null;
 
@@ -696,6 +697,7 @@ export class ScriptRunner {
                   }
                   this.sceneCharacterIds.add(id);
                 },
+                this.context.roll,
               )
             : null;
 
