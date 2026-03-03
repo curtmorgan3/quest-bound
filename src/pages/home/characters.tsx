@@ -33,11 +33,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { useAssets, useCharacter, useRulesets } from '@/lib/compass-api';
+import { useAssets, useCharacter, useRulesets, useImportCharacter } from '@/lib/compass-api';
 import { db } from '@/stores';
 import type { Archetype } from '@/types';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { Plus, X } from 'lucide-react';
+import { AlertCircle, Plus, Upload, X } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -45,6 +45,7 @@ export const Characters = () => {
   const { characters, createCharacter, deleteCharacter } = useCharacter();
   const { rulesets } = useRulesets();
   const { assets, deleteAsset } = useAssets();
+  const { importCharacter, isImporting } = useImportCharacter();
 
   const selectableCharacters = characters.filter((c) => !c.isTestCharacter && c.isNpc !== true);
 
@@ -55,6 +56,13 @@ export const Characters = () => {
   const [addArchetypeValue, setAddArchetypeValue] = useState('');
   const [assetId, setAssetId] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
+  const [importResult, setImportResult] = useState<{
+    success: boolean;
+    message: string;
+    rulesetMissing: boolean;
+  } | null>(null);
+  const [rulesetWarningOpen, setRulesetWarningOpen] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const archetypes: Archetype[] =
     useLiveQuery(
@@ -165,172 +173,265 @@ export const Characters = () => {
     return ruleset?.title ?? 'Unknown Ruleset';
   };
 
+  const handleImportClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const result = await importCharacter(file);
+      setImportResult({
+        success: result.success,
+        message: result.message,
+        rulesetMissing: result.rulesetMissing,
+      });
+      if (result.rulesetMissing) {
+        setRulesetWarningOpen(true);
+      }
+    } catch (error) {
+      setImportResult({
+        success: false,
+        message:
+          error instanceof Error ? error.message : 'Character import failed due to an unknown error.',
+        rulesetMissing: false,
+      });
+    } finally {
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
   return (
     <PageWrapper
       title='Characters'
       headerActions={
-        <Dialog open={open} onOpenChange={handleOpenChange}>
-          <DialogTrigger asChild>
-            <Button size='sm' className='gap-1' data-testid='create-character-button'>
-              <Plus className='h-4 w-4' />
-              Create Character
-            </Button>
-          </DialogTrigger>
-          <DialogContent className='sm:max-w-[425px]'>
-            <DialogHeader>
-              <DialogTitle>{step === 1 ? 'New Character' : 'Select Archetypes'}</DialogTitle>
-              <DialogDescription>
-                {step === 1 ? 'New Character' : 'Select Archetypes'}
-              </DialogDescription>
-            </DialogHeader>
-            {step === 1 ? (
-              <div className='grid gap-4'>
-                <div className='grid gap-3'>
-                  <Label htmlFor='character-name'>
-                    Name <span className='text-destructive'>*</span>
-                  </Label>
-                  <Input
-                    id='character-name'
-                    name='name'
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    placeholder='Enter character name'
-                  />
-                </div>
-                <div className='grid gap-3'>
-                  <Label htmlFor='character-ruleset'>
-                    Ruleset <span className='text-destructive'>*</span>
-                  </Label>
-                  <Select value={rulesetId} onValueChange={handleRulesetChange}>
-                    <SelectTrigger
-                      id='character-ruleset'
-                      className='w-full'
-                      data-testid='character-ruleset-select'>
-                      <SelectValue placeholder='Select a ruleset' />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {rulesets.length === 0 ? (
-                        <SelectItem value='_none' disabled>
-                          No rulesets available
-                        </SelectItem>
-                      ) : (
-                        rulesets.map((ruleset) => (
-                          <SelectItem key={ruleset.id} value={ruleset.id}>
-                            {ruleset.title}
-                          </SelectItem>
-                        ))
-                      )}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className='grid gap-3'>
-                  <Label>Image</Label>
-                  <ImageUpload
-                    image={getImageFromAssetId(assetId)}
-                    alt={name || 'Character image'}
-                    onUpload={handleImageUpload}
-                    onRemove={handleImageRemove}
-                    rulesetId={rulesetId || undefined}
-                  />
-                </div>
+        <div className='flex items-center gap-2'>
+          {importResult && (
+            <div
+              className={`p-3 rounded-lg border text-sm ${
+                importResult.success
+                  ? 'bg-green-50 border-green-200 text-green-800'
+                  : 'bg-red-50 border-red-200 text-red-800'
+              }`}>
+              <div className='flex items-center gap-2'>
+                {importResult.success ? null : <AlertCircle className='h-4 w-4' />}
+                <span className='font-medium'>{importResult.message}</span>
               </div>
-            ) : (
-              <div className='grid gap-4'>
-                <div className='grid gap-3'>
-                  <Label>Archetypes</Label>
-                  <div className='flex gap-2'>
-                    <Select
-                      value={addArchetypeValue}
-                      onValueChange={(v) => (v === '_none' ? undefined : setAddArchetypeValue(v))}>
+            </div>
+          )}
+
+          <Dialog open={open} onOpenChange={handleOpenChange}>
+            <DialogTrigger asChild>
+              <Button size='sm' className='gap-1' data-testid='create-character-button'>
+                <Plus className='h-4 w-4' />
+                Create Character
+              </Button>
+            </DialogTrigger>
+            <DialogContent className='sm:max-w-[425px]'>
+              <DialogHeader>
+                <DialogTitle>{step === 1 ? 'New Character' : 'Select Archetypes'}</DialogTitle>
+                <DialogDescription>
+                  {step === 1 ? 'New Character' : 'Select Archetypes'}
+                </DialogDescription>
+              </DialogHeader>
+              {step === 1 ? (
+                <div className='grid gap-4'>
+                  <div className='grid gap-3'>
+                    <Label htmlFor='character-name'>
+                      Name <span className='text-destructive'>*</span>
+                    </Label>
+                    <Input
+                      id='character-name'
+                      name='name'
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      placeholder='Enter character name'
+                    />
+                  </div>
+                  <div className='grid gap-3'>
+                    <Label htmlFor='character-ruleset'>
+                      Ruleset <span className='text-destructive'>*</span>
+                    </Label>
+                    <Select value={rulesetId} onValueChange={handleRulesetChange}>
                       <SelectTrigger
-                        id='character-archetype-add'
-                        className='flex-1'
-                        data-testid='character-archetype-select'>
-                        <SelectValue placeholder='Add archetype...' />
+                        id='character-ruleset'
+                        className='w-full'
+                        data-testid='character-ruleset-select'>
+                        <SelectValue placeholder='Select a ruleset' />
                       </SelectTrigger>
                       <SelectContent>
-                        {availableArchetypes.length === 0 ? (
+                        {rulesets.length === 0 ? (
                           <SelectItem value='_none' disabled>
-                            All archetypes added
+                            No rulesets available
                           </SelectItem>
                         ) : (
-                          availableArchetypes.map((archetype) => (
-                            <SelectItem key={archetype.id} value={archetype.id}>
-                              {archetype.name}
+                          rulesets.map((ruleset) => (
+                            <SelectItem key={ruleset.id} value={ruleset.id}>
+                              {ruleset.title}
                             </SelectItem>
                           ))
                         )}
                       </SelectContent>
                     </Select>
-                    <Button
-                      type='button'
-                      variant='outline'
-                      size='icon'
-                      onClick={() => addArchetypeValue && handleAddArchetype(addArchetypeValue)}
-                      disabled={!addArchetypeValue}
-                      data-testid='character-archetype-add-button'
-                      aria-label='Add archetype'>
-                      <Plus className='h-4 w-4' />
-                    </Button>
                   </div>
-                  {selectedArchetypeIds.length > 0 && (
-                    <div className='flex flex-col gap-1' data-testid='character-archetypes-list'>
-                      {selectedArchetypeIds.map((archetypeId) => {
-                        const archetype = archetypes.find((a) => a.id === archetypeId);
-                        if (!archetype) return null;
-                        return (
-                          <div
-                            key={archetype.id}
-                            className='flex items-center gap-2 rounded-md border px-3 py-2'
-                            data-testid={`character-archetype-row-${archetype.id}`}>
-                            <span className='flex-1 text-sm font-medium'>{archetype.name}</span>
-                            <Button
-                              type='button'
-                              variant='ghost'
-                              size='icon'
-                              className='h-8 w-8 shrink-0'
-                              onClick={() => handleRemoveArchetype(archetype.id)}
-                              aria-label={`Remove ${archetype.name}`}>
-                              <X className='h-4 w-4' />
-                            </Button>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                  {selectedArchetypeIds.length === 0 && (
-                    <p className='text-sm text-muted-foreground'>Archetypes are optional</p>
-                  )}
+                  <div className='grid gap-3'>
+                    <Label>Image</Label>
+                    <ImageUpload
+                      image={getImageFromAssetId(assetId)}
+                      alt={name || 'Character image'}
+                      onUpload={handleImageUpload}
+                      onRemove={handleImageRemove}
+                      rulesetId={rulesetId || undefined}
+                    />
+                  </div>
                 </div>
-              </div>
-            )}
-            <DialogFooter>
-              <DialogClose asChild>
-                <Button variant='outline'>Cancel</Button>
-              </DialogClose>
-              {step === 2 && (
-                <Button variant='outline' onClick={() => setStep(1)}>
-                  Back
-                </Button>
-              )}
-              {step === 1 && showNextOnStep1 ? (
-                <Button
-                  data-testid='create-character-next'
-                  onClick={() => setStep(2)}
-                  disabled={!isFormValid}>
-                  Next
-                </Button>
               ) : (
-                <Button
-                  data-testid='create-character-submit'
-                  onClick={handleCreate}
-                  disabled={!isFormValid}>
-                  Create
-                </Button>
+                <div className='grid gap-4'>
+                  <div className='grid gap-3'>
+                    <Label>Archetypes</Label>
+                    <div className='flex gap-2'>
+                      <Select
+                        value={addArchetypeValue}
+                        onValueChange={(v) => (v === '_none' ? undefined : setAddArchetypeValue(v))}>
+                        <SelectTrigger
+                          id='character-archetype-add'
+                          className='flex-1'
+                          data-testid='character-archetype-select'>
+                          <SelectValue placeholder='Add archetype...' />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {availableArchetypes.length === 0 ? (
+                            <SelectItem value='_none' disabled>
+                              All archetypes added
+                            </SelectItem>
+                          ) : (
+                            availableArchetypes.map((archetype) => (
+                              <SelectItem key={archetype.id} value={archetype.id}>
+                                {archetype.name}
+                              </SelectItem>
+                            ))
+                          )}
+                        </SelectContent>
+                      </Select>
+                      <Button
+                        type='button'
+                        variant='outline'
+                        size='icon'
+                        onClick={() => addArchetypeValue && handleAddArchetype(addArchetypeValue)}
+                        disabled={!addArchetypeValue}
+                        data-testid='character-archetype-add-button'
+                        aria-label='Add archetype'>
+                        <Plus className='h-4 w-4' />
+                      </Button>
+                    </div>
+                    {selectedArchetypeIds.length > 0 && (
+                      <div className='flex flex-col gap-1' data-testid='character-archetypes-list'>
+                        {selectedArchetypeIds.map((archetypeId) => {
+                          const archetype = archetypes.find((a) => a.id === archetypeId);
+                          if (!archetype) return null;
+                          return (
+                            <div
+                              key={archetype.id}
+                              className='flex items-center gap-2 rounded-md border px-3 py-2'
+                              data-testid={`character-archetype-row-${archetype.id}`}>
+                              <span className='flex-1 text-sm font-medium'>{archetype.name}</span>
+                              <Button
+                                type='button'
+                                variant='ghost'
+                                size='icon'
+                                className='h-8 w-8 shrink-0'
+                                onClick={() => handleRemoveArchetype(archetype.id)}
+                                aria-label={`Remove ${archetype.name}`}>
+                                <X className='h-4 w-4' />
+                              </Button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                    {selectedArchetypeIds.length === 0 && (
+                      <p className='text-sm text-muted-foreground'>Archetypes are optional</p>
+                    )}
+                  </div>
+                </div>
               )}
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+              <DialogFooter>
+                <DialogClose asChild>
+                  <Button variant='outline'>Cancel</Button>
+                </DialogClose>
+                {step === 2 && (
+                  <Button variant='outline' onClick={() => setStep(1)}>
+                    Back
+                  </Button>
+                )}
+                {step === 1 && showNextOnStep1 ? (
+                  <Button
+                    data-testid='create-character-next'
+                    onClick={() => setStep(2)}
+                    disabled={!isFormValid}>
+                    Next
+                  </Button>
+                ) : (
+                  <Button
+                    data-testid='create-character-submit'
+                    onClick={handleCreate}
+                    disabled={!isFormValid}>
+                    Create
+                  </Button>
+                )}
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          <input
+            ref={fileInputRef}
+            type='file'
+            accept='.zip'
+            onChange={handleFileSelect}
+            className='hidden'
+          />
+          <Button
+            variant='outline'
+            size='sm'
+            className='gap-1'
+            disabled={isImporting}
+            onClick={handleImportClick}>
+            {isImporting ? (
+              <>
+                <Upload className='h-4 w-4 animate-pulse' />
+                Import
+              </>
+            ) : (
+              <>
+                <Upload className='h-4 w-4' />
+                Import
+              </>
+            )}
+          </Button>
+
+          <Dialog open={rulesetWarningOpen} onOpenChange={setRulesetWarningOpen}>
+            <DialogContent className='sm:max-w-[425px]'>
+              <DialogHeader>
+                <DialogTitle>Ruleset not found</DialogTitle>
+                <DialogDescription>
+                  The ruleset for this character is not available in this library.
+                </DialogDescription>
+              </DialogHeader>
+              <p className='text-sm text-muted-foreground'>
+                The character has been imported, but its original ruleset could not be found. Some
+                attributes, items, or windows may not align correctly until the matching ruleset is
+                imported.
+              </p>
+              <DialogFooter>
+                <Button onClick={() => setRulesetWarningOpen(false)}>OK</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </div>
       }>
       <div className='flex flex-col gap-3'>
         {selectableCharacters.map((character) => {
