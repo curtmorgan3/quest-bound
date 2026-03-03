@@ -193,6 +193,64 @@ export class CampaignSceneAccessor {
       await this.db.characterAttributes.bulkAdd(characterAttributes as any);
     }
 
+    // Instantiate characterPages and characterWindows from the archetype's test character (when available).
+    if (archetype.testCharacterId) {
+      try {
+        const templatePages = await this.db.characterPages
+          .where('characterId')
+          .equals(archetype.testCharacterId)
+          .toArray();
+
+        const pageIdMap = new Map<string, string>();
+
+        if (templatePages.length > 0) {
+          for (const cp of templatePages as any[]) {
+            const newJoinId = crypto.randomUUID();
+            pageIdMap.set((cp as any).id, newJoinId);
+
+            await this.db.characterPages.add({
+              id: newJoinId,
+              characterId,
+              pageId: (cp as any).pageId,
+              label: (cp as any).label,
+              createdAt: now,
+              updatedAt: now,
+            } as any);
+          }
+        }
+
+        // Copy characterWindows, remapping characterPageId to the new join ids.
+        const templateWindows = await this.db.characterWindows
+          .where('characterId')
+          .equals(archetype.testCharacterId)
+          .toArray();
+
+        for (const cw of templateWindows as any[]) {
+          const originalPageId = (cw as any).characterPageId as string | undefined | null;
+          const mappedPageId =
+            originalPageId != null ? pageIdMap.get(originalPageId) ?? originalPageId : originalPageId;
+
+          await this.db.characterWindows.add({
+            id: crypto.randomUUID(),
+            characterId,
+            characterPageId: mappedPageId,
+            windowId: (cw as any).windowId,
+            title: (cw as any).title,
+            x: (cw as any).x,
+            y: (cw as any).y,
+            isCollapsed: (cw as any).isCollapsed,
+            createdAt: now,
+            updatedAt: now,
+          } as any);
+        }
+      } catch (err) {
+        console.warn(
+          'Failed to copy characterPages/characterWindows for spawned NPC from archetype test character:',
+          err,
+        );
+      }
+    }
+
     // Instantiate customProperties from archetype's ArchetypeCustomProperties.
     const archetypeCustomProps = (await this.db.archetypeCustomProperties
       .where('archetypeId')
