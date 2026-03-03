@@ -5,6 +5,7 @@
  * Provides a clean async API for script execution and reactive updates.
  */
 
+import { getCurrentCampaignIdForScripts } from '@/lib/compass-logic/worker/current-campaign-ref';
 import { usePromptModalStore } from '@/stores/prompt-modal-store';
 import { useCharacterSelectModalStore } from '@/stores/character-select-modal-store';
 import { useScriptModifiedAttributesStore } from '@/stores/script-modified-attributes-store';
@@ -41,6 +42,8 @@ export interface ScriptExecutionOptions {
   /** When script is attached to an entity (attribute, action, item), enables 'Self' in the script environment. */
   entityType?: string;
   entityId?: string;
+  /** When set (e.g. in campaign play), script logs and context are associated with this campaign. */
+  campaignId?: string;
 }
 
 export interface AttributeChangeOptions {
@@ -458,6 +461,7 @@ export class QBScriptClient {
       requestId,
       entityType: options.entityType,
       entityId: options.entityId,
+      campaignId: options.campaignId ?? getCurrentCampaignIdForScripts(),
     };
 
     return this.sendSignal({ type: 'EXECUTE_SCRIPT', payload }, requestId, options.timeout);

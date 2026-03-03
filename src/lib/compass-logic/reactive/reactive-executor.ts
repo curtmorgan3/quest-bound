@@ -344,6 +344,7 @@ export class ReactiveExecutor {
         characterId,
         result.logMessages,
         'attribute_change',
+        options.campaignId ?? null,
       );
 
       // Check if this execution triggered more changes
@@ -399,6 +400,7 @@ export class ReactiveExecutor {
     characterId: string,
     logMessages: any[][],
     context: string,
+    campaignId: string | null = null,
   ): Promise<void> {
     if (logMessages.length === 0) return;
     const now = new Date().toISOString();
@@ -414,6 +416,7 @@ export class ReactiveExecutor {
         await this.db.scriptLogs.add({
           id: crypto.randomUUID(),
           rulesetId,
+          campaignId,
           scriptId,
           characterId,
           argsJson,

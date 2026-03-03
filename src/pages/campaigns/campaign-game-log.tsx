@@ -22,7 +22,7 @@ interface CampaignGameLogProps {
 export function CampaignGameLog({ campaignId, rulesetId, limit = 250 }: CampaignGameLogProps) {
   const campaign = useCampaign(campaignId);
   const { updateCampaign } = useCampaigns();
-  const { logs: scriptLogs, clearLogs } = useScriptLogs(limit, rulesetId);
+  const { logs: scriptLogs, clearLogs } = useScriptLogs(limit, rulesetId, campaignId);
 
   const showAutoEntries = campaign?.details?.showAutoEntries !== false;
 

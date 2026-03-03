@@ -5,25 +5,35 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { useActiveRuleset } from '../rulesets/use-active-ruleset';
 
 /**
- * @param limit Max number of log entries to return (newest first).
+ * @param limit Max number of log entries to return (newest first). When campaignId is set, no limit is applied (show all campaign logs).
  * @param rulesetId Optional. When set (e.g. campaign's rulesetId), query logs for this ruleset instead of active ruleset.
+ * @param campaignId Optional. When set (e.g. campaign log), query and clear logs by campaign instead of ruleset.
  */
-export const useScriptLogs = (limit = 100, rulesetId?: string) => {
+export const useScriptLogs = (limit = 100, rulesetId?: string, campaignId?: string) => {
   const { activeRuleset } = useActiveRuleset();
   const { handleError } = useErrorHandler();
   const effectiveRulesetId = rulesetId ?? activeRuleset?.id;
 
   const logs = useLiveQuery(
-    async (): Promise<ScriptLog[]> =>
-      effectiveRulesetId
-        ? db.scriptLogs
-            .where('rulesetId')
-            .equals(effectiveRulesetId)
-            .reverse()
-            .limit(limit)
-            .toArray()
-        : [],
-    [effectiveRulesetId, limit],
+    async (): Promise<ScriptLog[]> => {
+      if (campaignId) {
+        return db.scriptLogs
+          .where('campaignId')
+          .equals(campaignId)
+          .reverse()
+          .toArray();
+      }
+      if (effectiveRulesetId) {
+        return db.scriptLogs
+          .where('rulesetId')
+          .equals(effectiveRulesetId)
+          .reverse()
+          .limit(limit)
+          .toArray();
+      }
+      return [];
+    },
+    [effectiveRulesetId, limit, campaignId],
   );
 
   const logScriptLog = async (data: Omit<ScriptLog, 'id' | 'createdAt' | 'updatedAt'>) => {
@@ -35,6 +45,7 @@ export const useScriptLogs = (limit = 100, rulesetId?: string) => {
         ...data,
         id: crypto.randomUUID(),
         rulesetId: targetRulesetId,
+        campaignId: data.campaignId ?? campaignId ?? null,
         createdAt: now,
         updatedAt: now,
         timestamp: data.timestamp ?? Date.now(),
@@ -48,9 +59,12 @@ export const useScriptLogs = (limit = 100, rulesetId?: string) => {
   };
 
   const clearLogs = async () => {
-    if (!effectiveRulesetId) return;
     try {
-      await db.scriptLogs.where('rulesetId').equals(effectiveRulesetId).delete();
+      if (campaignId) {
+        await db.scriptLogs.where('campaignId').equals(campaignId).delete();
+      } else if (effectiveRulesetId) {
+        await db.scriptLogs.where('rulesetId').equals(effectiveRulesetId).delete();
+      }
     } catch (e) {
       handleError(e as Error, {
         component: 'useScriptLogs/clearLogs',

@@ -135,5 +135,11 @@ export const dbSchemaV49 = {
   documents: `${common}, rulesetId, worldId, campaignId, campaignSceneId, title, description, category, assetId, image, pdfAssetId, pdfData, markdownData, moduleId, [campaignSceneId]`,
 };
 
+/** Schema for v50: scriptLogs get campaignId for campaign-scoped logs. */
+export const dbSchemaV50 = {
+  ...dbSchemaV49,
+  scriptLogs: `${common}, rulesetId, campaignId, scriptId, characterId, timestamp, [entityId+entityType], [campaignId]`,
+};
+
 // Increment on every schema change
-export const dbSchemaVersion = 49;
+export const dbSchemaVersion = 50;

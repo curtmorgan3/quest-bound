@@ -301,6 +301,8 @@ export interface ExecuteScriptPayload {
   /** When script is attached to an entity (attribute, action, item), enables 'Self' in the script environment. */
   entityType?: string;
   entityId?: string;
+  /** When set, logs and script context are associated with this campaign. */
+  campaignId?: string;
 }
 
 export interface AttributeChangedPayload {

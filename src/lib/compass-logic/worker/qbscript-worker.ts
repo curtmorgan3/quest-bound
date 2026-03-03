@@ -300,6 +300,7 @@ async function persistScriptLogs(
   characterId: string,
   logMessages: any[][],
   context: string,
+  campaignId: string | null = null,
 ): Promise<void> {
   if (logMessages.length === 0) return;
   const now = new Date().toISOString();
@@ -315,6 +316,7 @@ async function persistScriptLogs(
       await db.scriptLogs.add({
         id: crypto.randomUUID(),
         rulesetId,
+        campaignId,
         scriptId,
         characterId,
         argsJson,
@@ -546,6 +548,7 @@ async function handleExecuteScript(payload: ExecuteScriptPayload): Promise<void>
       triggerType: payload.triggerType,
       entityType: payload.entityType,
       entityId: payload.entityId,
+      campaignId: payload.campaignId,
       roll: rollFn,
       rollSplit: rollSplitFn,
       prompt: promptFn,
@@ -558,7 +561,7 @@ async function handleExecuteScript(payload: ExecuteScriptPayload): Promise<void>
           targetId,
           eventType,
           rollFn,
-          undefined,
+          payload.campaignId,
           undefined,
           rollSplitFn,
           promptFn,
@@ -577,6 +580,7 @@ async function handleExecuteScript(payload: ExecuteScriptPayload): Promise<void>
       payload.characterId,
       result.logMessages,
       contextLabel,
+      payload.campaignId ?? null,
     );
 
     if (result.error) {
@@ -1244,6 +1248,7 @@ async function handleExecuteItemEvent(payload: {
       payload.characterId,
       result.logMessages,
       'item_event',
+      payload.campaignId ?? null,
     );
 
     if (result.error || !result.success) {

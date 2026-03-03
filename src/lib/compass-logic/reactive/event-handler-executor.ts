@@ -320,6 +320,7 @@ export class EventHandlerExecutor {
         script.id,
         characterId,
         result.logMessages,
+        campaignId ?? null,
       );
 
       return {
@@ -344,6 +345,7 @@ export class EventHandlerExecutor {
     scriptId: string,
     characterId: string,
     logMessages: any[][],
+    campaignId: string | null = null,
   ): Promise<void> {
     if (logMessages.length === 0) return;
     const now = new Date().toISOString();
@@ -359,6 +361,7 @@ export class EventHandlerExecutor {
         await this.db.scriptLogs.add({
           id: crypto.randomUUID(),
           rulesetId,
+          campaignId,
           scriptId,
           characterId,
           argsJson,
@@ -543,6 +546,7 @@ export class EventHandlerExecutor {
       script.id,
       characterId,
       result.logMessages,
+      campaignId ?? null,
     );
 
     return {
@@ -567,6 +571,7 @@ export class EventHandlerExecutor {
     prompt?: PromptFn,
     selectCharacter?: SelectCharacterFn,
     selectCharacters?: SelectCharactersFn,
+    campaignId?: string | null,
   ): Promise<EventHandlerResult> {
     const script = await this.db.scripts
       .where({ rulesetId, entityType: 'characterLoader' })
@@ -615,7 +620,13 @@ export class EventHandlerExecutor {
       await this.onAttributesModified(result.modifiedAttributeIds, characterId, rulesetId);
     }
 
-    await this.persistCharacterLoaderLogs(rulesetId, script.id, characterId, result.logMessages);
+    await this.persistCharacterLoaderLogs(
+      rulesetId,
+      script.id,
+      characterId,
+      result.logMessages,
+      campaignId ?? null,
+    );
 
     return {
       success: !result.error,
@@ -634,6 +645,7 @@ export class EventHandlerExecutor {
     scriptId: string,
     characterId: string,
     logMessages: any[][],
+    campaignId: string | null = null,
   ): Promise<void> {
     if (logMessages.length === 0) return;
     const now = new Date().toISOString();
@@ -649,6 +661,7 @@ export class EventHandlerExecutor {
         await this.db.scriptLogs.add({
           id: crypto.randomUUID(),
           rulesetId,
+          campaignId,
           scriptId,
           characterId,
           argsJson,
@@ -671,6 +684,7 @@ export class EventHandlerExecutor {
     scriptId: string,
     characterId: string,
     logMessages: any[][],
+    campaignId: string | null = null,
   ): Promise<void> {
     if (logMessages.length === 0) return;
     const now = new Date().toISOString();
@@ -686,6 +700,7 @@ export class EventHandlerExecutor {
         await this.db.scriptLogs.add({
           id: crypto.randomUUID(),
           rulesetId,
+          campaignId,
           scriptId,
           characterId,
           argsJson,
@@ -708,6 +723,7 @@ export class EventHandlerExecutor {
     scriptId: string,
     characterId: string,
     logMessages: any[][],
+    campaignId: string | null = null,
   ): Promise<void> {
     if (logMessages.length === 0) return;
     const now = new Date().toISOString();
@@ -723,6 +739,7 @@ export class EventHandlerExecutor {
         await this.db.scriptLogs.add({
           id: crypto.randomUUID(),
           rulesetId,
+          campaignId,
           scriptId,
           characterId,
           argsJson,
@@ -844,6 +861,7 @@ export class EventHandlerExecutor {
       script.id,
       characterId,
       result.logMessages,
+      campaignEvent.campaignId,
     );
 
     return {

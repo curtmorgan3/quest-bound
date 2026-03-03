@@ -417,6 +417,8 @@ export type ScriptError = BaseDetails & {
 
 export type ScriptLog = BaseDetails & {
   rulesetId: string;
+  /** When set, this log was produced in campaign context (campaign play, campaign character sheet). */
+  campaignId: string | null;
   scriptId: string;
   characterId: string | null;
   argsJson: string; // JSON.stringify of the log arguments array (any[])
