@@ -12,16 +12,16 @@ import type {
   SelectCharactersFn,
 } from '@/types';
 import type { ASTNode } from '../interpreter/ast';
-import {
-  getEventInvocationLogMessage,
-  persistEventInvocationLog,
-  persistScriptLogs,
-} from '../script-logs';
 import { functionDefToExecutableSource } from '../interpreter/ast-to-source';
 import { Lexer } from '../interpreter/lexer';
 import { Parser } from '../interpreter/parser';
 import type { ScriptExecutionContext, ScriptExecutionResult } from '../runtime/script-runner';
 import { ScriptRunner } from '../runtime/script-runner';
+import {
+  getEventInvocationLogMessage,
+  persistEventInvocationLog,
+  persistScriptLogs,
+} from '../script-logs';
 
 /**
  * Type of event handler.
@@ -107,11 +107,19 @@ export function createCampaignEventParamsHelper(
   for (const def of definitions) {
     const trimmedName = (def.name ?? '').trim();
     if (!trimmedName) continue;
+    const key = trimmedName.toLowerCase();
 
-    const hasSceneOverride = Object.prototype.hasOwnProperty.call(sceneValues, def.id);
-    const rawValue = hasSceneOverride ? sceneValues[def.id] : def.defaultValue ?? null;
+    let valueFromScene: CampaignEventParamValue | undefined;
+    if (Object.prototype.hasOwnProperty.call(sceneValues, def.id)) {
+      valueFromScene = sceneValues[def.id];
+    } else if (Object.prototype.hasOwnProperty.call(sceneValues, trimmedName)) {
+      // Fallback: support legacy or name-keyed parameterValues
+      valueFromScene = sceneValues[trimmedName];
+    }
 
-    byName.set(trimmedName, {
+    const rawValue = valueFromScene !== undefined ? valueFromScene : (def.defaultValue ?? null);
+
+    byName.set(key, {
       name: trimmedName,
       type: def.type,
       required: def.required,
@@ -142,25 +150,25 @@ export function createCampaignEventParamsHelper(
 
   return {
     get: (name: string): CampaignEventParamValue => {
-      const entry = byName.get(name.trim());
+      const entry = byName.get(name.trim().toLowerCase());
       return entry ? entry.value : null;
     },
     getString: (name: string): string | null => {
-      const value = byName.get(name.trim())?.value;
+      const value = byName.get(name.trim().toLowerCase())?.value;
       if (value == null) return null;
       return String(value);
     },
     getNumber: (name: string): number | null => {
-      const entry = byName.get(name.trim());
+      const entry = byName.get(name.trim().toLowerCase());
       if (!entry) return null;
       return coerceNumber(entry.value);
     },
     getBoolean: (name: string): boolean | null => {
-      const entry = byName.get(name.trim());
+      const entry = byName.get(name.trim().toLowerCase());
       if (!entry) return null;
       return coerceBoolean(entry.value);
     },
-    has: (name: string): boolean => byName.has(name.trim()),
+    has: (name: string): boolean => byName.has(name.trim().toLowerCase()),
     entries: (): CampaignEventParamDescriptor[] => Array.from(byName.values()),
   };
 }
@@ -319,8 +327,11 @@ export class EventHandlerExecutor {
       };
     }
 
-    const { selectCharacter: selectCharacterWrapped, selectCharacters: selectCharactersWrapped, getCollectedTargetNames } =
-      this.createSelectCharacterCollectors(selectCharacter, selectCharacters);
+    const {
+      selectCharacter: selectCharacterWrapped,
+      selectCharacters: selectCharactersWrapped,
+      getCollectedTargetNames,
+    } = this.createSelectCharacterCollectors(selectCharacter, selectCharacters);
 
     // Run full script so all definitions are in scope, then call the handler
     const scriptToRun = this.buildScriptWithHandlerCall(script.sourceCode, eventType);
@@ -371,13 +382,17 @@ export class EventHandlerExecutor {
       eventName: eventType,
       targetNames: targetNames.length > 0 ? targetNames : undefined,
     });
-    await persistEventInvocationLog(this.db, {
-      rulesetId: item.rulesetId,
-      scriptId: script.id,
-      characterId,
-      campaignId: campaignId ?? null,
-      context: 'item_event',
-    }, message);
+    await persistEventInvocationLog(
+      this.db,
+      {
+        rulesetId: item.rulesetId,
+        scriptId: script.id,
+        characterId,
+        campaignId: campaignId ?? null,
+        context: 'item_event',
+      },
+      message,
+    );
 
     if (!result.error && result.modifiedAttributeIds?.length && this.onAttributesModified) {
       await this.onAttributesModified(result.modifiedAttributeIds, characterId, item.rulesetId);
@@ -460,8 +475,11 @@ export class EventHandlerExecutor {
       };
     }
 
-    const { selectCharacter: selectCharacterWrapped, selectCharacters: selectCharactersWrapped, getCollectedTargetNames } =
-      this.createSelectCharacterCollectors(selectCharacter, selectCharacters);
+    const {
+      selectCharacter: selectCharacterWrapped,
+      selectCharacters: selectCharactersWrapped,
+      getCollectedTargetNames,
+    } = this.createSelectCharacterCollectors(selectCharacter, selectCharacters);
 
     // Run full script so all definitions are in scope, then call the handler
     const scriptToRun = this.buildScriptWithHandlerCall(script.sourceCode, eventType);
@@ -522,13 +540,17 @@ export class EventHandlerExecutor {
         eventName: eventType,
         targetNames: targetNames.length > 0 ? targetNames : undefined,
       });
-      await persistEventInvocationLog(this.db, {
-        rulesetId: action.rulesetId,
-        scriptId: script.id,
-        characterId,
-        campaignId: campaignId ?? null,
-        context: 'action_event',
-      }, message);
+      await persistEventInvocationLog(
+        this.db,
+        {
+          rulesetId: action.rulesetId,
+          scriptId: script.id,
+          characterId,
+          campaignId: campaignId ?? null,
+          context: 'action_event',
+        },
+        message,
+      );
 
       if (!result.error && result.modifiedAttributeIds?.length && this.onAttributesModified) {
         await this.onAttributesModified(result.modifiedAttributeIds, characterId, action.rulesetId);
@@ -785,7 +807,12 @@ export class EventHandlerExecutor {
       prompt,
       selectCharacter,
       selectCharacters,
-      onRollComplete: this.createOnRollComplete(rulesetId, script.id, characterId, campaignId ?? null),
+      onRollComplete: this.createOnRollComplete(
+        rulesetId,
+        script.id,
+        characterId,
+        campaignId ?? null,
+      ),
       executeActionEvent: (actionId, ownerId, targetIdForAction, eventTypeForAction) =>
         this.executeActionEvent(
           actionId,
@@ -892,21 +919,22 @@ export class EventHandlerExecutor {
     }
 
     // Resolve parameter helper for this campaign event and scene (if any).
-    let paramsHelper: ReturnType<typeof createCampaignEventParamsHelper> | undefined;
-    if ((campaignEvent.parameters?.length ?? 0) > 0) {
-      try {
-        const link = (await this.db.campaignEventScenes
+    // Always create a helper so `params` is defined in scripts, even when there are no parameters.
+    let paramsHelper = createCampaignEventParamsHelper(campaignEvent as CampaignEvent, null);
+    try {
+      const table = (this.db as any).campaignEventScenes;
+      if (table && typeof table.where === 'function') {
+        const link = (await table
           .where('campaignSceneId')
           .equals(campaignSceneId)
           .filter((l: CampaignEventScene) => l.campaignEventId === campaignEventId)
           .first()) as CampaignEventScene | undefined;
-        paramsHelper = createCampaignEventParamsHelper(campaignEvent as CampaignEvent, link ?? null);
-      } catch (e) {
-        console.warn(
-          '[EventHandlerExecutor] Failed to load CampaignEventScene for params',
-          e,
-        );
+        if (link) {
+          paramsHelper = createCampaignEventParamsHelper(campaignEvent as CampaignEvent, link);
+        }
       }
+    } catch (e) {
+      console.warn('[EventHandlerExecutor] Failed to load CampaignEventScene for params', e);
     }
 
     const context: ScriptExecutionContext = {

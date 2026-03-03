@@ -322,14 +322,10 @@ export function CampaignEvents() {
               ) : (
                 <div className='flex flex-col gap-2'>
                   {editParameters.map((param) => (
-                    <div
-                      key={param.id}
-                      className='grid grid-cols-[1.5fr,1fr,auto] items-center gap-2'>
+                    <div key={param.id} className='flex gap-2'>
                       <Input
                         value={param.name}
-                        onChange={(e) =>
-                          handleUpdateParameter(param.id, { name: e.target.value })
-                        }
+                        onChange={(e) => handleUpdateParameter(param.id, { name: e.target.value })}
                         placeholder='Parameter name'
                       />
                       <Select
@@ -349,20 +345,60 @@ export function CampaignEvents() {
                         </SelectContent>
                       </Select>
                       <div className='flex items-center gap-1'>
-                        <Input
-                          className='w-32'
-                          value={
-                            param.defaultValue === null || param.defaultValue === undefined
-                              ? ''
-                              : String(param.defaultValue)
-                          }
-                          onChange={(e) =>
-                            handleUpdateParameter(param.id, {
-                              defaultValue: e.target.value === '' ? undefined : e.target.value,
-                            })
-                          }
-                          placeholder='Default'
-                        />
+                        {param.type === 'boolean' ? (
+                          <Select
+                            value={
+                              param.defaultValue === true ||
+                              (typeof param.defaultValue === 'string' &&
+                                param.defaultValue.trim().toLowerCase() === 'true')
+                                ? 'true'
+                                : param.defaultValue === false ||
+                                    (typeof param.defaultValue === 'string' &&
+                                      param.defaultValue.trim().toLowerCase() === 'false')
+                                  ? 'false'
+                                  : 'unset'
+                            }
+                            onValueChange={(v) =>
+                              handleUpdateParameter(param.id, {
+                                defaultValue: v === 'unset' ? undefined : v === 'true',
+                              })
+                            }>
+                            <SelectTrigger className='w-32'>
+                              <SelectValue placeholder='Default' />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value='unset'>No default</SelectItem>
+                              <SelectItem value='true'>True</SelectItem>
+                              <SelectItem value='false'>False</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        ) : (
+                          <Input
+                            className='w-32'
+                            type={param.type === 'number' ? 'number' : 'text'}
+                            value={
+                              param.defaultValue === null || param.defaultValue === undefined
+                                ? ''
+                                : String(param.defaultValue)
+                            }
+                            onChange={(e) => {
+                              const raw = e.target.value;
+                              if (raw === '') {
+                                handleUpdateParameter(param.id, { defaultValue: undefined });
+                                return;
+                              }
+                              if (param.type === 'number') {
+                                const num = Number(raw);
+                                handleUpdateParameter(param.id, {
+                                  defaultValue: Number.isFinite(num) ? num : raw,
+                                });
+                              } else {
+                                handleUpdateParameter(param.id, { defaultValue: raw });
+                              }
+                            }}
+                            placeholder='Default'
+                          />
+                        )}
                         <Button
                           type='button'
                           variant='ghost'
