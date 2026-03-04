@@ -24,6 +24,21 @@ const qbscriptCompletions = [
     type: 'function',
     info: 'Get action reference by name, then call .activate()',
   },
+  {
+    label: 'Owner.addPage',
+    type: 'function',
+    info: "Create a character sheet page from a ruleset page template by label (e.g. Owner.addPage('Spells'))",
+  },
+  {
+    label: 'Owner.navigateToPage',
+    type: 'function',
+    info: "Navigate the character sheet to a page by label (e.g. Owner.navigateToPage('Spells'))",
+  },
+  {
+    label: 'Owner.removePage',
+    type: 'function',
+    info: "Remove a character sheet page that was created from a ruleset page with the given label (e.g. Owner.removePage('Spells'))",
+  },
   { label: 'Ruleset', type: 'variable', info: 'Ruleset-level entities' },
   { label: 'Ruleset.Attribute', type: 'function', info: 'Get attribute definition' },
   { label: 'Ruleset.Chart', type: 'function', info: 'Get chart by name' },

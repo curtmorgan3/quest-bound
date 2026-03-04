@@ -9,6 +9,8 @@ import type {
   CustomProperty,
   InventoryItem,
   Item,
+  Page,
+  CharacterPage,
   PromptFn,
   RollFn,
   RollSplitFn,
@@ -491,6 +493,65 @@ export class ScriptRunner {
    */
   async flushCache(): Promise<void> {
     const { db, rulesetId } = this.context;
+    const now = new Date().toISOString();
+
+    const ensureCharacterPageFromLabel = async (
+      characterId: string,
+      label: string,
+    ): Promise<CharacterPage | null> => {
+      // Resolve character + ruleset for safety (character.rulesetId is the source of truth).
+      const character = await db.characters.get(characterId);
+      if (!character) return null;
+      const characterRulesetId = character.rulesetId ?? rulesetId;
+
+      // Find the ruleset page template by label.
+      const template = (await db.pages
+        .where('rulesetId')
+        .equals(characterRulesetId)
+        .filter((p) => (p as Page).label === label)
+        .first()) as Page | undefined;
+      if (!template) return null;
+
+      // Reuse existing CharacterPage if one already exists for this character + template page.
+      const existing = (await db.characterPages
+        .where('[characterId+pageId]')
+        .equals([characterId, template.id])
+        .first()) as CharacterPage | undefined;
+      if (existing) return existing;
+
+      // Create a new CharacterPage from the template.
+      const { id: _id, createdAt: _c, updatedAt: _u, ...pageRest } = template;
+      const characterPageId = crypto.randomUUID();
+      const newRow: CharacterPage = {
+        ...(pageRest as Omit<CharacterPage, 'id' | 'createdAt' | 'updatedAt' | 'characterId'>),
+        id: characterPageId,
+        characterId,
+        pageId: template.id,
+        createdAt: now,
+        updatedAt: now,
+      };
+
+      await db.characterPages.add(newRow);
+
+      // Create CharacterWindows from RulesetWindows bound to this page template.
+      const rulesetWindows = await db.rulesetWindows.where('pageId').equals(template.id).toArray();
+      for (const rw of rulesetWindows) {
+        await db.characterWindows.add({
+          id: crypto.randomUUID(),
+          characterId,
+          characterPageId,
+          windowId: rw.windowId,
+          title: rw.title,
+          x: rw.x,
+          y: rw.y,
+          isCollapsed: rw.isCollapsed,
+          createdAt: now,
+          updatedAt: now,
+        });
+      }
+
+      return newRow;
+    };
 
     // Process all pending updates
     for (const [key, value] of this.pendingUpdates.entries()) {
@@ -506,7 +567,7 @@ export class ScriptRunner {
         const update: Record<string, unknown> = {
           ...(patch.customProperties != null && { customProperties: patch.customProperties }),
           ...(patch.image !== undefined && { image: patch.image }),
-          updatedAt: new Date().toISOString(),
+          updatedAt: now,
         };
         await db.characters.update(id, update);
       } else if (type === 'characterAttributeMax') {
@@ -581,6 +642,70 @@ export class ScriptRunner {
             console.warn('Archetype on_remove script failed:', result.error);
           }
           await db.characterArchetypes.delete(ca.id);
+        }
+      } else if (type === 'characterPageAdd') {
+        const entries = value as { characterId: string; label: string }[];
+        for (const { characterId, label } of entries) {
+          await ensureCharacterPageFromLabel(characterId, label);
+        }
+      } else if (type === 'characterPageNavigate') {
+        const entries = value as { characterId: string; label: string }[];
+        for (const { characterId, label } of entries) {
+          const characterPage = await ensureCharacterPageFromLabel(characterId, label);
+          if (!characterPage) continue;
+          await db.characters.update(characterId, {
+            lastViewedPageId: characterPage.id,
+            updatedAt: now,
+          });
+        }
+      } else if (type === 'characterPageRemove') {
+        const entries = value as { characterId: string; label: string }[];
+        for (const { characterId, label } of entries) {
+          const character = await db.characters.get(characterId);
+          if (!character) continue;
+
+          // Prefer matching by template Page for this ruleset + label.
+          const template = (await db.pages
+            .where('rulesetId')
+            .equals(character.rulesetId ?? rulesetId)
+            .filter((p) => (p as Page).label === label)
+            .first()) as Page | undefined;
+
+          let characterPage: CharacterPage | undefined;
+          if (template) {
+            characterPage = (await db.characterPages
+              .where('[characterId+pageId]')
+              .equals([characterId, template.id])
+              .first()) as CharacterPage | undefined;
+          }
+
+          // Fallback: match by label on CharacterPage when template is missing.
+          if (!characterPage) {
+            characterPage = (await db.characterPages
+              .where('characterId')
+              .equals(characterId)
+              .filter((cp) => (cp as CharacterPage).label === label)
+              .first()) as CharacterPage | undefined;
+          }
+
+          if (!characterPage) continue;
+
+          // Remove windows and page.
+          await db.characterWindows.where('characterPageId').equals(characterPage.id).delete();
+          await db.characterPages.delete(characterPage.id);
+
+          // If this was the last viewed page, move the character to a fallback page.
+          if (character.lastViewedPageId === characterPage.id) {
+            const remaining = await db.characterPages
+              .where('characterId')
+              .equals(characterId)
+              .sortBy('createdAt');
+            const nextId = remaining[0]?.id ?? null;
+            await db.characters.update(characterId, {
+              lastViewedPageId: nextId,
+              updatedAt: now,
+            });
+          }
         }
       }
     }

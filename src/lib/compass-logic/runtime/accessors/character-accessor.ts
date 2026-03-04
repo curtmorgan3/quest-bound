@@ -454,6 +454,53 @@ export class CharacterAccessor implements StructuredCloneSafe {
     this.inventoryItems = this.inventoryItems.filter((i) => i.id !== inv.id);
   }
 
+  /**
+   * Add a character sheet page for this character from a ruleset page template, by label.
+   * Example: Owner.addPage('Spells')
+   *
+   * The actual DB work is performed in ScriptRunner.flushCache via 'characterPageAdd'.
+   */
+  addPage(label: string): void {
+    const key = 'characterPageAdd';
+    const existing = this.pendingUpdates.get(key) as
+      | { characterId: string; label: string }[]
+      | undefined;
+    const entry = { characterId: this.id, label };
+    this.pendingUpdates.set(key, existing ? [...existing, entry] : [entry]);
+  }
+
+  /**
+   * Navigate this character's sheet to a page by label.
+   * Example: Owner.navigateToPage('Spells')
+   *
+   * The actual DB work (ensuring the CharacterPage exists and updating lastViewedPageId)
+   * is performed in ScriptRunner.flushCache via 'characterPageNavigate'.
+   */
+  navigateToPage(label: string): void {
+    const key = 'characterPageNavigate';
+    const existing = this.pendingUpdates.get(key) as
+      | { characterId: string; label: string }[]
+      | undefined;
+    const entry = { characterId: this.id, label };
+    this.pendingUpdates.set(key, existing ? [...existing, entry] : [entry]);
+  }
+
+  /**
+   * Remove this character's page that was created from a ruleset page with the given label.
+   * Example: Owner.removePage('Spells')
+   *
+   * The actual DB work (deleting CharacterPage + its CharacterWindows and updating
+   * lastViewedPageId when needed) is performed in ScriptRunner.flushCache via 'characterPageRemove'.
+   */
+  removePage(label: string): void {
+    const key = 'characterPageRemove';
+    const existing = this.pendingUpdates.get(key) as
+      | { characterId: string; label: string }[]
+      | undefined;
+    const entry = { characterId: this.id, label };
+    this.pendingUpdates.set(key, existing ? [...existing, entry] : [entry]);
+  }
+
   /** Public id for script-runner (e.g. to find Owner in location list). */
   get characterId(): string {
     return this.id;
