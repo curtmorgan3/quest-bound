@@ -33,11 +33,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { useAssets, useCharacter, useImportCharacter, useRulesets } from '@/lib/compass-api';
+import {
+  ArchetypeLookup,
+  useAssets,
+  useCharacter,
+  useImportCharacter,
+  useRulesets,
+} from '@/lib/compass-api';
 import { db } from '@/stores';
-import type { Archetype } from '@/types';
+import type { Archetype, ArchetypeWithVariantOptions } from '@/types';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { AlertCircle, Plus, Upload, X } from 'lucide-react';
+import { AlertCircle, Plus, Upload } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -52,8 +58,8 @@ export const Characters = () => {
   const [step, setStep] = useState<1 | 2>(1);
   const [name, setName] = useState('');
   const [rulesetId, setRulesetId] = useState('');
-  const [selectedArchetypeIds, setSelectedArchetypeIds] = useState<string[]>([]);
-  const [addArchetypeValue, setAddArchetypeValue] = useState('');
+  const [selectedArchetypeId, setSelectedArchetypeId] = useState<string | null>(null);
+  const [selectedVariant, setSelectedVariant] = useState<string | null>(null);
   const [assetId, setAssetId] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
   const [importResult, setImportResult] = useState<{
@@ -92,7 +98,8 @@ export const Characters = () => {
     await createCharacter({
       name: name.trim(),
       rulesetId,
-      archetypeIds: selectedArchetypeIds,
+      archetypeIds: selectedArchetypeId ? [selectedArchetypeId] : [],
+      variant: selectedVariant ?? undefined,
       assetId,
     });
 
@@ -107,8 +114,8 @@ export const Characters = () => {
     setStep(1);
     setName('');
     setRulesetId('');
-    setSelectedArchetypeIds([]);
-    setAddArchetypeValue('');
+    setSelectedArchetypeId(null);
+    setSelectedVariant(null);
     setAssetId(null);
     setOpen(false);
   };
@@ -123,8 +130,8 @@ export const Characters = () => {
       setStep(1);
       setName('');
       setRulesetId('');
-      setSelectedArchetypeIds([]);
-      setAddArchetypeValue('');
+      setSelectedArchetypeId(null);
+      setSelectedVariant(null);
       setAssetId(null);
     }
     setOpen(isOpen);
@@ -135,23 +142,17 @@ export const Characters = () => {
 
   const handleRulesetChange = (value: string) => {
     setRulesetId(value);
-    setSelectedArchetypeIds([]);
-    setAddArchetypeValue('');
+    setSelectedArchetypeId(null);
+    setSelectedVariant(null);
   };
 
-  const handleAddArchetype = (archetypeId: string) => {
-    if (!archetypeId || selectedArchetypeIds.includes(archetypeId)) return;
-    setSelectedArchetypeIds((prev) => [...prev, archetypeId]);
-    setAddArchetypeValue('');
-  };
-
-  const handleRemoveArchetype = (archetypeId: string) => {
-    setSelectedArchetypeIds((prev) => prev.filter((id) => id !== archetypeId));
-  };
-
-  const availableArchetypes = selectableArchetypes.filter(
-    (a) => !selectedArchetypeIds.includes(a.id),
-  );
+  const selectedArchetype = selectedArchetypeId
+    ? (archetypes.find((a) => a.id === selectedArchetypeId) as
+        | ArchetypeWithVariantOptions
+        | undefined)
+    : undefined;
+  const selectedArchetypeHasVariants =
+    selectedArchetype?.variantOptions && selectedArchetype.variantOptions.length > 0;
 
   const handleImageUpload = (uploadedAssetId: string) => {
     setAssetId(uploadedAssetId);
@@ -235,9 +236,9 @@ export const Characters = () => {
             </DialogTrigger>
             <DialogContent className='sm:max-w-[425px]'>
               <DialogHeader>
-                <DialogTitle>{step === 1 ? 'New Character' : 'Select Archetypes'}</DialogTitle>
+                <DialogTitle>{step === 1 ? 'New Character' : 'Select Archetype'}</DialogTitle>
                 <DialogDescription>
-                  {step === 1 ? 'New Character' : 'Select Archetypes'}
+                  {step === 1 ? 'New Character' : 'Select Archetype'}
                 </DialogDescription>
               </DialogHeader>
               {step === 1 ? (
@@ -294,71 +295,34 @@ export const Characters = () => {
               ) : (
                 <div className='grid gap-4'>
                   <div className='grid gap-3'>
-                    <Label>Archetypes</Label>
-                    <div className='flex gap-2'>
-                      <Select
-                        value={addArchetypeValue}
-                        onValueChange={(v) =>
-                          v === '_none' ? undefined : setAddArchetypeValue(v)
-                        }>
-                        <SelectTrigger
-                          id='character-archetype-add'
-                          className='flex-1'
-                          data-testid='character-archetype-select'>
-                          <SelectValue placeholder='Add archetype...' />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {availableArchetypes.length === 0 ? (
-                            <SelectItem value='_none' disabled>
-                              All archetypes added
-                            </SelectItem>
-                          ) : (
-                            availableArchetypes.map((archetype) => (
-                              <SelectItem key={archetype.id} value={archetype.id}>
-                                {archetype.name}
-                              </SelectItem>
-                            ))
-                          )}
-                        </SelectContent>
-                      </Select>
-                      <Button
-                        type='button'
-                        variant='outline'
-                        size='icon'
-                        onClick={() => addArchetypeValue && handleAddArchetype(addArchetypeValue)}
-                        disabled={!addArchetypeValue}
-                        data-testid='character-archetype-add-button'
-                        aria-label='Add archetype'>
-                        <Plus className='h-4 w-4' />
-                      </Button>
-                    </div>
-                    {selectedArchetypeIds.length > 0 && (
-                      <div className='flex flex-col gap-1' data-testid='character-archetypes-list'>
-                        {selectedArchetypeIds.map((archetypeId) => {
-                          const archetype = archetypes.find((a) => a.id === archetypeId);
-                          if (!archetype) return null;
-                          return (
-                            <div
-                              key={archetype.id}
-                              className='flex items-center gap-2 rounded-md border px-3 py-2'
-                              data-testid={`character-archetype-row-${archetype.id}`}>
-                              <span className='flex-1 text-sm font-medium'>{archetype.name}</span>
-                              <Button
-                                type='button'
-                                variant='ghost'
-                                size='icon'
-                                className='h-8 w-8 shrink-0'
-                                onClick={() => handleRemoveArchetype(archetype.id)}
-                                aria-label={`Remove ${archetype.name}`}>
-                                <X className='h-4 w-4' />
-                              </Button>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-                    {selectedArchetypeIds.length === 0 && (
-                      <p className='text-sm text-muted-foreground'>Archetypes are optional</p>
+                    <Label>Archetype</Label>
+                    <ArchetypeLookup
+                      rulesetId={rulesetId || undefined}
+                      label=''
+                      value={selectedArchetypeId}
+                      placeholder='Select archetype (optional)'
+                      data-testid='character-archetype-select'
+                      onSelect={(archetype) => {
+                        setSelectedArchetypeId(archetype.id);
+                        setSelectedVariant(null);
+                      }}
+                      onDelete={() => {
+                        setSelectedArchetypeId(null);
+                        setSelectedVariant(null);
+                      }}
+                      variantValue={selectedArchetypeHasVariants ? selectedVariant : null}
+                      onVariantSelect={
+                        selectedArchetypeHasVariants
+                          ? (v) => setSelectedVariant(v ?? null)
+                          : undefined
+                      }
+                      variantPlaceholder='None'
+                      variantLabel={
+                        selectedArchetype ? `Variant for ${selectedArchetype.name}` : 'Variant'
+                      }
+                    />
+                    {!selectedArchetypeId && (
+                      <p className='text-sm text-muted-foreground'>Archetype is optional</p>
                     )}
                   </div>
                 </div>

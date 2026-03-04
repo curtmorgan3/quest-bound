@@ -69,10 +69,11 @@ function useNpcStageEntries(campaignCharacters: CampaignCharacter[]): NpcStageEn
           .where('characterId')
           .equals(character.id)
           .sortBy('loadOrder');
-        const firstArchetypeId = cas[0]?.archetypeId;
+        const firstCa = cas[0];
+        const firstArchetypeId = firstCa?.archetypeId;
         if (firstArchetypeId) {
           const arch = await db.archetypes.get(firstArchetypeId);
-          archetypeTitle = arch?.name ?? null;
+          archetypeTitle = firstCa?.variant ?? arch?.name ?? null;
         }
       }
       result.push({ cc, character, archetypeTitle });
@@ -314,7 +315,6 @@ export function NpcStage({ campaignId, rulesetId, sceneId, onCardHover }: NpcSta
   const editingEntry = npcEntries.find((e) => e.cc.id === editingCampaignCharacterId) ?? null;
   const editingCharacter = editingEntry?.character ?? null;
   const editingCampaignCharacter = editingEntry?.cc ?? null;
-  console.log(filteredNpcEntries);
 
   const handleAddNpc = useCallback(async () => {
     if (!selectedArchetype) return;
