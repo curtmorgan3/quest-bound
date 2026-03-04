@@ -1,7 +1,6 @@
 import { Button } from '@/components';
 import { useSidebar } from '@/components/ui/sidebar';
 import { CharacterPage } from '@/pages/characters';
-import { useCampaignContext } from '@/stores';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Backpack, EyeClosed, X } from 'lucide-react';
 import { useState } from 'react';
@@ -17,6 +16,7 @@ export interface CampaignCharacterSheetProps {
   /** When provided, the transparency state becomes controlled by the parent. */
   transparentBackground?: boolean;
   onTransparentBackgroundChange?: (transparentBackground: boolean) => void;
+  campaignId?: string;
 }
 
 export const CampaignCharacterSheet = ({
@@ -26,18 +26,15 @@ export const CampaignCharacterSheet = ({
   hideGameLog = false,
   transparentBackground: controlledTransparentBackground,
   onTransparentBackgroundChange,
+  campaignId,
 }: CampaignCharacterSheetProps = {}) => {
-  const { campaignId, selectedPlayerCharacters } = useCampaignContext();
   const { state: sidebarState } = useSidebar();
   const [sheetOpen, setSheetOpen] = useState(false);
   const [uncontrolledTransparentBackground, setUncontrolledTransparentBackground] = useState(false);
 
-  const contextCharacterId =
-    selectedPlayerCharacters.length === 1 ? selectedPlayerCharacters[0]!.characterId : null;
-  const characterId = controlledCharacterId ?? contextCharacterId;
+  const characterId = controlledCharacterId;
   const isControlled = controlledCharacterId != null;
   const showSheet = isControlled ? controlledOpen && !!characterId : sheetOpen && !!characterId;
-  const showCharacterSheetButton = !isControlled && selectedPlayerCharacters.length === 1;
 
   const isTransparentBackgroundControlled = controlledTransparentBackground != null;
   const transparentBackground = isTransparentBackgroundControlled
@@ -60,18 +57,13 @@ export const CampaignCharacterSheet = ({
     }
   };
 
-  if (!showCharacterSheetButton && !showSheet) return null;
+  if (!showSheet) return null;
 
   const overlayLeft =
     sidebarState === 'expanded' ? 'var(--sidebar-width)' : 'calc(var(--sidebar-width-icon) + 1rem)';
 
   return (
     <>
-      {showCharacterSheetButton && (
-        <Button variant='outline' size='sm' onClick={() => setSheetOpen(true)}>
-          Character sheet
-        </Button>
-      )}
       <AnimatePresence>
         {showSheet && characterId && (
           <motion.div

@@ -66,7 +66,6 @@ export const assetInjectorMiddleware: Middleware<DBCore> = {
             'documents',
             'attributes',
             'pages',
-            'worlds',
             'locations',
             'tilemaps',
             'characterPages',
@@ -82,9 +81,7 @@ export const assetInjectorMiddleware: Middleware<DBCore> = {
             return downlevelTable.get(req).then(injectImageData);
           },
           getMany: (req) => {
-            return downlevelTable.getMany(req).then((results) =>
-              results.map(injectImageData),
-            );
+            return downlevelTable.getMany(req).then((results) => results.map(injectImageData));
           },
           query: (req) => {
             return downlevelTable.query(req).then(async (originalResult) => {

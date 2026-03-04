@@ -26,7 +26,6 @@ import { ErrorBoundary } from './components';
 import { Layout } from './components/layout';
 import { DocumentViewer } from './pages/ruleset/documents';
 import { WindowEditor } from './pages/ruleset/windows/window-editor';
-import { CampaignProvider } from './stores';
 
 function CompassRoutes() {
   const campaignsEnabled = useFeatureFlag('campaigns', false);
@@ -86,29 +85,14 @@ function CompassRoutes() {
                 <Route path={`/campaigns`} element={<Campaigns />} />
                 <Route path={`/campaigns/new`} element={<CampaignNew />} />
                 <Route path={`/campaigns/:campaignId/events`} element={<CampaignEvents />} />
-                <Route
-                  path={`/campaigns/:campaignId/scenes`}
-                  element={
-                    <CampaignProvider>
-                      <CampaignScenes />
-                    </CampaignProvider>
-                  }
-                />
+                <Route path={`/campaigns/:campaignId/scenes`} element={<CampaignScenes />} />
                 <Route
                   path={`/campaigns/:campaignId/scenes/:sceneId`}
-                  element={
-                    <CampaignProvider>
-                      <CampaignDashboard />
-                    </CampaignProvider>
-                  }
+                  element={<CampaignDashboard />}
                 />
                 <Route
                   path={`/campaigns/:campaignId/documents`}
-                  element={
-                    <CampaignProvider>
-                      <CampaignDocumentsPage />
-                    </CampaignProvider>
-                  }
+                  element={<CampaignDocumentsPage />}
                 />
                 <Route
                   path={`/campaigns/:campaignId/documents/:documentId`}
@@ -116,27 +100,12 @@ function CompassRoutes() {
                 />
                 <Route
                   path={`/campaigns/:campaignId/chart/:chartId`}
-                  element={
-                    <CampaignProvider>
-                      <CampaignChartViewer />
-                    </CampaignProvider>
-                  }
+                  element={<CampaignChartViewer />}
                 />
-                <Route
-                  path={`/campaigns/:campaignId/scripts`}
-                  element={
-                    <CampaignProvider>
-                      <ScriptsIndex />
-                    </CampaignProvider>
-                  }
-                />
+                <Route path={`/campaigns/:campaignId/scripts`} element={<ScriptsIndex />} />
                 <Route
                   path={`/campaigns/:campaignId/scripts/:scriptId`}
-                  element={
-                    <CampaignProvider>
-                      <ScriptEditorPage />
-                    </CampaignProvider>
-                  }
+                  element={<ScriptEditorPage />}
                 />
               </>
             )}

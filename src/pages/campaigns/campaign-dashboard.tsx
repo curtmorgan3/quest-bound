@@ -128,6 +128,7 @@ export function CampaignDashboard() {
             </div>
             <CampaignCharacterSheet
               hideGameLog
+              campaignId={campaignId}
               characterId={sheetCharacterId ?? undefined}
               open={!!sheetCharacterId}
               transparentBackground={characterSheetTransparentBackground}

@@ -1,11 +1,10 @@
 import { useErrorHandler } from '@/hooks';
 import { persistScriptLogs, type PersistScriptLogsParams } from '@/lib/compass-logic/script-logs';
 import { db } from '@/stores';
-import { CampaignPlayContext } from '@/stores/context/campaign-context';
 import type { ScriptLog } from '@/types';
 import { getGameLogResetAt, setGameLogResetAt } from '@/utils/game-log-reset-storage';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { useCallback, useContext, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useCampaign } from '../campaigns/use-campaign';
 import { useActiveRuleset } from '../rulesets/use-active-ruleset';
@@ -166,14 +165,12 @@ export type PersistLogParams = Pick<
  * override any of rulesetId, campaignId, characterId, or scriptName.
  */
 export function usePersistLogs() {
-  const campaignContext = useContext(CampaignPlayContext);
   const params = useParams<{ characterId?: string; campaignId?: string; rulesetId?: string }>();
-  const campaign = useCampaign(campaignContext?.campaignId ?? params.campaignId);
+  const campaign = useCampaign(params.campaignId);
   const { activeRuleset } = useActiveRuleset();
 
-  const rulesetId =
-    campaignContext?.rulesetId ?? campaign?.rulesetId ?? activeRuleset?.id ?? params.rulesetId;
-  const campaignId = campaignContext?.campaignId ?? params.campaignId ?? undefined;
+  const rulesetId = campaign?.rulesetId ?? activeRuleset?.id ?? params.rulesetId;
+  const campaignId = params.campaignId ?? undefined;
   const characterId = params.characterId ?? undefined;
 
   const persistLog = useCallback(

@@ -13,9 +13,7 @@ import type Dexie from 'dexie';
 import { migrate41to42 } from './migrate-41-to-42';
 import { migrate43to44 } from './migrate-43-to-44';
 
-export type ManualMigrationResult =
-  | { ok: true; message: string }
-  | { ok: false; message: string };
+export type ManualMigrationResult = { ok: true; message: string } | { ok: false; message: string };
 
 const MIGRATION_TABLES = [
   'rulesetPages',
@@ -44,11 +42,11 @@ export async function runMigration41to42Manually(db: Dexie): Promise<ManualMigra
     });
     return { ok: true, message: 'Migration 41→42 completed.' };
   } catch (err) {
-    const message =
-      err instanceof Error ? err.message : String(err);
-    const hint = message.includes('rulesetPages') || message.includes('not found')
-      ? ' The DB may already be at v43 (rulesetPages removed). Manual run only works when the DB is still at v41 or v42.'
-      : '';
+    const message = err instanceof Error ? err.message : String(err);
+    const hint =
+      message.includes('rulesetPages') || message.includes('not found')
+        ? ' The DB may already be at v43 (rulesetPages removed). Manual run only works when the DB is still at v41 or v42.'
+        : '';
     return {
       ok: false,
       message: message + hint,
@@ -67,7 +65,6 @@ const MIGRATION_43_TO_44_TABLES = [
   'actions',
   'items',
   'archetypes',
-  'worlds',
   'characterPages',
   'components',
 ] as const;
