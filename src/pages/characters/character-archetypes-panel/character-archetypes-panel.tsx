@@ -14,6 +14,7 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet';
 import { useArchetypes, useAssets, useCharacter } from '@/lib/compass-api';
+import type { ArchetypeWithVariantOptions } from '@/types';
 import { Plus, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { useParams } from 'react-router-dom';
@@ -27,10 +28,7 @@ type CharacterArchetypesPanelProps = {
   onOpenChange: (open: boolean) => void;
 };
 
-export const CharacterArchetypesPanel = ({
-  open,
-  onOpenChange,
-}: CharacterArchetypesPanelProps) => {
+export const CharacterArchetypesPanel = ({ open, onOpenChange }: CharacterArchetypesPanelProps) => {
   const { characterId } = useParams<{ characterId: string }>();
   const { character } = useCharacter(characterId);
   const { archetypes } = useArchetypes(character?.rulesetId);
@@ -49,53 +47,108 @@ export const CharacterArchetypesPanel = ({
     .sort((a, b) => a.archetype.name.localeCompare(b.archetype.name));
 
   const [addValue, setAddValue] = useState('');
+  const [pendingVariant, setPendingVariant] = useState('');
   const addedArchetypeIds = new Set(characterArchetypes.map((ca) => ca.archetypeId));
   const availableArchetypes = archetypes.filter(
     (a) => !a.isDefault && !addedArchetypeIds.has(a.id),
   );
+  const selectedForAdd = availableArchetypes.find((a) => a.id === addValue) as
+    | ArchetypeWithVariantOptions
+    | undefined;
+  const hasVariantOptions =
+    selectedForAdd?.variantOptions && selectedForAdd.variantOptions.length > 0;
 
-  const handleAdd = async (archetypeId: string) => {
+  const handleAdd = async (archetypeId: string, variant?: string) => {
     if (!archetypeId) return;
-    await addArchetype(archetypeId);
+    await addArchetype(archetypeId, variant || undefined);
     setAddValue('');
+    setPendingVariant('');
+  };
+
+  const handleAddWithVariant = () => {
+    if (!addValue) return;
+    handleAdd(addValue, pendingVariant || undefined);
   };
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side='left' className='flex flex-col p-[8px]' data-testid='character-archetypes-panel'>
+      <SheetContent
+        side='left'
+        className='flex flex-col p-[8px]'
+        data-testid='character-archetypes-panel'>
         <SheetHeader>
           <SheetTitle>Character Archetypes</SheetTitle>
-          <SheetDescription>
-            View, add, and remove archetypes on this character.
-          </SheetDescription>
+          <SheetDescription>View, add, and remove archetypes on this character.</SheetDescription>
         </SheetHeader>
 
         {availableArchetypes.length > 0 && (
-          <div className='flex gap-2'>
-            <Select value={addValue} onValueChange={(v) => handleAdd(v)}>
-              <SelectTrigger className='flex-1' data-testid='add-archetype-select'>
-                <SelectValue placeholder='Add archetype...' />
-              </SelectTrigger>
-              <SelectContent>
-                {availableArchetypes.map((a) => (
-                  <SelectItem key={a.id} value={a.id}>
-                    {a.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Button
-              variant='outline'
-              size='icon'
-              className='shrink-0'
-              onClick={() => {
-                const first = availableArchetypes[0];
-                if (first) handleAdd(first.id);
-              }}
-              title='Add first available'
-              data-testid='add-archetype-button'>
-              <Plus className='h-4 w-4' />
-            </Button>
+          <div className='flex flex-col gap-2'>
+            <div className='flex gap-2'>
+              <Select
+                value={addValue}
+                onValueChange={(v) => {
+                  setAddValue(v);
+                  setPendingVariant('');
+                  if (!v) return;
+                  const selected = availableArchetypes.find((a) => a.id === v) as
+                    | ArchetypeWithVariantOptions
+                    | undefined;
+                  if (!selected?.variantOptions?.length) {
+                    handleAdd(v);
+                  }
+                }}>
+                <SelectTrigger className='flex-1' data-testid='add-archetype-select'>
+                  <SelectValue placeholder='Add archetype...' />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableArchetypes.map((a) => (
+                    <SelectItem key={a.id} value={a.id}>
+                      {a.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {!hasVariantOptions && (
+                <Button
+                  variant='outline'
+                  size='icon'
+                  className='shrink-0'
+                  onClick={() => {
+                    const first = availableArchetypes[0];
+                    if (first) handleAdd(first.id);
+                  }}
+                  title='Add first available'
+                  data-testid='add-archetype-button'>
+                  <Plus className='h-4 w-4' />
+                </Button>
+              )}
+            </div>
+            {hasVariantOptions && selectedForAdd && (
+              <div className='flex gap-2 items-end'>
+                <div className='flex-1 grid gap-1'>
+                  <label className='text-xs text-muted-foreground'>Variant (optional)</label>
+                  <Select value={pendingVariant} onValueChange={setPendingVariant}>
+                    <SelectTrigger>
+                      <SelectValue placeholder='None' />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value='none'>None</SelectItem>
+                      {selectedForAdd.variantOptions!.map((opt) => (
+                        <SelectItem key={opt} value={opt}>
+                          {opt}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <Button
+                  onClick={handleAddWithVariant}
+                  data-testid='add-archetype-button'
+                  className='shrink-0'>
+                  Add
+                </Button>
+              </div>
+            )}
           </div>
         )}
 
@@ -111,7 +164,9 @@ export const CharacterArchetypesPanel = ({
             )}
           </div>
         ) : (
-          <div className='flex-1 min-h-0 overflow-auto flex flex-col gap-2 mt-4' data-testid='character-archetypes-list'>
+          <div
+            className='flex-1 min-h-0 overflow-auto flex flex-col gap-2 mt-4'
+            data-testid='character-archetypes-list'>
             {displayedArchetypes.map((ca) => (
               <ArchetypeRow
                 key={ca.id}
@@ -153,6 +208,7 @@ function ArchetypeRow({
       )}
       <div className='flex-1 min-w-0'>
         <div className='font-medium'>{ca.archetype.name}</div>
+        {ca.variant && <p className='text-sm text-muted-foreground'>Variant: {ca.variant}</p>}
         {ca.archetype.description && (
           <p className='text-sm text-muted-foreground truncate'>{ca.archetype.description}</p>
         )}

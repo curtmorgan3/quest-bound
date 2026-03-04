@@ -22,6 +22,8 @@ export const useArchetypes = (rulesetId: string | undefined) => {
     description?: string;
     assetId?: string | null;
     image?: string | null;
+    variantsChartRef?: number;
+    variantsChartColumnHeader?: string;
   }) => {
     if (!rulesetId || !currentUser) return;
     const now = new Date().toISOString();
@@ -85,6 +87,8 @@ export const useArchetypes = (rulesetId: string | undefined) => {
         testCharacterId: characterId,
         isDefault: false,
         loadOrder: maxLoadOrder + 1,
+        variantsChartRef: data.variantsChartRef ?? undefined,
+        variantsChartColumnHeader: data.variantsChartColumnHeader ?? undefined,
         createdAt: now,
         updatedAt: now,
       });
@@ -99,7 +103,17 @@ export const useArchetypes = (rulesetId: string | undefined) => {
   const updateArchetype = async (
     id: string,
     updates: Partial<
-      Pick<Archetype, 'name' | 'description' | 'assetId' | 'image' | 'scriptId' | 'category'>
+      Pick<
+        Archetype,
+        | 'name'
+        | 'description'
+        | 'assetId'
+        | 'image'
+        | 'scriptId'
+        | 'category'
+        | 'variantsChartRef'
+        | 'variantsChartColumnHeader'
+      >
     >,
   ) => {
     try {

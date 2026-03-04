@@ -141,15 +141,22 @@ export type Archetype = BaseDetails & {
   testCharacterId: string;
   isDefault: boolean;
   loadOrder: number;
+  /** When set, variant options are derived from this chart column (for CharacterArchetype.variant). */
+  variantsChartRef?: number;
+  variantsChartColumnHeader?: string;
   /** Module origin: ruleset id, source entity id, and module name. */
   moduleId?: string;
   moduleEntityId?: string;
   moduleName?: string;
 };
 
+/** Injected at read time when variantsChartRef + variantsChartColumnHeader are set. */
+export type ArchetypeWithVariantOptions = Archetype & { variantOptions?: string[] };
+
 export type CharacterArchetype = BaseDetails & {
   characterId: string;
   archetypeId: string;
+  variant?: string;
   loadOrder: number;
 };
 

@@ -10,25 +10,22 @@ export function useCharacterArchetypes(characterId: string | undefined) {
   const { handleError } = useErrorHandler();
 
   const characterArchetypes: CharacterArchetypeWithArchetype[] =
-    useLiveQuery(
-      async () => {
-        if (!characterId) return [];
-        const cas = await db.characterArchetypes
-          .where('characterId')
-          .equals(characterId)
-          .sortBy('loadOrder');
-        const archetypes = await Promise.all(cas.map((ca) => db.archetypes.get(ca.archetypeId)));
-        return cas
-          .map((ca) => {
-            const archetype = archetypes.find((a) => a?.id === ca.archetypeId);
-            return archetype ? { ...ca, archetype } : null;
-          })
-          .filter((x): x is CharacterArchetypeWithArchetype => x !== null);
-      },
-      [characterId],
-    ) ?? [];
+    useLiveQuery(async () => {
+      if (!characterId) return [];
+      const cas = await db.characterArchetypes
+        .where('characterId')
+        .equals(characterId)
+        .sortBy('loadOrder');
+      const archetypes = await Promise.all(cas.map((ca) => db.archetypes.get(ca.archetypeId)));
+      return cas
+        .map((ca) => {
+          const archetype = archetypes.find((a) => a?.id === ca.archetypeId);
+          return archetype ? { ...ca, archetype } : null;
+        })
+        .filter((x): x is CharacterArchetypeWithArchetype => x !== null);
+    }, [characterId]) ?? [];
 
-  const addArchetype = async (archetypeId: string) => {
+  const addArchetype = async (archetypeId: string, variant?: string) => {
     if (!characterId) return;
     const now = new Date().toISOString();
     try {
@@ -39,27 +36,21 @@ export function useCharacterArchetypes(characterId: string | undefined) {
       if (existing) return;
 
       const maxOrder =
-        (await db.characterArchetypes
-          .where('characterId')
-          .equals(characterId)
-          .sortBy('loadOrder'))
-          .pop()?.loadOrder ?? -1;
+        (
+          await db.characterArchetypes.where('characterId').equals(characterId).sortBy('loadOrder')
+        ).pop()?.loadOrder ?? -1;
 
       await db.characterArchetypes.add({
         id: crypto.randomUUID(),
         characterId,
         archetypeId,
+        variant,
         loadOrder: maxOrder + 1,
         createdAt: now,
         updatedAt: now,
       });
 
-      const archetypeResult = await executeArchetypeEvent(
-        db,
-        archetypeId,
-        characterId,
-        'on_add',
-      );
+      const archetypeResult = await executeArchetypeEvent(db, archetypeId, characterId, 'on_add');
       if (archetypeResult.error) {
         console.warn('Archetype on_add script failed:', archetypeResult.error);
       }

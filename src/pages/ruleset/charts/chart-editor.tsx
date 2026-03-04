@@ -30,9 +30,9 @@ function normalizeFieldName(name: string) {
 export const ChartEditor = ({ chartId, readOnly = false, rulesetId }: ChartEditorProps) => {
   const { charts, updateChart } = useCharts(rulesetId);
   const [editColumnsOpen, setEditColumnsOpen] = useState(false);
-  const [editedColumns, setEditedColumns] = useState<Array<{ header: string; originalIndex: number }>>(
-    [],
-  );
+  const [editedColumns, setEditedColumns] = useState<
+    Array<{ header: string; originalIndex: number }>
+  >([]);
 
   const chart = charts.find((c) => c.id === chartId);
   if (!chart) return null;
@@ -68,9 +68,7 @@ export const ChartEditor = ({ chartId, readOnly = false, rulesetId }: ChartEdito
   };
 
   const openEditColumns = () => {
-    setEditedColumns(
-      headerRow.map((header, originalIndex) => ({ header, originalIndex })),
-    );
+    setEditedColumns(headerRow.map((header, originalIndex) => ({ header, originalIndex })));
     setEditColumnsOpen(true);
   };
 
@@ -195,7 +193,7 @@ export const ChartEditor = ({ chartId, readOnly = false, rulesetId }: ChartEdito
             <DialogTitle>Edit columns</DialogTitle>
             <DialogDescription>Edit columns</DialogDescription>
           </DialogHeader>
-          <div className='flex flex-col gap-2 py-4'>
+          <div className='flex flex-col gap-2 py-4 max-h-[60dvh] overflow-auto'>
             {editedColumns.map((col, index) => (
               <div key={index} className='flex items-center gap-2'>
                 <Input

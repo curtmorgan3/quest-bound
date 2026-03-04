@@ -804,17 +804,32 @@ export async function addModuleToRuleset({
     }
   }
 
-  // Clone archetypes (with new testCharacterId)
+  // Clone archetypes (with new testCharacterId, map variantsChartRef to new chart id)
   for (const arch of sourceArchetypes as Archetype[]) {
     const newArchId = crypto.randomUUID();
     archetypeIdMap.set(arch.id, newArchId);
     const newTestCharId = characterIdMap.get(arch.testCharacterId) ?? arch.testCharacterId;
-    const { id: _aid, rulesetId: _arid, createdAt: _ac, updatedAt: _au, ...restArch } = arch;
+    const {
+      id: _aid,
+      rulesetId: _arid,
+      createdAt: _ac,
+      updatedAt: _au,
+      variantsChartRef,
+      ...restArch
+    } = arch;
+    let mappedVariantsChartRef = variantsChartRef;
+    if (variantsChartRef != null) {
+      const mappedChartId = chartIdMap.get(String(variantsChartRef));
+      if (mappedChartId) {
+        mappedVariantsChartRef = mappedChartId as unknown as number;
+      }
+    }
     await db.archetypes.add({
       ...restArch,
       id: newArchId,
       rulesetId: targetRulesetId,
       testCharacterId: newTestCharId,
+      variantsChartRef: mappedVariantsChartRef,
       moduleId: sourceRulesetId,
       moduleEntityId: arch.id,
       moduleName,

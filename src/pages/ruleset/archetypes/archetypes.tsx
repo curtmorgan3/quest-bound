@@ -1,5 +1,12 @@
-import { Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components';
-import { useArchetypes, useAssets } from '@/lib/compass-api';
+import {
+  Input,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components';
+import { useArchetypes, useAssets, useCharts } from '@/lib/compass-api';
 import { useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { ArchetypeCard } from './archetype-card';
@@ -11,6 +18,7 @@ export const Archetypes = () => {
   const { archetypes, updateArchetype, deleteArchetype, reorderArchetypes } =
     useArchetypes(rulesetId);
   const { assets } = useAssets(rulesetId);
+  const { charts } = useCharts(rulesetId);
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
@@ -18,6 +26,9 @@ export const Archetypes = () => {
   const [editAssetId, setEditAssetId] = useState<string | null>(null);
   const [editImage, setEditImage] = useState<string | null>(null);
   const [editCategory, setEditCategory] = useState<string | null>(null);
+  const [editUseChartForVariants, setEditUseChartForVariants] = useState(false);
+  const [editVariantsChartId, setEditVariantsChartId] = useState('');
+  const [editVariantsChartColumnHeader, setEditVariantsChartColumnHeader] = useState('');
   const [filterValue, setFilterValue] = useState('');
   const [categoryFilter, setCategoryFilter] = useState(ALL_CATEGORIES);
 
@@ -36,6 +47,10 @@ export const Archetypes = () => {
       setEditAssetId(a.assetId ?? null);
       setEditImage(a.image ?? null);
       setEditCategory(a.category ?? null);
+      const hasChart = !!(a.variantsChartRef != null && a.variantsChartColumnHeader);
+      setEditUseChartForVariants(hasChart);
+      setEditVariantsChartId(a.variantsChartRef != null ? String(a.variantsChartRef) : '');
+      setEditVariantsChartColumnHeader(a.variantsChartColumnHeader ?? '');
     }
   };
 
@@ -47,6 +62,14 @@ export const Archetypes = () => {
       assetId: editAssetId,
       image: editImage,
       category: editCategory ?? undefined,
+      variantsChartRef:
+        editUseChartForVariants && editVariantsChartId && editVariantsChartColumnHeader
+          ? (editVariantsChartId as unknown as number)
+          : undefined,
+      variantsChartColumnHeader:
+        editUseChartForVariants && editVariantsChartId && editVariantsChartColumnHeader
+          ? editVariantsChartColumnHeader
+          : undefined,
     });
     setEditingId(null);
   };
@@ -149,7 +172,11 @@ export const Archetypes = () => {
               editAssetId={editAssetId}
               editImage={editImage}
               editCategory={editCategory}
+              editUseChartForVariants={editUseChartForVariants}
+              editVariantsChartId={editVariantsChartId}
+              editVariantsChartColumnHeader={editVariantsChartColumnHeader}
               existingCategories={existingCategories}
+              charts={charts}
               onMoveUp={() => moveUp(index)}
               onMoveDown={() => moveDown(index)}
               onStartEdit={() => startEdit(archetype.id)}
@@ -160,6 +187,9 @@ export const Archetypes = () => {
               onEditImageUpload={handleEditImageUpload}
               onEditImageRemove={handleEditImageRemove}
               onEditCategoryChange={setEditCategory}
+              onEditUseChartForVariantsChange={setEditUseChartForVariants}
+              onEditVariantsChartIdChange={setEditVariantsChartId}
+              onEditVariantsChartColumnHeaderChange={setEditVariantsChartColumnHeader}
               onDelete={() => deleteArchetype(archetype.id)}
               confirmBeforeDelete={doNotAsk}
             />

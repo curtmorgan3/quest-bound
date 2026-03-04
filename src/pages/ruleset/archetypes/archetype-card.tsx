@@ -11,14 +11,21 @@ import {
   Button,
   Card,
   CategoryField,
+  Checkbox,
   DescriptionEditor,
   ImageUpload,
   Input,
   Label,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from '@/components';
 import { useActiveRuleset } from '@/lib/compass-api';
-import type { Archetype } from '@/types';
+import type { Archetype, Chart } from '@/types';
 import { ChevronDown, ChevronUp, FileCode, Pencil, Trash2 } from 'lucide-react';
+import { useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ManageArchetypeCustomPropertiesModal } from './manage-archetype-custom-properties-modal';
 
@@ -34,7 +41,11 @@ export interface ArchetypeCardProps {
   editAssetId: string | null;
   editImage: string | null;
   editCategory: string | null;
+  editUseChartForVariants: boolean;
+  editVariantsChartId: string;
+  editVariantsChartColumnHeader: string;
   existingCategories: string[];
+  charts: Chart[];
   onMoveUp: () => void;
   onMoveDown: () => void;
   onStartEdit: () => void;
@@ -45,6 +56,9 @@ export interface ArchetypeCardProps {
   onEditImageUpload: (assetId: string) => void;
   onEditImageRemove: () => void;
   onEditCategoryChange: (value: string | null) => void;
+  onEditUseChartForVariantsChange: (value: boolean) => void;
+  onEditVariantsChartIdChange: (value: string) => void;
+  onEditVariantsChartColumnHeaderChange: (value: string) => void;
   onDelete: () => void;
   confirmBeforeDelete: boolean;
 }
@@ -61,7 +75,11 @@ export function ArchetypeCard({
   editAssetId,
   editImage,
   editCategory,
+  editUseChartForVariants,
+  editVariantsChartId,
+  editVariantsChartColumnHeader,
   existingCategories,
+  charts,
   onMoveUp,
   onMoveDown,
   onStartEdit,
@@ -72,12 +90,27 @@ export function ArchetypeCard({
   onEditImageUpload,
   onEditImageRemove,
   onEditCategoryChange,
+  onEditUseChartForVariantsChange,
+  onEditVariantsChartIdChange,
+  onEditVariantsChartColumnHeaderChange,
   onDelete,
   confirmBeforeDelete,
 }: ArchetypeCardProps) {
   const { activeRuleset } = useActiveRuleset();
   const navigate = useNavigate();
   const imageSrc = archetype.image ?? getImageFromAssetId(archetype.assetId ?? null) ?? undefined;
+
+  const variantsChartColumnHeaders = useMemo(() => {
+    if (!editVariantsChartId) return [];
+    const chart = charts.find((c) => c.id === editVariantsChartId);
+    if (!chart?.data) return [];
+    try {
+      const rows = JSON.parse(chart.data) as string[][];
+      return (rows[0] || []).filter(Boolean);
+    } catch {
+      return [];
+    }
+  }, [charts, editVariantsChartId]);
 
   const handleOpenSheetEdit = () => {
     if (!activeRuleset) return;
@@ -117,7 +150,7 @@ export function ArchetypeCard({
       )}
       <div className='flex-1 min-w-0'>
         {isEditing ? (
-          <div className='flex flex-col gap-2'>
+          <div className='flex flex-col gap-6'>
             <Input
               value={editName}
               onChange={(e) => onEditNameChange(e.target.value)}
@@ -146,6 +179,64 @@ export function ArchetypeCard({
                 onChange={onEditDescriptionChange}
                 placeholder='Description'
               />
+            </div>
+            <div className='flex flex-col gap-4'>
+              <div className='flex items-center gap-2'>
+                <Checkbox
+                  id='edit-use-chart-variants'
+                  checked={editUseChartForVariants}
+                  onCheckedChange={(checked) => {
+                    onEditUseChartForVariantsChange(!!checked);
+                    if (!checked) {
+                      onEditVariantsChartIdChange('');
+                      onEditVariantsChartColumnHeaderChange('');
+                    }
+                  }}
+                />
+                <Label htmlFor='edit-use-chart-variants'>Add variants from chart</Label>
+              </div>
+              {editUseChartForVariants && (
+                <div className='flex flex-row gap-4'>
+                  <div className='grid gap-2'>
+                    <Label htmlFor='edit-variants-chart'>Chart</Label>
+                    <Select
+                      value={editVariantsChartId}
+                      onValueChange={(value) => {
+                        onEditVariantsChartIdChange(value);
+                        onEditVariantsChartColumnHeaderChange('');
+                      }}>
+                      <SelectTrigger id='edit-variants-chart'>
+                        <SelectValue placeholder='Select a chart' />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {charts.map((chart) => (
+                          <SelectItem key={chart.id} value={chart.id}>
+                            {chart.title}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className='grid gap-2'>
+                    <Label htmlFor='edit-variants-column'>Column</Label>
+                    <Select
+                      value={editVariantsChartColumnHeader}
+                      onValueChange={onEditVariantsChartColumnHeaderChange}
+                      disabled={!editVariantsChartId}>
+                      <SelectTrigger id='edit-variants-column'>
+                        <SelectValue placeholder='Select a column' />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {variantsChartColumnHeaders.map((header) => (
+                          <SelectItem key={header} value={header}>
+                            {header}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              )}
             </div>
             <div className='flex gap-2'>
               <Button size='sm' onClick={onSaveEdit}>

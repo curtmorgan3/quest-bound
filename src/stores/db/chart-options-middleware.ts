@@ -35,6 +35,30 @@ function injectChartOptions(record: any): Attribute {
   return record;
 }
 
+/** Injects variantOptions from chart when archetype has variantsChartRef + variantsChartColumnHeader. */
+function injectArchetypeVariantOptions(record: any): any {
+  if (!record) return record;
+  if (!record.variantsChartRef || !record.variantsChartColumnHeader) return record;
+
+  const chartId = String(record.variantsChartRef);
+  const chartData = memoizedCharts[chartId];
+  if (chartData) {
+    const variantOptions = getOptionsFromChart(chartData, record.variantsChartColumnHeader);
+    return { ...record, variantOptions };
+  }
+  return record;
+}
+
+function processRecord(tableName: string, record: any): any {
+  if (tableName === 'attributes' || tableName === 'characterAttributes') {
+    return injectChartOptions(record);
+  }
+  if (tableName === 'archetypes') {
+    return injectArchetypeVariantOptions(record);
+  }
+  return record;
+}
+
 export const chartOptionsMiddleware: Middleware<DBCore> = {
   stack: 'dbcore',
   name: 'ChartOptionsInjector',
@@ -44,21 +68,25 @@ export const chartOptionsMiddleware: Middleware<DBCore> = {
       table(tableName) {
         const downlevelTable = downlevelDatabase.table(tableName);
 
-        // Only apply to attributes table
-        if (tableName !== 'attributes' && tableName !== 'characterAttributes') {
+        const applyMiddleware =
+          tableName === 'attributes' ||
+          tableName === 'characterAttributes' ||
+          tableName === 'archetypes';
+
+        if (!applyMiddleware) {
           return downlevelTable;
         }
 
         return {
           ...downlevelTable,
           get: (req) => {
-            return downlevelTable.get(req).then(injectChartOptions);
+            return downlevelTable.get(req).then((record) => processRecord(tableName, record));
           },
           query: (req) => {
             return downlevelTable.query(req).then((originalResult) => {
               if (!originalResult) return originalResult;
               const records = originalResult?.result ?? [];
-              const processedRecords = records.map(injectChartOptions);
+              const processedRecords = records.map((r) => processRecord(tableName, r));
 
               return {
                 ...originalResult,
