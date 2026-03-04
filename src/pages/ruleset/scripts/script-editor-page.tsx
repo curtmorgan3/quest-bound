@@ -10,7 +10,7 @@ import {
 import { CodeMirrorEditor } from '@/lib/compass-logic/editor';
 import { colorPrimary } from '@/palette';
 import { db } from '@/stores';
-import type { Script } from '@/types';
+import type { Script, ScriptParameterDefinition } from '@/types';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { AnimatePresence, motion } from 'framer-motion';
 import { AlertCircle, ChevronDown, ChevronUp, Terminal } from 'lucide-react';
@@ -20,6 +20,7 @@ import { AttributeControls } from './script-editor/attribute-controls';
 import { EditorConsole } from './script-editor/editor-console';
 import { EditorTopBar } from './script-editor/editor-top-bar';
 import { EventControls } from './script-editor/event-controls';
+import { GameManagerParameters } from './script-editor/game-manager-parameters';
 import { SCRIPT_TEMPLATES } from './templates';
 import { useAutoSave } from './use-auto-save';
 import { getAutocompletePreference, SCRIPT_EDITOR_AUTOCOMPLETE_KEY } from './utils';
@@ -90,6 +91,7 @@ export function ScriptEditorPage() {
   const [sourceCode, setSourceCode] = useState('');
   const [autocompleteEnabled, setAutocompleteEnabled] = useState(getAutocompletePreference);
   const [consolePanelOpen, setConsolePanelOpen] = useState(false);
+  const [parameters, setParameters] = useState<ScriptParameterDefinition[]>([]);
 
   const setAutocompleteEnabledWithStorage = useCallback((enabled: boolean) => {
     setAutocompleteEnabled(enabled);
@@ -138,6 +140,9 @@ export function ScriptEditorPage() {
       setEntityId(script.entityId);
       setSourceCode(script.sourceCode);
       setCategory(script.category ?? null);
+      setParameters(script.parameters ?? []);
+    } else if (isNew) {
+      setParameters([]);
     }
   }, [scriptId, script, isNew]);
 
@@ -167,6 +172,7 @@ export function ScriptEditorPage() {
           setEntityType,
           category,
           setCategory,
+            parameters,
         }}
       />
 
@@ -206,6 +212,10 @@ export function ScriptEditorPage() {
                 executeItemEvent={executeItemEvent}
                 executeArchetypeEvent={executeArchetypeEvent}
               />
+            )}
+
+            {entityType === 'gameManager' && (
+              <GameManagerParameters parameters={parameters} onChange={setParameters} />
             )}
           </div>
         </div>

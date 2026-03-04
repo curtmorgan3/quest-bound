@@ -985,7 +985,7 @@ export class EventHandlerExecutor {
           rollSplit,
           prompt,
         ),
-      ...(paramsHelper ? { campaignEventParams: paramsHelper } : {}),
+      params: paramsHelper,
     };
 
     const result = await this.executeEventHandlerByCall(script.sourceCode, eventType, context);

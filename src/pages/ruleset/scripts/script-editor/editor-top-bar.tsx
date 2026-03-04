@@ -19,7 +19,15 @@ import {
 } from '@/lib/compass-api';
 import { type UseReactiveScriptExecutionResult } from '@/lib/compass-logic';
 import { activateButtonStyle } from '@/palette';
-import type { Action, Archetype, Attribute, CampaignEvent, Item, Script } from '@/types';
+import type {
+  Action,
+  Archetype,
+  Attribute,
+  CampaignEvent,
+  Item,
+  Script,
+  ScriptParameterDefinition,
+} from '@/types';
 import { Trash2, X, Zap } from 'lucide-react';
 import { useCallback, type Dispatch, type SetStateAction } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -40,6 +48,7 @@ interface EditorTopBar {
   sourceCode: string;
   saveDisabled?: boolean;
   scriptExecutionHook: UseReactiveScriptExecutionResult;
+  parameters: ScriptParameterDefinition[];
 }
 
 export const EditorTopBar = ({
@@ -56,6 +65,7 @@ export const EditorTopBar = ({
   sourceCode,
   saveDisabled,
   scriptExecutionHook,
+  parameters,
 }: EditorTopBar) => {
   const navigate = useNavigate();
   const { scriptId } = useParams<{ scriptId: string }>();
@@ -72,6 +82,20 @@ export const EditorTopBar = ({
   const handleRun = useCallback(async () => {
     if (!activeRuleset) throw new Error('No ruleset found.');
     if (!testCharacter) throw new Error('No test character found for the ruleset.');
+
+    const paramsRecord =
+      parameters && parameters.length
+        ? Object.fromEntries(
+            parameters
+              .map((p) => ({
+                key: p.label.trim(),
+                value: p.defaultValue ?? null,
+              }))
+              .filter((p) => p.key.length > 0)
+              .map((p) => [p.key, p.value]),
+          )
+        : undefined;
+
     await scriptExecutionHook.execute({
       rulesetId: activeRuleset.id,
       scriptId: script?.id ?? 'script-editor-run',
@@ -83,6 +107,7 @@ export const EditorTopBar = ({
       // So entity scripts get 'Self' = Owner.Attribute/Action/Item as appropriate
       entityType,
       entityId: entityId ?? undefined,
+      ...(paramsRecord ? { params: paramsRecord } : {}),
     });
   }, [
     activeRuleset,
@@ -92,6 +117,7 @@ export const EditorTopBar = ({
     scriptExecutionHook.execute,
     entityType,
     entityId,
+    parameters,
   ]);
 
   const handleSave = async () => {
@@ -108,6 +134,13 @@ export const EditorTopBar = ({
       enabled: true,
       category: category ?? undefined,
       campaignId,
+      parameters:
+        parameters && parameters.length
+          ? parameters.map((p) => ({
+              ...p,
+              label: p.label.trim(),
+            }))
+          : undefined,
     };
     if (isNew) {
       const id = await createScript(payload);

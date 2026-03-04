@@ -1,7 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-  createCampaignEventParamsHelper,
-} from '@/lib/compass-logic/reactive/event-handler-executor';
+import { createCampaignEventParamsHelper } from '@/lib/compass-logic/reactive/event-handler-executor';
 import type {
   CampaignEvent,
   CampaignEventParamType,

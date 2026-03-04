@@ -24,6 +24,7 @@ import {
 } from '../reactive/event-handler-executor';
 import { ReactiveExecutor } from '../reactive/reactive-executor';
 import { ScriptRunner, type ScriptExecutionContext } from '../runtime/script-runner';
+import { createParamsHelperFromRecord } from '../runtime/params-helper';
 import { prepareForStructuredClone } from '../runtime/structured-clone-safe';
 import type {
   AttributeChangedPayload,
@@ -539,6 +540,7 @@ async function handleExecuteScript(payload: ExecuteScriptPayload): Promise<void>
           rollSplitFn,
           promptFn,
         ),
+      ...(payload.params ? { params: createParamsHelperFromRecord(payload.params) } : {}),
     };
 
     const runner = new ScriptRunner(context);

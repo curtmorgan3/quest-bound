@@ -305,6 +305,8 @@ export interface ExecuteScriptPayload {
   entityId?: string;
   /** When set, logs and script context are associated with this campaign. */
   campaignId?: string;
+  /** Optional params map exposed to QBScript as params.get('name'). Must be JSON-serializable. */
+  params?: Record<string, any>;
 }
 
 export interface AttributeChangedPayload {

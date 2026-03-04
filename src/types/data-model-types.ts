@@ -52,7 +52,7 @@ export type Attribute = BaseDetails & {
   image?: string | null;
   inventoryWidth?: number;
   inventoryHeight?: number;
-  scriptId?: string | null; // NEW: Associated script
+  scriptId?: string | null;
   /** Module origin: ruleset id, source entity id, and module name. */
   moduleId?: string;
   moduleEntityId?: string;
@@ -385,6 +385,19 @@ export type ScriptEntityType =
   | 'gameManager'
   | 'campaignEvent';
 
+export type ScriptParamType = 'string' | 'number' | 'boolean';
+
+export type ScriptParamValue = string | number | boolean | null;
+
+export type ScriptParameterDefinition = {
+  id: string;
+  /** Human-friendly label for this parameter (e.g. \"Difficulty\", \"Target Name\"). */
+  label: string;
+  type: ScriptParamType;
+  /** Optional default value used when the caller does not supply an explicit value. */
+  defaultValue?: ScriptParamValue;
+};
+
 export type Script = BaseDetails & {
   rulesetId: string; // Which ruleset this script belongs to
   name: string; // Script name (e.g., "hit_points", "cast_fireball")
@@ -396,6 +409,8 @@ export type Script = BaseDetails & {
   category?: string; // Optional category for grouping scripts
   /** Optional campaign; when set, script is campaign-specific. */
   campaignId?: string;
+   /** Optional parameter definitions used by the UI to collect values for params.get(). */
+  parameters?: ScriptParameterDefinition[];
   /** Module origin: ruleset id, source entity id, and module name. */
   moduleId?: string;
   moduleEntityId?: string;

@@ -44,6 +44,8 @@ export interface ScriptExecutionOptions {
   entityId?: string;
   /** When set (e.g. in campaign play), script logs and context are associated with this campaign. */
   campaignId?: string;
+  /** Optional params map exposed to QBScript as params.get('name'). Must be JSON-serializable. */
+  params?: Record<string, any>;
 }
 
 export interface AttributeChangeOptions {
@@ -476,6 +478,7 @@ export class QBScriptClient {
       entityType: options.entityType,
       entityId: options.entityId,
       campaignId: options.campaignId ?? getCurrentCampaignIdForScripts(),
+      ...(options.params ? { params: options.params } : {}),
     };
 
     return this.sendSignal({ type: 'EXECUTE_SCRIPT', payload }, requestId, options.timeout);

@@ -569,6 +569,8 @@ export interface ReactiveScriptExecutionOptions {
   /** When script is attached to an entity (attribute, action, item), enables 'Self' in the script environment. */
   entityType?: string;
   entityId?: string;
+   /** Optional params map exposed to QBScript as params.get('name'). Must be JSON-serializable. */
+  params?: Record<string, any>;
 }
 
 export interface UseReactiveScriptExecutionResult {
@@ -620,6 +622,7 @@ export function useReactiveScriptExecution(timeout = 10000): UseReactiveScriptEx
           triggerType: options.triggerType,
           entityType: options.entityType,
           entityId: options.entityId,
+          params: options.params,
           timeout,
         });
 

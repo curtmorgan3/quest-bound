@@ -9,6 +9,7 @@ import type { DB } from '@/stores/db/hooks/types';
 import { persistScriptLogs } from '../script-logs';
 import type { ExecuteActionEventFn } from '../runtime/proxies';
 import type { ScriptExecutionContext } from '../runtime/script-runner';
+import { createParamsHelperFromRecord } from '../runtime/params-helper';
 import { ScriptRunner } from '../runtime/script-runner';
 import { buildDependencyGraph, DependencyGraph, loadDependencyGraph } from './dependency-graph';
 import { ExecutionLimitError, ExecutionTracker } from './execution-tracker';
@@ -40,6 +41,8 @@ export interface ReactiveExecutionOptions {
   selectCharacter?: SelectCharacterFn;
   /** Optional character picker for selectCharacters(title?, description?). */
   selectCharacters?: SelectCharactersFn;
+  /** Optional params map exposed to QBScript as params.get('name') for reactive scripts. */
+  params?: Record<string, any>;
 }
 
 /**
@@ -299,6 +302,9 @@ export class ReactiveExecutor {
     options: ReactiveExecutionOptions = {},
   ): Promise<string[]> {
     const allModifiedIds: string[] = [];
+    const paramsHelper = options.params
+      ? createParamsHelperFromRecord(options.params)
+      : undefined;
     for (const scriptId of scriptIds) {
       // Record execution
       this.executionTracker.recordExecution(executionId, scriptId);
@@ -325,6 +331,7 @@ export class ReactiveExecutor {
         prompt: options.prompt,
         selectCharacter: options.selectCharacter,
         selectCharacters: options.selectCharacters,
+        ...(paramsHelper ? { params: paramsHelper } : {}),
       };
 
       const runner = new ScriptRunner(context);
