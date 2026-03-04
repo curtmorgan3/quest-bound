@@ -9,9 +9,10 @@ import {
 import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
-import type { Archetype } from '@/types';
+import type { Archetype, ArchetypeWithVariantOptions } from '@/types';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { Check, ChevronsUpDown, XIcon } from 'lucide-react';
+import type { RefObject } from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useArchetypes } from '../hooks/archetypes/use-archetypes';
 
@@ -39,6 +40,18 @@ interface ArchetypeLookupProps {
   /** Applied to the popover content. Use e.g. z-[110] when rendered inside a portaled overlay. */
   popoverContentClassName?: string;
   wrapperClassName?: string;
+  /** Archetype IDs to exclude from the list (e.g. already added to character). */
+  excludeIds?: string[];
+  /** When the selected archetype has variants, current variant value (or null for none). */
+  variantValue?: string | null;
+  /** Callback when user selects or clears a variant. Only used when selected archetype has variantOptions. */
+  onVariantSelect?: (variant: string | null) => void;
+  /** Placeholder for the variant lookup when shown. */
+  variantPlaceholder?: string;
+  /** Label for the variant lookup when shown. */
+  variantLabel?: string;
+  /** When set, popover content is portaled into this element (e.g. Sheet content) so scroll works inside modals. */
+  popoverContainerRef?: RefObject<HTMLElement | null>;
 }
 
 export const ArchetypeLookup = ({
@@ -55,17 +68,36 @@ export const ArchetypeLookup = ({
   'data-testid': dataTestId,
   allowDefault = false,
   popoverContentClassName,
+  excludeIds,
+  variantValue = null,
+  onVariantSelect,
+  variantPlaceholder = 'Select variant...',
+  variantLabel = 'Variant',
+  popoverContainerRef,
 }: ArchetypeLookupProps) => {
   const [open, setOpen] = useState(false);
+  const [variantOpen, setVariantOpen] = useState(false);
   const [search, setSearch] = useState('');
+  const [variantSearch, setVariantSearch] = useState('');
   const parentRef = useRef<HTMLDivElement>(null);
+  const variantParentRef = useRef<HTMLDivElement>(null);
   const { archetypes: allArchetypes } = useArchetypes(rulesetId);
-  const archetypes = allArchetypes.filter((arch) => {
-    if (allowDefault) return true;
-    return !arch.isDefault;
-  });
+  const archetypes = useMemo(() => {
+    let list = allArchetypes.filter((arch) => {
+      if (allowDefault) return true;
+      return !arch.isDefault;
+    });
+    if (excludeIds?.length) {
+      const set = new Set(excludeIds);
+      list = list.filter((a) => !set.has(a.id));
+    }
+    return list;
+  }, [allArchetypes, allowDefault, excludeIds]);
 
   const selectedArchetype = value ? archetypes.find((a) => a.id === value) : undefined;
+  const selectedWithVariants = selectedArchetype as ArchetypeWithVariantOptions | undefined;
+  const variantOptions = selectedWithVariants?.variantOptions ?? [];
+  const hasVariants = variantOptions.length > 0 && onVariantSelect;
 
   const searchLower = search.toLowerCase().trim();
   const filteredArchetypes = useMemo(() => {
@@ -84,6 +116,22 @@ export const ArchetypeLookup = ({
       estimatedSize: a.description ? 56 : 40,
     }));
   }, [filteredArchetypes]);
+
+  const variantSearchLower = variantSearch.toLowerCase().trim();
+  const filteredVariants = useMemo(() => {
+    if (!variantSearchLower) return variantOptions;
+    return variantOptions.filter((v) => v.toLowerCase().includes(variantSearchLower));
+  }, [variantOptions, variantSearchLower]);
+
+  const variantRows = useMemo(() => {
+    const list: { value: string | null; estimatedSize: number }[] = [
+      { value: null, estimatedSize: 40 },
+    ];
+    for (const v of filteredVariants) {
+      list.push({ value: v, estimatedSize: 40 });
+    }
+    return list;
+  }, [filteredVariants]);
 
   const virtualizer = useVirtualizer({
     count: rows.length,
@@ -106,9 +154,35 @@ export const ArchetypeLookup = ({
     return () => cancelAnimationFrame(raf);
   }, [open, rows.length, virtualizer]);
 
+  const variantVirtualizer = useVirtualizer({
+    count: variantRows.length,
+    getScrollElement: () => variantParentRef.current,
+    estimateSize: (index) => variantRows[index]?.estimatedSize ?? 40,
+    overscan: 5,
+  });
+
+  useEffect(() => {
+    if (variantOpen) setVariantSearch('');
+  }, [variantOpen]);
+
+  useEffect(() => {
+    if (!variantOpen || variantRows.length === 0) return;
+    const raf = requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        variantVirtualizer.measure();
+      });
+    });
+    return () => cancelAnimationFrame(raf);
+  }, [variantOpen, variantRows.length, variantVirtualizer]);
+
   const handleSelect = (archetype: Archetype) => {
     onSelect(archetype);
     setOpen(false);
+  };
+
+  const handleVariantSelect = (value: string | null) => {
+    onVariantSelect?.(value);
+    setVariantOpen(false);
   };
 
   return (
@@ -149,7 +223,10 @@ export const ArchetypeLookup = ({
               </>
             </Button>
           </PopoverTrigger>
-          <PopoverContent className={cn('w-[300px] p-0', popoverContentClassName)} align='start'>
+          <PopoverContent
+            className={cn('w-[300px] p-0', popoverContentClassName)}
+            align='start'
+            container={popoverContainerRef?.current ?? undefined}>
             <Command shouldFilter={false}>
               <CommandInput placeholder={placeholder} value={search} onValueChange={setSearch} />
               <CommandList>
@@ -158,7 +235,8 @@ export const ArchetypeLookup = ({
                   <div
                     ref={parentRef}
                     className='h-[300px] overflow-auto'
-                    style={{ contain: 'strict' }}>
+                    style={{ contain: 'strict' }}
+                    onWheel={(e) => e.stopPropagation()}>
                     <div
                       style={{
                         height: `${virtualizer.getTotalSize()}px`,
@@ -219,6 +297,91 @@ export const ArchetypeLookup = ({
           </PopoverContent>
         </Popover>
       </div>
+
+      {hasVariants && (
+        <div className='flex flex-col gap-1'>
+          <Label className='text-xs text-muted-foreground'>{variantLabel}</Label>
+          <div className='flex gap-2'>
+            <Popover open={variantOpen} onOpenChange={setVariantOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant='outline'
+                  role='combobox'
+                  aria-expanded={variantOpen}
+                  className={cn('w-full justify-between h-[32px]', className)}
+                  disabled={disabled}>
+                  {variantValue ?? variantPlaceholder}
+                  <ChevronsUpDown className='ml-2 h-4 w-4 shrink-0 opacity-50' />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent
+                className={cn('w-[300px] p-0', popoverContentClassName)}
+                align='start'
+                container={popoverContainerRef?.current ?? undefined}>
+                <Command shouldFilter={false}>
+                  <CommandInput
+                    placeholder='Search variants...'
+                    value={variantSearch}
+                    onValueChange={setVariantSearch}
+                  />
+                  <CommandList>
+                    <CommandEmpty>No variants found.</CommandEmpty>
+                    {variantRows.length > 0 && (
+                      <div
+                        ref={variantParentRef}
+                        className='h-[200px] overflow-auto'
+                        style={{ contain: 'strict' }}
+                        onWheel={(e) => e.stopPropagation()}>
+                        <div
+                          style={{
+                            height: `${variantVirtualizer.getTotalSize()}px`,
+                            width: '100%',
+                            position: 'relative',
+                          }}>
+                          {variantVirtualizer.getVirtualItems().map((virtualRow) => {
+                            const row = variantRows[virtualRow.index];
+                            if (!row) return null;
+                            const isNone = row.value === null;
+                            const displayLabel = isNone ? 'None' : row.value;
+                            const isSelected =
+                              (isNone && !variantValue) || (!isNone && variantValue === row.value);
+                            return (
+                              <div
+                                key={isNone ? '__none__' : row.value}
+                                data-index={virtualRow.index}
+                                ref={variantVirtualizer.measureElement}
+                                style={{
+                                  position: 'absolute',
+                                  top: 0,
+                                  left: 0,
+                                  width: '100%',
+                                  transform: `translateY(${virtualRow.start}px)`,
+                                }}
+                                className='pb-0.5'>
+                                <CommandItem
+                                  value={displayLabel ?? ''}
+                                  onSelect={() => handleVariantSelect(row.value)}>
+                                  <Check
+                                    className={cn(
+                                      'mr-2 h-4 w-4',
+                                      isSelected ? 'opacity-100' : 'opacity-0',
+                                    )}
+                                  />
+                                  <span>{displayLabel}</span>
+                                </CommandItem>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

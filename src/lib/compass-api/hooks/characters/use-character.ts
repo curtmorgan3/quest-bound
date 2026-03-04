@@ -59,7 +59,9 @@ export const useCharacter = (_id?: string) => {
     }
   };
 
-  const createCharacter = async (data: Partial<Character> & { archetypeIds?: string[] }) => {
+  const createCharacter = async (
+    data: Partial<Character> & { archetypeIds?: string[]; variant?: string },
+  ) => {
     if (!data.rulesetId || !currentUser) return;
     const now = new Date().toISOString();
     const rulesetId = data.rulesetId;
@@ -185,6 +187,7 @@ export const useCharacter = (_id?: string) => {
         await db.characterArchetypes.add({
           id: crypto.randomUUID(),
           characterId,
+          variant: data.variant,
           archetypeId: archetypeIds[i],
           loadOrder: i,
           createdAt: now,

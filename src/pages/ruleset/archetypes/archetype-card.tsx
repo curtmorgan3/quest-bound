@@ -22,7 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components';
-import { useActiveRuleset } from '@/lib/compass-api';
+import { ChartLookup, useActiveRuleset } from '@/lib/compass-api';
 import type { Archetype, Chart } from '@/types';
 import { ChevronDown, ChevronUp, FileCode, Pencil, Trash2 } from 'lucide-react';
 import { useMemo } from 'react';
@@ -196,29 +196,27 @@ export function ArchetypeCard({
                 <Label htmlFor='edit-use-chart-variants'>Add variants from chart</Label>
               </div>
               {editUseChartForVariants && (
-                <div className='flex flex-row gap-4'>
-                  <div className='grid gap-2'>
-                    <Label htmlFor='edit-variants-chart'>Chart</Label>
-                    <Select
-                      value={editVariantsChartId}
-                      onValueChange={(value) => {
-                        onEditVariantsChartIdChange(value);
+                <div className='flex flex-row gap-4 items-end'>
+                  <div className='grid gap-2 flex-1'>
+                    <ChartLookup
+                      rulesetId={rulesetId}
+                      label='Chart'
+                      value={editVariantsChartId || null}
+                      placeholder='Select a chart'
+                      onSelect={(chart) => {
+                        onEditVariantsChartIdChange(chart.id);
                         onEditVariantsChartColumnHeaderChange('');
-                      }}>
-                      <SelectTrigger id='edit-variants-chart'>
-                        <SelectValue placeholder='Select a chart' />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {charts.map((chart) => (
-                          <SelectItem key={chart.id} value={chart.id}>
-                            {chart.title}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                      }}
+                      onDelete={() => {
+                        onEditVariantsChartIdChange('');
+                        onEditVariantsChartColumnHeaderChange('');
+                      }}
+                    />
                   </div>
-                  <div className='grid gap-2'>
-                    <Label htmlFor='edit-variants-column'>Column</Label>
+                  <div className='grid gap-2 flex-1'>
+                    <Label htmlFor='edit-variants-column' className='text-sm text-muted-foreground'>
+                      Column
+                    </Label>
                     <Select
                       value={editVariantsChartColumnHeader}
                       onValueChange={onEditVariantsChartColumnHeaderChange}

@@ -284,6 +284,7 @@ interface NpcStageProps {
 
 export function NpcStage({ campaignId, rulesetId, sceneId, onCardHover }: NpcStageProps) {
   const [selectedArchetype, setSelectedArchetype] = useState<Archetype | null>(null);
+  const [selectedVariant, setSelectedVariant] = useState<string | null>(null);
   const [editingCampaignCharacterId, setEditingCampaignCharacterId] = useState<string | null>(null);
   const [nameFilter, setNameFilter] = useState('');
   const {
@@ -313,12 +314,14 @@ export function NpcStage({ campaignId, rulesetId, sceneId, onCardHover }: NpcSta
   const editingEntry = npcEntries.find((e) => e.cc.id === editingCampaignCharacterId) ?? null;
   const editingCharacter = editingEntry?.character ?? null;
   const editingCampaignCharacter = editingEntry?.cc ?? null;
+  console.log(filteredNpcEntries);
 
   const handleAddNpc = useCallback(async () => {
     if (!selectedArchetype) return;
     const newCharId = await createCharacter({
       rulesetId,
       archetypeIds: [selectedArchetype.id],
+      variant: selectedVariant ?? undefined,
       isNpc: true,
       name: selectedArchetype.name,
       assetId: selectedArchetype.assetId ?? null,
@@ -328,7 +331,15 @@ export function NpcStage({ campaignId, rulesetId, sceneId, onCardHover }: NpcSta
         ...(sceneId ? { campaignSceneId: sceneId } : {}),
       });
     }
-  }, [campaignId, rulesetId, sceneId, selectedArchetype, createCharacter, createCampaignCharacter]);
+  }, [
+    campaignId,
+    rulesetId,
+    sceneId,
+    selectedArchetype,
+    selectedVariant,
+    createCharacter,
+    createCampaignCharacter,
+  ]);
 
   return (
     <div className='flex h-[90dvh] w-[280px] shrink-0 flex-col gap-3 border-r bg-muted/30 p-3'>
@@ -350,7 +361,14 @@ export function NpcStage({ campaignId, rulesetId, sceneId, onCardHover }: NpcSta
             wrapperClassName='w-[100%]'
             value={selectedArchetype?.id ?? null}
             onSelect={(archetype) => setSelectedArchetype(archetype)}
-            onDelete={() => setSelectedArchetype(null)}
+            onDelete={() => {
+              setSelectedArchetype(null);
+              setSelectedVariant(null);
+            }}
+            variantValue={selectedVariant}
+            onVariantSelect={setSelectedVariant}
+            variantPlaceholder='None'
+            variantLabel='Variant'
             placeholder='Search archetypes...'
             label=''
             data-testid='npc-stage-archetype-lookup'

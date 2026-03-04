@@ -2,6 +2,7 @@ export * from './action-lookup';
 export * from './archetype-lookup';
 export * from './asset-lookup';
 export * from './attribute-lookup';
+export * from './chart-lookup';
 export * from './character-lookup';
 export * from './document-lookup';
 export * from './event-lookup';
