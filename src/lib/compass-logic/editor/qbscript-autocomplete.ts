@@ -30,7 +30,8 @@ const qbscriptCompletions = [
   {
     label: 'subscribe',
     type: 'keyword',
-    info: 'Forces this script to execute again when subscribed attributes change',
+    info:
+      'Forces this script to execute again when subscribed attributes change (used by attribute and Game Manager scripts)',
   },
   {
     label: 'getAttr',

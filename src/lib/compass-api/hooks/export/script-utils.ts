@@ -70,6 +70,9 @@ export function parseScriptPath(path: string): {
     case 'character_loaders':
       entityType = 'characterLoader';
       break;
+    case 'game_managers':
+      entityType = 'gameManager';
+      break;
     default:
       return null;
   }
@@ -112,6 +115,9 @@ export function generateScriptPath(entityType: ScriptEntityType, name: string): 
     case 'campaignEvent':
       folderName = 'campaign_events';
       break;
+    case 'gameManager':
+      folderName = 'game_managers';
+      break;
   }
 
   return `scripts/${folderName}/${sanitizedName}.qbs`;
@@ -137,7 +143,7 @@ export function validateScriptForExport(script: Script): string[] {
   }
 
   if (
-    !['attribute', 'action', 'item', 'archetype', 'global', 'characterLoader'].includes(
+    !['attribute', 'action', 'item', 'archetype', 'global', 'characterLoader', 'gameManager'].includes(
       script.entityType,
     )
   ) {
@@ -146,7 +152,12 @@ export function validateScriptForExport(script: Script): string[] {
     );
   }
 
-  if (!script.isGlobal && script.entityType !== 'characterLoader' && !script.entityId) {
+  if (
+    !script.isGlobal &&
+    script.entityType !== 'characterLoader' &&
+    script.entityType !== 'gameManager' &&
+    !script.entityId
+  ) {
     errors.push(
       `Script ${script.id}: non-global, non-characterLoader scripts must have an entityId`,
     );

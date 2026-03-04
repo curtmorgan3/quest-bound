@@ -382,6 +382,7 @@ export type ScriptEntityType =
   | 'archetype'
   | 'global'
   | 'characterLoader'
+  | 'gameManager'
   | 'campaignEvent';
 
 export type Script = BaseDetails & {

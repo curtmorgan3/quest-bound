@@ -121,6 +121,15 @@ export function ScriptEditorPage() {
 
   const associatedAttributeId = entityType === 'attribute' ? entityId : null;
 
+  const requiresEntityAssociation =
+    entityType === 'attribute' ||
+    entityType === 'action' ||
+    entityType === 'item' ||
+    entityType === 'archetype' ||
+    entityType === 'campaignEvent';
+
+  const missingEntityAssociation = requiresEntityAssociation && !entityId;
+
   // Sync script data to state when navigating to a different (existing) script
   useEffect(() => {
     if (script && !isNew) {
@@ -147,6 +156,7 @@ export function ScriptEditorPage() {
         rulesetId={effectiveRulesetId}
         campaignId={campaignId}
         sourceCode={sourceCode}
+        saveDisabled={missingEntityAssociation}
         scriptExecutionHook={workerHook}
         {...{
           name,
@@ -217,6 +227,17 @@ export function ScriptEditorPage() {
                     </li>
                   ))}
                 </ul>
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {missingEntityAssociation && (
+            <Alert variant='destructive'>
+              <AlertCircle className='h-4 w-4' />
+              <AlertTitle>Missing entity association</AlertTitle>
+              <AlertDescription>
+                Select an entity for this script type before saving (attribute, action, item,
+                archetype, or campaign event).
               </AlertDescription>
             </Alert>
           )}

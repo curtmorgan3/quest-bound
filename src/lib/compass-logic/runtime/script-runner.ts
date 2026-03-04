@@ -746,7 +746,7 @@ export class ScriptRunner {
         this.evaluator.globalEnv.define('Self', eventAccessor);
       }
     }
-    // entityType 'location' | 'tile' | 'archetype' | 'global' | 'characterLoader' (or unknown): no Self
+    // entityType 'location' | 'tile' | 'archetype' | 'global' | 'characterLoader' | 'gameManager' (or unknown): no Self
   }
 
   /**

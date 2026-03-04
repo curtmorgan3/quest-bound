@@ -15,6 +15,7 @@ Scripts can be attached to:
 - **Items** — Event handlers for equip, unequip, consume, etc.
 - **Archetypes** — Event handlers for `on_add` and `on_remove` when an archetype is added to or removed from a character
 - **Global** — Utility modules that provide shared functions and variables
+- **Game Manager** — Ruleset-level scripts that are not attached to a specific entity, can subscribe to attributes with `subscribe('Name')`, and run when those attributes change for any character (with `Owner` set to that character and no `Self`)
 
 ## Basic syntax
 

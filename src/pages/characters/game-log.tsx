@@ -78,7 +78,7 @@ export const GameLog = ({ className, characterId }: GameLogProps) => {
       {open && (
         <>
           <div
-            className='fixed bottom-[90px] left-[55px] z-50 flex w-80 max-h-[200px] flex-col rounded-lg border bg-background shadow-lg'
+            className='fixed bottom-[90px] left-[55px] z-50 flex w-80 max-h-[250px] flex-col rounded-lg border bg-background shadow-lg'
             role='dialog'
             aria-label='Game log'>
             <div className='flex items-center justify-between border-b px-3 py-2'>
@@ -117,7 +117,7 @@ export const GameLog = ({ className, characterId }: GameLogProps) => {
                   Show auto entries
                 </Label>
               </div>
-              <div className='min-h-0 flex-1 overflow-y-auto'>
+              <div className='min-h-0 flex-1 overflow-y-auto max-h-[160px]'>
                 {logs.length === 0 ? (
                   <p className='text-xs text-muted-foreground'>No log entries yet.</p>
                 ) : (

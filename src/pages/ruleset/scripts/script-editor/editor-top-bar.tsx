@@ -100,7 +100,10 @@ export const EditorTopBar = ({
       name: name || 'Untitled',
       sourceCode,
       entityType,
-      entityId: entityType === 'global' || entityType === 'characterLoader' ? null : entityId,
+      entityId:
+        entityType === 'global' || entityType === 'characterLoader' || entityType === 'gameManager'
+          ? null
+          : entityId,
       isGlobal: entityType === 'global',
       enabled: true,
       category: category ?? undefined,
@@ -149,7 +152,9 @@ export const EditorTopBar = ({
           value={entityType}
           onValueChange={(v: Script['entityType']) => {
             setEntityType(v);
-            if (v === 'global' || v === 'characterLoader') setEntityId(null);
+            if (v === 'global' || v === 'characterLoader' || v === 'gameManager') {
+              setEntityId(null);
+            }
           }}>
           <SelectTrigger data-testid='script-editor-type'>
             <SelectValue />

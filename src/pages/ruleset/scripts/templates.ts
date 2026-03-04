@@ -11,7 +11,7 @@ export const SCRIPT_TEMPLATES: Record<ScriptEntityType, string> = {
 subscribe('Fear') 
 
 // Access other attributes with Owner accessor
-fear_level = Owner.Attribute('Fear')
+fear_level = Owner.Attribute('Fear').value
 
 // Read Ruleset entities like charts
 random_dream = Ruleset.Chart('Bad Dreams').randomCell()
@@ -19,6 +19,20 @@ random_dream = Ruleset.Chart('Bad Dreams').randomCell()
 // Access this attribute with Self
 if fear_level > 5:
     Self.set(random_dream)
+`,
+  gameManager: `
+// Game Manager scripts are not attached to a specific entity and have no Self.
+// They run when subscribed attributes change on any character.
+// In this context, Owner is the character whose attribute changed.
+
+// Subscribe to attributes that should trigger this script
+subscribe('Health')
+
+// Example: when a character's Health drops to 0 or below, announce a message
+current_health = Owner.Attribute('Health').value
+
+if current_health <= 0:
+    announce('{{Owner.name}} has fallen!')
 `,
   action: `
 // Action scripts hold an action's activation event
@@ -74,6 +88,24 @@ else:
     Owner.Attribute('Health').set(8)
 `,
   campaignEvent: `
-// campaign event script
+// Campaign Event scripts run when this event is triggered in a scene.
+// Use params.get('<Parameter Name>') to read values defined on the event.
+
+event_name = params.get('Name')
+difficulty = params.get('Difficulty')      // e.g. number or text
+target = params.get('Target')              // e.g. character name or description
+
+// Basic announcement when the event fires
+announce('Event "{{event_name}}" has begun.')
+
+// Branch on parameters
+if difficulty != null:
+    announce('Difficulty: {{difficulty}}')
+
+if target != null:
+    announce('Target: {{target}}')
+
+// Add your custom event logic below
+// e.g. modify attributes, roll dice, or prompt the GM/player
 `,
 };

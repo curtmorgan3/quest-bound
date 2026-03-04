@@ -29,8 +29,12 @@ export async function linkScriptToEntity(
   entityType: ScriptEntityType,
   entityName: string,
 ): Promise<string | null> {
-  if (entityType === 'global' || entityType === 'characterLoader') {
-    return null; // Global and Character Loader scripts don't link to entities
+  if (
+    entityType === 'global' ||
+    entityType === 'characterLoader' ||
+    entityType === 'gameManager'
+  ) {
+    return null; // Global, Character Loader, and Game Manager scripts don't link to entities
   }
 
   try {
@@ -131,12 +135,12 @@ export async function importScript(
     );
   }
 
-  if (entityType === 'characterLoader') {
-    entityId = null; // Only one per ruleset; no entity link
+  if (entityType === 'characterLoader' || entityType === 'gameManager') {
+    entityId = null; // No entity link
   }
 
   // Try to link to entity if we have an entity name but no entity ID
-  if (!isGlobal && entityType !== 'characterLoader' && entityName && !entityId) {
+  if (!isGlobal && entityType !== 'characterLoader' && entityType !== 'gameManager' && entityName && !entityId) {
     entityId = await linkScriptToEntity(rulesetId, entityType, entityName);
     if (!entityId) {
       warnings.push(

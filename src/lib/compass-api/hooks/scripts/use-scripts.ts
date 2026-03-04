@@ -6,7 +6,8 @@ import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useActiveRuleset } from '../rulesets/use-active-ruleset';
 
 function getEntityTable(entityType: ScriptEntityType) {
-  if (entityType === 'global' || entityType === 'characterLoader') return;
+  if (entityType === 'global' || entityType === 'characterLoader' || entityType === 'gameManager')
+    return;
   return entityType === 'attribute'
     ? db.attributes
     : entityType === 'action'
@@ -52,7 +53,11 @@ export const useScripts = (campaignId?: string) => {
         ...data,
         entityType,
         entityId:
-          entityType === 'global' || entityType === 'characterLoader' ? null : data.entityId,
+          entityType === 'global' ||
+          entityType === 'characterLoader' ||
+          entityType === 'gameManager'
+            ? null
+            : data.entityId,
         isGlobal: entityType === 'global',
         id: undefined as string | undefined,
         rulesetId: activeRuleset?.id,
@@ -78,7 +83,12 @@ export const useScripts = (campaignId?: string) => {
       } as Script);
 
       // If associated with an entity, update the entity's scriptId
-      if (payload.entityId && entityType !== 'global' && entityType !== 'characterLoader') {
+      if (
+        payload.entityId &&
+        entityType !== 'global' &&
+        entityType !== 'characterLoader' &&
+        entityType !== 'gameManager'
+      ) {
         await getEntityTable(entityType)?.update(payload.entityId, { scriptId });
       }
 
@@ -104,14 +114,18 @@ export const useScripts = (campaignId?: string) => {
 
       const newEntityType = data.entityType ?? existing.entityType;
       const newEntityId =
-        newEntityType === 'global' || newEntityType === 'characterLoader'
+        newEntityType === 'global' ||
+        newEntityType === 'characterLoader' ||
+        newEntityType === 'gameManager'
           ? null
           : data.entityId !== undefined
             ? data.entityId
             : existing.entityId;
 
       const oldEntityId =
-        existing.entityType !== 'global' && existing.entityType !== 'characterLoader'
+        existing.entityType !== 'global' &&
+        existing.entityType !== 'characterLoader' &&
+        existing.entityType !== 'gameManager'
           ? existing.entityId
           : null;
       const oldEntityType = existing.entityType;
@@ -137,7 +151,12 @@ export const useScripts = (campaignId?: string) => {
       }
 
       // Set scriptId on the new entity when associated with this script
-      if (newEntityId && newEntityType !== 'global' && newEntityType !== 'characterLoader') {
+      if (
+        newEntityId &&
+        newEntityType !== 'global' &&
+        newEntityType !== 'characterLoader' &&
+        newEntityType !== 'gameManager'
+      ) {
         await getEntityTable(newEntityType)?.update(newEntityId, { scriptId: id });
       }
     } catch (e) {
