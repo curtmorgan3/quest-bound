@@ -119,8 +119,6 @@ export type Character = BaseDetails & {
   moduleId?: string;
   moduleEntityId?: string;
   moduleName?: string;
-  /** Asset IDs for map sprites (stacked by z-index). */
-  sprites?: string[];
   /** Keyed by customPropertyId. Instantiated from first archetype's ArchetypeCustomProperties at creation. */
   customProperties?: Record<string, string | number | boolean>;
 };
@@ -143,10 +141,6 @@ export type Archetype = BaseDetails & {
   testCharacterId: string;
   isDefault: boolean;
   loadOrder: number;
-  mapHeight?: number;
-  mapWidth?: number;
-  /** Asset IDs or URLs for map sprites (e.g. single sprite for campaign map). */
-  sprites?: string[];
   /** Module origin: ruleset id, source entity id, and module name. */
   moduleId?: string;
   moduleEntityId?: string;
@@ -298,10 +292,6 @@ export type Item = BaseDetails & {
   assetId?: string | null;
   image?: string | null;
   scriptId?: string | null;
-  mapHeight?: number;
-  mapWidth?: number;
-  /** Asset IDs or urls for map sprites (stacked by z-index). */
-  sprites?: string[];
   /** Action IDs from the same ruleset. When an item is added to inventory, these are copied to the inventory item. */
   actionIds?: string[];
   /** Module origin: ruleset id, source entity id, and module name. */
@@ -453,12 +443,6 @@ export type CampaignCharacter = BaseDetails & {
   characterId: string;
   campaignId: string;
   campaignSceneId?: string;
-  /** @deprecated World/location feature removed; may exist on old data. */
-  currentLocationId?: string | null;
-  /** @deprecated World/location feature removed; may exist on old data. */
-  currentTileId?: string | null;
-  mapHeight?: number;
-  mapWidth?: number;
   active?: boolean;
 };
 
@@ -485,12 +469,6 @@ export type CampaignItem = BaseDetails & {
   itemId: string;
   campaignId: string;
   sceneId?: string;
-  /** @deprecated World/location feature removed; may exist on old data. */
-  currentLocationId?: string | null;
-  /** @deprecated World/location feature removed; may exist on old data. */
-  currentTileId?: string | null;
-  mapHeight?: number;
-  mapWidth?: number;
 };
 
 export type CampaignEvent = BaseDetails & {

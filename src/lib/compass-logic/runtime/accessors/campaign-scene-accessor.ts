@@ -162,7 +162,6 @@ export class CampaignSceneAccessor {
       updatedAt: now,
       lastViewedPageId: null,
       sheetLocked: false,
-      sprites: archetype.sprites ?? [],
       moduleId: archetype.moduleId,
       moduleEntityId: archetype.moduleEntityId,
       moduleName: archetype.moduleName,
@@ -228,7 +227,9 @@ export class CampaignSceneAccessor {
         for (const cw of templateWindows as any[]) {
           const originalPageId = (cw as any).characterPageId as string | undefined | null;
           const mappedPageId =
-            originalPageId != null ? pageIdMap.get(originalPageId) ?? originalPageId : originalPageId;
+            originalPageId != null
+              ? (pageIdMap.get(originalPageId) ?? originalPageId)
+              : originalPageId;
 
           await this.db.characterWindows.add({
             id: crypto.randomUUID(),
@@ -332,8 +333,6 @@ export class CampaignSceneAccessor {
       characterId,
       campaignId: this.campaignId,
       campaignSceneId: this.campaignSceneId,
-      mapWidth: archetype.mapWidth,
-      mapHeight: archetype.mapHeight,
       active: true,
       createdAt: now,
       updatedAt: now,

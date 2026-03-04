@@ -29,20 +29,11 @@ export const useCampaignCharacters = (campaignId: string | undefined) => {
     const now = new Date().toISOString();
     const id = crypto.randomUUID();
     try {
-      const characterArchetypes = await db.characterArchetypes
-        .where('characterId')
-        .equals(characterId)
-        .sortBy('loadOrder');
-      const firstArchetypeId = characterArchetypes[0]?.archetypeId;
-      const archetype = firstArchetypeId ? await db.archetypes.get(firstArchetypeId) : null;
-
       await db.campaignCharacters.add({
         id,
         campaignId,
         characterId,
         campaignSceneId: data?.campaignSceneId,
-        mapWidth: archetype?.mapWidth,
-        mapHeight: archetype?.mapHeight,
         active: data?.active,
         createdAt: now,
         updatedAt: now,
@@ -58,18 +49,12 @@ export const useCampaignCharacters = (campaignId: string | undefined) => {
 
   const updateCampaignCharacter = async (
     id: string,
-    data: Partial<
-      Pick<
-        CampaignCharacter,
-        'active' | 'campaignSceneId' | 'currentLocationId' | 'currentTileId' | 'mapHeight' | 'mapWidth'
-      >
-    >,
+    data: Partial<Pick<CampaignCharacter, 'active' | 'campaignSceneId'>>,
   ) => {
     const now = new Date().toISOString();
-    const { currentLocationId: _loc, currentTileId: _tile, ...rest } = data;
     try {
       await db.campaignCharacters.update(id, {
-        ...rest,
+        ...data,
         updatedAt: now,
       });
     } catch (e) {

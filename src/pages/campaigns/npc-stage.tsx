@@ -92,9 +92,7 @@ interface NpcEditModalProps {
   onOpenChange: (open: boolean) => void;
   onUpdateCampaignCharacter: (
     id: string,
-    data: Partial<
-      Pick<CampaignCharacter, 'active' | 'campaignSceneId' | 'mapHeight' | 'mapWidth'>
-    >,
+    data: Partial<Pick<CampaignCharacter, 'active' | 'campaignSceneId'>>,
   ) => Promise<void>;
 }
 

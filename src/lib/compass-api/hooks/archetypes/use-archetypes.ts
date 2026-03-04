@@ -69,16 +69,11 @@ export const useArchetypes = (rulesetId: string | undefined) => {
         updatedAt: now,
       } as Character);
 
-      await duplicateCharacterFromTemplate(
-        sourceCharacter.id,
-        characterId,
-        inventoryId,
-      );
+      await duplicateCharacterFromTemplate(sourceCharacter.id, characterId, inventoryId);
 
       const allArchetypes = await db.archetypes.where('rulesetId').equals(rulesetId).toArray();
-      const maxLoadOrder = allArchetypes.length > 0
-        ? Math.max(...allArchetypes.map((a) => a.loadOrder), -1)
-        : -1;
+      const maxLoadOrder =
+        allArchetypes.length > 0 ? Math.max(...allArchetypes.map((a) => a.loadOrder), -1) : -1;
 
       await db.archetypes.add({
         id: crypto.randomUUID(),
@@ -101,7 +96,12 @@ export const useArchetypes = (rulesetId: string | undefined) => {
     }
   };
 
-  const updateArchetype = async (id: string, updates: Partial<Pick<Archetype, 'name' | 'description' | 'assetId' | 'image' | 'scriptId' | 'mapWidth' | 'mapHeight' | 'sprites' | 'category'>>) => {
+  const updateArchetype = async (
+    id: string,
+    updates: Partial<
+      Pick<Archetype, 'name' | 'description' | 'assetId' | 'image' | 'scriptId' | 'category'>
+    >,
+  ) => {
     try {
       await db.archetypes.update(id, {
         ...updates,
@@ -129,7 +129,10 @@ export const useArchetypes = (rulesetId: string | undefined) => {
   const reorderArchetypes = async (orderedIds: string[]) => {
     try {
       for (let i = 0; i < orderedIds.length; i++) {
-        await db.archetypes.update(orderedIds[i], { loadOrder: i, updatedAt: new Date().toISOString() });
+        await db.archetypes.update(orderedIds[i], {
+          loadOrder: i,
+          updatedAt: new Date().toISOString(),
+        });
       }
     } catch (e) {
       handleError(e as Error, {

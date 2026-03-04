@@ -33,7 +33,6 @@ export const useItemValues = ({
       setTitle(activeItem.title);
       setDescription(activeItem.description);
       setCategory(activeItem.category || '');
-
       setIsContainer(activeItem.isContainer);
       setIsStorable(activeItem.isStorable);
       setIsEquippable(activeItem.isEquippable);
@@ -43,9 +42,6 @@ export const useItemValues = ({
       setDefaultQuantity(activeItem.defaultQuantity);
       setInventoryWidth(activeItem.inventoryWidth);
       setInventoryHeight(activeItem.inventoryHeight);
-      setMapWidth(activeItem.mapWidth);
-      setMapHeight(activeItem.mapHeight);
-      setSprites(activeItem.sprites ?? []);
       setImage(activeItem.image ?? null);
       setAssetId(activeItem.assetId ?? null);
       setActionIds(activeItem.actionIds ?? []);
@@ -94,9 +90,6 @@ export const useItemValues = ({
     defaultQuantity,
     inventoryWidth,
     inventoryHeight,
-    mapWidth,
-    mapHeight,
-    sprites,
     image,
     assetId,
     actionIds,

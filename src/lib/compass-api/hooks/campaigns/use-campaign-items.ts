@@ -8,9 +8,7 @@ export const useCampaignItems = (campaignId: string | undefined) => {
 
   const campaignItems = useLiveQuery(
     async (): Promise<CampaignItem[]> =>
-      campaignId
-        ? db.campaignItems.where('campaignId').equals(campaignId).toArray()
-        : [],
+      campaignId ? db.campaignItems.where('campaignId').equals(campaignId).toArray() : [],
     [campaignId],
   );
 
@@ -28,14 +26,10 @@ export const useCampaignItems = (campaignId: string | undefined) => {
     const now = new Date().toISOString();
     const id = crypto.randomUUID();
     try {
-      const item = await db.items.get(data.itemId);
       await db.campaignItems.add({
         id,
         campaignId,
         itemId: data.itemId,
-        sceneId: data.sceneId,
-        mapWidth: item?.mapWidth,
-        mapHeight: item?.mapHeight,
         createdAt: now,
         updatedAt: now,
       } as CampaignItem);
@@ -48,17 +42,11 @@ export const useCampaignItems = (campaignId: string | undefined) => {
     }
   };
 
-  const updateCampaignItem = async (
-    id: string,
-    data: Partial<
-      Pick<CampaignItem, 'sceneId' | 'currentLocationId' | 'currentTileId' | 'mapHeight' | 'mapWidth'>
-    >,
-  ) => {
+  const updateCampaignItem = async (id: string, data: Partial<Pick<CampaignItem, 'sceneId'>>) => {
     const now = new Date().toISOString();
-    const { currentLocationId: _loc, currentTileId: _tile, ...rest } = data;
     try {
       await db.campaignItems.update(id, {
-        ...rest,
+        ...data,
         updatedAt: now,
       });
     } catch (e) {

@@ -1,11 +1,4 @@
-import {
-  Input,
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components';
+import { Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components';
 import { useArchetypes, useAssets } from '@/lib/compass-api';
 import { useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
@@ -17,16 +10,13 @@ export const Archetypes = () => {
   const { rulesetId } = useParams();
   const { archetypes, updateArchetype, deleteArchetype, reorderArchetypes } =
     useArchetypes(rulesetId);
-  const { assets, deleteAsset } = useAssets(rulesetId);
+  const { assets } = useAssets(rulesetId);
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
   const [editDescription, setEditDescription] = useState('');
   const [editAssetId, setEditAssetId] = useState<string | null>(null);
   const [editImage, setEditImage] = useState<string | null>(null);
-  const [editMapWidth, setEditMapWidth] = useState<number | undefined>(undefined);
-  const [editMapHeight, setEditMapHeight] = useState<number | undefined>(undefined);
-  const [editSprites, setEditSprites] = useState<string[]>([]);
   const [editCategory, setEditCategory] = useState<string | null>(null);
   const [filterValue, setFilterValue] = useState('');
   const [categoryFilter, setCategoryFilter] = useState(ALL_CATEGORIES);
@@ -45,9 +35,6 @@ export const Archetypes = () => {
       setEditDescription(a.description ?? '');
       setEditAssetId(a.assetId ?? null);
       setEditImage(a.image ?? null);
-      setEditMapWidth(a.mapWidth);
-      setEditMapHeight(a.mapHeight);
-      setEditSprites(a.sprites ?? []);
       setEditCategory(a.category ?? null);
     }
   };
@@ -59,9 +46,6 @@ export const Archetypes = () => {
       description: editDescription.trim(),
       assetId: editAssetId,
       image: editImage,
-      mapWidth: editMapWidth,
-      mapHeight: editMapHeight,
-      sprites: editSprites,
       category: editCategory ?? undefined,
     });
     setEditingId(null);
@@ -76,17 +60,6 @@ export const Archetypes = () => {
   const handleEditImageRemove = () => {
     setEditAssetId(null);
     setEditImage(null);
-  };
-
-  const editSpriteAssetId = editSprites[0] ?? null;
-  const handleEditSpriteUpload = (uploadedAssetId: string) => {
-    setEditSprites([uploadedAssetId]);
-  };
-  const handleEditSpriteRemove = async () => {
-    if (editSpriteAssetId) {
-      await deleteAsset(editSpriteAssetId);
-    }
-    setEditSprites([]);
   };
 
   const moveUp = async (index: number) => {
@@ -119,9 +92,7 @@ export const Archetypes = () => {
 
   const existingCategories = [
     ...new Set(
-      archetypes
-        .map((a) => a.category)
-        .filter((c): c is string => !!c && c.trim() !== ''),
+      archetypes.map((a) => a.category).filter((c): c is string => !!c && c.trim() !== ''),
     ),
   ];
 
@@ -166,38 +137,31 @@ export const Archetypes = () => {
           const index = archetypes.findIndex((a) => a.id === archetype.id);
           return (
             <ArchetypeCard
-            key={archetype.id}
-            archetype={archetype}
-            index={index}
-            totalCount={archetypes.length}
-            rulesetId={rulesetId}
-            getImageFromAssetId={getImageFromAssetId}
-            isEditing={editingId === archetype.id}
-            editName={editName}
-            editDescription={editDescription}
-            editAssetId={editAssetId}
-            editImage={editImage}
-            editMapWidth={editMapWidth}
-            editMapHeight={editMapHeight}
-            editSprites={editSprites}
-            editCategory={editCategory}
-            existingCategories={existingCategories}
-            onMoveUp={() => moveUp(index)}
-            onMoveDown={() => moveDown(index)}
-            onStartEdit={() => startEdit(archetype.id)}
-            onSaveEdit={saveEdit}
-            onCancelEdit={() => setEditingId(null)}
-            onEditNameChange={setEditName}
-            onEditDescriptionChange={setEditDescription}
-            onEditImageUpload={handleEditImageUpload}
-            onEditImageRemove={handleEditImageRemove}
-            onEditMapWidthChange={setEditMapWidth}
-            onEditMapHeightChange={setEditMapHeight}
-            onEditSpriteUpload={handleEditSpriteUpload}
-            onEditSpriteRemove={handleEditSpriteRemove}
-            onEditCategoryChange={setEditCategory}
-            onDelete={() => deleteArchetype(archetype.id)}
-            confirmBeforeDelete={doNotAsk}
+              key={archetype.id}
+              archetype={archetype}
+              index={index}
+              totalCount={archetypes.length}
+              rulesetId={rulesetId}
+              getImageFromAssetId={getImageFromAssetId}
+              isEditing={editingId === archetype.id}
+              editName={editName}
+              editDescription={editDescription}
+              editAssetId={editAssetId}
+              editImage={editImage}
+              editCategory={editCategory}
+              existingCategories={existingCategories}
+              onMoveUp={() => moveUp(index)}
+              onMoveDown={() => moveDown(index)}
+              onStartEdit={() => startEdit(archetype.id)}
+              onSaveEdit={saveEdit}
+              onCancelEdit={() => setEditingId(null)}
+              onEditNameChange={setEditName}
+              onEditDescriptionChange={setEditDescription}
+              onEditImageUpload={handleEditImageUpload}
+              onEditImageRemove={handleEditImageRemove}
+              onEditCategoryChange={setEditCategory}
+              onDelete={() => deleteArchetype(archetype.id)}
+              confirmBeforeDelete={doNotAsk}
             />
           );
         })}

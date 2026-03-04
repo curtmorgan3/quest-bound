@@ -144,7 +144,6 @@ export const useCharacter = (_id?: string) => {
         pinnedSidebarCharts: data.pinnedSidebarCharts ?? [],
         lastViewedPageId: data.lastViewedPageId ?? null,
         sheetLocked: data.sheetLocked ?? false,
-        sprites: data.sprites ?? firstArchetype?.sprites ?? [],
       } as Character);
 
       // Instantiate customProperties from first non-default archetype's ArchetypeCustomProperties.
