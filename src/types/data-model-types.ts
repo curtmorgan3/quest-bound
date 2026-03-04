@@ -233,6 +233,8 @@ export type Component = BaseDetails & {
   attributeId?: string | null;
   actionId?: string;
   childWindowId?: string;
+  /** Optional script attached to this window component (e.g. Game Manager script). */
+  scriptId?: string | null;
 };
 
 export type DiceRoll = BaseDetails & {

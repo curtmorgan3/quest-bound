@@ -137,29 +137,30 @@ export const WindowNode = ({ data }: { data: WindowNodeData }) => {
         }}>
         {components.map((component) => {
           const pos = positionMap.get(component.id);
+          const canOpenChild = component.childWindowId && !component.scriptId;
           return (
-          <div
-            key={component.id}
-            style={{
-              position: 'absolute',
-              left: component.x - minX,
-              top: component.y - minY,
-              width: component.width,
-              height: component.height,
-              zIndex: pos?.z ?? component.z,
-              cursor: component.childWindowId ? 'pointer' : undefined,
-            }}
-            onClick={
-              component.childWindowId
-                ? (e) => {
-                    e.stopPropagation();
-                    handleChildWindowClick(component.childWindowId!);
-                  }
-                : undefined
-            }>
-            {renderViewComponent(component, characterContext?.characterAttributes, pos)}
-          </div>
-        );
+            <div
+              key={component.id}
+              style={{
+                position: 'absolute',
+                left: component.x - minX,
+                top: component.y - minY,
+                width: component.width,
+                height: component.height,
+                zIndex: pos?.z ?? component.z,
+                cursor: canOpenChild ? 'pointer' : undefined,
+              }}
+              onClick={
+                canOpenChild
+                  ? (e) => {
+                      e.stopPropagation();
+                      handleChildWindowClick(component.childWindowId!);
+                    }
+                  : undefined
+              }>
+              {renderViewComponent(component, characterContext?.characterAttributes, pos)}
+            </div>
+          );
         })}
       </div>
     </div>

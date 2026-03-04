@@ -23,7 +23,12 @@ import { Evaluator } from '../interpreter/evaluator';
 import { Lexer } from '../interpreter/lexer';
 import { Parser } from '../interpreter/parser';
 import { executeArchetypeEvent } from '../reactive/event-handler-executor';
-import { CampaignSceneAccessor, CharacterAccessor, OwnerAccessor, RulesetAccessor } from './accessors';
+import {
+  CampaignSceneAccessor,
+  CharacterAccessor,
+  OwnerAccessor,
+  RulesetAccessor,
+} from './accessors';
 import type { ScriptParamsHelper } from './params-helper';
 import type { ExecuteActionEventFn } from './proxies';
 

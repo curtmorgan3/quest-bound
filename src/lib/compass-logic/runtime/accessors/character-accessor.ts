@@ -482,6 +482,7 @@ export class CharacterAccessor implements StructuredCloneSafe {
       | { characterId: string; label: string }[]
       | undefined;
     const entry = { characterId: this.id, label };
+
     this.pendingUpdates.set(key, existing ? [...existing, entry] : [entry]);
   }
 

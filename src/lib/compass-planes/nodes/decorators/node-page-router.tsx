@@ -17,7 +17,12 @@ interface NodePageRouterProps {
  */
 export const NodePageRouter = ({ children, component, componentData }: NodePageRouterProps) => {
   const [searchParams, setSearchParams] = useSearchParams();
-  const { pageId, href } = componentData ?? getComponentData(component);
+  const data = componentData ?? getComponentData(component);
+  const { pageId, href } = data;
+
+  if (component.scriptId) {
+    return <>{children}</>;
+  }
 
   const characterContext = useContext(CharacterContext);
   const { characterPages } = useCharacterPages(characterContext?.character?.id);

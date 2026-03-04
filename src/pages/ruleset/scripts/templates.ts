@@ -87,25 +87,4 @@ if Owner.hasArchetype('Warrior'):
 else:
     Owner.Attribute('Health').set(8)
 `,
-  campaignEvent: `
-// Campaign Event scripts run when this event is triggered in a scene.
-// Use params.get('<Parameter Name>') to read values defined on the event.
-
-event_name = params.get('Name')
-difficulty = params.get('Difficulty')      // e.g. number or text
-target = params.get('Target')              // e.g. character name or description
-
-// Basic announcement when the event fires
-announce('Event "{{event_name}}" has begun.')
-
-// Branch on parameters
-if difficulty != null:
-    announce('Difficulty: {{difficulty}}')
-
-if target != null:
-    announce('Target: {{target}}')
-
-// Add your custom event logic below
-// e.g. modify attributes, roll dice, or prompt the GM/player
-`,
 };

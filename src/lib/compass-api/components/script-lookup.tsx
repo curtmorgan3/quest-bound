@@ -245,7 +245,7 @@ export const ScriptLookup = ({
                             )}
                             {row.type === 'entry' && (
                               <CommandItem
-                                value={`${row.entry.name} ${row.entry.category ?? ''} ${row.entry.entityType}`}
+                                value={row.entry.id}
                                 onSelect={() => handleSelect(row.entry)}>
                                 <Check
                                   className={cn(

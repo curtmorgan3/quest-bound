@@ -1,4 +1,4 @@
-import { Input, Label } from '@/components';
+import { Button, Input, Label } from '@/components';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
@@ -30,6 +30,7 @@ import {
 } from './component-edit-panel-context';
 import { ConditionalRenderEdit, TextEdit } from './component-edits';
 import { ShapeEdit } from './component-edits/shape-edit';
+import { ComponentScriptAttachModal } from './component-script-attach-modal';
 import { CustomPropertiesListModal } from './custom-properties-list-modal';
 import { PositionEdit } from './position-edit';
 import { StyleEdit } from './style-edit';
@@ -38,6 +39,7 @@ export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
   const { windowId } = useParams();
   const { components, updateComponents } = useComponents(windowId);
   const [customPropertiesModalOpen, setCustomPropertiesModalOpen] = useState(false);
+  const [scriptModalOpen, setScriptModalOpen] = useState(false);
   const customPropertiesModalStyleKeyRef = useRef<string | null>(null);
   let selectedComponents = components.filter((c) => c.selected);
 
@@ -279,13 +281,6 @@ export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
                       onDelete={() => handleUpdate('attributeId', null)}
                       filterType={allAreCheckboxes ? 'boolean' : undefined}
                     />
-
-                    <ActionLookup
-                      id='component-data-action-lookup'
-                      value={selectedComponents[0].actionId}
-                      onSelect={(attr) => handleUpdate('actionId', attr.id)}
-                      onDelete={() => handleUpdate('actionId', null)}
-                    />
                   </>
                 )}
               {selectedComponents.every((c) => c.type === ComponentTypes.TEXT) &&
@@ -317,6 +312,67 @@ export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
                   onLogicChange={setConditionalRenderLogic}
                 />
               )}
+
+              {selectedComponents.length === 1 &&
+                selectedComponents[0].type !== ComponentTypes.INVENTORY && (
+                  <div className='flex flex-col gap-2'>
+                    <Label htmlFor='component-edit-href' className='text-xs text-muted-foreground'>
+                      Link
+                    </Label>
+                    <Input
+                      id='component-edit-href'
+                      className='h-8 rounded-[4px]'
+                      disabled={!!getComponentData(selectedComponents[0]).pageId}
+                      placeholder='https://...'
+                      value={getComponentData(selectedComponents[0]).href ?? ''}
+                      onChange={(e) => setHref(e.target.value)}
+                    />
+                  </div>
+                )}
+
+              {selectedComponents.length === 1 && (
+                <div className='flex flex-col gap-1'>
+                  <Label className='text-xs text-muted-foreground'>Attached Script</Label>
+                  <Button
+                    type='button'
+                    size='sm'
+                    variant='outline'
+                    className='h-7 px-2 justify-start text-xs'
+                    onClick={() => setScriptModalOpen(true)}>
+                    {selectedComponents[0].scriptId ? 'Edit Script' : 'Attach Script'}
+                  </Button>
+                  {selectedComponents[0].scriptId && (
+                    <p className='text-[0.7rem] text-muted-foreground'>
+                      This component will run its attached script on click, overriding other click
+                      behaviors.
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {selectedComponents.length === 1 &&
+                selectedComponents[0].type !== ComponentTypes.INVENTORY && (
+                  <PageLookup
+                    label='Open Page'
+                    value={getComponentData(selectedComponents[0]).pageId ?? null}
+                    onSelect={(page) => setPageId(page.id)}
+                    onDelete={() => setPageId(null)}
+                  />
+                )}
+
+              {selectedComponents.length === 1 &&
+                selectedComponents[0].type !== ComponentTypes.INVENTORY &&
+                selectedComponents[0].type !== ComponentTypes.GRAPH &&
+                selectedComponents[0].type !== ComponentTypes.FRAME && (
+                  <>
+                    <ActionLookup
+                      id='component-data-action-lookup'
+                      value={selectedComponents[0].actionId}
+                      onSelect={(attr) => handleUpdate('actionId', attr.id)}
+                      onDelete={() => handleUpdate('actionId', null)}
+                    />
+                  </>
+                )}
               {selectedComponents.length === 1 && windowId && allCanOpenChildWindow && (
                 <WindowLookup
                   label='Open Window'
@@ -326,32 +382,7 @@ export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
                   excludeIds={[windowId]}
                 />
               )}
-              {selectedComponents.length === 1 &&
-                selectedComponents[0].type !== ComponentTypes.INVENTORY && (
-                  <>
-                    <PageLookup
-                      label='Open Page'
-                      value={getComponentData(selectedComponents[0]).pageId ?? null}
-                      onSelect={(page) => setPageId(page.id)}
-                      onDelete={() => setPageId(null)}
-                    />
-                    <div className='flex flex-col gap-2'>
-                      <Label
-                        htmlFor='component-edit-href'
-                        className='text-xs text-muted-foreground'>
-                        Link
-                      </Label>
-                      <Input
-                        id='component-edit-href'
-                        className='h-8 rounded-[4px]'
-                        disabled={!!getComponentData(selectedComponents[0]).pageId}
-                        placeholder='https://...'
-                        value={getComponentData(selectedComponents[0]).href ?? ''}
-                        onChange={(e) => setHref(e.target.value)}
-                      />
-                    </div>
-                  </>
-                )}
+
               {allAreImages && (
                 <ImageDataEdit
                   components={selectedComponents}
@@ -414,6 +445,14 @@ export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
           setCustomPropertiesModalOpen(false);
         }}
       />
+      {selectedComponents.length === 1 && (
+        <ComponentScriptAttachModal
+          open={scriptModalOpen}
+          onOpenChange={setScriptModalOpen}
+          component={selectedComponents[0]}
+          updateComponents={updateComponents}
+        />
+      )}
     </ComponentEditPanelContext.Provider>
   );
 };

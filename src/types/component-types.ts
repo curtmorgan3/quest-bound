@@ -1,3 +1,5 @@
+import type { ScriptParamValue } from './data-model-types';
+
 type BaseComponentStyle = {
   backgroundColor: string;
   opacity: number;
@@ -116,4 +118,6 @@ export type ComponentData = ShapeComponentData &
     conditionalRenderLogic?: ConditionalRenderLogic | null;
     pageId?: string;
     href?: string;
+    /** Per-component values for Script.parameters, keyed by ScriptParameterDefinition.id. */
+    scriptParameterValues?: Record<string, ScriptParamValue>;
   };

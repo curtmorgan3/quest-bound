@@ -14,6 +14,7 @@ export const NodeActionCaller = ({ children, component, style }: NodeActionCalle
   const { actions } = useActions();
 
   const action = actions.find((action) => action.id === component.actionId);
+  const hasScript = Boolean(component.scriptId);
 
   const handleClick = () => {
     if (!action) return;
@@ -23,9 +24,9 @@ export const NodeActionCaller = ({ children, component, style }: NodeActionCalle
   return (
     <div
       style={style}
-      role={action ? 'button' : undefined}
-      onClick={action ? handleClick : undefined}
-      className={action ? 'clickable' : ''}
+      role={action && !hasScript ? 'button' : undefined}
+      onClick={action && !hasScript ? handleClick : undefined}
+      className={action && !hasScript ? 'clickable' : ''}
       data-action-id={action?.id}
       data-action-title={action?.title}>
       {children}

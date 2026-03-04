@@ -105,6 +105,7 @@ export function ScriptEditorPage() {
   const { validationErrors } = useAutoSave({
     sourceCode,
     script,
+    parameters,
   });
 
   const hasErrors = validationErrors.length > 0;

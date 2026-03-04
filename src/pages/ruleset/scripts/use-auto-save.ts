@@ -1,6 +1,6 @@
 import { useScripts } from '@/lib/compass-api';
 import { useScriptValidation } from '@/lib/compass-logic';
-import type { Script } from '@/types';
+import type { Script, ScriptParameterDefinition } from '@/types';
 import { useEffect, useRef } from 'react';
 
 const AUTOSAVE_DEBOUNCE_MS = 1500;
@@ -8,9 +8,10 @@ const AUTOSAVE_DEBOUNCE_MS = 1500;
 interface UseAutoSave {
   sourceCode: string;
   script?: Script | null;
+  parameters?: ScriptParameterDefinition[];
 }
 
-export const useAutoSave = ({ sourceCode, script }: UseAutoSave) => {
+export const useAutoSave = ({ sourceCode, script, parameters }: UseAutoSave) => {
   const { errors: validationErrors, validate } = useScriptValidation();
   const { updateScript } = useScripts();
 
@@ -23,13 +24,16 @@ export const useAutoSave = ({ sourceCode, script }: UseAutoSave) => {
     autosaveTimeoutRef.current = setTimeout(() => {
       validate(scriptId, sourceCode);
       if (script) {
-        updateScript(script.id, { sourceCode });
+        updateScript(script.id, {
+          sourceCode,
+          ...(parameters ? { parameters } : {}),
+        });
       }
     }, AUTOSAVE_DEBOUNCE_MS);
     return () => {
       if (autosaveTimeoutRef.current) clearTimeout(autosaveTimeoutRef.current);
     };
-  }, [sourceCode]);
+  }, [sourceCode, script, scriptId, parameters, validate, updateScript]);
 
   return {
     validationErrors,
