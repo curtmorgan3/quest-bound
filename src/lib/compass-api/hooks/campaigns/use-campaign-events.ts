@@ -59,7 +59,6 @@ export const useCampaignEvents = (campaignId: string | undefined) => {
 
   const deleteCampaignEvent = async (id: string) => {
     try {
-      await db.campaignEventLocations.where('campaignEventId').equals(id).delete();
       await db.campaignEvents.delete(id);
     } catch (e) {
       handleError(e as Error, {

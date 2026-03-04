@@ -29,7 +29,6 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useNotifications } from '@/hooks';
-import { useFeatureFlag } from '@/hooks/use-feature-flag';
 import {
   useActiveRuleset,
   useCharacter,
@@ -52,7 +51,6 @@ export const CharacterSettings = ({ character }: CharacterSettingsProps) => {
   const { activeRuleset } = useActiveRuleset();
   const { syncWithRuleset } = useCharacterAttributes(character.id);
   const { addNotification } = useNotifications();
-  const worldsEnabled = useFeatureFlag('worlds', false);
   const navigate = useNavigate();
   const { exportCharacter, isExporting } = useExportCharacter(character.id);
 
@@ -193,18 +191,6 @@ export const CharacterSettings = ({ character }: CharacterSettingsProps) => {
           />
         </div>
 
-        {worldsEnabled && (
-          <div className='flex flex-col gap-2 max-w-sm'>
-            <Label>Map sprite</Label>
-            <ImageUpload
-              image={character.sprites?.[0]}
-              alt={`${character.name} sprite`}
-              onRemove={() => updateCharacter(character.id, { sprites: [] })}
-              onUpload={(assetId) => updateCharacter(character.id, { sprites: [assetId] })}
-              rulesetId={character.rulesetId}
-            />
-          </div>
-        )}
       </div>
 
       <div className='flex flex-col gap-1'>

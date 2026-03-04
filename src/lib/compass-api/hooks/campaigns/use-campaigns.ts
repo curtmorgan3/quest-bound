@@ -65,10 +65,6 @@ export const useCampaigns = (filters?: { rulesetId?: string; worldId?: string })
     try {
       await db.campaignCharacters.where('campaignId').equals(id).delete();
       await db.campaignItems.where('campaignId').equals(id).delete();
-      const events = await db.campaignEvents.where('campaignId').equals(id).toArray();
-      for (const e of events) {
-        await db.campaignEventLocations.where('campaignEventId').equals(e.id).delete();
-      }
       await db.campaignEvents.where('campaignId').equals(id).delete();
       await db.campaigns.delete(id);
     } catch (e) {

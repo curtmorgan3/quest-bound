@@ -19,7 +19,9 @@ export const useCampaignCharacters = (campaignId: string | undefined) => {
     characterId: string,
     data?: {
       campaignSceneId?: string;
+      /** @deprecated World/location removed; ignored. */
       currentLocationId?: string;
+      /** @deprecated World/location removed; ignored. */
       currentTileId?: string;
       active?: boolean;
     },
@@ -39,8 +41,6 @@ export const useCampaignCharacters = (campaignId: string | undefined) => {
         campaignId,
         characterId,
         campaignSceneId: data?.campaignSceneId,
-        currentLocationId: data?.currentLocationId ?? null,
-        currentTileId: data?.currentTileId ?? null,
         mapWidth: archetype?.mapWidth,
         mapHeight: archetype?.mapHeight,
         active: data?.active,
@@ -59,13 +59,17 @@ export const useCampaignCharacters = (campaignId: string | undefined) => {
   const updateCampaignCharacter = async (
     id: string,
     data: Partial<
-      Pick<CampaignCharacter, 'active' | 'campaignSceneId' | 'currentLocationId' | 'currentTileId' | 'mapHeight' | 'mapWidth'>
+      Pick<
+        CampaignCharacter,
+        'active' | 'campaignSceneId' | 'currentLocationId' | 'currentTileId' | 'mapHeight' | 'mapWidth'
+      >
     >,
   ) => {
     const now = new Date().toISOString();
+    const { currentLocationId: _loc, currentTileId: _tile, ...rest } = data;
     try {
       await db.campaignCharacters.update(id, {
-        ...data,
+        ...rest,
         updatedAt: now,
       });
     } catch (e) {

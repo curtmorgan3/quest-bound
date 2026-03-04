@@ -36,7 +36,6 @@ import { Popover, PopoverContent, PopoverTrigger } from '../../ui/popover';
 import { CampaignSidebar } from './campaign-sidebar';
 import { CharacterSidebar } from './character-sidebar';
 import { RulesetSidebar } from './ruleset-sidebar';
-import { WorldSidebar } from './world-sidebar';
 
 function docsPageFromRoute(path: string): string {
   if (path.includes('/rulesets') && !path.includes('/characters')) {
@@ -56,7 +55,6 @@ function docsPageFromRoute(path: string): string {
       return path.includes('/chart/') ? 'charts' : 'documents';
     return 'characters';
   }
-  if (path.includes('/worlds')) return 'worlds';
   return 'rulesets';
 }
 
@@ -69,14 +67,11 @@ export function AppSidebar() {
   const characterArchetypesPanel = useContext(CharacterArchetypesPanelContext);
   const { setDicePanelOpen } = useContext(DiceContext);
 
-  const worldsEnabled = useFeatureFlag('worlds', false);
   const campaignsEnabled = useFeatureFlag('campaigns', false);
   const isHomepage =
     location.pathname === '/rulesets' ||
     location.pathname === '/characters' ||
-    location.pathname === '/worlds' ||
     location.pathname === '/campaigns';
-  const isWorldsRoute = location.pathname.startsWith('/worlds/');
   const isCampaignsRoute =
     location.pathname.startsWith('/campaigns/') && location.pathname !== '/campaigns/new';
 
@@ -97,8 +92,6 @@ export function AppSidebar() {
 
   const sidebarContent = character ? (
     <CharacterSidebar />
-  ) : isWorldsRoute && worldsEnabled ? (
-    <WorldSidebar />
   ) : isCampaignsRoute && campaignsEnabled ? (
     <CampaignSidebar />
   ) : (

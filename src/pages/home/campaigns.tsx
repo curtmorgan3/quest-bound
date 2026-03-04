@@ -25,7 +25,6 @@ import {
   useCampaigns,
   useCharacter,
   useRulesets,
-  useWorlds,
 } from '@/lib/compass-api';
 import type { Campaign } from '@/types';
 import { Plus, UserMinus } from 'lucide-react';
@@ -90,22 +89,15 @@ function CampaignCardCharacterSection({ campaign }: { campaign: Campaign }) {
 
 export function Campaigns() {
   const { campaigns, deleteCampaign } = useCampaigns();
-  const { worlds } = useWorlds();
   const { rulesets } = useRulesets();
   const navigate = useNavigate();
 
-  const getWorldLabel = (id: string | null | undefined) =>
-    id ? (worlds.find((w) => w.id === id)?.label ?? 'Unknown world') : null;
   const getRulesetTitle = (id: string) =>
     rulesets.find((r) => r.id === id)?.title ?? 'Unknown ruleset';
 
-  const sortedCampaigns = [...campaigns].sort((a, b) => {
-    const aWorld = getWorldLabel(a.worldId) ?? '';
-    const bWorld = getWorldLabel(b.worldId) ?? '';
-    const worldCmp = aWorld.localeCompare(bWorld);
-    if (worldCmp !== 0) return worldCmp;
-    return getRulesetTitle(a.rulesetId).localeCompare(getRulesetTitle(b.rulesetId));
-  });
+  const sortedCampaigns = [...campaigns].sort((a, b) =>
+    getRulesetTitle(a.rulesetId).localeCompare(getRulesetTitle(b.rulesetId)),
+  );
 
   return (
     <PageWrapper
@@ -127,9 +119,7 @@ export function Campaigns() {
               <div className='min-w-0'>
                 <p className='font-medium'>{campaign.label || 'Unnamed campaign'}</p>
                 <p className='text-sm text-muted-foreground'>
-                  {[getWorldLabel(campaign.worldId), getRulesetTitle(campaign.rulesetId)]
-                    .filter(Boolean)
-                    .join(' · ')}
+                  {getRulesetTitle(campaign.rulesetId)}
                 </p>
               </div>
               <div className='flex items-center gap-2'>

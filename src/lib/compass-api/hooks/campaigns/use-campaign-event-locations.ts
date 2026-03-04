@@ -1,79 +1,16 @@
-import { useErrorHandler } from '@/hooks';
-import { db } from '@/stores';
-import type { CampaignEventLocation } from '@/types';
-import { useLiveQuery } from 'dexie-react-hooks';
-
-export const useCampaignEventLocations = (campaignEventId: string | undefined) => {
-  const { handleError } = useErrorHandler();
-
-  const campaignEventLocations = useLiveQuery(
-    async (): Promise<CampaignEventLocation[]> =>
-      campaignEventId
-        ? db.campaignEventLocations
-            .where('campaignEventId')
-            .equals(campaignEventId)
-            .toArray()
-        : [],
-    [campaignEventId],
-  );
-
-  const createCampaignEventLocation = async (
-    campaignEventId: string,
-    locationId: string,
-    tileId?: string | null,
-  ) => {
-    const now = new Date().toISOString();
-    const id = crypto.randomUUID();
-    try {
-      await db.campaignEventLocations.add({
-        id,
-        campaignEventId,
-        locationId,
-        tileId: tileId ?? null,
-        createdAt: now,
-        updatedAt: now,
-      } as CampaignEventLocation);
-      return id;
-    } catch (e) {
-      handleError(e as Error, {
-        component: 'useCampaignEventLocations/createCampaignEventLocation',
-        severity: 'medium',
-      });
-    }
-  };
-
-  const deleteCampaignEventLocation = async (id: string) => {
-    try {
-      await db.campaignEventLocations.delete(id);
-    } catch (e) {
-      handleError(e as Error, {
-        component: 'useCampaignEventLocations/deleteCampaignEventLocation',
-        severity: 'medium',
-      });
-    }
-  };
-
-  const updateCampaignEventLocation = async (
-    id: string,
-    updates: { locationId?: string; tileId?: string | null },
-  ) => {
-    try {
-      await db.campaignEventLocations.update(id, {
-        ...updates,
-        updatedAt: new Date().toISOString(),
-      });
-    } catch (e) {
-      handleError(e as Error, {
-        component: 'useCampaignEventLocations/updateCampaignEventLocation',
-        severity: 'medium',
-      });
-    }
-  };
-
+/** Campaign event locations (world/location maps) removed; stub returns empty data and no-op mutations. */
+export const useCampaignEventLocations = (_campaignEventId: string | undefined) => {
   return {
-    campaignEventLocations: campaignEventLocations ?? [],
-    createCampaignEventLocation,
-    deleteCampaignEventLocation,
-    updateCampaignEventLocation,
+    campaignEventLocations: [] as { id: string; campaignEventId: string; locationId: string; tileId?: string | null }[],
+    createCampaignEventLocation: async (
+      _campaignEventId: string,
+      _locationId: string,
+      _tileId?: string | null,
+    ) => undefined as string | undefined,
+    deleteCampaignEventLocation: async (_id: string) => {},
+    updateCampaignEventLocation: async (
+      _id: string,
+      _updates: { locationId?: string; tileId?: string | null },
+    ) => {},
   };
 };

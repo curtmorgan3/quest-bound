@@ -1,4 +1,3 @@
-import { getFirstPassableTileId, getTopTileDataAt } from '@/components/locations';
 import {
   useCampaign,
   useCampaignCharacters,
@@ -6,176 +5,44 @@ import {
   useLocation,
   useLocations,
 } from '@/lib/compass-api';
-import { db } from '@/stores';
-import type { ActiveCharacter, Location, TileData } from '@/types';
+import type { ActiveCharacter } from '@/types';
 import { useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { moveCharacters } from '../campaign-controls/character-movement';
 
+/** Map/location feature removed; stub returns no-op handlers. */
 interface UseMapHelpers {
   campaignId?: string;
-  currentLocation?: Location;
+  currentLocation?: { id: string; tiles?: unknown[]; parentLocationId?: string | null };
   selectedLocationId?: string | null;
   selectedCharacters: ActiveCharacter[];
 }
 
 export const useMapHelpers = ({
   campaignId,
-  currentLocation,
-  selectedLocationId,
-  selectedCharacters,
+  currentLocation: _currentLocation,
+  selectedLocationId: _selectedLocationId,
+  selectedCharacters: _selectedCharacters,
 }: UseMapHelpers) => {
-  const campaign = useCampaign(campaignId);
-  const { campaignCharacters, updateCampaignCharacter } = useCampaignCharacters(campaignId);
-  const { updateLocation } = useLocations(campaign?.worldId ?? '', null);
-  const { updateCampaignItem } = useCampaignItems(campaignId);
-
+  useCampaign(campaignId);
+  useCampaignCharacters(campaignId);
+  useCampaignItems(campaignId);
+  useLocations(undefined, null);
   const navigate = useNavigate();
-  const { campaignId: campaignIdParam, locationId: locationIdParam } = useParams<{
-    campaignId?: string;
-    locationId?: string;
-  }>();
+  const { campaignId: campaignIdParam } = useParams<{ campaignId?: string; locationId?: string }>();
+  useLocation(undefined);
 
-  const viewingLocation = useLocation(locationIdParam);
-
-  const moveSelectedCharactersTo = useCallback(
-    async (locationId: string | null, tileId?: string) => {
-      if (!locationId) {
-        for (const character of selectedCharacters) {
-          await updateCampaignCharacter(character.campaignCharacterId, {
-            currentLocationId: null,
-          });
-        }
-
-        return;
-      }
-
-      const loc = await db.locations.get(locationId);
-      if (!loc) return;
-
-      const tiles = loc.tiles ?? [];
-      const targetTileId =
-        tileId ?? getFirstPassableTileId(tiles) ?? (tiles[0] ? tiles[0].id : null);
-
-      if (!targetTileId) {
-        for (const character of selectedCharacters) {
-          await updateCampaignCharacter(character.campaignCharacterId, {
-            currentLocationId: locationId,
-            currentTileId: null,
-          });
-        }
-
-        return;
-      }
-
-      const charactersInLocation = campaignCharacters.filter(
-        (cc) => cc.currentLocationId === locationId,
-      );
-
-      const movements = moveCharacters({
-        location: loc,
-        targetTile: { id: targetTileId },
-        characterToMove: selectedCharacters,
-        charactersInLocation,
-      });
-
-      for (const movement of movements) {
-        await updateCampaignCharacter(movement.characterId, {
-          currentLocationId: locationId,
-          currentTileId: movement.tileId,
-        });
-      }
-    },
-    [selectedCharacters, campaignCharacters, updateCampaignCharacter],
-  );
-
-  const navigateTo = useCallback(
-    (locationId: string) => {
-      if (campaignIdParam) {
-        navigate(`/campaigns/${campaignIdParam}/locations/${locationId}`);
-      }
-
-      moveSelectedCharactersTo(locationId);
-    },
-    [campaignIdParam, navigate, selectedCharacters],
-  );
-
-  const openMap = useCallback(
-    (locationId: string) => {
-      if (campaignIdParam) {
-        navigate(`/campaigns/${campaignIdParam}/locations/${locationId}?view=map`);
-      }
-
-      moveSelectedCharactersTo(locationId);
-    },
-    [campaignIdParam, navigate, selectedCharacters],
-  );
-
+  const moveSelectedCharactersTo = useCallback(async (_locationId: string | null, _tileId?: string) => {}, []);
+  const navigateTo = useCallback((_locationId: string) => {
+    if (campaignIdParam) navigate(`/campaigns/${campaignIdParam}/locations/${_locationId}`);
+  }, [campaignIdParam, navigate]);
+  const openMap = useCallback((_locationId: string) => {
+    if (campaignIdParam) navigate(`/campaigns/${campaignIdParam}/locations/${_locationId}?view=map`);
+  }, [campaignIdParam, navigate]);
   const navigateBack = useCallback(() => {
-    if (!campaignIdParam) return;
-    if (viewingLocation?.parentLocationId) {
-      navigate(`/campaigns/${campaignIdParam}/locations/${viewingLocation.parentLocationId}`);
-      moveSelectedCharactersTo(viewingLocation.parentLocationId);
-    } else {
-      navigate(`/campaigns/${campaignIdParam}`);
-      moveSelectedCharactersTo(null);
-    }
-  }, [campaignIdParam, viewingLocation?.parentLocationId, navigate, selectedCharacters]);
-
-  const jumpToCharacter = useCallback(
-    (characterId: string) => {
-      const cc = campaignCharacters.find((c) => c.characterId === characterId);
-      if (cc?.currentLocationId && campaignIdParam) {
-        navigate(`/campaigns/${campaignIdParam}/locations/${cc.currentLocationId}`);
-      }
-    },
-    [campaignCharacters, campaignIdParam, navigate, selectedCharacters],
-  );
-
-  const handleDrop = useCallback(
-    async (x: number, y: number, e: React.DragEvent) => {
-      if (!currentLocation || !selectedLocationId) return;
-      const raw = e.dataTransfer.getData('application/json');
-      if (!raw) return;
-      let payload: { type: string; id: string };
-      try {
-        payload = JSON.parse(raw);
-      } catch {
-        return;
-      }
-      const tiles = currentLocation.tiles ?? [];
-      let targetTile = getTopTileDataAt(tiles, x, y);
-      if (!targetTile) {
-        const newTile: TileData = {
-          id: crypto.randomUUID(),
-          x,
-          y,
-          zIndex: 0,
-          isPassable: true,
-        };
-        await updateLocation(currentLocation.id, { tiles: [...tiles, newTile] });
-        targetTile = newTile;
-      }
-      if (payload.type === 'campaign-character') {
-        await updateCampaignCharacter(payload.id, {
-          currentLocationId: selectedLocationId,
-          currentTileId: targetTile.id,
-        });
-      } else if (payload.type === 'campaign-item') {
-        await updateCampaignItem(payload.id, {
-          currentLocationId: selectedLocationId,
-          currentTileId: targetTile.id,
-        });
-      }
-    },
-    [
-      currentLocation,
-      selectedLocationId,
-      updateLocation,
-      updateCampaignCharacter,
-      updateCampaignItem,
-    ],
-  );
+    if (campaignIdParam) navigate(`/campaigns/${campaignIdParam}`);
+  }, [campaignIdParam, navigate]);
+  const jumpToCharacter = useCallback((_characterId: string) => {}, []);
+  const handleDrop = useCallback(async (_x: number, _y: number, _e: React.DragEvent) => {}, []);
 
   return {
     navigateTo,

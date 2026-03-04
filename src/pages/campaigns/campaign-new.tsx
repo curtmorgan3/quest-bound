@@ -6,20 +6,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { useFeatureFlag } from '@/hooks/use-feature-flag';
-import { useCampaigns, useRulesets, useWorlds } from '@/lib/compass-api';
+import { useCampaigns, useRulesets } from '@/lib/compass-api';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 export function CampaignNew() {
   const { createCampaign } = useCampaigns();
-  const worldsEnabled = useFeatureFlag('worlds', false);
-  const { worlds } = useWorlds();
   const { rulesets } = useRulesets();
   const navigate = useNavigate();
 
   const [label, setLabel] = useState('');
-  const [worldId, setWorldId] = useState('');
   const [rulesetId, setRulesetId] = useState('');
 
   const handleSubmit = async () => {
@@ -27,15 +23,11 @@ export function CampaignNew() {
     const id = await createCampaign({
       label: label.trim() || undefined,
       rulesetId,
-      worldId: worldId && worldId !== '_none' ? worldId : undefined,
     });
     if (id) navigate(`/campaigns/${id}`);
   };
 
   const isValid = Boolean(rulesetId);
-  const sortedWorlds = worldsEnabled
-    ? [...worlds].sort((a, b) => a.label.localeCompare(b.label))
-    : [];
   const sortedRulesets = [...rulesets].sort((a, b) => a.title.localeCompare(b.title));
 
   return (
@@ -75,26 +67,6 @@ export function CampaignNew() {
             </SelectContent>
           </Select>
         </div>
-        {worldsEnabled && (
-          <div className='grid gap-2'>
-            <Label htmlFor='campaign-world'>World (optional)</Label>
-            <Select
-              value={worldId || '_none'}
-              onValueChange={(v) => setWorldId(v === '_none' ? '' : v)}>
-              <SelectTrigger id='campaign-world' data-testid='campaign-world-select'>
-                <SelectValue placeholder='None' />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value='_none'>None</SelectItem>
-                {sortedWorlds.map((w) => (
-                  <SelectItem key={w.id} value={w.id}>
-                    {w.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        )}
         <div className='flex gap-2'>
           <Button variant='outline' onClick={() => navigate('/campaigns')}>
             Cancel

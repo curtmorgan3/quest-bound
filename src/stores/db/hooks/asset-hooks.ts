@@ -13,10 +13,7 @@ export async function getAssetReferenceCount(db: DB, assetId: string): Promise<n
     rulesetCount,
     chartCount,
     archetypeCount,
-    worldCount,
-    tilemapCount,
     characterPageCount,
-    locationCount,
   ] = await Promise.all([
     db.items.filter((item) => item.assetId === assetId).count(),
     db.documents
@@ -30,12 +27,7 @@ export async function getAssetReferenceCount(db: DB, assetId: string): Promise<n
     db.rulesets.filter((r) => r.assetId === assetId).count(),
     db.charts.filter((c) => c.assetId === assetId).count(),
     db.archetypes.filter((a) => a.assetId === assetId).count(),
-    db.worlds.filter((w) => w.assetId === assetId).count(),
-    db.tilemaps.filter((tm) => tm.assetId === assetId).count(),
     db.characterPages.filter((cp) => cp.assetId === assetId).count(),
-    db.locations.filter(
-      (loc) => loc.backgroundAssetId === assetId || loc.mapAssetId === assetId,
-    ).count(),
   ]);
   return (
     itemCount +
@@ -48,10 +40,7 @@ export async function getAssetReferenceCount(db: DB, assetId: string): Promise<n
     rulesetCount +
     chartCount +
     archetypeCount +
-    worldCount +
-    tilemapCount +
-    characterPageCount +
-    locationCount
+    characterPageCount
   );
 }
 
@@ -76,8 +65,6 @@ export async function clearAssetReferences(db: DB, assetId: string): Promise<voi
     rulesets,
     charts,
     archetypes,
-    worlds,
-    tilemaps,
     characterPages,
   ] = await Promise.all([
     db.items.where('assetId').equals(assetId).toArray(),
@@ -90,8 +77,6 @@ export async function clearAssetReferences(db: DB, assetId: string): Promise<voi
     db.rulesets.where('assetId').equals(assetId).toArray(),
     db.charts.where('assetId').equals(assetId).toArray(),
     db.archetypes.where('assetId').equals(assetId).toArray(),
-    db.worlds.where('assetId').equals(assetId).toArray(),
-    db.tilemaps.where('assetId').equals(assetId).toArray(),
     db.characterPages.where('assetId').equals(assetId).toArray(),
   ]);
 
@@ -111,8 +96,6 @@ export async function clearAssetReferences(db: DB, assetId: string): Promise<voi
     ...rulesets.map((r) => db.rulesets.update(r.id, { assetId: null, updatedAt: now })),
     ...charts.map((c) => db.charts.update(c.id, { assetId: null, updatedAt: now })),
     ...archetypes.map((a) => db.archetypes.update(a.id, { assetId: null, updatedAt: now })),
-    ...worlds.map((w) => db.worlds.update(w.id, { assetId: null, updatedAt: now })),
-    ...tilemaps.map((t) => db.tilemaps.update(t.id, { assetId: null, updatedAt: now })),
     ...characterPages.map((cp) =>
       db.characterPages.update(cp.id, { assetId: null, updatedAt: now }),
     ),

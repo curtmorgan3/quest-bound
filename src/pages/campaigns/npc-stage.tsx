@@ -93,10 +93,7 @@ interface NpcEditModalProps {
   onUpdateCampaignCharacter: (
     id: string,
     data: Partial<
-      Pick<
-        CampaignCharacter,
-        'active' | 'campaignSceneId' | 'currentLocationId' | 'currentTileId' | 'mapHeight' | 'mapWidth'
-      >
+      Pick<CampaignCharacter, 'active' | 'campaignSceneId' | 'mapHeight' | 'mapWidth'>
     >,
   ) => Promise<void>;
 }

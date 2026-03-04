@@ -4,9 +4,7 @@ import {
   MAX_LOCATION_MAP_ASSET_WIDTH,
 } from '@/constants';
 import { useLocation, useTilemaps } from '@/lib/compass-api';
-import { db } from '@/stores';
 import type { Tile, TileData, Tilemap } from '@/types';
-import { useLiveQuery } from 'dexie-react-hooks';
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 
 type AssetSize = {
@@ -63,26 +61,8 @@ export const useTilemapAsset = ({
     return map;
   }, [tilemaps]);
 
-  const tileIdsInLocation = useMemo(
-    () => [
-      ...new Set(
-        (location?.tiles ?? []).map((td) => td.tileId).filter((id): id is string => id != null),
-      ),
-    ],
-    [location?.tiles],
-  );
-
-  const tilesById = useLiveQuery(
-    () =>
-      tileIdsInLocation.length > 0
-        ? db.tiles.bulkGet(tileIdsInLocation).then((arr) => {
-            const map = new Map<string, Tile>();
-            arr.forEach((t) => t && map.set(t.id, t));
-            return map;
-          })
-        : Promise.resolve(new Map<string, Tile>()),
-    [tileIdsInLocation.join(',')],
-  );
+  /** Tiles table removed; no longer loading from DB. */
+  const tilesById = useMemo(() => new Map<string, Tile>(), []);
 
   // Preload tilemap asset images to get dimensions
   useEffect(() => {

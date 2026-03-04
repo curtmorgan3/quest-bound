@@ -19,7 +19,9 @@ export const useCampaignItems = (campaignId: string | undefined) => {
     data: {
       itemId: string;
       sceneId?: string;
+      /** @deprecated World/location removed; ignored. */
       currentLocationId?: string;
+      /** @deprecated World/location removed; ignored. */
       currentTileId?: string;
     },
   ) => {
@@ -32,8 +34,6 @@ export const useCampaignItems = (campaignId: string | undefined) => {
         campaignId,
         itemId: data.itemId,
         sceneId: data.sceneId,
-        currentLocationId: data.currentLocationId ?? null,
-        currentTileId: data.currentTileId ?? null,
         mapWidth: item?.mapWidth,
         mapHeight: item?.mapHeight,
         createdAt: now,
@@ -50,12 +50,15 @@ export const useCampaignItems = (campaignId: string | undefined) => {
 
   const updateCampaignItem = async (
     id: string,
-    data: Partial<Pick<CampaignItem, 'sceneId' | 'currentLocationId' | 'currentTileId' | 'mapHeight' | 'mapWidth'>>,
+    data: Partial<
+      Pick<CampaignItem, 'sceneId' | 'currentLocationId' | 'currentTileId' | 'mapHeight' | 'mapWidth'>
+    >,
   ) => {
     const now = new Date().toISOString();
+    const { currentLocationId: _loc, currentTileId: _tile, ...rest } = data;
     try {
       await db.campaignItems.update(id, {
-        ...data,
+        ...rest,
         updatedAt: now,
       });
     } catch (e) {

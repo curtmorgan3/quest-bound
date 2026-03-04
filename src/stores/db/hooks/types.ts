@@ -30,14 +30,10 @@ export type DB = Dexie & {
   scriptErrors: Dexie.Table;
   scriptLogs: Dexie.Table;
   dependencyGraphNodes: Dexie.Table;
-  worlds: Dexie.Table;
-  tilemaps: Dexie.Table;
-  locations: Dexie.Table;
   campaigns: Dexie.Table;
   campaignCharacters: Dexie.Table;
   campaignScenes: Dexie.Table;
   campaignEvents: Dexie.Table;
-  campaignEventLocations: Dexie.Table;
   campaignEventScenes: Dexie.Table;
   campaignItems: Dexie.Table;
 };

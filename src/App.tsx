@@ -14,18 +14,12 @@ import {
   Characters,
   DevTools,
   ErrorPage,
-  LocationEditor,
   ManageCustomProperties,
   Ruleset,
   RulesetPageEditorPage,
   Rulesets,
   ScriptEditorPage,
   ScriptsIndex,
-  TilemapEditor,
-  TilemapListPage,
-  WorldDocumentsPage,
-  WorldEditor,
-  Worlds,
 } from '@/pages';
 import { HashRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { ErrorBoundary } from './components';
@@ -35,7 +29,6 @@ import { WindowEditor } from './pages/ruleset/windows/window-editor';
 import { CampaignProvider } from './stores';
 
 function CompassRoutes() {
-  const worldsEnabled = useFeatureFlag('worlds', false);
   const campaignsEnabled = useFeatureFlag('campaigns', false);
 
   return (
@@ -144,25 +137,6 @@ function CompassRoutes() {
                       <ScriptEditorPage />
                     </CampaignProvider>
                   }
-                />
-              </>
-            )}
-
-            {worldsEnabled && (
-              <>
-                <Route path={`/worlds`} element={<Worlds />} />
-                <Route path={`/worlds/:worldId`} element={<WorldEditor />} />
-                <Route path={`/worlds/:worldId/locations/:locationId`} element={<WorldEditor />} />
-                <Route path={`/worlds/:worldId/tilemaps`} element={<TilemapListPage />} />
-                <Route path={`/worlds/:worldId/tilemaps/:tilemapId`} element={<TilemapEditor />} />
-                <Route path={`/worlds/:worldId/documents`} element={<WorldDocumentsPage />} />
-                <Route
-                  path={`/worlds/:worldId/documents/:documentId`}
-                  element={<DocumentViewer />}
-                />
-                <Route
-                  path={`/worlds/:worldId/locations/:locationId/edit`}
-                  element={<LocationEditor />}
                 />
               </>
             )}

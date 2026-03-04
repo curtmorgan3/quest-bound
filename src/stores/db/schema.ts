@@ -141,5 +141,28 @@ export const dbSchemaV50 = {
   scriptLogs: `${common}, rulesetId, campaignId, scriptId, characterId, timestamp, [entityId+entityType], [campaignId]`,
 };
 
+/** Schema for v51: remove worlds, locations, tilemaps, tiles, campaignEventLocations. */
+const {
+  worlds: _w,
+  tilemaps: _tm,
+  tiles: _t,
+  locations: _l,
+  campaignEventLocations: _cel,
+  ...dbSchemaV50WithoutWorldTables
+} = dbSchemaV50 as typeof dbSchemaV50 & {
+  worlds?: string;
+  tilemaps?: string;
+  tiles?: string;
+  locations?: string;
+  campaignEventLocations?: string;
+};
+export const dbSchemaV51 = {
+  ...dbSchemaV50WithoutWorldTables,
+  documents: `${common}, rulesetId, campaignId, campaignSceneId, title, description, category, assetId, image, pdfAssetId, pdfData, markdownData, moduleId, [campaignSceneId]`,
+  campaigns: `${common}, label, rulesetId, [rulesetId]`,
+  campaignCharacters: `${common}, characterId, campaignId, campaignSceneId, mapHeight, mapWidth, active, [campaignId], [characterId], [campaignId+characterId], [campaignSceneId]`,
+  campaignItems: `${common}, itemId, campaignId, sceneId, mapHeight, mapWidth, [campaignId], [sceneId]`,
+};
+
 // Increment on every schema change
-export const dbSchemaVersion = 50;
+export const dbSchemaVersion = 51;

@@ -1,15 +1,6 @@
-import { db } from '@/stores';
 import type { Tilemap } from '@/types';
-import { useLiveQuery } from 'dexie-react-hooks';
 
-export const useTilemap = (tilemapId: string | undefined) => {
-  const tilemap = useLiveQuery(
-    () =>
-      tilemapId
-        ? db.tilemaps.get(tilemapId)
-        : Promise.resolve(undefined),
-    [tilemapId],
-  );
-
-  return tilemap as Tilemap | undefined;
+/** Tilemaps feature removed; stub always returns undefined. */
+export const useTilemap = (_tilemapId: string | undefined): Tilemap | undefined => {
+  return undefined;
 };

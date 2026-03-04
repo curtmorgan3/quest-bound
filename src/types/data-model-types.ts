@@ -22,7 +22,7 @@ export type Asset = BaseDetails & {
   filename: string;
   rulesetId: string | null; // Nullable for user assets
   category?: string;
-  /** Optional world for tracking/exporting worlds. */
+  /** @deprecated World feature removed; may exist on old data. */
   worldId?: string | null;
   /** @deprecated Removed in v44; only filename is used. Kept for backwards-compat read of old export/metadata. */
   directory?: string;
@@ -246,13 +246,13 @@ export type DiceRoll = BaseDetails & {
 };
 
 export type Document = BaseDetails & {
-  /** When set, document belongs to a ruleset (ruleset-scoped). Omitted when document belongs to a world or campaign. */
+  /** When set, document belongs to a ruleset (ruleset-scoped). Omitted when document belongs to a campaign. */
   rulesetId?: string;
-  /** When set, document belongs to a world (and optionally a location). Mutually exclusive with campaign usage. */
+  /** @deprecated World feature removed; may exist on old data. */
   worldId?: string | null;
-  /** When set with worldId, document is scoped to this location within the world. When set with campaignId, document is scoped to this location within the campaign. */
+  /** @deprecated World/location feature removed; may exist on old data. */
   locationId?: string | null;
-  /** When set, document belongs to a campaign (and has locationId; no worldId). */
+  /** When set, document belongs to a campaign. */
   campaignId?: string | null;
   /** Optional scene within the campaign; when set, document is associated with this CampaignScene. */
   campaignSceneId?: string | null;
@@ -396,7 +396,7 @@ export type Script = BaseDetails & {
   isGlobal: boolean; // Whether this is a global utility script
   enabled: boolean; // Allow disabling scripts without deleting
   category?: string; // Optional category for grouping scripts
-  /** Optional world; when set, script is world-specific and hidden from ruleset-level script list. */
+  /** Optional campaign; when set, script is campaign-specific. */
   campaignId?: string;
   /** Module origin: ruleset id, source entity id, and module name. */
   moduleId?: string;
@@ -437,89 +437,11 @@ export type DependencyGraphNode = BaseDetails & {
   dependents: string[]; // Array of script IDs that depend on this script's entity
 };
 
-// --- Worlds & Locations (not a DB table; stored inside Location.tiles) ---
-export interface TileData {
-  id: string;
-  /** Optional for placeholder cells (no tileset); used for entity placement and isPassable. */
-  tileId?: string;
-  x: number;
-  y: number;
-  /** Layer order; higher values draw on top. Default 0 when omitted. */
-  zIndex?: number;
-  isPassable: boolean;
-  actionId?: string;
-}
-
-export type World = BaseDetails & {
-  label: string;
-  description?: string;
-  assetId?: string | null;
-  image?: string | null;
-  /** @deprecated Legacy: may still exist in DB after migration; do not set on new worlds. Use Campaign for ruleset–world association. */
-  rulesetId?: string;
-};
-
-export type Tilemap = BaseDetails & {
-  label?: string;
-  worldId: string;
-  assetId: string;
-  /** Resolved tilemap image URL (injected at read from DB). */
-  image?: string | null;
-  tileHeight: number;
-  tileWidth: number;
-};
-
-export type Tile = BaseDetails & {
-  tilemapId?: string;
-  tileX?: number;
-  tileY?: number;
-};
-
-export type Location = BaseDetails & {
-  label: string;
-  worldId: string;
-  nodeX: number;
-  nodeY: number;
-  nodeWidth: number;
-  nodeHeight: number;
-  parentLocationId?: string | null;
-  gridWidth: number;
-  gridHeight: number;
-  /** When true, this location has a tile map (grid) and can be opened in the location editor. */
-  hasMap?: boolean;
-  /** Pixel size (width and height) for rendering each tile in the location editor. */
-  tileRenderSize?: number;
-  tiles: TileData[];
-  /** Stacking order of the node on the canvas; higher values draw on top. */
-  nodeZIndex?: number;
-  /** Whether to show the label on the node. */
-  labelVisible?: boolean;
-  /** CSS background color for the node. */
-  backgroundColor?: string | null;
-  /** Opacity 0–1 for the node fill and for the background image when present. */
-  opacity?: number;
-  /** Asset id for node background image. */
-  backgroundAssetId?: string | null;
-  /** Resolved background image URL (injected at read from DB). */
-  backgroundImage?: string | null;
-  /** CSS background-size: cover, contain, auto, etc. */
-  backgroundSize?: string | null;
-  /** CSS background-position: center, top, left, etc. */
-  backgroundPosition?: string | null;
-  /** Optional flat map image asset; when set, location-viewer shows this image instead of the tile grid. */
-  mapAssetId?: string | null;
-  /** Resolved map image URL (injected at read from DB). */
-  mapAsset?: string | null;
-  // Large images are scaled down. Tiles selected in the location editor are relative
-  // to this size.
-  scaledMapHeight?: number;
-  scaledMapWidth?: number;
-};
-
-// --- Campaign (joins ruleset; world is optional); placement is campaign-scoped ---
+// --- Campaign (joins ruleset); placement is campaign-scoped ---
 export type Campaign = BaseDetails & {
   label?: string;
   rulesetId: string;
+  /** @deprecated World feature removed; may exist on old data. */
   worldId?: string | null;
   pinnedSidebarDocuments?: string[];
   pinnedSidebarCharts?: string[];
@@ -531,7 +453,9 @@ export type CampaignCharacter = BaseDetails & {
   characterId: string;
   campaignId: string;
   campaignSceneId?: string;
+  /** @deprecated World/location feature removed; may exist on old data. */
   currentLocationId?: string | null;
+  /** @deprecated World/location feature removed; may exist on old data. */
   currentTileId?: string | null;
   mapHeight?: number;
   mapWidth?: number;
@@ -561,7 +485,9 @@ export type CampaignItem = BaseDetails & {
   itemId: string;
   campaignId: string;
   sceneId?: string;
+  /** @deprecated World/location feature removed; may exist on old data. */
   currentLocationId?: string | null;
+  /** @deprecated World/location feature removed; may exist on old data. */
   currentTileId?: string | null;
   mapHeight?: number;
   mapWidth?: number;
@@ -581,10 +507,4 @@ export type CampaignEventScene = BaseDetails & {
   campaignSceneId: string;
   /** Per-scene values for this event's parameters, keyed by parameter definition id. */
   parameterValues?: Record<string, CampaignEventParamValue>;
-};
-
-export type CampaignEventLocation = BaseDetails & {
-  campaignEventId: string;
-  locationId: string;
-  tileId?: string | null;
 };

@@ -332,8 +332,6 @@ export class CampaignSceneAccessor {
       characterId,
       campaignId: this.campaignId,
       campaignSceneId: this.campaignSceneId,
-      currentLocationId: null,
-      currentTileId: null,
       mapWidth: archetype.mapWidth,
       mapHeight: archetype.mapHeight,
       active: true,
