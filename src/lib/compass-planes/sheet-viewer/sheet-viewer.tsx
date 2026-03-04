@@ -4,11 +4,12 @@ import {
   useWindows,
   type CharacterWindowUpdate,
 } from '@/lib/compass-api';
+import { db } from '@/stores';
 import type { CharacterWindow } from '@/types';
 import type { Node, NodeChange, NodePositionChange } from '@xyflow/react';
 import { applyNodeChanges } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { BaseEditor } from '../base-editor';
 import { dispatchSheetViewerBackdropClick } from './backdrop-click-event';
@@ -120,51 +121,43 @@ export const SheetViewer = ({
     [windowsToRenderAsNodes],
   );
 
-  const handleChildWindowClick = useCallback(
-    (
-      childWindowId: string,
-      parentWindow: { x: number; y: number },
-      characterWindow: CharacterWindow,
-    ) => {
-      const existing = editorWindowId
-        ? characterWindows.find((cw) => !cw.characterPageId && cw.windowId === childWindowId)
-        : windowsForCurrentPage.find((cw) => cw.windowId === childWindowId);
-      if (existing) {
-        deleteCharacterWindow(existing.id);
-        if (editorWindowId) {
-          setOpenedChildRulesetWindowIds((prev) => {
-            const next = new Set(prev);
-            next.delete(childWindowId);
-            return next;
-          });
-        }
-        return;
-      }
-      const w = rulesetWindowDefs.find((r) => r.id === childWindowId);
-      if (!w || !characterId) return;
-      createCharacterWindow({
-        windowId: w.id,
-        characterId,
-        characterPageId: characterWindow.characterPageId ?? undefined,
-        title: w.title,
-        x: parentWindow.x + 200,
-        y: parentWindow.y + 150,
-        isCollapsed: false,
-      });
+  const handleChildWindowClick = async (
+    childWindowId: string,
+    parentWindow: { x: number; y: number },
+    characterWindow: CharacterWindow,
+  ) => {
+    const existing = editorWindowId
+      ? characterWindows.find((cw) => !cw.characterPageId && cw.windowId === childWindowId)
+      : windowsForCurrentPage.find((cw) => cw.windowId === childWindowId);
+
+    if (existing) {
+      deleteCharacterWindow(existing.id);
       if (editorWindowId) {
-        setOpenedChildRulesetWindowIds((prev) => new Set(prev).add(childWindowId));
+        setOpenedChildRulesetWindowIds((prev) => {
+          const next = new Set(prev);
+          next.delete(childWindowId);
+          return next;
+        });
       }
-    },
-    [
-      editorWindowId,
-      windowsForCurrentPage,
-      characterWindows,
-      rulesetWindowDefs,
-      createCharacterWindow,
-      deleteCharacterWindow,
+      return;
+    }
+    const w =
+      rulesetWindowDefs.find((r) => r.id === childWindowId) ??
+      (await db.windows.get(childWindowId));
+    if (!w || !characterId) return;
+    createCharacterWindow({
+      windowId: w.id,
       characterId,
-    ],
-  );
+      characterPageId: characterWindow.characterPageId ?? undefined,
+      title: w.title,
+      x: parentWindow.x + 200,
+      y: parentWindow.y + 150,
+      isCollapsed: false,
+    });
+    if (editorWindowId) {
+      setOpenedChildRulesetWindowIds((prev) => new Set(prev).add(childWindowId));
+    }
+  };
 
   function convertWindowsToNode(windows: CharacterWindow[]): Node[] {
     return windows.map((window, index) => {

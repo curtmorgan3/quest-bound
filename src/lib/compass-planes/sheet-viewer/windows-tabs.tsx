@@ -75,6 +75,12 @@ export const WindowsTabs = ({
   const sortedWindows = [...windows].sort((a, b) => a.title.localeCompare(b.title));
   const sortedPages = [...characterPages].sort((a, b) => a.label?.localeCompare(b.label));
 
+  const existingTemplatePageIds = new Set(
+    characterPages
+      .map((p) => p.pageId)
+      .filter((id): id is string => Boolean(id && id.trim().length > 0)),
+  );
+
   const allCategories = [
     ...new Set(
       rulesetWindows.map((w) => w.category).filter((c): c is string => Boolean(c?.trim())),
@@ -405,8 +411,16 @@ export const WindowsTabs = ({
                     <button
                       key={rp.id}
                       type='button'
-                      onClick={() => handleAddPageFromTemplate(rp.id)}
-                      className='text-left px-3 py-2 rounded text-sm text-white hover:bg-[#444] transition-colors'
+                      disabled={existingTemplatePageIds.has(rp.id)}
+                      onClick={() => {
+                        if (existingTemplatePageIds.has(rp.id)) return;
+                        handleAddPageFromTemplate(rp.id);
+                      }}
+                      className={`text-left px-3 py-2 rounded text-sm text-white transition-colors ${
+                        existingTemplatePageIds.has(rp.id)
+                          ? 'opacity-50 cursor-not-allowed'
+                          : 'hover:bg-[#444]'
+                      }`}
                       data-testid={`add-page-option-${rp.label.toLowerCase().replace(/\s+/g, '-')}`}>
                       {rp.label}
                       {rp.category && (

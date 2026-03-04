@@ -115,24 +115,22 @@ export const useWindows = () => {
         updatedAt: now,
       });
 
-      const newComponents: Component[] = sourceComponents.map(
-        (c) => {
-          const newId = componentIdMap.get(c.id)!;
-          const newGroupId =
-            c.groupId && componentIdMap.has(c.groupId) ? componentIdMap.get(c.groupId)! : c.groupId;
-          const newChildWindowId =
-            c.childWindowId === id ? newWindowId : (c.childWindowId ?? undefined);
-          return {
-            ...c,
-            id: newId,
-            windowId: newWindowId,
-            groupId: newGroupId ?? null,
-            childWindowId: newChildWindowId,
-            createdAt: now,
-            updatedAt: now,
-          };
-        },
-      );
+      const newComponents: Component[] = sourceComponents.map((c) => {
+        const newId = componentIdMap.get(c.id)!;
+        const newGroupId =
+          c.groupId && componentIdMap.has(c.groupId) ? componentIdMap.get(c.groupId)! : c.groupId;
+        const newChildWindowId =
+          c.childWindowId === id ? newWindowId : (c.childWindowId ?? undefined);
+        return {
+          ...c,
+          id: newId,
+          windowId: newWindowId,
+          groupId: newGroupId ?? null,
+          childWindowId: newChildWindowId,
+          createdAt: now,
+          updatedAt: now,
+        };
+      });
       await db.components.bulkAdd(newComponents);
 
       if (testCharacter) {

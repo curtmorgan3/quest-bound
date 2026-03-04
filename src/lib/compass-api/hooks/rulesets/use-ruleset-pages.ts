@@ -33,6 +33,31 @@ export const useRulesetPages = () => {
     if (!activeRuleset) return;
     const now = new Date().toISOString();
     try {
+      const trimmedLabel = data.label?.trim();
+
+      if (trimmedLabel) {
+        const existingWithSameLabel = await db.pages
+          .where('rulesetId')
+          .equals(activeRuleset.id)
+          .filter(
+            (p) => p.label?.trim().toLowerCase() === trimmedLabel.toLowerCase(),
+          )
+          .first();
+
+        if (existingWithSameLabel) {
+          await handleError(
+            new Error(
+              `A page named "${trimmedLabel}" already exists in this ruleset. Use a different name.`,
+            ),
+            {
+              component: 'useRulesetPages/createPage',
+              severity: 'medium',
+            },
+          );
+          return;
+        }
+      }
+
       await db.pages.add({
         ...data,
         id: crypto.randomUUID(),
@@ -66,6 +91,37 @@ export const useRulesetPages = () => {
   ) => {
     const now = new Date().toISOString();
     try {
+      const trimmedLabel = data.label?.trim();
+
+      if (trimmedLabel) {
+        const existingPage = await db.pages.get(id);
+
+        if (existingPage?.rulesetId) {
+          const duplicate = await db.pages
+            .where('rulesetId')
+            .equals(existingPage.rulesetId)
+            .filter(
+              (p) =>
+                p.id !== id &&
+                p.label?.trim().toLowerCase() === trimmedLabel.toLowerCase(),
+            )
+            .first();
+
+          if (duplicate) {
+            await handleError(
+              new Error(
+                `A page named "${trimmedLabel}" already exists in this ruleset. Use a different name.`,
+              ),
+              {
+                component: 'useRulesetPages/updatePage',
+                severity: 'medium',
+              },
+            );
+            return;
+          }
+        }
+      }
+
       await db.pages.update(id, {
         ...data,
         updatedAt: now,
