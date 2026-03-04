@@ -1,13 +1,22 @@
-import { Button, Input, Label } from '@/components';
+import { Button, Dialog, DialogContent, DialogDescription, DialogTitle, Input, Label } from '@/components';
 import { Checkbox } from '@/components/ui/checkbox';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   ActionLookup,
   AttributeLookup,
   PageLookup,
+  ScriptLookup,
   useComponents,
   WindowLookup,
 } from '@/lib/compass-api';
+import { useScripts } from '@/lib/compass-api/hooks/scripts/use-scripts';
 import { ComponentTypes } from '@/lib/compass-planes/nodes';
 import {
   CheckboxDataEdit,
@@ -19,8 +28,8 @@ import {
 import { ImageDataEdit } from '@/lib/compass-planes/nodes/components/image';
 import { getComponentData } from '@/lib/compass-planes/utils';
 import { colorBlack } from '@/palette';
-import type { ConditionalRenderLogic, TextComponentData } from '@/types';
-import { useRef, useState } from 'react';
+import type { ConditionalRenderLogic, Script, ScriptParamValue, TextComponentData } from '@/types';
+import { useMemo, useRef, useState } from 'react';
 import type { RGBColor } from 'react-color';
 import { useParams } from 'react-router-dom';
 import { ActionEdit } from './action-edit';
@@ -30,20 +39,22 @@ import {
 } from './component-edit-panel-context';
 import { ConditionalRenderEdit, TextEdit } from './component-edits';
 import { ShapeEdit } from './component-edits/shape-edit';
-import { ComponentScriptAttachModal } from './component-script-attach-modal';
 import { CustomPropertiesListModal } from './custom-properties-list-modal';
 import { PositionEdit } from './position-edit';
 import { StyleEdit } from './style-edit';
 
+type ClickEventType = 'openPage' | 'openWindow' | 'fireAction' | 'fireScript';
+
 export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
   const { windowId } = useParams();
   const { components, updateComponents } = useComponents(windowId);
+  const { scripts } = useScripts();
   const [customPropertiesModalOpen, setCustomPropertiesModalOpen] = useState(false);
-  const [scriptModalOpen, setScriptModalOpen] = useState(false);
+  const [clickEventDialogOpen, setClickEventDialogOpen] = useState(false);
+  const [clickEventType, setClickEventType] = useState<ClickEventType>('openPage');
   const customPropertiesModalStyleKeyRef = useRef<string | null>(null);
   let selectedComponents = components.filter((c) => c.selected);
-
-  if (selectedComponents.length === 0) return null;
+  const hadSelection = selectedComponents.length > 0;
 
   // multiple components selected and all are locked
   if (selectedComponents.length > 1) {
@@ -173,6 +184,77 @@ export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
     );
   };
 
+  const singleSelectedComponent =
+    selectedComponents.length === 1 ? selectedComponents[0] : null;
+
+  const selectedScript: Script | undefined = useMemo(
+    () =>
+      singleSelectedComponent
+        ? scripts.find((s) => s.id === singleSelectedComponent.scriptId)
+        : undefined,
+    [scripts, singleSelectedComponent?.scriptId],
+  );
+
+  const scriptParameterValues: Record<string, ScriptParamValue> = singleSelectedComponent
+    ? (getComponentData(singleSelectedComponent).scriptParameterValues ?? {})
+    : {};
+
+  const hasScriptParameters = (selectedScript?.parameters?.length ?? 0) > 0;
+
+  const handleSelectScript = (script: Script) => {
+    if (!singleSelectedComponent) return;
+    const baseData = JSON.parse(singleSelectedComponent.data);
+    delete baseData.scriptParameterValues;
+
+    updateComponents([
+      {
+        id: singleSelectedComponent.id,
+        scriptId: script.id,
+        data: JSON.stringify(baseData),
+      },
+    ]);
+  };
+
+  const handleClearScript = () => {
+    if (!singleSelectedComponent) return;
+    const baseData = JSON.parse(singleSelectedComponent.data);
+    delete baseData.scriptParameterValues;
+
+    updateComponents([
+      {
+        id: singleSelectedComponent.id,
+        scriptId: null,
+        data: JSON.stringify(baseData),
+      },
+    ]);
+  };
+
+  const handleUpdateScriptParameterValue = (paramId: string, value: ScriptParamValue) => {
+    if (!singleSelectedComponent) return;
+    const baseData = JSON.parse(singleSelectedComponent.data);
+    const existing: Record<string, ScriptParamValue> = baseData.scriptParameterValues ?? {};
+    const next: Record<string, ScriptParamValue> = { ...existing };
+
+    if (value === '' || value === null || value === undefined) {
+      delete next[paramId];
+    } else {
+      next[paramId] = value;
+    }
+
+    if (Object.keys(next).length === 0) {
+      delete baseData.scriptParameterValues;
+    } else {
+      baseData.scriptParameterValues = next;
+    }
+
+    updateComponents([
+      {
+        id: singleSelectedComponent.id,
+        data: JSON.stringify(baseData),
+      },
+    ]);
+  };
+
   const assignStyleToCustomProperty = (styleKey: string, customPropertyId: string) => {
     const nonstyleKeys = ['width', 'height', 'rotation', 'z'];
 
@@ -191,8 +273,6 @@ export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
       setCustomPropertiesModalOpen(true);
     },
   };
-
-  if (viewMode) return null;
 
   // Check if all selected components are image type
   const allAreImages =
@@ -243,6 +323,39 @@ export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
   const allAreFrames =
     selectedComponents.length > 0 &&
     selectedComponents.every((c) => c.type === ComponentTypes.FRAME);
+
+  const getCurrentClickEventType = (): ClickEventType | null => {
+    if (!singleSelectedComponent) return null;
+    const component = singleSelectedComponent;
+    const data = getComponentData(component);
+
+    if (component.scriptId) return 'fireScript';
+    if (data.pageId) return 'openPage';
+    if (component.childWindowId) return 'openWindow';
+    if (component.actionId) return 'fireAction';
+
+    return null;
+  };
+
+  const getClickEventLabel = (type: ClickEventType | null): string | null => {
+    if (!type) return null;
+    switch (type) {
+      case 'openPage':
+        return 'Open Page';
+      case 'openWindow':
+        return 'Open Window';
+      case 'fireAction':
+        return 'Fire Action';
+      case 'fireScript':
+        return 'Fire Script';
+      default:
+        return null;
+    }
+  };
+
+  if (viewMode || !hadSelection) {
+    return null;
+  }
 
   return (
     <ComponentEditPanelContext.Provider value={contextValue}>
@@ -331,56 +444,26 @@ export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
                 )}
 
               {selectedComponents.length === 1 && (
-                <div className='flex flex-col gap-1'>
-                  <Label className='text-xs text-muted-foreground'>Attached Script</Label>
+                <div className='flex flex-col gap-2'>
+                  <Label className='text-xs text-muted-foreground'>Click Event</Label>
                   <Button
                     type='button'
                     size='sm'
                     variant='outline'
                     className='h-7 px-2 justify-start text-xs'
-                    onClick={() => setScriptModalOpen(true)}>
-                    {selectedComponents[0].scriptId ? 'Edit Script' : 'Attach Script'}
+                    onClick={() => {
+                      const current = getCurrentClickEventType();
+                      setClickEventType(current ?? 'openPage');
+                      setClickEventDialogOpen(true);
+                    }}>
+                    Set Click Event
                   </Button>
-                  {selectedComponents[0].scriptId && (
+                  {getClickEventLabel(getCurrentClickEventType()) && (
                     <p className='text-[0.7rem] text-muted-foreground'>
-                      This component will run its attached script on click, overriding other click
-                      behaviors.
+                      Current: {getClickEventLabel(getCurrentClickEventType())}
                     </p>
                   )}
                 </div>
-              )}
-
-              {selectedComponents.length === 1 &&
-                selectedComponents[0].type !== ComponentTypes.INVENTORY && (
-                  <PageLookup
-                    label='Open Page'
-                    value={getComponentData(selectedComponents[0]).pageId ?? null}
-                    onSelect={(page) => setPageId(page.id)}
-                    onDelete={() => setPageId(null)}
-                  />
-                )}
-
-              {selectedComponents.length === 1 &&
-                selectedComponents[0].type !== ComponentTypes.INVENTORY &&
-                selectedComponents[0].type !== ComponentTypes.GRAPH &&
-                selectedComponents[0].type !== ComponentTypes.FRAME && (
-                  <>
-                    <ActionLookup
-                      id='component-data-action-lookup'
-                      value={selectedComponents[0].actionId}
-                      onSelect={(attr) => handleUpdate('actionId', attr.id)}
-                      onDelete={() => handleUpdate('actionId', null)}
-                    />
-                  </>
-                )}
-              {selectedComponents.length === 1 && windowId && allCanOpenChildWindow && (
-                <WindowLookup
-                  label='Open Window'
-                  value={selectedComponents[0].childWindowId}
-                  onSelect={(win) => handleUpdate('childWindowId', win.id)}
-                  onDelete={() => handleUpdate('childWindowId', null)}
-                  excludeIds={[windowId]}
-                />
               )}
 
               {allAreImages && (
@@ -433,6 +516,163 @@ export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
           <p className='text-xs'>All selected components are locked</p>
         )}
       </div>
+      {selectedComponents.length === 1 && (
+        <Dialog open={clickEventDialogOpen} onOpenChange={setClickEventDialogOpen}>
+          <DialogContent className='min-w-[320px] max-w-[90vw] flex flex-col gap-4'>
+            <DialogTitle>Set Click Event</DialogTitle>
+            <DialogDescription>
+              Choose what should happen when this component is clicked.
+            </DialogDescription>
+
+            <div className='flex flex-col gap-2'>
+              <Label className='text-xs text-muted-foreground'>Click Event Type</Label>
+              <Select value={clickEventType} onValueChange={(value: ClickEventType) => setClickEventType(value)}>
+                <SelectTrigger className='h-8'>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value='openPage'>Open Page</SelectItem>
+                  <SelectItem value='openWindow'>Open Window</SelectItem>
+                  <SelectItem value='fireAction'>Fire Action</SelectItem>
+                  <SelectItem value='fireScript'>Fire Script</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className='flex flex-col gap-3'>
+              {clickEventType === 'openPage' &&
+                selectedComponents[0].type !== ComponentTypes.INVENTORY && (
+                  <PageLookup
+                    label='Open Page'
+                    value={getComponentData(selectedComponents[0]).pageId ?? null}
+                    onSelect={(page) => setPageId(page.id)}
+                    onDelete={() => setPageId(null)}
+                  />
+                )}
+
+              {clickEventType === 'fireAction' &&
+                selectedComponents[0].type !== ComponentTypes.INVENTORY &&
+                selectedComponents[0].type !== ComponentTypes.GRAPH &&
+                selectedComponents[0].type !== ComponentTypes.FRAME && (
+                  <ActionLookup
+                    id='component-data-action-lookup'
+                    value={selectedComponents[0].actionId}
+                    onSelect={(attr) => handleUpdate('actionId', attr.id)}
+                    onDelete={() => handleUpdate('actionId', null)}
+                  />
+                )}
+
+              {clickEventType === 'openWindow' && windowId && allCanOpenChildWindow && (
+                <WindowLookup
+                  label='Open Window'
+                  value={selectedComponents[0].childWindowId}
+                  onSelect={(win) => handleUpdate('childWindowId', win.id)}
+                  onDelete={() => handleUpdate('childWindowId', null)}
+                  excludeIds={[windowId]}
+                />
+              )}
+
+              {clickEventType === 'fireScript' && singleSelectedComponent && (
+                <div className='flex flex-col gap-3'>
+                  <div className='space-y-2'>
+                    <ScriptLookup
+                      label='Script'
+                      value={singleSelectedComponent.scriptId ?? null}
+                      filterEntityType='gameManager'
+                      onSelect={handleSelectScript}
+                      onDelete={handleClearScript}
+                      placeholder='Search Game Manager scripts...'
+                    />
+                  </div>
+
+                  {selectedScript && hasScriptParameters && (
+                    <div className='flex flex-col gap-3'>
+                      <Label className='text-xs text-muted-foreground'>Parameters</Label>
+                      <p className='text-[0.7rem] text-muted-foreground'>
+                        When not set, each parameter falls back to its default value from the script
+                        definition.
+                      </p>
+                      <div className='flex flex-col gap-2 max-h-[260px] overflow-auto pr-1'>
+                        {selectedScript.parameters!.map((param) => {
+                          const resolvedValue =
+                            scriptParameterValues[param.id] ??
+                            (param.defaultValue as ScriptParamValue | undefined) ??
+                            null;
+
+                          if (param.type === 'boolean') {
+                            const checked =
+                              resolvedValue === true ||
+                              (typeof resolvedValue === 'string' &&
+                                resolvedValue.trim().toLowerCase() === 'true');
+
+                            return (
+                              <div
+                                key={param.id}
+                                className='flex items-center gap-2 text-xs text-muted-foreground'>
+                                <span className='w-40 truncate'>
+                                  {param.label}{' '}
+                                  <span className='text-[0.7rem] uppercase'>({param.type})</span>
+                                </span>
+                                <div className='flex items-center gap-1'>
+                                  <Checkbox
+                                    checked={checked}
+                                    onCheckedChange={(next) =>
+                                      handleUpdateScriptParameterValue(
+                                        param.id,
+                                        next ? 'true' : 'false',
+                                      )
+                                    }
+                                  />
+                                  {param.defaultValue != null && (
+                                    <span className='text-[0.7rem] italic text-muted-foreground'>
+                                      Default: {String(param.defaultValue)}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          }
+
+                          return (
+                            <div
+                              key={param.id}
+                              className='flex items-center gap-2 text-xs text-muted-foreground'>
+                              <span className='w-40 truncate'>
+                                {param.label}{' '}
+                                <span className='text-[0.7rem] uppercase'>({param.type})</span>
+                              </span>
+                              <Input
+                                className='flex-1 h-7 rounded-[4px]'
+                                type={param.type === 'number' ? 'number' : 'text'}
+                                value={resolvedValue == null ? '' : String(resolvedValue)}
+                                onChange={(e) =>
+                                  handleUpdateScriptParameterValue(
+                                    param.id,
+                                    param.type === 'number' && e.target.value !== ''
+                                      ? Number(e.target.value)
+                                      : (e.target.value as ScriptParamValue),
+                                  )
+                                }
+                              />
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {selectedScript && (
+                    <p className='text-[0.7rem] text-muted-foreground'>
+                      This component will run its attached script on click, overriding other click
+                      behaviors.
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
       <CustomPropertiesListModal
         open={customPropertiesModalOpen}
         onOpenChange={setCustomPropertiesModalOpen}
@@ -445,14 +685,6 @@ export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
           setCustomPropertiesModalOpen(false);
         }}
       />
-      {selectedComponents.length === 1 && (
-        <ComponentScriptAttachModal
-          open={scriptModalOpen}
-          onOpenChange={setScriptModalOpen}
-          component={selectedComponents[0]}
-          updateComponents={updateComponents}
-        />
-      )}
     </ComponentEditPanelContext.Provider>
   );
 };
