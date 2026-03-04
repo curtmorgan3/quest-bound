@@ -1,13 +1,13 @@
 import type { DB } from '@/stores/db/hooks/types';
 import type {
   CampaignEvent,
-  CampaignEventParamType,
   CampaignEventParamValue,
-  CampaignEventParameterDefinition,
-  CampaignEventScene,
   PromptFn,
   RollFn,
   RollSplitFn,
+  Script,
+  ScriptParameterDefinition,
+  ScriptParamValue,
   SelectCharacterFn,
   SelectCharactersFn,
 } from '@/types';
@@ -79,24 +79,17 @@ export type RunScriptForTestFn = (
   sourceCode: string,
 ) => Promise<ScriptExecutionResult>;
 
-type CampaignEventParamDescriptor = {
-  name: string;
-  type: CampaignEventParamType;
-  required?: boolean;
-  value: CampaignEventParamValue;
-};
-
 /**
  * Build the helper object exposed to QBScript as `params` for campaign event scripts.
- * Values are resolved by parameter definition (including defaults) plus per-scene overrides.
+ * Values are resolved from Script.parameters (definitions + defaults) plus per-event overrides on CampaignEvent.
  */
 export function createCampaignEventParamsHelper(
+  script: Script,
   event: CampaignEvent,
-  link: CampaignEventScene | null | undefined,
 ): {
   get: (name: string) => CampaignEventParamValue;
 } {
-  const coerceNumber = (value: CampaignEventParamValue): number | null => {
+  const coerceNumber = (value: ScriptParamValue): number | null => {
     if (value == null) return null;
     if (typeof value === 'number') return Number.isFinite(value) ? value : null;
     if (typeof value === 'boolean') return value ? 1 : 0;
@@ -106,7 +99,7 @@ export function createCampaignEventParamsHelper(
     return Number.isFinite(num) ? num : null;
   };
 
-  const coerceBoolean = (value: CampaignEventParamValue): boolean | null => {
+  const coerceBoolean = (value: ScriptParamValue): boolean | null => {
     if (value == null) return null;
     if (typeof value === 'boolean') return value;
     if (typeof value === 'number') return value !== 0;
@@ -117,25 +110,21 @@ export function createCampaignEventParamsHelper(
     return null;
   };
 
-  const definitions: CampaignEventParameterDefinition[] = event.parameters ?? [];
-  const sceneValues: Record<string, CampaignEventParamValue> = link?.parameterValues ?? {};
+  const definitions: ScriptParameterDefinition[] = script.parameters ?? [];
+  const eventValues: Record<string, ScriptParamValue> = event.parameterValues ?? {};
 
-  const byName = new Map<string, CampaignEventParamDescriptor>();
+  const byLabel = new Map<string, CampaignEventParamValue>();
 
   for (const def of definitions) {
-    const trimmedName = (def.name ?? '').trim();
-    if (!trimmedName) continue;
-    const key = trimmedName.toLowerCase();
+    const trimmedLabel = (def.label ?? '').trim();
+    if (!trimmedLabel) continue;
+    const key = trimmedLabel.toLowerCase();
 
-    let valueFromScene: CampaignEventParamValue | undefined;
-    if (Object.prototype.hasOwnProperty.call(sceneValues, def.id)) {
-      valueFromScene = sceneValues[def.id];
-    } else if (Object.prototype.hasOwnProperty.call(sceneValues, trimmedName)) {
-      // Fallback: support legacy or name-keyed parameterValues
-      valueFromScene = sceneValues[trimmedName];
-    }
-
-    const rawValue = valueFromScene !== undefined ? valueFromScene : (def.defaultValue ?? null);
+    const hasOverride = Object.prototype.hasOwnProperty.call(eventValues, def.id);
+    const rawValue: ScriptParamValue =
+      hasOverride && eventValues[def.id] !== undefined
+        ? eventValues[def.id]!
+        : (def.defaultValue ?? null);
 
     let coerced: CampaignEventParamValue = null;
     if (def.type === 'string') {
@@ -146,21 +135,16 @@ export function createCampaignEventParamsHelper(
       coerced = coerceBoolean(rawValue);
     } else {
       // Future-proof: fall back to raw value if an unknown type is introduced.
-      coerced = rawValue ?? null;
+      coerced = (rawValue ?? null) as CampaignEventParamValue;
     }
 
-    byName.set(key, {
-      name: trimmedName,
-      type: def.type,
-      required: def.required,
-      value: coerced,
-    });
+    byLabel.set(key, coerced);
   }
 
   return {
     get: (name: string): CampaignEventParamValue => {
-      const entry = byName.get(name.trim().toLowerCase());
-      return entry ? entry.value : null;
+      const entry = byLabel.get(name.trim().toLowerCase());
+      return entry ?? null;
     },
   };
 }
@@ -861,8 +845,8 @@ export class EventHandlerExecutor {
     roll?: RollFn,
     rollSplit?: RollSplitFn,
     prompt?: PromptFn,
-    /** Optional specific CampaignEventScene id when multiple links exist for the same event+scene. */
-    campaignEventSceneId?: string | null,
+    /** @deprecated campaignEventSceneId is ignored; CampaignEvent.sceneId is used instead. */
+    _campaignEventSceneId?: string | null,
   ): Promise<EventHandlerResult> {
     const campaignEvent = await this.db.campaignEvents.get(campaignEventId);
     if (!campaignEvent) {
@@ -915,43 +899,8 @@ export class EventHandlerExecutor {
       };
     }
 
-    // Resolve parameter helper for this campaign event and scene (if any).
-    // Always create a helper so `params` is defined in scripts, even when there are no parameters.
-    let paramsHelper = createCampaignEventParamsHelper(campaignEvent as CampaignEvent, null);
-    try {
-      const table = (this.db as any).campaignEventScenes;
-      if (table && typeof table.where === 'function') {
-        let link: CampaignEventScene | undefined;
-
-        // Prefer an explicit CampaignEventScene when provided (disambiguates multiples in a scene).
-        if (campaignEventSceneId) {
-          link = (await table.get?.(campaignEventSceneId)) as CampaignEventScene | undefined;
-          // Basic safeguard: ensure the link matches the requested event+scene.
-          if (
-            link &&
-            (link as any).campaignEventId !== campaignEventId &&
-            (link as any).campaignSceneId !== campaignSceneId
-          ) {
-            link = undefined;
-          }
-        }
-
-        // Fallback to first match by (scene, event) for legacy callers that don't pass an id.
-        if (!link) {
-          link = (await table
-            .where('campaignSceneId')
-            .equals(campaignSceneId)
-            .filter((l: CampaignEventScene) => l.campaignEventId === campaignEventId)
-            .first()) as CampaignEventScene | undefined;
-        }
-
-        if (link) {
-          paramsHelper = createCampaignEventParamsHelper(campaignEvent as CampaignEvent, link);
-        }
-      }
-    } catch (e) {
-      console.warn('[EventHandlerExecutor] Failed to load CampaignEventScene for params', e);
-    }
+    // Resolve parameter helper from Script.parameters + CampaignEvent.parameterValues.
+    const paramsHelper = createCampaignEventParamsHelper(script as Script, campaignEvent as CampaignEvent);
 
     const context: ScriptExecutionContext = {
       ...(characterId ? { ownerId: characterId } : {}),
@@ -962,7 +911,7 @@ export class EventHandlerExecutor {
       entityType: 'campaignEvent',
       entityId: campaignEventId,
       campaignId: campaignEvent.campaignId,
-      campaignSceneId,
+      campaignSceneId: (campaignEvent as CampaignEvent).sceneId ?? campaignSceneId,
       campaignEvent,
       roll,
       rollSplit,
@@ -1148,7 +1097,6 @@ export async function executeCampaignEventEvent(
   eventType: 'on_enter' | 'on_leave' | 'on_activate',
   characterId: string,
   roll?: RollFn,
-  campaignEventSceneId?: string | null,
 ): Promise<EventHandlerResult> {
   const executor = new EventHandlerExecutor(db);
   return executor.executeCampaignEventEvent(
@@ -1159,6 +1107,5 @@ export async function executeCampaignEventEvent(
     roll,
     undefined,
     undefined,
-    campaignEventSceneId,
   );
 }

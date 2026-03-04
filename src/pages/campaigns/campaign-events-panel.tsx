@@ -6,16 +6,14 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet';
-import { EventLookup } from '@/lib/compass-api';
+import { ScriptLookup, useScripts } from '@/lib/compass-api';
 import { useQBScriptClient } from '@/lib/compass-logic/worker/hooks';
 import { activateButtonStyle } from '@/palette';
 import { db } from '@/stores';
-import type { CampaignEvent, CampaignEventScene } from '@/types';
+import type { CampaignEvent } from '@/types';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { FileText, Trash2, Zap } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
-
-type EventSceneWithEvent = CampaignEventScene & { event: CampaignEvent };
 
 export interface CampaignEventsPanelProps {
   open: boolean;
@@ -40,64 +38,68 @@ export function CampaignEventsPanel({
 
   const hasScene = Boolean(campaignId && sceneId);
 
-  const eventsForScene = useLiveQuery(async (): Promise<EventSceneWithEvent[]> => {
+  const eventsForScene = useLiveQuery(async (): Promise<CampaignEvent[]> => {
     if (!sceneId || !campaignId) return [];
-
-    const links = await db.campaignEventScenes.where('campaignSceneId').equals(sceneId).toArray();
-    if (links.length === 0) return [];
-
-    const events = await db.campaignEvents.bulkGet(links.map((l) => l.campaignEventId));
-    return links
-      .map((link) => {
-        const event = events.find((e) => e?.id === link.campaignEventId);
-        return event && event.campaignId === campaignId
-          ? ({ ...link, event } as EventSceneWithEvent)
-          : null;
-      })
-      .filter((x): x is EventSceneWithEvent => x != null);
+    const list = (await db.campaignEvents
+      .where('sceneId')
+      .equals(sceneId)
+      .toArray()) as CampaignEvent[];
+    return list.filter((ev) => ev.campaignId === campaignId);
   }, [sceneId, campaignId]);
+
+  const { scripts } = useScripts(campaignId);
+  const scriptsById = useMemo(() => {
+    const map = new Map<string, (typeof scripts)[number]>();
+    for (const script of scripts) {
+      map.set(script.id, script);
+    }
+    return map;
+  }, [scripts]);
 
   const sortedEventsForScene = useMemo(
     () =>
       (eventsForScene ?? []).slice().sort((a, b) =>
-        (a.event.label ?? '').localeCompare(b.event.label ?? '', undefined, {
+        (a.label ?? '').localeCompare(b.label ?? '', undefined, {
           sensitivity: 'base',
         }),
       ),
     [eventsForScene],
   );
 
-  const handleAddEventToScene = useCallback(
-    async (event: CampaignEvent) => {
-      if (!sceneId) return;
+  const handleAddScriptToScene = useCallback(
+    async (script: (typeof scripts)[number]) => {
+      if (!sceneId || !campaignId) return;
       const now = new Date().toISOString();
-      await db.campaignEventScenes.add({
+      await db.campaignEvents.add({
         id: crypto.randomUUID(),
-        campaignEventId: event.id,
-        campaignSceneId: sceneId,
+        campaignId,
+        sceneId,
+        label: script.name,
+        category: script.category,
+        scriptId: script.id,
         createdAt: now,
         updatedAt: now,
-      } as CampaignEventScene);
+      } as CampaignEvent);
     },
-    [eventsForScene, sceneId],
+    [campaignId, sceneId, scripts],
   );
 
   const handleUpdateParameterValue = useCallback(
-    async (linkId: string, paramId: string, value: string) => {
+    async (eventId: string, paramId: string, value: string) => {
       try {
-        const link = (await db.campaignEventScenes.get(linkId)) as CampaignEventScene | undefined;
-        if (!link) return;
-        const existing = link.parameterValues ?? {};
+        const event = (await db.campaignEvents.get(eventId)) as CampaignEvent | undefined;
+        if (!event) return;
+        const existing = event.parameterValues ?? {};
         const next: Record<string, any> = { ...existing };
         if (value === '') {
           delete next[paramId];
         } else {
           next[paramId] = value;
         }
-        await db.campaignEventScenes.update(linkId, {
+        await db.campaignEvents.update(eventId, {
           parameterValues: next,
           updatedAt: new Date().toISOString(),
-        } as Partial<CampaignEventScene>);
+        } as Partial<CampaignEvent>);
       } catch (e) {
         console.warn('[CampaignEventsPanel] Failed to update parameter value', e);
       }
@@ -105,26 +107,21 @@ export function CampaignEventsPanel({
     [],
   );
 
-  const handleRemoveEventFromScene = useCallback(async (linkId: string) => {
-    await db.campaignEventScenes.delete(linkId);
+  const handleRemoveEventFromScene = useCallback(async (eventId: string) => {
+    await db.campaignEvents.delete(eventId);
   }, []);
 
   const handleActivateEvent = useCallback(
-    async (link: EventSceneWithEvent) => {
-      const { event } = link;
-      if (!event.scriptId || !sceneId) return;
+    async (event: CampaignEvent) => {
+      if (!event.scriptId || !event.sceneId) return;
       setActivatingEventId(event.id);
       try {
         await client
           .executeCampaignEventEvent(
             event.id,
-            sceneId,
+            event.sceneId,
             'on_activate',
             actingCharacterId ?? null,
-            undefined,
-            undefined,
-            undefined,
-            link.id,
           )
           .catch((err) => console.warn('[CampaignEventsPanel] on_activate script failed:', err));
       } finally {
@@ -163,14 +160,14 @@ export function CampaignEventsPanel({
             <div className='flex min-h-0 flex-1 flex-col gap-4 overflow-auto p-6'>
               <div className='space-y-2'>
                 <p className='text-sm text-muted-foreground'>
-                  Link existing campaign events to this scene.
+                  Attach Game Manager scripts as events for this scene.
                 </p>
-                <EventLookup
+                <ScriptLookup
                   campaignId={campaignId}
-                  label='Add event'
-                  placeholder='Search events...'
-                  onSelect={handleAddEventToScene}
-                  popoverContentClassName='z-[110]'
+                  label='Add script'
+                  placeholder='Search Game Manager scripts...'
+                  filterEntityType='gameManager'
+                  onSelect={handleAddScriptToScene}
                   data-testid='scene-events-add-lookup'
                 />
               </div>
@@ -183,13 +180,15 @@ export function CampaignEventsPanel({
                   </p>
                 ) : (
                   <div className='flex flex-col gap-2'>
-                    {sortedEventsForScene.map((link) => {
-                      const { event } = link;
+                    {sortedEventsForScene.map((event) => {
                       const canActivate = Boolean(event.scriptId);
                       const isActivating = activatingEventId === event.id;
+                      const script = event.scriptId ? scriptsById.get(event.scriptId) : undefined;
+                      const definitions = script?.parameters ?? [];
+                      const values = event.parameterValues ?? {};
                       return (
                         <div
-                          key={link.id}
+                          key={event.id}
                           className='flex items-center justify-between rounded-md border bg-card px-3 py-2'>
                           <div className='flex flex-col gap-0.5'>
                             <span className='text-sm font-medium'>{event.label}</span>
@@ -198,10 +197,10 @@ export function CampaignEventsPanel({
                                 {event.category}
                               </span>
                             )}
-                            {event.parameters && event.parameters.length > 0 && (
+                            {definitions.length > 0 && (
                               <div className='mt-1 flex flex-col gap-1'>
-                                {event.parameters.map((param) => {
-                                  const sceneValues = link.parameterValues ?? {};
+                                {definitions.map((param) => {
+                                  const sceneValues = values;
                                   const resolvedValue =
                                     sceneValues[param.id] ?? param.defaultValue ?? null;
                                   if (param.type === 'boolean') {
@@ -215,7 +214,7 @@ export function CampaignEventsPanel({
                                         key={param.id}
                                         className='flex items-center gap-2 text-xs text-muted-foreground'>
                                         <span className='w-32 truncate'>
-                                          {param.name}{' '}
+                                          {param.label}{' '}
                                           <span className='text-[0.7rem] uppercase'>
                                             ({param.type})
                                           </span>
@@ -225,7 +224,7 @@ export function CampaignEventsPanel({
                                             checked={checked}
                                             onCheckedChange={(next) =>
                                               handleUpdateParameterValue(
-                                                link.id,
+                                                event.id,
                                                 param.id,
                                                 next ? 'true' : 'false',
                                               )
@@ -246,7 +245,7 @@ export function CampaignEventsPanel({
                                       key={param.id}
                                       className='flex items-center gap-2 text-xs text-muted-foreground'>
                                       <span className='w-32 truncate'>
-                                        {param.name}{' '}
+                                        {param.label}{' '}
                                         <span className='text-[0.7rem] uppercase'>
                                           ({param.type})
                                         </span>
@@ -257,7 +256,7 @@ export function CampaignEventsPanel({
                                         value={resolvedValue == null ? '' : String(resolvedValue)}
                                         onChange={(e) =>
                                           handleUpdateParameterValue(
-                                            link.id,
+                                            event.id,
                                             param.id,
                                             e.target.value,
                                           )
@@ -278,7 +277,7 @@ export function CampaignEventsPanel({
                                 disabled={!canActivate || isActivating}
                                 style={activateButtonStyle}
                                 title={!event.scriptId ? 'No script assigned' : 'Run on_activate'}
-                                onClick={() => handleActivateEvent(link)}
+                                onClick={() => handleActivateEvent(event)}
                                 data-testid={`scene-event-zap-${event.id}`}>
                                 <Zap className='h-4 w-4' />
                               </Button>
@@ -287,9 +286,9 @@ export function CampaignEventsPanel({
                               type='button'
                               variant='ghost'
                               size='icon'
-                              onClick={() => handleRemoveEventFromScene(link.id)}
+                              onClick={() => handleRemoveEventFromScene(event.id)}
                               title='Remove event from scene'
-                              data-testid={`scene-event-remove-${link.id}`}>
+                              data-testid={`scene-event-remove-${event.id}`}>
                               <Trash2 className='h-4 w-4' />
                             </Button>
                           </div>

@@ -7,7 +7,6 @@ import type {
   Campaign,
   CampaignCharacter,
   CampaignEvent,
-  CampaignEventScene,
   CampaignItem,
   CampaignScene,
   Character,
@@ -82,7 +81,6 @@ const db = new Dexie('qbdb') as Dexie & {
   campaignItems: EntityTable<CampaignItem, 'id'>;
   campaignScenes: EntityTable<CampaignScene, 'id'>;
   campaignEvents: EntityTable<CampaignEvent, 'id'>;
-  campaignEventScenes: EntityTable<CampaignEventScene, 'id'>;
 };
 
 db.version(41).stores(dbSchemaV41);

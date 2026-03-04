@@ -497,15 +497,11 @@ export type CampaignItem = BaseDetails & {
 export type CampaignEvent = BaseDetails & {
   label: string;
   campaignId: string;
+  /** Scene this event belongs to (one scene per event). */
+  sceneId: string;
+  /** Game Manager script to run for this event. */
   scriptId?: string | null;
   category?: string;
-  /** Parameter definitions that can be bound per CampaignEventScene and accessed via params.get(). */
-  parameters?: CampaignEventParameterDefinition[];
-};
-
-export type CampaignEventScene = BaseDetails & {
-  campaignEventId: string;
-  campaignSceneId: string;
-  /** Per-scene values for this event's parameters, keyed by parameter definition id. */
-  parameterValues?: Record<string, CampaignEventParamValue>;
+  /** Per-event values for Script.parameters, keyed by ScriptParameterDefinition.id. */
+  parameterValues?: Record<string, ScriptParamValue>;
 };

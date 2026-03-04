@@ -2,114 +2,85 @@ import { describe, expect, it } from 'vitest';
 import { createCampaignEventParamsHelper } from '@/lib/compass-logic/reactive/event-handler-executor';
 import type {
   CampaignEvent,
-  CampaignEventParamType,
   CampaignEventParamValue,
-  CampaignEventParameterDefinition,
-  CampaignEventScene,
+  Script,
+  ScriptParameterDefinition,
+  ScriptParamType,
 } from '@/types';
 
 describe('createCampaignEventParamsHelper', () => {
   const makeParam = (
     id: string,
-    name: string,
-    type: CampaignEventParamType,
+    label: string,
+    type: ScriptParamType,
     defaultValue?: CampaignEventParamValue,
-  ): CampaignEventParameterDefinition => ({
+  ): ScriptParameterDefinition => ({
     id,
-    name,
+    label,
     type,
     defaultValue,
   });
 
-  it('resolves defaults when no scene overrides exist', () => {
-    const event: CampaignEvent = {
-      id: 'ev1',
-      campaignId: 'c1',
-      label: 'Test Event',
-      createdAt: 'now',
-      updatedAt: 'now',
-      parameters: [
-        makeParam('p1', 'Name', 'string', 'Alice'),
-        makeParam('p2', 'Count', 'number', 3),
-      ],
-    };
+  const makeScript = (parameters: ScriptParameterDefinition[]): Script => ({
+    id: 's1',
+    rulesetId: 'r1',
+    name: 'test',
+    sourceCode: '',
+    entityType: 'gameManager',
+    entityId: null,
+    isGlobal: false,
+    enabled: true,
+    parameters,
+    createdAt: 'now',
+    updatedAt: 'now',
+  });
 
-    const helper = createCampaignEventParamsHelper(event, null);
+  const makeEvent = (overrides?: Record<string, CampaignEventParamValue>): CampaignEvent => ({
+    id: 'ev1',
+    campaignId: 'c1',
+    sceneId: 'scene1',
+    label: 'Test Event',
+    scriptId: 's1',
+    createdAt: 'now',
+    updatedAt: 'now',
+    ...(overrides ? { parameterValues: overrides } : {}),
+  });
+
+  it('resolves defaults when no event overrides exist', () => {
+    const script = makeScript([
+      makeParam('p1', 'Name', 'string', 'Alice'),
+      makeParam('p2', 'Count', 'number', 3),
+    ]);
+    const event = makeEvent();
+
+    const helper = createCampaignEventParamsHelper(script, event);
 
     expect(helper.get('Name')).toBe('Alice');
     expect(helper.get('Count')).toBe(3);
     expect(helper.get('Missing')).toBeNull();
   });
 
-  it('prefers scene parameter values over defaults', () => {
-    const event: CampaignEvent = {
-      id: 'ev1',
-      campaignId: 'c1',
-      label: 'Test Event',
-      createdAt: 'now',
-      updatedAt: 'now',
-      parameters: [
-        makeParam('p1', 'Name', 'string', 'Alice'),
-        makeParam('p2', 'Active', 'boolean', false),
-      ],
-    };
+  it('prefers event parameter values over defaults', () => {
+    const script = makeScript([
+      makeParam('p1', 'Name', 'string', 'Alice'),
+      makeParam('p2', 'Active', 'boolean', false),
+    ]);
+    const event = makeEvent({
+      p1: 'Bob',
+      p2: 'true',
+    });
 
-    const sceneLink: CampaignEventScene = {
-      id: 'link1',
-      campaignEventId: 'ev1',
-      campaignSceneId: 'scene1',
-      createdAt: 'now',
-      updatedAt: 'now',
-      parameterValues: {
-        p1: 'Bob',
-        p2: 'true',
-      },
-    };
-
-    const helper = createCampaignEventParamsHelper(event, sceneLink);
+    const helper = createCampaignEventParamsHelper(script, event);
 
     expect(helper.get('Name')).toBe('Bob');
     expect(helper.get('Active')).toBe(true);
   });
 
-  it('can read scene values keyed by parameter name', () => {
-    const event: CampaignEvent = {
-      id: 'ev1',
-      campaignId: 'c1',
-      label: 'Test Event',
-      createdAt: 'now',
-      updatedAt: 'now',
-      parameters: [makeParam('p1', 'Threshold', 'number', 10)],
-    };
+  it('looks up parameters case-insensitively by label', () => {
+    const script = makeScript([makeParam('p1', 'Enemy Name', 'string', 'Goblin')]);
+    const event = makeEvent();
 
-    // Simulate parameterValues stored with "Threshold" as key instead of param id "p1"
-    const sceneLink: CampaignEventScene = {
-      id: 'link1',
-      campaignEventId: 'ev1',
-      campaignSceneId: 'scene1',
-      createdAt: 'now',
-      updatedAt: 'now',
-      parameterValues: {
-        Threshold: 25,
-      },
-    };
-
-    const helper = createCampaignEventParamsHelper(event, sceneLink);
-
-    expect(helper.get('Threshold')).toBe(25);
-  });
-
-  it('looks up parameters case-insensitively by name', () => {
-    const event: CampaignEvent = {
-      id: 'ev1',
-      campaignId: 'c1',
-      label: 'Test Event',
-      createdAt: 'now',
-      updatedAt: 'now',
-      parameters: [makeParam('p1', 'Enemy Name', 'string', 'Goblin')],
-    };
-
-    const helper = createCampaignEventParamsHelper(event, null);
+    const helper = createCampaignEventParamsHelper(script, event);
 
     expect(helper.get('Enemy Name')).toBe('Goblin');
     expect(helper.get('enemy name')).toBe('Goblin');
@@ -117,16 +88,10 @@ describe('createCampaignEventParamsHelper', () => {
   });
 
   it('returns null for unknown parameters', () => {
-    const event: CampaignEvent = {
-      id: 'ev1',
-      campaignId: 'c1',
-      label: 'Test Event',
-      createdAt: 'now',
-      updatedAt: 'now',
-      parameters: [],
-    };
+    const script = makeScript([]);
+    const event = makeEvent();
 
-    const helper = createCampaignEventParamsHelper(event, null);
+    const helper = createCampaignEventParamsHelper(script, event);
 
     expect(helper.get('Unknown')).toBeNull();
   });

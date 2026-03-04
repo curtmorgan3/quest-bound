@@ -41,7 +41,7 @@ export const useCampaignEvents = (campaignId: string | undefined) => {
 
   const updateCampaignEvent = async (
     id: string,
-    data: Partial<Pick<CampaignEvent, 'label' | 'scriptId' | 'category' | 'parameters'>>,
+    data: Partial<Pick<CampaignEvent, 'label' | 'scriptId' | 'category'>>,
   ) => {
     const now = new Date().toISOString();
     try {

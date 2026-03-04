@@ -10,3 +10,4 @@ export * from './item-lookup';
 export * from './page-lookup';
 export * from './scene-lookup';
 export * from './window-lookup';
+export * from './script-lookup';

@@ -720,8 +720,6 @@ export class QBScriptClient {
     roll?: RollFn,
     timeout = 10000,
     rollSplit?: RollSplitFn,
-    /** Optional specific CampaignEventScene id when multiple links exist for the same event+scene. */
-    campaignEventSceneId?: string | null,
   ): Promise<{
     value: any;
     announceMessages: string[];
@@ -741,7 +739,6 @@ export class QBScriptClient {
             eventType,
             requestId,
             characterId: characterId ?? undefined,
-            ...(campaignEventSceneId ? { campaignEventSceneId } : {}),
           },
         },
         requestId,

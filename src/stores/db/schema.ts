@@ -39,7 +39,7 @@ export const dbSchemaV41 = {
   campaigns: `${common}, label, rulesetId, worldId, [rulesetId], [worldId]`,
   campaignCharacters: `${common}, characterId, campaignId, currentLocationId, currentTileId, [campaignId], [characterId], [campaignId+characterId]`,
   campaignItems: `${common}, itemId, campaignId, currentLocationId, currentTileId, [campaignId]`,
-  campaignEvents: `${common}, label, campaignId, scriptId, category, [campaignId]`,
+  campaignEvents: `${common}, label, campaignId, sceneId, scriptId, category, parameterValues, [campaignId], [sceneId]`,
   campaignEventLocations: `${common}, campaignEventId, locationId, tileId, [campaignEventId], [locationId]`,
 };
 
@@ -80,7 +80,7 @@ export const dbSchema = {
   campaigns: `${common}, label, rulesetId, worldId, [rulesetId], [worldId]`,
   campaignCharacters: `${common}, characterId, campaignId, currentLocationId, currentTileId, [campaignId], [characterId], [campaignId+characterId]`,
   campaignItems: `${common}, itemId, campaignId, currentLocationId, currentTileId, [campaignId]`,
-  campaignEvents: `${common}, label, campaignId, scriptId, category, [campaignId]`,
+  campaignEvents: `${common}, label, campaignId, sceneId, scriptId, category, parameterValues, [campaignId], [sceneId]`,
   campaignEventLocations: `${common}, campaignEventId, locationId, tileId, [campaignEventId], [locationId]`,
 };
 
@@ -120,11 +120,10 @@ export const dbSchemaV47 = {
   inventoryItems: `${common}, characterId, inventoryId, entityId, quantity, actionIds`,
 };
 
-/** Schema for v48: CampaignScene, CampaignEventScene; campaignCharacters get campaignSceneId; campaignItems get sceneId. */
+/** Schema for v48: CampaignScene; campaignCharacters get campaignSceneId; campaignItems get sceneId. */
 export const dbSchemaV48 = {
   ...dbSchemaV47,
   campaignScenes: `${common}, campaignId, name, category, [campaignId]`,
-  campaignEventScenes: `${common}, campaignEventId, campaignSceneId, [campaignEventId], [campaignSceneId]`,
   campaignCharacters: `${common}, characterId, campaignId, campaignSceneId, currentLocationId, currentTileId, mapHeight, mapWidth, active, [campaignId], [characterId], [campaignId+characterId], [campaignSceneId]`,
   campaignItems: `${common}, itemId, campaignId, sceneId, currentLocationId, currentTileId, mapHeight, mapWidth, [campaignId], [sceneId]`,
 };
