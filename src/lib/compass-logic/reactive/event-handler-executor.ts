@@ -49,6 +49,8 @@ export interface EventHandlerResult {
   error?: Error;
   /** Ruleset attribute IDs modified by the script (for UI animation). */
   modifiedAttributeIds?: string[];
+  /** Optional list of character/page pairs that should be navigated to in the UI after execution. */
+  navigateTargets?: { characterId: string; pageId: string }[];
 }
 
 /**
@@ -562,6 +564,7 @@ export class EventHandlerExecutor {
         logMessages: result.logMessages,
         error: result.error,
         modifiedAttributeIds: result.modifiedAttributeIds,
+        navigateTargets: result.navigateTargets,
       };
     } finally {
       actionEventDepth--;
@@ -754,6 +757,7 @@ export class EventHandlerExecutor {
       announceMessages: result.announceMessages,
       logMessages: result.logMessages,
       error: result.error,
+      navigateTargets: result.navigateTargets,
     };
   }
 
@@ -841,6 +845,7 @@ export class EventHandlerExecutor {
       announceMessages: result.announceMessages,
       logMessages: result.logMessages,
       error: result.error,
+      navigateTargets: result.navigateTargets,
     };
   }
 

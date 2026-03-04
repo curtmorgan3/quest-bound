@@ -630,6 +630,7 @@ async function handleExecuteScript(payload: ExecuteScriptPayload): Promise<void>
           executionTime,
           modifiedAttributeIds,
           characterId: payload.characterId,
+          navigateTargets: result.navigateTargets,
         },
       });
     }
@@ -1126,6 +1127,7 @@ async function handleExecuteActionEvent(payload: {
           announceMessages: result.announceMessages,
           logMessages: result.logMessages.map((args) => prepareForStructuredClone(args)),
           executionTime: 0,
+          navigateTargets: result.navigateTargets,
         },
       });
     }

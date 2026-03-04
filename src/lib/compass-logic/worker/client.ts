@@ -6,8 +6,8 @@
  */
 
 import { getCurrentCampaignIdForScripts } from '@/lib/compass-logic/worker/current-campaign-ref';
-import { usePromptModalStore } from '@/stores/prompt-modal-store';
 import { useCharacterSelectModalStore } from '@/stores/character-select-modal-store';
+import { usePromptModalStore } from '@/stores/prompt-modal-store';
 import { useScriptModifiedAttributesStore } from '@/stores/script-modified-attributes-store';
 import type { RollFn, RollSplitFn } from '@/types';
 import { defaultScriptDiceRoller, defaultScriptDiceRollerSplit } from '@/utils/dice-utils';
@@ -213,7 +213,9 @@ export class QBScriptClient {
     attributeIds: string[];
   }): void {
     if (payload.attributeIds.length > 0) {
-      useScriptModifiedAttributesStore.getState().addModified(payload.characterId, payload.attributeIds);
+      useScriptModifiedAttributesStore
+        .getState()
+        .addModified(payload.characterId, payload.attributeIds);
     }
   }
 
@@ -253,9 +255,7 @@ export class QBScriptClient {
       this.pendingRollSplitHandlers.get(payload.executionRequestId) ?? defaultScriptDiceRollerSplit;
     if (!this.worker) return;
     try {
-      const value = await Promise.resolve(
-        rollSplitFn(payload.expression, payload.rerollMessage),
-      );
+      const value = await Promise.resolve(rollSplitFn(payload.expression, payload.rerollMessage));
       this.worker.postMessage({
         type: 'ROLL_SPLIT_RESPONSE',
         payload: { rollRequestId: payload.rollRequestId, value },
@@ -306,15 +306,13 @@ export class QBScriptClient {
   }): Promise<void> {
     if (!this.worker) return;
     try {
-      const { characterIds } = await useCharacterSelectModalStore
-        .getState()
-        .show({
-          mode: payload.mode,
-          title: payload.title,
-          description: payload.description,
-          rulesetId: payload.rulesetId,
-          campaignId: payload.campaignId,
-        });
+      const { characterIds } = await useCharacterSelectModalStore.getState().show({
+        mode: payload.mode,
+        title: payload.title,
+        description: payload.description,
+        rulesetId: payload.rulesetId,
+        campaignId: payload.campaignId,
+      });
 
       this.worker.postMessage({
         type: 'SELECT_CHARACTER_RESPONSE',
@@ -333,7 +331,23 @@ export class QBScriptClient {
 
   private handleScriptResult(payload: ScriptResultPayload): void {
     if (payload.modifiedAttributeIds?.length && payload.characterId) {
-      useScriptModifiedAttributesStore.getState().addModified(payload.characterId, payload.modifiedAttributeIds);
+      useScriptModifiedAttributesStore
+        .getState()
+        .addModified(payload.characterId, payload.modifiedAttributeIds);
+    }
+
+    // Handle page navigation requests by dispatching an event that the app shell can consume.
+    if (payload.navigateTargets && payload.navigateTargets.length > 0) {
+      const target = payload.navigateTargets[0];
+      try {
+        window.dispatchEvent(
+          new CustomEvent('qbscript:navigateToCharacterPage', {
+            detail: { characterId: target.characterId, pageId: target.pageId },
+          }),
+        );
+      } catch (e) {
+        console.warn('Failed to dispatch navigation event for script result:', e);
+      }
     }
 
     const pending = this.pendingRequests.get(payload.requestId);

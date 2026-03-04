@@ -16,7 +16,7 @@ import {
   useOnboardingStore,
 } from '@/stores';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Outlet, useSearchParams } from 'react-router-dom';
+import { Outlet, useNavigate, useSearchParams } from 'react-router-dom';
 import { AppSidebar } from './composites/app-sidebar';
 import { SidebarProvider } from './ui/sidebar';
 import { Toaster } from './ui/sonner';
@@ -25,6 +25,7 @@ const DEV_TOOLS_STORAGE_KEY = 'dev.tools';
 
 export function Layout() {
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const { currentUser, loading } = useUsers();
   const {
     hasCompleted,
@@ -57,6 +58,21 @@ export function Layout() {
       setDevToolsToggled((n) => n + 1);
     }
   }, [searchParams]);
+
+  // Listen for script-driven sheet navigation (Owner.navigateToPage)
+  useEffect(() => {
+    const handler = (event: Event) => {
+      const custom = event as CustomEvent<{ characterId: string; pageId: string }>;
+      const { characterId, pageId } = custom.detail || {};
+      if (!characterId || !pageId) return;
+      navigate(`/characters/${characterId}?pageId=${pageId}`);
+    };
+
+    window.addEventListener('qbscript:navigateToCharacterPage', handler as EventListener);
+    return () => {
+      window.removeEventListener('qbscript:navigateToCharacterPage', handler as EventListener);
+    };
+  }, [navigate]);
 
   // Load ruleset fonts into the browser
   useFontLoader();

@@ -5,12 +5,12 @@ import type {
   CampaignCharacter,
   CampaignEvent,
   CharacterAttribute,
+  CharacterPage,
   Chart,
   CustomProperty,
   InventoryItem,
   Item,
   Page,
-  CharacterPage,
   PromptFn,
   RollFn,
   RollSplitFn,
@@ -207,6 +207,8 @@ export interface ScriptExecutionResult {
   error?: Error;
   /** Attribute IDs (ruleset attribute ids) whose character values were updated. Used to trigger reactive scripts in the worker. */
   modifiedAttributeIds?: string[];
+  /** Optional list of character/page pairs that should be navigated to in the UI after execution. */
+  navigateTargets?: { characterId: string; pageId: string }[];
 }
 
 /**
@@ -349,9 +351,7 @@ export class ScriptRunner {
         .where('characterId')
         .equals(ownerId)
         .toArray();
-      const ownerCharArchetypes = ownerCharArchetypesRaw.sort(
-        (a, b) => a.loadOrder - b.loadOrder,
-      );
+      const ownerCharArchetypes = ownerCharArchetypesRaw.sort((a, b) => a.loadOrder - b.loadOrder);
       for (const ca of ownerCharArchetypes) {
         const archetype = await db.archetypes.get(ca.archetypeId);
         if (archetype?.name) {
@@ -387,7 +387,6 @@ export class ScriptRunner {
 
       this.sceneCharacterIds = ids;
     }
-
   }
 
   /**
@@ -431,9 +430,7 @@ export class ScriptRunner {
       .where('characterId')
       .equals(characterId)
       .toArray();
-    const charArchetypes = charArchetypesRaw.sort(
-      (a, b) => a.loadOrder - b.loadOrder,
-    );
+    const charArchetypes = charArchetypesRaw.sort((a, b) => a.loadOrder - b.loadOrder);
     for (const ca of charArchetypes) {
       const archetype = await db.archetypes.get(ca.archetypeId);
       if (archetype?.name) {
@@ -491,7 +488,7 @@ export class ScriptRunner {
   /**
    * Write all pending changes back to the database.
    */
-  async flushCache(): Promise<void> {
+  async flushCache(): Promise<{ navigateTargets: { characterId: string; pageId: string }[] }> {
     const { db, rulesetId } = this.context;
     const now = new Date().toISOString();
 
@@ -552,6 +549,8 @@ export class ScriptRunner {
 
       return newRow;
     };
+
+    const navigateTargets: { characterId: string; pageId: string }[] = [];
 
     // Process all pending updates
     for (const [key, value] of this.pendingUpdates.entries()) {
@@ -657,6 +656,7 @@ export class ScriptRunner {
             lastViewedPageId: characterPage.id,
             updatedAt: now,
           });
+          navigateTargets.push({ characterId, pageId: characterPage.id });
         }
       } else if (type === 'characterPageRemove') {
         const entries = value as { characterId: string; label: string }[];
@@ -712,6 +712,8 @@ export class ScriptRunner {
 
     // Clear pending updates
     this.pendingUpdates.clear();
+
+    return { navigateTargets };
   }
 
   /**
@@ -926,14 +928,15 @@ export class ScriptRunner {
       // Collect modified attribute IDs before flush (flush clears pendingUpdates)
       const modifiedAttributeIds = this.getModifiedAttributeIds();
 
-      // Flush changes to database
-      await this.flushCache();
+      // Flush changes to database and capture any navigation targets
+      const { navigateTargets } = await this.flushCache();
 
       return {
         value,
         announceMessages: this.evaluator.getAnnounceMessages(),
         logMessages: this.evaluator.getLogMessages(),
         modifiedAttributeIds,
+        navigateTargets,
       };
     } catch (error) {
       return {

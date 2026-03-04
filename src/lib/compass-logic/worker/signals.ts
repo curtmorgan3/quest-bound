@@ -331,6 +331,8 @@ export interface ScriptResultPayload {
   modifiedAttributeIds?: string[];
   /** Character whose attributes were modified (for UI animation). */
   characterId?: string;
+  /** Optional list of character/page pairs that should be navigated to in the UI after execution. */
+  navigateTargets?: { characterId: string; pageId: string }[];
 }
 
 export interface ScriptErrorPayload {
