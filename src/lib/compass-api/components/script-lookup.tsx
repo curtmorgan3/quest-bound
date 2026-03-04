@@ -65,7 +65,9 @@ export const ScriptLookup = ({
   const parentRef = useRef<HTMLDivElement>(null);
   const { scripts: allScripts } = useScripts(campaignId);
 
-  let scripts = allScripts;
+  // Hidden scripts are internal (e.g. auto-generated component click handlers) and
+  // should not appear in generic lookup UIs.
+  let scripts = allScripts.filter((s) => s.hidden !== true);
 
   if (filterEntityType) {
     scripts = scripts.filter((s) => s.entityType === filterEntityType);

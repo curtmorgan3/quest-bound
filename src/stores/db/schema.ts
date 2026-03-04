@@ -163,5 +163,10 @@ export const dbSchemaV51 = {
   campaignItems: `${common}, itemId, campaignId, sceneId, mapHeight, mapWidth, [campaignId], [sceneId]`,
 };
 
+// v52 keeps the same schema as v51; it only adds a data migration for component click scripts.
+export const dbSchemaV52 = {
+  ...dbSchemaV51,
+};
+
 // Increment on every schema change
-export const dbSchemaVersion = 51;
+export const dbSchemaVersion = 52;

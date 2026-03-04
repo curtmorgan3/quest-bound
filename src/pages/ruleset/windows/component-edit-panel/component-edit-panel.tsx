@@ -1,4 +1,12 @@
-import { Button, Dialog, DialogContent, DialogDescription, DialogTitle, Input, Label } from '@/components';
+import {
+  Button,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+  Input,
+  Label,
+} from '@/components';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
   Select,
@@ -16,6 +24,9 @@ import {
   useComponents,
   WindowLookup,
 } from '@/lib/compass-api';
+import { useActions } from '@/lib/compass-api/hooks/rulesets/use-actions';
+import { useRulesetPages } from '@/lib/compass-api/hooks/rulesets/use-ruleset-pages';
+import { useWindows } from '@/lib/compass-api/hooks/rulesets/use-windows';
 import { useScripts } from '@/lib/compass-api/hooks/scripts/use-scripts';
 import { ComponentTypes } from '@/lib/compass-planes/nodes';
 import {
@@ -28,7 +39,13 @@ import {
 import { ImageDataEdit } from '@/lib/compass-planes/nodes/components/image';
 import { getComponentData } from '@/lib/compass-planes/utils';
 import { colorBlack } from '@/palette';
-import type { ConditionalRenderLogic, Script, ScriptParamValue, TextComponentData } from '@/types';
+import type {
+  Component,
+  ConditionalRenderLogic,
+  Script,
+  ScriptParamValue,
+  TextComponentData,
+} from '@/types';
 import { useMemo, useRef, useState } from 'react';
 import type { RGBColor } from 'react-color';
 import { useParams } from 'react-router-dom';
@@ -48,7 +65,10 @@ type ClickEventType = 'openPage' | 'openWindow' | 'fireAction' | 'fireScript';
 export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
   const { windowId } = useParams();
   const { components, updateComponents } = useComponents(windowId);
-  const { scripts } = useScripts();
+  const { scripts, createScript, updateScript, deleteScript } = useScripts();
+  const { pages } = useRulesetPages();
+  const { windows } = useWindows();
+  const { actions } = useActions();
   const [customPropertiesModalOpen, setCustomPropertiesModalOpen] = useState(false);
   const [clickEventDialogOpen, setClickEventDialogOpen] = useState(false);
   const [clickEventType, setClickEventType] = useState<ClickEventType>('openPage');
@@ -145,19 +165,6 @@ export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
     );
   };
 
-  const setPageId = (pageId: string | null) => {
-    const toUpdate = selectedComponents.filter((c) => !c.locked);
-    updateComponents(
-      toUpdate.map((c) => ({
-        id: c.id,
-        data: JSON.stringify({
-          ...JSON.parse(c.data),
-          pageId: pageId ?? undefined,
-        }),
-      })),
-    );
-  };
-
   const setHref = (href: string) => {
     const toUpdate = selectedComponents.filter((c) => !c.locked);
     updateComponents(
@@ -184,8 +191,7 @@ export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
     );
   };
 
-  const singleSelectedComponent =
-    selectedComponents.length === 1 ? selectedComponents[0] : null;
+  const singleSelectedComponent = selectedComponents.length === 1 ? selectedComponents[0] : null;
 
   const selectedScript: Script | undefined = useMemo(
     () =>
@@ -324,12 +330,76 @@ export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
     selectedComponents.length > 0 &&
     selectedComponents.every((c) => c.type === ComponentTypes.FRAME);
 
+  const buildClickScriptSource = (
+    kind: Extract<ClickEventType, 'openPage' | 'openWindow' | 'fireAction'>,
+    targetId: string,
+  ): string => {
+    const header =
+      '// Auto-generated click handler script. Uses stable entity IDs so it keeps working when labels change.\n\n';
+
+    if (kind === 'openPage') {
+      return `${header}Owner.navigateToPage('${targetId}')\n`;
+    }
+
+    if (kind === 'openWindow') {
+      return `${header}Owner.openWindow('${targetId}')\n`;
+    }
+
+    return `${header}Owner.Action('${targetId}').activate()\n`;
+  };
+
+  const ensureClickScript = async (
+    component: Component,
+    kind: Extract<ClickEventType, 'openPage' | 'openWindow' | 'fireAction'>,
+    targetId: string,
+  ): Promise<string | undefined> => {
+    const existingId = component.scriptId ?? undefined;
+    const sourceCode = buildClickScriptSource(kind, targetId);
+
+    if (existingId) {
+      const existing = scripts.find((s) => s.id === existingId);
+      if (existing && existing.hidden) {
+        await updateScript(existingId, {
+          sourceCode,
+          entityType: 'gameManager',
+          entityId: null,
+          hidden: true,
+          enabled: true,
+          category: existing.category ?? 'Component Click',
+          name: existing.name || `component_click_${component.id}`,
+        });
+        return existingId;
+      }
+    }
+
+    const newId = await createScript({
+      name: `component_click_${component.id}`,
+      sourceCode,
+      entityType: 'gameManager',
+      entityId: null,
+      enabled: true,
+      hidden: true,
+      category: 'Component Click',
+    });
+
+    return newId;
+  };
+
   const getCurrentClickEventType = (): ClickEventType | null => {
     if (!singleSelectedComponent) return null;
     const component = singleSelectedComponent;
     const data = getComponentData(component);
 
-    if (component.scriptId) return 'fireScript';
+    if (component.scriptId && selectedScript) {
+      if (!selectedScript.hidden) return 'fireScript';
+
+      if (data.pageId) return 'openPage';
+      if (component.childWindowId) return 'openWindow';
+      if (component.actionId) return 'fireAction';
+
+      return 'fireScript';
+    }
+
     if (data.pageId) return 'openPage';
     if (component.childWindowId) return 'openWindow';
     if (component.actionId) return 'fireAction';
@@ -337,20 +407,156 @@ export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
     return null;
   };
 
-  const getClickEventLabel = (type: ClickEventType | null): string | null => {
+  const getCurrentClickEventLabel = (): string | null => {
+    if (!singleSelectedComponent) return null;
+    const type = getCurrentClickEventType();
     if (!type) return null;
-    switch (type) {
-      case 'openPage':
-        return 'Open Page';
-      case 'openWindow':
-        return 'Open Window';
-      case 'fireAction':
-        return 'Fire Action';
-      case 'fireScript':
-        return 'Fire Script';
-      default:
-        return null;
+
+    const data = getComponentData(singleSelectedComponent);
+
+    if (type === 'openPage') {
+      const pageId = (data as any).pageId as string | undefined;
+      const page = pageId ? pages.find((p) => p.id === pageId) : undefined;
+      return page ? `Open Page: ${page.label}` : 'Open Page';
     }
+
+    if (type === 'openWindow') {
+      const windowId = singleSelectedComponent.childWindowId ?? undefined;
+      const win = windowId ? windows.find((w) => w.id === windowId) : undefined;
+      return win ? `Open Window: ${win.title}` : 'Open Window';
+    }
+
+    if (type === 'fireAction') {
+      const actionId = singleSelectedComponent.actionId ?? undefined;
+      const action = actionId ? actions.find((a) => a.id === actionId) : undefined;
+      return action ? `Fire Action: ${action.title}` : 'Fire Action';
+    }
+
+    if (type === 'fireScript') {
+      if (selectedScript) {
+        return `Fire Script: ${selectedScript.name || 'Untitled'}`;
+      }
+      return 'Fire Script';
+    }
+
+    return null;
+  };
+
+  const handleSetOpenPageClick = async (pageId: string) => {
+    if (!singleSelectedComponent) return;
+
+    const baseData = JSON.parse(singleSelectedComponent.data);
+    baseData.pageId = pageId;
+
+    const scriptId = await ensureClickScript(singleSelectedComponent, 'openPage', pageId);
+
+    const update: any = {
+      id: singleSelectedComponent.id,
+      data: JSON.stringify(baseData),
+    };
+
+    if (scriptId) {
+      update.scriptId = scriptId;
+    }
+
+    await updateComponents([update]);
+  };
+
+  const handleClearOpenPageClick = async () => {
+    if (!singleSelectedComponent) return;
+
+    const baseData = JSON.parse(singleSelectedComponent.data);
+    delete baseData.pageId;
+
+    const update: any = {
+      id: singleSelectedComponent.id,
+      data: JSON.stringify(baseData),
+    };
+
+    if (selectedScript?.hidden) {
+      update.scriptId = null;
+      await deleteScript(selectedScript.id);
+    }
+
+    await updateComponents([update]);
+  };
+
+  const handleSetOpenWindowClick = async (childWindowId: string) => {
+    if (!singleSelectedComponent) return;
+
+    const baseData = JSON.parse(singleSelectedComponent.data);
+
+    const scriptId = await ensureClickScript(singleSelectedComponent, 'openWindow', childWindowId);
+
+    const update: any = {
+      id: singleSelectedComponent.id,
+      childWindowId,
+      data: JSON.stringify(baseData),
+    };
+
+    if (scriptId) {
+      update.scriptId = scriptId;
+    }
+
+    await updateComponents([update]);
+  };
+
+  const handleClearOpenWindowClick = async () => {
+    if (!singleSelectedComponent) return;
+
+    const baseData = JSON.parse(singleSelectedComponent.data);
+
+    const update: any = {
+      id: singleSelectedComponent.id,
+      childWindowId: null as string | null,
+      data: JSON.stringify(baseData),
+    };
+
+    if (selectedScript?.hidden) {
+      update.scriptId = null;
+      await deleteScript(selectedScript.id);
+    }
+
+    await updateComponents([update]);
+  };
+
+  const handleSetFireActionClick = async (actionId: string) => {
+    if (!singleSelectedComponent) return;
+
+    const baseData = JSON.parse(singleSelectedComponent.data);
+
+    const scriptId = await ensureClickScript(singleSelectedComponent, 'fireAction', actionId);
+
+    const update: any = {
+      id: singleSelectedComponent.id,
+      actionId,
+      data: JSON.stringify(baseData),
+    };
+
+    if (scriptId) {
+      update.scriptId = scriptId;
+    }
+
+    await updateComponents([update]);
+  };
+
+  const handleClearFireActionClick = async () => {
+    if (!singleSelectedComponent) return;
+
+    const baseData = JSON.parse(singleSelectedComponent.data);
+
+    const update: any = {
+      id: singleSelectedComponent.id,
+      actionId: null as string | null,
+      data: JSON.stringify(baseData),
+    };
+
+    if (selectedScript?.hidden) {
+      update.scriptId = null;
+      await deleteScript(selectedScript.id);
+    }
+
+    await updateComponents([update]);
   };
 
   if (viewMode || !hadSelection) {
@@ -458,9 +664,9 @@ export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
                     }}>
                     Set Click Event
                   </Button>
-                  {getClickEventLabel(getCurrentClickEventType()) && (
+                  {getCurrentClickEventLabel() && (
                     <p className='text-[0.7rem] text-muted-foreground'>
-                      Current: {getClickEventLabel(getCurrentClickEventType())}
+                      Current: {getCurrentClickEventLabel()}
                     </p>
                   )}
                 </div>
@@ -526,7 +732,9 @@ export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
 
             <div className='flex flex-col gap-2'>
               <Label className='text-xs text-muted-foreground'>Click Event Type</Label>
-              <Select value={clickEventType} onValueChange={(value: ClickEventType) => setClickEventType(value)}>
+              <Select
+                value={clickEventType}
+                onValueChange={(value: ClickEventType) => setClickEventType(value)}>
                 <SelectTrigger className='h-8'>
                   <SelectValue />
                 </SelectTrigger>
@@ -545,8 +753,12 @@ export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
                   <PageLookup
                     label='Open Page'
                     value={getComponentData(selectedComponents[0]).pageId ?? null}
-                    onSelect={(page) => setPageId(page.id)}
-                    onDelete={() => setPageId(null)}
+                    onSelect={(page) => {
+                      void handleSetOpenPageClick(page.id);
+                    }}
+                    onDelete={() => {
+                      void handleClearOpenPageClick();
+                    }}
                   />
                 )}
 
@@ -557,8 +769,12 @@ export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
                   <ActionLookup
                     id='component-data-action-lookup'
                     value={selectedComponents[0].actionId}
-                    onSelect={(attr) => handleUpdate('actionId', attr.id)}
-                    onDelete={() => handleUpdate('actionId', null)}
+                    onSelect={(attr) => {
+                      void handleSetFireActionClick(attr.id);
+                    }}
+                    onDelete={() => {
+                      void handleClearFireActionClick();
+                    }}
                   />
                 )}
 
@@ -566,8 +782,12 @@ export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
                 <WindowLookup
                   label='Open Window'
                   value={selectedComponents[0].childWindowId}
-                  onSelect={(win) => handleUpdate('childWindowId', win.id)}
-                  onDelete={() => handleUpdate('childWindowId', null)}
+                  onSelect={(win) => {
+                    void handleSetOpenWindowClick(win.id);
+                  }}
+                  onDelete={() => {
+                    void handleClearOpenWindowClick();
+                  }}
                   excludeIds={[windowId]}
                 />
               )}

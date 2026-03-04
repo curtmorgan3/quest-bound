@@ -43,7 +43,8 @@ export const useScriptFilters = () => {
   };
 
   const filteredScripts = useMemo(() => {
-    let result = scripts;
+    // Hide hidden scripts from the main scripts index; they are internal.
+    let result = scripts.filter((s) => s.hidden !== true);
     if (selectedType !== 'all') {
       result = result.filter((s) => s.entityType === selectedType);
     }

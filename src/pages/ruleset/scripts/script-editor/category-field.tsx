@@ -20,9 +20,11 @@ export function CategoryField({
   ...props
 }: ScriptCategoryFieldProps) {
   const { scripts: allScripts } = useScripts();
+  // Exclude hidden scripts when deriving categories; they are internal-only.
+  const visibleScripts = allScripts.filter((s) => s.hidden !== true);
   const scripts = campaignScripts
-    ? allScripts.filter((s) => s.campaignId)
-    : allScripts.filter((s) => !s.campaignId);
+    ? visibleScripts.filter((s) => s.campaignId)
+    : visibleScripts.filter((s) => !s.campaignId);
 
   const existingCategories = useMemo(() => {
     const categories = new Set<string>();

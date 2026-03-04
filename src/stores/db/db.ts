@@ -39,9 +39,19 @@ import { assetInjectorMiddleware } from './asset-injector-middleware';
 import { chartOptionsMiddleware, memoizedCharts } from './chart-options-middleware';
 import { registerDbHooks } from './hooks/db-hooks';
 import { memoizedAssets } from './memoization-cache';
-import { dbSchema, dbSchemaVersion, dbSchemaV41, dbSchemaV42, dbSchemaV44, dbSchemaV45, dbSchemaV51 } from './schema';
+import {
+  dbSchema,
+  dbSchemaVersion,
+  dbSchemaV41,
+  dbSchemaV42,
+  dbSchemaV44,
+  dbSchemaV45,
+  dbSchemaV51,
+  dbSchemaV52,
+} from './schema';
 import { migrate41to42 } from './migrations/migrate-41-to-42';
 import { migrate43to44 } from './migrations/migrate-43-to-44';
+import { migrate51to52 } from './migrations/migrate-51-to-52';
 
 const db = new Dexie('qbdb') as Dexie & {
   users: EntityTable<
@@ -124,7 +134,9 @@ db.version(44).stores(dbSchemaV44).upgrade(migrate43to44);
 
 db.version(45).stores(dbSchemaV45);
 
-db.version(dbSchemaVersion).stores(dbSchemaV51);
+// v51 used dbSchemaV51 with no upgrade; v52 keeps the same schema and adds data migration.
+db.version(51).stores(dbSchemaV51);
+db.version(dbSchemaVersion).stores(dbSchemaV52).upgrade(migrate51to52);
 
 // Cache assets for reference in the asset injector middleware
 db.on('ready', async () => {
