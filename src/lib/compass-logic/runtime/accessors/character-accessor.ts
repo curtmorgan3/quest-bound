@@ -29,6 +29,8 @@ export class CharacterAccessor implements StructuredCloneSafe {
   protected itemsCache: Map<string, Item>;
   protected inventoryItems: InventoryItem[];
   protected archetypeNamesCache: Set<string>;
+  /** Archetype name -> variant, for getVariant(name). First entry in insertion order is the "primary" for the variant getter. */
+  protected archetypeVariantByName: Map<string, string | undefined>;
   protected customProperties: CustomProperty[];
   /** Character's custom property values (keyed by customPropertyId). Mutable reference for setProperty. */
   protected characterCustomProperties: Record<string, string | number | boolean>;
@@ -47,6 +49,7 @@ export class CharacterAccessor implements StructuredCloneSafe {
     itemsCache: Map<string, Item>,
     inventoryItems: InventoryItem[],
     archetypeNamesCache: Set<string> = new Set(),
+    archetypeVariantByName: Map<string, string | undefined> = new Map(),
     targetId: string | null = null,
     executeActionEvent?: ExecuteActionEventFn,
     customProperties: CustomProperty[] = [],
@@ -63,6 +66,7 @@ export class CharacterAccessor implements StructuredCloneSafe {
     this.itemsCache = itemsCache;
     this.inventoryItems = inventoryItems;
     this.archetypeNamesCache = archetypeNamesCache;
+    this.archetypeVariantByName = archetypeVariantByName;
     this.targetId = targetId;
     this.executeActionEvent = executeActionEvent;
     this.customProperties = customProperties;
@@ -122,12 +126,46 @@ export class CharacterAccessor implements StructuredCloneSafe {
     });
   }
 
+  /**
+   * Set the character's image to a URL (e.g. Owner.setImage('https://example.com/portrait.png')).
+   * Persists via pendingUpdates on flush.
+   */
+  setImage(url: string): void {
+    const existing = this.pendingUpdates.get(`characterUpdate:${this.id}`) as
+      | { customProperties?: Record<string, string | number | boolean>; image?: string | null }
+      | undefined;
+    this.pendingUpdates.set(`characterUpdate:${this.id}`, {
+      ...existing,
+      customProperties: existing?.customProperties ?? this.characterCustomProperties,
+      image: url,
+    });
+  }
+
   hasArchetype(name: string): boolean {
     return this.archetypeNamesCache.has(name);
   }
 
   get archetypes(): string[] {
     return Array.from(this.archetypeNamesCache);
+  }
+
+  /**
+   * The archetype variant for this character (first archetype's variant by load order).
+   * When the character has a single archetype with a variant, this is that variant.
+   */
+  get variant(): string | null {
+    const first = this.archetypeVariantByName.entries().next();
+    if (first.done) return null;
+    const v = first.value[1];
+    return v !== undefined ? v : null;
+  }
+
+  /**
+   * Get the variant for a specific archetype by name (e.g. Owner.getVariant('Fighter')).
+   */
+  getVariant(archetypeName: string): string | null {
+    const v = this.archetypeVariantByName.get(archetypeName);
+    return v !== undefined ? v : null;
   }
 
   addArchetype(archetypeName: string): void {

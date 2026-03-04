@@ -228,6 +228,8 @@ export class ScriptRunner {
   private ownerCharacterName: string;
   private ownerInventoryId: string;
   private ownerArchetypeNames: Set<string>;
+  /** Archetype name -> variant for owner (insertion order = load order for variant getter). */
+  private ownerArchetypeVariantByName: Map<string, string | undefined>;
   /** Cached Owner accessor instance (set in setupAccessors). */
   private ownerAccessor: OwnerAccessor | null = null;
 
@@ -279,6 +281,7 @@ export class ScriptRunner {
     this.ownerCharacterName = 'Character';
     this.ownerInventoryId = '';
     this.ownerArchetypeNames = new Set();
+    this.ownerArchetypeVariantByName = new Map();
   }
 
   /**
@@ -339,14 +342,20 @@ export class ScriptRunner {
         this.characterAttributesCache.set(charAttr.id, charAttr);
       }
 
-      // Load archetype names for owner (CharacterArchetype join Archetype)
-      const ownerCharArchetypes = await db.characterArchetypes
+      // Load archetype names and variants for owner (CharacterArchetype join Archetype), in load order
+      const ownerCharArchetypesRaw = await db.characterArchetypes
         .where('characterId')
         .equals(ownerId)
         .toArray();
+      const ownerCharArchetypes = ownerCharArchetypesRaw.sort(
+        (a, b) => a.loadOrder - b.loadOrder,
+      );
       for (const ca of ownerCharArchetypes) {
         const archetype = await db.archetypes.get(ca.archetypeId);
-        if (archetype?.name) this.ownerArchetypeNames.add(archetype.name);
+        if (archetype?.name) {
+          this.ownerArchetypeNames.add(archetype.name);
+          this.ownerArchetypeVariantByName.set(archetype.name, ca.variant);
+        }
       }
     }
 
@@ -415,10 +424,20 @@ export class ScriptRunner {
     }
 
     const archetypeNames = new Set<string>();
-    const charArchetypes = await db.characterArchetypes.where('characterId').equals(characterId).toArray();
+    const archetypeVariantByName = new Map<string, string | undefined>();
+    const charArchetypesRaw = await db.characterArchetypes
+      .where('characterId')
+      .equals(characterId)
+      .toArray();
+    const charArchetypes = charArchetypesRaw.sort(
+      (a, b) => a.loadOrder - b.loadOrder,
+    );
     for (const ca of charArchetypes) {
       const archetype = await db.archetypes.get(ca.archetypeId);
-      if (archetype?.name) archetypeNames.add(archetype.name);
+      if (archetype?.name) {
+        archetypeNames.add(archetype.name);
+        archetypeVariantByName.set(archetype.name, ca.variant);
+      }
     }
 
     const accessor = new CharacterAccessor(
@@ -433,6 +452,7 @@ export class ScriptRunner {
       this.itemsCache,
       inventoryItems,
       archetypeNames,
+      archetypeVariantByName,
       null,
       this.context.executeActionEvent,
       this.customPropertiesCache,
@@ -479,10 +499,16 @@ export class ScriptRunner {
       if (type === 'characterAttribute') {
         await db.characterAttributes.update(id, { value });
       } else if (type === 'characterUpdate') {
-        const { customProperties } = value as {
-          customProperties: Record<string, string | number | boolean>;
+        const patch = value as {
+          customProperties?: Record<string, string | number | boolean>;
+          image?: string | null;
         };
-        await db.characters.update(id, { customProperties, updatedAt: new Date().toISOString() });
+        const update: Record<string, unknown> = {
+          ...(patch.customProperties != null && { customProperties: patch.customProperties }),
+          ...(patch.image !== undefined && { image: patch.image }),
+          updatedAt: new Date().toISOString(),
+        };
+        await db.characters.update(id, update);
       } else if (type === 'characterAttributeMax') {
         await db.characterAttributes.update(id, { max: value });
       } else if (type === 'characterAttributeMin') {
@@ -640,6 +666,7 @@ export class ScriptRunner {
       this.itemsCache,
       this.ownerInventoryItems,
       this.ownerArchetypeNames,
+      this.ownerArchetypeVariantByName,
       null,
       this.context.executeActionEvent,
       this.customPropertiesCache,
