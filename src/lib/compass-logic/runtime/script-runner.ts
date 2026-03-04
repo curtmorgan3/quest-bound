@@ -497,19 +497,22 @@ export class ScriptRunner {
 
     const ensureCharacterPageFromLabel = async (
       characterId: string,
-      label: string,
+      labelOrId: string,
     ): Promise<CharacterPage | null> => {
       // Resolve character + ruleset for safety (character.rulesetId is the source of truth).
       const character = await db.characters.get(characterId);
       if (!character) return null;
       const characterRulesetId = character.rulesetId ?? rulesetId;
 
-      // Find the ruleset page template by label.
-      const template = (await db.pages
-        .where('rulesetId')
-        .equals(characterRulesetId)
-        .filter((p) => (p as Page).label === label)
-        .first()) as Page | undefined;
+      // Try to resolve the ruleset page template by id first; fall back to label.
+      let template = (await db.pages.get(labelOrId)) as Page | undefined;
+      if (!template || template.rulesetId !== characterRulesetId) {
+        template = (await db.pages
+          .where('rulesetId')
+          .equals(characterRulesetId)
+          .filter((p) => (p as Page).label === labelOrId)
+          .first()) as Page | undefined;
+      }
       if (!template) return null;
 
       // Reuse existing CharacterPage if one already exists for this character + template page.
@@ -667,12 +670,16 @@ export class ScriptRunner {
           const character = await db.characters.get(characterId);
           if (!character) continue;
 
-          // Prefer matching by template Page for this ruleset + label.
-          const template = (await db.pages
-            .where('rulesetId')
-            .equals(character.rulesetId ?? rulesetId)
-            .filter((p) => (p as Page).label === label)
-            .first()) as Page | undefined;
+          // Prefer matching by template Page for this ruleset, resolving by id first then label.
+          const characterRulesetId = character.rulesetId ?? rulesetId;
+          let template = (await db.pages.get(label)) as Page | undefined;
+          if (!template || template.rulesetId !== characterRulesetId) {
+            template = (await db.pages
+              .where('rulesetId')
+              .equals(characterRulesetId)
+              .filter((p) => (p as Page).label === label)
+              .first()) as Page | undefined;
+          }
 
           let characterPage: CharacterPage | undefined;
           if (template) {
@@ -733,6 +740,19 @@ export class ScriptRunner {
             | undefined;
           if (!characterPage) continue;
 
+          const characterRulesetId = (character as { rulesetId?: string }).rulesetId ?? rulesetId;
+
+          // Try to resolve the window definition by id first; fall back to title.
+          let windowDef = (await db.windows.get(label)) as Window | undefined;
+          if (!windowDef || windowDef.rulesetId !== characterRulesetId) {
+            windowDef = (await db.windows
+              .where('rulesetId')
+              .equals(characterRulesetId)
+              .filter((w) => (w as Window).title === label)
+              .first()) as Window | undefined;
+          }
+          if (!windowDef) continue;
+
           // Reuse existing CharacterWindow with this title on the current page when present.
           const existing = (await db.characterWindows
             .where('characterId')
@@ -740,7 +760,7 @@ export class ScriptRunner {
             .filter(
               (cw) =>
                 (cw as CharacterWindow).characterPageId === characterPage.id &&
-                (cw as CharacterWindow).title === label,
+                (cw as CharacterWindow).title === windowDef!.title,
             )
             .first()) as CharacterWindow | undefined;
 
@@ -753,16 +773,6 @@ export class ScriptRunner {
           }
             continue;
           }
-
-          const characterRulesetId = (character as { rulesetId?: string }).rulesetId ?? rulesetId;
-
-          // Find the window definition by title in this character's ruleset.
-          const windowDef = (await db.windows
-            .where('rulesetId')
-            .equals(characterRulesetId)
-            .filter((w) => (w as Window).title === label)
-            .first()) as Window | undefined;
-          if (!windowDef) continue;
 
           // Default position; overridden when a RulesetWindow layout exists for this page+window.
           let x = 100;
@@ -818,13 +828,24 @@ export class ScriptRunner {
             | undefined;
           if (!characterPage) continue;
 
+          const characterRulesetId = (character as { rulesetId?: string }).rulesetId ?? rulesetId;
+
+          // Try to resolve a window definition for id-based lookups.
+          let windowDef = (await db.windows.get(label)) as Window | undefined;
+          if (!windowDef || windowDef.rulesetId !== characterRulesetId) {
+            windowDef = undefined;
+          }
+
+          // Prefer matching by the resolved window title when available; fall back to the raw label.
+          const targetTitle = windowDef?.title ?? label;
+
           const existing = (await db.characterWindows
             .where('characterId')
             .equals(characterId)
             .filter(
               (cw) =>
                 (cw as CharacterWindow).characterPageId === characterPage.id &&
-                (cw as CharacterWindow).title === label,
+                (cw as CharacterWindow).title === targetTitle,
             )
             .first()) as CharacterWindow | undefined;
 

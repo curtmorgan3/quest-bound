@@ -188,10 +188,13 @@ export class CharacterAccessor implements StructuredCloneSafe {
     this.pendingUpdates.set(key, existing ? [...existing, entry] : [entry]);
   }
 
-  Action(name: string): ActionProxy {
-    const action = Array.from(this.actionsCache.values()).find((a) => a.title === name);
+  Action(nameOrId: string): ActionProxy {
+    let action = this.actionsCache.get(nameOrId);
     if (!action) {
-      throw new Error(`Action '${name}' not found`);
+      action = Array.from(this.actionsCache.values()).find((a) => a.title === nameOrId);
+    }
+    if (!action) {
+      throw new Error(`Action '${nameOrId}' not found`);
     }
     return new ActionProxy(action.id, this.id, this.targetId, this.executeActionEvent);
   }
@@ -455,82 +458,92 @@ export class CharacterAccessor implements StructuredCloneSafe {
   }
 
   /**
-   * Add a character sheet page for this character from a ruleset page template, by label.
-   * Example: Owner.addPage('Spells')
+   * Add a character sheet page for this character from a ruleset page template, by label or id.
+   * Examples:
+   * - Owner.addPage('Spells')
+   * - Owner.addPage('<page-uuid>')
    *
    * The actual DB work is performed in ScriptRunner.flushCache via 'characterPageAdd'.
    */
-  addPage(label: string): void {
+  addPage(labelOrId: string): void {
     const key = 'characterPageAdd';
     const existing = this.pendingUpdates.get(key) as
       | { characterId: string; label: string }[]
       | undefined;
-    const entry = { characterId: this.id, label };
+    const entry = { characterId: this.id, label: labelOrId };
     this.pendingUpdates.set(key, existing ? [...existing, entry] : [entry]);
   }
 
   /**
-   * Navigate this character's sheet to a page by label.
-   * Example: Owner.navigateToPage('Spells')
+   * Navigate this character's sheet to a page by label or id.
+   * Examples:
+   * - Owner.navigateToPage('Spells')
+   * - Owner.navigateToPage('<page-uuid>')
    *
    * The actual DB work (ensuring the CharacterPage exists and updating lastViewedPageId)
    * is performed in ScriptRunner.flushCache via 'characterPageNavigate'.
    */
-  navigateToPage(label: string): void {
+  navigateToPage(labelOrId: string): void {
     const key = 'characterPageNavigate';
     const existing = this.pendingUpdates.get(key) as
       | { characterId: string; label: string }[]
       | undefined;
-    const entry = { characterId: this.id, label };
+    const entry = { characterId: this.id, label: labelOrId };
 
     this.pendingUpdates.set(key, existing ? [...existing, entry] : [entry]);
   }
 
   /**
-   * Open a character sheet window on the current page by label.
-   * Example: Owner.openWindow('Inventory')
+   * Open a character sheet window on the current page by title or id.
+   * Examples:
+   * - Owner.openWindow('Inventory')
+   * - Owner.openWindow('<window-uuid>')
    *
    * The actual DB work (finding/creating CharacterWindow on the current page and uncollapsing it)
    * is performed in ScriptRunner.flushCache via 'characterWindowOpen'.
    */
-  openWindow(label: string): void {
+  openWindow(labelOrId: string): void {
     const key = 'characterWindowOpen';
     const existing = this.pendingUpdates.get(key) as
       | { characterId: string; label: string }[]
       | undefined;
-    const entry = { characterId: this.id, label };
+    const entry = { characterId: this.id, label: labelOrId };
     this.pendingUpdates.set(key, existing ? [...existing, entry] : [entry]);
   }
 
   /**
-   * Remove this character's page that was created from a ruleset page with the given label.
-   * Example: Owner.removePage('Spells')
+   * Remove this character's page that was created from a ruleset page with the given label or id.
+   * Examples:
+   * - Owner.removePage('Spells')
+   * - Owner.removePage('<page-uuid>')
    *
    * The actual DB work (deleting CharacterPage + its CharacterWindows and updating
    * lastViewedPageId when needed) is performed in ScriptRunner.flushCache via 'characterPageRemove'.
    */
-  removePage(label: string): void {
+  removePage(labelOrId: string): void {
     const key = 'characterPageRemove';
     const existing = this.pendingUpdates.get(key) as
       | { characterId: string; label: string }[]
       | undefined;
-    const entry = { characterId: this.id, label };
+    const entry = { characterId: this.id, label: labelOrId };
     this.pendingUpdates.set(key, existing ? [...existing, entry] : [entry]);
   }
 
   /**
-   * Close and remove a character sheet window on the current page by label.
-   * Example: Owner.closeWindow('Inventory')
+   * Close and remove a character sheet window on the current page by title or id.
+   * Examples:
+   * - Owner.closeWindow('Inventory')
+   * - Owner.closeWindow('<window-uuid>')
    *
    * The actual DB work (finding CharacterWindow on the current page and deleting it)
    * is performed in ScriptRunner.flushCache via 'characterWindowClose'.
    */
-  closeWindow(label: string): void {
+  closeWindow(labelOrId: string): void {
     const key = 'characterWindowClose';
     const existing = this.pendingUpdates.get(key) as
       | { characterId: string; label: string }[]
       | undefined;
-    const entry = { characterId: this.id, label };
+    const entry = { characterId: this.id, label: labelOrId };
     this.pendingUpdates.set(key, existing ? [...existing, entry] : [entry]);
   }
 
