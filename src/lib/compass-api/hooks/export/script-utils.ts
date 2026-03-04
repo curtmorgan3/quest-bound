@@ -112,9 +112,6 @@ export function generateScriptPath(entityType: ScriptEntityType, name: string): 
     case 'characterLoader':
       folderName = 'character_loaders';
       break;
-    case 'campaignEvent':
-      folderName = 'campaign_events';
-      break;
     case 'gameManager':
       folderName = 'game_managers';
       break;

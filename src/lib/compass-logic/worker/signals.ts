@@ -112,7 +112,7 @@ export interface ExecuteArchetypeEventSignal {
   };
 }
 
-/** Runs a campaign event script handler (on_enter, on_leave, on_activate) for a campaign scene event. */
+/** Runs the script attached to a campaign scene event (on_enter, on_leave, on_activate). */
 export interface ExecuteCampaignEventEventSignal {
   type: 'EXECUTE_CAMPAIGN_EVENT_EVENT';
   payload: {

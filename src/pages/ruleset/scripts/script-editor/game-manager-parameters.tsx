@@ -45,8 +45,10 @@ export function GameManagerParameters({ parameters, onChange }: GameManagerParam
     if (type === 'boolean') {
       const trimmed = raw.trim().toLowerCase();
       if (!trimmed) return undefined;
-      if (trimmed === 'true' || trimmed === '1' || trimmed === 'yes' || trimmed === 'y') return true;
-      if (trimmed === 'false' || trimmed === '0' || trimmed === 'no' || trimmed === 'n') return false;
+      if (trimmed === 'true' || trimmed === '1' || trimmed === 'yes' || trimmed === 'y')
+        return true;
+      if (trimmed === 'false' || trimmed === '0' || trimmed === 'no' || trimmed === 'n')
+        return false;
       return undefined;
     }
     return raw;
@@ -67,8 +69,8 @@ export function GameManagerParameters({ parameters, onChange }: GameManagerParam
       </div>
       {parameters.length === 0 ? (
         <p className='text-xs text-muted-foreground'>
-          No parameters. Add parameters to collect values before running this Game Manager script and
-          access them via <code>params.get('&lt;Label&gt;')</code>.
+          Add parameters to collect values before running this script and access them via
+          `params.get('&lt;Label&gt;')`.
         </p>
       ) : (
         <div className='flex flex-col gap-2'>
@@ -159,4 +161,3 @@ export function GameManagerParameters({ parameters, onChange }: GameManagerParam
     </div>
   );
 }
-

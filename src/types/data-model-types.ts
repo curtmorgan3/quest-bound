@@ -382,8 +382,7 @@ export type ScriptEntityType =
   | 'archetype'
   | 'global'
   | 'characterLoader'
-  | 'gameManager'
-  | 'campaignEvent';
+  | 'gameManager';
 
 export type ScriptParamType = 'string' | 'number' | 'boolean';
 

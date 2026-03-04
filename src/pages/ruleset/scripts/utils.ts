@@ -11,13 +11,13 @@ export const ENTITY_TYPE_OPTIONS = [
   { value: 'item', label: 'Item' },
   { value: 'archetype', label: 'Archetype' },
   { value: 'characterLoader', label: 'Character Loader' },
-   { value: 'gameManager', label: 'Game Manager' },
+  { value: 'gameManager', label: 'Game Manager' },
   { value: 'global', label: 'Global' },
 ] as const;
 
 export const CAMPAIGN_TYPE_OPTIONS = [
   { value: 'all', label: 'All types' },
-  { value: 'campaignEvent', label: 'Campaign Event' },
+  { value: 'gameManager', label: 'Game Manager' },
   { value: 'global', label: 'Global' },
 ];
 

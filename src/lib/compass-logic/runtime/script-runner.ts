@@ -23,13 +23,7 @@ import { Evaluator } from '../interpreter/evaluator';
 import { Lexer } from '../interpreter/lexer';
 import { Parser } from '../interpreter/parser';
 import { executeArchetypeEvent } from '../reactive/event-handler-executor';
-import {
-  CampaignEventAccessor,
-  CampaignSceneAccessor,
-  CharacterAccessor,
-  OwnerAccessor,
-  RulesetAccessor,
-} from './accessors';
+import { CampaignSceneAccessor, CharacterAccessor, OwnerAccessor, RulesetAccessor } from './accessors';
 import type { ScriptParamsHelper } from './params-helper';
 import type { ExecuteActionEventFn } from './proxies';
 
@@ -238,7 +232,7 @@ export class ScriptRunner {
   /** Cached Owner accessor instance (set in setupAccessors). */
   private ownerAccessor: OwnerAccessor | null = null;
 
-  /** Cached character ids that are active in the current campaign scene (for campaign event scripts). */
+  /** Cached character ids that are active in the current campaign scene (for campaign scene contexts). */
   private sceneCharacterIds: Set<string> | null = null;
 
   /** Lazily-created accessors for characters selected via selectCharacter(s). */
@@ -736,49 +730,36 @@ export class ScriptRunner {
       this.itemsCache,
     );
 
-    // When there is no owner (e.g. some campaign/system scripts), only Ruleset is injected
-    // except for campaign event scripts, which still get Self and Scene() via CampaignEventAccessor.
+    const dbTyped = db as DB;
+
+    // When running in a campaign scene, build a shared Scene accessor that can be injected
+    // into both ownerless and owner contexts.
+    const sceneAccessor =
+      this.context.campaignId && this.context.campaignSceneId
+        ? new CampaignSceneAccessor(
+            dbTyped,
+            this.context.campaignId,
+            this.context.campaignSceneId,
+            rulesetId,
+            (id: string) => this.getCharacterAccessorById(id),
+            this.sceneCharacterIds ? Array.from(this.sceneCharacterIds) : undefined,
+            (id: string) => {
+              if (!this.sceneCharacterIds) {
+                this.sceneCharacterIds = new Set();
+              }
+              this.sceneCharacterIds.add(id);
+            },
+            this.context.roll,
+          )
+        : null;
+
+    // When there is no owner (e.g. some campaign/system scripts), only Ruleset is injected,
+    // plus Scene when running in a campaign scene context.
     if (!ownerId) {
       this.evaluator.globalEnv.define('Ruleset', ruleset);
-
-      if (this.context.entityType === 'campaignEvent' && this.context.entityId) {
-        const dbTyped = db as DB;
-        const campaignEvent = this.context.campaignEvent;
-
-        if (!campaignEvent) {
-          this.evaluator.globalEnv.define('Self', null);
-        } else {
-          const sceneAccessor =
-            this.context.campaignId && this.context.campaignSceneId
-              ? new CampaignSceneAccessor(
-                  dbTyped,
-                  this.context.campaignId,
-                  this.context.campaignSceneId,
-                  rulesetId,
-                  (id: string) => this.getCharacterAccessorById(id),
-                  this.sceneCharacterIds ? Array.from(this.sceneCharacterIds) : undefined,
-                  (id: string) => {
-                    if (!this.sceneCharacterIds) {
-                      this.sceneCharacterIds = new Set();
-                    }
-                    this.sceneCharacterIds.add(id);
-                  },
-                  this.context.roll,
-                )
-              : null;
-
-          const eventAccessor = new CampaignEventAccessor(
-            dbTyped,
-            campaignEvent,
-            rulesetId,
-            this.context.campaignSceneId ?? null,
-            () => sceneAccessor,
-          );
-
-          this.evaluator.globalEnv.define('Self', eventAccessor);
-        }
+      if (sceneAccessor) {
+        this.evaluator.globalEnv.define('Scene', sceneAccessor);
       }
-
       return;
     }
 
@@ -813,6 +794,9 @@ export class ScriptRunner {
     // Inject into interpreter environment
     this.evaluator.globalEnv.define('Owner', owner);
     this.evaluator.globalEnv.define('Ruleset', ruleset);
+    if (sceneAccessor) {
+      this.evaluator.globalEnv.define('Scene', sceneAccessor);
+    }
 
     // 'Self' refers to the entity this script is attached to (attribute, action, item, or campaignEvent).
     if (this.context.entityType === 'attribute' && this.context.entityId) {
@@ -835,43 +819,6 @@ export class ScriptRunner {
           ? owner.getItemByInstanceId(this.context.inventoryItemInstanceId)
           : owner.Item(item.title);
         this.evaluator.globalEnv.define('Self', itemRef ?? null);
-      }
-    } else if (this.context.entityType === 'campaignEvent' && this.context.entityId) {
-      // For campaign event scripts, Self refers to the CampaignEvent accessor and exposes Scene().
-      const dbTyped = db as DB;
-      const campaignEvent = this.context.campaignEvent;
-
-      if (!campaignEvent) {
-        this.evaluator.globalEnv.define('Self', null);
-      } else {
-        const sceneAccessor =
-          this.context.campaignId && this.context.campaignSceneId
-            ? new CampaignSceneAccessor(
-                dbTyped,
-                this.context.campaignId,
-                this.context.campaignSceneId,
-                rulesetId,
-                (id: string) => this.getCharacterAccessorById(id),
-                this.sceneCharacterIds ? Array.from(this.sceneCharacterIds) : undefined,
-                (id: string) => {
-                  if (!this.sceneCharacterIds) {
-                    this.sceneCharacterIds = new Set();
-                  }
-                  this.sceneCharacterIds.add(id);
-                },
-                this.context.roll,
-              )
-            : null;
-
-        const eventAccessor = new CampaignEventAccessor(
-          dbTyped,
-          campaignEvent,
-          rulesetId,
-          this.context.campaignSceneId ?? null,
-          () => sceneAccessor,
-        );
-
-        this.evaluator.globalEnv.define('Self', eventAccessor);
       }
     }
     // entityType 'location' | 'tile' | 'archetype' | 'global' | 'characterLoader' | 'gameManager' (or unknown): no Self

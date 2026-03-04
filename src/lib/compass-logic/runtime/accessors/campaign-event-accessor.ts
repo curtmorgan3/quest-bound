@@ -4,10 +4,10 @@ import type Dexie from 'dexie';
 import { CampaignSceneAccessor } from './campaign-scene-accessor';
 
 /**
- * Accessor for a campaign event in campaign event scripts.
+ * Accessor for a campaign event in legacy campaign event scripts.
  *
- * In campaign event scripts, Self refers to an instance of this accessor.
- * Use Self.Scene() to access the current CampaignScene (when available).
+ * New Game Manager based campaign events no longer inject this accessor;
+ * scripts should use the top-level `Scene` accessor instead.
  */
 export class CampaignEventAccessor {
   // private db: DB;

@@ -81,7 +81,7 @@ export function ScriptEditorPage() {
     ...archetypeEventAnnouncements,
   ];
 
-  const defaultEntityType = campaignId ? 'campaignEvent' : 'attribute';
+  const defaultEntityType = campaignId ? 'gameManager' : 'attribute';
 
   const [name, setName] = useState(entityName);
   const [entityType, setEntityType] = useState<Script['entityType']>(type ?? defaultEntityType);
@@ -127,8 +127,7 @@ export function ScriptEditorPage() {
     entityType === 'attribute' ||
     entityType === 'action' ||
     entityType === 'item' ||
-    entityType === 'archetype' ||
-    entityType === 'campaignEvent';
+    entityType === 'archetype';
 
   const missingEntityAssociation = requiresEntityAssociation && !entityId;
 

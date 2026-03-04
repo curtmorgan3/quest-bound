@@ -80,7 +80,7 @@ export type RunScriptForTestFn = (
 ) => Promise<ScriptExecutionResult>;
 
 /**
- * Build the helper object exposed to QBScript as `params` for campaign event scripts.
+ * Build the helper object exposed to QBScript as `params` for scripts run from campaign events.
  * Values are resolved from Script.parameters (definitions + defaults) plus per-event overrides on CampaignEvent.
  */
 export function createCampaignEventParamsHelper(
@@ -889,16 +889,6 @@ export class EventHandlerExecutor {
       };
     }
 
-    const hasHandler = this.extractEventHandler(script.sourceCode, eventType) !== null;
-    if (!hasHandler) {
-      return {
-        success: true,
-        value: null,
-        announceMessages: [],
-        logMessages: [],
-      };
-    }
-
     // Resolve parameter helper from Script.parameters + CampaignEvent.parameterValues.
     const paramsHelper = createCampaignEventParamsHelper(script as Script, campaignEvent as CampaignEvent);
 
@@ -908,8 +898,8 @@ export class EventHandlerExecutor {
       db: this.db,
       scriptId: script.id,
       triggerType: 'attribute_change',
-      entityType: 'campaignEvent',
-      entityId: campaignEventId,
+      entityType: script.entityType,
+      entityId: script.entityId ?? undefined,
       campaignId: campaignEvent.campaignId,
       campaignSceneId: (campaignEvent as CampaignEvent).sceneId ?? campaignSceneId,
       campaignEvent,
@@ -937,7 +927,18 @@ export class EventHandlerExecutor {
       params: paramsHelper,
     };
 
-    const result = await this.executeEventHandlerByCall(script.sourceCode, eventType, context);
+    const result = this.runScriptForTest
+      ? await this.runScriptForTest(context, script.sourceCode)
+      : await new ScriptRunner(context).run(script.sourceCode);
+
+    if (
+      !result.error &&
+      result.modifiedAttributeIds?.length &&
+      this.onAttributesModified &&
+      characterId
+    ) {
+      await this.onAttributesModified(result.modifiedAttributeIds, characterId, campaign.rulesetId);
+    }
 
     await persistScriptLogs(this.db, {
       rulesetId: campaign.rulesetId,
@@ -1087,7 +1088,7 @@ export async function executeCharacterLoader(
 }
 
 /**
- * Execute a campaign event script (on_enter, on_leave, on_activate) when a character moves onto/off a tile or activates it.
+ * Execute the script attached to a campaign scene event (on_enter, on_leave, on_activate).
  * Uses CampaignEvent and CampaignScene; location-based events are deprecated.
  */
 export async function executeCampaignEventEvent(

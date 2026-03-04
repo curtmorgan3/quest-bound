@@ -26,9 +26,11 @@ type GetCharacterAccessorByIdFn = (characterId: string) => Promise<AnyCharacterA
 type RegisterSceneCharacterIdFn = (characterId: string) => void;
 
 /**
- * Accessor for a campaign scene in campaign event scripts.
+ * Accessor for a campaign scene in campaign-aware scripts.
  *
- * Exposed via Self.Scene() in campaign event scripts.
+ * Exposed to QBScript as the top-level `Scene` accessor when a campaignId
+ * and campaignSceneId are present in the ScriptExecutionContext.
+ *
  * Provides:
  * - .characters(): active characters in the scene as character accessors
  * - .spawnCharacter('Archetype Name'): create an active NPC in the scene

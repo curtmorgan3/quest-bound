@@ -151,9 +151,20 @@ export const ScriptLookup = ({
   };
 
   const renderScriptMeta = (script: Script) => {
+    const friendlyType: Record<ScriptEntityType, string> = {
+      attribute: 'Attribute',
+      action: 'Action',
+      item: 'Item',
+      archetype: 'Archetype',
+      global: 'Global',
+      characterLoader: 'Character Loader',
+      gameManager: 'Game Manager',
+    };
+
     const parts: string[] = [];
     if (script.entityType) {
-      parts.push(script.entityType);
+      const label = friendlyType[script.entityType] ?? script.entityType;
+      parts.push(label);
     }
     if (script.category) {
       parts.push(script.category);

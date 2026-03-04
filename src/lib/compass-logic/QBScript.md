@@ -208,7 +208,7 @@ The following built-ins let you select characters from the active campaign conte
 
 ---
 
-## Accessing character data
+## Accessing character and scene data
 
 ### Accessors
 
@@ -217,6 +217,7 @@ The following built-ins let you select characters from the active campaign conte
 | `Owner`   | The character that initiated the script                                                    |
 | `Ruleset` | Ruleset-level entities (attributes, charts, items, actions)                                |
 | `Self`    | The entity to which the script is attached — same as `Owner.Attribute('<this attribute>')` |
+| `Scene`   | The active campaign scene when running in a campaign context (e.g. Game Manager events)    |
 
 ### Getters
 
@@ -239,6 +240,28 @@ Use these to resolve entities by name:
 Owner.Attribute('Hit Points'); // Character's Hit Points
 Owner.Action('Attack'); // Character's Attack action
 Ruleset.Attribute('Strength'); // Attribute definition (ruleset)
+```
+
+### Scene
+
+When a script runs in a campaign + scene context (for example, a Game Manager script
+triggered by a campaign event), QBScript exposes a top-level `Scene` accessor.
+
+**Methods:**
+
+- `Scene.characters()` — returns an array of character accessors (player characters and active NPCs) in the current scene.
+- `Scene.spawnCharacter('Archetype Name')` — creates an active NPC in the scene from the given archetype and returns a character accessor for it.
+
+Both methods are asynchronous and should be awaited:
+
+```javascript
+npcs = await Scene.characters()
+
+for npc in npcs:
+  announce('{{npc.name}} is present in the scene.')
+
+spawned = await Scene.spawnCharacter('Goblin')
+announce('Spawned {{spawned.name}} into the scene.')
 ```
 
 ### Character (Owner)

@@ -11,7 +11,6 @@ import {
 } from '@/components/ui/sidebar';
 import { useCampaign, useCampaigns, useCharts, useDocuments } from '@/lib/compass-api';
 import {
-  CalendarCheck,
   Clapperboard,
   FileCode,
   FileSpreadsheet,
@@ -114,17 +113,6 @@ export function CampaignSidebar() {
                 <Link to={`/campaigns/${campaign.id}/documents`} data-testid='nav-documents'>
                   <Notebook className='w-4 h-4' />
                   <span>Notes</span>
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-            <SidebarMenuItem
-              className={
-                location.pathname === `/campaigns/${campaign.id}/events` ? 'text-primary' : ''
-              }>
-              <SidebarMenuButton asChild>
-                <Link to={`/campaigns/${campaign.id}/events`} data-testid='nav-events'>
-                  <CalendarCheck className='w-4 h-4' />
-                  <span>Events</span>
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>

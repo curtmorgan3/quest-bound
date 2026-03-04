@@ -14,9 +14,7 @@ function getEntityTable(entityType: ScriptEntityType) {
       ? db.actions
       : entityType === 'item'
         ? db.items
-        : entityType === 'campaignEvent'
-          ? db.campaignEvents
-          : db.archetypes;
+        : db.archetypes;
 }
 
 export const useScripts = (campaignId?: string) => {

@@ -39,6 +39,11 @@ const qbscriptCompletions = [
     type: 'function',
     info: "Remove a character sheet page that was created from a ruleset page with the given label (e.g. Owner.removePage('Spells'))",
   },
+  {
+    label: 'Scene',
+    type: 'variable',
+    info: 'Active campaign scene in campaign context; use Scene.characters() and Scene.spawnCharacter(name)',
+  },
   { label: 'Ruleset', type: 'variable', info: 'Ruleset-level entities' },
   { label: 'Ruleset.Attribute', type: 'function', info: 'Get attribute definition' },
   { label: 'Ruleset.Chart', type: 'function', info: 'Get chart by name' },

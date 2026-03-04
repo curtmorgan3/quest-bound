@@ -248,18 +248,6 @@ export const EditorTopBar = ({
           />
         </div>
       )}
-      {entityType === 'campaignEvent' && (
-        <div className='w-[240px]'>
-          <EventLookup
-            campaignId={campaignId}
-            label='Campaign Event'
-            value={entityId}
-            onSelect={(event: CampaignEvent) => setEntityId(event.id)}
-            onDelete={() => setEntityId(null)}
-            data-testid='script-editor-event-lookup'
-          />
-        </div>
-      )}
       <div className='flex justify-end items-center flex-1'>
         <div className='flex gap-2 justify-end min-w-[225px]'>
           <Button

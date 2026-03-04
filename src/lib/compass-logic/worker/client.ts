@@ -708,7 +708,7 @@ export class QBScriptClient {
   }
 
   /**
-   * Execute a campaign event script (on_enter, on_leave) when a character moves onto/off a tile.
+   * Execute the script attached to a campaign event when it fires.
    * Uses CampaignEvent and CampaignScene; location-based events are deprecated.
    */
   async executeCampaignEventEvent(

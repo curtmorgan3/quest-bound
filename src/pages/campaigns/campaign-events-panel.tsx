@@ -144,8 +144,8 @@ export function CampaignEventsPanel({
           </SheetTitle>
           <SheetDescription>
             {hasScene
-              ? 'Associate campaign events with this scene and optionally trigger their scripts.'
-              : 'Open a scene to associate campaign events.'}
+              ? 'Add and execute scripts from this scene'
+              : 'Open a scene to associate scripts.'}
           </SheetDescription>
         </SheetHeader>
         <div className='flex min-h-0 flex-1 flex-col overflow-hidden'>
@@ -153,15 +153,12 @@ export function CampaignEventsPanel({
             <div className='flex flex-1 items-center justify-center p-6 text-muted-foreground'>
               <div className='flex flex-col items-center gap-2'>
                 <FileText className='h-12 w-12' />
-                <p>Open a scene to associate events</p>
+                <p>Open a scene to add scripts</p>
               </div>
             </div>
           ) : (
             <div className='flex min-h-0 flex-1 flex-col gap-4 overflow-auto p-6'>
               <div className='space-y-2'>
-                <p className='text-sm text-muted-foreground'>
-                  Attach Game Manager scripts as events for this scene.
-                </p>
                 <ScriptLookup
                   campaignId={campaignId}
                   label='Add script'

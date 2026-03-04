@@ -57,7 +57,11 @@ const qbscriptParser = StreamLanguage.define<QBScriptState>({
     }
 
     // Built-in functions (when not in call position; call position is handled below)
-    if (stream.match(/\b(roll|rollQuiet|floor|ceil|round|announce|log|getAttr|getChart|number|text)\b/)) {
+    if (
+      stream.match(
+        /\b(roll|rollQuiet|floor|ceil|round|announce|log|getAttr|getChart|number|text)\b/,
+      )
+    ) {
       stream.eatSpace();
       if (stream.peek() === '(') return 'function';
       return 'builtin';
@@ -71,7 +75,7 @@ const qbscriptParser = StreamLanguage.define<QBScriptState>({
     }
 
     // Accessors (Owner, Ruleset, Caller, Self - only when not followed by ()
-    if (stream.match(/\b(Owner|Ruleset|Caller|Self)\b/)) {
+    if (stream.match(/\b(Owner|Ruleset|Caller|Self|Scene)\b/)) {
       stream.eatSpace();
       if (stream.peek() === '(') return 'function';
       return 'variable-2';
