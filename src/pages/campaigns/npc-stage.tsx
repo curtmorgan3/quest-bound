@@ -18,6 +18,7 @@ import {
 } from '@/components/ui/select';
 import {
   ArchetypeLookup,
+  SceneLookup,
   useArchetypes,
   useCampaignCharacters,
   useCharacter,
@@ -83,14 +84,35 @@ function useNpcStageEntries(campaignCharacters: CampaignCharacter[]): NpcStageEn
 }
 
 interface NpcEditModalProps {
+  campaignId: string;
+  campaignCharacter: CampaignCharacter | null;
   character: Character | null;
+  stageSceneId?: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onUpdateCampaignCharacter: (
+    id: string,
+    data: Partial<
+      Pick<
+        CampaignCharacter,
+        'active' | 'campaignSceneId' | 'currentLocationId' | 'currentTileId' | 'mapHeight' | 'mapWidth'
+      >
+    >,
+  ) => Promise<void>;
 }
 
-function NpcEditModal({ character, open, onOpenChange }: NpcEditModalProps) {
+function NpcEditModal({
+  campaignId,
+  campaignCharacter,
+  character,
+  stageSceneId,
+  open,
+  onOpenChange,
+  onUpdateCampaignCharacter,
+}: NpcEditModalProps) {
   const [name, setName] = useState('');
   const [addArchetypeId, setAddArchetypeId] = useState<string>('');
+  const [pendingSceneId, setPendingSceneId] = useState<string | null>(null);
   const { updateCharacter } = useCharacter();
   const { archetypes } = useArchetypes(character?.rulesetId);
   const { characterArchetypes, addArchetype, removeArchetype } = useCharacterArchetypes(
@@ -102,6 +124,12 @@ function NpcEditModal({ character, open, onOpenChange }: NpcEditModalProps) {
       setName(character.name);
     }
   }, [character]);
+
+  useEffect(() => {
+    if (campaignCharacter) {
+      setPendingSceneId(campaignCharacter.campaignSceneId ?? null);
+    }
+  }, [campaignCharacter]);
 
   const handleSaveName = useCallback(() => {
     if (character && name.trim()) {
@@ -216,9 +244,31 @@ function NpcEditModal({ character, open, onOpenChange }: NpcEditModalProps) {
                   <p className='text-sm text-muted-foreground'>Archetypes are optional</p>
                 )}
               </div>
+              <div className='flex flex-col gap-2'>
+                <SceneLookup
+                  campaignId={campaignId}
+                  label='Scene'
+                  value={pendingSceneId}
+                  placeholder='Assign to scene...'
+                  onSelect={(scene) => setPendingSceneId(scene.id)}
+                  onDelete={() => setPendingSceneId(null)}
+                />
+              </div>
             </div>
             <DialogFooter>
-              <Button variant='outline' onClick={() => onOpenChange(false)}>
+              <Button
+                variant='outline'
+                onClick={async () => {
+                  if (
+                    campaignCharacter &&
+                    pendingSceneId !== (campaignCharacter.campaignSceneId ?? null)
+                  ) {
+                    await onUpdateCampaignCharacter(campaignCharacter.id, {
+                      campaignSceneId: pendingSceneId ?? undefined,
+                    });
+                  }
+                  onOpenChange(false);
+                }}>
                 Done
               </Button>
             </DialogFooter>
@@ -239,7 +289,7 @@ interface NpcStageProps {
 
 export function NpcStage({ campaignId, rulesetId, sceneId, onCardHover }: NpcStageProps) {
   const [selectedArchetype, setSelectedArchetype] = useState<Archetype | null>(null);
-  const [editingCharacterId, setEditingCharacterId] = useState<string | null>(null);
+  const [editingCampaignCharacterId, setEditingCampaignCharacterId] = useState<string | null>(null);
   const [nameFilter, setNameFilter] = useState('');
   const {
     campaignCharacters,
@@ -265,8 +315,9 @@ export function NpcStage({ campaignId, rulesetId, sceneId, onCardHover }: NpcSta
         : npcEntries,
     [npcEntries, filterLower],
   );
-  const editingCharacter =
-    npcEntries.find((e) => e.character?.id === editingCharacterId)?.character ?? null;
+  const editingEntry = npcEntries.find((e) => e.cc.id === editingCampaignCharacterId) ?? null;
+  const editingCharacter = editingEntry?.character ?? null;
+  const editingCampaignCharacter = editingEntry?.cc ?? null;
 
   const handleAddNpc = useCallback(async () => {
     if (!selectedArchetype) return;
@@ -287,9 +338,13 @@ export function NpcStage({ campaignId, rulesetId, sceneId, onCardHover }: NpcSta
   return (
     <div className='flex h-[90dvh] w-[280px] shrink-0 flex-col gap-3 border-r bg-muted/30 p-3'>
       <NpcEditModal
+        campaignId={campaignId}
+        campaignCharacter={editingCampaignCharacter}
         character={editingCharacter}
-        open={!!editingCharacterId}
-        onOpenChange={(open) => !open && setEditingCharacterId(null)}
+        stageSceneId={sceneId}
+        open={!!editingCampaignCharacterId}
+        onOpenChange={(open) => !open && setEditingCampaignCharacterId(null)}
+        onUpdateCampaignCharacter={updateCampaignCharacter}
       />
       <div className='shrink-0 space-y-2'>
         <p className='text-sm text-muted-foreground'>Stage NPCs</p>
@@ -341,7 +396,7 @@ export function NpcStage({ campaignId, rulesetId, sceneId, onCardHover }: NpcSta
             </Button>
             <button
               type='button'
-              onClick={() => character && setEditingCharacterId(character.id)}
+              onClick={() => character && setEditingCampaignCharacterId(cc.id)}
               className='h-10 w-10 shrink-0 rounded-md overflow-hidden focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 clickable'
               aria-label='Edit NPC'>
               {character?.image ? (

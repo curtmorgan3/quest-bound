@@ -7,5 +7,6 @@ export * from './character-lookup';
 export * from './document-lookup';
 export * from './item-lookup';
 export * from './location-lookup';
+export * from './scene-lookup';
 export * from './page-lookup';
 export * from './window-lookup';
