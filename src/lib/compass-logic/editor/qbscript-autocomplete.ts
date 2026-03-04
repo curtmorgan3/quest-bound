@@ -40,6 +40,16 @@ const qbscriptCompletions = [
     info: "Remove a character sheet page that was created from a ruleset page with the given label (e.g. Owner.removePage('Spells'))",
   },
   {
+    label: 'Owner.openWindow',
+    type: 'function',
+    info: "Open a character sheet window on the current page by label (e.g. Owner.openWindow('Inventory'))",
+  },
+  {
+    label: 'Owner.closeWindow',
+    type: 'function',
+    info: "Close and remove a character sheet window on the current page by label (e.g. Owner.closeWindow('Inventory'))",
+  },
+  {
     label: 'Scene',
     type: 'variable',
     info: 'Active campaign scene in campaign context; use Scene.characters() and Scene.spawnCharacter(name)',

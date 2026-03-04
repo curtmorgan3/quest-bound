@@ -408,9 +408,10 @@ export type Script = BaseDetails & {
   isGlobal: boolean; // Whether this is a global utility script
   enabled: boolean; // Allow disabling scripts without deleting
   category?: string; // Optional category for grouping scripts
+  hidden?: boolean; // If the script is visible in the script editor. Hidden scripts are used under the hood
   /** Optional campaign; when set, script is campaign-specific. */
   campaignId?: string;
-   /** Optional parameter definitions used by the UI to collect values for params.get(). */
+  /** Optional parameter definitions used by the UI to collect values for params.get(). */
   parameters?: ScriptParameterDefinition[];
   /** Module origin: ruleset id, source entity id, and module name. */
   moduleId?: string;

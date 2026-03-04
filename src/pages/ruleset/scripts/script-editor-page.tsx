@@ -86,6 +86,7 @@ export function ScriptEditorPage() {
   const [name, setName] = useState(entityName);
   const [entityType, setEntityType] = useState<Script['entityType']>(type ?? defaultEntityType);
   const [category, setCategory] = useState<string | null>(null);
+  const [initializedFromScriptId, setInitializedFromScriptId] = useState<string | null>(null);
 
   const [entityId, setEntityId] = useState<string | null>(paramEntityId ?? null);
   const [sourceCode, setSourceCode] = useState('');
@@ -132,19 +133,23 @@ export function ScriptEditorPage() {
 
   const missingEntityAssociation = requiresEntityAssociation && !entityId;
 
-  // Sync script data to state when navigating to a different (existing) script
+  // Sync script data to state once per script id (avoid clobbering in-progress edits from autosave)
   useEffect(() => {
-    if (script && !isNew) {
-      setName(script.name);
-      setEntityType(script.entityType);
-      setEntityId(script.entityId);
-      setSourceCode(script.sourceCode);
-      setCategory(script.category ?? null);
-      setParameters(script.parameters ?? []);
-    } else if (isNew) {
+    if (isNew) {
       setParameters([]);
+      return;
     }
-  }, [scriptId, script, isNew]);
+    if (!script) return;
+    if (initializedFromScriptId === script.id) return;
+
+    setInitializedFromScriptId(script.id);
+    setName(script.name);
+    setEntityType(script.entityType);
+    setEntityId(script.entityId);
+    setSourceCode(script.sourceCode);
+    setCategory(script.category ?? null);
+    setParameters(script.parameters ?? []);
+  }, [scriptId, script, isNew, initializedFromScriptId]);
 
   // When creating a new script, update source template when type changes
   useEffect(() => {

@@ -6,6 +6,7 @@ import type {
   CampaignEvent,
   CharacterAttribute,
   CharacterPage,
+  CharacterWindow,
   Chart,
   CustomProperty,
   InventoryItem,
@@ -14,9 +15,11 @@ import type {
   PromptFn,
   RollFn,
   RollSplitFn,
+  RulesetWindow,
   Script,
   SelectCharacterFn,
   SelectCharactersFn,
+  Window,
 } from '@/types';
 import { buildItemCustomProperties } from '@/utils/custom-property-utils';
 import { Evaluator } from '../interpreter/evaluator';
@@ -706,6 +709,128 @@ export class ScriptRunner {
               updatedAt: now,
             });
           }
+        }
+      } else if (type === 'characterWindowOpen') {
+        const entries = value as { characterId: string; label: string }[];
+        for (const { characterId, label } of entries) {
+          const character = await db.characters.get(characterId);
+          if (!character) continue;
+
+          // Determine the current page: prefer lastViewedPageId, fall back to first page.
+          let currentPageId =
+            (character as { lastViewedPageId?: string | null }).lastViewedPageId ?? null;
+          if (!currentPageId) {
+            const pages = (await db.characterPages
+              .where('characterId')
+              .equals(characterId)
+              .sortBy('createdAt')) as CharacterPage[];
+            currentPageId = pages[0]?.id ?? null;
+          }
+          if (!currentPageId) continue;
+
+          const characterPage = (await db.characterPages.get(currentPageId)) as
+            | CharacterPage
+            | undefined;
+          if (!characterPage) continue;
+
+          // Reuse existing CharacterWindow with this title on the current page when present.
+          const existing = (await db.characterWindows
+            .where('characterId')
+            .equals(characterId)
+            .filter(
+              (cw) =>
+                (cw as CharacterWindow).characterPageId === characterPage.id &&
+                (cw as CharacterWindow).title === label,
+            )
+            .first()) as CharacterWindow | undefined;
+
+          if (existing) {
+            if (existing.isCollapsed) {
+              await db.characterWindows.update(existing.id, {
+                isCollapsed: false,
+                updatedAt: now,
+              });
+          }
+            continue;
+          }
+
+          const characterRulesetId = (character as { rulesetId?: string }).rulesetId ?? rulesetId;
+
+          // Find the window definition by title in this character's ruleset.
+          const windowDef = (await db.windows
+            .where('rulesetId')
+            .equals(characterRulesetId)
+            .filter((w) => (w as Window).title === label)
+            .first()) as Window | undefined;
+          if (!windowDef) continue;
+
+          // Default position; overridden when a RulesetWindow layout exists for this page+window.
+          let x = 100;
+          let y = 100;
+          let isCollapsed = false;
+
+          if (characterPage.pageId) {
+            const rulesetWindow = (await db.rulesetWindows
+              .where('pageId')
+              .equals(characterPage.pageId)
+              .filter((rw) => (rw as RulesetWindow).windowId === windowDef.id)
+              .first()) as RulesetWindow | undefined;
+            if (rulesetWindow) {
+              x = rulesetWindow.x;
+              y = rulesetWindow.y;
+              isCollapsed = !!rulesetWindow.isCollapsed;
+            }
+          }
+
+          await db.characterWindows.add({
+            id: crypto.randomUUID(),
+            characterId,
+            characterPageId: currentPageId,
+            windowId: windowDef.id,
+            title: windowDef.title,
+            x,
+            y,
+            isCollapsed,
+            createdAt: now,
+            updatedAt: now,
+          } as CharacterWindow);
+        }
+      } else if (type === 'characterWindowClose') {
+        const entries = value as { characterId: string; label: string }[];
+        for (const { characterId, label } of entries) {
+          const character = await db.characters.get(characterId);
+          if (!character) continue;
+
+          // Determine the current page: prefer lastViewedPageId, fall back to first page.
+          let currentPageId =
+            (character as { lastViewedPageId?: string | null }).lastViewedPageId ?? null;
+          if (!currentPageId) {
+            const pages = (await db.characterPages
+              .where('characterId')
+              .equals(characterId)
+              .sortBy('createdAt')) as CharacterPage[];
+            currentPageId = pages[0]?.id ?? null;
+          }
+          if (!currentPageId) continue;
+
+          const characterPage = (await db.characterPages.get(currentPageId)) as
+            | CharacterPage
+            | undefined;
+          if (!characterPage) continue;
+
+          const existing = (await db.characterWindows
+            .where('characterId')
+            .equals(characterId)
+            .filter(
+              (cw) =>
+                (cw as CharacterWindow).characterPageId === characterPage.id &&
+                (cw as CharacterWindow).title === label,
+            )
+            .first()) as CharacterWindow | undefined;
+
+          if (!existing) continue;
+
+          await db.characterWindows.delete(existing.id);
         }
       }
     }

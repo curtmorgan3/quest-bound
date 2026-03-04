@@ -487,6 +487,22 @@ export class CharacterAccessor implements StructuredCloneSafe {
   }
 
   /**
+   * Open a character sheet window on the current page by label.
+   * Example: Owner.openWindow('Inventory')
+   *
+   * The actual DB work (finding/creating CharacterWindow on the current page and uncollapsing it)
+   * is performed in ScriptRunner.flushCache via 'characterWindowOpen'.
+   */
+  openWindow(label: string): void {
+    const key = 'characterWindowOpen';
+    const existing = this.pendingUpdates.get(key) as
+      | { characterId: string; label: string }[]
+      | undefined;
+    const entry = { characterId: this.id, label };
+    this.pendingUpdates.set(key, existing ? [...existing, entry] : [entry]);
+  }
+
+  /**
    * Remove this character's page that was created from a ruleset page with the given label.
    * Example: Owner.removePage('Spells')
    *
@@ -495,6 +511,22 @@ export class CharacterAccessor implements StructuredCloneSafe {
    */
   removePage(label: string): void {
     const key = 'characterPageRemove';
+    const existing = this.pendingUpdates.get(key) as
+      | { characterId: string; label: string }[]
+      | undefined;
+    const entry = { characterId: this.id, label };
+    this.pendingUpdates.set(key, existing ? [...existing, entry] : [entry]);
+  }
+
+  /**
+   * Close and remove a character sheet window on the current page by label.
+   * Example: Owner.closeWindow('Inventory')
+   *
+   * The actual DB work (finding CharacterWindow on the current page and deleting it)
+   * is performed in ScriptRunner.flushCache via 'characterWindowClose'.
+   */
+  closeWindow(label: string): void {
+    const key = 'characterWindowClose';
     const existing = this.pendingUpdates.get(key) as
       | { characterId: string; label: string }[]
       | undefined;
