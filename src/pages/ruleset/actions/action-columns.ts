@@ -23,6 +23,7 @@ export const actionChartColumns: GridColumn<Action>[] = [
     headerName: 'Title',
     editable: true,
     filter: true,
+    filterParams: { debounceMs: 0 },
     sortIndex: 0,
   },
   {
@@ -30,6 +31,7 @@ export const actionChartColumns: GridColumn<Action>[] = [
     headerName: 'Category',
     editable: true,
     filter: true,
+    filterParams: { debounceMs: 0 },
     width: 150,
     sortIndex: 4,
   },

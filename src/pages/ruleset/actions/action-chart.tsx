@@ -26,16 +26,39 @@ export const ActionChart = () => {
   const { actions, deleteAction, updateAction } = useActions();
   const [searchParams, setSearchParams] = useSearchParams();
   const setGridFilters = useRulesetFiltersStore((s) => s.setGridFilters);
+  const getGridFilters = useRulesetFiltersStore((s) => s.getGridFilters);
 
   const rulesetId = activeRuleset?.id;
 
   useEffect(() => {
     if (!rulesetId) return;
-    setGridFilters(rulesetId, 'actions', {
-      filter: searchParams.get(FILTER_PARAM) ?? undefined,
-      sort: searchParams.get(SORT_PARAM) ?? undefined,
-    });
+    const filter = searchParams.get(FILTER_PARAM);
+    const sort = searchParams.get(SORT_PARAM);
+    if (filter !== null || sort !== null) {
+      setGridFilters(rulesetId, 'actions', {
+        filter: filter ?? undefined,
+        sort: sort ?? undefined,
+      });
+    }
   }, [rulesetId, searchParams, setGridFilters]);
+
+  useEffect(() => {
+    if (!rulesetId) return;
+    const stored = getGridFilters(rulesetId, 'actions');
+    if (!stored?.filter && !stored?.sort) return;
+    const urlFilter = searchParams.get(FILTER_PARAM);
+    const urlSort = searchParams.get(SORT_PARAM);
+    if (urlFilter !== null && urlSort !== null) return;
+    setSearchParams(
+      (prev) => {
+        const p = new URLSearchParams(prev);
+        if (urlFilter === null && stored.filter) p.set(FILTER_PARAM, stored.filter);
+        if (urlSort === null && stored.sort) p.set(SORT_PARAM, stored.sort);
+        return p;
+      },
+      { replace: true },
+    );
+  }, [rulesetId, getGridFilters, setSearchParams]);
 
   const initialFilterModel = useMemo(
     () => parseFilterFromSearchParams(searchParams),

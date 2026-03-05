@@ -79,7 +79,7 @@ export const Grid = <T,>({
           sort: s.sort,
           sortIndex: s.sortIndex ?? i,
         })),
-        applyOrder: true,
+        applyOrder: false,
       });
     } else {
       skipNextSortRef.current = true;

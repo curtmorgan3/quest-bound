@@ -23,6 +23,7 @@ export const attributeChartColumns: GridColumn<Attribute>[] = [
     headerName: 'Title',
     editable: true,
     filter: true,
+    filterParams: { debounceMs: 0 },
     sortIndex: 2,
   },
   {
@@ -30,6 +31,7 @@ export const attributeChartColumns: GridColumn<Attribute>[] = [
     headerName: 'Category',
     editable: true,
     filter: true,
+    filterParams: { debounceMs: 0 },
     width: 150,
     sortIndex: 3,
   },
@@ -38,6 +40,7 @@ export const attributeChartColumns: GridColumn<Attribute>[] = [
     headerName: 'Type',
     editable: true,
     filter: true,
+    filterParams: { debounceMs: 0 },
     width: 100,
     cellEditor: 'agSelectCellEditor',
     cellEditorParams: {
@@ -51,6 +54,7 @@ export const attributeChartColumns: GridColumn<Attribute>[] = [
     cellDataType: false,
     editable: true,
     filter: true,
+    filterParams: { debounceMs: 0 },
     width: 100,
     sortIndex: 5,
     cellRendererSelector: (params) => {
@@ -65,6 +69,7 @@ export const attributeChartColumns: GridColumn<Attribute>[] = [
     headerName: 'Min',
     editable: true,
     filter: true,
+    filterParams: { debounceMs: 0 },
     width: 100,
     sortIndex: 6,
   },
@@ -73,6 +78,7 @@ export const attributeChartColumns: GridColumn<Attribute>[] = [
     headerName: 'Max',
     editable: true,
     filter: true,
+    filterParams: { debounceMs: 0 },
     width: 100,
     sortIndex: 7,
   },
