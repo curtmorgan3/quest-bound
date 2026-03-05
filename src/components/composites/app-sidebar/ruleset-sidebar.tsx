@@ -66,6 +66,9 @@ export function RulesetSidebar() {
   const getGridFilters = useRulesetFiltersStore((s) => s.getGridFilters);
   const getListFilters = useRulesetFiltersStore((s) => s.getListFilters);
   const getScriptsFilters = useRulesetFiltersStore((s) => s.getScriptsFilters);
+  const clearGridFilters = useRulesetFiltersStore((s) => s.clearGridFilters);
+  const clearListFilters = useRulesetFiltersStore((s) => s.clearListFilters);
+  const clearScriptsFilters = useRulesetFiltersStore((s) => s.clearScriptsFilters);
 
   const isHomepage =
     location.pathname === '/rulesets' ||
@@ -81,7 +84,7 @@ export function RulesetSidebar() {
   const rulesetId = activeRuleset?.id;
 
   const items = isHomepage
-    ? homepageItems
+    ? homepageItems.map((item) => ({ ...item, url: item.url, baseUrl: item.url }))
     : RULESET_NAV_ITEMS.map((item) => {
         const baseUrl = `/rulesets/${rulesetId}/${item.path}`;
         let url = baseUrl;
@@ -110,7 +113,7 @@ export function RulesetSidebar() {
             url = `${baseUrl}?${q.toString()}`;
           }
         }
-        return { title: item.title, url, icon: item.icon };
+        return { ...item, url, baseUrl };
       });
 
   const title = activeRuleset?.title ?? 'Quest Bound';
@@ -135,11 +138,32 @@ export function RulesetSidebar() {
             </SidebarMenuItem>
           )}
           {items.map((item) => {
-            const isActive = location.pathname.includes(item.title.toLowerCase());
+            const isActive = location.pathname === item.baseUrl;
+            const hasStoredFilters =
+              rulesetId &&
+              ('gridPage' in item && item.gridPage) ||
+              ('listPage' in item && item.listPage) ||
+              ('scriptsPage' in item && item.scriptsPage);
+            const clearCurrentPageFilters = () => {
+              if (!rulesetId) return;
+              if ('gridPage' in item && item.gridPage) {
+                clearGridFilters(rulesetId, item.gridPage as GridPage);
+              } else if ('listPage' in item && item.listPage) {
+                clearListFilters(rulesetId, item.listPage as ListPage);
+              } else if ('scriptsPage' in item && item.scriptsPage) {
+                clearScriptsFilters(rulesetId);
+              }
+            };
+            const linkTo =
+              isActive && hasStoredFilters ? item.baseUrl : item.url;
             return (
               <SidebarMenuItem key={item.title} className={isActive ? 'text-primary' : ''}>
                 <SidebarMenuButton asChild>
-                  <Link to={item.url} data-testid={`nav-${item.title.toLowerCase()}`}>
+                  <Link
+                    to={linkTo}
+                    data-testid={`nav-${item.title.toLowerCase()}`}
+                    onClick={isActive && hasStoredFilters ? clearCurrentPageFilters : undefined}
+                  >
                     <item.icon />
                     <span>{item.title}</span>
                   </Link>

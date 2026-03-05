@@ -58,6 +58,9 @@ export const useRulesetFiltersStore = create<State & {
   getListFilters: (rulesetId: string | undefined, page: ListPage) => ListParams | undefined;
   setScriptsFilters: (rulesetId: string, partial: SetScriptsPartial) => void;
   getScriptsFilters: (rulesetId: string | undefined) => ScriptsParams | undefined;
+  clearGridFilters: (rulesetId: string, page: GridPage) => void;
+  clearListFilters: (rulesetId: string, page: ListPage) => void;
+  clearScriptsFilters: (rulesetId: string) => void;
 }>((set, get) => {
   function ensureHydrated() {
     if (!get()._hydrated) {
@@ -178,6 +181,18 @@ export const useRulesetFiltersStore = create<State & {
       const params = ruleset?.scripts;
       if (!params || (!params.q && !params.type)) return undefined;
       return params;
+    },
+
+    clearGridFilters(rulesetId: string, page: GridPage) {
+      get().setGridFilters(rulesetId, page, { filter: null, sort: null });
+    },
+
+    clearListFilters(rulesetId: string, page: ListPage) {
+      get().setListFilters(rulesetId, page, { title: null, category: null });
+    },
+
+    clearScriptsFilters(rulesetId: string) {
+      get().setScriptsFilters(rulesetId, { q: null, type: null });
     },
   };
 });
