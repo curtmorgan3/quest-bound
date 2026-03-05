@@ -1,8 +1,10 @@
 import { Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components';
 import { useActiveRuleset, useWindows } from '@/lib/compass-api';
-import { useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useMemo } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useRulesetFiltersStore } from '@/stores/ruleset-filters-store';
 import { PreviewCard } from '../components';
+import { useListFilterParams } from '../utils/list-filter-query-params';
 
 interface WindowSelectProps {
   onEditDetails?: (id: string) => void;
@@ -14,8 +16,30 @@ export const WindowSelect = ({ onEditDetails }: WindowSelectProps) => {
   const { windows, deleteWindow, updateWindow, duplicateWindow } = useWindows();
   const { activeRuleset } = useActiveRuleset();
   const navigate = useNavigate();
-  const [filterValue, setFilterValue] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState(ALL_CATEGORIES);
+  const [searchParams] = useSearchParams();
+  const { title: filterValue, category: categoryFilter, setTitle: setFilterValue, setCategory: setCategoryFilter } =
+    useListFilterParams();
+  const setListFilters = useRulesetFiltersStore((s) => s.setListFilters);
+
+  const rulesetId = activeRuleset?.id;
+
+  useEffect(() => {
+    if (!rulesetId) return;
+    setListFilters(rulesetId, 'windows', {
+      title: searchParams.get('title') ?? undefined,
+      category: searchParams.get('category') ?? undefined,
+    });
+  }, [rulesetId, searchParams, setListFilters]);
+
+  const handleTitleChange = (value: string) => {
+    setFilterValue(value);
+    if (rulesetId) setListFilters(rulesetId, 'windows', { title: value || null });
+  };
+
+  const handleCategoryChange = (value: string) => {
+    setCategoryFilter(value);
+    if (rulesetId) setListFilters(rulesetId, 'windows', { category: value === ALL_CATEGORIES ? null : value });
+  };
 
   const categories = useMemo(() => {
     const set = new Set<string>();
@@ -43,9 +67,9 @@ export const WindowSelect = ({ onEditDetails }: WindowSelectProps) => {
           data-testid='preview-filter'
           placeholder='Filter by title'
           value={filterValue}
-          onChange={(e) => setFilterValue(e.target.value)}
+          onChange={(e) => handleTitleChange(e.target.value)}
         />
-        <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+        <Select value={categoryFilter} onValueChange={handleCategoryChange}>
           <SelectTrigger className='w-[180px]' data-testid='category-filter'>
             <SelectValue placeholder='Category' />
           </SelectTrigger>

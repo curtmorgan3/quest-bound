@@ -21,7 +21,9 @@ import {
 } from '@/components/ui/select';
 import { useScripts } from '@/lib/compass-api/hooks/scripts/use-scripts';
 import { FileCode, Plus, Search } from 'lucide-react';
+import { useEffect } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
+import { useRulesetFiltersStore } from '@/stores/ruleset-filters-store';
 import { useScriptFilters } from './use-script-filters';
 import { CAMPAIGN_TYPE_OPTIONS, ENTITY_TYPE_OPTIONS, typeFromParams } from './utils';
 
@@ -34,10 +36,31 @@ export function ScriptsIndex() {
   const [searchParams] = useSearchParams();
   const { rulesetId: rulesetIdFromHook } = useScripts();
   const rulesetId = rulesetIdParam ?? rulesetIdFromHook ?? '';
-  const selectedType = typeFromParams(searchParams, 'campaigns');
+  const selectedType = typeFromParams(searchParams, campaignId ? 'campaigns' : undefined);
 
   const { nameFilter, setNameFilter, setSelectedType, scriptsByCategory, filteredScripts } =
     useScriptFilters();
+
+  const setScriptsFilters = useRulesetFiltersStore((s) => s.setScriptsFilters);
+  const rulesetIdForStore = campaignId ? undefined : (rulesetIdParam ?? rulesetIdFromHook ?? undefined);
+
+  useEffect(() => {
+    if (!rulesetIdForStore) return;
+    setScriptsFilters(rulesetIdForStore, {
+      q: searchParams.get('q') ?? undefined,
+      type: searchParams.get('type') ?? undefined,
+    });
+  }, [rulesetIdForStore, searchParams, setScriptsFilters]);
+
+  const handleNameChange = (value: string) => {
+    setNameFilter(value);
+    if (rulesetIdForStore) setScriptsFilters(rulesetIdForStore, { q: value || null });
+  };
+
+  const handleTypeChange = (value: string) => {
+    setSelectedType(value);
+    if (rulesetIdForStore) setScriptsFilters(rulesetIdForStore, { type: value === 'all' ? null : value });
+  };
 
   const uncategorized = scriptsByCategory.filter((cat) => cat.category === 'Uncategorized');
   const categorized = scriptsByCategory.filter((cat) => cat.category !== 'Uncategorized');
@@ -72,7 +95,7 @@ export function ScriptsIndex() {
               type='search'
               placeholder='Filter by name...'
               value={nameFilter}
-              onChange={(e) => setNameFilter(e.target.value)}
+              onChange={(e) => handleNameChange(e.target.value)}
               className='pl-9'
               aria-label='Filter scripts by name'
             />
@@ -81,7 +104,7 @@ export function ScriptsIndex() {
             <Label htmlFor='script-type-filter' className='text-sm'>
               Type
             </Label>
-            <Select value={selectedType} onValueChange={setSelectedType}>
+            <Select value={selectedType} onValueChange={handleTypeChange}>
               <SelectTrigger id='script-type-filter' className='w-[140px]'>
                 <SelectValue placeholder='All types' />
               </SelectTrigger>

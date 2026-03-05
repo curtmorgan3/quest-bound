@@ -6,5 +6,6 @@ export * from './db';
 export * from './event-log-store';
 export * from './script-modified-attributes-store';
 export * from './prompt-modal-store';
+export * from './ruleset-filters-store';
 export * from './loggers';
 export * from './onboarding-store';

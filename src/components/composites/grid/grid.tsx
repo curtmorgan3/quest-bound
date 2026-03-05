@@ -6,7 +6,7 @@ import {
   type GridApi as _GridApi,
 } from 'ag-grid-community';
 import { AgGridReact } from 'ag-grid-react';
-import { useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import './grid.css';
 
 ModuleRegistry.registerModules([AllCommunityModule]);
@@ -59,14 +59,17 @@ export const Grid = <T,>({
   onFilterChanged,
   onSortChanged,
 }: Props<T>) => {
+  const apiRef = useRef<GridApi | null>(null);
   const skipNextFilterRef = useRef(false);
   const skipNextSortRef = useRef(false);
 
-  const handleGridReady = (e: { api: GridApi }) => {
-    const api = e.api;
+  const applyInitialState = (api: GridApi) => {
     if (initialFilterModel != null && Object.keys(initialFilterModel).length > 0) {
       skipNextFilterRef.current = true;
       api.setFilterModel(initialFilterModel);
+    } else {
+      skipNextFilterRef.current = true;
+      api.setFilterModel(null);
     }
     if (initialSortModel != null && initialSortModel.length > 0) {
       skipNextSortRef.current = true;
@@ -78,9 +81,30 @@ export const Grid = <T,>({
         })),
         applyOrder: true,
       });
+    } else {
+      skipNextSortRef.current = true;
+      const columnState = api.getColumnState?.() ?? [];
+      const stateWithNoSort = columnState.map((col) => ({
+        ...col,
+        sort: null,
+        sortIndex: undefined,
+      }));
+      api.applyColumnState?.({ state: stateWithNoSort });
     }
+  };
+
+  const handleGridReady = (e: { api: GridApi }) => {
+    const api = e.api;
+    apiRef.current = api;
+    applyInitialState(api);
     onGridReady?.(api);
   };
+
+  useEffect(() => {
+    const api = apiRef.current;
+    if (!api) return;
+    applyInitialState(api);
+  }, [initialFilterModel, initialSortModel]);
 
   const handleFilterChanged = (e: { api: GridApi; source?: string }) => {
     if (skipNextFilterRef.current) {

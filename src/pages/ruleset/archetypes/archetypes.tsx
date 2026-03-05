@@ -7,8 +7,10 @@ import {
   SelectValue,
 } from '@/components';
 import { useArchetypes, useAssets, useCharts } from '@/lib/compass-api';
-import { useMemo, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useEffect, useMemo, useState } from 'react';
+import { useParams, useSearchParams } from 'react-router-dom';
+import { useRulesetFiltersStore } from '@/stores/ruleset-filters-store';
+import { useListFilterParams } from '../utils/list-filter-query-params';
 import { ArchetypeCard } from './archetype-card';
 
 const ALL_CATEGORIES = 'all';
@@ -29,8 +31,28 @@ export const Archetypes = () => {
   const [editUseChartForVariants, setEditUseChartForVariants] = useState(false);
   const [editVariantsChartId, setEditVariantsChartId] = useState('');
   const [editVariantsChartColumnHeader, setEditVariantsChartColumnHeader] = useState('');
-  const [filterValue, setFilterValue] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState(ALL_CATEGORIES);
+  const [searchParams] = useSearchParams();
+  const { title: filterValue, category: categoryFilter, setTitle: setFilterValue, setCategory: setCategoryFilter } =
+    useListFilterParams();
+  const setListFilters = useRulesetFiltersStore((s) => s.setListFilters);
+
+  useEffect(() => {
+    if (!rulesetId) return;
+    setListFilters(rulesetId, 'archetypes', {
+      title: searchParams.get('title') ?? undefined,
+      category: searchParams.get('category') ?? undefined,
+    });
+  }, [rulesetId, searchParams, setListFilters]);
+
+  const handleTitleChange = (value: string) => {
+    setFilterValue(value);
+    if (rulesetId) setListFilters(rulesetId, 'archetypes', { title: value || null });
+  };
+
+  const handleCategoryChange = (value: string) => {
+    setCategoryFilter(value);
+    if (rulesetId) setListFilters(rulesetId, 'archetypes', { category: value === ALL_CATEGORIES ? null : value });
+  };
 
   const getImageFromAssetId = (id: string | null) => {
     if (!id) return null;
@@ -134,9 +156,9 @@ export const Archetypes = () => {
           data-testid='preview-filter'
           placeholder='Filter by name'
           value={filterValue}
-          onChange={(e) => setFilterValue(e.target.value)}
+          onChange={(e) => handleTitleChange(e.target.value)}
         />
-        <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+        <Select value={categoryFilter} onValueChange={handleCategoryChange}>
           <SelectTrigger className='w-[180px]' data-testid='category-filter'>
             <SelectValue placeholder='Category' />
           </SelectTrigger>

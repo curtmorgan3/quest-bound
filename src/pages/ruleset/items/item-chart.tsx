@@ -5,10 +5,11 @@ import {
   type GridFilterModel,
   type GridSortModelItem,
 } from '@/components';
-import { useItems } from '@/lib/compass-api';
+import { useActiveRuleset, useItems } from '@/lib/compass-api';
 import type { Item } from '@/types';
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { useRulesetFiltersStore } from '@/stores/ruleset-filters-store';
 import { ChartControls } from '../components';
 import {
   encodeFilterForUrl,
@@ -21,8 +22,20 @@ import {
 import { itemChartColumns } from './item-columns';
 
 export const ItemChart = () => {
+  const { activeRuleset } = useActiveRuleset();
   const { items, deleteItem, updateItem } = useItems();
   const [searchParams, setSearchParams] = useSearchParams();
+  const setGridFilters = useRulesetFiltersStore((s) => s.setGridFilters);
+
+  const rulesetId = activeRuleset?.id;
+
+  useEffect(() => {
+    if (!rulesetId) return;
+    setGridFilters(rulesetId, 'items', {
+      filter: searchParams.get(FILTER_PARAM) ?? undefined,
+      sort: searchParams.get(SORT_PARAM) ?? undefined,
+    });
+  }, [rulesetId, searchParams, setGridFilters]);
 
   const initialFilterModel = useMemo(
     () => parseFilterFromSearchParams(searchParams),
@@ -102,27 +115,26 @@ export const ItemChart = () => {
   };
 
   const handleFilterChanged = (filterModel: GridFilterModel) => {
+    const filterValue =
+      Object.keys(filterModel).length > 0 ? encodeFilterForUrl(filterModel) : null;
     setSearchParams((prev) => {
       const p = new URLSearchParams(prev);
-      if (Object.keys(filterModel).length > 0) {
-        p.set(FILTER_PARAM, encodeFilterForUrl(filterModel));
-      } else {
-        p.delete(FILTER_PARAM);
-      }
+      if (filterValue) p.set(FILTER_PARAM, filterValue);
+      else p.delete(FILTER_PARAM);
       return p;
     }, { replace: true });
+    if (rulesetId) setGridFilters(rulesetId, 'items', { filter: filterValue });
   };
 
   const handleSortChanged = (sortModel: GridSortModelItem[]) => {
+    const sortValue = sortModel.length > 0 ? encodeSortForUrl(sortModel) : null;
     setSearchParams((prev) => {
       const p = new URLSearchParams(prev);
-      if (sortModel.length > 0) {
-        p.set(SORT_PARAM, encodeSortForUrl(sortModel));
-      } else {
-        p.delete(SORT_PARAM);
-      }
+      if (sortValue) p.set(SORT_PARAM, sortValue);
+      else p.delete(SORT_PARAM);
       return p;
     }, { replace: true });
+    if (rulesetId) setGridFilters(rulesetId, 'items', { sort: sortValue });
   };
 
   return (

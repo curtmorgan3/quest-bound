@@ -29,7 +29,9 @@ import type { Asset } from '@/types';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { Loader2, Pencil, Plus, Trash, Upload } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useSearchParams } from 'react-router-dom';
+import { useRulesetFiltersStore } from '@/stores/ruleset-filters-store';
+import { useListFilterParams } from '../utils/list-filter-query-params';
 
 function dedupeFileNames(files: File[]): File[] {
   const usedNames = new Set<string>();
@@ -63,8 +65,29 @@ export function AssetsPage() {
   const [editUrl, setEditUrl] = useState('');
   const [editCategory, setEditCategory] = useState<string | null>(null);
   const [editError, setEditError] = useState<string | null>(null);
-  const [filterValue, setFilterValue] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState(ALL_CATEGORIES);
+  const [searchParams] = useSearchParams();
+  const { title: filterValue, category: categoryFilter, setTitle: setFilterValue, setCategory: setCategoryFilter } =
+    useListFilterParams();
+  const setListFilters = useRulesetFiltersStore((s) => s.setListFilters);
+
+  useEffect(() => {
+    if (!rulesetId) return;
+    setListFilters(rulesetId, 'assets', {
+      title: searchParams.get('title') ?? undefined,
+      category: searchParams.get('category') ?? undefined,
+    });
+  }, [rulesetId, searchParams, setListFilters]);
+
+  const handleTitleChange = (value: string) => {
+    setFilterValue(value);
+    if (rulesetId) setListFilters(rulesetId, 'assets', { title: value || null });
+  };
+
+  const handleCategoryChange = (value: string) => {
+    setCategoryFilter(value);
+    if (rulesetId) setListFilters(rulesetId, 'assets', { category: value === ALL_CATEGORIES ? null : value });
+  };
+
   const [deleteConfirm, setDeleteConfirm] = useState<{
     id: string;
     filename: string;
@@ -360,9 +383,9 @@ export function AssetsPage() {
             className='max-w-md'
             placeholder='Filter by name'
             value={filterValue}
-            onChange={(e) => setFilterValue(e.target.value)}
+            onChange={(e) => handleTitleChange(e.target.value)}
           />
-          <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+          <Select value={categoryFilter} onValueChange={handleCategoryChange}>
             <SelectTrigger className='w-[180px]'>
               <SelectValue placeholder='Category' />
             </SelectTrigger>
