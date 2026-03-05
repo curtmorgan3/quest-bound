@@ -1,13 +1,37 @@
-import { Grid, type CellRendererProps, type GridColumn } from '@/components';
+import {
+  Grid,
+  type CellRendererProps,
+  type GridColumn,
+  type GridFilterModel,
+  type GridSortModelItem,
+} from '@/components';
 import { useActions } from '@/lib/compass-api';
 import type { Action } from '@/types';
+import { useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { ChartControls } from '../components';
+import {
+  encodeFilterForUrl,
+  encodeSortForUrl,
+  FILTER_PARAM,
+  parseFilterFromSearchParams,
+  parseSortFromSearchParams,
+  SORT_PARAM,
+} from '../utils/chart-query-params';
 import { actionChartColumns } from './action-columns';
 
 export const ActionChart = () => {
   const { actions, deleteAction, updateAction } = useActions();
-  const [, setSearchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const initialFilterModel = useMemo(
+    () => parseFilterFromSearchParams(searchParams),
+    [searchParams],
+  );
+  const initialSortModel = useMemo(
+    () => parseSortFromSearchParams(searchParams),
+    [searchParams],
+  );
 
   const columns: GridColumn<Action>[] = [...actionChartColumns]
     .map((c) => {
@@ -19,7 +43,13 @@ export const ActionChart = () => {
               id={params.data.id}
               type='action'
               handleDelete={handleDelete}
-              handleEdit={(id) => setSearchParams({ edit: id })}
+              handleEdit={(id) =>
+                setSearchParams((prev) => {
+                  const p = new URLSearchParams(prev);
+                  p.set('edit', id);
+                  return p;
+                })
+              }
               title={params.data.title}
             />
           ),
@@ -68,5 +98,39 @@ export const ActionChart = () => {
     deleteAction(id);
   };
 
-  return <Grid rowData={actions} colDefs={columns} onCellValueChanged={handleUpdate} />;
+  const handleFilterChanged = (filterModel: GridFilterModel) => {
+    setSearchParams((prev) => {
+      const p = new URLSearchParams(prev);
+      if (Object.keys(filterModel).length > 0) {
+        p.set(FILTER_PARAM, encodeFilterForUrl(filterModel));
+      } else {
+        p.delete(FILTER_PARAM);
+      }
+      return p;
+    }, { replace: true });
+  };
+
+  const handleSortChanged = (sortModel: GridSortModelItem[]) => {
+    setSearchParams((prev) => {
+      const p = new URLSearchParams(prev);
+      if (sortModel.length > 0) {
+        p.set(SORT_PARAM, encodeSortForUrl(sortModel));
+      } else {
+        p.delete(SORT_PARAM);
+      }
+      return p;
+    }, { replace: true });
+  };
+
+  return (
+    <Grid
+      rowData={actions}
+      colDefs={columns}
+      initialFilterModel={initialFilterModel}
+      initialSortModel={initialSortModel}
+      onCellValueChanged={handleUpdate}
+      onFilterChanged={handleFilterChanged}
+      onSortChanged={handleSortChanged}
+    />
+  );
 };
