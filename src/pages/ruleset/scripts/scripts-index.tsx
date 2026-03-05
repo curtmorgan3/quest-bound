@@ -21,7 +21,7 @@ import {
 } from '@/components/ui/select';
 import { useScripts } from '@/lib/compass-api/hooks/scripts/use-scripts';
 import { FileCode, Plus, Search } from 'lucide-react';
-import { useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { useRulesetFiltersStore } from '@/stores/ruleset-filters-store';
 import { useScriptFilters } from './use-script-filters';
@@ -87,6 +87,38 @@ export function ScriptsIndex() {
   const categorized = scriptsByCategory.filter((cat) => cat.category !== 'Uncategorized');
 
   const options = campaignId ? CAMPAIGN_TYPE_OPTIONS : ENTITY_TYPE_OPTIONS;
+
+  const STORAGE_KEY = 'qb.scriptsIndex.accordionOpen';
+  const [openCategories, setOpenCategories] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (!rulesetId) return;
+    try {
+      const raw = localStorage.getItem(`${STORAGE_KEY}.${rulesetId}`);
+      if (raw) {
+        const parsed = JSON.parse(raw) as unknown;
+        if (Array.isArray(parsed) && parsed.every((x) => typeof x === 'string')) {
+          setOpenCategories(parsed);
+        }
+      }
+    } catch {
+      // ignore
+    }
+  }, [rulesetId]);
+
+  const handleAccordionChange = useCallback(
+    (value: string[]) => {
+      setOpenCategories(value);
+      if (rulesetId) {
+        try {
+          localStorage.setItem(`${STORAGE_KEY}.${rulesetId}`, JSON.stringify(value));
+        } catch {
+          // ignore
+        }
+      }
+    },
+    [rulesetId],
+  );
 
   return (
     <PageWrapper
@@ -186,7 +218,11 @@ export function ScriptsIndex() {
         ) : (
           <>
             {categorized.length > 0 && (
-              <Accordion type='multiple' className='w-full border-b'>
+              <Accordion
+                type='multiple'
+                className='w-full border-b'
+                value={openCategories}
+                onValueChange={handleAccordionChange}>
                 {categorized.map(({ category, scripts: categoryScripts }) => (
                   <AccordionItem key={category} value={category}>
                     <AccordionTrigger style={{ textDecoration: 'none' }}>
