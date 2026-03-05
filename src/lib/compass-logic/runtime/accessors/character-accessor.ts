@@ -127,17 +127,21 @@ export class CharacterAccessor implements StructuredCloneSafe {
   }
 
   /**
-   * Set the character's image to a URL (e.g. Owner.setImage('https://example.com/portrait.png')).
+   * Set the character's image to either:
+   * - a direct URL (e.g. Owner.setImage('https://example.com/portrait.png')), or
+   * - the filename of an asset in the current ruleset (e.g. Owner.setImage('portrait.png')).
+   *
+   * The exact storage (assetId vs raw image URL) is resolved in ScriptRunner.flushCache.
    * Persists via pendingUpdates on flush.
    */
-  setImage(url: string): void {
+  setImage(value: string | null): void {
     const existing = this.pendingUpdates.get(`characterUpdate:${this.id}`) as
       | { customProperties?: Record<string, string | number | boolean>; image?: string | null }
       | undefined;
     this.pendingUpdates.set(`characterUpdate:${this.id}`, {
       ...existing,
       customProperties: existing?.customProperties ?? this.characterCustomProperties,
-      image: url,
+      image: value,
     });
   }
 

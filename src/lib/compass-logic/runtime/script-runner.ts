@@ -569,11 +569,53 @@ export class ScriptRunner {
           customProperties?: Record<string, string | number | boolean>;
           image?: string | null;
         };
+
         const update: Record<string, unknown> = {
-          ...(patch.customProperties != null && { customProperties: patch.customProperties }),
-          ...(patch.image !== undefined && { image: patch.image }),
           updatedAt: now,
         };
+
+        if (patch.customProperties != null) {
+          update.customProperties = patch.customProperties;
+        }
+
+        if (patch.image === null) {
+          update.assetId = null;
+          update.image = null;
+        } else if (patch.image !== undefined) {
+          const raw = typeof patch.image === 'string' ? patch.image.trim() : '';
+
+          if (!raw) {
+            update.assetId = null;
+            update.image = null;
+          } else if (
+            raw.startsWith('http://') ||
+            raw.startsWith('https://') ||
+            raw.startsWith('data:')
+          ) {
+            update.assetId = null;
+            update.image = raw;
+          } else {
+            let assetId: string | null = null;
+            if (rulesetId) {
+              const asset = await db.assets
+                .where('[rulesetId+filename]')
+                .equals([rulesetId, raw])
+                .first();
+              if (asset?.id) {
+                assetId = asset.id;
+              }
+            }
+
+            if (assetId) {
+              update.assetId = assetId;
+              // Let asset-injector middleware provide image from assetId when reading.
+            } else {
+              update.assetId = null;
+              update.image = raw;
+            }
+          }
+        }
+
         await db.characters.update(id, update);
       } else if (type === 'characterAttributeMax') {
         await db.characterAttributes.update(id, { max: value });

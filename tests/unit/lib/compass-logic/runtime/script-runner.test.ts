@@ -3,7 +3,7 @@ import { Lexer } from '@/lib/compass-logic/interpreter/lexer';
 import { Parser } from '@/lib/compass-logic/interpreter/parser';
 import { OwnerAccessor, RulesetAccessor } from '@/lib/compass-logic/runtime/accessors';
 import { ScriptRunner } from '@/lib/compass-logic/runtime/script-runner';
-import type { Attribute, CharacterAttribute, Chart, InventoryItem, Item } from '@/types';
+import type { Attribute, Asset, Character, CharacterAttribute, Chart, InventoryItem, Item } from '@/types';
 import { describe, expect, it } from 'vitest';
 import type { DB } from '@/stores/db/hooks/types';
 
@@ -265,6 +265,202 @@ result
       const result = await evaluator.eval(ast);
 
       expect(result).toBe(42);
+    });
+  });
+
+  describe('Owner.setImage with asset and URL images', () => {
+    it('sets character.image to URL and clears assetId when given a direct URL', async () => {
+      const now = '2024-01-01T00:00:00.000Z';
+
+      const character: Character = {
+        id: 'char1',
+        rulesetId: 'ruleset1',
+        userId: 'user1',
+        inventoryId: 'inv1',
+        name: 'Test Character',
+        assetId: null,
+        image: null,
+        isTestCharacter: false,
+        componentData: {},
+        pinnedSidebarDocuments: [],
+        pinnedSidebarCharts: [],
+        createdAt: now,
+        updatedAt: now,
+      };
+
+      const mockDb = {
+        // Minimal shape for ScriptRunner.loadCache
+        attributes: { where: () => ({ toArray: () => Promise.resolve<Attribute[]>([]) }) },
+        charts: { where: () => ({ toArray: () => Promise.resolve<Chart[]>([]) }) },
+        items: { where: () => ({ toArray: () => Promise.resolve<Item[]>([]) }) },
+        actions: { where: () => ({ toArray: () => Promise.resolve([]) }) },
+        characters: {
+          get: (id: string) => Promise.resolve(id === character.id ? character : null),
+          update: vi.fn(),
+        },
+        customProperties: {
+          where: () => ({ equals: () => ({ toArray: () => Promise.resolve([]) }) }),
+        },
+        characterAttributes: { where: () => ({ toArray: () => Promise.resolve<CharacterAttribute[]>([]) }) },
+        characterArchetypes: {
+          where: () => ({ equals: () => ({ toArray: () => Promise.resolve([]) }) }),
+        },
+        scripts: {
+          where: () => ({ filter: () => ({ toArray: () => Promise.resolve([]) }) }),
+        },
+        inventories: {
+          where: () => ({ equals: () => ({ toArray: () => Promise.resolve([]) }) }),
+        },
+        inventoryItems: {
+          where: () => ({ equals: () => ({ toArray: () => Promise.resolve<InventoryItem[]>([]) }) }),
+        },
+        archetypes: { where: () => ({ equals: () => ({ toArray: () => Promise.resolve([]) }) }), get: () => Promise.resolve(null) },
+        assets: {
+          where: () => ({
+            equals: () => ({
+              first: () => Promise.resolve<Asset | undefined>(undefined),
+            }),
+          }),
+        },
+      } as unknown as DB;
+
+      const context = {
+        ownerId: character.id,
+        rulesetId: character.rulesetId,
+        db: mockDb,
+      };
+
+      const runner = new ScriptRunner(context);
+      await runner.loadCache();
+
+      const script = `
+Owner.setImage("https://example.com/portrait.png")
+`;
+
+      const result = await runner.run(script);
+      expect(result.error).toBeUndefined();
+
+      await runner.flushCache();
+
+      expect((mockDb.characters as any).update).toHaveBeenCalledWith(
+        character.id,
+        expect.objectContaining({
+          assetId: null,
+          image: 'https://example.com/portrait.png',
+        }),
+      );
+    });
+
+    it('sets character.assetId when given an asset filename and falls back when not found', async () => {
+      const now = '2024-01-01T00:00:00.000Z';
+
+      const character: Character = {
+        id: 'char2',
+        rulesetId: 'ruleset-asset',
+        userId: 'user1',
+        inventoryId: 'inv2',
+        name: 'Asset Character',
+        assetId: null,
+        image: null,
+        isTestCharacter: false,
+        componentData: {},
+        pinnedSidebarDocuments: [],
+        pinnedSidebarCharts: [],
+        createdAt: now,
+        updatedAt: now,
+      };
+
+      const portraitAsset: Asset = {
+        id: 'asset-portrait',
+        data: 'data:image/png;base64,xxx',
+        type: 'image/png',
+        filename: 'portrait.png',
+        rulesetId: character.rulesetId,
+        createdAt: now,
+        updatedAt: now,
+      };
+
+      const charactersUpdateSpy = vi.fn();
+
+      const mockDb = {
+        attributes: { where: () => ({ toArray: () => Promise.resolve<Attribute[]>([]) }) },
+        charts: { where: () => ({ toArray: () => Promise.resolve<Chart[]>([]) }) },
+        items: { where: () => ({ toArray: () => Promise.resolve<Item[]>([]) }) },
+        actions: { where: () => ({ toArray: () => Promise.resolve([]) }) },
+        characters: {
+          get: (id: string) => Promise.resolve(id === character.id ? character : null),
+          update: charactersUpdateSpy,
+        },
+        customProperties: {
+          where: () => ({ equals: () => ({ toArray: () => Promise.resolve([]) }) }),
+        },
+        characterAttributes: { where: () => ({ toArray: () => Promise.resolve<CharacterAttribute[]>([]) }) },
+        characterArchetypes: {
+          where: () => ({ equals: () => ({ toArray: () => Promise.resolve([]) }) }),
+        },
+        scripts: {
+          where: () => ({ filter: () => ({ toArray: () => Promise.resolve([]) }) }),
+        },
+        inventories: {
+          where: () => ({ equals: () => ({ toArray: () => Promise.resolve([]) }) }),
+        },
+        inventoryItems: {
+          where: () => ({ equals: () => ({ toArray: () => Promise.resolve<InventoryItem[]>([]) }) }),
+        },
+        archetypes: { where: () => ({ equals: () => ({ toArray: () => Promise.resolve([]) }) }), get: () => Promise.resolve(null) },
+        assets: {
+          where: (_index: string) => ({
+            equals: ([rulesetId, filename]: [string, string]) => ({
+              first: () =>
+                Promise.resolve(
+                  rulesetId === character.rulesetId && filename === portraitAsset.filename
+                    ? portraitAsset
+                    : undefined,
+                ),
+            }),
+          }),
+        },
+      } as unknown as DB;
+
+      const context = {
+        ownerId: character.id,
+        rulesetId: character.rulesetId,
+        db: mockDb,
+      };
+
+      const runner = new ScriptRunner(context);
+      await runner.loadCache();
+
+      // First, use an existing asset filename
+      const scriptUseAsset = `
+Owner.setImage("portrait.png")
+`;
+      const resultUseAsset = await runner.run(scriptUseAsset);
+      expect(resultUseAsset.error).toBeUndefined();
+      await runner.flushCache();
+
+      expect(charactersUpdateSpy).toHaveBeenCalledWith(
+        character.id,
+        expect.objectContaining({
+          assetId: portraitAsset.id,
+        }),
+      );
+
+      // Then, use a non-existent filename; should fall back to storing image string and clearing assetId
+      const scriptFallback = `
+Owner.setImage("nonexistent.png")
+`;
+      const resultFallback = await runner.run(scriptFallback);
+      expect(resultFallback.error).toBeUndefined();
+      await runner.flushCache();
+
+      expect(charactersUpdateSpy).toHaveBeenCalledWith(
+        character.id,
+        expect.objectContaining({
+          assetId: null,
+          image: 'nonexistent.png',
+        }),
+      );
     });
   });
 
