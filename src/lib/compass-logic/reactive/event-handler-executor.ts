@@ -170,7 +170,7 @@ export class EventHandlerExecutor {
 
   /** Resolve character id to display name for event invocation logs. */
   private async getCharacterName(characterId: string): Promise<string> {
-    const character = await this.db.characters.get(characterId);
+    const character = await this.db.characters?.get?.(characterId);
     return (character as { name?: string } | undefined)?.name ?? 'Someone';
   }
 
