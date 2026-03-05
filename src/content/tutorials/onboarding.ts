@@ -44,7 +44,7 @@ export const onboardingTutorial: Tutorial = [
       },
       {
         description:
-          'Enter the title "Health" (with a capital H). Set Default to 10, then click Create.',
+          'Enter the title "Health" (with a capital H). Set Default to 1, then click Create.',
         selector: {
           selector: '#create-title, #create-default, [data-testid="base-create-submit"]',
           shouldAdvanceOnClick: true,
@@ -205,11 +205,18 @@ export const onboardingTutorial: Tutorial = [
         },
       },
       {
-        description:
-          'Under the Content tab, open the Action dropdown and select the "Take Damage" action to bind it to the input.',
+        description: 'Under the Content tab, click "Set Click Event".',
         selector: {
-          selector: '#component-data-action-lookup',
-          shouldAdvanceOnClick: false,
+          selector: '[data-testid="component-set-click-event"]',
+          shouldAdvanceOnClick: true,
+        },
+      },
+      {
+        description:
+          'In the dialog, open the Click Event Type dropdown. Select "Fire Action" from the list, then choose "Take Damage" from the Action dropdown.',
+        selector: {
+          selector: '[data-testid="click-event-option-fire-action"]',
+          shouldAdvanceOnClick: true,
         },
       },
       {
@@ -222,7 +229,7 @@ export const onboardingTutorial: Tutorial = [
       },
       {
         description:
-          'Click the inventory you added to select it. In the right-hand panel, click the "Data" tab.',
+          'Click the inventory you added to select it. In the right-hand panel, click the "Content" tab.',
         selector: {
           selector: '[data-testid="component-edit-tab-data"]',
           shouldAdvanceOnClick: true,

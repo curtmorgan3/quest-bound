@@ -657,6 +657,7 @@ export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
                     size='sm'
                     variant='outline'
                     className='h-7 px-2 justify-start text-xs'
+                    data-testid='component-set-click-event'
                     onClick={() => {
                       const current = getCurrentClickEventType();
                       setClickEventType(current ?? 'openPage');
@@ -735,13 +736,15 @@ export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
               <Select
                 value={clickEventType}
                 onValueChange={(value: ClickEventType) => setClickEventType(value)}>
-                <SelectTrigger className='h-8'>
+                <SelectTrigger className='h-8' data-testid='click-event-type-trigger'>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value='openPage'>Open Page</SelectItem>
                   <SelectItem value='openWindow'>Open Window</SelectItem>
-                  <SelectItem value='fireAction'>Fire Action</SelectItem>
+                  <SelectItem value='fireAction' data-testid='click-event-option-fire-action'>
+                    Fire Action
+                  </SelectItem>
                   <SelectItem value='fireScript'>Fire Script</SelectItem>
                 </SelectContent>
               </Select>
@@ -768,6 +771,7 @@ export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
                 selectedComponents[0].type !== ComponentTypes.FRAME && (
                   <ActionLookup
                     id='component-data-action-lookup'
+                    data-testid='component-data-action-lookup'
                     value={selectedComponents[0].actionId}
                     onSelect={(attr) => {
                       void handleSetFireActionClick(attr.id);

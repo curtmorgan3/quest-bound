@@ -97,14 +97,15 @@ export function OnboardingPanel({ userId, onClose }: OnboardingPanelProps) {
     }
     if (elements.length === 0) return;
 
-    const isButtonLike = (el: Element): boolean => {
+    const isClickableForAdvance = (el: Element): boolean => {
       const tag = el.tagName.toUpperCase();
       if (tag === 'BUTTON' || tag === 'A') return true;
-      if (el.getAttribute('role') === 'button') return true;
+      const role = el.getAttribute('role');
+      if (role === 'button' || role === 'option' || role === 'menuitem') return true;
       return false;
     };
 
-    const clickables = elements.filter(isButtonLike);
+    const clickables = elements.filter(isClickableForAdvance);
     if (clickables.length === 0) return;
 
     const handler = () => {
