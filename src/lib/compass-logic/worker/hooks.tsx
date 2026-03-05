@@ -571,6 +571,10 @@ export interface ReactiveScriptExecutionOptions {
   entityId?: string;
    /** Optional params map exposed to QBScript as params.get('name'). Must be JSON-serializable. */
   params?: Record<string, any>;
+  /** When set, roll() in scripts uses this handler (e.g. dice context rollDice for UI/3D dice). */
+  roll?: RollFn;
+  /** When set, rollSplit() in scripts uses this handler. */
+  rollSplit?: RollSplitFn;
 }
 
 export interface UseReactiveScriptExecutionResult {
@@ -623,6 +627,8 @@ export function useReactiveScriptExecution(timeout = 10000): UseReactiveScriptEx
           entityType: options.entityType,
           entityId: options.entityId,
           params: options.params,
+          roll: options.roll,
+          rollSplit: options.rollSplit,
           timeout,
         });
 

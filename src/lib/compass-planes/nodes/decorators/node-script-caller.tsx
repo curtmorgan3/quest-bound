@@ -1,9 +1,9 @@
 import { useScripts } from '@/lib/compass-api/hooks/scripts/use-scripts';
 import { useReactiveScriptExecution } from '@/lib/compass-logic';
 import { getComponentData } from '@/lib/compass-planes/utils';
-import { CharacterContext } from '@/stores';
+import { CharacterContext, DiceContext } from '@/stores';
 import type { Component, ScriptParamValue } from '@/types';
-import { useContext, useMemo, type ReactNode } from 'react';
+import { useCallback, useContext, useMemo, type ReactNode } from 'react';
 
 interface NodeScriptCallerProps {
   children: ReactNode;
@@ -12,8 +12,15 @@ interface NodeScriptCallerProps {
 
 export const NodeScriptCaller = ({ children, component }: NodeScriptCallerProps) => {
   const characterContext = useContext(CharacterContext);
+  const diceContext = useContext(DiceContext);
   const character = characterContext?.character;
   const hasScript = Boolean(component.scriptId);
+
+  const rollFn = useCallback(
+    (expression: string, rerollMessage?: string) =>
+      diceContext?.rollDice(expression, { rerollMessage }).then((r) => r.total),
+    [diceContext],
+  );
 
   const { scripts } = useScripts();
   const script = useMemo(
@@ -97,6 +104,7 @@ export const NodeScriptCaller = ({ children, component }: NodeScriptCallerProps)
       entityType: script.entityType,
       entityId: script.entityId ?? undefined,
       params: paramsRecord,
+      roll: diceContext ? rollFn : undefined,
     });
   };
 

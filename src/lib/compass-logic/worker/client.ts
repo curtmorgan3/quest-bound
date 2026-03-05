@@ -46,6 +46,10 @@ export interface ScriptExecutionOptions {
   campaignId?: string;
   /** Optional params map exposed to QBScript as params.get('name'). Must be JSON-serializable. */
   params?: Record<string, any>;
+  /** When set, roll() in scripts uses this handler (e.g. dice context rollDice for UI/3D dice). */
+  roll?: RollFn;
+  /** When set, rollSplit() in scripts uses this handler. */
+  rollSplit?: RollSplitFn;
 }
 
 export interface AttributeChangeOptions {
@@ -467,6 +471,9 @@ export class QBScriptClient {
     const requestId = generateRequestId();
     const scriptId = options.scriptId || `inline-${requestId}`;
 
+    this.pendingRollHandlers.set(requestId, options.roll ?? defaultScriptDiceRoller);
+    this.pendingRollSplitHandlers.set(requestId, options.rollSplit ?? defaultScriptDiceRollerSplit);
+
     const payload: ExecuteScriptPayload = {
       scriptId,
       sourceCode: options.sourceCode,
@@ -481,7 +488,16 @@ export class QBScriptClient {
       ...(options.params ? { params: options.params } : {}),
     };
 
-    return this.sendSignal({ type: 'EXECUTE_SCRIPT', payload }, requestId, options.timeout);
+    try {
+      return await this.sendSignal(
+        { type: 'EXECUTE_SCRIPT', payload },
+        requestId,
+        options.timeout,
+      );
+    } finally {
+      this.pendingRollHandlers.delete(requestId);
+      this.pendingRollSplitHandlers.delete(requestId);
+    }
   }
 
   /**
