@@ -13,7 +13,7 @@ export type ListPage =
 
 export type GridParams = { filter?: string; sort?: string };
 export type ListParams = { title?: string; category?: string };
-export type ScriptsParams = { q?: string; type?: string };
+export type ScriptsParams = { q?: string; type?: string; category?: string };
 
 type RulesetState = {
   [K in GridPage]?: GridParams;
@@ -49,7 +49,7 @@ function saveToStorage(byRuleset: Record<string, RulesetState>) {
 
 type SetGridPartial = { filter?: string | null; sort?: string | null };
 type SetListPartial = { title?: string | null; category?: string | null };
-type SetScriptsPartial = { q?: string | null; type?: string | null };
+type SetScriptsPartial = { q?: string | null; type?: string | null; category?: string | null };
 
 export const useRulesetFiltersStore = create<State & {
   setGridFilters: (rulesetId: string, page: GridPage, partial: SetGridPartial) => void;
@@ -164,9 +164,16 @@ export const useRulesetFiltersStore = create<State & {
               : partial.type !== undefined
                 ? partial.type
                 : current.type,
+          category:
+            partial.category === null || partial.category === 'all'
+              ? undefined
+              : partial.category !== undefined
+                ? partial.category
+                : current.category,
         };
         if (!next.q) delete next.q;
         if (!next.type || next.type === 'all') delete next.type;
+        if (!next.category || next.category === 'all') delete next.category;
         const nextRuleset = { ...ruleset, scripts: next };
         const byRuleset = { ...state.byRuleset, [rulesetId]: nextRuleset };
         saveToStorage(byRuleset);
@@ -179,7 +186,7 @@ export const useRulesetFiltersStore = create<State & {
       if (!rulesetId) return undefined;
       const ruleset = get().byRuleset[rulesetId];
       const params = ruleset?.scripts;
-      if (!params || (!params.q && !params.type)) return undefined;
+      if (!params || (!params.q && !params.type && !params.category)) return undefined;
       return params;
     },
 
@@ -192,7 +199,7 @@ export const useRulesetFiltersStore = create<State & {
     },
 
     clearScriptsFilters(rulesetId: string) {
-      get().setScriptsFilters(rulesetId, { q: null, type: null });
+      get().setScriptsFilters(rulesetId, { q: null, type: null, category: null });
     },
   };
 });

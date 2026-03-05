@@ -25,7 +25,12 @@ import { useEffect } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { useRulesetFiltersStore } from '@/stores/ruleset-filters-store';
 import { useScriptFilters } from './use-script-filters';
-import { CAMPAIGN_TYPE_OPTIONS, ENTITY_TYPE_OPTIONS, typeFromParams } from './utils';
+import {
+  ALL_CATEGORIES,
+  CAMPAIGN_TYPE_OPTIONS,
+  ENTITY_TYPE_OPTIONS,
+  typeFromParams,
+} from './utils';
 
 export function ScriptsIndex() {
   const { rulesetId: rulesetIdParam, campaignId } = useParams<{
@@ -38,8 +43,16 @@ export function ScriptsIndex() {
   const rulesetId = rulesetIdParam ?? rulesetIdFromHook ?? '';
   const selectedType = typeFromParams(searchParams, campaignId ? 'campaigns' : undefined);
 
-  const { nameFilter, setNameFilter, setSelectedType, scriptsByCategory, filteredScripts } =
-    useScriptFilters();
+  const {
+    nameFilter,
+    setNameFilter,
+    setSelectedType,
+    setCategoryFilter,
+    scriptsByCategory,
+    filteredScripts,
+    categoryFilter,
+    categories,
+  } = useScriptFilters();
 
   const setScriptsFilters = useRulesetFiltersStore((s) => s.setScriptsFilters);
   const rulesetIdForStore = campaignId ? undefined : (rulesetIdParam ?? rulesetIdFromHook ?? undefined);
@@ -49,6 +62,7 @@ export function ScriptsIndex() {
     setScriptsFilters(rulesetIdForStore, {
       q: searchParams.get('q') ?? undefined,
       type: searchParams.get('type') ?? undefined,
+      category: searchParams.get('category') ?? undefined,
     });
   }, [rulesetIdForStore, searchParams, setScriptsFilters]);
 
@@ -59,7 +73,14 @@ export function ScriptsIndex() {
 
   const handleTypeChange = (value: string) => {
     setSelectedType(value);
-    if (rulesetIdForStore) setScriptsFilters(rulesetIdForStore, { type: value === 'all' ? null : value });
+    if (rulesetIdForStore)
+      setScriptsFilters(rulesetIdForStore, { type: value === 'all' ? null : value });
+  };
+
+  const handleCategoryChange = (value: string) => {
+    setCategoryFilter(value);
+    if (rulesetIdForStore)
+      setScriptsFilters(rulesetIdForStore, { category: value === ALL_CATEGORIES ? null : value });
   };
 
   const uncategorized = scriptsByCategory.filter((cat) => cat.category === 'Uncategorized');
@@ -112,6 +133,24 @@ export function ScriptsIndex() {
                 {options.map((opt) => (
                   <SelectItem key={opt.value} value={opt.value}>
                     {opt.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className='flex items-center gap-2'>
+            <Label htmlFor='script-category-filter' className='text-sm'>
+              Category
+            </Label>
+            <Select value={categoryFilter} onValueChange={handleCategoryChange}>
+              <SelectTrigger id='script-category-filter' className='w-[180px]' data-testid='category-filter'>
+                <SelectValue placeholder='All categories' />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={ALL_CATEGORIES}>All categories</SelectItem>
+                {categories.map((cat) => (
+                  <SelectItem key={cat} value={cat}>
+                    {cat}
                   </SelectItem>
                 ))}
               </SelectContent>

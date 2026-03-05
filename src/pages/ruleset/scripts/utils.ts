@@ -73,3 +73,9 @@ export function typeFromParams(
 export function nameFromParams(searchParams: URLSearchParams): string {
   return searchParams.get('q') ?? '';
 }
+
+export const ALL_CATEGORIES = 'all';
+
+export function categoryFromParams(searchParams: URLSearchParams): string {
+  return searchParams.get('category') ?? ALL_CATEGORIES;
+}

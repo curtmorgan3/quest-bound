@@ -103,10 +103,11 @@ export function RulesetSidebar() {
           }
         } else if (rulesetId && item.scriptsPage) {
           const params = getScriptsFilters(rulesetId);
-          if (params && (params.q || params.type)) {
+          if (params && (params.q || params.type || params.category)) {
             const q = new URLSearchParams();
             if (params.q) q.set('q', params.q);
             if (params.type) q.set('type', params.type);
+            if (params.category) q.set('category', params.category);
             url = `${baseUrl}?${q.toString()}`;
           }
         }
