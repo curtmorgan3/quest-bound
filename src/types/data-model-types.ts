@@ -469,12 +469,35 @@ export type CampaignCharacter = BaseDetails & {
   campaignId: string;
   campaignSceneId?: string;
   active?: boolean;
+  /** Position in turn order for this scene (0 = unset). Sort by turnOrder for order; gaps allowed. */
+  turnOrder?: number;
 };
 
 export type CampaignScene = BaseDetails & {
   campaignId: string;
   name: string;
   category?: string;
+  /** Whether the scene is in turn-based mode. */
+  turnBasedMode?: boolean;
+  /** Current cycle number (1-based). Meaningful when turnBasedMode is true. */
+  currentTurnCycle?: number;
+  /** 0-based index in sorted turn order (which character's turn it is). */
+  currentStepInCycle?: number;
+};
+
+/** Callback registered via Scene.in_turns(n) or Scene.on_turn_advance(); runs when a cycle is entered or on every advance. */
+export type SceneTurnCallback = BaseDetails & {
+  campaignSceneId: string;
+  /** Cycle when to run; null = run every advance (on_turn_advance). */
+  targetCycle: number | null;
+  /** Scene's currentTurnCycle when the callback was registered. */
+  createdAtCycle: number;
+  /** Character id for Owner context; null when no owner (e.g. Game Manager). */
+  ownerId: string | null;
+  rulesetId: string;
+  scriptId: string;
+  /** Source code of the block to execute (re-parsed when the callback fires). */
+  blockSource: string;
 };
 
 export type CampaignEventParamType = 'string' | 'number' | 'boolean';

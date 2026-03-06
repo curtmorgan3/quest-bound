@@ -168,5 +168,13 @@ export const dbSchemaV52 = {
   ...dbSchemaV51,
 };
 
+/** Schema for v53: turns feature — CampaignScene turn state, CampaignCharacter turnOrder, sceneTurnCallbacks table. */
+export const dbSchemaV53 = {
+  ...dbSchemaV52,
+  campaignScenes: `${common}, campaignId, name, category, turnBasedMode, currentTurnCycle, currentStepInCycle, [campaignId]`,
+  campaignCharacters: `${common}, characterId, campaignId, campaignSceneId, mapHeight, mapWidth, active, turnOrder, [campaignId], [characterId], [campaignId+characterId], [campaignSceneId]`,
+  sceneTurnCallbacks: `${common}, campaignSceneId, targetCycle, createdAtCycle, ownerId, rulesetId, scriptId, blockSource, [campaignSceneId], [campaignSceneId+targetCycle]`,
+};
+
 // Increment on every schema change
-export const dbSchemaVersion = 52;
+export const dbSchemaVersion = 53;
