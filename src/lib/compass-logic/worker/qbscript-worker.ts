@@ -6,7 +6,7 @@
  */
 
 import type { DB } from '@/stores/db/hooks/types';
-import { dbSchemaV50, dbSchemaVersion } from '@/stores/db/schema';
+import { dbSchemaV53, dbSchemaVersion } from '@/stores/db/schema';
 import type {
   PromptFn,
   RollFn,
@@ -42,7 +42,7 @@ import type {
 // Note: This MUST match the schema from @/stores/db/db.ts
 const db = new Dexie('qbdb') as DB;
 
-db.version(dbSchemaVersion).stores(dbSchemaV50);
+db.version(dbSchemaVersion).stores(dbSchemaV53);
 
 // ============================================================================
 // Worker State

@@ -16,8 +16,8 @@ import type {
   RollFn,
   RollSplitFn,
   RulesetWindow,
-  Script,
   SceneTurnCallback,
+  Script,
   SelectCharacterFn,
   SelectCharactersFn,
   Window,
@@ -828,7 +828,7 @@ export class ScriptRunner {
                 isCollapsed: false,
                 updatedAt: now,
               });
-          }
+            }
             continue;
           }
 
@@ -928,6 +928,7 @@ export class ScriptRunner {
     callbacks: SceneTurnCallback[],
     sceneAccessor: CampaignSceneAccessor,
   ): Promise<void> {
+    console.log(callbacks);
     sceneAccessor.setInsideCallbackRun(true);
     for (const cb of callbacks) {
       await executeTurnCallback(
@@ -999,8 +1000,7 @@ export class ScriptRunner {
         },
         this.context.roll,
         deferredAdvanceRef,
-        (callbacks: SceneTurnCallback[]) =>
-          this.runTurnCallbacks(callbacks, this.sceneAccessor!),
+        (callbacks: SceneTurnCallback[]) => this.runTurnCallbacks(callbacks, this.sceneAccessor!),
       );
     } else {
       this.sceneAccessor = null;
