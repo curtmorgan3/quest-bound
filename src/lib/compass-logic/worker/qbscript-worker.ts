@@ -539,6 +539,8 @@ async function handleExecuteScript(payload: ExecuteScriptPayload): Promise<void>
           undefined,
           rollSplitFn,
           promptFn,
+          selectCharacterFn,
+          selectCharactersFn,
         ),
       ...(payload.params ? { params: createParamsHelperFromRecord(payload.params) } : {}),
     };
@@ -597,10 +599,14 @@ async function handleExecuteScript(payload: ExecuteScriptPayload): Promise<void>
               undefined,
               rollSplitFn,
               promptFn,
+              selectCharacterFn,
+              selectCharactersFn,
             ),
           roll: rollFn,
           rollSplit: rollSplitFn,
           prompt: promptFn,
+          selectCharacter: selectCharacterFn,
+          selectCharacters: selectCharactersFn,
         };
         const chainResult = await runReactiveChainForModifiedAttributes(
           directModifiedIds,
@@ -1403,19 +1409,54 @@ async function handleExecuteCampaignEventEvent(payload: {
   requestId: string;
 }): Promise<void> {
   try {
+    const campaignEvent = await db.campaignEvents.get(payload.campaignEventId);
+    const campaign = campaignEvent
+      ? await db.campaigns.get(campaignEvent.campaignId)
+      : undefined;
+    const rulesetId = campaign?.rulesetId ?? '';
+    const campaignId = campaignEvent?.campaignId;
+
     const rollFn: RollFn = (expression: string, rerollMessage?: string) =>
       rollBridge.requestRoll(expression, payload.requestId, rerollMessage);
     const rollSplitFn: RollSplitFn = (expression: string, rerollMessage?: string) =>
       rollBridge.requestRollSplit(expression, payload.requestId, rerollMessage);
     const promptFn: PromptFn = (msg: string, choices: string[]) =>
       promptBridge.requestPrompt(msg, choices, payload.requestId);
+    const selectCharacterFn: SelectCharacterFn = (title?: string, description?: string) =>
+      characterSelectBridge
+        .requestSelect(
+          'single',
+          title,
+          description,
+          payload.requestId,
+          rulesetId,
+          campaignId,
+        )
+        .then((ids) => (ids.length > 0 ? ids[0]! : null));
+    const selectCharactersFn: SelectCharactersFn = (title?: string, description?: string) =>
+      characterSelectBridge.requestSelect(
+        'multi',
+        title,
+        description,
+        payload.requestId,
+        rulesetId,
+        campaignId,
+      );
 
     const allModifiedIds = new Set<string>();
     const getCollector = () => allModifiedIds;
     let executor: EventHandlerExecutor;
     executor = new EventHandlerExecutor(
       db,
-      createOnAttributesModified(rollFn, rollSplitFn, () => executor, getCollector, promptFn),
+      createOnAttributesModified(
+        rollFn,
+        rollSplitFn,
+        () => executor,
+        getCollector,
+        promptFn,
+        selectCharacterFn,
+        selectCharactersFn,
+      ),
     );
     const result = await executor.executeCampaignEventEvent(
       payload.campaignEventId,
@@ -1425,6 +1466,8 @@ async function handleExecuteCampaignEventEvent(payload: {
       rollFn,
       rollSplitFn,
       promptFn,
+      selectCharacterFn,
+      selectCharactersFn,
     );
 
     if (result.error || !result.success) {

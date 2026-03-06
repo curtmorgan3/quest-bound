@@ -176,5 +176,11 @@ export const dbSchemaV53 = {
   sceneTurnCallbacks: `${common}, campaignSceneId, targetCycle, createdAtCycle, ownerId, rulesetId, scriptId, blockSource, [campaignSceneId], [campaignSceneId+targetCycle]`,
 };
 
+/** Schema for v54: CampaignCharacter turn timestamps for per-turn log filtering (rewritten each cycle). */
+export const dbSchemaV54 = {
+  ...dbSchemaV53,
+  campaignCharacters: `${common}, characterId, campaignId, campaignSceneId, mapHeight, mapWidth, active, turnOrder, turnStartTimestamp, turnEndTimestamp, [campaignId], [characterId], [campaignId+characterId], [campaignSceneId]`,
+};
+
 // Increment on every schema change
-export const dbSchemaVersion = 53;
+export const dbSchemaVersion = 54;

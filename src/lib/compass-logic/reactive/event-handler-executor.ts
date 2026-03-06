@@ -343,6 +343,8 @@ export class EventHandlerExecutor {
           undefined,
           rollSplit,
           prompt,
+          selectCharacterWrapped,
+          selectCharactersWrapped,
         ),
     };
 
@@ -711,6 +713,8 @@ export class EventHandlerExecutor {
           undefined,
           rollSplit,
           prompt,
+          selectCharacter,
+          selectCharacters,
         ),
     };
 
@@ -802,6 +806,8 @@ export class EventHandlerExecutor {
           undefined,
           rollSplit,
           prompt,
+          selectCharacter,
+          selectCharacters,
         ),
     };
 
@@ -845,6 +851,8 @@ export class EventHandlerExecutor {
     roll?: RollFn,
     rollSplit?: RollSplitFn,
     prompt?: PromptFn,
+    selectCharacter?: SelectCharacterFn,
+    selectCharacters?: SelectCharactersFn,
     /** @deprecated campaignEventSceneId is ignored; CampaignEvent.sceneId is used instead. */
     _campaignEventSceneId?: string | null,
   ): Promise<EventHandlerResult> {
@@ -906,6 +914,8 @@ export class EventHandlerExecutor {
       roll,
       rollSplit,
       prompt,
+      selectCharacter,
+      selectCharacters,
       onRollComplete: this.createOnRollComplete(
         campaign.rulesetId,
         script.id,
@@ -923,6 +933,8 @@ export class EventHandlerExecutor {
           undefined,
           rollSplit,
           prompt,
+          selectCharacter,
+          selectCharacters,
         ),
       params: paramsHelper,
     };

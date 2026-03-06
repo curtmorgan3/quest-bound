@@ -84,13 +84,44 @@ export async function advanceSceneTurnState(
   }
 
   const justWrapped = currentStepInCycle === 0;
-
   const now = new Date().toISOString();
+  const nowMs = Date.now();
+
   await db.campaignScenes.update(campaignSceneId, {
     currentTurnCycle,
     currentStepInCycle,
     updatedAt: now,
   });
+
+  // Update turn timestamps on campaign characters (rewritten each advance/cycle for per-turn logs).
+  const prevStep = currentStepInCycle === 0 ? numCharacters - 1 : currentStepInCycle - 1;
+  const prevCharacter = characters[prevStep];
+  const newCharacter = characters[currentStepInCycle];
+  if (prevCharacter) {
+    await db.campaignCharacters.update(prevCharacter.id, {
+      turnEndTimestamp: nowMs,
+      updatedAt: now,
+    });
+  }
+  if (newCharacter) {
+    await db.campaignCharacters.update(newCharacter.id, {
+      turnStartTimestamp: nowMs,
+      turnEndTimestamp: null,
+      updatedAt: now,
+    });
+  }
+  if (justWrapped) {
+    // Clear turn timestamps for everyone else so only current cycle is reflected.
+    for (const cc of characters) {
+      if (cc.id !== newCharacter?.id) {
+        await db.campaignCharacters.update(cc.id, {
+          turnStartTimestamp: undefined,
+          turnEndTimestamp: undefined,
+          updatedAt: now,
+        });
+      }
+    }
+  }
 
   // Fetch callbacks: cycle callbacks for this cycle (only when we just wrapped), then on_turn_advance
   const cycleCallbacks: SceneTurnCallback[] = justWrapped
@@ -123,6 +154,7 @@ export async function startSceneTurnBasedMode(
   if (characters.length === 0) return;
 
   const now = new Date().toISOString();
+  const nowMs = Date.now();
   const sorted = [...characters].sort(
     (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
   );
@@ -133,6 +165,11 @@ export async function startSceneTurnBasedMode(
       updatedAt: now,
     });
   }
+  await db.campaignCharacters.update(sorted[0].id, {
+    turnStartTimestamp: nowMs,
+    turnEndTimestamp: null,
+    updatedAt: now,
+  });
 
   await db.campaignScenes.update(campaignSceneId, {
     turnBasedMode: true,
@@ -163,6 +200,8 @@ export async function stopSceneTurnBasedMode(
   for (const cc of rows) {
     await db.campaignCharacters.update(cc.id, {
       turnOrder: 0,
+      turnStartTimestamp: undefined,
+      turnEndTimestamp: undefined,
       updatedAt: now,
     });
   }

@@ -23,7 +23,11 @@ type CharacterWithCampaign = {
 export function CharacterSelectModal() {
   const { open, mode, title, description, rulesetId, campaignId, select, cancel } =
     useCharacterSelectModalStore();
+
+  console.log('id: ', campaignId);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
+  const { pcs, npcs } = useCharacterLists(rulesetId, campaignId);
 
   const handleOpenChange = (isOpen: boolean) => {
     if (!isOpen) {
@@ -61,8 +65,6 @@ export function CharacterSelectModal() {
     select(Array.from(selectedIds));
     resetSelection();
   };
-
-  const { pcs, npcs } = useCharacterLists(rulesetId, campaignId);
 
   const hasAnyCharacters = pcs.length > 0 || npcs.length > 0;
   const modalTitle =

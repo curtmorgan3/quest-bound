@@ -160,15 +160,15 @@ export function useExecuteAction(timeout = 10000): UseExecuteActionResult {
 
 export interface UseExecuteActionEventResult {
   executeActionEvent: (
-      actionId: string,
-      characterId: string,
-      targetId: string | null,
-      eventType: 'on_activate' | 'on_deactivate',
-      roll?: RollFn,
-      campaignId?: string,
-      callerInventoryItemInstanceId?: string,
-      rollSplit?: RollSplitFn,
-    ) => Promise<void>;
+    actionId: string,
+    characterId: string,
+    targetId: string | null,
+    eventType: 'on_activate' | 'on_deactivate',
+    roll?: RollFn,
+    campaignId?: string,
+    callerInventoryItemInstanceId?: string,
+    rollSplit?: RollSplitFn,
+  ) => Promise<void>;
   result: any;
   announceMessages: string[];
   logMessages: any[][];
@@ -540,7 +540,6 @@ export function useScriptAnnouncements(onAnnounce?: (message: string) => void): 
     const handleAnnounce = (event: Event) => {
       const customEvent = event as CustomEvent<{ message: string }>;
       if (onAnnounce) {
-        console.log('announce');
         onAnnounce(customEvent.detail.message);
       }
     };
@@ -569,7 +568,7 @@ export interface ReactiveScriptExecutionOptions {
   /** When script is attached to an entity (attribute, action, item), enables 'Self' in the script environment. */
   entityType?: string;
   entityId?: string;
-   /** Optional params map exposed to QBScript as params.get('name'). Must be JSON-serializable. */
+  /** Optional params map exposed to QBScript as params.get('name'). Must be JSON-serializable. */
   params?: Record<string, any>;
   /** When set, roll() in scripts uses this handler (e.g. dice context rollDice for UI/3D dice). */
   roll?: RollFn;

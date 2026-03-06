@@ -1,4 +1,5 @@
-import { useCampaignCharacters } from '@/lib/compass-api';
+import { useCampaign, useCampaignCharacters, useScriptLogs } from '@/lib/compass-api';
+import type { ScriptLog } from '@/types';
 import { motion } from 'framer-motion';
 import { useMemo } from 'react';
 import type { CampaignCharacterWithName } from './hooks';
@@ -29,6 +30,10 @@ export function TurnOrderScene({
   onAvatarClick,
 }: TurnOrderSceneProps) {
   const { campaignCharacters } = useCampaignCharacters(campaignId);
+  const campaign = useCampaign(campaignId);
+  const rulesetId = campaign?.rulesetId;
+  const { logs: scriptLogs } = useScriptLogs(500, rulesetId, campaignId);
+
   const inScene = useMemo(
     () => campaignCharacters.filter((cc) => cc.campaignSceneId === sceneId),
     [campaignCharacters, sceneId],
@@ -64,7 +69,7 @@ export function TurnOrderScene({
   }
 
   return (
-    <div className='flex min-h-0 w-[200px] shrink-0 flex-col border-r bg-muted/20 p-3 flex-1'>
+    <div className='flex min-h-0 flex-1 flex-col border-r bg-muted/20 p-3'>
       <p className='mb-2 text-sm text-muted-foreground'>Turn {currentTurnCycle}</p>
       <div className='flex min-h-0 flex-1 flex-col gap-2 overflow-auto p-2'>
         {displayOrder.map((entry) => (
@@ -73,6 +78,7 @@ export function TurnOrderScene({
             entry={entry}
             isCurrentTurn={entry.cc.id === currentTurnCampaignCharacterId}
             isHovered={entry.cc.id === hoveredCampaignCharacterId}
+            scriptLogs={scriptLogs}
             onAvatarClick={onAvatarClick}
           />
         ))}
@@ -85,6 +91,7 @@ interface TurnOrderPortraitProps {
   entry: CampaignCharacterWithName;
   isCurrentTurn: boolean;
   isHovered: boolean;
+  scriptLogs: ScriptLog[];
   onAvatarClick?: (characterId: string) => void;
 }
 
@@ -92,41 +99,83 @@ function TurnOrderPortrait({
   entry,
   isCurrentTurn,
   isHovered,
+  scriptLogs,
   onAvatarClick,
 }: TurnOrderPortraitProps) {
-  const { character } = entry;
+  const { character, cc } = entry;
   const showRing = isCurrentTurn || isHovered;
+
+  const turnLogs = useMemo(() => {
+    const start = cc.turnStartTimestamp;
+    const end = cc.turnEndTimestamp ?? (isCurrentTurn ? Date.now() : undefined);
+    if (start == null || (end == null && !isCurrentTurn)) return [];
+    const characterId = cc.characterId;
+    return scriptLogs
+      .filter(
+        (log) =>
+          log.characterId === characterId &&
+          log.timestamp >= start &&
+          (end == null || log.timestamp < end),
+      )
+      .sort((a, b) => a.timestamp - b.timestamp);
+  }, [cc.turnStartTimestamp, cc.turnEndTimestamp, cc.characterId, isCurrentTurn, scriptLogs]);
+
+  const logLines = useMemo(() => {
+    return turnLogs.map((l) => {
+      try {
+        const arr = JSON.parse(l.argsJson) as unknown[];
+        return Array.isArray(arr) ? arr.join(', ') : String(arr);
+      } catch {
+        return l.argsJson;
+      }
+    });
+  }, [turnLogs]);
 
   return (
     <motion.div
       layout
       transition={{ type: 'spring', stiffness: 350, damping: 30 }}
-      className={`flex flex-col items-start gap-1 ${isCurrentTurn ? 'mb-8' : ''}`}>
-      <button
-        type='button'
-        data-active-npc-avatar='true'
-        data-current-turn={isCurrentTurn ? 'true' : undefined}
-        onClick={() => character?.id && onAvatarClick?.(character.id)}
-        className={`size-26 shrink-0 overflow-hidden rounded-md border bg-muted transition-shadow duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
-          showRing ? 'ring-2 ring-primary shadow-[0_0_12px] shadow-primary/50' : ''
-        }`}
-        title={character?.name ?? 'Unnamed'}
-        aria-label={`Open ${character?.name ?? 'character'} sheet${isCurrentTurn ? ' (current turn)' : ''}`}>
-        {character?.image ? (
-          <img
-            src={character.image}
-            alt={character?.name ?? ''}
-            className='size-full object-cover'
-          />
+      className={`flex items-stretch gap-2 ${isCurrentTurn ? 'mb-8' : ''}`}>
+      <div className='flex shrink-0 flex-col items-start gap-1'>
+        <button
+          type='button'
+          data-active-npc-avatar='true'
+          data-current-turn={isCurrentTurn ? 'true' : undefined}
+          onClick={() => character?.id && onAvatarClick?.(character.id)}
+          className={`size-26 shrink-0 overflow-hidden rounded-md border bg-muted transition-shadow duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+            showRing ? 'ring-2 ring-primary shadow-[0_0_12px] shadow-primary/50' : ''
+          }`}
+          title={character?.name ?? 'Unnamed'}
+          aria-label={`Open ${character?.name ?? 'character'} sheet${isCurrentTurn ? ' (current turn)' : ''}`}>
+          {character?.image ? (
+            <img
+              src={character.image}
+              alt={character?.name ?? ''}
+              className='size-full object-cover'
+            />
+          ) : (
+            <div className='flex size-full items-center justify-center text-xl font-medium text-muted-foreground'>
+              {(character?.name ?? '?').slice(0, 1).toUpperCase()}
+            </div>
+          )}
+        </button>
+        <span className='text-xs text-muted-foreground truncate max-w-[5rem]'>
+          {character?.name ?? 'Unnamed'}
+        </span>
+      </div>
+      <div
+        className='h-26 min-w-0 flex-1 overflow-y-auto rounded border bg-background/80 px-2 py-1 font-mono text-xs'
+        aria-label={`Log for ${character?.name ?? 'character'}'s turn`}>
+        {logLines.length === 0 ? (
+          <span className='text-muted-foreground'>—</span>
         ) : (
-          <div className='flex size-full items-center justify-center text-xl font-medium text-muted-foreground'>
-            {(character?.name ?? '?').slice(0, 1).toUpperCase()}
+          <div className='flex flex-col gap-0.5 break-words'>
+            {logLines.map((line, i) => (
+              <div key={i}>{line}</div>
+            ))}
           </div>
         )}
-      </button>
-      <span className='text-xs text-muted-foreground truncate max-w-[5rem]'>
-        {character?.name ?? 'Unnamed'}
-      </span>
+      </div>
     </motion.div>
   );
 }

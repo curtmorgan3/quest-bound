@@ -471,6 +471,10 @@ export type CampaignCharacter = BaseDetails & {
   active?: boolean;
   /** Position in turn order for this scene (0 = unset). Sort by turnOrder for order; gaps allowed. */
   turnOrder?: number;
+  /** Unix ms when this character's turn started (current cycle). Rewritten on each advance. */
+  turnStartTimestamp?: number;
+  /** Unix ms when this character's turn ended (null = currently their turn). Rewritten on each advance. */
+  turnEndTimestamp?: number | null;
 };
 
 export type CampaignScene = BaseDetails & {
