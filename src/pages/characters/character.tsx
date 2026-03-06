@@ -1,5 +1,6 @@
 import { useSidebar } from '@/components/ui/sidebar';
 import { useCharacter, useCharacterAttributes } from '@/lib/compass-api';
+import { setCurrentCampaignIdForScripts } from '@/lib/compass-logic/worker/current-campaign-ref';
 import {
   setCurrentRollHandlerForScripts,
   setCurrentRollSplitHandlerForScripts,
@@ -82,6 +83,15 @@ export const CharacterPage = ({
       setCurrentRollSplitHandlerForScripts(undefined);
     };
   }, [roll, rollSplit]);
+
+  // When viewing character sheet in campaign play, set campaign ref so component-click scripts
+  // and reactive scripts get campaignId in context and logs are persisted with campaignId.
+  useEffect(() => {
+    setCurrentCampaignIdForScripts(campaignId ?? undefined);
+    return () => {
+      setCurrentCampaignIdForScripts(undefined);
+    };
+  }, [campaignId]);
 
   const { character, updateCharacter } = useCharacter(id ?? characterId);
 

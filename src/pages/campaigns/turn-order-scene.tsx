@@ -167,9 +167,9 @@ function TurnOrderPortrait({
         className='h-26 min-w-0 flex-1 overflow-y-auto rounded border bg-background/80 px-2 py-1 font-mono text-xs'
         aria-label={`Log for ${character?.name ?? 'character'}'s turn`}>
         {logLines.length === 0 ? (
-          <span className='text-muted-foreground'>—</span>
+          <span className='text-muted-foreground'>Waiting for turn</span>
         ) : (
-          <div className='flex flex-col gap-0.5 break-words'>
+          <div className='flex flex-col gap-0.5 break-words text-muted-foreground'>
             {logLines.map((line, i) => (
               <div key={i}>{line}</div>
             ))}
