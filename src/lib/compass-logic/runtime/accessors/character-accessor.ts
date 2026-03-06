@@ -1,3 +1,4 @@
+import type { DB } from '@/stores/db/hooks/types';
 import type {
   Action,
   Attribute,
@@ -6,7 +7,6 @@ import type {
   InventoryItem,
   Item,
 } from '@/types';
-import type { DB } from '@/stores/db/hooks/types';
 import type Dexie from 'dexie';
 import type { ExecuteActionEventFn } from '../proxies';
 import { ActionProxy, AttributeProxy, createItemInstanceProxy } from '../proxies';
@@ -137,20 +137,25 @@ export class CharacterAccessor implements StructuredCloneSafe {
    */
   getProperty(name: string): string | number | boolean | null {
     const cp = this.customProperties.find((c) => c.label === name);
-    if (!cp) return null;
-    const current = this.characterCustomProperties[cp.id];
-    if (current !== undefined && current != null) {
-      return current as string | number | boolean;
+    if (cp) {
+      const current = this.characterCustomProperties[cp.id];
+      if (current !== undefined && current != null) {
+        return current as string | number | boolean;
+      }
+
+      const defaultValue = this.getDefaultValueForCustomProperty(cp);
+      this.characterCustomProperties[cp.id] = defaultValue;
+      this.pendingUpdates.set(`characterUpdate:${this.id}`, {
+        customProperties: this.characterCustomProperties,
+      });
+
+      return defaultValue;
     }
 
-    const defaultValue = this.getDefaultValueForCustomProperty(cp);
-    console.log('def: ', defaultValue);
-    this.characterCustomProperties[cp.id] = defaultValue;
-    this.pendingUpdates.set(`characterUpdate:${this.id}`, {
-      customProperties: this.characterCustomProperties,
-    });
-
-    return defaultValue;
+    const looseValue = this.characterCustomProperties[name];
+    return looseValue !== undefined && looseValue != null
+      ? (looseValue as string | number | boolean)
+      : null;
   }
 
   /**
@@ -159,8 +164,11 @@ export class CharacterAccessor implements StructuredCloneSafe {
    */
   setProperty(name: string, value: string | number | boolean): void {
     const cp = this.customProperties.find((c) => c.label === name);
-    if (!cp) return;
-    this.characterCustomProperties[cp.id] = value;
+    if (cp) {
+      this.characterCustomProperties[cp.id] = value;
+    } else {
+      this.characterCustomProperties[name] = value;
+    }
     this.pendingUpdates.set(`characterUpdate:${this.id}`, {
       customProperties: this.characterCustomProperties,
     });
