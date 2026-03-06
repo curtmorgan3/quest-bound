@@ -91,3 +91,68 @@ export async function advanceSceneTurnState(
 
   return { cycleCallbacks, advanceCallbacks };
 }
+
+/**
+ * Start turn-based mode for a scene (e.g. from UI toggle).
+ * Assigns default turn order by creation date. No-op when there are no active characters.
+ */
+export async function startSceneTurnBasedMode(
+  db: DB,
+  campaignId: string,
+  campaignSceneId: string,
+): Promise<void> {
+  const characters = await getSceneTurnOrderCharacters(db, campaignId, campaignSceneId);
+  if (characters.length === 0) return;
+
+  const now = new Date().toISOString();
+  const sorted = [...characters].sort(
+    (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+  );
+  let turnOrder = 1;
+  for (const cc of sorted) {
+    await db.campaignCharacters.update(cc.id, {
+      turnOrder: turnOrder++,
+      updatedAt: now,
+    });
+  }
+
+  await db.campaignScenes.update(campaignSceneId, {
+    turnBasedMode: true,
+    currentTurnCycle: 1,
+    currentStepInCycle: 0,
+    updatedAt: now,
+  });
+}
+
+/**
+ * Stop turn-based mode for a scene (e.g. from UI toggle).
+ * Clears callbacks and resets all scene characters' turnOrder to 0.
+ */
+export async function stopSceneTurnBasedMode(
+  db: DB,
+  campaignId: string,
+  campaignSceneId: string,
+): Promise<void> {
+  const now = new Date().toISOString();
+  const rows = (await db.campaignCharacters
+    .where('campaignId')
+    .equals(campaignId)
+    .filter(
+      (cc: CampaignCharacter) => cc.campaignSceneId === campaignSceneId,
+    )
+    .toArray()) as CampaignCharacter[];
+
+  for (const cc of rows) {
+    await db.campaignCharacters.update(cc.id, {
+      turnOrder: 0,
+      updatedAt: now,
+    });
+  }
+
+  await db.sceneTurnCallbacks.where('campaignSceneId').equals(campaignSceneId).delete();
+
+  await db.campaignScenes.update(campaignSceneId, {
+    turnBasedMode: false,
+    updatedAt: now,
+  });
+}

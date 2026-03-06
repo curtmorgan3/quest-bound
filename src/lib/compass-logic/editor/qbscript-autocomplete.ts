@@ -52,7 +52,67 @@ const qbscriptCompletions = [
   {
     label: 'Scene',
     type: 'variable',
-    info: 'Active campaign scene in campaign context; use Scene.characters() and Scene.spawnCharacter(name)',
+    info: 'Active campaign scene in campaign context; use Scene.characters(), Scene.spawnCharacter(name), and turn-based APIs',
+  },
+  {
+    label: 'Scene.characters',
+    type: 'function',
+    info: 'Returns array of active character accessors in this scene (e.g. Scene.characters())',
+  },
+  {
+    label: 'Scene.currentTurnCycle',
+    type: 'variable',
+    info: 'Current cycle number (1-based). Read-only. Meaningful when turn-based mode is on.',
+  },
+  {
+    label: 'Scene.currentStepInCycle',
+    type: 'variable',
+    info: '0-based index of whose turn it is in the sorted turn order. Read-only.',
+  },
+  {
+    label: 'Scene.advanceTurnOrder',
+    type: 'function',
+    info: 'Move to the next character in turn order; runs cycle and on_turn_advance callbacks (e.g. Scene.advanceTurnOrder())',
+  },
+  {
+    label: 'Scene.startTurnBasedMode',
+    type: 'function',
+    info: 'Enable turn-based mode and assign default turn order by creation date (e.g. Scene.startTurnBasedMode())',
+  },
+  {
+    label: 'Scene.stopTurnBasedMode',
+    type: 'function',
+    info: 'Disable turn-based mode and clear turn callbacks (e.g. Scene.stopTurnBasedMode())',
+  },
+  {
+    label: 'Scene.in_turns',
+    type: 'function',
+    info: 'Register a block to run in n cycles (e.g. Scene.in_turns(3): ...). Use a colon and indented block.',
+  },
+  {
+    label: 'Scene.on_turn_advance',
+    type: 'function',
+    info: 'Register a block to run on every advance (e.g. Scene.on_turn_advance(): ...). Use a colon and indented block.',
+  },
+  {
+    label: 'Owner.turnOrder',
+    type: 'variable',
+    info: 'This character\'s position in turn order (0 = unset). Read-only. In campaign scene context only.',
+  },
+  {
+    label: 'Owner.setTurnOrder',
+    type: 'function',
+    info: 'Set this character\'s turn order (e.g. Owner.setTurnOrder(2)). Use 0 for unset. Gaps allowed.',
+  },
+  {
+    label: 'turnOrder',
+    type: 'variable',
+    info: 'On character references (Owner or from Scene.characters()): position in turn order (0 = unset). Read-only.',
+  },
+  {
+    label: 'setTurnOrder',
+    type: 'function',
+    info: 'On character references: set turn order (e.g. char.setTurnOrder(2)). Use 0 for unset. In campaign scene only.',
   },
   { label: 'Ruleset', type: 'variable', info: 'Ruleset-level entities' },
   { label: 'Ruleset.Attribute', type: 'function', info: 'Get attribute definition' },

@@ -1,4 +1,4 @@
-import { Avatar, AvatarFallback, AvatarImage, Button } from '@/components';
+import { Avatar, AvatarFallback, AvatarImage, Button, Label, Switch } from '@/components';
 import { PageWrapper } from '@/components/composites';
 import {
   useCampaign,
@@ -6,10 +6,16 @@ import {
   useCampaignScenes,
   useCharacter,
 } from '@/lib/compass-api';
+import {
+  startSceneTurnBasedMode,
+  stopSceneTurnBasedMode,
+} from '@/lib/compass-logic/runtime/advance-turn-order';
+import { runSceneAdvanceFromUI } from '@/lib/compass-logic/runtime';
 import type { SheetViewerBackdropClickDetail } from '@/lib/compass-planes/sheet-viewer';
 import { SHEET_VIEWER_BACKDROP_CLICK } from '@/lib/compass-planes/sheet-viewer';
-import { FileText, ScrollText, Zap } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { db } from '@/stores';
+import { ChevronRight, FileText, ScrollText, Zap } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { ActiveScene } from './active-scene';
 import { CampaignCharacterSheet } from './campaign-controls';
@@ -37,9 +43,32 @@ export function CampaignDashboard() {
   const [showCampaignLog, setShowCampaignLog] = useState(true);
   const [characterSheetTransparentBackground, setCharacterSheetTransparentBackground] =
     useState(true);
+  const [advancing, setAdvancing] = useState(false);
 
   const { campaignScenes } = useCampaignScenes(campaignId);
   const currentScene = sceneId ? campaignScenes.find((s) => s.id === sceneId) : undefined;
+
+  const sceneCharactersByTurnOrder = useMemo(
+    () =>
+      sceneId && campaignCharacters
+        ? campaignCharacters
+            .filter(
+              (cc) => cc.campaignSceneId === sceneId && cc.active === true,
+            )
+            .sort((a, b) => (a.turnOrder ?? 0) - (b.turnOrder ?? 0))
+        : [],
+    [campaignCharacters, sceneId],
+  );
+  const currentStepInCycle = currentScene?.turnBasedMode
+    ? Math.min(
+        currentScene.currentStepInCycle ?? 0,
+        Math.max(0, sceneCharactersByTurnOrder.length - 1),
+      )
+    : -1;
+  const currentTurnCampaignCharacterId =
+    currentStepInCycle >= 0 && sceneCharactersByTurnOrder[currentStepInCycle]
+      ? sceneCharactersByTurnOrder[currentStepInCycle].id
+      : null;
 
   useEffect(() => {
     if (!sheetCharacterId) return;
@@ -142,6 +171,64 @@ export function CampaignDashboard() {
                 }
               }}
             />
+            {sceneId && currentScene && (
+              <div className='flex items-center gap-3 border-l pl-3'>
+                <div className='flex items-center gap-2'>
+                  <Switch
+                    id='turn-based-mode'
+                    checked={!!currentScene.turnBasedMode}
+                    onCheckedChange={async (checked) => {
+                      if (!campaignId || !sceneId) return;
+                      try {
+                        if (checked) {
+                          await startSceneTurnBasedMode(db, campaignId, sceneId);
+                        } else {
+                          await stopSceneTurnBasedMode(db, campaignId, sceneId);
+                        }
+                      } catch (e) {
+                        console.warn('Turn-based mode toggle failed', e);
+                      }
+                    }}
+                    data-testid='turn-based-mode-switch'
+                  />
+                  <Label htmlFor='turn-based-mode' className='text-sm cursor-pointer'>
+                    Turn-based
+                  </Label>
+                </div>
+                {currentScene.turnBasedMode && (
+                  <>
+                    <span className='text-sm text-muted-foreground' aria-label='Current cycle'>
+                      Cycle {currentScene.currentTurnCycle ?? 1}
+                    </span>
+                    <Button
+                      variant='outline'
+                      size='sm'
+                      onClick={async () => {
+                        if (!campaignId || !sceneId || !campaign?.rulesetId) return;
+                        setAdvancing(true);
+                        try {
+                          await runSceneAdvanceFromUI({
+                            db,
+                            rulesetId: campaign.rulesetId,
+                            campaignId,
+                            campaignSceneId: sceneId,
+                          });
+                        } catch (e) {
+                          console.warn('Advance turn failed', e);
+                        } finally {
+                          setAdvancing(false);
+                        }
+                      }}
+                      disabled={advancing}
+                      aria-label='Next turn'
+                      data-testid='next-turn-button'>
+                      <ChevronRight className='h-4 w-4' />
+                      Next turn
+                    </Button>
+                  </>
+                )}
+              </div>
+            )}
             <ManagePlayerCharacters
               campaignCharacters={campaignCharacters}
               characters={characters}
@@ -211,6 +298,8 @@ export function CampaignDashboard() {
             campaignId={campaign.id}
             sceneId={sceneId}
             hoveredCampaignCharacterId={hoveredCampaignCharacterId}
+            currentTurnCampaignCharacterId={currentTurnCampaignCharacterId}
+            currentTurnCycle={currentScene?.turnBasedMode ? (currentScene.currentTurnCycle ?? 1) : undefined}
             onAvatarClick={(characterId) =>
               setSheetCharacterId((prev) => (prev === characterId ? null : characterId))
             }

@@ -251,6 +251,9 @@ export class ScriptRunner {
   /** Lazily-created accessors for characters selected via selectCharacter(s). */
   private otherCharacterAccessors: Map<string, CharacterAccessor | OwnerAccessor> = new Map();
 
+  /** Scene accessor (set in setupAccessors when in campaign scene context). Used for runAdvanceTurnOrder. */
+  private sceneAccessor: CampaignSceneAccessor | null = null;
+
   constructor(context: ScriptExecutionContext) {
     this.context = context;
     const selectCharacterHost =
@@ -934,10 +937,23 @@ export class ScriptRunner {
         (id: string) => this.getCharacterAccessorById(id),
         this.context.rulesetId,
         this.context.roll,
+        this.context.campaignId ?? null,
       );
       await this.flushCache();
     }
     sceneAccessor.setInsideCallbackRun(false);
+  }
+
+  /**
+   * Run the shared advance-turn flow (same as Scene.advanceTurnOrder() from script).
+   * Loads cache and sets up accessors, then advances and runs any cycle/on_turn_advance callbacks.
+   * No-op when not in campaign scene context.
+   */
+  async runAdvanceTurnOrder(): Promise<void> {
+    if (!this.context.campaignId || !this.context.campaignSceneId) return;
+    await this.loadCache();
+    this.setupAccessors();
+    await this.sceneAccessor?.advanceTurnOrder();
   }
 
   /**
@@ -967,9 +983,8 @@ export class ScriptRunner {
     // When running in a campaign scene, build a shared Scene accessor that can be injected
     // into both ownerless and owner contexts.
     const deferredAdvanceRef = { current: false };
-    let sceneAccessor: CampaignSceneAccessor | null = null;
     if (this.context.campaignId && this.context.campaignSceneId) {
-      sceneAccessor = new CampaignSceneAccessor(
+      this.sceneAccessor = new CampaignSceneAccessor(
         dbTyped,
         this.context.campaignId,
         this.context.campaignSceneId,
@@ -985,9 +1000,12 @@ export class ScriptRunner {
         this.context.roll,
         deferredAdvanceRef,
         (callbacks: SceneTurnCallback[]) =>
-          this.runTurnCallbacks(callbacks, sceneAccessor!),
+          this.runTurnCallbacks(callbacks, this.sceneAccessor!),
       );
+    } else {
+      this.sceneAccessor = null;
     }
+    const sceneAccessor = this.sceneAccessor;
 
     // When there is no owner (e.g. some campaign/system scripts), only Ruleset is injected,
     // plus Scene when running in a campaign scene context.
@@ -1135,4 +1153,18 @@ export class ScriptRunner {
       };
     }
   }
+}
+
+/**
+ * Run the shared advance-turn flow from the UI (e.g. "Next turn" button).
+ * Uses the same logic as Scene.advanceTurnOrder() in script: advances state and runs callbacks.
+ */
+export async function runSceneAdvanceFromUI(
+  context: Pick<
+    ScriptExecutionContext,
+    'db' | 'rulesetId' | 'campaignId' | 'campaignSceneId' | 'roll'
+  >,
+): Promise<void> {
+  const runner = new ScriptRunner(context as ScriptExecutionContext);
+  await runner.runAdvanceTurnOrder();
 }
