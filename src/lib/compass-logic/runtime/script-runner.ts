@@ -2,7 +2,6 @@ import type { DB } from '@/stores/db/hooks/types';
 import type {
   Action,
   Attribute,
-  CampaignCharacter,
   CampaignEvent,
   CharacterAttribute,
   CharacterPage,

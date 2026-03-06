@@ -1,7 +1,7 @@
 import { useCampaign, useCampaignCharacters, useScriptLogs } from '@/lib/compass-api';
 import type { ScriptLog } from '@/types';
 import { motion } from 'framer-motion';
-import { useEffect, useMemo } from 'react';
+import { useMemo } from 'react';
 import type { CampaignCharacterWithName } from './hooks';
 import { useCampaignPlayCharacterList } from './hooks';
 
@@ -49,10 +49,6 @@ export function TurnOrderScene({
         .sort((a, b) => (a.cc.turnOrder ?? 0) - (b.cc.turnOrder ?? 0)),
     [withNames],
   );
-
-  useEffect(() => {
-    console.log(entriesByTurnOrder);
-  }, [entriesByTurnOrder]);
 
   const displayOrder = useMemo(() => {
     if (entriesByTurnOrder.length === 0) return [];
