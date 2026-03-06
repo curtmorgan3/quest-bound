@@ -321,6 +321,87 @@ export class Evaluator {
     // Array-like (e.g. Owner.Items('Arrow')): support .count(), .first(), .last() so
     // plain arrays remain structured-cloneable when sent via postMessage from the worker.
     const isArrayLike = Array.isArray(object) || (object && typeof object.length === 'number');
+    if (isArrayLike && node.method === 'sort') {
+      const args = await Promise.all(node.arguments.map((arg: ASTNode) => this.eval(arg)));
+      const compareFnVal = args[0];
+
+      // Case A – no comparator or undefined/null: use native JS sort semantics
+      if (compareFnVal === undefined || compareFnVal === null) {
+        (object as any[]).sort();
+        return object;
+      }
+
+      // Case B – comparator is a native JS function
+      if (typeof compareFnVal === 'function') {
+        (object as any[]).sort(compareFnVal as (a: unknown, b: unknown) => number);
+        return object;
+      }
+
+      // Case C – comparator is a QBScript function value
+      if (compareFnVal && typeof compareFnVal === 'object' && (compareFnVal as any).type === 'function') {
+        const funcObj = compareFnVal as {
+          type: 'function';
+          params: string[];
+          body: ASTNode[];
+          closure: Environment;
+        };
+
+        const callComparator = async (a: any, b: any): Promise<number> => {
+          const newEnv = new Environment(funcObj.closure);
+          const params = funcObj.params ?? [];
+          const values = [a, b];
+
+          for (let i = 0; i < params.length; i++) {
+            newEnv.define(params[i]!, i < values.length ? values[i] : undefined);
+          }
+
+          const prevEnv = this.currentEnv;
+          this.currentEnv = newEnv;
+
+          try {
+            let result: any = null;
+            for (const stmt of funcObj.body) {
+              result = await this.eval(stmt);
+            }
+            this.currentEnv = prevEnv;
+            if (typeof result !== 'number') {
+              throw new RuntimeError('sort comparator must return a number');
+            }
+            return result;
+          } catch (e) {
+            this.currentEnv = prevEnv;
+            if (e instanceof ReturnValue) {
+              const value = e.value;
+              if (typeof value !== 'number') {
+                throw new RuntimeError('sort comparator must return a number');
+              }
+              return value;
+            }
+            throw e;
+          }
+        };
+
+        const arr = object as any[];
+        const n = arr.length ?? 0;
+
+        // Simple in-place O(n^2) sort to allow async comparator invocations.
+        for (let i = 0; i < n - 1; i++) {
+          for (let j = i + 1; j < n; j++) {
+            const cmp = await callComparator(arr[i], arr[j]);
+            if (cmp > 0) {
+              const tmp = arr[i];
+              arr[i] = arr[j];
+              arr[j] = tmp;
+            }
+          }
+        }
+
+        return arr;
+      }
+
+      // Case D – invalid comparator
+      throw new RuntimeError('sort comparator must be a function');
+    }
     if (isArrayLike && isBuiltInArrayMethod(node.method)) {
       return registerArrayMethod(node.method, object);
     }

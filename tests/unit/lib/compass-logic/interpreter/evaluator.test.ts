@@ -247,6 +247,62 @@ arr[-1]`),
 x[0]`),
       ).rejects.toThrow('Cannot index non-array');
     });
+
+    it('should sort array in place with default string comparison', async () => {
+      const result = await evaluate(`arr = [10, 3, 25]
+arr.sort()
+arr`);
+      expect(result).toEqual([10, 25, 3]);
+    });
+
+    it('should sort array in place with numeric comparator function', async () => {
+      const result = await evaluate(`compare(a, b):
+    return a - b
+
+arr = [10, 3, 25]
+arr.sort(compare)
+arr`);
+      expect(result).toEqual([3, 10, 25]);
+    });
+
+    it('should sort array of objects using comparator on properties', async () => {
+      const source = `compare(a, b):
+    return a.value - b.value
+
+items.sort(compare)
+items`;
+
+      const lexer = new Lexer(source);
+      const tokens = lexer.tokenize();
+      const parser = new Parser(tokens);
+      const ast = parser.parse();
+      const evaluator = new Evaluator();
+      const items = [{ value: 10 }, { value: 3 }, { value: 25 }];
+      evaluator.globalEnv.define('items', items);
+
+      const result = await evaluator.eval(ast);
+
+      expect(result.map((x: any) => x.value)).toEqual([3, 10, 25]);
+      // Ensure original array was mutated
+      expect(items.map((x) => x.value)).toEqual([3, 10, 25]);
+    });
+
+    it('should throw when sort comparator is not a function', async () => {
+      await expect(
+        evaluate(`arr = [1, 2, 3]
+arr.sort(123)`),
+      ).rejects.toThrow('sort comparator must be a function');
+    });
+
+    it('should throw when sort comparator does not return a number', async () => {
+      await expect(
+        evaluate(`compare(a, b):
+    return "x"
+
+arr = [1, 2, 3]
+arr.sort(compare)`),
+      ).rejects.toThrow('sort comparator must return a number');
+    });
   });
 
   describe('Function Definitions', async () => {

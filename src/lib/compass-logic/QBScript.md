@@ -78,17 +78,45 @@ list = [];
 
 **Array methods:**
 
-| Method               | Return Value                                       |
-| -------------------- | -------------------------------------------------- |
-| `list.count()`       | Number of items                                    |
-| `list.first()`       | First item                                         |
-| `list.last()`        | Last item                                          |
-| `list.push(item)`    | Add item to end                                    |
-| `list.pop()`         | Remove and return last item                        |
-| `list.random()`      | Random element                                     |
-| `list.filter()`      | Copy with only truthy values                       |
-| `list.filterEmpty()` | Copy with non-empty values (excludes `''`, `null`) |
-| `list[index]`        | Access by zero-based index                         |
+| Method                 | Return Value                                                                                           |
+| ---------------------- | ------------------------------------------------------------------------------------------------------ |
+| `list.count()`         | Number of items                                                                                        |
+| `list.first()`         | First item                                                                                             |
+| `list.last()`          | Last item                                                                                              |
+| `list.push(item)`      | Add item to end                                                                                        |
+| `list.pop()`           | Remove and return last item                                                                            |
+| `list.random()`        | Random element                                                                                         |
+| `list.filter()`        | Copy with only truthy values                                                                           |
+| `list.filterEmpty()`   | Copy with non-empty values (excludes `''`, `null`)                                                     |
+| `list.sort()`          | Sorts the array in place (mutates) using string comparison by default; returns the same array         |
+| `list.sort(compareFn)` | Sorts the array in place using `compareFn(a, b)` (negative / zero / positive); returns the same array |
+| `list[index]`          | Access by zero-based index                                                                             |
+
+**Sorting examples:**
+
+```javascript
+compareNumeric(a, b):
+  return a - b
+
+scores = [10, 3, 25]
+
+// Default sort (string comparison)
+scores.sort() // → [10, 25, 3]
+
+// Numeric sort with comparator function
+scores.sort(compareNumeric)
+
+// Sorting objects, e.g. character accessors by name
+byName(a, b):
+  if text(a.name) < text(b.name):
+    return -1
+  else if text(a.name) > text(b.name):
+    return 1
+  return 0
+
+chars = await Scene.characters()
+chars.sort(byName)
+```
 
 ### Loops
 

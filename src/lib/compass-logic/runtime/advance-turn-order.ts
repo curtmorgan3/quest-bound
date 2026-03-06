@@ -110,18 +110,6 @@ export async function advanceSceneTurnState(
     });
     await persistTurnStartLog(db, campaignId, newCharacter.characterId);
   }
-  if (justWrapped) {
-    // Clear turn timestamps for everyone else so only current cycle is reflected.
-    for (const cc of characters) {
-      if (cc.id !== newCharacter?.id) {
-        await db.campaignCharacters.update(cc.id, {
-          turnStartTimestamp: undefined,
-          turnEndTimestamp: undefined,
-          updatedAt: now,
-        });
-      }
-    }
-  }
 
   // Fetch callbacks: cycle callbacks for this cycle (only when we just wrapped), then on_turn_advance
   const cycleCallbacks: SceneTurnCallback[] = justWrapped
