@@ -1,5 +1,6 @@
 import type { PromptFn, RollFn, RollSplitFn, SelectCharacterFn, SelectCharactersFn } from '@/types';
 import { parseDiceExpression, rollDie } from '@/utils/dice-utils';
+import { blockStatementsToSource } from './ast-to-source';
 import { prepareForStructuredClone } from '../runtime/structured-clone-safe';
 import type { ASTNode } from './ast';
 import { isBuiltInArrayMethod, registerArrayMethod } from './built-ins';
@@ -159,6 +160,12 @@ export class Evaluator {
 
       case 'SubscribeCall':
         return this.evalSubscribeCall(node);
+
+      case 'InTurnsCall':
+        return this.evalInTurnsCall(node);
+
+      case 'OnTurnAdvanceCall':
+        return this.evalOnTurnAdvanceCall(node);
 
       case 'ArrayLiteral':
         return this.evalArrayLiteral(node);
@@ -416,6 +423,31 @@ export class Evaluator {
     // For now, just evaluate arguments (in Phase 4 this will register subscriptions)
     const args = await Promise.all(node.arguments.map((arg: ASTNode) => this.eval(arg)));
     return args;
+  }
+
+  private async evalInTurnsCall(node: any): Promise<void> {
+    if (!this.globalEnv.has('Scene')) return;
+    const Scene = this.globalEnv.get('Scene');
+    const n = await this.eval(node.argument);
+    const blockSource = blockStatementsToSource(node.block);
+    const Owner = this.globalEnv.has('Owner') ? this.globalEnv.get('Owner') : null;
+    const ownerId = Owner?.id ?? null;
+    const scriptId = this.globalEnv.has('__scriptId') ? this.globalEnv.get('__scriptId') : '';
+    if (typeof Scene?.registerInTurns === 'function') {
+      await Scene.registerInTurns(n, blockSource, ownerId, scriptId);
+    }
+  }
+
+  private async evalOnTurnAdvanceCall(node: any): Promise<void> {
+    if (!this.globalEnv.has('Scene')) return;
+    const Scene = this.globalEnv.get('Scene');
+    const blockSource = blockStatementsToSource(node.block);
+    const Owner = this.globalEnv.has('Owner') ? this.globalEnv.get('Owner') : null;
+    const ownerId = Owner?.id ?? null;
+    const scriptId = this.globalEnv.has('__scriptId') ? this.globalEnv.get('__scriptId') : '';
+    if (typeof Scene?.registerOnTurnAdvance === 'function') {
+      await Scene.registerOnTurnAdvance(blockSource, ownerId, scriptId);
+    }
   }
 
   private async evalArrayLiteral(node: any): Promise<any[]> {

@@ -10,6 +10,8 @@ import type {
   FunctionDef,
   Identifier,
   IfStatement,
+  InTurnsCall,
+  OnTurnAdvanceCall,
   WhileLoop,
   MemberAccess,
   MethodCall,
@@ -135,6 +137,18 @@ export function astToSource(
       out += blockToSource(fn.body, safeLevel + 1, safeIndent);
       return out;
     }
+    case 'InTurnsCall': {
+      const it = node as InTurnsCall;
+      let out = `${prefix}Scene.in_turns(${exprToSource(it.argument)}):\n`;
+      out += blockToSource(it.block, safeLevel + 1, safeIndent);
+      return out;
+    }
+    case 'OnTurnAdvanceCall': {
+      const ot = node as OnTurnAdvanceCall;
+      let out = `${prefix}Scene.on_turn_advance():\n`;
+      out += blockToSource(ot.block, safeLevel + 1, safeIndent);
+      return out;
+    }
     case 'Program': {
       const prog = node as Program;
       return blockToSource(prog.statements, safeLevel, safeIndent);
@@ -218,4 +232,12 @@ function blockToSource(
  */
 export function functionDefToExecutableSource(funcNode: FunctionDef): string {
   return blockToSource(funcNode.body, 0, DEFAULT_INDENT);
+}
+
+/**
+ * Serialize a block of statements to source (e.g. for turn callback storage).
+ * Uses one indent level so the result can be re-parsed as a block.
+ */
+export function blockStatementsToSource(statements: ASTNode[]): string {
+  return blockToSource(statements, 1, DEFAULT_INDENT);
 }

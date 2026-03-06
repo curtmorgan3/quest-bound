@@ -198,6 +198,61 @@ export class CampaignSceneAccessor {
   }
 
   /**
+   * Register a callback to run in n cycles (Scene.in_turns(n): block).
+   * No-op if n is not a positive integer. Uses current turn cycle to compute targetCycle.
+   */
+  async registerInTurns(
+    n: number,
+    blockSource: string,
+    ownerId: string | null,
+    scriptId: string,
+  ): Promise<void> {
+    if (typeof n !== 'number' || n < 1 || !Number.isInteger(n)) {
+      return;
+    }
+    const cycle = await this.currentTurnCycle();
+    if (cycle === 0) return;
+    const targetCycle = cycle + n;
+    const now = new Date().toISOString();
+    await this.db.sceneTurnCallbacks.add({
+      id: crypto.randomUUID(),
+      campaignSceneId: this.campaignSceneId,
+      targetCycle,
+      createdAtCycle: cycle,
+      ownerId,
+      rulesetId: this.rulesetId,
+      scriptId,
+      blockSource,
+      createdAt: now,
+      updatedAt: now,
+    } as any);
+  }
+
+  /**
+   * Register a callback to run on every advance (Scene.on_turn_advance(): block).
+   */
+  async registerOnTurnAdvance(
+    blockSource: string,
+    ownerId: string | null,
+    scriptId: string,
+  ): Promise<void> {
+    const cycle = await this.currentTurnCycle();
+    const now = new Date().toISOString();
+    await this.db.sceneTurnCallbacks.add({
+      id: crypto.randomUUID(),
+      campaignSceneId: this.campaignSceneId,
+      targetCycle: null,
+      createdAtCycle: cycle,
+      ownerId,
+      rulesetId: this.rulesetId,
+      scriptId,
+      blockSource,
+      createdAt: now,
+      updatedAt: now,
+    } as any);
+  }
+
+  /**
    * Return all active characters in this scene as character accessors.
    * Includes both player characters and NPCs whose CampaignCharacter.active === true.
    */

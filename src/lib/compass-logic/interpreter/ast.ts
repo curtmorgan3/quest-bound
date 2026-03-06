@@ -16,6 +16,8 @@ export type ASTNode =
   | WhileLoop
   | ReturnStatement
   | SubscribeCall
+  | InTurnsCall
+  | OnTurnAdvanceCall
   | ArrayLiteral
   | ArrayAccess
   | MemberAccess
@@ -123,6 +125,19 @@ export interface ReturnStatement {
 export interface SubscribeCall {
   type: 'SubscribeCall';
   arguments: ASTNode[];
+}
+
+/** Scene.in_turns(n): block — register callback to run in n cycles. */
+export interface InTurnsCall {
+  type: 'InTurnsCall';
+  argument: ASTNode;
+  block: ASTNode[];
+}
+
+/** Scene.on_turn_advance(): block — register callback to run on every advance. */
+export interface OnTurnAdvanceCall {
+  type: 'OnTurnAdvanceCall';
+  block: ASTNode[];
 }
 
 export interface ArrayLiteral {

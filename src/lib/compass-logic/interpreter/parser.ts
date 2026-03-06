@@ -9,6 +9,8 @@ import type {
   WhileLoop,
   ReturnStatement,
   SubscribeCall,
+  InTurnsCall,
+  OnTurnAdvanceCall,
   Assignment,
   BinaryOp,
   UnaryOp,
@@ -276,6 +278,33 @@ export class Parser {
 
   private expressionStatement(): ASTNode {
     const expr = this.expression();
+
+    // Scene.in_turns(n): block or Scene.on_turn_advance(): block
+    if (expr.type === 'MethodCall') {
+      const mc = expr as MethodCall;
+      if (
+        mc.object.type === 'MemberAccess' &&
+        (mc.object as MemberAccess).object.type === 'Identifier' &&
+        ((mc.object as MemberAccess).object as Identifier).name === 'Scene' &&
+        ((mc.object as MemberAccess).property === 'in_turns' ||
+          (mc.object as MemberAccess).property === 'on_turn_advance') &&
+        this.check(TokenType.COLON)
+      ) {
+        const method = (mc.object as MemberAccess).property;
+        this.consume(TokenType.COLON, `Expected ':' after Scene.${method}(...)`);
+        this.consume(TokenType.NEWLINE, "Expected newline after ':'");
+        this.consume(TokenType.INDENT, "Expected indent after ':'");
+        const block = this.block();
+        if (method === 'in_turns') {
+          return {
+            type: 'InTurnsCall',
+            argument: mc.arguments[0],
+            block,
+          } as InTurnsCall;
+        }
+        return { type: 'OnTurnAdvanceCall', block } as OnTurnAdvanceCall;
+      }
+    }
 
     // Check if it's an assignment or compound assignment
     if (

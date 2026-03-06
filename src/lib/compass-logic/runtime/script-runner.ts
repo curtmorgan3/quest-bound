@@ -935,6 +935,9 @@ export class ScriptRunner {
   private setupAccessors(): void {
     const { ownerId, rulesetId, db } = this.context;
 
+    // Script id for turn callback registration (Scene.in_turns / Scene.on_turn_advance).
+    this.evaluator.globalEnv.define('__scriptId', this.context.scriptId ?? '');
+
     // Inject generic params helper (when provided) as `params` in the script environment.
     if (this.context.params) {
       this.evaluator.globalEnv.define('params', this.context.params);
