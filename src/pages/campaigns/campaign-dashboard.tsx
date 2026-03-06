@@ -131,8 +131,51 @@ export function CampaignDashboard() {
         headerActions={
           <div className='flex items-center gap-2'>
             {sceneId && currentScene && (
-              <div className='flex items-center gap-3 border-l pl-3'>
-                <div className='flex items-center gap-2'>
+              <div className='flex items-center gap-3'>
+                <div className='flex gap-2'>
+                  {campaignPlayerCharacters.map(({ cc, character }) => (
+                    <button
+                      type='button'
+                      key={cc.id}
+                      onClick={() =>
+                        setSheetCharacterId((current) =>
+                          current === cc.characterId ? null : cc.characterId,
+                        )
+                      }
+                      className='rounded-md focus:outline-none focus-visible:ring-2 focus-visible:ring-ring'
+                      aria-label={
+                        sheetCharacterId === cc.characterId
+                          ? 'Close character sheet'
+                          : `Open ${character?.name ?? 'character'} sheet`
+                      }
+                      title={character?.name ?? 'Character'}>
+                      <Avatar className='size-8 shrink-0 rounded-md'>
+                        <AvatarImage
+                          src={character?.image ?? ''}
+                          alt={character?.name ?? 'Character'}
+                        />
+                        <AvatarFallback className='rounded-md text-xs'>
+                          {(character?.name ?? '?').slice(0, 1).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                    </button>
+                  ))}
+                </div>
+                <ManagePlayerCharacters
+                  campaignCharacters={campaignCharacters}
+                  characters={characters}
+                  rulesetId={campaign.rulesetId}
+                  onAddCharacter={async (characterId) => {
+                    await createCampaignCharacter(campaign.id, characterId, {
+                      ...(sceneId ? { campaignSceneId: sceneId } : {}),
+                    });
+                  }}
+                  onRemoveCharacter={async (campaignCharacterId) => {
+                    await deleteCampaignCharacter(campaignCharacterId);
+                  }}
+                />
+
+                <div className='flex items-center border-l pl-2 gap-2'>
                   <Switch
                     id='turn-based-mode'
                     checked={!!currentScene.turnBasedMode}
@@ -151,7 +194,7 @@ export function CampaignDashboard() {
                     data-testid='turn-based-mode-switch'
                   />
                   <Label htmlFor='turn-based-mode' className='text-sm cursor-pointer'>
-                    Turn-based
+                    Turn Mode
                   </Label>
                 </div>
                 {currentScene.turnBasedMode && (
@@ -179,71 +222,15 @@ export function CampaignDashboard() {
                       aria-label='Next turn'
                       data-testid='next-turn-button'>
                       <ChevronRight className='h-4 w-4' />
-                      Next turn
                     </Button>
                   </>
                 )}
               </div>
             )}
-            <div className='flex gap-2'>
-              {campaignPlayerCharacters.map(({ cc, character }) => (
-                <button
-                  type='button'
-                  key={cc.id}
-                  onClick={() =>
-                    setSheetCharacterId((current) =>
-                      current === cc.characterId ? null : cc.characterId,
-                    )
-                  }
-                  className='rounded-md focus:outline-none focus-visible:ring-2 focus-visible:ring-ring'
-                  aria-label={
-                    sheetCharacterId === cc.characterId
-                      ? 'Close character sheet'
-                      : `Open ${character?.name ?? 'character'} sheet`
-                  }
-                  title={character?.name ?? 'Character'}>
-                  <Avatar className='size-8 shrink-0 rounded-md'>
-                    <AvatarImage
-                      src={character?.image ?? ''}
-                      alt={character?.name ?? 'Character'}
-                    />
-                    <AvatarFallback className='rounded-md text-xs'>
-                      {(character?.name ?? '?').slice(0, 1).toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                </button>
-              ))}
-            </div>
-            <CampaignCharacterSheet
-              hideGameLog
-              campaignId={campaignId}
-              characterId={sheetCharacterId ?? undefined}
-              open={!!sheetCharacterId}
-              transparentBackground={characterSheetTransparentBackground}
-              onTransparentBackgroundChange={setCharacterSheetTransparentBackground}
-              onClose={() => {
-                setSheetCharacterId(null);
-                if (searchParams.has('pageId')) {
-                  const next = new URLSearchParams(searchParams);
-                  next.delete('pageId');
-                  setSearchParams(next, { replace: true });
-                }
-              }}
-            />
+            {sceneId && currentScene && (
+              <div className='h-6 w-px shrink-0 bg-border self-center' aria-hidden />
+            )}
 
-            <ManagePlayerCharacters
-              campaignCharacters={campaignCharacters}
-              characters={characters}
-              rulesetId={campaign.rulesetId}
-              onAddCharacter={async (characterId) => {
-                await createCampaignCharacter(campaign.id, characterId, {
-                  ...(sceneId ? { campaignSceneId: sceneId } : {}),
-                });
-              }}
-              onRemoveCharacter={async (campaignCharacterId) => {
-                await deleteCampaignCharacter(campaignCharacterId);
-              }}
-            />
             <Button
               variant='ghost'
               size='icon'
@@ -286,6 +273,22 @@ export function CampaignDashboard() {
               sceneId={sceneId}
               sceneName={currentScene?.name}
               actingCharacterId={sheetCharacterId}
+            />
+            <CampaignCharacterSheet
+              hideGameLog
+              campaignId={campaignId}
+              characterId={sheetCharacterId ?? undefined}
+              open={!!sheetCharacterId}
+              transparentBackground={characterSheetTransparentBackground}
+              onTransparentBackgroundChange={setCharacterSheetTransparentBackground}
+              onClose={() => {
+                setSheetCharacterId(null);
+                if (searchParams.has('pageId')) {
+                  const next = new URLSearchParams(searchParams);
+                  next.delete('pageId');
+                  setSearchParams(next, { replace: true });
+                }
+              }}
             />
           </div>
         }>

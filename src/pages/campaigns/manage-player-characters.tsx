@@ -1,10 +1,11 @@
+import { Avatar, AvatarFallback, AvatarImage, Button, Label } from '@/components';
 import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-  Button,
-  Label,
-} from '@/components';
+  Command,
+  CommandEmpty,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command';
 import {
   Dialog,
   DialogContent,
@@ -13,13 +14,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import {
-  Command,
-  CommandEmpty,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from '@/components/ui/command';
 import type { CampaignCharacter, Character } from '@/types';
 import { Trash2, UserPlus } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
@@ -66,10 +60,7 @@ export function ManagePlayerCharacters({
     const baseList =
       rulesetId != null
         ? characters.filter(
-            (c) =>
-              c.rulesetId === rulesetId &&
-              c.isNpc !== true &&
-              !alreadyInCampaignIds.has(c.id),
+            (c) => c.rulesetId === rulesetId && c.isNpc !== true && !alreadyInCampaignIds.has(c.id),
           )
         : [];
 
@@ -98,12 +89,11 @@ export function ManagePlayerCharacters({
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <Button
-          variant='outline'
+          variant='ghost'
           size='sm'
           data-testid='campaign-dashboard-add-character'
           className='gap-1'>
           <UserPlus className='h-4 w-4' />
-          Manage Player Characters
         </Button>
       </DialogTrigger>
       <DialogContent className='sm:max-w-md' showCloseButton>
@@ -124,9 +114,7 @@ export function ManagePlayerCharacters({
             ) : (
               <div className='flex flex-col gap-2'>
                 {playerCampaignCharacters.map(({ cc, character }) => (
-                  <div
-                    key={cc.id}
-                    className='flex items-center gap-2 rounded-md border px-2 py-1'>
+                  <div key={cc.id} className='flex items-center gap-2 rounded-md border px-2 py-1'>
                     <Avatar className='size-8 shrink-0 rounded-md'>
                       <AvatarImage
                         src={character?.image ?? ''}
@@ -191,4 +179,3 @@ export function ManagePlayerCharacters({
     </Dialog>
   );
 }
-
