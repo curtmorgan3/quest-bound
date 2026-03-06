@@ -50,14 +50,17 @@ export function CampaignDashboard() {
 
   const sceneCharactersByTurnOrder = useMemo(
     () =>
-      sceneId && campaignCharacters
-        ? campaignCharacters
+      sceneId && withNames.length > 0
+        ? withNames
             .filter(
-              (cc) => cc.campaignSceneId === sceneId && cc.active === true,
+              (entry) =>
+                entry.cc.campaignSceneId === sceneId &&
+                (entry.cc.active === true || !entry.character?.isNpc),
             )
-            .sort((a, b) => (a.turnOrder ?? 0) - (b.turnOrder ?? 0))
+            .sort((a, b) => (a.cc.turnOrder ?? 0) - (b.cc.turnOrder ?? 0))
+            .map((entry) => entry.cc)
         : [],
-    [campaignCharacters, sceneId],
+    [sceneId, withNames],
   );
   const currentStepInCycle = currentScene?.turnBasedMode
     ? Math.min(

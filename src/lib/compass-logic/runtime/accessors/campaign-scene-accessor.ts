@@ -129,7 +129,8 @@ export class CampaignSceneAccessor {
 
   /**
    * Start turn-based mode: set turn state and assign default turn order by creation date.
-   * Disallowed when there are no active characters in the scene.
+   * Includes all active campaign characters plus all player characters in the scene.
+   * No-op when there are no characters in the turn order.
    */
   async startTurnBasedMode(): Promise<void> {
     const characters = await getSceneTurnOrderCharacters(

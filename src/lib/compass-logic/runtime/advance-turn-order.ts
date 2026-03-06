@@ -1,5 +1,5 @@
 import type { DB } from '@/stores/db/hooks/types';
-import type { CampaignCharacter, CampaignScene, SceneTurnCallback } from '@/types';
+import type { CampaignCharacter, Character, CampaignScene, SceneTurnCallback } from '@/types';
 
 export interface AdvanceTurnResult {
   /** Callbacks to run for the new cycle (targetCycle === currentTurnCycle), in registration order. */
@@ -9,7 +9,9 @@ export interface AdvanceTurnResult {
 }
 
 /**
- * Get active campaign characters in the scene sorted by turnOrder (for turn-based flow).
+ * Get campaign characters in the scene that participate in turn order, sorted by turnOrder.
+ * Includes: all active campaign characters, plus all player characters (Character.isNpc !== true)
+ * in the scene, so that player characters are always in the turn order when turn-based mode is on.
  */
 export async function getSceneTurnOrderCharacters(
   db: DB,
@@ -20,12 +22,27 @@ export async function getSceneTurnOrderCharacters(
     .where('campaignId')
     .equals(campaignId)
     .filter(
-      (cc: CampaignCharacter) =>
-        cc.campaignSceneId === campaignSceneId && cc.active === true,
+      (cc: CampaignCharacter) => cc.campaignSceneId === campaignSceneId,
     )
     .toArray()) as CampaignCharacter[];
 
-  return rows.sort((a, b) => (a.turnOrder ?? 0) - (b.turnOrder ?? 0));
+  if (rows.length === 0) return [];
+
+  const characterIds = [...new Set(rows.map((cc) => cc.characterId))];
+  const characters = await Promise.all(
+    characterIds.map((id) => db.characters.get(id)),
+  );
+  const characterById = new Map<string, Character | undefined>(
+    characterIds.map((id, i) => [id, characters[i] as Character | undefined]),
+  );
+
+  const inTurnOrder = rows.filter((cc) => {
+    const character = characterById.get(cc.characterId);
+    const isPlayer = character ? !character.isNpc : false;
+    return cc.active === true || isPlayer;
+  });
+
+  return inTurnOrder.sort((a, b) => (a.turnOrder ?? 0) - (b.turnOrder ?? 0));
 }
 
 /**
@@ -94,7 +111,8 @@ export async function advanceSceneTurnState(
 
 /**
  * Start turn-based mode for a scene (e.g. from UI toggle).
- * Assigns default turn order by creation date. No-op when there are no active characters.
+ * Assigns default turn order by creation date to all characters in the turn order
+ * (active campaign characters plus all player characters in the scene). No-op when there are none.
  */
 export async function startSceneTurnBasedMode(
   db: DB,
