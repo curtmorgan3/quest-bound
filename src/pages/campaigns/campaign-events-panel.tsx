@@ -9,11 +9,11 @@ import {
 import { ScriptLookup, useScripts } from '@/lib/compass-api';
 import { useQBScriptClient } from '@/lib/compass-logic/worker/hooks';
 import { activateButtonStyle } from '@/palette';
-import { db } from '@/stores';
+import { db, DiceContext } from '@/stores';
 import type { CampaignEvent } from '@/types';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { FileText, Trash2, Zap } from 'lucide-react';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useContext, useMemo, useState } from 'react';
 
 export interface CampaignEventsPanelProps {
   open: boolean;
@@ -35,6 +35,14 @@ export function CampaignEventsPanel({
 }: CampaignEventsPanelProps) {
   const [activatingEventId, setActivatingEventId] = useState<string | null>(null);
   const client = useQBScriptClient();
+
+  const diceContext = useContext(DiceContext);
+  const roll = useCallback(
+    async (diceString: string, rerollMessage?: string) =>
+      diceContext?.rollDice(diceString, { rerollMessage }).then((res) => res.total) ??
+      Promise.resolve(0),
+    [diceContext],
+  );
 
   const hasScene = Boolean(campaignId && sceneId);
 
@@ -122,13 +130,14 @@ export function CampaignEventsPanel({
             event.sceneId,
             'on_activate',
             actingCharacterId ?? null,
+            roll,
           )
           .catch((err) => console.warn('[CampaignEventsPanel] on_activate script failed:', err));
       } finally {
         setActivatingEventId((current) => (current === event.id ? null : current));
       }
     },
-    [actingCharacterId, client, sceneId],
+    [actingCharacterId, client, roll, sceneId],
   );
 
   const hasEvents = sortedEventsForScene.length > 0;
