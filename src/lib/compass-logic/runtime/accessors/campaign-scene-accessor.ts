@@ -521,6 +521,7 @@ export class CampaignSceneAccessor {
       campaignId: this.campaignId,
       campaignSceneId: this.campaignSceneId,
       active: true,
+      turnOrder: 0,
       createdAt: now,
       updatedAt: now,
     };

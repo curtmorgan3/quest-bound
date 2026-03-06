@@ -32,6 +32,9 @@ export class OwnerAccessor extends CharacterAccessor {
     executeActionEvent?: ExecuteActionEventFn,
     customProperties: CustomProperty[] = [],
     characterCustomProperties: Record<string, string | number | boolean> = {},
+    turnOrder: number = 0,
+    campaignId?: string,
+    campaignSceneId?: string,
   ) {
     super(
       characterId,
@@ -50,6 +53,9 @@ export class OwnerAccessor extends CharacterAccessor {
       executeActionEvent,
       customProperties,
       characterCustomProperties,
+      turnOrder,
+      campaignId,
+      campaignSceneId,
     );
   }
 

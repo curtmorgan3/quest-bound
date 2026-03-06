@@ -6,6 +6,7 @@ import type {
   InventoryItem,
   Item,
 } from '@/types';
+import type { DB } from '@/stores/db/hooks/types';
 import type Dexie from 'dexie';
 import type { ExecuteActionEventFn } from '../proxies';
 import { ActionProxy, AttributeProxy, createItemInstanceProxy } from '../proxies';
@@ -36,6 +37,10 @@ export class CharacterAccessor implements StructuredCloneSafe {
   protected characterCustomProperties: Record<string, string | number | boolean>;
   protected targetId: string | null;
   protected executeActionEvent: ExecuteActionEventFn | undefined;
+  /** Turn order in the current campaign scene (0 = unset). Only set when in campaign scene context. */
+  protected turnOrderValue: number;
+  protected campaignId: string | undefined;
+  protected campaignSceneId: string | undefined;
 
   constructor(
     characterId: string,
@@ -54,6 +59,9 @@ export class CharacterAccessor implements StructuredCloneSafe {
     executeActionEvent?: ExecuteActionEventFn,
     customProperties: CustomProperty[] = [],
     characterCustomProperties: Record<string, string | number | boolean> = {},
+    turnOrder: number = 0,
+    campaignId?: string,
+    campaignSceneId?: string,
   ) {
     this.id = characterId;
     this.characterName = characterName;
@@ -71,6 +79,38 @@ export class CharacterAccessor implements StructuredCloneSafe {
     this.executeActionEvent = executeActionEvent;
     this.customProperties = customProperties;
     this.characterCustomProperties = characterCustomProperties;
+    this.turnOrderValue = turnOrder;
+    this.campaignId = campaignId;
+    this.campaignSceneId = campaignSceneId;
+  }
+
+  /** Turn order in the current campaign scene (0 = unset). Read-only. */
+  get turnOrder(): number {
+    return this.turnOrderValue;
+  }
+
+  /**
+   * Set this character's turn order in the current campaign scene.
+   * No-op when not in campaign scene context. Allows 0 (unset). Gaps allowed.
+   */
+  async setTurnOrder(num: number): Promise<void> {
+    if (this.campaignId == null || this.campaignSceneId == null) return;
+    const db = this.db as DB;
+    const cc = await db.campaignCharacters
+      .where('campaignSceneId')
+      .equals(this.campaignSceneId)
+      .filter(
+        (row: { campaignId: string; characterId: string }) =>
+          row.campaignId === this.campaignId && row.characterId === this.id,
+      )
+      .first();
+    if (cc) {
+      this.turnOrderValue = num;
+      await db.campaignCharacters.update(cc.id, {
+        turnOrder: num,
+        updatedAt: new Date().toISOString(),
+      });
+    }
   }
 
   private getDefaultValueForCustomProperty(

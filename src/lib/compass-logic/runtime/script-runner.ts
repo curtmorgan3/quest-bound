@@ -245,6 +245,9 @@ export class ScriptRunner {
   /** Cached character ids that are active in the current campaign scene (for campaign scene contexts). */
   private sceneCharacterIds: Set<string> | null = null;
 
+  /** characterId -> turnOrder for scene characters (populated in loadCache when in campaign scene). */
+  private sceneCharacterTurnOrder: Map<string, number> | null = null;
+
   /** Lazily-created accessors for characters selected via selectCharacter(s). */
   private otherCharacterAccessors: Map<string, CharacterAccessor | OwnerAccessor> = new Map();
 
@@ -378,6 +381,10 @@ export class ScriptRunner {
         )
         .toArray()) as CampaignCharacter[];
 
+      this.sceneCharacterTurnOrder = new Map(
+        sceneCampaignCharacters.map((cc) => [cc.characterId, cc.turnOrder ?? 0]),
+      );
+
       const ids = new Set<string>();
       for (const cc of sceneCampaignCharacters) {
         const characterId = cc.characterId;
@@ -444,6 +451,7 @@ export class ScriptRunner {
       }
     }
 
+    const turnOrder = this.sceneCharacterTurnOrder?.get(characterId) ?? 0;
     const accessor = new CharacterAccessor(
       characterId,
       characterName,
@@ -461,6 +469,9 @@ export class ScriptRunner {
       this.context.executeActionEvent,
       this.customPropertiesCache,
       character.customProperties ?? {},
+      turnOrder,
+      this.context.campaignId,
+      this.context.campaignSceneId,
     );
 
     this.otherCharacterAccessors.set(characterId, accessor);
@@ -988,6 +999,7 @@ export class ScriptRunner {
       return;
     }
 
+    const ownerTurnOrder = this.sceneCharacterTurnOrder?.get(ownerId) ?? 0;
     const owner = new OwnerAccessor(
       ownerId,
       this.ownerCharacterName,
@@ -1005,6 +1017,9 @@ export class ScriptRunner {
       this.context.executeActionEvent,
       this.customPropertiesCache,
       this.ownerCharacterCustomProperties,
+      ownerTurnOrder,
+      this.context.campaignId,
+      this.context.campaignSceneId,
     );
 
     this.ownerAccessor = owner;
