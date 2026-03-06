@@ -144,8 +144,7 @@ export class CampaignSceneAccessor {
 
     const now = new Date().toISOString();
     const sorted = [...characters].sort(
-      (a, b) =>
-        new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+      (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
     );
     let turnOrder = 1;
     for (const cc of sorted) {
@@ -173,9 +172,7 @@ export class CampaignSceneAccessor {
     const rows = (await this.db.campaignCharacters
       .where('campaignId')
       .equals(this.campaignId)
-      .filter(
-        (cc: CampaignCharacter) => cc.campaignSceneId === this.campaignSceneId,
-      )
+      .filter((cc: CampaignCharacter) => cc.campaignSceneId === this.campaignSceneId)
       .toArray()) as CampaignCharacter[];
 
     for (const cc of rows) {
@@ -185,10 +182,7 @@ export class CampaignSceneAccessor {
       });
     }
 
-    await this.db.sceneTurnCallbacks
-      .where('campaignSceneId')
-      .equals(this.campaignSceneId)
-      .delete();
+    await this.db.sceneTurnCallbacks.where('campaignSceneId').equals(this.campaignSceneId).delete();
 
     await this.db.campaignScenes.update(this.campaignSceneId, {
       turnBasedMode: false,
@@ -267,15 +261,11 @@ export class CampaignSceneAccessor {
     if (this.cachedCharacterIds && this.cachedCharacterIds.size > 0) {
       characterIds = Array.from(this.cachedCharacterIds);
     } else {
-      const rows = (await this.db.campaignCharacters
-        .where('campaignId')
-        .equals(this.campaignId)
-        .filter(
-          (cc: CampaignCharacter) =>
-            cc.campaignSceneId === this.campaignSceneId && cc.active === true,
-        )
-        .toArray()) as CampaignCharacter[];
-
+      const rows = await getSceneTurnOrderCharacters(
+        this.db,
+        this.campaignId,
+        this.campaignSceneId,
+      );
       characterIds = rows.map((cc) => cc.characterId);
       this.cachedCharacterIds = new Set(characterIds);
     }

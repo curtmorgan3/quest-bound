@@ -33,6 +33,7 @@ import {
   OwnerAccessor,
   RulesetAccessor,
 } from './accessors';
+import { getSceneTurnOrderCharacters } from './advance-turn-order';
 import { executeTurnCallback } from './execute-turn-callback';
 import type { ScriptParamsHelper } from './params-helper';
 import type { ExecuteActionEventFn } from './proxies';
@@ -373,16 +374,14 @@ export class ScriptRunner {
     }
 
     // Load active characters for the current campaign scene (for campaign scene events).
-    // Includes both player characters and NPCs whose CampaignCharacter.active === true.
+    // Includes both player characters (isNpc !== true, considered in every scene) and
+    // NPCs whose CampaignCharacter.active === true in this scene.
     if (this.context.campaignId && this.context.campaignSceneId) {
-      const sceneCampaignCharacters = (await db.campaignCharacters
-        .where('campaignId')
-        .equals(this.context.campaignId)
-        .filter(
-          (cc: CampaignCharacter) =>
-            cc.campaignSceneId === this.context.campaignSceneId && cc.active === true,
-        )
-        .toArray()) as CampaignCharacter[];
+      const sceneCampaignCharacters = await getSceneTurnOrderCharacters(
+        db,
+        this.context.campaignId,
+        this.context.campaignSceneId,
+      );
 
       this.sceneCharacterTurnOrder = new Map(
         sceneCampaignCharacters.map((cc) => [cc.characterId, cc.turnOrder ?? 0]),

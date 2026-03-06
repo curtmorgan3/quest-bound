@@ -48,6 +48,9 @@ export function CampaignDashboard() {
 
   const { campaignScenes } = useCampaignScenes(campaignId);
   const currentScene = sceneId ? campaignScenes.find((s) => s.id === sceneId) : undefined;
+  const campaignTitle = currentScene
+    ? `${campaign?.label ?? 'Unnamed campaign'} > ${currentScene.name ?? 'Unnamed scene'}`
+    : campaign?.label ?? 'Unnamed campaign';
 
   const sceneCharactersByTurnOrder = useMemo(
     () =>
@@ -127,7 +130,7 @@ export function CampaignDashboard() {
   return (
     <>
       <PageWrapper
-        title={campaign.label ?? 'Unnamed campaign'}
+        title={campaignTitle}
         headerActions={
           <div className='flex items-center gap-2'>
             {sceneId && currentScene && (
