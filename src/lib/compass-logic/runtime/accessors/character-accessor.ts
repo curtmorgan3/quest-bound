@@ -2,6 +2,7 @@ import type { DB } from '@/stores/db/hooks/types';
 import type {
   Action,
   Attribute,
+  CampaignCharacter,
   CharacterAttribute,
   CustomProperty,
   InventoryItem,
@@ -96,21 +97,17 @@ export class CharacterAccessor implements StructuredCloneSafe {
   async setTurnOrder(num: number): Promise<void> {
     if (this.campaignId == null || this.campaignSceneId == null) return;
     const db = this.db as DB;
-    const cc = await db.campaignCharacters
-      .where('campaignSceneId')
-      .equals(this.campaignSceneId)
-      .filter(
-        (row: { campaignId: string; characterId: string }) =>
-          row.campaignId === this.campaignId && row.characterId === this.id,
-      )
-      .first();
-    if (cc) {
-      this.turnOrderValue = num;
-      await db.campaignCharacters.update(cc.id, {
-        turnOrder: num,
-        updatedAt: new Date().toISOString(),
-      });
-    }
+    const cc = (await db.campaignCharacters
+      .where('[campaignId+characterId]')
+      .equals([this.campaignId, this.id])
+      .first()) as CampaignCharacter | undefined;
+    if (!cc) return;
+
+    this.turnOrderValue = num;
+    await db.campaignCharacters.update(cc.id, {
+      turnOrder: num,
+      updatedAt: new Date().toISOString(),
+    });
   }
 
   private getDefaultValueForCustomProperty(

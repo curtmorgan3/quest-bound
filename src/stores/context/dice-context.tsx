@@ -89,6 +89,8 @@ export const useDiceState = ({ canvasRef }: DiceStateProps): IDiceContext => {
         await dddiceState.rollThreeDDice(diceRolls);
         await new Promise((res) => setTimeout(res, 2000));
         setDddiceRolling(false);
+      } else if (!physicalDice) {
+        await new Promise((res) => setTimeout(res, 2000));
       }
 
       // 3. If hasRerollMessage, prompt for re-roll input to overwrite result

@@ -174,23 +174,39 @@ export async function startSceneTurnBasedMode(
 
   const now = new Date().toISOString();
   const nowMs = Date.now();
+
+  // Preserve any existing explicit turnOrder values; only assign defaults for unset (0/null) rows.
+  const existingMax = characters.reduce(
+    (max, cc) => Math.max(max, cc.turnOrder ?? 0),
+    0,
+  );
+  let nextTurnOrder = existingMax > 0 ? existingMax + 1 : 1;
+
   const sorted = [...characters].sort(
     (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
   );
-  let turnOrder = 1;
+
   for (const cc of sorted) {
-    await db.campaignCharacters.update(cc.id, {
-      turnOrder: turnOrder++,
-      updatedAt: now,
-    });
+    if ((cc.turnOrder ?? 0) === 0) {
+      await db.campaignCharacters.update(cc.id, {
+        turnOrder: nextTurnOrder++,
+        updatedAt: now,
+      });
+    }
   }
-  await db.campaignCharacters.update(sorted[0].id, {
+
+  // Ensure the "first" character in order has a turn start timestamp/log entry.
+  const first =
+    sorted.find((cc) => (cc.turnOrder ?? 0) > 0) ??
+    sorted[0];
+
+  await db.campaignCharacters.update(first.id, {
     turnStartTimestamp: nowMs,
     turnEndTimestamp: null,
     updatedAt: now,
   });
 
-  await persistTurnStartLog(db, campaignId, sorted[0].characterId);
+  await persistTurnStartLog(db, campaignId, first.characterId);
 
   await db.campaignScenes.update(campaignSceneId, {
     turnBasedMode: true,
