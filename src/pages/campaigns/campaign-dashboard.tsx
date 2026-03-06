@@ -6,11 +6,11 @@ import {
   useCampaignScenes,
   useCharacter,
 } from '@/lib/compass-api';
+import { runSceneAdvanceFromUI } from '@/lib/compass-logic/runtime';
 import {
   startSceneTurnBasedMode,
   stopSceneTurnBasedMode,
 } from '@/lib/compass-logic/runtime/advance-turn-order';
-import { runSceneAdvanceFromUI } from '@/lib/compass-logic/runtime';
 import type { SheetViewerBackdropClickDetail } from '@/lib/compass-planes/sheet-viewer';
 import { SHEET_VIEWER_BACKDROP_CLICK } from '@/lib/compass-planes/sheet-viewer';
 import { db } from '@/stores';
@@ -18,7 +18,6 @@ import { ChevronRight, FileText, ScrollText, Zap } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { ActiveScene } from './active-scene';
-import { TurnOrderScene } from './turn-order-scene';
 import { CampaignCharacterSheet } from './campaign-controls';
 import { CampaignEventsPanel } from './campaign-events-panel';
 import { CampaignGameLog } from './campaign-game-log';
@@ -26,6 +25,7 @@ import { useCampaignPlayCharacterList } from './hooks';
 import { ManagePlayerCharacters } from './manage-player-characters';
 import { NpcStage } from './npc-stage';
 import { SceneDocumentPanel } from './scene-document-panel';
+import { TurnOrderScene } from './turn-order-scene';
 
 export function CampaignDashboard() {
   const { campaignId, sceneId } = useParams<{ campaignId: string; sceneId?: string }>();
@@ -130,6 +130,61 @@ export function CampaignDashboard() {
         title={campaign.label ?? 'Unnamed campaign'}
         headerActions={
           <div className='flex items-center gap-2'>
+            {sceneId && currentScene && (
+              <div className='flex items-center gap-3 border-l pl-3'>
+                <div className='flex items-center gap-2'>
+                  <Switch
+                    id='turn-based-mode'
+                    checked={!!currentScene.turnBasedMode}
+                    onCheckedChange={async (checked) => {
+                      if (!campaignId || !sceneId) return;
+                      try {
+                        if (checked) {
+                          await startSceneTurnBasedMode(db, campaignId, sceneId);
+                        } else {
+                          await stopSceneTurnBasedMode(db, campaignId, sceneId);
+                        }
+                      } catch (e) {
+                        console.warn('Turn-based mode toggle failed', e);
+                      }
+                    }}
+                    data-testid='turn-based-mode-switch'
+                  />
+                  <Label htmlFor='turn-based-mode' className='text-sm cursor-pointer'>
+                    Turn-based
+                  </Label>
+                </div>
+                {currentScene.turnBasedMode && (
+                  <>
+                    <Button
+                      variant='outline'
+                      size='sm'
+                      onClick={async () => {
+                        if (!campaignId || !sceneId || !campaign?.rulesetId) return;
+                        setAdvancing(true);
+                        try {
+                          await runSceneAdvanceFromUI({
+                            db,
+                            rulesetId: campaign.rulesetId,
+                            campaignId,
+                            campaignSceneId: sceneId,
+                          });
+                        } catch (e) {
+                          console.warn('Advance turn failed', e);
+                        } finally {
+                          setAdvancing(false);
+                        }
+                      }}
+                      disabled={advancing}
+                      aria-label='Next turn'
+                      data-testid='next-turn-button'>
+                      <ChevronRight className='h-4 w-4' />
+                      Next turn
+                    </Button>
+                  </>
+                )}
+              </div>
+            )}
             <div className='flex gap-2'>
               {campaignPlayerCharacters.map(({ cc, character }) => (
                 <button
@@ -175,64 +230,7 @@ export function CampaignDashboard() {
                 }
               }}
             />
-            {sceneId && currentScene && (
-              <div className='flex items-center gap-3 border-l pl-3'>
-                <div className='flex items-center gap-2'>
-                  <Switch
-                    id='turn-based-mode'
-                    checked={!!currentScene.turnBasedMode}
-                    onCheckedChange={async (checked) => {
-                      if (!campaignId || !sceneId) return;
-                      try {
-                        if (checked) {
-                          await startSceneTurnBasedMode(db, campaignId, sceneId);
-                        } else {
-                          await stopSceneTurnBasedMode(db, campaignId, sceneId);
-                        }
-                      } catch (e) {
-                        console.warn('Turn-based mode toggle failed', e);
-                      }
-                    }}
-                    data-testid='turn-based-mode-switch'
-                  />
-                  <Label htmlFor='turn-based-mode' className='text-sm cursor-pointer'>
-                    Turn-based
-                  </Label>
-                </div>
-                {currentScene.turnBasedMode && (
-                  <>
-                    <span className='text-sm text-muted-foreground' aria-label='Current cycle'>
-                      Cycle {currentScene.currentTurnCycle ?? 1}
-                    </span>
-                    <Button
-                      variant='outline'
-                      size='sm'
-                      onClick={async () => {
-                        if (!campaignId || !sceneId || !campaign?.rulesetId) return;
-                        setAdvancing(true);
-                        try {
-                          await runSceneAdvanceFromUI({
-                            db,
-                            rulesetId: campaign.rulesetId,
-                            campaignId,
-                            campaignSceneId: sceneId,
-                          });
-                        } catch (e) {
-                          console.warn('Advance turn failed', e);
-                        } finally {
-                          setAdvancing(false);
-                        }
-                      }}
-                      disabled={advancing}
-                      aria-label='Next turn'
-                      data-testid='next-turn-button'>
-                      <ChevronRight className='h-4 w-4' />
-                      Next turn
-                    </Button>
-                  </>
-                )}
-              </div>
-            )}
+
             <ManagePlayerCharacters
               campaignCharacters={campaignCharacters}
               characters={characters}
