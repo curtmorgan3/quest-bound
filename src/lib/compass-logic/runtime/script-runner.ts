@@ -928,7 +928,6 @@ export class ScriptRunner {
     callbacks: SceneTurnCallback[],
     sceneAccessor: CampaignSceneAccessor,
   ): Promise<void> {
-    console.log(callbacks);
     sceneAccessor.setInsideCallbackRun(true);
     for (const cb of callbacks) {
       await executeTurnCallback(

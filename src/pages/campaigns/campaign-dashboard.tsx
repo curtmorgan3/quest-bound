@@ -18,6 +18,7 @@ import { ChevronRight, FileText, ScrollText, Zap } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { ActiveScene } from './active-scene';
+import { TurnOrderScene } from './turn-order-scene';
 import { CampaignCharacterSheet } from './campaign-controls';
 import { CampaignEventsPanel } from './campaign-events-panel';
 import { CampaignGameLog } from './campaign-game-log';
@@ -297,16 +298,27 @@ export function CampaignDashboard() {
             sceneId={sceneId}
             onCardHover={setHoveredCampaignCharacterId}
           />
-          <ActiveScene
-            campaignId={campaign.id}
-            sceneId={sceneId}
-            hoveredCampaignCharacterId={hoveredCampaignCharacterId}
-            currentTurnCampaignCharacterId={currentTurnCampaignCharacterId}
-            currentTurnCycle={currentScene?.turnBasedMode ? (currentScene.currentTurnCycle ?? 1) : undefined}
-            onAvatarClick={(characterId) =>
-              setSheetCharacterId((prev) => (prev === characterId ? null : characterId))
-            }
-          />
+          {currentScene?.turnBasedMode && sceneId ? (
+            <TurnOrderScene
+              campaignId={campaign.id}
+              sceneId={sceneId}
+              currentTurnCycle={currentScene.currentTurnCycle ?? 1}
+              currentTurnCampaignCharacterId={currentTurnCampaignCharacterId ?? null}
+              hoveredCampaignCharacterId={hoveredCampaignCharacterId}
+              onAvatarClick={(characterId) =>
+                setSheetCharacterId((prev) => (prev === characterId ? null : characterId))
+              }
+            />
+          ) : (
+            <ActiveScene
+              campaignId={campaign.id}
+              sceneId={sceneId}
+              hoveredCampaignCharacterId={hoveredCampaignCharacterId}
+              onAvatarClick={(characterId) =>
+                setSheetCharacterId((prev) => (prev === characterId ? null : characterId))
+              }
+            />
+          )}
           {showCampaignLog && (
             <CampaignGameLog campaignId={campaign.id} rulesetId={campaign.rulesetId} />
           )}
