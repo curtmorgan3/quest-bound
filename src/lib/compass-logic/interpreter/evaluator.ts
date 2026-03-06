@@ -451,6 +451,13 @@ export class Evaluator {
     return object[node.property];
   }
 
+  /**
+   * Run a block of statements (e.g. for turn callbacks). Public API for executing parsed blocks.
+   */
+  async runBlock(statements: ASTNode[]): Promise<any> {
+    return this.evalBlock(statements);
+  }
+
   private async evalBlock(statements: ASTNode[]): Promise<any> {
     let result = null;
     for (const stmt of statements) {

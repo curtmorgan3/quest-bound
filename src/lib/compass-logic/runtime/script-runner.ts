@@ -17,6 +17,7 @@ import type {
   RollSplitFn,
   RulesetWindow,
   Script,
+  SceneTurnCallback,
   SelectCharacterFn,
   SelectCharactersFn,
   Window,
@@ -32,6 +33,7 @@ import {
   OwnerAccessor,
   RulesetAccessor,
 } from './accessors';
+import { executeTurnCallback } from './execute-turn-callback';
 import type { ScriptParamsHelper } from './params-helper';
 import type { ExecuteActionEventFn } from './proxies';
 
@@ -905,6 +907,29 @@ export class ScriptRunner {
   }
 
   /**
+   * Run turn callbacks (cycle + on_turn_advance) in order. Sets scene's insideCallbackRun so
+   * advanceTurnOrder() from within a callback only sets deferred. Flushes after each callback.
+   */
+  private async runTurnCallbacks(
+    callbacks: SceneTurnCallback[],
+    sceneAccessor: CampaignSceneAccessor,
+  ): Promise<void> {
+    sceneAccessor.setInsideCallbackRun(true);
+    for (const cb of callbacks) {
+      await executeTurnCallback(
+        this.context.db,
+        cb,
+        sceneAccessor,
+        (id: string) => this.getCharacterAccessorById(id),
+        this.context.rulesetId,
+        this.context.roll,
+      );
+      await this.flushCache();
+    }
+    sceneAccessor.setInsideCallbackRun(false);
+  }
+
+  /**
    * Set up accessor objects in the interpreter environment.
    */
   private setupAccessors(): void {
@@ -927,24 +952,28 @@ export class ScriptRunner {
 
     // When running in a campaign scene, build a shared Scene accessor that can be injected
     // into both ownerless and owner contexts.
-    const sceneAccessor =
-      this.context.campaignId && this.context.campaignSceneId
-        ? new CampaignSceneAccessor(
-            dbTyped,
-            this.context.campaignId,
-            this.context.campaignSceneId,
-            rulesetId,
-            (id: string) => this.getCharacterAccessorById(id),
-            this.sceneCharacterIds ? Array.from(this.sceneCharacterIds) : undefined,
-            (id: string) => {
-              if (!this.sceneCharacterIds) {
-                this.sceneCharacterIds = new Set();
-              }
-              this.sceneCharacterIds.add(id);
-            },
-            this.context.roll,
-          )
-        : null;
+    const deferredAdvanceRef = { current: false };
+    let sceneAccessor: CampaignSceneAccessor | null = null;
+    if (this.context.campaignId && this.context.campaignSceneId) {
+      sceneAccessor = new CampaignSceneAccessor(
+        dbTyped,
+        this.context.campaignId,
+        this.context.campaignSceneId,
+        rulesetId,
+        (id: string) => this.getCharacterAccessorById(id),
+        this.sceneCharacterIds ? Array.from(this.sceneCharacterIds) : undefined,
+        (id: string) => {
+          if (!this.sceneCharacterIds) {
+            this.sceneCharacterIds = new Set();
+          }
+          this.sceneCharacterIds.add(id);
+        },
+        this.context.roll,
+        deferredAdvanceRef,
+        (callbacks: SceneTurnCallback[]) =>
+          this.runTurnCallbacks(callbacks, sceneAccessor!),
+      );
+    }
 
     // When there is no owner (e.g. some campaign/system scripts), only Ruleset is injected,
     // plus Scene when running in a campaign scene context.

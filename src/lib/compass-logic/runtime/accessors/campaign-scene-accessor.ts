@@ -2,16 +2,19 @@ import type { DB } from '@/stores/db/hooks/types';
 import type {
   Archetype,
   CampaignCharacter,
+  CampaignScene,
   Character,
   CharacterAttribute,
   CustomProperty,
   RollFn,
+  SceneTurnCallback,
 } from '@/types';
 import type Dexie from 'dexie';
 import {
   executeArchetypeEvent,
   executeCharacterLoader,
 } from '../../reactive/event-handler-executor';
+import { advanceSceneTurnState, getSceneTurnOrderCharacters } from '../advance-turn-order';
 import type { CharacterAccessor } from './character-accessor';
 import type { OwnerAccessor } from './owner-accessor';
 
@@ -24,6 +27,8 @@ interface SpawnCharacterOptions {
 type GetCharacterAccessorByIdFn = (characterId: string) => Promise<AnyCharacterAccessor | null>;
 
 type RegisterSceneCharacterIdFn = (characterId: string) => void;
+
+export type ExecuteTurnCallbacksFn = (callbacks: SceneTurnCallback[]) => Promise<void>;
 
 /**
  * Accessor for a campaign scene in campaign-aware scripts.
@@ -45,6 +50,9 @@ export class CampaignSceneAccessor {
   private cachedCharacterIds: Set<string> | null;
   private cachedAccessors: AnyCharacterAccessor[] | null;
   private roll?: RollFn;
+  private deferredAdvanceRef?: { current: boolean };
+  private executeTurnCallbacks?: ExecuteTurnCallbacksFn;
+  private insideCallbackRun = false;
 
   constructor(
     db: Dexie,
@@ -55,6 +63,8 @@ export class CampaignSceneAccessor {
     initialCharacterIds?: string[],
     registerSceneCharacterId?: RegisterSceneCharacterIdFn,
     roll?: RollFn,
+    deferredAdvanceRef?: { current: boolean },
+    executeTurnCallbacks?: ExecuteTurnCallbacksFn,
   ) {
     this.db = db as DB;
     this.campaignId = campaignId;
@@ -65,6 +75,126 @@ export class CampaignSceneAccessor {
     this.cachedCharacterIds = initialCharacterIds ? new Set(initialCharacterIds) : null;
     this.cachedAccessors = null;
     this.roll = roll;
+    this.deferredAdvanceRef = deferredAdvanceRef;
+    this.executeTurnCallbacks = executeTurnCallbacks;
+  }
+
+  /** Set by the runner when running turn callbacks; when true, advanceTurnOrder() only sets deferred. */
+  setInsideCallbackRun(inside: boolean): void {
+    this.insideCallbackRun = inside;
+  }
+
+  /** Current turn cycle (1-based). Returns 0 when not in turn-based mode. */
+  async currentTurnCycle(): Promise<number> {
+    const scene = (await this.db.campaignScenes.get(this.campaignSceneId)) as
+      | CampaignScene
+      | undefined;
+    if (!scene?.turnBasedMode) return 0;
+    return scene.currentTurnCycle ?? 1;
+  }
+
+  /** 0-based index in sorted turn order. Returns 0 when not in turn-based mode. */
+  async currentStepInCycle(): Promise<number> {
+    const scene = (await this.db.campaignScenes.get(this.campaignSceneId)) as
+      | CampaignScene
+      | undefined;
+    if (!scene?.turnBasedMode) return 0;
+    return scene.currentStepInCycle ?? 0;
+  }
+
+  /**
+   * Advance to the next character in turn order. Runs cycle callbacks (if we just wrapped) then on_turn_advance callbacks.
+   * No-op when not in turn-based mode. If called from inside a callback, sets deferred and returns.
+   */
+  async advanceTurnOrder(): Promise<void> {
+    if (this.insideCallbackRun && this.deferredAdvanceRef) {
+      this.deferredAdvanceRef.current = true;
+      return;
+    }
+
+    const result = await advanceSceneTurnState(this.db, this.campaignSceneId);
+    if (!result) return;
+
+    const run = this.executeTurnCallbacks;
+    if (!run) return;
+
+    const all = result.cycleCallbacks.concat(result.advanceCallbacks);
+    await run(all);
+
+    if (this.deferredAdvanceRef?.current) {
+      this.deferredAdvanceRef.current = false;
+      await this.advanceTurnOrder();
+    }
+  }
+
+  /**
+   * Start turn-based mode: set turn state and assign default turn order by creation date.
+   * Disallowed when there are no active characters in the scene.
+   */
+  async startTurnBasedMode(): Promise<void> {
+    const characters = await getSceneTurnOrderCharacters(
+      this.db,
+      this.campaignId,
+      this.campaignSceneId,
+    );
+    if (characters.length === 0) {
+      return;
+    }
+
+    const now = new Date().toISOString();
+    const sorted = [...characters].sort(
+      (a, b) =>
+        new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+    );
+    let turnOrder = 1;
+    for (const cc of sorted) {
+      await this.db.campaignCharacters.update(cc.id, {
+        turnOrder: turnOrder++,
+        updatedAt: now,
+      });
+    }
+
+    await this.db.campaignScenes.update(this.campaignSceneId, {
+      turnBasedMode: true,
+      currentTurnCycle: 1,
+      currentStepInCycle: 0,
+      updatedAt: now,
+    });
+
+    this.cachedAccessors = null;
+  }
+
+  /**
+   * Stop turn-based mode: clear callback queue and reset all scene characters' turnOrder to 0.
+   */
+  async stopTurnBasedMode(): Promise<void> {
+    const now = new Date().toISOString();
+    const rows = (await this.db.campaignCharacters
+      .where('campaignId')
+      .equals(this.campaignId)
+      .filter(
+        (cc: CampaignCharacter) => cc.campaignSceneId === this.campaignSceneId,
+      )
+      .toArray()) as CampaignCharacter[];
+
+    for (const cc of rows) {
+      await this.db.campaignCharacters.update(cc.id, {
+        turnOrder: 0,
+        updatedAt: now,
+      });
+    }
+
+    await this.db.sceneTurnCallbacks
+      .where('campaignSceneId')
+      .equals(this.campaignSceneId)
+      .delete();
+
+    await this.db.campaignScenes.update(this.campaignSceneId, {
+      turnBasedMode: false,
+      updatedAt: now,
+    });
+
+    this.cachedAccessors = null;
   }
 
   /**
