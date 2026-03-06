@@ -103,6 +103,7 @@ export const NodeScriptCaller = ({ children, component }: NodeScriptCallerProps)
       triggerType: 'action_click',
       entityType: script.entityType,
       entityId: script.entityId ?? undefined,
+      campaignId: characterContext?.campaignId,
       params: paramsRecord,
       roll: diceContext ? rollFn : undefined,
     });

@@ -37,6 +37,8 @@ export type InventoryItemWithData = InventoryItem & {
 
 type CharacterContext = {
   character: Character;
+  /** When set (e.g. sheet open in campaign play), script execution gets this campaign id for context and log persistence. */
+  campaignId?: string;
   characterAttributes: CharacterAttribute[];
   getCharacterAttribute: (attributeId: string) => CharacterAttribute | null;
   updateCharacterAttribute: (id: string, update: Partial<CharacterAttribute>) => void;

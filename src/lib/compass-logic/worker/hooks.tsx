@@ -568,6 +568,8 @@ export interface ReactiveScriptExecutionOptions {
   /** When script is attached to an entity (attribute, action, item), enables 'Self' in the script environment. */
   entityType?: string;
   entityId?: string;
+  /** When set (e.g. character sheet in campaign play), script context and logs are associated with this campaign. */
+  campaignId?: string;
   /** Optional params map exposed to QBScript as params.get('name'). Must be JSON-serializable. */
   params?: Record<string, any>;
   /** When set, roll() in scripts uses this handler (e.g. dice context rollDice for UI/3D dice). */
@@ -625,6 +627,7 @@ export function useReactiveScriptExecution(timeout = 10000): UseReactiveScriptEx
           triggerType: options.triggerType,
           entityType: options.entityType,
           entityId: options.entityId,
+          campaignId: options.campaignId,
           params: options.params,
           roll: options.roll,
           rollSplit: options.rollSplit,
@@ -643,6 +646,7 @@ export function useReactiveScriptExecution(timeout = 10000): UseReactiveScriptEx
               attributeId: options.reactiveAttributeId,
               characterId: options.characterId,
               rulesetId: options.rulesetId,
+              campaignId: options.campaignId,
               timeout,
             });
 

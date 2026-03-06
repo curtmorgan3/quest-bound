@@ -476,7 +476,14 @@ async function handleExecuteScript(payload: ExecuteScriptPayload): Promise<void>
     promptBridge.requestPrompt(msg, choices, payload.requestId);
   const selectCharacterFn: SelectCharacterFn = (title?: string, description?: string) =>
     characterSelectBridge
-      .requestSelect('single', title, description, payload.requestId, payload.rulesetId)
+      .requestSelect(
+        'single',
+        title,
+        description,
+        payload.requestId,
+        payload.rulesetId,
+        payload.campaignId,
+      )
       .then((ids) => (ids.length > 0 ? ids[0]! : null));
   const selectCharactersFn: SelectCharactersFn = (title?: string, description?: string) =>
     characterSelectBridge.requestSelect(
@@ -485,6 +492,7 @@ async function handleExecuteScript(payload: ExecuteScriptPayload): Promise<void>
       description,
       payload.requestId,
       payload.rulesetId,
+      payload.campaignId,
     );
   let executor: EventHandlerExecutor;
   executor = new EventHandlerExecutor(

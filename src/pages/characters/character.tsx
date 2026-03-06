@@ -185,6 +185,7 @@ export const CharacterPage = ({
     <CharacterProvider
       value={{
         character,
+        campaignId,
         characterAttributes,
         getCharacterAttribute,
         updateCharacterAttribute: handleUpdateCharacterAttribute,

@@ -24,7 +24,6 @@ export function CharacterSelectModal() {
   const { open, mode, title, description, rulesetId, campaignId, select, cancel } =
     useCharacterSelectModalStore();
 
-  console.log('id: ', campaignId);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   const { pcs, npcs } = useCharacterLists(rulesetId, campaignId);
