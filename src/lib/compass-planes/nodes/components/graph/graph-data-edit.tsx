@@ -1,10 +1,3 @@
-import { AttributeLookup } from '@/lib/compass-api';
-import {
-  fireExternalComponentChangeEvent,
-  getComponentData,
-  updateComponentData,
-} from '@/lib/compass-planes/utils';
-import type { Component, GraphComponentData, GraphVariant } from '@/types';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -14,6 +7,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { AttributeLookup } from '@/lib/compass-api';
+import {
+  fireExternalComponentChangeEvent,
+  getComponentData,
+  updateComponentData,
+} from '@/lib/compass-planes/utils';
+import type { Component, GraphComponentData, GraphVariant } from '@/types';
 
 interface GraphDataEditProps {
   components: Array<Component>;
@@ -26,10 +26,7 @@ const VARIANTS: { value: GraphVariant; label: string }[] = [
   { value: 'circular', label: 'Circular' },
 ];
 
-export const GraphDataEdit = ({
-  components,
-  updateComponents,
-}: GraphDataEditProps) => {
+export const GraphDataEdit = ({ components, updateComponents }: GraphDataEditProps) => {
   const editableComponents = components.filter((c) => !c.locked);
   const first = editableComponents[0];
   const firstData = first ? (getComponentData(first) as GraphComponentData) : null;
@@ -47,6 +44,15 @@ export const GraphDataEdit = ({
     const updates = editableComponents.map((c) => ({
       id: c.id,
       data: updateComponentData(c.data, { denominatorAttributeId: attributeId }),
+    }));
+    updateComponents(updates);
+    fireExternalComponentChangeEvent({ updates: updates as any });
+  };
+
+  const setDenominatorValue = (value: number | null) => {
+    const updates = editableComponents.map((c) => ({
+      id: c.id,
+      data: updateComponentData(c.data, { denominatorValue: value }),
     }));
     updateComponents(updates);
     fireExternalComponentChangeEvent({ updates: updates as any });
@@ -74,8 +80,8 @@ export const GraphDataEdit = ({
   if (editableComponents.length === 0) return null;
 
   return (
-    <div className="flex flex-col gap-3 pb-2 border-b border-border">
-      <div className="flex flex-col gap-2">
+    <div className='flex flex-col gap-3 pb-2 border-b border-border'>
+      <div className='flex flex-col gap-2'>
         <Label>Graph style</Label>
         <Select
           value={firstData?.graphVariant ?? 'horizontal-linear'}
@@ -92,11 +98,11 @@ export const GraphDataEdit = ({
           </SelectContent>
         </Select>
       </div>
-      <div className="flex flex-col gap-2">
-        <Label htmlFor="graph-animation-debounce">Animation delay (seconds)</Label>
+      <div className='flex flex-col gap-2'>
+        <Label htmlFor='graph-animation-debounce'>Animation delay (seconds)</Label>
         <Input
-          id="graph-animation-debounce"
-          type="number"
+          id='graph-animation-debounce'
+          type='number'
           min={0}
           step={0.1}
           value={
@@ -108,23 +114,46 @@ export const GraphDataEdit = ({
             const v = parseFloat(e.target.value);
             if (!Number.isNaN(v)) setAnimationDebounceSeconds(v);
           }}
-          className="h-9"
+          className='h-9'
         />
       </div>
       <AttributeLookup
-        label="Numerator (number)"
+        label='Numerator (number)'
         value={firstData?.numeratorAttributeId ?? null}
         onSelect={(attr) => setNumeratorAttributeId(attr.id)}
         onDelete={() => setNumeratorAttributeId(null)}
-        filterType="number"
+        filterType='number'
       />
       <AttributeLookup
-        label="Denominator (number)"
+        label='Denominator (number attribute)'
         value={firstData?.denominatorAttributeId ?? null}
         onSelect={(attr) => setDenominatorAttributeId(attr.id)}
         onDelete={() => setDenominatorAttributeId(null)}
-        filterType="number"
+        filterType='number'
       />
+      <div className='flex flex-col gap-2'>
+        <Label htmlFor='graph-denominator-value' className='text-xs text-muted-foreground'>
+          Denominator (fixed value when no attribute)
+        </Label>
+        <Input
+          id='graph-denominator-value'
+          type='number'
+          min={0}
+          step={1}
+          placeholder='e.g. 100'
+          value={firstData?.denominatorValue != null ? String(firstData.denominatorValue) : ''}
+          onChange={(e) => {
+            const raw = e.target.value.trim();
+            if (raw === '') {
+              setDenominatorValue(null);
+              return;
+            }
+            const v = parseFloat(raw);
+            if (!Number.isNaN(v) && v >= 0) setDenominatorValue(v);
+          }}
+          className='h-9'
+        />
+      </div>
     </div>
   );
 };

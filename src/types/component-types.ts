@@ -82,6 +82,7 @@ export type GraphComponentData = {
   graphVariant?: GraphVariant;
   numeratorAttributeId?: string | null;
   denominatorAttributeId?: string | null;
+  denominatorValue?: number | null;
   /** Delay in seconds before the fill animation runs (decimal allowed). */
   animationDebounceSeconds?: number;
 };

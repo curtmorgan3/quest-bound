@@ -27,7 +27,7 @@ function useGraphRatio(component: Component): number {
   const denominator =
     denominatorId && characterContext
       ? toNumber(characterContext.getCharacterAttribute(denominatorId)?.value ?? 0)
-      : 0;
+      : (data.denominatorValue != null ? toNumber(data.denominatorValue) : 0);
 
   const rawRatio = denominator !== 0 ? numerator / denominator : 0;
   return Math.min(1, Math.max(0, rawRatio));
