@@ -24,7 +24,7 @@ export function CampaignNew() {
       label: label.trim() || undefined,
       rulesetId,
     });
-    if (id) navigate(`/campaigns/${id}`);
+    if (id) navigate(`/campaigns/${id}/scenes`);
   };
 
   const isValid = Boolean(rulesetId);
