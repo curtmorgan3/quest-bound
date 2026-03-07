@@ -939,6 +939,7 @@ export class ScriptRunner {
   /**
    * Run turn callbacks (cycle + onTurnAdvance) in order. Sets scene's insideCallbackRun so
    * advanceTurnOrder() from within a callback only sets deferred. Flushes after each callback.
+   * Merges each callback's announce/log messages into this evaluator so they are included in the script result.
    */
   private async runTurnCallbacks(
     callbacks: SceneTurnCallback[],
@@ -946,7 +947,7 @@ export class ScriptRunner {
   ): Promise<void> {
     sceneAccessor.setInsideCallbackRun(true);
     for (const cb of callbacks) {
-      await executeTurnCallback(
+      const result = await executeTurnCallback(
         this.context.db,
         cb,
         sceneAccessor,
@@ -955,6 +956,8 @@ export class ScriptRunner {
         this.context.roll,
         this.context.campaignId ?? null,
       );
+      this.evaluator.addAnnounceMessages(result.announceMessages);
+      this.evaluator.addLogMessages(result.logMessages);
       await this.flushCache();
     }
     sceneAccessor.setInsideCallbackRun(false);

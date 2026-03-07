@@ -571,6 +571,20 @@ export class Evaluator {
     return this.evalBlock(statements);
   }
 
+  /**
+   * Run a block in a child scope so variable assignments cannot overwrite globals (Scene, Owner, Ruleset).
+   * Use this for turn callbacks so e.g. "test = 10" does not shadow or overwrite built-in bindings.
+   */
+  async runBlockInNewScope(statements: ASTNode[]): Promise<any> {
+    const prevEnv = this.currentEnv;
+    this.currentEnv = new Environment(this.currentEnv);
+    try {
+      return await this.runBlock(statements);
+    } finally {
+      this.currentEnv = prevEnv;
+    }
+  }
+
   private async evalBlock(statements: ASTNode[]): Promise<any> {
     let result = null;
     for (const stmt of statements) {
@@ -811,5 +825,15 @@ export class Evaluator {
   clearMessages(): void {
     this.announceMessages = [];
     this.logMessages = [];
+  }
+
+  /** Append announce messages (e.g. from a turn callback) so they are included in script result. */
+  addAnnounceMessages(messages: string[]): void {
+    this.announceMessages.push(...messages);
+  }
+
+  /** Append log message batches (e.g. from a turn callback) so they are included in script result. */
+  addLogMessages(batches: any[][]): void {
+    this.logMessages.push(...batches);
   }
 }

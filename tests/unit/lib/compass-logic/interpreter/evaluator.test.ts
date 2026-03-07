@@ -927,4 +927,23 @@ x`);
       expect(result).toBe(14);
     });
   });
+
+  describe('runBlockInNewScope (turn callback style)', () => {
+    it('runs all statements including after variable assignment; assignment does not overwrite globals', async () => {
+      const evaluator = new Evaluator();
+      const scene = { name: 'Scene' };
+      evaluator.globalEnv.define('Scene', scene);
+      evaluator.globalEnv.define('Ruleset', {});
+
+      const blockSource = `    test = 10
+    announce('turn')
+`;
+      const tokens = new Lexer(blockSource).tokenize();
+      const program = new Parser(tokens).parse();
+      await evaluator.runBlockInNewScope(program.statements);
+
+      expect(evaluator.getAnnounceMessages()).toEqual(['turn']);
+      expect(evaluator.globalEnv.get('Scene')).toBe(scene);
+    });
+  });
 });

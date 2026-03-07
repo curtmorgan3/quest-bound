@@ -20,10 +20,16 @@ type AnyCharacterAccessor = CharacterAccessor | OwnerAccessor;
 
 const TURN_CALLBACK_CONTEXT = 'turn_callback';
 
+export interface TurnCallbackResult {
+  announceMessages: string[];
+  logMessages: any[][];
+}
+
 /**
  * Execute a single turn callback's block in the stored context (Owner, Scene, Ruleset).
+ * Runs the block in a child scope so variable assignments cannot overwrite Scene/Owner/Ruleset.
  * Persists script log() output and reports errors to scriptErrors using stored scriptId and rulesetId.
- * Catches errors and does not throw.
+ * Catches errors and does not throw. Returns announce/log messages so the caller can merge them into the script result.
  */
 export async function executeTurnCallback(
   db: DB,
@@ -33,7 +39,8 @@ export async function executeTurnCallback(
   rulesetId: string,
   roll?: RollFn,
   campaignId?: string | null,
-): Promise<void> {
+): Promise<TurnCallbackResult> {
+  const emptyResult: TurnCallbackResult = { announceMessages: [], logMessages: [] };
   try {
     const attributes = (await db.attributes.where('rulesetId').equals(rulesetId).toArray()) as Attribute[];
     const charts = (await db.charts.where('rulesetId').equals(rulesetId).toArray()) as Chart[];
@@ -58,10 +65,12 @@ export async function executeTurnCallback(
 
     const tokens = new Lexer(callback.blockSource).tokenize();
     const program = new Parser(tokens).parse();
-    await evaluator.runBlock(program.statements);
+    await evaluator.runBlockInNewScope(program.statements);
 
-    // Dispatch announce messages so UI toasts fire (same event as worker script execution)
     const announceMessages = evaluator.getAnnounceMessages();
+    const logMessages = evaluator.getLogMessages();
+
+    // Dispatch announce messages so UI toasts fire when running in main thread (e.g. tests)
     if (typeof window !== 'undefined') {
       for (const message of announceMessages) {
         window.dispatchEvent(
@@ -70,7 +79,6 @@ export async function executeTurnCallback(
       }
     }
 
-    const logMessages = evaluator.getLogMessages();
     if (logMessages.length > 0) {
       await persistScriptLogs(db, {
         rulesetId: callback.rulesetId,
@@ -81,6 +89,8 @@ export async function executeTurnCallback(
         campaignId: campaignId ?? null,
       });
     }
+
+    return { announceMessages, logMessages };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     const stack = err instanceof Error ? err.stack ?? null : null;
@@ -104,5 +114,6 @@ export async function executeTurnCallback(
     } catch (persistErr) {
       console.warn('[executeTurnCallback] Failed to persist script error', persistErr);
     }
+    return emptyResult;
   }
 }

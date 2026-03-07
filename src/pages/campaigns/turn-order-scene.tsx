@@ -1,8 +1,13 @@
-import { useCampaign, useCampaignCharacters, useScriptLogs } from '@/lib/compass-api';
+import {
+  useCampaign,
+  useCampaignCharacters,
+  useCharacterAttributes,
+  useScriptLogs,
+} from '@/lib/compass-api';
 import type { ScriptLog } from '@/types';
 import { motion } from 'framer-motion';
 import { GripVertical } from 'lucide-react';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import type { CampaignCharacterWithName } from './hooks';
 import { useCampaignPlayCharacterList } from './hooks';
 
@@ -134,6 +139,8 @@ interface TurnOrderPortraitProps {
   onDrop?: (e: React.DragEvent) => void;
 }
 
+type PortraitView = 'log' | 'attributes';
+
 function TurnOrderPortrait({
   entry,
   displayIndex,
@@ -147,6 +154,12 @@ function TurnOrderPortrait({
 }: TurnOrderPortraitProps) {
   const { character, cc } = entry;
   const showRing = isCurrentTurn || isHovered;
+  const [view, setView] = useState<PortraitView>('log');
+  const { characterAttributes } = useCharacterAttributes(character?.id);
+
+  const sortedAttributes = useMemo(() => {
+    return [...characterAttributes].sort((a, b) => (a.title ?? '').localeCompare(b.title ?? ''));
+  }, [characterAttributes]);
 
   const turnLogs = useMemo(() => {
     const start = cc.turnStartTimestamp;
@@ -183,7 +196,7 @@ function TurnOrderPortrait({
       onDrop={onDrop}>
       {onDragStart && (
         <div
-          role="button"
+          role='button'
           tabIndex={0}
           draggable
           onDragStart={onDragStart}
@@ -192,7 +205,7 @@ function TurnOrderPortrait({
           <GripVertical className='size-4' />
         </div>
       )}
-      <div className='flex shrink-0 flex-col items-start gap-1'>
+      <div className='flex shrink-0 flex-col items-center gap-1'>
         <button
           type='button'
           data-active-npc-avatar='true'
@@ -219,18 +232,60 @@ function TurnOrderPortrait({
           {character?.name ?? 'Unnamed'}
         </span>
       </div>
-      <div
-        className='h-26 min-w-0 flex-1 overflow-y-auto rounded border bg-background/80 px-2 py-1 font-mono text-xs'
-        aria-label={`Log for ${character?.name ?? 'character'}'s turn`}>
-        {logLines.length === 0 ? (
-          <span className='text-muted-foreground'>Waiting for turn</span>
-        ) : (
-          <div className='flex flex-col gap-0.5 break-words text-muted-foreground'>
-            {logLines.map((line, i) => (
-              <div key={i}>{line}</div>
-            ))}
-          </div>
-        )}
+      <div className='flex min-h-0 min-w-0 flex-1 flex-col gap-0.5'>
+        <div
+          className='h-26 min-h-0 min-w-0 flex-1 overflow-y-auto rounded border bg-background/80 px-2 py-1 font-mono text-xs'
+          aria-label={
+            view === 'log'
+              ? `Log for ${character?.name ?? 'character'}'s turn`
+              : `Attributes for ${character?.name ?? 'character'}`
+          }>
+          {view === 'log' ? (
+            logLines.length === 0 ? (
+              <span className='text-muted-foreground'>Waiting for turn</span>
+            ) : (
+              <div className='flex flex-col gap-0.5 break-words text-muted-foreground'>
+                {logLines.map((line, i) => (
+                  <div key={i}>{line}</div>
+                ))}
+              </div>
+            )
+          ) : sortedAttributes.length === 0 ? (
+            <span className='text-muted-foreground'>No attributes</span>
+          ) : (
+            <div className='flex flex-col gap-0.5 break-words text-muted-foreground max-h-[100px] overflow-auto'>
+              {sortedAttributes.map((attr) => (
+                <div key={attr.id} className='text-[12px]'>
+                  {attr.title ?? 'Unnamed'}: {String(attr.value)}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+        <div className='flex shrink-0 gap-1.5'>
+          <button
+            type='button'
+            onClick={() => setView('log')}
+            className={`text-[10px] font-medium transition-colors ${
+              view === 'log' ? 'text-foreground' : 'text-muted-foreground hover:text-foreground'
+            }`}
+            aria-pressed={view === 'log'}
+            aria-label='Show game log'>
+            Log
+          </button>
+          <button
+            type='button'
+            onClick={() => setView('attributes')}
+            className={`text-[10px] font-medium transition-colors ${
+              view === 'attributes'
+                ? 'text-foreground'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+            aria-pressed={view === 'attributes'}
+            aria-label='Show attributes'>
+            Attributes
+          </button>
+        </div>
       </div>
     </motion.div>
   );
