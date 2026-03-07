@@ -30,6 +30,21 @@ const qbscriptCompletions = [
     info: "Create a character sheet page from a ruleset page template by label (e.g. Owner.addPage('Spells'))",
   },
   {
+    label: 'Owner.addItem',
+    type: 'function',
+    info: "Add an item to the character's inventory by name (e.g. Owner.addItem('Potion', 2) or Owner.addItem('Potion', 1, 'inventoryCompId'))",
+  },
+  {
+    label: 'Owner.addAction',
+    type: 'function',
+    info: "Add an action as an inventory entry (e.g. Owner.addAction('Attack') or Owner.addAction('Attack', 'inventoryCompId'))",
+  },
+  {
+    label: 'Owner.addAttribute',
+    type: 'function',
+    info: "Add an attribute as an inventory entry (e.g. Owner.addAttribute('Health') or Owner.addAttribute('Health', 'inventoryCompId'))",
+  },
+  {
     label: 'Owner.navigateToPage',
     type: 'function',
     info: "Navigate the character sheet to a page by label (e.g. Owner.navigateToPage('Spells'))",

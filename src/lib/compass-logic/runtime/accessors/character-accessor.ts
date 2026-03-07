@@ -441,6 +441,76 @@ export class CharacterAccessor implements StructuredCloneSafe {
     return this.createItemInstanceProxyFor(newEntry, item);
   }
 
+  /**
+   * Add an inventory entry of the given action type to the character's inventory,
+   * optionally targeting a specific inventory component by id.
+   * Example: Owner.addAction('Attack', 'inventory-comp-uuid')
+   */
+  addAction(name: string, inventoryCompId?: string): void {
+    const action = Array.from(this.actionsCache.values()).find((a) => a.title === name);
+    if (!action) {
+      throw new Error(`Action '${name}' not found`);
+    }
+    if (!this.inventoryId) {
+      throw new Error('Character has no inventory');
+    }
+    const now = new Date().toISOString();
+    const newEntry = {
+      id: crypto.randomUUID(),
+      type: 'action' as const,
+      entityId: action.id,
+      inventoryId: this.inventoryId,
+      componentId: '',
+      quantity: 1,
+      x: -1,
+      y: -1,
+      createdAt: now,
+      updatedAt: now,
+      ...(inventoryCompId != null && inventoryCompId !== ''
+        ? { _inventoryComponentIdRef: inventoryCompId }
+        : {}),
+    };
+    this.inventoryItems.push(newEntry as InventoryItem);
+    const key = 'inventoryAdd';
+    const existing = this.pendingUpdates.get(key) as InventoryItem[] | undefined;
+    this.pendingUpdates.set(key, existing ? [...existing, newEntry] : [newEntry]);
+  }
+
+  /**
+   * Add an inventory entry of the given attribute type to the character's inventory,
+   * optionally targeting a specific inventory component by id.
+   * Example: Owner.addAttribute('Health', 'inventory-comp-uuid')
+   */
+  addAttribute(name: string, inventoryCompId?: string): void {
+    const attribute = Array.from(this.attributesCache.values()).find((attr) => attr.title === name);
+    if (!attribute) {
+      throw new Error(`Attribute '${name}' not found`);
+    }
+    if (!this.inventoryId) {
+      throw new Error('Character has no inventory');
+    }
+    const now = new Date().toISOString();
+    const newEntry = {
+      id: crypto.randomUUID(),
+      type: 'attribute' as const,
+      entityId: attribute.id,
+      inventoryId: this.inventoryId,
+      componentId: '',
+      quantity: 1,
+      x: -1,
+      y: -1,
+      createdAt: now,
+      updatedAt: now,
+      ...(inventoryCompId != null && inventoryCompId !== ''
+        ? { _inventoryComponentIdRef: inventoryCompId }
+        : {}),
+    };
+    this.inventoryItems.push(newEntry as InventoryItem);
+    const key = 'inventoryAdd';
+    const existing = this.pendingUpdates.get(key) as InventoryItem[] | undefined;
+    this.pendingUpdates.set(key, existing ? [...existing, newEntry] : [newEntry]);
+  }
+
   setItem(name: string, quantity: number = 0): void {
     const item = Array.from(this.itemsCache.values()).find((i) => i.title === name);
     if (!item) {
