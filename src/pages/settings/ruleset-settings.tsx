@@ -257,14 +257,14 @@ export const RulesetSettings = ({ activeRuleset }: RulesetSettingsProps) => {
   };
 
   return (
-    <Tabs defaultValue='details' className='flex flex-col gap-4'>
+    <Tabs defaultValue='details' className='flex min-h-0 flex-1 flex-col gap-4'>
       <TabsList>
         <TabsTrigger value='details'>Details</TabsTrigger>
         <TabsTrigger value='defaults'>Content</TabsTrigger>
         <TabsTrigger value='modules'>Modules</TabsTrigger>
       </TabsList>
 
-      <TabsContent value='details' className='flex flex-col gap-6 mt-0'>
+      <TabsContent value='details' className='mt-0 flex min-h-0 flex-1 flex-col gap-6 overflow-auto'>
         <div className='flex items-end gap-4'>
           <div className='flex flex-col gap-2 max-w-sm flex-1'>
             <Label htmlFor='ruleset-title'>Title</Label>
@@ -299,7 +299,7 @@ export const RulesetSettings = ({ activeRuleset }: RulesetSettingsProps) => {
         </div>
       </TabsContent>
 
-      <TabsContent value='defaults' className='flex flex-col gap-6 mt-0'>
+      <TabsContent value='defaults' className='mt-0 flex min-h-0 flex-1 flex-col gap-6 overflow-auto'>
         <div className='flex flex-col gap-3'>
           <Label>Custom Properties</Label>
           <p className='text-sm text-muted-foreground'>
@@ -543,7 +543,7 @@ export const RulesetSettings = ({ activeRuleset }: RulesetSettingsProps) => {
         </div>
       </TabsContent>
 
-      <TabsContent value='modules' className='flex flex-col gap-6 mt-0 overflow-auto'>
+      <TabsContent value='modules' className='mt-0 flex min-h-0 flex-1 flex-col gap-6 overflow-auto'>
         <div className='flex flex-col gap-3'>
           <div className='flex items-center gap-2'>
             <Checkbox

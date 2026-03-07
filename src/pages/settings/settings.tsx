@@ -53,10 +53,19 @@ export const Settings = () => {
         setPage('user');
       }
     }
-  }, [activeRuleset, campaign, character, isOnCampaignRoute, isOnRulesetRoute, page, rulesetId, campaignId]);
+  }, [
+    activeRuleset,
+    campaign,
+    character,
+    isOnCampaignRoute,
+    isOnRulesetRoute,
+    page,
+    rulesetId,
+    campaignId,
+  ]);
 
   return (
-    <div className='p-4 min-h-[90vh]'>
+    <div className='p-4 min-h-[100%] overflow-auto'>
       <Sidebar>
         <SidebarContent className='w-[200px] p-4'>
           <SidebarMenu>
@@ -101,15 +110,17 @@ export const Settings = () => {
           </SidebarMenu>
         </SidebarContent>
       </Sidebar>
-      <div className='flex flex-col p-4 gap-4 ml-[200px] h-[1000px] overflow-scroll'>
-        {page === 'user' && <UserSettings />}
-        {page === 'campaign' && isOnCampaignRoute && campaign && (
-          <CampaignSettings activeCampaign={campaign} />
-        )}
-        {page === 'ruleset' && isOnRulesetRoute && activeRuleset && (
-          <RulesetSettings activeRuleset={activeRuleset} />
-        )}
-        {page === 'character' && character && <CharacterSettings character={character} />}
+      <div className='flex min-h-[70vh] flex-col gap-4 p-4 ml-[200px] overflow-scroll'>
+        <div className='flex min-h-0 flex-1 flex-col'>
+          {page === 'user' && <UserSettings />}
+          {page === 'campaign' && isOnCampaignRoute && campaign && (
+            <CampaignSettings activeCampaign={campaign} />
+          )}
+          {page === 'ruleset' && isOnRulesetRoute && activeRuleset && (
+            <RulesetSettings activeRuleset={activeRuleset} />
+          )}
+          {page === 'character' && character && <CharacterSettings character={character} />}
+        </div>
       </div>
     </div>
   );
