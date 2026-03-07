@@ -748,6 +748,34 @@ z = 3`;
       expect((ast.statements[0] as { type: string }).type).toBe('Assignment');
       expect((ast.statements[0] as { name: string; value: unknown }).name).toBe('char');
     });
+
+    it('should parse block with assignment on second line (after expression statement)', () => {
+      const source = `Scene.onTurnAdvance():
+    announce('turn')
+    test = 10`;
+      const ast = parse(source);
+      expect(ast.statements).toHaveLength(1);
+      expect(ast.statements[0].type).toBe('OnTurnAdvanceCall');
+      const stmt = ast.statements[0] as { block: unknown[] };
+      expect(stmt.block).toHaveLength(2);
+      expect((stmt.block[0] as { type: string }).type).toBe('FunctionCall');
+      expect((stmt.block[1] as { type: string }).type).toBe('Assignment');
+      expect((stmt.block[1] as { name: string }).name).toBe('test');
+    });
+
+    it('should parse block when second line has extra indent (INDENT before statement)', () => {
+      // Some editors indent continuation lines more; parser should skip INDENT and parse the statement
+      const source = `Scene.onTurnAdvance():
+    announce('turn')
+        test = 10`;
+      const ast = parse(source);
+      expect(ast.statements).toHaveLength(1);
+      expect(ast.statements[0].type).toBe('OnTurnAdvanceCall');
+      const stmt = ast.statements[0] as { block: unknown[] };
+      expect(stmt.block).toHaveLength(2);
+      expect((stmt.block[1] as { type: string }).type).toBe('Assignment');
+      expect((stmt.block[1] as { name: string }).name).toBe('test');
+    });
   });
 
   describe('Error Handling', () => {

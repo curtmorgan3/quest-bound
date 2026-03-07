@@ -72,6 +72,11 @@ export class Parser {
     // Skip any newlines before statement
     this.skipNewlines();
 
+    // Skip INDENT at start of line (e.g. when a line in a block has more indent than the previous)
+    while (this.match(TokenType.INDENT)) {
+      // continue
+    }
+
     // Return statement
     if (this.match(TokenType.RETURN)) {
       return this.returnStatement();
