@@ -49,7 +49,7 @@ export const useCampaignCharacters = (campaignId: string | undefined) => {
 
   const updateCampaignCharacter = async (
     id: string,
-    data: Partial<Pick<CampaignCharacter, 'active' | 'campaignSceneId'>>,
+    data: Partial<Pick<CampaignCharacter, 'active' | 'campaignSceneId' | 'turnOrder'>>,
   ) => {
     const now = new Date().toISOString();
     try {

@@ -1,9 +1,12 @@
 import { useCampaign, useCampaignCharacters, useScriptLogs } from '@/lib/compass-api';
 import type { ScriptLog } from '@/types';
 import { motion } from 'framer-motion';
+import { GripVertical } from 'lucide-react';
 import { useMemo } from 'react';
 import type { CampaignCharacterWithName } from './hooks';
 import { useCampaignPlayCharacterList } from './hooks';
+
+const DRAG_DATA_KEY = 'application/x-quest-bound-turn-order-index';
 
 export interface TurnOrderSceneProps {
   campaignId: string;
@@ -14,6 +17,8 @@ export interface TurnOrderSceneProps {
   currentTurnCampaignCharacterId: string | null;
   hoveredCampaignCharacterId?: string | null;
   onAvatarClick?: (characterId: string) => void;
+  /** Called with campaign character ids in new order after drag reorder. */
+  onReorderTurnOrder?: (orderedCampaignCharacterIds: string[]) => void | Promise<void>;
 }
 
 /**
@@ -28,6 +33,7 @@ export function TurnOrderScene({
   currentTurnCampaignCharacterId,
   hoveredCampaignCharacterId,
   onAvatarClick,
+  onReorderTurnOrder,
 }: TurnOrderSceneProps) {
   const { campaignCharacters } = useCampaignCharacters(campaignId);
   const campaign = useCampaign(campaignId);
@@ -68,18 +74,47 @@ export function TurnOrderScene({
     );
   }
 
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  };
+
+  const handleDrop = (e: React.DragEvent, dropDisplayIndex: number) => {
+    e.preventDefault();
+    const dragDisplayIndexJson = e.dataTransfer.getData(DRAG_DATA_KEY);
+    if (dragDisplayIndexJson === '' || !onReorderTurnOrder) return;
+    const dragDisplayIndex = Number(JSON.parse(dragDisplayIndexJson));
+    if (Number.isNaN(dragDisplayIndex) || dragDisplayIndex === dropDisplayIndex) return;
+    const reordered = [...displayOrder];
+    const [removed] = reordered.splice(dragDisplayIndex, 1);
+    reordered.splice(dropDisplayIndex, 0, removed);
+    const orderedIds = reordered.map((entry) => entry.cc.id);
+    void onReorderTurnOrder(orderedIds);
+  };
+
   return (
     <div className='flex min-h-0 flex-1 flex-col border-r bg-muted/20 p-3'>
       <p className='mb-2 text-sm text-muted-foreground'>Turn {currentTurnCycle}</p>
       <div className='flex min-h-0 flex-1 flex-col gap-2 overflow-auto p-2'>
-        {displayOrder.map((entry) => (
+        {displayOrder.map((entry, displayIndex) => (
           <TurnOrderPortrait
             key={entry.cc.id}
             entry={entry}
+            displayIndex={displayIndex}
             isCurrentTurn={entry.cc.id === currentTurnCampaignCharacterId}
             isHovered={entry.cc.id === hoveredCampaignCharacterId}
             scriptLogs={scriptLogs}
             onAvatarClick={onAvatarClick}
+            onDragStart={
+              onReorderTurnOrder
+                ? (e) => {
+                    e.dataTransfer.setData(DRAG_DATA_KEY, JSON.stringify(displayIndex));
+                    e.dataTransfer.effectAllowed = 'move';
+                  }
+                : undefined
+            }
+            onDragOver={onReorderTurnOrder ? handleDragOver : undefined}
+            onDrop={onReorderTurnOrder ? (e) => handleDrop(e, displayIndex) : undefined}
           />
         ))}
       </div>
@@ -89,18 +124,26 @@ export function TurnOrderScene({
 
 interface TurnOrderPortraitProps {
   entry: CampaignCharacterWithName;
+  displayIndex: number;
   isCurrentTurn: boolean;
   isHovered: boolean;
   scriptLogs: ScriptLog[];
   onAvatarClick?: (characterId: string) => void;
+  onDragStart?: (e: React.DragEvent) => void;
+  onDragOver?: (e: React.DragEvent) => void;
+  onDrop?: (e: React.DragEvent) => void;
 }
 
 function TurnOrderPortrait({
   entry,
+  displayIndex,
   isCurrentTurn,
   isHovered,
   scriptLogs,
   onAvatarClick,
+  onDragStart,
+  onDragOver,
+  onDrop,
 }: TurnOrderPortraitProps) {
   const { character, cc } = entry;
   const showRing = isCurrentTurn || isHovered;
@@ -135,7 +178,20 @@ function TurnOrderPortrait({
     <motion.div
       layout
       transition={{ type: 'spring', stiffness: 350, damping: 30 }}
-      className={`flex items-stretch gap-2 ${isCurrentTurn ? 'mb-8' : ''}`}>
+      className={`flex items-stretch gap-2 ${isCurrentTurn ? 'mb-8' : ''}`}
+      onDragOver={onDragOver}
+      onDrop={onDrop}>
+      {onDragStart && (
+        <div
+          role="button"
+          tabIndex={0}
+          draggable
+          onDragStart={onDragStart}
+          className='flex shrink-0 cursor-grab touch-none flex-col items-center justify-center self-stretch rounded border-0 bg-transparent px-1 text-muted-foreground hover:bg-muted/50 hover:text-foreground active:cursor-grabbing'
+          aria-label='Drag to reorder turn'>
+          <GripVertical className='size-4' />
+        </div>
+      )}
       <div className='flex shrink-0 flex-col items-start gap-1'>
         <button
           type='button'

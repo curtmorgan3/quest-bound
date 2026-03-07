@@ -33,7 +33,7 @@ export function CampaignDashboard() {
   const [searchParams, setSearchParams] = useSearchParams();
   const campaign = useCampaign(campaignId);
   const navigate = useNavigate();
-  const { campaignCharacters, createCampaignCharacter, deleteCampaignCharacter } =
+  const { campaignCharacters, createCampaignCharacter, deleteCampaignCharacter, updateCampaignCharacter } =
     useCampaignCharacters(campaignId);
   const withNames = useCampaignPlayCharacterList({ campaignCharacters });
   const { characters } = useCharacter();
@@ -387,6 +387,13 @@ export function CampaignDashboard() {
                       onAvatarClick={(characterId) =>
                         setSheetCharacterId((prev) => (prev === characterId ? null : characterId))
                       }
+                      onReorderTurnOrder={async (orderedCampaignCharacterIds) => {
+                        for (let i = 0; i < orderedCampaignCharacterIds.length; i++) {
+                          await updateCampaignCharacter(orderedCampaignCharacterIds[i], {
+                            turnOrder: i,
+                          });
+                        }
+                      }}
                     />
                   ) : (
                     <ActiveScene
