@@ -58,6 +58,7 @@ export const assetInjectorMiddleware: Middleware<DBCore> = {
           [
             'users',
             'rulesets',
+            'campaigns',
             'characters',
             'charts',
             'items',

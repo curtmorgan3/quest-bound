@@ -11,6 +11,7 @@ export async function getAssetReferenceCount(db: DB, assetId: string): Promise<n
     characterCount,
     componentCount,
     rulesetCount,
+    campaignCount,
     chartCount,
     archetypeCount,
     characterPageCount,
@@ -25,6 +26,7 @@ export async function getAssetReferenceCount(db: DB, assetId: string): Promise<n
     db.characters.filter((char) => char.assetId === assetId).count(),
     db.components.filter((comp) => JSON.parse(comp.data)?.assetId === assetId).count(),
     db.rulesets.filter((r) => r.assetId === assetId).count(),
+    db.campaigns.filter((c) => c.assetId === assetId).count(),
     db.charts.filter((c) => c.assetId === assetId).count(),
     db.archetypes.filter((a) => a.assetId === assetId).count(),
     db.characterPages.filter((cp) => cp.assetId === assetId).count(),
@@ -38,6 +40,7 @@ export async function getAssetReferenceCount(db: DB, assetId: string): Promise<n
     characterCount +
     componentCount +
     rulesetCount +
+    campaignCount +
     chartCount +
     archetypeCount +
     characterPageCount
@@ -63,6 +66,7 @@ export async function clearAssetReferences(db: DB, assetId: string): Promise<voi
     characters,
     components,
     rulesets,
+    campaigns,
     charts,
     archetypes,
     characterPages,
@@ -75,6 +79,7 @@ export async function clearAssetReferences(db: DB, assetId: string): Promise<voi
     db.characters.where('assetId').equals(assetId).toArray(),
     db.components.toArray(),
     db.rulesets.where('assetId').equals(assetId).toArray(),
+    db.campaigns.where('assetId').equals(assetId).toArray(),
     db.charts.where('assetId').equals(assetId).toArray(),
     db.archetypes.where('assetId').equals(assetId).toArray(),
     db.characterPages.where('assetId').equals(assetId).toArray(),
@@ -94,6 +99,7 @@ export async function clearAssetReferences(db: DB, assetId: string): Promise<voi
     ...attributes.map((a) => db.attributes.update(a.id, { assetId: null, updatedAt: now })),
     ...characters.map((c) => db.characters.update(c.id, { assetId: null, updatedAt: now })),
     ...rulesets.map((r) => db.rulesets.update(r.id, { assetId: null, updatedAt: now })),
+    ...campaigns.map((c) => db.campaigns.update(c.id, { assetId: null, updatedAt: now })),
     ...charts.map((c) => db.charts.update(c.id, { assetId: null, updatedAt: now })),
     ...archetypes.map((a) => db.archetypes.update(a.id, { assetId: null, updatedAt: now })),
     ...characterPages.map((cp) =>

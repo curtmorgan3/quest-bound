@@ -458,6 +458,12 @@ export type Campaign = BaseDetails & {
   rulesetId: string;
   /** @deprecated World feature removed; may exist on old data. */
   worldId?: string | null;
+  /** Optional cover/avatar image asset. */
+  assetId?: string | null;
+  /** Injected from asset.data when assetId is set; do not persist on entity. */
+  image?: string | null;
+  /** Optional campaign description. */
+  description?: string;
   pinnedSidebarDocuments?: string[];
   pinnedSidebarCharts?: string[];
   /** Arbitrary key-value options (e.g. showAutoEntries for game log). */

@@ -5,33 +5,40 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from '@/components/ui/sidebar';
-import { useActiveRuleset, useCharacter } from '@/lib/compass-api';
-import { NotebookPen, User, UserRoundPen } from 'lucide-react';
+import { useActiveRuleset, useCampaign, useCharacter } from '@/lib/compass-api';
+import { Clapperboard, NotebookPen, User, UserRoundPen } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
+import { CampaignSettings } from './campaign-settings';
 import { CharacterSettings } from './character-settings';
 import { RulesetSettings } from './ruleset-settings';
 import { UserSettings } from './user-settings';
 
 export const Settings = () => {
-  const { rulesetId } = useParams();
+  const { rulesetId, campaignId } = useParams();
   const { activeRuleset } = useActiveRuleset();
   const { character } = useCharacter();
+  const campaign = useCampaign(campaignId);
 
   const isOnRulesetRoute = Boolean(rulesetId && rulesetId !== 'undefined');
+  const isOnCampaignRoute = Boolean(campaignId && campaignId !== 'undefined');
 
   const [page, setPage] = useState<string>('user');
-  const prevParamsRef = useRef({ rulesetId });
+  const prevParamsRef = useRef({ rulesetId, campaignId });
   const hasSetInitialRef = useRef(false);
 
   useEffect(() => {
-    const paramsChanged = prevParamsRef.current.rulesetId !== rulesetId;
+    const paramsChanged =
+      prevParamsRef.current.rulesetId !== rulesetId ||
+      prevParamsRef.current.campaignId !== campaignId;
 
     if (!hasSetInitialRef.current || paramsChanged) {
       hasSetInitialRef.current = true;
-      prevParamsRef.current = { rulesetId };
+      prevParamsRef.current = { rulesetId, campaignId };
       if (character) {
         setPage('character');
+      } else if (isOnCampaignRoute && campaign) {
+        setPage('campaign');
       } else if (isOnRulesetRoute && activeRuleset) {
         setPage('ruleset');
       } else {
@@ -42,9 +49,11 @@ export const Settings = () => {
         setPage('user');
       } else if (page === 'character' && !character) {
         setPage('user');
+      } else if (page === 'campaign' && (!isOnCampaignRoute || !campaign)) {
+        setPage('user');
       }
     }
-  }, [activeRuleset, character, isOnRulesetRoute, page, rulesetId]);
+  }, [activeRuleset, campaign, character, isOnCampaignRoute, isOnRulesetRoute, page, rulesetId, campaignId]);
 
   return (
     <div className='p-4 min-h-[90vh]'>
@@ -57,6 +66,16 @@ export const Settings = () => {
                   <div>
                     <UserRoundPen />
                     <span>{character.name}</span>
+                  </div>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            )}
+            {isOnCampaignRoute && campaign && (
+              <SidebarMenuItem className={`${page === 'campaign' ? 'text-primary' : ''}`}>
+                <SidebarMenuButton asChild onClick={() => setPage('campaign')}>
+                  <div>
+                    <Clapperboard />
+                    <span>{campaign.label ?? 'Campaign'}</span>
                   </div>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -84,6 +103,9 @@ export const Settings = () => {
       </Sidebar>
       <div className='flex flex-col p-4 gap-4 ml-[200px] h-[1000px] overflow-scroll'>
         {page === 'user' && <UserSettings />}
+        {page === 'campaign' && isOnCampaignRoute && campaign && (
+          <CampaignSettings activeCampaign={campaign} />
+        )}
         {page === 'ruleset' && isOnRulesetRoute && activeRuleset && (
           <RulesetSettings activeRuleset={activeRuleset} />
         )}
