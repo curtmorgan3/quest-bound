@@ -83,6 +83,10 @@ export type GraphComponentData = {
   numeratorAttributeId?: string | null;
   denominatorAttributeId?: string | null;
   denominatorValue?: number | null;
+  /** When set with segmentCount, this node shows only segment segmentIndex of segmentCount (1-based). */
+  segmentIndex?: number | null;
+  /** Total segments; e.g. 3 = one bar split into three. Use 1 or leave unset for single full bar. */
+  segmentCount?: number | null;
   /** Delay in seconds before the fill animation runs (decimal allowed). */
   animationDebounceSeconds?: number;
 };

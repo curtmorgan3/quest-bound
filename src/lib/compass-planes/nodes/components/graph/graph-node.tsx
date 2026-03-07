@@ -30,7 +30,22 @@ function useGraphRatio(component: Component): number {
       : (data.denominatorValue != null ? toNumber(data.denominatorValue) : 0);
 
   const rawRatio = denominator !== 0 ? numerator / denominator : 0;
-  return Math.min(1, Math.max(0, rawRatio));
+  const ratio = Math.min(1, Math.max(0, rawRatio));
+
+  const n = data.segmentCount;
+  const oneBasedIndex = data.segmentIndex;
+  if (
+    typeof n === 'number' &&
+    n >= 1 &&
+    typeof oneBasedIndex === 'number' &&
+    oneBasedIndex >= 1 &&
+    oneBasedIndex <= n
+  ) {
+    const i = oneBasedIndex - 1;
+    const segmentFill = ratio * n - i;
+    return Math.min(1, Math.max(0, segmentFill));
+  }
+  return ratio;
 }
 
 function useDebouncedRatio(ratio: number, debounceMs: number): number {
