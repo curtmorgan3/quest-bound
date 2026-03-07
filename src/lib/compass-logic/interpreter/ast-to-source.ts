@@ -71,7 +71,7 @@ export function astToSource(
     case 'FunctionCall': {
       const fc = node as FunctionCall;
       const args = fc.arguments.map(exprToSource).join(', ');
-      return `${fc.name}(${args})`;
+      return `${prefix}${fc.name}(${args})`;
     }
     case 'MethodCall': {
       const mc = node as MethodCall;

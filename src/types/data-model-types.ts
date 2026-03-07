@@ -475,6 +475,8 @@ export type CampaignCharacter = BaseDetails & {
   turnStartTimestamp?: number;
   /** Unix ms when this character's turn ended (null = currently their turn). Rewritten on each advance. */
   turnEndTimestamp?: number | null;
+  /** Character attribute ids to show pinned at top of turn-order attributes list (this campaign character only). */
+  pinnedTurnOrderAttributeIds?: string[];
 };
 
 export type CampaignScene = BaseDetails & {

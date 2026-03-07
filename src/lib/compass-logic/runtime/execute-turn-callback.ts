@@ -1,20 +1,13 @@
-import type { DB } from '@/stores/db/hooks/types';
-import type {
-  Attribute,
-  Chart,
-  Item,
-  RollFn,
-  SceneTurnCallback,
-  ScriptError,
-} from '@/types';
 import { persistScriptLogs } from '@/lib/compass-logic/script-logs';
-import type { CharacterAccessor } from './accessors/character-accessor';
-import type { OwnerAccessor } from './accessors/owner-accessor';
-import { CampaignSceneAccessor } from './accessors/campaign-scene-accessor';
-import { RulesetAccessor } from './accessors/ruleset-accessor';
+import type { DB } from '@/stores/db/hooks/types';
+import type { Attribute, Chart, Item, RollFn, SceneTurnCallback, ScriptError } from '@/types';
 import { Evaluator } from '../interpreter/evaluator';
 import { Lexer } from '../interpreter/lexer';
 import { Parser } from '../interpreter/parser';
+import { CampaignSceneAccessor } from './accessors/campaign-scene-accessor';
+import type { CharacterAccessor } from './accessors/character-accessor';
+import type { OwnerAccessor } from './accessors/owner-accessor';
+import { RulesetAccessor } from './accessors/ruleset-accessor';
 
 type AnyCharacterAccessor = CharacterAccessor | OwnerAccessor;
 
@@ -42,7 +35,10 @@ export async function executeTurnCallback(
 ): Promise<TurnCallbackResult> {
   const emptyResult: TurnCallbackResult = { announceMessages: [], logMessages: [] };
   try {
-    const attributes = (await db.attributes.where('rulesetId').equals(rulesetId).toArray()) as Attribute[];
+    const attributes = (await db.attributes
+      .where('rulesetId')
+      .equals(rulesetId)
+      .toArray()) as Attribute[];
     const charts = (await db.charts.where('rulesetId').equals(rulesetId).toArray()) as Chart[];
     const items = (await db.items.where('rulesetId').equals(rulesetId).toArray()) as Item[];
 
@@ -52,9 +48,7 @@ export async function executeTurnCallback(
 
     const ruleset = new RulesetAccessor(rulesetId, attributesCache, chartsCache, itemsCache);
 
-    const owner = callback.ownerId
-      ? await getCharacterAccessorById(callback.ownerId)
-      : null;
+    const owner = callback.ownerId ? await getCharacterAccessorById(callback.ownerId) : null;
 
     const evaluator = new Evaluator({ roll });
     evaluator.globalEnv.define('Scene', sceneAccessor);
@@ -73,9 +67,7 @@ export async function executeTurnCallback(
     // Dispatch announce messages so UI toasts fire when running in main thread (e.g. tests)
     if (typeof window !== 'undefined') {
       for (const message of announceMessages) {
-        window.dispatchEvent(
-          new CustomEvent('qbscript:announce', { detail: { message } }),
-        );
+        window.dispatchEvent(new CustomEvent('qbscript:announce', { detail: { message } }));
       }
     }
 
@@ -93,7 +85,7 @@ export async function executeTurnCallback(
     return { announceMessages, logMessages };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    const stack = err instanceof Error ? err.stack ?? null : null;
+    const stack = err instanceof Error ? (err.stack ?? null) : null;
     console.warn('[executeTurnCallback]', callback.scriptId, callback.rulesetId, err);
     const now = new Date().toISOString();
     const scriptError: ScriptError = {

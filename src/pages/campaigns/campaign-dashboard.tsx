@@ -17,6 +17,42 @@ import { db } from '@/stores';
 import { cn } from '@/lib/utils';
 import { ChevronLeft, ChevronRight, FileText, ScrollText, Zap } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
+
+const DASHBOARD_COLUMNS_STORAGE_KEY = 'qb.campaignDashboard.columns';
+
+interface StoredColumnState {
+  left: boolean;
+  center: boolean;
+  right: boolean;
+}
+
+function loadColumnState(): StoredColumnState {
+  if (typeof window === 'undefined') return { left: false, center: false, right: false };
+  try {
+    const raw = localStorage.getItem(DASHBOARD_COLUMNS_STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw) as StoredColumnState;
+      if (
+        typeof parsed?.left === 'boolean' &&
+        typeof parsed?.center === 'boolean' &&
+        typeof parsed?.right === 'boolean'
+      ) {
+        return parsed;
+      }
+    }
+  } catch {
+    // ignore invalid stored state
+  }
+  return { left: false, center: false, right: false };
+}
+
+function saveColumnState(state: StoredColumnState) {
+  try {
+    localStorage.setItem(DASHBOARD_COLUMNS_STORAGE_KEY, JSON.stringify(state));
+  } catch {
+    // ignore quota / private mode
+  }
+}
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { ActiveScene } from './active-scene';
 import { CampaignCharacterSheet } from './campaign-controls';
@@ -46,9 +82,17 @@ export function CampaignDashboard() {
   const [characterSheetTransparentBackground, setCharacterSheetTransparentBackground] =
     useState(true);
   const [advancing, setAdvancing] = useState(false);
-  const [leftColumnCollapsed, setLeftColumnCollapsed] = useState(false);
-  const [centerColumnCollapsed, setCenterColumnCollapsed] = useState(false);
-  const [rightColumnCollapsed, setRightColumnCollapsed] = useState(false);
+  const [leftColumnCollapsed, setLeftColumnCollapsed] = useState(() => loadColumnState().left);
+  const [centerColumnCollapsed, setCenterColumnCollapsed] = useState(() => loadColumnState().center);
+  const [rightColumnCollapsed, setRightColumnCollapsed] = useState(() => loadColumnState().right);
+
+  useEffect(() => {
+    saveColumnState({
+      left: leftColumnCollapsed,
+      center: centerColumnCollapsed,
+      right: rightColumnCollapsed,
+    });
+  }, [leftColumnCollapsed, centerColumnCollapsed, rightColumnCollapsed]);
 
   const { campaignScenes } = useCampaignScenes(campaignId);
   const currentScene = sceneId ? campaignScenes.find((s) => s.id === sceneId) : undefined;

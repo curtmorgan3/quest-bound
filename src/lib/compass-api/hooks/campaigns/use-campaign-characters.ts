@@ -49,7 +49,9 @@ export const useCampaignCharacters = (campaignId: string | undefined) => {
 
   const updateCampaignCharacter = async (
     id: string,
-    data: Partial<Pick<CampaignCharacter, 'active' | 'campaignSceneId' | 'turnOrder'>>,
+    data: Partial<
+      Pick<CampaignCharacter, 'active' | 'campaignSceneId' | 'turnOrder' | 'pinnedTurnOrderAttributeIds'>
+    >,
   ) => {
     const now = new Date().toISOString();
     try {

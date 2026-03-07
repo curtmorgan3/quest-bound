@@ -182,5 +182,11 @@ export const dbSchemaV54 = {
   campaignCharacters: `${common}, characterId, campaignId, campaignSceneId, mapHeight, mapWidth, active, turnOrder, turnStartTimestamp, turnEndTimestamp, [campaignId], [characterId], [campaignId+characterId], [campaignSceneId]`,
 };
 
+/** Schema for v55: CampaignCharacter pinned turn-order attribute ids. */
+export const dbSchemaV55 = {
+  ...dbSchemaV54,
+  campaignCharacters: `${common}, characterId, campaignId, campaignSceneId, mapHeight, mapWidth, active, turnOrder, turnStartTimestamp, turnEndTimestamp, pinnedTurnOrderAttributeIds, [campaignId], [characterId], [campaignId+characterId], [campaignSceneId]`,
+};
+
 // Increment on every schema change
-export const dbSchemaVersion = 54;
+export const dbSchemaVersion = 55;

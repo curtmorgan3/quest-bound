@@ -6,8 +6,8 @@ import {
 } from '@/lib/compass-api';
 import type { ScriptLog } from '@/types';
 import { motion } from 'framer-motion';
-import { GripVertical } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { GripVertical, Pin } from 'lucide-react';
+import { useCallback, useMemo, useState } from 'react';
 import type { CampaignCharacterWithName } from './hooks';
 import { useCampaignPlayCharacterList } from './hooks';
 
@@ -40,7 +40,7 @@ export function TurnOrderScene({
   onAvatarClick,
   onReorderTurnOrder,
 }: TurnOrderSceneProps) {
-  const { campaignCharacters } = useCampaignCharacters(campaignId);
+  const { campaignCharacters, updateCampaignCharacter } = useCampaignCharacters(campaignId);
   const campaign = useCampaign(campaignId);
   const rulesetId = campaign?.rulesetId;
   const { logs: scriptLogs } = useScriptLogs(500, rulesetId, campaignId);
@@ -109,6 +109,10 @@ export function TurnOrderScene({
             isCurrentTurn={entry.cc.id === currentTurnCampaignCharacterId}
             isHovered={entry.cc.id === hoveredCampaignCharacterId}
             scriptLogs={scriptLogs}
+            pinnedAttributeIds={entry.cc.pinnedTurnOrderAttributeIds ?? []}
+            onPinAttributesChange={(pinnedIds) =>
+              void updateCampaignCharacter(entry.cc.id, { pinnedTurnOrderAttributeIds: pinnedIds })
+            }
             onAvatarClick={onAvatarClick}
             onDragStart={
               onReorderTurnOrder
@@ -133,6 +137,9 @@ interface TurnOrderPortraitProps {
   isCurrentTurn: boolean;
   isHovered: boolean;
   scriptLogs: ScriptLog[];
+  /** Pinned character attribute ids (stored on campaign character). */
+  pinnedAttributeIds: string[];
+  onPinAttributesChange: (pinnedIds: string[]) => void;
   onAvatarClick?: (characterId: string) => void;
   onDragStart?: (e: React.DragEvent) => void;
   onDragOver?: (e: React.DragEvent) => void;
@@ -147,6 +154,8 @@ function TurnOrderPortrait({
   isCurrentTurn,
   isHovered,
   scriptLogs,
+  pinnedAttributeIds: pinnedIdsFromCc,
+  onPinAttributesChange,
   onAvatarClick,
   onDragStart,
   onDragOver,
@@ -156,10 +165,31 @@ function TurnOrderPortrait({
   const showRing = isCurrentTurn || isHovered;
   const [view, setView] = useState<PortraitView>('log');
   const { characterAttributes } = useCharacterAttributes(character?.id);
+  const pinnedSet = useMemo(() => new Set(pinnedIdsFromCc), [pinnedIdsFromCc]);
 
   const sortedAttributes = useMemo(() => {
     return [...characterAttributes].sort((a, b) => (a.title ?? '').localeCompare(b.title ?? ''));
   }, [characterAttributes]);
+
+  const togglePinAttribute = useCallback(
+    (attrId: string) => {
+      const next = new Set(pinnedSet);
+      if (next.has(attrId)) next.delete(attrId);
+      else next.add(attrId);
+      onPinAttributesChange(Array.from(next));
+    },
+    [pinnedSet, onPinAttributesChange],
+  );
+
+  const { pinnedAttributes, unpinnedAttributes } = useMemo(() => {
+    const pinned: typeof sortedAttributes = [];
+    const unpinned: typeof sortedAttributes = [];
+    for (const attr of sortedAttributes) {
+      if (pinnedSet.has(attr.id)) pinned.push(attr);
+      else unpinned.push(attr);
+    }
+    return { pinnedAttributes: pinned, unpinnedAttributes: unpinned };
+  }, [sortedAttributes, pinnedSet]);
 
   const turnLogs = useMemo(() => {
     const start = cc.turnStartTimestamp;
@@ -254,10 +284,36 @@ function TurnOrderPortrait({
             <span className='text-muted-foreground'>No attributes</span>
           ) : (
             <div className='flex flex-col gap-0.5 break-words text-muted-foreground max-h-[100px] overflow-auto'>
-              {sortedAttributes.map((attr) => (
-                <div key={attr.id} className='text-[12px]'>
-                  {attr.title ?? 'Unnamed'}: {String(attr.value)}
-                </div>
+              {pinnedAttributes.map((attr) => (
+                <button
+                  key={attr.id}
+                  type='button'
+                  onClick={() => togglePinAttribute(attr.id)}
+                  className='flex w-full cursor-pointer items-center gap-1 rounded text-left text-[12px] hover:bg-muted/80 focus:outline-none focus-visible:ring-1 focus-visible:ring-ring'
+                  title='Click to unpin from top'
+                  aria-label={`Unpin ${attr.title ?? 'attribute'} from top`}>
+                  <Pin className='size-2.5 shrink-0 fill-current' aria-hidden />
+                  <span>
+                    {attr.title ?? 'Unnamed'}: {String(attr.value)}
+                  </span>
+                </button>
+              ))}
+              {pinnedAttributes.length > 0 && unpinnedAttributes.length > 0 && (
+                <div className='my-0.5 border-t border-border' role='separator' />
+              )}
+              {unpinnedAttributes.map((attr) => (
+                <button
+                  key={attr.id}
+                  type='button'
+                  onClick={() => togglePinAttribute(attr.id)}
+                  className='flex w-full cursor-pointer items-center gap-1 rounded text-left text-[12px] text-muted-foreground/80 hover:bg-muted/80 hover:text-muted-foreground focus:outline-none focus-visible:ring-1 focus-visible:ring-ring'
+                  title='Click to pin to top'
+                  aria-label={`Pin ${attr.title ?? 'attribute'} to top`}>
+                  <Pin className='size-2.5 shrink-0 opacity-50' aria-hidden />
+                  <span>
+                    {attr.title ?? 'Unnamed'}: {String(attr.value)}
+                  </span>
+                </button>
               ))}
             </div>
           )}

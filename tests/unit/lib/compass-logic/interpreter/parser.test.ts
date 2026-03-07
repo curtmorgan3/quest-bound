@@ -1,7 +1,9 @@
 import { describe, it, expect } from 'vitest';
+import { blockStatementsToSource } from '@/lib/compass-logic/interpreter/ast-to-source';
 import { Lexer } from '@/lib/compass-logic/interpreter/lexer';
 import { Parser } from '@/lib/compass-logic/interpreter/parser';
 import type {
+  ASTNode,
   Program,
   NumberLiteral,
   StringLiteral,
@@ -775,6 +777,44 @@ z = 3`;
       expect(stmt.block).toHaveLength(2);
       expect((stmt.block[1] as { type: string }).type).toBe('Assignment');
       expect((stmt.block[1] as { name: string }).name).toBe('test');
+    });
+
+    it('should parse block with log() and statements after it', () => {
+      const source = `Scene.onTurnAdvance():
+    test = 10
+    test2 = 20
+    log(test)
+    test3 = 30`;
+      const ast = parse(source);
+      expect(ast.statements).toHaveLength(1);
+      expect(ast.statements[0].type).toBe('OnTurnAdvanceCall');
+      const stmt = ast.statements[0] as { block: unknown[] };
+      expect(stmt.block).toHaveLength(4);
+      expect((stmt.block[0] as { type: string; name?: string }).type).toBe('Assignment');
+      expect((stmt.block[0] as { name: string }).name).toBe('test');
+      expect((stmt.block[1] as { type: string; name?: string }).type).toBe('Assignment');
+      expect((stmt.block[1] as { name: string }).name).toBe('test2');
+      expect((stmt.block[2] as { type: string; name?: string }).type).toBe('FunctionCall');
+      expect((stmt.block[2] as { name: string }).name).toBe('log');
+      expect((stmt.block[3] as { type: string; name?: string }).type).toBe('Assignment');
+      expect((stmt.block[3] as { name: string }).name).toBe('test3');
+    });
+
+    it('should re-parse serialized block with log() and preserve all statements', () => {
+      const source = `Scene.onTurnAdvance():
+    test = 10
+    test2 = 20
+    log(test)
+    test3 = 30`;
+      const ast = parse(source);
+      const onTurn = ast.statements[0] as { block: unknown[] };
+      const blockSource = blockStatementsToSource(onTurn.block as ASTNode[]);
+      const reparsed = parse(blockSource);
+      expect(reparsed.statements).toHaveLength(4);
+      expect((reparsed.statements[2] as { type: string; name?: string }).type).toBe('FunctionCall');
+      expect((reparsed.statements[2] as { name: string }).name).toBe('log');
+      expect((reparsed.statements[3] as { type: string; name?: string }).type).toBe('Assignment');
+      expect((reparsed.statements[3] as { name: string }).name).toBe('test3');
     });
   });
 
