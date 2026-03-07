@@ -1,4 +1,3 @@
-import { useFeatureFlag } from '@/hooks/use-feature-flag';
 import {
   ArchetypeSheetEditor,
   AssetsPage,
@@ -27,8 +26,6 @@ import { DocumentViewer } from './pages/ruleset/documents';
 import { WindowEditor } from './pages/ruleset/windows/window-editor';
 
 function CompassRoutes() {
-  const campaignsEnabled = useFeatureFlag('campaigns', false);
-
   return (
     <ErrorBoundary showDetails>
       <HashRouter>
@@ -79,34 +76,30 @@ function CompassRoutes() {
               element={<ManageCustomProperties />}
             />
 
-            {campaignsEnabled && (
-              <>
-                <Route path={`/campaigns`} element={<Campaigns />} />
-                <Route path={`/campaigns/new`} element={<CampaignNew />} />
-                <Route path={`/campaigns/:campaignId/scenes`} element={<CampaignScenes />} />
-                <Route
-                  path={`/campaigns/:campaignId/scenes/:sceneId`}
-                  element={<CampaignDashboard />}
-                />
-                <Route
-                  path={`/campaigns/:campaignId/documents`}
-                  element={<CampaignDocumentsPage />}
-                />
-                <Route
-                  path={`/campaigns/:campaignId/documents/:documentId`}
-                  element={<DocumentViewer />}
-                />
-                <Route
-                  path={`/campaigns/:campaignId/chart/:chartId`}
-                  element={<CampaignChartViewer />}
-                />
-                <Route path={`/campaigns/:campaignId/scripts`} element={<ScriptsIndex />} />
-                <Route
-                  path={`/campaigns/:campaignId/scripts/:scriptId`}
-                  element={<ScriptEditorPage />}
-                />
-              </>
-            )}
+            <Route path={`/campaigns`} element={<Campaigns />} />
+            <Route path={`/campaigns/new`} element={<CampaignNew />} />
+            <Route path={`/campaigns/:campaignId/scenes`} element={<CampaignScenes />} />
+            <Route
+              path={`/campaigns/:campaignId/scenes/:sceneId`}
+              element={<CampaignDashboard />}
+            />
+            <Route
+              path={`/campaigns/:campaignId/documents`}
+              element={<CampaignDocumentsPage />}
+            />
+            <Route
+              path={`/campaigns/:campaignId/documents/:documentId`}
+              element={<DocumentViewer />}
+            />
+            <Route
+              path={`/campaigns/:campaignId/chart/:chartId`}
+              element={<CampaignChartViewer />}
+            />
+            <Route path={`/campaigns/:campaignId/scripts`} element={<ScriptsIndex />} />
+            <Route
+              path={`/campaigns/:campaignId/scripts/:scriptId`}
+              element={<ScriptEditorPage />}
+            />
 
             <Route path={`/characters`} element={<Characters />} />
             <Route path={`/characters/:characterId`} element={<CharacterPage lockByDefault />} />

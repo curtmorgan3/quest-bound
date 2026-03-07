@@ -8,7 +8,6 @@ import {
   SidebarTrigger,
   useSidebar,
 } from '@/components/ui/sidebar';
-import { useFeatureFlag } from '@/hooks/use-feature-flag';
 import { useActiveRuleset } from '@/lib/compass-api';
 import {
   AppWindow,
@@ -62,7 +61,6 @@ export function RulesetSidebar() {
   const { activeRuleset } = useActiveRuleset();
   const { open } = useSidebar();
   const location = useLocation();
-  const campaignsEnabled = useFeatureFlag('campaigns', false);
   const getGridFilters = useRulesetFiltersStore((s) => s.getGridFilters);
   const getListFilters = useRulesetFiltersStore((s) => s.getListFilters);
   const getScriptsFilters = useRulesetFiltersStore((s) => s.getScriptsFilters);
@@ -73,10 +71,7 @@ export function RulesetSidebar() {
     location.pathname === '/campaigns' ||
     location.pathname === '/campaigns/new';
 
-  const homepageItems = HOMEPAGE_ITEMS.filter((item) => {
-    if (item.title === 'Campaigns') return campaignsEnabled;
-    return true;
-  });
+  const homepageItems = HOMEPAGE_ITEMS;
 
   const rulesetId = activeRuleset?.id;
 
