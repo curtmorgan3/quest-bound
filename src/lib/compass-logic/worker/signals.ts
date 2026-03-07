@@ -82,6 +82,7 @@ export interface ExecuteActionEventSignal {
     eventType: 'on_activate' | 'on_deactivate';
     requestId: string;
     campaignId?: string;
+    campaignSceneId?: string;
     /** When set (action fired from item context menu), Caller = itemInstanceProxy of this inventory item. */
     callerInventoryItemInstanceId?: string;
   };
@@ -95,6 +96,7 @@ export interface ExecuteItemEventSignal {
     eventType: string;
     requestId: string;
     campaignId?: string;
+    campaignSceneId?: string;
     /** When set, Self in the item script refers to this inventory item instance instead of the first match by name. */
     inventoryItemInstanceId?: string;
   };
@@ -109,6 +111,7 @@ export interface ExecuteArchetypeEventSignal {
     eventType: 'on_add' | 'on_remove';
     requestId: string;
     campaignId?: string;
+    campaignSceneId?: string;
   };
 }
 
@@ -305,6 +308,8 @@ export interface ExecuteScriptPayload {
   entityId?: string;
   /** When set, logs and script context are associated with this campaign. */
   campaignId?: string;
+  /** When set with campaignId, scripts get Scene accessor. */
+  campaignSceneId?: string;
   /** Optional params map exposed to QBScript as params.get('name'). Must be JSON-serializable. */
   params?: Record<string, any>;
 }
@@ -315,6 +320,7 @@ export interface AttributeChangedPayload {
   rulesetId: string;
   requestId: string;
   campaignId?: string;
+  campaignSceneId?: string;
   options?: {
     useTransaction?: boolean;
     maxExecutions?: number;

@@ -39,6 +39,8 @@ type CharacterContext = {
   character: Character;
   /** When set (e.g. sheet open in campaign play), script execution gets this campaign id for context and log persistence. */
   campaignId?: string;
+  /** When set with campaignId (e.g. sheet open in a scene), scripts get Scene accessor. */
+  campaignSceneId?: string;
   characterAttributes: CharacterAttribute[];
   getCharacterAttribute: (attributeId: string) => CharacterAttribute | null;
   updateCharacterAttribute: (id: string, update: Partial<CharacterAttribute>) => void;

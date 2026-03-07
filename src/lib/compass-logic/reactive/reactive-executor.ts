@@ -37,6 +37,8 @@ export interface ReactiveExecutionOptions {
   prompt?: PromptFn;
   /** Optional campaign id for associating reactive execution with a campaign. */
   campaignId?: string;
+  /** Optional campaign scene id; when set with campaignId, scripts get Scene accessor. */
+  campaignSceneId?: string;
   /** Optional character picker for selectCharacter(title?, description?). */
   selectCharacter?: SelectCharacterFn;
   /** Optional character picker for selectCharacters(title?, description?). */
@@ -325,6 +327,7 @@ export class ReactiveExecutor {
         entityType: script.entityType,
         entityId: script.entityId ?? undefined,
         campaignId: options.campaignId,
+        campaignSceneId: options.campaignSceneId,
         executeActionEvent: options.executeActionEvent,
         roll: options.roll,
         rollSplit: options.rollSplit,

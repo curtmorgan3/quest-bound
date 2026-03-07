@@ -1,4 +1,7 @@
-import { getCurrentCampaignIdForScripts } from '@/lib/compass-logic/worker/current-campaign-ref';
+import {
+  getCurrentCampaignIdForScripts,
+  getCurrentCampaignSceneIdForScripts,
+} from '@/lib/compass-logic/worker/current-campaign-ref';
 import {
   getCurrentRollHandlerForScripts,
   getCurrentRollSplitHandlerForScripts,
@@ -26,6 +29,7 @@ export function registerCharacterDbHooks(db: DB) {
             characterId,
             rulesetId,
             campaignId: getCurrentCampaignIdForScripts(),
+            campaignSceneId: getCurrentCampaignSceneIdForScripts(),
             roll: getCurrentRollHandlerForScripts(),
             rollSplit: getCurrentRollSplitHandlerForScripts(),
           })

@@ -7,9 +7,10 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet';
 import { ArchetypeLookup, useArchetypes, useAssets, useCharacter } from '@/lib/compass-api';
+import { CharacterContext } from '@/stores/context/character-context';
 import type { ArchetypeWithVariantOptions } from '@/types';
 import { Trash2 } from 'lucide-react';
-import { useRef, useState } from 'react';
+import { useContext, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import {
   useCharacterArchetypes,
@@ -23,6 +24,7 @@ type CharacterArchetypesPanelProps = {
 
 export const CharacterArchetypesPanel = ({ open, onOpenChange }: CharacterArchetypesPanelProps) => {
   const { characterId } = useParams<{ characterId: string }>();
+  const characterContext = useContext(CharacterContext);
   const { character } = useCharacter(characterId);
   const { archetypes } = useArchetypes(character?.rulesetId);
   const { assets } = useAssets(character?.rulesetId);
@@ -32,8 +34,13 @@ export const CharacterArchetypesPanel = ({ open, onOpenChange }: CharacterArchet
     const asset = assets.find((a) => a.id === id);
     return asset?.data ?? null;
   };
-  const { characterArchetypes, addArchetype, removeArchetype } =
-    useCharacterArchetypes(characterId);
+  const { characterArchetypes, addArchetype, removeArchetype } = useCharacterArchetypes(
+    characterId,
+    {
+      campaignId: characterContext?.campaignId,
+      campaignSceneId: characterContext?.campaignSceneId,
+    },
+  );
 
   const displayedArchetypes = characterArchetypes
     .filter((ca) => !ca.archetype.isDefault)
@@ -105,10 +112,7 @@ export const CharacterArchetypesPanel = ({ open, onOpenChange }: CharacterArchet
             popoverContainerRef={sheetContentRef}
           />
           {addValue && (
-            <Button
-              onClick={handleAddClick}
-              data-testid='add-archetype-button'
-              className='w-fit'>
+            <Button onClick={handleAddClick} data-testid='add-archetype-button' className='w-fit'>
               Add
             </Button>
           )}

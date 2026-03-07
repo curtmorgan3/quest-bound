@@ -5,7 +5,10 @@
  * Provides a clean async API for script execution and reactive updates.
  */
 
-import { getCurrentCampaignIdForScripts } from '@/lib/compass-logic/worker/current-campaign-ref';
+import {
+  getCurrentCampaignIdForScripts,
+  getCurrentCampaignSceneIdForScripts,
+} from '@/lib/compass-logic/worker/current-campaign-ref';
 import { useCharacterSelectModalStore } from '@/stores/character-select-modal-store';
 import { usePromptModalStore } from '@/stores/prompt-modal-store';
 import { useScriptModifiedAttributesStore } from '@/stores/script-modified-attributes-store';
@@ -44,6 +47,8 @@ export interface ScriptExecutionOptions {
   entityId?: string;
   /** When set (e.g. in campaign play), script logs and context are associated with this campaign. */
   campaignId?: string;
+  /** When set with campaignId, scripts get Scene accessor. */
+  campaignSceneId?: string;
   /** Optional params map exposed to QBScript as params.get('name'). Must be JSON-serializable. */
   params?: Record<string, any>;
   /** When set, roll() in scripts uses this handler (e.g. dice context rollDice for UI/3D dice). */
@@ -57,6 +62,7 @@ export interface AttributeChangeOptions {
   characterId: string;
   rulesetId: string;
   campaignId?: string;
+  campaignSceneId?: string;
   useTransaction?: boolean;
   maxExecutions?: number;
   maxPerScript?: number;
@@ -485,6 +491,7 @@ export class QBScriptClient {
       entityType: options.entityType,
       entityId: options.entityId,
       campaignId: options.campaignId ?? getCurrentCampaignIdForScripts(),
+      campaignSceneId: options.campaignSceneId ?? getCurrentCampaignSceneIdForScripts(),
       ...(options.params ? { params: options.params } : {}),
     };
 
@@ -516,7 +523,8 @@ export class QBScriptClient {
       characterId: options.characterId,
       rulesetId: options.rulesetId,
       requestId,
-      campaignId: options.campaignId,
+      campaignId: options.campaignId ?? getCurrentCampaignIdForScripts(),
+      campaignSceneId: options.campaignSceneId ?? getCurrentCampaignSceneIdForScripts(),
       options: {
         useTransaction: options.useTransaction,
         maxExecutions: options.maxExecutions,
@@ -703,6 +711,7 @@ export class QBScriptClient {
     timeout = 10000,
     campaignId?: string,
     rollSplit?: RollSplitFn,
+    campaignSceneId?: string,
   ): Promise<{
     value: any;
     announceMessages: string[];
@@ -716,7 +725,7 @@ export class QBScriptClient {
       return await this.sendSignal(
         {
           type: 'EXECUTE_ARCHETYPE_EVENT',
-          payload: { archetypeId, characterId, eventType, requestId, campaignId },
+          payload: { archetypeId, characterId, eventType, requestId, campaignId, campaignSceneId },
         },
         requestId,
         timeout,

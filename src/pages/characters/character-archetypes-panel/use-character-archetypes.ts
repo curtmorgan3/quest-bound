@@ -6,7 +6,10 @@ import { useLiveQuery } from 'dexie-react-hooks';
 
 export type CharacterArchetypeWithArchetype = CharacterArchetype & { archetype: Archetype };
 
-export function useCharacterArchetypes(characterId: string | undefined) {
+export function useCharacterArchetypes(
+  characterId: string | undefined,
+  options?: { campaignId?: string; campaignSceneId?: string },
+) {
   const { handleError } = useErrorHandler();
 
   const characterArchetypes: CharacterArchetypeWithArchetype[] =
@@ -50,7 +53,16 @@ export function useCharacterArchetypes(characterId: string | undefined) {
         updatedAt: now,
       });
 
-      const archetypeResult = await executeArchetypeEvent(db, archetypeId, characterId, 'on_add');
+      const archetypeResult = await executeArchetypeEvent(
+        db,
+        archetypeId,
+        characterId,
+        'on_add',
+        undefined,
+        options?.campaignId,
+        undefined,
+        options?.campaignSceneId,
+      );
       if (archetypeResult.error) {
         console.warn('Archetype on_add script failed:', archetypeResult.error);
       }
@@ -71,6 +83,10 @@ export function useCharacterArchetypes(characterId: string | undefined) {
         ca.archetypeId,
         ca.characterId,
         'on_remove',
+        undefined,
+        options?.campaignId,
+        undefined,
+        options?.campaignSceneId,
       );
       if (archetypeResult.error) {
         console.warn('Archetype on_remove script failed:', archetypeResult.error);

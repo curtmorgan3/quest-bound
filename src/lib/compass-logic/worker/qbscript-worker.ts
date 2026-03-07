@@ -305,6 +305,8 @@ function createOnAttributesModified(
   promptFn?: PromptFn,
   selectCharacterFn?: SelectCharacterFn,
   selectCharactersFn?: SelectCharactersFn,
+  campaignId?: string,
+  campaignSceneId?: string,
 ): OnAttributesModifiedFn {
   return async (attributeIds: string[], characterId: string, rulesetId: string) => {
     if (attributeIds.length === 0) return;
@@ -328,6 +330,8 @@ function createOnAttributesModified(
             prompt: promptFn,
             selectCharacter: selectCharacterFn,
             selectCharacters: selectCharactersFn,
+            campaignId,
+            campaignSceneId,
             executeActionEvent: (actionId, cId, targetId, eventType) =>
               executor.executeActionEvent(
                 actionId,
@@ -335,12 +339,13 @@ function createOnAttributesModified(
                 targetId,
                 eventType,
                 rollFn,
-                undefined,
+                campaignId,
                 undefined,
                 rollSplitFn,
                 promptFn,
                 selectCharacterFn,
                 selectCharactersFn,
+                campaignSceneId,
               ),
           },
         );
@@ -505,6 +510,8 @@ async function handleExecuteScript(payload: ExecuteScriptPayload): Promise<void>
       promptFn,
       selectCharacterFn,
       selectCharactersFn,
+      payload.campaignId,
+      payload.campaignSceneId,
     ),
   );
 
@@ -530,6 +537,7 @@ async function handleExecuteScript(payload: ExecuteScriptPayload): Promise<void>
       entityType: payload.entityType,
       entityId: payload.entityId,
       campaignId: payload.campaignId,
+      campaignSceneId: payload.campaignSceneId,
       roll: rollFn,
       rollSplit: rollSplitFn,
       prompt: promptFn,
@@ -549,6 +557,7 @@ async function handleExecuteScript(payload: ExecuteScriptPayload): Promise<void>
           promptFn,
           selectCharacterFn,
           selectCharactersFn,
+          payload.campaignSceneId,
         ),
       ...(payload.params ? { params: createParamsHelperFromRecord(payload.params) } : {}),
     };
@@ -774,6 +783,7 @@ async function handleAttributeChanged(payload: AttributeChangedPayload): Promise
     const reactiveOptions = {
       ...(payload.options || {}),
       campaignId: payload.campaignId,
+      campaignSceneId: payload.campaignSceneId,
       executeActionEvent: (
         actionId: string,
         characterId: string,
@@ -792,6 +802,7 @@ async function handleAttributeChanged(payload: AttributeChangedPayload): Promise
           promptFn,
           selectCharacterFn,
           selectCharactersFn,
+          payload.campaignSceneId,
         ),
       roll: rollFn,
       rollSplit: rollSplitFn,
@@ -1093,6 +1104,8 @@ async function handleExecuteActionEvent(payload: {
         promptFn,
         selectCharacterFn,
         selectCharactersFn,
+        payload.campaignId,
+        payload.campaignSceneId,
       ),
     );
     const result = await executor.executeActionEvent(
@@ -1218,6 +1231,8 @@ async function handleExecuteItemEvent(payload: {
         promptFn,
         selectCharacterFn,
         selectCharactersFn,
+        payload.campaignId,
+        payload.campaignSceneId,
       ),
     );
     const result = await executor.executeItemEvent(
@@ -1300,6 +1315,7 @@ async function handleExecuteArchetypeEvent(payload: {
   eventType: 'on_add' | 'on_remove';
   requestId: string;
   campaignId?: string;
+  campaignSceneId?: string;
 }): Promise<void> {
   try {
     const archetype = await db.archetypes.get(payload.archetypeId);
@@ -1347,6 +1363,8 @@ async function handleExecuteArchetypeEvent(payload: {
         promptFn,
         selectCharacterFn,
         selectCharactersFn,
+        payload.campaignId,
+        payload.campaignSceneId,
       ),
     );
     const result = await executor.executeArchetypeEvent(
@@ -1359,6 +1377,7 @@ async function handleExecuteArchetypeEvent(payload: {
       promptFn,
       selectCharacterFn,
       selectCharactersFn,
+      payload.campaignSceneId,
     );
 
     // Logs are persisted inside EventHandlerExecutor.executeArchetypeEvent so they
@@ -1468,6 +1487,8 @@ async function handleExecuteCampaignEventEvent(payload: {
         promptFn,
         selectCharacterFn,
         selectCharactersFn,
+        campaignId ?? undefined,
+        payload.campaignSceneId,
       ),
     );
     const result = await executor.executeCampaignEventEvent(

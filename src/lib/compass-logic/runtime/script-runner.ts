@@ -683,7 +683,16 @@ export class ScriptRunner {
             createdAt: now,
             updatedAt: now,
           });
-          const result = await executeArchetypeEvent(db, archetype.id, characterId, 'on_add');
+          const result = await executeArchetypeEvent(
+            db,
+            archetype.id,
+            characterId,
+            'on_add',
+            this.context.roll,
+            this.context.campaignId,
+            this.context.rollSplit,
+            this.context.campaignSceneId,
+          );
           if (result.error) {
             console.warn('Archetype on_add script failed:', result.error);
           }
@@ -698,7 +707,16 @@ export class ScriptRunner {
             .equals([characterId, archetype.id])
             .first();
           if (!ca) continue;
-          const result = await executeArchetypeEvent(db, archetype.id, characterId, 'on_remove');
+          const result = await executeArchetypeEvent(
+            db,
+            archetype.id,
+            characterId,
+            'on_remove',
+            this.context.roll,
+            this.context.campaignId,
+            this.context.rollSplit,
+            this.context.campaignSceneId,
+          );
           if (result.error) {
             console.warn('Archetype on_remove script failed:', result.error);
           }

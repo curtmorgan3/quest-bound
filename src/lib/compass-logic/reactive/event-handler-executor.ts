@@ -646,6 +646,7 @@ export class EventHandlerExecutor {
     prompt?: PromptFn,
     selectCharacter?: SelectCharacterFn,
     selectCharacters?: SelectCharactersFn,
+    campaignSceneId?: string,
   ): Promise<EventHandlerResult> {
     const archetype = await this.db.archetypes.get(archetypeId);
     if (!archetype) {
@@ -697,6 +698,7 @@ export class EventHandlerExecutor {
       entityType: 'archetype',
       entityId: archetype.id,
       campaignId,
+      campaignSceneId,
       roll,
       rollSplit,
       prompt,
@@ -721,6 +723,7 @@ export class EventHandlerExecutor {
           prompt,
           selectCharacter,
           selectCharacters,
+          campaignSceneId,
         ),
     };
 
@@ -941,6 +944,7 @@ export class EventHandlerExecutor {
           prompt,
           selectCharacter,
           selectCharacters,
+          (campaignEvent as CampaignEvent).sceneId ?? campaignSceneId,
         ),
       params: paramsHelper,
     };
@@ -1080,6 +1084,7 @@ export async function executeActionEvent(
 
 /**
  * Execute an archetype event (on_add or on_remove).
+ * Pass campaignId and campaignSceneId when in campaign scene context so scripts get Scene accessor.
  */
 export async function executeArchetypeEvent(
   db: DB,
@@ -1087,9 +1092,23 @@ export async function executeArchetypeEvent(
   characterId: string,
   eventType: 'on_add' | 'on_remove',
   roll?: RollFn,
+  campaignId?: string,
+  rollSplit?: RollSplitFn,
+  campaignSceneId?: string,
 ): Promise<EventHandlerResult> {
   const executor = new EventHandlerExecutor(db);
-  return executor.executeArchetypeEvent(archetypeId, characterId, eventType, roll);
+  return executor.executeArchetypeEvent(
+    archetypeId,
+    characterId,
+    eventType,
+    roll,
+    campaignId,
+    rollSplit,
+    undefined,
+    undefined,
+    undefined,
+    campaignSceneId,
+  );
 }
 
 /**

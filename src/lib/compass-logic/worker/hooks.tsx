@@ -362,6 +362,7 @@ export interface UseExecuteArchetypeEventResult {
     roll?: RollFn,
     campaignId?: string,
     rollSplit?: RollSplitFn,
+    campaignSceneId?: string,
   ) => Promise<void>;
   result: any;
   announceMessages: string[];
@@ -389,6 +390,7 @@ export function useExecuteArchetypeEvent(timeout = 10000): UseExecuteArchetypeEv
       roll?: RollFn,
       campaignId?: string,
       rollSplit?: RollSplitFn,
+      campaignSceneId?: string,
     ) => {
       setIsExecuting(true);
       setError(null);
@@ -402,6 +404,7 @@ export function useExecuteArchetypeEvent(timeout = 10000): UseExecuteArchetypeEv
           timeout,
           campaignId,
           rollSplit,
+          campaignSceneId,
         );
         setResult(response.value);
         setAnnounceMessages(response.announceMessages);

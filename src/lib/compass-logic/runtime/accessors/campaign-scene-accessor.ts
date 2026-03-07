@@ -503,6 +503,9 @@ export class CampaignSceneAccessor {
         characterId,
         'on_add',
         this.roll,
+        this.campaignId,
+        undefined,
+        this.campaignSceneId,
       );
       if (archetypeResult.error) {
         console.warn('Archetype on_add script failed for spawned NPC:', archetypeResult.error);
