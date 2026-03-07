@@ -23,7 +23,7 @@ interface UseInventoryUpdateWrapperes {
   rollSplit?: RollSplitFn;
   /** When set (e.g. in campaign play), scripts get Owner.location and other campaign context. */
   campaignId?: string;
-  /** When set with campaignId (e.g. character sheet in a scene), item scripts get Scene with in_turns/on_turn_advance. */
+  /** When set with campaignId (e.g. character sheet in a scene), item scripts get Scene with inTurns/onTurnAdvance. */
   campaignSceneId?: string;
 }
 

@@ -127,14 +127,14 @@ export interface SubscribeCall {
   arguments: ASTNode[];
 }
 
-/** Scene.in_turns(n): block — register callback to run in n cycles. */
+/** Scene.inTurns(n): block — register callback to run in n cycles. */
 export interface InTurnsCall {
   type: 'InTurnsCall';
   argument: ASTNode;
   block: ASTNode[];
 }
 
-/** Scene.on_turn_advance(): block — register callback to run on every advance. */
+/** Scene.onTurnAdvance(): block — register callback to run on every advance. */
 export interface OnTurnAdvanceCall {
   type: 'OnTurnAdvanceCall';
   block: ASTNode[];

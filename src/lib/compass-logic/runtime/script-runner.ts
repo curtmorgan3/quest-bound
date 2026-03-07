@@ -937,7 +937,7 @@ export class ScriptRunner {
   }
 
   /**
-   * Run turn callbacks (cycle + on_turn_advance) in order. Sets scene's insideCallbackRun so
+   * Run turn callbacks (cycle + onTurnAdvance) in order. Sets scene's insideCallbackRun so
    * advanceTurnOrder() from within a callback only sets deferred. Flushes after each callback.
    */
   private async runTurnCallbacks(
@@ -962,7 +962,7 @@ export class ScriptRunner {
 
   /**
    * Run the shared advance-turn flow (same as Scene.advanceTurnOrder() from script).
-   * Loads cache and sets up accessors, then advances and runs any cycle/on_turn_advance callbacks.
+   * Loads cache and sets up accessors, then advances and runs any cycle/onTurnAdvance callbacks.
    * No-op when not in campaign scene context.
    */
   async runAdvanceTurnOrder(): Promise<void> {
@@ -978,7 +978,7 @@ export class ScriptRunner {
   private setupAccessors(): void {
     const { ownerId, rulesetId, db } = this.context;
 
-    // Script id for turn callback registration (Scene.in_turns / Scene.on_turn_advance).
+    // Script id for turn callback registration (Scene.inTurns / Scene.onTurnAdvance).
     this.evaluator.globalEnv.define('__scriptId', this.context.scriptId ?? '');
 
     // Inject generic params helper (when provided) as `params` in the script environment.

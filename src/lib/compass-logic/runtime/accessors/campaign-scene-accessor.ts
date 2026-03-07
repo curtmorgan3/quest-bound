@@ -103,7 +103,7 @@ export class CampaignSceneAccessor {
   }
 
   /**
-   * Advance to the next character in turn order. Runs cycle callbacks (if we just wrapped) then on_turn_advance callbacks.
+   * Advance to the next character in turn order. Runs cycle callbacks (if we just wrapped) then onTurnAdvance callbacks.
    * No-op when not in turn-based mode. If called from inside a callback, sets deferred and returns.
    */
   async advanceTurnOrder(): Promise<void> {
@@ -199,7 +199,7 @@ export class CampaignSceneAccessor {
   }
 
   /**
-   * Register a callback to run in n cycles (Scene.in_turns(n): block).
+   * Register a callback to run in n cycles (Scene.inTurns(n): block).
    * No-op if n is not a positive integer. Uses current turn cycle to compute targetCycle.
    */
   async registerInTurns(
@@ -230,7 +230,7 @@ export class CampaignSceneAccessor {
   }
 
   /**
-   * Register a callback to run on every advance (Scene.on_turn_advance(): block).
+   * Register a callback to run on every advance (Scene.onTurnAdvance(): block).
    */
   async registerOnTurnAdvance(
     blockSource: string,

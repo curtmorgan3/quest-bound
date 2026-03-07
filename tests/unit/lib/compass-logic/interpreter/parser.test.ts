@@ -726,9 +726,9 @@ z = 3`;
     });
   });
 
-  describe('Scene.on_turn_advance', () => {
+  describe('Scene.onTurnAdvance', () => {
     it('should parse block with variable assignment on first line', () => {
-      const source = `Scene.on_turn_advance():
+      const source = `Scene.onTurnAdvance():
     char = Scene.characters()
 `;
       const ast = parse(source);

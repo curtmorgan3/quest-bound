@@ -72,7 +72,7 @@ const qbscriptCompletions = [
   {
     label: 'Scene.advanceTurnOrder',
     type: 'function',
-    info: 'Move to the next character in turn order; runs cycle and on_turn_advance callbacks (e.g. Scene.advanceTurnOrder())',
+    info: 'Move to the next character in turn order; runs cycle and onTurnAdvance callbacks (e.g. Scene.advanceTurnOrder())',
   },
   {
     label: 'Scene.startTurnBasedMode',
@@ -85,14 +85,14 @@ const qbscriptCompletions = [
     info: 'Disable turn-based mode and clear turn callbacks (e.g. Scene.stopTurnBasedMode())',
   },
   {
-    label: 'Scene.in_turns',
+    label: 'Scene.inTurns',
     type: 'function',
-    info: 'Register a block to run in n cycles (e.g. Scene.in_turns(3): ...). Use a colon and indented block.',
+    info: 'Register a block to run in n cycles (e.g. Scene.inTurns(3): ...). Use a colon and indented block.',
   },
   {
-    label: 'Scene.on_turn_advance',
+    label: 'Scene.onTurnAdvance',
     type: 'function',
-    info: 'Register a block to run on every advance (e.g. Scene.on_turn_advance(): ...). Use a colon and indented block.',
+    info: 'Register a block to run on every advance (e.g. Scene.onTurnAdvance(): ...). Use a colon and indented block.',
   },
   {
     label: 'Owner.turnOrder',

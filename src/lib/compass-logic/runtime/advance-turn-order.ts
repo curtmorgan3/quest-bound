@@ -48,7 +48,7 @@ export async function getSceneTurnOrderCharacters(
 
 /**
  * Advance scene turn state by one step (next character). Updates DB.
- * Returns callbacks to run: cycle callbacks (if we just wrapped into a new cycle) then on_turn_advance callbacks.
+ * Returns callbacks to run: cycle callbacks (if we just wrapped into a new cycle) then onTurnAdvance callbacks.
  * Returns null if scene is not in turn-based mode or has no characters.
  */
 export async function advanceSceneTurnState(
@@ -111,7 +111,7 @@ export async function advanceSceneTurnState(
     await persistTurnStartLog(db, campaignId, newCharacter.characterId);
   }
 
-  // Fetch callbacks: cycle callbacks for this cycle (only when we just wrapped), then on_turn_advance
+  // Fetch callbacks: cycle callbacks for this cycle (only when we just wrapped), then onTurnAdvance
   const cycleCallbacks: SceneTurnCallback[] = justWrapped
     ? ((await db.sceneTurnCallbacks
         .where('[campaignSceneId+targetCycle]')

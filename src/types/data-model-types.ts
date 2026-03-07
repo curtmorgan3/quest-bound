@@ -489,10 +489,10 @@ export type CampaignScene = BaseDetails & {
   currentStepInCycle?: number;
 };
 
-/** Callback registered via Scene.in_turns(n) or Scene.on_turn_advance(); runs when a cycle is entered or on every advance. */
+/** Callback registered via Scene.inTurns(n) or Scene.onTurnAdvance(); runs when a cycle is entered or on every advance. */
 export type SceneTurnCallback = BaseDetails & {
   campaignSceneId: string;
-  /** Cycle when to run; null = run every advance (on_turn_advance). */
+  /** Cycle when to run; null = run every advance (onTurnAdvance). */
   targetCycle: number | null;
   /** Scene's currentTurnCycle when the callback was registered. */
   createdAtCycle: number;

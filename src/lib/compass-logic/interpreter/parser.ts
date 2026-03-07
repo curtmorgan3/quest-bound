@@ -288,14 +288,14 @@ export class Parser {
   private expressionStatement(): ASTNode {
     const expr = this.expression();
 
-    // Scene.in_turns(n): block or Scene.on_turn_advance(): block (colon may follow on same or next line)
+    // Scene.inTurns(n): block or Scene.onTurnAdvance(): block (colon may follow on same or next line)
     if (expr.type === 'MethodCall') {
       const mc = expr as MethodCall;
       this.skipNewlines();
       if (
         mc.object.type === 'Identifier' &&
         (mc.object as Identifier).name === 'Scene' &&
-        (mc.method === 'in_turns' || mc.method === 'on_turn_advance') &&
+        (mc.method === 'inTurns' || mc.method === 'onTurnAdvance') &&
         this.check(TokenType.COLON)
       ) {
         const method = mc.method;
@@ -303,7 +303,7 @@ export class Parser {
         this.consume(TokenType.NEWLINE, "Expected newline after ':'");
         this.consume(TokenType.INDENT, "Expected indent after ':'");
         const block = this.block();
-        if (method === 'in_turns') {
+        if (method === 'inTurns') {
           return {
             type: 'InTurnsCall',
             argument: mc.arguments[0],

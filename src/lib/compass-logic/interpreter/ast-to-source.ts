@@ -139,13 +139,13 @@ export function astToSource(
     }
     case 'InTurnsCall': {
       const it = node as InTurnsCall;
-      let out = `${prefix}Scene.in_turns(${exprToSource(it.argument)}):\n`;
+      let out = `${prefix}Scene.inTurns(${exprToSource(it.argument)}):\n`;
       out += blockToSource(it.block, safeLevel + 1, safeIndent);
       return out;
     }
     case 'OnTurnAdvanceCall': {
       const ot = node as OnTurnAdvanceCall;
-      let out = `${prefix}Scene.on_turn_advance():\n`;
+      let out = `${prefix}Scene.onTurnAdvance():\n`;
       out += blockToSource(ot.block, safeLevel + 1, safeIndent);
       return out;
     }
