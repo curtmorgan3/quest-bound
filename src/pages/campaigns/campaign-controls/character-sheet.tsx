@@ -17,6 +17,8 @@ export interface CampaignCharacterSheetProps {
   transparentBackground?: boolean;
   onTransparentBackgroundChange?: (transparentBackground: boolean) => void;
   campaignId?: string;
+  /** When set (e.g. viewing character in a scene), action scripts get Scene accessor with advanceTurnOrder. */
+  campaignSceneId?: string;
 }
 
 export const CampaignCharacterSheet = ({
@@ -27,6 +29,7 @@ export const CampaignCharacterSheet = ({
   transparentBackground: controlledTransparentBackground,
   onTransparentBackgroundChange,
   campaignId,
+  campaignSceneId,
 }: CampaignCharacterSheetProps = {}) => {
   const { state: sidebarState } = useSidebar();
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -81,6 +84,7 @@ export const CampaignCharacterSheet = ({
               <CharacterPage
                 id={characterId}
                 campaignId={campaignId}
+                campaignSceneId={campaignSceneId}
                 lockByDefault
                 transparentBackground={transparentBackground}
                 onClose={handleClose}

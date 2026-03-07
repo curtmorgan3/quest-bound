@@ -38,6 +38,8 @@ interface CharacterPage {
   id?: string;
   /** When set (e.g. in campaign play), scripts get Owner.location and other campaign context. */
   campaignId?: string;
+  /** When set with campaignId (e.g. character sheet in a scene), action scripts get Scene with advanceTurnOrder. */
+  campaignSceneId?: string;
   lockByDefault?: boolean;
   /**
    * If provided, renders just this window in preview mode. Otherwise, it renders all character pages and windows.
@@ -55,6 +57,7 @@ interface CharacterPage {
 export const CharacterPage = ({
   id,
   campaignId,
+  campaignSceneId,
   lockByDefault,
   editorWindowId,
   transparentBackground,
@@ -118,6 +121,7 @@ export const CharacterPage = ({
     roll,
     rollSplit,
     campaignId,
+    campaignSceneId,
     inventoryPanelConfig,
     setInventoryPanelConfig,
   });
@@ -151,6 +155,7 @@ export const CharacterPage = ({
       campaignId,
       undefined,
       rollSplit,
+      campaignSceneId,
     );
   };
 
@@ -165,6 +170,7 @@ export const CharacterPage = ({
       campaignId,
       inventoryItemId,
       rollSplit,
+      campaignSceneId,
     );
   };
 

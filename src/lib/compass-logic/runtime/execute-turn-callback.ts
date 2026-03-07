@@ -60,6 +60,16 @@ export async function executeTurnCallback(
     const program = new Parser(tokens).parse();
     await evaluator.runBlock(program.statements);
 
+    // Dispatch announce messages so UI toasts fire (same event as worker script execution)
+    const announceMessages = evaluator.getAnnounceMessages();
+    if (typeof window !== 'undefined') {
+      for (const message of announceMessages) {
+        window.dispatchEvent(
+          new CustomEvent('qbscript:announce', { detail: { message } }),
+        );
+      }
+    }
+
     const logMessages = evaluator.getLogMessages();
     if (logMessages.length > 0) {
       await persistScriptLogs(db, {

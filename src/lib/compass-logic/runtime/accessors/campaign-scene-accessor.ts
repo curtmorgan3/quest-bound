@@ -144,10 +144,7 @@ export class CampaignSceneAccessor {
 
     const now = new Date().toISOString();
     // Preserve any existing explicit turnOrder values; only assign defaults for unset (0/null) rows.
-    const existingMax = characters.reduce(
-      (max, cc) => Math.max(max, cc.turnOrder ?? 0),
-      0,
-    );
+    const existingMax = characters.reduce((max, cc) => Math.max(max, cc.turnOrder ?? 0), 0);
     let nextTurnOrder = existingMax > 0 ? existingMax + 1 : 1;
 
     const sorted = [...characters].sort(

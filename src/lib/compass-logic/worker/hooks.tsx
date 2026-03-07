@@ -168,6 +168,7 @@ export interface UseExecuteActionEventResult {
     campaignId?: string,
     callerInventoryItemInstanceId?: string,
     rollSplit?: RollSplitFn,
+    campaignSceneId?: string,
   ) => Promise<void>;
   result: any;
   announceMessages: string[];
@@ -197,6 +198,7 @@ export function useExecuteActionEvent(timeout = 10000): UseExecuteActionEventRes
       campaignId?: string,
       callerInventoryItemInstanceId?: string,
       rollSplit?: RollSplitFn,
+      campaignSceneId?: string,
     ) => {
       setIsExecuting(true);
       setError(null);
@@ -212,6 +214,7 @@ export function useExecuteActionEvent(timeout = 10000): UseExecuteActionEventRes
           campaignId,
           callerInventoryItemInstanceId,
           rollSplit,
+          campaignSceneId,
         );
 
         setResult(response.value);
@@ -264,6 +267,7 @@ export interface UseExecuteItemEventResult {
     campaignId?: string,
     inventoryItemInstanceId?: string,
     rollSplit?: RollSplitFn,
+    campaignSceneId?: string,
   ) => Promise<void>;
   result: any;
   announceMessages: string[];
@@ -292,6 +296,7 @@ export function useExecuteItemEvent(timeout = 10000): UseExecuteItemEventResult 
       campaignId?: string,
       inventoryItemInstanceId?: string,
       rollSplit?: RollSplitFn,
+      campaignSceneId?: string,
     ) => {
       setIsExecuting(true);
       setError(null);
@@ -306,6 +311,7 @@ export function useExecuteItemEvent(timeout = 10000): UseExecuteItemEventResult 
           campaignId,
           inventoryItemInstanceId,
           rollSplit,
+          campaignSceneId,
         );
         setResult(response.value);
         setAnnounceMessages(response.announceMessages);

@@ -1043,6 +1043,7 @@ async function handleExecuteActionEvent(payload: {
   eventType: 'on_activate' | 'on_deactivate';
   requestId: string;
   campaignId?: string;
+  campaignSceneId?: string;
   callerInventoryItemInstanceId?: string;
   roll?: RollFn;
 }): Promise<void> {
@@ -1106,6 +1107,7 @@ async function handleExecuteActionEvent(payload: {
       promptFn,
       selectCharacterFn,
       selectCharactersFn,
+      payload.campaignSceneId,
     );
 
     if (result.error || !result.success) {
@@ -1167,6 +1169,7 @@ async function handleExecuteItemEvent(payload: {
   eventType: string;
   requestId: string;
   campaignId?: string;
+  campaignSceneId?: string;
   inventoryItemInstanceId?: string;
 }): Promise<void> {
   try {
@@ -1228,6 +1231,7 @@ async function handleExecuteItemEvent(payload: {
       promptFn,
       selectCharacterFn,
       selectCharactersFn,
+      payload.campaignSceneId,
     );
 
     const script = await db.scripts.where({ entityId: payload.itemId, entityType: 'item' }).first();

@@ -51,9 +51,18 @@ export class Parser {
     // Skip leading newlines
     this.skipNewlines();
 
-    while (!this.isAtEnd()) {
+    // When parsing a block body in isolation (e.g. turn callback blockSource), it starts with INDENT
+    if (this.check(TokenType.INDENT)) {
+      this.advance();
+    }
+
+    while (!this.isAtEnd() && !this.check(TokenType.DEDENT)) {
       statements.push(this.statement());
       this.skipNewlines();
+    }
+
+    if (this.check(TokenType.DEDENT)) {
+      this.advance();
     }
 
     return { type: 'Program', statements };

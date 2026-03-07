@@ -611,6 +611,7 @@ export class QBScriptClient {
     campaignId?: string,
     callerInventoryItemInstanceId?: string,
     rollSplit?: RollSplitFn,
+    campaignSceneId?: string,
   ): Promise<{
     value: any;
     announceMessages: string[];
@@ -631,6 +632,7 @@ export class QBScriptClient {
             eventType,
             requestId,
             campaignId,
+            campaignSceneId,
             callerInventoryItemInstanceId,
           },
         },
@@ -656,6 +658,7 @@ export class QBScriptClient {
     campaignId?: string,
     inventoryItemInstanceId?: string,
     rollSplit?: RollSplitFn,
+    campaignSceneId?: string,
   ): Promise<{
     value: any;
     announceMessages: string[];
@@ -675,6 +678,7 @@ export class QBScriptClient {
             eventType,
             requestId,
             campaignId,
+            campaignSceneId,
             inventoryItemInstanceId,
           },
         },

@@ -258,6 +258,7 @@ export class EventHandlerExecutor {
     prompt?: PromptFn,
     selectCharacter?: SelectCharacterFn,
     selectCharacters?: SelectCharactersFn,
+    campaignSceneId?: string,
   ): Promise<EventHandlerResult> {
     // Get item
     const item = await this.db.items.get(itemId);
@@ -321,6 +322,7 @@ export class EventHandlerExecutor {
       entityId: item.id,
       inventoryItemInstanceId,
       campaignId,
+      campaignSceneId,
       roll,
       rollSplit,
       prompt,
@@ -345,6 +347,7 @@ export class EventHandlerExecutor {
           prompt,
           selectCharacterWrapped,
           selectCharactersWrapped,
+          campaignSceneId,
         ),
     };
 
@@ -408,6 +411,7 @@ export class EventHandlerExecutor {
     prompt?: PromptFn,
     selectCharacter?: SelectCharacterFn,
     selectCharacters?: SelectCharactersFn,
+    campaignSceneId?: string,
   ): Promise<EventHandlerResult> {
     // Get action
     const action = await this.db.actions.get(actionId);
@@ -485,6 +489,7 @@ export class EventHandlerExecutor {
           campaignId ?? null,
         ),
         callerInventoryItemInstanceId,
+        campaignSceneId,
         // Only allow Owner.Action().activate() at top level to avoid infinite re-entrancy
         ...(actionEventDepth === 1 && {
           executeActionEvent: (actionId, ownerId, targetIdForAction, eventTypeForAction) =>
@@ -500,6 +505,7 @@ export class EventHandlerExecutor {
               prompt,
               selectCharacterWrapped,
               selectCharactersWrapped,
+              campaignSceneId,
             ),
         }),
       };

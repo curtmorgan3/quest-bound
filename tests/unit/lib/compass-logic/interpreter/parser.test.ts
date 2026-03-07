@@ -726,6 +726,30 @@ z = 3`;
     });
   });
 
+  describe('Scene.on_turn_advance', () => {
+    it('should parse block with variable assignment on first line', () => {
+      const source = `Scene.on_turn_advance():
+    char = Scene.characters()
+`;
+      const ast = parse(source);
+      expect(ast.statements).toHaveLength(1);
+      expect(ast.statements[0].type).toBe('OnTurnAdvanceCall');
+      const stmt = ast.statements[0] as { block: unknown[] };
+      expect(stmt.block).toHaveLength(1);
+      expect((stmt.block[0] as { type: string }).type).toBe('Assignment');
+    });
+
+    it('should parse block body in isolation (as stored for turn callbacks)', () => {
+      // blockSource is serialized with one indent level; parser must accept leading INDENT
+      const blockSource = `    char = Scene.characters()
+`;
+      const ast = parse(blockSource);
+      expect(ast.statements).toHaveLength(1);
+      expect((ast.statements[0] as { type: string }).type).toBe('Assignment');
+      expect((ast.statements[0] as { name: string; value: unknown }).name).toBe('char');
+    });
+  });
+
   describe('Error Handling', () => {
     it('should throw error on missing closing parenthesis', () => {
       expect(() => parse('foo(')).toThrow();
