@@ -14,7 +14,8 @@ import {
 import type { SheetViewerBackdropClickDetail } from '@/lib/compass-planes/sheet-viewer';
 import { SHEET_VIEWER_BACKDROP_CLICK } from '@/lib/compass-planes/sheet-viewer';
 import { db } from '@/stores';
-import { ChevronRight, FileText, ScrollText, Zap } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { ChevronLeft, ChevronRight, FileText, ScrollText, Zap } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { ActiveScene } from './active-scene';
@@ -45,6 +46,9 @@ export function CampaignDashboard() {
   const [characterSheetTransparentBackground, setCharacterSheetTransparentBackground] =
     useState(true);
   const [advancing, setAdvancing] = useState(false);
+  const [leftColumnCollapsed, setLeftColumnCollapsed] = useState(false);
+  const [centerColumnCollapsed, setCenterColumnCollapsed] = useState(false);
+  const [rightColumnCollapsed, setRightColumnCollapsed] = useState(false);
 
   const { campaignScenes } = useCampaignScenes(campaignId);
   const currentScene = sceneId ? campaignScenes.find((s) => s.id === sceneId) : undefined;
@@ -297,35 +301,145 @@ export function CampaignDashboard() {
           </div>
         }>
         <div className='flex min-h-0 flex-1'>
-          <NpcStage
-            campaignId={campaign.id}
-            rulesetId={campaign.rulesetId}
-            sceneId={sceneId}
-            onCardHover={setHoveredCampaignCharacterId}
-          />
-          {currentScene?.turnBasedMode && sceneId ? (
-            <TurnOrderScene
-              campaignId={campaign.id}
-              sceneId={sceneId}
-              currentTurnCycle={currentScene.currentTurnCycle ?? 1}
-              currentTurnCampaignCharacterId={currentTurnCampaignCharacterId ?? null}
-              hoveredCampaignCharacterId={hoveredCampaignCharacterId}
-              onAvatarClick={(characterId) =>
-                setSheetCharacterId((prev) => (prev === characterId ? null : characterId))
-              }
-            />
-          ) : (
-            <ActiveScene
-              campaignId={campaign.id}
-              sceneId={sceneId}
-              hoveredCampaignCharacterId={hoveredCampaignCharacterId}
-              onAvatarClick={(characterId) =>
-                setSheetCharacterId((prev) => (prev === characterId ? null : characterId))
-              }
-            />
-          )}
+          {/* Left column: Stage NPCs */}
+          <div
+            className={cn(
+              'flex min-h-0 flex-col bg-muted/20',
+              leftColumnCollapsed ? 'w-10 shrink-0 border-r border-border' : 'shrink-0',
+            )}
+            style={leftColumnCollapsed ? undefined : { width: 280 }}>
+            {leftColumnCollapsed ? (
+              <button
+                type='button'
+                onClick={() => setLeftColumnCollapsed(false)}
+                className='flex h-full min-h-0 flex-col items-center justify-center gap-1 border-r border-border bg-muted/30 px-1 py-2 hover:bg-muted/50'
+                aria-label='Expand Stage NPCs panel'>
+                <ChevronRight className='size-4 shrink-0' />
+                <span className='text-[10px] font-medium uppercase tracking-wide text-muted-foreground [writing-mode:vertical-rl]'>
+                  Stage
+                </span>
+              </button>
+            ) : (
+              <>
+                <div className='flex shrink-0 items-center justify-between gap-2 border-b border-border px-2 py-1.5'>
+                  <span className='text-sm font-medium text-muted-foreground'>Stage NPCs</span>
+                  <Button
+                    variant='ghost'
+                    size='icon'
+                    className='size-7'
+                    onClick={() => setLeftColumnCollapsed(true)}
+                    aria-label='Collapse Stage NPCs panel'>
+                    <ChevronLeft className='size-4' />
+                  </Button>
+                </div>
+                <div className='min-h-0 flex-1 overflow-auto'>
+                  <NpcStage
+                    campaignId={campaign.id}
+                    rulesetId={campaign.rulesetId}
+                    sceneId={sceneId}
+                    onCardHover={setHoveredCampaignCharacterId}
+                  />
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Center column: Scene (Active / Turn order) */}
+          <div
+            className={cn(
+              'flex min-h-0 flex-col bg-muted/20',
+              centerColumnCollapsed ? 'w-10 shrink-0 border-r border-border' : 'min-w-0 flex-1 border-r border-border',
+            )}>
+            {centerColumnCollapsed ? (
+              <button
+                type='button'
+                onClick={() => setCenterColumnCollapsed(false)}
+                className='flex h-full min-h-0 flex-col items-center justify-center gap-1 border-r border-border bg-muted/30 px-1 py-2 hover:bg-muted/50'
+                aria-label='Expand Scene panel'>
+                <ChevronRight className='size-4 shrink-0' />
+                <span className='text-[10px] font-medium uppercase tracking-wide text-muted-foreground [writing-mode:vertical-rl]'>
+                  Scene
+                </span>
+              </button>
+            ) : (
+              <>
+                <div className='flex shrink-0 items-center justify-between gap-2 border-b border-border px-2 py-1.5'>
+                  <span className='text-sm font-medium text-muted-foreground'>
+                    {currentScene?.turnBasedMode ? 'Turn order' : 'Active'}
+                  </span>
+                  <Button
+                    variant='ghost'
+                    size='icon'
+                    className='size-7'
+                    onClick={() => setCenterColumnCollapsed(true)}
+                    aria-label='Collapse Scene panel'>
+                    <ChevronLeft className='size-4' />
+                  </Button>
+                </div>
+                <div className='min-h-0 flex-1 overflow-auto'>
+                  {currentScene?.turnBasedMode && sceneId ? (
+                    <TurnOrderScene
+                      campaignId={campaign.id}
+                      sceneId={sceneId}
+                      currentTurnCycle={currentScene.currentTurnCycle ?? 1}
+                      currentTurnCampaignCharacterId={currentTurnCampaignCharacterId ?? null}
+                      hoveredCampaignCharacterId={hoveredCampaignCharacterId}
+                      onAvatarClick={(characterId) =>
+                        setSheetCharacterId((prev) => (prev === characterId ? null : characterId))
+                      }
+                    />
+                  ) : (
+                    <ActiveScene
+                      campaignId={campaign.id}
+                      sceneId={sceneId}
+                      hoveredCampaignCharacterId={hoveredCampaignCharacterId}
+                      onAvatarClick={(characterId) =>
+                        setSheetCharacterId((prev) => (prev === characterId ? null : characterId))
+                      }
+                    />
+                  )}
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Right column: Game log */}
           {showCampaignLog && (
-            <CampaignGameLog campaignId={campaign.id} rulesetId={campaign.rulesetId} />
+            <div
+              className={cn(
+                'flex min-h-0 flex-col bg-muted/20',
+                rightColumnCollapsed ? 'w-10 shrink-0 border-l border-border' : 'min-w-[240px] flex-1',
+              )}>
+              {rightColumnCollapsed ? (
+                <button
+                  type='button'
+                  onClick={() => setRightColumnCollapsed(false)}
+                  className='flex h-full min-h-0 flex-col items-center justify-center gap-1 border-l border-border bg-muted/30 px-1 py-2 hover:bg-muted/50'
+                  aria-label='Expand Game log panel'>
+                  <ChevronLeft className='size-4 shrink-0' />
+                  <span className='text-[10px] font-medium uppercase tracking-wide text-muted-foreground [writing-mode:vertical-rl]'>
+                    Log
+                  </span>
+                </button>
+              ) : (
+                <>
+                  <div className='flex shrink-0 items-center justify-between gap-2 border-b border-border px-2 py-1.5'>
+                    <span className='text-sm font-medium text-muted-foreground'>Game log</span>
+                    <Button
+                      variant='ghost'
+                      size='icon'
+                      className='size-7'
+                      onClick={() => setRightColumnCollapsed(true)}
+                      aria-label='Collapse Game log panel'>
+                      <ChevronRight className='size-4' />
+                    </Button>
+                  </div>
+                  <div className='min-h-0 flex-1 overflow-auto'>
+                    <CampaignGameLog campaignId={campaign.id} rulesetId={campaign.rulesetId} />
+                  </div>
+                </>
+              )}
+            </div>
           )}
         </div>
       </PageWrapper>
