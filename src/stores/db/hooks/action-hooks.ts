@@ -3,13 +3,18 @@ import { deleteAssetIfUnreferenced } from './asset-hooks';
 import type { DB } from './types';
 
 export function registerActionDbHooks(db: DB) {
-  // Clean up dependency graph when action's script is replaced
+  // Clean up dependency graph when action's script is replaced.
+  // Defer with setTimeout so this runs after the current transaction completes;
+  // otherwise IDBTransaction only has the 'actions' store and buildDependencyGraph fails.
   db.actions.hook('updating', (modifications, _primKey, obj) => {
     const mods = modifications as { scriptId?: string | null };
     if (mods.scriptId !== undefined && obj.rulesetId) {
-      buildDependencyGraph(obj.rulesetId!, db).catch((error) =>
-        console.error('Failed to rebuild dependency graph:', error),
-      );
+      const rulesetId = obj.rulesetId;
+      setTimeout(() => {
+        buildDependencyGraph(rulesetId, db).catch((error) =>
+          console.error('Failed to rebuild dependency graph:', error),
+        );
+      }, 0);
     }
   });
 
