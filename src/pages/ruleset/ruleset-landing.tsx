@@ -1,6 +1,7 @@
 import { Card } from '@/components';
 import { PageWrapper } from '@/components/composites';
 import { LogoIcon } from '@/components/ui/logo-icon';
+import { useFeatureFlag } from '@/hooks/use-feature-flag';
 import { useActiveRuleset } from '@/lib/compass-api';
 import { Map, Users } from 'lucide-react';
 import Markdown from 'react-markdown';
@@ -8,6 +9,7 @@ import { Link } from 'react-router-dom';
 
 export function RulesetLanding() {
   const { activeRuleset } = useActiveRuleset();
+  const playQuestbound = useFeatureFlag('play.questbound');
 
   if (!activeRuleset) {
     return (
@@ -23,7 +25,8 @@ export function RulesetLanding() {
     activeRuleset;
 
   const inEngine =
-    location.hostname.includes('app.questbound.com') || location.hostname.includes('localhost');
+    window.location.hostname.includes('app.questbound.com') ||
+    window.location.hostname.includes('localhost');
 
   return (
     <PageWrapper
@@ -36,7 +39,13 @@ export function RulesetLanding() {
             <span>Made with Quest Bound</span>
             <LogoIcon style={{ width: 24, height: 24 }} />
           </div>
-          {inEngine ? (
+          {playQuestbound ? (
+            <Link
+              to={`/?rulesetId=${activeRuleset.id}`}
+              className='text-xs text-muted-foreground hover:text-foreground transition-colors'>
+              Modify this Ruleset
+            </Link>
+          ) : inEngine ? (
             <Link
               to={`/rulesets/${activeRuleset.id}`}
               className='text-xs text-muted-foreground hover:text-foreground transition-colors'>
@@ -44,7 +53,7 @@ export function RulesetLanding() {
             </Link>
           ) : (
             <a
-              href={`https://app.questbound.com?ruleset=${activeRuleset.id}`}
+              href={`https://app.questbound.com?rulesetId=${activeRuleset.id}`}
               target='_blank'
               rel='noopener noreferrer'
               className='text-xs text-muted-foreground hover:text-foreground transition-colors'>

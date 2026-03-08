@@ -70,6 +70,8 @@ export function AppSidebar() {
 
   const isCharacterRoute = location.pathname.startsWith('/characters/');
 
+  const isDevTools = location.pathname.startsWith('/dev');
+
   const isCampaignsRoute =
     location.pathname.startsWith('/campaigns/') && location.pathname !== '/campaigns/new';
 
@@ -97,7 +99,7 @@ export function AppSidebar() {
     <CharacterSidebar />
   ) : isCampaignsRoute ? (
     <CampaignSidebar />
-  ) : (
+  ) : isDevTools ? null : (
     <RulesetSidebar />
   );
 
