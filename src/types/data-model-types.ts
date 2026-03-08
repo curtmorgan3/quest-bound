@@ -349,6 +349,14 @@ export type Ruleset = BaseDetails & {
   assetId: string | null;
   /** Injected from asset.data when assetId is set; do not persist on entity. */
   image?: string | null;
+  /** Asset ID for the Characters CTA card image on the ruleset landing page. */
+  charactersCtaAssetId?: string | null;
+  /** Asset ID for the Campaigns CTA card image on the ruleset landing page. */
+  campaignsCtaAssetId?: string | null;
+  /** Injected from asset.data when charactersCtaAssetId is set; do not persist on entity. */
+  charactersCtaImage?: string | null;
+  /** Injected from asset.data when campaignsCtaAssetId is set; do not persist on entity. */
+  campaignsCtaImage?: string | null;
   palette: string[];
   /** When true, this ruleset can be added as a module to other rulesets. */
   isModule?: boolean;

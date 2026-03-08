@@ -15,6 +15,7 @@ import {
   FileCode,
   FileSpreadsheet,
   HandFist,
+  Home,
   Image,
   LayoutTemplate,
   Map,
@@ -45,6 +46,7 @@ const RULESET_NAV_ITEMS: {
   listPage?: ListPage;
   scriptsPage?: boolean;
 }[] = [
+  { title: 'Landing', path: 'landing', icon: Home },
   { title: 'Attributes', path: 'attributes', icon: UserRoundPen, gridPage: 'attributes' },
   { title: 'Actions', path: 'actions', icon: HandFist, gridPage: 'actions' },
   { title: 'Items', path: 'items', icon: Sword, gridPage: 'items' },

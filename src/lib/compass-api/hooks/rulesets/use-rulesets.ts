@@ -188,15 +188,18 @@ export const useRulesets = () => {
   const updateRuleset = async (id: string, updates: Partial<Ruleset>) => {
     setLoading(true);
     try {
-      if (updates.assetId === null) {
-        const original = await db.rulesets.get(id);
-        if (original?.assetId) {
-          await deleteAssetIfUnreferenced(db, original.assetId);
-        }
-
+      const original = await db.rulesets.get(id);
+      if (updates.assetId === null && original?.assetId) {
+        await deleteAssetIfUnreferenced(db, original.assetId);
         if (!updates.image) {
           updates.image = null;
         }
+      }
+      if (updates.charactersCtaAssetId === null && original?.charactersCtaAssetId) {
+        await deleteAssetIfUnreferenced(db, original.charactersCtaAssetId);
+      }
+      if (updates.campaignsCtaAssetId === null && original?.campaignsCtaAssetId) {
+        await deleteAssetIfUnreferenced(db, original.campaignsCtaAssetId);
       }
 
       await db.rulesets.update(id, {

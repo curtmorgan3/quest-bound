@@ -30,6 +30,16 @@ function injectImageData(record: any) {
     if (mapAsset) next = { ...next, mapAsset };
   }
 
+  if (record.charactersCtaAssetId) {
+    const charactersCtaImage = resolveAssetUrl(record.charactersCtaAssetId);
+    if (charactersCtaImage) next = { ...next, charactersCtaImage };
+  }
+
+  if (record.campaignsCtaAssetId) {
+    const campaignsCtaImage = resolveAssetUrl(record.campaignsCtaAssetId);
+    if (campaignsCtaImage) next = { ...next, campaignsCtaImage };
+  }
+
   if (record.sprites && Array.isArray(record.sprites)) {
     next = {
       ...next,
