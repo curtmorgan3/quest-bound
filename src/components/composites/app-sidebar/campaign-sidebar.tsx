@@ -14,6 +14,7 @@ import {
   FileCode,
   FileSpreadsheet,
   FileText,
+  Home,
   Notebook,
   Pin,
   PinOff,
@@ -75,6 +76,17 @@ export function CampaignSidebar() {
       <SidebarGroup>
         <SidebarGroupContent>
           <SidebarMenu>
+            <SidebarMenuItem
+              className={
+                location.pathname === `/landing/${campaign.rulesetId}` ? 'text-primary' : ''
+              }>
+              <SidebarMenuButton asChild>
+                <Link to={`/landing/${campaign.rulesetId}`} data-testid='nav-home'>
+                  <Home className='w-4 h-4' />
+                  <span>Home</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
             <SidebarMenuItem
               className={
                 location.pathname === `/campaigns/${campaign.id}/scenes` ? 'text-primary' : ''

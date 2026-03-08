@@ -9,7 +9,18 @@ import {
   useSidebar,
 } from '@/components/ui/sidebar';
 import { useCharacter, useCharts, useDocuments } from '@/lib/compass-api';
-import { ArrowLeft, FileSpreadsheet, FileText, Pin, PinOff } from 'lucide-react';
+import { CharacterArchetypesPanelContext, CharacterInventoryPanelContext } from '@/stores';
+import {
+  ArrowLeft,
+  FileSpreadsheet,
+  FileText,
+  Handbag,
+  Home,
+  Pin,
+  PinOff,
+  UserPlus,
+} from 'lucide-react';
+import { useContext } from 'react';
 import { Link, useLocation, useParams } from 'react-router-dom';
 
 export function CharacterSidebar() {
@@ -19,6 +30,9 @@ export function CharacterSidebar() {
   const { open } = useSidebar();
   const { documentId, chartId } = useParams<{ documentId?: string; chartId?: string }>();
   const location = useLocation();
+
+  const characterInventoryPanel = useContext(CharacterInventoryPanelContext);
+  const characterArchetypesPanel = useContext(CharacterArchetypesPanelContext);
 
   if (!character) return null;
 
@@ -62,6 +76,17 @@ export function CharacterSidebar() {
       <SidebarGroup>
         <SidebarGroupContent>
           <SidebarMenu>
+            <SidebarMenuItem
+              className={
+                location.pathname === `/landing/${character.rulesetId}` ? 'text-primary' : ''
+              }>
+              <SidebarMenuButton asChild>
+                <Link to={`/landing/${character.rulesetId}`} data-testid='nav-home'>
+                  <Home className='w-4 h-4' />
+                  <span>Home</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
             {(isViewingDocument || isViewingChart) && (
               <SidebarMenuItem>
                 <SidebarMenuButton asChild>
@@ -73,6 +98,26 @@ export function CharacterSidebar() {
               </SidebarMenuItem>
             )}
           </SidebarMenu>
+          {characterInventoryPanel && (
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                onClick={() => characterInventoryPanel.setOpen(true)}
+                data-testid='nav-character-inventory'>
+                <Handbag className='w-4 h-4' />
+                <span>Inventory</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          )}
+          {characterArchetypesPanel && (
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                onClick={() => characterArchetypesPanel.setOpen(true)}
+                data-testid='nav-character-archetypes'>
+                <UserPlus className='w-4 h-4' />
+                <span>Archetypes</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          )}
         </SidebarGroupContent>
       </SidebarGroup>
 

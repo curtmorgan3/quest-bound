@@ -1,10 +1,9 @@
 import {
   Dices,
-  Handbag,
+  FolderOpen,
   HelpCircle,
   Settings as SettingsIcon,
   User,
-  UserPlus,
   Wrench,
 } from 'lucide-react';
 
@@ -21,13 +20,9 @@ import {
   SidebarTrigger,
   useSidebar,
 } from '@/components/ui/sidebar';
-import { useActiveRuleset, useCharacter, useUsers } from '@/lib/compass-api';
+import { useActiveRuleset, useUsers } from '@/lib/compass-api';
 import { Settings } from '@/pages';
-import {
-  CharacterArchetypesPanelContext,
-  CharacterInventoryPanelContext,
-  DiceContext,
-} from '@/stores';
+import { DiceContext } from '@/stores';
 import { useContext, useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Avatar, AvatarFallback, AvatarImage } from '../../ui/avatar';
@@ -62,11 +57,8 @@ function docsPageFromRoute(path: string): string {
 
 export function AppSidebar() {
   const { currentUser, signOut } = useUsers();
-  const { character } = useCharacter();
   const { open, setOpen } = useSidebar();
   const location = useLocation();
-  const characterInventoryPanel = useContext(CharacterInventoryPanelContext);
-  const characterArchetypesPanel = useContext(CharacterArchetypesPanelContext);
   const { setDicePanelOpen } = useContext(DiceContext);
   const { activeRuleset } = useActiveRuleset();
 
@@ -75,6 +67,9 @@ export function AppSidebar() {
     location.pathname === '/rulesets' ||
     location.pathname === '/characters' ||
     location.pathname === '/campaigns';
+
+  const isCharacterRoute = location.pathname.startsWith('/characters/');
+
   const isCampaignsRoute =
     location.pathname.startsWith('/campaigns/') && location.pathname !== '/campaigns/new';
 
@@ -98,7 +93,7 @@ export function AppSidebar() {
     setSettingsOpen(false);
   }, [location.pathname]);
 
-  const sidebarContent = isLandingRoute ? null : character ? (
+  const sidebarContent = isLandingRoute ? null : isCharacterRoute ? (
     <CharacterSidebar />
   ) : isCampaignsRoute ? (
     <CampaignSidebar />
@@ -133,35 +128,22 @@ export function AppSidebar() {
         <SidebarContent>{sidebarContent}</SidebarContent>
         <SidebarFooter>
           <SidebarMenu>
+            <SidebarMenuItem>
+              <SidebarMenuButton asChild>
+                <Link to={`/rulesets`} data-testid='nav-home'>
+                  <FolderOpen className='w-4 h-4' />
+                  <span>Open</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+
             {!isHomepage && (
-              <>
-                <SidebarMenuItem>
-                  <SidebarMenuButton onClick={() => setDicePanelOpen(true)} data-testid='nav-dice'>
-                    <Dices />
-                    <span>Dice</span>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                {character && characterInventoryPanel && (
-                  <SidebarMenuItem>
-                    <SidebarMenuButton
-                      onClick={() => characterInventoryPanel.setOpen(true)}
-                      data-testid='nav-character-inventory'>
-                      <Handbag className='w-4 h-4' />
-                      <span>Inventory</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                )}
-                {character && characterArchetypesPanel && (
-                  <SidebarMenuItem>
-                    <SidebarMenuButton
-                      onClick={() => characterArchetypesPanel.setOpen(true)}
-                      data-testid='nav-character-archetypes'>
-                      <UserPlus className='w-4 h-4' />
-                      <span>Archetypes</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                )}
-              </>
+              <SidebarMenuItem>
+                <SidebarMenuButton onClick={() => setDicePanelOpen(true)} data-testid='nav-dice'>
+                  <Dices />
+                  <span>Dice</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
             )}
             <SidebarMenuItem>
               <DrawerTrigger asChild>
