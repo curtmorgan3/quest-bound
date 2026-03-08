@@ -297,6 +297,47 @@ export const RulesetSettings = ({ activeRuleset }: RulesetSettingsProps) => {
 
           <DescriptionEditor className='flex-1' value={description} onChange={setDescription} />
         </div>
+
+        <div className='flex flex-col gap-3'>
+          <Label>Landing page CTA card images</Label>
+          <p className='text-sm text-muted-foreground'>
+            Images shown on the Characters and Campaigns cards on the ruleset landing page.
+          </p>
+          <div className='flex flex-wrap gap-8'>
+            <div className='flex flex-col gap-2'>
+              <Label className='text-xs font-normal text-muted-foreground'>
+                Characters CTA
+              </Label>
+              <ImageUpload
+                image={activeRuleset.charactersCtaImage ?? undefined}
+                alt='Characters CTA'
+                onRemove={() =>
+                  updateRuleset(activeRuleset.id, { charactersCtaAssetId: null })
+                }
+                onUpload={(assetId) =>
+                  updateRuleset(activeRuleset.id, { charactersCtaAssetId: assetId })
+                }
+                rulesetId={activeRuleset.id}
+              />
+            </div>
+            <div className='flex flex-col gap-2'>
+              <Label className='text-xs font-normal text-muted-foreground'>
+                Campaigns CTA
+              </Label>
+              <ImageUpload
+                image={activeRuleset.campaignsCtaImage ?? undefined}
+                alt='Campaigns CTA'
+                onRemove={() =>
+                  updateRuleset(activeRuleset.id, { campaignsCtaAssetId: null })
+                }
+                onUpload={(assetId) =>
+                  updateRuleset(activeRuleset.id, { campaignsCtaAssetId: assetId })
+                }
+                rulesetId={activeRuleset.id}
+              />
+            </div>
+          </div>
+        </div>
       </TabsContent>
 
       <TabsContent value='defaults' className='mt-0 flex min-h-0 flex-1 flex-col gap-6 overflow-auto'>
