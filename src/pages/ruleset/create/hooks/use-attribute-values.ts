@@ -115,8 +115,7 @@ export const useAttributeValues = ({
       typeValue === 'list' && useChartForOptions && optionsChartColumnHeader
         ? optionsChartColumnHeader
         : undefined,
-    allowMultiSelect:
-      typeValue === 'list' && allowMultiSelect ? true : undefined,
+    allowMultiSelect: typeValue === 'list' && allowMultiSelect ? true : undefined,
     min: typeValue === 'number' ? min : undefined,
     max: typeValue === 'number' ? max : undefined,
     inventoryHeight,
@@ -128,10 +127,6 @@ export const useAttributeValues = ({
       ...baseProperties,
       ...attributeProperties,
     };
-
-    if (data.type === 'number' && data.defaultValue === '') {
-      data.defaultValue = 0;
-    }
 
     if (isEditMode) {
       updateAttribute(id, data);

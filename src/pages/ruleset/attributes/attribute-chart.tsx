@@ -7,10 +7,10 @@ import {
 } from '@/components';
 import { useActiveRuleset } from '@/lib/compass-api';
 import { useAttributes } from '@/lib/compass-api/hooks/rulesets/use-attributes';
+import { useRulesetFiltersStore } from '@/stores/ruleset-filters-store';
 import type { Attribute } from '@/types';
 import { useEffect, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { useRulesetFiltersStore } from '@/stores/ruleset-filters-store';
 import { ChartControls } from '../components';
 import {
   encodeFilterForUrl,
@@ -79,10 +79,7 @@ export const AttributeChart = () => {
     () => parseFilterFromSearchParams(searchParams),
     [searchParams],
   );
-  const initialSortModel = useMemo(
-    () => parseSortFromSearchParams(searchParams),
-    [searchParams],
-  );
+  const initialSortModel = useMemo(() => parseSortFromSearchParams(searchParams), [searchParams]);
 
   const rows: Partial<Attribute>[] = useMemo(
     () =>
@@ -90,7 +87,10 @@ export const AttributeChart = () => {
         return {
           ...a,
           type: typeLabels[a.type] as keyof typeof typeLabels,
-          defaultValue: a.type === 'number' ? parseInt(a.defaultValue.toString()) : a.defaultValue,
+          defaultValue:
+            a.type === 'number' && a.defaultValue !== ''
+              ? parseInt(a.defaultValue.toString())
+              : a.defaultValue,
         };
       }),
     [attributes],
@@ -172,12 +172,15 @@ export const AttributeChart = () => {
   const handleFilterChanged = (filterModel: GridFilterModel) => {
     const filterValue =
       Object.keys(filterModel).length > 0 ? encodeFilterForUrl(filterModel) : null;
-    setSearchParams((prev) => {
-      const p = new URLSearchParams(prev);
-      if (filterValue) p.set(FILTER_PARAM, filterValue);
-      else p.delete(FILTER_PARAM);
-      return p;
-    }, { replace: true });
+    setSearchParams(
+      (prev) => {
+        const p = new URLSearchParams(prev);
+        if (filterValue) p.set(FILTER_PARAM, filterValue);
+        else p.delete(FILTER_PARAM);
+        return p;
+      },
+      { replace: true },
+    );
     if (rulesetId) {
       setGridFilters(rulesetId, 'attributes', { filter: filterValue });
     }
@@ -185,12 +188,15 @@ export const AttributeChart = () => {
 
   const handleSortChanged = (sortModel: GridSortModelItem[]) => {
     const sortValue = sortModel.length > 0 ? encodeSortForUrl(sortModel) : null;
-    setSearchParams((prev) => {
-      const p = new URLSearchParams(prev);
-      if (sortValue) p.set(SORT_PARAM, sortValue);
-      else p.delete(SORT_PARAM);
-      return p;
-    }, { replace: true });
+    setSearchParams(
+      (prev) => {
+        const p = new URLSearchParams(prev);
+        if (sortValue) p.set(SORT_PARAM, sortValue);
+        else p.delete(SORT_PARAM);
+        return p;
+      },
+      { replace: true },
+    );
     if (rulesetId) {
       setGridFilters(rulesetId, 'attributes', { sort: sortValue });
     }
