@@ -16,7 +16,7 @@ import {
   useOnboardingStore,
 } from '@/stores';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Outlet, useNavigate, useSearchParams } from 'react-router-dom';
+import { Outlet, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { AppSidebar } from './composites/app-sidebar';
 import { SidebarProvider } from './ui/sidebar';
 import { Toaster } from './ui/sonner';
@@ -84,6 +84,9 @@ export function Layout() {
   const [characterInventoryPanelOpen, setCharacterInventoryPanelOpen] = useState(false);
   const [characterArchetypesPanelOpen, setCharacterArchetypesPanelOpen] = useState(false);
 
+  const location = useLocation();
+  const isPlayPage = location.pathname.startsWith('/play/');
+
   return loading ? (
     <Loading />
   ) : !currentUser ? (
@@ -107,7 +110,7 @@ export function Layout() {
             {currentUser && showOnboarding && (
               <OnboardingPanel userId={currentUser.id} onClose={handleOnboardingClose} />
             )}
-            <AppSidebar />
+            {!isPlayPage && <AppSidebar />}
             <main
               style={{
                 display: 'grid',

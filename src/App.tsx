@@ -13,6 +13,7 @@ import {
   DevTools,
   ErrorPage,
   ManageCustomProperties,
+  PlayPage,
   Ruleset,
   RulesetLanding,
   RulesetPageEditorPage,
@@ -36,6 +37,7 @@ function CompassRoutes() {
             <Route path={`/rulesets`} element={<Rulesets />} />
             <Route path={`/rulesets/:rulesetId`} element={<Ruleset />} />
             <Route path={`/landing/:rulesetId`} element={<RulesetLanding />} />
+            <Route path={`/play/:slug`} element={<PlayPage />} />
             <Route
               path={`/rulesets/:rulesetId/attributes`}
               element={<Ruleset page='attributes' />}
