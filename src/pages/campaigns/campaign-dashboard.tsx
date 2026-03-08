@@ -451,6 +451,7 @@ export function CampaignDashboard() {
             )}
           </div>
 
+          {/* Right column: Game Log */}
           <div
             className={cn(
               'flex min-h-0 flex-col bg-muted/20',
