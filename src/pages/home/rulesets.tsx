@@ -15,7 +15,7 @@ import {
   Label,
   Textarea,
 } from '@/components';
-import { PageWrapper } from '@/components/composites';
+import { ImportRulesetOverwriteModals, PageWrapper } from '@/components/composites';
 import {
   Dialog,
   DialogClose,
@@ -232,61 +232,23 @@ export const Rulesets = () => {
             )}
           </Button>
 
-          <Dialog open={replaceConfirmOpen} onOpenChange={setReplaceConfirmOpen}>
-            <DialogContent className='sm:max-w-[425px]'>
-              <DialogHeader>
-                <DialogTitle>Replace existing ruleset?</DialogTitle>
-                <DialogDescription>{pendingReplaceResult?.message}</DialogDescription>
-              </DialogHeader>
-              <p className='text-sm text-muted-foreground'>{pendingReplaceResult?.message}</p>
-              <DialogFooter>
-                <Button variant='outline' onClick={handleCancelReplace}>
-                  Cancel
-                </Button>
-                <Button onClick={handleConfirmReplace} disabled={isImporting}>
-                  {isImporting ? 'Replacing…' : 'Replace'}
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-
-          <Dialog open={duplicateConfirmOpen} onOpenChange={setDuplicateConfirmOpen}>
-            <DialogContent className='sm:max-w-[425px]'>
-              <DialogHeader>
-                <DialogTitle>Save as new ruleset?</DialogTitle>
-                <DialogDescription>{pendingDuplicateResult?.message}</DialogDescription>
-              </DialogHeader>
-              <p className='text-sm text-muted-foreground'>{pendingDuplicateResult?.message}</p>
-              <div className='mt-4 grid gap-4'>
-                <div className='grid gap-2'>
-                  <Label htmlFor='duplicate-title'>Title</Label>
-                  <Input
-                    id='duplicate-title'
-                    value={duplicateTitle}
-                    onChange={(e) => setDuplicateTitle(e.target.value)}
-                    placeholder={pendingDuplicateResult?.importedRuleset?.title}
-                  />
-                </div>
-                <div className='grid gap-2'>
-                  <Label htmlFor='duplicate-version'>Version</Label>
-                  <Input
-                    id='duplicate-version'
-                    value={duplicateVersion}
-                    onChange={(e) => setDuplicateVersion(e.target.value)}
-                    placeholder={pendingDuplicateResult?.importedRuleset?.version}
-                  />
-                </div>
-              </div>
-              <DialogFooter>
-                <Button variant='outline' onClick={handleCancelDuplicate}>
-                  Cancel
-                </Button>
-                <Button onClick={handleConfirmDuplicate} disabled={isImporting}>
-                  {isImporting ? 'Creating…' : 'Create copy'}
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+          <ImportRulesetOverwriteModals
+            replaceOpen={replaceConfirmOpen}
+            onReplaceOpenChange={setReplaceConfirmOpen}
+            pendingReplaceResult={pendingReplaceResult}
+            onConfirmReplace={handleConfirmReplace}
+            onCancelReplace={handleCancelReplace}
+            duplicateOpen={duplicateConfirmOpen}
+            onDuplicateOpenChange={setDuplicateConfirmOpen}
+            pendingDuplicateResult={pendingDuplicateResult}
+            duplicateTitle={duplicateTitle}
+            duplicateVersion={duplicateVersion}
+            onDuplicateTitleChange={setDuplicateTitle}
+            onDuplicateVersionChange={setDuplicateVersion}
+            onConfirmDuplicate={handleConfirmDuplicate}
+            onCancelDuplicate={handleCancelDuplicate}
+            isImporting={isImporting}
+          />
         </div>
       }>
       <div className='flex flex-wrap gap-4'>

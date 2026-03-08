@@ -796,6 +796,7 @@ export const useImportRuleset = () => {
             return {
               success: false,
               message: `A ruleset "${existingRuleset.title}" (v${existingRuleset.version}) already exists with the same id. The uploaded file is an older or same version (v${newRuleset.version}). Import aborted.`,
+              existingRuleset,
               importedCounts: {
                 attributes: 0,
                 actions: 0,
