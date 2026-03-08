@@ -6,6 +6,11 @@ import type {
   ArchetypeCustomProperty,
   Asset,
   Attribute,
+  Campaign,
+  CampaignCharacter,
+  CampaignEvent,
+  CampaignItem,
+  CampaignScene,
   Character,
   CharacterAttribute,
   CharacterPage,
@@ -22,6 +27,7 @@ import type {
   Page,
   Ruleset,
   RulesetWindow,
+  SceneTurnCallback,
   Window,
 } from '@/types';
 import JSZip from 'jszip';
@@ -114,6 +120,12 @@ export interface ImportRulesetResult {
     rulesetWindows: number;
     inventoryItems: number;
     scripts: number;
+    campaigns: number;
+    campaignScenes: number;
+    campaignCharacters: number;
+    campaignItems: number;
+    campaignEvents: number;
+    sceneTurnCallbacks: number;
   };
   errors: string[];
 }
@@ -158,6 +170,12 @@ interface ImportedMetadata {
     customProperties?: number;
     archetypeCustomProperties?: number;
     itemCustomProperties?: number;
+    campaigns?: number;
+    campaignScenes?: number;
+    campaignCharacters?: number;
+    campaignItems?: number;
+    campaignEvents?: number;
+    sceneTurnCallbacks?: number;
   };
   scripts?: ScriptMetadata[];
 }
@@ -536,6 +554,12 @@ export const useImportRuleset = () => {
             rulesetWindows: 0,
             inventoryItems: 0,
             scripts: 0,
+            campaigns: 0,
+            campaignScenes: 0,
+            campaignCharacters: 0,
+            campaignItems: 0,
+            campaignEvents: 0,
+            sceneTurnCallbacks: 0,
           },
           errors: [
             'application data/metadata.json file is required. When manually zipping, compress the contents of the export folder so that "application data" appears at the root of the zip.',
@@ -574,6 +598,12 @@ export const useImportRuleset = () => {
             rulesetWindows: 0,
             inventoryItems: 0,
             scripts: 0,
+            campaigns: 0,
+            campaignScenes: 0,
+            campaignCharacters: 0,
+            campaignItems: 0,
+            campaignEvents: 0,
+            sceneTurnCallbacks: 0,
           },
           errors: metadataValidation.errors,
         };
@@ -675,6 +705,12 @@ export const useImportRuleset = () => {
                 rulesetWindows: 0,
                 inventoryItems: 0,
                 scripts: 0,
+                campaigns: 0,
+                campaignScenes: 0,
+                campaignCharacters: 0,
+                campaignItems: 0,
+                campaignEvents: 0,
+                sceneTurnCallbacks: 0,
               },
               errors: ['Duplicate ruleset: same id and version as an existing ruleset'],
             };
@@ -710,6 +746,12 @@ export const useImportRuleset = () => {
                   rulesetWindows: 0,
                   inventoryItems: 0,
                   scripts: 0,
+                  campaigns: 0,
+                  campaignScenes: 0,
+                  campaignCharacters: 0,
+                  campaignItems: 0,
+                  campaignEvents: 0,
+                  sceneTurnCallbacks: 0,
                 },
                 errors: [],
               };
@@ -742,6 +784,12 @@ export const useImportRuleset = () => {
                 rulesetWindows: 0,
                 inventoryItems: 0,
                 scripts: 0,
+                campaigns: 0,
+                campaignScenes: 0,
+                campaignCharacters: 0,
+                campaignItems: 0,
+                campaignEvents: 0,
+                sceneTurnCallbacks: 0,
               },
               errors: ['Existing ruleset has same or newer version'],
             };
@@ -773,6 +821,12 @@ export const useImportRuleset = () => {
         rulesetWindows: 0,
         inventoryItems: 0,
         scripts: 0,
+        campaigns: 0,
+        campaignScenes: 0,
+        campaignCharacters: 0,
+        campaignItems: 0,
+        campaignEvents: 0,
+        sceneTurnCallbacks: 0,
       };
 
       const allErrors: string[] = [];
@@ -1579,6 +1633,145 @@ export const useImportRuleset = () => {
         }
       }
 
+      // Import campaigns and related data (after characters, since campaignCharacters reference characterId)
+      const campaignsFile = getZipFile('application data/campaigns.json');
+      if (campaignsFile) {
+        try {
+          const campaignsText = await campaignsFile.async('text');
+          const campaignsToImport: Campaign[] = JSON.parse(campaignsText);
+          const campaignIdMap = new Map<string, string>();
+          const campaignSceneIdMap = new Map<string, string>();
+
+          for (const campaign of campaignsToImport) {
+            const newCampaignId = crypto.randomUUID();
+            campaignIdMap.set(campaign.id, newCampaignId);
+            const newCampaign: Campaign = {
+              ...campaign,
+              id: newCampaignId,
+              rulesetId: newRulesetId,
+              createdAt: now,
+              updatedAt: now,
+            };
+            if (newCampaign.image && isUrl(newCampaign.image) && !newCampaign.assetId) {
+              newCampaign.assetId = await createUrlAssetForImport(
+                newCampaign.image,
+                newRulesetId,
+              );
+              newCampaign.image = undefined;
+            }
+            await db.campaigns.add(newCampaign);
+            importedCounts.campaigns++;
+          }
+
+          const campaignScenesFile = getZipFile('application data/campaignScenes.json');
+          if (campaignScenesFile) {
+            const scenesText = await campaignScenesFile.async('text');
+            const scenesToImport: CampaignScene[] = JSON.parse(scenesText);
+            for (const scene of scenesToImport) {
+              const newCampaignId = campaignIdMap.get(scene.campaignId);
+              if (!newCampaignId) continue;
+              const newSceneId = crypto.randomUUID();
+              campaignSceneIdMap.set(scene.id, newSceneId);
+              await db.campaignScenes.add({
+                ...scene,
+                id: newSceneId,
+                campaignId: newCampaignId,
+                createdAt: now,
+                updatedAt: now,
+              });
+              importedCounts.campaignScenes++;
+            }
+          }
+
+          const campaignCharactersFile = getZipFile('application data/campaignCharacters.json');
+          if (campaignCharactersFile) {
+            const ccText = await campaignCharactersFile.async('text');
+            const ccToImport: CampaignCharacter[] = JSON.parse(ccText);
+            for (const cc of ccToImport) {
+              const newCampaignId = campaignIdMap.get(cc.campaignId);
+              if (!newCampaignId) continue;
+              const newSceneId = cc.campaignSceneId
+                ? campaignSceneIdMap.get(cc.campaignSceneId)
+                : undefined;
+              await db.campaignCharacters.add({
+                ...cc,
+                id: crypto.randomUUID(),
+                campaignId: newCampaignId,
+                campaignSceneId: newSceneId ?? cc.campaignSceneId,
+                createdAt: now,
+                updatedAt: now,
+              });
+              importedCounts.campaignCharacters++;
+            }
+          }
+
+          const campaignItemsFile = getZipFile('application data/campaignItems.json');
+          if (campaignItemsFile) {
+            const ciText = await campaignItemsFile.async('text');
+            const ciToImport: CampaignItem[] = JSON.parse(ciText);
+            for (const ci of ciToImport) {
+              const newCampaignId = campaignIdMap.get(ci.campaignId);
+              if (!newCampaignId) continue;
+              const newSceneId = ci.sceneId
+                ? campaignSceneIdMap.get(ci.sceneId)
+                : undefined;
+              await db.campaignItems.add({
+                ...ci,
+                id: crypto.randomUUID(),
+                campaignId: newCampaignId,
+                sceneId: newSceneId ?? ci.sceneId,
+                createdAt: now,
+                updatedAt: now,
+              });
+              importedCounts.campaignItems++;
+            }
+          }
+
+          const campaignEventsFile = getZipFile('application data/campaignEvents.json');
+          if (campaignEventsFile) {
+            const ceText = await campaignEventsFile.async('text');
+            const ceToImport: CampaignEvent[] = JSON.parse(ceText);
+            for (const ev of ceToImport) {
+              const newCampaignId = campaignIdMap.get(ev.campaignId);
+              if (!newCampaignId) continue;
+              const newSceneId = campaignSceneIdMap.get(ev.sceneId);
+              if (!newSceneId) continue;
+              await db.campaignEvents.add({
+                ...ev,
+                id: crypto.randomUUID(),
+                campaignId: newCampaignId,
+                sceneId: newSceneId,
+                createdAt: now,
+                updatedAt: now,
+              });
+              importedCounts.campaignEvents++;
+            }
+          }
+
+          const sceneTurnCallbacksFile = getZipFile('application data/sceneTurnCallbacks.json');
+          if (sceneTurnCallbacksFile) {
+            const stcText = await sceneTurnCallbacksFile.async('text');
+            const stcToImport: SceneTurnCallback[] = JSON.parse(stcText);
+            for (const stc of stcToImport) {
+              const newSceneId = campaignSceneIdMap.get(stc.campaignSceneId);
+              if (!newSceneId) continue;
+              await db.sceneTurnCallbacks.add({
+                ...stc,
+                id: crypto.randomUUID(),
+                campaignSceneId: newSceneId,
+                createdAt: now,
+                updatedAt: now,
+              });
+              importedCounts.sceneTurnCallbacks++;
+            }
+          }
+        } catch (error) {
+          allErrors.push(
+            `Failed to import campaigns: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          );
+        }
+      }
+
       // Import archetypes (after characters, since archetype.testCharacterId references character)
       const archetypesFile = getZipFile('application data/archetypes.json');
       if (archetypesFile) {
@@ -1730,7 +1923,13 @@ export const useImportRuleset = () => {
         importedCounts.rulesetPages +
         importedCounts.rulesetWindows +
         importedCounts.inventoryItems +
-        importedCounts.scripts;
+        importedCounts.scripts +
+        importedCounts.campaigns +
+        importedCounts.campaignScenes +
+        importedCounts.campaignCharacters +
+        importedCounts.campaignItems +
+        importedCounts.campaignEvents +
+        importedCounts.sceneTurnCallbacks;
 
       return {
         success: allErrors.length === 0,
@@ -1770,6 +1969,12 @@ export const useImportRuleset = () => {
           rulesetWindows: 0,
           inventoryItems: 0,
           scripts: 0,
+          campaigns: 0,
+          campaignScenes: 0,
+          campaignCharacters: 0,
+          campaignItems: 0,
+          campaignEvents: 0,
+          sceneTurnCallbacks: 0,
         },
         errors: [error instanceof Error ? error.message : 'Unknown error'],
       };

@@ -29,6 +29,7 @@ import {
   TabsList,
   TabsTrigger,
 } from '@/components';
+import { ExportRulesetModal } from '@/components/export-ruleset-modal';
 import { RulesetColorPicker } from '@/components/composites/ruleset-color-picker';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useNotifications } from '@/hooks/use-notifications';
@@ -53,7 +54,12 @@ interface RulesetSettingsProps {
 
 export const RulesetSettings = ({ activeRuleset }: RulesetSettingsProps) => {
   const { updateRuleset, rulesets, resetTestCharacter } = useRulesets();
-  const { exportRuleset } = useExportRuleset(activeRuleset.id);
+  const {
+    exportRuleset,
+    exportableCharacters,
+    campaigns,
+    isExporting,
+  } = useExportRuleset(activeRuleset.id);
   const { importRuleset } = useImportRuleset();
   const { fonts, createFont, deleteFont } = useFonts(activeRuleset.id);
   const { addNotification } = useNotifications();
@@ -80,6 +86,7 @@ export const RulesetSettings = ({ activeRuleset }: RulesetSettingsProps) => {
     string,
     Array<{ id: string; title?: string }>
   > | null>(null);
+  const [exportModalOpen, setExportModalOpen] = useState(false);
 
   const [title, setTitle] = useState(activeRuleset.title);
   const [version, setVersion] = useState(activeRuleset.version);
@@ -281,9 +288,23 @@ export const RulesetSettings = ({ activeRuleset }: RulesetSettingsProps) => {
             />
           </div>
 
-          <Button className='gap-2 w-[50px]' variant='outline' onClick={exportRuleset}>
+          <Button
+            className='gap-2 w-[50px]'
+            variant='outline'
+            onClick={() => setExportModalOpen(true)}
+          >
             <Download className='h-4 w-4' />
           </Button>
+          <ExportRulesetModal
+            open={exportModalOpen}
+            onOpenChange={setExportModalOpen}
+            characters={exportableCharacters}
+            campaigns={campaigns}
+            isExporting={isExporting}
+            onExport={async (options) => {
+              await exportRuleset(options);
+            }}
+          />
         </div>
 
         <div className='flex w-full justify-between gap-8'>

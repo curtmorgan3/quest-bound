@@ -27,13 +27,6 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import {
   ArchetypeLookup,
   useAssets,
   useCharacter,
@@ -68,7 +61,6 @@ export const Characters = () => {
 
   const [step, setStep] = useState<1 | 2>(1);
   const [name, setName] = useState('');
-  const [rulesetId, setRulesetId] = useState('');
   const [selectedArchetypeId, setSelectedArchetypeId] = useState<string | null>(null);
   const [selectedVariant, setSelectedVariant] = useState<string | null>(null);
   const [assetId, setAssetId] = useState<string | null>(null);
@@ -84,10 +76,10 @@ export const Characters = () => {
   const archetypes: Archetype[] =
     useLiveQuery(
       () =>
-        rulesetId
-          ? db.archetypes.where('rulesetId').equals(rulesetId).sortBy('loadOrder')
+        rulesetIdParam
+          ? db.archetypes.where('rulesetId').equals(rulesetIdParam).sortBy('loadOrder')
           : Promise.resolve([] as Archetype[]),
-      [rulesetId],
+      [rulesetIdParam],
     ) ?? [];
 
   const selectableArchetypes = archetypes.filter((a) => !a.isDefault);
@@ -104,11 +96,11 @@ export const Characters = () => {
   };
 
   const handleCreate = async () => {
-    if (!name.trim() || !rulesetId) return;
+    if (!name.trim() || !rulesetIdParam) return;
 
     await createCharacter({
       name: name.trim(),
-      rulesetId,
+      rulesetId: rulesetIdParam,
       archetypeIds: selectedArchetypeId ? [selectedArchetypeId] : [],
       variant: selectedVariant ?? undefined,
       assetId,
@@ -124,7 +116,6 @@ export const Characters = () => {
   const resetForm = () => {
     setStep(1);
     setName('');
-    setRulesetId('');
     setSelectedArchetypeId(null);
     setSelectedVariant(null);
     setAssetId(null);
@@ -140,7 +131,6 @@ export const Characters = () => {
     if (!isOpen) {
       setStep(1);
       setName('');
-      setRulesetId('');
       setSelectedArchetypeId(null);
       setSelectedVariant(null);
       setAssetId(null);
@@ -148,14 +138,8 @@ export const Characters = () => {
     setOpen(isOpen);
   };
 
-  const hasArchetypeStep = rulesetId && selectableArchetypes.length > 0;
+  const hasArchetypeStep = rulesetIdParam && selectableArchetypes.length > 0;
   const showNextOnStep1 = hasArchetypeStep;
-
-  const handleRulesetChange = (value: string) => {
-    setRulesetId(value);
-    setSelectedArchetypeId(null);
-    setSelectedVariant(null);
-  };
 
   const selectedArchetype = selectedArchetypeId
     ? (archetypes.find((a) => a.id === selectedArchetypeId) as
@@ -178,7 +162,7 @@ export const Characters = () => {
     setAssetId(null);
   };
 
-  const isFormValid = name.trim() !== '' && rulesetId !== '';
+  const isFormValid = name.trim() !== '' && rulesetIdParam != null && rulesetIdParam !== '';
 
   const getRulesetTitle = (rulesetId: string) => {
     const ruleset = rulesets.find((r) => r.id === rulesetId);
@@ -254,61 +238,44 @@ export const Characters = () => {
               </DialogHeader>
               {step === 1 ? (
                 <div className='grid gap-4'>
-                  <div className='grid gap-3'>
-                    <Label htmlFor='character-name'>
-                      Name <span className='text-destructive'>*</span>
-                    </Label>
-                    <Input
-                      id='character-name'
-                      name='name'
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      placeholder='Enter character name'
-                    />
-                  </div>
-                  <div className='grid gap-3'>
-                    <Label htmlFor='character-ruleset'>
-                      Ruleset <span className='text-destructive'>*</span>
-                    </Label>
-                    <Select value={rulesetId} onValueChange={handleRulesetChange}>
-                      <SelectTrigger
-                        id='character-ruleset'
-                        className='w-full'
-                        data-testid='character-ruleset-select'>
-                        <SelectValue placeholder='Select a ruleset' />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {rulesets.length === 0 ? (
-                          <SelectItem value='_none' disabled>
-                            No rulesets available
-                          </SelectItem>
-                        ) : (
-                          rulesets.map((ruleset) => (
-                            <SelectItem key={ruleset.id} value={ruleset.id}>
-                              {ruleset.title}
-                            </SelectItem>
-                          ))
-                        )}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className='grid gap-3'>
-                    <Label>Image</Label>
-                    <ImageUpload
-                      image={getImageFromAssetId(assetId)}
-                      alt={name || 'Character image'}
-                      onUpload={handleImageUpload}
-                      onRemove={handleImageRemove}
-                      rulesetId={rulesetId || undefined}
-                    />
-                  </div>
+                  {!rulesetIdParam ? (
+                    <p className='text-sm text-muted-foreground'>
+                      Open a ruleset from the home page (e.g. from the ruleset&apos;s Characters
+                      card) to create a character for that ruleset.
+                    </p>
+                  ) : (
+                    <>
+                      <div className='grid gap-3'>
+                        <Label htmlFor='character-name'>
+                          Name <span className='text-destructive'>*</span>
+                        </Label>
+                        <Input
+                          id='character-name'
+                          name='name'
+                          value={name}
+                          onChange={(e) => setName(e.target.value)}
+                          placeholder='Enter character name'
+                        />
+                      </div>
+                      <div className='grid gap-3'>
+                        <Label>Image</Label>
+                        <ImageUpload
+                          image={getImageFromAssetId(assetId)}
+                          alt={name || 'Character image'}
+                          onUpload={handleImageUpload}
+                          onRemove={handleImageRemove}
+                          rulesetId={rulesetIdParam}
+                        />
+                      </div>
+                    </>
+                  )}
                 </div>
               ) : (
                 <div className='grid gap-4'>
                   <div className='grid gap-3'>
                     <Label>Archetype</Label>
                     <ArchetypeLookup
-                      rulesetId={rulesetId || undefined}
+                      rulesetId={rulesetIdParam ?? undefined}
                       label=''
                       value={selectedArchetypeId}
                       placeholder='Select archetype (optional)'

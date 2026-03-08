@@ -441,10 +441,9 @@ export const onboardingTutorial: Tutorial = [
       },
       {
         description:
-          'Enter a character name, then select your ruleset from the dropdown and click Create.',
+          'Enter a character name and click Create. (Characters are created for the ruleset in the URL—open Characters from a ruleset\'s page first.)',
         selector: {
-          selector:
-            '#character-name, [data-testid="character-ruleset-select"], [data-testid="create-character-submit"]',
+          selector: '#character-name, [data-testid="create-character-submit"]',
           shouldAdvanceOnClick: false,
         },
       },

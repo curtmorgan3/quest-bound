@@ -1,5 +1,6 @@
 import { useErrorHandler } from '@/hooks';
 import { db } from '@/stores';
+import type { Character, Campaign } from '@/types';
 import { useLiveQuery } from 'dexie-react-hooks';
 import JSZip from 'jszip';
 import { useState } from 'react';
@@ -12,6 +13,13 @@ import {
 } from './types';
 import { buildAssetFilenameMap, convertToTsv } from './utils';
 import { exportScripts } from './script-export';
+
+export interface ExportRulesetOptions {
+  /** Character IDs to include in the export (in addition to test characters). */
+  characterIds?: string[];
+  /** Campaign IDs to include in the export. */
+  campaignIds?: string[];
+}
 
 export const useExportRuleset = (rulesetId: string) => {
   const [isExporting, setIsExporting] = useState(false);
@@ -158,6 +166,28 @@ export const useExportRuleset = (rulesetId: string) => {
     [rulesetId],
   );
 
+  /** Player characters only (non-test, non-NPC) — selectable in export modal. NPCs are auto-included when their campaigns/scenes are selected. */
+  const exportableCharacters = useLiveQuery(
+    () =>
+      rulesetId
+        ? db.characters
+            .where('rulesetId')
+            .equals(rulesetId)
+            .filter((c) => !c.isTestCharacter && c.isNpc !== true)
+            .toArray()
+        : Promise.resolve([] as Character[]),
+    [rulesetId],
+  );
+
+  /** Campaigns that use this ruleset (for optional export). */
+  const campaigns = useLiveQuery(
+    () =>
+      rulesetId
+        ? db.campaigns.where('rulesetId').equals(rulesetId).toArray()
+        : Promise.resolve([] as Campaign[]),
+    [rulesetId],
+  );
+
   const characterPages = useLiveQuery(
     async () => {
       if (testCharacterIds.length === 0) return [];
@@ -204,7 +234,7 @@ export const useExportRuleset = (rulesetId: string) => {
     pages === undefined ||
     inventoryItems === undefined;
 
-  const exportRuleset = async (): Promise<void> => {
+  const exportRuleset = async (options?: ExportRulesetOptions): Promise<void> => {
     if (!ruleset || !rulesetId) {
       throw new Error('No ruleset found to export');
     }
@@ -213,6 +243,124 @@ export const useExportRuleset = (rulesetId: string) => {
 
     try {
       const zip = new JSZip();
+
+      // Resolve characters to export: test characters + optionally selected characters
+      const testCharIds = new Set(testCharacters?.map((c) => c.id) ?? []);
+      const selectedCharacterIds = options?.characterIds ?? [];
+      let exportedCharacters = [...(testCharacters ?? [])];
+      let exportedCharacterAttributes = [...(characterAttributes ?? [])];
+      let exportedInventories = [...(inventories ?? [])];
+      let exportedCharacterWindows = [...(characterWindows ?? [])];
+      let exportedCharacterPages = [...(characterPages ?? [])];
+      let exportedInventoryItems = [...(inventoryItems ?? [])];
+
+      if (selectedCharacterIds.length > 0) {
+        const selectedChars = await Promise.all(
+          selectedCharacterIds
+            .filter((id) => !testCharIds.has(id))
+            .map((id) => db.characters.get(id)),
+        );
+        const selectedCharacters = selectedChars.filter(
+          (c): c is Character => c != null && c.rulesetId === rulesetId,
+        );
+        if (selectedCharacters.length > 0) {
+          const selectedCharIds = selectedCharacters.map((c) => c.id);
+          const [selAttrs, selInvs, selCw, selCp, selInvItems] = await Promise.all([
+            db.characterAttributes.where('characterId').anyOf(selectedCharIds).toArray(),
+            db.inventories.where('characterId').anyOf(selectedCharIds).toArray(),
+            db.characterWindows.where('characterId').anyOf(selectedCharIds).toArray(),
+            db.characterPages.where('characterId').anyOf(selectedCharIds).toArray(),
+            (async () => {
+              const invs = await db.inventories
+                .where('characterId')
+                .anyOf(selectedCharIds)
+                .toArray();
+              const invIds = invs.map((i) => i.id);
+              return invIds.length > 0
+                ? db.inventoryItems.where('inventoryId').anyOf(invIds).toArray()
+                : [];
+            })(),
+          ]);
+          exportedCharacters = [...exportedCharacters, ...selectedCharacters];
+          exportedCharacterAttributes = [...exportedCharacterAttributes, ...selAttrs];
+          exportedInventories = [...exportedInventories, ...selInvs];
+          exportedCharacterWindows = [...exportedCharacterWindows, ...selCw];
+          exportedCharacterPages = [...exportedCharacterPages, ...selCp];
+          exportedInventoryItems = [...exportedInventoryItems, ...selInvItems];
+        }
+      }
+
+      // Resolve campaigns to export
+      let exportedCampaigns: import('@/types').Campaign[] = [];
+      let exportedCampaignScenes: import('@/types').CampaignScene[] = [];
+      let exportedCampaignCharacters: import('@/types').CampaignCharacter[] = [];
+      let exportedCampaignItems: import('@/types').CampaignItem[] = [];
+      let exportedCampaignEvents: import('@/types').CampaignEvent[] = [];
+      let exportedSceneTurnCallbacks: import('@/types').SceneTurnCallback[] = [];
+      const campaignIds = options?.campaignIds ?? [];
+      if (campaignIds.length > 0) {
+        const camps = await db.campaigns.where('id').anyOf(campaignIds).toArray();
+        const validCampaigns = camps.filter((c) => c.rulesetId === rulesetId);
+        if (validCampaigns.length > 0) {
+          exportedCampaigns = validCampaigns;
+          const campIds = validCampaigns.map((c) => c.id);
+          const scenes = await db.campaignScenes.where('campaignId').anyOf(campIds).toArray();
+          exportedCampaignScenes = scenes;
+          const sceneIds = scenes.map((s) => s.id);
+          const [cc, ci, ce, stc] = await Promise.all([
+            db.campaignCharacters.where('campaignId').anyOf(campIds).toArray(),
+            db.campaignItems.where('campaignId').anyOf(campIds).toArray(),
+            db.campaignEvents.where('campaignId').anyOf(campIds).toArray(),
+            db.sceneTurnCallbacks
+              .where('campaignSceneId')
+              .anyOf(sceneIds)
+              .toArray(),
+          ]);
+          exportedCampaignCharacters = cc;
+          exportedCampaignItems = ci;
+          exportedCampaignEvents = ce;
+          exportedSceneTurnCallbacks = stc;
+
+          // Auto-include characters that appear in selected campaigns (e.g. NPCs in scenes)
+          const exportedCharIds = new Set(exportedCharacters.map((c) => c.id));
+          const campaignCharacterIds = [
+            ...new Set(exportedCampaignCharacters.map((cc) => cc.characterId)),
+          ].filter((id) => !exportedCharIds.has(id));
+          if (campaignCharacterIds.length > 0) {
+            const campaignChars = await Promise.all(
+              campaignCharacterIds.map((id) => db.characters.get(id)),
+            );
+            const toAdd = campaignChars.filter(
+              (c): c is Character => c != null && c.rulesetId === rulesetId,
+            );
+            if (toAdd.length > 0) {
+              const toAddIds = toAdd.map((c) => c.id);
+              const [attrs, invs, cw, cp, invItems] = await Promise.all([
+                db.characterAttributes.where('characterId').anyOf(toAddIds).toArray(),
+                db.inventories.where('characterId').anyOf(toAddIds).toArray(),
+                db.characterWindows.where('characterId').anyOf(toAddIds).toArray(),
+                db.characterPages.where('characterId').anyOf(toAddIds).toArray(),
+                (async () => {
+                  const invList = await db.inventories
+                    .where('characterId')
+                    .anyOf(toAddIds)
+                    .toArray();
+                  const ids = invList.map((i) => i.id);
+                  return ids.length > 0
+                    ? db.inventoryItems.where('inventoryId').anyOf(ids).toArray()
+                    : [];
+                })(),
+              ]);
+              exportedCharacters = [...exportedCharacters, ...toAdd];
+              exportedCharacterAttributes = [...exportedCharacterAttributes, ...attrs];
+              exportedInventories = [...exportedInventories, ...invs];
+              exportedCharacterWindows = [...exportedCharacterWindows, ...cw];
+              exportedCharacterPages = [...exportedCharacterPages, ...cp];
+              exportedInventoryItems = [...exportedInventoryItems, ...invItems];
+            }
+          }
+        }
+      }
 
       // Create application data folder for JSON files
       const appDataFolder = zip.folder('application data');
@@ -248,14 +396,20 @@ export const useExportRuleset = (rulesetId: string) => {
           customProperties: customProperties?.length || 0,
           archetypeCustomProperties: archetypeCustomProperties?.length || 0,
           itemCustomProperties: itemCustomProperties?.length || 0,
-          characterAttributes: characterAttributes?.length || 0,
-          inventories: inventories?.length || 0,
-          characterWindows: characterWindows?.length || 0,
-          characterPages: characterPages?.length || 0,
+          characterAttributes: exportedCharacterAttributes.length,
+          inventories: exportedInventories.length,
+          characterWindows: exportedCharacterWindows.length,
+          characterPages: exportedCharacterPages.length,
           rulesetWindows: rulesetWindows?.length || 0,
           pages: pages?.length || 0,
-          inventoryItems: inventoryItems?.length || 0,
+          inventoryItems: exportedInventoryItems.length,
           scripts: scriptExportResult.files.length,
+          campaigns: exportedCampaigns.length,
+          campaignScenes: exportedCampaignScenes.length,
+          campaignCharacters: exportedCampaignCharacters.length,
+          campaignItems: exportedCampaignItems.length,
+          campaignEvents: exportedCampaignEvents.length,
+          sceneTurnCallbacks: exportedSceneTurnCallbacks.length,
         },
         scripts: scriptExportResult.metadata,
       };
@@ -323,8 +477,8 @@ export const useExportRuleset = (rulesetId: string) => {
         );
       }
 
-      if (testCharacters && testCharacters.length > 0) {
-        appDataFolder.file('characters.json', JSON.stringify(testCharacters, null, 2));
+      if (exportedCharacters.length > 0) {
+        appDataFolder.file('characters.json', JSON.stringify(exportedCharacters, null, 2));
       }
 
       if (charts && charts.length > 0) {
@@ -462,19 +616,22 @@ export const useExportRuleset = (rulesetId: string) => {
         }
       }
 
-      if (characterAttributes && characterAttributes.length > 0) {
+      if (exportedCharacterAttributes.length > 0) {
         appDataFolder.file(
           'characterAttributes.json',
-          JSON.stringify(characterAttributes, null, 2),
+          JSON.stringify(exportedCharacterAttributes, null, 2),
         );
       }
 
-      if (inventories && inventories.length > 0) {
-        appDataFolder.file('inventories.json', JSON.stringify(inventories, null, 2));
+      if (exportedInventories.length > 0) {
+        appDataFolder.file('inventories.json', JSON.stringify(exportedInventories, null, 2));
       }
 
-      if (characterWindows && characterWindows.length > 0) {
-        appDataFolder.file('characterWindows.json', JSON.stringify(characterWindows, null, 2));
+      if (exportedCharacterWindows.length > 0) {
+        appDataFolder.file(
+          'characterWindows.json',
+          JSON.stringify(exportedCharacterWindows, null, 2),
+        );
       }
 
       if (pages && pages.length > 0) {
@@ -483,12 +640,52 @@ export const useExportRuleset = (rulesetId: string) => {
       if (rulesetWindows && rulesetWindows.length > 0) {
         appDataFolder.file('rulesetWindows.json', JSON.stringify(rulesetWindows, null, 2));
       }
-      if (characterPages && characterPages.length > 0) {
-        appDataFolder.file('characterPages.json', JSON.stringify(characterPages, null, 2));
+      if (exportedCharacterPages.length > 0) {
+        appDataFolder.file(
+          'characterPages.json',
+          JSON.stringify(exportedCharacterPages, null, 2),
+        );
       }
 
-      if (inventoryItems && inventoryItems.length > 0) {
-        appDataFolder.file('inventoryItems.json', JSON.stringify(inventoryItems, null, 2));
+      if (exportedInventoryItems.length > 0) {
+        appDataFolder.file(
+          'inventoryItems.json',
+          JSON.stringify(exportedInventoryItems, null, 2),
+        );
+      }
+
+      if (exportedCampaigns.length > 0) {
+        appDataFolder.file('campaigns.json', JSON.stringify(exportedCampaigns, null, 2));
+      }
+      if (exportedCampaignScenes.length > 0) {
+        appDataFolder.file(
+          'campaignScenes.json',
+          JSON.stringify(exportedCampaignScenes, null, 2),
+        );
+      }
+      if (exportedCampaignCharacters.length > 0) {
+        appDataFolder.file(
+          'campaignCharacters.json',
+          JSON.stringify(exportedCampaignCharacters, null, 2),
+        );
+      }
+      if (exportedCampaignItems.length > 0) {
+        appDataFolder.file(
+          'campaignItems.json',
+          JSON.stringify(exportedCampaignItems, null, 2),
+        );
+      }
+      if (exportedCampaignEvents.length > 0) {
+        appDataFolder.file(
+          'campaignEvents.json',
+          JSON.stringify(exportedCampaignEvents, null, 2),
+        );
+      }
+      if (exportedSceneTurnCallbacks.length > 0) {
+        appDataFolder.file(
+          'sceneTurnCallbacks.json',
+          JSON.stringify(exportedSceneTurnCallbacks, null, 2),
+        );
       }
 
       // Create a markdown file named after the ruleset title containing only the description
@@ -610,5 +807,7 @@ For more information about Quest Bound, visit the application documentation.
     isLoading,
     isExporting,
     exportRuleset,
+    exportableCharacters: exportableCharacters ?? [],
+    campaigns: campaigns ?? [],
   };
 };

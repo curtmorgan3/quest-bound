@@ -54,6 +54,12 @@ export interface RulesetDuplicationCounts {
   characterPages: number;
   inventoryItems: number;
   scripts: number;
+  campaigns: number;
+  campaignScenes: number;
+  campaignCharacters: number;
+  campaignItems: number;
+  campaignEvents: number;
+  sceneTurnCallbacks: number;
 }
 
 /**
@@ -180,6 +186,12 @@ export async function duplicateRuleset({
     characterPages: 0,
     inventoryItems: 0,
     scripts: 0,
+    campaigns: 0,
+    campaignScenes: 0,
+    campaignCharacters: 0,
+    campaignItems: 0,
+    campaignEvents: 0,
+    sceneTurnCallbacks: 0,
   };
 
   // 1. Assets
