@@ -36,11 +36,12 @@ export function ScriptEditorPage() {
     campaignId?: string;
   }>();
 
+  const { activeRuleset, testCharacter } = useActiveRuleset();
   const campaign = useCampaign(campaignId);
 
-  const effectiveRulesetId = rulesetIdParam ?? campaign?.rulesetId ?? '';
+  const effectiveRulesetId = activeRuleset?.id ?? rulesetIdParam ?? campaign?.rulesetId ?? '';
 
-  const { scripts } = useScripts(campaignId);
+  const { scripts } = useScripts();
   const isNew = scriptId === 'new';
   const script = isNew ? null : (scripts.find((s) => s.id === scriptId) ?? null);
 
@@ -51,7 +52,6 @@ export function ScriptEditorPage() {
 
   const entityName = paramEntityName ? paramEntityName.replace(/ /g, '_').toLowerCase() : '';
 
-  const { activeRuleset, testCharacter } = useActiveRuleset();
   const {
     executeActionEvent,
     logMessages: actionEventLogs,
@@ -81,7 +81,7 @@ export function ScriptEditorPage() {
     ...archetypeEventAnnouncements,
   ];
 
-  const defaultEntityType = campaignId ? 'gameManager' : 'attribute';
+  const defaultEntityType = 'gameManager';
 
   const [name, setName] = useState(entityName);
   const [entityType, setEntityType] = useState<Script['entityType']>(type ?? defaultEntityType);
@@ -177,7 +177,7 @@ export function ScriptEditorPage() {
           setEntityType,
           category,
           setCategory,
-            parameters,
+          parameters,
         }}
       />
 

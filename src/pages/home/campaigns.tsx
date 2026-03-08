@@ -12,18 +12,30 @@ import {
   Card,
 } from '@/components';
 import { PageWrapper } from '@/components/composites';
+import { NewCampaignModal } from '@/pages/campaigns/new-campaign-modal';
 import { useCampaigns, useRulesets } from '@/lib/compass-api';
 import { Plus } from 'lucide-react';
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
 export function Campaigns() {
   const [searchParams] = useSearchParams();
   const rulesetIdParam = searchParams.get('rulesetId');
+  const [newCampaignModalOpen, setNewCampaignModalOpen] = useState(false);
 
   const { campaigns, deleteCampaign } = useCampaigns();
   const { rulesets } = useRulesets();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (searchParams.get('new') === '1') {
+      setNewCampaignModalOpen(true);
+      const nextSearch = new URLSearchParams(searchParams);
+      nextSearch.delete('new');
+      const search = nextSearch.toString();
+      navigate('/campaigns' + (search ? `?${search}` : ''), { replace: true });
+    }
+  }, [searchParams, navigate]);
 
   const getRulesetTitle = (id: string) =>
     rulesets.find((r) => r.id === id)?.title ?? 'Unknown ruleset';
@@ -48,11 +60,12 @@ export function Campaigns() {
           size='sm'
           className='gap-1'
           data-testid='campaigns-create'
-          onClick={() => navigate('/campaigns/new')}>
+          onClick={() => setNewCampaignModalOpen(true)}>
           <Plus className='h-4 w-4' />
           Create Campaign
         </Button>
       }>
+      <NewCampaignModal open={newCampaignModalOpen} onOpenChange={setNewCampaignModalOpen} />
       <div className='flex flex-wrap gap-4'>
         {filteredCampaigns.map((campaign) => (
           <Card
@@ -119,8 +132,7 @@ export function Campaigns() {
 
       {filteredCampaigns.length === 0 && (
         <div className='flex flex-col items-center justify-center py-12 text-muted-foreground'>
-          <p className='text-lg'>No campaigns yet</p>
-          <p className='text-sm'>Create a campaign by selecting a ruleset</p>
+          <p className='text-lg'>No campaigns</p>
         </div>
       )}
     </PageWrapper>

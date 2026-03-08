@@ -9,16 +9,7 @@ import {
   useSidebar,
 } from '@/components/ui/sidebar';
 import { useCampaign, useCampaigns, useCharts, useDocuments } from '@/lib/compass-api';
-import {
-  Clapperboard,
-  FileCode,
-  FileSpreadsheet,
-  FileText,
-  Home,
-  Notebook,
-  Pin,
-  PinOff,
-} from 'lucide-react';
+import { Clapperboard, FileSpreadsheet, FileText, Home, Notebook, Pin, PinOff } from 'lucide-react';
 import { Link, useLocation, useParams } from 'react-router-dom';
 
 export function CampaignSidebar() {
@@ -109,17 +100,6 @@ export function CampaignSidebar() {
                 <Link to={`/campaigns/${campaign.id}/documents`} data-testid='nav-documents'>
                   <Notebook className='w-4 h-4' />
                   <span>Notes</span>
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-            <SidebarMenuItem
-              className={
-                location.pathname === `/campaigns/${campaign.id}/scripts` ? 'text-primary' : ''
-              }>
-              <SidebarMenuButton asChild>
-                <Link to={`/campaigns/${campaign.id}/scripts`} data-testid='nav-scripts'>
-                  <FileCode className='w-4 h-4' />
-                  <span>Scripts</span>
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>

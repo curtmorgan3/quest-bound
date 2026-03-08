@@ -4,7 +4,6 @@ import {
   CampaignChartViewer,
   CampaignDashboard,
   CampaignDocumentsPage,
-  CampaignNew,
   CampaignScenes,
   Campaigns,
   CharacterChartViewer,
@@ -81,16 +80,13 @@ function CompassRoutes() {
             />
 
             <Route path={`/campaigns`} element={<Campaigns />} />
-            <Route path={`/campaigns/new`} element={<CampaignNew />} />
+            <Route path={`/campaigns/new`} element={<Navigate to='/campaigns?new=1' replace />} />
             <Route path={`/campaigns/:campaignId/scenes`} element={<CampaignScenes />} />
             <Route
               path={`/campaigns/:campaignId/scenes/:sceneId`}
               element={<CampaignDashboard />}
             />
-            <Route
-              path={`/campaigns/:campaignId/documents`}
-              element={<CampaignDocumentsPage />}
-            />
+            <Route path={`/campaigns/:campaignId/documents`} element={<CampaignDocumentsPage />} />
             <Route
               path={`/campaigns/:campaignId/documents/:documentId`}
               element={<DocumentViewer />}
@@ -98,11 +94,6 @@ function CompassRoutes() {
             <Route
               path={`/campaigns/:campaignId/chart/:chartId`}
               element={<CampaignChartViewer />}
-            />
-            <Route path={`/campaigns/:campaignId/scripts`} element={<ScriptsIndex />} />
-            <Route
-              path={`/campaigns/:campaignId/scripts/:scriptId`}
-              element={<ScriptEditorPage />}
             />
 
             <Route path={`/characters`} element={<Characters />} />

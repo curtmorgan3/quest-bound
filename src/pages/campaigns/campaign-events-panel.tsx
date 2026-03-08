@@ -55,7 +55,7 @@ export function CampaignEventsPanel({
     return list.filter((ev) => ev.campaignId === campaignId);
   }, [sceneId, campaignId]);
 
-  const { scripts } = useScripts(campaignId);
+  const { scripts } = useScripts();
   const scriptsById = useMemo(() => {
     const map = new Map<string, (typeof scripts)[number]>();
     for (const script of scripts) {
@@ -169,7 +169,6 @@ export function CampaignEventsPanel({
             <div className='flex min-h-0 flex-1 flex-col gap-4 overflow-auto p-6'>
               <div className='space-y-2'>
                 <ScriptLookup
-                  campaignId={campaignId}
                   label='Add script'
                   placeholder='Search Game Manager scripts...'
                   filterEntityType='gameManager'

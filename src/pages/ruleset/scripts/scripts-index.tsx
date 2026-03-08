@@ -20,28 +20,22 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useScripts } from '@/lib/compass-api/hooks/scripts/use-scripts';
+import { useRulesetFiltersStore } from '@/stores/ruleset-filters-store';
 import { FileCode, Plus, Search } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
-import { useRulesetFiltersStore } from '@/stores/ruleset-filters-store';
 import { useScriptFilters } from './use-script-filters';
-import {
-  ALL_CATEGORIES,
-  CAMPAIGN_TYPE_OPTIONS,
-  ENTITY_TYPE_OPTIONS,
-  typeFromParams,
-} from './utils';
+import { ALL_CATEGORIES, ENTITY_TYPE_OPTIONS, typeFromParams } from './utils';
 
 export function ScriptsIndex() {
-  const { rulesetId: rulesetIdParam, campaignId } = useParams<{
+  const { rulesetId: rulesetIdParam } = useParams<{
     rulesetId?: string;
-    campaignId?: string;
   }>();
 
   const [searchParams] = useSearchParams();
   const { rulesetId: rulesetIdFromHook } = useScripts();
   const rulesetId = rulesetIdParam ?? rulesetIdFromHook ?? '';
-  const selectedType = typeFromParams(searchParams, campaignId ? 'campaigns' : undefined);
+  const selectedType = typeFromParams(searchParams);
 
   const {
     nameFilter,
@@ -55,7 +49,7 @@ export function ScriptsIndex() {
   } = useScriptFilters();
 
   const setScriptsFilters = useRulesetFiltersStore((s) => s.setScriptsFilters);
-  const rulesetIdForStore = campaignId ? undefined : (rulesetIdParam ?? rulesetIdFromHook ?? undefined);
+  const rulesetIdForStore = rulesetIdParam ?? rulesetIdFromHook;
 
   useEffect(() => {
     if (!rulesetIdForStore) return;
@@ -86,7 +80,7 @@ export function ScriptsIndex() {
   const uncategorized = scriptsByCategory.filter((cat) => cat.category === 'Uncategorized');
   const categorized = scriptsByCategory.filter((cat) => cat.category !== 'Uncategorized');
 
-  const options = campaignId ? CAMPAIGN_TYPE_OPTIONS : ENTITY_TYPE_OPTIONS;
+  const options = ENTITY_TYPE_OPTIONS;
 
   const STORAGE_KEY = 'qb.scriptsIndex.accordionOpen';
   const [openCategories, setOpenCategories] = useState<string[]>([]);
@@ -126,13 +120,7 @@ export function ScriptsIndex() {
       headerActions={
         rulesetId ? (
           <Button asChild size='sm' className='gap-1'>
-            <Link
-              to={
-                campaignId
-                  ? `/campaigns/${campaignId}/scripts/new`
-                  : `/rulesets/${rulesetId}/scripts/new`
-              }
-              data-testid='scripts-new-script-link'>
+            <Link to={`/rulesets/${rulesetId}/scripts/new`} data-testid='scripts-new-script-link'>
               <Plus className='h-4 w-4' />
               Create Script
             </Link>
@@ -175,7 +163,10 @@ export function ScriptsIndex() {
               Category
             </Label>
             <Select value={categoryFilter} onValueChange={handleCategoryChange}>
-              <SelectTrigger id='script-category-filter' className='w-[180px]' data-testid='category-filter'>
+              <SelectTrigger
+                id='script-category-filter'
+                className='w-[180px]'
+                data-testid='category-filter'>
                 <SelectValue placeholder='All categories' />
               </SelectTrigger>
               <SelectContent>
@@ -203,11 +194,7 @@ export function ScriptsIndex() {
             {selectedType === 'all' && rulesetId && (
               <Button asChild>
                 <Link
-                  to={
-                    campaignId
-                      ? `/campaigns/${campaignId}/scripts/new`
-                      : `/rulesets/${rulesetId}/scripts/new`
-                  }
+                  to={`/rulesets/${rulesetId}/scripts/new`}
                   data-testid='scripts-new-script-link'>
                   <Plus className='h-4 w-4 mr-2' />
                   New Script
@@ -233,13 +220,7 @@ export function ScriptsIndex() {
                         {categoryScripts.map((script) => (
                           <li key={script.id}>
                             <Link
-                              to={
-                                campaignId
-                                  ? `/campaigns/${campaignId}/scripts/${script.id}`
-                                  : rulesetId
-                                    ? `/rulesets/${rulesetId}/scripts/${script.id}`
-                                    : '#'
-                              }
+                              to={rulesetId ? `/rulesets/${rulesetId}/scripts/${script.id}` : '#'}
                               className={
                                 script.moduleId
                                   ? 'text-sm text-module-origin'
@@ -261,13 +242,7 @@ export function ScriptsIndex() {
                   {categoryScripts.map((script) => (
                     <li key={script.id}>
                       <Link
-                        to={
-                          campaignId
-                            ? `/campaigns/${campaignId}/scripts/${script.id}`
-                            : rulesetId
-                              ? `/rulesets/${rulesetId}/scripts/${script.id}`
-                              : '#'
-                        }
+                        to={rulesetId ? `/rulesets/${rulesetId}/scripts/${script.id}` : '#'}
                         className={
                           script.moduleId ? 'text-sm text-module-origin' : 'text-sm text-foreground'
                         }>
