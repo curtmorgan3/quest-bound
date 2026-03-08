@@ -56,7 +56,6 @@ export function ImportRulesetOverwriteModals({
             <DialogTitle>Replace existing ruleset?</DialogTitle>
             <DialogDescription>{pendingReplaceResult?.message}</DialogDescription>
           </DialogHeader>
-          <p className='text-sm text-muted-foreground'>{pendingReplaceResult?.message}</p>
           <DialogFooter>
             <Button variant='outline' onClick={onCancelReplace}>
               Cancel

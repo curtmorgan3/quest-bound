@@ -231,7 +231,7 @@ export const Characters = () => {
             </DialogTrigger>
             <DialogContent className='sm:max-w-[425px]'>
               <DialogHeader>
-                <DialogTitle>{step === 1 ? 'New Character' : 'Select Archetype'}</DialogTitle>
+                <DialogTitle>Create Character</DialogTitle>
                 <DialogDescription>
                   {step === 1 ? 'New Character' : 'Select Archetype'}
                 </DialogDescription>
