@@ -64,6 +64,7 @@ export function RulesetLanding() {
           {/* Right column: CTAs stacked vertically (1/3) */}
           <section className='flex min-w-0 basis-full flex-col items-center gap-6 lg:basis-0 lg:flex-[1_1_0]'>
             <Link
+              data-testid='landing-characters'
               to={`/characters?rulesetId=${activeRuleset.id}`}
               className='group block w-3/4 min-w-[300px] transition-transform hover:scale-[1.02] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'>
               <Card className='flex aspect-square flex-col overflow-hidden p-0'>

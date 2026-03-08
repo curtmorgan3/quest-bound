@@ -9,37 +9,14 @@ export const onboardingTutorial: Tutorial = [
         description:
           'This tutorial will walk you through creating a basic ruleset. You can run this tutorial any time from user settings.',
       },
-      {
-        description: 'Go to the Rulesets page to see and manage your rulesets.',
-        selector: { selector: '[data-testid="nav-rulesets"]', shouldAdvanceOnClick: true },
-      },
-    ],
-  },
-  {
-    title: 'Ruleset',
-    substeps: [
-      {
-        description: 'Create a new ruleset by clicking Create New.',
-        selector: { selector: '[data-testid="create-ruleset-button"]', shouldAdvanceOnClick: true },
-      },
-      {
-        description: 'Enter any title, then click Create.',
-        selector: {
-          selector: '#ruleset-title, [data-testid="create-ruleset-submit"]',
-          shouldAdvanceOnClick: true,
-        },
-      },
-      {
-        description: 'Open your ruleset by clicking Open on the ruleset card.',
-        selector: { selector: '[data-testid="preview-card-open"]', shouldAdvanceOnClick: true },
-      },
     ],
   },
   {
     title: 'Attribute',
     substeps: [
       {
-        description: 'Click New from the Attributes page to open the create attribute menu.',
+        description:
+          'Click Create Attribute from the Attributes page to open the create attribute menu.',
         selector: { selector: '[data-testid="ruleset-new-button"]', shouldAdvanceOnClick: true },
       },
       {
@@ -346,7 +323,7 @@ export const onboardingTutorial: Tutorial = [
         selector: { selector: '[data-testid="nav-scripts"]', shouldAdvanceOnClick: true },
       },
       {
-        description: 'Click New Script to create a script.',
+        description: 'Click Create Script to create a script.',
         selector: {
           selector: '[data-testid="scripts-new-script-link"]',
           shouldAdvanceOnClick: true,
@@ -385,7 +362,7 @@ export const onboardingTutorial: Tutorial = [
         },
       },
       {
-        description: 'Click New Script again.',
+        description: 'Click Create Script Script again.',
         selector: {
           selector: '[data-testid="scripts-new-script-link"]',
           shouldAdvanceOnClick: true,
@@ -419,21 +396,21 @@ export const onboardingTutorial: Tutorial = [
     substeps: [
       {
         description:
-          "Your ruleset is done! Now let's create a character. In the sidebar, click Open to go to the home menu.",
+          "Your ruleset is done! Now let's create a character. In the sidebar, click Home to go to the ruleset landing page.",
         selector: {
-          selector: '[data-testid="nav-open"]',
+          selector: '[data-testid="nav-landing"]',
           shouldAdvanceOnClick: true,
         },
       },
       {
         description: 'Click Characters to go to the Characters page.',
         selector: {
-          selector: '[data-testid="nav-characters"]',
+          selector: '[data-testid="landing-characters"]',
           shouldAdvanceOnClick: true,
         },
       },
       {
-        description: 'Click Create New to open the new character dialog.',
+        description: 'Click Create Create Character to open the new character dialog.',
         selector: {
           selector: '[data-testid="create-character-button"]',
           shouldAdvanceOnClick: true,
@@ -441,7 +418,7 @@ export const onboardingTutorial: Tutorial = [
       },
       {
         description:
-          'Enter a character name and click Create. (Characters are created for the ruleset in the URL—open Characters from a ruleset\'s page first.)',
+          "Enter a character name and click Create. (Characters are created for the ruleset in the URL—open Characters from a ruleset's page first.)",
         selector: {
           selector: '#character-name, [data-testid="create-character-submit"]',
           shouldAdvanceOnClick: false,

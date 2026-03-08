@@ -26,6 +26,7 @@ const DEV_TOOLS_STORAGE_KEY = 'dev.tools';
 export function Layout() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const { currentUser, loading } = useUsers();
   const {
     hasCompleted,
@@ -33,10 +34,22 @@ export function Layout() {
     refetch,
   } = useOnboardingStatus(currentUser?.id ?? null);
   const { forceShowAgain } = useOnboardingStore();
+  const isOnAttributesRoute = /^\/rulesets\/[^/]+\/attributes$/.test(location.pathname);
+  const [tutorialLaunchedFromAttributes, setTutorialLaunchedFromAttributes] = useState(false);
+
+  const wouldShowOnAttributes =
+    currentUser && !onboardingLoading && (forceShowAgain || !hasCompleted);
+  useEffect(() => {
+    if (isOnAttributesRoute && wouldShowOnAttributes) {
+      setTutorialLaunchedFromAttributes(true);
+    }
+  }, [isOnAttributesRoute, wouldShowOnAttributes]);
+
   const showOnboarding = Boolean(
-    !onboardingLoading && currentUser && (forceShowAgain || !hasCompleted),
+    wouldShowOnAttributes && (isOnAttributesRoute || tutorialLaunchedFromAttributes),
   );
   const handleOnboardingClose = useCallback(() => {
+    setTutorialLaunchedFromAttributes(false);
     refetch();
   }, [refetch]);
 
@@ -84,7 +97,6 @@ export function Layout() {
   const [characterInventoryPanelOpen, setCharacterInventoryPanelOpen] = useState(false);
   const [characterArchetypesPanelOpen, setCharacterArchetypesPanelOpen] = useState(false);
 
-  const location = useLocation();
   const isPlayPage = location.pathname.startsWith('/play/');
   const isSignInRequiredRoute =
     location.pathname.startsWith('/rulesets/') ||
