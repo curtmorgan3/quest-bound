@@ -515,8 +515,13 @@ export const useExportRuleset = (rulesetId: string) => {
       }
 
       if (assets && assets.length > 0) {
-        // Store asset metadata without the data property (data is stored as files in assets folder)
-        const assetsMetadata = assets.map(({ data, ...rest }) => rest);
+        // Store asset metadata; omit data for binary assets (stored as files). Keep data when it's a URL.
+        const assetsMetadata = assets.map(({ data, ...rest }) => {
+          const isUrl =
+            typeof data === 'string' &&
+            (data.startsWith('http://') || data.startsWith('https://'));
+          return isUrl ? { ...rest, data } : rest;
+        });
         appDataFolder.file('assets.json', JSON.stringify(assetsMetadata, null, 2));
 
         // Bundle assets as individual files in an "assets" folder at root level

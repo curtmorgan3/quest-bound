@@ -72,6 +72,21 @@ async function createUrlAssetForImport(url: string, rulesetId: string | null): P
   return id;
 }
 
+/** Resolve asset id for a URL: use existing id from urlToAssetIdMap (e.g. from assets.json) or create a new asset. */
+async function getOrCreateUrlAssetId(
+  url: string,
+  rulesetId: string | null,
+  urlToAssetIdMap: Record<string, string>,
+): Promise<string | null> {
+  if (!url?.trim()) return null;
+  const trimmed = url.trim();
+  const existing = urlToAssetIdMap[trimmed];
+  if (existing) return existing;
+  const id = await createUrlAssetForImport(trimmed, rulesetId);
+  urlToAssetIdMap[trimmed] = id;
+  return id;
+}
+
 export interface ImportRulesetOptions {
   /** When true, replace an existing ruleset with the same id if the uploaded version is higher */
   replaceIfNewer?: boolean;
@@ -604,10 +619,37 @@ export const useImportRuleset = () => {
       const now = new Date().toISOString();
       let newRulesetId = metadata.ruleset.id;
 
+      // Build asset maps early so we can reuse URL asset ids and avoid importing URL-backed assets twice
+      const assetFilenameToIdMap: Record<string, string> = {};
+      const urlToAssetIdMap: Record<string, string> = {};
+      const assetsMetadataFileForMaps = getZipFile('application data/assets.json');
+      if (assetsMetadataFileForMaps) {
+        try {
+          const assetsMetadataText = await assetsMetadataFileForMaps.async('text');
+          const assetsMetadataForMap: (Omit<Asset, 'data'> & { data?: string })[] =
+            JSON.parse(assetsMetadataText);
+          for (const assetMeta of assetsMetadataForMap) {
+            let fullPath = assetMeta.filename;
+            if (assetMeta.directory) {
+              const directoryPath = assetMeta.directory.replace(/^\/+|\/+$/g, '');
+              if (directoryPath) {
+                fullPath = `${directoryPath}/${assetMeta.filename}`;
+              }
+            }
+            assetFilenameToIdMap[fullPath] = assetMeta.id;
+            if (typeof assetMeta.data === 'string' && isUrl(assetMeta.data)) {
+              urlToAssetIdMap[assetMeta.data] = assetMeta.id;
+            }
+          }
+        } catch {
+          // If we can't read asset metadata, continue without the maps
+        }
+      }
+
       const rulesetImage = metadata.ruleset.image as string | null | undefined;
       const rulesetCoverAssetId =
         rulesetImage && isUrl(rulesetImage.trim())
-          ? await createUrlAssetForImport(rulesetImage.trim(), newRulesetId)
+          ? await getOrCreateUrlAssetId(rulesetImage.trim(), newRulesetId, urlToAssetIdMap)
           : null;
 
       const newRuleset: Ruleset = {
@@ -821,33 +863,6 @@ export const useImportRuleset = () => {
 
       const allErrors: string[] = [];
 
-      // Build filename -> assetId map for resolving asset references in actions/items
-      // Read asset metadata early (before importing) to build the map
-      const assetFilenameToIdMap: Record<string, string> = {};
-      const assetsMetadataFile = getZipFile('application data/assets.json');
-      if (assetsMetadataFile) {
-        try {
-          const assetsMetadataText = await assetsMetadataFile.async('text');
-          const assetsMetadataForMap: Array<{ id: string; filename: string; directory?: string }> =
-            JSON.parse(assetsMetadataText);
-
-          for (const assetMeta of assetsMetadataForMap) {
-            // Build the full path (directory + filename) as the key
-            let fullPath = assetMeta.filename;
-            if (assetMeta.directory) {
-              const directoryPath = assetMeta.directory.replace(/^\/+|\/+$/g, '');
-              if (directoryPath) {
-                fullPath = `${directoryPath}/${assetMeta.filename}`;
-              }
-            }
-            assetFilenameToIdMap[fullPath] = assetMeta.id;
-          }
-        } catch {
-          // If we can't read asset metadata, continue without the map
-          // Asset references in actions/items will just be undefined
-        }
-      }
-
       // Import characterAttributes
       const characterAttributesFile = getZipFile('application data/characterAttributes.json');
       if (characterAttributesFile) {
@@ -908,8 +923,11 @@ export const useImportRuleset = () => {
             for (const attribute of attributes) {
               const toAdd = { ...attribute };
               if (toAdd.image && isUrl(toAdd.image) && !toAdd.assetId) {
-                toAdd.assetId = await createUrlAssetForImport(toAdd.image, newRulesetId);
-                toAdd.image = undefined;
+                const id = await getOrCreateUrlAssetId(toAdd.image, newRulesetId, urlToAssetIdMap);
+                if (id) {
+                  toAdd.assetId = id;
+                  toAdd.image = undefined;
+                }
               }
               await db.attributes.add(toAdd);
               importedCounts.attributes++;
@@ -955,8 +973,11 @@ export const useImportRuleset = () => {
             for (const action of actions) {
               const toAdd = { ...action };
               if (toAdd.image && isUrl(toAdd.image) && !toAdd.assetId) {
-                toAdd.assetId = await createUrlAssetForImport(toAdd.image, newRulesetId);
-                toAdd.image = undefined;
+                const id = await getOrCreateUrlAssetId(toAdd.image, newRulesetId, urlToAssetIdMap);
+                if (id) {
+                  toAdd.assetId = id;
+                  toAdd.image = undefined;
+                }
               }
               await db.actions.add(toAdd);
               importedCounts.actions++;
@@ -1011,8 +1032,11 @@ export const useImportRuleset = () => {
             for (const item of items) {
               const toAdd = { ...item };
               if (toAdd.image && isUrl(toAdd.image) && !toAdd.assetId) {
-                toAdd.assetId = await createUrlAssetForImport(toAdd.image, newRulesetId);
-                toAdd.image = undefined;
+                const id = await getOrCreateUrlAssetId(toAdd.image, newRulesetId, urlToAssetIdMap);
+                if (id) {
+                  toAdd.assetId = id;
+                  toAdd.image = undefined;
+                }
               }
               await db.items.add(toAdd);
               importedCounts.items++;
@@ -1077,8 +1101,15 @@ export const useImportRuleset = () => {
                 updatedAt: now,
               };
               if (newChart.image && isUrl(newChart.image) && !newChart.assetId) {
-                newChart.assetId = await createUrlAssetForImport(newChart.image, newRulesetId);
-                newChart.image = undefined;
+                const id = await getOrCreateUrlAssetId(
+                  newChart.image,
+                  newRulesetId,
+                  urlToAssetIdMap,
+                );
+                if (id) {
+                  newChart.assetId = id;
+                  newChart.image = undefined;
+                }
               }
               await db.charts.add(newChart);
               importedCounts.charts++;
@@ -1208,12 +1239,12 @@ export const useImportRuleset = () => {
         }
       }
 
-      // Import assets (metadata from JSON, data from files in assets folder)
+      // Import assets (metadata from JSON; data from JSON when URL, else from files in assets folder)
       const assetsFile = getZipFile('application data/assets.json');
       if (assetsFile) {
         try {
           const assetsText = await assetsFile.async('text');
-          const assetsMetadata: Omit<Asset, 'data'>[] = JSON.parse(assetsText);
+          const assetsMetadata: (Omit<Asset, 'data'> & { data?: string })[] = JSON.parse(assetsText);
 
           // Load asset data from files in assets folder
           const assetDataMap: Record<string, string> = {};
@@ -1232,8 +1263,16 @@ export const useImportRuleset = () => {
             assetDataMap[relativePath] = fileData;
           }
 
-          // Reconstruct assets with their data
+          // Reconstruct assets with their data (use URL from JSON when present, else from file)
           const assets: Asset[] = assetsMetadata.map((metadata) => {
+            const urlFromJson = metadata.data;
+            if (typeof urlFromJson === 'string' && isUrl(urlFromJson)) {
+              return {
+                ...metadata,
+                data: urlFromJson,
+              };
+            }
+
             // Build the expected path based on directory and filename
             let assetPath = metadata.filename;
             if (metadata.directory) {
@@ -1379,11 +1418,15 @@ export const useImportRuleset = () => {
                 updatedAt: now,
               };
               if (newDocument.image && isUrl(newDocument.image) && !newDocument.assetId) {
-                newDocument.assetId = await createUrlAssetForImport(
+                const id = await getOrCreateUrlAssetId(
                   newDocument.image,
                   newRulesetId,
+                  urlToAssetIdMap,
                 );
-                newDocument.image = undefined;
+                if (id) {
+                  newDocument.assetId = id;
+                  newDocument.image = undefined;
+                }
               }
               await db.documents.add(newDocument);
               importedCounts.documents++;
@@ -1607,11 +1650,15 @@ export const useImportRuleset = () => {
                 updatedAt: now,
               };
               if (newCharacter.image && isUrl(newCharacter.image) && !newCharacter.assetId) {
-                newCharacter.assetId = await createUrlAssetForImport(
+                const id = await getOrCreateUrlAssetId(
                   newCharacter.image,
                   newRulesetId,
+                  urlToAssetIdMap,
                 );
-                newCharacter.image = undefined;
+                if (id) {
+                  newCharacter.assetId = id;
+                  newCharacter.image = undefined;
+                }
               }
               await db.characters.add(newCharacter);
               importedCounts.characters++;
@@ -1649,8 +1696,15 @@ export const useImportRuleset = () => {
               updatedAt: now,
             };
             if (newCampaign.image && isUrl(newCampaign.image) && !newCampaign.assetId) {
-              newCampaign.assetId = await createUrlAssetForImport(newCampaign.image, newRulesetId);
-              newCampaign.image = undefined;
+              const id = await getOrCreateUrlAssetId(
+                newCampaign.image,
+                newRulesetId,
+                urlToAssetIdMap,
+              );
+              if (id) {
+                newCampaign.assetId = id;
+                newCampaign.image = undefined;
+              }
             }
             await db.campaigns.add(newCampaign);
             importedCounts.campaigns++;
@@ -1762,11 +1816,15 @@ export const useImportRuleset = () => {
               updatedAt: now,
             };
             if (newArchetype.image && isUrl(newArchetype.image) && !newArchetype.assetId) {
-              newArchetype.assetId = await createUrlAssetForImport(
+              const id = await getOrCreateUrlAssetId(
                 newArchetype.image,
                 newRulesetId,
+                urlToAssetIdMap,
               );
-              newArchetype.image = undefined;
+              if (id) {
+                newArchetype.assetId = id;
+                newArchetype.image = undefined;
+              }
             }
             await db.archetypes.add(newArchetype);
             importedCounts.archetypes++;
