@@ -1,4 +1,4 @@
-import { Loading } from '@/components';
+import { Loading, PWAInstallPrompt } from '@/components';
 import { GlobalLoadingOverlay } from '@/components/global-loading-overlay';
 import { OnboardingPanel, useOnboardingStatus } from '@/components/onboarding';
 import { useNotifications } from '@/hooks';
@@ -92,6 +92,7 @@ export function Layout() {
   ) : !currentUser ? (
     <>
       <SignIn />
+      <PWAInstallPrompt />
       <Toaster />
     </>
   ) : (
@@ -126,6 +127,7 @@ export function Layout() {
             <PhysicalRollModal />
             <PromptModal />
             <CharacterSelectModal />
+            <PWAInstallPrompt />
             <canvas
               id='threeddice'
               ref={diceRef}
