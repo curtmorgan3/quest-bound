@@ -294,7 +294,6 @@ export const useExportRuleset = (rulesetId: string) => {
       let exportedCampaigns: import('@/types').Campaign[] = [];
       let exportedCampaignScenes: import('@/types').CampaignScene[] = [];
       let exportedCampaignCharacters: import('@/types').CampaignCharacter[] = [];
-      let exportedCampaignItems: import('@/types').CampaignItem[] = [];
       let exportedCampaignEvents: import('@/types').CampaignEvent[] = [];
       let exportedSceneTurnCallbacks: import('@/types').SceneTurnCallback[] = [];
       const campaignIds = options?.campaignIds ?? [];
@@ -307,9 +306,8 @@ export const useExportRuleset = (rulesetId: string) => {
           const scenes = await db.campaignScenes.where('campaignId').anyOf(campIds).toArray();
           exportedCampaignScenes = scenes;
           const sceneIds = scenes.map((s) => s.id);
-          const [cc, ci, ce, stc] = await Promise.all([
+          const [cc, ce, stc] = await Promise.all([
             db.campaignCharacters.where('campaignId').anyOf(campIds).toArray(),
-            db.campaignItems.where('campaignId').anyOf(campIds).toArray(),
             db.campaignEvents.where('campaignId').anyOf(campIds).toArray(),
             db.sceneTurnCallbacks
               .where('campaignSceneId')
@@ -317,7 +315,6 @@ export const useExportRuleset = (rulesetId: string) => {
               .toArray(),
           ]);
           exportedCampaignCharacters = cc;
-          exportedCampaignItems = ci;
           exportedCampaignEvents = ce;
           exportedSceneTurnCallbacks = stc;
 
@@ -371,11 +368,13 @@ export const useExportRuleset = (rulesetId: string) => {
       // Export scripts
       const scriptExportResult = await exportScripts(rulesetId);
 
-      // Create metadata file
+      // Create metadata file (include CTA asset IDs so they are restored on import)
       const metadata = {
         ruleset: {
           ...ruleset,
           id: ruleset.id,
+          charactersCtaAssetId: ruleset.charactersCtaAssetId ?? null,
+          campaignsCtaAssetId: ruleset.campaignsCtaAssetId ?? null,
         },
         exportInfo: {
           exportedAt: new Date().toISOString(),
@@ -407,7 +406,6 @@ export const useExportRuleset = (rulesetId: string) => {
           campaigns: exportedCampaigns.length,
           campaignScenes: exportedCampaignScenes.length,
           campaignCharacters: exportedCampaignCharacters.length,
-          campaignItems: exportedCampaignItems.length,
           campaignEvents: exportedCampaignEvents.length,
           sceneTurnCallbacks: exportedSceneTurnCallbacks.length,
         },
@@ -667,12 +665,6 @@ export const useExportRuleset = (rulesetId: string) => {
         appDataFolder.file(
           'campaignCharacters.json',
           JSON.stringify(exportedCampaignCharacters, null, 2),
-        );
-      }
-      if (exportedCampaignItems.length > 0) {
-        appDataFolder.file(
-          'campaignItems.json',
-          JSON.stringify(exportedCampaignItems, null, 2),
         );
       }
       if (exportedCampaignEvents.length > 0) {

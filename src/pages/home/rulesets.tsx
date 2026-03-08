@@ -27,7 +27,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { useImportRuleset, useRulesets, type ImportRulesetResult } from '@/lib/compass-api';
-import { AlertCircle, CheckCircle, Plus, Upload } from 'lucide-react';
+import { AlertCircle, CheckCircle, Plus, Upload, X } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -158,52 +158,6 @@ export const Rulesets = () => {
       title='Rulesets'
       headerActions={
         <div className='flex items-center gap-2'>
-          {importResult && (
-            <div
-              className={`p-3 rounded-lg border ${
-                importResult.success
-                  ? 'bg-green-50 border-green-200 text-green-800'
-                  : 'bg-red-50 border-red-200 text-red-800'
-              }`}>
-              <div className='flex items-center gap-2'>
-                {importResult.success ? (
-                  <CheckCircle className='h-4 w-4' />
-                ) : (
-                  <AlertCircle className='h-4 w-4' />
-                )}
-                <span className='text-sm font-medium'>{importResult.message}</span>
-              </div>
-
-              {importResult.success && importResult.importedRuleset && (
-                <div className='mt-2 text-xs'>
-                  <p>
-                    Imported: <strong>{importResult.importedRuleset.title}</strong>
-                  </p>
-                  <div className='flex gap-4'>
-                    <span>Attributes: {importResult.importedCounts.attributes}</span>
-                    <span>Actions: {importResult.importedCounts.actions}</span>
-                    <span>Items: {importResult.importedCounts.items}</span>
-                    <span>Charts: {importResult.importedCounts.charts}</span>
-                  </div>
-                </div>
-              )}
-
-              {importResult.errors.length > 0 && (
-                <div className='mt-2'>
-                  <p className='text-xs font-medium'>Errors:</p>
-                  <ul className='list-disc list-inside text-xs'>
-                    {importResult.errors.slice(0, 3).map((error, index) => (
-                      <li key={index}>{error}</li>
-                    ))}
-                    {importResult.errors.length > 3 && (
-                      <li>...and {importResult.errors.length - 3} more errors</li>
-                    )}
-                  </ul>
-                </div>
-              )}
-            </div>
-          )}
-
           <Dialog>
             <form>
               <DialogTrigger asChild>
@@ -414,6 +368,62 @@ export const Rulesets = () => {
           );
         })}
       </div>
+
+      {importResult && (
+        <div
+          className={`fixed bottom-4 right-4 z-50 flex max-w-sm flex-col gap-2 rounded-lg border p-3 shadow-lg ${
+            importResult.success
+              ? 'border-green-200 bg-green-50 text-green-800'
+              : 'border-red-200 bg-red-50 text-red-800'
+          }`}>
+          <div className='flex items-start justify-between gap-2'>
+            <div className='flex items-center gap-2'>
+              {importResult.success ? (
+                <CheckCircle className='h-4 w-4 shrink-0' />
+              ) : (
+                <AlertCircle className='h-4 w-4 shrink-0' />
+              )}
+              <span className='text-sm font-medium'>{importResult.message}</span>
+            </div>
+            <Button
+              variant='ghost'
+              size='icon'
+              className='h-6 w-6 shrink-0'
+              onClick={() => setImportResult(null)}
+              aria-label='Dismiss'>
+              <X className='h-4 w-4' />
+            </Button>
+          </div>
+
+          {importResult.success && importResult.importedRuleset && (
+            <div className='text-xs'>
+              <p>
+                Imported: <strong>{importResult.importedRuleset.title}</strong>
+              </p>
+              <div className='flex gap-4'>
+                <span>Attributes: {importResult.importedCounts.attributes}</span>
+                <span>Actions: {importResult.importedCounts.actions}</span>
+                <span>Items: {importResult.importedCounts.items}</span>
+                <span>Charts: {importResult.importedCounts.charts}</span>
+              </div>
+            </div>
+          )}
+
+          {importResult.errors.length > 0 && (
+            <div>
+              <p className='text-xs font-medium'>Errors:</p>
+              <ul className='list-disc list-inside text-xs'>
+                {importResult.errors.slice(0, 3).map((error, index) => (
+                  <li key={index}>{error}</li>
+                ))}
+                {importResult.errors.length > 3 && (
+                  <li>...and {importResult.errors.length - 3} more errors</li>
+                )}
+              </ul>
+            </div>
+          )}
+        </div>
+      )}
     </PageWrapper>
   );
 };

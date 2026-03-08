@@ -57,7 +57,6 @@ export interface RulesetDuplicationCounts {
   campaigns: number;
   campaignScenes: number;
   campaignCharacters: number;
-  campaignItems: number;
   campaignEvents: number;
   sceneTurnCallbacks: number;
 }
@@ -189,7 +188,6 @@ export async function duplicateRuleset({
     campaigns: 0,
     campaignScenes: 0,
     campaignCharacters: 0,
-    campaignItems: 0,
     campaignEvents: 0,
     sceneTurnCallbacks: 0,
   };

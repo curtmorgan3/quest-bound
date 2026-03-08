@@ -101,6 +101,21 @@ export function registerRulesetDbHooks(db: DB) {
         await db.rulesetWindows.where('rulesetId').equals(rulesetId).delete();
         await db.pages.where('rulesetId').equals(rulesetId).delete();
 
+        // Delete campaigns and their related data (scenes, campaignCharacters, campaignEvents, sceneTurnCallbacks)
+        const campaigns = await db.campaigns.where('rulesetId').equals(rulesetId).toArray();
+        const campaignIds = campaigns.map((c) => c.id);
+        if (campaignIds.length > 0) {
+          const scenes = await db.campaignScenes.where('campaignId').anyOf(campaignIds).toArray();
+          const sceneIds = scenes.map((s) => s.id);
+          if (sceneIds.length > 0) {
+            await db.sceneTurnCallbacks.where('campaignSceneId').anyOf(sceneIds).delete();
+          }
+          await db.campaignEvents.where('campaignId').anyOf(campaignIds).delete();
+          await db.campaignCharacters.where('campaignId').anyOf(campaignIds).delete();
+          await db.campaignScenes.where('campaignId').anyOf(campaignIds).delete();
+          await db.campaigns.where('rulesetId').equals(rulesetId).delete();
+        }
+
         // Find and delete all test characters (archetype hooks may have already deleted some)
         const testCharacters = await db.characters
           .where('rulesetId')

@@ -64,7 +64,6 @@ export const useCampaigns = (filters?: { rulesetId?: string; worldId?: string })
   const deleteCampaign = async (id: string) => {
     try {
       await db.campaignCharacters.where('campaignId').equals(id).delete();
-      await db.campaignItems.where('campaignId').equals(id).delete();
       await db.campaignEvents.where('campaignId').equals(id).delete();
       await db.campaigns.delete(id);
     } catch (e) {

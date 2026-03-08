@@ -533,12 +533,6 @@ export type CampaignEventParameterDefinition = {
   description?: string;
 };
 
-export type CampaignItem = BaseDetails & {
-  itemId: string;
-  campaignId: string;
-  sceneId?: string;
-};
-
 export type CampaignEvent = BaseDetails & {
   label: string;
   campaignId: string;

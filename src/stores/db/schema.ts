@@ -188,5 +188,9 @@ export const dbSchemaV55 = {
   campaignCharacters: `${common}, characterId, campaignId, campaignSceneId, mapHeight, mapWidth, active, turnOrder, turnStartTimestamp, turnEndTimestamp, pinnedTurnOrderAttributeIds, [campaignId], [characterId], [campaignId+characterId], [campaignSceneId]`,
 };
 
+/** Schema for v56: remove campaignItems (and worlds, locations, tiles, tilemaps remain removed from v51). New DB instances do not have these tables. */
+const { campaignItems: _campaignItems, ...dbSchemaV55WithoutCampaignItems } = dbSchemaV55 as typeof dbSchemaV55 & { campaignItems?: string };
+export const dbSchemaV56 = { ...dbSchemaV55WithoutCampaignItems };
+
 // Increment on every schema change
-export const dbSchemaVersion = 55;
+export const dbSchemaVersion = 56;

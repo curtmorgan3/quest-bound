@@ -7,7 +7,6 @@ import type {
   Campaign,
   CampaignCharacter,
   CampaignEvent,
-  CampaignItem,
   CampaignScene,
   Character,
   CharacterAttribute,
@@ -49,7 +48,7 @@ import {
   dbSchemaV45,
   dbSchemaV51,
   dbSchemaV52,
-  dbSchemaV55,
+  dbSchemaV56,
 } from './schema';
 import { migrate41to42 } from './migrations/migrate-41-to-42';
 import { migrate43to44 } from './migrations/migrate-43-to-44';
@@ -90,7 +89,6 @@ const db = new Dexie('qbdb') as Dexie & {
   itemCustomProperties: EntityTable<ItemCustomProperty, 'id'>;
   campaigns: EntityTable<Campaign, 'id'>;
   campaignCharacters: EntityTable<CampaignCharacter, 'id'>;
-  campaignItems: EntityTable<CampaignItem, 'id'>;
   campaignScenes: EntityTable<CampaignScene, 'id'>;
   sceneTurnCallbacks: EntityTable<SceneTurnCallback, 'id'>;
   campaignEvents: EntityTable<CampaignEvent, 'id'>;
@@ -140,7 +138,7 @@ db.version(45).stores(dbSchemaV45);
 // v51 used dbSchemaV51 with no upgrade; v52 keeps the same schema and adds data migration.
 db.version(51).stores(dbSchemaV51);
 db.version(52).stores(dbSchemaV52).upgrade(migrate51to52);
-db.version(dbSchemaVersion).stores(dbSchemaV55);
+db.version(dbSchemaVersion).stores(dbSchemaV56);
 
 // Cache assets for reference in the asset injector middleware
 db.on('ready', async () => {

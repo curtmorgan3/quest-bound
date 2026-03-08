@@ -35,5 +35,4 @@ export type DB = Dexie & {
   campaignScenes: Dexie.Table;
   sceneTurnCallbacks: Dexie.Table;
   campaignEvents: Dexie.Table;
-  campaignItems: Dexie.Table;
 };

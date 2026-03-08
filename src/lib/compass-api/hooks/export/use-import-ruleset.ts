@@ -9,7 +9,6 @@ import type {
   Campaign,
   CampaignCharacter,
   CampaignEvent,
-  CampaignItem,
   CampaignScene,
   Character,
   CharacterAttribute,
@@ -58,10 +57,7 @@ function filenameFromUrlForImport(url: string): string {
 }
 
 /** Create a URL asset for import when entity has image (URL) and no assetId. Returns new asset id. */
-async function createUrlAssetForImport(
-  url: string,
-  rulesetId: string | null,
-): Promise<string> {
+async function createUrlAssetForImport(url: string, rulesetId: string | null): Promise<string> {
   const id = crypto.randomUUID();
   const now = new Date().toISOString();
   await db.assets.add({
@@ -123,7 +119,6 @@ export interface ImportRulesetResult {
     campaigns: number;
     campaignScenes: number;
     campaignCharacters: number;
-    campaignItems: number;
     campaignEvents: number;
     sceneTurnCallbacks: number;
   };
@@ -143,6 +138,8 @@ interface ImportedMetadata {
     image: string | null;
     isModule: boolean;
     palette?: string[];
+    charactersCtaAssetId?: string | null;
+    campaignsCtaAssetId?: string | null;
   };
   exportInfo: {
     exportedAt: string;
@@ -173,7 +170,6 @@ interface ImportedMetadata {
     campaigns?: number;
     campaignScenes?: number;
     campaignCharacters?: number;
-    campaignItems?: number;
     campaignEvents?: number;
     sceneTurnCallbacks?: number;
   };
@@ -338,9 +334,7 @@ export const useImportRuleset = () => {
 
         case 'itemCustomProperties':
           if (!item.itemId || typeof item.itemId !== 'string') {
-            errors.push(
-              `ItemCustomProperty ${index + 1}: itemId is required and must be a string`,
-            );
+            errors.push(`ItemCustomProperty ${index + 1}: itemId is required and must be a string`);
           }
           if (!item.customPropertyId || typeof item.customPropertyId !== 'string') {
             errors.push(
@@ -392,8 +386,8 @@ export const useImportRuleset = () => {
           break;
 
         case 'assets':
-          if (!item.data || typeof item.data !== 'string') {
-            errors.push(`Asset ${index + 1}: data is required and must be a string`);
+          if (typeof item.data !== 'string') {
+            errors.push(`Asset ${index + 1}: data must be a string`);
           }
           if (!item.type || typeof item.type !== 'string') {
             errors.push(`Asset ${index + 1}: type is required and must be a string`);
@@ -557,7 +551,6 @@ export const useImportRuleset = () => {
             campaigns: 0,
             campaignScenes: 0,
             campaignCharacters: 0,
-            campaignItems: 0,
             campaignEvents: 0,
             sceneTurnCallbacks: 0,
           },
@@ -601,7 +594,6 @@ export const useImportRuleset = () => {
             campaigns: 0,
             campaignScenes: 0,
             campaignCharacters: 0,
-            campaignItems: 0,
             campaignEvents: 0,
             sceneTurnCallbacks: 0,
           },
@@ -630,6 +622,8 @@ export const useImportRuleset = () => {
         createdAt: now,
         updatedAt: now,
         palette: Array.isArray(metadata.ruleset.palette) ? metadata.ruleset.palette : [],
+        charactersCtaAssetId: metadata.ruleset.charactersCtaAssetId ?? null,
+        campaignsCtaAssetId: metadata.ruleset.campaignsCtaAssetId ?? null,
       };
 
       // Content-only import: fill an existing ruleset (e.g. temp ruleset for add-module-from-zip)
@@ -708,7 +702,6 @@ export const useImportRuleset = () => {
                 campaigns: 0,
                 campaignScenes: 0,
                 campaignCharacters: 0,
-                campaignItems: 0,
                 campaignEvents: 0,
                 sceneTurnCallbacks: 0,
               },
@@ -749,7 +742,6 @@ export const useImportRuleset = () => {
                   campaigns: 0,
                   campaignScenes: 0,
                   campaignCharacters: 0,
-                  campaignItems: 0,
                   campaignEvents: 0,
                   sceneTurnCallbacks: 0,
                 },
@@ -787,7 +779,6 @@ export const useImportRuleset = () => {
                 campaigns: 0,
                 campaignScenes: 0,
                 campaignCharacters: 0,
-                campaignItems: 0,
                 campaignEvents: 0,
                 sceneTurnCallbacks: 0,
               },
@@ -824,7 +815,6 @@ export const useImportRuleset = () => {
         campaigns: 0,
         campaignScenes: 0,
         campaignCharacters: 0,
-        campaignItems: 0,
         campaignEvents: 0,
         sceneTurnCallbacks: 0,
       };
@@ -1389,7 +1379,10 @@ export const useImportRuleset = () => {
                 updatedAt: now,
               };
               if (newDocument.image && isUrl(newDocument.image) && !newDocument.assetId) {
-                newDocument.assetId = await createUrlAssetForImport(newDocument.image, newRulesetId);
+                newDocument.assetId = await createUrlAssetForImport(
+                  newDocument.image,
+                  newRulesetId,
+                );
                 newDocument.image = undefined;
               }
               await db.documents.add(newDocument);
@@ -1517,7 +1510,7 @@ export const useImportRuleset = () => {
               const legacyPageId = (rw as { rulesetPageId?: string | null }).rulesetPageId;
               const pageId =
                 rw.pageId ??
-                (legacyPageId != null ? rulesetPageIdToPageId.get(legacyPageId) ?? null : null);
+                (legacyPageId != null ? (rulesetPageIdToPageId.get(legacyPageId) ?? null) : null);
               const newRulesetWindow: RulesetWindow = {
                 ...rw,
                 id: crypto.randomUUID(),
@@ -1641,8 +1634,11 @@ export const useImportRuleset = () => {
           const campaignsToImport: Campaign[] = JSON.parse(campaignsText);
           const campaignIdMap = new Map<string, string>();
           const campaignSceneIdMap = new Map<string, string>();
+          const seenCampaignIds = new Set<string>();
 
           for (const campaign of campaignsToImport) {
+            if (seenCampaignIds.has(campaign.id)) continue;
+            seenCampaignIds.add(campaign.id);
             const newCampaignId = crypto.randomUUID();
             campaignIdMap.set(campaign.id, newCampaignId);
             const newCampaign: Campaign = {
@@ -1653,10 +1649,7 @@ export const useImportRuleset = () => {
               updatedAt: now,
             };
             if (newCampaign.image && isUrl(newCampaign.image) && !newCampaign.assetId) {
-              newCampaign.assetId = await createUrlAssetForImport(
-                newCampaign.image,
-                newRulesetId,
-              );
+              newCampaign.assetId = await createUrlAssetForImport(newCampaign.image, newRulesetId);
               newCampaign.image = undefined;
             }
             await db.campaigns.add(newCampaign);
@@ -1667,7 +1660,10 @@ export const useImportRuleset = () => {
           if (campaignScenesFile) {
             const scenesText = await campaignScenesFile.async('text');
             const scenesToImport: CampaignScene[] = JSON.parse(scenesText);
+            const seenSceneIds = new Set<string>();
             for (const scene of scenesToImport) {
+              if (seenSceneIds.has(scene.id)) continue;
+              seenSceneIds.add(scene.id);
               const newCampaignId = campaignIdMap.get(scene.campaignId);
               if (!newCampaignId) continue;
               const newSceneId = crypto.randomUUID();
@@ -1702,28 +1698,6 @@ export const useImportRuleset = () => {
                 updatedAt: now,
               });
               importedCounts.campaignCharacters++;
-            }
-          }
-
-          const campaignItemsFile = getZipFile('application data/campaignItems.json');
-          if (campaignItemsFile) {
-            const ciText = await campaignItemsFile.async('text');
-            const ciToImport: CampaignItem[] = JSON.parse(ciText);
-            for (const ci of ciToImport) {
-              const newCampaignId = campaignIdMap.get(ci.campaignId);
-              if (!newCampaignId) continue;
-              const newSceneId = ci.sceneId
-                ? campaignSceneIdMap.get(ci.sceneId)
-                : undefined;
-              await db.campaignItems.add({
-                ...ci,
-                id: crypto.randomUUID(),
-                campaignId: newCampaignId,
-                sceneId: newSceneId ?? ci.sceneId,
-                createdAt: now,
-                updatedAt: now,
-              });
-              importedCounts.campaignItems++;
             }
           }
 
@@ -1927,7 +1901,6 @@ export const useImportRuleset = () => {
         importedCounts.campaigns +
         importedCounts.campaignScenes +
         importedCounts.campaignCharacters +
-        importedCounts.campaignItems +
         importedCounts.campaignEvents +
         importedCounts.sceneTurnCallbacks;
 
@@ -1972,7 +1945,6 @@ export const useImportRuleset = () => {
           campaigns: 0,
           campaignScenes: 0,
           campaignCharacters: 0,
-          campaignItems: 0,
           campaignEvents: 0,
           sceneTurnCallbacks: 0,
         },
