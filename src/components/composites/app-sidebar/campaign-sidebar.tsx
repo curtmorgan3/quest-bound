@@ -6,7 +6,6 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarTrigger,
   useSidebar,
 } from '@/components/ui/sidebar';
 import { useCampaign, useCampaigns, useCharts, useDocuments } from '@/lib/compass-api';
@@ -74,23 +73,8 @@ export function CampaignSidebar() {
   return (
     <>
       <SidebarGroup>
-        <div className='flex items-center justify-left'>
-          <SidebarGroupLabel>{campaign.label ?? 'Campaign'}</SidebarGroupLabel>
-          {open && (
-            <SidebarTrigger onClick={() => localStorage.setItem('qb.sidebarCollapsed', 'true')} />
-          )}
-        </div>
         <SidebarGroupContent>
           <SidebarMenu>
-            {!open && (
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild>
-                  <SidebarTrigger
-                    onClick={() => localStorage.setItem('qb.sidebarCollapsed', 'false')}
-                  />
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            )}
             <SidebarMenuItem
               className={
                 location.pathname === `/campaigns/${campaign.id}/scenes` ? 'text-primary' : ''

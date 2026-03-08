@@ -1,14 +1,16 @@
 import {
   SidebarGroup,
   SidebarGroupContent,
-  SidebarGroupLabel,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarTrigger,
-  useSidebar,
 } from '@/components/ui/sidebar';
 import { useActiveRuleset } from '@/lib/compass-api';
+import {
+  useRulesetFiltersStore,
+  type GridPage,
+  type ListPage,
+} from '@/stores/ruleset-filters-store';
 import {
   AppWindow,
   BookOpen,
@@ -18,25 +20,12 @@ import {
   Home,
   Image,
   LayoutTemplate,
-  Map,
   Newspaper,
   Sword,
   User,
   UserRoundPen,
-  Users,
 } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
-import {
-  useRulesetFiltersStore,
-  type GridPage,
-  type ListPage,
-} from '@/stores/ruleset-filters-store';
-
-const HOMEPAGE_ITEMS = [
-  { title: 'Rulesets', url: '/rulesets', icon: BookOpen },
-  { title: 'Characters', url: '/characters', icon: Users },
-  { title: 'Campaigns', url: '/campaigns', icon: Map },
-];
 
 const RULESET_NAV_ITEMS: {
   title: string;
@@ -61,7 +50,6 @@ const RULESET_NAV_ITEMS: {
 
 export function RulesetSidebar() {
   const { activeRuleset } = useActiveRuleset();
-  const { open } = useSidebar();
   const location = useLocation();
   const getGridFilters = useRulesetFiltersStore((s) => s.getGridFilters);
   const getListFilters = useRulesetFiltersStore((s) => s.getListFilters);
@@ -73,17 +61,13 @@ export function RulesetSidebar() {
     location.pathname === '/campaigns' ||
     location.pathname === '/campaigns/new';
 
-  const homepageItems = HOMEPAGE_ITEMS;
-
   const rulesetId = activeRuleset?.id;
 
   const items = isHomepage
-    ? homepageItems.map((item) => ({ ...item, url: item.url, baseUrl: item.url }))
+    ? []
     : RULESET_NAV_ITEMS.map((item) => {
         const baseUrl =
-          item.path === 'landing'
-            ? `/landing/${rulesetId}`
-            : `/rulesets/${rulesetId}/${item.path}`;
+          item.path === 'landing' ? `/landing/${rulesetId}` : `/rulesets/${rulesetId}/${item.path}`;
         let url = baseUrl;
         if (rulesetId && item.gridPage) {
           const params = getGridFilters(rulesetId, item.gridPage);
@@ -114,27 +98,10 @@ export function RulesetSidebar() {
         return { ...item, url, baseUrl };
       });
 
-  const title = activeRuleset?.title ?? 'Quest Bound';
-
   return (
     <SidebarGroup>
-      <div className='flex items-center justify-left'>
-        <SidebarGroupLabel>{title}</SidebarGroupLabel>
-        {open && (
-          <SidebarTrigger onClick={() => localStorage.setItem('qb.sidebarCollapsed', 'true')} />
-        )}
-      </div>
       <SidebarGroupContent>
         <SidebarMenu>
-          {!open && (
-            <SidebarMenuItem>
-              <SidebarMenuButton asChild>
-                <SidebarTrigger
-                  onClick={() => localStorage.setItem('qb.sidebarCollapsed', 'false')}
-                />
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          )}
           {items.map((item) => {
             const isActive = location.pathname === item.baseUrl;
             return (

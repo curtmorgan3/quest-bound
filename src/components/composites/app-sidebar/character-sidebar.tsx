@@ -1,4 +1,4 @@
-import { ArrowLeft, FileSpreadsheet, FileText, Pin, PinOff } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import {
   SidebarGroup,
   SidebarGroupContent,
@@ -6,12 +6,11 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarTrigger,
   useSidebar,
 } from '@/components/ui/sidebar';
 import { useCharacter, useCharts, useDocuments } from '@/lib/compass-api';
+import { ArrowLeft, FileSpreadsheet, FileText, Pin, PinOff } from 'lucide-react';
 import { Link, useLocation, useParams } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
 
 export function CharacterSidebar() {
   const { character, updateCharacter } = useCharacter();
@@ -61,23 +60,8 @@ export function CharacterSidebar() {
   return (
     <>
       <SidebarGroup>
-        <div className='flex items-center justify-left'>
-          <SidebarGroupLabel>{character.name}</SidebarGroupLabel>
-          {open && (
-            <SidebarTrigger onClick={() => localStorage.setItem('qb.sidebarCollapsed', 'true')} />
-          )}
-        </div>
         <SidebarGroupContent>
           <SidebarMenu>
-            {!open && (
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild>
-                  <SidebarTrigger
-                    onClick={() => localStorage.setItem('qb.sidebarCollapsed', 'false')}
-                  />
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            )}
             {(isViewingDocument || isViewingChart) && (
               <SidebarMenuItem>
                 <SidebarMenuButton asChild>
@@ -168,9 +152,7 @@ export function CharacterSidebar() {
               <SidebarMenu>
                 {sortedDocuments.length === 0 ? (
                   <SidebarMenuItem>
-                    <span className='px-2 py-1.5 text-xs text-muted-foreground'>
-                      No documents
-                    </span>
+                    <span className='px-2 py-1.5 text-xs text-muted-foreground'>No documents</span>
                   </SidebarMenuItem>
                 ) : (
                   sortedDocuments.map((doc) => {

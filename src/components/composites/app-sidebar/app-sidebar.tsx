@@ -1,6 +1,5 @@
 import {
   Dices,
-  FolderOpen,
   Handbag,
   HelpCircle,
   Settings as SettingsIcon,
@@ -13,12 +12,16 @@ import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarTrigger,
   useSidebar,
 } from '@/components/ui/sidebar';
-import { useCharacter, useUsers } from '@/lib/compass-api';
+import { useActiveRuleset, useCharacter, useUsers } from '@/lib/compass-api';
 import { Settings } from '@/pages';
 import {
   CharacterArchetypesPanelContext,
@@ -65,13 +68,20 @@ export function AppSidebar() {
   const characterInventoryPanel = useContext(CharacterInventoryPanelContext);
   const characterArchetypesPanel = useContext(CharacterArchetypesPanelContext);
   const { setDicePanelOpen } = useContext(DiceContext);
+  const { activeRuleset } = useActiveRuleset();
 
+  const isLandingRoute = location.pathname.startsWith('/landing/');
   const isHomepage =
     location.pathname === '/rulesets' ||
     location.pathname === '/characters' ||
     location.pathname === '/campaigns';
   const isCampaignsRoute =
     location.pathname.startsWith('/campaigns/') && location.pathname !== '/campaigns/new';
+
+  const title =
+    location.pathname === '/rulesets' || !activeRuleset?.title
+      ? 'Quest Bound'
+      : activeRuleset.title;
 
   useEffect(() => {
     const storedState = localStorage.getItem('qb.sidebarCollapsed');
@@ -88,7 +98,7 @@ export function AppSidebar() {
     setSettingsOpen(false);
   }, [location.pathname]);
 
-  const sidebarContent = character ? (
+  const sidebarContent = isLandingRoute ? null : character ? (
     <CharacterSidebar />
   ) : isCampaignsRoute ? (
     <CampaignSidebar />
@@ -99,19 +109,32 @@ export function AppSidebar() {
   return (
     <Drawer direction='bottom' open={settingsOpen} onOpenChange={setSettingsOpen}>
       <Sidebar collapsible='icon'>
+        <SidebarGroup>
+          <div className='flex items-center justify-left'>
+            <SidebarGroupLabel>{title}</SidebarGroupLabel>
+            {open && (
+              <SidebarTrigger onClick={() => localStorage.setItem('qb.sidebarCollapsed', 'true')} />
+            )}
+          </div>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {!open && (
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild>
+                    <SidebarTrigger
+                      onClick={() => localStorage.setItem('qb.sidebarCollapsed', 'false')}
+                    />
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
         <SidebarContent>{sidebarContent}</SidebarContent>
         <SidebarFooter>
           <SidebarMenu>
             {!isHomepage && (
               <>
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild>
-                    <Link to='/rulesets' data-testid='nav-open'>
-                      <FolderOpen />
-                      <span>Open</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
                 <SidebarMenuItem>
                   <SidebarMenuButton onClick={() => setDicePanelOpen(true)} data-testid='nav-dice'>
                     <Dices />
