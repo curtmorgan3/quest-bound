@@ -13,10 +13,20 @@ import {
 } from '@/lib/compass-logic/runtime/advance-turn-order';
 import type { SheetViewerBackdropClickDetail } from '@/lib/compass-planes/sheet-viewer';
 import { SHEET_VIEWER_BACKDROP_CLICK } from '@/lib/compass-planes/sheet-viewer';
-import { db } from '@/stores';
 import { cn } from '@/lib/utils';
-import { ChevronLeft, ChevronRight, FileText, ScrollText, Zap } from 'lucide-react';
+import { db } from '@/stores';
+import { ChevronLeft, ChevronRight, FileText, Zap } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { ActiveScene } from './active-scene';
+import { CampaignCharacterSheet } from './campaign-controls';
+import { CampaignEventsPanel } from './campaign-events-panel';
+import { CampaignGameLog } from './campaign-game-log';
+import { useCampaignPlayCharacterList } from './hooks';
+import { ManagePlayerCharacters } from './manage-player-characters';
+import { NpcStage } from './npc-stage';
+import { SceneDocumentPanel } from './scene-document-panel';
+import { TurnOrderScene } from './turn-order-scene';
 
 const DASHBOARD_COLUMNS_STORAGE_KEY = 'qb.campaignDashboard.columns';
 
@@ -53,24 +63,18 @@ function saveColumnState(state: StoredColumnState) {
     // ignore quota / private mode
   }
 }
-import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { ActiveScene } from './active-scene';
-import { CampaignCharacterSheet } from './campaign-controls';
-import { CampaignEventsPanel } from './campaign-events-panel';
-import { CampaignGameLog } from './campaign-game-log';
-import { useCampaignPlayCharacterList } from './hooks';
-import { ManagePlayerCharacters } from './manage-player-characters';
-import { NpcStage } from './npc-stage';
-import { SceneDocumentPanel } from './scene-document-panel';
-import { TurnOrderScene } from './turn-order-scene';
 
 export function CampaignDashboard() {
   const { campaignId, sceneId } = useParams<{ campaignId: string; sceneId?: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
   const campaign = useCampaign(campaignId);
   const navigate = useNavigate();
-  const { campaignCharacters, createCampaignCharacter, deleteCampaignCharacter, updateCampaignCharacter } =
-    useCampaignCharacters(campaignId);
+  const {
+    campaignCharacters,
+    createCampaignCharacter,
+    deleteCampaignCharacter,
+    updateCampaignCharacter,
+  } = useCampaignCharacters(campaignId);
   const withNames = useCampaignPlayCharacterList({ campaignCharacters });
   const { characters } = useCharacter();
 
@@ -78,12 +82,13 @@ export function CampaignDashboard() {
   const [hoveredCampaignCharacterId, setHoveredCampaignCharacterId] = useState<string | null>(null);
   const [sceneDocumentPanelOpen, setSceneDocumentPanelOpen] = useState(false);
   const [sceneEventsPanelOpen, setSceneEventsPanelOpen] = useState(false);
-  const [showCampaignLog, setShowCampaignLog] = useState(true);
   const [characterSheetTransparentBackground, setCharacterSheetTransparentBackground] =
     useState(true);
   const [advancing, setAdvancing] = useState(false);
   const [leftColumnCollapsed, setLeftColumnCollapsed] = useState(() => loadColumnState().left);
-  const [centerColumnCollapsed, setCenterColumnCollapsed] = useState(() => loadColumnState().center);
+  const [centerColumnCollapsed, setCenterColumnCollapsed] = useState(
+    () => loadColumnState().center,
+  );
   const [rightColumnCollapsed, setRightColumnCollapsed] = useState(() => loadColumnState().right);
 
   useEffect(() => {
@@ -98,7 +103,7 @@ export function CampaignDashboard() {
   const currentScene = sceneId ? campaignScenes.find((s) => s.id === sceneId) : undefined;
   const campaignTitle = currentScene
     ? `${campaign?.label ?? 'Unnamed campaign'} > ${currentScene.name ?? 'Unnamed scene'}`
-    : campaign?.label ?? 'Unnamed campaign';
+    : (campaign?.label ?? 'Unnamed campaign');
 
   const sceneCharactersByTurnOrder = useMemo(
     () =>
@@ -300,16 +305,6 @@ export function CampaignDashboard() {
               data-testid='scene-events-panel-trigger'>
               <Zap className='h-4 w-4' />
             </Button>
-            <Button
-              variant='ghost'
-              size='icon'
-              onClick={() => setShowCampaignLog((v) => !v)}
-              aria-label={showCampaignLog ? 'Hide game log' : 'Show game log'}
-              title={showCampaignLog ? 'Hide game log' : 'Show game log'}
-              data-testid='campaign-log-toggle'
-              className={showCampaignLog ? 'text-primary' : undefined}>
-              <ScrollText className='h-4 w-4' />
-            </Button>
             <SceneDocumentPanel
               open={sceneDocumentPanelOpen}
               onOpenChange={setSceneDocumentPanelOpen}
@@ -392,7 +387,9 @@ export function CampaignDashboard() {
           <div
             className={cn(
               'flex min-h-0 flex-col bg-muted/20',
-              centerColumnCollapsed ? 'w-10 shrink-0 border-r border-border' : 'min-w-0 flex-1 border-r border-border',
+              centerColumnCollapsed
+                ? 'w-10 shrink-0 border-r border-border'
+                : 'min-w-0 flex-1 border-r border-border',
             )}>
             {centerColumnCollapsed ? (
               <button
@@ -454,44 +451,43 @@ export function CampaignDashboard() {
             )}
           </div>
 
-          {/* Right column: Game log */}
-          {showCampaignLog && (
-            <div
-              className={cn(
-                'flex min-h-0 flex-col bg-muted/20',
-                rightColumnCollapsed ? 'w-10 shrink-0 border-l border-border' : 'min-w-[240px] flex-1',
-              )}>
-              {rightColumnCollapsed ? (
-                <button
-                  type='button'
-                  onClick={() => setRightColumnCollapsed(false)}
-                  className='flex h-full min-h-0 flex-col items-center justify-center gap-1 border-l border-border bg-muted/30 px-1 py-2 hover:bg-muted/50'
-                  aria-label='Expand Game log panel'>
-                  <ChevronLeft className='size-4 shrink-0' />
-                  <span className='text-[10px] font-medium uppercase tracking-wide text-muted-foreground [writing-mode:vertical-rl]'>
-                    Log
-                  </span>
-                </button>
-              ) : (
-                <>
-                  <div className='flex shrink-0 items-center justify-between gap-2 border-b border-border px-2 py-1.5'>
-                    <span className='text-sm font-medium text-muted-foreground'>Game log</span>
-                    <Button
-                      variant='ghost'
-                      size='icon'
-                      className='size-7'
-                      onClick={() => setRightColumnCollapsed(true)}
-                      aria-label='Collapse Game log panel'>
-                      <ChevronRight className='size-4' />
-                    </Button>
-                  </div>
-                  <div className='min-h-0 flex-1 overflow-auto'>
-                    <CampaignGameLog campaignId={campaign.id} rulesetId={campaign.rulesetId} />
-                  </div>
-                </>
-              )}
-            </div>
-          )}
+          <div
+            className={cn(
+              'flex min-h-0 flex-col bg-muted/20',
+              rightColumnCollapsed
+                ? 'w-10 shrink-0 border-l border-border'
+                : 'min-w-[240px] flex-1',
+            )}>
+            {rightColumnCollapsed ? (
+              <button
+                type='button'
+                onClick={() => setRightColumnCollapsed(false)}
+                className='flex h-full min-h-0 flex-col items-center justify-center gap-1 border-l border-border bg-muted/30 px-1 py-2 hover:bg-muted/50'
+                aria-label='Expand Game log panel'>
+                <ChevronLeft className='size-4 shrink-0' />
+                <span className='text-[10px] font-medium uppercase tracking-wide text-muted-foreground [writing-mode:vertical-rl]'>
+                  Log
+                </span>
+              </button>
+            ) : (
+              <>
+                <div className='flex shrink-0 items-center justify-between gap-2 border-b border-border px-2 py-1.5'>
+                  <span className='text-sm font-medium text-muted-foreground'>Game log</span>
+                  <Button
+                    variant='ghost'
+                    size='icon'
+                    className='size-7'
+                    onClick={() => setRightColumnCollapsed(true)}
+                    aria-label='Collapse Game log panel'>
+                    <ChevronRight className='size-4' />
+                  </Button>
+                </div>
+                <div className='min-h-0 flex-1 overflow-auto'>
+                  <CampaignGameLog campaignId={campaign.id} rulesetId={campaign.rulesetId} />
+                </div>
+              </>
+            )}
+          </div>
         </div>
       </PageWrapper>
     </>
