@@ -6,26 +6,20 @@
  */
 
 import type { DB } from '@/stores/db/hooks/types';
-import { dbSchemaV53, dbSchemaVersion } from '@/stores/db/schema';
-import type {
-  PromptFn,
-  RollFn,
-  RollSplitFn,
-  SelectCharacterFn,
-  SelectCharactersFn,
-} from '@/types';
+import { dbSchemaVersion, latestDbSchema } from '@/stores/db/schema';
+import type { PromptFn, RollFn, RollSplitFn, SelectCharacterFn, SelectCharactersFn } from '@/types';
 import Dexie from 'dexie';
 import { Lexer } from '../interpreter/lexer';
 import { Parser } from '../interpreter/parser';
-import { persistScriptLogs } from '../script-logs';
 import {
   EventHandlerExecutor,
   type OnAttributesModifiedFn,
 } from '../reactive/event-handler-executor';
 import { ReactiveExecutor } from '../reactive/reactive-executor';
-import { ScriptRunner, type ScriptExecutionContext } from '../runtime/script-runner';
 import { createParamsHelperFromRecord } from '../runtime/params-helper';
+import { ScriptRunner, type ScriptExecutionContext } from '../runtime/script-runner';
 import { prepareForStructuredClone } from '../runtime/structured-clone-safe';
+import { persistScriptLogs } from '../script-logs';
 import type {
   AttributeChangedPayload,
   AttributesModifiedByScriptPayload,
@@ -38,11 +32,10 @@ import type {
 // Database Setup
 // ============================================================================
 
-// Initialize Dexie database in worker context
-// Note: This MUST match the schema from @/stores/db/db.ts
+// Initialize Dexie database in worker context (same IndexedDB as main thread)
 const db = new Dexie('qbdb') as DB;
 
-db.version(dbSchemaVersion).stores(dbSchemaV53);
+db.version(dbSchemaVersion).stores(latestDbSchema);
 
 // ============================================================================
 // Worker State
@@ -61,7 +54,11 @@ const rollBridge = {
     string,
     { resolve: (value: number[]) => void; reject: (err: Error) => void }
   >(),
-  requestRoll(expression: string, executionRequestId: string, rerollMessage?: string): Promise<number> {
+  requestRoll(
+    expression: string,
+    executionRequestId: string,
+    rerollMessage?: string,
+  ): Promise<number> {
     const rollRequestId = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
     return new Promise<number>((resolve, reject) => {
       this.pending.set(rollRequestId, { resolve, reject });
@@ -113,11 +110,7 @@ const rollBridge = {
 
 const promptBridge = {
   pending: new Map<string, { resolve: (value: string) => void; reject: (err: Error) => void }>(),
-  requestPrompt(
-    msg: string,
-    choices: string[],
-    executionRequestId: string,
-  ): Promise<string> {
+  requestPrompt(msg: string, choices: string[], executionRequestId: string): Promise<string> {
     const promptRequestId = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
     return new Promise<string>((resolve, reject) => {
       this.pending.set(promptRequestId, { resolve, reject });
@@ -755,7 +748,14 @@ async function handleAttributeChanged(payload: AttributeChangedPayload): Promise
       promptBridge.requestPrompt(msg, choices, payload.requestId);
     const selectCharacterFn: SelectCharacterFn = (title?: string, description?: string) =>
       characterSelectBridge
-        .requestSelect('single', title, description, payload.requestId, payload.rulesetId, payload.campaignId)
+        .requestSelect(
+          'single',
+          title,
+          description,
+          payload.requestId,
+          payload.rulesetId,
+          payload.campaignId,
+        )
         .then((ids) => (ids.length > 0 ? ids[0]! : null));
     const selectCharactersFn: SelectCharactersFn = (title?: string, description?: string) =>
       characterSelectBridge.requestSelect(
@@ -917,31 +917,27 @@ async function handleInitialAttributeSync(payload: {
       ),
     );
 
-    const result = await reactiveExecutor.runInitialSync(
-      payload.characterId,
-      payload.rulesetId,
-      {
-        executeActionEvent: (actionId, characterId, targetId, eventType) =>
-          executor.executeActionEvent(
-            actionId,
-            characterId,
-            targetId,
-            eventType,
-            rollFn,
-            undefined,
-            undefined,
-            rollSplitFn,
-            promptFn,
-            selectCharacterFn,
-            selectCharactersFn,
-          ),
-        roll: rollFn,
-        rollSplit: rollSplitFn,
-        prompt: promptFn,
-        selectCharacter: selectCharacterFn,
-        selectCharacters: selectCharactersFn,
-      },
-    );
+    const result = await reactiveExecutor.runInitialSync(payload.characterId, payload.rulesetId, {
+      executeActionEvent: (actionId, characterId, targetId, eventType) =>
+        executor.executeActionEvent(
+          actionId,
+          characterId,
+          targetId,
+          eventType,
+          rollFn,
+          undefined,
+          undefined,
+          rollSplitFn,
+          promptFn,
+          selectCharacterFn,
+          selectCharactersFn,
+        ),
+      roll: rollFn,
+      rollSplit: rollSplitFn,
+      prompt: promptFn,
+      selectCharacter: selectCharacterFn,
+      selectCharacters: selectCharactersFn,
+    });
 
     if (result.success) {
       const modifiedAttributeIds = result.modifiedAttributeIds ?? [];
@@ -1441,9 +1437,7 @@ async function handleExecuteCampaignEventEvent(payload: {
 }): Promise<void> {
   try {
     const campaignEvent = await db.campaignEvents.get(payload.campaignEventId);
-    const campaign = campaignEvent
-      ? await db.campaigns.get(campaignEvent.campaignId)
-      : undefined;
+    const campaign = campaignEvent ? await db.campaigns.get(campaignEvent.campaignId) : undefined;
     const rulesetId = campaign?.rulesetId ?? '';
     const campaignId = campaignEvent?.campaignId;
 
@@ -1455,14 +1449,7 @@ async function handleExecuteCampaignEventEvent(payload: {
       promptBridge.requestPrompt(msg, choices, payload.requestId);
     const selectCharacterFn: SelectCharacterFn = (title?: string, description?: string) =>
       characterSelectBridge
-        .requestSelect(
-          'single',
-          title,
-          description,
-          payload.requestId,
-          rulesetId,
-          campaignId,
-        )
+        .requestSelect('single', title, description, payload.requestId, rulesetId, campaignId)
         .then((ids) => (ids.length > 0 ? ids[0]! : null));
     const selectCharactersFn: SelectCharactersFn = (title?: string, description?: string) =>
       characterSelectBridge.requestSelect(

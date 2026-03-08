@@ -9,8 +9,8 @@ import type {
   CampaignEvent,
   CampaignScene,
   Character,
-  CharacterAttribute,
   CharacterArchetype,
+  CharacterAttribute,
   CharacterPage,
   CharacterWindow,
   Chart,
@@ -27,10 +27,10 @@ import type {
   Page,
   Ruleset,
   RulesetWindow,
+  SceneTurnCallback,
   Script,
   ScriptError,
   ScriptLog,
-  SceneTurnCallback,
   User,
   Window,
 } from '@/types';
@@ -39,20 +39,7 @@ import { assetInjectorMiddleware } from './asset-injector-middleware';
 import { chartOptionsMiddleware, memoizedCharts } from './chart-options-middleware';
 import { registerDbHooks } from './hooks/db-hooks';
 import { memoizedAssets } from './memoization-cache';
-import {
-  dbSchema,
-  dbSchemaVersion,
-  dbSchemaV41,
-  dbSchemaV42,
-  dbSchemaV44,
-  dbSchemaV45,
-  dbSchemaV51,
-  dbSchemaV52,
-  dbSchemaV56,
-} from './schema';
-import { migrate41to42 } from './migrations/migrate-41-to-42';
-import { migrate43to44 } from './migrations/migrate-43-to-44';
-import { migrate51to52 } from './migrations/migrate-51-to-52';
+import { registerVersions } from './migrations/run-migrations';
 
 const db = new Dexie('qbdb') as Dexie & {
   users: EntityTable<
@@ -94,51 +81,7 @@ const db = new Dexie('qbdb') as Dexie & {
   campaignEvents: EntityTable<CampaignEvent, 'id'>;
 };
 
-db.version(41).stores(dbSchemaV41);
-
-db.version(42).stores(dbSchemaV42).upgrade(migrate41to42);
-
-db.version(39).stores(dbSchema).upgrade((tx) => {
-  // Create a Campaign for each world that had rulesetId (upgrading from pre-Phase-7)
-  const worlds = (tx as any).table('worlds');
-  const campaigns = (tx as any).table('campaigns');
-  return worlds.toCollection().each((world: { id: string; rulesetId?: string }) => {
-    if (world.rulesetId) {
-      const now = new Date().toISOString();
-      return campaigns.add({
-        id: crypto.randomUUID(),
-        rulesetId: world.rulesetId,
-        worldId: world.id,
-        createdAt: now,
-        updatedAt: now,
-      });
-    }
-  });
-});
-
-db.version(33)
-  .stores({
-    ...dbSchema,
-    campaignEvents: `${dbSchema.campaignEvents}, type`,
-  } as any)
-  .upgrade((tx) => {
-    // Phase 8: add type to campaignEvents (default on_activate), tileId on campaignEventLocations
-    const campaignEvents = (tx as any).table('campaignEvents');
-    return campaignEvents.toCollection().each((ev: { id: string; type?: string }) => {
-      if (ev.type == null) {
-        return campaignEvents.update(ev.id, { type: 'on_activate' });
-      }
-    });
-  });
-
-db.version(44).stores(dbSchemaV44).upgrade(migrate43to44);
-
-db.version(45).stores(dbSchemaV45);
-
-// v51 used dbSchemaV51 with no upgrade; v52 keeps the same schema and adds data migration.
-db.version(51).stores(dbSchemaV51);
-db.version(52).stores(dbSchemaV52).upgrade(migrate51to52);
-db.version(dbSchemaVersion).stores(dbSchemaV56);
+registerVersions(db);
 
 // Cache assets for reference in the asset injector middleware
 db.on('ready', async () => {
@@ -165,14 +108,5 @@ db.on('ready', async () => {
 db.use(assetInjectorMiddleware);
 db.use(chartOptionsMiddleware);
 registerDbHooks(db);
-
-// Expose db and manual migration runner in dev for console use (e.g. run migration manually)
-if (import.meta.env?.DEV && typeof window !== 'undefined') {
-  (window as unknown as { __QB_DB__?: typeof db }).__QB_DB__ = db;
-  import('./migrations/run-migration-manually').then((m) => {
-    (window as unknown as { __QB_RUN_MIGRATION_43_44?: () => Promise<{ ok: boolean; message: string }> }).__QB_RUN_MIGRATION_43_44 = () =>
-      m.runMigration43to44Manually(db);
-  });
-}
 
 export { db };

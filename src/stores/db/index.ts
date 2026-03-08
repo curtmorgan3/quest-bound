@@ -1,7 +1,7 @@
 export * from './db';
-export * from './schema';
 export {
-  getAssetReferenceCount,
   clearAssetReferences,
   deleteAssetIfUnreferenced,
+  getAssetReferenceCount,
 } from './hooks/asset-hooks';
+export * from './schema';
