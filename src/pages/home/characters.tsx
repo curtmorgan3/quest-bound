@@ -58,9 +58,11 @@ export const Characters = () => {
 
   const selectableCharacters = useMemo(
     () =>
-      characters
-        .filter((c) => !c.isTestCharacter && c.isNpc !== true)
-        .filter((c) => !rulesetIdParam || c.rulesetId === rulesetIdParam),
+      !rulesetIdParam
+        ? []
+        : characters
+            .filter((c) => !c.isTestCharacter && c.isNpc !== true)
+            .filter((c) => c.rulesetId === rulesetIdParam),
     [characters, rulesetIdParam],
   );
 
@@ -410,7 +412,7 @@ export const Characters = () => {
           </Dialog>
         </div>
       }>
-      <div className='flex flex-col gap-3'>
+      <div className='flex flex-wrap gap-4'>
         {selectableCharacters.map((character) => {
           const doNotAsk = localStorage.getItem('qb.confirmOnDelete') === 'false';
           const rulesetTitle = getRulesetTitle(character.rulesetId);
@@ -418,24 +420,23 @@ export const Characters = () => {
           return (
             <Card
               key={character.id}
-              className='flex flex-row overflow-hidden p-0 h-32 min-h-32'
+              className='flex aspect-square w-[min(100%,280px)] flex-col overflow-hidden p-0'
               data-testid='character-card'>
               <div
-                className='w-40 shrink-0 bg-muted bg-cover bg-center'
+                className='min-h-0 flex-1 bg-muted bg-cover bg-center'
                 style={character.image ? { backgroundImage: `url(${character.image})` } : undefined}
               />
-              <div className='flex min-w-0 flex-1 flex-col justify-between p-4'>
-                <div className='min-w-0'>
-                  <h2 className='truncate text-lg font-semibold'>{character.name}</h2>
-                  <p className='mt-0.5 text-sm text-muted-foreground'>{rulesetTitle}</p>
+              <div className='flex shrink-0 flex-col gap-2 border-t p-3'>
+                <div className='flex min-w-0 flex-col gap-0.5'>
+                  <h2 className='truncate text-sm font-semibold'>{character.name}</h2>
+                  <span className='truncate text-xs text-muted-foreground'>{rulesetTitle}</span>
                 </div>
-
-                <div className='mt-2 flex items-center justify-end gap-2'>
+                <div className='flex items-center gap-2'>
                   {doNotAsk ? (
                     <Button
                       variant='ghost'
                       size='sm'
-                      className='text-red-500'
+                      className='h-8 flex-1 text-red-500'
                       data-testid='preview-card-delete'
                       onClick={() => deleteCharacter(character.id)}>
                       Delete
@@ -446,7 +447,7 @@ export const Characters = () => {
                         <Button
                           variant='ghost'
                           size='sm'
-                          className='text-red-500'
+                          className='h-8 flex-1 text-red-500'
                           data-testid='preview-card-delete'>
                           Delete
                         </Button>
@@ -478,10 +479,10 @@ export const Characters = () => {
                       </AlertDialogContent>
                     </AlertDialog>
                   )}
-
                   <Button
-                    variant='link'
+                    variant='outline'
                     size='sm'
+                    className='h-8 flex-1'
                     onClick={() => navigate(`/characters/${character.id}`)}
                     data-testid='character-card-open'>
                     Open

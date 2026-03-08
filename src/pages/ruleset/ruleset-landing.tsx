@@ -96,7 +96,7 @@ export function RulesetLanding() {
             </Link>
 
             <Link
-              to="/campaigns"
+              to={`/campaigns?rulesetId=${activeRuleset.id}`}
               className="group block w-3/4 min-w-[300px] transition-transform hover:scale-[1.02] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               <Card className="flex aspect-square flex-col overflow-hidden p-0">

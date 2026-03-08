@@ -8,18 +8,19 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
   Button,
   Card,
 } from '@/components';
 import { PageWrapper } from '@/components/composites';
 import { useCampaigns, useRulesets } from '@/lib/compass-api';
 import { Plus } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useMemo } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 
 export function Campaigns() {
+  const [searchParams] = useSearchParams();
+  const rulesetIdParam = searchParams.get('rulesetId');
+
   const { campaigns, deleteCampaign } = useCampaigns();
   const { rulesets } = useRulesets();
   const navigate = useNavigate();
@@ -27,8 +28,16 @@ export function Campaigns() {
   const getRulesetTitle = (id: string) =>
     rulesets.find((r) => r.id === id)?.title ?? 'Unknown ruleset';
 
-  const sortedCampaigns = [...campaigns].sort((a, b) =>
-    getRulesetTitle(a.rulesetId).localeCompare(getRulesetTitle(b.rulesetId)),
+  const filteredCampaigns = useMemo(
+    () =>
+      !rulesetIdParam
+        ? []
+        : [...campaigns]
+            .filter((c) => c.rulesetId === rulesetIdParam)
+            .sort((a, b) =>
+              getRulesetTitle(a.rulesetId).localeCompare(getRulesetTitle(b.rulesetId)),
+            ),
+    [campaigns, rulesetIdParam, rulesets],
   );
 
   return (
@@ -44,33 +53,33 @@ export function Campaigns() {
           Create Campaign
         </Button>
       }>
-      <div className='flex flex-col gap-3'>
-        {sortedCampaigns.map((campaign) => (
-          <Card key={campaign.id} className='overflow-hidden' data-testid='campaign-card'>
-            <div className='flex flex-row items-center justify-between gap-4 p-4'>
-              <Avatar className='size-12 shrink-0 rounded-lg'>
-                <AvatarImage
-                  src={campaign.image ?? ''}
-                  alt={campaign.label ?? 'Campaign'}
-                />
-                <AvatarFallback className='rounded-lg text-lg'>
-                  {(campaign.label ?? '?').slice(0, 1).toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
-              <div className='min-w-0 flex-1'>
-                <p className='font-medium'>{campaign.label || 'Unnamed campaign'}</p>
-                <p className='text-sm text-muted-foreground'>
+      <div className='flex flex-wrap gap-4'>
+        {filteredCampaigns.map((campaign) => (
+          <Card
+            key={campaign.id}
+            className='flex aspect-square w-[min(100%,280px)] flex-col overflow-hidden p-0'
+            data-testid='campaign-card'>
+            <div
+              className='min-h-0 flex-1 bg-muted bg-cover bg-center'
+              style={campaign.image ? { backgroundImage: `url(${campaign.image})` } : undefined}
+            />
+            <div className='flex shrink-0 flex-col gap-2 border-t p-3'>
+              <div className='flex min-w-0 flex-col gap-0.5'>
+                <h2 className='truncate text-sm font-semibold'>
+                  {campaign.label || 'Unnamed campaign'}
+                </h2>
+                <span className='truncate text-xs text-muted-foreground'>
                   {getRulesetTitle(campaign.rulesetId)}
-                </p>
+                </span>
               </div>
               <div className='flex items-center gap-2'>
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
                     <Button
                       type='button'
-                      variant='outline'
+                      variant='ghost'
                       size='sm'
-                      className='shrink-0 hover:text-destructive'
+                      className='h-8 flex-1 text-red-500'
                       aria-label='Delete campaign'
                       data-testid='campaign-card-delete'>
                       Delete
@@ -95,7 +104,9 @@ export function Campaigns() {
                   </AlertDialogContent>
                 </AlertDialog>
                 <Button
+                  variant='outline'
                   size='sm'
+                  className='h-8 flex-1'
                   onClick={() => navigate(`/campaigns/${campaign.id}/scenes`)}
                   data-testid='campaign-card-open'>
                   Open
@@ -106,7 +117,7 @@ export function Campaigns() {
         ))}
       </div>
 
-      {sortedCampaigns.length === 0 && (
+      {filteredCampaigns.length === 0 && (
         <div className='flex flex-col items-center justify-center py-12 text-muted-foreground'>
           <p className='text-lg'>No campaigns yet</p>
           <p className='text-sm'>Create a campaign by selecting a ruleset</p>
