@@ -91,6 +91,18 @@ export const RulesetSettings = ({ activeRuleset }: RulesetSettingsProps) => {
   const [title, setTitle] = useState(activeRuleset.title);
   const [version, setVersion] = useState(activeRuleset.version);
   const [description, setDescription] = useState(activeRuleset.description);
+  const [characterCtaTitle, setCharacterCtaTitle] = useState(
+    activeRuleset.characterCtaTitle ?? '',
+  );
+  const [characterCtaDescription, setCharacterCtaDescription] = useState(
+    activeRuleset.characterCtaDescription ?? '',
+  );
+  const [campaignsCtaTitle, setCampaignsCtaTitle] = useState(
+    activeRuleset.campaignsCtaTitle ?? '',
+  );
+  const [campaignCtaDescription, setCampaignCtaDescription] = useState(
+    activeRuleset.campaignCtaDescription ?? '',
+  );
   const [animationSelectOpen, setAnimationSelectOpen] = useState(false);
   const [hoveredAnimation, setHoveredAnimation] = useState<string>('');
   const [fontLoading, setFontLoading] = useState(false);
@@ -134,6 +146,51 @@ export const RulesetSettings = ({ activeRuleset }: RulesetSettingsProps) => {
     }, 500);
     return () => clearTimeout(timeout);
   }, [description]);
+
+  useEffect(() => {
+    setCharacterCtaTitle(activeRuleset.characterCtaTitle ?? '');
+    setCharacterCtaDescription(activeRuleset.characterCtaDescription ?? '');
+    setCampaignsCtaTitle(activeRuleset.campaignsCtaTitle ?? '');
+    setCampaignCtaDescription(activeRuleset.campaignCtaDescription ?? '');
+  }, [activeRuleset.id]);
+
+  const handleUpdateCharacterCtaText = async (updates: {
+    characterCtaTitle?: string;
+    characterCtaDescription?: string;
+  }) => {
+    await updateRuleset(activeRuleset.id, updates);
+  };
+
+  const handleUpdateCampaignsCtaText = async (updates: {
+    campaignsCtaTitle?: string;
+    campaignCtaDescription?: string;
+  }) => {
+    await updateRuleset(activeRuleset.id, updates);
+  };
+
+  useEffect(() => {
+    if (
+      characterCtaTitle === (activeRuleset.characterCtaTitle ?? '') &&
+      characterCtaDescription === (activeRuleset.characterCtaDescription ?? '')
+    )
+      return;
+    const timeout = setTimeout(() => {
+      handleUpdateCharacterCtaText({ characterCtaTitle, characterCtaDescription });
+    }, 500);
+    return () => clearTimeout(timeout);
+  }, [characterCtaTitle, characterCtaDescription]);
+
+  useEffect(() => {
+    if (
+      campaignsCtaTitle === (activeRuleset.campaignsCtaTitle ?? '') &&
+      campaignCtaDescription === (activeRuleset.campaignCtaDescription ?? '')
+    )
+      return;
+    const timeout = setTimeout(() => {
+      handleUpdateCampaignsCtaText({ campaignsCtaTitle, campaignCtaDescription });
+    }, 500);
+    return () => clearTimeout(timeout);
+  }, [campaignsCtaTitle, campaignCtaDescription]);
 
   const handleAddPaletteColor = (color: RGBColor) => {
     const hex = rgbToHex(color.r, color.g, color.b);
@@ -322,40 +379,93 @@ export const RulesetSettings = ({ activeRuleset }: RulesetSettingsProps) => {
         <div className='flex flex-col gap-3'>
           <Label>Landing page CTA card images</Label>
           <p className='text-sm text-muted-foreground'>
-            Images shown on the Characters and Campaigns cards on the ruleset landing page.
+            Images and copy shown on the Characters and Campaigns cards on the ruleset landing
+            page.
           </p>
-          <div className='flex flex-wrap gap-8'>
-            <div className='flex flex-col gap-2'>
-              <Label className='text-xs font-normal text-muted-foreground'>
-                Characters CTA
-              </Label>
-              <ImageUpload
-                image={activeRuleset.charactersCtaImage ?? undefined}
-                alt='Characters CTA'
-                onRemove={() =>
-                  updateRuleset(activeRuleset.id, { charactersCtaAssetId: null })
-                }
-                onUpload={(assetId) =>
-                  updateRuleset(activeRuleset.id, { charactersCtaAssetId: assetId })
-                }
-                rulesetId={activeRuleset.id}
-              />
+          <div className='flex flex-col gap-6'>
+            <div className='flex items-start gap-4'>
+              <div className='flex flex-col gap-2 shrink-0'>
+                <Label className='text-xs font-normal text-muted-foreground'>
+                  Characters CTA
+                </Label>
+                <ImageUpload
+                  image={activeRuleset.charactersCtaImage ?? undefined}
+                  alt='Characters CTA'
+                  onRemove={() =>
+                    updateRuleset(activeRuleset.id, { charactersCtaAssetId: null })
+                  }
+                  onUpload={(assetId) =>
+                    updateRuleset(activeRuleset.id, { charactersCtaAssetId: assetId })
+                  }
+                  rulesetId={activeRuleset.id}
+                />
+              </div>
+              <div className='flex flex-1 flex-row gap-4 min-w-0 items-end'>
+                <div className='flex flex-1 flex-col gap-2 min-w-0'>
+                  <Label htmlFor='character-cta-title' className='text-xs font-normal text-muted-foreground'>
+                    Title
+                  </Label>
+                  <Input
+                    id='character-cta-title'
+                    value={characterCtaTitle}
+                    onChange={(e) => setCharacterCtaTitle(e.target.value)}
+                    placeholder='Characters card title'
+                  />
+                </div>
+                <div className='flex flex-1 flex-col gap-2 min-w-0'>
+                  <Label htmlFor='character-cta-description' className='text-xs font-normal text-muted-foreground'>
+                    Description
+                  </Label>
+                  <Input
+                    id='character-cta-description'
+                    value={characterCtaDescription}
+                    onChange={(e) => setCharacterCtaDescription(e.target.value)}
+                    placeholder='Characters card description'
+                  />
+                </div>
+              </div>
             </div>
-            <div className='flex flex-col gap-2'>
-              <Label className='text-xs font-normal text-muted-foreground'>
-                Campaigns CTA
-              </Label>
-              <ImageUpload
-                image={activeRuleset.campaignsCtaImage ?? undefined}
-                alt='Campaigns CTA'
-                onRemove={() =>
-                  updateRuleset(activeRuleset.id, { campaignsCtaAssetId: null })
-                }
-                onUpload={(assetId) =>
-                  updateRuleset(activeRuleset.id, { campaignsCtaAssetId: assetId })
-                }
-                rulesetId={activeRuleset.id}
-              />
+            <div className='flex items-start gap-4'>
+              <div className='flex flex-col gap-2 shrink-0'>
+                <Label className='text-xs font-normal text-muted-foreground'>
+                  Campaigns CTA
+                </Label>
+                <ImageUpload
+                  image={activeRuleset.campaignsCtaImage ?? undefined}
+                  alt='Campaigns CTA'
+                  onRemove={() =>
+                    updateRuleset(activeRuleset.id, { campaignsCtaAssetId: null })
+                  }
+                  onUpload={(assetId) =>
+                    updateRuleset(activeRuleset.id, { campaignsCtaAssetId: assetId })
+                  }
+                  rulesetId={activeRuleset.id}
+                />
+              </div>
+              <div className='flex flex-1 flex-row gap-4 min-w-0 items-end'>
+                <div className='flex flex-1 flex-col gap-2 min-w-0'>
+                  <Label htmlFor='campaigns-cta-title' className='text-xs font-normal text-muted-foreground'>
+                    Title
+                  </Label>
+                  <Input
+                    id='campaigns-cta-title'
+                    value={campaignsCtaTitle}
+                    onChange={(e) => setCampaignsCtaTitle(e.target.value)}
+                    placeholder='Campaigns card title'
+                  />
+                </div>
+                <div className='flex flex-1 flex-col gap-2 min-w-0'>
+                  <Label htmlFor='campaigns-cta-description' className='text-xs font-normal text-muted-foreground'>
+                    Description
+                  </Label>
+                  <Input
+                    id='campaigns-cta-description'
+                    value={campaignCtaDescription}
+                    onChange={(e) => setCampaignCtaDescription(e.target.value)}
+                    placeholder='Campaigns card description'
+                  />
+                </div>
+              </div>
             </div>
           </div>
         </div>

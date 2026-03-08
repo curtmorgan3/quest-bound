@@ -164,6 +164,10 @@ export const useRulesets = () => {
         createdBy: currentUser?.username || 'unknown',
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
+        characterCtaTitle: 'Characters',
+        characterCtaDescription: 'Create and Manage Characters for this Ruleset',
+        campaignsCtaTitle: 'Campaigns',
+        campaignCtaDescription: 'Create and Launch a Campaign for this Ruleset',
         ...data,
       });
       localStorage.setItem('qb.lastEditedRulesetId', id.toString());

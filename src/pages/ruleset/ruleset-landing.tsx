@@ -19,8 +19,18 @@ export function RulesetLanding() {
     );
   }
 
-  const { title, description, image, version, charactersCtaImage, campaignsCtaImage } =
-    activeRuleset;
+  const {
+    title,
+    description,
+    image,
+    version,
+    charactersCtaImage,
+    campaignsCtaImage,
+    characterCtaTitle,
+    characterCtaDescription,
+    campaignsCtaTitle,
+    campaignCtaDescription,
+  } = activeRuleset;
 
   return (
     <PageWrapper
@@ -81,9 +91,11 @@ export function RulesetLanding() {
                     <Users className='size-6' />
                   </div>
                   <div>
-                    <h2 className='text-lg font-semibold'>Characters</h2>
+                    <h2 className='text-lg font-semibold'>
+                      {characterCtaTitle ?? 'Characters'}
+                    </h2>
                     <p className='text-sm text-muted-foreground'>
-                      Create and manage characters for this ruleset.
+                      {characterCtaDescription ?? 'Create and manage characters for this ruleset.'}
                     </p>
                   </div>
                 </div>
@@ -105,9 +117,11 @@ export function RulesetLanding() {
                     <Map className='size-6' />
                   </div>
                   <div>
-                    <h2 className='text-lg font-semibold'>Campaigns</h2>
+                    <h2 className='text-lg font-semibold'>
+                      {campaignsCtaTitle ?? 'Campaigns'}
+                    </h2>
                     <p className='text-sm text-muted-foreground'>
-                      Start or join a campaign using this ruleset.
+                      {campaignCtaDescription ?? 'Start or join a campaign using this ruleset.'}
                     </p>
                   </div>
                 </div>

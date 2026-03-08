@@ -155,6 +155,10 @@ interface ImportedMetadata {
     palette?: string[];
     charactersCtaAssetId?: string | null;
     campaignsCtaAssetId?: string | null;
+    characterCtaTitle?: string | null;
+    characterCtaDescription?: string | null;
+    campaignsCtaTitle?: string | null;
+    campaignCtaDescription?: string | null;
   };
   exportInfo: {
     exportedAt: string;
@@ -666,6 +670,10 @@ export const useImportRuleset = () => {
         palette: Array.isArray(metadata.ruleset.palette) ? metadata.ruleset.palette : [],
         charactersCtaAssetId: metadata.ruleset.charactersCtaAssetId ?? null,
         campaignsCtaAssetId: metadata.ruleset.campaignsCtaAssetId ?? null,
+        characterCtaTitle: metadata.ruleset.characterCtaTitle ?? null,
+        characterCtaDescription: metadata.ruleset.characterCtaDescription ?? null,
+        campaignsCtaTitle: metadata.ruleset.campaignsCtaTitle ?? null,
+        campaignCtaDescription: metadata.ruleset.campaignCtaDescription ?? null,
       };
 
       // Content-only import: fill an existing ruleset (e.g. temp ruleset for add-module-from-zip)

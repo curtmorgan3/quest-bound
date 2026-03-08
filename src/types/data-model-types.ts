@@ -353,6 +353,14 @@ export type Ruleset = BaseDetails & {
   charactersCtaAssetId?: string | null;
   /** Asset ID for the Campaigns CTA card image on the ruleset landing page. */
   campaignsCtaAssetId?: string | null;
+  /** Title for the Characters CTA card on the ruleset landing page. */
+  characterCtaTitle?: string | null;
+  /** Description for the Characters CTA card on the ruleset landing page. */
+  characterCtaDescription?: string | null;
+  /** Title for the Campaigns CTA card on the ruleset landing page. */
+  campaignsCtaTitle?: string | null;
+  /** Description for the Campaigns CTA card on the ruleset landing page. */
+  campaignCtaDescription?: string | null;
   /** Injected from asset.data when charactersCtaAssetId is set; do not persist on entity. */
   charactersCtaImage?: string | null;
   /** Injected from asset.data when campaignsCtaAssetId is set; do not persist on entity. */
