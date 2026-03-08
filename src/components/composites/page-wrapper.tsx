@@ -12,6 +12,8 @@ interface PageWrapperProps {
   children: React.ReactNode;
   className?: string;
   contentClassName?: string;
+  /** When true, the header bar stays fixed at the top when scrolling. */
+  stickyHeader?: boolean;
 }
 
 export function PageWrapper({
@@ -23,6 +25,7 @@ export function PageWrapper({
   children,
   className,
   contentClassName,
+  stickyHeader,
 }: PageWrapperProps) {
   const [editingTitle, setEditingTitle] = useState(false);
   const [titleValue, setTitleValue] = useState(title);
@@ -39,7 +42,11 @@ export function PageWrapper({
 
   return (
     <div className={cn('flex h-full w-full flex-col', className)}>
-      <div className='flex shrink-0 items-center gap-2 border-b bg-background px-4 py-2'>
+      <div
+        className={cn(
+          'flex shrink-0 items-center gap-2 border-b bg-background px-4 py-2',
+          stickyHeader && 'sticky top-0 z-10',
+        )}>
         {editingTitle ? (
           <Input
             value={titleValue}

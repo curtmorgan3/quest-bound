@@ -44,16 +44,25 @@ import { db } from '@/stores';
 import type { Archetype, ArchetypeWithVariantOptions } from '@/types';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { AlertCircle, Plus, Upload } from 'lucide-react';
-import { useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useMemo, useRef, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 
 export const Characters = () => {
+  const [searchParams] = useSearchParams();
+  const rulesetIdParam = searchParams.get('rulesetId');
+
   const { characters, createCharacter, deleteCharacter } = useCharacter();
   const { rulesets } = useRulesets();
   const { assets, deleteAsset } = useAssets();
   const { importCharacter, isImporting } = useImportCharacter();
 
-  const selectableCharacters = characters.filter((c) => !c.isTestCharacter && c.isNpc !== true);
+  const selectableCharacters = useMemo(
+    () =>
+      characters
+        .filter((c) => !c.isTestCharacter && c.isNpc !== true)
+        .filter((c) => !rulesetIdParam || c.rulesetId === rulesetIdParam),
+    [characters, rulesetIdParam],
+  );
 
   const [step, setStep] = useState<1 | 2>(1);
   const [name, setName] = useState('');

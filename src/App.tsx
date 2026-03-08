@@ -35,10 +35,7 @@ function CompassRoutes() {
             <Route index element={<Navigate to='/rulesets' replace />} />
             <Route path={`/rulesets`} element={<Rulesets />} />
             <Route path={`/rulesets/:rulesetId`} element={<Ruleset />} />
-            <Route
-              path={`/rulesets/:rulesetId/landing`}
-              element={<RulesetLanding />}
-            />
+            <Route path={`/landing/:rulesetId`} element={<RulesetLanding />} />
             <Route
               path={`/rulesets/:rulesetId/attributes`}
               element={<Ruleset page='attributes' />}

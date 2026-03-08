@@ -29,7 +29,6 @@ import {
 import { useImportRuleset, useRulesets, type ImportRulesetResult } from '@/lib/compass-api';
 import { AlertCircle, CheckCircle, Plus, Upload } from 'lucide-react';
 import { useRef, useState } from 'react';
-import Markdown from 'react-markdown';
 import { useNavigate } from 'react-router-dom';
 
 export const Rulesets = () => {
@@ -336,33 +335,29 @@ export const Rulesets = () => {
           </Dialog>
         </div>
       }>
-      <div className='flex flex-col gap-3'>
+      <div className='flex flex-wrap gap-4'>
         {sortedRulesets?.map((r) => {
           const doNotAsk = localStorage.getItem('qb.confirmOnDelete') === 'false';
           return (
-            <Card key={r.id} className='flex flex-row overflow-hidden p-0 h-32 min-h-[200px] gap-0'>
+            <Card
+              key={r.id}
+              className='flex aspect-square w-[min(100%,280px)] flex-col overflow-hidden p-0'
+              data-testid='ruleset-card'>
               <div
-                className='w-40 shrink-0 bg-muted bg-cover bg-center'
+                className='min-h-0 flex-1 bg-muted bg-cover bg-center'
                 style={r.image ? { backgroundImage: `url(${r.image})` } : undefined}
               />
-              <div className='flex min-w-0 flex-1 flex-col justify-between p-4'>
-                <div className='min-w-0'>
-                  <div className='flex items-center w-full justify-between'>
-                    <h2 className='truncate text-lg font-semibold'>{r.title}</h2>
-                    <span className='text-xs text-muted-foreground'>v{r.version}</span>
-                  </div>
-                  {r.description ? (
-                    <div className='md-content mt-0.5 max-h-[90%] overflow-scroll text-sm text-muted-foreground'>
-                      <Markdown>{r.description}</Markdown>
-                    </div>
-                  ) : null}
+              <div className='flex shrink-0 flex-col gap-2 border-t p-3'>
+                <div className='flex min-w-0 items-baseline justify-between gap-2'>
+                  <h2 className='truncate text-sm font-semibold'>{r.title}</h2>
+                  <span className='shrink-0 text-xs text-muted-foreground'>v{r.version}</span>
                 </div>
-                <div className='mt-2 flex items-center justify-end gap-2'>
+                <div className='flex items-center gap-2'>
                   {doNotAsk ? (
                     <Button
                       variant='ghost'
                       size='sm'
-                      className='text-red-500'
+                      className='h-8 flex-1 text-red-500'
                       data-testid='preview-card-delete'
                       onClick={() => deleteRuleset(r.id)}>
                       Delete
@@ -373,7 +368,7 @@ export const Rulesets = () => {
                         <Button
                           variant='ghost'
                           size='sm'
-                          className='text-red-500'
+                          className='h-8 flex-1 text-red-500'
                           data-testid='preview-card-delete'>
                           Delete
                         </Button>
@@ -381,7 +376,9 @@ export const Rulesets = () => {
                       <AlertDialogContent>
                         <AlertDialogHeader>
                           <AlertDialogTitle>Permanently delete this content?</AlertDialogTitle>
-                          <AlertDialogDescription>Permanently delete this content?</AlertDialogDescription>
+                          <AlertDialogDescription>
+                            Permanently delete this content?
+                          </AlertDialogDescription>
                           <div className='flex gap-2'>
                             <Label htmlFor='preview-card-do-not-ask-again'>Do not ask again</Label>
                             <Checkbox
@@ -404,9 +401,10 @@ export const Rulesets = () => {
                     </AlertDialog>
                   )}
                   <Button
-                    variant='ghost'
+                    variant='outline'
                     size='sm'
-                    onClick={() => navigate(`/rulesets/${r.id}`)}
+                    className='h-8 flex-1'
+                    onClick={() => navigate(`/landing/${r.id}`)}
                     data-testid='preview-card-open'>
                     Open
                   </Button>

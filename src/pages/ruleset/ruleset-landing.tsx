@@ -1,5 +1,6 @@
 import { Card } from '@/components';
 import { PageWrapper } from '@/components/composites';
+import { LogoIcon } from '@/components/ui/logo-icon';
 import { useActiveRuleset } from '@/lib/compass-api';
 import { Map, Users } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -18,10 +19,31 @@ export function RulesetLanding() {
     );
   }
 
-  const { title, description, image, charactersCtaImage, campaignsCtaImage } = activeRuleset;
+  const { title, description, image, version, charactersCtaImage, campaignsCtaImage } =
+    activeRuleset;
 
   return (
-    <PageWrapper title={title} contentClassName="p-0">
+    <PageWrapper
+      title={title}
+      contentClassName="p-0"
+      stickyHeader
+      headerActions={
+        <div className="flex flex-col items-end gap-0.5">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <span>Made with Quest Bound</span>
+            <LogoIcon style={{ width: 24, height: 24 }} />
+          </div>
+          <a
+            href={`https://app.questbound.com?ruleset=${activeRuleset.id}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+          >
+            Modify this Ruleset
+          </a>
+        </div>
+      }
+    >
       <div
         className="relative min-h-full flex-1 bg-muted bg-cover bg-center bg-no-repeat"
         style={image ? { backgroundImage: `url(${image})` } : undefined}
@@ -30,7 +52,10 @@ export function RulesetLanding() {
         <div className="relative flex min-h-full flex-wrap items-start gap-6 p-6 lg:p-8">
           {/* Left column: description (2/3) */}
           <section className="flex min-w-0 basis-full flex-col lg:sticky lg:top-8 lg:basis-0 lg:flex-[2_1_0]">
-            <Card className="flex-1 bg-card/70 p-6 backdrop-blur-sm">
+            <Card className="relative flex-1 bg-card/70 p-6 backdrop-blur-sm">
+              <span className="absolute right-4 top-4 text-xs text-muted-foreground">
+                v{version}
+              </span>
               {description ? (
                 <div className="md-content text-muted-foreground">
                   <Markdown>{description}</Markdown>
@@ -44,7 +69,7 @@ export function RulesetLanding() {
           {/* Right column: CTAs stacked vertically (1/3) */}
           <section className="flex min-w-0 basis-full flex-col items-center gap-6 lg:basis-0 lg:flex-[1_1_0]">
             <Link
-              to="/characters"
+              to={`/characters?rulesetId=${activeRuleset.id}`}
               className="group block w-3/4 min-w-[300px] transition-transform hover:scale-[1.02] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               <Card className="flex aspect-square flex-col overflow-hidden p-0">

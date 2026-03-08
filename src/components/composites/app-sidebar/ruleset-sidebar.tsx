@@ -80,7 +80,10 @@ export function RulesetSidebar() {
   const items = isHomepage
     ? homepageItems.map((item) => ({ ...item, url: item.url, baseUrl: item.url }))
     : RULESET_NAV_ITEMS.map((item) => {
-        const baseUrl = `/rulesets/${rulesetId}/${item.path}`;
+        const baseUrl =
+          item.path === 'landing'
+            ? `/landing/${rulesetId}`
+            : `/rulesets/${rulesetId}/${item.path}`;
         let url = baseUrl;
         if (rulesetId && item.gridPage) {
           const params = getGridFilters(rulesetId, item.gridPage);
