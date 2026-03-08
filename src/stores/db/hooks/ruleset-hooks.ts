@@ -67,66 +67,33 @@ export function registerRulesetDbHooks(db: DB) {
       try {
         const rulesetId = primKey as string;
 
-        // Delete ruleset-level entities
         await db.attributes.where('rulesetId').equals(rulesetId).delete();
-        const items = await db.items.where('rulesetId').equals(rulesetId).toArray();
-        for (const item of items) {
-          await db.itemCustomProperties.where('itemId').equals(item.id).delete();
-        }
-        await db.items.where('rulesetId').equals(rulesetId).delete();
         await db.actions.where('rulesetId').equals(rulesetId).delete();
+        await db.items.where('rulesetId').equals(rulesetId).delete();
+
         await db.charts.where('rulesetId').equals(rulesetId).delete();
-        await db.assets.where('rulesetId').equals(rulesetId).delete();
-        await db.windows.where('rulesetId').equals(rulesetId).delete();
-        await db.components.where('rulesetId').equals(rulesetId).delete();
-        await db.fonts.where('rulesetId').equals(rulesetId).delete();
         await db.documents.where('rulesetId').equals(rulesetId).delete();
+
+        await db.pages.where('rulesetId').equals(rulesetId).delete();
+        await db.windows.where('rulesetId').equals(rulesetId).delete();
+        await db.rulesetWindows.where('rulesetId').equals(rulesetId).delete();
+        await db.components.where('rulesetId').equals(rulesetId).delete();
+
+        await db.archetypes.where('rulesetId').equals(rulesetId).delete();
+
+        await db.assets.where('rulesetId').equals(rulesetId).delete();
+        await db.fonts.where('rulesetId').equals(rulesetId).delete();
         await db.diceRolls.where('rulesetId').equals(rulesetId).delete();
+        await db.customProperties.where('rulesetId').equals(rulesetId).delete();
+
         await db.scripts.where('rulesetId').equals(rulesetId).delete();
         await db.scriptErrors.where('rulesetId').equals(rulesetId).delete();
         await db.scriptLogs.where('rulesetId').equals(rulesetId).delete();
         await db.dependencyGraphNodes.where('rulesetId').equals(rulesetId).delete();
 
-        // Delete custom properties for this ruleset
-        await db.customProperties.where('rulesetId').equals(rulesetId).delete();
+        await db.campaigns.where('rulesetId').equals(rulesetId).delete();
 
-        // Delete characterArchetypes and archetypeCustomProperties for archetypes in this ruleset, then delete archetypes
-        const archetypes = await db.archetypes.where('rulesetId').equals(rulesetId).toArray();
-        for (const archetype of archetypes) {
-          await db.characterArchetypes.where('archetypeId').equals(archetype.id).delete();
-          await db.archetypeCustomProperties.where('archetypeId').equals(archetype.id).delete();
-        }
-        await db.archetypes.where('rulesetId').equals(rulesetId).delete();
-
-        await db.rulesetWindows.where('rulesetId').equals(rulesetId).delete();
-        await db.pages.where('rulesetId').equals(rulesetId).delete();
-
-        // Delete campaigns and their related data (scenes, campaignCharacters, campaignEvents, sceneTurnCallbacks)
-        const campaigns = await db.campaigns.where('rulesetId').equals(rulesetId).toArray();
-        const campaignIds = campaigns.map((c) => c.id);
-        if (campaignIds.length > 0) {
-          const scenes = await db.campaignScenes.where('campaignId').anyOf(campaignIds).toArray();
-          const sceneIds = scenes.map((s) => s.id);
-          if (sceneIds.length > 0) {
-            await db.sceneTurnCallbacks.where('campaignSceneId').anyOf(sceneIds).delete();
-          }
-          await db.campaignEvents.where('campaignId').anyOf(campaignIds).delete();
-          await db.campaignCharacters.where('campaignId').anyOf(campaignIds).delete();
-          await db.campaignScenes.where('campaignId').anyOf(campaignIds).delete();
-          await db.campaigns.where('rulesetId').equals(rulesetId).delete();
-        }
-
-        // Find and delete all test characters (archetype hooks may have already deleted some)
-        const testCharacters = await db.characters
-          .where('rulesetId')
-          .equals(rulesetId)
-          .filter((c: any) => c.isTestCharacter)
-          .toArray();
-
-        for (const testCharacter of testCharacters) {
-          await db.characters.delete(testCharacter.id);
-          // Character hook cascades to attributes, pages, windows, inventories, inventoryItems
-        }
+        await db.characters.where('rulesetId').equals(rulesetId).delete();
       } catch (error) {
         console.error('Failed to delete associated entities for ruleset:', error);
       }

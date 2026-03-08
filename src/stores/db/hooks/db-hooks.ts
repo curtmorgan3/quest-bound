@@ -2,6 +2,7 @@ import { registerActionDbHooks } from './action-hooks';
 import { registerArchetypeDbHooks } from './archetype-hooks';
 import { registerAssetDbHooks } from './asset-hooks';
 import { registerAttributeDbHooks } from './attribute-hooks';
+import { registerCampaignDbHooks } from './campaign-hooks';
 import { registerCharacterDbHooks } from './character-hooks';
 import { registerChartDbHooks } from './chart-hooks';
 import { registerComponentDbHooks } from './component-hooks';
@@ -15,6 +16,7 @@ import type { DB } from './types';
 
 export function registerDbHooks(db: DB) {
   registerRulesetDbHooks(db);
+  registerCampaignDbHooks(db);
   registerArchetypeDbHooks(db);
   registerChartDbHooks(db);
   registerAttributeDbHooks(db);
