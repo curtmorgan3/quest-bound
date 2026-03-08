@@ -1,12 +1,12 @@
 import { Loading, PWAInstallPrompt } from '@/components';
+import { CharacterSelectModal } from '@/components/character-select-modal';
 import { GlobalLoadingOverlay } from '@/components/global-loading-overlay';
 import { OnboardingPanel, useOnboardingStatus } from '@/components/onboarding';
+import { PromptModal } from '@/components/prompt-modal';
 import { useNotifications } from '@/hooks';
 import { useFontLoader, useUsers } from '@/lib/compass-api';
 import { useScriptAnnouncements } from '@/lib/compass-logic';
 import { SignIn } from '@/pages';
-import { PromptModal } from '@/components/prompt-modal';
-import { CharacterSelectModal } from '@/components/character-select-modal';
 import { DicePanel, PhysicalRollModal } from '@/pages/dice';
 import {
   CharacterArchetypesPanelContext,
@@ -86,10 +86,16 @@ export function Layout() {
 
   const location = useLocation();
   const isPlayPage = location.pathname.startsWith('/play/');
+  const isSignInRequiredRoute =
+    location.pathname.startsWith('/rulesets/') ||
+    (location.pathname.startsWith('/campaigns/') &&
+      !location.pathname.startsWith('/campaigns/new'));
+
+  const showSignInModal = !currentUser?.email && isSignInRequiredRoute;
 
   return loading ? (
     <Loading />
-  ) : !currentUser ? (
+  ) : showSignInModal ? (
     <>
       <SignIn />
       <PWAInstallPrompt />

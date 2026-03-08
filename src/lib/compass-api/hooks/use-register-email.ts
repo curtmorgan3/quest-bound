@@ -1,16 +1,23 @@
 import { useNotifications } from '@/hooks';
-import { useState } from 'react';
+import { db, useCurrentUser } from '@/stores';
+import { useEffect, useState } from 'react';
 
 export const useRegisterEmail = () => {
-  const existingEmail = localStorage.getItem('user-email');
-
+  const { currentUser, setCurrentUser } = useCurrentUser();
   const { addNotification } = useNotifications();
-  const [email, setEmail] = useState<string | null>(existingEmail);
+  const [email, setEmail] = useState<string | null>(currentUser?.email ?? null);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    setEmail(currentUser?.email ?? null);
+  }, [currentUser?.id, currentUser?.email]);
 
   const registerEmail = async () => {
     if (!email?.trim()) {
       throw new Error('Email is required');
+    }
+    if (!currentUser) {
+      throw new Error('No user selected');
     }
 
     try {
@@ -27,7 +34,12 @@ export const useRegisterEmail = () => {
         throw new Error(`Failed to register email: ${response.statusText}`);
       }
 
-      localStorage.setItem('user-email', email);
+      const updatedAt = new Date().toISOString();
+      await db.users.update(currentUser.id, { email: email.trim(), updatedAt });
+      const updatedUser = await db.users.get(currentUser.id);
+      if (updatedUser) {
+        setCurrentUser(updatedUser);
+      }
       addNotification('Email registered successfully');
     } catch (e) {
       addNotification(`Failed to register email`, { type: 'error' });
@@ -40,7 +52,7 @@ export const useRegisterEmail = () => {
     email,
     setEmail,
     registerEmail,
-    emailRegistered: !!localStorage.getItem('user-email'),
+    emailRegistered: !!currentUser?.email,
     loading,
   };
 };

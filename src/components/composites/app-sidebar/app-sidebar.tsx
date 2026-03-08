@@ -26,10 +26,8 @@ import { DiceContext } from '@/stores';
 import { useContext, useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Avatar, AvatarFallback, AvatarImage } from '../../ui/avatar';
-import { Button } from '../../ui/button';
 import { DialogDescription } from '../../ui/dialog';
 import { Drawer, DrawerContent, DrawerTrigger } from '../../ui/drawer';
-import { Popover, PopoverContent, PopoverTrigger } from '../../ui/popover';
 import { CampaignSidebar } from './campaign-sidebar';
 import { CharacterSidebar } from './character-sidebar';
 import { RulesetSidebar } from './ruleset-sidebar';
@@ -56,7 +54,7 @@ function docsPageFromRoute(path: string): string {
 }
 
 export function AppSidebar() {
-  const { currentUser, signOut } = useUsers();
+  const { currentUser } = useUsers();
   const { open, setOpen } = useSidebar();
   const location = useLocation();
   const { setDicePanelOpen } = useContext(DiceContext);
@@ -178,28 +176,17 @@ export function AppSidebar() {
               </SidebarMenuItem>
             )}
           </SidebarMenu>
-          <Popover>
-            <PopoverTrigger asChild>
-              <div
-                className={`p-${open ? 2 : 0} pb-2 flex items-center gap-2 cursor-pointer`}
-                data-testid='user-menu'>
-                <Avatar className={open ? 'rounded-lg' : 'rounded-sm'}>
-                  <AvatarImage src={currentUser?.image ?? ''} alt={currentUser?.username} />
-                  <AvatarFallback>
-                    <User className='size-4 text-muted-foreground' />
-                  </AvatarFallback>
-                </Avatar>
-                {open && <p>{currentUser?.username}</p>}
-              </div>
-            </PopoverTrigger>
-            <PopoverContent>
-              <div className='w-40 flex justify-center'>
-                <Button variant='link' onClick={signOut} data-testid='sign-out'>
-                  Sign out
-                </Button>
-              </div>
-            </PopoverContent>
-          </Popover>
+          <div
+            className={`p-${open ? 2 : 0} pb-2 flex items-center gap-2`}
+            data-testid='user-menu'>
+            <Avatar className={open ? 'rounded-lg' : 'rounded-sm'}>
+              <AvatarImage src={currentUser?.image ?? ''} alt={currentUser?.username} />
+              <AvatarFallback>
+                <User className='size-4 text-muted-foreground' />
+              </AvatarFallback>
+            </Avatar>
+            {open && <p>{currentUser?.username}</p>}
+          </div>
         </SidebarFooter>
       </Sidebar>
 

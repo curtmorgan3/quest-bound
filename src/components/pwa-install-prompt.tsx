@@ -1,4 +1,5 @@
-import { Download } from 'lucide-react';
+import { usePwaInstallStore } from '@/stores/pwa-install-store';
+import { Download, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Button } from './ui/button';
 
@@ -12,7 +13,7 @@ interface BeforeInstallPromptEvent extends Event {
 }
 
 export function PWAInstallPrompt({ ignoreDismissed = false }: { ignoreDismissed?: boolean }) {
-  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  const { deferredPrompt, setDeferredPrompt, triggerInstall } = usePwaInstallStore();
   const [showInstallPrompt, setShowInstallPrompt] = useState(false);
 
   const dismissed = localStorage.getItem('qb.pwa-install-dismissed');
@@ -23,15 +24,13 @@ export function PWAInstallPrompt({ ignoreDismissed = false }: { ignoreDismissed?
 
   useEffect(() => {
     const handleBeforeInstallPrompt = (e: Event) => {
-      // Prevent the mini-infobar from appearing on mobile
       e.preventDefault();
-      // Stash the event so it can be triggered later
-      setDeferredPrompt(e as BeforeInstallPromptEvent);
+      const prompt = e as unknown as BeforeInstallPromptEvent;
+      setDeferredPrompt(prompt);
       setShowInstallPrompt(true);
     };
 
     const handleAppInstalled = () => {
-      // Clear the deferredPrompt so it can only be used once
       setDeferredPrompt(null);
       setShowInstallPrompt(false);
     };
@@ -43,33 +42,17 @@ export function PWAInstallPrompt({ ignoreDismissed = false }: { ignoreDismissed?
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
       window.removeEventListener('appinstalled', handleAppInstalled);
     };
-  }, []);
+  }, [setDeferredPrompt]);
 
   const handleInstallClick = async () => {
-    if (!deferredPrompt) return;
-
-    // Show the install prompt
-    deferredPrompt.prompt();
-
-    // Wait for the user to respond to the prompt
-    const { outcome } = await deferredPrompt.userChoice;
-
-    if (outcome === 'accepted') {
-      console.log('User accepted the install prompt');
-    } else {
-      console.log('User dismissed the install prompt');
-    }
-
-    // Clear the deferredPrompt so it can only be used once
-    setDeferredPrompt(null);
-    setShowInstallPrompt(false);
+    const installed = await triggerInstall();
+    if (installed) setShowInstallPrompt(false);
   };
 
-  // const handleDismiss = () => {
-  //   setShowInstallPrompt(false);
-  //   // Store dismissal in localStorage to avoid showing again for a while
-  //   localStorage.setItem('qb.pwa-install-dismissed', Date.now().toString());
-  // };
+  const handleDismiss = () => {
+    setShowInstallPrompt(false);
+    localStorage.setItem('qb.pwa-install-dismissed', Date.now().toString());
+  };
 
   if (!showInstallPrompt || !deferredPrompt || (dismissedRecently && !ignoreDismissed)) {
     return null;
@@ -85,18 +68,23 @@ export function PWAInstallPrompt({ ignoreDismissed = false }: { ignoreDismissed?
               Install this app on your device to use offline.
             </p>
           </div>
-          {/* <Button variant='ghost' size='sm' onClick={handleDismiss} className='h-6 w-6 p-0'>
+          <Button
+            variant='ghost'
+            size='sm'
+            onClick={handleDismiss}
+            className='h-6 w-6 p-0 shrink-0'
+            aria-label='Dismiss'>
             <X className='h-3 w-3' />
-          </Button> */}
+          </Button>
         </div>
         <div className='flex gap-2'>
           <Button onClick={handleInstallClick} size='sm' className='flex-1'>
             <Download className='h-3 w-3 mr-1' />
             Install
           </Button>
-          {/* <Button variant='outline' size='sm' onClick={handleDismiss}>
+          <Button variant='outline' size='sm' onClick={handleDismiss}>
             Not now
-          </Button> */}
+          </Button>
         </div>
       </div>
     </div>

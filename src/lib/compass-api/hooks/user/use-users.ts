@@ -4,8 +4,18 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useRulesets } from '../rulesets';
 
+const LAST_LOGGED_IN_KEY = 'qb.lastLoggedInUsername';
+
+/** Ensures we only attempt to auto-create a user once per app session (avoids Strict Mode + live query timing). */
+let hasAttemptedAutoCreate = false;
+
+function randomUsername(): string {
+  return `User_${crypto.randomUUID().slice(0, 8)}`;
+}
+
 type UpdateUser = {
   username?: string;
+  email?: string | null;
   assetId?: string | null;
   image?: string | null;
   preferences?: Record<string, any>;
@@ -28,12 +38,41 @@ export const useUsers = () => {
   };
 
   useEffect(() => {
-    const lastLoggedInUsername = localStorage.getItem('qb.lastLoggedInUsername');
-    if (lastLoggedInUsername && users) {
-      const user = users.find((u) => u.username === lastLoggedInUsername) || null;
-      if (user) {
-        setCurrentUser(user);
-      }
+    if (users === undefined) return;
+
+    const lastLoggedInUsername = localStorage.getItem(LAST_LOGGED_IN_KEY);
+
+    if (users.length === 0) {
+      if (hasAttemptedAutoCreate) return;
+      hasAttemptedAutoCreate = true;
+      const username = randomUsername();
+      db.users
+        .add({
+          id: crypto.randomUUID(),
+          username,
+          email: null,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          preferences: {},
+          image: null,
+          assetId: null,
+          rulesets: [],
+        })
+        .then((id) => db.users.get(id))
+        .then((user) => {
+          if (user) setCurrentUser(user);
+        });
+      return;
+    }
+
+    const matchedUser = lastLoggedInUsername
+      ? users.find((u) => u.username === lastLoggedInUsername) ?? null
+      : null;
+
+    if (!matchedUser) {
+      setCurrentUser(users[0]);
+    } else {
+      setCurrentUser(matchedUser);
     }
   }, [setCurrentUser, users]);
 
@@ -42,6 +81,7 @@ export const useUsers = () => {
     const id = await db.users.add({
       id: crypto.randomUUID(),
       username,
+      email: null,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       preferences: {},

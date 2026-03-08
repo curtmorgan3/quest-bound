@@ -13,16 +13,17 @@ import {
   ImageUpload,
   Input,
   Label,
-  PWAInstallPrompt,
 } from '@/components';
 import { useUsers } from '@/lib/compass-api';
-import { errorLogger, useOnboardingStore } from '@/stores';
+import { errorLogger, useOnboardingStore, usePwaInstallStore } from '@/stores';
 import { Download, PlayCircleIcon } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 export const UserSettings = () => {
   const { currentUser, updateUser, deleteUser } = useUsers();
   const { setForceShowAgain } = useOnboardingStore();
+  const { deferredPrompt, triggerInstall } = usePwaInstallStore();
+  const [installLoading, setInstallLoading] = useState(false);
 
   const [username, setUsername] = useState(currentUser?.username || '');
   const [exportLoading, setExportLoading] = useState(false);
@@ -103,7 +104,30 @@ export const UserSettings = () => {
         </Label>
       </div>
 
-      <PWAInstallPrompt ignoreDismissed />
+      <div className='flex flex-col gap-2'>
+        <Button
+          variant='outline'
+          onClick={async () => {
+            if (!deferredPrompt) return;
+            setInstallLoading(true);
+            try {
+              await triggerInstall();
+            } finally {
+              setInstallLoading(false);
+            }
+          }}
+          disabled={!deferredPrompt || installLoading}
+          className='gap-2 w-[200px]'>
+          <Download className='h-4 w-4' />
+          {installLoading ? 'Installing…' : 'Install app'}
+        </Button>
+        {!deferredPrompt && (
+          <p className='text-xs text-muted-foreground max-w-[200px]'>
+            Install is available when your browser supports it and the app is not already
+            installed.
+          </p>
+        )}
+      </div>
 
       <ImageUpload
         image={currentUser.image}

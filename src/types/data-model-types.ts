@@ -366,6 +366,7 @@ export type Ruleset = BaseDetails & {
 
 export type User = BaseDetails & {
   username: string;
+  email?: string | null;
   assetId?: string | null;
   image?: string | null;
   preferences: Record<string, any>;

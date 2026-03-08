@@ -4,9 +4,8 @@ import { Button, Input, Link } from '@/components';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { DISCORD_URL } from '@/constants';
 import { useRegisterEmail, useUsers } from '@/lib/compass-api';
-import { isRunningLocally } from '@/utils';
 import { motion } from 'framer-motion';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -15,7 +14,7 @@ function isValidEmail(value: string | null | undefined): boolean {
 }
 
 export const SignIn = () => {
-  const { users, createUser, setCurrentUserById, loading } = useUsers();
+  const { users, createUser, setCurrentUserById, updateUser, loading } = useUsers();
   const {
     email,
     setEmail,
@@ -24,39 +23,49 @@ export const SignIn = () => {
     loading: emailLoading,
   } = useRegisterEmail();
 
-  const [newUsername, setNewUsername] = useState<string>('');
+  const [usernameValue, setUsernameValue] = useState<string>('');
   const [emailError, setEmailError] = useState<string | null>(null);
 
-  const requireEmail = !isRunningLocally();
   const needUser = !users?.length;
+  const selectedUser = users?.length ? users[0] : null;
+
+  useEffect(() => {
+    if (selectedUser) {
+      setUsernameValue(selectedUser.username);
+    }
+  }, [selectedUser?.id]);
 
   const handleSubmit = async () => {
     try {
       const trimmed = email?.trim();
 
-      if (requireEmail && !emailRegistered && !trimmed) {
+      if (!trimmed) {
         setEmailError('Email is required');
         return;
       }
+      if (!isValidEmail(email)) {
+        setEmailError('Please enter a valid email address');
+        return;
+      }
+      setEmailError(null);
 
-      if (trimmed) {
-        if (!isValidEmail(email)) {
-          setEmailError('Please enter a valid email address');
-          return;
-        }
-        setEmailError(null);
+      if (!emailRegistered) {
         await registerEmail();
-      } else {
-        setEmailError(null);
       }
 
+      const trimmedUsername = usernameValue.trim();
+      if (!trimmedUsername) return;
+
       if (needUser) {
-        if (!newUsername.trim()) return;
-        await createUser(newUsername.trim());
+        await createUser(trimmedUsername);
       } else {
         const firstUser = users?.[0];
         if (firstUser) {
-          setCurrentUserById(firstUser.id);
+          if (trimmedUsername !== firstUser.username) {
+            await updateUser(firstUser.id, { username: trimmedUsername });
+          } else {
+            setCurrentUserById(firstUser.id);
+          }
         }
       }
     } catch (e: any) {
@@ -64,13 +73,12 @@ export const SignIn = () => {
     }
   };
 
-  const needEmailRegistration = requireEmail && !emailRegistered;
   const hasEmailValue = Boolean(email?.trim());
   const emailInvalid = hasEmailValue && !isValidEmail(email);
   const isSubmitDisabled =
-    (needEmailRegistration && !email?.trim()) ||
-    (hasEmailValue && !isValidEmail(email)) ||
-    (needUser && !newUsername.trim());
+    !email?.trim() ||
+    !isValidEmail(email) ||
+    !usernameValue.trim();
   const isSubmitting = emailLoading || loading;
 
   return (
@@ -122,21 +130,13 @@ export const SignIn = () => {
                 </p>
               )}
             </div>
-            {needUser ? (
-              <Input
-                className='w-full'
-                placeholder='Username'
-                value={newUsername}
-                onChange={(e) => setNewUsername(e.target.value)}
-                data-testid='username-input'
-              />
-            ) : (
-              <span
-                className='rounded-md border bg-muted px-3 py-2 text-sm'
-                data-testid='current-user-text'>
-                {users?.[0]?.username}
-              </span>
-            )}
+            <Input
+              className='w-full'
+              placeholder='Username'
+              value={usernameValue}
+              onChange={(e) => setUsernameValue(e.target.value)}
+              data-testid='username-input'
+            />
             <Button
               loading={isSubmitting}
               onClick={handleSubmit}
@@ -145,20 +145,6 @@ export const SignIn = () => {
               data-testid='submit-button'>
               Submit
             </Button>
-            {requireEmail && !emailRegistered && (
-              <div className='flex flex-col gap-2 items-center justify-center'>
-                <p className='text-center text-sm text-muted-foreground'>
-                  Email is required to use app.questbound.com
-                </p>
-                <a
-                  target='_blank'
-                  rel='noreferrer'
-                  href='https://github.com/curtmorgan3/quest-bound'
-                  className='underline text-sm text-mutated-foreground'>
-                  Download the source code to run locally
-                </a>
-              </div>
-            )}
           </div>
 
           <motion.div
