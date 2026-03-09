@@ -58,6 +58,8 @@ export interface ReactiveExecutionResult {
   rollbackPerformed: boolean;
   /** Ruleset attribute IDs whose character values were updated by the script chain. */
   modifiedAttributeIds?: string[];
+  /** Component animations to trigger in the sheet viewer (from Owner.animateComponent in scripts). */
+  componentAnimations?: Array<{ characterId: string; referenceLabel: string; animation: string }>;
 }
 
 /**
@@ -111,6 +113,7 @@ export class ReactiveExecutor {
         executionCount: 0,
         rollbackPerformed: false,
         modifiedAttributeIds: [],
+        componentAnimations: [],
       };
     }
     if (this.graph.isEmpty()) {
@@ -124,6 +127,7 @@ export class ReactiveExecutor {
         executionCount: 0,
         rollbackPerformed: false,
         modifiedAttributeIds: [],
+        componentAnimations: [],
       };
     }
 
@@ -138,7 +142,7 @@ export class ReactiveExecutor {
     }
 
     try {
-      const modifiedAttributeIds = await this.executeScriptChain(
+      const { modifiedAttributeIds, componentAnimations } = await this.executeScriptChain(
         scriptIds,
         characterId,
         rulesetId,
@@ -153,6 +157,7 @@ export class ReactiveExecutor {
         executionCount: scriptIds.length,
         rollbackPerformed: false,
         modifiedAttributeIds,
+        componentAnimations,
       };
     } catch (error) {
       let rollbackPerformed = false;
@@ -172,6 +177,7 @@ export class ReactiveExecutor {
         error: error as Error,
         rollbackPerformed,
         modifiedAttributeIds: [],
+        componentAnimations: [],
       };
     }
   }
@@ -202,6 +208,7 @@ export class ReactiveExecutor {
         executionCount: 0,
         rollbackPerformed: false,
         modifiedAttributeIds: [],
+        componentAnimations: [],
       };
     }
 
@@ -215,6 +222,7 @@ export class ReactiveExecutor {
         executionCount: 0,
         rollbackPerformed: false,
         modifiedAttributeIds: [],
+        componentAnimations: [],
       };
     }
 
@@ -240,7 +248,7 @@ export class ReactiveExecutor {
 
     try {
       // Execute script chain
-      const modifiedAttributeIds = await this.executeScriptChain(
+      const { modifiedAttributeIds, componentAnimations } = await this.executeScriptChain(
         scriptIds,
         characterId,
         rulesetId,
@@ -258,6 +266,7 @@ export class ReactiveExecutor {
         executionCount: scriptIds.length,
         rollbackPerformed: false,
         modifiedAttributeIds,
+        componentAnimations,
       };
     } catch (error) {
       // Rollback on error
@@ -284,6 +293,7 @@ export class ReactiveExecutor {
         error: error as Error,
         rollbackPerformed,
         modifiedAttributeIds: [],
+        componentAnimations: [],
       };
     }
   }
@@ -294,7 +304,7 @@ export class ReactiveExecutor {
    * @param characterId - ID of the character
    * @param rulesetId - ID of the ruleset
    * @param executionId - ID of the execution context
-   * @returns Ruleset attribute IDs that were modified by the script chain
+   * @returns Modified attribute IDs and component animations from the script chain
    */
   private async executeScriptChain(
     scriptIds: string[],
@@ -302,8 +312,16 @@ export class ReactiveExecutor {
     rulesetId: string,
     executionId: string,
     options: ReactiveExecutionOptions = {},
-  ): Promise<string[]> {
+  ): Promise<{
+    modifiedAttributeIds: string[];
+    componentAnimations: Array<{ characterId: string; referenceLabel: string; animation: string }>;
+  }> {
     const allModifiedIds: string[] = [];
+    const allComponentAnimations: Array<{
+      characterId: string;
+      referenceLabel: string;
+      animation: string;
+    }> = [];
     const paramsHelper = options.params
       ? createParamsHelperFromRecord(options.params)
       : undefined;
@@ -349,6 +367,11 @@ export class ReactiveExecutor {
         if (!allModifiedIds.includes(id)) allModifiedIds.push(id);
       }
 
+      const animations = result.componentAnimations ?? [];
+      for (const entry of animations) {
+        allComponentAnimations.push(entry);
+      }
+
       await persistScriptLogs(this.db, {
         rulesetId,
         scriptId,
@@ -362,7 +385,10 @@ export class ReactiveExecutor {
       // If so, we would recursively execute those scripts
       // For now, we rely on the topological sort to handle this
     }
-    return allModifiedIds;
+    return {
+      modifiedAttributeIds: allModifiedIds,
+      componentAnimations: allComponentAnimations,
+    };
   }
 
   /**

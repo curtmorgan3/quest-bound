@@ -349,12 +349,9 @@ export class QBScriptClient {
         .addModified(payload.characterId, payload.modifiedAttributeIds);
     }
 
-    console.log('pay: ', payload);
-
     if (payload.componentAnimations?.length) {
       const store = useScriptComponentAnimationStore.getState();
       for (const { characterId, referenceLabel, animation } of payload.componentAnimations) {
-        console.log('add: ', referenceLabel, animation);
         store.add(characterId, referenceLabel, animation);
       }
     }

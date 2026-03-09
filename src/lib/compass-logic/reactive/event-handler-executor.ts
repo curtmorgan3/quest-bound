@@ -913,7 +913,10 @@ export class EventHandlerExecutor {
     }
 
     // Resolve parameter helper from Script.parameters + CampaignEvent.parameterValues.
-    const paramsHelper = createCampaignEventParamsHelper(script as Script, campaignEvent as CampaignEvent);
+    const paramsHelper = createCampaignEventParamsHelper(
+      script as Script,
+      campaignEvent as CampaignEvent,
+    );
 
     const context: ScriptExecutionContext = {
       ...(characterId ? { ownerId: characterId } : {}),

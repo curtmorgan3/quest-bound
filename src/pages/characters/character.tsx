@@ -1,5 +1,6 @@
 import { useSidebar } from '@/components/ui/sidebar';
 import { useCharacter, useCharacterAttributes } from '@/lib/compass-api';
+import { useExecuteActionEvent } from '@/lib/compass-logic';
 import {
   setCurrentCampaignIdForScripts,
   setCurrentCampaignSceneIdForScripts,
@@ -8,8 +9,8 @@ import {
   setCurrentRollHandlerForScripts,
   setCurrentRollSplitHandlerForScripts,
 } from '@/lib/compass-logic/worker/current-roll-handler-ref';
-import { useExecuteActionEvent } from '@/lib/compass-logic';
 import { SheetViewer } from '@/lib/compass-planes';
+import { InventoryDragPreview } from '@/lib/compass-planes/nodes/components/inventory/inventory-drag-preview';
 import {
   CharacterArchetypesPanelContext,
   CharacterInventoryPanelContext,
@@ -24,7 +25,6 @@ import { useParams } from 'react-router-dom';
 import { CharacterArchetypesPanel } from './character-archetypes-panel';
 import { CharacterInventoryPanel } from './character-inventory-panel';
 import { GameLog } from './game-log';
-import { InventoryDragPreview } from '@/lib/compass-planes/nodes/components/inventory/inventory-drag-preview';
 import {
   useCharacterInventoryHandlers,
   useCharacterWindowHandlers,
@@ -150,8 +150,9 @@ export const CharacterPage = ({
   };
 
   const fireAction = async (actionId: string) => {
+    console.log('fire');
     if (!character) return;
-    executeActionEvent(
+    const res = await executeActionEvent(
       actionId,
       character.id,
       null,
@@ -162,6 +163,8 @@ export const CharacterPage = ({
       rollSplit,
       campaignSceneId,
     );
+
+    console.log(res);
   };
 
   const fireActionFromItem = async (actionId: string, inventoryItemId: string) => {

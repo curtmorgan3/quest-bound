@@ -54,8 +54,10 @@ export const NodeScriptCaller = ({ children, component }: NodeScriptCallerProps)
       if (typeof raw === 'number') return raw !== 0;
       const trimmed = String(raw).trim().toLowerCase();
       if (!trimmed) return null;
-      if (trimmed === 'true' || trimmed === '1' || trimmed === 'yes' || trimmed === 'y') return true;
-      if (trimmed === 'false' || trimmed === '0' || trimmed === 'no' || trimmed === 'n') return false;
+      if (trimmed === 'true' || trimmed === '1' || trimmed === 'yes' || trimmed === 'y')
+        return true;
+      if (trimmed === 'false' || trimmed === '0' || trimmed === 'no' || trimmed === 'n')
+        return false;
       return null;
     };
 
@@ -68,7 +70,7 @@ export const NodeScriptCaller = ({ children, component }: NodeScriptCallerProps)
       const raw: ScriptParamValue =
         hasOverride && values[def.id] !== undefined
           ? values[def.id]!
-          : (def.defaultValue as ScriptParamValue | undefined) ?? null;
+          : ((def.defaultValue as ScriptParamValue | undefined) ?? null);
 
       let coerced: ScriptParamValue = null;
       if (def.type === 'string') {
@@ -119,4 +121,3 @@ export const NodeScriptCaller = ({ children, component }: NodeScriptCallerProps)
     </div>
   );
 };
-

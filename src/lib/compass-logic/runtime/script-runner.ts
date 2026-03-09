@@ -1221,6 +1221,9 @@ export class ScriptRunner {
         this.pendingUpdates.set(key, base);
       };
 
+      // Pre-initialize so the callback always mutates the same object
+      this.pendingUpdates.set('componentUpdates', { animations: [], styleOverrides: {} });
+
       // Load all data first
       await this.loadCache();
 
@@ -1229,6 +1232,10 @@ export class ScriptRunner {
 
       // Run global scripts so their definitions are in the environment
       await this.loadAndRunGlobalScripts();
+
+      // Re-inject Owner, Ruleset, Scene, Caller, Self so the main script always sees the correct
+      // accessors (globals can overwrite them; e.g. Owner.animateComponent must use our Owner).
+      this.setupAccessors();
 
       // Parse and execute the main script
       const tokens = new Lexer(sourceCode).tokenize();
@@ -1248,7 +1255,7 @@ export class ScriptRunner {
         logMessages: this.evaluator.getLogMessages(),
         modifiedAttributeIds,
         navigateTargets,
-        componentAnimations: componentUpdates.animations,
+        componentAnimations: componentUpdates.animations ?? [],
       };
     } catch (error) {
       return {
@@ -1256,6 +1263,7 @@ export class ScriptRunner {
         announceMessages: this.evaluator.getAnnounceMessages(),
         logMessages: this.evaluator.getLogMessages(),
         error: error instanceof Error ? error : new Error(String(error)),
+        componentAnimations: [],
       };
     }
   }

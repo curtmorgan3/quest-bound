@@ -380,6 +380,7 @@ async function runReactiveChainForModifiedAttributes(
   allModifiedIds: string[];
   scriptsExecuted: string[];
   executionCount: number;
+  componentAnimations: Array<{ characterId: string; referenceLabel: string; animation: string }>;
   lastError?: ReactiveExecutionResult['error'];
   truncated?: boolean;
 }> {
@@ -388,6 +389,11 @@ async function runReactiveChainForModifiedAttributes(
   }
   const allModifiedIds = new Set<string>(initialAttributeIds);
   const scriptsExecuted: string[] = [];
+  const componentAnimations: Array<{
+    characterId: string;
+    referenceLabel: string;
+    animation: string;
+  }> = [];
   let executionCount = 0;
   const queue = [...initialAttributeIds];
   const processed = new Set<string>();
@@ -431,11 +437,15 @@ async function runReactiveChainForModifiedAttributes(
           allModifiedIds: Array.from(allModifiedIds),
           scriptsExecuted,
           executionCount,
+          componentAnimations,
           lastError: result.error as Error | undefined,
         };
       }
       scriptsExecuted.push(...(result.scriptsExecuted ?? []));
       executionCount += result.executionCount ?? 0;
+      for (const entry of result.componentAnimations ?? []) {
+        componentAnimations.push(entry);
+      }
       for (const id of result.modifiedAttributeIds ?? []) {
         allModifiedIds.add(id);
         if (!processed.has(id)) queue.push(id);
@@ -453,6 +463,7 @@ async function runReactiveChainForModifiedAttributes(
     allModifiedIds: Array.from(allModifiedIds),
     scriptsExecuted,
     executionCount,
+    componentAnimations,
     ...(truncated ? { truncated: true } : {}),
   };
 }
@@ -841,6 +852,8 @@ async function handleAttributeChanged(payload: AttributeChangedPayload): Promise
           announceMessages: [],
           logMessages: [],
           executionTime: 0,
+          characterId: payload.characterId,
+          componentAnimations: chainResult.componentAnimations,
         },
       });
     } else {
