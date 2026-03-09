@@ -92,7 +92,11 @@ export const NodeAnimation = ({ component, children }: NodeAnimationProps) => {
             {scriptChangeFlash ? (
               <TicOverlay
                 key={`tic-${flashKey}`}
-                style={style}
+                style={{
+                  ...style,
+                  height: `${component.height}px`,
+                  width: `${component.width}px`,
+                }}
                 currentValue={numericCurrent}
                 diff={diff}
               />
@@ -217,7 +221,7 @@ interface TicOverlayProps {
   style: CSSProperties;
 }
 
-const MAX_TIC_STEPS = 20;
+const MAX_TIC_STEPS = 1000;
 const FLASH_DURATION_MS = 800;
 
 const TicOverlay = ({ currentValue, diff, style }: TicOverlayProps) => {
@@ -272,10 +276,7 @@ const TicOverlay = ({ currentValue, diff, style }: TicOverlayProps) => {
   if (displayValue === null) return null;
 
   return (
-    <span
-      className='sheet-attribute-tic-overlay'
-      style={{ ...style, display: 'inline-block' }}
-      aria-hidden>
+    <span style={{ ...style, display: 'inline-block' }} aria-hidden>
       {displayValue}
     </span>
   );
