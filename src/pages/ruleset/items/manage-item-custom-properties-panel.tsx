@@ -23,7 +23,6 @@ import type { CustomPropertyType, Item } from '@/types';
 import { rgbToHex } from '@/utils';
 import { RotateCcw, Search, SlidersHorizontal, Trash2 } from 'lucide-react';
 import { useMemo, useState } from 'react';
-import type { RGBColor } from 'react-color';
 import { CustomPropertyPicker } from './custom-property-picker';
 
 function getEffectiveDefault(
@@ -191,11 +190,12 @@ export function ManageItemCustomPropertiesPanel({
                                   color={(effectiveDefault as string) || undefined}
                                   label='Default color'
                                   disableAlpha
-                                  onUpdate={(color: RGBColor) =>
+                                  onUpdate={(value) => {
+                                    if (typeof value === 'string') return;
                                     updateItemCustomProperty(icp.id, {
-                                      defaultValue: rgbToHex(color.r, color.g, color.b),
-                                    })
-                                  }
+                                      defaultValue: rgbToHex(value.r, value.g, value.b),
+                                    });
+                                  }}
                                 />
                                 <Input
                                   value={(effectiveDefault as string) || ''}

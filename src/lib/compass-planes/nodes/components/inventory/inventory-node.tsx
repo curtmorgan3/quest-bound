@@ -1,4 +1,9 @@
-import { getComponentData, useComponentStyles } from '@/lib/compass-planes/utils';
+import {
+  getBackgroundStyle,
+  getColorStyle,
+  getComponentData,
+  useComponentStyles,
+} from '@/lib/compass-planes/utils';
 import { CharacterContext, WindowEditorContext, useInventoryDragContext } from '@/stores';
 import type { Component, InventoryComponentData } from '@/types';
 import { useNodeId } from '@xyflow/react';
@@ -19,9 +24,25 @@ export const EditInventoryNode = () => {
 
   const data = getComponentData(component) as InventoryComponentData;
   const gridColor = css.color || '#ccc';
+  const bgStyle = getBackgroundStyle(css);
+  const gridImage = `
+    linear-gradient(to right, ${gridColor} ${css.outlineWidth}px, transparent ${css.outlineWidth}px),
+    linear-gradient(to bottom, ${gridColor} ${css.outlineWidth}px, transparent ${css.outlineWidth}px)
+  `;
 
   const cellWidth = (data.cellWidth ?? 1) * 20;
   const cellHeight = (data.cellHeight ?? 1) * 20;
+
+  const containerStyle = bgStyle.background
+    ? {
+        backgroundImage: `${bgStyle.background}, ${gridImage}`,
+        backgroundSize: `100% 100%, ${cellWidth}px ${cellHeight}px`,
+      }
+    : {
+        ...bgStyle,
+        backgroundImage: gridImage,
+        backgroundSize: `${cellWidth}px ${cellHeight}px`,
+      };
 
   return (
     <ResizableNode component={component}>
@@ -29,13 +50,8 @@ export const EditInventoryNode = () => {
         style={{
           height: component.height,
           width: component.width,
-          backgroundColor: css.backgroundColor,
+          ...containerStyle,
           borderRadius: css.borderRadius,
-          backgroundSize: `${cellWidth}px ${cellHeight}px`,
-          backgroundImage: `
-            linear-gradient(to right, ${gridColor} ${css.outlineWidth}px, transparent ${css.outlineWidth}px),
-            linear-gradient(to bottom, ${gridColor} ${css.outlineWidth}px, transparent ${css.outlineWidth}px)
-          `,
           overflow: 'hidden',
         }}></div>
     </ResizableNode>
@@ -50,6 +66,11 @@ const ViewInventoryNodeComponent = ({ component }: { component: Component }) => 
   const css = useComponentStyles(component);
   const data = getComponentData(component) as InventoryComponentData;
   const gridColor = css.color || '#ccc';
+  const bgStyle = getBackgroundStyle(css);
+  const gridImage = `
+    linear-gradient(to right, ${gridColor} ${css.outlineWidth}px, transparent ${css.outlineWidth}px),
+    linear-gradient(to bottom, ${gridColor} ${css.outlineWidth}px, transparent ${css.outlineWidth}px)
+  `;
 
   const cellWidth = (data.cellWidth ?? 1) * 20;
   const cellHeight = (data.cellHeight ?? 1) * 20;
@@ -153,13 +174,17 @@ const ViewInventoryNodeComponent = ({ component }: { component: Component }) => 
           position: 'relative',
           height: component.height,
           width: component.width,
-          backgroundColor: css.backgroundColor,
+          ...(bgStyle.background
+            ? {
+                backgroundImage: `${bgStyle.background}, ${gridImage}`,
+                backgroundSize: `100% 100%, ${cellWidth}px ${cellHeight}px`,
+              }
+            : {
+                ...bgStyle,
+                backgroundImage: gridImage,
+                backgroundSize: `${cellWidth}px ${cellHeight}px`,
+              }),
           borderRadius: css.borderRadius,
-          backgroundSize: `${cellWidth}px ${cellHeight}px`,
-          backgroundImage: `
-            linear-gradient(to right, ${gridColor} ${css.outlineWidth}px, transparent ${css.outlineWidth}px),
-            linear-gradient(to bottom, ${gridColor} ${css.outlineWidth}px, transparent ${css.outlineWidth}px)
-          `,
           overflow: 'hidden',
           touchAction: 'none',
         }}>
@@ -208,7 +233,7 @@ const ViewInventoryNodeComponent = ({ component }: { component: Component }) => 
                 <span
                   className='text-xs pl-[4px]'
                   style={{
-                    color: css.color,
+                    ...getColorStyle(css),
                     fontFamily: css.fontFamily,
                     fontSize: css.fontSize,
                     fontStyle: css.fontStyle,

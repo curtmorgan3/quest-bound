@@ -1,5 +1,9 @@
 import { useAssets } from '@/lib/compass-api';
-import { getComponentData, useComponentStyles } from '@/lib/compass-planes/utils';
+import {
+  getBackgroundStyle,
+  getComponentData,
+  useComponentStyles,
+} from '@/lib/compass-planes/utils';
 import { CharacterContext, WindowEditorContext } from '@/stores';
 import type { Component, ImageComponentData } from '@/types';
 import { useNodeId } from '@xyflow/react';
@@ -32,7 +36,7 @@ export const EditImageNode = () => {
           alignItems: 'center',
           justifyContent: 'center',
           ...css,
-          backgroundColor: imageSrc ? 'transparent' : css.backgroundColor,
+          ...(imageSrc ? { backgroundColor: 'transparent' } : getBackgroundStyle(css)),
         }}>
         {imageSrc ? (
           <img
@@ -98,7 +102,7 @@ const ViewImageNodeComponent = ({ component }: { component: Component }) => {
         maxHeight: '100%',
         objectFit: 'cover',
         ...css,
-        backgroundColor: imageSrc ? 'transparent' : css.backgroundColor,
+        ...(imageSrc ? { backgroundColor: 'transparent' } : getBackgroundStyle(css)),
       }}
     />
   );

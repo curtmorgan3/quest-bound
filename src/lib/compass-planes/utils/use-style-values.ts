@@ -68,6 +68,32 @@ function resolveCustomProp(
   return raw;
 }
 
+/** Parse linear-gradient(angle deg, color1, color2) and resolve custom props in colors. */
+function resolveGradient(
+  raw: string,
+  character: { customProperties?: Record<string, string | number | boolean> } | null,
+  customProperties: Array<{ id: string; defaultValue?: string | number | boolean }>,
+): string {
+  const s = raw.trim();
+  if (!s.startsWith('linear-gradient(')) return raw;
+  const inner = s.slice('linear-gradient('.length, -1).trim();
+  const color2Match = inner.match(/,\s*([^,)]+)\s*$/);
+  if (!color2Match) return raw;
+  const color2Raw = color2Match[1].trim();
+  const rest = inner.slice(0, color2Match.index).trim();
+  const angleMatch = rest.match(/^(\d+)\s*deg\s*,\s*(.+)$/);
+  if (!angleMatch) return raw;
+  const angle = angleMatch[1];
+  const color1Raw = angleMatch[2].trim();
+  const color1 = String(
+    resolveCustomProp(color1Raw, character, customProperties),
+  );
+  const color2 = String(
+    resolveCustomProp(color2Raw, character, customProperties),
+  );
+  return `linear-gradient(${angle}deg, ${color1}, ${color2})`;
+}
+
 function makeStyleSignature(components: Array<Component>): string {
   if (!components.length) return '';
   return components
@@ -90,7 +116,16 @@ export function useStyleValues(components: Array<Component>): StyleValues {
     const result = {} as StyleValues;
     for (const key of STYLE_KEYS) {
       const raw = valueIfAllAreEqual(components, key);
-      const resolved = resolveCustomProp(raw, character, customProperties);
+      let resolved: string | number;
+      if (
+        (key === 'backgroundColor' || key === 'color') &&
+        typeof raw === 'string' &&
+        raw.trim().startsWith('linear-gradient(')
+      ) {
+        resolved = resolveGradient(raw, character, customProperties);
+      } else {
+        resolved = resolveCustomProp(raw, character, customProperties);
+      }
       result[key] = { raw, resolved };
     }
     return result;

@@ -50,6 +50,10 @@ export function updateComponentData(data: string, update: Record<any, any>): str
   });
 }
 
+function isLinearGradient(value: string | undefined): value is string {
+  return typeof value === 'string' && value.trim().startsWith('linear-gradient(');
+}
+
 function applyStyleEnrichment(styles: ComponentStyle): ComponentStyle {
   if (styles.outlineWidth === 0) {
     styles.outline = undefined;
@@ -63,6 +67,19 @@ function applyStyleEnrichment(styles: ComponentStyle): ComponentStyle {
   if (!styles.paddingTop) styles.paddingTop = 0;
   if (!styles.paddingLeft) styles.paddingLeft = 0;
   if (!styles.paddingRight) styles.paddingRight = 0;
+
+  if (isLinearGradient(styles.backgroundColor)) {
+    (styles as Record<string, unknown>).background = styles.backgroundColor;
+  }
+
+  if (isLinearGradient(styles.color)) {
+    (styles as Record<string, unknown>).colorStyle = {
+      background: styles.color,
+      backgroundClip: 'text',
+      WebkitBackgroundClip: 'text',
+      color: 'transparent',
+    };
+  }
 
   return styles;
 }

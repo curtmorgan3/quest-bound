@@ -2,7 +2,12 @@ import { CharacterContext, WindowEditorContext } from '@/stores';
 import type { Component, GraphComponentData, GraphVariant } from '@/types';
 import { useNodeId } from '@xyflow/react';
 import { memo, useContext, useEffect, useState } from 'react';
-import { getComponentData, useComponentStyles } from '../../../utils';
+import {
+  getBackgroundStyle,
+  getComponentData,
+  getSolidFallback,
+  useComponentStyles,
+} from '@/lib/compass-planes/utils';
 import { ResizableNode } from '../../decorators';
 
 function toNumber(v: string | number | boolean): number {
@@ -90,14 +95,14 @@ function GraphEditPlaceholder({
   variant: GraphVariant;
 }) {
   const css = useComponentStyles(component);
-  const fillColor = (css as { color?: string }).color ?? '#7BA3C7';
+  const fillColor = getSolidFallback((css as { color?: string }).color) ?? '#7BA3C7';
   const w = component.width;
   const h = component.height;
 
   const commonContainer = {
     width: w,
     height: h,
-    backgroundColor: css.backgroundColor,
+    ...getBackgroundStyle(css),
     borderRadius: css.borderRadius,
     border: '1px solid ' + (css.outlineColor || 'transparent'),
     overflow: 'hidden' as const,
@@ -118,7 +123,7 @@ function GraphEditPlaceholder({
             cy={cy}
             r={r}
             fill='none'
-            stroke={css.backgroundColor}
+            stroke={getSolidFallback(css.background ?? css.backgroundColor) ?? 'transparent'}
             strokeWidth={r * 2}
           />
           <circle
@@ -197,8 +202,9 @@ const ViewGraphNodeLive = memo(function ViewGraphNodeLive({
 }) {
   const ratio = useGraphRatio(component);
   const debouncedRatio = useDebouncedRatio(ratio, debounceMs);
-  const bg = css.backgroundColor;
-  const fillColor = (css as { color?: string }).color ?? '#7BA3C7';
+  const bgStyle = getBackgroundStyle(css);
+  const bg = (css as { background?: string }).background ?? css.backgroundColor;
+  const fillColor = getSolidFallback((css as { color?: string }).color) ?? '#7BA3C7';
 
   const w = component.width;
   const h = component.height;
@@ -206,7 +212,7 @@ const ViewGraphNodeLive = memo(function ViewGraphNodeLive({
   const commonContainer = {
     width: w,
     height: h,
-    backgroundColor: bg,
+    ...bgStyle,
     borderRadius: css.borderRadius,
     overflow: 'hidden' as const,
   };
@@ -254,7 +260,14 @@ const ViewGraphNodeLive = memo(function ViewGraphNodeLive({
   return (
     <div style={{ ...commonContainer, backgroundColor: 'transparent', position: 'relative' }}>
       <svg width={w} height={h} style={{ display: 'block', transform: 'rotate(-90deg)' }}>
-        <circle cx={cx} cy={cy} r={r} fill='none' stroke={bg} strokeWidth={r * 2} />
+        <circle
+          cx={cx}
+          cy={cy}
+          r={r}
+          fill='none'
+          stroke={getSolidFallback(bg ?? css.backgroundColor) ?? 'transparent'}
+          strokeWidth={r * 2}
+        />
         <circle
           cx={cx}
           cy={cy}

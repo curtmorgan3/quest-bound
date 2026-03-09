@@ -1,5 +1,6 @@
 import {
   fireExternalComponentChangeEvent,
+  getBackgroundStyle,
   getComponentData,
   useComponentStyles,
   useNodeData,
@@ -166,7 +167,7 @@ const ViewContentNodeComponent = ({
         display: 'flex',
         justifyContent: css.textAlign ?? 'start',
         alignItems: css.verticalAlign ?? 'start',
-        backgroundColor: css.backgroundColor,
+        ...getBackgroundStyle(css),
         borderRadius: css.borderRadius,
         outline: css.outline,
         outlineColor: css.outlineColor,

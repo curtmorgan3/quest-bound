@@ -30,7 +30,6 @@ import type { CustomPropertyType } from '@/types';
 import { rgbToHex } from '@/utils';
 import { Plus, Search, Trash } from 'lucide-react';
 import { useMemo, useState } from 'react';
-import type { RGBColor } from 'react-color';
 import { useParams } from 'react-router-dom';
 import { CustomPropertyPicker } from '../items/custom-property-picker';
 
@@ -250,9 +249,10 @@ export function ManageCustomProperties() {
                           color={(cp.defaultValue as string) || undefined}
                           label='Default color'
                           disableAlpha
-                          onUpdate={(color: RGBColor) =>
-                            handleDefaultValueChange(cp.id, rgbToHex(color.r, color.g, color.b))
-                          }
+                          onUpdate={(value) => {
+                            if (typeof value === 'string') return;
+                            handleDefaultValueChange(cp.id, rgbToHex(value.r, value.g, value.b));
+                          }}
                         />
                         <Input
                           value={(cp.defaultValue as string) || ''}

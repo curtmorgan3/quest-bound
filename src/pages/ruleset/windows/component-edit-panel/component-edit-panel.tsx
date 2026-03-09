@@ -95,7 +95,10 @@ export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
   const [customPropertiesModalOpen, setCustomPropertiesModalOpen] = useState(false);
   const [clickEventDialogOpen, setClickEventDialogOpen] = useState(false);
   const [clickEventType, setClickEventType] = useState<ClickEventType>('openPage');
-  const customPropertiesModalStyleKeyRef = useRef<string | null>(null);
+  const customPropertiesModalParamsRef = useRef<{
+    styleKey: string | null;
+    onSelect?: (customPropertyId: string) => void;
+  }>({ styleKey: null });
   let selectedComponents = components.filter((c) => c.selected);
   const hadSelection = selectedComponents.length > 0;
 
@@ -341,8 +344,11 @@ export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
 
   const contextValue: ComponentEditPanelContextValue = {
     assignStyleToCustomProperty,
-    openCustomPropertiesModal: (styleKey) => {
-      customPropertiesModalStyleKeyRef.current = styleKey ?? null;
+    openCustomPropertiesModal: (styleKey, onSelect) => {
+      customPropertiesModalParamsRef.current = {
+        styleKey: styleKey ?? null,
+        onSelect,
+      };
       setCustomPropertiesModalOpen(true);
     },
   };
@@ -719,8 +725,9 @@ export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
                       activeRuleset?.details?.animationColor
                     }
                     disableAlpha
-                    onUpdate={(color) => {
-                      const hex = rgbToHex(color.r, color.g, color.b);
+                    onUpdate={(value) => {
+                      if (typeof value === 'string') return;
+                      const hex = rgbToHex(value.r, value.g, value.b);
                       setAnimationColor(hex);
                     }}
                   />
@@ -1025,11 +1032,13 @@ export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
         open={customPropertiesModalOpen}
         onOpenChange={setCustomPropertiesModalOpen}
         onSelect={(customPropertyId) => {
-          const styleKey = customPropertiesModalStyleKeyRef.current;
-          if (styleKey) {
+          const { styleKey, onSelect } = customPropertiesModalParamsRef.current;
+          if (onSelect) {
+            onSelect(customPropertyId);
+          } else if (styleKey) {
             assignStyleToCustomProperty(styleKey, customPropertyId);
           }
-          customPropertiesModalStyleKeyRef.current = null;
+          customPropertiesModalParamsRef.current = { styleKey: null };
           setCustomPropertiesModalOpen(false);
         }}
       />

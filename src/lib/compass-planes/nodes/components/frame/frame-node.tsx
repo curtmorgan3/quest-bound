@@ -1,4 +1,8 @@
-import { getComponentData, useComponentStyles } from '@/lib/compass-planes/utils';
+import {
+  getBackgroundStyle,
+  getComponentData,
+  useComponentStyles,
+} from '@/lib/compass-planes/utils';
 import { colorWhite } from '@/palette';
 import { WindowEditorContext } from '@/stores';
 import type { Component, FrameComponentData } from '@/types';
@@ -26,6 +30,7 @@ export const EditFrameNode = () => {
           alignItems: 'center',
           justifyContent: 'center',
           ...css,
+          ...getBackgroundStyle(css),
         }}>
         <FrameIcon size={32} color={colorWhite} strokeWidth={1.5} />
       </div>
@@ -51,6 +56,7 @@ const ViewFrameNodeComponent = ({ component }: { component: Component }) => {
         width: `${component.width}px`,
         border: 'none',
         ...css,
+        ...getBackgroundStyle(css),
       }}
     />
   );

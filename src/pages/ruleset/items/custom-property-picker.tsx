@@ -22,8 +22,6 @@ import type { CustomPropertyType } from '@/types';
 import { rgbToHex } from '@/utils';
 import { Plus, Search } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import type { RGBColor } from 'react-color';
-
 const PROP_TYPES: CustomPropertyType[] = ['string', 'number', 'boolean', 'color'];
 
 interface CustomPropertyPickerProps {
@@ -321,9 +319,10 @@ export function CustomPropertyPicker({
                   color={createDefaultValue || undefined}
                   label='Default color'
                   disableAlpha
-                  onUpdate={(color: RGBColor) =>
-                    setCreateDefaultValue(rgbToHex(color.r, color.g, color.b))
-                  }
+                  onUpdate={(value) => {
+                    if (typeof value === 'string') return;
+                    setCreateDefaultValue(rgbToHex(value.r, value.g, value.b));
+                  }}
                 />
               ) : (
                 <Input

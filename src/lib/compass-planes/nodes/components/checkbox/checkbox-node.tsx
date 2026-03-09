@@ -1,5 +1,10 @@
 import { useAssets } from '@/lib/compass-api';
-import { useComponentStyles, useNodeData } from '@/lib/compass-planes/utils';
+import {
+  getBackgroundStyle,
+  getColorStyle,
+  useComponentStyles,
+  useNodeData,
+} from '@/lib/compass-planes/utils';
 import { CharacterContext, WindowEditorContext } from '@/stores';
 import type { Component, ComponentStyle } from '@/types';
 import { useNodeId } from '@xyflow/react';
@@ -65,7 +70,7 @@ const ViewCheckboxNodeComponent = ({
         display: 'flex',
         justifyContent: css.textAlign ?? 'center',
         alignItems: css.verticalAlign ?? 'center',
-        backgroundColor: css.backgroundColor,
+        ...getBackgroundStyle(css),
         borderRadius: css.borderRadius,
         outline: css.outline,
         outlineColor: css.outlineColor,
@@ -87,6 +92,7 @@ export const ViewCheckboxNode = memo(
 );
 
 function Checked({ url, css }: { url?: string; css: ComponentStyle }) {
+  const colorStyle = getColorStyle(css);
   if (url) {
     return (
       <img
@@ -94,7 +100,7 @@ function Checked({ url, css }: { url?: string; css: ComponentStyle }) {
         style={{
           height: '100%',
           width: '100%',
-          color: css.color,
+          ...colorStyle,
         }}
       />
     );
@@ -105,13 +111,14 @@ function Checked({ url, css }: { url?: string; css: ComponentStyle }) {
       style={{
         height: '100%',
         width: '100%',
-        color: css.color,
+        ...colorStyle,
       }}
     />
   );
 }
 
 function Unchecked({ url, css }: { url?: string; css: ComponentStyle }) {
+  const colorStyle = getColorStyle(css);
   if (url) {
     return (
       <img
@@ -119,7 +126,7 @@ function Unchecked({ url, css }: { url?: string; css: ComponentStyle }) {
         style={{
           height: '100%',
           width: '100%',
-          color: css.color,
+          ...colorStyle,
         }}
       />
     );
@@ -130,7 +137,7 @@ function Unchecked({ url, css }: { url?: string; css: ComponentStyle }) {
       style={{
         height: '100%',
         width: '100%',
-        color: css.color,
+        ...colorStyle,
       }}
     />
   );

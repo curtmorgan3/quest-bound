@@ -102,8 +102,9 @@ export const StyleEdit = ({ components, handleUpdate }: Props) => {
           propertyKey='backgroundColor'
           color={backgroundColor}
           resolvedColor={backgroundColorResolved}
-          onUpdate={(color) => handleUpdate('backgroundColor', color)}
+          onUpdate={(value) => handleUpdate('backgroundColor', value)}
           disabled={backgroundColor === MIXED_VALUE_LABEL}
+          allowGradient
         />
 
         <RulesetColorPicker
@@ -112,8 +113,9 @@ export const StyleEdit = ({ components, handleUpdate }: Props) => {
           propertyKey='color'
           color={color}
           resolvedColor={colorResolved}
-          onUpdate={(color) => handleUpdate('color', color)}
+          onUpdate={(value) => handleUpdate('color', value)}
           disabled={color === MIXED_VALUE_LABEL}
+          allowGradient
         />
       </div>
 

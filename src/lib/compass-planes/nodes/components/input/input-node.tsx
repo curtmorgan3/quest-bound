@@ -9,7 +9,12 @@ import {
   DialogTitle,
   NumberInput,
 } from '@/components';
-import { useComponentStyles, useNodeData } from '@/lib/compass-planes/utils';
+import {
+  getBackgroundStyle,
+  getColorStyle,
+  useComponentStyles,
+  useNodeData,
+} from '@/lib/compass-planes/utils';
 import { CharacterContext, WindowEditorContext } from '@/stores';
 import type { Component, TextComponentStyle } from '@/types';
 import { useNodeId } from '@xyflow/react';
@@ -94,7 +99,7 @@ const ViewInputNodeComponent = ({
     display: 'flex',
     justifyContent: css.textAlign ?? 'start',
     alignItems: css.verticalAlign ?? 'start',
-    backgroundColor: css.backgroundColor,
+    ...getBackgroundStyle(css),
     borderRadius: css.borderRadius,
     outline: css.outline,
     outlineColor: css.outlineColor,
@@ -104,7 +109,7 @@ const ViewInputNodeComponent = ({
   const inputStyle = {
     height: '100%',
     width: '100%',
-    color: css.color,
+    ...getColorStyle(css),
     fontSize: css.fontSize,
     fontFamily: css.fontFamily,
     fontWeight: css.fontWeight,

@@ -2,7 +2,12 @@ import { WindowEditorContext } from '@/stores';
 import type { Component, ShapeComponentData } from '@/types';
 import { useNodeId } from '@xyflow/react';
 import { memo, useContext } from 'react';
-import { getComponentData, useComponentStyles } from '../../../utils';
+import {
+  getBackgroundStyle,
+  getComponentData,
+  getSolidFallback,
+  useComponentStyles,
+} from '@/lib/compass-planes/utils';
 import { ResizableNode } from '../../decorators';
 
 export const EditShapeNode = () => {
@@ -26,6 +31,8 @@ const ViewShapeNodeComponent = ({ component }: { component: Component }) => {
   const outlineWidth = Math.max(0, css.outlineWidth);
   const numSides = data.sides ?? 4;
 
+  const bgStyle = getBackgroundStyle(css);
+
   // For rectangles, support irregular shapes
   if (numSides === 4) {
     return (
@@ -34,6 +41,24 @@ const ViewShapeNodeComponent = ({ component }: { component: Component }) => {
           height: `${component.height}px`,
           width: `${component.width}px`,
           ...css,
+          ...bgStyle,
+        }}
+      />
+    );
+  }
+
+  // For polygons: SVG fill needs solid color; use gradient via div+clip-path when gradient
+  const bg = (css as { background?: string }).background ?? css.backgroundColor;
+  if (bg?.startsWith('linear-gradient')) {
+    const clipPath = getPolygonClipPath(numSides);
+    return (
+      <div
+        style={{
+          height: `${component.height}px`,
+          width: `${component.width}px`,
+          background: bg,
+          clipPath,
+          WebkitClipPath: clipPath,
         }}
       />
     );
@@ -44,13 +69,23 @@ const ViewShapeNodeComponent = ({ component }: { component: Component }) => {
       key={JSON.stringify(css)}
       sides={numSides}
       diameter={component.width}
-      color={css.backgroundColor}
+      color={getSolidFallback(css.backgroundColor) ?? 'transparent'}
       outlineWidth={outlineWidth}
       outlineColor={css.outlineColor}
       opacity={css.opacity}
     />
   );
 };
+
+function getPolygonClipPath(sides: number): string {
+  const points = Array.from({ length: sides }, (_, i) => {
+    const angle = (2 * Math.PI * i) / sides - Math.PI / 2;
+    const x = 50 + 50 * Math.cos(angle);
+    const y = 50 + 50 * Math.sin(angle);
+    return `${x}% ${y}%`;
+  });
+  return `polygon(${points.join(', ')})`;
+}
 
 export const ViewShapeNode = memo(
   ViewShapeNodeComponent,

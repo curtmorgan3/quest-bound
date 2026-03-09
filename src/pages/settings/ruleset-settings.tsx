@@ -30,7 +30,10 @@ import {
   TabsTrigger,
 } from '@/components';
 import { ExportRulesetModal } from '@/components/export-ruleset-modal';
-import { RulesetColorPicker } from '@/components/composites/ruleset-color-picker';
+import {
+  RulesetColorPicker,
+  type RulesetColorPickerValue,
+} from '@/components/composites/ruleset-color-picker';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useNotifications } from '@/hooks/use-notifications';
 import { useExportRuleset, useFonts, useImportRuleset, useRulesets } from '@/lib/compass-api';
@@ -45,7 +48,6 @@ import type { Ruleset, RulesetModuleEntry } from '@/types';
 import { rgbToHex } from '@/utils';
 import { Download, Package, Plus, Sliders, Trash, Upload } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
-import type { RGBColor } from 'react-color';
 import { Link } from 'react-router-dom';
 
 interface RulesetSettingsProps {
@@ -192,8 +194,9 @@ export const RulesetSettings = ({ activeRuleset }: RulesetSettingsProps) => {
     return () => clearTimeout(timeout);
   }, [campaignsCtaTitle, campaignCtaDescription]);
 
-  const handleAddPaletteColor = (color: RGBColor) => {
-    const hex = rgbToHex(color.r, color.g, color.b);
+  const handleAddPaletteColor = (value: RulesetColorPickerValue) => {
+    if (typeof value === 'string') return;
+    const hex = rgbToHex(value.r, value.g, value.b);
     setPaletteAddColor(hex);
   };
 
@@ -600,8 +603,9 @@ export const RulesetSettings = ({ activeRuleset }: RulesetSettingsProps) => {
               label='Animation Color'
               color={activeRuleset.details?.animationColor}
               disableAlpha
-              onUpdate={(color) => {
-                const hex = rgbToHex(color.r, color.g, color.b);
+              onUpdate={(value) => {
+                if (typeof value === 'string') return;
+                const hex = rgbToHex(value.r, value.g, value.b);
                 updateRuleset(activeRuleset.id, {
                   details: { ...activeRuleset.details, animationColor: hex },
                 });

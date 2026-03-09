@@ -1,5 +1,7 @@
 import {
   fireExternalComponentChangeEvent,
+  getBackgroundStyle,
+  getColorStyle,
   getComponentData,
   useComponentStyles,
   useNodeData,
@@ -152,7 +154,7 @@ const ViewTextNodeComponent = ({
           display: 'flex',
           justifyContent: css.textAlign ?? 'start',
           alignItems: css.verticalAlign ?? 'start',
-          backgroundColor: css.backgroundColor,
+          ...getBackgroundStyle(css),
           borderRadius: css.borderRadius,
           outline: css.outline,
           outlineColor: css.outlineColor,
@@ -165,6 +167,7 @@ const ViewTextNodeComponent = ({
           className={diceRolls.length ? 'clickable' : undefined}
           style={{
             ...css,
+            ...getColorStyle(css),
             outline: 'none',
             outlineColor: 'unset',
             outlineWidth: 'unset',

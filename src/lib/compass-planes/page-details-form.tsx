@@ -64,9 +64,10 @@ export function PageDetailsForm({
         <RulesetColorPicker
           label='Background Color'
           color={value.backgroundColor}
-          onUpdate={(color) =>
-            onUpdate({ backgroundColor: `rgba(${color.r}, ${color.g}, ${color.g}, ${color.a})` })
-          }
+          onUpdate={(value) => {
+            if (typeof value === 'string') return;
+            onUpdate({ backgroundColor: `rgba(${value.r}, ${value.g}, ${value.b}, ${value.a})` });
+          }}
         />
       </div>
 

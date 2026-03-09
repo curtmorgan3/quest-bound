@@ -21,6 +21,30 @@ function isCustomPropValue(value: string | undefined): value is string {
   return typeof value === 'string' && value.startsWith(CUSTOM_PROP_PREFIX);
 }
 
+function isLinearGradient(value: string | undefined): value is string {
+  return typeof value === 'string' && value.trim().startsWith('linear-gradient(');
+}
+
+/** Parse linear-gradient(angle deg, color1, color2). Returns null if not a valid gradient. */
+function parseLinearGradient(
+  value: string,
+): { angle: number; color1: string; color2: string } | null {
+  const s = value.trim();
+  if (!s.startsWith('linear-gradient(')) return null;
+  const inner = s.slice('linear-gradient('.length, -1).trim();
+  const color2Match = inner.match(/,\s*([^,)]+)\s*$/);
+  if (!color2Match) return null;
+  const color2 = color2Match[1].trim();
+  const rest = inner.slice(0, color2Match.index).trim();
+  const angleMatch = rest.match(/^(\d+)\s*deg\s*,\s*(.+)$/);
+  if (!angleMatch) return null;
+  return {
+    angle: Math.min(360, Math.max(0, parseInt(angleMatch[1], 10))),
+    color1: angleMatch[2].trim(),
+    color2,
+  };
+}
+
 /** Parse rgba(r,g,b,a) or #hex to #rrggbb for native color input. */
 function colorToHex(color: string | undefined): string {
   if (!color || typeof color !== 'string') return '#000000';
@@ -55,17 +79,21 @@ function hexToRgb(hex: string, a = 1): RGBColor {
   };
 }
 
+export type RulesetColorPickerValue = RGBColor | string;
+
 interface RulesetColorPicker {
   color?: string;
   /** When style is bound to a custom property (color is 'custom-prop-<id>'), use this for the displayed swatch and picker. */
   resolvedColor?: string;
   label?: string;
   disabled?: boolean;
-  /** Called with RGBColor when user picks a color, or '' when clearing a custom property. */
-  onUpdate: (color: RGBColor) => void;
+  /** Called with RGBColor for solid colors, or gradient string (e.g. "linear-gradient(90deg, red, blue)") for gradients. */
+  onUpdate: (value: RulesetColorPickerValue) => void;
   disableAlpha?: boolean;
   propertyKey?: string;
   showLabel?: boolean;
+  /** When true, shows a solid/gradient toggle and gradient controls (angle + two colors). Only for backgroundColor and color. */
+  allowGradient?: boolean;
 }
 
 export const RulesetColorPicker = ({
@@ -77,13 +105,57 @@ export const RulesetColorPicker = ({
   propertyKey,
   showLabel,
   disableAlpha,
+  allowGradient = false,
 }: RulesetColorPicker) => {
   const { activeRuleset } = useActiveRuleset();
   const { customProperties } = useCustomProperties(activeRuleset?.id);
   const palette = activeRuleset?.palette ?? [];
   const [customPropsModalOpen, setCustomPropsModalOpen] = useState(false);
+  const [gradientCustomPropSlot, setGradientCustomPropSlot] = useState<1 | 2 | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const panelContext = useContext(ComponentEditPanelContext);
+
+  const displayColor = resolvedColor ?? color;
+  const isGradient = allowGradient && isLinearGradient(displayColor);
+  const parsedGradient = isGradient ? parseLinearGradient(displayColor) : null;
+  const parsedGradientRaw = isGradient && color ? parseLinearGradient(color) : null;
+  const gradientColor1IsCustomProp = !!parsedGradientRaw && isCustomPropValue(parsedGradientRaw.color1);
+  const gradientColor2IsCustomProp = !!parsedGradientRaw && isCustomPropValue(parsedGradientRaw.color2);
+  const gradientColor1CustomPropId = gradientColor1IsCustomProp
+    ? parsedGradientRaw!.color1.slice(CUSTOM_PROP_PREFIX.length)
+    : '';
+  const gradientColor2CustomPropId = gradientColor2IsCustomProp
+    ? parsedGradientRaw!.color2.slice(CUSTOM_PROP_PREFIX.length)
+    : '';
+  const gradientColor1CustomProp = customProperties.find((p) => p.id === gradientColor1CustomPropId);
+  const gradientColor2CustomProp = customProperties.find((p) => p.id === gradientColor2CustomPropId);
+
+  const [mode, setMode] = useState<'solid' | 'gradient'>(() => (isGradient ? 'gradient' : 'solid'));
+  const [gradientAngle, setGradientAngle] = useState(() => {
+    const p = color ? parseLinearGradient(color) : parsedGradient;
+    return p?.angle ?? 90;
+  });
+  const [gradientColor1, setGradientColor1] = useState(() => {
+    const p = color ? parseLinearGradient(color) : parsedGradient;
+    if (!p) return '#ff0000';
+    return isCustomPropValue(p.color1) ? p.color1 : colorToHex(p.color1);
+  });
+  const [gradientColor2, setGradientColor2] = useState(() => {
+    const p = color ? parseLinearGradient(color) : parsedGradient;
+    if (!p) return '#0000ff';
+    return isCustomPropValue(p.color2) ? p.color2 : colorToHex(p.color2);
+  });
+
+  useEffect(() => {
+    if (dialogOpen && isGradient && mode === 'gradient') {
+      const p = parseLinearGradient(color ?? displayColor);
+      if (p) {
+        setGradientAngle(p.angle);
+        setGradientColor1(isCustomPropValue(p.color1) ? p.color1 : colorToHex(p.color1));
+        setGradientColor2(isCustomPropValue(p.color2) ? p.color2 : colorToHex(p.color2));
+      }
+    }
+  }, [dialogOpen, isGradient, mode, color, displayColor]);
 
   const showCustomPropPill = isCustomPropValue(color);
   const customPropId = showCustomPropPill ? color.slice(CUSTOM_PROP_PREFIX.length) : '';
@@ -109,7 +181,6 @@ export const RulesetColorPicker = ({
     }
   };
 
-  const displayColor = resolvedColor ?? color;
   const currentHex = colorToHex(displayColor);
   const opacity = colorToAlpha(displayColor);
 
@@ -121,45 +192,244 @@ export const RulesetColorPicker = ({
     onUpdate(hexToRgb(currentHex, a));
   };
 
+  const handleGradientUpdate = () => {
+    const gradientStr = `linear-gradient(${gradientAngle}deg, ${gradientColor1}, ${gradientColor2})`;
+    onUpdate(gradientStr);
+  };
+
+  const handleGradientAngleChange = (angle: number) => {
+    setGradientAngle(angle);
+    onUpdate(`linear-gradient(${angle}deg, ${gradientColor1}, ${gradientColor2})`);
+  };
+
+  const handleGradientColor1Change = (hex: string) => {
+    setGradientColor1(hex);
+    onUpdate(`linear-gradient(${gradientAngle}deg, ${hex}, ${gradientColor2})`);
+  };
+
+  const handleGradientColor2Change = (hex: string) => {
+    setGradientColor2(hex);
+    onUpdate(`linear-gradient(${gradientAngle}deg, ${gradientColor1}, ${hex})`);
+  };
+
+  const openGradientColorCustomPropModal = (slot: 1 | 2) => {
+    if (panelContext?.openCustomPropertiesModal && propertyKey) {
+      panelContext.openCustomPropertiesModal(propertyKey, (customPropertyId) => {
+        const customPropValue = `${CUSTOM_PROP_PREFIX}${customPropertyId}`;
+        if (slot === 1) {
+          setGradientColor1(customPropValue);
+          onUpdate(`linear-gradient(${gradientAngle}deg, ${customPropValue}, ${gradientColor2})`);
+        } else {
+          setGradientColor2(customPropValue);
+          onUpdate(`linear-gradient(${gradientAngle}deg, ${gradientColor1}, ${customPropValue})`);
+        }
+      });
+    } else if (propertyKey) {
+      setGradientCustomPropSlot(slot);
+      setCustomPropsModalOpen(true);
+    }
+  };
+
+  const clearGradientColorCustomProp = (slot: 1 | 2) => {
+    const fallbackHex = slot === 1 ? '#ff0000' : '#0000ff';
+    if (slot === 1) {
+      setGradientColor1(fallbackHex);
+      onUpdate(`linear-gradient(${gradientAngle}deg, ${fallbackHex}, ${gradientColor2})`);
+    } else {
+      setGradientColor2(fallbackHex);
+      onUpdate(`linear-gradient(${gradientAngle}deg, ${gradientColor1}, ${fallbackHex})`);
+    }
+  };
+
+  const swatchGradientColors =
+    mode === 'gradient'
+      ? [
+          gradientColor1IsCustomProp ? colorToHex(parsedGradient?.color1) : gradientColor1,
+          gradientColor2IsCustomProp ? colorToHex(parsedGradient?.color2) : gradientColor2,
+        ]
+      : null;
+  const swatchStyle =
+    mode === 'gradient' && swatchGradientColors
+      ? {
+          background: `linear-gradient(${gradientAngle}deg, ${swatchGradientColors[0]}, ${swatchGradientColors[1]})`,
+        }
+      : { backgroundColor: currentHex };
+
   const pickerContent = (
     <div className='flex flex-col gap-4'>
       <DialogTitle className='text-base'>{label ?? 'Color'}</DialogTitle>
       <DialogDescription>{label ?? 'Color'}</DialogDescription>
       <div className='flex flex-col gap-3'>
-        <div className='flex items-center gap-2'>
-          <input
-            type='color'
-            value={currentHex}
-            onChange={(e) => handleColorChange(e.target.value)}
-            className='h-10 flex-1 min-w-0 cursor-pointer rounded border border-border bg-transparent p-0'
-            aria-label={label ?? 'Color'}
-          />
-          {!!propertyKey && (
+        {allowGradient && (
+          <div className='flex gap-2'>
             <Button
               type='button'
-              variant='outline'
-              size='icon'
-              className='size-10 rounded shrink-0'
-              aria-label={label ?? 'Color'}
-              onClick={openCustomPropertiesModal}>
-              <SlidersHorizontal className='size-4' />
+              variant={mode === 'solid' ? 'outline' : 'ghost'}
+              size='sm'
+              className='flex-1'
+              onClick={() => {
+                setMode('solid');
+                const hex = isGradient ? gradientColor1 : colorToHex(displayColor);
+                onUpdate(hexToRgb(hex, opacity));
+              }}>
+              Solid
             </Button>
-          )}
-        </div>
-        {!disableAlpha && (
-          <div className='flex flex-col gap-2'>
-            <Label className='text-xs'>Opacity</Label>
-            <Slider
-              min={0}
-              max={100}
-              step={1}
-              value={[Math.round(opacity * 100)]}
-              onValueChange={(v) => handleOpacityChange((v[0] ?? 100) / 100)}
-              aria-label='Opacity'
-            />
+            <Button
+              type='button'
+              variant={mode === 'gradient' ? 'outline' : 'ghost'}
+              size='sm'
+              className='flex-1'
+              onClick={() => {
+                setMode('gradient');
+                handleGradientUpdate();
+              }}>
+              Gradient
+            </Button>
           </div>
         )}
-        {palette.length > 0 && (
+        {mode === 'solid' ? (
+          <>
+            <div className='flex items-center gap-2'>
+              <input
+                type='color'
+                value={currentHex}
+                onChange={(e) => handleColorChange(e.target.value)}
+                className='h-10 flex-1 min-w-0 cursor-pointer rounded border border-border bg-transparent p-0'
+                aria-label={label ?? 'Color'}
+              />
+              {!!propertyKey && (
+                <Button
+                  type='button'
+                  variant='outline'
+                  size='icon'
+                  className='size-10 rounded shrink-0'
+                  aria-label={label ?? 'Color'}
+                  onClick={openCustomPropertiesModal}>
+                  <SlidersHorizontal className='size-4' />
+                </Button>
+              )}
+            </div>
+            {!disableAlpha && (
+              <div className='flex flex-col gap-2'>
+                <Label className='text-xs'>Opacity</Label>
+                <Slider
+                  min={0}
+                  max={100}
+                  step={1}
+                  value={[Math.round(opacity * 100)]}
+                  onValueChange={(v) => handleOpacityChange((v[0] ?? 100) / 100)}
+                  aria-label='Opacity'
+                />
+              </div>
+            )}
+          </>
+        ) : (
+          <div className='flex flex-col gap-3'>
+            <div className='flex flex-col gap-2'>
+              <Label className='text-xs'>Angle</Label>
+              <input
+                type='number'
+                min={0}
+                max={360}
+                value={gradientAngle}
+                onChange={(e) =>
+                  handleGradientAngleChange(
+                    Math.min(360, Math.max(0, parseInt(e.target.value, 10) || 0)),
+                  )
+                }
+                className='h-10 w-full rounded border border-border bg-transparent px-3 py-2 text-sm'
+                aria-label='Gradient angle'
+              />
+            </div>
+            <div className='flex flex-col gap-2'>
+              <Label className='text-xs'>Color 1</Label>
+              {gradientColor1IsCustomProp ? (
+                <div className='flex h-[40px] items-center gap-1 rounded-[4px] border border-border bg-muted/50 px-1.5'>
+                  <span
+                    className='min-w-0 flex-1 truncate text-xs'
+                    title={gradientColor1CustomProp?.label ?? 'unknown'}>
+                    {gradientColor1CustomProp?.label ?? 'unknown'}
+                  </span>
+                  <Button
+                    type='button'
+                    variant='ghost'
+                    size='icon'
+                    className='size-4 shrink-0 rounded'
+                    aria-label='Remove custom property'
+                    disabled={disabled}
+                    onClick={() => clearGradientColorCustomProp(1)}>
+                    <X className='size-3' />
+                  </Button>
+                </div>
+              ) : (
+                <div className='flex items-center gap-2'>
+                  <input
+                    type='color'
+                    value={colorToHex(gradientColor1)}
+                    onChange={(e) => handleGradientColor1Change(e.target.value)}
+                    className='h-10 flex-1 min-w-0 cursor-pointer rounded border border-border bg-transparent p-0'
+                    aria-label='Gradient color 1'
+                  />
+                  {!!propertyKey && (
+                    <Button
+                      type='button'
+                      variant='outline'
+                      size='icon'
+                      className='size-10 rounded shrink-0'
+                      aria-label='Assign custom property to gradient color 1'
+                      onClick={() => openGradientColorCustomPropModal(1)}>
+                      <SlidersHorizontal className='size-4' />
+                    </Button>
+                  )}
+                </div>
+              )}
+            </div>
+            <div className='flex flex-col gap-2'>
+              <Label className='text-xs'>Color 2</Label>
+              {gradientColor2IsCustomProp ? (
+                <div className='flex h-[40px] items-center gap-1 rounded-[4px] border border-border bg-muted/50 px-1.5'>
+                  <span
+                    className='min-w-0 flex-1 truncate text-xs'
+                    title={gradientColor2CustomProp?.label ?? 'unknown'}>
+                    {gradientColor2CustomProp?.label ?? 'unknown'}
+                  </span>
+                  <Button
+                    type='button'
+                    variant='ghost'
+                    size='icon'
+                    className='size-4 shrink-0 rounded'
+                    aria-label='Remove custom property'
+                    disabled={disabled}
+                    onClick={() => clearGradientColorCustomProp(2)}>
+                    <X className='size-3' />
+                  </Button>
+                </div>
+              ) : (
+                <div className='flex items-center gap-2'>
+                  <input
+                    type='color'
+                    value={colorToHex(gradientColor2)}
+                    onChange={(e) => handleGradientColor2Change(e.target.value)}
+                    className='h-10 flex-1 min-w-0 cursor-pointer rounded border border-border bg-transparent p-0'
+                    aria-label='Gradient color 2'
+                  />
+                  {!!propertyKey && (
+                    <Button
+                      type='button'
+                      variant='outline'
+                      size='icon'
+                      className='size-10 rounded shrink-0'
+                      aria-label='Assign custom property to gradient color 2'
+                      onClick={() => openGradientColorCustomPropModal(2)}>
+                      <SlidersHorizontal className='size-4' />
+                    </Button>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+        {mode === 'solid' && palette.length > 0 && (
           <div className='flex flex-wrap gap-1.5'>
             {palette.map((swatch, i) => {
               const hex = colorToHex(swatch);
@@ -218,7 +488,7 @@ export const RulesetColorPicker = ({
                 type='button'
                 disabled={disabled}
                 className='h-8 w-full clickable rounded border border-border shadow-sm disabled:opacity-50'
-                style={{ backgroundColor: currentHex, height: 30, width: 30 }}
+                style={{ ...swatchStyle, height: 30, width: 30 }}
                 aria-label={label ?? 'Color'}
               />
             </DialogTrigger>
@@ -229,8 +499,28 @@ export const RulesetColorPicker = ({
       {!panelContext && (
         <CustomPropertiesListModal
           open={customPropsModalOpen}
-          onOpenChange={setCustomPropsModalOpen}
-          onSelect={() => setCustomPropsModalOpen(false)}
+          onOpenChange={(open) => {
+            setCustomPropsModalOpen(open);
+            if (!open) setGradientCustomPropSlot(null);
+          }}
+          onSelect={(customPropertyId) => {
+            if (gradientCustomPropSlot && propertyKey) {
+              const customPropValue = `${CUSTOM_PROP_PREFIX}${customPropertyId}`;
+              if (gradientCustomPropSlot === 1) {
+                setGradientColor1(customPropValue);
+                onUpdate(
+                  `linear-gradient(${gradientAngle}deg, ${customPropValue}, ${gradientColor2})`,
+                );
+              } else {
+                setGradientColor2(customPropValue);
+                onUpdate(
+                  `linear-gradient(${gradientAngle}deg, ${gradientColor1}, ${customPropValue})`,
+                );
+              }
+            }
+            setCustomPropsModalOpen(false);
+            setGradientCustomPropSlot(null);
+          }}
         />
       )}
     </>

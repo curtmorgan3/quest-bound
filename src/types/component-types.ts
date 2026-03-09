@@ -1,7 +1,10 @@
 import type { ScriptParamValue } from './data-model-types';
 
 type BaseComponentStyle = {
-  backgroundColor: string;
+  /** Solid color or custom-prop reference. When a gradient, use `background` instead. */
+  backgroundColor?: string;
+  /** Set when backgroundColor is a linear-gradient; use this for the style. */
+  background?: string;
   opacity: number;
   outline?: string;
   borderRadius?: string;
@@ -18,7 +21,10 @@ type BaseComponentStyle = {
 };
 
 export type TextComponentStyle = BaseComponentStyle & {
+  /** Solid color or linear-gradient string. When gradient, use colorStyle for gradient text. */
   color?: string;
+  /** When color is a gradient, use this object for the text element (background + backgroundClip + color). */
+  colorStyle?: Record<string, string | number>;
   fontSize?: number;
   fontFamily?: string;
   fontWeight?: string;
