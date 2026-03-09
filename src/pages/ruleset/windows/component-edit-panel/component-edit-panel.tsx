@@ -68,6 +68,7 @@ type ClickEventType = 'openPage' | 'openWindow' | 'fireAction' | 'fireScript';
 const ATTRIBUTE_ANIMATION_OPTIONS = [
   { value: 'none', label: 'None' },
   { value: 'floating-difference', label: 'Floating difference' },
+  { value: 'tic', label: 'Tic' },
   { value: 'pop', label: 'Pop' },
   { value: 'highlight', label: 'Highlight' },
   { value: 'glow', label: 'Glow' },

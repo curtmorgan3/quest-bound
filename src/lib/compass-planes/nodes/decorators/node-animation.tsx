@@ -1,9 +1,10 @@
 import { CharacterContext, useCurrentUser } from '@/stores';
 import type { Component } from '@/types';
-import { useContext, type ReactNode } from 'react';
+import { useContext, useEffect, useState, type CSSProperties, type ReactNode } from 'react';
 import {
   getComponentData,
   useComponentAnimationTrigger,
+  useComponentStyles,
   useNodeData,
   useRegisterAnimation,
 } from '../../utils';
@@ -19,10 +20,19 @@ export const NodeAnimation = ({ component, children }: NodeAnimationProps) => {
   const context = useContext(CharacterContext);
   const character = context?.character;
   const { value, attributeType } = useNodeData(component);
+  const style = useComponentStyles(component);
+
+  const numericCurrent =
+    attributeType === 'number'
+      ? (() => {
+          const n = Number(value);
+          return Number.isFinite(n) ? n : null;
+        })()
+      : null;
   const { flashKey, diff, scriptChangeFlash } = useRegisterAnimation(
     character?.id ?? '',
     component.attributeId ?? '',
-    attributeType === 'number' ? parseInt(`${value}`) : value,
+    numericCurrent ?? (value as string | number | boolean),
   );
 
   const data = getComponentData(component);
@@ -63,6 +73,36 @@ export const NodeAnimation = ({ component, children }: NodeAnimationProps) => {
           </div>
         );
         break;
+      case 'tic': {
+        if (numericCurrent === null || !diff) {
+          content = <>{children}</>;
+          break;
+        }
+
+        const delta = parseNumericDiff(diff);
+        const canAnimate = delta !== null && delta !== 0 && Number.isFinite(numericCurrent);
+
+        if (!canAnimate) {
+          content = <>{children}</>;
+          break;
+        }
+
+        content = (
+          <div key={flashKey} className='sheet-attribute-animation-wrapper'>
+            {scriptChangeFlash ? (
+              <TicOverlay
+                key={`tic-${flashKey}`}
+                style={style}
+                currentValue={numericCurrent}
+                diff={diff}
+              />
+            ) : (
+              children
+            )}
+          </div>
+        );
+        break;
+      }
       case 'pop':
         content = (
           <div key={flashKey} className='sheet-attribute-animation-wrapper'>
@@ -161,4 +201,82 @@ export const NodeAnimation = ({ component, children }: NodeAnimationProps) => {
   }
 
   return content;
+};
+
+export function parseNumericDiff(diff: string): number | null {
+  const trimmed = diff.trim();
+  if (!trimmed) return null;
+  const num = Number(trimmed);
+  if (!Number.isFinite(num)) return null;
+  return num;
+}
+
+interface TicOverlayProps {
+  currentValue: number;
+  diff: string;
+  style: CSSProperties;
+}
+
+const MAX_TIC_STEPS = 20;
+const FLASH_DURATION_MS = 800;
+
+const TicOverlay = ({ currentValue, diff, style }: TicOverlayProps) => {
+  const [displayValue, setDisplayValue] = useState<number | null>(null);
+
+  useEffect(() => {
+    const delta = parseNumericDiff(diff);
+    if (delta === null || delta === 0) {
+      setDisplayValue(null);
+      return;
+    }
+
+    const prevValue = currentValue - delta;
+
+    if (!Number.isFinite(prevValue) || !Number.isFinite(currentValue)) {
+      setDisplayValue(null);
+      return;
+    }
+
+    const absDelta = Math.abs(delta);
+
+    // Only render if both the prev and new values are numbers and the change is small enough to animate.
+    if (absDelta > MAX_TIC_STEPS) {
+      setDisplayValue(null);
+      return;
+    }
+
+    let value = prevValue;
+    const step = delta > 0 ? 1 : -1;
+
+    setDisplayValue(value);
+
+    const intervalMs = Math.max(16, Math.floor(FLASH_DURATION_MS / absDelta));
+
+    const intervalId = window.setInterval(() => {
+      value += step;
+
+      if ((step > 0 && value >= currentValue) || (step < 0 && value <= currentValue)) {
+        setDisplayValue(currentValue);
+        window.clearInterval(intervalId);
+        return;
+      }
+
+      setDisplayValue(value);
+    }, intervalMs);
+
+    return () => {
+      window.clearInterval(intervalId);
+    };
+  }, [currentValue, diff]);
+
+  if (displayValue === null) return null;
+
+  return (
+    <span
+      className='sheet-attribute-tic-overlay'
+      style={{ ...style, display: 'inline-block' }}
+      aria-hidden>
+      {displayValue}
+    </span>
+  );
 };
