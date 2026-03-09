@@ -1,3 +1,4 @@
+import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -67,6 +68,15 @@ export const GraphDataEdit = ({ components, updateComponents }: GraphDataEditPro
     fireExternalComponentChangeEvent({ updates: updates as any });
   };
 
+  const setInverseFill = (inverseFill: boolean) => {
+    const updates = editableComponents.map((c) => ({
+      id: c.id,
+      data: updateComponentData(c.data, { inverseFill }),
+    }));
+    updateComponents(updates);
+    fireExternalComponentChangeEvent({ updates: updates as any });
+  };
+
   const setAnimationDebounceSeconds = (seconds: number) => {
     const value = Math.max(0, Number(seconds));
     const updates = editableComponents.map((c) => ({
@@ -115,6 +125,16 @@ export const GraphDataEdit = ({ components, updateComponents }: GraphDataEditPro
             ))}
           </SelectContent>
         </Select>
+        <div className='flex items-center gap-2'>
+          <Checkbox
+            id='graph-inverse-fill'
+            checked={firstData?.inverseFill ?? false}
+            onCheckedChange={(checked) => setInverseFill(checked === true)}
+          />
+          <Label htmlFor='graph-inverse-fill' className='text-sm font-normal cursor-pointer'>
+            Invert fill
+          </Label>
+        </div>
       </div>
       <div className='flex flex-col gap-2'>
         <Label htmlFor='graph-animation-debounce'>Animation delay (seconds)</Label>

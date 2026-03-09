@@ -96,10 +96,12 @@ function GraphEditPlaceholder({
   component: Component;
   variant: GraphVariant;
 }) {
+  const data = getComponentData(component) as GraphComponentData;
   const css = useComponentStyles(component);
   const fillColor = getSolidFallback((css as { color?: string }).color) ?? '#7BA3C7';
   const w = component.width;
   const h = component.height;
+  const editFillRatio = data.inverseFill ? 1 - EDIT_FILL_RATIO : EDIT_FILL_RATIO;
 
   const commonContainer = {
     width: w,
@@ -116,7 +118,7 @@ function GraphEditPlaceholder({
     const cx = w / 2;
     const cy = h / 2;
     const circumference = 2 * Math.PI * r;
-    const strokeDashoffset = circumference * (1 - EDIT_FILL_RATIO);
+    const strokeDashoffset = circumference * (1 - editFillRatio);
     return (
       <div style={{ width: w, height: h, borderRadius: css.borderRadius, overflow: 'hidden' }}>
         <svg width={w} height={h} style={{ display: 'block', transform: 'rotate(-90deg)' }}>
@@ -149,8 +151,8 @@ function GraphEditPlaceholder({
       ? fillStyle
       : { backgroundColor: fillColor };
 
-  const editClipRight = (1 - EDIT_FILL_RATIO) * 100;
-  const editClipTop = (1 - EDIT_FILL_RATIO) * 100;
+  const editClipRight = (1 - editFillRatio) * 100;
+  const editClipTop = (1 - editFillRatio) * 100;
 
   if (variant === 'vertical-linear') {
     return (
@@ -212,8 +214,11 @@ const ViewGraphNodeLive = memo(function ViewGraphNodeLive({
   css: ReturnType<typeof useComponentStyles>;
   debounceMs: number;
 }) {
+  const data = getComponentData(component) as GraphComponentData;
   const ratio = useGraphRatio(component);
   const debouncedRatio = useDebouncedRatio(ratio, debounceMs);
+  const displayRatio = data.inverseFill ? 1 - debouncedRatio : debouncedRatio;
+
   const bgStyle = getBackgroundStyle(css);
   const bg = (css as { background?: string }).background ?? css.backgroundColor;
   const colorValue = (css as { color?: string }).color;
@@ -235,8 +240,8 @@ const ViewGraphNodeLive = memo(function ViewGraphNodeLive({
   };
 
   // Gradient/fill layer is full component size; clip-path reveals the fill ratio portion
-  const clipRight = (1 - debouncedRatio) * 100;
-  const clipTop = (1 - debouncedRatio) * 100;
+  const clipRight = (1 - displayRatio) * 100;
+  const clipTop = (1 - displayRatio) * 100;
 
   if (variant === 'horizontal-linear') {
     return (
@@ -277,7 +282,7 @@ const ViewGraphNodeLive = memo(function ViewGraphNodeLive({
   const cx = w / 2;
   const cy = h / 2;
   const circumference = 2 * Math.PI * r;
-  const strokeDashoffset = circumference * (1 - debouncedRatio);
+  const strokeDashoffset = circumference * (1 - displayRatio);
 
   // SVG stroke doesn't accept CSS gradient; use linearGradient in defs when fill is a gradient
   const fillStroke =

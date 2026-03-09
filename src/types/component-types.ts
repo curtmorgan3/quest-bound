@@ -86,6 +86,8 @@ export type GraphVariant = 'horizontal-linear' | 'vertical-linear' | 'circular';
 
 export type GraphComponentData = {
   graphVariant?: GraphVariant;
+  /** When true, the fill is inverted (empty portion shown as fill, fill as empty). */
+  inverseFill?: boolean;
   numeratorAttributeId?: string | null;
   denominatorAttributeId?: string | null;
   denominatorValue?: number | null;
