@@ -57,10 +57,12 @@ export const Rulesets = () => {
   const navigate = useNavigate();
 
   const handleCreate = async () => {
-    await createRuleset({
+    const id = await createRuleset({
       title: title || 'New Ruleset',
       description,
     });
+
+    navigate(`/rulesets/${id}`);
   };
 
   const handleImport = () => {

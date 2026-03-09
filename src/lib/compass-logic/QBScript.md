@@ -191,6 +191,24 @@ damage = roll('1d8');
 stealth = rollQuiet('1d20+5');
 ```
 
+### Timing
+
+| Function        | Description                                                                 |
+| --------------- | --------------------------------------------------------------------------- |
+| `wait(seconds)` | Pause execution for the given number of seconds (integer or float). Use `await wait(2)` or `await wait(0.5)`. |
+
+**Examples:**
+
+```javascript
+announce('Starting in 3...')
+await wait(1)
+announce('2...')
+await wait(1)
+announce('1...')
+await wait(0.5)
+announce('Go!')
+```
+
 ### Math
 
 | Function    | Description                              |

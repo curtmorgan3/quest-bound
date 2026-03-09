@@ -692,6 +692,13 @@ export class Evaluator {
       return this.defaultLocalRoll(expression);
     });
 
+    // Wait: pause execution for the given number of seconds (integer or float)
+    this.globalEnv.define(
+      'wait',
+      (numSeconds: number): Promise<void> =>
+        new Promise((resolve) => setTimeout(resolve, Number(numSeconds) * 1000)),
+    );
+
     // Prompt: show modal with message and choices; returns selected choice (requires injected promptFn, e.g. from worker bridge)
     this.globalEnv.define('prompt', async (msg: string, choices: string[]): Promise<string> => {
       if (!this.promptFn) {

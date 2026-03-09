@@ -112,12 +112,12 @@ const qbscriptCompletions = [
   {
     label: 'Owner.turnOrder',
     type: 'variable',
-    info: 'This character\'s position in turn order (0 = unset). Read-only. In campaign scene context only.',
+    info: "This character's position in turn order (0 = unset). Read-only. In campaign scene context only.",
   },
   {
     label: 'Owner.setTurnOrder',
     type: 'function',
-    info: 'Set this character\'s turn order (e.g. Owner.setTurnOrder(2)). Use 0 for unset. Gaps allowed.',
+    info: "Set this character's turn order (e.g. Owner.setTurnOrder(2)). Use 0 for unset. Gaps allowed.",
   },
   {
     label: 'Owner.setComponentStyle',
@@ -155,8 +155,7 @@ const qbscriptCompletions = [
   {
     label: 'subscribe',
     type: 'keyword',
-    info:
-      'Forces this script to execute again when subscribed attributes change (used by attribute and Game Manager scripts)',
+    info: 'Forces this script to execute again when subscribed attributes change (used by attribute and Game Manager scripts)',
   },
   {
     label: 'getAttr',
@@ -178,7 +177,11 @@ const qbscriptCompletions = [
     type: 'function',
     info: "Get a column's value from a chart row. Example: hp = chart.rowWhere('Level', 5).valueInColumn('HP')",
   },
-  { label: 'roll', type: 'function', info: 'Roll dice (e.g. roll("2d6+3")). Uses script runner roll (e.g. dice panel).' },
+  {
+    label: 'roll',
+    type: 'function',
+    info: 'Roll dice (e.g. roll("2d6+3")). Uses script runner roll (e.g. dice panel).',
+  },
   {
     label: 'prompt',
     type: 'function',
@@ -193,6 +196,11 @@ const qbscriptCompletions = [
     label: 'rollQuiet',
     type: 'function',
     info: 'Roll dice with default local roll only (no UI, no script-runner override). e.g. rollQuiet("1d20+5")',
+  },
+  {
+    label: 'wait',
+    type: 'function',
+    info: 'Pause execution for the given number of seconds (integer or float). E.g. wait(2) or wait(0.5)',
   },
   { label: 'announce', type: 'function', info: 'Display notification message to player' },
   { label: 'log', type: 'function', info: 'Log to editor console and game log' },
