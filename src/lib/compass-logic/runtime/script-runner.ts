@@ -7,6 +7,7 @@ import type {
   CharacterPage,
   CharacterWindow,
   Chart,
+  ComponentStyle,
   CustomProperty,
   InventoryItem,
   Item,
@@ -214,6 +215,8 @@ export interface ScriptExecutionResult {
   modifiedAttributeIds?: string[];
   /** Optional list of character/page pairs that should be navigated to in the UI after execution. */
   navigateTargets?: { characterId: string; pageId: string }[];
+  /** Component animations to trigger in the sheet viewer (by referenceLabel). */
+  componentAnimations?: Array<{ characterId: string; referenceLabel: string; animation: string }>;
 }
 
 /**
@@ -250,6 +253,14 @@ export class ScriptRunner {
 
   /** Lazily-created accessors for characters selected via selectCharacter(s). */
   private otherCharacterAccessors: Map<string, CharacterAccessor | OwnerAccessor> = new Map();
+
+  /** Callback for setComponentStyle / animateComponent; set in setupAccessors so getCharacterAccessorById can pass it. */
+  private registerComponentUpdate?: (
+    characterId: string,
+    referenceLabel: string,
+    type: 'animation' | 'style',
+    data: Record<string, unknown>,
+  ) => void;
 
   /** Scene accessor (set in setupAccessors when in campaign scene context). Used for runAdvanceTurnOrder. */
   private sceneAccessor: CampaignSceneAccessor | null = null;
@@ -473,10 +484,28 @@ export class ScriptRunner {
       turnOrder,
       this.context.campaignId,
       this.context.campaignSceneId,
+      this.registerComponentUpdate,
     );
 
     this.otherCharacterAccessors.set(characterId, accessor);
     return accessor;
+  }
+
+  /**
+   * Collect component updates (animations + style overrides) for script result and flush.
+   * Must be called before flushCache() since flush clears pendingUpdates.
+   */
+  getComponentUpdates(): {
+    animations: Array<{ characterId: string; referenceLabel: string; animation: string }>;
+    styleOverrides: Record<string, Partial<ComponentStyle>>;
+  } {
+    const raw = this.pendingUpdates.get('componentUpdates') as
+      | {
+          animations: Array<{ characterId: string; referenceLabel: string; animation: string }>;
+          styleOverrides: Record<string, Partial<ComponentStyle>>;
+        }
+      | undefined;
+    return raw ?? { animations: [], styleOverrides: {} };
   }
 
   /**
@@ -575,6 +604,30 @@ export class ScriptRunner {
     // Process all pending updates
     for (const [key, value] of this.pendingUpdates.entries()) {
       const [type, id] = key.split(':');
+
+      if (type === 'componentUpdates') {
+        const { styleOverrides } = value as {
+          animations: unknown[];
+          styleOverrides: Record<string, Partial<ComponentStyle>>;
+        };
+        for (const [comboKey, patch] of Object.entries(styleOverrides ?? {})) {
+          const firstColon = comboKey.indexOf(':');
+          if (firstColon === -1) continue;
+          const characterId = comboKey.slice(0, firstColon);
+          const referenceLabel = comboKey.slice(firstColon + 1);
+          const character = await db.characters.get(characterId);
+          if (!character) continue;
+          const existing = (character as { componentStyleOverrides?: Record<string, Partial<ComponentStyle>> })
+            .componentStyleOverrides ?? {};
+          const refOverrides = { ...(existing[referenceLabel] ?? {}), ...patch };
+          const next = { ...existing, [referenceLabel]: refOverrides };
+          await db.characters.update(characterId, {
+            componentStyleOverrides: next,
+            updatedAt: now,
+          });
+        }
+        continue;
+      }
 
       if (type === 'characterAttribute') {
         await db.characterAttributes.update(id, { value });
@@ -1056,6 +1109,7 @@ export class ScriptRunner {
       ownerTurnOrder,
       this.context.campaignId,
       this.context.campaignSceneId,
+      this.registerComponentUpdate,
     );
 
     this.ownerAccessor = owner;
@@ -1135,6 +1189,38 @@ export class ScriptRunner {
    */
   async run(sourceCode: string): Promise<ScriptExecutionResult> {
     try {
+      // Set up component-update callback before loadCache so getCharacterAccessorById (e.g. during
+      // scene preload or from Scene.characters()) and Owner always receive it. Required for
+      // setComponentStyle/animateComponent in both owner and ownerless (e.g. game manager) scripts.
+      this.registerComponentUpdate = (
+        characterId: string,
+        referenceLabel: string,
+        type: 'animation' | 'style',
+        data: Record<string, unknown>,
+      ) => {
+        const key = 'componentUpdates';
+        const current = this.pendingUpdates.get(key) as
+          | {
+              animations: Array<{ characterId: string; referenceLabel: string; animation: string }>;
+              styleOverrides: Record<string, Partial<ComponentStyle>>;
+            }
+          | undefined;
+        const base = current ?? { animations: [], styleOverrides: {} };
+        if (type === 'animation') {
+          const animation = data.animation as string;
+          if (animation != null) {
+            base.animations.push({ characterId, referenceLabel, animation });
+          }
+        } else {
+          const styleKey = `${characterId}:${referenceLabel}`;
+          base.styleOverrides[styleKey] = {
+            ...(base.styleOverrides[styleKey] ?? {}),
+            ...(data as Partial<ComponentStyle>),
+          };
+        }
+        this.pendingUpdates.set(key, base);
+      };
+
       // Load all data first
       await this.loadCache();
 
@@ -1149,8 +1235,9 @@ export class ScriptRunner {
       const ast = new Parser(tokens).parse();
       const value = await this.evaluator.eval(ast);
 
-      // Collect modified attribute IDs before flush (flush clears pendingUpdates)
+      // Collect modified attribute IDs and component updates before flush (flush clears pendingUpdates)
       const modifiedAttributeIds = this.getModifiedAttributeIds();
+      const componentUpdates = this.getComponentUpdates();
 
       // Flush changes to database and capture any navigation targets
       const { navigateTargets } = await this.flushCache();
@@ -1161,6 +1248,7 @@ export class ScriptRunner {
         logMessages: this.evaluator.getLogMessages(),
         modifiedAttributeIds,
         navigateTargets,
+        componentAnimations: componentUpdates.animations,
       };
     } catch (error) {
       return {

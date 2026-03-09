@@ -11,6 +11,7 @@ import {
 } from '@/lib/compass-logic/worker/current-campaign-ref';
 import { useCharacterSelectModalStore } from '@/stores/character-select-modal-store';
 import { usePromptModalStore } from '@/stores/prompt-modal-store';
+import { useScriptComponentAnimationStore } from '@/stores/script-component-animation-store';
 import { useScriptModifiedAttributesStore } from '@/stores/script-modified-attributes-store';
 import type { RollFn, RollSplitFn } from '@/types';
 import { defaultScriptDiceRoller, defaultScriptDiceRollerSplit } from '@/utils/dice-utils';
@@ -348,6 +349,16 @@ export class QBScriptClient {
         .addModified(payload.characterId, payload.modifiedAttributeIds);
     }
 
+    console.log('pay: ', payload);
+
+    if (payload.componentAnimations?.length) {
+      const store = useScriptComponentAnimationStore.getState();
+      for (const { characterId, referenceLabel, animation } of payload.componentAnimations) {
+        console.log('add: ', referenceLabel, animation);
+        store.add(characterId, referenceLabel, animation);
+      }
+    }
+
     // Handle page navigation requests by dispatching an event that the app shell can consume.
     if (payload.navigateTargets && payload.navigateTargets.length > 0) {
       const target = payload.navigateTargets[0];
@@ -496,11 +507,7 @@ export class QBScriptClient {
     };
 
     try {
-      return await this.sendSignal(
-        { type: 'EXECUTE_SCRIPT', payload },
-        requestId,
-        options.timeout,
-      );
+      return await this.sendSignal({ type: 'EXECUTE_SCRIPT', payload }, requestId, options.timeout);
     } finally {
       this.pendingRollHandlers.delete(requestId);
       this.pendingRollSplitHandlers.delete(requestId);

@@ -121,6 +121,8 @@ export type Character = BaseDetails & {
   moduleName?: string;
   /** Keyed by customPropertyId. Instantiated from first archetype's ArchetypeCustomProperties at creation. */
   customProperties?: Record<string, string | number | boolean>;
+  /** Style overrides for sheet components by referenceLabel (from setComponentStyle). Values are partial component style objects. */
+  componentStyleOverrides?: Record<string, Record<string, unknown>>;
 };
 
 export type CharacterAttribute = Attribute & {

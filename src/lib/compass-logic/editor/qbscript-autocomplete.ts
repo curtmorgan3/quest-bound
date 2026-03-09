@@ -120,6 +120,16 @@ const qbscriptCompletions = [
     info: 'Set this character\'s turn order (e.g. Owner.setTurnOrder(2)). Use 0 for unset. Gaps allowed.',
   },
   {
+    label: 'Owner.setComponentStyle',
+    type: 'function',
+    info: "Set a style override for all components with a reference label (e.g. Owner.setComponentStyle('healthBar', 'backgroundColor', 'red'))",
+  },
+  {
+    label: 'Owner.animateComponent',
+    type: 'function',
+    info: "Trigger a one-off animation for all components with a reference label (e.g. Owner.animateComponent('healthBar', 'shake'))",
+  },
+  {
     label: 'turnOrder',
     type: 'variable',
     info: 'On character references (Owner or from Scene.characters()): position in turn order (0 = unset). Read-only.',
@@ -128,6 +138,16 @@ const qbscriptCompletions = [
     label: 'setTurnOrder',
     type: 'function',
     info: 'On character references: set turn order (e.g. char.setTurnOrder(2)). Use 0 for unset. In campaign scene only.',
+  },
+  {
+    label: 'setComponentStyle',
+    type: 'function',
+    info: "On character references: set style for all sheet components with a reference label (e.g. char.setComponentStyle('ref', 'color', 'red'))",
+  },
+  {
+    label: 'animateComponent',
+    type: 'function',
+    info: "On character references: trigger animation for all sheet components with a reference label (e.g. char.animateComponent('ref', 'shake'))",
   },
   { label: 'Ruleset', type: 'variable', info: 'Ruleset-level entities' },
   { label: 'Ruleset.Attribute', type: 'function', info: 'Get attribute definition' },

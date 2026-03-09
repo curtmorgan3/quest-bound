@@ -42,6 +42,13 @@ export class CharacterAccessor implements StructuredCloneSafe {
   protected turnOrderValue: number;
   protected campaignId: string | undefined;
   protected campaignSceneId: string | undefined;
+  /** When set, setComponentStyle and animateComponent enqueue updates for this character's sheet. */
+  protected registerComponentUpdate?: (
+    characterId: string,
+    referenceLabel: string,
+    type: 'animation' | 'style',
+    data: Record<string, unknown>,
+  ) => void;
 
   constructor(
     characterId: string,
@@ -63,6 +70,12 @@ export class CharacterAccessor implements StructuredCloneSafe {
     turnOrder: number = 0,
     campaignId?: string,
     campaignSceneId?: string,
+    registerComponentUpdate?: (
+      characterId: string,
+      referenceLabel: string,
+      type: 'animation' | 'style',
+      data: Record<string, unknown>,
+    ) => void,
   ) {
     this.id = characterId;
     this.characterName = characterName;
@@ -83,6 +96,25 @@ export class CharacterAccessor implements StructuredCloneSafe {
     this.turnOrderValue = turnOrder;
     this.campaignId = campaignId;
     this.campaignSceneId = campaignSceneId;
+    this.registerComponentUpdate = registerComponentUpdate;
+  }
+
+  /**
+   * Set a style override for all components on this character's sheet with the given reference label.
+   * Persisted on the character; merged when resolving styles in the viewer.
+   */
+  setComponentStyle(referenceLabel: string, styleProp: string, value: string | number): void {
+    this.registerComponentUpdate?.(this.id, referenceLabel, 'style', { [styleProp]: value });
+  }
+
+  /**
+   * Trigger a one-off animation for all components on this character's sheet with the given reference label.
+   * Delivered via store and applied when the sheet viewer renders each matching component.
+   */
+  animateComponent(referenceLabel: string, animationName: string): void {
+    this.registerComponentUpdate?.(this.id, referenceLabel, 'animation', {
+      animation: animationName,
+    });
   }
 
   /** Turn order in the current campaign scene (0 = unset). Read-only. */

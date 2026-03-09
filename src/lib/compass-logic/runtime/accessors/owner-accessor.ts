@@ -35,6 +35,12 @@ export class OwnerAccessor extends CharacterAccessor {
     turnOrder: number = 0,
     campaignId?: string,
     campaignSceneId?: string,
+    registerComponentUpdate?: (
+      characterId: string,
+      referenceLabel: string,
+      type: 'animation' | 'style',
+      data: Record<string, unknown>,
+    ) => void,
   ) {
     super(
       characterId,
@@ -56,6 +62,7 @@ export class OwnerAccessor extends CharacterAccessor {
       turnOrder,
       campaignId,
       campaignSceneId,
+      registerComponentUpdate,
     );
   }
 

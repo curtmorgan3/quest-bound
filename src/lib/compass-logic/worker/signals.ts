@@ -341,6 +341,8 @@ export interface ScriptResultPayload {
   characterId?: string;
   /** Optional list of character/page pairs that should be navigated to in the UI after execution. */
   navigateTargets?: { characterId: string; pageId: string }[];
+  /** Component animations to trigger in the sheet viewer (by referenceLabel). */
+  componentAnimations?: Array<{ characterId: string; referenceLabel: string; animation: string }>;
 }
 
 export interface ScriptErrorPayload {

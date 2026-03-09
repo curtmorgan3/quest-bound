@@ -1,6 +1,7 @@
+import { CharacterContext } from '@/stores';
 import type { Component, ComponentData, ComponentStyle } from '@/types';
 import type { Node } from '@xyflow/react';
-import { useMemo } from 'react';
+import { useContext, useMemo } from 'react';
 import {
   type PositionValues,
   STYLE_KEYS,
@@ -79,14 +80,21 @@ export function getComponentStyles(component: Component): ComponentStyle {
 
 export function useComponentStyles(component: Component | null): ComponentStyle {
   const styleValues = useStyleValues(component ? [component] : []);
+  const characterContext = useContext(CharacterContext);
+  const character = characterContext?.character ?? null;
+
   return useMemo(() => {
     if (!component) return {} as ComponentStyle;
     const styles = JSON.parse(component.style) as ComponentStyle;
     for (const key of STYLE_KEYS) {
       (styles as Record<string, unknown>)[key] = styleValues[key].resolved;
     }
+    const referenceLabel = getComponentData(component).referenceLabel;
+    if (referenceLabel && character?.componentStyleOverrides?.[referenceLabel]) {
+      Object.assign(styles, character.componentStyleOverrides[referenceLabel]);
+    }
     return applyStyleEnrichment(styles);
-  }, [component, styleValues]);
+  }, [component, styleValues, character]);
 }
 
 export function useComponentPosition(component?: Component): PositionValues {

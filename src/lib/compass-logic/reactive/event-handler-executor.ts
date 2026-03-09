@@ -51,6 +51,8 @@ export interface EventHandlerResult {
   modifiedAttributeIds?: string[];
   /** Optional list of character/page pairs that should be navigated to in the UI after execution. */
   navigateTargets?: { characterId: string; pageId: string }[];
+  /** Component animations to trigger in the sheet viewer (by referenceLabel). */
+  componentAnimations?: Array<{ characterId: string; referenceLabel: string; animation: string }>;
 }
 
 /**
@@ -385,6 +387,9 @@ export class EventHandlerExecutor {
       announceMessages: result.announceMessages,
       logMessages: result.logMessages,
       error: result.error,
+      modifiedAttributeIds: result.modifiedAttributeIds,
+      navigateTargets: result.navigateTargets,
+      componentAnimations: result.componentAnimations,
     };
   }
 
@@ -557,6 +562,7 @@ export class EventHandlerExecutor {
         error: result.error,
         modifiedAttributeIds: result.modifiedAttributeIds,
         navigateTargets: result.navigateTargets,
+        componentAnimations: result.componentAnimations,
       };
     } finally {
       actionEventDepth--;

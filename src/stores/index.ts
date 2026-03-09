@@ -4,6 +4,7 @@ export * from './context';
 export * from './current-user-store';
 export * from './db';
 export * from './event-log-store';
+export * from './script-component-animation-store';
 export * from './script-modified-attributes-store';
 export * from './prompt-modal-store';
 export * from './pwa-install-store';
