@@ -5,7 +5,9 @@ import { memo, useContext, useEffect, useState } from 'react';
 import {
   getBackgroundStyle,
   getComponentData,
+  getFillStyle,
   getSolidFallback,
+  parseLinearGradient,
   useComponentStyles,
 } from '@/lib/compass-planes/utils';
 import { ResizableNode } from '../../decorators';
@@ -141,17 +143,25 @@ function GraphEditPlaceholder({
     );
   }
 
+  const fillStyle = getFillStyle((css as { color?: string }).color);
+  const fillDivStyle =
+    Object.keys(fillStyle).length > 0
+      ? fillStyle
+      : { backgroundColor: fillColor };
+
+  const editClipRight = (1 - EDIT_FILL_RATIO) * 100;
+  const editClipTop = (1 - EDIT_FILL_RATIO) * 100;
+
   if (variant === 'vertical-linear') {
     return (
       <div style={{ ...commonContainer, position: 'relative' }}>
         <div
           style={{
             position: 'absolute',
-            bottom: 0,
-            left: 0,
-            right: 0,
-            height: `${EDIT_FILL_RATIO * 100}%`,
-            backgroundColor: fillColor,
+            inset: 0,
+            ...fillDivStyle,
+            clipPath: `inset(${editClipTop}% 0 0 0)`,
+            WebkitClipPath: `inset(${editClipTop}% 0 0 0)`,
           }}
         />
       </div>
@@ -160,12 +170,14 @@ function GraphEditPlaceholder({
 
   // horizontal-linear (default)
   return (
-    <div style={commonContainer}>
+    <div style={{ ...commonContainer, position: 'relative' }}>
       <div
         style={{
-          height: '100%',
-          width: `${EDIT_FILL_RATIO * 100}%`,
-          backgroundColor: fillColor,
+          position: 'absolute',
+          inset: 0,
+          ...fillDivStyle,
+          clipPath: `inset(0 ${editClipRight}% 0 0)`,
+          WebkitClipPath: `inset(0 ${editClipRight}% 0 0)`,
         }}
       />
     </div>
@@ -204,7 +216,12 @@ const ViewGraphNodeLive = memo(function ViewGraphNodeLive({
   const debouncedRatio = useDebouncedRatio(ratio, debounceMs);
   const bgStyle = getBackgroundStyle(css);
   const bg = (css as { background?: string }).background ?? css.backgroundColor;
-  const fillColor = getSolidFallback((css as { color?: string }).color) ?? '#7BA3C7';
+  const colorValue = (css as { color?: string }).color;
+  const fillColor = getSolidFallback(colorValue) ?? '#7BA3C7';
+  const fillStyle = getFillStyle(colorValue);
+  const fillDivStyle =
+    Object.keys(fillStyle).length > 0 ? fillStyle : { backgroundColor: fillColor };
+  const fillGradient = parseLinearGradient(colorValue ?? '');
 
   const w = component.width;
   const h = component.height;
@@ -217,15 +234,21 @@ const ViewGraphNodeLive = memo(function ViewGraphNodeLive({
     overflow: 'hidden' as const,
   };
 
+  // Gradient/fill layer is full component size; clip-path reveals the fill ratio portion
+  const clipRight = (1 - debouncedRatio) * 100;
+  const clipTop = (1 - debouncedRatio) * 100;
+
   if (variant === 'horizontal-linear') {
     return (
-      <div style={commonContainer}>
+      <div style={{ ...commonContainer, position: 'relative' }}>
         <div
           style={{
-            height: '100%',
-            width: `${debouncedRatio * 100}%`,
-            backgroundColor: fillColor,
-            transition: `width ${FILL_TRANSITION_MS}ms ease-out`,
+            position: 'absolute',
+            inset: 0,
+            ...fillDivStyle,
+            clipPath: `inset(0 ${clipRight}% 0 0)`,
+            WebkitClipPath: `inset(0 ${clipRight}% 0 0)`,
+            transition: `clip-path ${FILL_TRANSITION_MS}ms ease-out`,
           }}
         />
       </div>
@@ -238,12 +261,11 @@ const ViewGraphNodeLive = memo(function ViewGraphNodeLive({
         <div
           style={{
             position: 'absolute',
-            bottom: 0,
-            left: 0,
-            right: 0,
-            height: `${debouncedRatio * 100}%`,
-            backgroundColor: fillColor,
-            transition: `height ${FILL_TRANSITION_MS}ms ease-out`,
+            inset: 0,
+            ...fillDivStyle,
+            clipPath: `inset(${clipTop}% 0 0 0)`,
+            WebkitClipPath: `inset(${clipTop}% 0 0 0)`,
+            transition: `clip-path ${FILL_TRANSITION_MS}ms ease-out`,
           }}
         />
       </div>
@@ -257,9 +279,34 @@ const ViewGraphNodeLive = memo(function ViewGraphNodeLive({
   const circumference = 2 * Math.PI * r;
   const strokeDashoffset = circumference * (1 - debouncedRatio);
 
+  // SVG stroke doesn't accept CSS gradient; use linearGradient in defs when fill is a gradient
+  const fillStroke =
+    fillGradient &&
+    (() => {
+      const angleRad = (fillGradient.angle * Math.PI) / 180;
+      const x1 = 0.5 - 0.5 * Math.sin(angleRad);
+      const y1 = 0.5 + 0.5 * Math.cos(angleRad);
+      const x2 = 0.5 + 0.5 * Math.sin(angleRad);
+      const y2 = 0.5 - 0.5 * Math.cos(angleRad);
+      const gradId = `graph-fill-${component.id}`;
+      return {
+        gradId,
+        defs: (
+          <defs>
+            <linearGradient id={gradId} x1={x1} y1={y1} x2={x2} y2={y2}>
+              <stop offset="0%" stopColor={fillGradient.color1} />
+              <stop offset="100%" stopColor={fillGradient.color2} />
+            </linearGradient>
+          </defs>
+        ),
+        stroke: `url(#${gradId})`,
+      };
+    })();
+
   return (
     <div style={{ ...commonContainer, backgroundColor: 'transparent', position: 'relative' }}>
       <svg width={w} height={h} style={{ display: 'block', transform: 'rotate(-90deg)' }}>
+        {fillStroke?.defs}
         <circle
           cx={cx}
           cy={cy}
@@ -273,7 +320,7 @@ const ViewGraphNodeLive = memo(function ViewGraphNodeLive({
           cy={cy}
           r={r}
           fill='none'
-          stroke={fillColor}
+          stroke={fillStroke?.stroke ?? fillColor}
           strokeWidth={r * 2}
           strokeDasharray={circumference}
           strokeDashoffset={strokeDashoffset}

@@ -32,6 +32,37 @@ function parseFirstGradientColor(value: string): string | null {
   return angleMatch ? angleMatch[1].trim() : null;
 }
 
+function isLinearGradient(value: string | undefined): value is string {
+  return typeof value === 'string' && value.trim().startsWith('linear-gradient(');
+}
+
+/** Parse linear-gradient(angle deg, color1, color2). Returns null if not a valid gradient. */
+export function parseLinearGradient(
+  value: string,
+): { angle: number; color1: string; color2: string } | null {
+  const s = value.trim();
+  if (!s.startsWith('linear-gradient(')) return null;
+  const inner = s.slice('linear-gradient('.length, -1).trim();
+  const color2Match = inner.match(/,\s*([^,)]+)\s*$/);
+  if (!color2Match) return null;
+  const color2 = color2Match[1].trim();
+  const rest = inner.slice(0, color2Match.index).trim();
+  const angleMatch = rest.match(/^(\d+)\s*deg\s*,\s*(.+)$/);
+  if (!angleMatch) return null;
+  return {
+    angle: Math.min(360, Math.max(0, parseInt(angleMatch[1], 10))),
+    color1: angleMatch[2].trim(),
+    color2,
+  };
+}
+
+/** Returns style for a fill area: `background` for gradient, `backgroundColor` for solid. */
+export function getFillStyle(colorValue: string | undefined): Record<string, string> {
+  if (!colorValue) return {};
+  if (isLinearGradient(colorValue)) return { background: colorValue };
+  return { backgroundColor: colorValue };
+}
+
 /** When value is a gradient, return the first color for SVG/stroke fallback. Otherwise return the value. */
 export function getSolidFallback(value: string | undefined): string | undefined {
   if (!value) return value;
