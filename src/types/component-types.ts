@@ -126,4 +126,6 @@ export type ComponentData = ShapeComponentData &
     href?: string;
     /** Per-component values for Script.parameters, keyed by ScriptParameterDefinition.id. */
     scriptParameterValues?: Record<string, ScriptParamValue>;
+    animationColor?: string | null;
+    animation?: string | null;
   };

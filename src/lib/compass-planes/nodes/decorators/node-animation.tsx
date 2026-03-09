@@ -1,8 +1,7 @@
-import { useActiveRuleset } from '@/lib/compass-api';
 import { CharacterContext, useCurrentUser } from '@/stores';
 import type { Component } from '@/types';
 import { useContext, type ReactNode } from 'react';
-import { useNodeData, useRegisterAnimation } from '../../utils';
+import { getComponentData, useNodeData, useRegisterAnimation } from '../../utils';
 
 interface NodeAnimationProps {
   children: ReactNode;
@@ -11,7 +10,6 @@ interface NodeAnimationProps {
 
 export const NodeAnimation = ({ component, children }: NodeAnimationProps) => {
   const { currentUser } = useCurrentUser();
-  const { activeRuleset } = useActiveRuleset();
   const sheetAttributeAnimations = currentUser?.preferences?.sheetAttributeAnimations ?? true;
   const context = useContext(CharacterContext);
   const character = context?.character;
@@ -22,8 +20,9 @@ export const NodeAnimation = ({ component, children }: NodeAnimationProps) => {
     attributeType === 'number' ? parseInt(`${value}`) : value,
   );
 
-  const animation = activeRuleset?.details?.animation;
-  const animationColor = activeRuleset?.details?.animationColor;
+  const data = getComponentData(component);
+  const animation = data.animation;
+  const animationColor = data.animationColor;
 
   if (!sheetAttributeAnimations) {
     return <>{children}</>;

@@ -7,6 +7,7 @@ import {
   Input,
   Label,
 } from '@/components';
+import { RulesetColorPicker } from '@/components/composites/ruleset-color-picker';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
   Select,
@@ -22,6 +23,7 @@ import {
   PageLookup,
   ScriptLookup,
   useComponents,
+  useRulesets,
   WindowLookup,
 } from '@/lib/compass-api';
 import { useActions } from '@/lib/compass-api/hooks/rulesets/use-actions';
@@ -46,6 +48,7 @@ import type {
   ScriptParamValue,
   TextComponentData,
 } from '@/types';
+import { rgbToHex } from '@/utils';
 import { useMemo, useRef, useState } from 'react';
 import type { RGBColor } from 'react-color';
 import { useParams } from 'react-router-dom';
@@ -62,9 +65,20 @@ import { StyleEdit } from './style-edit';
 
 type ClickEventType = 'openPage' | 'openWindow' | 'fireAction' | 'fireScript';
 
+const ATTRIBUTE_ANIMATION_OPTIONS = [
+  { value: 'none', label: 'None' },
+  { value: 'floating-difference', label: 'Floating difference' },
+  { value: 'pop', label: 'Pop' },
+  { value: 'highlight', label: 'Highlight' },
+  { value: 'glow', label: 'Glow' },
+  { value: 'shimmer', label: 'Shimmer' },
+  { value: 'fade', label: 'Fade' },
+] as const;
+
 export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
   const { windowId } = useParams();
   const { components, updateComponents } = useComponents(windowId);
+  const { activeRuleset } = useRulesets();
   const { scripts, createScript, updateScript, deleteScript } = useScripts();
   const { pages } = useRulesetPages();
   const { windows } = useWindows();
@@ -178,6 +192,45 @@ export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
     );
   };
 
+  const setReferenceLabel = (referenceLabel: string) => {
+    const toUpdate = selectedComponents.filter((c) => !c.locked);
+    updateComponents(
+      toUpdate.map((c) => ({
+        id: c.id,
+        data: JSON.stringify({
+          ...JSON.parse(c.data),
+          referenceLabel: referenceLabel.trim() || undefined,
+        }),
+      })),
+    );
+  };
+
+  const setAnimation = (animation: string | null) => {
+    const toUpdate = selectedComponents.filter((c) => !c.locked);
+    updateComponents(
+      toUpdate.map((c) => ({
+        id: c.id,
+        data: JSON.stringify({
+          ...JSON.parse(c.data),
+          animation: animation && animation !== 'none' ? animation : null,
+        }),
+      })),
+    );
+  };
+
+  const setAnimationColor = (animationColor: string | null) => {
+    const toUpdate = selectedComponents.filter((c) => !c.locked);
+    updateComponents(
+      toUpdate.map((c) => ({
+        id: c.id,
+        data: JSON.stringify({
+          ...JSON.parse(c.data),
+          animationColor: animationColor ?? null,
+        }),
+      })),
+    );
+  };
+
   const setShowSign = (showSign: boolean) => {
     const toUpdate = selectedComponents.filter((c) => !c.locked);
     updateComponents(
@@ -266,6 +319,11 @@ export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
 
     if (nonstyleKeys.includes(styleKey)) {
       handleUpdate(styleKey, `custom-prop-${customPropertyId}`);
+      return;
+    }
+
+    if (styleKey === 'animationColor') {
+      setAnimationColor(`custom-prop-${customPropertyId}`);
       return;
     }
 
@@ -588,6 +646,22 @@ export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
               {allAreShapes && <ShapeEdit components={selectedComponents} />}
             </TabsContent>
             <TabsContent value='data' className='w-full flex flex-col gap-4 mt-2 overflow-x-hidden'>
+              {selectedComponents.length === 1 && (
+                <div className='flex flex-col gap-2'>
+                  <Label
+                    htmlFor='component-edit-reference-label'
+                    className='text-xs text-muted-foreground'>
+                    Reference ID
+                  </Label>
+                  <Input
+                    id='component-edit-reference-label'
+                    className='h-8 rounded-[4px]'
+                    placeholder='Used for reference in script'
+                    value={getComponentData(selectedComponents[0]).referenceLabel ?? ''}
+                    onChange={(e) => setReferenceLabel(e.target.value)}
+                  />
+                </div>
+              )}
               {selectedComponents.length === 1 &&
                 selectedComponents[0].type !== ComponentTypes.INVENTORY &&
                 selectedComponents[0].type !== ComponentTypes.GRAPH &&
@@ -602,6 +676,49 @@ export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
                     />
                   </>
                 )}
+              {selectedComponents.length === 1 && selectedComponents[0].attributeId && (
+                <div className='flex flex-row gap-2 items-end justify-end'>
+                  <div className='flex flex-col gap-2 flex-1 min-w-0'>
+                    <Label
+                      htmlFor='component-edit-animation'
+                      className='text-xs text-muted-foreground'>
+                      Animation
+                    </Label>
+                    <Select
+                      value={
+                        getComponentData(selectedComponents[0]).animation ||
+                        activeRuleset?.details?.animation ||
+                        'none'
+                      }
+                      onValueChange={(value) => setAnimation(value)}>
+                      <SelectTrigger id='component-edit-animation' className='h-8 w-full'>
+                        <SelectValue placeholder='Select animation…' />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {ATTRIBUTE_ANIMATION_OPTIONS.map((opt) => (
+                          <SelectItem key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <RulesetColorPicker
+                    showLabel
+                    label='Animation Color'
+                    propertyKey='animationColor'
+                    color={
+                      getComponentData(selectedComponents[0]).animationColor ??
+                      activeRuleset?.details?.animationColor
+                    }
+                    disableAlpha
+                    onUpdate={(color) => {
+                      const hex = rgbToHex(color.r, color.g, color.b);
+                      setAnimationColor(hex);
+                    }}
+                  />
+                </div>
+              )}
               {selectedComponents.every((c) => c.type === ComponentTypes.TEXT) &&
                 selectedComponents.length === 1 &&
                 selectedComponents[0].attributeId && (
