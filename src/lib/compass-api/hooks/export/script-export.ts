@@ -1,5 +1,5 @@
 import { db } from '@/stores';
-import type { ScriptEntityType } from '@/types';
+import type { ScriptEntityType, ScriptParameterDefinition } from '@/types';
 import {
   findDuplicateScriptNames,
   generateScriptPath,
@@ -28,6 +28,8 @@ export interface ScriptMetadata {
   isGlobal: boolean;
   enabled: boolean;
   category?: string; // Optional category for grouping scripts
+  /** Parameter definitions (e.g. for Game Manager scripts); restored on import. */
+  parameters?: ScriptParameterDefinition[];
 }
 
 /**
@@ -132,6 +134,7 @@ export async function exportScripts(rulesetId: string): Promise<ScriptExportResu
       isGlobal: script.isGlobal,
       enabled: script.enabled,
       category: script.category,
+      ...(script.parameters?.length ? { parameters: script.parameters } : {}),
     });
   }
 

@@ -117,6 +117,7 @@ export async function importScript(
   let enabled = true;
   let category: string | undefined;
   let scriptId: string | undefined;
+  let parameters: Script['parameters'];
 
   if (metadata) {
     scriptName = metadata.name;
@@ -126,6 +127,7 @@ export async function importScript(
     enabled = metadata.enabled;
     category = metadata.category;
     scriptId = metadata.id;
+    parameters = metadata.parameters;
   }
 
   // Validate source code
@@ -181,6 +183,7 @@ export async function importScript(
     isGlobal,
     enabled,
     ...(category !== undefined && { category }),
+    ...(parameters?.length ? { parameters } : {}),
     createdAt: now,
     updatedAt: now,
   };
