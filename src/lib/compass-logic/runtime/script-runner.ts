@@ -42,16 +42,16 @@ const INVENTORY_COMPONENT_TYPE = 'inventory';
 const CELL_SIZE_PX = 20;
 
 /**
- * Resolve _inventoryComponentIdRef (data.inventoryComponentId from script) to component.id.
+ * Resolve _inventoryRefLabel (component referenceLabel from script) to component.id.
  * If x or y is -1, find the first available slot in the target inventory component.
- * Returns the item with componentId set and _inventoryComponentIdRef omitted for persistence.
+ * Returns the item with componentId set and _inventoryRefLabel omitted for persistence.
  */
-async function resolveInventoryComponentIdRef(
+async function resolveInventoryRefLabel(
   db: DB,
-  item: InventoryItem & { _inventoryComponentIdRef?: string },
+  item: InventoryItem & { _inventoryRefLabel?: string },
 ): Promise<InventoryItem> {
-  const ref = item._inventoryComponentIdRef;
-  const { _inventoryComponentIdRef: _, ...rest } = item;
+  const ref = item._inventoryRefLabel;
+  const { _inventoryRefLabel: _, ...rest } = item;
   const out: InventoryItem = { ...rest };
 
   if (ref == null || ref === '') return out;
@@ -68,7 +68,7 @@ async function resolveInventoryComponentIdRef(
 
   const match = components.find((c) => {
     const data = JSON.parse((c as { data?: string }).data ?? '{}');
-    return data.inventoryComponentId === ref;
+    return data.referenceLabel === ref;
   });
 
   if (!match) return out;
@@ -691,7 +691,7 @@ export class ScriptRunner {
       } else if (type === 'characterAttributeOptions') {
         await db.characterAttributes.update(id, { options: value });
       } else if (type === 'inventoryAdd') {
-        const items = value as (InventoryItem & { _inventoryComponentIdRef?: string })[];
+        const items = value as (InventoryItem & { _inventoryRefLabel?: string })[];
         for (const item of items) {
           let itemToAdd = item;
           if (item.type === 'item' && item.entityId) {
@@ -702,7 +702,7 @@ export class ScriptRunner {
           } else {
             itemToAdd = { ...item, customProperties: item.customProperties ?? {} };
           }
-          const resolved = await resolveInventoryComponentIdRef(db, itemToAdd);
+          const resolved = await resolveInventoryRefLabel(db, itemToAdd);
           await db.inventoryItems.add(resolved);
         }
       } else if (type === 'inventoryUpdate') {

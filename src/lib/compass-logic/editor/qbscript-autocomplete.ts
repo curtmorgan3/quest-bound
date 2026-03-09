@@ -32,17 +32,17 @@ const qbscriptCompletions = [
   {
     label: 'Owner.addItem',
     type: 'function',
-    info: "Add an item to the character's inventory by name (e.g. Owner.addItem('Potion', 2) or Owner.addItem('Potion', 1, 'inventoryCompId'))",
+    info: "Add an item to the character's inventory by name (e.g. Owner.addItem('Potion', 2) or Owner.addItem('Potion', 1, 'refLabel'))",
   },
   {
     label: 'Owner.addAction',
     type: 'function',
-    info: "Add an action as an inventory entry (e.g. Owner.addAction('Attack') or Owner.addAction('Attack', 'inventoryCompId'))",
+    info: "Add an action as an inventory entry (e.g. Owner.addAction('Attack') or Owner.addAction('Attack', 'refLabel'))",
   },
   {
     label: 'Owner.addAttribute',
     type: 'function',
-    info: "Add an attribute as an inventory entry (e.g. Owner.addAttribute('Health') or Owner.addAttribute('Health', 'inventoryCompId'))",
+    info: "Add an attribute as an inventory entry (e.g. Owner.addAttribute('Health') or Owner.addAttribute('Health', 'refLabel'))",
   },
   {
     label: 'Owner.navigateToPage',

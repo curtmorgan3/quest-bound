@@ -436,7 +436,7 @@ export class CharacterAccessor implements StructuredCloneSafe {
   addItem(
     name: string,
     quantity: number = 1,
-    inventoryCompId?: string,
+    referenceLabel?: string,
     x?: number,
     y?: number,
   ): ReturnType<typeof createItemInstanceProxy> {
@@ -462,8 +462,8 @@ export class CharacterAccessor implements StructuredCloneSafe {
       y: y ?? -1,
       createdAt: now,
       updatedAt: now,
-      ...(inventoryCompId != null && inventoryCompId !== ''
-        ? { _inventoryComponentIdRef: inventoryCompId }
+      ...(referenceLabel != null && referenceLabel !== ''
+        ? { _inventoryRefLabel: referenceLabel }
         : {}),
     };
     this.inventoryItems.push(newEntry as InventoryItem);
@@ -475,10 +475,10 @@ export class CharacterAccessor implements StructuredCloneSafe {
 
   /**
    * Add an inventory entry of the given action type to the character's inventory,
-   * optionally targeting a specific inventory component by id.
-   * Example: Owner.addAction('Attack', 'inventory-comp-uuid')
+   * optionally targeting a specific inventory component by reference label.
+   * Example: Owner.addAction('Attack', 'my-inventory')
    */
-  addAction(name: string, inventoryCompId?: string): void {
+  addAction(name: string, referenceLabel?: string): void {
     const action = Array.from(this.actionsCache.values()).find((a) => a.title === name);
     if (!action) {
       throw new Error(`Action '${name}' not found`);
@@ -498,8 +498,8 @@ export class CharacterAccessor implements StructuredCloneSafe {
       y: -1,
       createdAt: now,
       updatedAt: now,
-      ...(inventoryCompId != null && inventoryCompId !== ''
-        ? { _inventoryComponentIdRef: inventoryCompId }
+      ...(referenceLabel != null && referenceLabel !== ''
+        ? { _inventoryRefLabel: referenceLabel }
         : {}),
     };
     this.inventoryItems.push(newEntry as InventoryItem);
@@ -510,10 +510,10 @@ export class CharacterAccessor implements StructuredCloneSafe {
 
   /**
    * Add an inventory entry of the given attribute type to the character's inventory,
-   * optionally targeting a specific inventory component by id.
-   * Example: Owner.addAttribute('Health', 'inventory-comp-uuid')
+   * optionally targeting a specific inventory component by reference label.
+   * Example: Owner.addAttribute('Health', 'my-inventory')
    */
-  addAttribute(name: string, inventoryCompId?: string): void {
+  addAttribute(name: string, referenceLabel?: string): void {
     const attribute = Array.from(this.attributesCache.values()).find((attr) => attr.title === name);
     if (!attribute) {
       throw new Error(`Attribute '${name}' not found`);
@@ -533,8 +533,8 @@ export class CharacterAccessor implements StructuredCloneSafe {
       y: -1,
       createdAt: now,
       updatedAt: now,
-      ...(inventoryCompId != null && inventoryCompId !== ''
-        ? { _inventoryComponentIdRef: inventoryCompId }
+      ...(referenceLabel != null && referenceLabel !== ''
+        ? { _inventoryRefLabel: referenceLabel }
         : {}),
     };
     this.inventoryItems.push(newEntry as InventoryItem);

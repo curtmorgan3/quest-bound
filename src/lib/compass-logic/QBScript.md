@@ -312,8 +312,8 @@ announce('Spawned {{spawned.name}} into the scene.')
 - `Owner.Items('item name')` — array of matching items
 - `Owner.hasItem('item name')` — whether the character has at least one
 - `Owner.addItem('item name', quantity)` — add to inventory (quantity defaults to 1)
-- `Owner.addAction('action name', inventoryCompId?)` — add an action as an inventory entry to the character's inventory; optional inventory component id targets a specific comp
-- `Owner.addAttribute('attribute name', inventoryCompId?)` — add an attribute as an inventory entry; optional inventory component id targets a specific comp
+- `Owner.addAction('action name', referenceLabel?)` — add an action as an inventory entry to the character's inventory; optional reference label targets a specific inventory component
+- `Owner.addAttribute('attribute name', referenceLabel?)` — add an attribute as an inventory entry; optional reference label targets a specific inventory component
 - `Owner.removeItem('item name', quantity)` — remove from inventory
 - `Owner.setItem('item name', quantity)` — set total quantity (consolidates to one stack; 0 removes all)
 
