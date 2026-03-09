@@ -1,6 +1,6 @@
 import { CharacterContext, useCurrentUser } from '@/stores';
 import type { Component } from '@/types';
-import { useContext, useEffect, useState, type CSSProperties, type ReactNode } from 'react';
+import { useContext, useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import {
   getComponentData,
   useComponentAnimationTrigger,
@@ -29,6 +29,24 @@ export const NodeAnimation = ({ component, children }: NodeAnimationProps) => {
           return Number.isFinite(n) ? n : null;
         })()
       : null;
+
+  const prevNumericRef = useRef<number | null>(numericCurrent);
+  const [ticRange, setTicRange] = useState<{ from: number; to: number } | null>(null);
+
+  const prevNumeric = prevNumericRef.current;
+  const numericChanged =
+    prevNumeric !== null && numericCurrent !== null && prevNumeric !== numericCurrent;
+
+  useEffect(() => {
+    if (numericChanged && prevNumeric !== null && numericCurrent !== null) {
+      setTicRange({ from: prevNumeric, to: numericCurrent });
+    }
+  }, [numericChanged, prevNumeric, numericCurrent]);
+
+  useEffect(() => {
+    prevNumericRef.current = numericCurrent;
+  }, [numericCurrent]);
+
   const { flashKey, diff, scriptChangeFlash } = useRegisterAnimation(
     character?.id ?? '',
     component.attributeId ?? '',
@@ -74,35 +92,36 @@ export const NodeAnimation = ({ component, children }: NodeAnimationProps) => {
         );
         break;
       case 'tic': {
-        if (numericCurrent === null || !diff) {
-          content = <>{children}</>;
-          break;
-        }
+        const immediateRange =
+          numericChanged && prevNumeric !== null && numericCurrent !== null
+            ? { from: prevNumeric, to: numericCurrent }
+            : null;
 
-        const delta = parseNumericDiff(diff);
-        const canAnimate = delta !== null && delta !== 0 && Number.isFinite(numericCurrent);
+        const activeRange = immediateRange ?? ticRange;
 
-        if (!canAnimate) {
+        if (
+          !activeRange ||
+          activeRange.from === activeRange.to ||
+          !Number.isFinite(activeRange.from) ||
+          !Number.isFinite(activeRange.to)
+        ) {
           content = <>{children}</>;
           break;
         }
 
         content = (
           <div key={flashKey} className='sheet-attribute-animation-wrapper'>
-            {scriptChangeFlash ? (
-              <TicOverlay
-                key={`tic-${flashKey}`}
-                style={{
-                  ...style,
-                  height: `${component.height}px`,
-                  width: `${component.width}px`,
-                }}
-                currentValue={numericCurrent}
-                diff={diff}
-              />
-            ) : (
-              children
-            )}
+            <TicOverlay
+              key={`tic-${flashKey}-${activeRange.from}-${activeRange.to}`}
+              style={{
+                ...style,
+                height: `${component.height}px`,
+                width: `${component.width}px`,
+              }}
+              from={activeRange.from}
+              to={activeRange.to}
+              onDone={() => setTicRange(null)}
+            />
           </div>
         );
         break;
@@ -207,49 +226,36 @@ export const NodeAnimation = ({ component, children }: NodeAnimationProps) => {
   return content;
 };
 
-export function parseNumericDiff(diff: string): number | null {
-  const trimmed = diff.trim();
-  if (!trimmed) return null;
-  const num = Number(trimmed);
-  if (!Number.isFinite(num)) return null;
-  return num;
-}
-
 interface TicOverlayProps {
-  currentValue: number;
-  diff: string;
+  from: number;
+  to: number;
   style: CSSProperties;
+  onDone?: () => void;
 }
 
 const MAX_TIC_STEPS = 1000;
 const FLASH_DURATION_MS = 800;
 
-const TicOverlay = ({ currentValue, diff, style }: TicOverlayProps) => {
-  const [displayValue, setDisplayValue] = useState<number | null>(null);
+const TicOverlay = ({ from, to, style, onDone }: TicOverlayProps) => {
+  const [displayValue, setDisplayValue] = useState<number>(from);
 
   useEffect(() => {
-    const delta = parseNumericDiff(diff);
-    if (delta === null || delta === 0) {
-      setDisplayValue(null);
+    if (!Number.isFinite(from) || !Number.isFinite(to) || from === to) {
+      setDisplayValue(to);
+      onDone?.();
       return;
     }
 
-    const prevValue = currentValue - delta;
-
-    if (!Number.isFinite(prevValue) || !Number.isFinite(currentValue)) {
-      setDisplayValue(null);
-      return;
-    }
-
+    const delta = to - from;
     const absDelta = Math.abs(delta);
 
-    // Only render if both the prev and new values are numbers and the change is small enough to animate.
     if (absDelta > MAX_TIC_STEPS) {
-      setDisplayValue(null);
+      setDisplayValue(to);
+      onDone?.();
       return;
     }
 
-    let value = prevValue;
+    let value = from;
     const step = delta > 0 ? 1 : -1;
 
     setDisplayValue(value);
@@ -259,9 +265,10 @@ const TicOverlay = ({ currentValue, diff, style }: TicOverlayProps) => {
     const intervalId = window.setInterval(() => {
       value += step;
 
-      if ((step > 0 && value >= currentValue) || (step < 0 && value <= currentValue)) {
-        setDisplayValue(currentValue);
+      if ((step > 0 && value >= to) || (step < 0 && value <= to)) {
+        setDisplayValue(to);
         window.clearInterval(intervalId);
+        onDone?.();
         return;
       }
 
@@ -271,9 +278,7 @@ const TicOverlay = ({ currentValue, diff, style }: TicOverlayProps) => {
     return () => {
       window.clearInterval(intervalId);
     };
-  }, [currentValue, diff]);
-
-  if (displayValue === null) return null;
+  }, [from, to, onDone]);
 
   return (
     <span style={{ ...style, display: 'inline-block' }} aria-hidden>
