@@ -7,6 +7,8 @@ import { useNavigate, useParams } from 'react-router-dom';
 export function PlayPage() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
+  const navigateRef = useRef(navigate);
+  navigateRef.current = navigate;
   const { importRuleset, isImporting } = useImportRuleset();
   const { getRulesetBundle } = useRulesetBundle();
   const importRulesetRef = useRef(importRuleset);
@@ -28,7 +30,7 @@ export function PlayPage() {
   const [duplicateVersion, setDuplicateVersion] = useState('');
 
   const navigateToRuleset = (rulesetId: string) => {
-    navigate(`/landing/${rulesetId}`, { replace: true });
+    navigateRef.current(`/landing/${rulesetId}`, { replace: true });
   };
 
   useEffect(() => {
@@ -98,7 +100,7 @@ export function PlayPage() {
       cancelled = true;
       clearTimeout(timeoutId);
     };
-  }, [slug, navigate]);
+  }, [slug]);
 
   const handleConfirmReplace = async () => {
     if (!pendingFile) return;

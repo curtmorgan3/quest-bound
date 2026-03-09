@@ -118,6 +118,7 @@ export type ComponentData = ShapeComponentData &
   CheckboxComponentData &
   GraphComponentData &
   FrameComponentData & {
+    referenceLabel?: string | null;
     conditionalRenderAttributeId?: string | null;
     conditionalRenderInverse?: boolean;
     conditionalRenderLogic?: ConditionalRenderLogic | null;
