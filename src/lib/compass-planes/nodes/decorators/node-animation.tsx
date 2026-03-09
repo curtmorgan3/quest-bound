@@ -115,6 +115,17 @@ export const NodeAnimation = ({ component, children }: NodeAnimationProps) => {
         </div>
       );
 
+    case 'shake':
+      return (
+        <div key={flashKey} className='sheet-attribute-animation-wrapper'>
+          <div
+            className={scriptChangeFlash ? 'sheet-attribute-animation-shake' : undefined}
+            style={{ display: 'inline-block' }}>
+            {children}
+          </div>
+        </div>
+      );
+
     default:
       return <>{children}</>;
   }

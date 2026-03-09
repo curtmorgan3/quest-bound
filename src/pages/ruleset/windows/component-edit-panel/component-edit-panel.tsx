@@ -73,6 +73,7 @@ const ATTRIBUTE_ANIMATION_OPTIONS = [
   { value: 'glow', label: 'Glow' },
   { value: 'shimmer', label: 'Shimmer' },
   { value: 'fade', label: 'Fade' },
+  { value: 'shake', label: 'Shake' },
 ] as const;
 
 export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {

@@ -506,6 +506,7 @@ export const RulesetSettings = ({ activeRuleset }: RulesetSettingsProps) => {
                     hoveredAnimation === 'pop' && 'sheet-attribute-animation-pop',
                     hoveredAnimation === 'glow' && 'sheet-attribute-animation-glow',
                     hoveredAnimation === 'fade' && 'sheet-attribute-animation-fade',
+                    hoveredAnimation === 'shake' && 'sheet-attribute-animation-shake',
                   )}
                   style={
                     (hoveredAnimation === 'glow' || hoveredAnimation === 'shimmer') &&
@@ -585,6 +586,12 @@ export const RulesetSettings = ({ activeRuleset }: RulesetSettingsProps) => {
                     onMouseEnter={() => setHoveredAnimation('fade')}
                     onMouseLeave={() => setHoveredAnimation('')}>
                     Fade
+                  </SelectItem>
+                  <SelectItem
+                    value='shake'
+                    onMouseEnter={() => setHoveredAnimation('shake')}
+                    onMouseLeave={() => setHoveredAnimation('')}>
+                    Shake
                   </SelectItem>
                 </SelectContent>
               </Select>
