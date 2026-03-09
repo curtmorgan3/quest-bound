@@ -1,5 +1,6 @@
 import { RulesetColorPicker } from '@/components';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { ComponentTypes } from '@/lib/compass-planes/nodes';
 import type { Component } from '@/types';
 import { SquareRoundCorner } from 'lucide-react';
 import { useState } from 'react';
@@ -63,6 +64,12 @@ export const StyleEdit = ({ components, handleUpdate }: Props) => {
   const [isCornersOpen, setIsCornersOpen] = useState(false);
   const [isPaddingsOpen, setIsPaddingsOpen] = useState(false);
 
+  const allowGradient =
+    components.length > 0 &&
+    components.every(
+      (c) => c.type === ComponentTypes.GRAPH || c.type === ComponentTypes.SHAPE,
+    );
+
   const handleAllCornersChange = (val: string | number) => {
     const parsedVal = Math.min(200, Math.max(0, parseValue(val)));
     handleUpdate(
@@ -104,7 +111,7 @@ export const StyleEdit = ({ components, handleUpdate }: Props) => {
           resolvedColor={backgroundColorResolved}
           onUpdate={(value) => handleUpdate('backgroundColor', value)}
           disabled={backgroundColor === MIXED_VALUE_LABEL}
-          allowGradient
+          allowGradient={allowGradient}
         />
 
         <RulesetColorPicker
@@ -115,7 +122,7 @@ export const StyleEdit = ({ components, handleUpdate }: Props) => {
           resolvedColor={colorResolved}
           onUpdate={(value) => handleUpdate('color', value)}
           disabled={color === MIXED_VALUE_LABEL}
-          allowGradient
+          allowGradient={allowGradient}
         />
       </div>
 
