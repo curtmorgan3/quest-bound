@@ -77,6 +77,13 @@ const ATTRIBUTE_ANIMATION_OPTIONS = [
   { value: 'shake', label: 'Shake' },
 ] as const;
 
+const COMPONENTS_TYPES_FOR_ATTR_ASSIGNMENT: string[] = [
+  ComponentTypes.CHECKBOX,
+  ComponentTypes.INPUT,
+  ComponentTypes.TEXT,
+  ComponentTypes.CONTENT,
+];
+
 export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
   const { windowId } = useParams();
   const { components, updateComponents } = useComponents(windowId);
@@ -665,9 +672,7 @@ export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
                 </div>
               )}
               {selectedComponents.length === 1 &&
-                selectedComponents[0].type !== ComponentTypes.INVENTORY &&
-                selectedComponents[0].type !== ComponentTypes.GRAPH &&
-                selectedComponents[0].type !== ComponentTypes.FRAME && (
+                COMPONENTS_TYPES_FOR_ATTR_ASSIGNMENT.includes(selectedComponents[0].type) && (
                   <>
                     <AttributeLookup
                       id='component-data-attribute-lookup'
