@@ -35,7 +35,13 @@ export const NodeAnimation = ({ component, children }: NodeAnimationProps) => {
   );
 
   const effectiveScriptAnimation =
-    character?.id && data.referenceLabel ? scriptTriggeredAnimation : null;
+    character?.id && data.referenceLabel && scriptTriggeredAnimation
+      ? scriptTriggeredAnimation
+      : null;
+
+  if (scriptTriggeredAnimation) {
+    console.log('script triggered: ', effectiveScriptAnimation, data);
+  }
 
   if (!sheetAttributeAnimations && !effectiveScriptAnimation) {
     return <>{children}</>;
@@ -148,10 +154,11 @@ export const NodeAnimation = ({ component, children }: NodeAnimationProps) => {
     }
 
   if (effectiveScriptAnimation) {
+    console.log('overwrite');
     content = (
       <div
-        key={`script-${effectiveScriptAnimation}`}
-        className={`sheet-attribute-animation-${effectiveScriptAnimation}`}
+        key={`script-${effectiveScriptAnimation.generation}`}
+        className={`sheet-attribute-animation-${effectiveScriptAnimation.animation.toLowerCase()}`}
         style={{ display: 'inline-block' }}>
         {content}
       </div>

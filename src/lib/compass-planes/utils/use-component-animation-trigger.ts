@@ -1,29 +1,20 @@
 import { useScriptComponentAnimationStore } from '@/stores/script-component-animation-store';
-import { useRef } from 'react';
 
 function storeKey(characterId: string, referenceLabel: string): string {
   return `${characterId}:${referenceLabel}`;
 }
 
 /**
- * Returns the current script-triggered animation name for this (characterId, referenceLabel), if any.
- * Each component instance tracks the last consumed generation so the animation plays once per trigger.
+ * Returns the current script-triggered animation entry for this (characterId, referenceLabel), if any.
+ * The generation is included so callers can use it as a React key, forcing a remount (and CSS
+ * animation replay) on every new trigger — even when the animation name repeats.
  */
 export function useComponentAnimationTrigger(
   characterId: string,
   referenceLabel: string,
-): string | null {
-  const lastConsumedRef = useRef(0);
-
-  // Subscribe to this key's entry so we re-render when an animation is added for it
-  const entry = useScriptComponentAnimationStore((s) => {
+): { animation: string; generation: number } | null {
+  return useScriptComponentAnimationStore((s) => {
     const k = storeKey(characterId, referenceLabel);
     return s.pending.get(k) ?? null;
   });
-
-  if (entry && entry.generation > lastConsumedRef.current) {
-    lastConsumedRef.current = entry.generation;
-    return entry.animation;
-  }
-  return null;
 }

@@ -300,10 +300,17 @@ function createOnAttributesModified(
   selectCharactersFn?: SelectCharactersFn,
   campaignId?: string,
   campaignSceneId?: string,
+  /** When provided, collect component animations triggered by reactive scripts. */
+  getComponentAnimationsCollector?: () => Array<{
+    characterId: string;
+    referenceLabel: string;
+    animation: string;
+  }>,
 ): OnAttributesModifiedFn {
   return async (attributeIds: string[], characterId: string, rulesetId: string) => {
     if (attributeIds.length === 0) return;
     const collector = getModifiedIdsCollector?.();
+    const animationsCollector = getComponentAnimationsCollector?.();
     if (collector) {
       attributeIds.forEach((id) => collector.add(id));
     }
@@ -344,6 +351,9 @@ function createOnAttributesModified(
         );
         if (collector && reactiveResult.modifiedAttributeIds?.length) {
           reactiveResult.modifiedAttributeIds.forEach((id) => collector.add(id));
+        }
+        if (animationsCollector && reactiveResult.componentAnimations?.length) {
+          reactiveResult.componentAnimations.forEach((entry) => animationsCollector.push(entry));
         }
       } catch (e) {
         console.warn('[QBScript] Reactive execution failed for attribute', attributeId, e);
@@ -602,6 +612,11 @@ async function handleExecuteScript(payload: ExecuteScriptPayload): Promise<void>
       // attribute, downstream dependencies refire (e.g. a's script sets b -> c's script runs).
       const directModifiedIds = result.modifiedAttributeIds ?? [];
       let allModifiedIds = new Set<string>(directModifiedIds);
+      const reactiveComponentAnimations: Array<{
+        characterId: string;
+        referenceLabel: string;
+        animation: string;
+      }> = [];
       if (directModifiedIds.length > 0) {
         const reactiveOptions = {
           executeActionEvent: (
@@ -636,6 +651,9 @@ async function handleExecuteScript(payload: ExecuteScriptPayload): Promise<void>
           reactiveOptions,
         );
         chainResult.allModifiedIds.forEach((id) => allModifiedIds.add(id));
+        for (const entry of chainResult.componentAnimations) {
+          reactiveComponentAnimations.push(entry);
+        }
       }
 
       const modifiedAttributeIds = Array.from(allModifiedIds);
@@ -649,6 +667,10 @@ async function handleExecuteScript(payload: ExecuteScriptPayload): Promise<void>
         });
       }
 
+      const allComponentAnimations = [
+        ...(result.componentAnimations ?? []),
+        ...reactiveComponentAnimations,
+      ];
       sendSignal({
         type: 'SCRIPT_RESULT',
         payload: {
@@ -660,7 +682,7 @@ async function handleExecuteScript(payload: ExecuteScriptPayload): Promise<void>
           modifiedAttributeIds,
           characterId: payload.characterId,
           navigateTargets: result.navigateTargets,
-          componentAnimations: result.componentAnimations,
+          componentAnimations: allComponentAnimations,
         },
       });
     }
@@ -975,6 +997,7 @@ async function handleInitialAttributeSync(payload: {
           announceMessages: [],
           logMessages: [],
           executionTime: 0,
+          componentAnimations: result.componentAnimations,
         },
       });
     } else {
@@ -1102,7 +1125,13 @@ async function handleExecuteActionEvent(payload: {
       );
 
     const allModifiedIds = new Set<string>();
+    const allReactiveAnimations: Array<{
+      characterId: string;
+      referenceLabel: string;
+      animation: string;
+    }> = [];
     const getCollector = () => allModifiedIds;
+    const getAnimationsCollector = () => allReactiveAnimations;
     let executor: EventHandlerExecutor;
     executor = new EventHandlerExecutor(
       db,
@@ -1116,6 +1145,7 @@ async function handleExecuteActionEvent(payload: {
         selectCharactersFn,
         payload.campaignId,
         payload.campaignSceneId,
+        getAnimationsCollector,
       ),
     );
     const result = await executor.executeActionEvent(
@@ -1171,7 +1201,7 @@ async function handleExecuteActionEvent(payload: {
           characterId: payload.characterId,
           modifiedAttributeIds: result.modifiedAttributeIds,
           navigateTargets: result.navigateTargets,
-          componentAnimations: result.componentAnimations,
+          componentAnimations: [...(result.componentAnimations ?? []), ...allReactiveAnimations],
         },
       });
     }
@@ -1232,7 +1262,13 @@ async function handleExecuteItemEvent(payload: {
       );
 
     const allModifiedIds = new Set<string>();
+    const allReactiveAnimations: Array<{
+      characterId: string;
+      referenceLabel: string;
+      animation: string;
+    }> = [];
     const getCollector = () => allModifiedIds;
+    const getAnimationsCollector = () => allReactiveAnimations;
     let executor: EventHandlerExecutor;
     executor = new EventHandlerExecutor(
       db,
@@ -1246,6 +1282,7 @@ async function handleExecuteItemEvent(payload: {
         selectCharactersFn,
         payload.campaignId,
         payload.campaignSceneId,
+        getAnimationsCollector,
       ),
     );
     const result = await executor.executeItemEvent(
@@ -1308,7 +1345,7 @@ async function handleExecuteItemEvent(payload: {
           characterId: payload.characterId,
           modifiedAttributeIds: result.modifiedAttributeIds,
           navigateTargets: result.navigateTargets,
-          componentAnimations: result.componentAnimations,
+          componentAnimations: [...(result.componentAnimations ?? []), ...allReactiveAnimations],
         },
       });
     }
@@ -1368,7 +1405,13 @@ async function handleExecuteArchetypeEvent(payload: {
       );
 
     const allModifiedIds = new Set<string>();
+    const allReactiveAnimations: Array<{
+      characterId: string;
+      referenceLabel: string;
+      animation: string;
+    }> = [];
     const getCollector = () => allModifiedIds;
+    const getAnimationsCollector = () => allReactiveAnimations;
     let executor: EventHandlerExecutor;
     executor = new EventHandlerExecutor(
       db,
@@ -1382,6 +1425,7 @@ async function handleExecuteArchetypeEvent(payload: {
         selectCharactersFn,
         payload.campaignId,
         payload.campaignSceneId,
+        getAnimationsCollector,
       ),
     );
     const result = await executor.executeArchetypeEvent(
@@ -1431,6 +1475,7 @@ async function handleExecuteArchetypeEvent(payload: {
           announceMessages: result.announceMessages,
           logMessages: result.logMessages.map((args) => prepareForStructuredClone(args)),
           executionTime: 0,
+          componentAnimations: [...(result.componentAnimations ?? []), ...allReactiveAnimations],
         },
       });
     }
@@ -1483,7 +1528,13 @@ async function handleExecuteCampaignEventEvent(payload: {
       );
 
     const allModifiedIds = new Set<string>();
+    const allReactiveAnimations: Array<{
+      characterId: string;
+      referenceLabel: string;
+      animation: string;
+    }> = [];
     const getCollector = () => allModifiedIds;
+    const getAnimationsCollector = () => allReactiveAnimations;
     let executor: EventHandlerExecutor;
     executor = new EventHandlerExecutor(
       db,
@@ -1497,6 +1548,7 @@ async function handleExecuteCampaignEventEvent(payload: {
         selectCharactersFn,
         campaignId ?? undefined,
         payload.campaignSceneId,
+        getAnimationsCollector,
       ),
     );
     const result = await executor.executeCampaignEventEvent(
@@ -1542,6 +1594,7 @@ async function handleExecuteCampaignEventEvent(payload: {
           announceMessages: result.announceMessages,
           logMessages: result.logMessages.map((args) => prepareForStructuredClone(args)),
           executionTime: 0,
+          componentAnimations: [...(result.componentAnimations ?? []), ...allReactiveAnimations],
         },
       });
     }
