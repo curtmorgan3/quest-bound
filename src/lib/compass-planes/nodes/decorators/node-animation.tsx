@@ -33,17 +33,17 @@ export const NodeAnimation = ({ component, children }: NodeAnimationProps) => {
   const prevNumericRef = useRef<number | null>(numericCurrent);
   const [ticRange, setTicRange] = useState<{ from: number; to: number } | null>(null);
 
-  const prevNumeric = prevNumericRef.current;
-  const numericChanged =
-    prevNumeric !== null && numericCurrent !== null && prevNumeric !== numericCurrent;
-
   useEffect(() => {
-    if (numericChanged && prevNumeric !== null && numericCurrent !== null) {
+    const prevNumeric = prevNumericRef.current;
+    if (
+      prevNumeric !== null &&
+      numericCurrent !== null &&
+      Number.isFinite(prevNumeric) &&
+      Number.isFinite(numericCurrent) &&
+      prevNumeric !== numericCurrent
+    ) {
       setTicRange({ from: prevNumeric, to: numericCurrent });
     }
-  }, [numericChanged, prevNumeric, numericCurrent]);
-
-  useEffect(() => {
     prevNumericRef.current = numericCurrent;
   }, [numericCurrent]);
 
@@ -92,18 +92,11 @@ export const NodeAnimation = ({ component, children }: NodeAnimationProps) => {
         );
         break;
       case 'tic': {
-        const immediateRange =
-          numericChanged && prevNumeric !== null && numericCurrent !== null
-            ? { from: prevNumeric, to: numericCurrent }
-            : null;
-
-        const activeRange = immediateRange ?? ticRange;
-
         if (
-          !activeRange ||
-          activeRange.from === activeRange.to ||
-          !Number.isFinite(activeRange.from) ||
-          !Number.isFinite(activeRange.to)
+          !ticRange ||
+          ticRange.from === ticRange.to ||
+          !Number.isFinite(ticRange.from) ||
+          !Number.isFinite(ticRange.to)
         ) {
           content = <>{children}</>;
           break;
@@ -112,15 +105,14 @@ export const NodeAnimation = ({ component, children }: NodeAnimationProps) => {
         content = (
           <div key={flashKey} className='sheet-attribute-animation-wrapper'>
             <TicOverlay
-              key={`tic-${flashKey}-${activeRange.from}-${activeRange.to}`}
+              key={`tic-${flashKey}-${ticRange.from}-${ticRange.to}`}
               style={{
                 ...style,
                 height: `${component.height}px`,
                 width: `${component.width}px`,
               }}
-              from={activeRange.from}
-              to={activeRange.to}
-              onDone={() => setTicRange(null)}
+              from={ticRange.from}
+              to={ticRange.to}
             />
           </div>
         );
@@ -230,19 +222,17 @@ interface TicOverlayProps {
   from: number;
   to: number;
   style: CSSProperties;
-  onDone?: () => void;
 }
 
 const MAX_TIC_STEPS = 1000;
 const FLASH_DURATION_MS = 800;
 
-const TicOverlay = ({ from, to, style, onDone }: TicOverlayProps) => {
+const TicOverlay = ({ from, to, style }: TicOverlayProps) => {
   const [displayValue, setDisplayValue] = useState<number>(from);
 
   useEffect(() => {
     if (!Number.isFinite(from) || !Number.isFinite(to) || from === to) {
       setDisplayValue(to);
-      onDone?.();
       return;
     }
 
@@ -251,7 +241,6 @@ const TicOverlay = ({ from, to, style, onDone }: TicOverlayProps) => {
 
     if (absDelta > MAX_TIC_STEPS) {
       setDisplayValue(to);
-      onDone?.();
       return;
     }
 
@@ -268,7 +257,6 @@ const TicOverlay = ({ from, to, style, onDone }: TicOverlayProps) => {
       if ((step > 0 && value >= to) || (step < 0 && value <= to)) {
         setDisplayValue(to);
         window.clearInterval(intervalId);
-        onDone?.();
         return;
       }
 
@@ -278,7 +266,7 @@ const TicOverlay = ({ from, to, style, onDone }: TicOverlayProps) => {
     return () => {
       window.clearInterval(intervalId);
     };
-  }, [from, to, onDone]);
+  }, [from, to]);
 
   return (
     <span style={{ ...style, display: 'inline-block' }} aria-hidden>
