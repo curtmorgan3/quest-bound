@@ -9,6 +9,8 @@ export interface ExecuteActionEventResult {
   announceMessages: string[];
   logMessages: any[][];
   error?: Error;
+  /** Component animations triggered by the action's on_activate/on_deactivate handler. */
+  componentAnimations?: Array<{ characterId: string; referenceLabel: string; animation: string }>;
 }
 
 export type ExecuteActionEventFn = (

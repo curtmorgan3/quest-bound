@@ -39,10 +39,6 @@ export const NodeAnimation = ({ component, children }: NodeAnimationProps) => {
       ? scriptTriggeredAnimation
       : null;
 
-  if (scriptTriggeredAnimation) {
-    console.log('script triggered: ', effectiveScriptAnimation, data);
-  }
-
   if (!sheetAttributeAnimations && !effectiveScriptAnimation) {
     return <>{children}</>;
   }
@@ -154,7 +150,6 @@ export const NodeAnimation = ({ component, children }: NodeAnimationProps) => {
     }
 
   if (effectiveScriptAnimation) {
-    console.log('overwrite');
     content = (
       <div
         key={`script-${effectiveScriptAnimation.generation}`}

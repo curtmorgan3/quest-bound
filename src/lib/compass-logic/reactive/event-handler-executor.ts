@@ -472,6 +472,14 @@ export class EventHandlerExecutor {
     const scriptToRun = this.buildScriptWithHandlerCall(script.sourceCode, eventType);
     actionEventDepth++;
 
+    // Collect componentAnimations from any nested Owner.Action().activate() calls so they
+    // are returned alongside this action's own animations.
+    const nestedAnimations: Array<{
+      characterId: string;
+      referenceLabel: string;
+      animation: string;
+    }> = [];
+
     try {
       const context: ScriptExecutionContext = {
         ownerId: characterId,
@@ -497,8 +505,8 @@ export class EventHandlerExecutor {
         campaignSceneId,
         // Only allow Owner.Action().activate() at top level to avoid infinite re-entrancy
         ...(actionEventDepth === 1 && {
-          executeActionEvent: (actionId, ownerId, targetIdForAction, eventTypeForAction) =>
-            this.executeActionEvent(
+          executeActionEvent: async (actionId, ownerId, targetIdForAction, eventTypeForAction) => {
+            const r = await this.executeActionEvent(
               actionId,
               ownerId,
               targetIdForAction,
@@ -511,7 +519,12 @@ export class EventHandlerExecutor {
               selectCharacterWrapped,
               selectCharactersWrapped,
               campaignSceneId,
-            ),
+            );
+            for (const entry of r.componentAnimations ?? []) {
+              nestedAnimations.push(entry);
+            }
+            return r;
+          },
         }),
       };
 
@@ -562,7 +575,7 @@ export class EventHandlerExecutor {
         error: result.error,
         modifiedAttributeIds: result.modifiedAttributeIds,
         navigateTargets: result.navigateTargets,
-        componentAnimations: result.componentAnimations,
+        componentAnimations: [...(result.componentAnimations ?? []), ...nestedAnimations],
       };
     } finally {
       actionEventDepth--;

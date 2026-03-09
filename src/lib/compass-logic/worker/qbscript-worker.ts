@@ -541,6 +541,14 @@ async function handleExecuteScript(payload: ExecuteScriptPayload): Promise<void>
     });
   };
 
+  // Collects componentAnimations from nested action event calls (Owner.Action().activate()) and
+  // reactive chain executions triggered by attribute modifications during script execution.
+  const reactiveComponentAnimations: Array<{
+    characterId: string;
+    referenceLabel: string;
+    animation: string;
+  }> = [];
+
   try {
     const context: ScriptExecutionContext = {
       ownerId: payload.characterId,
@@ -558,8 +566,8 @@ async function handleExecuteScript(payload: ExecuteScriptPayload): Promise<void>
       selectCharacter: selectCharacterFn,
       selectCharacters: selectCharactersFn,
       onRollComplete,
-      executeActionEvent: (actionId, characterId, targetId, eventType) =>
-        executor.executeActionEvent(
+      executeActionEvent: async (actionId, characterId, targetId, eventType) => {
+        const r = await executor.executeActionEvent(
           actionId,
           characterId,
           targetId,
@@ -572,7 +580,12 @@ async function handleExecuteScript(payload: ExecuteScriptPayload): Promise<void>
           selectCharacterFn,
           selectCharactersFn,
           payload.campaignSceneId,
-        ),
+        );
+        for (const entry of r.componentAnimations ?? []) {
+          reactiveComponentAnimations.push(entry);
+        }
+        return r;
+      },
       ...(payload.params ? { params: createParamsHelperFromRecord(payload.params) } : {}),
     };
 
@@ -612,11 +625,6 @@ async function handleExecuteScript(payload: ExecuteScriptPayload): Promise<void>
       // attribute, downstream dependencies refire (e.g. a's script sets b -> c's script runs).
       const directModifiedIds = result.modifiedAttributeIds ?? [];
       let allModifiedIds = new Set<string>(directModifiedIds);
-      const reactiveComponentAnimations: Array<{
-        characterId: string;
-        referenceLabel: string;
-        animation: string;
-      }> = [];
       if (directModifiedIds.length > 0) {
         const reactiveOptions = {
           executeActionEvent: (
