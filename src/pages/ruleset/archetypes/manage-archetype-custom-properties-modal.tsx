@@ -1,6 +1,7 @@
 import {
   Badge,
   Button,
+  ImageUpload,
   Input,
   Label,
   RulesetColorPicker,
@@ -18,7 +19,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from '@/components/ui/sheet';
-import { useActiveRuleset, useArchetypeCustomProperties } from '@/lib/compass-api';
+import { useActiveRuleset, useArchetypeCustomProperties, useAssets } from '@/lib/compass-api';
 import type { Archetype, CustomPropertyType } from '@/types';
 import { rgbToHex } from '@/utils';
 import { RotateCcw, Search, SlidersHorizontal, Trash2 } from 'lucide-react';
@@ -45,6 +46,7 @@ export function ManageArchetypeCustomPropertiesModal({
   trigger,
 }: ManageArchetypeCustomPropertiesModalProps) {
   const { activeRuleset } = useActiveRuleset();
+  const { assets } = useAssets(activeRuleset?.id);
   const {
     archetypeCustomProperties,
     customProperties,
@@ -207,6 +209,32 @@ export function ManageArchetypeCustomPropertiesModal({
                                   className='h-8 flex-1 max-w-[120px]'
                                 />
                               </div>
+                            ) : cp.type === 'image' ? (
+                              <ImageUpload
+                                image={
+                                  typeof effectiveDefault === 'string'
+                                    ? (effectiveDefault as string)
+                                    : undefined
+                                }
+                                alt={cp.label}
+                                rulesetId={activeRuleset?.id}
+                                onUpload={async (assetId) => {
+                                  const asset = assets.find((a) => a.id === assetId);
+                                  const value =
+                                    asset && typeof asset.data === 'string'
+                                      ? asset.data
+                                      : (assetId as string);
+                                  await updateArchetypeCustomProperty(acp.id, {
+                                    defaultValue: value,
+                                  });
+                                }}
+                                onRemove={() =>
+                                  updateArchetypeCustomProperty(acp.id, {
+                                    defaultValue: '',
+                                  })
+                                }
+                                hideSelectAsset={false}
+                              />
                             ) : cp.type === 'number' ? (
                               <Input
                                 type='number'
