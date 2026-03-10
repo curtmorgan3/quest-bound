@@ -151,12 +151,62 @@ export function ScriptEditorPage() {
     setParameters(script.parameters ?? []);
   }, [scriptId, script, isNew, initializedFromScriptId]);
 
-  // When creating a new script, update source template when type changes
+  // When creating a new script, update source template when type changes.
+  // If an entityId is provided in query params, fetch the entity and prepend its
+  // description as a multiline comment at the top of the source code.
   useEffect(() => {
-    if (isNew) {
-      setSourceCode(SCRIPT_TEMPLATES[entityType]);
+    if (!isNew) return;
+
+    const baseTemplate = SCRIPT_TEMPLATES[entityType];
+
+    // No entity context – just use the plain template.
+    if (!paramEntityId) {
+      setSourceCode(baseTemplate);
+      return;
     }
-  }, [isNew, entityType]);
+
+    let cancelled = false;
+
+    const loadEntityDescriptionAndApplyTemplate = async () => {
+      try {
+        let description: string | undefined;
+
+        if (entityType === 'attribute') {
+          const attribute = await db.attributes.get(paramEntityId);
+          description = attribute?.description;
+        } else if (entityType === 'action') {
+          const action = await db.actions.get(paramEntityId);
+          description = action?.description;
+        } else if (entityType === 'item') {
+          const item = await db.items.get(paramEntityId);
+          description = item?.description;
+        } else if (entityType === 'archetype') {
+          const archetype = await db.archetypes.get(paramEntityId);
+          description = archetype?.description;
+        }
+
+        if (cancelled) return;
+
+        if (description && description.trim()) {
+          const sanitizedDescription = description.replace(/\*\//g, '*\\/');
+          const commentedTemplate = `/*\n${sanitizedDescription}\n*/\n\n${baseTemplate.trimStart()}`;
+          setSourceCode(commentedTemplate);
+        } else {
+          setSourceCode(baseTemplate);
+        }
+      } catch {
+        if (!cancelled) {
+          setSourceCode(baseTemplate);
+        }
+      }
+    };
+
+    void loadEntityDescriptionAndApplyTemplate();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isNew, entityType, paramEntityId]);
 
   const usesEvents = entityType === 'action' || entityType === 'item' || entityType === 'archetype';
 
