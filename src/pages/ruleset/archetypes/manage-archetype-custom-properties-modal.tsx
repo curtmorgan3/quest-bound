@@ -217,6 +217,8 @@ export function ManageArchetypeCustomPropertiesModal({
                                     : undefined
                                 }
                                 alt={cp.label}
+                                height={64}
+                                width={64}
                                 rulesetId={activeRuleset?.id}
                                 onUpload={async (assetId) => {
                                   const asset = assets.find((a) => a.id === assetId);

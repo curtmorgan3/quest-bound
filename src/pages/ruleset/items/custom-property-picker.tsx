@@ -8,6 +8,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  ImageUpload,
   Input,
   Label,
   RulesetColorPicker,
@@ -17,7 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components';
-import { useActiveRuleset, useCustomProperties } from '@/lib/compass-api';
+import { useActiveRuleset, useAssets, useCustomProperties } from '@/lib/compass-api';
 import type { CustomPropertyType } from '@/types';
 import { rgbToHex } from '@/utils';
 import { Plus, Search } from 'lucide-react';
@@ -43,6 +44,7 @@ export function CustomPropertyPicker({
   const { activeRuleset } = useActiveRuleset();
   const { customProperties, createCustomProperty } = useCustomProperties(activeRuleset?.id);
   const [mode, setMode] = useState<'select' | 'create'>(initialMode);
+  const { assets } = useAssets();
 
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
@@ -60,6 +62,8 @@ export function CustomPropertyPicker({
   const [createCategory, setCreateCategory] = useState('');
   const [createDefaultValue, setCreateDefaultValue] = useState('');
   const [creating, setCreating] = useState(false);
+
+  const selectedAsset = assets.find((a) => a.id === createDefaultValue);
 
   const available = customProperties.filter((cp) => !excludeIds.includes(cp.id));
 
@@ -323,6 +327,16 @@ export function CustomPropertyPicker({
                     if (typeof value === 'string') return;
                     setCreateDefaultValue(rgbToHex(value.r, value.g, value.b));
                   }}
+                />
+              ) : createType === 'image' ? (
+                <ImageUpload
+                  image={selectedAsset?.data || undefined}
+                  rulesetId={activeRuleset?.id}
+                  onUpload={(assetId) => setCreateDefaultValue(assetId)}
+                  onRemove={() => setCreateDefaultValue('')}
+                  hideSelectAsset={false}
+                  height={64}
+                  width={64}
                 />
               ) : (
                 <Input
