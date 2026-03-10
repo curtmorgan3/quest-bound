@@ -31,15 +31,7 @@ export const useCharacter = (_id?: string) => {
 
   const { addNotification } = useNotifications();
 
-  const characters =
-    useLiveQuery(
-      () =>
-        db.characters
-          .where('userId')
-          .equals(currentUser?.id ?? 0)
-          .toArray(),
-      [currentUser],
-    ) ?? [];
+  const characters = useLiveQuery(() => db.characters.toArray(), [currentUser]) ?? [];
 
   const id = _id ?? characterId;
 

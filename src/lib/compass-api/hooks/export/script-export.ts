@@ -27,6 +27,8 @@ export interface ScriptMetadata {
   entityName: string | null; // Name of the associated entity (for re-linking on import)
   isGlobal: boolean;
   enabled: boolean;
+  /** When true, script is hidden from the main script editor (internal-only). */
+  hidden?: boolean;
   category?: string; // Optional category for grouping scripts
   /** Parameter definitions (e.g. for Game Manager scripts); restored on import. */
   parameters?: ScriptParameterDefinition[];
@@ -133,6 +135,7 @@ export async function exportScripts(rulesetId: string): Promise<ScriptExportResu
       entityName,
       isGlobal: script.isGlobal,
       enabled: script.enabled,
+      ...(script.hidden !== undefined ? { hidden: script.hidden } : {}),
       category: script.category,
       ...(script.parameters?.length ? { parameters: script.parameters } : {}),
     });

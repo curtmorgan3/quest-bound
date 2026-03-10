@@ -117,6 +117,7 @@ export async function importScript(
   let enabled = true;
   let category: string | undefined;
   let scriptId: string | undefined;
+  let hidden: boolean | undefined;
   let parameters: Script['parameters'];
 
   if (metadata) {
@@ -127,6 +128,7 @@ export async function importScript(
     enabled = metadata.enabled;
     category = metadata.category;
     scriptId = metadata.id;
+    hidden = metadata.hidden;
     parameters = metadata.parameters;
   }
 
@@ -182,6 +184,7 @@ export async function importScript(
     entityId,
     isGlobal,
     enabled,
+    ...(hidden !== undefined && { hidden }),
     ...(category !== undefined && { category }),
     ...(parameters?.length ? { parameters } : {}),
     createdAt: now,
