@@ -1,4 +1,4 @@
-import { useAssets } from '@/lib/compass-api';
+import { useActiveRuleset, useAssets, useCustomProperties } from '@/lib/compass-api';
 import {
   getBackgroundStyle,
   getComponentData,
@@ -13,6 +13,8 @@ import { ResizableNode } from '../../decorators';
 export const EditImageNode = () => {
   const { getComponent } = useContext(WindowEditorContext);
   const { assets } = useAssets();
+  const { activeRuleset } = useActiveRuleset();
+  const { customProperties } = useCustomProperties(activeRuleset?.id);
 
   const id = useNodeId();
   const component = getComponent(id ?? '');
@@ -24,7 +26,18 @@ export const EditImageNode = () => {
   const data = getComponentData(component) as ImageComponentData;
   const asset = assets.find((a) => a.id === data.assetId);
 
-  const imageSrc = asset?.data ?? data.assetUrl;
+  let imageSrc: string | undefined;
+
+  if (data.customPropertyId) {
+    const cp = customProperties.find((p) => p.id === data.customPropertyId);
+    if (cp && typeof cp.defaultValue === 'string') {
+      imageSrc = cp.defaultValue;
+    }
+  }
+
+  if (!imageSrc) {
+    imageSrc = asset?.data ?? data.assetUrl;
+  }
 
   return (
     <ResizableNode component={component}>
@@ -77,14 +90,35 @@ const ViewImageNodeComponent = ({ component }: { component: Component }) => {
   const data = getComponentData(component) as ImageComponentData;
   const { assets } = useAssets();
   const characterContext = useContext(CharacterContext);
+  const { activeRuleset } = useActiveRuleset();
+  const { customProperties } = useCustomProperties(activeRuleset?.id);
 
   const asset = assets.find((a) => a.id === data.assetId);
   const componentImageSrc = asset?.data ?? data.assetUrl;
 
-  const imageSrc =
-    data.useCharacterImage && characterContext?.character?.image
-      ? characterContext.character.image
-      : componentImageSrc;
+  const character = characterContext?.character ?? null;
+
+  let imageSrc: string | undefined;
+
+  if (data.customPropertyId) {
+    const charValue = character?.customProperties?.[data.customPropertyId];
+    if (typeof charValue === 'string') {
+      imageSrc = charValue;
+    } else {
+      const cp = customProperties.find((p) => p.id === data.customPropertyId);
+      if (cp && typeof cp.defaultValue === 'string') {
+        imageSrc = cp.defaultValue;
+      }
+    }
+  }
+
+  if (!imageSrc && data.useCharacterImage && character?.image) {
+    imageSrc = character.image;
+  }
+
+  if (!imageSrc) {
+    imageSrc = componentImageSrc;
+  }
 
   if (!imageSrc) {
     return null;

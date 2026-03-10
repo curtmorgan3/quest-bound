@@ -54,6 +54,7 @@ export type ContentComponentData = {
 export type ImageComponentData = {
   assetId?: string;
   assetUrl?: string;
+  customPropertyId?: string;
   /** When true, in view mode show the character's image; fall back to this component's image when no character image. */
   useCharacterImage?: boolean;
 };
