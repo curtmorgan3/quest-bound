@@ -132,7 +132,7 @@ export const useAttributeValues = ({
       updateAttribute(id, data);
     } else {
       createAttribute(data);
-      resetAll();
+      setTitle('');
     }
 
     onCreate?.();

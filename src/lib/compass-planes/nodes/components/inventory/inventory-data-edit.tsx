@@ -40,7 +40,6 @@ export const InventoryDataEdit = ({ components, updateComponents }: InventoryDat
   const cellHeight = firstComponentData?.cellHeight ?? 1;
   const categoryRestriction = firstComponentData?.categoryRestriction ?? '';
   const showItemAs = firstComponentData?.showItemAs ?? 'image';
-  const inventoryComponentId = firstComponentData?.inventoryComponentId ?? '';
 
   const existingCategories = useMemo(() => {
     if (!currentType) return [];
@@ -128,20 +127,6 @@ export const InventoryDataEdit = ({ components, updateComponents }: InventoryDat
     fireExternalComponentChangeEvent({ updates });
   };
 
-  const handleInventoryComponentIdChange = async (value: string) => {
-    if (editableComponents.length === 0) return;
-
-    const updates = editableComponents.map((component) => ({
-      id: component.id,
-      data: updateComponentData(component.data, {
-        inventoryComponentId: value.trim() || undefined,
-      }),
-    }));
-
-    await updateComponents(updates);
-    fireExternalComponentChangeEvent({ updates });
-  };
-
   const isDisabled = editableComponents.length === 0;
 
   return (
@@ -208,17 +193,6 @@ export const InventoryDataEdit = ({ components, updateComponents }: InventoryDat
             <SelectItem value='title'>Title</SelectItem>
           </SelectContent>
         </Select>
-      </div>
-
-      <div className='flex flex-col gap-1'>
-        <label className='text-xs text-muted-foreground'>ID</label>
-        <Input
-          type='text'
-          value={inventoryComponentId}
-          onChange={(e) => handleInventoryComponentIdChange(e.target.value)}
-          placeholder='For item assignment via script'
-          disabled={isDisabled}
-        />
       </div>
     </div>
   );

@@ -91,7 +91,7 @@ export async function clearAssetReferences(db: DB, assetId: string): Promise<voi
           r.campaignsCtaAssetId === assetId,
       )
       .toArray(),
-    db.campaigns.where('assetId').equals(assetId).toArray(),
+    db.campaigns.filter((c) => c.assetId === assetId).toArray(),
     db.charts.where('assetId').equals(assetId).toArray(),
     db.archetypes.where('assetId').equals(assetId).toArray(),
     db.characterPages.where('assetId').equals(assetId).toArray(),

@@ -1,8 +1,16 @@
-import { Button, Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components';
+import {
+  Button,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components';
 import { PageWrapper } from '@/components/composites';
-import { useActiveRuleset, useCharts, useExportChart } from '@/lib/compass-api';
-import { ArrowDownToLine, Loader2, Pencil, Plus } from 'lucide-react';
-import { useState } from 'react';
+import { useActiveRuleset, useCharts, useDocuments, useExportChart } from '@/lib/compass-api';
+import { ArrowDownToLine, Loader2, Pencil, Plus, Upload } from 'lucide-react';
+import { useRef, useState } from 'react';
 import { Navigate, useSearchParams } from 'react-router-dom';
 import { ActionChart } from './actions';
 import { ArchetypeCreateDialog } from './archetypes/archetype-create-dialog';
@@ -45,8 +53,12 @@ export const Ruleset = ({
   const [searchParams, setSearchParams] = useSearchParams();
   const [open, setOpen] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
+  const [documentUploadModalOpen, setDocumentUploadModalOpen] = useState(false);
+  const [uploadingDocuments, setUploadingDocuments] = useState(false);
+  const documentFileInputRef = useRef<HTMLInputElement>(null);
   const { exportChartAsTSV } = useExportChart();
   const { charts } = useCharts();
+  const { createDocument } = useDocuments();
 
   const chartId = searchParams.get('chart');
   const activeChart = chartId ? charts?.find((c) => c.id === chartId) : undefined;
@@ -56,6 +68,38 @@ export const Ruleset = ({
   if (!page) {
     return <Navigate to={`/rulesets/${activeRuleset?.id}/attributes`} replace={true} />;
   }
+
+  const handleDocumentUploadClick = () => {
+    setDocumentUploadModalOpen(true);
+  };
+
+  const handleDocumentSelectFilesClick = () => {
+    documentFileInputRef.current?.click();
+  };
+
+  const handleDocumentFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files?.length) return;
+    const fileList = Array.from(files);
+    e.target.value = '';
+    setUploadingDocuments(true);
+    try {
+      for (const file of fileList) {
+        if (file.type !== 'application/pdf') continue;
+        const base64 = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+        const title = file.name.replace(/\.pdf$/i, '');
+        await createDocument({ title, pdfData: base64 });
+      }
+      setDocumentUploadModalOpen(false);
+    } finally {
+      setUploadingDocuments(false);
+    }
+  };
 
   const renderChart = () => {
     switch (page) {
@@ -128,6 +172,31 @@ export const Ruleset = ({
               {`Create ${(pageToLabel.get(page) ?? '').slice(0, -1)}`}
             </Button>
           )}
+          {page === 'documents' && (
+            <Button
+              size='sm'
+              variant='outline'
+              onClick={handleDocumentUploadClick}
+              disabled={uploadingDocuments}
+              data-testid='documents-upload-button'>
+              {uploadingDocuments ? (
+                <Loader2 className='h-4 w-4 animate-spin' />
+              ) : (
+                <Upload className='h-4 w-4' />
+              )}
+              {uploadingDocuments ? 'Uploading…' : 'Upload'}
+            </Button>
+          )}
+          {page === 'documents' && (
+            <input
+              ref={documentFileInputRef}
+              type='file'
+              accept='application/pdf'
+              multiple
+              className='hidden'
+              onChange={handleDocumentFileChange}
+            />
+          )}
           {page === 'charts' && chartId && (
             <div className='flex gap-2'>
               <Button
@@ -195,6 +264,41 @@ export const Ruleset = ({
           </DialogContent>
         )}
       </Dialog>
+
+      {page === 'documents' && (
+        <Dialog open={documentUploadModalOpen} onOpenChange={setDocumentUploadModalOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Upload documents</DialogTitle>
+              <DialogDescription>
+                Select one or more PDF files. Each file will be added as a document with its
+                filename as the title.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button
+                onClick={handleDocumentSelectFilesClick}
+                disabled={uploadingDocuments}
+                data-testid='documents-upload-select-files'>
+                {uploadingDocuments ? (
+                  <>
+                    <Loader2 className='h-4 w-4 animate-spin' />
+                    Uploading…
+                  </>
+                ) : (
+                  'Select Files'
+                )}
+              </Button>
+              <Button
+                variant='secondary'
+                onClick={() => setDocumentUploadModalOpen(false)}
+                disabled={uploadingDocuments}>
+                Cancel
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
     </PageWrapper>
   );
 };

@@ -161,6 +161,7 @@ export const ActionChart = () => {
     <Grid
       rowData={actions}
       colDefs={columns}
+      getRowId={({ data }) => data.id}
       initialFilterModel={initialFilterModel}
       initialSortModel={initialSortModel}
       onCellValueChanged={handleUpdate}

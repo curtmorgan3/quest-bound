@@ -29,6 +29,8 @@ export interface GridSortModelItem {
 interface Props<T> {
   rowData: T[];
   colDefs: GridColumn<T>[];
+  /** Return a stable id for each row so the grid can update in place and preserve scroll on data change. */
+  getRowId?: (params: any) => string;
   initialFilterModel?: GridFilterModel;
   initialSortModel?: GridSortModelItem[];
   onSelectionChanged?: (selections: T[]) => void;
@@ -46,6 +48,7 @@ interface Props<T> {
 export const Grid = <T,>({
   rowData,
   colDefs,
+  getRowId,
   initialFilterModel,
   initialSortModel,
   onSelectionChanged,
@@ -124,7 +127,10 @@ export const Grid = <T,>({
     if (e.source !== 'api') {
       const state = e.api.getColumnState?.() ?? [];
       const sortModel: GridSortModelItem[] = state
-        .filter((col): col is { colId: string; sort: 'asc' | 'desc'; sortIndex?: number } => col.sort != null)
+        .filter(
+          (col): col is { colId: string; sort: 'asc' | 'desc'; sortIndex?: number } =>
+            col.sort != null,
+        )
         .map((col) => ({ colId: col.colId, sort: col.sort, sortIndex: col.sortIndex }));
       onSortChanged?.(sortModel);
     }
@@ -134,6 +140,7 @@ export const Grid = <T,>({
     <div className='ag-theme-quartz-dark w-full h-full'>
       <AgGridReact
         rowData={rowData}
+        getRowId={getRowId}
         columnDefs={colDefs}
         rowDragManaged
         onGridReady={handleGridReady}

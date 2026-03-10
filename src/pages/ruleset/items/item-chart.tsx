@@ -164,6 +164,7 @@ export const ItemChart = () => {
     <Grid
       rowData={items}
       colDefs={columns}
+      getRowId={({ data }) => data.id}
       initialFilterModel={initialFilterModel}
       initialSortModel={initialSortModel}
       onCellValueChanged={handleUpdate}

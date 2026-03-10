@@ -19,21 +19,16 @@ import {
   ImageUpload,
   Input,
   Label,
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
 } from '@/components';
-import { ExportRulesetModal } from '@/components/export-ruleset-modal';
 import {
   RulesetColorPicker,
   type RulesetColorPickerValue,
 } from '@/components/composites/ruleset-color-picker';
+import { ExportRulesetModal } from '@/components/export-ruleset-modal';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useNotifications } from '@/hooks/use-notifications';
 import { useExportRuleset, useFonts, useImportRuleset, useRulesets } from '@/lib/compass-api';
@@ -43,7 +38,6 @@ import {
   getDanglingReferencesForModuleRemoval,
   removeModuleFromRuleset,
 } from '@/lib/compass-api/hooks/export/remove-module-from-ruleset';
-import { cn } from '@/lib/utils';
 import type { Ruleset, RulesetModuleEntry } from '@/types';
 import { rgbToHex } from '@/utils';
 import { Download, Package, Plus, Sliders, Trash, Upload } from 'lucide-react';
@@ -56,12 +50,9 @@ interface RulesetSettingsProps {
 
 export const RulesetSettings = ({ activeRuleset }: RulesetSettingsProps) => {
   const { updateRuleset, rulesets, resetTestCharacter } = useRulesets();
-  const {
-    exportRuleset,
-    exportableCharacters,
-    campaigns,
-    isExporting,
-  } = useExportRuleset(activeRuleset.id);
+  const { exportRuleset, exportableCharacters, campaigns, isExporting } = useExportRuleset(
+    activeRuleset.id,
+  );
   const { importRuleset } = useImportRuleset();
   const { fonts, createFont, deleteFont } = useFonts(activeRuleset.id);
   const { addNotification } = useNotifications();
@@ -93,20 +84,15 @@ export const RulesetSettings = ({ activeRuleset }: RulesetSettingsProps) => {
   const [title, setTitle] = useState(activeRuleset.title);
   const [version, setVersion] = useState(activeRuleset.version);
   const [description, setDescription] = useState(activeRuleset.description);
-  const [characterCtaTitle, setCharacterCtaTitle] = useState(
-    activeRuleset.characterCtaTitle ?? '',
-  );
+  const [characterCtaTitle, setCharacterCtaTitle] = useState(activeRuleset.characterCtaTitle ?? '');
   const [characterCtaDescription, setCharacterCtaDescription] = useState(
     activeRuleset.characterCtaDescription ?? '',
   );
-  const [campaignsCtaTitle, setCampaignsCtaTitle] = useState(
-    activeRuleset.campaignsCtaTitle ?? '',
-  );
+  const [campaignsCtaTitle, setCampaignsCtaTitle] = useState(activeRuleset.campaignsCtaTitle ?? '');
   const [campaignCtaDescription, setCampaignCtaDescription] = useState(
     activeRuleset.campaignCtaDescription ?? '',
   );
-  const [animationSelectOpen, setAnimationSelectOpen] = useState(false);
-  const [hoveredAnimation, setHoveredAnimation] = useState<string>('');
+
   const [fontLoading, setFontLoading] = useState(false);
   const [paletteAddColor, setPaletteAddColor] = useState<string | undefined>(undefined);
   const fontInputRef = useRef<HTMLInputElement>(null);
@@ -331,7 +317,9 @@ export const RulesetSettings = ({ activeRuleset }: RulesetSettingsProps) => {
         <TabsTrigger value='modules'>Modules</TabsTrigger>
       </TabsList>
 
-      <TabsContent value='details' className='mt-0 flex min-h-0 flex-1 flex-col gap-6 overflow-auto'>
+      <TabsContent
+        value='details'
+        className='mt-0 flex min-h-0 flex-1 flex-col gap-6 overflow-auto'>
         <div className='flex items-end gap-4'>
           <div className='flex flex-col gap-2 max-w-sm flex-1'>
             <Label htmlFor='ruleset-title'>Title</Label>
@@ -351,8 +339,7 @@ export const RulesetSettings = ({ activeRuleset }: RulesetSettingsProps) => {
           <Button
             className='gap-2 w-[50px]'
             variant='outline'
-            onClick={() => setExportModalOpen(true)}
-          >
+            onClick={() => setExportModalOpen(true)}>
             <Download className='h-4 w-4' />
           </Button>
           <ExportRulesetModal
@@ -382,21 +369,16 @@ export const RulesetSettings = ({ activeRuleset }: RulesetSettingsProps) => {
         <div className='flex flex-col gap-3'>
           <Label>Landing page CTA card images</Label>
           <p className='text-sm text-muted-foreground'>
-            Images and copy shown on the Characters and Campaigns cards on the ruleset landing
-            page.
+            Images and copy shown on the Characters and Campaigns cards on the ruleset landing page.
           </p>
           <div className='flex flex-col gap-6'>
             <div className='flex items-start gap-4'>
               <div className='flex flex-col gap-2 shrink-0'>
-                <Label className='text-xs font-normal text-muted-foreground'>
-                  Characters CTA
-                </Label>
+                <Label className='text-xs font-normal text-muted-foreground'>Characters CTA</Label>
                 <ImageUpload
                   image={activeRuleset.charactersCtaImage ?? undefined}
                   alt='Characters CTA'
-                  onRemove={() =>
-                    updateRuleset(activeRuleset.id, { charactersCtaAssetId: null })
-                  }
+                  onRemove={() => updateRuleset(activeRuleset.id, { charactersCtaAssetId: null })}
                   onUpload={(assetId) =>
                     updateRuleset(activeRuleset.id, { charactersCtaAssetId: assetId })
                   }
@@ -405,7 +387,9 @@ export const RulesetSettings = ({ activeRuleset }: RulesetSettingsProps) => {
               </div>
               <div className='flex flex-1 flex-row gap-4 min-w-0 items-end'>
                 <div className='flex flex-1 flex-col gap-2 min-w-0'>
-                  <Label htmlFor='character-cta-title' className='text-xs font-normal text-muted-foreground'>
+                  <Label
+                    htmlFor='character-cta-title'
+                    className='text-xs font-normal text-muted-foreground'>
                     Title
                   </Label>
                   <Input
@@ -416,7 +400,9 @@ export const RulesetSettings = ({ activeRuleset }: RulesetSettingsProps) => {
                   />
                 </div>
                 <div className='flex flex-1 flex-col gap-2 min-w-0'>
-                  <Label htmlFor='character-cta-description' className='text-xs font-normal text-muted-foreground'>
+                  <Label
+                    htmlFor='character-cta-description'
+                    className='text-xs font-normal text-muted-foreground'>
                     Description
                   </Label>
                   <Input
@@ -430,15 +416,11 @@ export const RulesetSettings = ({ activeRuleset }: RulesetSettingsProps) => {
             </div>
             <div className='flex items-start gap-4'>
               <div className='flex flex-col gap-2 shrink-0'>
-                <Label className='text-xs font-normal text-muted-foreground'>
-                  Campaigns CTA
-                </Label>
+                <Label className='text-xs font-normal text-muted-foreground'>Campaigns CTA</Label>
                 <ImageUpload
                   image={activeRuleset.campaignsCtaImage ?? undefined}
                   alt='Campaigns CTA'
-                  onRemove={() =>
-                    updateRuleset(activeRuleset.id, { campaignsCtaAssetId: null })
-                  }
+                  onRemove={() => updateRuleset(activeRuleset.id, { campaignsCtaAssetId: null })}
                   onUpload={(assetId) =>
                     updateRuleset(activeRuleset.id, { campaignsCtaAssetId: assetId })
                   }
@@ -447,7 +429,9 @@ export const RulesetSettings = ({ activeRuleset }: RulesetSettingsProps) => {
               </div>
               <div className='flex flex-1 flex-row gap-4 min-w-0 items-end'>
                 <div className='flex flex-1 flex-col gap-2 min-w-0'>
-                  <Label htmlFor='campaigns-cta-title' className='text-xs font-normal text-muted-foreground'>
+                  <Label
+                    htmlFor='campaigns-cta-title'
+                    className='text-xs font-normal text-muted-foreground'>
                     Title
                   </Label>
                   <Input
@@ -458,7 +442,9 @@ export const RulesetSettings = ({ activeRuleset }: RulesetSettingsProps) => {
                   />
                 </div>
                 <div className='flex flex-1 flex-col gap-2 min-w-0'>
-                  <Label htmlFor='campaigns-cta-description' className='text-xs font-normal text-muted-foreground'>
+                  <Label
+                    htmlFor='campaigns-cta-description'
+                    className='text-xs font-normal text-muted-foreground'>
                     Description
                   </Label>
                   <Input
@@ -474,7 +460,9 @@ export const RulesetSettings = ({ activeRuleset }: RulesetSettingsProps) => {
         </div>
       </TabsContent>
 
-      <TabsContent value='defaults' className='mt-0 flex min-h-0 flex-1 flex-col gap-6 overflow-auto'>
+      <TabsContent
+        value='defaults'
+        className='mt-0 flex min-h-0 flex-1 flex-col gap-6 overflow-auto'>
         <div className='flex flex-col gap-3'>
           <Label>Custom Properties</Label>
           <p className='text-sm text-muted-foreground'>
@@ -487,136 +475,6 @@ export const RulesetSettings = ({ activeRuleset }: RulesetSettingsProps) => {
             </Link>
           </Button>
         </div>
-        <div className='flex flex-col gap-1'>
-          <div className='flex gap-4 items-end'>
-            <div className='flex flex-col gap-2 max-w-xs'>
-              <Label htmlFor='ruleset-animation'>Animation style</Label>
-              <Select
-                value={activeRuleset.details?.animation ?? ''}
-                onValueChange={(value) =>
-                  updateRuleset(activeRuleset.id, {
-                    details: { ...activeRuleset.details, animation: value },
-                  })
-                }
-                open={animationSelectOpen}
-                onOpenChange={(open) => {
-                  setAnimationSelectOpen(open);
-                  if (!open) setHoveredAnimation('');
-                }}>
-                <div
-                  className={cn(
-                    'relative inline-block w-full',
-                    hoveredAnimation === 'pop' && 'sheet-attribute-animation-pop',
-                    hoveredAnimation === 'glow' && 'sheet-attribute-animation-glow',
-                    hoveredAnimation === 'fade' && 'sheet-attribute-animation-fade',
-                    hoveredAnimation === 'shake' && 'sheet-attribute-animation-shake',
-                  )}
-                  style={
-                    (hoveredAnimation === 'glow' || hoveredAnimation === 'shimmer') &&
-                    activeRuleset.details?.animationColor
-                      ? {
-                          ['--sheet-animation-color' as string]:
-                            activeRuleset.details.animationColor,
-                        }
-                      : undefined
-                  }>
-                  <SelectTrigger id='ruleset-animation' className='h-8 w-full'>
-                    <SelectValue placeholder='Select animation…' />
-                  </SelectTrigger>
-                  {hoveredAnimation === 'highlight' && (
-                    <div
-                      className='sheet-attribute-highlight-overlay rounded-md'
-                      style={{
-                        backgroundColor: activeRuleset.details?.animationColor ?? 'var(--primary)',
-                      }}
-                      aria-hidden
-                    />
-                  )}
-                  {hoveredAnimation === 'shimmer' && (
-                    <div className='sheet-attribute-shimmer-overlay rounded-md' aria-hidden />
-                  )}
-                  {hoveredAnimation === 'floating-difference' && (
-                    <span
-                      className='floating-difference'
-                      style={
-                        activeRuleset.details?.animationColor
-                          ? { color: activeRuleset.details.animationColor }
-                          : undefined
-                      }>
-                      +1
-                    </span>
-                  )}
-                </div>
-                <SelectContent>
-                  <SelectItem
-                    value='none'
-                    onMouseEnter={() => setHoveredAnimation('')}
-                    onMouseLeave={() => setHoveredAnimation('')}>
-                    None
-                  </SelectItem>
-                  <SelectItem
-                    value='floating-difference'
-                    onMouseEnter={() => setHoveredAnimation('floating-difference')}
-                    onMouseLeave={() => setHoveredAnimation('')}>
-                    Floating difference
-                  </SelectItem>
-                  <SelectItem
-                    value='pop'
-                    onMouseEnter={() => setHoveredAnimation('pop')}
-                    onMouseLeave={() => setHoveredAnimation('')}>
-                    Pop
-                  </SelectItem>
-                  <SelectItem
-                    value='highlight'
-                    onMouseEnter={() => setHoveredAnimation('highlight')}
-                    onMouseLeave={() => setHoveredAnimation('')}>
-                    Highlight
-                  </SelectItem>
-                  <SelectItem
-                    value='glow'
-                    onMouseEnter={() => setHoveredAnimation('glow')}
-                    onMouseLeave={() => setHoveredAnimation('')}>
-                    Glow
-                  </SelectItem>
-                  <SelectItem
-                    value='shimmer'
-                    onMouseEnter={() => setHoveredAnimation('shimmer')}
-                    onMouseLeave={() => setHoveredAnimation('')}>
-                    Shimmer
-                  </SelectItem>
-                  <SelectItem
-                    value='fade'
-                    onMouseEnter={() => setHoveredAnimation('fade')}
-                    onMouseLeave={() => setHoveredAnimation('')}>
-                    Fade
-                  </SelectItem>
-                  <SelectItem
-                    value='shake'
-                    onMouseEnter={() => setHoveredAnimation('shake')}
-                    onMouseLeave={() => setHoveredAnimation('')}>
-                    Shake
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <RulesetColorPicker
-              label='Animation Color'
-              color={activeRuleset.details?.animationColor}
-              disableAlpha
-              onUpdate={(value) => {
-                if (typeof value === 'string') return;
-                const hex = rgbToHex(value.r, value.g, value.b);
-                updateRuleset(activeRuleset.id, {
-                  details: { ...activeRuleset.details, animationColor: hex },
-                });
-              }}
-            />
-          </div>
-          <span className='text-xs text-muted-foreground'>
-            Window components animate when their attribute's value changes
-          </span>
-        </div>
-
         <div className='flex flex-col gap-3'>
           <Label>Fonts</Label>
           <div className='flex flex-col gap-2'>
@@ -726,7 +584,9 @@ export const RulesetSettings = ({ activeRuleset }: RulesetSettingsProps) => {
         </div>
       </TabsContent>
 
-      <TabsContent value='modules' className='mt-0 flex min-h-0 flex-1 flex-col gap-6 overflow-auto'>
+      <TabsContent
+        value='modules'
+        className='mt-0 flex min-h-0 flex-1 flex-col gap-6 overflow-auto'>
         <div className='flex flex-col gap-3'>
           <div className='flex items-center gap-2'>
             <Checkbox
