@@ -617,8 +617,9 @@ export class ScriptRunner {
           const referenceLabel = comboKey.slice(firstColon + 1);
           const character = await db.characters.get(characterId);
           if (!character) continue;
-          const existing = (character as { componentStyleOverrides?: Record<string, Partial<ComponentStyle>> })
-            .componentStyleOverrides ?? {};
+          const existing =
+            (character as { componentStyleOverrides?: Record<string, Partial<ComponentStyle>> })
+              .componentStyleOverrides ?? {};
           const refOverrides = { ...(existing[referenceLabel] ?? {}), ...patch };
           const next = { ...existing, [referenceLabel]: refOverrides };
           await db.characters.update(characterId, {
@@ -642,7 +643,33 @@ export class ScriptRunner {
         };
 
         if (patch.customProperties != null) {
-          update.customProperties = patch.customProperties;
+          // Resolve image-tagged custom properties (image::<assetName>) to the asset's data.
+          const resolvedCustomProps: Record<string, string | number | boolean> = {};
+
+          for (const [propKey, rawVal] of Object.entries(patch.customProperties)) {
+            if (typeof rawVal === 'string' && rawVal.includes('image::')) {
+              const marker = 'image::';
+              const idx = rawVal.indexOf(marker);
+              const assetName = rawVal.slice(idx + marker.length).trim();
+
+              if (assetName) {
+                const asset = await db.assets
+                  .where('[rulesetId+filename]')
+                  .equals([rulesetId, assetName])
+                  .first();
+
+                if (asset && typeof (asset as { data?: string }).data === 'string') {
+                  resolvedCustomProps[propKey] = (asset as { data: string }).data;
+                  continue;
+                }
+              }
+            }
+
+            // Fallback: keep original value when not an image tag or asset not found.
+            resolvedCustomProps[propKey] = rawVal;
+          }
+
+          update.customProperties = resolvedCustomProps;
         }
 
         if (patch.image === null) {

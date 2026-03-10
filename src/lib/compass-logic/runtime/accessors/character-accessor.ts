@@ -193,13 +193,41 @@ export class CharacterAccessor implements StructuredCloneSafe {
    */
   setProperty(name: string, value: string | number | boolean): void {
     const cp = this.customProperties.find((c) => c.label === name);
+    const key = `characterUpdate:${this.id}`;
+    const existing = this.pendingUpdates.get(key) as
+      | { customProperties?: Record<string, string | number | boolean>; image?: string | null }
+      | undefined;
+
     if (cp) {
-      this.characterCustomProperties[cp.id] = value;
-    } else {
-      this.characterCustomProperties[name] = value;
+      let nextValue: string | number | boolean = value;
+
+      if (
+        cp.type === 'image' &&
+        typeof value === 'string' &&
+        !value.startsWith('http://') &&
+        !value.startsWith('https://') &&
+        !value.startsWith('data:') &&
+        !value.startsWith('image::')
+      ) {
+        nextValue = `image::${value}`;
+      }
+
+      const baseCustomProps = existing?.customProperties ?? this.characterCustomProperties;
+      const updatedCustomProps = { ...baseCustomProps, [cp.id]: nextValue };
+      this.characterCustomProperties = updatedCustomProps;
+      this.pendingUpdates.set(key, {
+        ...existing,
+        customProperties: updatedCustomProps,
+      });
+      return;
     }
-    this.pendingUpdates.set(`characterUpdate:${this.id}`, {
-      customProperties: this.characterCustomProperties,
+
+    const baseCustomProps = existing?.customProperties ?? this.characterCustomProperties;
+    const updatedCustomProps = { ...baseCustomProps, [name]: value };
+    this.characterCustomProperties = updatedCustomProps;
+    this.pendingUpdates.set(key, {
+      ...existing,
+      customProperties: updatedCustomProps,
     });
   }
 
