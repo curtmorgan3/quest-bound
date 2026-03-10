@@ -15,6 +15,7 @@ import {
   AlertDialogTrigger,
   Button,
   CategoryField,
+  ImageUpload,
   Input,
   Label,
   PageWrapper,
@@ -33,7 +34,7 @@ import { useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { CustomPropertyPicker } from '../items/custom-property-picker';
 
-const PROP_TYPES: CustomPropertyType[] = ['string', 'number', 'boolean', 'color'];
+const PROP_TYPES: CustomPropertyType[] = ['string', 'number', 'boolean', 'color', 'image'];
 
 export function ManageCustomProperties() {
   const { rulesetId } = useParams<{ rulesetId: string }>();
@@ -223,7 +224,7 @@ export function ManageCustomProperties() {
                       <SelectContent>
                         {PROP_TYPES.map((t) => (
                           <SelectItem key={t} value={t}>
-                            {t}
+                            {t === 'image' ? 'Image' : t}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -261,6 +262,16 @@ export function ManageCustomProperties() {
                           className='h-8 flex-1 max-w-[120px]'
                         />
                       </div>
+                    ) : cp.type === 'image' ? (
+                      <ImageUpload
+                        image={(cp.defaultValue as string) || ''}
+                        rulesetId={rulesetId}
+                        onUpload={(assetId) => handleDefaultValueChange(cp.id, assetId)}
+                        onRemove={() => handleDefaultValueChange(cp.id, '')}
+                        hideSelectAsset={false}
+                        height={64}
+                        width={64}
+                      />
                     ) : cp.type === 'number' ? (
                       <Input
                         type='number'

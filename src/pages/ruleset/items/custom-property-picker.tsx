@@ -22,7 +22,7 @@ import type { CustomPropertyType } from '@/types';
 import { rgbToHex } from '@/utils';
 import { Plus, Search } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-const PROP_TYPES: CustomPropertyType[] = ['string', 'number', 'boolean', 'color'];
+const PROP_TYPES: CustomPropertyType[] = ['string', 'number', 'boolean', 'color', 'image'];
 
 interface CustomPropertyPickerProps {
   open: boolean;

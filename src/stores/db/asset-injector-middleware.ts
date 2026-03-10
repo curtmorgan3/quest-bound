@@ -52,6 +52,14 @@ function injectImageData(record: any) {
     };
   }
 
+  // Inject image data for image-typed custom properties whose defaultValue holds an assetId.
+  if (record.type === 'image' && typeof record.defaultValue === 'string') {
+    const imageData = resolveAssetUrl(record.defaultValue);
+    if (imageData) {
+      next = { ...next, defaultValue: imageData };
+    }
+  }
+
   return next;
 }
 
@@ -79,6 +87,7 @@ export const assetInjectorMiddleware: Middleware<DBCore> = {
             'pages',
             'locations',
             'tilemaps',
+            'customProperties',
             'characterPages',
             'components',
           ].indexOf(tableName) === -1

@@ -78,6 +78,8 @@ interface ImageUploadProps {
   trigger?: (props: { openDialog: () => void }) => React.ReactNode;
   /** When true, hide the asset lookup (choose existing asset) in the dialog. Default false. */
   hideSelectAsset?: boolean;
+  height?: number;
+  width?: number;
 }
 
 export const ImageUpload = ({
@@ -91,6 +93,8 @@ export const ImageUpload = ({
   maxHeight,
   trigger,
   hideSelectAsset = false,
+  height = 124,
+  width = 124,
 }: ImageUploadProps) => {
   const id = crypto.randomUUID();
   const { createAsset, createUrlAsset } = useAssets(rulesetId, worldId);
@@ -170,11 +174,13 @@ export const ImageUpload = ({
         trigger({ openDialog: handleClick })
       ) : image ? (
         <div
-          className='flex gap-2 w-[124px] h-[124px]'
+          className={`flex gap-2 `}
+          style={{ height, width }}
           onPointerEnter={() => setHovering(true)}
           onPointerLeave={() => setHovering(false)}>
           <img
-            className='w-[124px] h-[124px] object-cover rounded-lg cursor-pointer'
+            className={` object-cover rounded-lg cursor-pointer`}
+            style={{ height, width }}
             src={image}
             alt={alt}
             onClick={handleClick}
@@ -191,9 +197,12 @@ export const ImageUpload = ({
         </div>
       ) : (
         <div
-          className='w-[124px] h-[124px] bg-muted flex items-center justify-center rounded-lg text-3xl cursor-pointer'
+          className={` bg-muted flex items-center justify-center rounded-lg text-3xl cursor-pointer`}
+          style={{ height, width }}
           onClick={handleClick}>
-          <span className='text-sm'>{loading ? 'Loading' : 'Upload Image'}</span>
+          <span className='text-xs text-muted-foreground'>
+            {loading ? 'Loading' : 'Upload Image'}
+          </span>
         </div>
       )}
 

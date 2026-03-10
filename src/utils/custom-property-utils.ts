@@ -8,6 +8,7 @@ function getTypeDefault(type: CustomPropertyType): string | number | boolean {
     case 'boolean':
       return false;
     case 'color':
+    case 'image':
       return '';
     default:
       return '';
