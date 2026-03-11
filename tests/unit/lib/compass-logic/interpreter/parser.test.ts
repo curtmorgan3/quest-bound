@@ -473,6 +473,42 @@ else:
       expect(stmt.thenBlock).toHaveLength(1);
       expect((stmt.thenBlock[0] as IfStatement).type).toBe('IfStatement');
     });
+
+    it('should parse if inside nested function (4 indent levels)', () => {
+      const source = `monitor_turn_cycles():
+    Scene.onTurnAdvance():
+        apply_turn_damage():
+            damage = char.getProperty('turn_cycle_damage')
+            if damage:
+                char.Attribute('Hit Points').subtract(damage)
+
+        log('turn advance')`;
+      const ast = parse(source);
+      expect(ast.statements).toHaveLength(1);
+      const outer = ast.statements[0] as FunctionDef;
+      expect(outer.name).toBe('monitor_turn_cycles');
+      expect(outer.body).toHaveLength(1);
+      const onTurn = outer.body[0] as { block: ASTNode[] };
+      expect(onTurn.block).toHaveLength(2); // apply_turn_damage def + log
+      const applyDef = onTurn.block[0] as FunctionDef;
+      expect(applyDef.name).toBe('apply_turn_damage');
+      expect(applyDef.body).toHaveLength(2); // damage = ... and if damage: ...
+      const ifStmt = applyDef.body[1] as IfStatement;
+      expect(ifStmt.thenBlock).toHaveLength(1);
+    });
+
+    it('should parse when if line is indented one level more than previous (no extra INDENT for body)', () => {
+      // When "if x:" is on a line that's indented more than the previous line, the lexer emits INDENT at the start of that line; statement() consumes it to reach "if", so ifStatement() sees the body without a leading INDENT token.
+      const source = `foo():
+    a = 1
+    if a:
+        b = 2`;
+      const ast = parse(source);
+      const fn = ast.statements[0] as FunctionDef;
+      expect(fn.body).toHaveLength(2);
+      const ifStmt = fn.body[1] as IfStatement;
+      expect(ifStmt.thenBlock).toHaveLength(1);
+    });
   });
 
   describe('For Loops', () => {
@@ -798,6 +834,23 @@ z = 3`;
       expect((stmt.block[2] as { name: string }).name).toBe('log');
       expect((stmt.block[3] as { type: string; name?: string }).type).toBe('Assignment');
       expect((stmt.block[3] as { name: string }).name).toBe('test3');
+    });
+
+    it('should parse block in isolation with nested function and if (turn advance body)', () => {
+      // Simulates blockSource stored for Scene.onTurnAdvance - one indent level
+      const blockSource = `    apply_turn_damage():
+        damage = char.getProperty('turn_cycle_damage')
+        if damage:
+            char.Attribute('Hit Points').subtract(damage)
+
+    log('turn advance')`;
+      const ast = parse(blockSource);
+      expect(ast.statements).toHaveLength(2); // apply_turn_damage def + log() call
+      const applyDef = ast.statements[0] as FunctionDef;
+      expect(applyDef.name).toBe('apply_turn_damage');
+      expect(applyDef.body).toHaveLength(2);
+      const ifStmt = applyDef.body[1] as IfStatement;
+      expect(ifStmt.thenBlock).toHaveLength(1);
     });
 
     it('should re-parse serialized block with log() and preserve all statements', () => {

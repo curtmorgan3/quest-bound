@@ -77,7 +77,7 @@ export function astToSource(
       const mc = node as MethodCall;
       const obj = exprToSource(mc.object);
       const args = mc.arguments.map(exprToSource).join(', ');
-      return `${obj}.${mc.method}(${args})`;
+      return `${prefix}${obj}.${mc.method}(${args})`;
     }
     case 'MemberAccess': {
       const ma = node as MemberAccess;

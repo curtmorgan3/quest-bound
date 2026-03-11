@@ -171,7 +171,9 @@ export class Parser {
     const condition = this.expression();
     this.consume(TokenType.COLON, "Expected ':' after if condition");
     this.consume(TokenType.NEWLINE, "Expected newline after ':'");
-    this.consume(TokenType.INDENT, 'Expected indent after if statement');
+    this.skipNewlines(); // allow blank lines before indented body
+    // INDENT optional: if the "if" line was indented deeper than the previous line, statement() consumed that INDENT to reach "if", so the body starts with no extra INDENT token
+    if (this.check(TokenType.INDENT)) this.advance();
 
     const thenBlock = this.block();
 
@@ -185,14 +187,16 @@ export class Parser {
         const elseIfCondition = this.expression();
         this.consume(TokenType.COLON, "Expected ':' after else if condition");
         this.consume(TokenType.NEWLINE, "Expected newline after ':'");
-        this.consume(TokenType.INDENT, 'Expected indent after else if statement');
+        this.skipNewlines();
+        if (this.check(TokenType.INDENT)) this.advance();
         const elseIfBlock = this.block();
         elseIfBlocks.push({ condition: elseIfCondition, block: elseIfBlock });
       } else {
         // else
         this.consume(TokenType.COLON, "Expected ':' after else");
         this.consume(TokenType.NEWLINE, "Expected newline after ':'");
-        this.consume(TokenType.INDENT, 'Expected indent after else statement');
+        this.skipNewlines();
+        if (this.check(TokenType.INDENT)) this.advance();
         elseBlock = this.block();
         break; // else must be last
       }
@@ -218,7 +222,8 @@ export class Parser {
 
     this.consume(TokenType.COLON, "Expected ':' after for iterable");
     this.consume(TokenType.NEWLINE, "Expected newline after ':'");
-    this.consume(TokenType.INDENT, 'Expected indent after for statement');
+    this.skipNewlines();
+    if (this.check(TokenType.INDENT)) this.advance();
 
     const body = this.block();
 
@@ -235,7 +240,8 @@ export class Parser {
     const condition = this.expression();
     this.consume(TokenType.COLON, "Expected ':' after while condition");
     this.consume(TokenType.NEWLINE, "Expected newline after ':'");
-    this.consume(TokenType.INDENT, 'Expected indent after while statement');
+    this.skipNewlines();
+    if (this.check(TokenType.INDENT)) this.advance();
 
     const body = this.block();
 
@@ -263,7 +269,8 @@ export class Parser {
     this.consume(TokenType.RPAREN, "Expected ')' after parameters");
     this.consume(TokenType.COLON, "Expected ':' after function signature");
     this.consume(TokenType.NEWLINE, "Expected newline after ':'");
-    this.consume(TokenType.INDENT, 'Expected indent after function definition');
+    this.skipNewlines();
+    if (this.check(TokenType.INDENT)) this.advance();
 
     const body = this.block();
 
@@ -306,7 +313,8 @@ export class Parser {
         const method = mc.method;
         this.consume(TokenType.COLON, `Expected ':' after Scene.${method}(...)`);
         this.consume(TokenType.NEWLINE, "Expected newline after ':'");
-        this.consume(TokenType.INDENT, "Expected indent after ':'");
+        this.skipNewlines();
+        if (this.check(TokenType.INDENT)) this.advance();
         const block = this.block();
         if (method === 'inTurns') {
           return {

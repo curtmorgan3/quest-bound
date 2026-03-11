@@ -77,6 +77,11 @@ export class Environment {
   has(name: string): boolean {
     return this.variables.has(name) || (this.parent ? this.parent.has(name) : false);
   }
+
+  /** True only if this scope (not parent) has the variable. Used for assignment so we create locals instead of updating parent. */
+  hasInCurrentScope(name: string): boolean {
+    return this.variables.has(name);
+  }
 }
 
 export class Evaluator {
@@ -256,9 +261,12 @@ export class Evaluator {
   private async evalAssignment(node: any): Promise<any> {
     const value = await this.eval(node.value);
 
-    // If variable exists in current scope or parent, update it
-    // Otherwise, define it in current scope
-    if (this.currentEnv.has(node.name)) {
+    // If variable exists in current scope only, update it.
+    // If it exists in a parent scope (e.g. loop body assigning to outer "result"), update there.
+    // Otherwise define in current scope so assignment creates a local (e.g. "damage" inside apply_turn_damage).
+    if (this.currentEnv.hasInCurrentScope(node.name)) {
+      this.currentEnv.set(node.name, value);
+    } else if (this.currentEnv.has(node.name)) {
       this.currentEnv.set(node.name, value);
     } else {
       this.currentEnv.define(node.name, value);
@@ -453,19 +461,34 @@ export class Evaluator {
   private async evalForLoop(node: any): Promise<any> {
     const iterable = await this.eval(node.iterable);
     let result = null;
+    const parentEnv = this.currentEnv;
+
+    // Run each iteration in a child scope so the loop variable is in scope for the body.
+    // Also define the loop variable in the parent after each iteration so code that runs
+    // after the loop (e.g. mis-indented or serialized) can still resolve it.
+    const runIteration = async (value: any) => {
+      const loopEnv = new Environment(parentEnv);
+      loopEnv.define(node.variable, value);
+      parentEnv.define(node.variable, value);
+      const prevEnv = this.currentEnv;
+      this.currentEnv = loopEnv;
+      try {
+        return await this.evalBlock(node.body);
+      } finally {
+        this.currentEnv = prevEnv;
+      }
+    };
 
     // For-in range (e.g., for i in 10)
     if (typeof iterable === 'number') {
       for (let i = 0; i < iterable; i++) {
-        this.currentEnv.define(node.variable, i);
-        result = await this.evalBlock(node.body);
+        result = await runIteration(i);
       }
     }
     // For-in array
     else if (Array.isArray(iterable)) {
       for (const item of iterable) {
-        this.currentEnv.define(node.variable, item);
-        result = await this.evalBlock(node.body);
+        result = await runIteration(item);
       }
     } else {
       throw new RuntimeError(`Cannot iterate over ${typeof iterable}`);

@@ -60,7 +60,11 @@ export function ManagePlayerCharacters({
     const baseList =
       rulesetId != null
         ? characters.filter(
-            (c) => c.rulesetId === rulesetId && c.isNpc !== true && !alreadyInCampaignIds.has(c.id),
+            (c) =>
+              c.rulesetId === rulesetId &&
+              c.isNpc !== true &&
+              !alreadyInCampaignIds.has(c.id) &&
+              !c.isTestCharacter,
           )
         : [];
 

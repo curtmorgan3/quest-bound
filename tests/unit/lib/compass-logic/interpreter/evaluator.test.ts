@@ -1,6 +1,7 @@
 import { Evaluator, RuntimeError } from '@/lib/compass-logic/interpreter/evaluator';
 import { Lexer } from '@/lib/compass-logic/interpreter/lexer';
 import { Parser } from '@/lib/compass-logic/interpreter/parser';
+import { blockStatementsToSource } from '@/lib/compass-logic/interpreter/ast-to-source';
 import { describe, expect, it } from 'vitest';
 
 async function evaluate(source: string): Promise<any> {
@@ -944,6 +945,80 @@ x`);
 
       expect(evaluator.getAnnounceMessages()).toEqual(['turn']);
       expect(evaluator.globalEnv.get('Scene')).toBe(scene);
+    });
+
+    it('nested function with param called from for loop has access to loop variable as argument', async () => {
+      // Simulates turn callback: block with a function that takes a param and a for loop that calls it with the loop var.
+      const evaluator = new Evaluator();
+      evaluator.globalEnv.define('Ruleset', {});
+
+      const blockSource = `    apply_one(c):
+        x = c
+        return x
+    items = [10, 20]
+    for char in items:
+        apply_one(char)
+`;
+      const tokens = new Lexer(blockSource).tokenize();
+      const program = new Parser(tokens).parse();
+      await expect(
+        evaluator.runBlockInNewScope(program.statements),
+      ).resolves.not.toThrow();
+    });
+
+    it('loop variable is in parent scope after loop so post-loop reference to char resolves', async () => {
+      // When block is re-parsed (e.g. turn callback), a statement at same indent as "for" runs after the loop;
+      // loop var must be resolvable so apply_turn_damage(char) does not throw Undefined variable 'char'.
+      const evaluator = new Evaluator();
+      evaluator.globalEnv.define('Ruleset', {});
+
+      const blockSource = `    apply_one(c):
+        return c
+    items = [100, 200]
+    for char in items:
+        x = char
+    apply_one(char)
+`;
+      const tokens = new Lexer(blockSource).tokenize();
+      const program = new Parser(tokens).parse();
+      const result = await evaluator.runBlockInNewScope(program.statements);
+      expect(result).toBe(200);
+    });
+
+    it('blockStatementsToSource round-trip preserves method call indentation so re-parsed block runs correctly', async () => {
+      // Regression: MethodCall in astToSource was missing ${prefix}, so statements like
+      // char.Attribute('HP').subtract(damage) lost their indentation when serialized.
+      // On re-parse those lines appeared at column 0, collapsing function bodies and making
+      // 'char' undefined at the top level.
+      const source = `apply_turn_damage(c):
+    damage = c.getProperty("dmg")
+    if damage:
+        c.doSomething(damage)
+for char in characters:
+    apply_turn_damage(char)
+    char.setProperty("visited", true)
+`;
+      const ast = new Parser(new Lexer(source).tokenize()).parse();
+      const serialized = blockStatementsToSource(ast.statements);
+
+      const calls: string[] = [];
+      const evaluator = new Evaluator();
+      evaluator.globalEnv.define('Ruleset', {});
+
+      const makeChar = (dmg: number) => ({
+        getProperty: (_k: string) => dmg,
+        doSomething: (d: number) => { calls.push(`doSomething(${d})`); },
+        setProperty: (k: string, v: any) => { calls.push(`setProperty(${k},${v})`); },
+      });
+      evaluator.globalEnv.define('characters', [makeChar(5), makeChar(0)]);
+
+      const reparsed = new Parser(new Lexer(serialized).tokenize()).parse();
+      await evaluator.runBlockInNewScope(reparsed.statements);
+
+      // doSomething called only for the char with dmg=5
+      expect(calls).toContain('doSomething(5)');
+      // setProperty called for both chars
+      expect(calls.filter(c => c.startsWith('setProperty'))).toHaveLength(2);
     });
   });
 });

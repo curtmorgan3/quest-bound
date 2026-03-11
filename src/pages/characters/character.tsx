@@ -150,7 +150,6 @@ export const CharacterPage = ({
   };
 
   const fireAction = async (actionId: string) => {
-    console.log('fire');
     if (!character) return;
     const res = await executeActionEvent(
       actionId,
@@ -163,8 +162,6 @@ export const CharacterPage = ({
       rollSplit,
       campaignSceneId,
     );
-
-    console.log(res);
   };
 
   const fireActionFromItem = async (actionId: string, inventoryItemId: string) => {
