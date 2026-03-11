@@ -104,6 +104,7 @@ const ViewInputNodeComponent = ({
     outline: css.outline,
     outlineColor: css.outlineColor,
     outlineWidth: css.outlineWidth,
+    opacity: css.opacity,
   } as React.CSSProperties;
 
   const inputStyle = {
@@ -121,9 +122,7 @@ const ViewInputNodeComponent = ({
   } as React.CSSProperties;
 
   return (
-    <section
-      style={sectionStyle}
-      data-attribute-name={data.name}>
+    <section style={sectionStyle} data-attribute-name={data.name}>
       {isMultiSelectList && !editMode ? (
         <>
           <button
