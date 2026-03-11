@@ -256,9 +256,23 @@ export class CampaignSceneAccessor {
   /**
    * Return all active characters in this scene as character accessors.
    * Includes both player characters and NPCs whose CampaignCharacter.active === true.
+   * Each accessor has isActiveTurn set to true when that character's turn order is the active turn.
    */
   async characters(): Promise<AnyCharacterAccessor[]> {
+    const scene = (await this.db.campaignScenes.get(this.campaignSceneId)) as
+      | CampaignScene
+      | undefined;
+    const turnBasedMode = scene?.turnBasedMode === true;
+    const currentStepInCycle = turnBasedMode ? (scene?.currentStepInCycle ?? 0) : -1;
+
+    const applyActiveTurn = (accessors: AnyCharacterAccessor[]): void => {
+      for (let i = 0; i < accessors.length; i++) {
+        accessors[i].isActiveTurn = turnBasedMode && i === currentStepInCycle;
+      }
+    };
+
     if (this.cachedAccessors) {
+      applyActiveTurn(this.cachedAccessors);
       return this.cachedAccessors;
     }
 
@@ -281,6 +295,7 @@ export class CampaignSceneAccessor {
       const acc = await this.getCharacterAccessorById(id);
       if (acc) accessors.push(acc);
     }
+    applyActiveTurn(accessors);
 
     this.cachedAccessors = accessors;
     return accessors;

@@ -151,7 +151,7 @@ export const CharacterPage = ({
 
   const fireAction = async (actionId: string) => {
     if (!character) return;
-    const res = await executeActionEvent(
+    await executeActionEvent(
       actionId,
       character.id,
       null,

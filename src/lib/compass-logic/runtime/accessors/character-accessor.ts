@@ -40,6 +40,8 @@ export class CharacterAccessor implements StructuredCloneSafe {
   protected executeActionEvent: ExecuteActionEventFn | undefined;
   /** Turn order in the current campaign scene (0 = unset). Only set when in campaign scene context. */
   protected turnOrderValue: number;
+  /** True when this character's turn order is the active turn. Set by Scene.characters() in campaign scene context. */
+  isActiveTurn: boolean;
   protected campaignId: string | undefined;
   protected campaignSceneId: string | undefined;
   /** When set, setComponentStyle and animateComponent enqueue updates for this character's sheet. */
@@ -94,6 +96,7 @@ export class CharacterAccessor implements StructuredCloneSafe {
     this.customProperties = customProperties;
     this.characterCustomProperties = characterCustomProperties;
     this.turnOrderValue = turnOrder;
+    this.isActiveTurn = false;
     this.campaignId = campaignId;
     this.campaignSceneId = campaignSceneId;
     this.registerComponentUpdate = registerComponentUpdate;
