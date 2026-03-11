@@ -118,7 +118,12 @@ export class CampaignSceneAccessor {
     const run = this.executeTurnCallbacks;
     if (!run) return;
 
-    const all = result.cycleCallbacks.concat(result.advanceCallbacks);
+    // Order: end-of-prev-turn → start-of-new-turn → new cycle callbacks → every-advance callbacks
+    const all = result.turnEndCallbacks.concat(
+      result.turnStartCallbacks,
+      result.cycleCallbacks,
+      result.advanceCallbacks,
+    );
     await run(all);
 
     if (this.deferredAdvanceRef?.current) {
@@ -208,6 +213,7 @@ export class CampaignSceneAccessor {
     ownerId: string | null,
     scriptId: string,
     capturedCharacterIds?: Record<string, string>,
+    capturedValues?: Record<string, string | number | boolean | null>,
   ): Promise<void> {
     if (typeof n !== 'number' || n < 1 || !Number.isInteger(n)) {
       return;
@@ -229,6 +235,8 @@ export class CampaignSceneAccessor {
         capturedCharacterIds && Object.keys(capturedCharacterIds).length > 0
           ? capturedCharacterIds
           : undefined,
+      capturedValues:
+        capturedValues && Object.keys(capturedValues).length > 0 ? capturedValues : undefined,
       createdAt: now,
       updatedAt: now,
     } as any);
@@ -242,6 +250,7 @@ export class CampaignSceneAccessor {
     ownerId: string | null,
     scriptId: string,
     capturedCharacterIds?: Record<string, string>,
+    capturedValues?: Record<string, string | number | boolean | null>,
   ): Promise<void> {
     const cycle = await this.currentTurnCycle();
     const now = new Date().toISOString();
@@ -258,6 +267,73 @@ export class CampaignSceneAccessor {
         capturedCharacterIds && Object.keys(capturedCharacterIds).length > 0
           ? capturedCharacterIds
           : undefined,
+      capturedValues:
+        capturedValues && Object.keys(capturedValues).length > 0 ? capturedValues : undefined,
+      createdAt: now,
+      updatedAt: now,
+    } as any);
+  }
+
+  /**
+   * Register a one-shot callback that fires at the start or end of the target character's next turn.
+   * Used by character.atStartOfNextTurn() and character.atEndOfNextTurn() in QBScript.
+   * The callback is deleted from the DB as soon as it is fetched (one-shot, never re-fires).
+   *
+   * For turn_end: if the target character is currently the active turn character, the first
+   * turn-end (the end of the current turn) is skipped so the callback fires at the end of their
+   * *next* turn. The skipNextTurnEnd flag is cleared after the skip.
+   */
+  async registerCharacterTurnCallback(
+    targetCharacterId: string,
+    triggerOn: 'turn_start' | 'turn_end',
+    blockSource: string,
+    ownerId: string | null,
+    scriptId: string,
+    capturedCharacterIds?: Record<string, string>,
+    capturedValues?: Record<string, string | number | boolean | null>,
+  ): Promise<void> {
+    if (!targetCharacterId) return;
+    const cycle = await this.currentTurnCycle();
+    const now = new Date().toISOString();
+
+    // For turn_end, check whether the target character is currently the active turn character.
+    // If so, the upcoming turn-end is the *current* turn ending — skip it and wait for the next.
+    let skipNextTurnEnd = false;
+    if (triggerOn === 'turn_end') {
+      const scene = (await this.db.campaignScenes.get(this.campaignSceneId)) as
+        | CampaignScene
+        | undefined;
+      if (scene?.turnBasedMode) {
+        const characters = await getSceneTurnOrderCharacters(
+          this.db,
+          this.campaignId,
+          this.campaignSceneId,
+        );
+        const activeCharacter = characters[scene.currentStepInCycle ?? 0];
+        if (activeCharacter?.characterId === targetCharacterId) {
+          skipNextTurnEnd = true;
+        }
+      }
+    }
+
+    await this.db.sceneTurnCallbacks.add({
+      id: crypto.randomUUID(),
+      campaignSceneId: this.campaignSceneId,
+      targetCycle: null,
+      createdAtCycle: cycle,
+      ownerId,
+      rulesetId: this.rulesetId,
+      scriptId,
+      blockSource,
+      targetCharacterId,
+      triggerOn,
+      skipNextTurnEnd: skipNextTurnEnd || undefined,
+      capturedCharacterIds:
+        capturedCharacterIds && Object.keys(capturedCharacterIds).length > 0
+          ? capturedCharacterIds
+          : undefined,
+      capturedValues:
+        capturedValues && Object.keys(capturedValues).length > 0 ? capturedValues : undefined,
       createdAt: now,
       updatedAt: now,
     } as any);

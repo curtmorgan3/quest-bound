@@ -110,6 +110,16 @@ const qbscriptCompletions = [
     info: 'Register a block to run on every advance (e.g. Scene.onTurnAdvance(): ...). Use a colon and indented block.',
   },
   {
+    label: 'character.atStartOfNextTurn',
+    type: 'function',
+    info: "Register a one-shot block to run at the start of a character's next turn (e.g. targ.atStartOfNextTurn(): ...). Use a colon and indented block. Variables in scope are captured automatically.",
+  },
+  {
+    label: 'character.atEndOfNextTurn',
+    type: 'function',
+    info: "Register a one-shot block to run at the end of a character's next turn (e.g. targ.atEndOfNextTurn(): ...). Use a colon and indented block. Variables in scope are captured automatically.",
+  },
+  {
     label: 'Owner.turnOrder',
     type: 'variable',
     info: "This character's position in turn order (0 = unset). Read-only. In campaign scene context only.",

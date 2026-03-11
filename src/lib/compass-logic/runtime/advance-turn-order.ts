@@ -3,9 +3,13 @@ import type { DB } from '@/stores/db/hooks/types';
 import type { CampaignCharacter, CampaignScene, Character, SceneTurnCallback } from '@/types';
 
 export interface AdvanceTurnResult {
+  /** One-shot callbacks for the character whose turn just ended (triggerOn === 'turn_end'), in registration order. Already deleted from DB. */
+  turnEndCallbacks: SceneTurnCallback[];
+  /** One-shot callbacks for the character whose turn just started (triggerOn === 'turn_start'), in registration order. Already deleted from DB. */
+  turnStartCallbacks: SceneTurnCallback[];
   /** Callbacks to run for the new cycle (targetCycle === currentTurnCycle), in registration order. */
   cycleCallbacks: SceneTurnCallback[];
-  /** Callbacks to run every advance (targetCycle === null), in registration order. */
+  /** Callbacks to run every advance (targetCycle === null, no targetCharacterId), in registration order. */
   advanceCallbacks: SceneTurnCallback[];
 }
 
@@ -111,6 +115,48 @@ export async function advanceSceneTurnState(
     await persistTurnStartLog(db, campaignId, newCharacter.characterId);
   }
 
+  // Fetch + delete one-shot character-turn callbacks (turn_end for prev, turn_start for new).
+  const prevCharacterId = prevCharacter?.characterId ?? null;
+  const newCharacterId = newCharacter?.characterId ?? null;
+
+  const allTurnEndMatches: SceneTurnCallback[] = prevCharacterId
+    ? ((await db.sceneTurnCallbacks
+        .where('campaignSceneId')
+        .equals(campaignSceneId)
+        .filter(
+          (cb: SceneTurnCallback) =>
+            cb.targetCharacterId === prevCharacterId && cb.triggerOn === 'turn_end',
+        )
+        .sortBy('createdAt')) as SceneTurnCallback[])
+    : [];
+
+  // Separate skipped callbacks (registered during the character's own active turn) from ready ones.
+  const skippedTurnEnd = allTurnEndMatches.filter((cb) => cb.skipNextTurnEnd === true);
+  const turnEndCallbacks = allTurnEndMatches.filter((cb) => cb.skipNextTurnEnd !== true);
+
+  // Clear the skip flag on skipped callbacks so they fire next time.
+  for (const cb of skippedTurnEnd) {
+    await db.sceneTurnCallbacks.update(cb.id, {
+      skipNextTurnEnd: undefined,
+      updatedAt: new Date().toISOString(),
+    });
+  }
+
+  const turnStartCallbacks: SceneTurnCallback[] = newCharacterId
+    ? ((await db.sceneTurnCallbacks
+        .where('campaignSceneId')
+        .equals(campaignSceneId)
+        .filter(
+          (cb: SceneTurnCallback) =>
+            cb.targetCharacterId === newCharacterId && cb.triggerOn === 'turn_start',
+        )
+        .sortBy('createdAt')) as SceneTurnCallback[])
+    : [];
+
+  // Delete one-shot callbacks before returning so they never re-fire.
+  for (const cb of turnEndCallbacks) await db.sceneTurnCallbacks.delete(cb.id);
+  for (const cb of turnStartCallbacks) await db.sceneTurnCallbacks.delete(cb.id);
+
   // Fetch callbacks: cycle callbacks for this cycle (only when we just wrapped), then onTurnAdvance
   const cycleCallbacks: SceneTurnCallback[] = justWrapped
     ? ((await db.sceneTurnCallbacks
@@ -122,10 +168,12 @@ export async function advanceSceneTurnState(
   const advanceCallbacks = (await db.sceneTurnCallbacks
     .where('campaignSceneId')
     .equals(campaignSceneId)
-    .filter((cb: SceneTurnCallback) => cb.targetCycle === null)
+    .filter(
+      (cb: SceneTurnCallback) => cb.targetCycle === null && cb.targetCharacterId == null,
+    )
     .sortBy('createdAt')) as SceneTurnCallback[];
 
-  return { cycleCallbacks, advanceCallbacks };
+  return { turnEndCallbacks, turnStartCallbacks, cycleCallbacks, advanceCallbacks };
 }
 
 async function persistTurnStartLog(db: DB, campaignId: string, characterId: string): Promise<void> {

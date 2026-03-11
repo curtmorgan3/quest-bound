@@ -60,6 +60,14 @@ export async function executeTurnCallback(
       evaluator.globalEnv.define('Owner', owner);
     }
 
+    // Re-inject primitive values captured from the outer script scope at registration time.
+    // These are injected first so character accessors (below) take precedence on name collision.
+    if (callback.capturedValues) {
+      for (const [varName, value] of Object.entries(callback.capturedValues)) {
+        evaluator.globalEnv.define(varName, value);
+      }
+    }
+
     // Re-inject character variables captured from the outer script scope at registration time.
     // This makes loop variables like `targ` available inside the deferred block.
     if (callback.capturedCharacterIds) {

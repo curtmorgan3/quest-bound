@@ -519,7 +519,7 @@ export type CampaignScene = BaseDetails & {
 /** Callback registered via Scene.inTurns(n) or Scene.onTurnAdvance(); runs when a cycle is entered or on every advance. */
 export type SceneTurnCallback = BaseDetails & {
   campaignSceneId: string;
-  /** Cycle when to run; null = run every advance (onTurnAdvance). */
+  /** Cycle when to run; null = run every advance (onTurnAdvance) or character-turn callbacks. */
   targetCycle: number | null;
   /** Scene's currentTurnCycle when the callback was registered. */
   createdAtCycle: number;
@@ -531,10 +531,31 @@ export type SceneTurnCallback = BaseDetails & {
   blockSource: string;
   /**
    * Character accessor variables captured from the outer script scope at registration time.
-   * Maps variable name → character id so they can be re-injected when the callback executes.
+   * Maps variable name → character id so they can be re-fetched and re-injected when the callback executes.
    * E.g. { targ: "uuid" } lets `targ` refer to the same character inside the deferred block.
    */
   capturedCharacterIds?: Record<string, string>;
+  /**
+   * Primitive values (string, number, boolean, null) captured from the outer script scope.
+   * E.g. { name: "Goblin", damage: 12 } lets `name` and `damage` resolve inside the deferred block.
+   */
+  capturedValues?: Record<string, string | number | boolean | null>;
+  /**
+   * For atStartOfNextTurn / atEndOfNextTurn callbacks: the character whose turn triggers this callback.
+   * Null for cycle (inTurns) and advance (onTurnAdvance) callbacks.
+   */
+  targetCharacterId?: string | null;
+  /**
+   * For character-turn callbacks: whether to fire at the start or end of the target character's turn.
+   * Null for cycle and advance callbacks.
+   */
+  triggerOn?: 'turn_start' | 'turn_end' | null;
+  /**
+   * When true, the next turn_end occurrence for this character is skipped and this flag is cleared.
+   * Set when atEndOfNextTurn() is called during the target character's own active turn, so the
+   * callback doesn't fire at the end of the current turn but fires at the end of the next one.
+   */
+  skipNextTurnEnd?: boolean;
 };
 
 export type CampaignEventParamType = 'string' | 'number' | 'boolean';

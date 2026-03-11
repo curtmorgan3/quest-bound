@@ -172,6 +172,12 @@ export class Evaluator {
       case 'OnTurnAdvanceCall':
         return this.evalOnTurnAdvanceCall(node);
 
+      case 'AtStartOfNextTurnCall':
+        return this.evalAtStartOfNextTurnCall(node);
+
+      case 'AtEndOfNextTurnCall':
+        return this.evalAtEndOfNextTurnCall(node);
+
       case 'ArrayLiteral':
         return this.evalArrayLiteral(node);
 
@@ -537,9 +543,9 @@ export class Evaluator {
     const Owner = this.globalEnv.has('Owner') ? this.globalEnv.get('Owner') : null;
     const ownerId = Owner?.id ?? null;
     const scriptId = this.globalEnv.has('__scriptId') ? this.globalEnv.get('__scriptId') : '';
-    const capturedCharacterIds = this.captureCharacterIds(node.block);
+    const { capturedCharacterIds, capturedValues } = this.captureClosureSnapshot(node.block);
     if (typeof Scene?.registerInTurns === 'function') {
-      await Scene.registerInTurns(n, blockSource, ownerId, scriptId, capturedCharacterIds);
+      await Scene.registerInTurns(n, blockSource, ownerId, scriptId, capturedCharacterIds, capturedValues);
     }
   }
 
@@ -550,20 +556,72 @@ export class Evaluator {
     const Owner = this.globalEnv.has('Owner') ? this.globalEnv.get('Owner') : null;
     const ownerId = Owner?.id ?? null;
     const scriptId = this.globalEnv.has('__scriptId') ? this.globalEnv.get('__scriptId') : '';
-    const capturedCharacterIds = this.captureCharacterIds(node.block);
+    const { capturedCharacterIds, capturedValues } = this.captureClosureSnapshot(node.block);
     if (typeof Scene?.registerOnTurnAdvance === 'function') {
-      await Scene.registerOnTurnAdvance(blockSource, ownerId, scriptId, capturedCharacterIds);
+      await Scene.registerOnTurnAdvance(blockSource, ownerId, scriptId, capturedCharacterIds, capturedValues);
+    }
+  }
+
+  private async evalAtStartOfNextTurnCall(node: any): Promise<void> {
+    if (!this.globalEnv.has('Scene')) return;
+    const Scene = this.globalEnv.get('Scene');
+    const character = await this.eval(node.object);
+    const characterId =
+      character && typeof character.characterId === 'string' ? character.characterId : null;
+    if (!characterId) return;
+    const blockSource = blockStatementsToSource(node.block);
+    const Owner = this.globalEnv.has('Owner') ? this.globalEnv.get('Owner') : null;
+    const ownerId = Owner?.id ?? null;
+    const scriptId = this.globalEnv.has('__scriptId') ? this.globalEnv.get('__scriptId') : '';
+    const { capturedCharacterIds, capturedValues } = this.captureClosureSnapshot(node.block);
+    if (typeof Scene?.registerCharacterTurnCallback === 'function') {
+      await Scene.registerCharacterTurnCallback(
+        characterId,
+        'turn_start',
+        blockSource,
+        ownerId,
+        scriptId,
+        capturedCharacterIds,
+        capturedValues,
+      );
+    }
+  }
+
+  private async evalAtEndOfNextTurnCall(node: any): Promise<void> {
+    if (!this.globalEnv.has('Scene')) return;
+    const Scene = this.globalEnv.get('Scene');
+    const character = await this.eval(node.object);
+    const characterId =
+      character && typeof character.characterId === 'string' ? character.characterId : null;
+    if (!characterId) return;
+    const blockSource = blockStatementsToSource(node.block);
+    const Owner = this.globalEnv.has('Owner') ? this.globalEnv.get('Owner') : null;
+    const ownerId = Owner?.id ?? null;
+    const scriptId = this.globalEnv.has('__scriptId') ? this.globalEnv.get('__scriptId') : '';
+    const { capturedCharacterIds, capturedValues } = this.captureClosureSnapshot(node.block);
+    if (typeof Scene?.registerCharacterTurnCallback === 'function') {
+      await Scene.registerCharacterTurnCallback(
+        characterId,
+        'turn_end',
+        blockSource,
+        ownerId,
+        scriptId,
+        capturedCharacterIds,
+        capturedValues,
+      );
     }
   }
 
   /**
-   * Walk the AST of a block and return a map of variable-name → character-id for any
-   * identifier referenced in the block that (a) exists in the current environment,
-   * (b) is not a built-in global (Scene / Owner / Ruleset), and
-   * (c) has a non-empty string `id` property (i.e. is a character accessor).
-   * These are captured so they can be re-injected when the deferred callback fires.
+   * Walk the block AST and snapshot all outer-scope variables referenced inside it.
+   * - Character accessors (have a non-empty string `.id`) → capturedCharacterIds (re-fetched at execution time).
+   * - Primitives (string, number, boolean, null) → capturedValues (injected directly at execution time).
+   * Built-in globals (Scene, Owner, Ruleset, __scriptId) are excluded; they are re-injected by the executor.
    */
-  private captureCharacterIds(statements: ASTNode[]): Record<string, string> {
+  private captureClosureSnapshot(statements: ASTNode[]): {
+    capturedCharacterIds: Record<string, string>;
+    capturedValues: Record<string, string | number | boolean | null>;
+  } {
     const BUILT_IN_GLOBALS = new Set(['Scene', 'Owner', 'Ruleset', '__scriptId']);
     const names = new Set<string>();
 
@@ -587,16 +645,26 @@ export class Evaluator {
 
     for (const stmt of statements) visit(stmt);
 
-    const captured: Record<string, string> = {};
+    const capturedCharacterIds: Record<string, string> = {};
+    const capturedValues: Record<string, string | number | boolean | null> = {};
+
     for (const name of names) {
       if (BUILT_IN_GLOBALS.has(name)) continue;
       if (!this.currentEnv.has(name)) continue;
       const value = this.currentEnv.get(name);
       if (value && typeof value === 'object' && typeof value.id === 'string' && value.id) {
-        captured[name] = value.id;
+        capturedCharacterIds[name] = value.id;
+      } else if (
+        value === null ||
+        typeof value === 'string' ||
+        typeof value === 'number' ||
+        typeof value === 'boolean'
+      ) {
+        capturedValues[name] = value;
       }
     }
-    return captured;
+
+    return { capturedCharacterIds, capturedValues };
   }
 
   private async evalArrayLiteral(node: any): Promise<any[]> {

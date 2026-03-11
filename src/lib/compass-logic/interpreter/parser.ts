@@ -11,6 +11,8 @@ import type {
   SubscribeCall,
   InTurnsCall,
   OnTurnAdvanceCall,
+  AtStartOfNextTurnCall,
+  AtEndOfNextTurnCall,
   Assignment,
   BinaryOp,
   UnaryOp,
@@ -324,6 +326,23 @@ export class Parser {
           } as InTurnsCall;
         }
         return { type: 'OnTurnAdvanceCall', block } as OnTurnAdvanceCall;
+      }
+
+      // <character>.atStartOfNextTurn(): block or <character>.atEndOfNextTurn(): block
+      if (
+        (mc.method === 'atStartOfNextTurn' || mc.method === 'atEndOfNextTurn') &&
+        this.check(TokenType.COLON)
+      ) {
+        const method = mc.method;
+        this.consume(TokenType.COLON, `Expected ':' after ${method}(...)`);
+        this.consume(TokenType.NEWLINE, "Expected newline after ':'");
+        this.skipNewlines();
+        if (this.check(TokenType.INDENT)) this.advance();
+        const block = this.block();
+        if (method === 'atStartOfNextTurn') {
+          return { type: 'AtStartOfNextTurnCall', object: mc.object, block } as AtStartOfNextTurnCall;
+        }
+        return { type: 'AtEndOfNextTurnCall', object: mc.object, block } as AtEndOfNextTurnCall;
       }
     }
 

@@ -3,6 +3,8 @@ import type {
   ArrayAccess,
   ArrayLiteral,
   Assignment,
+  AtEndOfNextTurnCall,
+  AtStartOfNextTurnCall,
   BinaryOp,
   BooleanLiteral,
   ForLoop,
@@ -147,6 +149,18 @@ export function astToSource(
       const ot = node as OnTurnAdvanceCall;
       let out = `${prefix}Scene.onTurnAdvance():\n`;
       out += blockToSource(ot.block, safeLevel + 1, safeIndent);
+      return out;
+    }
+    case 'AtStartOfNextTurnCall': {
+      const ast = node as AtStartOfNextTurnCall;
+      let out = `${prefix}${exprToSource(ast.object)}.atStartOfNextTurn():\n`;
+      out += blockToSource(ast.block, safeLevel + 1, safeIndent);
+      return out;
+    }
+    case 'AtEndOfNextTurnCall': {
+      const aet = node as AtEndOfNextTurnCall;
+      let out = `${prefix}${exprToSource(aet.object)}.atEndOfNextTurn():\n`;
+      out += blockToSource(aet.block, safeLevel + 1, safeIndent);
       return out;
     }
     case 'Program': {

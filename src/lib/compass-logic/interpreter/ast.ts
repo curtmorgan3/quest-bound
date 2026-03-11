@@ -18,6 +18,8 @@ export type ASTNode =
   | SubscribeCall
   | InTurnsCall
   | OnTurnAdvanceCall
+  | AtStartOfNextTurnCall
+  | AtEndOfNextTurnCall
   | ArrayLiteral
   | ArrayAccess
   | MemberAccess
@@ -137,6 +139,22 @@ export interface InTurnsCall {
 /** Scene.onTurnAdvance(): block — register callback to run on every advance. */
 export interface OnTurnAdvanceCall {
   type: 'OnTurnAdvanceCall';
+  block: ASTNode[];
+}
+
+/** character.atStartOfNextTurn(): block — register a one-shot callback for the start of that character's next turn. */
+export interface AtStartOfNextTurnCall {
+  type: 'AtStartOfNextTurnCall';
+  /** The character expression (e.g. identifier `targ`, `Owner`, etc.). */
+  object: ASTNode;
+  block: ASTNode[];
+}
+
+/** character.atEndOfNextTurn(): block — register a one-shot callback for the end of that character's next turn. */
+export interface AtEndOfNextTurnCall {
+  type: 'AtEndOfNextTurnCall';
+  /** The character expression (e.g. identifier `targ`, `Owner`, etc.). */
+  object: ASTNode;
   block: ASTNode[];
 }
 
