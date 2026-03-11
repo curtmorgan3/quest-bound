@@ -625,10 +625,23 @@ export class Evaluator {
     const BUILT_IN_GLOBALS = new Set(['Scene', 'Owner', 'Ruleset', '__scriptId']);
     const names = new Set<string>();
 
+    const TEMPLATE_VAR_RE = /\{\{([^}]+)\}\}/g;
+
     const visit = (node: ASTNode): void => {
       if (!node || typeof node !== 'object') return;
       if ((node as any).type === 'Identifier') {
         names.add((node as any).name);
+        return;
+      }
+      // Extract {{varName}} template references from string literals — these are resolved
+      // at runtime by interpolateString() and never appear as Identifier AST nodes.
+      if ((node as any).type === 'StringLiteral') {
+        const raw: string = (node as any).value ?? '';
+        let m: RegExpExecArray | null;
+        TEMPLATE_VAR_RE.lastIndex = 0;
+        while ((m = TEMPLATE_VAR_RE.exec(raw)) !== null) {
+          names.add(m[1].trim());
+        }
         return;
       }
       for (const value of Object.values(node as Record<string, unknown>)) {
