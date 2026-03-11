@@ -35,7 +35,6 @@ export async function executeTurnCallback(
   roll?: RollFn,
   campaignId?: string | null,
 ): Promise<TurnCallbackResult> {
-  const emptyResult: TurnCallbackResult = { announceMessages: [], logMessages: [] };
   let evaluator: Evaluator | null = null;
   try {
     const attributes = (await db.attributes
@@ -146,6 +145,9 @@ export async function executeTurnCallback(
     } catch (persistErr) {
       console.warn('[executeTurnCallback] Failed to persist script error', persistErr);
     }
-    return { announceMessages: evaluator?.getAnnounceMessages() ?? [], logMessages: partialLogMessages };
+    return {
+      announceMessages: evaluator?.getAnnounceMessages() ?? [],
+      logMessages: partialLogMessages,
+    };
   }
 }

@@ -1,8 +1,8 @@
 import type { PromptFn, RollFn, RollSplitFn, SelectCharacterFn, SelectCharactersFn } from '@/types';
 import { parseDiceExpression, rollDie } from '@/utils/dice-utils';
-import { blockStatementsToSource } from './ast-to-source';
 import { prepareForStructuredClone } from '../runtime/structured-clone-safe';
 import type { ASTNode } from './ast';
+import { blockStatementsToSource } from './ast-to-source';
 import { isBuiltInArrayMethod, registerArrayMethod } from './built-ins';
 
 export interface EvaluatorOptions {
@@ -352,7 +352,11 @@ export class Evaluator {
       }
 
       // Case C – comparator is a QBScript function value
-      if (compareFnVal && typeof compareFnVal === 'object' && (compareFnVal as any).type === 'function') {
+      if (
+        compareFnVal &&
+        typeof compareFnVal === 'object' &&
+        (compareFnVal as any).type === 'function'
+      ) {
         const funcObj = compareFnVal as {
           type: 'function';
           params: string[];
@@ -545,7 +549,14 @@ export class Evaluator {
     const scriptId = this.globalEnv.has('__scriptId') ? this.globalEnv.get('__scriptId') : '';
     const { capturedCharacterIds, capturedValues } = this.captureClosureSnapshot(node.block);
     if (typeof Scene?.registerInTurns === 'function') {
-      await Scene.registerInTurns(n, blockSource, ownerId, scriptId, capturedCharacterIds, capturedValues);
+      await Scene.registerInTurns(
+        n,
+        blockSource,
+        ownerId,
+        scriptId,
+        capturedCharacterIds,
+        capturedValues,
+      );
     }
   }
 
@@ -558,7 +569,13 @@ export class Evaluator {
     const scriptId = this.globalEnv.has('__scriptId') ? this.globalEnv.get('__scriptId') : '';
     const { capturedCharacterIds, capturedValues } = this.captureClosureSnapshot(node.block);
     if (typeof Scene?.registerOnTurnAdvance === 'function') {
-      await Scene.registerOnTurnAdvance(blockSource, ownerId, scriptId, capturedCharacterIds, capturedValues);
+      await Scene.registerOnTurnAdvance(
+        blockSource,
+        ownerId,
+        scriptId,
+        capturedCharacterIds,
+        capturedValues,
+      );
     }
   }
 
@@ -644,7 +661,7 @@ export class Evaluator {
         }
         return;
       }
-      for (const value of Object.values(node as Record<string, unknown>)) {
+      for (const value of Object.values(node)) {
         if (Array.isArray(value)) {
           for (const item of value) {
             if (item && typeof item === 'object' && 'type' in (item as object))
