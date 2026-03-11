@@ -225,7 +225,12 @@ interface TicOverlayProps {
 }
 
 const MAX_TIC_STEPS = 1000;
-const FLASH_DURATION_MS = 800;
+const TIC_ANIMATION_DURATION_MS = 1000;
+
+/** Cubic ease-in-out: slow at start and end, faster in the middle. */
+function easeInOutCubic(t: number): number {
+  return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+}
 
 const TicOverlay = ({ from, to, style }: TicOverlayProps) => {
   const [displayValue, setDisplayValue] = useState<number>(from);
@@ -244,32 +249,39 @@ const TicOverlay = ({ from, to, style }: TicOverlayProps) => {
       return;
     }
 
-    let value = from;
-    const step = delta > 0 ? 1 : -1;
+    const startTime = performance.now();
 
-    setDisplayValue(value);
+    const tick = (now: number) => {
+      const elapsed = now - startTime;
+      const progress = Math.min(elapsed / TIC_ANIMATION_DURATION_MS, 1);
+      const easedProgress = easeInOutCubic(progress);
+      const value = Math.round(from + delta * easedProgress);
+      const clampedValue = delta > 0 ? Math.min(value, to) : Math.max(value, to);
+      setDisplayValue(clampedValue);
 
-    const intervalMs = Math.max(16, Math.floor(FLASH_DURATION_MS / absDelta));
-
-    const intervalId = window.setInterval(() => {
-      value += step;
-
-      if ((step > 0 && value >= to) || (step < 0 && value <= to)) {
+      if (progress < 1) {
+        frameId = window.requestAnimationFrame(tick);
+      } else {
         setDisplayValue(to);
-        window.clearInterval(intervalId);
-        return;
       }
+    };
 
-      setDisplayValue(value);
-    }, intervalMs);
+    let frameId = window.requestAnimationFrame(tick);
 
     return () => {
-      window.clearInterval(intervalId);
+      window.cancelAnimationFrame(frameId);
     };
   }, [from, to]);
 
   return (
-    <span style={{ ...style, display: 'inline-block' }} aria-hidden>
+    <span
+      style={{
+        ...style,
+        display: 'flex',
+        alignItems: style.verticalAlign as string,
+        justifyContent: style.textAlign,
+      }}
+      aria-hidden>
       {displayValue}
     </span>
   );
