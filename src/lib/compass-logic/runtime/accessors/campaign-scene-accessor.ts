@@ -207,6 +207,7 @@ export class CampaignSceneAccessor {
     blockSource: string,
     ownerId: string | null,
     scriptId: string,
+    capturedCharacterIds?: Record<string, string>,
   ): Promise<void> {
     if (typeof n !== 'number' || n < 1 || !Number.isInteger(n)) {
       return;
@@ -224,6 +225,10 @@ export class CampaignSceneAccessor {
       rulesetId: this.rulesetId,
       scriptId,
       blockSource,
+      capturedCharacterIds:
+        capturedCharacterIds && Object.keys(capturedCharacterIds).length > 0
+          ? capturedCharacterIds
+          : undefined,
       createdAt: now,
       updatedAt: now,
     } as any);
@@ -236,6 +241,7 @@ export class CampaignSceneAccessor {
     blockSource: string,
     ownerId: string | null,
     scriptId: string,
+    capturedCharacterIds?: Record<string, string>,
   ): Promise<void> {
     const cycle = await this.currentTurnCycle();
     const now = new Date().toISOString();
@@ -248,6 +254,10 @@ export class CampaignSceneAccessor {
       rulesetId: this.rulesetId,
       scriptId,
       blockSource,
+      capturedCharacterIds:
+        capturedCharacterIds && Object.keys(capturedCharacterIds).length > 0
+          ? capturedCharacterIds
+          : undefined,
       createdAt: now,
       updatedAt: now,
     } as any);

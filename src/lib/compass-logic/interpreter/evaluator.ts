@@ -537,8 +537,9 @@ export class Evaluator {
     const Owner = this.globalEnv.has('Owner') ? this.globalEnv.get('Owner') : null;
     const ownerId = Owner?.id ?? null;
     const scriptId = this.globalEnv.has('__scriptId') ? this.globalEnv.get('__scriptId') : '';
+    const capturedCharacterIds = this.captureCharacterIds(node.block);
     if (typeof Scene?.registerInTurns === 'function') {
-      await Scene.registerInTurns(n, blockSource, ownerId, scriptId);
+      await Scene.registerInTurns(n, blockSource, ownerId, scriptId, capturedCharacterIds);
     }
   }
 
@@ -549,9 +550,53 @@ export class Evaluator {
     const Owner = this.globalEnv.has('Owner') ? this.globalEnv.get('Owner') : null;
     const ownerId = Owner?.id ?? null;
     const scriptId = this.globalEnv.has('__scriptId') ? this.globalEnv.get('__scriptId') : '';
+    const capturedCharacterIds = this.captureCharacterIds(node.block);
     if (typeof Scene?.registerOnTurnAdvance === 'function') {
-      await Scene.registerOnTurnAdvance(blockSource, ownerId, scriptId);
+      await Scene.registerOnTurnAdvance(blockSource, ownerId, scriptId, capturedCharacterIds);
     }
+  }
+
+  /**
+   * Walk the AST of a block and return a map of variable-name → character-id for any
+   * identifier referenced in the block that (a) exists in the current environment,
+   * (b) is not a built-in global (Scene / Owner / Ruleset), and
+   * (c) has a non-empty string `id` property (i.e. is a character accessor).
+   * These are captured so they can be re-injected when the deferred callback fires.
+   */
+  private captureCharacterIds(statements: ASTNode[]): Record<string, string> {
+    const BUILT_IN_GLOBALS = new Set(['Scene', 'Owner', 'Ruleset', '__scriptId']);
+    const names = new Set<string>();
+
+    const visit = (node: ASTNode): void => {
+      if (!node || typeof node !== 'object') return;
+      if ((node as any).type === 'Identifier') {
+        names.add((node as any).name);
+        return;
+      }
+      for (const value of Object.values(node as Record<string, unknown>)) {
+        if (Array.isArray(value)) {
+          for (const item of value) {
+            if (item && typeof item === 'object' && 'type' in (item as object))
+              visit(item as ASTNode);
+          }
+        } else if (value && typeof value === 'object' && 'type' in (value as object)) {
+          visit(value as ASTNode);
+        }
+      }
+    };
+
+    for (const stmt of statements) visit(stmt);
+
+    const captured: Record<string, string> = {};
+    for (const name of names) {
+      if (BUILT_IN_GLOBALS.has(name)) continue;
+      if (!this.currentEnv.has(name)) continue;
+      const value = this.currentEnv.get(name);
+      if (value && typeof value === 'object' && typeof value.id === 'string' && value.id) {
+        captured[name] = value.id;
+      }
+    }
+    return captured;
   }
 
   private async evalArrayLiteral(node: any): Promise<any[]> {

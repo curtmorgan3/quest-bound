@@ -529,6 +529,12 @@ export type SceneTurnCallback = BaseDetails & {
   scriptId: string;
   /** Source code of the block to execute (re-parsed when the callback fires). */
   blockSource: string;
+  /**
+   * Character accessor variables captured from the outer script scope at registration time.
+   * Maps variable name → character id so they can be re-injected when the callback executes.
+   * E.g. { targ: "uuid" } lets `targ` refer to the same character inside the deferred block.
+   */
+  capturedCharacterIds?: Record<string, string>;
 };
 
 export type CampaignEventParamType = 'string' | 'number' | 'boolean';

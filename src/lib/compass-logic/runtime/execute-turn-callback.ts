@@ -21,6 +21,8 @@ export interface TurnCallbackResult {
 /**
  * Execute a single turn callback's block in the stored context (Owner, Scene, Ruleset).
  * Runs the block in a child scope so variable assignments cannot overwrite Scene/Owner/Ruleset.
+ * Re-injects any character variables captured at registration time (capturedCharacterIds) so
+ * that loop variables like `targ` are available inside the deferred block.
  * Persists script log() output and reports errors to scriptErrors using stored scriptId and rulesetId.
  * Catches errors and does not throw. Returns announce/log messages so the caller can merge them into the script result.
  */
@@ -34,6 +36,7 @@ export async function executeTurnCallback(
   campaignId?: string | null,
 ): Promise<TurnCallbackResult> {
   const emptyResult: TurnCallbackResult = { announceMessages: [], logMessages: [] };
+  let evaluator: Evaluator | null = null;
   try {
     const attributes = (await db.attributes
       .where('rulesetId')
@@ -50,11 +53,22 @@ export async function executeTurnCallback(
 
     const owner = callback.ownerId ? await getCharacterAccessorById(callback.ownerId) : null;
 
-    const evaluator = new Evaluator({ roll });
+    evaluator = new Evaluator({ roll });
     evaluator.globalEnv.define('Scene', sceneAccessor);
     evaluator.globalEnv.define('Ruleset', ruleset);
     if (owner) {
       evaluator.globalEnv.define('Owner', owner);
+    }
+
+    // Re-inject character variables captured from the outer script scope at registration time.
+    // This makes loop variables like `targ` available inside the deferred block.
+    if (callback.capturedCharacterIds) {
+      for (const [varName, characterId] of Object.entries(callback.capturedCharacterIds)) {
+        const accessor = await getCharacterAccessorById(characterId);
+        if (accessor) {
+          evaluator.globalEnv.define(varName, accessor);
+        }
+      }
     }
 
     const tokens = new Lexer(callback.blockSource).tokenize();
@@ -87,6 +101,24 @@ export async function executeTurnCallback(
     const message = err instanceof Error ? err.message : String(err);
     const stack = err instanceof Error ? (err.stack ?? null) : null;
     console.warn('[executeTurnCallback]', callback.scriptId, callback.rulesetId, err);
+
+    // Persist any log() messages that were emitted before the error so they are not lost.
+    const partialLogMessages = evaluator?.getLogMessages() ?? [];
+    if (partialLogMessages.length > 0) {
+      try {
+        await persistScriptLogs(db, {
+          rulesetId: callback.rulesetId,
+          scriptId: callback.scriptId,
+          characterId: callback.ownerId,
+          logMessages: partialLogMessages,
+          context: TURN_CALLBACK_CONTEXT,
+          campaignId: campaignId ?? null,
+        });
+      } catch (logPersistErr) {
+        console.warn('[executeTurnCallback] Failed to persist partial log messages', logPersistErr);
+      }
+    }
+
     const now = new Date().toISOString();
     const scriptError: ScriptError = {
       id: crypto.randomUUID(),
@@ -106,6 +138,6 @@ export async function executeTurnCallback(
     } catch (persistErr) {
       console.warn('[executeTurnCallback] Failed to persist script error', persistErr);
     }
-    return emptyResult;
+    return { announceMessages: evaluator?.getAnnounceMessages() ?? [], logMessages: partialLogMessages };
   }
 }
