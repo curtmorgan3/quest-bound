@@ -323,7 +323,7 @@ export function NpcStage({ campaignId, rulesetId, sceneId, onCardHover }: NpcSta
       archetypeIds: [selectedArchetype.id],
       variant: selectedVariant ?? undefined,
       isNpc: true,
-      name: selectedArchetype.name,
+      name: selectedVariant ?? selectedArchetype.name,
       assetId: selectedArchetype.assetId ?? null,
     });
     if (newCharId) {
