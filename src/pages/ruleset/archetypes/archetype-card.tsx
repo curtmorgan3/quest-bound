@@ -253,9 +253,6 @@ export function ArchetypeCard({
             {archetype.category && (
               <p className='text-sm text-muted-foreground mt-0.5'>{archetype.category}</p>
             )}
-            {archetype.description && (
-              <p className='text-sm text-muted-foreground mt-0.5'>{archetype.description}</p>
-            )}
           </div>
         )}
       </div>

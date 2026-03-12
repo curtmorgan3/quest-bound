@@ -1,8 +1,14 @@
 import { useState } from 'react';
 import Markdown from 'react-markdown';
+import { Button } from '../ui/button';
 import { Label } from '../ui/label';
-import { Textarea } from '../ui/textarea';
-import { ToggleGroup, ToggleGroupItem } from '../ui/toggle-group';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from '../ui/sheet';
+import { MarkdownPanel } from './markdown-panel';
 
 interface DescriptionEditorProps {
   value?: string;
@@ -20,47 +26,39 @@ export const DescriptionEditor = ({
   onChange,
   placeholder = '',
   disabled = false,
-  onSave,
   className = '',
 }: DescriptionEditorProps) => {
-  const [mode, setMode] = useState<'edit' | 'preview'>('edit');
+  const [open, setOpen] = useState(false);
 
   return (
-    <div
-      id={id}
-      className={`flex flex-col gap-2 md-content ${className}`}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' && !e.shiftKey) {
-          onSave?.();
-        }
-      }}>
-      <div className='flex items-center justify-between gap-2'>
-        <Label>Description</Label>
-        <ToggleGroup
-          type='single'
-          value={mode}
-          onValueChange={(v) => v && setMode(v as 'edit' | 'preview')}
-          className='w-fit'>
-          <ToggleGroupItem value='edit' aria-label='Edit'>
-            Edit
-          </ToggleGroupItem>
-          <ToggleGroupItem value='preview' aria-label='Preview'>
-            Preview
-          </ToggleGroupItem>
-        </ToggleGroup>
-      </div>
-      {mode === 'edit' ? (
-        <Textarea
-          value={value}
-          onChange={(e) => onChange?.(e.target.value)}
-          placeholder={placeholder}
-          disabled={disabled}
-          className='min-h-24 max-h-[200px] overflow-y-auto'
-        />
-      ) : (
+    <>
+      <div id={id} className={`flex flex-col gap-2 md-content ${className}`}>
+        <div className='flex items-center justify-between gap-2'>
+          <Label>Description</Label>
+          {!disabled && (
+            <Button variant='outline' size='sm' onClick={() => setOpen(true)}>
+              Edit
+            </Button>
+          )}
+        </div>
         <DescriptionViewer value={value} placeholder={placeholder} />
-      )}
-    </div>
+      </div>
+
+      <Sheet open={open} onOpenChange={setOpen}>
+        <SheetContent side='right' className='flex w-full flex-col gap-4 sm:max-w-lg'>
+          <SheetHeader>
+            <SheetTitle>Description</SheetTitle>
+          </SheetHeader>
+          <MarkdownPanel
+            value={value}
+            onChange={onChange}
+            placeholder={placeholder}
+            disabled={disabled}
+            className='min-h-0 flex-1'
+          />
+        </SheetContent>
+      </Sheet>
+    </>
   );
 };
 

@@ -1,8 +1,8 @@
 import { Button } from '@/components';
-import { DocumentMarkdownContent, type DocumentMarkdownMode } from '@/components/composites/document-markdown-content';
-import { useDocuments } from '@/lib/compass-api';
-import { Loader2 } from 'lucide-react';
-import { useCallback, useEffect, useState } from 'react';
+import {
+  DocumentMarkdownContent,
+  type DocumentMarkdownMode,
+} from '@/components/composites/document-markdown-content';
 import {
   Sheet,
   SheetContent,
@@ -10,6 +10,9 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet';
+import { useDocuments } from '@/lib/compass-api';
+import { Loader2 } from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
 
 interface MarkdownEditorPanelProps {
   open: boolean;
@@ -18,8 +21,6 @@ interface MarkdownEditorPanelProps {
   mode: DocumentMarkdownMode;
   /** When provided, document is resolved from this ruleset (e.g. when not in character context). */
   rulesetId?: string;
-  /** When provided, document is resolved from this world (e.g. world documents page). */
-  worldId?: string;
   /** When provided, document is resolved from this campaign (e.g. campaign documents page). */
   campaignId?: string;
 }
@@ -30,15 +31,9 @@ export function MarkdownEditorPanel({
   documentId,
   mode,
   rulesetId,
-  worldId,
   campaignId,
 }: MarkdownEditorPanelProps) {
-  const options =
-    campaignId != null
-      ? { campaignId }
-      : worldId != null
-        ? { worldId }
-        : rulesetId;
+  const options = campaignId != null ? { campaignId } : rulesetId;
   const { documents, updateDocument } = useDocuments(options);
   const document = documentId ? documents.find((d) => d.id === documentId) : undefined;
   const [localValue, setLocalValue] = useState('');
@@ -74,9 +69,9 @@ export function MarkdownEditorPanel({
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
-        side="right"
-        className="flex w-full flex-col gap-4 border-l p-0 sm:max-w-lg [&>button]:absolute [&>button]:right-4 [&>button]:top-4">
-        <SheetHeader className="shrink-0 border-b px-6 py-4">
+        side='right'
+        className='flex w-full flex-col gap-4 border-l p-0 sm:max-w-lg [&>button]:absolute [&>button]:right-4 [&>button]:top-4'>
+        <SheetHeader className='shrink-0 border-b px-6 py-4'>
           <SheetTitle>{document?.title ?? 'Document'}</SheetTitle>
           <SheetDescription>
             {isEdit
@@ -84,32 +79,27 @@ export function MarkdownEditorPanel({
               : 'View markdown content.'}
           </SheetDescription>
         </SheetHeader>
-        <div className="flex min-h-0 flex-1 flex-col overflow-hidden px-6 pb-6">
+        <div className='flex min-h-0 flex-1 flex-col overflow-hidden px-6 pb-6'>
           {!document && documentId ? (
-            <div className="flex flex-1 items-center justify-center text-muted-foreground">
-              <Loader2 className="h-6 w-6 animate-spin" />
+            <div className='flex flex-1 items-center justify-center text-muted-foreground'>
+              <Loader2 className='h-6 w-6 animate-spin' />
             </div>
           ) : document ? (
-            <div className="flex min-h-0 flex-1 flex-col overflow-auto">
+            <div className='flex min-h-0 flex-1 flex-col overflow-auto'>
               <DocumentMarkdownContent
                 value={isEdit ? localValue : (document.markdownData ?? '')}
                 onChange={isEdit ? handleChange : undefined}
                 mode={mode}
                 onSave={isEdit ? handleSave : undefined}
-                placeholder="No content."
+                placeholder='No content.'
               />
             </div>
           ) : null}
         </div>
         {isEdit && document && (
-          <div className="shrink-0 border-t px-6 py-4">
-            <Button
-              onClick={handleSave}
-              disabled={saving}
-              className="w-full gap-2">
-              {saving ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : null}
+          <div className='shrink-0 border-t px-6 py-4'>
+            <Button onClick={handleSave} disabled={saving} className='w-full gap-2'>
+              {saving ? <Loader2 className='h-4 w-4 animate-spin' /> : null}
               Save
             </Button>
           </div>

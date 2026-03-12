@@ -23,6 +23,7 @@ import { type CharacterAttribute } from '@/types';
 import { useContext, useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { CharacterArchetypesPanel } from './character-archetypes-panel';
+import { CharacterAttributeEditPanel } from './character-attribute-edit-panel';
 import { CharacterInventoryPanel } from './character-inventory-panel';
 import { GameLog } from './game-log';
 import {
@@ -265,6 +266,7 @@ export const CharacterPage = ({
           />
         )}
         <InventoryDragPreview />
+        <CharacterAttributeEditPanel />
       </InventoryDragProvider>
     </CharacterProvider>
   );
