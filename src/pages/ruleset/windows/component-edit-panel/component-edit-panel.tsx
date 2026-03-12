@@ -28,6 +28,7 @@ import type { RGBColor } from 'react-color';
 import { useParams } from 'react-router-dom';
 import { ActionEdit } from './action-edit';
 import { ClickEventModal } from './click-event-modal';
+import { ComponentTooltipSettings } from './component-tooltip-settings';
 import {
   ComponentEditPanelContext,
   type ComponentEditPanelContextValue,
@@ -218,6 +219,45 @@ export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
         data: JSON.stringify({
           ...JSON.parse(c.data),
           showSign,
+        }),
+      })),
+    );
+  };
+
+  const setTooltipValue = (tooltipValue: string) => {
+    const toUpdate = selectedComponents.filter((c) => !c.locked);
+    updateComponents(
+      toUpdate.map((c) => ({
+        id: c.id,
+        data: JSON.stringify({
+          ...JSON.parse(c.data),
+          tooltipValue: tooltipValue || undefined,
+        }),
+      })),
+    );
+  };
+
+  const setTooltipAttributeId = (id: string | null) => {
+    const toUpdate = selectedComponents.filter((c) => !c.locked);
+    updateComponents(
+      toUpdate.map((c) => ({
+        id: c.id,
+        data: JSON.stringify({
+          ...JSON.parse(c.data),
+          tooltipAttributeId: id,
+        }),
+      })),
+    );
+  };
+
+  const setTooltipPlacement = (placement: 'top' | 'right' | 'bottom' | 'left') => {
+    const toUpdate = selectedComponents.filter((c) => !c.locked);
+    updateComponents(
+      toUpdate.map((c) => ({
+        id: c.id,
+        data: JSON.stringify({
+          ...JSON.parse(c.data),
+          tooltipPlacement: placement,
         }),
       })),
     );
@@ -452,6 +492,15 @@ export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
                 <ClickEventModal
                   component={selectedComponents[0]}
                   allCanOpenChildWindow={allCanOpenChildWindow}
+                />
+              )}
+
+              {selectedComponents.length === 1 && (
+                <ComponentTooltipSettings
+                  component={selectedComponents[0]}
+                  onTooltipValueChange={setTooltipValue}
+                  onTooltipAttributeIdChange={setTooltipAttributeId}
+                  onTooltipPlacementChange={setTooltipPlacement}
                 />
               )}
 

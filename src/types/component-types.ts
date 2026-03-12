@@ -140,4 +140,7 @@ export type ComponentData = ShapeComponentData &
     scriptParameterValues?: Record<string, ScriptParamValue>;
     animationColor?: string | null;
     animation?: string | null;
+    tooltipValue?: string | null;
+    tooltipAttributeId?: string | null;
+    tooltipPlacement?: 'top' | 'right' | 'bottom' | 'left';
   };

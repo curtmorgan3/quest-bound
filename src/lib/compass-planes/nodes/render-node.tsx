@@ -19,6 +19,7 @@ import {
   NodeConditionalRender,
   NodePageRouter,
   NodeScriptCaller,
+  NodeTooltip,
 } from './decorators';
 import { NodeRotation } from './decorators/node-rotation';
 import { getComponentData } from '../utils';
@@ -155,15 +156,19 @@ function WrapDecorators({
       component={component}
       componentData={componentData}
       characterAttributes={characterAttributes}>
-      <NodeScriptCaller component={component}>
-        <NodeAttributeEditPanelControl component={component}>
-          <NodePageRouter component={component} componentData={componentData}>
-            <NodeRotation rotation={position?.rotation} z={position?.z}>
-              <NodeAnimation component={component}>{children}</NodeAnimation>
-            </NodeRotation>
-          </NodePageRouter>
-        </NodeAttributeEditPanelControl>
-      </NodeScriptCaller>
+      <NodeTooltip
+        component={component}
+        componentData={componentData}>
+        <NodeScriptCaller component={component}>
+          <NodeAttributeEditPanelControl component={component}>
+            <NodePageRouter component={component} componentData={componentData}>
+              <NodeRotation rotation={position?.rotation} z={position?.z}>
+                <NodeAnimation component={component}>{children}</NodeAnimation>
+              </NodeRotation>
+            </NodePageRouter>
+          </NodeAttributeEditPanelControl>
+        </NodeScriptCaller>
+      </NodeTooltip>
     </NodeConditionalRender>
   );
 }
