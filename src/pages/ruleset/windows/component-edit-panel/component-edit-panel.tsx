@@ -1,12 +1,4 @@
-import {
-  Button,
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogTitle,
-  Input,
-  Label,
-} from '@/components';
+import { Input, Label } from '@/components';
 import { RulesetColorPicker } from '@/components/composites/ruleset-color-picker';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
@@ -17,19 +9,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import {
-  ActionLookup,
-  AttributeLookup,
-  PageLookup,
-  ScriptLookup,
-  useComponents,
-  useRulesets,
-  WindowLookup,
-} from '@/lib/compass-api';
-import { useActions } from '@/lib/compass-api/hooks/rulesets/use-actions';
-import { useRulesetPages } from '@/lib/compass-api/hooks/rulesets/use-ruleset-pages';
-import { useWindows } from '@/lib/compass-api/hooks/rulesets/use-windows';
-import { useScripts } from '@/lib/compass-api/hooks/scripts/use-scripts';
+import { AttributeLookup, useComponents, useRulesets } from '@/lib/compass-api';
 import { ComponentTypes } from '@/lib/compass-planes/nodes';
 import {
   CheckboxDataEdit,
@@ -41,18 +21,13 @@ import {
 import { ImageDataEdit } from '@/lib/compass-planes/nodes/components/image';
 import { getComponentData } from '@/lib/compass-planes/utils';
 import { colorBlack } from '@/palette';
-import type {
-  Component,
-  ConditionalRenderLogic,
-  Script,
-  ScriptParamValue,
-  TextComponentData,
-} from '@/types';
+import type { ConditionalRenderLogic, TextComponentData } from '@/types';
 import { rgbToHex } from '@/utils';
-import { useMemo, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import type { RGBColor } from 'react-color';
 import { useParams } from 'react-router-dom';
 import { ActionEdit } from './action-edit';
+import { ClickEventModal } from './click-event-modal';
 import {
   ComponentEditPanelContext,
   type ComponentEditPanelContextValue,
@@ -62,8 +37,6 @@ import { ShapeEdit } from './component-edits/shape-edit';
 import { CustomPropertiesListModal } from './custom-properties-list-modal';
 import { PositionEdit } from './position-edit';
 import { StyleEdit } from './style-edit';
-
-type ClickEventType = 'openPage' | 'openWindow' | 'fireAction' | 'fireScript';
 
 const ATTRIBUTE_ANIMATION_OPTIONS = [
   { value: 'none', label: 'None' },
@@ -88,13 +61,7 @@ export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
   const { windowId } = useParams();
   const { components, updateComponents } = useComponents(windowId);
   const { activeRuleset } = useRulesets();
-  const { scripts, createScript, updateScript, deleteScript } = useScripts();
-  const { pages } = useRulesetPages();
-  const { windows } = useWindows();
-  const { actions } = useActions();
   const [customPropertiesModalOpen, setCustomPropertiesModalOpen] = useState(false);
-  const [clickEventDialogOpen, setClickEventDialogOpen] = useState(false);
-  const [clickEventType, setClickEventType] = useState<ClickEventType>('openPage');
   const customPropertiesModalParamsRef = useRef<{
     styleKey: string | null;
     onSelect?: (customPropertyId: string) => void;
@@ -256,76 +223,6 @@ export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
     );
   };
 
-  const singleSelectedComponent = selectedComponents.length === 1 ? selectedComponents[0] : null;
-
-  const selectedScript: Script | undefined = useMemo(
-    () =>
-      singleSelectedComponent
-        ? scripts.find((s) => s.id === singleSelectedComponent.scriptId)
-        : undefined,
-    [scripts, singleSelectedComponent?.scriptId],
-  );
-
-  const scriptParameterValues: Record<string, ScriptParamValue> = singleSelectedComponent
-    ? (getComponentData(singleSelectedComponent).scriptParameterValues ?? {})
-    : {};
-
-  const hasScriptParameters = (selectedScript?.parameters?.length ?? 0) > 0;
-
-  const handleSelectScript = (script: Script) => {
-    if (!singleSelectedComponent) return;
-    const baseData = JSON.parse(singleSelectedComponent.data);
-    delete baseData.scriptParameterValues;
-
-    updateComponents([
-      {
-        id: singleSelectedComponent.id,
-        scriptId: script.id,
-        data: JSON.stringify(baseData),
-      },
-    ]);
-  };
-
-  const handleClearScript = () => {
-    if (!singleSelectedComponent) return;
-    const baseData = JSON.parse(singleSelectedComponent.data);
-    delete baseData.scriptParameterValues;
-
-    updateComponents([
-      {
-        id: singleSelectedComponent.id,
-        scriptId: null,
-        data: JSON.stringify(baseData),
-      },
-    ]);
-  };
-
-  const handleUpdateScriptParameterValue = (paramId: string, value: ScriptParamValue) => {
-    if (!singleSelectedComponent) return;
-    const baseData = JSON.parse(singleSelectedComponent.data);
-    const existing: Record<string, ScriptParamValue> = baseData.scriptParameterValues ?? {};
-    const next: Record<string, ScriptParamValue> = { ...existing };
-
-    if (value === '' || value === null || value === undefined) {
-      delete next[paramId];
-    } else {
-      next[paramId] = value;
-    }
-
-    if (Object.keys(next).length === 0) {
-      delete baseData.scriptParameterValues;
-    } else {
-      baseData.scriptParameterValues = next;
-    }
-
-    updateComponents([
-      {
-        id: singleSelectedComponent.id,
-        data: JSON.stringify(baseData),
-      },
-    ]);
-  };
-
   const assignStyleToCustomProperty = (styleKey: string, customPropertyId: string) => {
     const nonstyleKeys = ['width', 'height', 'rotation', 'z'];
 
@@ -402,235 +299,6 @@ export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
   const allAreFrames =
     selectedComponents.length > 0 &&
     selectedComponents.every((c) => c.type === ComponentTypes.FRAME);
-
-  const buildClickScriptSource = (
-    kind: Extract<ClickEventType, 'openPage' | 'openWindow' | 'fireAction'>,
-    targetId: string,
-  ): string => {
-    const header =
-      '// Auto-generated click handler script. Uses stable entity IDs so it keeps working when labels change.\n\n';
-
-    if (kind === 'openPage') {
-      return `${header}Owner.navigateToPage('${targetId}')\n`;
-    }
-
-    if (kind === 'openWindow') {
-      return `${header}Owner.openWindow('${targetId}')\n`;
-    }
-
-    return `${header}Owner.Action('${targetId}').activate()\n`;
-  };
-
-  const ensureClickScript = async (
-    component: Component,
-    kind: Extract<ClickEventType, 'openPage' | 'openWindow' | 'fireAction'>,
-    targetId: string,
-  ): Promise<string | undefined> => {
-    const existingId = component.scriptId ?? undefined;
-    const sourceCode = buildClickScriptSource(kind, targetId);
-
-    if (existingId) {
-      const existing = scripts.find((s) => s.id === existingId);
-      if (existing && existing.hidden) {
-        await updateScript(existingId, {
-          sourceCode,
-          entityType: 'gameManager',
-          entityId: null,
-          hidden: true,
-          enabled: true,
-          category: existing.category ?? 'Component Click',
-          name: existing.name || `component_click_${component.id}`,
-        });
-        return existingId;
-      }
-    }
-
-    const newId = await createScript({
-      name: `component_click_${component.id}`,
-      sourceCode,
-      entityType: 'gameManager',
-      entityId: null,
-      enabled: true,
-      hidden: true,
-      category: 'Component Click',
-    });
-
-    return newId;
-  };
-
-  const getCurrentClickEventType = (): ClickEventType | null => {
-    if (!singleSelectedComponent) return null;
-    const component = singleSelectedComponent;
-    const data = getComponentData(component);
-
-    if (component.scriptId && selectedScript) {
-      if (!selectedScript.hidden) return 'fireScript';
-
-      if (data.pageId) return 'openPage';
-      if (component.childWindowId) return 'openWindow';
-      if (component.actionId) return 'fireAction';
-
-      return 'fireScript';
-    }
-
-    if (data.pageId) return 'openPage';
-    if (component.childWindowId) return 'openWindow';
-    if (component.actionId) return 'fireAction';
-
-    return null;
-  };
-
-  const getCurrentClickEventLabel = (): string | null => {
-    if (!singleSelectedComponent) return null;
-    const type = getCurrentClickEventType();
-    if (!type) return null;
-
-    const data = getComponentData(singleSelectedComponent);
-
-    if (type === 'openPage') {
-      const pageId = (data as any).pageId as string | undefined;
-      const page = pageId ? pages.find((p) => p.id === pageId) : undefined;
-      return page ? `Open Page: ${page.label}` : 'Open Page';
-    }
-
-    if (type === 'openWindow') {
-      const windowId = singleSelectedComponent.childWindowId ?? undefined;
-      const win = windowId ? windows.find((w) => w.id === windowId) : undefined;
-      return win ? `Open Window: ${win.title}` : 'Open Window';
-    }
-
-    if (type === 'fireAction') {
-      const actionId = singleSelectedComponent.actionId ?? undefined;
-      const action = actionId ? actions.find((a) => a.id === actionId) : undefined;
-      return action ? `Fire Action: ${action.title}` : 'Fire Action';
-    }
-
-    if (type === 'fireScript') {
-      if (selectedScript) {
-        return `Fire Script: ${selectedScript.name || 'Untitled'}`;
-      }
-      return 'Fire Script';
-    }
-
-    return null;
-  };
-
-  const handleSetOpenPageClick = async (pageId: string) => {
-    if (!singleSelectedComponent) return;
-
-    const baseData = JSON.parse(singleSelectedComponent.data);
-    baseData.pageId = pageId;
-
-    const scriptId = await ensureClickScript(singleSelectedComponent, 'openPage', pageId);
-
-    const update: any = {
-      id: singleSelectedComponent.id,
-      data: JSON.stringify(baseData),
-    };
-
-    if (scriptId) {
-      update.scriptId = scriptId;
-    }
-
-    await updateComponents([update]);
-  };
-
-  const handleClearOpenPageClick = async () => {
-    if (!singleSelectedComponent) return;
-
-    const baseData = JSON.parse(singleSelectedComponent.data);
-    delete baseData.pageId;
-
-    const update: any = {
-      id: singleSelectedComponent.id,
-      data: JSON.stringify(baseData),
-    };
-
-    if (selectedScript?.hidden) {
-      update.scriptId = null;
-      await deleteScript(selectedScript.id);
-    }
-
-    await updateComponents([update]);
-  };
-
-  const handleSetOpenWindowClick = async (childWindowId: string) => {
-    if (!singleSelectedComponent) return;
-
-    const baseData = JSON.parse(singleSelectedComponent.data);
-
-    const scriptId = await ensureClickScript(singleSelectedComponent, 'openWindow', childWindowId);
-
-    const update: any = {
-      id: singleSelectedComponent.id,
-      childWindowId,
-      data: JSON.stringify(baseData),
-    };
-
-    if (scriptId) {
-      update.scriptId = scriptId;
-    }
-
-    await updateComponents([update]);
-  };
-
-  const handleClearOpenWindowClick = async () => {
-    if (!singleSelectedComponent) return;
-
-    const baseData = JSON.parse(singleSelectedComponent.data);
-
-    const update: any = {
-      id: singleSelectedComponent.id,
-      childWindowId: null as string | null,
-      data: JSON.stringify(baseData),
-    };
-
-    if (selectedScript?.hidden) {
-      update.scriptId = null;
-      await deleteScript(selectedScript.id);
-    }
-
-    await updateComponents([update]);
-  };
-
-  const handleSetFireActionClick = async (actionId: string) => {
-    if (!singleSelectedComponent) return;
-
-    const baseData = JSON.parse(singleSelectedComponent.data);
-
-    const scriptId = await ensureClickScript(singleSelectedComponent, 'fireAction', actionId);
-
-    const update: any = {
-      id: singleSelectedComponent.id,
-      actionId,
-      data: JSON.stringify(baseData),
-    };
-
-    if (scriptId) {
-      update.scriptId = scriptId;
-    }
-
-    await updateComponents([update]);
-  };
-
-  const handleClearFireActionClick = async () => {
-    if (!singleSelectedComponent) return;
-
-    const baseData = JSON.parse(singleSelectedComponent.data);
-
-    const update: any = {
-      id: singleSelectedComponent.id,
-      actionId: null as string | null,
-      data: JSON.stringify(baseData),
-    };
-
-    if (selectedScript?.hidden) {
-      update.scriptId = null;
-      await deleteScript(selectedScript.id);
-    }
-
-    await updateComponents([update]);
-  };
 
   if (viewMode || !hadSelection) {
     return null;
@@ -781,27 +449,10 @@ export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
                 )}
 
               {selectedComponents.length === 1 && (
-                <div className='flex flex-col gap-2'>
-                  <Label className='text-xs text-muted-foreground'>Click Event</Label>
-                  <Button
-                    type='button'
-                    size='sm'
-                    variant='outline'
-                    className='h-7 px-2 justify-start text-xs'
-                    data-testid='component-set-click-event'
-                    onClick={() => {
-                      const current = getCurrentClickEventType();
-                      setClickEventType(current ?? 'openPage');
-                      setClickEventDialogOpen(true);
-                    }}>
-                    Set Click Event
-                  </Button>
-                  {getCurrentClickEventLabel() && (
-                    <p className='text-[0.7rem] text-muted-foreground'>
-                      Current: {getCurrentClickEventLabel()}
-                    </p>
-                  )}
-                </div>
+                <ClickEventModal
+                  component={selectedComponents[0]}
+                  allCanOpenChildWindow={allCanOpenChildWindow}
+                />
               )}
 
               {allAreImages && (
@@ -854,180 +505,6 @@ export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
           <p className='text-xs'>All selected components are locked</p>
         )}
       </div>
-      {selectedComponents.length === 1 && (
-        <Dialog open={clickEventDialogOpen} onOpenChange={setClickEventDialogOpen}>
-          <DialogContent className='min-w-[320px] max-w-[90vw] flex flex-col gap-4'>
-            <DialogTitle>Set Click Event</DialogTitle>
-            <DialogDescription>
-              Choose what should happen when this component is clicked.
-            </DialogDescription>
-
-            <div className='flex flex-col gap-2'>
-              <Label className='text-xs text-muted-foreground'>Click Event Type</Label>
-              <Select
-                value={clickEventType}
-                onValueChange={(value: ClickEventType) => setClickEventType(value)}>
-                <SelectTrigger className='h-8' data-testid='click-event-type-trigger'>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value='openPage'>Open Page</SelectItem>
-                  <SelectItem value='openWindow'>Open Window</SelectItem>
-                  <SelectItem value='fireAction' data-testid='click-event-option-fire-action'>
-                    Fire Action
-                  </SelectItem>
-                  <SelectItem value='fireScript'>Fire Script</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className='flex flex-col gap-3'>
-              {clickEventType === 'openPage' &&
-                selectedComponents[0].type !== ComponentTypes.INVENTORY && (
-                  <PageLookup
-                    label='Open Page'
-                    value={getComponentData(selectedComponents[0]).pageId ?? null}
-                    onSelect={(page) => {
-                      void handleSetOpenPageClick(page.id);
-                    }}
-                    onDelete={() => {
-                      void handleClearOpenPageClick();
-                    }}
-                  />
-                )}
-
-              {clickEventType === 'fireAction' &&
-                selectedComponents[0].type !== ComponentTypes.INVENTORY &&
-                selectedComponents[0].type !== ComponentTypes.GRAPH &&
-                selectedComponents[0].type !== ComponentTypes.FRAME && (
-                  <ActionLookup
-                    id='component-data-action-lookup'
-                    data-testid='component-data-action-lookup'
-                    value={selectedComponents[0].actionId}
-                    onSelect={(attr) => {
-                      void handleSetFireActionClick(attr.id);
-                    }}
-                    onDelete={() => {
-                      void handleClearFireActionClick();
-                    }}
-                  />
-                )}
-
-              {clickEventType === 'openWindow' && windowId && allCanOpenChildWindow && (
-                <WindowLookup
-                  label='Open Window'
-                  value={selectedComponents[0].childWindowId}
-                  onSelect={(win) => {
-                    void handleSetOpenWindowClick(win.id);
-                  }}
-                  onDelete={() => {
-                    void handleClearOpenWindowClick();
-                  }}
-                  excludeIds={[windowId]}
-                />
-              )}
-
-              {clickEventType === 'fireScript' && singleSelectedComponent && (
-                <div className='flex flex-col gap-3'>
-                  <div className='space-y-2'>
-                    <ScriptLookup
-                      label='Script'
-                      value={singleSelectedComponent.scriptId ?? null}
-                      filterEntityType='gameManager'
-                      onSelect={handleSelectScript}
-                      onDelete={handleClearScript}
-                      placeholder='Search Game Manager scripts...'
-                    />
-                  </div>
-
-                  {selectedScript && hasScriptParameters && (
-                    <div className='flex flex-col gap-3'>
-                      <Label className='text-xs text-muted-foreground'>Parameters</Label>
-                      <p className='text-[0.7rem] text-muted-foreground'>
-                        When not set, each parameter falls back to its default value from the script
-                        definition.
-                      </p>
-                      <div className='flex flex-col gap-2 max-h-[260px] overflow-auto pr-1'>
-                        {selectedScript.parameters!.map((param) => {
-                          const resolvedValue =
-                            scriptParameterValues[param.id] ??
-                            (param.defaultValue as ScriptParamValue | undefined) ??
-                            null;
-
-                          if (param.type === 'boolean') {
-                            const checked =
-                              resolvedValue === true ||
-                              (typeof resolvedValue === 'string' &&
-                                resolvedValue.trim().toLowerCase() === 'true');
-
-                            return (
-                              <div
-                                key={param.id}
-                                className='flex items-center gap-2 text-xs text-muted-foreground'>
-                                <span className='w-40 truncate'>
-                                  {param.label}{' '}
-                                  <span className='text-[0.7rem] uppercase'>({param.type})</span>
-                                </span>
-                                <div className='flex items-center gap-1'>
-                                  <Checkbox
-                                    checked={checked}
-                                    onCheckedChange={(next) =>
-                                      handleUpdateScriptParameterValue(
-                                        param.id,
-                                        next ? 'true' : 'false',
-                                      )
-                                    }
-                                  />
-                                  {param.defaultValue != null && (
-                                    <span className='text-[0.7rem] italic text-muted-foreground'>
-                                      Default: {String(param.defaultValue)}
-                                    </span>
-                                  )}
-                                </div>
-                              </div>
-                            );
-                          }
-
-                          return (
-                            <div
-                              key={param.id}
-                              className='flex items-center gap-2 text-xs text-muted-foreground'>
-                              <span className='w-40 truncate'>
-                                {param.label}{' '}
-                                <span className='text-[0.7rem] uppercase'>({param.type})</span>
-                              </span>
-                              <Input
-                                className='flex-1 h-7 rounded-[4px]'
-                                type={param.type === 'number' ? 'number' : 'text'}
-                                value={resolvedValue == null ? '' : String(resolvedValue)}
-                                onChange={(e) =>
-                                  handleUpdateScriptParameterValue(
-                                    param.id,
-                                    param.type === 'number' && e.target.value !== ''
-                                      ? Number(e.target.value)
-                                      : (e.target.value as ScriptParamValue),
-                                  )
-                                }
-                              />
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
-
-                  {selectedScript && (
-                    <p className='text-[0.7rem] text-muted-foreground'>
-                      This component will run its attached script on click, overriding other click
-                      behaviors.
-                    </p>
-                  )}
-                </div>
-              )}
-            </div>
-          </DialogContent>
-        </Dialog>
-      )}
       <CustomPropertiesListModal
         open={customPropertiesModalOpen}
         onOpenChange={setCustomPropertiesModalOpen}

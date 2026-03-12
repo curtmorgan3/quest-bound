@@ -13,7 +13,13 @@ import {
   ViewShapeNode,
   ViewTextNode,
 } from '../nodes/components';
-import { NodeAnimation, NodeConditionalRender, NodePageRouter, NodeScriptCaller } from './decorators';
+import {
+  NodeAnimation,
+  NodeAttributeEditPanelControl,
+  NodeConditionalRender,
+  NodePageRouter,
+  NodeScriptCaller,
+} from './decorators';
 import { NodeRotation } from './decorators/node-rotation';
 import { getComponentData } from '../utils';
 
@@ -150,11 +156,13 @@ function WrapDecorators({
       componentData={componentData}
       characterAttributes={characterAttributes}>
       <NodeScriptCaller component={component}>
-        <NodePageRouter component={component} componentData={componentData}>
-          <NodeRotation rotation={position?.rotation} z={position?.z}>
-            <NodeAnimation component={component}>{children}</NodeAnimation>
-          </NodeRotation>
-        </NodePageRouter>
+        <NodeAttributeEditPanelControl component={component}>
+          <NodePageRouter component={component} componentData={componentData}>
+            <NodeRotation rotation={position?.rotation} z={position?.z}>
+              <NodeAnimation component={component}>{children}</NodeAnimation>
+            </NodeRotation>
+          </NodePageRouter>
+        </NodeAttributeEditPanelControl>
       </NodeScriptCaller>
     </NodeConditionalRender>
   );

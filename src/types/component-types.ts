@@ -134,6 +134,8 @@ export type ComponentData = ShapeComponentData &
     conditionalRenderLogic?: ConditionalRenderLogic | null;
     pageId?: string;
     href?: string;
+    viewAttributeId?: string | null;
+    viewAttributeReadOnly?: boolean;
     /** Per-component values for Script.parameters, keyed by ScriptParameterDefinition.id. */
     scriptParameterValues?: Record<string, ScriptParamValue>;
     animationColor?: string | null;
