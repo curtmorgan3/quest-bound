@@ -29,6 +29,8 @@ const TEXT_LIST_OPERATORS: { value: ConditionalRenderOperator; label: string }[]
   { value: 'neq', label: 'Not equals' },
   { value: 'contains', label: 'Contains' },
   { value: 'notContains', label: 'Does not contain' },
+  { value: 'isEmpty', label: 'Is empty' },
+  { value: 'isNotEmpty', label: 'Is not empty' },
 ];
 
 const BOOLEAN_OPTIONS: { operator: ConditionalRenderOperator; value: boolean; label: string }[] = [
@@ -77,10 +79,10 @@ export const ConditionalRenderEdit = ({
   onLogicChange,
 }: ConditionalRenderEditProps) => {
   const { attributes } = useAttributes();
-  const selectedAttribute = attributeId
-    ? attributes?.find((a) => a.id === attributeId)
-    : undefined;
+  const selectedAttribute = attributeId ? attributes?.find((a) => a.id === attributeId) : undefined;
   const attributeType = selectedAttribute?.type;
+
+  console.log(attributeType);
 
   const logic = conditionalRenderLogic ?? { operator: 'eq', value: '' };
   const isBoolean = attributeType === 'boolean';
@@ -139,11 +141,7 @@ export const ConditionalRenderEdit = ({
               {isBoolean ? 'Condition' : 'Operator'}
             </Label>
             <Select
-              value={
-                isBoolean
-                  ? booleanSelectValue
-                  : logic.operator
-              }
+              value={isBoolean ? booleanSelectValue : logic.operator}
               onValueChange={(v) =>
                 isBoolean ? setBooleanChoice(v) : setOperator(v as ConditionalRenderOperator)
               }>
@@ -159,7 +157,7 @@ export const ConditionalRenderEdit = ({
               </SelectContent>
             </Select>
           </div>
-          {!isBoolean && (
+          {!isBoolean && logic.operator !== 'isEmpty' && logic.operator !== 'isNotEmpty' && (
             <div className='flex flex-col gap-2'>
               <Label htmlFor='conditional-render-comparator'>Compare to</Label>
               <Input

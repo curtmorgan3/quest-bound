@@ -38,6 +38,10 @@ function evaluateLogic(
       return asString(actual).includes(asString(compareValue));
     case 'notContains':
       return !asString(actual).includes(asString(compareValue));
+    case 'isEmpty':
+      return asString(actual).trim() === '';
+    case 'isNotEmpty':
+      return asString(actual).trim() !== '';
     default:
       return true;
   }

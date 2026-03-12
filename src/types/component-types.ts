@@ -111,7 +111,9 @@ export type ConditionalRenderOperator =
   | 'lt'
   | 'lte'
   | 'contains'
-  | 'notContains';
+  | 'notContains'
+  | 'isEmpty'
+  | 'isNotEmpty';
 
 export type ConditionalRenderLogic = {
   operator: ConditionalRenderOperator;
