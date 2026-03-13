@@ -19,7 +19,7 @@ import { ItemContextMenu } from '@/lib/compass-planes/nodes/components/inventory
 import { PopoverScrollContainerContext } from '@/stores';
 import type { InventoryItemType } from '@/types';
 import { Plus, SearchIcon } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { DefaultInventoryEntryRow } from './default-inventory-row';
 import { useCharacterInventoryItems } from './use-character-inventory-items';
@@ -38,12 +38,26 @@ export const CharacterInventoryPanel = ({
 }: CharacterInventoryPanelProps) => {
   const { characterId: paramId } = useParams<{ characterId: string }>();
   const characterId = _characterId ?? paramId;
-  const { character } = useCharacter(characterId);
+  const { character, updateCharacter } = useCharacter(characterId);
   const { inventoryItems } = useInventory(character?.inventoryId ?? '', character?.id ?? '');
   const sheetContentRef = useRef<HTMLDivElement>(null);
 
-  const [typeFilter, setTypeFilter] = useState<InventoryItemType>('item');
+  const [typeFilter, setTypeFilter] = useState<InventoryItemType>('pinned');
   const [titleFilter, setTitleFilter] = useState('');
+
+  const pinnedIds = character?.pinnedInventoryItemIds ?? [];
+
+  const handleTogglePin = useCallback(
+    (itemId: string) => {
+      if (!character) return;
+      const current = character.pinnedInventoryItemIds ?? [];
+      const updated = current.includes(itemId)
+        ? current.filter((id) => id !== itemId)
+        : [...current, itemId];
+      updateCharacter(character.id, { pinnedInventoryItemIds: updated });
+    },
+    [character, updateCharacter],
+  );
 
   const totalInventoryWeight = Number(
     inventoryItems.reduce((acc, current) => (acc += current.weight), 0).toFixed(2),
@@ -72,6 +86,7 @@ export const CharacterInventoryPanel = ({
     typeFilter,
     parentRef,
     contextMenu,
+    pinnedIds,
   });
 
   // Keep the open context menu item in sync with live inventory data so
@@ -128,6 +143,7 @@ export const CharacterInventoryPanel = ({
               <SelectItem value='item'>Items</SelectItem>
               <SelectItem value='action'>Actions</SelectItem>
               <SelectItem value='attribute'>Attributes</SelectItem>
+              <SelectItem value='pinned'>Pinned</SelectItem>
             </SelectContent>
           </Select>
 
@@ -141,10 +157,12 @@ export const CharacterInventoryPanel = ({
             />
           </div>
 
-          <Button variant='outline' className='w-full gap-2' onClick={handleOpenInventoryPanel}>
-            <Plus className='h-4 w-4' />
-            Add from ruleset
-          </Button>
+          {typeFilter !== 'pinned' && (
+            <Button variant='outline' className='w-full gap-2' onClick={handleOpenInventoryPanel}>
+              <Plus className='h-4 w-4' />
+              Add from ruleset
+            </Button>
+          )}
 
           {inventoryItems.length === 0 && (
             <div className='flex-1 flex items-center justify-center text-center py-8 text-muted-foreground'>
@@ -159,9 +177,13 @@ export const CharacterInventoryPanel = ({
           {inventoryItems.length > 0 && rows.length === 0 && (
             <div className='flex-1 flex items-center justify-center text-center py-8 text-muted-foreground'>
               <p>
-                {titleFilter.trim()
-                  ? `No ${typeFilter}s match "${titleFilter.trim()}".`
-                  : `No ${typeFilter}s have been added.`}
+                {typeFilter === 'pinned'
+                  ? titleFilter.trim()
+                    ? `No pinned items match "${titleFilter.trim()}".`
+                    : 'No items have been pinned.'
+                  : titleFilter.trim()
+                    ? `No ${typeFilter}s match "${titleFilter.trim()}".`
+                    : `No ${typeFilter}s have been added.`}
               </p>
             </div>
           )}
@@ -194,7 +216,12 @@ export const CharacterInventoryPanel = ({
                         transform: `translateY(${virtualRow.start}px)`,
                       }}
                       className='pb-0.5'>
-                      <DefaultInventoryEntryRow item={row.entry} onItemClick={handleItemClick} />
+                      <DefaultInventoryEntryRow
+                        item={row.entry}
+                        onItemClick={handleItemClick}
+                        isPinned={pinnedIds.includes(row.entry.id)}
+                        onTogglePin={handleTogglePin}
+                      />
                       {isMenuOpen && (
                         <div className='mt-1'>
                           <ItemContextMenu

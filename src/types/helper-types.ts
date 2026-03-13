@@ -16,7 +16,7 @@ export type Dimensions = {
   width: number;
 };
 
-export type InventoryItemType = 'item' | 'action' | 'attribute';
+export type InventoryItemType = 'item' | 'action' | 'attribute' | 'pinned';
 
 export type InventoryListRow = {
   type: 'entry';

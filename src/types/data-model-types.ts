@@ -111,6 +111,7 @@ export type Character = BaseDetails & {
   componentData: Record<string, any>;
   pinnedSidebarDocuments: string[];
   pinnedSidebarCharts: string[];
+  pinnedInventoryItemIds?: string[];
   /** Last viewed character page id (sheet viewer). */
   lastViewedPageId?: string | null;
   /** Whether the sheet viewer is locked (windows not draggable). */

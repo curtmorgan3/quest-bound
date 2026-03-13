@@ -10,6 +10,7 @@ interface UseCharacterInventoryItems {
   parentRef: RefObject<HTMLDivElement | null>;
   typeFilter?: InventoryItemType;
   contextMenu?: ContextMenuState | null;
+  pinnedIds?: string[];
 }
 
 export const useCharacterInventoryItems = ({
@@ -18,16 +19,21 @@ export const useCharacterInventoryItems = ({
   inventoryItems,
   contextMenu,
   parentRef,
+  pinnedIds = [],
 }: UseCharacterInventoryItems) => {
   const filteredItems = useMemo(() => {
     const search = titleFilter.trim().toLowerCase();
     const filtered = inventoryItems.filter((item) => {
-      if (item.type !== typeFilter) return false;
+      if (typeFilter === 'pinned') {
+        if (!pinnedIds.includes(item.id)) return false;
+      } else {
+        if (item.type !== typeFilter) return false;
+      }
       if (search && !item.title.toLowerCase().includes(search)) return false;
       return true;
     });
     return [...filtered].sort((a, b) => a.title.localeCompare(b.title));
-  }, [inventoryItems, typeFilter, titleFilter]);
+  }, [inventoryItems, typeFilter, titleFilter, pinnedIds]);
 
   const rows = useMemo((): InventoryListRow[] => {
     const openItemId = contextMenu?.item.id;

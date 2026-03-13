@@ -1,16 +1,21 @@
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import type { InventoryItemWithData } from '@/stores';
-import { GaugeIcon, GripVertical, PackageIcon, ZapIcon } from 'lucide-react';
+import { GaugeIcon, GripVertical, PackageIcon, PinIcon, ZapIcon } from 'lucide-react';
 import { useInventoryDragContext } from '@/stores';
 import { useInventoryPlacement } from '@/lib/compass-planes/nodes/components/inventory/use-inventory-placement';
 import { useRef } from 'react';
+import { cn } from '@/lib/utils';
 
 export function DefaultInventoryEntryRow({
   item,
   onItemClick,
+  isPinned,
+  onTogglePin,
 }: {
   item: InventoryItemWithData;
   onItemClick: (e: React.MouseEvent, item: InventoryItemWithData) => void;
+  isPinned?: boolean;
+  onTogglePin?: (itemId: string) => void;
 }) {
   const { beginDrag, updateDragPosition, cancelDrag, resolveDrop, activeDrag } =
     useInventoryDragContext();
@@ -27,7 +32,7 @@ export function DefaultInventoryEntryRow({
   }
 
   return (
-    <div className='w-full px-2 py-1.5 rounded-md text-sm flex items-center gap-2 hover:bg-accent hover:text-accent-foreground transition-colors'>
+    <div className='group w-full px-2 py-1.5 rounded-md text-sm flex items-center gap-2 hover:bg-accent hover:text-accent-foreground transition-colors'>
       <button
         type='button'
         aria-label='Drag to place on sheet'
@@ -100,7 +105,24 @@ export function DefaultInventoryEntryRow({
         {item.quantity > 1 && <span className='text-muted-foreground ml-1'>×{item.quantity}</span>}
       </button>
       {item.type === 'attribute' && (
-        <span className='shrink-0 ml-auto italic text-muted-foreground'>{String(value)}</span>
+        <span className='shrink-0 italic text-muted-foreground'>{String(value)}</span>
+      )}
+      {onTogglePin && (
+        <button
+          type='button'
+          aria-label={isPinned ? 'Unpin item' : 'Pin item'}
+          onClick={(e) => {
+            e.stopPropagation();
+            onTogglePin(item.id);
+          }}
+          className={cn(
+            'shrink-0 h-6 w-6 flex items-center justify-center rounded transition-colors',
+            isPinned
+              ? 'text-primary'
+              : 'text-muted-foreground opacity-0 group-hover:opacity-100 hover:text-foreground',
+          )}>
+          <PinIcon className='h-3.5 w-3.5' />
+        </button>
       )}
     </div>
   );
