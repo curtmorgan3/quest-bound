@@ -198,6 +198,11 @@ const qbscriptCompletions = [
     info: 'Show modal with message and choice buttons. Returns selected choice. E.g. choice = prompt("Pick one", ["A", "B", "C"])',
   },
   {
+    label: 'promptInput',
+    type: 'function',
+    info: 'Show modal with message and a text input. Returns the submitted string. E.g. name = promptInput("Enter your name")',
+  },
+  {
     label: 'rollSplit',
     type: 'function',
     info: 'Like roll but returns array of each die value in order (e.g. rollSplit("1d6,2d20") → [d6, d20_1, d20_2]).',

@@ -1,15 +1,20 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { usePromptModalStore } from '@/stores/prompt-modal-store';
 
 export function PromptModal() {
-  const { open, multiple, msg, choices, select, confirm, cancel } = usePromptModalStore();
+  const { open, multiple, input, msg, choices, select, confirm, submitInput, cancel } =
+    usePromptModalStore();
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [inputValue, setInputValue] = useState('');
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const handleOpenChange = (isOpen: boolean) => {
     if (!isOpen) {
       setSelected(new Set());
+      setInputValue('');
       cancel();
     }
   };
@@ -30,6 +35,38 @@ export function PromptModal() {
     confirm(Array.from(selected));
     setSelected(new Set());
   };
+
+  const handleSubmitInput = () => {
+    submitInput(inputValue);
+    setInputValue('');
+  };
+
+  if (input) {
+    return (
+      <Dialog open={open} onOpenChange={handleOpenChange}>
+        <DialogContent showCloseButton={false} className='z-[1100]' overlayClassName='z-[1100]'>
+          <DialogHeader>
+            <DialogTitle>{msg || 'Enter a value'}</DialogTitle>
+          </DialogHeader>
+          <Input
+            ref={inputRef}
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') handleSubmitInput();
+            }}
+            autoFocus
+          />
+          <div className='flex justify-end gap-2 pt-2'>
+            <Button variant='ghost' onClick={() => handleOpenChange(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSubmitInput}>Submit</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   if (!multiple) {
     return (

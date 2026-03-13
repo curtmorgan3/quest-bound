@@ -24,6 +24,7 @@ export type MainToWorkerSignal =
   | RollSplitResponseSignal
   | PromptResponseSignal
   | PromptMultipleResponseSignal
+  | PromptInputResponseSignal
   | CharacterSelectResponseSignal
   | ClearGraphSignal;
 
@@ -149,6 +150,11 @@ export interface PromptMultipleResponseSignal {
   payload: { promptRequestId: string; value?: string[]; error?: string };
 }
 
+export interface PromptInputResponseSignal {
+  type: 'PROMPT_INPUT_RESPONSE';
+  payload: { promptRequestId: string; value?: string; error?: string };
+}
+
 export interface CharacterSelectResponseSignal {
   type: 'SELECT_CHARACTER_RESPONSE';
   payload: { selectRequestId: string; characterIds?: string[]; error?: string };
@@ -178,6 +184,7 @@ export type WorkerToMainSignal =
   | RollSplitRequestSignal
   | PromptRequestSignal
   | PromptMultipleRequestSignal
+  | PromptInputRequestSignal
   | CharacterSelectRequestSignal
   | AttributesModifiedByScriptSignal;
 
@@ -218,6 +225,15 @@ export interface PromptMultipleRequestSignal {
     promptRequestId: string;
     msg: string;
     choices: string[];
+  };
+}
+
+export interface PromptInputRequestSignal {
+  type: 'PROMPT_INPUT_REQUEST';
+  payload: {
+    executionRequestId: string;
+    promptRequestId: string;
+    msg: string;
   };
 }
 

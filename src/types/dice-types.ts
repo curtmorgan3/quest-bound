@@ -46,6 +46,9 @@ export type PromptFn = (msg: string, choices: string[]) => Promise<string>;
 /** PromptMultiple built-in: shows modal with message and choices; returns array of selected choices. Used by QBScript promptMultiple(msg, choices). */
 export type PromptMultipleFn = (msg: string, choices: string[]) => Promise<string[]>;
 
+/** PromptInput built-in: shows modal with message and a text input; returns the submitted string. Used by QBScript promptInput(msg). */
+export type PromptInputFn = (msg: string) => Promise<string>;
+
 /**
  * Character selection host hook used by QBScript.
  *

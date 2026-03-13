@@ -56,6 +56,7 @@ interface CharacterPage {
   /** When provided with onClose, renders floating action buttons (e.g. inventory + close) in the top-right. */
   renderFloatingActions?: (actions: CharacterPageFloatingActions) => React.ReactNode;
   hideGameLog?: boolean;
+  showHiddenWindows?: boolean;
 }
 
 export const CharacterPage = ({
@@ -68,6 +69,7 @@ export const CharacterPage = ({
   onClose,
   renderFloatingActions,
   hideGameLog = false,
+  showHiddenWindows = false,
 }: CharacterPage) => {
   const { open } = useSidebar();
   const { characterId } = useParams<{ characterId: string }>();
@@ -242,6 +244,7 @@ export const CharacterPage = ({
           onWindowDeleted={handleDeleteWindow}
           editorWindowId={editorWindowId}
           transparentBackground={transparentBackground}
+          showHiddenWindows={showHiddenWindows}
         />
 
         {!hideGameLog && (

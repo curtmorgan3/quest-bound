@@ -78,10 +78,15 @@ function getStyleFromComponent(component: Component): Record<string, unknown> {
   }
 }
 
-export function valueIfAllAreEqual(components: Array<Component>, key: string): string | number {
+export function valueIfAllAreEqual(
+  components: Array<Component>,
+  key: string,
+  ignoreLock = false,
+): string | number {
   if (!components.length) return '-';
 
-  if (components.length === 1 && components[0].locked && key !== 'locked') return '-';
+  if (!ignoreLock && components.length === 1 && components[0].locked && key !== 'locked')
+    return '-';
 
   let val = components[0][key as keyof (typeof components)[0]];
 

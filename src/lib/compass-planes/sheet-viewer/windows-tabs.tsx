@@ -39,6 +39,7 @@ interface WindowsTabsProps {
   locked?: boolean;
   onToggleLock: () => void;
   pageId?: string;
+  showHiddenWindows?: boolean;
 }
 
 export const WindowsTabs = ({
@@ -50,6 +51,7 @@ export const WindowsTabs = ({
   locked = false,
   onToggleLock,
   pageId,
+  showHiddenWindows = false,
 }: WindowsTabsProps) => {
   const { character } = useCharacter(characterId);
   const rulesetPages = useRulesetPagesForRuleset(character?.rulesetId);
@@ -70,7 +72,7 @@ export const WindowsTabs = ({
   const [editPageId, setEditPageId] = useState<string | null>(null);
 
   const sortedRulesetWindows = [...rulesetWindows]
-    .filter((w) => !w.hideFromPlayerView)
+    .filter((w) => showHiddenWindows || !w.hideFromPlayerView)
     .sort((a, b) => a.title.localeCompare(b.title));
   const sortedWindows = [...windows].sort((a, b) => a.title.localeCompare(b.title));
   const sortedPages = [...characterPages].sort((a, b) => a.label?.localeCompare(b.label));

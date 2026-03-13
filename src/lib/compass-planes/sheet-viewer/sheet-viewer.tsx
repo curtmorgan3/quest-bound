@@ -34,6 +34,8 @@ interface SheetViewerProps {
   editorWindowId?: string;
   /** When true, no background color/image is shown; only the React Flow nodes are visible. */
   transparentBackground?: boolean;
+  /** When true, windows marked as hidden from player view are still shown in the add-window list. */
+  showHiddenWindows?: boolean;
 }
 
 export const SheetViewer = ({
@@ -46,6 +48,7 @@ export const SheetViewer = ({
   onLockedChange,
   editorWindowId,
   transparentBackground = false,
+  showHiddenWindows = false,
 }: SheetViewerProps) => {
   const { characterPages } = useCharacterPages(characterId);
 
@@ -314,6 +317,7 @@ export const SheetViewer = ({
           toggleWindow={(id: string) => onWindowUpdated?.({ id, isCollapsed: openWindows.has(id) })}
           locked={locked}
           onToggleLock={() => setLocked((prev) => !prev)}
+          showHiddenWindows={showHiddenWindows}
         />
       )}
     </div>

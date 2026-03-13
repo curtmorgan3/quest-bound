@@ -13,6 +13,7 @@ import type {
   Item,
   Page,
   PromptFn,
+  PromptInputFn,
   PromptMultipleFn,
   RollFn,
   RollSplitFn,
@@ -188,6 +189,8 @@ export interface ScriptExecutionContext {
   prompt?: PromptFn;
   /** Optional promptMultiple function for script built-in promptMultiple(msg, choices). When set, used to show multi-select modal and return selected choices. */
   promptMultiple?: PromptMultipleFn;
+  /** Optional promptInput function for script built-in promptInput(msg). When set, used to show a text input modal and return the entered string. */
+  promptInput?: PromptInputFn;
   /** Optional character picker for selectCharacter(title?, description?). When set, used to show UI and return a single character accessor or null. */
   selectCharacter?: SelectCharacterFn;
   /** Optional character picker for selectCharacters(title?, description?). When set, used to show UI and return an array of character accessors. */
@@ -297,6 +300,7 @@ export class ScriptRunner {
       rollSplit: context.rollSplit,
       prompt: context.prompt,
       promptMultiple: context.promptMultiple,
+      promptInput: context.promptInput,
       selectCharacter: selectCharacterHost,
       selectCharacters: selectCharactersHost,
       onRollComplete: context.onRollComplete,
@@ -1116,9 +1120,7 @@ export class ScriptRunner {
     // plus Scene when running in a campaign scene context.
     if (!ownerId) {
       this.evaluator.globalEnv.define('Ruleset', ruleset);
-      if (sceneAccessor) {
-        this.evaluator.globalEnv.define('Scene', sceneAccessor);
-      }
+      this.evaluator.globalEnv.define('Scene', sceneAccessor ?? null);
       return;
     }
 
@@ -1161,9 +1163,7 @@ export class ScriptRunner {
     // Inject into interpreter environment
     this.evaluator.globalEnv.define('Owner', owner);
     this.evaluator.globalEnv.define('Ruleset', ruleset);
-    if (sceneAccessor) {
-      this.evaluator.globalEnv.define('Scene', sceneAccessor);
-    }
+    this.evaluator.globalEnv.define('Scene', sceneAccessor ?? null);
 
     // 'Self' refers to the entity this script is attached to (attribute, action, item, or campaignEvent).
     if (this.context.entityType === 'attribute' && this.context.entityId) {

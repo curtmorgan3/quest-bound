@@ -1,4 +1,4 @@
-import type { PromptFn, PromptMultipleFn, RollFn, RollSplitFn, SelectCharacterFn, SelectCharactersFn } from '@/types';
+import type { PromptFn, PromptInputFn, PromptMultipleFn, RollFn, RollSplitFn, SelectCharacterFn, SelectCharactersFn } from '@/types';
 import { parseDiceExpression, rollDie } from '@/utils/dice-utils';
 import { prepareForStructuredClone } from '../runtime/structured-clone-safe';
 import type { ASTNode, ObjectLiteral } from './ast';
@@ -14,6 +14,8 @@ export interface EvaluatorOptions {
   prompt?: PromptFn;
   /** When set, used as the script built-in promptMultiple(msg, choices). Required for promptMultiple() to work. */
   promptMultiple?: PromptMultipleFn;
+  /** When set, used as the script built-in promptInput(msg). Required for promptInput() to work. */
+  promptInput?: PromptInputFn;
   /** When set, used as the script built-in selectCharacter(title?, description?). */
   selectCharacter?: SelectCharacterFn;
   /** When set, used as the script built-in selectCharacters(title?, description?). */
@@ -96,6 +98,7 @@ export class Evaluator {
   private rollSplitFn: RollSplitFn | undefined;
   private promptFn: PromptFn | undefined;
   private promptMultipleFn: PromptMultipleFn | undefined;
+  private promptInputFn: PromptInputFn | undefined;
   private selectCharacterFn: SelectCharacterFn | undefined;
   private selectCharactersFn: SelectCharactersFn | undefined;
   private onRollComplete: ((message: string) => Promise<void>) | undefined;
@@ -109,6 +112,7 @@ export class Evaluator {
     this.rollSplitFn = options?.rollSplit;
     this.promptFn = options?.prompt;
     this.promptMultipleFn = options?.promptMultiple;
+    this.promptInputFn = options?.promptInput;
     this.selectCharacterFn = options?.selectCharacter;
     this.selectCharactersFn = options?.selectCharacters;
     this.onRollComplete = options?.onRollComplete;
@@ -900,6 +904,19 @@ export class Evaluator {
         }
         const normalizedChoices = Array.isArray(choices) ? choices.map(String) : [String(choices)];
         return this.promptMultipleFn(msg, normalizedChoices);
+      },
+    );
+
+    // PromptInput: show modal with message and text input; returns the submitted string
+    this.globalEnv.define(
+      'promptInput',
+      async (msg: string): Promise<string> => {
+        if (!this.promptInputFn) {
+          throw new RuntimeError(
+            'promptInput(msg) is not available in this context (no promptInput handler)',
+          );
+        }
+        return this.promptInputFn(String(msg));
       },
     );
 

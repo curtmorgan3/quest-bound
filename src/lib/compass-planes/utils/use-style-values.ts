@@ -115,7 +115,7 @@ export function useStyleValues(components: Array<Component>): StyleValues {
   return useMemo(() => {
     const result = {} as StyleValues;
     for (const key of STYLE_KEYS) {
-      const raw = valueIfAllAreEqual(components, key);
+      const raw = valueIfAllAreEqual(components, key, true);
       let resolved: string | number;
       if (
         (key === 'backgroundColor' || key === 'color') &&
@@ -157,7 +157,7 @@ export function usePositionValues(components: Array<Component>): PositionValues 
   return useMemo(() => {
     const result = {} as PositionValues;
     for (const key of POSITION_KEYS) {
-      const raw = valueIfAllAreEqual(components, key);
+      const raw = valueIfAllAreEqual(components, key, true);
       const resolved = resolveCustomProp(raw, character, customProperties);
       result[key] = toPositionNumber(resolved);
     }

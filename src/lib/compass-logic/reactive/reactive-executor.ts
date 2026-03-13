@@ -1,5 +1,6 @@
 import type {
   PromptFn,
+  PromptInputFn,
   PromptMultipleFn,
   RollFn,
   RollSplitFn,
@@ -38,6 +39,8 @@ export interface ReactiveExecutionOptions {
   prompt?: PromptFn;
   /** Optional promptMultiple function for script built-in promptMultiple(msg, choices). */
   promptMultiple?: PromptMultipleFn;
+  /** Optional promptInput function for script built-in promptInput(msg). */
+  promptInput?: PromptInputFn;
   /** Optional campaign id for associating reactive execution with a campaign. */
   campaignId?: string;
   /** Optional campaign scene id; when set with campaignId, scripts get Scene accessor. */
@@ -354,6 +357,7 @@ export class ReactiveExecutor {
         rollSplit: options.rollSplit,
         prompt: options.prompt,
         promptMultiple: options.promptMultiple,
+        promptInput: options.promptInput,
         selectCharacter: options.selectCharacter,
         selectCharacters: options.selectCharacters,
         ...(paramsHelper ? { params: paramsHelper } : {}),
