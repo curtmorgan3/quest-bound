@@ -11,43 +11,58 @@ import {
   Button,
   Card,
   Checkbox,
-  ImageUpload,
-  Input,
   Label,
 } from '@/components';
 import { PageWrapper } from '@/components/composites';
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog';
-import {
-  ArchetypeLookup,
-  useAssets,
-  useCharacter,
-  useImportCharacter,
-  useRulesets,
-} from '@/lib/compass-api';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { useCharacter, useImportCharacter } from '@/lib/compass-api';
 import { db } from '@/stores';
-import type { Archetype, ArchetypeWithVariantOptions } from '@/types';
+import type { Archetype, CharacterArchetype } from '@/types';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { AlertCircle, Plus, Upload } from 'lucide-react';
+import { AlertCircle, Upload } from 'lucide-react';
 import { useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { CreateCharacterModal } from './create-character-modal';
 
 export const Characters = () => {
   const [searchParams] = useSearchParams();
   const rulesetIdParam = searchParams.get('rulesetId');
 
   const { characters, createCharacter, deleteCharacter } = useCharacter();
-  const { rulesets } = useRulesets();
-  const { assets, deleteAsset } = useAssets();
   const { importCharacter, isImporting } = useImportCharacter();
+
+  const characterArchetypes: CharacterArchetype[] =
+    useLiveQuery(
+      () =>
+        rulesetIdParam
+          ? db.characterArchetypes
+              .where('characterId')
+              .anyOf(
+                characters
+                  .filter((c) => c.rulesetId === rulesetIdParam)
+                  .map((c) => c.id),
+              )
+              .sortBy('loadOrder')
+          : Promise.resolve([] as CharacterArchetype[]),
+      [rulesetIdParam, characters],
+    ) ?? [];
+
+  const archetypes: Archetype[] =
+    useLiveQuery(
+      () =>
+        rulesetIdParam
+          ? db.archetypes.where('rulesetId').equals(rulesetIdParam).toArray()
+          : Promise.resolve([] as Archetype[]),
+      [rulesetIdParam],
+    ) ?? [];
+
+  const getArchetypeLabel = (characterId: string): string | null => {
+    const ca = characterArchetypes.find((a) => a.characterId === characterId);
+    if (!ca) return null;
+    const archetype = archetypes.find((a) => a.id === ca.archetypeId);
+    if (!archetype) return null;
+    return ca.variant ? `${archetype.name} (${ca.variant})` : archetype.name;
+  };
 
   const selectableCharacters = useMemo(
     () =>
@@ -59,12 +74,6 @@ export const Characters = () => {
     [characters, rulesetIdParam],
   );
 
-  const [step, setStep] = useState<1 | 2>(1);
-  const [name, setName] = useState('');
-  const [selectedArchetypeId, setSelectedArchetypeId] = useState<string | null>(null);
-  const [selectedVariant, setSelectedVariant] = useState<string | null>(null);
-  const [assetId, setAssetId] = useState<string | null>(null);
-  const [open, setOpen] = useState(false);
   const [importResult, setImportResult] = useState<{
     success: boolean;
     message: string;
@@ -73,101 +82,7 @@ export const Characters = () => {
   const [rulesetWarningOpen, setRulesetWarningOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const archetypes: Archetype[] =
-    useLiveQuery(
-      () =>
-        rulesetIdParam
-          ? db.archetypes.where('rulesetId').equals(rulesetIdParam).sortBy('loadOrder')
-          : Promise.resolve([] as Archetype[]),
-      [rulesetIdParam],
-    ) ?? [];
-
-  const selectableArchetypes = archetypes.filter((a) => !a.isDefault);
-
-  // Track the assetId to clean up if dialog is cancelled
-  const pendingAssetIdRef = useRef<string | null>(null);
-
   const navigate = useNavigate();
-
-  const getImageFromAssetId = (id: string | null) => {
-    if (!id) return null;
-    const asset = assets.find((a) => a.id === id);
-    return asset?.data ?? null;
-  };
-
-  const handleCreate = async () => {
-    if (!name.trim() || !rulesetIdParam) return;
-
-    await createCharacter({
-      name: name.trim(),
-      rulesetId: rulesetIdParam,
-      archetypeIds: selectedArchetypeId ? [selectedArchetypeId] : [],
-      variant: selectedVariant ?? undefined,
-      assetId,
-    });
-
-    // Clear pending asset ref since it's now saved
-    pendingAssetIdRef.current = null;
-
-    // Reset form
-    resetForm();
-  };
-
-  const resetForm = () => {
-    setStep(1);
-    setName('');
-    setSelectedArchetypeId(null);
-    setSelectedVariant(null);
-    setAssetId(null);
-    setOpen(false);
-  };
-
-  const handleOpenChange = async (isOpen: boolean) => {
-    if (!isOpen && pendingAssetIdRef.current) {
-      // Dialog was closed without submitting - clean up orphan asset
-      await deleteAsset(pendingAssetIdRef.current);
-      pendingAssetIdRef.current = null;
-    }
-    if (!isOpen) {
-      setStep(1);
-      setName('');
-      setSelectedArchetypeId(null);
-      setSelectedVariant(null);
-      setAssetId(null);
-    }
-    setOpen(isOpen);
-  };
-
-  const hasArchetypeStep = rulesetIdParam && selectableArchetypes.length > 0;
-  const showNextOnStep1 = hasArchetypeStep;
-
-  const selectedArchetype = selectedArchetypeId
-    ? (archetypes.find((a) => a.id === selectedArchetypeId) as
-        | ArchetypeWithVariantOptions
-        | undefined)
-    : undefined;
-  const selectedArchetypeHasVariants =
-    selectedArchetype?.variantOptions && selectedArchetype.variantOptions.length > 0;
-
-  const handleImageUpload = (uploadedAssetId: string) => {
-    setAssetId(uploadedAssetId);
-    pendingAssetIdRef.current = uploadedAssetId;
-  };
-
-  const handleImageRemove = async () => {
-    if (assetId) {
-      await deleteAsset(assetId);
-      pendingAssetIdRef.current = null;
-    }
-    setAssetId(null);
-  };
-
-  const isFormValid = name.trim() !== '' && rulesetIdParam != null && rulesetIdParam !== '';
-
-  const getRulesetTitle = (rulesetId: string) => {
-    const ruleset = rulesets.find((r) => r.id === rulesetId);
-    return ruleset?.title ?? 'Unknown Ruleset';
-  };
 
   const handleImportClick = () => {
     fileInputRef.current?.click();
@@ -222,116 +137,7 @@ export const Characters = () => {
             </div>
           )}
 
-          <Dialog open={open} onOpenChange={handleOpenChange}>
-            <DialogTrigger asChild>
-              <Button size='sm' className='gap-1' data-testid='create-character-button'>
-                <Plus className='h-4 w-4' />
-                Create Character
-              </Button>
-            </DialogTrigger>
-            <DialogContent className='sm:max-w-[425px]'>
-              <DialogHeader>
-                <DialogTitle>Create Character</DialogTitle>
-                <DialogDescription>
-                  {step === 1 ? 'New Character' : 'Select Archetype'}
-                </DialogDescription>
-              </DialogHeader>
-              {step === 1 ? (
-                <div className='grid gap-4'>
-                  {!rulesetIdParam ? (
-                    <p className='text-sm text-muted-foreground'>
-                      Open a ruleset from the home page (e.g. from the ruleset&apos;s Characters
-                      card) to create a character for that ruleset.
-                    </p>
-                  ) : (
-                    <>
-                      <div className='grid gap-3'>
-                        <Label htmlFor='character-name'>
-                          Name <span className='text-destructive'>*</span>
-                        </Label>
-                        <Input
-                          id='character-name'
-                          name='name'
-                          value={name}
-                          onChange={(e) => setName(e.target.value)}
-                          placeholder='Enter character name'
-                        />
-                      </div>
-                      <div className='grid gap-3'>
-                        <Label>Image</Label>
-                        <ImageUpload
-                          image={getImageFromAssetId(assetId)}
-                          alt={name || 'Character image'}
-                          onUpload={handleImageUpload}
-                          onRemove={handleImageRemove}
-                          rulesetId={rulesetIdParam}
-                        />
-                      </div>
-                    </>
-                  )}
-                </div>
-              ) : (
-                <div className='grid gap-4'>
-                  <div className='grid gap-3'>
-                    <Label>Archetype</Label>
-                    <ArchetypeLookup
-                      rulesetId={rulesetIdParam ?? undefined}
-                      label=''
-                      value={selectedArchetypeId}
-                      placeholder='Select archetype (optional)'
-                      data-testid='character-archetype-select'
-                      onSelect={(archetype) => {
-                        setSelectedArchetypeId(archetype.id);
-                        setSelectedVariant(null);
-                      }}
-                      onDelete={() => {
-                        setSelectedArchetypeId(null);
-                        setSelectedVariant(null);
-                      }}
-                      variantValue={selectedArchetypeHasVariants ? selectedVariant : null}
-                      onVariantSelect={
-                        selectedArchetypeHasVariants
-                          ? (v) => setSelectedVariant(v ?? null)
-                          : undefined
-                      }
-                      variantPlaceholder='None'
-                      variantLabel={
-                        selectedArchetype ? `Variant for ${selectedArchetype.name}` : 'Variant'
-                      }
-                    />
-                    {!selectedArchetypeId && (
-                      <p className='text-sm text-muted-foreground'>Archetype is optional</p>
-                    )}
-                  </div>
-                </div>
-              )}
-              <DialogFooter>
-                <DialogClose asChild>
-                  <Button variant='outline'>Cancel</Button>
-                </DialogClose>
-                {step === 2 && (
-                  <Button variant='outline' onClick={() => setStep(1)}>
-                    Back
-                  </Button>
-                )}
-                {step === 1 && showNextOnStep1 ? (
-                  <Button
-                    data-testid='create-character-next'
-                    onClick={() => setStep(2)}
-                    disabled={!isFormValid}>
-                    Next
-                  </Button>
-                ) : (
-                  <Button
-                    data-testid='create-character-submit'
-                    onClick={handleCreate}
-                    disabled={!isFormValid}>
-                    Create
-                  </Button>
-                )}
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+          <CreateCharacterModal rulesetId={rulesetIdParam} onCreate={createCharacter} />
 
           <input
             ref={fileInputRef}
@@ -382,7 +188,7 @@ export const Characters = () => {
       <div className='flex flex-wrap gap-4'>
         {selectableCharacters.map((character) => {
           const doNotAsk = localStorage.getItem('qb.confirmOnDelete') === 'false';
-          const rulesetTitle = getRulesetTitle(character.rulesetId);
+          const archetypeLabel = getArchetypeLabel(character.id);
 
           return (
             <Card
@@ -396,7 +202,9 @@ export const Characters = () => {
               <div className='flex shrink-0 flex-col gap-2 border-t p-3'>
                 <div className='flex min-w-0 flex-col gap-0.5'>
                   <h2 className='truncate text-sm font-semibold'>{character.name}</h2>
-                  <span className='truncate text-xs text-muted-foreground'>{rulesetTitle}</span>
+                  {archetypeLabel && (
+                    <span className='truncate text-xs text-muted-foreground'>{archetypeLabel}</span>
+                  )}
                 </div>
                 <div className='flex items-center gap-2'>
                   {doNotAsk ? (

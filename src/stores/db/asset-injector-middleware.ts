@@ -81,6 +81,7 @@ export const assetInjectorMiddleware: Middleware<DBCore> = {
             'charts',
             'items',
             'actions',
+            'archetypes',
             'assets',
             'documents',
             'attributes',
