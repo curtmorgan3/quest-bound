@@ -1,7 +1,7 @@
 import type { PromptFn, PromptMultipleFn, RollFn, RollSplitFn, SelectCharacterFn, SelectCharactersFn } from '@/types';
 import { parseDiceExpression, rollDie } from '@/utils/dice-utils';
 import { prepareForStructuredClone } from '../runtime/structured-clone-safe';
-import type { ASTNode } from './ast';
+import type { ASTNode, ObjectLiteral } from './ast';
 import { blockStatementsToSource } from './ast-to-source';
 import { isBuiltInArrayMethod, registerArrayMethod } from './built-ins';
 
@@ -187,6 +187,9 @@ export class Evaluator {
 
       case 'ArrayAccess':
         return this.evalArrayAccess(node);
+
+      case 'ObjectLiteral':
+        return this.evalObjectLiteral(node);
 
       case 'MemberAccess':
         return this.evalMemberAccess(node);
@@ -703,6 +706,14 @@ export class Evaluator {
 
   private async evalArrayLiteral(node: any): Promise<any[]> {
     return Promise.all(node.elements.map((element: ASTNode) => this.eval(element)));
+  }
+
+  private async evalObjectLiteral(node: ObjectLiteral): Promise<Record<string, any>> {
+    const result: Record<string, any> = {};
+    for (const prop of node.properties) {
+      result[prop.key] = await this.eval(prop.value);
+    }
+    return result;
   }
 
   private async evalArrayAccess(node: any): Promise<any> {

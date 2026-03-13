@@ -22,6 +22,7 @@ export type ASTNode =
   | AtEndOfNextTurnCall
   | ArrayLiteral
   | ArrayAccess
+  | ObjectLiteral
   | MemberAccess
   | Program;
 
@@ -167,6 +168,16 @@ export interface ArrayAccess {
   type: 'ArrayAccess';
   object: ASTNode;
   index: ASTNode;
+}
+
+export interface ObjectProperty {
+  key: string;
+  value: ASTNode;
+}
+
+export interface ObjectLiteral {
+  type: 'ObjectLiteral';
+  properties: ObjectProperty[];
 }
 
 export interface MemberAccess {

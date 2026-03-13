@@ -21,6 +21,8 @@ import type {
   MemberAccess,
   ArrayAccess,
   ArrayLiteral,
+  ObjectLiteral,
+  ObjectProperty,
   Identifier,
   NumberLiteral,
   StringLiteral,
@@ -618,6 +620,23 @@ export class Parser {
 
       this.consume(TokenType.RBRACKET, "Expected ']' after array elements");
       return { type: 'ArrayLiteral', elements } as ArrayLiteral;
+    }
+
+    // Object literals
+    if (this.match(TokenType.LBRACE)) {
+      const properties: ObjectProperty[] = [];
+
+      if (!this.check(TokenType.RBRACE)) {
+        do {
+          const keyToken = this.consume(TokenType.IDENTIFIER, 'Expected property name in object literal');
+          this.consume(TokenType.COLON, "Expected ':' after property name");
+          const value = this.expression();
+          properties.push({ key: keyToken.value, value });
+        } while (this.match(TokenType.COMMA));
+      }
+
+      this.consume(TokenType.RBRACE, "Expected '}' after object properties");
+      return { type: 'ObjectLiteral', properties } as ObjectLiteral;
     }
 
     // Parenthesized expressions

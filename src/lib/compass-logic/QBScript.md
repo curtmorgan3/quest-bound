@@ -70,6 +70,31 @@ comment
 
 **Boolean:** `&&` (and) `||` (or) `!` (not)
 
+### Objects
+
+```javascript
+dice_mod = {source: 'Blinded', duration: 3}
+```
+
+Keys must be bare identifiers. Values can be any expression, including other objects or arrays.
+
+**Property access:**
+
+```javascript
+dice_mod.source       // dot notation → 'Blinded'
+dice_mod['duration']  // bracket notation → 3
+```
+
+**Nested objects and objects in arrays:**
+
+```javascript
+effect = {name: 'Poison', stats: {damage: 5, turns: 2}}
+turns = effect.stats.turns
+
+modifiers = [{source: 'Blinded', duration: 3}, {source: 'Stunned', duration: 1}]
+first_mod = modifiers[0].source
+```
+
 ### Arrays
 
 ```javascript

@@ -18,6 +18,7 @@ import type {
   MemberAccess,
   MethodCall,
   NumberLiteral,
+  ObjectLiteral,
   Program,
   ReturnStatement,
   StringLiteral,
@@ -93,6 +94,11 @@ export function astToSource(
       const al = node as ArrayLiteral;
       const elements = al.elements.map(exprToSource).join(', ');
       return `[${elements}]`;
+    }
+    case 'ObjectLiteral': {
+      const ol = node as ObjectLiteral;
+      const props = ol.properties.map((p) => `${p.key}: ${exprToSource(p.value)}`).join(', ');
+      return `{${props}}`;
     }
     case 'SubscribeCall': {
       const sc = node as SubscribeCall;
@@ -214,6 +220,11 @@ function exprToSource(node: ASTNode): string {
     case 'ArrayLiteral': {
       const al = node as ArrayLiteral;
       return `[${al.elements.map(exprToSource).join(', ')}]`;
+    }
+    case 'ObjectLiteral': {
+      const ol = node as ObjectLiteral;
+      const props = ol.properties.map((p) => `${p.key}: ${exprToSource(p.value)}`).join(', ');
+      return `{${props}}`;
     }
     case 'SubscribeCall': {
       const sc = node as SubscribeCall;
