@@ -247,7 +247,7 @@ export const CharacterPage = ({
           onOpenChange={(open: boolean) => {
             if (!open) setInventoryPanelConfig({});
           }}
-          type={inventoryPanelConfig.type}
+          type={inventoryPanelConfig.type as 'attribute' | 'item' | 'action'}
           includeIds={inventoryPanelConfig.includeIds}
           excludeIds={inventoryPanelConfig.excludeIds}
           onSelect={handleSelectInventoryEntity}
