@@ -1,13 +1,14 @@
 import {
   Grid,
   type CellRendererProps,
+  type GridApi,
   type GridColumn,
   type GridFilterModel,
   type GridSortModelItem,
 } from '@/components';
 import { useActiveRuleset, useItems } from '@/lib/compass-api';
 import type { Item } from '@/types';
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useRulesetFiltersStore } from '@/stores/ruleset-filters-store';
 import { ChartControls } from '../components';
@@ -29,6 +30,18 @@ export const ItemChart = () => {
   const getGridFilters = useRulesetFiltersStore((s) => s.getGridFilters);
 
   const rulesetId = activeRuleset?.id;
+  const gridApiRef = useRef<GridApi | null>(null);
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.metaKey && e.key === 'f') {
+        e.preventDefault();
+        gridApiRef.current?.showColumnFilter('title');
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, []);
 
   useEffect(() => {
     if (!rulesetId) return;
@@ -44,16 +57,16 @@ export const ItemChart = () => {
 
   useEffect(() => {
     if (!rulesetId) return;
-    const stored = getGridFilters(rulesetId, 'items');
-    if (!stored?.filter && !stored?.sort) return;
     const urlFilter = searchParams.get(FILTER_PARAM);
     const urlSort = searchParams.get(SORT_PARAM);
-    if (urlFilter !== null && urlSort !== null) return;
+    if (urlFilter !== null || urlSort !== null) return;
+    const stored = getGridFilters(rulesetId, 'items');
+    if (!stored?.filter && !stored?.sort) return;
     setSearchParams(
       (prev) => {
         const p = new URLSearchParams(prev);
-        if (urlFilter === null && stored.filter) p.set(FILTER_PARAM, stored.filter);
-        if (urlSort === null && stored.sort) p.set(SORT_PARAM, stored.sort);
+        if (stored.filter) p.set(FILTER_PARAM, stored.filter);
+        if (stored.sort) p.set(SORT_PARAM, stored.sort);
         return p;
       },
       { replace: true },
@@ -170,6 +183,7 @@ export const ItemChart = () => {
       onCellValueChanged={handleUpdate}
       onFilterChanged={handleFilterChanged}
       onSortChanged={handleSortChanged}
+      onGridReady={(api) => { gridApiRef.current = api; }}
     />
   );
 };

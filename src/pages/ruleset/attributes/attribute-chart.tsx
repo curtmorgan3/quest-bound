@@ -1,6 +1,7 @@
 import {
   Grid,
   type CellRendererProps,
+  type GridApi,
   type GridColumn,
   type GridFilterModel,
   type GridSortModelItem,
@@ -9,7 +10,7 @@ import { useActiveRuleset } from '@/lib/compass-api';
 import { useAttributes } from '@/lib/compass-api/hooks/rulesets/use-attributes';
 import { useRulesetFiltersStore } from '@/stores/ruleset-filters-store';
 import type { Attribute } from '@/types';
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { ChartControls } from '../components';
 import {
@@ -44,6 +45,18 @@ export const AttributeChart = () => {
   const getGridFilters = useRulesetFiltersStore((s) => s.getGridFilters);
 
   const rulesetId = activeRuleset?.id;
+  const gridApiRef = useRef<GridApi | null>(null);
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.metaKey && e.key === 'f') {
+        e.preventDefault();
+        gridApiRef.current?.showColumnFilter('title');
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, []);
 
   useEffect(() => {
     if (!rulesetId) return;
@@ -212,6 +225,7 @@ export const AttributeChart = () => {
       onCellValueChanged={handleUpdate}
       onFilterChanged={handleFilterChanged}
       onSortChanged={handleSortChanged}
+      onGridReady={(api) => { gridApiRef.current = api; }}
     />
   );
 };
