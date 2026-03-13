@@ -489,6 +489,9 @@ export class ScriptRunner {
       this.context.campaignId,
       this.context.campaignSceneId,
       this.registerComponentUpdate,
+      this.context.roll,
+      this.context.rollSplit,
+      this.context.onRollComplete,
     );
 
     this.otherCharacterAccessors.set(characterId, accessor);
@@ -1141,6 +1144,9 @@ export class ScriptRunner {
       this.context.campaignId,
       this.context.campaignSceneId,
       this.registerComponentUpdate,
+      this.context.roll,
+      this.context.rollSplit,
+      this.context.onRollComplete,
     );
 
     this.ownerAccessor = owner;

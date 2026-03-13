@@ -7,7 +7,10 @@ import type {
   CustomProperty,
   InventoryItem,
   Item,
+  RollFn,
+  RollSplitFn,
 } from '@/types';
+import { parseDiceExpression, rollDie } from '@/utils/dice-utils';
 import type Dexie from 'dexie';
 import type { ExecuteActionEventFn } from '../proxies';
 import { ActionProxy, AttributeProxy, createItemInstanceProxy } from '../proxies';
@@ -51,6 +54,9 @@ export class CharacterAccessor implements StructuredCloneSafe {
     type: 'animation' | 'style',
     data: Record<string, unknown>,
   ) => void;
+  protected rollFn: RollFn | undefined;
+  protected rollSplitFn: RollSplitFn | undefined;
+  protected onRollComplete: ((message: string) => Promise<void>) | undefined;
 
   constructor(
     characterId: string,
@@ -78,6 +84,9 @@ export class CharacterAccessor implements StructuredCloneSafe {
       type: 'animation' | 'style',
       data: Record<string, unknown>,
     ) => void,
+    rollFn?: RollFn,
+    rollSplitFn?: RollSplitFn,
+    onRollComplete?: (message: string) => Promise<void>,
   ) {
     this.id = characterId;
     this.characterName = characterName;
@@ -100,6 +109,9 @@ export class CharacterAccessor implements StructuredCloneSafe {
     this.campaignId = campaignId;
     this.campaignSceneId = campaignSceneId;
     this.registerComponentUpdate = registerComponentUpdate;
+    this.rollFn = rollFn;
+    this.rollSplitFn = rollSplitFn;
+    this.onRollComplete = onRollComplete;
   }
 
   /**
@@ -732,6 +744,63 @@ export class CharacterAccessor implements StructuredCloneSafe {
   /** Public id for script-runner (e.g. to find Owner in location list). */
   get characterId(): string {
     return this.id;
+  }
+
+  async roll(expression: string, rerollMessage?: string): Promise<number> {
+    const result = this.rollFn
+      ? await this.rollFn(expression, rerollMessage)
+      : this.localRoll(expression);
+    await this.persistRollLog(result);
+    return result;
+  }
+
+  async rollSplit(expression: string, rerollMessage?: string): Promise<number[]> {
+    const result = this.rollSplitFn
+      ? await this.rollSplitFn(expression, rerollMessage)
+      : this.localRollSplit(expression);
+    await this.persistRollLog(result.reduce((a, b) => a + b, 0));
+    return result;
+  }
+
+  rollQuiet(expression: string): number {
+    return this.localRoll(expression);
+  }
+
+  private localRoll(expression: string): number {
+    const segments = parseDiceExpression(expression);
+    let total = 0;
+    for (const segment of segments) {
+      for (const token of segment) {
+        if (token.type === 'dice') {
+          for (let i = 0; i < token.count; i++) {
+            total += rollDie(token.sides);
+          }
+        } else if (token.type === 'modifier') {
+          total += token.value;
+        }
+      }
+    }
+    return total;
+  }
+
+  private localRollSplit(expression: string): number[] {
+    const segments = parseDiceExpression(expression);
+    const values: number[] = [];
+    for (const segment of segments) {
+      for (const token of segment) {
+        if (token.type === 'dice') {
+          for (let i = 0; i < token.count; i++) {
+            values.push(rollDie(token.sides));
+          }
+        }
+      }
+    }
+    return values;
+  }
+
+  private async persistRollLog(total: number): Promise<void> {
+    if (!this.onRollComplete) return;
+    await this.onRollComplete(`${this.characterName} rolled a ${total}`);
   }
 
   toStructuredCloneSafe(): unknown {

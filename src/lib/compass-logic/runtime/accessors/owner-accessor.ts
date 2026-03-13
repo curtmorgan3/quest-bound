@@ -5,6 +5,8 @@ import type {
   CustomProperty,
   InventoryItem,
   Item,
+  RollFn,
+  RollSplitFn,
 } from '@/types';
 import type Dexie from 'dexie';
 import type { ExecuteActionEventFn } from '../proxies';
@@ -41,6 +43,9 @@ export class OwnerAccessor extends CharacterAccessor {
       type: 'animation' | 'style',
       data: Record<string, unknown>,
     ) => void,
+    rollFn?: RollFn,
+    rollSplitFn?: RollSplitFn,
+    onRollComplete?: (message: string) => Promise<void>,
   ) {
     super(
       characterId,
@@ -63,6 +68,9 @@ export class OwnerAccessor extends CharacterAccessor {
       campaignId,
       campaignSceneId,
       registerComponentUpdate,
+      rollFn,
+      rollSplitFn,
+      onRollComplete,
     );
   }
 

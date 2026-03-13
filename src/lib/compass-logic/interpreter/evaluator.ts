@@ -828,13 +828,11 @@ export class Evaluator {
   }
 
   /** Persist an auto-generated log for roll/rollSplit when onRollComplete is set. */
-  private async persistRollLog(total: number): Promise<void> {
+  private async persistRollLog(total: number, rollerName?: string): Promise<void> {
     if (!this.onRollComplete) return;
     try {
-      const owner = this.currentEnv.get('Owner');
-      const ownerName = owner?.name ?? 'Someone';
-      const message = `${ownerName} rolled a ${total}`;
-      await this.onRollComplete(message);
+      const name = rollerName ?? this.currentEnv.get('Owner')?.name ?? 'Someone';
+      await this.onRollComplete(`${name} rolled a ${total}`);
     } catch {
       // Owner not in env or other error; skip persisting
     }
