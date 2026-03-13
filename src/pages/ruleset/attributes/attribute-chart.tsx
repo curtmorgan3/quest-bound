@@ -59,16 +59,16 @@ export const AttributeChart = () => {
 
   useEffect(() => {
     if (!rulesetId) return;
-    const stored = getGridFilters(rulesetId, 'attributes');
-    if (!stored?.filter && !stored?.sort) return;
     const urlFilter = searchParams.get(FILTER_PARAM);
     const urlSort = searchParams.get(SORT_PARAM);
-    if (urlFilter !== null && urlSort !== null) return;
+    if (urlFilter !== null || urlSort !== null) return;
+    const stored = getGridFilters(rulesetId, 'attributes');
+    if (!stored?.filter && !stored?.sort) return;
     setSearchParams(
       (prev) => {
         const p = new URLSearchParams(prev);
-        if (urlFilter === null && stored.filter) p.set(FILTER_PARAM, stored.filter);
-        if (urlSort === null && stored.sort) p.set(SORT_PARAM, stored.sort);
+        if (stored.filter) p.set(FILTER_PARAM, stored.filter);
+        if (stored.sort) p.set(SORT_PARAM, stored.sort);
         return p;
       },
       { replace: true },

@@ -132,6 +132,7 @@ export const useCharacter = (_id?: string) => {
         image: characterImage,
         createdAt: now,
         updatedAt: now,
+        lastSyncedAt: now,
         isTestCharacter: data.isTestCharacter ?? false,
         componentData: data.componentData ?? {},
         pinnedSidebarDocuments: data.pinnedSidebarDocuments ?? [],

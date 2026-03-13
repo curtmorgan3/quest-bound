@@ -104,7 +104,15 @@ export const CharacterPage = ({
 
   const { character, updateCharacter } = useCharacter(id ?? characterId);
 
-  const { characterAttributes, updateCharacterAttribute } = useCharacterAttributes(character?.id);
+  const { characterAttributes, updateCharacterAttribute, syncWithRuleset } = useCharacterAttributes(
+    character?.id,
+  );
+
+  // On character open, sync only attributes created or updated since the last sync.
+  useEffect(() => {
+    if (!character?.id) return;
+    syncWithRuleset();
+  }, [character?.id]);
   const { handleUpdateWindow, handleDeleteWindow } = useCharacterWindowHandlers(
     character?.id ?? '',
   );

@@ -203,5 +203,11 @@ const { campaignItems: _campaignItems, ...dbSchemaV55WithoutCampaignItems } =
   dbSchemaV55 as typeof dbSchemaV55 & { campaignItems?: string };
 export const dbSchemaV56 = { ...dbSchemaV55WithoutCampaignItems };
 
+/** Schema for v57: characters get lastSyncedAt index for incremental ruleset attribute sync. */
+export const dbSchemaV57 = {
+  ...dbSchemaV56,
+  characters: `${common}, rulesetId, userId, assetId, image, moduleId, lastSyncedAt`,
+};
+
 // latestDbSchema should always be used for the worker thread db instance
-export const latestDbSchema = { ...dbSchemaV56 };
+export const latestDbSchema = { ...dbSchemaV57 };

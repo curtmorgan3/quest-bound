@@ -124,6 +124,8 @@ export type Character = BaseDetails & {
   customProperties?: Record<string, string | number | boolean>;
   /** Style overrides for sheet components by referenceLabel (from setComponentStyle). Values are partial component style objects. */
   componentStyleOverrides?: Record<string, Record<string, unknown>>;
+  /** ISO timestamp of the last time this character was synced with its ruleset attributes. */
+  lastSyncedAt?: string | null;
 };
 
 export type CharacterAttribute = Attribute & {

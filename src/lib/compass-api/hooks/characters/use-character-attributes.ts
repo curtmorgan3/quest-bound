@@ -92,15 +92,27 @@ export const useCharacterAttributes = (characterId?: string) => {
     }
   };
 
-  const syncWithRuleset = async (): Promise<number> => {
+  const syncWithRuleset = async (options?: { ignoreLastSyncedAt?: boolean }): Promise<number> => {
     if (!character?.rulesetId) return 0;
 
     try {
-      const rulesetAttributes = await db.attributes
-        .where({ rulesetId: character.rulesetId })
+      const lastSyncedAt = options?.ignoreLastSyncedAt ? null : (character.lastSyncedAt ?? null);
+
+      // When a lastSyncedAt timestamp exists, only fetch attributes created or updated since then.
+      // On first sync (or when ignoreLastSyncedAt is true), fetch all attributes for the ruleset.
+      const rulesetAttributes = lastSyncedAt
+        ? await db.attributes
+            .where({ rulesetId: character.rulesetId })
+            .filter((attr) => attr.updatedAt > lastSyncedAt || attr.createdAt > lastSyncedAt)
+            .toArray()
+        : await db.attributes.where({ rulesetId: character.rulesetId }).toArray();
+
+      const existingCharacterAttributes = await db.characterAttributes
+        .where('characterId')
+        .equals(character.id)
         .toArray();
       const existingByAttributeId = new Map(
-        (characterAttributes ?? []).map((ca) => [ca.attributeId, ca]),
+        existingCharacterAttributes.map((ca) => [ca.attributeId, ca]),
       );
 
       const now = new Date().toISOString();
@@ -170,6 +182,10 @@ export const useCharacterAttributes = (characterId?: string) => {
           });
         }
       }
+
+      // Record the sync timestamp regardless of whether there were changes,
+      // so future syncs only check for attributes modified after this point.
+      await db.characters.update(character.id, { lastSyncedAt: now });
 
       return count;
     } catch (e) {

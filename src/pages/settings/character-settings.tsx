@@ -105,7 +105,7 @@ export const CharacterSettings = ({ character }: CharacterSettingsProps) => {
   };
 
   const handleSyncWithRuleset = async () => {
-    const count = await syncWithRuleset();
+    const count = await syncWithRuleset({ ignoreLastSyncedAt: true });
     if (count > 0) {
       addNotification(`Updated ${count} attribute${count === 1 ? '' : 's'}`, { type: 'success' });
     } else {
@@ -190,7 +190,6 @@ export const CharacterSettings = ({ character }: CharacterSettingsProps) => {
             rulesetId={activeRuleset?.id}
           />
         </div>
-
       </div>
 
       <div className='flex flex-col gap-1'>
@@ -198,9 +197,12 @@ export const CharacterSettings = ({ character }: CharacterSettingsProps) => {
           Sync with Ruleset
         </Button>
         <span className='text-sm text-muted-foreground'>
-          Update character attributes to align with the ruleset's definition.
+          Update character attributes to align with the ruleset's definition without changing their
+          values.
         </span>
-        <span className='text-sm text-muted-foreground'>Does not change attribute values.</span>
+        <span className='text-sm text-muted-foreground'>
+          Characters are automatically synced on open. Run this when there is a misalignment only.
+        </span>
       </div>
 
       <AlertDialog>

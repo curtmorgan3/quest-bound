@@ -10,6 +10,7 @@ import {
   dbSchemaV51,
   dbSchemaV52,
   dbSchemaV56,
+  dbSchemaV57,
 } from '../schema/versions/versions';
 import { migrate32to33 } from './migrate-32-to-33';
 import { migrate38to39 } from './migrate-38-to-39';
@@ -35,6 +36,8 @@ export function registerVersions(db: Dexie): void {
   db.version(51).stores(dbSchemaV51);
   db.version(52).stores(dbSchemaV52).upgrade(migrate51to52);
 
+  db.version(56).stores(dbSchemaV56);
+
   // The version here should always be the same as latestDbSchema
-  db.version(dbSchemaVersion).stores(dbSchemaV56);
+  db.version(dbSchemaVersion).stores(dbSchemaV57);
 }
