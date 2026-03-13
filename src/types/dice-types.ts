@@ -43,6 +43,9 @@ export type RollSplitFn = (
 /** Prompt built-in: shows modal with message and choices; returns selected choice. Used by QBScript prompt(msg, choices). */
 export type PromptFn = (msg: string, choices: string[]) => Promise<string>;
 
+/** PromptMultiple built-in: shows modal with message and choices; returns array of selected choices. Used by QBScript promptMultiple(msg, choices). */
+export type PromptMultipleFn = (msg: string, choices: string[]) => Promise<string[]>;
+
 /**
  * Character selection host hook used by QBScript.
  *

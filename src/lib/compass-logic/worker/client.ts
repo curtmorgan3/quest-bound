@@ -208,6 +208,10 @@ export class QBScriptClient {
         this.handlePromptRequest(signal.payload);
         break;
 
+      case 'PROMPT_MULTIPLE_REQUEST':
+        this.handlePromptMultipleRequest(signal.payload);
+        break;
+
       case 'SELECT_CHARACTER_REQUEST':
         this.handleSelectCharacterRequest(signal.payload);
         break;
@@ -300,6 +304,30 @@ export class QBScriptClient {
     } catch (err) {
       this.worker.postMessage({
         type: 'PROMPT_RESPONSE',
+        payload: {
+          promptRequestId: payload.promptRequestId,
+          error: err instanceof Error ? err.message : String(err),
+        },
+      });
+    }
+  }
+
+  private async handlePromptMultipleRequest(payload: {
+    executionRequestId: string;
+    promptRequestId: string;
+    msg: string;
+    choices: string[];
+  }): Promise<void> {
+    if (!this.worker) return;
+    try {
+      const value = await usePromptModalStore.getState().showMultiple(payload.msg, payload.choices);
+      this.worker.postMessage({
+        type: 'PROMPT_MULTIPLE_RESPONSE',
+        payload: { promptRequestId: payload.promptRequestId, value },
+      });
+    } catch (err) {
+      this.worker.postMessage({
+        type: 'PROMPT_MULTIPLE_RESPONSE',
         payload: {
           promptRequestId: payload.promptRequestId,
           error: err instanceof Error ? err.message : String(err),

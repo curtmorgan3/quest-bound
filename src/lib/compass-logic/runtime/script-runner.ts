@@ -13,6 +13,7 @@ import type {
   Item,
   Page,
   PromptFn,
+  PromptMultipleFn,
   RollFn,
   RollSplitFn,
   RulesetWindow,
@@ -185,6 +186,8 @@ export interface ScriptExecutionContext {
   rollSplit?: RollSplitFn;
   /** Optional prompt function for script built-in prompt(msg, choices). When set, used to show modal and return selected choice. */
   prompt?: PromptFn;
+  /** Optional promptMultiple function for script built-in promptMultiple(msg, choices). When set, used to show multi-select modal and return selected choices. */
+  promptMultiple?: PromptMultipleFn;
   /** Optional character picker for selectCharacter(title?, description?). When set, used to show UI and return a single character accessor or null. */
   selectCharacter?: SelectCharacterFn;
   /** Optional character picker for selectCharacters(title?, description?). When set, used to show UI and return an array of character accessors. */
@@ -293,6 +296,7 @@ export class ScriptRunner {
       roll: context.roll,
       rollSplit: context.rollSplit,
       prompt: context.prompt,
+      promptMultiple: context.promptMultiple,
       selectCharacter: selectCharacterHost,
       selectCharacters: selectCharactersHost,
       onRollComplete: context.onRollComplete,

@@ -3,6 +3,7 @@ import type {
   CampaignEvent,
   CampaignEventParamValue,
   PromptFn,
+  PromptMultipleFn,
   RollFn,
   RollSplitFn,
   Script,
@@ -261,6 +262,7 @@ export class EventHandlerExecutor {
     selectCharacter?: SelectCharacterFn,
     selectCharacters?: SelectCharactersFn,
     campaignSceneId?: string,
+    promptMultiple?: PromptMultipleFn,
   ): Promise<EventHandlerResult> {
     // Get item
     const item = await this.db.items.get(itemId);
@@ -328,6 +330,7 @@ export class EventHandlerExecutor {
       roll,
       rollSplit,
       prompt,
+      promptMultiple,
       selectCharacter: selectCharacterWrapped,
       selectCharacters: selectCharactersWrapped,
       onRollComplete: this.createOnRollComplete(
@@ -350,6 +353,7 @@ export class EventHandlerExecutor {
           selectCharacterWrapped,
           selectCharactersWrapped,
           campaignSceneId,
+          promptMultiple,
         ),
     };
 
@@ -417,6 +421,7 @@ export class EventHandlerExecutor {
     selectCharacter?: SelectCharacterFn,
     selectCharacters?: SelectCharactersFn,
     campaignSceneId?: string,
+    promptMultiple?: PromptMultipleFn,
   ): Promise<EventHandlerResult> {
     // Get action
     const action = await this.db.actions.get(actionId);
@@ -493,6 +498,7 @@ export class EventHandlerExecutor {
         roll,
         rollSplit,
         prompt,
+        promptMultiple,
         selectCharacter: selectCharacterWrapped,
         selectCharacters: selectCharactersWrapped,
         onRollComplete: this.createOnRollComplete(
@@ -519,6 +525,7 @@ export class EventHandlerExecutor {
               selectCharacterWrapped,
               selectCharactersWrapped,
               campaignSceneId,
+              promptMultiple,
             );
             for (const entry of r.componentAnimations ?? []) {
               nestedAnimations.push(entry);
@@ -666,6 +673,7 @@ export class EventHandlerExecutor {
     selectCharacter?: SelectCharacterFn,
     selectCharacters?: SelectCharactersFn,
     campaignSceneId?: string,
+    promptMultiple?: PromptMultipleFn,
   ): Promise<EventHandlerResult> {
     const archetype = await this.db.archetypes.get(archetypeId);
     if (!archetype) {
@@ -721,6 +729,7 @@ export class EventHandlerExecutor {
       roll,
       rollSplit,
       prompt,
+      promptMultiple,
       selectCharacter,
       selectCharacters,
       onRollComplete: this.createOnRollComplete(
@@ -743,6 +752,7 @@ export class EventHandlerExecutor {
           selectCharacter,
           selectCharacters,
           campaignSceneId,
+          promptMultiple,
         ),
     };
 
@@ -791,6 +801,7 @@ export class EventHandlerExecutor {
     selectCharacter?: SelectCharacterFn,
     selectCharacters?: SelectCharactersFn,
     campaignId?: string | null,
+    promptMultiple?: PromptMultipleFn,
   ): Promise<EventHandlerResult> {
     const script = await this.db.scripts
       .where({ rulesetId, entityType: 'characterLoader' })
@@ -815,6 +826,7 @@ export class EventHandlerExecutor {
       roll,
       rollSplit,
       prompt,
+      promptMultiple,
       selectCharacter,
       selectCharacters,
       onRollComplete: this.createOnRollComplete(
@@ -836,6 +848,8 @@ export class EventHandlerExecutor {
           prompt,
           selectCharacter,
           selectCharacters,
+          undefined,
+          promptMultiple,
         ),
     };
 
@@ -883,6 +897,7 @@ export class EventHandlerExecutor {
     selectCharacters?: SelectCharactersFn,
     /** @deprecated campaignEventSceneId is ignored; CampaignEvent.sceneId is used instead. */
     _campaignEventSceneId?: string | null,
+    promptMultiple?: PromptMultipleFn,
   ): Promise<EventHandlerResult> {
     const campaignEvent = await this.db.campaignEvents.get(campaignEventId);
     if (!campaignEvent) {
@@ -945,6 +960,7 @@ export class EventHandlerExecutor {
       roll,
       rollSplit,
       prompt,
+      promptMultiple,
       selectCharacter,
       selectCharacters,
       onRollComplete: this.createOnRollComplete(
@@ -967,6 +983,7 @@ export class EventHandlerExecutor {
           selectCharacter,
           selectCharacters,
           (campaignEvent as CampaignEvent).sceneId ?? campaignSceneId,
+          promptMultiple,
         ),
       params: paramsHelper,
     };

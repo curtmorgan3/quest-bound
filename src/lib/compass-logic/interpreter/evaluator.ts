@@ -1,4 +1,4 @@
-import type { PromptFn, RollFn, RollSplitFn, SelectCharacterFn, SelectCharactersFn } from '@/types';
+import type { PromptFn, PromptMultipleFn, RollFn, RollSplitFn, SelectCharacterFn, SelectCharactersFn } from '@/types';
 import { parseDiceExpression, rollDie } from '@/utils/dice-utils';
 import { prepareForStructuredClone } from '../runtime/structured-clone-safe';
 import type { ASTNode } from './ast';
@@ -12,6 +12,8 @@ export interface EvaluatorOptions {
   rollSplit?: RollSplitFn;
   /** When set, used as the script built-in prompt(msg, choices). Required for prompt() to work (e.g. in worker via bridge). */
   prompt?: PromptFn;
+  /** When set, used as the script built-in promptMultiple(msg, choices). Required for promptMultiple() to work. */
+  promptMultiple?: PromptMultipleFn;
   /** When set, used as the script built-in selectCharacter(title?, description?). */
   selectCharacter?: SelectCharacterFn;
   /** When set, used as the script built-in selectCharacters(title?, description?). */
@@ -93,6 +95,7 @@ export class Evaluator {
   private rollFn: RollFn | undefined;
   private rollSplitFn: RollSplitFn | undefined;
   private promptFn: PromptFn | undefined;
+  private promptMultipleFn: PromptMultipleFn | undefined;
   private selectCharacterFn: SelectCharacterFn | undefined;
   private selectCharactersFn: SelectCharactersFn | undefined;
   private onRollComplete: ((message: string) => Promise<void>) | undefined;
@@ -105,6 +108,7 @@ export class Evaluator {
     this.rollFn = options?.roll;
     this.rollSplitFn = options?.rollSplit;
     this.promptFn = options?.prompt;
+    this.promptMultipleFn = options?.promptMultiple;
     this.selectCharacterFn = options?.selectCharacter;
     this.selectCharactersFn = options?.selectCharacters;
     this.onRollComplete = options?.onRollComplete;
@@ -875,6 +879,20 @@ export class Evaluator {
       const normalizedChoices = Array.isArray(choices) ? choices.map(String) : [String(choices)];
       return this.promptFn(msg, normalizedChoices);
     });
+
+    // PromptMultiple: show modal with message and choices; returns array of selected choices
+    this.globalEnv.define(
+      'promptMultiple',
+      async (msg: string, choices: string[]): Promise<string[]> => {
+        if (!this.promptMultipleFn) {
+          throw new RuntimeError(
+            'promptMultiple(msg, choices) is not available in this context (no promptMultiple handler)',
+          );
+        }
+        const normalizedChoices = Array.isArray(choices) ? choices.map(String) : [String(choices)];
+        return this.promptMultipleFn(msg, normalizedChoices);
+      },
+    );
 
     // Character selection: selectCharacter(title?, description?) -> character accessor or null
     this.globalEnv.define(

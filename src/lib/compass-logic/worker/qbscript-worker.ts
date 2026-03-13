@@ -7,7 +7,7 @@
 
 import type { DB } from '@/stores/db/hooks/types';
 import { dbSchemaVersion, latestDbSchema } from '@/stores/db/schema';
-import type { PromptFn, RollFn, RollSplitFn, SelectCharacterFn, SelectCharactersFn } from '@/types';
+import type { PromptFn, PromptMultipleFn, RollFn, RollSplitFn, SelectCharacterFn, SelectCharactersFn } from '@/types';
 import Dexie from 'dexie';
 import { Lexer } from '../interpreter/lexer';
 import { Parser } from '../interpreter/parser';
@@ -128,6 +128,38 @@ const promptBridge = {
       entry.reject(new Error(error));
     } else {
       entry.resolve(value ?? '');
+    }
+  },
+};
+
+// ============================================================================
+// PromptMultiple bridge (worker requests multi-select prompt modal; main responds with selected choices)
+// ============================================================================
+
+const promptMultipleBridge = {
+  pending: new Map<string, { resolve: (value: string[]) => void; reject: (err: Error) => void }>(),
+  requestPromptMultiple(
+    msg: string,
+    choices: string[],
+    executionRequestId: string,
+  ): Promise<string[]> {
+    const promptRequestId = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+    return new Promise<string[]>((resolve, reject) => {
+      this.pending.set(promptRequestId, { resolve, reject });
+      sendSignal({
+        type: 'PROMPT_MULTIPLE_REQUEST',
+        payload: { executionRequestId, promptRequestId, msg, choices },
+      });
+    });
+  },
+  resolvePromptMultiple(promptRequestId: string, value?: string[], error?: string): void {
+    const entry = this.pending.get(promptRequestId);
+    if (!entry) return;
+    this.pending.delete(promptRequestId);
+    if (error != null) {
+      entry.reject(new Error(error));
+    } else {
+      entry.resolve(value ?? []);
     }
   },
 };
@@ -264,6 +296,12 @@ async function handleSignal(signal: MainToWorkerSignal): Promise<void> {
         break;
       }
 
+      case 'PROMPT_MULTIPLE_RESPONSE': {
+        const { promptRequestId, value, error } = signal.payload;
+        promptMultipleBridge.resolvePromptMultiple(promptRequestId, value, error);
+        break;
+      }
+
       case 'SELECT_CHARACTER_RESPONSE': {
         const { selectRequestId, characterIds, error } = signal.payload;
         characterSelectBridge.resolve(selectRequestId, characterIds, error);
@@ -296,6 +334,7 @@ function createOnAttributesModified(
   /** When provided, collect all attribute IDs modified by script (direct + reactive) for UI animation. */
   getModifiedIdsCollector?: () => Set<string>,
   promptFn?: PromptFn,
+  promptMultipleFn?: PromptMultipleFn,
   selectCharacterFn?: SelectCharacterFn,
   selectCharactersFn?: SelectCharactersFn,
   campaignId?: string,
@@ -328,6 +367,7 @@ function createOnAttributesModified(
             roll: rollFn,
             rollSplit: rollSplitFn,
             prompt: promptFn,
+            promptMultiple: promptMultipleFn,
             selectCharacter: selectCharacterFn,
             selectCharacters: selectCharactersFn,
             campaignId,
@@ -346,6 +386,7 @@ function createOnAttributesModified(
                 selectCharacterFn,
                 selectCharactersFn,
                 campaignSceneId,
+                promptMultipleFn,
               ),
           },
         );
@@ -493,6 +534,8 @@ async function handleExecuteScript(payload: ExecuteScriptPayload): Promise<void>
     rollBridge.requestRollSplit(expression, payload.requestId, rerollMessage);
   const promptFn: PromptFn = (msg: string, choices: string[]) =>
     promptBridge.requestPrompt(msg, choices, payload.requestId);
+  const promptMultipleFn: PromptMultipleFn = (msg: string, choices: string[]) =>
+    promptMultipleBridge.requestPromptMultiple(msg, choices, payload.requestId);
   const selectCharacterFn: SelectCharacterFn = (title?: string, description?: string) =>
     characterSelectBridge
       .requestSelect(
@@ -522,6 +565,7 @@ async function handleExecuteScript(payload: ExecuteScriptPayload): Promise<void>
       () => executor,
       undefined,
       promptFn,
+      promptMultipleFn,
       selectCharacterFn,
       selectCharactersFn,
       payload.campaignId,
@@ -563,6 +607,7 @@ async function handleExecuteScript(payload: ExecuteScriptPayload): Promise<void>
       roll: rollFn,
       rollSplit: rollSplitFn,
       prompt: promptFn,
+      promptMultiple: promptMultipleFn,
       selectCharacter: selectCharacterFn,
       selectCharacters: selectCharactersFn,
       onRollComplete,
@@ -580,6 +625,7 @@ async function handleExecuteScript(payload: ExecuteScriptPayload): Promise<void>
           selectCharacterFn,
           selectCharactersFn,
           payload.campaignSceneId,
+          promptMultipleFn,
         );
         for (const entry of r.componentAnimations ?? []) {
           reactiveComponentAnimations.push(entry);
@@ -788,6 +834,8 @@ async function handleAttributeChanged(payload: AttributeChangedPayload): Promise
       rollBridge.requestRollSplit(expression, payload.requestId, rerollMessage);
     const promptFn: PromptFn = (msg: string, choices: string[]) =>
       promptBridge.requestPrompt(msg, choices, payload.requestId);
+    const promptMultipleFn: PromptMultipleFn = (msg: string, choices: string[]) =>
+      promptMultipleBridge.requestPromptMultiple(msg, choices, payload.requestId);
     const selectCharacterFn: SelectCharacterFn = (title?: string, description?: string) =>
       characterSelectBridge
         .requestSelect(
@@ -817,6 +865,7 @@ async function handleAttributeChanged(payload: AttributeChangedPayload): Promise
         () => executor,
         undefined,
         promptFn,
+        promptMultipleFn,
         selectCharacterFn,
         selectCharactersFn,
       ),
@@ -845,10 +894,12 @@ async function handleAttributeChanged(payload: AttributeChangedPayload): Promise
           selectCharacterFn,
           selectCharactersFn,
           payload.campaignSceneId,
+          promptMultipleFn,
         ),
       roll: rollFn,
       rollSplit: rollSplitFn,
       prompt: promptFn,
+      promptMultiple: promptMultipleFn,
       selectCharacter: selectCharacterFn,
       selectCharacters: selectCharactersFn,
     };
@@ -935,6 +986,8 @@ async function handleInitialAttributeSync(payload: {
       rollBridge.requestRollSplit(expression, payload.requestId, rerollMessage);
     const promptFn: PromptFn = (msg: string, choices: string[]) =>
       promptBridge.requestPrompt(msg, choices, payload.requestId);
+    const promptMultipleFn: PromptMultipleFn = (msg: string, choices: string[]) =>
+      promptMultipleBridge.requestPromptMultiple(msg, choices, payload.requestId);
     const selectCharacterFn: SelectCharacterFn = (title?: string, description?: string) =>
       characterSelectBridge
         .requestSelect('single', title, description, payload.requestId, payload.rulesetId)
@@ -956,6 +1009,7 @@ async function handleInitialAttributeSync(payload: {
         () => executor,
         undefined,
         promptFn,
+        promptMultipleFn,
         selectCharacterFn,
         selectCharactersFn,
       ),
@@ -975,10 +1029,13 @@ async function handleInitialAttributeSync(payload: {
           promptFn,
           selectCharacterFn,
           selectCharactersFn,
+          undefined,
+          promptMultipleFn,
         ),
       roll: rollFn,
       rollSplit: rollSplitFn,
       prompt: promptFn,
+      promptMultiple: promptMultipleFn,
       selectCharacter: selectCharacterFn,
       selectCharacters: selectCharactersFn,
     });
@@ -1111,6 +1168,8 @@ async function handleExecuteActionEvent(payload: {
       rollBridge.requestRollSplit(expression, payload.requestId, rerollMessage);
     const promptFn: PromptFn = (msg: string, choices: string[]) =>
       promptBridge.requestPrompt(msg, choices, payload.requestId);
+    const promptMultipleFn: PromptMultipleFn = (msg: string, choices: string[]) =>
+      promptMultipleBridge.requestPromptMultiple(msg, choices, payload.requestId);
     const selectCharacterFn: SelectCharacterFn = (title?: string, description?: string) =>
       characterSelectBridge
         .requestSelect(
@@ -1149,6 +1208,7 @@ async function handleExecuteActionEvent(payload: {
         () => executor,
         getCollector,
         promptFn,
+        promptMultipleFn,
         selectCharacterFn,
         selectCharactersFn,
         payload.campaignId,
@@ -1169,6 +1229,7 @@ async function handleExecuteActionEvent(payload: {
       selectCharacterFn,
       selectCharactersFn,
       payload.campaignSceneId,
+      promptMultipleFn,
     );
 
     if (result.error || !result.success) {
@@ -1248,6 +1309,8 @@ async function handleExecuteItemEvent(payload: {
       rollBridge.requestRollSplit(expression, payload.requestId, rerollMessage);
     const promptFn: PromptFn = (msg: string, choices: string[]) =>
       promptBridge.requestPrompt(msg, choices, payload.requestId);
+    const promptMultipleFn: PromptMultipleFn = (msg: string, choices: string[]) =>
+      promptMultipleBridge.requestPromptMultiple(msg, choices, payload.requestId);
     const selectCharacterFn: SelectCharacterFn = (title?: string, description?: string) =>
       characterSelectBridge
         .requestSelect(
@@ -1286,6 +1349,7 @@ async function handleExecuteItemEvent(payload: {
         () => executor,
         getCollector,
         promptFn,
+        promptMultipleFn,
         selectCharacterFn,
         selectCharactersFn,
         payload.campaignId,
@@ -1305,6 +1369,7 @@ async function handleExecuteItemEvent(payload: {
       selectCharacterFn,
       selectCharactersFn,
       payload.campaignSceneId,
+      promptMultipleFn,
     );
 
     const script = await db.scripts.where({ entityId: payload.itemId, entityType: 'item' }).first();
@@ -1391,6 +1456,8 @@ async function handleExecuteArchetypeEvent(payload: {
       rollBridge.requestRollSplit(expression, payload.requestId, rerollMessage);
     const promptFn: PromptFn = (msg: string, choices: string[]) =>
       promptBridge.requestPrompt(msg, choices, payload.requestId);
+    const promptMultipleFn: PromptMultipleFn = (msg: string, choices: string[]) =>
+      promptMultipleBridge.requestPromptMultiple(msg, choices, payload.requestId);
     const selectCharacterFn: SelectCharacterFn = (title?: string, description?: string) =>
       characterSelectBridge
         .requestSelect(
@@ -1429,6 +1496,7 @@ async function handleExecuteArchetypeEvent(payload: {
         () => executor,
         getCollector,
         promptFn,
+        promptMultipleFn,
         selectCharacterFn,
         selectCharactersFn,
         payload.campaignId,
@@ -1447,6 +1515,7 @@ async function handleExecuteArchetypeEvent(payload: {
       selectCharacterFn,
       selectCharactersFn,
       payload.campaignSceneId,
+      promptMultipleFn,
     );
 
     // Logs are persisted inside EventHandlerExecutor.executeArchetypeEvent so they
@@ -1521,6 +1590,8 @@ async function handleExecuteCampaignEventEvent(payload: {
       rollBridge.requestRollSplit(expression, payload.requestId, rerollMessage);
     const promptFn: PromptFn = (msg: string, choices: string[]) =>
       promptBridge.requestPrompt(msg, choices, payload.requestId);
+    const promptMultipleFn: PromptMultipleFn = (msg: string, choices: string[]) =>
+      promptMultipleBridge.requestPromptMultiple(msg, choices, payload.requestId);
     const selectCharacterFn: SelectCharacterFn = (title?: string, description?: string) =>
       characterSelectBridge
         .requestSelect('single', title, description, payload.requestId, rulesetId, campaignId)
@@ -1552,6 +1623,7 @@ async function handleExecuteCampaignEventEvent(payload: {
         () => executor,
         getCollector,
         promptFn,
+        promptMultipleFn,
         selectCharacterFn,
         selectCharactersFn,
         campaignId ?? undefined,
@@ -1569,6 +1641,8 @@ async function handleExecuteCampaignEventEvent(payload: {
       promptFn,
       selectCharacterFn,
       selectCharactersFn,
+      undefined,
+      promptMultipleFn,
     );
 
     if (result.error || !result.success) {
