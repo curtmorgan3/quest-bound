@@ -19,7 +19,7 @@ type UpdateUser = {
   assetId?: string | null;
   image?: string | null;
   preferences?: Record<string, any>;
-  rulesets?: string[];
+  cloudUserId?: string | null;
 };
 
 export const useUsers = () => {
@@ -56,7 +56,7 @@ export const useUsers = () => {
           preferences: {},
           image: null,
           assetId: null,
-          rulesets: [],
+          cloudUserId: null,
         })
         .then((id) => db.users.get(id))
         .then((user) => {
@@ -87,7 +87,7 @@ export const useUsers = () => {
       preferences: {},
       image: null,
       assetId: null,
-      rulesets: [],
+      cloudUserId: null,
     });
 
     const user = await db.users.get(id);
@@ -152,9 +152,12 @@ export const useUsers = () => {
         return;
       }
 
-      // Delete associated rulesets
-      for (const rulesetId of user.rulesets || []) {
-        await deleteRuleset(rulesetId);
+      // Delete rulesets owned by this user (createdBy matches username)
+      const allRulesets = await db.rulesets.toArray();
+      for (const r of allRulesets) {
+        if (r.createdBy === user.username) {
+          await deleteRuleset(r.id);
+        }
       }
 
       await db.users.delete(id);

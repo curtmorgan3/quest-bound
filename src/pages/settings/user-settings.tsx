@@ -18,6 +18,7 @@ import { useUsers } from '@/lib/compass-api';
 import { errorLogger, useOnboardingStore, usePwaInstallStore } from '@/stores';
 import { Download, PlayCircleIcon } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { CloudAccountSettings } from './cloud-account-settings';
 
 export const UserSettings = () => {
   const { currentUser, updateUser, deleteUser } = useUsers();
@@ -83,6 +84,8 @@ export const UserSettings = () => {
         <Label htmlFor='username'>Username</Label>
         <Input id='username' value={username} onChange={(e) => setUsername(e.target.value)} />
       </div>
+
+      <CloudAccountSettings />
 
       <div className='flex items-center gap-2'>
         <Checkbox

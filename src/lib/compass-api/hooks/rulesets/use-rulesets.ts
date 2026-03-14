@@ -17,7 +17,8 @@ export const useRulesets = () => {
 
   const [loading, setLoading] = useState(false);
   const _rulesets = useLiveQuery(() => db.rulesets.toArray(), []);
-  const rulesets = _rulesets?.filter((r) => currentUser?.rulesets?.includes(r.id)) || [];
+  // Local users: all rulesets in DB belong to the active user. Synced users: scoped by cloud (handled in sync layer).
+  const rulesets = _rulesets ?? [];
 
   const isLoading = _rulesets === undefined;
   useEffect(() => {
@@ -171,10 +172,6 @@ export const useRulesets = () => {
         ...data,
       });
       localStorage.setItem('qb.lastEditedRulesetId', id.toString());
-      if (currentUser) {
-        const updatedRulesetIds = Array.from(new Set([...(currentUser.rulesets || []), id]));
-        await db.users.update(currentUser.id, { rulesets: updatedRulesetIds });
-      }
       // Note: test character is created automatically via db hook
 
       return id;

@@ -1,5 +1,6 @@
 export * from './api-loading-store';
 export * from './archetype-store';
+export * from './cloud-auth-store';
 export * from './context';
 export * from './current-user-store';
 export * from './db';

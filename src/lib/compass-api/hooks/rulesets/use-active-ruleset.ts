@@ -1,4 +1,4 @@
-import { db, useArchetypeStore, useCurrentUser } from '@/stores';
+import { db, useArchetypeStore } from '@/stores';
 import type { Archetype } from '@/types';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useMemo } from 'react';
@@ -6,7 +6,6 @@ import { useParams } from 'react-router-dom';
 import { useCampaign } from '@/lib/compass-api/hooks/campaigns/use-campaign';
 
 export const useActiveRuleset = () => {
-  const { currentUser } = useCurrentUser();
   const { rulesetId, characterId, campaignId } = useParams();
   const getSelectedArchetype = useArchetypeStore((s) => s.getSelectedArchetype);
   const campaign = useCampaign(campaignId);
@@ -14,7 +13,8 @@ export const useActiveRuleset = () => {
   const lastEditedRulesetId = localStorage.getItem('qb.lastEditedRulesetId');
 
   const _rulesets = useLiveQuery(() => db.rulesets.toArray(), []);
-  const rulesets = _rulesets?.filter((r) => currentUser?.rulesets?.includes(r.id)) || [];
+  // Local users: all rulesets in DB. Synced users: scoped by cloud (sync layer).
+  const rulesets = _rulesets ?? [];
   const characters = useLiveQuery(() => db.characters.toArray(), [characterId]);
 
   const character = useMemo(() => characters?.find((c) => c.id === characterId), [characters]);

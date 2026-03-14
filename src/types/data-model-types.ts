@@ -383,7 +383,8 @@ export type User = BaseDetails & {
   assetId?: string | null;
   image?: string | null;
   preferences: Record<string, any>;
-  rulesets: string[]; // Array of Ruleset IDs
+  /** Links to cloud auth (e.g. Supabase auth.uid()). When set, rulesets are scoped by cloud identity. */
+  cloudUserId?: string | null;
 };
 
 export type Window = BaseDetails & {

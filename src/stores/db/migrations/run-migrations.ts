@@ -11,12 +11,14 @@ import {
   dbSchemaV52,
   dbSchemaV56,
   dbSchemaV57,
+  dbSchemaV58,
 } from '../schema/versions/versions';
 import { migrate32to33 } from './migrate-32-to-33';
 import { migrate38to39 } from './migrate-38-to-39';
 import { migrate41to42 } from './migrate-41-to-42';
 import { migrate43to44 } from './migrate-43-to-44';
 import { migrate51to52 } from './migrate-51-to-52';
+import { migrate57to58 } from './migrate-57-to-58';
 
 export { dbSchema };
 
@@ -37,7 +39,6 @@ export function registerVersions(db: Dexie): void {
   db.version(52).stores(dbSchemaV52).upgrade(migrate51to52);
 
   db.version(56).stores(dbSchemaV56);
-
-  // The version here should always be the same as latestDbSchema
-  db.version(dbSchemaVersion).stores(dbSchemaV57);
+  db.version(57).stores(dbSchemaV57);
+  db.version(dbSchemaVersion).stores(dbSchemaV58).upgrade(migrate57to58);
 }

@@ -12,6 +12,7 @@ import {
   CharacterArchetypesPanelContext,
   CharacterInventoryPanelContext,
   DiceProvider,
+  useCloudAuthStore,
   useDiceState,
   useOnboardingStore,
 } from '@/stores';
@@ -39,6 +40,12 @@ export function Layout() {
 
   const wouldShowOnAttributes =
     currentUser && !onboardingLoading && (forceShowAgain || !hasCompleted);
+
+  // Initialize cloud auth (session restore + auth state subscription)
+  useEffect(() => {
+    useCloudAuthStore.getState().init();
+  }, []);
+
   useEffect(() => {
     if (isOnAttributesRoute && wouldShowOnAttributes) {
       setTutorialLaunchedFromAttributes(true);

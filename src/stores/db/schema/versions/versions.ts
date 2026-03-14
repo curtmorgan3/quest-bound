@@ -209,5 +209,11 @@ export const dbSchemaV57 = {
   characters: `${common}, rulesetId, userId, assetId, image, moduleId, lastSyncedAt`,
 };
 
+/** Schema for v58: users get cloudUserId for cloud sync; rulesets field removed from User type. */
+export const dbSchemaV58 = {
+  ...dbSchemaV57,
+  users: `${common}, username, assetId, image, preferences, cloudUserId`,
+};
+
 // latestDbSchema should always be used for the worker thread db instance
-export const latestDbSchema = { ...dbSchemaV57 };
+export const latestDbSchema = { ...dbSchemaV58 };
