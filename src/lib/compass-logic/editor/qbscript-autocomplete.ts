@@ -13,12 +13,20 @@ const qbscriptCompletions = [
   {
     label: 'Caller',
     type: 'variable',
-    info: 'Entity that fired the action: item instance when action fired from item context menu, else Owner',
+    info: 'Entity that fired the action: item instance when action fired from item context menu, otherwise the Owner',
   },
   { label: 'Owner', type: 'variable', info: 'Character that initiated the script' },
   { label: 'Owner.Attribute', type: 'function', info: "Get owner's attribute by name" },
-  { label: 'Owner.Item', type: 'function', info: "Get owner's item by name" },
-  { label: 'Owner.Items', type: 'function', info: "Get owner's items array by name" },
+  {
+    label: 'Owner.Item',
+    type: 'function',
+    info: "Get first instance of owner's item found by name",
+  },
+  {
+    label: 'Owner.Items',
+    type: 'function',
+    info: "Get all instances of owner's items array by name",
+  },
   {
     label: 'Owner.Action',
     type: 'function',
@@ -32,17 +40,17 @@ const qbscriptCompletions = [
   {
     label: 'Owner.addItem',
     type: 'function',
-    info: "Add an item to the character's inventory by name (e.g. Owner.addItem('Potion', 2) or Owner.addItem('Potion', 1, 'refLabel'))",
+    info: "Add an item to the character's inventory by name (e.g. Owner.addItem('Potion', 2) or Owner.addItem('Potion', 1, 'component-id'))",
   },
   {
     label: 'Owner.addAction',
     type: 'function',
-    info: "Add an action as an inventory entry (e.g. Owner.addAction('Attack') or Owner.addAction('Attack', 'refLabel'))",
+    info: "Add an action as an inventory entry (e.g. Owner.addAction('Attack', 'component-id')",
   },
   {
     label: 'Owner.addAttribute',
     type: 'function',
-    info: "Add an attribute as an inventory entry (e.g. Owner.addAttribute('Health') or Owner.addAttribute('Health', 'refLabel'))",
+    info: "Add an attribute as an inventory entry (e.g. Owner.addAttribute('Health', 'component-id')",
   },
   {
     label: 'Owner.navigateToPage',
@@ -112,22 +120,22 @@ const qbscriptCompletions = [
   {
     label: 'character.atStartOfNextTurn',
     type: 'function',
-    info: "Register a one-shot block to run at the start of a character's next turn (e.g. targ.atStartOfNextTurn(): ...). Use a colon and indented block. Variables in scope are captured automatically.",
+    info: "Register a one-shot block to run at the start of a character's next turn (e.g. targ.atStartOfNextTurn(): ...). Use a colon and indented block.",
   },
   {
     label: 'character.atEndOfNextTurn',
     type: 'function',
-    info: "Register a one-shot block to run at the end of a character's next turn (e.g. targ.atEndOfNextTurn(): ...). Use a colon and indented block. Variables in scope are captured automatically.",
+    info: "Register a one-shot block to run at the end of a character's next turn (e.g. targ.atEndOfNextTurn(): ...). Use a colon and indented block.",
   },
   {
     label: 'character.atStartOfTurn',
     type: 'function',
-    info: "Register a one-shot block to run at the start of a character's nth turn from now (e.g. targ.atStartOfTurn(3): ...). n=1 is equivalent to atStartOfNextTurn. Use a colon and indented block. Variables in scope are captured automatically.",
+    info: "Register a one-shot block to run at the start of a character's nth turn from now (e.g. targ.atStartOfTurn(3): ...). n=1 is equivalent to atStartOfNextTurn. Use a colon and indented block.",
   },
   {
     label: 'character.atEndOfTurn',
     type: 'function',
-    info: "Register a one-shot block to run at the end of a character's nth turn from now (e.g. targ.atEndOfTurn(3): ...). n=1 is equivalent to atEndOfNextTurn. Use a colon and indented block. Variables in scope are captured automatically.",
+    info: "Register a one-shot block to run at the end of a character's nth turn from now (e.g. targ.atEndOfTurn(3): ...). n=1 is equivalent to atEndOfNextTurn. Use a colon and indented block.",
   },
   {
     label: 'Owner.turnOrder',
@@ -137,17 +145,17 @@ const qbscriptCompletions = [
   {
     label: 'Owner.setTurnOrder',
     type: 'function',
-    info: "Set this character's turn order (e.g. Owner.setTurnOrder(2)). Use 0 for unset. Gaps allowed.",
+    info: "Set this character's turn order (e.g. Owner.setTurnOrder(2)). Use 0 for unset.",
   },
   {
     label: 'Owner.setComponentStyle',
     type: 'function',
-    info: "Set a style override for all components with a reference label (e.g. Owner.setComponentStyle('healthBar', 'backgroundColor', 'red'))",
+    info: "Set a style override for all components with a reference ID (e.g. Owner.setComponentStyle('healthBar', 'backgroundColor', 'red'))",
   },
   {
     label: 'Owner.animateComponent',
     type: 'function',
-    info: "Trigger a one-off animation for all components with a reference label (e.g. Owner.animateComponent('healthBar', 'shake'))",
+    info: "Trigger a one-off animation for all components with a reference ID (e.g. Owner.animateComponent('healthBar', 'shake'))",
   },
   {
     label: 'turnOrder',
@@ -162,12 +170,12 @@ const qbscriptCompletions = [
   {
     label: 'setComponentStyle',
     type: 'function',
-    info: "On character references: set style for all sheet components with a reference label (e.g. char.setComponentStyle('ref', 'color', 'red'))",
+    info: "On character references: set style for all sheet components with a reference label (e.g. char.setComponentStyle('component-id', 'color', 'red'))",
   },
   {
     label: 'animateComponent',
     type: 'function',
-    info: "On character references: trigger animation for all sheet components with a reference label (e.g. char.animateComponent('ref', 'shake'))",
+    info: "On character references: trigger animation for all sheet components with a reference label (e.g. char.animateComponent('component-id', 'shake'))",
   },
   { label: 'Ruleset', type: 'variable', info: 'Ruleset-level entities' },
   { label: 'Ruleset.Attribute', type: 'function', info: 'Get attribute definition' },
@@ -200,7 +208,7 @@ const qbscriptCompletions = [
   {
     label: 'roll',
     type: 'function',
-    info: 'Roll dice (e.g. roll("2d6+3")). Uses script runner roll (e.g. dice panel).',
+    info: 'Roll dice (e.g. roll("2d6+3")). Opens dice panel to roll.',
   },
   {
     label: 'prompt',
@@ -213,14 +221,19 @@ const qbscriptCompletions = [
     info: 'Show modal with message and a text input. Returns the submitted string. E.g. name = promptInput("Enter your name")',
   },
   {
+    label: 'promptMultiple',
+    type: 'function',
+    info: 'Show modal with message and choice buttons. Allows multi-select. Returns the submitted strings. E.g. selections = promptMultiple("Select colors" ["red", "blue", "yellow"])',
+  },
+  {
     label: 'rollSplit',
     type: 'function',
-    info: 'Like roll but returns array of each die value in order (e.g. rollSplit("1d6,2d20") → [d6, d20_1, d20_2]).',
+    info: 'Like roll but returns array of each die value in order (e.g. rollSplit("1d6,2d20") → [6, 20, 1]).',
   },
   {
     label: 'rollQuiet',
     type: 'function',
-    info: 'Roll dice with default local roll only (no UI, no script-runner override). e.g. rollQuiet("1d20+5")',
+    info: 'Roll dice without opening the dice panel or logging the result e.g. rollQuiet("1d20+5")',
   },
   {
     label: 'wait',
