@@ -29,7 +29,7 @@ import { useWindows } from '@/lib/compass-api/hooks/rulesets/use-windows';
 import { useScripts } from '@/lib/compass-api/hooks/scripts/use-scripts';
 import { ComponentTypes } from '@/lib/compass-planes/nodes';
 import { getComponentData } from '@/lib/compass-planes/utils';
-import type { Component, Script, ScriptParamValue } from '@/types';
+import type { Component, ComponentData, Script, ScriptParamValue } from '@/types';
 import { useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 
@@ -49,6 +49,8 @@ export const ClickEventModal = ({ component, allCanOpenChildWindow }: Props) => 
   const { actions } = useActions();
   const [open, setOpen] = useState(false);
   const [clickEventType, setClickEventType] = useState<ClickEventType>('openPage');
+  const [openWindowX, setOpenWindowX] = useState(0);
+  const [openWindowY, setOpenWindowY] = useState(0);
 
   const selectedScript: Script | undefined = useMemo(
     () => scripts.find((s) => s.id === component.scriptId),
@@ -63,20 +65,25 @@ export const ClickEventModal = ({ component, allCanOpenChildWindow }: Props) => 
   const buildClickScriptSource = (
     kind: Extract<ClickEventType, 'openPage' | 'openWindow' | 'fireAction'>,
     targetId: string,
+    x?: number,
+    y?: number,
   ): string => {
     const header =
       '// Auto-generated click handler script. Uses stable entity IDs so it keeps working when labels change.\n\n';
     if (kind === 'openPage') return `${header}Owner.navigateToPage('${targetId}')\n`;
-    if (kind === 'openWindow') return `${header}Owner.openWindow('${targetId}', true)\n`;
+    if (kind === 'openWindow')
+      return `${header}Owner.openWindow('${targetId}', ${x ?? 0}, ${y ?? 0}, true)\n`;
     return `${header}Owner.Action('${targetId}').activate()\n`;
   };
 
   const ensureClickScript = async (
     kind: Extract<ClickEventType, 'openPage' | 'openWindow' | 'fireAction'>,
     targetId: string,
+    x?: number,
+    y?: number,
   ): Promise<string | undefined> => {
     const existingId = component.scriptId ?? undefined;
-    const sourceCode = buildClickScriptSource(kind, targetId);
+    const sourceCode = buildClickScriptSource(kind, targetId, x, y);
 
     if (existingId) {
       const existing = scripts.find((s) => s.id === existingId);
@@ -170,9 +177,11 @@ export const ClickEventModal = ({ component, allCanOpenChildWindow }: Props) => 
     await updateComponents([update]);
   };
 
-  const handleSetOpenWindowClick = async (childWindowId: string) => {
-    const baseData = JSON.parse(component.data);
-    const scriptId = await ensureClickScript('openWindow', childWindowId);
+  const handleSetOpenWindowClick = async (childWindowId: string, x: number, y: number) => {
+    const baseData: ComponentData = JSON.parse(component.data);
+    baseData.childWindowX = x;
+    baseData.childWindowY = y;
+    const scriptId = await ensureClickScript('openWindow', childWindowId, x, y);
     const update: any = { id: component.id, childWindowId, data: JSON.stringify(baseData) };
     if (scriptId) update.scriptId = scriptId;
     await updateComponents([update]);
@@ -180,6 +189,8 @@ export const ClickEventModal = ({ component, allCanOpenChildWindow }: Props) => 
 
   const handleClearOpenWindowClick = async () => {
     const baseData = JSON.parse(component.data);
+    delete baseData.openWindowX;
+    delete baseData.openWindowY;
     const update: any = {
       id: component.id,
       childWindowId: null as string | null,
@@ -279,6 +290,9 @@ export const ClickEventModal = ({ component, allCanOpenChildWindow }: Props) => 
         onClick={() => {
           const current = getCurrentClickEventType();
           setClickEventType(current ?? 'openPage');
+          const data = getComponentData(component);
+          setOpenWindowX(data.childWindowX ?? 0);
+          setOpenWindowY(data.childWindowY ?? 0);
           setOpen(true);
         }}>
         Set Click Event
@@ -346,17 +360,51 @@ export const ClickEventModal = ({ component, allCanOpenChildWindow }: Props) => 
               )}
 
             {clickEventType === 'openWindow' && windowId && allCanOpenChildWindow && (
-              <WindowLookup
-                label='Open Window'
-                value={component.childWindowId}
-                onSelect={(win) => {
-                  void handleSetOpenWindowClick(win.id);
-                }}
-                onDelete={() => {
-                  void handleClearOpenWindowClick();
-                }}
-                excludeIds={[windowId]}
-              />
+              <div className='flex flex-col gap-3'>
+                <WindowLookup
+                  label='Open Window'
+                  value={component.childWindowId}
+                  onSelect={(win) => {
+                    void handleSetOpenWindowClick(win.id, openWindowX, openWindowY);
+                  }}
+                  onDelete={() => {
+                    void handleClearOpenWindowClick();
+                  }}
+                  excludeIds={[windowId]}
+                />
+                <div className='flex items-center gap-3'>
+                  <div className='flex items-center gap-1.5'>
+                    <Label className='text-xs text-muted-foreground'>X</Label>
+                    <Input
+                      className='h-7 w-20 rounded-[4px]'
+                      type='number'
+                      value={openWindowX}
+                      onChange={(e) => {
+                        const val = e.target.value === '' ? 0 : Number(e.target.value);
+                        setOpenWindowX(val);
+                        if (component.childWindowId) {
+                          void handleSetOpenWindowClick(component.childWindowId, val, openWindowY);
+                        }
+                      }}
+                    />
+                  </div>
+                  <div className='flex items-center gap-1.5'>
+                    <Label className='text-xs text-muted-foreground'>Y</Label>
+                    <Input
+                      className='h-7 w-20 rounded-[4px]'
+                      type='number'
+                      value={openWindowY}
+                      onChange={(e) => {
+                        const val = e.target.value === '' ? 0 : Number(e.target.value);
+                        setOpenWindowY(val);
+                        if (component.childWindowId) {
+                          void handleSetOpenWindowClick(component.childWindowId, openWindowX, val);
+                        }
+                      }}
+                    />
+                  </div>
+                </div>
+              </div>
             )}
 
             {clickEventType === 'fireScript' && (

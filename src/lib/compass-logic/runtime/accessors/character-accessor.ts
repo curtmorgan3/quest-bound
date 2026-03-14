@@ -696,12 +696,12 @@ export class CharacterAccessor implements StructuredCloneSafe {
    * The actual DB work (finding/creating CharacterWindow on the current page and uncollapsing it)
    * is performed in ScriptRunner.flushCache via 'characterWindowOpen'.
    */
-  openWindow(labelOrId: string, collapse?: boolean): void {
+  openWindow(labelOrId: string, x?: number, y?: number, collapse?: boolean): void {
     const key = 'characterWindowOpen';
     const existing = this.pendingUpdates.get(key) as
-      | { characterId: string; label: string; collapse?: boolean }[]
+      | { characterId: string; label: string; collapse?: boolean; x?: number; y?: number }[]
       | undefined;
-    const entry = { characterId: this.id, label: labelOrId, collapse };
+    const entry = { characterId: this.id, label: labelOrId, collapse, x, y };
     this.pendingUpdates.set(key, existing ? [...existing, entry] : [entry]);
   }
 

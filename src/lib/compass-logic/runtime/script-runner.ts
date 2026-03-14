@@ -882,8 +882,8 @@ export class ScriptRunner {
           }
         }
       } else if (type === 'characterWindowOpen') {
-        const entries = value as { characterId: string; label: string; collapse?: boolean }[];
-        for (const { characterId, label, collapse: collapseIfOpen } of entries) {
+        const entries = value as { characterId: string; label: string; collapse?: boolean; x?: number; y?: number }[];
+        for (const { characterId, label, collapse: collapseIfOpen, x: openX, y: openY } of entries) {
           const character = await db.characters.get(characterId);
           if (!character) continue;
 
@@ -945,9 +945,9 @@ export class ScriptRunner {
             continue;
           }
 
-          // Default position; overridden when a RulesetWindow layout exists for this page+window.
-          let x = 100;
-          let y = 100;
+          // Default position; caller-provided values take precedence, then RulesetWindow layout, then fallback.
+          let x = openX ?? 100;
+          let y = openY ?? 100;
           let isCollapsed = false;
 
           if (characterPage.pageId) {

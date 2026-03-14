@@ -143,4 +143,6 @@ export type ComponentData = ShapeComponentData &
     tooltipValue?: string | null;
     tooltipAttributeId?: string | null;
     tooltipPlacement?: 'top' | 'right' | 'bottom' | 'left';
+    childWindowX?: number;
+    childWindowY?: number;
   };
