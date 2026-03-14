@@ -431,6 +431,69 @@ export class Evaluator {
       // Case D – invalid comparator
       throw new RuntimeError('sort comparator must be a function');
     }
+    if (isArrayLike && node.method === 'filter') {
+      const args = await Promise.all(node.arguments.map((arg: ASTNode) => this.eval(arg)));
+      const filterFnVal = args[0];
+
+      // Case A – no filterFn: filter for truthy values
+      if (filterFnVal === undefined || filterFnVal === null) {
+        return (object as any[]).filter(Boolean);
+      }
+
+      // Case B – filterFn is a native JS function
+      if (typeof filterFnVal === 'function') {
+        const result: any[] = [];
+        for (const item of object as any[]) {
+          if (await filterFnVal(item)) result.push(item);
+        }
+        return result;
+      }
+
+      // Case C – filterFn is a QBScript function value
+      if (
+        filterFnVal &&
+        typeof filterFnVal === 'object' &&
+        (filterFnVal as any).type === 'function'
+      ) {
+        const funcObj = filterFnVal as {
+          type: 'function';
+          params: string[];
+          body: ASTNode[];
+          closure: Environment;
+        };
+
+        const callFilterFn = async (item: any): Promise<boolean> => {
+          const newEnv = new Environment(funcObj.closure);
+          const params = funcObj.params ?? [];
+          if (params.length > 0) newEnv.define(params[0]!, item);
+
+          const prevEnv = this.currentEnv;
+          this.currentEnv = newEnv;
+
+          try {
+            let result: any = null;
+            for (const stmt of funcObj.body) {
+              result = await this.eval(stmt);
+            }
+            this.currentEnv = prevEnv;
+            return Boolean(result);
+          } catch (e) {
+            this.currentEnv = prevEnv;
+            if (e instanceof ReturnValue) return Boolean(e.value);
+            throw e;
+          }
+        };
+
+        const filtered: any[] = [];
+        for (const item of object as any[]) {
+          if (await callFilterFn(item)) filtered.push(item);
+        }
+        return filtered;
+      }
+
+      // Case D – invalid filterFn
+      throw new RuntimeError('filter argument must be a function');
+    }
     if (isArrayLike && isBuiltInArrayMethod(node.method)) {
       return registerArrayMethod(node.method, object);
     }

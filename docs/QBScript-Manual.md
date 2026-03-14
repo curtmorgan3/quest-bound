@@ -216,10 +216,11 @@ Accessing an index out of bounds (negative or ≥ length) causes a runtime error
 | `list.push(item)`      | —                  | Adds item to the end (mutates)                     |
 | `list.pop()`           | Last element       | Removes and returns last (mutates)                 |
 | `list.random()`        | Random element     |                                                    |
-| `list.filter()`        | New array          | Copy with only truthy values                       |
-| `list.filterEmpty()`   | New array          | Copy with non-empty values (excludes `''`, `null`) |
-| `list.sort()`          | Same array         | Sorts in place; default is string comparison       |
-| `list.sort(compareFn)` | Same array         | Sorts in place using comparator                    |
+| `list.filter()`          | New array          | Copy with only truthy values                                              |
+| `list.filter(filterFn)`  | New array          | Copy containing only elements for which `filterFn(item)` returns truthy  |
+| `list.filterEmpty()`     | New array          | Copy with non-empty values (excludes `''`, `null`)                        |
+| `list.sort()`            | Same array         | Sorts in place; default is string comparison                              |
+| `list.sort(compareFn)`   | Same array         | Sorts in place using comparator                                           |
 
 **Comparator for `sort(compareFn)`:** Pass a function `compareFn(a, b)`. Return a negative number if `a` should come before `b`, zero if equal, or a positive number if `a` should come after `b`.
 
@@ -244,6 +245,31 @@ byName(a, b):
 
 chars = Scene.characters()
 chars.sort(byName)
+```
+
+**Filter function for `filter(filterFn)`:** Pass a function `filterFn(item)`. Return any truthy value to keep the element, or a falsy value to exclude it. Returns a new array; the original is not mutated.
+
+```javascript
+// No argument: keep truthy values
+values = [0, 1, '', 'hello', null, 42]
+values.filter()  // → [1, 'hello', 42]
+
+// With a filterFn
+isPositive(n):
+  return n > 0
+
+scores = [-5, 10, 0, 3, -1]
+scores.filter(isPositive)  // → [10, 3]
+```
+
+Filtering objects (e.g. only living characters):
+
+```javascript
+isAlive(char):
+  return char.hp > 0
+
+chars = Scene.characters()
+living = chars.filter(isAlive)
 ```
 
 ---

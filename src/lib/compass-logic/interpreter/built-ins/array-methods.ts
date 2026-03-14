@@ -1,4 +1,4 @@
-const arrayMethodLists = ['count', 'first', 'last', 'random', 'filter', 'filterEmpty'];
+const arrayMethodLists = ['count', 'first', 'last', 'random', 'filterEmpty'];
 
 export function isBuiltInArrayMethod(method: any): boolean {
   if (typeof method !== 'string') return false;
@@ -22,10 +22,6 @@ function arrayRandom(arr: any): any {
   return arr[index];
 }
 
-function arrayFilter(arr: any): any {
-  return arr.filter((val: any) => Boolean(val));
-}
-
 function arrayFilterEmpty(arr: any): any {
   return arr.filter(
     (val: any) => val !== '' && val !== undefined && val !== null && val !== 'null',
@@ -42,8 +38,6 @@ export function registerArrayMethod(method: any, arr: any) {
       return arrayFirst(arr);
     case 'last':
       return arrayLast(arr);
-    case 'filter':
-      return arrayFilter(arr);
     case 'filterEmpty':
       return arrayFilterEmpty(arr);
     case 'random':

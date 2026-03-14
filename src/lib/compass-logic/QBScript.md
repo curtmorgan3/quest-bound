@@ -111,10 +111,11 @@ list = [];
 | `list.push(item)`      | Add item to end                                                                                        |
 | `list.pop()`           | Remove and return last item                                                                            |
 | `list.random()`        | Random element                                                                                         |
-| `list.filter()`        | Copy with only truthy values                                                                           |
-| `list.filterEmpty()`   | Copy with non-empty values (excludes `''`, `null`)                                                     |
-| `list.sort()`          | Sorts the array in place (mutates) using string comparison by default; returns the same array         |
-| `list.sort(compareFn)` | Sorts the array in place using `compareFn(a, b)` (negative / zero / positive); returns the same array |
+| `list.filter()`          | New array with only truthy values                                                                      |
+| `list.filter(filterFn)`  | New array containing only elements for which `filterFn(item)` returns truthy                          |
+| `list.filterEmpty()`     | Copy with non-empty values (excludes `''`, `null`)                                                     |
+| `list.sort()`            | Sorts the array in place (mutates) using string comparison by default; returns the same array         |
+| `list.sort(compareFn)`   | Sorts the array in place using `compareFn(a, b)` (negative / zero / positive); returns the same array |
 | `list[index]`          | Access by zero-based index                                                                             |
 
 **Sorting examples:**
@@ -141,6 +142,29 @@ byName(a, b):
 
 chars = await Scene.characters()
 chars.sort(byName)
+```
+
+**Filter examples:**
+
+```javascript
+values = [0, 1, '', 'hello', null, 42]
+
+// No argument: keep truthy values
+values.filter() // → [1, 'hello', 42]
+
+// With a filterFn: keep items matching a condition
+isPositive(n):
+  return n > 0
+
+scores = [-5, 10, 0, 3, -1]
+scores.filter(isPositive) // → [10, 3]
+
+// Filtering objects, e.g. only characters with HP > 0
+isAlive(char):
+  return char.hp > 0
+
+chars = await Scene.characters()
+living = chars.filter(isAlive)
 ```
 
 ### Loops
