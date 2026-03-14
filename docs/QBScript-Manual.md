@@ -400,6 +400,20 @@ announce('Spawned {{spawned.name}}.')
 
 - `char.turnOrder` — This character’s position in turn order (0 = unset). Read-only.
 - `char.setTurnOrder(num)` — Set this character’s turn order (0 = unset; gaps allowed).
+- `char.atStartOfNextTurn(): block` — One-shot; runs at the start of that character’s next turn.
+- `char.atEndOfNextTurn(): block` — One-shot; runs at the end of that character’s next turn.
+- `char.atStartOfTurn(n): block` — One-shot; runs at the start of that character’s nth turn from now. `n=1` is equivalent to `atStartOfNextTurn`. Silently ignored if `n <= 0`.
+- `char.atEndOfTurn(n): block` — One-shot; runs at the end of that character’s nth turn from now. `n=1` is equivalent to `atEndOfNextTurn`. Silently ignored if `n <= 0`.
+
+```javascript
+// Apply a burn effect starting on the 3rd turn from now
+targ.atStartOfTurn(3):
+  targ.hp -= 5
+
+// Expire a buff at the end of the caster’s 2nd turn from now
+Owner.atEndOfTurn(2):
+  Owner.strength -= 4
+```
 
 ---
 

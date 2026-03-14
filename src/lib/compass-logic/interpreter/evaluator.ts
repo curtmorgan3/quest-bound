@@ -186,6 +186,12 @@ export class Evaluator {
       case 'AtEndOfNextTurnCall':
         return this.evalAtEndOfNextTurnCall(node);
 
+      case 'AtStartOfTurnCall':
+        return this.evalAtStartOfTurnCall(node);
+
+      case 'AtEndOfTurnCall':
+        return this.evalAtEndOfTurnCall(node);
+
       case 'ArrayLiteral':
         return this.evalArrayLiteral(node);
 
@@ -699,6 +705,62 @@ export class Evaluator {
         scriptId,
         capturedCharacterIds,
         capturedValues,
+      );
+    }
+  }
+
+  private async evalAtStartOfTurnCall(node: any): Promise<void> {
+    if (!this.globalEnv.has('Scene')) return;
+    const Scene = this.globalEnv.get('Scene');
+    const character = await this.eval(node.object);
+    const characterId =
+      character && typeof character.characterId === 'string' ? character.characterId : null;
+    if (!characterId) return;
+    const n = await this.eval(node.argument);
+    if (typeof n !== 'number' || n <= 0) return;
+    const blockSource = blockStatementsToSource(node.block);
+    const Owner = this.globalEnv.has('Owner') ? this.globalEnv.get('Owner') : null;
+    const ownerId = Owner?.id ?? null;
+    const scriptId = this.globalEnv.has('__scriptId') ? this.globalEnv.get('__scriptId') : '';
+    const { capturedCharacterIds, capturedValues } = this.captureClosureSnapshot(node.block);
+    if (typeof Scene?.registerCharacterTurnCallback === 'function') {
+      await Scene.registerCharacterTurnCallback(
+        characterId,
+        'turn_start',
+        blockSource,
+        ownerId,
+        scriptId,
+        capturedCharacterIds,
+        capturedValues,
+        n,
+      );
+    }
+  }
+
+  private async evalAtEndOfTurnCall(node: any): Promise<void> {
+    if (!this.globalEnv.has('Scene')) return;
+    const Scene = this.globalEnv.get('Scene');
+    const character = await this.eval(node.object);
+    const characterId =
+      character && typeof character.characterId === 'string' ? character.characterId : null;
+    if (!characterId) return;
+    const n = await this.eval(node.argument);
+    if (typeof n !== 'number' || n <= 0) return;
+    const blockSource = blockStatementsToSource(node.block);
+    const Owner = this.globalEnv.has('Owner') ? this.globalEnv.get('Owner') : null;
+    const ownerId = Owner?.id ?? null;
+    const scriptId = this.globalEnv.has('__scriptId') ? this.globalEnv.get('__scriptId') : '';
+    const { capturedCharacterIds, capturedValues } = this.captureClosureSnapshot(node.block);
+    if (typeof Scene?.registerCharacterTurnCallback === 'function') {
+      await Scene.registerCharacterTurnCallback(
+        characterId,
+        'turn_end',
+        blockSource,
+        ownerId,
+        scriptId,
+        capturedCharacterIds,
+        capturedValues,
+        n,
       );
     }
   }

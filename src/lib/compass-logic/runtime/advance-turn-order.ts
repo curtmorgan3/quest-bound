@@ -132,7 +132,15 @@ export async function advanceSceneTurnState(
 
   // Separate skipped callbacks (registered during the character's own active turn) from ready ones.
   const skippedTurnEnd = allTurnEndMatches.filter((cb) => cb.skipNextTurnEnd === true);
-  const turnEndCallbacks = allTurnEndMatches.filter((cb) => cb.skipNextTurnEnd !== true);
+  // Callbacks with turnsRemaining > 1 need to be decremented, not fired yet.
+  const pendingTurnEnd = allTurnEndMatches.filter(
+    (cb) => cb.skipNextTurnEnd !== true && cb.turnsRemaining !== undefined && cb.turnsRemaining > 1,
+  );
+  const turnEndCallbacks = allTurnEndMatches.filter(
+    (cb) =>
+      cb.skipNextTurnEnd !== true &&
+      (cb.turnsRemaining === undefined || cb.turnsRemaining <= 1),
+  );
 
   // Clear the skip flag on skipped callbacks so they fire next time.
   for (const cb of skippedTurnEnd) {
@@ -142,7 +150,15 @@ export async function advanceSceneTurnState(
     });
   }
 
-  const turnStartCallbacks: SceneTurnCallback[] = newCharacterId
+  // Decrement turnsRemaining on callbacks that aren't ready yet.
+  for (const cb of pendingTurnEnd) {
+    await db.sceneTurnCallbacks.update(cb.id, {
+      turnsRemaining: (cb.turnsRemaining as number) - 1,
+      updatedAt: new Date().toISOString(),
+    });
+  }
+
+  const allTurnStartMatches: SceneTurnCallback[] = newCharacterId
     ? ((await db.sceneTurnCallbacks
         .where('campaignSceneId')
         .equals(campaignSceneId)
@@ -152,6 +168,22 @@ export async function advanceSceneTurnState(
         )
         .sortBy('createdAt')) as SceneTurnCallback[])
     : [];
+
+  // Callbacks with turnsRemaining > 1 need to be decremented, not fired yet.
+  const pendingTurnStart = allTurnStartMatches.filter(
+    (cb) => cb.turnsRemaining !== undefined && cb.turnsRemaining > 1,
+  );
+  const turnStartCallbacks = allTurnStartMatches.filter(
+    (cb) => cb.turnsRemaining === undefined || cb.turnsRemaining <= 1,
+  );
+
+  // Decrement turnsRemaining on callbacks that aren't ready yet.
+  for (const cb of pendingTurnStart) {
+    await db.sceneTurnCallbacks.update(cb.id, {
+      turnsRemaining: (cb.turnsRemaining as number) - 1,
+      updatedAt: new Date().toISOString(),
+    });
+  }
 
   // Delete one-shot callbacks before returning so they never re-fire.
   for (const cb of turnEndCallbacks) await db.sceneTurnCallbacks.delete(cb.id);

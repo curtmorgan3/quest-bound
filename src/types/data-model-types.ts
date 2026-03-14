@@ -559,6 +559,12 @@ export type SceneTurnCallback = BaseDetails & {
    * callback doesn't fire at the end of the current turn but fires at the end of the next one.
    */
   skipNextTurnEnd?: boolean;
+  /**
+   * For atStartOfTurn(n) / atEndOfTurn(n): number of remaining character-turns before the callback fires.
+   * Decremented each time the target character's turn start/end is reached. Fires and is deleted when it reaches 1.
+   * Undefined for atStartOfNextTurn / atEndOfNextTurn (always fires on the very next turn).
+   */
+  turnsRemaining?: number;
 };
 
 export type CampaignEventParamType = 'string' | 'number' | 'boolean';

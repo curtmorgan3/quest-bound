@@ -13,6 +13,8 @@ import type {
   OnTurnAdvanceCall,
   AtStartOfNextTurnCall,
   AtEndOfNextTurnCall,
+  AtStartOfTurnCall,
+  AtEndOfTurnCall,
   Assignment,
   BinaryOp,
   UnaryOp,
@@ -345,6 +347,33 @@ export class Parser {
           return { type: 'AtStartOfNextTurnCall', object: mc.object, block } as AtStartOfNextTurnCall;
         }
         return { type: 'AtEndOfNextTurnCall', object: mc.object, block } as AtEndOfNextTurnCall;
+      }
+
+      // <character>.atStartOfTurn(n): block or <character>.atEndOfTurn(n): block
+      if (
+        (mc.method === 'atStartOfTurn' || mc.method === 'atEndOfTurn') &&
+        this.check(TokenType.COLON)
+      ) {
+        const method = mc.method;
+        this.consume(TokenType.COLON, `Expected ':' after ${method}(...)`);
+        this.consume(TokenType.NEWLINE, "Expected newline after ':'");
+        this.skipNewlines();
+        if (this.check(TokenType.INDENT)) this.advance();
+        const block = this.block();
+        if (method === 'atStartOfTurn') {
+          return {
+            type: 'AtStartOfTurnCall',
+            object: mc.object,
+            argument: mc.arguments[0],
+            block,
+          } as AtStartOfTurnCall;
+        }
+        return {
+          type: 'AtEndOfTurnCall',
+          object: mc.object,
+          argument: mc.arguments[0],
+          block,
+        } as AtEndOfTurnCall;
       }
     }
 

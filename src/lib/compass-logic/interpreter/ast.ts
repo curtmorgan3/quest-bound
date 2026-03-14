@@ -20,6 +20,8 @@ export type ASTNode =
   | OnTurnAdvanceCall
   | AtStartOfNextTurnCall
   | AtEndOfNextTurnCall
+  | AtStartOfTurnCall
+  | AtEndOfTurnCall
   | ArrayLiteral
   | ArrayAccess
   | ObjectLiteral
@@ -156,6 +158,24 @@ export interface AtEndOfNextTurnCall {
   type: 'AtEndOfNextTurnCall';
   /** The character expression (e.g. identifier `targ`, `Owner`, etc.). */
   object: ASTNode;
+  block: ASTNode[];
+}
+
+/** character.atStartOfTurn(n): block — register a one-shot callback for the start of that character's nth turn from now. */
+export interface AtStartOfTurnCall {
+  type: 'AtStartOfTurnCall';
+  object: ASTNode;
+  /** Expression evaluating to the number of turns to wait (n=1 is equivalent to atStartOfNextTurn). */
+  argument: ASTNode;
+  block: ASTNode[];
+}
+
+/** character.atEndOfTurn(n): block — register a one-shot callback for the end of that character's nth turn from now. */
+export interface AtEndOfTurnCall {
+  type: 'AtEndOfTurnCall';
+  object: ASTNode;
+  /** Expression evaluating to the number of turns to wait (n=1 is equivalent to atEndOfNextTurn). */
+  argument: ASTNode;
   block: ASTNode[];
 }
 

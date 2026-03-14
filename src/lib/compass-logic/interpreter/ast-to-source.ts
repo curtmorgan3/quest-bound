@@ -5,6 +5,8 @@ import type {
   Assignment,
   AtEndOfNextTurnCall,
   AtStartOfNextTurnCall,
+  AtStartOfTurnCall,
+  AtEndOfTurnCall,
   BinaryOp,
   BooleanLiteral,
   ForLoop,
@@ -167,6 +169,18 @@ export function astToSource(
       const aet = node as AtEndOfNextTurnCall;
       let out = `${prefix}${exprToSource(aet.object)}.atEndOfNextTurn():\n`;
       out += blockToSource(aet.block, safeLevel + 1, safeIndent);
+      return out;
+    }
+    case 'AtStartOfTurnCall': {
+      const ast2 = node as AtStartOfTurnCall;
+      let out = `${prefix}${exprToSource(ast2.object)}.atStartOfTurn(${exprToSource(ast2.argument)}):\n`;
+      out += blockToSource(ast2.block, safeLevel + 1, safeIndent);
+      return out;
+    }
+    case 'AtEndOfTurnCall': {
+      const aet2 = node as AtEndOfTurnCall;
+      let out = `${prefix}${exprToSource(aet2.object)}.atEndOfTurn(${exprToSource(aet2.argument)}):\n`;
+      out += blockToSource(aet2.block, safeLevel + 1, safeIndent);
       return out;
     }
     case 'Program': {

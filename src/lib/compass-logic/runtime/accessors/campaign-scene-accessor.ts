@@ -291,6 +291,7 @@ export class CampaignSceneAccessor {
     scriptId: string,
     capturedCharacterIds?: Record<string, string>,
     capturedValues?: Record<string, string | number | boolean | null>,
+    turnsRemaining?: number,
   ): Promise<void> {
     if (!targetCharacterId) return;
     const cycle = await this.currentTurnCycle();
@@ -298,8 +299,9 @@ export class CampaignSceneAccessor {
 
     // For turn_end, check whether the target character is currently the active turn character.
     // If so, the upcoming turn-end is the *current* turn ending — skip it and wait for the next.
+    // Only applies when turnsRemaining is undefined (i.e. atEndOfNextTurn, not atEndOfTurn(n)).
     let skipNextTurnEnd = false;
-    if (triggerOn === 'turn_end') {
+    if (triggerOn === 'turn_end' && turnsRemaining === undefined) {
       const scene = (await this.db.campaignScenes.get(this.campaignSceneId)) as
         | CampaignScene
         | undefined;
@@ -328,6 +330,7 @@ export class CampaignSceneAccessor {
       targetCharacterId,
       triggerOn,
       skipNextTurnEnd: skipNextTurnEnd || undefined,
+      turnsRemaining: turnsRemaining !== undefined ? turnsRemaining : undefined,
       capturedCharacterIds:
         capturedCharacterIds && Object.keys(capturedCharacterIds).length > 0
           ? capturedCharacterIds

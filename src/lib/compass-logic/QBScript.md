@@ -389,6 +389,13 @@ announce('Spawned {{spawned.name}} into the scene.')
 - `Owner.Attribute('attribute name')` — character's attribute instance
 - `getAttr('attribute name')` — character's attribute instance's value, shorthand for `Owner.Attribute('attribute name').value`
 
+**Turn-based callbacks:**
+
+- `char.atStartOfNextTurn(): block` — one-shot; fires at the start of that character's next turn.
+- `char.atEndOfNextTurn(): block` — one-shot; fires at the end of that character's next turn.
+- `char.atStartOfTurn(n): block` — one-shot; fires at the start of that character's nth turn from now (`n=1` = next turn). Silently ignored if `n <= 0`.
+- `char.atEndOfTurn(n): block` — one-shot; fires at the end of that character's nth turn from now (`n=1` = next turn). Silently ignored if `n <= 0`.
+
 ### Attribute API
 
 Attribute scripts are reactive: they re-run when subscribed dependencies change and must `return` a value to set the attribute.
