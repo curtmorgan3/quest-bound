@@ -82,8 +82,6 @@ export const ConditionalRenderEdit = ({
   const selectedAttribute = attributeId ? attributes?.find((a) => a.id === attributeId) : undefined;
   const attributeType = selectedAttribute?.type;
 
-  console.log(attributeType);
-
   const logic = conditionalRenderLogic ?? { operator: 'eq', value: '' };
   const isBoolean = attributeType === 'boolean';
 

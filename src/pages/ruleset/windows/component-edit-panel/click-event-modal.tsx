@@ -67,7 +67,7 @@ export const ClickEventModal = ({ component, allCanOpenChildWindow }: Props) => 
     const header =
       '// Auto-generated click handler script. Uses stable entity IDs so it keeps working when labels change.\n\n';
     if (kind === 'openPage') return `${header}Owner.navigateToPage('${targetId}')\n`;
-    if (kind === 'openWindow') return `${header}Owner.openWindow('${targetId}')\n`;
+    if (kind === 'openWindow') return `${header}Owner.openWindow('${targetId}', true)\n`;
     return `${header}Owner.Action('${targetId}').activate()\n`;
   };
 
