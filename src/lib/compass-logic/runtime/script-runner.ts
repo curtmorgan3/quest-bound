@@ -51,7 +51,7 @@ const CELL_SIZE_PX = 20;
 async function resolveInventoryRefLabel(
   db: DB,
   item: InventoryItem & { _inventoryRefLabel?: string },
-): Promise<InventoryItem> {
+): Promise<InventoryItem | null> {
   const ref = item._inventoryRefLabel;
   const { _inventoryRefLabel: _, ...rest } = item;
   const out: InventoryItem = { ...rest };
@@ -148,9 +148,8 @@ async function resolveInventoryRefLabel(
     }
   }
 
-  out.x = 0;
-  out.y = 0;
-  return out;
+  console.warn('Inventory component is full. Skipping item add.');
+  return null;
 }
 
 /**
@@ -741,7 +740,7 @@ export class ScriptRunner {
             itemToAdd = { ...item, customProperties: item.customProperties ?? {} };
           }
           const resolved = await resolveInventoryRefLabel(db, itemToAdd);
-          await db.inventoryItems.add(resolved);
+          if (resolved) await db.inventoryItems.add(resolved);
         }
       } else if (type === 'inventoryUpdate') {
         const now = new Date().toISOString();
