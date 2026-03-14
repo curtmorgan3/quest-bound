@@ -51,6 +51,7 @@ export const ClickEventModal = ({ component, allCanOpenChildWindow }: Props) => 
   const [clickEventType, setClickEventType] = useState<ClickEventType>('openPage');
   const [openWindowX, setOpenWindowX] = useState(0);
   const [openWindowY, setOpenWindowY] = useState(0);
+  const [childWindowCollapse, setChildWindowCollapse] = useState(false);
 
   const selectedScript: Script | undefined = useMemo(
     () => scripts.find((s) => s.id === component.scriptId),
@@ -67,12 +68,13 @@ export const ClickEventModal = ({ component, allCanOpenChildWindow }: Props) => 
     targetId: string,
     x?: number,
     y?: number,
+    collapse?: boolean,
   ): string => {
     const header =
       '// Auto-generated click handler script. Uses stable entity IDs so it keeps working when labels change.\n\n';
     if (kind === 'openPage') return `${header}Owner.navigateToPage('${targetId}')\n`;
     if (kind === 'openWindow')
-      return `${header}Owner.openWindow('${targetId}', ${x ?? 0}, ${y ?? 0}, true)\n`;
+      return `${header}Owner.openWindow('${targetId}', ${x ?? 0}, ${y ?? 0}, ${collapse ?? false})\n`;
     return `${header}Owner.Action('${targetId}').activate()\n`;
   };
 
@@ -81,9 +83,10 @@ export const ClickEventModal = ({ component, allCanOpenChildWindow }: Props) => 
     targetId: string,
     x?: number,
     y?: number,
+    collapse?: boolean,
   ): Promise<string | undefined> => {
     const existingId = component.scriptId ?? undefined;
-    const sourceCode = buildClickScriptSource(kind, targetId, x, y);
+    const sourceCode = buildClickScriptSource(kind, targetId, x, y, collapse);
 
     if (existingId) {
       const existing = scripts.find((s) => s.id === existingId);
@@ -177,11 +180,17 @@ export const ClickEventModal = ({ component, allCanOpenChildWindow }: Props) => 
     await updateComponents([update]);
   };
 
-  const handleSetOpenWindowClick = async (childWindowId: string, x: number, y: number) => {
+  const handleSetOpenWindowClick = async (
+    childWindowId: string,
+    x: number,
+    y: number,
+    collapse?: boolean,
+  ) => {
     const baseData: ComponentData = JSON.parse(component.data);
     baseData.childWindowX = x;
     baseData.childWindowY = y;
-    const scriptId = await ensureClickScript('openWindow', childWindowId, x, y);
+    baseData.childWindowCollapse = collapse ?? false;
+    const scriptId = await ensureClickScript('openWindow', childWindowId, x, y, collapse);
     const update: any = { id: component.id, childWindowId, data: JSON.stringify(baseData) };
     if (scriptId) update.scriptId = scriptId;
     await updateComponents([update]);
@@ -191,6 +200,7 @@ export const ClickEventModal = ({ component, allCanOpenChildWindow }: Props) => 
     const baseData = JSON.parse(component.data);
     delete baseData.openWindowX;
     delete baseData.openWindowY;
+    delete baseData.childWindowCollapse;
     const update: any = {
       id: component.id,
       childWindowId: null as string | null,
@@ -293,6 +303,7 @@ export const ClickEventModal = ({ component, allCanOpenChildWindow }: Props) => 
           const data = getComponentData(component);
           setOpenWindowX(data.childWindowX ?? 0);
           setOpenWindowY(data.childWindowY ?? 0);
+          setChildWindowCollapse(data.childWindowCollapse ?? false);
           setOpen(true);
         }}>
         Set Click Event
@@ -365,7 +376,7 @@ export const ClickEventModal = ({ component, allCanOpenChildWindow }: Props) => 
                   label='Open Window'
                   value={component.childWindowId}
                   onSelect={(win) => {
-                    void handleSetOpenWindowClick(win.id, openWindowX, openWindowY);
+                    void handleSetOpenWindowClick(win.id, openWindowX, openWindowY, childWindowCollapse);
                   }}
                   onDelete={() => {
                     void handleClearOpenWindowClick();
@@ -383,7 +394,7 @@ export const ClickEventModal = ({ component, allCanOpenChildWindow }: Props) => 
                         const val = e.target.value === '' ? 0 : Number(e.target.value);
                         setOpenWindowX(val);
                         if (component.childWindowId) {
-                          void handleSetOpenWindowClick(component.childWindowId, val, openWindowY);
+                          void handleSetOpenWindowClick(component.childWindowId, val, openWindowY, childWindowCollapse);
                         }
                       }}
                     />
@@ -398,11 +409,27 @@ export const ClickEventModal = ({ component, allCanOpenChildWindow }: Props) => 
                         const val = e.target.value === '' ? 0 : Number(e.target.value);
                         setOpenWindowY(val);
                         if (component.childWindowId) {
-                          void handleSetOpenWindowClick(component.childWindowId, openWindowX, val);
+                          void handleSetOpenWindowClick(component.childWindowId, openWindowX, val, childWindowCollapse);
                         }
                       }}
                     />
                   </div>
+                </div>
+                <div className='flex items-center gap-2'>
+                  <Checkbox
+                    id='child-window-collapse'
+                    checked={childWindowCollapse}
+                    onCheckedChange={(checked) => {
+                      const val = checked === true;
+                      setChildWindowCollapse(val);
+                      if (component.childWindowId) {
+                        void handleSetOpenWindowClick(component.childWindowId, openWindowX, openWindowY, val);
+                      }
+                    }}
+                  />
+                  <Label htmlFor='child-window-collapse' className='text-sm leading-none'>
+                    Minimize if open
+                  </Label>
                 </div>
               </div>
             )}

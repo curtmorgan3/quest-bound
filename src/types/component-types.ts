@@ -145,4 +145,5 @@ export type ComponentData = ShapeComponentData &
     tooltipPlacement?: 'top' | 'right' | 'bottom' | 'left';
     childWindowX?: number;
     childWindowY?: number;
+    childWindowCollapse?: boolean;
   };

@@ -882,8 +882,20 @@ export class ScriptRunner {
           }
         }
       } else if (type === 'characterWindowOpen') {
-        const entries = value as { characterId: string; label: string; collapse?: boolean; x?: number; y?: number }[];
-        for (const { characterId, label, collapse: collapseIfOpen, x: openX, y: openY } of entries) {
+        const entries = value as {
+          characterId: string;
+          label: string;
+          collapse?: boolean;
+          x?: number;
+          y?: number;
+        }[];
+        for (const {
+          characterId,
+          label,
+          collapse: collapseIfOpen,
+          x: openX,
+          y: openY,
+        } of entries) {
           const character = await db.characters.get(characterId);
           if (!character) continue;
 
@@ -933,6 +945,8 @@ export class ScriptRunner {
               await db.characterWindows.update(existing.id, {
                 isCollapsed: false,
                 updatedAt: now,
+                x: openX ?? existing.x,
+                y: openY ?? existing.y,
               });
             } else {
               if (collapseIfOpen) {
