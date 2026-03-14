@@ -15,7 +15,7 @@ import {
   Label,
   Textarea,
 } from '@/components';
-import { ImportRulesetOverwriteModals, PageWrapper } from '@/components/composites';
+import { ImportRulesetOverwriteModals, Loading, PageWrapper } from '@/components/composites';
 import {
   Dialog,
   DialogClose,
@@ -33,7 +33,7 @@ import { useNavigate } from 'react-router-dom';
 
 export const Rulesets = () => {
   const { rulesets, createRuleset, deleteRuleset } = useRulesets();
-  const { importRuleset, isImporting } = useImportRuleset();
+  const { importRuleset, isImporting, importStep } = useImportRuleset();
 
   const sortedRulesets = [...rulesets].sort((a, b) => a.title.localeCompare(b.title));
 
@@ -332,6 +332,17 @@ export const Rulesets = () => {
           );
         })}
       </div>
+
+      {isImporting && (
+        <div className='fixed inset-0 z-50 bg-background'>
+          <Loading />
+          {importStep && (
+            <p className='absolute inset-x-0 bottom-1/3 text-center text-sm text-muted-foreground'>
+              {importStep}...
+            </p>
+          )}
+        </div>
+      )}
 
       {importResult && (
         <div

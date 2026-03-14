@@ -197,6 +197,7 @@ interface ImportedMetadata {
 
 export const useImportRuleset = () => {
   const [isImporting, setIsImporting] = useState(false);
+  const [importStep, setImportStep] = useState<string | null>(null);
   const { handleError } = useErrorHandler();
   const { createRuleset } = useRulesets();
 
@@ -519,6 +520,7 @@ export const useImportRuleset = () => {
     options?: ImportRulesetOptions,
   ): Promise<ImportRulesetResult> => {
     setIsImporting(true);
+    setImportStep('Reading zip file');
 
     try {
       // Parse the zip file
@@ -581,6 +583,8 @@ export const useImportRuleset = () => {
 
       const metadataText = await metadataFile.async('text');
       const metadata: ImportedMetadata = JSON.parse(metadataText);
+
+      setImportStep('Validating metadata');
 
       // Validate metadata
       const metadataValidation = validateMetadata(metadata);
@@ -872,6 +876,8 @@ export const useImportRuleset = () => {
 
       const allErrors: string[] = [];
 
+      setImportStep('Importing attributes');
+
       // Import characterAttributes
       const characterAttributesFile = getZipFile('application data/characterAttributes.json');
       if (characterAttributesFile) {
@@ -951,6 +957,8 @@ export const useImportRuleset = () => {
         }
       }
 
+      setImportStep('Importing actions');
+
       // Import actions (TSV format)
       const actionsFile = getZipFile('actions.tsv');
       if (actionsFile) {
@@ -1000,6 +1008,8 @@ export const useImportRuleset = () => {
           );
         }
       }
+
+      setImportStep('Importing items');
 
       // Import items (TSV format)
       const itemsFile = getZipFile('items.tsv');
@@ -1059,6 +1069,8 @@ export const useImportRuleset = () => {
           );
         }
       }
+
+      setImportStep('Importing charts');
 
       // Import charts (metadata from JSON, data from TSV files in charts folder)
       const chartsFile = getZipFile('application data/charts.json');
@@ -1191,6 +1203,8 @@ export const useImportRuleset = () => {
         }
       }
 
+      setImportStep('Importing windows');
+
       // Import windows (must be imported before components since components reference windows)
       const windowsFile = getZipFile('application data/windows.json');
       if (windowsFile) {
@@ -1220,6 +1234,8 @@ export const useImportRuleset = () => {
         }
       }
 
+      setImportStep('Importing components');
+
       // Import components (must be imported after windows to map windowIds)
       const componentsFile = getZipFile('application data/components.json');
       if (componentsFile) {
@@ -1248,12 +1264,15 @@ export const useImportRuleset = () => {
         }
       }
 
+      setImportStep('Importing assets');
+
       // Import assets (metadata from JSON; data from JSON when URL, else from files in assets folder)
       const assetsFile = getZipFile('application data/assets.json');
       if (assetsFile) {
         try {
           const assetsText = await assetsFile.async('text');
-          const assetsMetadata: (Omit<Asset, 'data'> & { data?: string })[] = JSON.parse(assetsText);
+          const assetsMetadata: (Omit<Asset, 'data'> & { data?: string })[] =
+            JSON.parse(assetsText);
 
           // Load asset data from files in assets folder
           const assetDataMap: Record<string, string> = {};
@@ -1323,6 +1342,8 @@ export const useImportRuleset = () => {
         }
       }
 
+      setImportStep('Importing fonts');
+
       // Import fonts (metadata from JSON, data from files in fonts folder)
       const fontsFile = getZipFile('application data/fonts.json');
       if (fontsFile) {
@@ -1381,6 +1402,8 @@ export const useImportRuleset = () => {
           );
         }
       }
+
+      setImportStep('Importing documents');
 
       // Import documents
       const documentsFile = getZipFile('application data/documents.json');
@@ -1642,6 +1665,8 @@ export const useImportRuleset = () => {
         }
       }
 
+      setImportStep('Importing characters');
+
       // Import characters
       const charactersFile = getZipFile('application data/characters.json');
       if (charactersFile) {
@@ -1681,6 +1706,8 @@ export const useImportRuleset = () => {
           );
         }
       }
+
+      setImportStep('Importing campaigns');
 
       // Import campaigns and related data (after characters, since campaignCharacters reference characterId)
       const campaignsFile = getZipFile('application data/campaigns.json');
@@ -1882,10 +1909,14 @@ export const useImportRuleset = () => {
 
       // Legacy export (no archetypes.json): ruleset creation hook creates default archetype from first test character
 
+      setImportStep('Creating ruleset');
+
       // Create ruleset after importing characters so test character isn't duplicated (skip when content-only import)
       if (!options?.contentOnlyIntoRulesetId) {
         await createRuleset(newRuleset);
       }
+
+      setImportStep('Importing scripts');
 
       // Import scripts after all entities are created (so we can link scripts to entities)
       try {
@@ -1905,36 +1936,41 @@ export const useImportRuleset = () => {
             allErrors.push(...scriptImportResult.errors.map((e) => `Script error: ${e}`));
           }
 
-          // Link scripts to entities: for each script with entityId, set that entity's scriptId
+          // Link scripts to entities: batch updates by entity type to avoid N sequential round-trips
           const scriptsWithEntity = await db.scripts
             .where('rulesetId')
             .equals(newRulesetId)
             .filter((s) => s.entityId != null && s.entityType !== 'global')
             .toArray();
+
+          type BulkUpdateEntry = { key: string; changes: { scriptId: string } };
+          const attributeUpdates: BulkUpdateEntry[] = [];
+          const actionUpdates: BulkUpdateEntry[] = [];
+          const itemUpdates: BulkUpdateEntry[] = [];
+          const archetypeUpdates: BulkUpdateEntry[] = [];
+
           for (const script of scriptsWithEntity) {
             if (!script.entityId) continue;
-            if (script.entityType === 'attribute') {
-              const attr = await db.attributes.get(script.entityId);
-              if (attr?.rulesetId === newRulesetId) {
-                await db.attributes.update(script.entityId, { scriptId: script.id });
-              }
-            } else if (script.entityType === 'action') {
-              const action = await db.actions.get(script.entityId);
-              if (action?.rulesetId === newRulesetId) {
-                await db.actions.update(script.entityId, { scriptId: script.id });
-              }
-            } else if (script.entityType === 'item') {
-              const item = await db.items.get(script.entityId);
-              if (item?.rulesetId === newRulesetId) {
-                await db.items.update(script.entityId, { scriptId: script.id });
-              }
-            } else if (script.entityType === 'archetype') {
-              const archetype = await db.archetypes.get(script.entityId);
-              if (archetype?.rulesetId === newRulesetId) {
-                await db.archetypes.update(script.entityId, { scriptId: script.id });
-              }
-            }
+            const entry = { key: script.entityId, changes: { scriptId: script.id } };
+            if (script.entityType === 'attribute') attributeUpdates.push(entry);
+            else if (script.entityType === 'action') actionUpdates.push(entry);
+            else if (script.entityType === 'item') itemUpdates.push(entry);
+            else if (script.entityType === 'archetype') archetypeUpdates.push(entry);
           }
+
+          await db.transaction(
+            'rw',
+            db.attributes,
+            db.actions,
+            db.items,
+            db.archetypes,
+            async () => {
+              if (attributeUpdates.length) await db.attributes.bulkUpdate(attributeUpdates);
+              if (actionUpdates.length) await db.actions.bulkUpdate(actionUpdates);
+              if (itemUpdates.length) await db.items.bulkUpdate(itemUpdates);
+              if (archetypeUpdates.length) await db.archetypes.bulkUpdate(archetypeUpdates);
+            },
+          );
         }
       } catch (error) {
         allErrors.push(
@@ -2019,11 +2055,13 @@ export const useImportRuleset = () => {
       };
     } finally {
       setIsImporting(false);
+      setImportStep(null);
     }
   };
 
   return {
     importRuleset,
     isImporting,
+    importStep,
   };
 };

@@ -80,20 +80,19 @@ export function registerRulesetDbHooks(db: DB) {
         await db.components.where('rulesetId').equals(rulesetId).delete();
 
         await db.archetypes.where('rulesetId').equals(rulesetId).delete();
+        await db.characters.where('rulesetId').equals(rulesetId).delete();
 
         await db.assets.where('rulesetId').equals(rulesetId).delete();
         await db.fonts.where('rulesetId').equals(rulesetId).delete();
         await db.diceRolls.where('rulesetId').equals(rulesetId).delete();
         await db.customProperties.where('rulesetId').equals(rulesetId).delete();
 
+        await db.campaigns.where('rulesetId').equals(rulesetId).delete();
+
         await db.scripts.where('rulesetId').equals(rulesetId).delete();
         await db.scriptErrors.where('rulesetId').equals(rulesetId).delete();
         await db.scriptLogs.where('rulesetId').equals(rulesetId).delete();
         await db.dependencyGraphNodes.where('rulesetId').equals(rulesetId).delete();
-
-        await db.campaigns.where('rulesetId').equals(rulesetId).delete();
-
-        await db.characters.where('rulesetId').equals(rulesetId).delete();
       } catch (error) {
         console.error('Failed to delete associated entities for ruleset:', error);
       }
