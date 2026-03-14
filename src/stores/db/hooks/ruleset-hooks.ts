@@ -61,41 +61,4 @@ export function registerRulesetDbHooks(db: DB) {
     }, 0);
   });
 
-  // Delete all associated entities when a ruleset is deleted
-  db.rulesets.hook('deleting', (primKey) => {
-    setTimeout(async () => {
-      try {
-        const rulesetId = primKey as string;
-
-        await db.attributes.where('rulesetId').equals(rulesetId).delete();
-        await db.actions.where('rulesetId').equals(rulesetId).delete();
-        await db.items.where('rulesetId').equals(rulesetId).delete();
-
-        await db.charts.where('rulesetId').equals(rulesetId).delete();
-        await db.documents.where('rulesetId').equals(rulesetId).delete();
-
-        await db.pages.where('rulesetId').equals(rulesetId).delete();
-        await db.windows.where('rulesetId').equals(rulesetId).delete();
-        await db.rulesetWindows.where('rulesetId').equals(rulesetId).delete();
-        await db.components.where('rulesetId').equals(rulesetId).delete();
-
-        await db.archetypes.where('rulesetId').equals(rulesetId).delete();
-        await db.characters.where('rulesetId').equals(rulesetId).delete();
-
-        await db.assets.where('rulesetId').equals(rulesetId).delete();
-        await db.fonts.where('rulesetId').equals(rulesetId).delete();
-        await db.diceRolls.where('rulesetId').equals(rulesetId).delete();
-        await db.customProperties.where('rulesetId').equals(rulesetId).delete();
-
-        await db.campaigns.where('rulesetId').equals(rulesetId).delete();
-
-        await db.scripts.where('rulesetId').equals(rulesetId).delete();
-        await db.scriptErrors.where('rulesetId').equals(rulesetId).delete();
-        await db.scriptLogs.where('rulesetId').equals(rulesetId).delete();
-        await db.dependencyGraphNodes.where('rulesetId').equals(rulesetId).delete();
-      } catch (error) {
-        console.error('Failed to delete associated entities for ruleset:', error);
-      }
-    }, 0);
-  });
 }

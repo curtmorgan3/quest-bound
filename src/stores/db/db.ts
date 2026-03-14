@@ -40,6 +40,7 @@ import { chartOptionsMiddleware, memoizedCharts } from './chart-options-middlewa
 import { registerDbHooks } from './hooks/db-hooks';
 import { memoizedAssets } from './memoization-cache';
 import { registerVersions } from './migrations/run-migrations';
+import { createRulesetCascadeDeleteMiddleware } from './ruleset-cascade-delete-middleware';
 
 const db = new Dexie('qbdb') as Dexie & {
   users: EntityTable<
@@ -107,6 +108,7 @@ db.on('ready', async () => {
 
 db.use(assetInjectorMiddleware);
 db.use(chartOptionsMiddleware);
+db.use(createRulesetCascadeDeleteMiddleware(() => db));
 registerDbHooks(db);
 
 export { db };
