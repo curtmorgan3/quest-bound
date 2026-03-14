@@ -441,18 +441,23 @@ export class Evaluator {
       const args = await Promise.all(node.arguments.map((arg: ASTNode) => this.eval(arg)));
       const filterFnVal = args[0];
 
+      const arr = object as any[];
+
       // Case A – no filterFn: filter for truthy values
       if (filterFnVal === undefined || filterFnVal === null) {
-        return (object as any[]).filter(Boolean);
+        const kept = arr.filter(Boolean);
+        arr.splice(0, arr.length, ...kept);
+        return arr;
       }
 
       // Case B – filterFn is a native JS function
       if (typeof filterFnVal === 'function') {
-        const result: any[] = [];
-        for (const item of object as any[]) {
-          if (await filterFnVal(item)) result.push(item);
+        const kept: any[] = [];
+        for (const item of arr) {
+          if (await filterFnVal(item)) kept.push(item);
         }
-        return result;
+        arr.splice(0, arr.length, ...kept);
+        return arr;
       }
 
       // Case C – filterFn is a QBScript function value
@@ -490,11 +495,12 @@ export class Evaluator {
           }
         };
 
-        const filtered: any[] = [];
-        for (const item of object as any[]) {
-          if (await callFilterFn(item)) filtered.push(item);
+        const kept: any[] = [];
+        for (const item of arr) {
+          if (await callFilterFn(item)) kept.push(item);
         }
-        return filtered;
+        arr.splice(0, arr.length, ...kept);
+        return arr;
       }
 
       // Case D – invalid filterFn
