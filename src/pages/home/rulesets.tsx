@@ -26,22 +26,36 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { useImportRuleset, useRulesets, type ImportRulesetResult } from '@/lib/compass-api';
+import {
+  useCloudRulesets,
+  useImportRuleset,
+  useRulesets,
+  type ImportRulesetResult,
+} from '@/lib/compass-api';
 import { isCloudConfigured } from '@/lib/cloud/client';
 import { useSyncStateStore } from '@/lib/cloud/sync/sync-state';
 import { useCloudAuthStore } from '@/stores/cloud-auth-store';
-import { AlertCircle, CheckCircle, Cloud, Plus, Upload, X } from 'lucide-react';
+import { AlertCircle, CheckCircle, Cloud, Download, Plus, Upload, X } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 export const Rulesets = () => {
   const { rulesets, createRuleset, deleteRuleset } = useRulesets();
   const { importRuleset, isImporting, importStep } = useImportRuleset();
+  const {
+    cloudRulesets,
+    installFromCloud,
+    isInstalling: isInstallingCloud,
+    installingRulesetId,
+  } = useCloudRulesets();
   const isAuthenticated = useCloudAuthStore((s) => s.isAuthenticated);
   const isCloudSynced = useSyncStateStore((s) => s.isCloudSynced);
   const showCloudBadge = isCloudConfigured && isAuthenticated;
 
+  const localIds = new Set(rulesets.map((r) => r.id));
+  const cloudOnlyRulesets = cloudRulesets.filter((r) => !localIds.has(r.id));
   const sortedRulesets = [...rulesets].sort((a, b) => a.title.localeCompare(b.title));
+  const sortedCloudOnly = [...cloudOnlyRulesets].sort((a, b) => a.title.localeCompare(b.title));
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -346,14 +360,65 @@ export const Rulesets = () => {
             </Card>
           );
         })}
+        {showCloudBadge &&
+          sortedCloudOnly.map((r) => (
+            <Card
+              key={r.id}
+              className='flex aspect-square w-[min(100%,280px)] flex-col overflow-hidden p-0'
+              data-testid='ruleset-card-cloud'>
+              <div
+                className='min-h-0 flex-1 bg-muted bg-cover bg-center'
+                style={r.image ? { backgroundImage: `url(${r.image})` } : undefined}
+              />
+              <div className='flex shrink-0 flex-col gap-2 border-t p-3'>
+                <div className='flex min-w-0 items-baseline justify-between gap-2'>
+                  <h2 className='flex min-w-0 items-center gap-1.5 truncate text-sm font-semibold'>
+                    <span className='truncate'>{r.title}</span>
+                    <Cloud
+                      className='h-3.5 w-3.5 shrink-0 text-muted-foreground'
+                      aria-label='In Quest Bound Cloud'
+                      data-testid='ruleset-cloud-badge'
+                    />
+                  </h2>
+                  <span className='shrink-0 text-xs text-muted-foreground'>v{r.version}</span>
+                </div>
+                <div className='flex items-center gap-2'>
+                  <Button
+                    variant='outline'
+                    size='sm'
+                    className='h-8 flex-1 gap-1'
+                    disabled={isInstallingCloud}
+                    onClick={() => installFromCloud(r.id)}
+                    data-testid='ruleset-card-install'>
+                    {installingRulesetId === r.id ? (
+                      <>
+                        <Download className='h-3.5 w-3.5 animate-pulse' />
+                        Installing…
+                      </>
+                    ) : (
+                      <>
+                        <Download className='h-3.5 w-3.5' />
+                        Install
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
+            </Card>
+          ))}
       </div>
 
-      {isImporting && (
+      {(isImporting || isInstallingCloud) && (
         <div className='fixed inset-0 z-50 bg-background'>
           <Loading />
-          {importStep && (
+          {isImporting && importStep && (
             <p className='absolute inset-x-0 bottom-1/3 text-center text-sm text-muted-foreground'>
               {importStep}...
+            </p>
+          )}
+          {isInstallingCloud && !isImporting && (
+            <p className='absolute inset-x-0 bottom-1/3 text-center text-sm text-muted-foreground'>
+              Installing from cloud...
             </p>
           )}
         </div>

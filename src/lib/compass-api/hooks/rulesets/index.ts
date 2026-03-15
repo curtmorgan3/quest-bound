@@ -1,5 +1,6 @@
 export * from './use-actions';
 export * from './use-active-ruleset';
+export * from './use-cloud-rulesets';
 export * from './use-archetype-custom-properties';
 export * from './use-attributes';
 export * from './use-charts';
