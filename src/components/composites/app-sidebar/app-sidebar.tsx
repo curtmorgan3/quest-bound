@@ -22,15 +22,16 @@ import {
   useSidebar,
 } from '@/components/ui/sidebar';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { useActiveRuleset, useUsers } from '@/lib/compass-api';
 import { isCloudConfigured } from '@/lib/cloud/client';
 import { pushToCloudAndMarkSynced, syncRuleset } from '@/lib/cloud/sync/sync-service';
 import { useSyncStateStore } from '@/lib/cloud/sync/sync-state';
+import { useActiveRuleset, useUsers } from '@/lib/compass-api';
 import { Settings } from '@/pages';
-import { DiceContext } from '@/stores';
-import type { DB } from '@/stores/db/hooks/types';
-import { db } from '@/stores';
+import { db, DiceContext } from '@/stores';
 import { useCloudAuthStore } from '@/stores/cloud-auth-store';
+import type { DB } from '@/stores/db/hooks/types';
+import { formatDistanceToNow } from 'date-fns';
+import { toast } from 'sonner';
 import {
   CloudAlert,
   CloudCheck,
@@ -42,7 +43,6 @@ import {
   User,
   Wrench,
 } from 'lucide-react';
-import { formatDistanceToNow } from 'date-fns';
 import { useContext, useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Avatar, AvatarFallback, AvatarImage } from '../../ui/avatar';
@@ -166,7 +166,7 @@ export function AppSidebar() {
     return 'Push to Quest Bound Cloud to sync across devices';
   };
 
-  const handleCloudSyncClick = () => {
+  const handleCloudSyncClick = async () => {
     if (!rulesetId) return;
     if (busy || isOffline) return;
     if (syncError) {
@@ -174,7 +174,8 @@ export function AppSidebar() {
       return;
     }
     if (synced) {
-      syncRuleset(rulesetId, db as DB);
+      const result = await syncRuleset(rulesetId, db as DB);
+      if (!result.error) toast.success('Synced to Quest Bound Cloud');
     } else {
       setPushDialogOpen(true);
     }
@@ -185,7 +186,10 @@ export function AppSidebar() {
     setPushInProgress(true);
     try {
       const result = await pushToCloudAndMarkSynced(rulesetId, db as DB);
-      if (!result.error) setPushDialogOpen(false);
+      if (!result.error) {
+        setPushDialogOpen(false);
+        toast.success('Synced to Quest Bound Cloud');
+      }
     } finally {
       setPushInProgress(false);
     }
@@ -268,7 +272,7 @@ export function AppSidebar() {
                         return (
                           <Icon
                             className={
-                              syncError || isOffline
+                              syncError || isOffline || !synced
                                 ? 'text-destructive'
                                 : busy
                                   ? 'animate-pulse'
@@ -280,7 +284,7 @@ export function AppSidebar() {
                       <span>{getCloudSyncLabel()}</span>
                     </SidebarMenuButton>
                   </TooltipTrigger>
-                  <TooltipContent side='right' className='max-w-xs'>
+                  <TooltipContent side='right' className='max-w-xs bg-muted'>
                     {getCloudSyncTooltip()}
                   </TooltipContent>
                 </Tooltip>
@@ -309,9 +313,7 @@ export function AppSidebar() {
               </SidebarMenuItem>
             )}
           </SidebarMenu>
-          <div
-            className={`p-${open ? 2 : 0} pb-2 flex items-center gap-2`}
-            data-testid='user-menu'>
+          <div className={`p-${open ? 2 : 0} pb-2 flex items-center gap-2`} data-testid='user-menu'>
             <Avatar className={open ? 'rounded-lg' : 'rounded-sm'}>
               <AvatarImage src={currentUser?.image ?? ''} alt={currentUser?.username} />
               <AvatarFallback>

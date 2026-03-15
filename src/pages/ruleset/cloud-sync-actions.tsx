@@ -8,6 +8,7 @@ import { pushToCloudAndMarkSynced, syncRuleset } from '@/lib/cloud/sync/sync-ser
 import { useSyncStateStore } from '@/lib/cloud/sync/sync-state';
 import { Cloud, Loader2, RefreshCw } from 'lucide-react';
 import { forwardRef, useImperativeHandle, useState } from 'react';
+import { toast } from 'sonner';
 import { db } from '@/stores';
 import type { DB } from '@/stores/db/hooks/types';
 import { useCloudAuthStore } from '@/stores/cloud-auth-store';
@@ -49,14 +50,18 @@ export const CloudSyncActions = forwardRef<CloudSyncActionsRef, CloudSyncActions
 
   const handleSyncNow = async () => {
     if (busy) return;
-    await syncRuleset(rulesetId, db as DB);
+    const result = await syncRuleset(rulesetId, db as DB);
+    if (!result.error) toast.success('Synced to Quest Bound Cloud');
   };
 
   const handlePushConfirm = async () => {
     setPushInProgress(true);
     try {
       const result = await pushToCloudAndMarkSynced(rulesetId, db as DB);
-      if (!result.error) setPushConfirmOpen(false);
+      if (!result.error) {
+        setPushConfirmOpen(false);
+        toast.success('Synced to Quest Bound Cloud');
+      }
     } finally {
       setPushInProgress(false);
     }
