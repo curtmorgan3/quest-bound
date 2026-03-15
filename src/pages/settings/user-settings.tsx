@@ -13,10 +13,14 @@ import {
   ImageUpload,
   Input,
   Label,
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
 } from '@/components';
 import { useUsers } from '@/lib/compass-api';
 import { errorLogger, useOnboardingStore, usePwaInstallStore } from '@/stores';
-import { Download, PlayCircleIcon } from 'lucide-react';
+import { Download, PlayCircleIcon, User, Settings, Shield } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { CloudAccountSettings } from './cloud-account-settings';
 
@@ -46,28 +50,17 @@ export const UserSettings = () => {
   const handleExportErrors = async () => {
     setExportLoading(true);
     try {
-      // Export the 100 most recent error logs
       const errorLogs = await errorLogger.exportErrorLogs();
-
-      // Create a blob with the JSON data
       const blob = new Blob([errorLogs], { type: 'application/json' });
-
-      // Create a download link
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-
-      // Generate filename with current date
       const now = new Date();
       const dateString = now.toISOString().split('T')[0];
       link.download = `quest-bound-errors-${dateString}.json`;
-
-      // Trigger download
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-
-      // Clean up the URL object
       URL.revokeObjectURL(url);
     } catch (error) {
       console.error('Failed to export error logs:', error);
@@ -79,112 +72,145 @@ export const UserSettings = () => {
   if (!currentUser) return null;
 
   return (
-    <div className='flex flex-col gap-4'>
-      <div className='flex flex-col gap-2 max-w-sm'>
-        <Label htmlFor='username'>Username</Label>
-        <Input id='username' value={username} onChange={(e) => setUsername(e.target.value)} />
-      </div>
+    <Tabs defaultValue='profile' className='w-full'>
+      <TabsList className='w-full max-w-md grid grid-cols-3'>
+        <TabsTrigger value='profile' className='gap-2'>
+          <User className='size-4' />
+          Profile
+        </TabsTrigger>
+        <TabsTrigger value='preferences' className='gap-2'>
+          <Settings className='size-4' />
+          Preferences
+        </TabsTrigger>
+        <TabsTrigger value='account' className='gap-2'>
+          <Shield className='size-4' />
+          Account
+        </TabsTrigger>
+      </TabsList>
 
-      <CloudAccountSettings />
+      <TabsContent value='profile' className='flex flex-col gap-4 mt-4'>
+        <div className='flex flex-col gap-2 max-w-sm'>
+          <Label htmlFor='username'>Username</Label>
+          <Input
+            id='username'
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+          />
+        </div>
+        <div className='flex flex-col gap-2'>
+          <Label>Avatar</Label>
+          <ImageUpload
+            image={currentUser.image}
+            alt={currentUser.username}
+            onRemove={() => updateUser(currentUser.id, { assetId: null })}
+            onUpload={(assetId) => updateUser(currentUser.id, { assetId })}
+            rulesetId={null}
+          />
+        </div>
+      </TabsContent>
 
-      <div className='flex items-center gap-2'>
-        <Checkbox
-          id='sheetAttributeAnimations'
-          checked={currentUser.preferences?.sheetAttributeAnimations ?? true}
-          onCheckedChange={(checked) => {
-            if (currentUser) {
-              updateUser(currentUser.id, {
-                preferences: {
-                  ...currentUser.preferences,
-                  sheetAttributeAnimations: checked === true,
-                },
-              });
-            }
-          }}
-        />
-        <Label htmlFor='sheetAttributeAnimations' className='cursor-pointer font-normal'>
-          Animate sheet attribute changes when available
-        </Label>
-      </div>
+      <TabsContent value='preferences' className='flex flex-col gap-4 mt-4'>
+        <div className='flex items-center gap-2'>
+          <Checkbox
+            id='sheetAttributeAnimations'
+            checked={currentUser.preferences?.sheetAttributeAnimations ?? true}
+            onCheckedChange={(checked) => {
+              if (currentUser) {
+                updateUser(currentUser.id, {
+                  preferences: {
+                    ...currentUser.preferences,
+                    sheetAttributeAnimations: checked === true,
+                  },
+                });
+              }
+            }}
+          />
+          <Label
+            htmlFor='sheetAttributeAnimations'
+            className='cursor-pointer font-normal'>
+            Animate sheet attribute changes when available
+          </Label>
+        </div>
 
-      <div className='flex flex-col gap-2'>
-        <Button
-          variant='outline'
-          onClick={async () => {
-            if (!deferredPrompt) return;
-            setInstallLoading(true);
-            try {
-              await triggerInstall();
-            } finally {
-              setInstallLoading(false);
-            }
-          }}
-          disabled={!deferredPrompt || installLoading}
-          className='gap-2 w-[200px]'>
-          <Download className='h-4 w-4' />
-          {installLoading ? 'Installing…' : 'Install app'}
-        </Button>
-        {!deferredPrompt && (
-          <p className='text-xs text-muted-foreground max-w-[200px]'>
-            Install is available when your browser supports it and the app is not already
-            installed.
-          </p>
-        )}
-      </div>
-
-      <ImageUpload
-        image={currentUser.image}
-        alt={currentUser.username}
-        onRemove={() => updateUser(currentUser.id, { assetId: null })}
-        onUpload={(assetId) => updateUser(currentUser.id, { assetId })}
-        rulesetId={null}
-      />
-
-      <div className='flex flex-col gap-2'>
-        <Button
-          variant='outline'
-          onClick={() => setForceShowAgain(true)}
-          className='gap-2 w-[200px]'>
-          <PlayCircleIcon className='h-4 w-4' />
-          Run Tutorial
-        </Button>
-      </div>
-
-      <div className='flex flex-col gap-2'>
-        <Button
-          variant='outline'
-          onClick={handleExportErrors}
-          disabled={exportLoading}
-          className='gap-2 w-[200px]'>
-          <Download className='h-4 w-4' />
-          {exportLoading ? 'Exporting...' : 'Export Error Logs'}
-        </Button>
-      </div>
-
-      <AlertDialog>
-        <AlertDialogTrigger asChild>
-          <Button className='w-[100px]' variant='destructive' disabled={!currentUser}>
-            Delete User
+        <div className='flex flex-col gap-2'>
+          <Button
+            variant='outline'
+            onClick={() => setForceShowAgain(true)}
+            className='gap-2 w-[200px]'>
+            <PlayCircleIcon className='h-4 w-4' />
+            Run Tutorial
           </Button>
-        </AlertDialogTrigger>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete User Account</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete your user account? This action cannot be undone and
-              will permanently remove all your data. Export your rulesets if you wish to keep them.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => deleteUser(currentUser!.id)}
-              className='bg-destructive text-destructive-foreground hover:bg-destructive/90'>
-              Delete Account
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </div>
+        </div>
+
+        <div className='flex flex-col gap-2'>
+          <Button
+            variant='outline'
+            onClick={async () => {
+              if (!deferredPrompt) return;
+              setInstallLoading(true);
+              try {
+                await triggerInstall();
+              } finally {
+                setInstallLoading(false);
+              }
+            }}
+            disabled={!deferredPrompt || installLoading}
+            className='gap-2 w-[200px]'>
+            <Download className='h-4 w-4' />
+            {installLoading ? 'Installing…' : 'Install app'}
+          </Button>
+          {!deferredPrompt && (
+            <p className='text-xs text-muted-foreground max-w-[200px]'>
+              Install is available when your browser supports it and the app is
+              not already installed.
+            </p>
+          )}
+        </div>
+      </TabsContent>
+
+      <TabsContent value='account' className='flex flex-col gap-4 mt-4'>
+        <CloudAccountSettings />
+
+        <div className='flex flex-col gap-2'>
+          <Button
+            variant='outline'
+            onClick={handleExportErrors}
+            disabled={exportLoading}
+            className='gap-2 w-[200px]'>
+            <Download className='h-4 w-4' />
+            {exportLoading ? 'Exporting...' : 'Export Error Logs'}
+          </Button>
+        </div>
+
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button
+              className='w-[100px]'
+              variant='destructive'
+              disabled={!currentUser}>
+              Delete User
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete User Account</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to delete your user account? This action
+                cannot be undone and will permanently remove all your data.
+                Export your rulesets if you wish to keep them.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => deleteUser(currentUser!.id)}
+                className='bg-destructive text-destructive-foreground hover:bg-destructive/90'>
+                Delete Account
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </TabsContent>
+    </Tabs>
   );
 };
