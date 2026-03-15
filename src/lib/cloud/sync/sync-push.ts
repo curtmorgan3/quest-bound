@@ -31,6 +31,7 @@ type TableWithGet = {
 export async function syncPush(rulesetId: string, db: DB): Promise<{ error?: string }> {
   const client = cloudClient;
   const session = await getSession();
+
   if (!client || !session?.user?.id) {
     return { error: 'Not authenticated' };
   }

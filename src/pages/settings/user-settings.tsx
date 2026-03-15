@@ -20,9 +20,9 @@ import {
 } from '@/components';
 import { useFeatureFlag } from '@/hooks/use-feature-flag';
 import { useUsers } from '@/lib/compass-api';
-import { CLOUD_SIGN_IN_FEATURE_FLAG } from '@/utils/feature-flags';
 import { errorLogger, useOnboardingStore, usePwaInstallStore } from '@/stores';
-import { Download, PlayCircleIcon, User, Settings, Shield } from 'lucide-react';
+import { CLOUD_SIGN_IN_FEATURE_FLAG } from '@/utils/feature-flags';
+import { Download, PlayCircleIcon, Settings, Shield, User } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { CloudAccountSettings } from './cloud-account-settings';
 
@@ -94,11 +94,7 @@ export const UserSettings = () => {
       <TabsContent value='profile' className='flex flex-col gap-4 mt-4'>
         <div className='flex flex-col gap-2 max-w-sm'>
           <Label htmlFor='username'>Username</Label>
-          <Input
-            id='username'
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-          />
+          <Input id='username' value={username} onChange={(e) => setUsername(e.target.value)} />
         </div>
         <div className='flex flex-col gap-2'>
           <Label>Avatar</Label>
@@ -128,9 +124,7 @@ export const UserSettings = () => {
               }
             }}
           />
-          <Label
-            htmlFor='sheetAttributeAnimations'
-            className='cursor-pointer font-normal'>
+          <Label htmlFor='sheetAttributeAnimations' className='cursor-pointer font-normal'>
             Animate sheet attribute changes when available
           </Label>
         </div>
@@ -164,8 +158,8 @@ export const UserSettings = () => {
           </Button>
           {!deferredPrompt && (
             <p className='text-xs text-muted-foreground max-w-[200px]'>
-              Install is available when your browser supports it and the app is
-              not already installed.
+              Install is available when your browser supports it and the app is not already
+              installed.
             </p>
           )}
         </div>
@@ -187,10 +181,7 @@ export const UserSettings = () => {
 
         <AlertDialog>
           <AlertDialogTrigger asChild>
-            <Button
-              className='w-[100px]'
-              variant='destructive'
-              disabled={!currentUser}>
+            <Button className='w-[100px]' variant='destructive' disabled={!currentUser}>
               Delete User
             </Button>
           </AlertDialogTrigger>
@@ -198,9 +189,9 @@ export const UserSettings = () => {
             <AlertDialogHeader>
               <AlertDialogTitle>Delete User Account</AlertDialogTitle>
               <AlertDialogDescription>
-                Are you sure you want to delete your user account? This action
-                cannot be undone and will permanently remove all your data.
-                Export your rulesets if you wish to keep them.
+                Are you sure you want to delete your user account? This action cannot be undone and
+                will permanently remove all your data. Export your rulesets if you wish to keep
+                them.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>

@@ -11,11 +11,7 @@ import {
   SYNC_TABLE_ORDER,
 } from '@/lib/cloud/sync/sync-tables';
 import { prepareRemoteForLocal } from '@/lib/cloud/sync/sync-utils';
-import {
-  useSyncStateStore,
-  getStoredLastSyncedAt,
-  setStoredLastSyncedAt,
-} from '@/lib/cloud/sync/sync-state';
+import { useSyncStateStore, getStoredLastSyncedAt } from '@/lib/cloud/sync/sync-state';
 import {
   resolveAssetRowsForPull,
   resolveFontRowsForPull,
@@ -78,7 +74,7 @@ export async function syncPull(rulesetId: string, db: DB): Promise<{ error?: str
     return { error: 'Not authenticated' };
   }
   const userId = session.user.id;
-  const { setSyncing, setSyncError, setLastSyncedAt, loadLastSyncedAt } = useSyncStateStore.getState();
+  const { setSyncing, setSyncError, loadLastSyncedAt } = useSyncStateStore.getState();
   await loadLastSyncedAt();
   const lastSyncedAtMap = await getStoredLastSyncedAt();
   const lastSyncedAt = lastSyncedAtMap[rulesetId] ?? '1970-01-01T00:00:00Z';
@@ -176,9 +172,10 @@ export async function syncPull(rulesetId: string, db: DB): Promise<{ error?: str
       if (table) await table.delete(entry.entity_id).catch(() => {});
     }
 
-    const now = new Date().toISOString();
-    setLastSyncedAt(rulesetId, now);
-    await setStoredLastSyncedAt({ ...lastSyncedAtMap, [rulesetId]: now });
+    // Do not advance lastSyncedAt here. syncPush (or the full sync in syncRuleset) must
+    // use the same lastSyncedAt to decide which local rows to push. If we advance it now,
+    // local changes made before this pull would have updatedAt < lastSyncedAt and would
+    // never be pushed. lastSyncedAt is only updated after a successful push.
     return {};
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
