@@ -7,11 +7,13 @@ import {
   getCurrentRollSplitHandlerForScripts,
 } from '@/lib/compass-logic/worker/current-roll-handler-ref';
 import { getQBScriptClient } from '@/lib/compass-logic/worker';
+import { getSyncState } from '@/lib/cloud/sync/sync-state';
 import type { DB } from './types';
 
 export function registerCharacterDbHooks(db: DB) {
   // Fire script client onAttributeChange when a character attribute's value is updated
   db.characterAttributes.hook('updating', (modifications, _primKey, obj) => {
+    if (getSyncState().isSyncing) return;
     const mods = modifications as { value?: unknown };
     if (mods.value === undefined) return;
     const characterId = (obj as { characterId?: string })?.characterId;
@@ -44,6 +46,7 @@ export function registerCharacterDbHooks(db: DB) {
 
   // Create an inventory when a character is created
   db.characters.hook('creating', (_primKey, obj) => {
+    if (getSyncState().isSyncing) return;
     setTimeout(async () => {
       try {
         const now = new Date().toISOString();
@@ -81,6 +84,7 @@ export function registerCharacterDbHooks(db: DB) {
 
   // Delete character windows when a character page is deleted
   db.characterPages.hook('deleting', (primKey) => {
+    if (getSyncState().isSyncing) return;
     setTimeout(async () => {
       try {
         const characterPageId = primKey as string;
@@ -93,6 +97,7 @@ export function registerCharacterDbHooks(db: DB) {
 
   // Delete all associated entities when a character is deleted
   db.characters.hook('deleting', (primKey) => {
+    if (getSyncState().isSyncing) return;
     setTimeout(async () => {
       try {
         const characterId = primKey as string;

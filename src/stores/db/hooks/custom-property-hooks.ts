@@ -5,6 +5,7 @@ import type {
   CustomProperty,
   CustomPropertyType,
 } from '@/types';
+import { getSyncState } from '@/lib/cloud/sync/sync-state';
 import type { DB } from './types';
 
 function getTypeDefault(type: CustomPropertyType): string | number | boolean {
@@ -74,6 +75,7 @@ async function updateTestCharacterCustomProperty(
 export function registerCustomPropertyDbHooks(db: DB) {
   // Keep archetype test characters' customProperties in sync with ArchetypeCustomProperties
   db.archetypeCustomProperties.hook('creating', (_primKey, obj) => {
+    if (getSyncState().isSyncing) return;
     const acp = obj as ArchetypeCustomProperty;
     setTimeout(() => {
       updateTestCharacterCustomProperty(db, acp.archetypeId, acp.customPropertyId).catch(
@@ -88,6 +90,7 @@ export function registerCustomPropertyDbHooks(db: DB) {
   });
 
   db.archetypeCustomProperties.hook('updating', (_modifications, primKey, _obj) => {
+    if (getSyncState().isSyncing) return;
     const id = primKey as string;
     setTimeout(async () => {
       try {
@@ -106,6 +109,7 @@ export function registerCustomPropertyDbHooks(db: DB) {
   });
 
   db.archetypeCustomProperties.hook('deleting', (_primKey, obj) => {
+    if (getSyncState().isSyncing) return;
     const acp = obj as ArchetypeCustomProperty | undefined;
     if (!acp) return;
     setTimeout(() => {

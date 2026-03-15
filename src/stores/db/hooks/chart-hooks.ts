@@ -1,9 +1,11 @@
+import { getSyncState } from '@/lib/cloud/sync/sync-state';
 import { memoizedCharts } from '../chart-options-middleware';
 import type { DB } from './types';
 
 export function registerChartDbHooks(db: DB) {
   // Keep chart cache in sync when charts are modified
   db.charts.hook('creating', (_primKey, obj) => {
+    if (getSyncState().isSyncing) return;
     try {
       memoizedCharts[obj.id] = JSON.parse(obj.data);
     } catch {
@@ -12,6 +14,7 @@ export function registerChartDbHooks(db: DB) {
   });
 
   db.charts.hook('updating', (modifications, primKey) => {
+    if (getSyncState().isSyncing) return;
     if ((modifications as any).data !== undefined) {
       try {
         memoizedCharts[primKey as string] = JSON.parse((modifications as any).data);
@@ -22,6 +25,7 @@ export function registerChartDbHooks(db: DB) {
   });
 
   db.charts.hook('deleting', (primKey) => {
+    if (getSyncState().isSyncing) return;
     delete memoizedCharts[primKey as string];
   });
 }

@@ -1,8 +1,10 @@
-import type { DB } from './types';
 import type { Archetype } from '@/types';
+import { getSyncState } from '@/lib/cloud/sync/sync-state';
+import type { DB } from './types';
 
 export function registerArchetypeDbHooks(db: DB) {
   db.archetypes.hook('deleting', (primKey, obj) => {
+    if (getSyncState().isSyncing) return;
     const archetypeId = primKey as string;
     const testCharacterId = (obj as Archetype | undefined)?.testCharacterId;
 

@@ -1,8 +1,10 @@
+import { getSyncState } from '@/lib/cloud/sync/sync-state';
 import type { DB } from './types';
 
 export function registerInventoryDbHooks(db: DB) {
   // Delete associated inventory items when an inventory is deleted
   db.inventories.hook('deleting', (primKey) => {
+    if (getSyncState().isSyncing) return;
     setTimeout(async () => {
       try {
         const inventoryId = primKey as string;

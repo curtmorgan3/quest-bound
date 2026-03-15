@@ -1,0 +1,125 @@
+/**
+ * Key mapping: Dexie uses camelCase, Postgres uses snake_case.
+ * Strip excluded fields before pushing to remote.
+ */
+
+import type { DB } from '@/stores/db/hooks/types';
+import { getSyncTableConfig } from './sync-tables';
+
+function camelToSnake(str: string): string {
+  return str.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`);
+}
+
+function snakeToCamel(str: string): string {
+  return str.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
+}
+
+export function toSnakeCaseKeys<T extends Record<string, unknown>>(obj: T): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(obj)) {
+    if (v === undefined) continue;
+    const key = camelToSnake(k);
+    out[key] = v;
+  }
+  return out;
+}
+
+export function toCamelCaseKeys<T extends Record<string, unknown>>(obj: T): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(obj)) {
+    if (v === undefined) continue;
+    const key = snakeToCamel(k);
+    out[key] = v;
+  }
+  return out;
+}
+
+/**
+ * Strip excluded fields and remove user_id (server-set). Returns a new object.
+ */
+export function stripForPush(
+  tableName: string,
+  record: Record<string, unknown>,
+): Record<string, unknown> {
+  const config = getSyncTableConfig(tableName);
+  const excluded = new Set(config?.excludedFields ?? []);
+  excluded.add('user_id');
+  const out: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(record)) {
+    if (excluded.has(k)) continue;
+    if (v === undefined) continue;
+    out[k] = v;
+  }
+  return out;
+}
+
+/**
+ * Prepare a local record for remote upsert: strip excluded fields, then convert keys to snake_case.
+ */
+export function prepareRecordForRemote(
+  tableName: string,
+  record: Record<string, unknown>,
+): Record<string, unknown> {
+  const stripped = stripForPush(tableName, record);
+  return toSnakeCaseKeys(stripped);
+}
+
+/**
+ * Prepare a remote record for local bulkPut: convert keys to camelCase.
+ * Does not add or remove fields beyond key mapping.
+ */
+export function prepareRemoteForLocal(record: Record<string, unknown>): Record<string, unknown> {
+  return toCamelCaseKeys(record);
+}
+
+/**
+ * Resolve rulesetId for an entity being deleted, so we can record it in sync_deletes.
+ * Used by delete hooks to scope pending deletes by ruleset.
+ */
+export async function getRulesetIdForDelete(
+  db: DB,
+  tableName: string,
+  entityId: string,
+  entity?: Record<string, unknown> | null,
+): Promise<string | null> {
+  const config = getSyncTableConfig(tableName);
+  if (!config) return null;
+  if (config.hasRulesetId && entity?.rulesetId) return entity.rulesetId as string;
+  type DbTable = { get: (id: string) => Promise<{ rulesetId?: string; campaignId?: string; characterId?: string } | undefined> };
+  const tables = db as unknown as Record<string, DbTable>;
+  if (config.parentTable === 'characters' && (entity?.characterId || entity?.character_id)) {
+    const id = (entity.characterId ?? entity.character_id) as string;
+    const char = await tables.characters?.get(id);
+    return char?.rulesetId ?? null;
+  }
+  if (config.parentTable === 'campaigns' && (entity?.campaignId || entity?.campaign_id)) {
+    const id = (entity.campaignId ?? entity.campaign_id) as string;
+    const camp = await tables.campaigns?.get(id);
+    return camp?.rulesetId ?? null;
+  }
+  if (config.parentTable === 'campaignScenes' && (entity?.campaignSceneId ?? entity?.campaign_scene_id)) {
+    const id = (entity.campaignSceneId ?? entity.campaign_scene_id) as string;
+    const scene = await tables.campaignScenes?.get(id);
+    if (!scene?.campaignId) return null;
+    const camp = await tables.campaigns?.get(scene.campaignId);
+    return camp?.rulesetId ?? null;
+  }
+  if (config.parentTable === 'archetypes' && (entity?.archetypeId ?? entity?.archetype_id)) {
+    const id = (entity.archetypeId ?? entity.archetype_id) as string;
+    const arch = await tables.archetypes?.get(id);
+    return arch?.rulesetId ?? null;
+  }
+  if (config.parentTable === 'items' && (entity?.itemId ?? entity?.item_id)) {
+    const id = (entity.itemId ?? entity.item_id) as string;
+    const item = await tables.items?.get(id);
+    return item?.rulesetId ?? null;
+  }
+  if (config.parentTable === 'inventories' && (entity?.inventoryId ?? entity?.inventory_id)) {
+    const id = (entity.inventoryId ?? entity.inventory_id) as string;
+    const inv = await tables.inventories?.get(id);
+    if (!inv?.characterId) return null;
+    const char = await tables.characters?.get(inv.characterId);
+    return char?.rulesetId ?? null;
+  }
+  return null;
+}

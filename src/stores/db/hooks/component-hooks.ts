@@ -1,3 +1,4 @@
+import { getSyncState } from '@/lib/cloud/sync/sync-state';
 import { deleteAssetIfUnreferenced } from './asset-hooks';
 import type { DB } from './types';
 
@@ -6,6 +7,7 @@ export function registerComponentDbHooks(db: DB) {
 
   // Delete asset only when no longer referenced after a component clears its asset
   db.components.hook('updating', (modifications, _primKey, obj) => {
+    if (getSyncState().isSyncing) return;
     const originalData = JSON.parse(obj?.data ?? '{}');
     const originalAssetId =
       originalData.assetId ?? originalData.checkedAssetId ?? originalData.uncheckedAssetId;

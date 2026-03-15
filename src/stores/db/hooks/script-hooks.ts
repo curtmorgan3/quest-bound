@@ -1,4 +1,5 @@
 import { buildDependencyGraph } from '@/lib/compass-logic/reactive/dependency-graph';
+import { getSyncState } from '@/lib/cloud/sync/sync-state';
 import type { DB } from './types';
 
 export function registerScriptHooks(db: DB) {
@@ -15,6 +16,7 @@ export function registerScriptHooks(db: DB) {
 
   // Hook for when scripts are created or updated - rebuild dependency graph
   db.scripts.hook('creating', async (primKey, obj) => {
+    if (getSyncState().isSyncing) return;
     // After script is created, rebuild the dependency graph for its ruleset
     const rulesetId = obj.rulesetId;
     if (rulesetId) {
@@ -30,6 +32,7 @@ export function registerScriptHooks(db: DB) {
   });
 
   db.scripts.hook('updating', async (modifications, primKey, obj) => {
+    if (getSyncState().isSyncing) return;
     const mods = modifications as {
       sourceCode?: string;
       enabled?: boolean;
@@ -57,6 +60,7 @@ export function registerScriptHooks(db: DB) {
 
   // Hook for when scripts are deleted
   db.scripts.hook('deleting', async (primKey) => {
+    if (getSyncState().isSyncing) return;
     const scriptId = primKey as string;
     const script = await db.scripts.get(scriptId);
 
@@ -86,6 +90,7 @@ export function registerScriptHooks(db: DB) {
 
   // Hook for when entities are deleted - clean up their scripts
   db.attributes.hook('deleting', async (primKey) => {
+    if (getSyncState().isSyncing) return;
     setTimeout(async () => {
       const attributeId = primKey as string;
       const attribute = await db.attributes.get(attributeId);
@@ -96,6 +101,7 @@ export function registerScriptHooks(db: DB) {
   });
 
   db.actions.hook('deleting', async (primKey) => {
+    if (getSyncState().isSyncing) return;
     setTimeout(async () => {
       const actionId = primKey as string;
       const action = await db.actions.get(actionId);
@@ -106,6 +112,7 @@ export function registerScriptHooks(db: DB) {
   });
 
   db.items.hook('deleting', async (primKey) => {
+    if (getSyncState().isSyncing) return;
     setTimeout(async () => {
       const itemId = primKey as string;
       const item = await db.items.get(itemId);
@@ -117,6 +124,7 @@ export function registerScriptHooks(db: DB) {
 
   // Hook for when rulesets are deleted - clean up all scripts and dependency graph
   db.rulesets.hook('deleting', async (primKey) => {
+    if (getSyncState().isSyncing) return;
     const rulesetId = primKey as string;
     setTimeout(async () => {
       await db.scripts.where({ rulesetId }).delete();

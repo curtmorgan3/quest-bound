@@ -1,9 +1,11 @@
 import type { Attribute } from '@/types';
+import { getSyncState } from '@/lib/cloud/sync/sync-state';
 import type { DB } from './types';
 
 export function registerAttributeDbHooks(db: DB) {
   // Sync attributes with characterAttributes for all archetype test characters
   db.attributes.hook('creating', (_primKey, obj) => {
+    if (getSyncState().isSyncing) return;
     setTimeout(async () => {
       try {
         const archetypes = await db.archetypes.where('rulesetId').equals(obj.rulesetId).toArray();
@@ -29,6 +31,7 @@ export function registerAttributeDbHooks(db: DB) {
   });
 
   db.attributes.hook('updating', (modifications, primKey, obj) => {
+    if (getSyncState().isSyncing) return;
     setTimeout(async () => {
       try {
         const archetypes = await db.archetypes.where('rulesetId').equals(obj.rulesetId).toArray();
@@ -68,6 +71,7 @@ export function registerAttributeDbHooks(db: DB) {
   });
 
   db.attributes.hook('deleting', (primKey, obj) => {
+    if (getSyncState().isSyncing) return;
     setTimeout(async () => {
       try {
         const archetypes = await db.archetypes.where('rulesetId').equals(obj.rulesetId).toArray();

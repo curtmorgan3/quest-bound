@@ -1,3 +1,4 @@
+import { getSyncState } from '@/lib/cloud/sync/sync-state';
 import { deleteAssetIfUnreferenced } from './asset-hooks';
 import type { DB } from './types';
 
@@ -6,6 +7,7 @@ export function registerDocumentDbHooks(db: DB) {
 
   // Delete assets only when no longer referenced after a document clears them
   db.documents.hook('updating', (modifications, _primKey, obj) => {
+    if (getSyncState().isSyncing) return;
     const mods = modifications as { assetId?: string | null; pdfAssetId?: string | null };
     const assetsToCheck: string[] = [];
 

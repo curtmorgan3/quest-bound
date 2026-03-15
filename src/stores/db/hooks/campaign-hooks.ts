@@ -1,8 +1,10 @@
+import { getSyncState } from '@/lib/cloud/sync/sync-state';
 import type { DB } from './types';
 
 export function registerCampaignDbHooks(db: DB) {
   // Delete all associated entities when a campaign is deleted (scenes, campaignCharacters, campaignEvents, sceneTurnCallbacks)
-  db.campaigns.hook('deleting', (primKey) => {
+  db.campaigns.hook('deleting', (primKey, obj) => {
+    if (getSyncState().isSyncing) return;
     setTimeout(async () => {
       try {
         const campaignId = primKey as string;
