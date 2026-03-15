@@ -20,14 +20,14 @@ function injectImageData(record: any) {
     if (asset) next = { ...next, image: asset };
   }
 
+  if (record.pdfAssetId) {
+    const pdfData = resolveAssetUrl(record.pdfAssetId as string);
+    if (pdfData) next = { ...next, pdfData };
+  }
+
   if (record.backgroundAssetId) {
     const backgroundImage = resolveAssetUrl(record.backgroundAssetId);
     if (backgroundImage) next = { ...next, backgroundImage };
-  }
-
-  if (record.mapAssetId) {
-    const mapAsset = resolveAssetUrl(record.mapAssetId);
-    if (mapAsset) next = { ...next, mapAsset };
   }
 
   if (record.charactersCtaAssetId) {
@@ -38,18 +38,6 @@ function injectImageData(record: any) {
   if (record.campaignsCtaAssetId) {
     const campaignsCtaImage = resolveAssetUrl(record.campaignsCtaAssetId);
     if (campaignsCtaImage) next = { ...next, campaignsCtaImage };
-  }
-
-  if (record.sprites && Array.isArray(record.sprites)) {
-    next = {
-      ...next,
-      sprites: record.sprites.map((s: string) => {
-        if (typeof s !== 'string') return s;
-        if (s.startsWith('http://') || s.startsWith('https://')) return s;
-        const data = resolveAssetUrl(s);
-        return data ?? s;
-      }),
-    };
   }
 
   // Inject image data for image-typed custom properties whose defaultValue holds an assetId.

@@ -8,7 +8,7 @@ import {
   DialogTitle,
 } from '@/components';
 import { PageWrapper } from '@/components/composites';
-import { useActiveRuleset, useCharts, useDocuments, useExportChart } from '@/lib/compass-api';
+import { useActiveRuleset, useAssets, useCharts, useDocuments, useExportChart } from '@/lib/compass-api';
 import { ArrowDownToLine, Loader2, Pencil, Plus, Upload } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { Navigate, useSearchParams } from 'react-router-dom';
@@ -59,6 +59,7 @@ export const Ruleset = ({
   const { exportChartAsTSV } = useExportChart();
   const { charts } = useCharts();
   const { createDocument } = useDocuments();
+  const { createAsset } = useAssets(activeRuleset?.id);
 
   const chartId = searchParams.get('chart');
   const activeChart = chartId ? charts?.find((c) => c.id === chartId) : undefined;
@@ -86,14 +87,9 @@ export const Ruleset = ({
     try {
       for (const file of fileList) {
         if (file.type !== 'application/pdf') continue;
-        const base64 = await new Promise<string>((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onloadend = () => resolve(reader.result as string);
-          reader.onerror = reject;
-          reader.readAsDataURL(file);
-        });
+        const pdfAssetId = await createAsset(file);
         const title = file.name.replace(/\.pdf$/i, '');
-        await createDocument({ title, pdfData: base64 });
+        await createDocument({ title, pdfAssetId });
       }
       setDocumentUploadModalOpen(false);
     } finally {

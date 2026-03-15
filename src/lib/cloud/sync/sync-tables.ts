@@ -53,7 +53,7 @@ export const SYNC_TABLE_CONFIGS: SyncTableConfig[] = [
   {
     tableName: 'documents',
     remoteTableName: 'documents',
-    excludedFields: ['image'],
+    excludedFields: ['image', 'pdfData'],
     hasRulesetId: true,
   },
   { tableName: 'assets', remoteTableName: 'assets', excludedFields: [], hasRulesetId: true },

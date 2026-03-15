@@ -194,18 +194,22 @@ export function AssetsPage() {
 
   const sortedAssets = useMemo(
     () =>
-      [...assets].sort((a, b) =>
-        a.filename.localeCompare(b.filename, undefined, { sensitivity: 'base' }),
-      ),
+      [...assets]
+        .filter((a) => a.type !== 'application/pdf')
+        .sort((a, b) =>
+          a.filename.localeCompare(b.filename, undefined, { sensitivity: 'base' }),
+        ),
     [assets],
   );
 
   const assetCategories = useMemo(
     () =>
       Array.from(
-        new Set(assets.map((a) => a.category).filter((c): c is string => Boolean(c?.trim()))),
+        new Set(
+          sortedAssets.map((a) => a.category).filter((c): c is string => Boolean(c?.trim())),
+        ),
       ).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' })),
-    [assets],
+    [sortedAssets],
   );
 
   const filteredAssets = useMemo(() => {

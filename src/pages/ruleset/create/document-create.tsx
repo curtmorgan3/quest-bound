@@ -26,7 +26,7 @@ export const DocumentCreate = ({
   setPdfData,
   rulesetId,
 }: DocumentCreateProps) => {
-  const { assets, deleteAsset } = useAssets(rulesetId);
+  const { assets, createAsset, deleteAsset } = useAssets(rulesetId);
   const pdfInputRef = useRef<HTMLInputElement>(null);
   const [pdfFilename, setPdfFilename] = useState<string | null>(null);
   const [uploadingPdf, setUploadingPdf] = useState(false);
@@ -58,20 +58,17 @@ export const DocumentCreate = ({
     if (file && file.type === 'application/pdf') {
       setUploadingPdf(true);
       setPdfFilename(file.name);
-
-      // Read file as base64 and store directly on document
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64String = reader.result as string;
-        setPdfData(base64String);
+      try {
+        const assetId = await createAsset(file);
+        setPdfAssetId(assetId);
+        setPdfData(null);
+      } catch (err) {
+        console.error('Failed to upload PDF as asset', err);
+      } finally {
         setUploadingPdf(false);
-      };
-      reader.onerror = () => {
-        console.error('Failed to read PDF file');
-        setUploadingPdf(false);
-      };
-      reader.readAsDataURL(file);
+      }
     }
+    e.target.value = '';
   };
 
   const handlePdfRemove = async () => {
