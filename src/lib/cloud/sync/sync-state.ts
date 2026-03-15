@@ -27,6 +27,8 @@ export interface SyncState {
   currentRulesetId: string | null;
   /** timestamp of last completed sync (for 10s visibility debounce). Transient. */
   lastSyncCompletedAt: number;
+  /** When true, the push-to-cloud dialog (e.g. in ruleset sidebar) should open. */
+  pushDialogOpen: boolean;
   setSyncing: (value: boolean) => void;
   setSyncError: (error: string | null) => void;
   setSyncProgress: (progress: { current: number; total: number } | null) => void;
@@ -39,6 +41,7 @@ export interface SyncState {
   loadSyncedRulesetIds: () => Promise<void>;
   markRulesetSynced: (rulesetId: string) => Promise<void>;
   isCloudSynced: (rulesetId: string) => boolean;
+  setPushDialogOpen: (open: boolean) => void;
 }
 
 export const useSyncStateStore = create<SyncState>((set, get) => ({
@@ -50,6 +53,7 @@ export const useSyncStateStore = create<SyncState>((set, get) => ({
   syncedRulesetIds: new Set(),
   currentRulesetId: null,
   lastSyncCompletedAt: 0,
+  pushDialogOpen: false,
 
   setSyncing: (value) => set({ isSyncing: value }),
   setSyncError: (error) => set({ syncError: error }),
@@ -95,6 +99,7 @@ export const useSyncStateStore = create<SyncState>((set, get) => ({
     await setKeyval(SYNCED_RULESETS_KEY, Array.from(next));
   },
   isCloudSynced: (rulesetId) => get().syncedRulesetIds.has(rulesetId),
+  setPushDialogOpen: (open) => set({ pushDialogOpen: open }),
 }));
 
 /** Read current isSyncing without subscribing. Use in Dexie hooks. */

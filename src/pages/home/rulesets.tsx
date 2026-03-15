@@ -27,13 +27,19 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { useImportRuleset, useRulesets, type ImportRulesetResult } from '@/lib/compass-api';
-import { AlertCircle, CheckCircle, Plus, Upload, X } from 'lucide-react';
+import { isCloudConfigured } from '@/lib/cloud/client';
+import { useSyncStateStore } from '@/lib/cloud/sync/sync-state';
+import { useCloudAuthStore } from '@/stores/cloud-auth-store';
+import { AlertCircle, CheckCircle, Cloud, Plus, Upload, X } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 export const Rulesets = () => {
   const { rulesets, createRuleset, deleteRuleset } = useRulesets();
   const { importRuleset, isImporting, importStep } = useImportRuleset();
+  const isAuthenticated = useCloudAuthStore((s) => s.isAuthenticated);
+  const isCloudSynced = useSyncStateStore((s) => s.isCloudSynced);
+  const showCloudBadge = isCloudConfigured && isAuthenticated;
 
   const sortedRulesets = [...rulesets].sort((a, b) => a.title.localeCompare(b.title));
 
@@ -267,7 +273,16 @@ export const Rulesets = () => {
               />
               <div className='flex shrink-0 flex-col gap-2 border-t p-3'>
                 <div className='flex min-w-0 items-baseline justify-between gap-2'>
-                  <h2 className='truncate text-sm font-semibold'>{r.title}</h2>
+                  <h2 className='flex min-w-0 items-center gap-1.5 truncate text-sm font-semibold'>
+                    <span className='truncate'>{r.title}</span>
+                    {showCloudBadge && isCloudSynced(r.id) && (
+                      <Cloud
+                        className='h-3.5 w-3.5 shrink-0 text-muted-foreground'
+                        aria-label='Synced with Quest Bound Cloud'
+                        data-testid='ruleset-cloud-badge'
+                      />
+                    )}
+                  </h2>
                   <span className='shrink-0 text-xs text-muted-foreground'>v{r.version}</span>
                 </div>
                 <div className='flex items-center gap-2'>

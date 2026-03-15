@@ -17,7 +17,7 @@ import { ArchetypeCreateDialog } from './archetypes/archetype-create-dialog';
 import { Archetypes } from './archetypes/archetypes';
 import { AttributeChart } from './attributes/attribute-chart';
 import { ChartSelect } from './charts';
-import { CloudSyncActions } from './cloud-sync-actions';
+import { PushToCloudPrompt } from './push-to-cloud-prompt';
 import { ChartImport, Export, Import } from './components';
 import { BaseCreate } from './create';
 import { Documents } from './documents';
@@ -161,8 +161,7 @@ export const Ruleset = ({
     <PageWrapper
       title={pageLabel}
       headerActions={
-        <div className='flex gap-2'>
-          {activeRuleset?.id && <CloudSyncActions rulesetId={activeRuleset.id} />}
+        <div className='flex items-center gap-2'>
           {page === 'archetypes' && <ArchetypeCreateDialog />}
           {page !== 'archetypes' && (
             <Button
@@ -230,6 +229,7 @@ export const Ruleset = ({
             page !== 'archetypes' && <Import type={page} onLoadingChange={setIsImporting} />}
         </div>
       }>
+      {activeRuleset?.id && <PushToCloudPrompt rulesetId={activeRuleset.id} />}
       <Dialog
         open={open}
         onOpenChange={(open) => {

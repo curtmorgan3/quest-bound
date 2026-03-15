@@ -7,7 +7,7 @@ import { isCloudConfigured } from '@/lib/cloud/client';
 import { pushToCloudAndMarkSynced, syncRuleset } from '@/lib/cloud/sync/sync-service';
 import { useSyncStateStore } from '@/lib/cloud/sync/sync-state';
 import { Cloud, Loader2, RefreshCw } from 'lucide-react';
-import { useState } from 'react';
+import { forwardRef, useImperativeHandle, useState } from 'react';
 import { db } from '@/stores';
 import type { DB } from '@/stores/db/hooks/types';
 import { useCloudAuthStore } from '@/stores/cloud-auth-store';
@@ -23,15 +23,24 @@ import {
   AlertDialogTitle,
 } from '@/components';
 
+export interface CloudSyncActionsRef {
+  openPushDialog: () => void;
+}
+
 interface CloudSyncActionsProps {
   rulesetId: string;
 }
 
-export function CloudSyncActions({ rulesetId }: CloudSyncActionsProps) {
-  const isAuthenticated = useCloudAuthStore((s) => s.isAuthenticated);
-  const { isCloudSynced, isSyncing, syncError } = useSyncStateStore();
-  const [pushConfirmOpen, setPushConfirmOpen] = useState(false);
-  const [pushInProgress, setPushInProgress] = useState(false);
+export const CloudSyncActions = forwardRef<CloudSyncActionsRef, CloudSyncActionsProps>(
+  function CloudSyncActions({ rulesetId }, ref) {
+    const isAuthenticated = useCloudAuthStore((s) => s.isAuthenticated);
+    const { isCloudSynced, isSyncing, syncError } = useSyncStateStore();
+    const [pushConfirmOpen, setPushConfirmOpen] = useState(false);
+    const [pushInProgress, setPushInProgress] = useState(false);
+
+    useImperativeHandle(ref, () => ({
+      openPushDialog: () => setPushConfirmOpen(true),
+    }));
 
   if (!isCloudConfigured || !isAuthenticated) return null;
 
@@ -115,4 +124,5 @@ export function CloudSyncActions({ rulesetId }: CloudSyncActionsProps) {
       </AlertDialog>
     </>
   );
-}
+  },
+);
