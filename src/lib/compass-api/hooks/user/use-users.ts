@@ -20,6 +20,7 @@ type UpdateUser = {
   image?: string | null;
   preferences?: Record<string, any>;
   cloudUserId?: string | null;
+  emailVerified?: boolean | null;
 };
 
 export const useUsers = () => {

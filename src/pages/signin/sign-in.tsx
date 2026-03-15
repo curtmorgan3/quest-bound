@@ -3,7 +3,10 @@ import videoSrc from '@/assets/logo-animation.mp4';
 import { Button, Input, Link } from '@/components';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { DISCORD_URL } from '@/constants';
+import { signIn as cloudSignIn, signUp as cloudSignUp } from '@/lib/cloud/auth';
+import { isCloudConfigured } from '@/lib/cloud/client';
 import { useRegisterEmail, useUsers } from '@/lib/compass-api';
+import { db, useCurrentUser } from '@/stores';
 import { motion } from 'framer-motion';
 import { useEffect, useState } from 'react';
 
@@ -11,6 +14,21 @@ const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 function isValidEmail(value: string | null | undefined): boolean {
   return Boolean(value?.trim() && EMAIL_REGEX.test(value.trim()));
+}
+
+/** Links the current local user to the cloud identity (sets cloudUserId). */
+async function linkLocalUserToCloud(cloudUid: string): Promise<void> {
+  const { currentUser } = useCurrentUser.getState();
+  if (!currentUser) return;
+
+  const existingUserWithCloud = await db.users.where('cloudUserId').equals(cloudUid).first();
+  if (existingUserWithCloud && existingUserWithCloud.id !== currentUser.id) {
+    return;
+  }
+
+  await db.users.update(currentUser.id, { cloudUserId: cloudUid });
+  const updated = await db.users.get(currentUser.id);
+  if (updated) useCurrentUser.getState().setCurrentUser(updated);
 }
 
 export const SignIn = () => {
@@ -24,7 +42,9 @@ export const SignIn = () => {
   } = useRegisterEmail();
 
   const [usernameValue, setUsernameValue] = useState<string>('');
+  const [passwordValue, setPasswordValue] = useState<string>('');
   const [emailError, setEmailError] = useState<string | null>(null);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const needUser = !users?.length;
   const selectedUser = users?.length ? users[0] : null;
@@ -37,6 +57,7 @@ export const SignIn = () => {
 
   const handleSubmit = async () => {
     try {
+      setSubmitError(null);
       const trimmed = email?.trim();
 
       if (!trimmed) {
@@ -49,12 +70,33 @@ export const SignIn = () => {
       }
       setEmailError(null);
 
-      if (!emailRegistered) {
-        await registerEmail();
-      }
-
       const trimmedUsername = usernameValue.trim();
       if (!trimmedUsername) return;
+
+      if (isCloudConfigured && !passwordValue.trim()) {
+        setSubmitError('Password is required');
+        return;
+      }
+
+      let cloudUid: string | null = null;
+
+      if (isCloudConfigured) {
+        const hasCloudAccount = !needUser && !!users?.[0]?.cloudUserId;
+        const result = hasCloudAccount
+          ? await cloudSignIn(trimmed, passwordValue.trim())
+          : await cloudSignUp(trimmed, passwordValue.trim());
+
+        if ('error' in result) {
+          setSubmitError(result.error.message);
+          return;
+        }
+        if ('needsEmailVerification' in result) {
+          setSubmitError('Please check your email to verify your account.');
+          // Continue to create/update local user; link when they verify later
+        } else {
+          cloudUid = result.user.id;
+        }
+      }
 
       if (needUser) {
         await createUser(trimmedUsername);
@@ -64,12 +106,21 @@ export const SignIn = () => {
           if (trimmedUsername !== firstUser.username) {
             await updateUser(firstUser.id, { username: trimmedUsername });
           } else {
-            setCurrentUserById(firstUser.id);
+            await setCurrentUserById(firstUser.id);
           }
         }
       }
-    } catch (e: any) {
+
+      if (isCloudConfigured && cloudUid) {
+        await linkLocalUserToCloud(cloudUid);
+      }
+
+      if (!isCloudConfigured && !emailRegistered) {
+        await registerEmail();
+      }
+    } catch (e: unknown) {
       console.error('Submit failed', e);
+      setSubmitError(e instanceof Error ? e.message : 'Something went wrong');
     }
   };
 
@@ -78,7 +129,8 @@ export const SignIn = () => {
   const isSubmitDisabled =
     !email?.trim() ||
     !isValidEmail(email) ||
-    !usernameValue.trim();
+    !usernameValue.trim() ||
+    (isCloudConfigured && !passwordValue.trim());
   const isSubmitting = emailLoading || loading;
 
   return (
@@ -115,6 +167,7 @@ export const SignIn = () => {
                 onChange={(e) => {
                   setEmail(e.target.value);
                   if (emailError) setEmailError(null);
+                  if (submitError) setSubmitError(null);
                 }}
                 aria-invalid={Boolean(emailError || emailInvalid)}
                 aria-describedby={emailError || emailInvalid ? 'email-error' : undefined}
@@ -130,6 +183,25 @@ export const SignIn = () => {
                 </p>
               )}
             </div>
+            {isCloudConfigured && (
+              <Input
+                type='password'
+                className='w-full'
+                placeholder='Password'
+                value={passwordValue}
+                onChange={(e) => {
+                  setPasswordValue(e.target.value);
+                  if (submitError) setSubmitError(null);
+                }}
+                autoComplete='current-password'
+                data-testid='password-input'
+              />
+            )}
+            {submitError && (
+              <p className='text-sm text-destructive' role='alert' data-testid='submit-error'>
+                {submitError}
+              </p>
+            )}
             <Input
               className='w-full'
               placeholder='Username'

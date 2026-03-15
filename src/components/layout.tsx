@@ -8,6 +8,7 @@ import { useFontLoader, useUsers } from '@/lib/compass-api';
 import { useScriptAnnouncements } from '@/lib/compass-logic';
 import { SignIn } from '@/pages';
 import { DicePanel, PhysicalRollModal } from '@/pages/dice';
+import { ensureEmailRegistered, isCloudEmailVerified } from '@/lib/cloud/auth';
 import { initSyncTriggers } from '@/lib/cloud/sync/sync-service';
 import { useSyncOnRulesetOpen } from '@/lib/cloud/sync/use-sync-on-ruleset-open';
 import {
@@ -32,7 +33,7 @@ export function Layout() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const { currentUser, loading } = useUsers();
+  const { currentUser, updateUser, loading } = useUsers();
   const {
     hasCompleted,
     isLoading: onboardingLoading,
@@ -45,10 +46,31 @@ export function Layout() {
   const wouldShowOnAttributes =
     currentUser && !onboardingLoading && (forceShowAgain || !hasCompleted);
 
+  const { cloudUser, isAuthenticated } = useCloudAuthStore();
+
   // Initialize cloud auth (session restore + auth state subscription)
   useEffect(() => {
     useCloudAuthStore.getState().init();
   }, []);
+
+  // When session user has verified email and local user has emailVerified false, register email and set emailVerified
+  useEffect(() => {
+    if (
+      !isAuthenticated ||
+      !cloudUser?.email ||
+      !currentUser ||
+      currentUser.cloudUserId !== cloudUser.id ||
+      currentUser.emailVerified
+    ) {
+      return;
+    }
+    if (!isCloudEmailVerified(cloudUser)) return;
+    ensureEmailRegistered(
+      cloudUser,
+      async () => currentUser,
+      (id, updates) => updateUser(id, updates),
+    );
+  }, [isAuthenticated, cloudUser, currentUser, updateUser]);
 
   // Initialize sync: load synced ruleset ids (once). Sync is UI-driven only.
   useEffect(() => {

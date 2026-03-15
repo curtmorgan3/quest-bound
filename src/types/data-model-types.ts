@@ -385,6 +385,8 @@ export type User = BaseDetails & {
   preferences: Record<string, any>;
   /** Links to cloud auth (e.g. Supabase auth.uid()). When set, rulesets are scoped by cloud identity. */
   cloudUserId?: string | null;
+  cloudEnabled?: boolean | null;
+  emailVerified?: boolean | null;
 };
 
 export type Window = BaseDetails & {
