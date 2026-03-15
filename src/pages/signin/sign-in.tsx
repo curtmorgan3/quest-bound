@@ -3,7 +3,7 @@ import videoSrc from '@/assets/logo-animation.mp4';
 import { Button, Input, Link } from '@/components';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { DISCORD_URL } from '@/constants';
-import { signIn as cloudSignIn, signUp as cloudSignUp } from '@/lib/cloud/auth';
+import { getSession, signIn as cloudSignIn, signUp as cloudSignUp } from '@/lib/cloud/auth';
 import { isCloudConfigured } from '@/lib/cloud/client';
 import { useRegisterEmail, useUsers } from '@/lib/compass-api';
 import { db, useCurrentUser } from '@/stores';
@@ -46,9 +46,23 @@ export const SignIn = () => {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [emailVerificationSent, setEmailVerificationSent] = useState(false);
+  const [hasCloudSession, setHasCloudSession] = useState<boolean | null>(null);
 
   const needUser = !users?.length;
   const selectedUser = users?.length ? users[0] : null;
+  const userHasCloudUserId = !!users?.[0]?.cloudUserId;
+  const isSignInOnlyMode =
+    isCloudConfigured &&
+    hasCloudSession === false &&
+    userHasCloudUserId;
+
+  useEffect(() => {
+    if (!isCloudConfigured) {
+      setHasCloudSession(false);
+      return;
+    }
+    getSession().then((session) => setHasCloudSession(!!session));
+  }, []);
 
   useEffect(() => {
     if (selectedUser) {
@@ -72,18 +86,32 @@ export const SignIn = () => {
       }
       setEmailError(null);
 
-      const trimmedUsername = usernameValue.trim();
-      if (!trimmedUsername) return;
-
       if (isCloudConfigured && !passwordValue.trim()) {
         setSubmitError('Password is required');
         return;
       }
 
+      if (isSignInOnlyMode) {
+        const result = await cloudSignIn(trimmed, passwordValue.trim());
+        if ('error' in result) {
+          setSubmitError(result.error.message);
+          return;
+        }
+        await linkLocalUserToCloud(result.user.id);
+        const firstUser = users?.[0];
+        if (firstUser) {
+          await setCurrentUserById(firstUser.id);
+        }
+        return;
+      }
+
+      const trimmedUsername = usernameValue.trim();
+      if (!trimmedUsername) return;
+
       let cloudUid: string | null = null;
 
       if (isCloudConfigured) {
-        const hasCloudAccount = !needUser && !!users?.[0]?.cloudUserId;
+        const hasCloudAccount = !needUser && userHasCloudUserId;
         const result = hasCloudAccount
           ? await cloudSignIn(trimmed, passwordValue.trim())
           : await cloudSignUp(trimmed, passwordValue.trim());
@@ -130,11 +158,14 @@ export const SignIn = () => {
 
   const hasEmailValue = Boolean(email?.trim());
   const emailInvalid = hasEmailValue && !isValidEmail(email);
-  const isSubmitDisabled =
-    !email?.trim() ||
-    !isValidEmail(email) ||
-    !usernameValue.trim() ||
-    (isCloudConfigured && !passwordValue.trim());
+  const isSubmitDisabled = isSignInOnlyMode
+    ? !email?.trim() ||
+      !isValidEmail(email) ||
+      !passwordValue.trim()
+    : !email?.trim() ||
+      !isValidEmail(email) ||
+      !usernameValue.trim() ||
+      (isCloudConfigured && !passwordValue.trim());
 
   return (
     <Dialog open={true}>
@@ -213,13 +244,15 @@ export const SignIn = () => {
                 {submitError}
               </p>
             )}
-            <Input
-              className='w-full'
-              placeholder='Username'
-              value={usernameValue}
-              onChange={(e) => setUsernameValue(e.target.value)}
-              data-testid='username-input'
-            />
+            {!isSignInOnlyMode && (
+              <Input
+                className='w-full'
+                placeholder='Username'
+                value={usernameValue}
+                onChange={(e) => setUsernameValue(e.target.value)}
+                data-testid='username-input'
+              />
+            )}
                 <Button
                   loading={submitting}
                   onClick={handleSubmit}

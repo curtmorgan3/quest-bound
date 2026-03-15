@@ -22,6 +22,7 @@ import {
   useSidebar,
 } from '@/components/ui/sidebar';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { useFeatureFlag } from '@/hooks/use-feature-flag';
 import { isCloudConfigured } from '@/lib/cloud/client';
 import { pushToCloudAndMarkSynced, syncRuleset } from '@/lib/cloud/sync/sync-service';
 import { useSyncStateStore } from '@/lib/cloud/sync/sync-state';
@@ -30,6 +31,7 @@ import { Settings } from '@/pages';
 import { db, DiceContext } from '@/stores';
 import { useCloudAuthStore } from '@/stores/cloud-auth-store';
 import type { DB } from '@/stores/db/hooks/types';
+import { CLOUD_SIGN_IN_FEATURE_FLAG } from '@/utils/feature-flags';
 import { formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
 import {
@@ -111,6 +113,7 @@ export function AppSidebar() {
   const [pushInProgress, setPushInProgress] = useState(false);
 
   const rulesetId = activeRuleset?.id;
+  const cloudSignInEnabled = useFeatureFlag(CLOUD_SIGN_IN_FEATURE_FLAG, false);
   const isAuthenticated = useCloudAuthStore((s) => s.isAuthenticated);
   const {
     isCloudSynced,
@@ -123,6 +126,7 @@ export function AppSidebar() {
   } = useSyncStateStore();
 
   const showCloudSync =
+    cloudSignInEnabled &&
     isCloudConfigured &&
     isAuthenticated &&
     rulesetId &&

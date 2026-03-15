@@ -9,7 +9,6 @@ import {
   Input,
   Label,
 } from '@/components';
-import { useUsers } from '@/lib/compass-api';
 import { signIn, signOut, signUp, updatePassword } from '@/lib/cloud/auth';
 import { isCloudConfigured } from '@/lib/cloud/client';
 import { db } from '@/stores';
@@ -244,7 +243,7 @@ function ChangePasswordDialog({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Change password</DialogTitle>
-          <DialogDescription>Set a new password for your Cloud account.</DialogDescription>
+          <DialogDescription>Set a new password for your account.</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className='flex flex-col gap-4'>
           {error && (
@@ -309,7 +308,6 @@ async function linkLocalUserToCloud(cloudUid: string): Promise<void> {
 
 export function CloudAccountSettings() {
   const { isAuthenticated, cloudUser, isLoading } = useCloudAuthStore();
-  const { currentUser, updateUser } = useUsers();
   const [signInOpen, setSignInOpen] = useState(false);
   const [signUpOpen, setSignUpOpen] = useState(false);
   const [changePasswordOpen, setChangePasswordOpen] = useState(false);
@@ -321,30 +319,22 @@ export function CloudAccountSettings() {
 
   const handleSignOut = async () => {
     await signOut();
-    if (currentUser?.cloudUserId) {
-      await updateUser(currentUser.id, { cloudUserId: null });
-      const updated = await db.users.get(currentUser.id);
-      if (updated) useCurrentUser.getState().setCurrentUser(updated);
-    }
   };
 
   if (!isCloudConfigured) return null;
-  if (isLoading) return <p className='text-sm text-muted-foreground'>Loading Cloud…</p>;
+  if (isLoading) return <p className='text-sm text-muted-foreground'>Loading…</p>;
 
   return (
     <div className='flex flex-col gap-4'>
-      <h3 className='text-sm font-medium'>Quest Bound Cloud</h3>
       {!isAuthenticated ? (
         <div className='flex flex-col gap-2'>
-          <p className='text-sm text-muted-foreground'>
-            Sign in or create an account to sync rulesets across devices.
-          </p>
+          <p className='text-sm text-muted-foreground'>Sign in or create an account</p>
           <div className='flex gap-2'>
             <Button variant='outline' size='sm' onClick={() => setSignInOpen(true)}>
-              Sign in to Cloud
+              Sign in
             </Button>
             <Button variant='outline' size='sm' onClick={() => setSignUpOpen(true)}>
-              Create cloud account
+              Create account
             </Button>
           </div>
         </div>
@@ -358,22 +348,14 @@ export function CloudAccountSettings() {
               Change password
             </Button>
             <Button variant='outline' size='sm' onClick={handleSignOut}>
-              Sign out of Cloud
+              Sign out
             </Button>
           </div>
         </div>
       )}
 
-      <SignInDialog
-        open={signInOpen}
-        onOpenChange={setSignInOpen}
-        onSuccess={handleAuthSuccess}
-      />
-      <SignUpDialog
-        open={signUpOpen}
-        onOpenChange={setSignUpOpen}
-        onSuccess={handleAuthSuccess}
-      />
+      <SignInDialog open={signInOpen} onOpenChange={setSignInOpen} onSuccess={handleAuthSuccess} />
+      <SignUpDialog open={signUpOpen} onOpenChange={setSignUpOpen} onSuccess={handleAuthSuccess} />
       <ChangePasswordDialog open={changePasswordOpen} onOpenChange={setChangePasswordOpen} />
     </div>
   );

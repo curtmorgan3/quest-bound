@@ -147,7 +147,7 @@ export function Layout() {
     (location.pathname.startsWith('/campaigns/') &&
       !location.pathname.startsWith('/campaigns/new'));
 
-  const showSignInModal = !currentUser?.cloudUserId && isSignInRequiredRoute;
+  const showSignInModal = isSignInRequiredRoute && (!currentUser?.cloudUserId || !isAuthenticated);
 
   return loading ? (
     <Loading />

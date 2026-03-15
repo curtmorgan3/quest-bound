@@ -99,14 +99,14 @@ export type LocalUserForEmail = {
 
 /**
  * When the session user has a verified email and the local user has emailVerified false,
- * calls registerEmail then updates the local user's email and emailVerified.
+ * calls registerEmail then updates the local user's email, emailVerified and cloudUserId.
  */
 export async function ensureEmailRegistered(
   cloudUser: CloudUser,
   getLocalUser: () => Promise<LocalUserForEmail | null>,
   updateLocalUser: (
     id: string,
-    updates: { email?: string; emailVerified: boolean },
+    updates: { email?: string; emailVerified: boolean; cloudUserId: string },
   ) => Promise<void>,
 ): Promise<void> {
   if (!cloudUser.email || !isCloudEmailVerified(cloudUser)) return;
@@ -115,6 +115,7 @@ export async function ensureEmailRegistered(
   const result = await registerEmail(cloudUser.email);
   if (result.error) return;
   await updateLocalUser(local.id, {
+    cloudUserId: cloudUser.id,
     email: cloudUser.email,
     emailVerified: true,
   });
