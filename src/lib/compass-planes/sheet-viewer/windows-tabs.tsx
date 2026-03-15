@@ -155,6 +155,7 @@ export const WindowsTabs = ({
     bottom: 0,
     left: 0,
     right: 0,
+    zIndex: 50,
     display: 'flex',
     gap: 8,
     padding: '8px',
