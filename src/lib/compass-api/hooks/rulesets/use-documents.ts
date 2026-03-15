@@ -3,6 +3,7 @@ import { db, useApiLoadingStore } from '@/stores';
 import type { Document } from '@/types';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useEffect } from 'react';
+import { useAssets } from '../assets';
 import { useActiveRuleset } from './use-active-ruleset';
 
 export interface UseDocumentsOptions {
@@ -25,6 +26,7 @@ export interface UseDocumentsOptions {
 export const useDocuments = (rulesetIdOrOptions?: string | UseDocumentsOptions) => {
   const { activeRuleset } = useActiveRuleset();
   const { handleError } = useErrorHandler();
+  const { assets } = useAssets();
 
   const options: UseDocumentsOptions =
     typeof rulesetIdOrOptions === 'string'
@@ -72,8 +74,7 @@ export const useDocuments = (rulesetIdOrOptions?: string | UseDocumentsOptions) 
   }, [isLoading]);
 
   const createDocument = async (data: Partial<Document>) => {
-    const canCreate =
-      data.campaignId ?? data.worldId ?? data.rulesetId ?? effectiveRulesetId;
+    const canCreate = data.campaignId ?? data.worldId ?? data.rulesetId ?? effectiveRulesetId;
     if (!canCreate) return;
     const now = new Date().toISOString();
     try {
@@ -81,8 +82,7 @@ export const useDocuments = (rulesetIdOrOptions?: string | UseDocumentsOptions) 
         ...data,
         id: crypto.randomUUID(),
         rulesetId:
-          data.rulesetId ??
-          (data.worldId || data.campaignId ? undefined : effectiveRulesetId),
+          data.rulesetId ?? (data.worldId || data.campaignId ? undefined : effectiveRulesetId),
         worldId: data.campaignId ? null : data.worldId,
         createdAt: now,
         updatedAt: now,
@@ -124,8 +124,21 @@ export const useDocuments = (rulesetIdOrOptions?: string | UseDocumentsOptions) 
     }
   };
 
+  // assetInjectorMiddleware is not working with PDFs. Temporary fix.
+  const documentsWithData =
+    documents?.map((doc) => {
+      const assetId = doc.pdfAssetId;
+      if (!assetId) return doc;
+      const asset = assets.find((asset) => asset.id === assetId);
+      if (!asset) return doc;
+      return {
+        ...doc,
+        pdfData: asset.data,
+      };
+    }) ?? [];
+
   return {
-    documents: documents ?? [],
+    documents: documentsWithData,
     isLoading,
     createDocument,
     updateDocument,

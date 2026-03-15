@@ -25,12 +25,12 @@ import {
 import { CategoryField, ImageUpload, PageWrapper } from '@/components/composites';
 import { useAssets } from '@/lib/compass-api';
 import { clearAssetReferences, db, getAssetReferenceCount } from '@/stores';
+import { useRulesetFiltersStore } from '@/stores/ruleset-filters-store';
 import type { Asset } from '@/types';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { Loader2, Pencil, Plus, Trash, Upload } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
-import { useRulesetFiltersStore } from '@/stores/ruleset-filters-store';
 import { useListFilterParams } from '../utils/list-filter-query-params';
 
 function dedupeFileNames(files: File[]): File[] {
@@ -66,8 +66,12 @@ export function AssetsPage() {
   const [editCategory, setEditCategory] = useState<string | null>(null);
   const [editError, setEditError] = useState<string | null>(null);
   const [searchParams] = useSearchParams();
-  const { title: filterValue, category: categoryFilter, setTitle: setFilterValue, setCategory: setCategoryFilter } =
-    useListFilterParams();
+  const {
+    title: filterValue,
+    category: categoryFilter,
+    setTitle: setFilterValue,
+    setCategory: setCategoryFilter,
+  } = useListFilterParams();
   const setListFilters = useRulesetFiltersStore((s) => s.setListFilters);
 
   useEffect(() => {
@@ -85,7 +89,8 @@ export function AssetsPage() {
 
   const handleCategoryChange = (value: string) => {
     setCategoryFilter(value);
-    if (rulesetId) setListFilters(rulesetId, 'assets', { category: value === ALL_CATEGORIES ? null : value });
+    if (rulesetId)
+      setListFilters(rulesetId, 'assets', { category: value === ALL_CATEGORIES ? null : value });
   };
 
   const [deleteConfirm, setDeleteConfirm] = useState<{
@@ -196,18 +201,14 @@ export function AssetsPage() {
     () =>
       [...assets]
         .filter((a) => a.type !== 'application/pdf')
-        .sort((a, b) =>
-          a.filename.localeCompare(b.filename, undefined, { sensitivity: 'base' }),
-        ),
+        .sort((a, b) => a.filename.localeCompare(b.filename, undefined, { sensitivity: 'base' })),
     [assets],
   );
 
   const assetCategories = useMemo(
     () =>
       Array.from(
-        new Set(
-          sortedAssets.map((a) => a.category).filter((c): c is string => Boolean(c?.trim())),
-        ),
+        new Set(sortedAssets.map((a) => a.category).filter((c): c is string => Boolean(c?.trim()))),
       ).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' })),
     [sortedAssets],
   );
