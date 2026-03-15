@@ -612,15 +612,20 @@ export class CharacterAccessor implements StructuredCloneSafe {
     this.addItem(name, quantity);
   }
 
-  removeItem(name: string, quantity: number = 1): void {
+  /**
+   * Remove up to `quantity` of the named item from this character's inventory.
+   * When `referenceLabel` is provided, only removes from inventory items associated with that component (e.g. Owner.removeItem('Sword', 1, 'my-inventory')).
+   */
+  removeItem(name: string, quantity: number = 1, referenceLabel?: string): void {
     if (quantity < 1) return;
     const item = Array.from(this.itemsCache.values()).find((i) => i.title === name);
     if (!item) {
       throw new Error(`Item '${name}' not found`);
     }
-    const matching = this.inventoryItems.filter(
+    let matching = this.inventoryItems.filter(
       (inv) => inv.entityId === item.id && inv.type === 'item',
     );
+
     let toRemove = quantity;
     const idsToDelete = new Set<string>();
     for (const inv of matching) {

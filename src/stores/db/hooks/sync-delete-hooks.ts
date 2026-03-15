@@ -1,6 +1,10 @@
 /**
  * Registers deleting hooks on all synced tables to record deletes for sync_deletes.
  * Single place so every local delete is recorded once.
+ *
+ * recordSyncDelete is deferred with setTimeout so it runs outside the current IDB transaction.
+ * Otherwise getRulesetIdForDelete would read other stores (e.g. inventories, characters) inside
+ * a transaction that only has the table being deleted, causing "object store was not found".
  */
 
 import { SYNC_TABLE_CONFIGS } from '@/lib/cloud/sync/sync-tables';
@@ -13,7 +17,12 @@ export function registerSyncDeleteHooks(db: DB): void {
     if (!table?.hook) continue;
     table.hook('deleting', (primKey, obj) => {
       if (getSyncState().isSyncing) return;
-      recordSyncDelete(db, config.tableName, String(primKey), obj as Record<string, unknown> | undefined).catch(() => {});
+      const tableName = config.tableName;
+      const entityId = String(primKey);
+      const entity = obj as Record<string, unknown> | undefined;
+      setTimeout(() => {
+        recordSyncDelete(db, tableName, entityId, entity).catch(() => {});
+      }, 0);
     });
   }
 }

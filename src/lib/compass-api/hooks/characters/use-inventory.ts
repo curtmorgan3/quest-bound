@@ -108,9 +108,21 @@ export const useInventory = (inventoryId: string, characterId: string) => {
     }
   };
 
-  const removeInventoryItem = async (id: string) => {
+  const   removeInventoryItem = async (id: string) => {
     try {
-      await db.inventoryItems.delete(id);
+      // Defer so the delete runs outside any existing IDB transaction (e.g. from a hook or
+      // live query). Otherwise IDB throws "The specified object store was not found" when the
+      // current transaction doesn't include the inventoryItems store.
+      await new Promise<void>((resolve, reject) => {
+        setTimeout(async () => {
+          try {
+            await db.inventoryItems.delete(id);
+            resolve();
+          } catch (err) {
+            reject(err);
+          }
+        }, 0);
+      });
     } catch (e) {
       handleError(e as Error, {
         component: 'useInventory/removeInventoryItem',

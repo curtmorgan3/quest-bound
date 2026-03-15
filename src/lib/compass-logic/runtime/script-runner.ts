@@ -613,7 +613,9 @@ export class ScriptRunner {
 
     // Process all pending updates
     for (const [key, value] of this.pendingUpdates.entries()) {
-      const [type, id] = key.split(':');
+      const colonIndex = key.indexOf(':');
+      const type = colonIndex === -1 ? key : key.slice(0, colonIndex);
+      const id = colonIndex === -1 ? '' : key.slice(colonIndex + 1);
 
       if (type === 'componentUpdates') {
         const { styleOverrides } = value as {
@@ -746,6 +748,7 @@ export class ScriptRunner {
         const now = new Date().toISOString();
         await db.inventoryItems.update(id, { ...value, updatedAt: now });
       } else if (type === 'inventoryDelete') {
+        console.log('delete: ', id);
         await db.inventoryItems.delete(id);
       } else if (type === 'archetypeAdd') {
         const entries = value as { characterId: string; archetypeName: string }[];
