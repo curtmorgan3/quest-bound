@@ -3,25 +3,19 @@
  * Also push pending sync_deletes and clear them for this ruleset.
  */
 
-import { cloudClient } from '@/lib/cloud/client';
 import { getSession } from '@/lib/cloud/auth';
-import type { DB } from '@/stores/db/hooks/types';
+import { cloudClient } from '@/lib/cloud/client';
+import { uploadAssetsForPush, uploadFontsForPush } from '@/lib/cloud/sync/sync-assets';
 import {
-  getSyncTableConfig,
-  SYNC_TABLE_ORDER,
-} from '@/lib/cloud/sync/sync-tables';
-import { prepareRecordForRemote } from '@/lib/cloud/sync/sync-utils';
-import {
-  useSyncStateStore,
   getStoredLastSyncedAt,
   setStoredLastSyncedAt,
   takePendingSyncDeletesForRuleset,
+  useSyncStateStore,
 } from '@/lib/cloud/sync/sync-state';
 import type { SyncTableConfig } from '@/lib/cloud/sync/sync-tables';
-import {
-  uploadAssetsForPush,
-  uploadFontsForPush,
-} from '@/lib/cloud/sync/sync-assets';
+import { getSyncTableConfig, SYNC_TABLE_ORDER } from '@/lib/cloud/sync/sync-tables';
+import { prepareRecordForRemote } from '@/lib/cloud/sync/sync-utils';
+import type { DB } from '@/stores/db/hooks/types';
 
 type TableWithWhere = {
   where: (key: string) => {
@@ -70,8 +64,7 @@ export async function syncPush(rulesetId: string, db: DB): Promise<{ error?: str
         // rulesets table uses id as key, not rulesetId (no rulesetId index)
         if (config.tableName === 'rulesets') {
           const row = await table.get?.(rulesetId);
-          rows =
-            row && (row.updatedAt as string) > lastSyncedAt ? [row] : [];
+          rows = row && (row.updatedAt as string) > lastSyncedAt ? [row] : [];
         } else if (table.where) {
           const all = await table.where('rulesetId').equals(rulesetId).toArray();
           rows = all.filter((r) => (r.updatedAt as string) > lastSyncedAt);
@@ -104,7 +97,7 @@ export async function syncPush(rulesetId: string, db: DB): Promise<{ error?: str
       }
 
       const remoteRows = rows.map((r) => {
-        const row = {
+        const row: { user_id: string; user_id_local?: string } = {
           ...prepareRecordForRemote(config.tableName, r),
           user_id: userId,
         };
@@ -113,7 +106,7 @@ export async function syncPush(rulesetId: string, db: DB): Promise<{ error?: str
           (config.tableName === 'characters' || config.tableName === 'diceRolls') &&
           typeof (r as { userId?: string }).userId === 'string'
         ) {
-          row.user_id_local = (r as { userId: string }).userId;
+          row.user_id_local = (r as { userId: string; user_id_local: string }).userId;
         }
         return row;
       });

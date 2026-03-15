@@ -6,9 +6,9 @@
 import { isCloudConfigured } from '@/lib/cloud/client';
 import { useCloudAuthStore } from '@/stores/cloud-auth-store';
 import type { DB } from '@/stores/db/hooks/types';
-import { useSyncStateStore } from './sync-state';
 import { syncPull } from './sync-pull';
 import { syncPush } from './sync-push';
+import { useSyncStateStore } from './sync-state';
 
 export { syncPull, syncPush };
 
@@ -24,7 +24,7 @@ export async function syncRuleset(rulesetId: string, db: DB): Promise<{ error?: 
   if (!isAuthenticated) return {};
   if (!navigator.onLine) return { error: 'Offline' };
 
-  const { isSyncing, setSyncError, setLastSyncCompletedAt } = useSyncStateStore.getState();
+  const { isSyncing, setSyncError } = useSyncStateStore.getState();
   if (isSyncing) return { error: 'Sync already in progress' };
 
   setSyncError(null);
@@ -41,7 +41,10 @@ export async function syncRuleset(rulesetId: string, db: DB): Promise<{ error?: 
  * First push to cloud: push only (no pull), then mark ruleset as cloud-synced.
  * Use for the initial "Push to Cloud" action.
  */
-export async function pushToCloudAndMarkSynced(rulesetId: string, db: DB): Promise<{ error?: string }> {
+export async function pushToCloudAndMarkSynced(
+  rulesetId: string,
+  db: DB,
+): Promise<{ error?: string }> {
   if (!isCloudConfigured) return { error: 'Cloud not configured' };
   const { isAuthenticated } = useCloudAuthStore.getState();
   if (!isAuthenticated) return { error: 'Not signed in' };
