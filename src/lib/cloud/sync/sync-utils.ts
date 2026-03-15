@@ -55,13 +55,19 @@ export function stripForPush(
 
 /**
  * Prepare a local record for remote upsert: strip excluded fields, then convert keys to snake_case.
+ * Coerces known integer columns (e.g. quantity on inventory_items) so we never send invalid types.
  */
 export function prepareRecordForRemote(
   tableName: string,
   record: Record<string, unknown>,
 ): Record<string, unknown> {
   const stripped = stripForPush(tableName, record);
-  return toSnakeCaseKeys(stripped);
+  const out = toSnakeCaseKeys(stripped);
+  if (tableName === 'inventoryItems' && 'quantity' in out) {
+    const n = Number((out as { quantity: unknown }).quantity);
+    (out as { quantity: number }).quantity = Number.isFinite(n) ? Math.max(0, Math.floor(n)) : 1;
+  }
+  return out;
 }
 
 /**

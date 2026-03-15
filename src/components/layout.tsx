@@ -8,6 +8,8 @@ import { useFontLoader, useUsers } from '@/lib/compass-api';
 import { useScriptAnnouncements } from '@/lib/compass-logic';
 import { SignIn } from '@/pages';
 import { DicePanel, PhysicalRollModal } from '@/pages/dice';
+import { initSyncTriggers } from '@/lib/cloud/sync/sync-service';
+import { useSyncOnRulesetOpen } from '@/lib/cloud/sync/use-sync-on-ruleset-open';
 import {
   CharacterArchetypesPanelContext,
   CharacterInventoryPanelContext,
@@ -15,7 +17,9 @@ import {
   useCloudAuthStore,
   useDiceState,
   useOnboardingStore,
+  db,
 } from '@/stores';
+import type { DB } from '@/stores/db/hooks/types';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Outlet, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { AppSidebar } from './composites/app-sidebar';
@@ -45,6 +49,14 @@ export function Layout() {
   useEffect(() => {
     useCloudAuthStore.getState().init();
   }, []);
+
+  // Initialize sync: visibility listener and synced ruleset ids (once)
+  useEffect(() => {
+    initSyncTriggers(db as DB);
+  }, []);
+
+  // When viewing a ruleset, set current for visibility sync and trigger sync if cloud-synced
+  useSyncOnRulesetOpen();
 
   useEffect(() => {
     if (isOnAttributesRoute && wouldShowOnAttributes) {

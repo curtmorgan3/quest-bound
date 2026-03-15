@@ -30,6 +30,10 @@ type TableWithWhere = {
   };
 };
 
+type TableWithGet = {
+  get: (key: string) => Promise<Record<string, unknown> | undefined>;
+};
+
 export async function syncPush(rulesetId: string, db: DB): Promise<{ error?: string }> {
   const client = cloudClient;
   const session = await getSession();
@@ -51,28 +55,68 @@ export async function syncPush(rulesetId: string, db: DB): Promise<{ error?: str
     }
 
     for (const config of configs) {
-      const table = (db as unknown as Record<string, TableWithWhere>)[config.tableName];
-      if (!table?.where) continue;
+      const tables = db as unknown as Record<string, TableWithWhere & TableWithGet>;
+      const table = tables[config.tableName];
+      if (!table) continue;
 
       let rows: Record<string, unknown>[];
-      if (config.hasRulesetId) {
-        const all = await table.where('rulesetId').equals(rulesetId).toArray();
-        rows = all.filter((r) => (r.updatedAt as string) > lastSyncedAt);
-      } else if (config.parentTable && config.parentKey) {
+      // Child tables (e.g. characterAttributes): no rulesetId index — use parent ids
+      if (config.parentTable && config.parentKey && table.where) {
         const parentIds = await getParentIds(db, config.parentTable, rulesetId);
         if (parentIds.length === 0) continue;
         const all = await table.where(config.parentKey).anyOf(parentIds).toArray();
         rows = all.filter((r) => (r.updatedAt as string) > lastSyncedAt);
+      } else if (config.hasRulesetId) {
+        // rulesets table uses id as key, not rulesetId (no rulesetId index)
+        if (config.tableName === 'rulesets') {
+          const row = await table.get?.(rulesetId);
+          rows =
+            row && (row.updatedAt as string) > lastSyncedAt ? [row] : [];
+        } else if (table.where) {
+          const all = await table.where('rulesetId').equals(rulesetId).toArray();
+          rows = all.filter((r) => (r.updatedAt as string) > lastSyncedAt);
+        } else {
+          continue;
+        }
       } else {
         continue;
       }
 
       if (rows.length === 0) continue;
 
-      const remoteRows = rows.map((r) => ({
-        ...prepareRecordForRemote(config.tableName, r),
-        user_id: userId,
-      }));
+      // Backfill character_id for inventory_items from parent inventory when missing (required by remote)
+      if (config.tableName === 'inventoryItems') {
+        const inventoriesTable = tables['inventories'] as TableWithGet | undefined;
+        if (inventoriesTable?.get) {
+          for (const r of rows) {
+            if (
+              (r.characterId == null || r.character_id == null) &&
+              typeof (r.inventoryId ?? r.inventory_id) === 'string'
+            ) {
+              const inv = await inventoriesTable.get((r.inventoryId ?? r.inventory_id) as string);
+              const cid = (inv as { characterId?: string } | undefined)?.characterId;
+              if (typeof cid === 'string') {
+                r.characterId = cid;
+              }
+            }
+          }
+        }
+      }
+
+      const remoteRows = rows.map((r) => {
+        const row = {
+          ...prepareRecordForRemote(config.tableName, r),
+          user_id: userId,
+        };
+        // Remote schema has user_id_local (local app user); required for characters and dice_rolls
+        if (
+          (config.tableName === 'characters' || config.tableName === 'diceRolls') &&
+          typeof (r as { userId?: string }).userId === 'string'
+        ) {
+          row.user_id_local = (r as { userId: string }).userId;
+        }
+        return row;
+      });
 
       if (config.tableName === 'assets') {
         await uploadAssetsForPush(client, userId, remoteRows);

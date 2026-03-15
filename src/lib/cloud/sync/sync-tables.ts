@@ -34,21 +34,36 @@ export const SYNC_TABLE_CONFIGS: SyncTableConfig[] = [
   {
     tableName: 'attributes',
     remoteTableName: 'attributes',
-    excludedFields: ['options'],
+    excludedFields: ['options', 'image'],
     hasRulesetId: true,
   },
   { tableName: 'actions', remoteTableName: 'actions', excludedFields: [], hasRulesetId: true },
   {
     tableName: 'items',
     remoteTableName: 'items',
-    excludedFields: ['sprites'],
+    excludedFields: ['sprites', 'image'],
     hasRulesetId: true,
   },
-  { tableName: 'charts', remoteTableName: 'charts', excludedFields: [], hasRulesetId: true },
-  { tableName: 'documents', remoteTableName: 'documents', excludedFields: [], hasRulesetId: true },
+  {
+    tableName: 'charts',
+    remoteTableName: 'charts',
+    excludedFields: ['image'],
+    hasRulesetId: true,
+  },
+  {
+    tableName: 'documents',
+    remoteTableName: 'documents',
+    excludedFields: ['image'],
+    hasRulesetId: true,
+  },
   { tableName: 'assets', remoteTableName: 'assets', excludedFields: [], hasRulesetId: true },
   { tableName: 'fonts', remoteTableName: 'fonts', excludedFields: [], hasRulesetId: true },
-  { tableName: 'windows', remoteTableName: 'windows', excludedFields: [], hasRulesetId: true },
+  {
+    tableName: 'windows',
+    remoteTableName: 'windows',
+    excludedFields: ['image'],
+    hasRulesetId: true,
+  },
   {
     tableName: 'components',
     remoteTableName: 'components',
@@ -73,7 +88,7 @@ export const SYNC_TABLE_CONFIGS: SyncTableConfig[] = [
   {
     tableName: 'archetypes',
     remoteTableName: 'archetypes',
-    excludedFields: ['variantOptions', 'sprites'],
+    excludedFields: ['variantOptions', 'sprites', 'image', 'mapHeight', 'mapWidth'],
     hasRulesetId: true,
   },
   {
@@ -86,13 +101,13 @@ export const SYNC_TABLE_CONFIGS: SyncTableConfig[] = [
   {
     tableName: 'characters',
     remoteTableName: 'characters',
-    excludedFields: ['image'],
+    excludedFields: ['image', 'archetypeIds'],
     hasRulesetId: true,
   },
   {
     tableName: 'characterAttributes',
     remoteTableName: 'character_attributes',
-    excludedFields: ['options'],
+    excludedFields: ['options', 'image'],
     hasRulesetId: true,
     parentTable: 'characters',
     parentKey: 'characterId',
@@ -116,7 +131,7 @@ export const SYNC_TABLE_CONFIGS: SyncTableConfig[] = [
   {
     tableName: 'inventories',
     remoteTableName: 'inventories',
-    excludedFields: [],
+    excludedFields: ['entities', 'items'],
     hasRulesetId: true,
     parentTable: 'characters',
     parentKey: 'characterId',
@@ -124,7 +139,7 @@ export const SYNC_TABLE_CONFIGS: SyncTableConfig[] = [
   {
     tableName: 'inventoryItems',
     remoteTableName: 'inventory_items',
-    excludedFields: [],
+    excludedFields: ['items'],
     hasRulesetId: false,
     parentTable: 'inventories',
     parentKey: 'inventoryId',

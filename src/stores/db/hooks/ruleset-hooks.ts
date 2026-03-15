@@ -50,8 +50,6 @@ export function registerRulesetDbHooks(db: DB) {
               testCharacterId: testCharacter.id,
               isDefault: true,
               loadOrder: 0,
-              mapHeight: 1,
-              mapWidth: 1,
               createdAt: now,
               updatedAt: now,
             });

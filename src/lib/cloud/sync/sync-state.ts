@@ -5,6 +5,7 @@ import { getRulesetIdForDelete } from './sync-utils';
 
 const LAST_SYNCED_KEY = 'qb.cloud.lastSyncedAt';
 const PENDING_DELETES_KEY = 'qb.cloud.pendingDeletes';
+const SYNCED_RULESETS_KEY = 'qb.cloud.syncedRulesetIds';
 
 export interface PendingSyncDelete {
   tableName: string;
@@ -20,6 +21,12 @@ export interface SyncState {
   syncProgress: { current: number; total: number } | null;
   /** ruleset IDs with unsynced local changes (transient) */
   pendingPushRulesets: Set<string>;
+  /** ruleset IDs marked as cloud-synced (after first push). Persisted in idb-keyval. */
+  syncedRulesetIds: Set<string>;
+  /** ruleset ID currently being viewed (for visibility-triggered sync). Transient. */
+  currentRulesetId: string | null;
+  /** timestamp of last completed sync (for 10s visibility debounce). Transient. */
+  lastSyncCompletedAt: number;
   setSyncing: (value: boolean) => void;
   setSyncError: (error: string | null) => void;
   setSyncProgress: (progress: { current: number; total: number } | null) => void;
@@ -27,6 +34,11 @@ export interface SyncState {
   loadLastSyncedAt: () => Promise<void>;
   addPendingPushRuleset: (rulesetId: string) => void;
   clearPendingPushRuleset: (rulesetId: string) => void;
+  setCurrentRulesetId: (rulesetId: string | null) => void;
+  setLastSyncCompletedAt: (timestamp: number) => void;
+  loadSyncedRulesetIds: () => Promise<void>;
+  markRulesetSynced: (rulesetId: string) => Promise<void>;
+  isCloudSynced: (rulesetId: string) => boolean;
 }
 
 export const useSyncStateStore = create<SyncState>((set, get) => ({
@@ -35,6 +47,9 @@ export const useSyncStateStore = create<SyncState>((set, get) => ({
   syncError: null,
   syncProgress: null,
   pendingPushRulesets: new Set(),
+  syncedRulesetIds: new Set(),
+  currentRulesetId: null,
+  lastSyncCompletedAt: 0,
 
   setSyncing: (value) => set({ isSyncing: value }),
   setSyncError: (error) => set({ syncError: error }),
@@ -64,6 +79,22 @@ export const useSyncStateStore = create<SyncState>((set, get) => ({
       return { pendingPushRulesets: next };
     });
   },
+  setCurrentRulesetId: (rulesetId) => set({ currentRulesetId: rulesetId }),
+  setLastSyncCompletedAt: (timestamp) => set({ lastSyncCompletedAt: timestamp }),
+  loadSyncedRulesetIds: async () => {
+    try {
+      const stored = await getKeyval<string[]>(SYNCED_RULESETS_KEY);
+      set({ syncedRulesetIds: new Set(stored ?? []) });
+    } catch {
+      set({ syncedRulesetIds: new Set() });
+    }
+  },
+  markRulesetSynced: async (rulesetId) => {
+    const next = new Set(get().syncedRulesetIds).add(rulesetId);
+    set({ syncedRulesetIds: next });
+    await setKeyval(SYNCED_RULESETS_KEY, Array.from(next));
+  },
+  isCloudSynced: (rulesetId) => get().syncedRulesetIds.has(rulesetId),
 }));
 
 /** Read current isSyncing without subscribing. Use in Dexie hooks. */

@@ -17,6 +17,7 @@ import { ArchetypeCreateDialog } from './archetypes/archetype-create-dialog';
 import { Archetypes } from './archetypes/archetypes';
 import { AttributeChart } from './attributes/attribute-chart';
 import { ChartSelect } from './charts';
+import { CloudSyncActions } from './cloud-sync-actions';
 import { ChartImport, Export, Import } from './components';
 import { BaseCreate } from './create';
 import { Documents } from './documents';
@@ -161,6 +162,7 @@ export const Ruleset = ({
       title={pageLabel}
       headerActions={
         <div className='flex gap-2'>
+          {activeRuleset?.id && <CloudSyncActions rulesetId={activeRuleset.id} />}
           {page === 'archetypes' && <ArchetypeCreateDialog />}
           {page !== 'archetypes' && (
             <Button
