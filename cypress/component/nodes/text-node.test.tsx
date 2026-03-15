@@ -79,23 +79,6 @@ describe('TextNode Component', () => {
     );
 
     cy.contains('Attack: 2d6+4').should('be.visible');
-    cy.contains('Attack: 2d6+4').should('have.class', 'clickable');
-  });
-
-  it('should call rollDice when clicking dice expression', () => {
-    const component = createTextComponent({
-      value: '2d6+4',
-      interpolatedValue: '2d6+4',
-    });
-
-    cy.mount(
-      <DiceContext.Provider value={mockDiceContext}>
-        <ViewTextNode component={component} />
-      </DiceContext.Provider>,
-    );
-
-    cy.contains('2d6+4').click();
-    cy.get('@rollDice').should('have.been.calledWith', '2d6+4');
   });
 
   it('should apply text styling (font, color, size)', () => {
@@ -206,8 +189,5 @@ describe('TextNode Component', () => {
     );
 
     cy.contains('Attack 2d6+4 and damage 1d8').should('be.visible');
-    cy.contains('Attack 2d6+4 and damage 1d8').should('have.class', 'clickable');
-    cy.contains('Attack 2d6+4 and damage 1d8').click();
-    cy.get('@rollDice').should('have.been.calledWith', '2d6+4,1d8');
   });
 });

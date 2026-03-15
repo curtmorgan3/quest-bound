@@ -6,9 +6,8 @@ import {
   useComponentStyles,
   useNodeData,
 } from '@/lib/compass-planes/utils';
-import { DiceContext, WindowEditorContext } from '@/stores';
+import { WindowEditorContext } from '@/stores';
 import type { Component, TextComponentData, TextComponentStyle } from '@/types';
-import { parseTextForDiceRolls } from '@/utils';
 import { useNodeId } from '@xyflow/react';
 import { memo, useContext, useEffect, useRef, useState } from 'react';
 import { ResizableNode } from '../../decorators';
@@ -130,14 +129,6 @@ const ViewTextNodeComponent = ({
 }) => {
   const data = useNodeData(component);
   const css = useComponentStyles(component) as TextComponentStyle;
-  const { rollDice } = useContext(DiceContext);
-
-  const diceRolls = parseTextForDiceRolls(data?.interpolatedValue?.toString());
-
-  const handleClick = () => {
-    if (!diceRolls.length || !!onDoubleClick) return;
-    rollDice(diceRolls.join(','));
-  };
 
   return (
     <div
@@ -163,8 +154,6 @@ const ViewTextNodeComponent = ({
         }}>
         <span
           onDoubleClick={onDoubleClick}
-          onClick={handleClick}
-          className={diceRolls.length ? 'clickable' : undefined}
           style={{
             ...css,
             ...getColorStyle(css),

@@ -17,6 +17,7 @@ import {
   NodeAnimation,
   NodeAttributeEditPanelControl,
   NodeConditionalRender,
+  NodeDiceClick,
   NodePageRouter,
   NodeScriptCaller,
   NodeTooltip,
@@ -160,6 +161,7 @@ function WrapDecorators({
         component={component}
         componentData={componentData}>
         <NodeScriptCaller component={component}>
+          <NodeDiceClick component={component}>
           <NodeAttributeEditPanelControl component={component}>
             <NodePageRouter component={component} componentData={componentData}>
               <NodeRotation rotation={position?.rotation} z={position?.z}>
@@ -167,6 +169,7 @@ function WrapDecorators({
               </NodeRotation>
             </NodePageRouter>
           </NodeAttributeEditPanelControl>
+          </NodeDiceClick>
         </NodeScriptCaller>
       </NodeTooltip>
     </NodeConditionalRender>

@@ -5,9 +5,8 @@ import {
   useComponentStyles,
   useNodeData,
 } from '@/lib/compass-planes/utils';
-import { CharacterContext, DiceContext, WindowEditorContext } from '@/stores';
+import { CharacterContext, WindowEditorContext } from '@/stores';
 import type { Component, ContentComponentData, TextComponentStyle } from '@/types';
-import { parseTextForDiceRolls } from '@/utils';
 import { useNodeId } from '@xyflow/react';
 import { memo, useContext, useEffect, useRef, useState } from 'react';
 import Markdown from 'react-markdown';
@@ -76,14 +75,6 @@ const ViewContentNodeComponent = ({
   const data = useNodeData(component);
   const css = useComponentStyles(component) as TextComponentStyle;
   const characterContext = useContext(CharacterContext);
-  const { rollDice } = useContext(DiceContext);
-
-  const diceRolls = parseTextForDiceRolls(data?.interpolatedValue?.toString());
-
-  const handleClick = () => {
-    if (!diceRolls.length || windowEditorMode) return;
-    rollDice(diceRolls.join(','));
-  };
 
   const { characterAttributeId } = data;
 
@@ -180,8 +171,7 @@ const ViewContentNodeComponent = ({
           width: '100%',
           height: '100%',
         }}
-        onClick={handleClick}
-        className={`prose prose-invert max-w-none editor-content md-content ${diceRolls.length ? 'clickable' : ''}`}>
+        className="prose prose-invert max-w-none editor-content md-content">
         <Markdown>{data?.interpolatedValue?.toString() ?? ''}</Markdown>
       </div>
     </section>
