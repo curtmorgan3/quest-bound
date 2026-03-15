@@ -141,13 +141,29 @@ export function Layout() {
   const [characterInventoryPanelOpen, setCharacterInventoryPanelOpen] = useState(false);
   const [characterArchetypesPanelOpen, setCharacterArchetypesPanelOpen] = useState(false);
 
+  const [isOnline, setIsOnline] = useState(() => navigator.onLine);
+
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
   const isPlayPage = location.pathname.startsWith('/play/');
   const isSignInRequiredRoute =
     location.pathname.startsWith('/rulesets/') ||
     (location.pathname.startsWith('/campaigns/') &&
       !location.pathname.startsWith('/campaigns/new'));
 
-  const showSignInModal = isSignInRequiredRoute && (!currentUser?.cloudUserId || !isAuthenticated);
+  const showSignInModal =
+    isOnline &&
+    isSignInRequiredRoute &&
+    (!currentUser?.cloudUserId || !isAuthenticated);
 
   return loading ? (
     <Loading />
