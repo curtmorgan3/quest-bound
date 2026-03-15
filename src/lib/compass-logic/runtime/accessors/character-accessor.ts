@@ -678,6 +678,29 @@ export class CharacterAccessor implements StructuredCloneSafe {
   }
 
   /**
+   * Clear inventory items. When no argument is provided, removes all inventory items
+   * belonging to the character's inventory. When referenceLabel is provided, clears
+   * all inventory items from inventory components whose referenceId equals referenceLabel.
+   */
+  clearInventory(referenceLabel?: string): void {
+    if (referenceLabel != null && referenceLabel !== '') {
+      if (this.refLabelToComponentId == null) return;
+      const componentId = this.refLabelToComponentId.get(referenceLabel);
+      if (componentId == null) return;
+      const toRemove = this.inventoryItems.filter((inv) => inv.componentId === componentId);
+      for (const inv of toRemove) {
+        this.pendingUpdates.set(`inventoryDelete:${inv.id}`, true);
+      }
+      this.inventoryItems = this.inventoryItems.filter((inv) => inv.componentId !== componentId);
+    } else {
+      for (const inv of this.inventoryItems) {
+        this.pendingUpdates.set(`inventoryDelete:${inv.id}`, true);
+      }
+      this.inventoryItems = [];
+    }
+  }
+
+  /**
    * Add a character sheet page for this character from a ruleset page template, by label or id.
    * Examples:
    * - Owner.addPage('Spells')
