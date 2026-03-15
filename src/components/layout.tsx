@@ -50,12 +50,12 @@ export function Layout() {
     useCloudAuthStore.getState().init();
   }, []);
 
-  // Initialize sync: visibility listener and synced ruleset ids (once)
+  // Initialize sync: load synced ruleset ids (once). Sync is UI-driven only.
   useEffect(() => {
     initSyncTriggers(db as DB);
   }, []);
 
-  // When viewing a ruleset, set current for visibility sync and trigger sync if cloud-synced
+  // When viewing a ruleset, set current ruleset and ensure synced ids are loaded
   useSyncOnRulesetOpen();
 
   useEffect(() => {

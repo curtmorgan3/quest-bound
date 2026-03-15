@@ -1,6 +1,6 @@
 /**
- * Sync service: orchestrator (pull → push), first-push, and triggers.
- * Step 6: syncRuleset with auth/online gating, sync-on-open, visibility, manual Sync Now.
+ * Sync service: orchestrator (pull → push), first-push, and init.
+ * Sync is UI-driven only (e.g. "Sync Now" button); no auto-sync on open or visibility.
  */
 
 import { isCloudConfigured } from '@/lib/cloud/client';
@@ -11,8 +11,6 @@ import { syncPush } from './sync-push';
 import { useSyncStateStore } from './sync-state';
 
 export { syncPull, syncPush };
-
-const VISIBILITY_DEBOUNCE_MS = 10_000;
 
 /**
  * Full sync for a ruleset: pull then push, update lastSyncedAt and lastSyncCompletedAt.
@@ -61,25 +59,14 @@ export async function pushToCloudAndMarkSynced(
   return {};
 }
 
-let visibilityListenerRegistered = false;
+let initDone = false;
 
 /**
- * Register visibilitychange listener: when tab becomes visible, sync current ruleset if
- * cloud-synced and last sync completed more than 10s ago. Call once at app init with db.
+ * Load synced ruleset IDs into store at app init. Call once at app init.
+ * Sync itself is UI-driven only (e.g. "Sync Now" on ruleset page).
  */
-export function initSyncTriggers(db: DB): void {
-  if (!isCloudConfigured || visibilityListenerRegistered) return;
-  visibilityListenerRegistered = true;
-
+export function initSyncTriggers(_db: DB): void {
+  if (!isCloudConfigured || initDone) return;
+  initDone = true;
   useSyncStateStore.getState().loadSyncedRulesetIds();
-
-  document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState !== 'visible') return;
-    const { currentRulesetId, lastSyncCompletedAt, isCloudSynced } = useSyncStateStore.getState();
-    if (!currentRulesetId || !isCloudSynced(currentRulesetId)) return;
-    if (Date.now() - lastSyncCompletedAt < VISIBILITY_DEBOUNCE_MS) return;
-    if (!useCloudAuthStore.getState().isAuthenticated || !navigator.onLine) return;
-
-    syncRuleset(currentRulesetId, db).catch(() => {});
-  });
 }
