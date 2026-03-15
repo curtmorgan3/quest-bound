@@ -266,6 +266,31 @@ export const ClickEventModal = ({ component, allCanOpenChildWindow }: Props) => 
     updateComponents([{ id: component.id, scriptId: null, data: JSON.stringify(baseData) }]);
   };
 
+  const clearClickEventData = async () => {
+    const baseData = JSON.parse(component.data);
+    delete baseData.pageId;
+    delete baseData.viewAttributeId;
+    delete baseData.viewAttributeReadOnly;
+    delete baseData.childWindowX;
+    delete baseData.childWindowY;
+    delete baseData.childWindowCollapse;
+    delete baseData.scriptParameterValues;
+
+    const update: Record<string, unknown> = {
+      id: component.id,
+      data: JSON.stringify(baseData),
+      childWindowId: null,
+      actionId: null,
+      scriptId: null,
+    };
+
+    if (selectedScript?.hidden) {
+      await deleteScript(selectedScript.id);
+    }
+
+    await updateComponents([update]);
+  };
+
   const handleUpdateScriptParameterValue = (paramId: string, value: ScriptParamValue) => {
     const baseData = JSON.parse(component.data);
     const existing: Record<string, ScriptParamValue> = baseData.scriptParameterValues ?? {};
@@ -323,7 +348,12 @@ export const ClickEventModal = ({ component, allCanOpenChildWindow }: Props) => 
             <Label className='text-xs text-muted-foreground'>Click Event Type</Label>
             <Select
               value={clickEventType}
-              onValueChange={(value: ClickEventType) => setClickEventType(value)}>
+              onValueChange={(value: ClickEventType) => {
+                if (value !== clickEventType) {
+                  void clearClickEventData();
+                }
+                setClickEventType(value);
+              }}>
               <SelectTrigger className='h-8' data-testid='click-event-type-trigger'>
                 <SelectValue />
               </SelectTrigger>
