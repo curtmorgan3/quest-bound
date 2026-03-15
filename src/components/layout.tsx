@@ -4,21 +4,21 @@ import { GlobalLoadingOverlay } from '@/components/global-loading-overlay';
 import { OnboardingPanel, useOnboardingStatus } from '@/components/onboarding';
 import { PromptModal } from '@/components/prompt-modal';
 import { useNotifications } from '@/hooks';
+import { ensureEmailRegistered, isCloudEmailVerified } from '@/lib/cloud/auth';
+import { initSyncTriggers } from '@/lib/cloud/sync/sync-service';
+import { useSyncOnRulesetOpen } from '@/lib/cloud/sync/use-sync-on-ruleset-open';
 import { useFontLoader, useUsers } from '@/lib/compass-api';
 import { useScriptAnnouncements } from '@/lib/compass-logic';
 import { SignIn } from '@/pages';
 import { DicePanel, PhysicalRollModal } from '@/pages/dice';
-import { ensureEmailRegistered, isCloudEmailVerified } from '@/lib/cloud/auth';
-import { initSyncTriggers } from '@/lib/cloud/sync/sync-service';
-import { useSyncOnRulesetOpen } from '@/lib/cloud/sync/use-sync-on-ruleset-open';
 import {
   CharacterArchetypesPanelContext,
   CharacterInventoryPanelContext,
+  db,
   DiceProvider,
   useCloudAuthStore,
   useDiceState,
   useOnboardingStore,
-  db,
 } from '@/stores';
 import type { DB } from '@/stores/db/hooks/types';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -47,6 +47,7 @@ export function Layout() {
     currentUser && !onboardingLoading && (forceShowAgain || !hasCompleted);
 
   const { cloudUser, isAuthenticated } = useCloudAuthStore();
+  const isRegisteringEmail = useRef(false);
 
   // Initialize cloud auth (session restore + auth state subscription)
   useEffect(() => {
@@ -59,12 +60,14 @@ export function Layout() {
       !isAuthenticated ||
       !cloudUser?.email ||
       !currentUser ||
-      currentUser.cloudUserId !== cloudUser.id ||
-      currentUser.emailVerified
+      (currentUser.cloudUserId && currentUser.cloudUserId !== cloudUser.id) ||
+      currentUser.emailVerified ||
+      isRegisteringEmail.current
     ) {
       return;
     }
     if (!isCloudEmailVerified(cloudUser)) return;
+    isRegisteringEmail.current = true;
     ensureEmailRegistered(
       cloudUser,
       async () => currentUser,
@@ -144,7 +147,7 @@ export function Layout() {
     (location.pathname.startsWith('/campaigns/') &&
       !location.pathname.startsWith('/campaigns/new'));
 
-  const showSignInModal = !currentUser?.email && isSignInRequiredRoute;
+  const showSignInModal = !currentUser?.cloudUserId && isSignInRequiredRoute;
 
   return loading ? (
     <Loading />

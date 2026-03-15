@@ -89,9 +89,7 @@ export async function registerEmail(email: string): Promise<{ error?: Error }> {
 
 /** True when the cloud user's email is verified (e.g. Supabase email_confirmed_at). */
 export function isCloudEmailVerified(user: CloudUser): boolean {
-  return Boolean(
-    (user as unknown as { email_confirmed_at?: string | null }).email_confirmed_at,
-  );
+  return Boolean((user as unknown as { email_confirmed_at?: string | null }).email_confirmed_at);
 }
 
 export type LocalUserForEmail = {

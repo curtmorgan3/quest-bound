@@ -32,19 +32,20 @@ async function linkLocalUserToCloud(cloudUid: string): Promise<void> {
 }
 
 export const SignIn = () => {
-  const { users, createUser, setCurrentUserById, updateUser, loading } = useUsers();
+  const { users, createUser, setCurrentUserById, updateUser } = useUsers();
   const {
     email,
     setEmail,
     registerEmail,
     emailRegistered,
-    loading: emailLoading,
   } = useRegisterEmail();
 
   const [usernameValue, setUsernameValue] = useState<string>('');
   const [passwordValue, setPasswordValue] = useState<string>('');
   const [emailError, setEmailError] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [emailVerificationSent, setEmailVerificationSent] = useState(false);
 
   const needUser = !users?.length;
   const selectedUser = users?.length ? users[0] : null;
@@ -56,6 +57,7 @@ export const SignIn = () => {
   }, [selectedUser?.id]);
 
   const handleSubmit = async () => {
+    setSubmitting(true);
     try {
       setSubmitError(null);
       const trimmed = email?.trim();
@@ -91,7 +93,7 @@ export const SignIn = () => {
           return;
         }
         if ('needsEmailVerification' in result) {
-          setSubmitError('Please check your email to verify your account.');
+          setEmailVerificationSent(true);
           // Continue to create/update local user; link when they verify later
         } else {
           cloudUid = result.user.id;
@@ -121,6 +123,8 @@ export const SignIn = () => {
     } catch (e: unknown) {
       console.error('Submit failed', e);
       setSubmitError(e instanceof Error ? e.message : 'Something went wrong');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -131,7 +135,6 @@ export const SignIn = () => {
     !isValidEmail(email) ||
     !usernameValue.trim() ||
     (isCloudConfigured && !passwordValue.trim());
-  const isSubmitting = emailLoading || loading;
 
   return (
     <Dialog open={true}>
@@ -153,7 +156,15 @@ export const SignIn = () => {
           </video>
 
           <div className='flex w-full flex-col gap-4'>
-            <div className='w-full flex justify-center items-center'>
+            {emailVerificationSent ? (
+              <p
+                className='text-center text-sm text-muted-foreground'
+                data-testid='email-verification-message'>
+                Please check your email to verify your account.
+              </p>
+            ) : (
+              <>
+                <div className='w-full flex justify-center items-center'>
               <p className='text-sm text-muted-foreground'>
                 Free & Open Source Tabletop Game Engine
               </p>
@@ -209,14 +220,16 @@ export const SignIn = () => {
               onChange={(e) => setUsernameValue(e.target.value)}
               data-testid='username-input'
             />
-            <Button
-              loading={isSubmitting}
-              onClick={handleSubmit}
-              disabled={isSubmitDisabled}
-              className='w-full'
-              data-testid='submit-button'>
-              Submit
-            </Button>
+                <Button
+                  loading={submitting}
+                  onClick={handleSubmit}
+                  disabled={isSubmitDisabled || submitting}
+                  className='w-full'
+                  data-testid='submit-button'>
+                  Submit
+                </Button>
+              </>
+            )}
           </div>
 
           <motion.div
