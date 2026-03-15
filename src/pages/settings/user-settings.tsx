@@ -18,7 +18,9 @@ import {
   TabsList,
   TabsTrigger,
 } from '@/components';
+import { useFeatureFlag } from '@/hooks/use-feature-flag';
 import { useUsers } from '@/lib/compass-api';
+import { CLOUD_SIGN_IN_FEATURE_FLAG } from '@/utils/feature-flags';
 import { errorLogger, useOnboardingStore, usePwaInstallStore } from '@/stores';
 import { Download, PlayCircleIcon, User, Settings, Shield } from 'lucide-react';
 import { useEffect, useState } from 'react';
@@ -28,6 +30,7 @@ export const UserSettings = () => {
   const { currentUser, updateUser, deleteUser } = useUsers();
   const { setForceShowAgain } = useOnboardingStore();
   const { deferredPrompt, triggerInstall } = usePwaInstallStore();
+  const cloudSignInEnabled = useFeatureFlag(CLOUD_SIGN_IN_FEATURE_FLAG, false);
   const [installLoading, setInstallLoading] = useState(false);
 
   const [username, setUsername] = useState(currentUser?.username || '');
@@ -169,7 +172,7 @@ export const UserSettings = () => {
       </TabsContent>
 
       <TabsContent value='account' className='flex flex-col gap-4 mt-4'>
-        <CloudAccountSettings />
+        {cloudSignInEnabled && <CloudAccountSettings />}
 
         <div className='flex flex-col gap-2'>
           <Button
