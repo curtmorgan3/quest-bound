@@ -18,6 +18,10 @@ import {
   takePendingSyncDeletesForRuleset,
 } from '@/lib/cloud/sync/sync-state';
 import type { SyncTableConfig } from '@/lib/cloud/sync/sync-tables';
+import {
+  uploadAssetsForPush,
+  uploadFontsForPush,
+} from '@/lib/cloud/sync/sync-assets';
 
 type TableWithWhere = {
   where: (key: string) => {
@@ -69,6 +73,13 @@ export async function syncPush(rulesetId: string, db: DB): Promise<{ error?: str
         ...prepareRecordForRemote(config.tableName, r),
         user_id: userId,
       }));
+
+      if (config.tableName === 'assets') {
+        await uploadAssetsForPush(client, userId, remoteRows);
+      } else if (config.tableName === 'fonts') {
+        await uploadFontsForPush(client, userId, remoteRows);
+      }
+
       const { error } = await client
         .from(config.remoteTableName)
         .upsert(remoteRows, { onConflict: 'user_id,id' });

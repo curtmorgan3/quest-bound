@@ -16,6 +16,11 @@ import {
   getStoredLastSyncedAt,
   setStoredLastSyncedAt,
 } from '@/lib/cloud/sync/sync-state';
+import {
+  resolveAssetRowsForPull,
+  resolveFontRowsForPull,
+  updateMemoizedAssetsForRecords,
+} from '@/lib/cloud/sync/sync-assets';
 
 const IS_SYNCING_CLEAR_DELAY_MS = 80;
 
@@ -109,8 +114,23 @@ export async function syncPull(rulesetId: string, db: DB): Promise<{ error?: str
             userId,
           );
         }
-        tablesByParent.set(config.tableName, rows.map((r) => r.id as string).filter(Boolean));
-        await mergeTable(db, config.tableName, rows);
+
+        if (config.tableName === 'assets' && client && rows.length > 0) {
+          const resolved = await resolveAssetRowsForPull(client, rows);
+          rows = resolved.rows;
+          tablesByParent.set(config.tableName, rows.map((r) => r.id as string).filter(Boolean));
+          await mergeTable(db, config.tableName, rows);
+          if (resolved.downloaded.length > 0) {
+            updateMemoizedAssetsForRecords(resolved.downloaded);
+          }
+        } else if (config.tableName === 'fonts' && client && rows.length > 0) {
+          rows = await resolveFontRowsForPull(client, rows);
+          tablesByParent.set(config.tableName, rows.map((r) => r.id as string).filter(Boolean));
+          await mergeTable(db, config.tableName, rows);
+        } else {
+          tablesByParent.set(config.tableName, rows.map((r) => r.id as string).filter(Boolean));
+          await mergeTable(db, config.tableName, rows);
+        }
       } else if (config.parentTable && config.parentKey) {
         let parentIds = [...(tablesByParent.get(config.parentTable) ?? [])];
         if (config.parentTable === 'characters') {
