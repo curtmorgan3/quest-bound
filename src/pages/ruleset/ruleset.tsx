@@ -67,7 +67,15 @@ export const Ruleset = ({
     page === 'charts' && activeChart ? activeChart.title : (pageToLabel.get(page ?? '') ?? '');
 
   if (!page) {
-    return <Navigate to={`/rulesets/${activeRuleset?.id}/attributes`} replace={true} />;
+    const target =
+      activeRuleset?.id != null
+        ? `/rulesets/${activeRuleset.id}/attributes`
+        : '/rulesets';
+    return <Navigate to={target} replace={true} />;
+  }
+
+  if (!activeRuleset) {
+    return <Navigate to='/rulesets' replace={true} />;
   }
 
   const handleDocumentUploadClick = () => {
