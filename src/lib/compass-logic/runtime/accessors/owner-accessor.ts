@@ -46,6 +46,7 @@ export class OwnerAccessor extends CharacterAccessor {
     rollFn?: RollFn,
     rollSplitFn?: RollSplitFn,
     onRollComplete?: (message: string) => Promise<void>,
+    refLabelToComponentId?: Map<string, string>,
   ) {
     super(
       characterId,
@@ -71,6 +72,7 @@ export class OwnerAccessor extends CharacterAccessor {
       rollFn,
       rollSplitFn,
       onRollComplete,
+      refLabelToComponentId,
     );
   }
 

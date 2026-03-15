@@ -270,6 +270,9 @@ export class ScriptRunner {
   /** Scene accessor (set in setupAccessors when in campaign scene context). Used for runAdvanceTurnOrder. */
   private sceneAccessor: CampaignSceneAccessor | null = null;
 
+  /** Map from inventory component referenceLabel to componentId (for removeItem filtering and delete validation). */
+  private refLabelToComponentId: Map<string, string> = new Map();
+
   constructor(context: ScriptExecutionContext) {
     this.context = context;
     const selectCharacterHost =
@@ -353,6 +356,22 @@ export class ScriptRunner {
       .where('rulesetId')
       .equals(rulesetId)
       .toArray();
+
+    // Build refLabel -> componentId for inventory components (for removeItem referenceLabel filtering)
+    const inventoryComponents = await db.components
+      .where('rulesetId')
+      .equals(rulesetId)
+      .filter((c) => (c as { type?: string }).type === INVENTORY_COMPONENT_TYPE)
+      .toArray();
+    this.refLabelToComponentId.clear();
+    for (const comp of inventoryComponents) {
+      const data = JSON.parse((comp as { data?: string }).data ?? '{}') as {
+        referenceLabel?: string;
+      };
+      if (data.referenceLabel) {
+        this.refLabelToComponentId.set(data.referenceLabel, comp.id);
+      }
+    }
 
     // Load owner character and inventory items (when an owner is present)
     if (ownerId) {
@@ -495,6 +514,7 @@ export class ScriptRunner {
       this.context.roll,
       this.context.rollSplit,
       this.context.onRollComplete,
+      this.refLabelToComponentId,
     );
 
     this.otherCharacterAccessors.set(characterId, accessor);
@@ -748,8 +768,28 @@ export class ScriptRunner {
         const now = new Date().toISOString();
         await db.inventoryItems.update(id, { ...value, updatedAt: now });
       } else if (type === 'inventoryDelete') {
-        console.log('delete: ', id);
-        await db.inventoryItems.delete(id);
+        const deletePayload = value as true | { referenceLabel: string };
+        if (
+          typeof deletePayload === 'object' &&
+          deletePayload !== null &&
+          'referenceLabel' in deletePayload
+        ) {
+          const inventoryItem = await db.inventoryItems.get(id);
+          if (inventoryItem) {
+            const componentIdForRef =
+              this.refLabelToComponentId.get(deletePayload.referenceLabel);
+            const itemComponentId = (inventoryItem as { componentId?: string }).componentId ?? '';
+            if (
+              componentIdForRef != null &&
+              itemComponentId !== '' &&
+              itemComponentId === componentIdForRef
+            ) {
+              await db.inventoryItems.delete(id);
+            }
+          }
+        } else {
+          await db.inventoryItems.delete(id);
+        }
       } else if (type === 'archetypeAdd') {
         const entries = value as { characterId: string; archetypeName: string }[];
         for (const { characterId, archetypeName } of entries) {
@@ -1172,6 +1212,7 @@ export class ScriptRunner {
       this.context.roll,
       this.context.rollSplit,
       this.context.onRollComplete,
+      this.refLabelToComponentId,
     );
 
     this.ownerAccessor = owner;

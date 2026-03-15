@@ -57,6 +57,8 @@ export class CharacterAccessor implements StructuredCloneSafe {
   protected rollFn: RollFn | undefined;
   protected rollSplitFn: RollSplitFn | undefined;
   protected onRollComplete: ((message: string) => Promise<void>) | undefined;
+  /** Map from inventory component referenceLabel to componentId (for removeItem referenceLabel filtering). */
+  protected refLabelToComponentId: Map<string, string> | undefined;
 
   constructor(
     characterId: string,
@@ -87,6 +89,7 @@ export class CharacterAccessor implements StructuredCloneSafe {
     rollFn?: RollFn,
     rollSplitFn?: RollSplitFn,
     onRollComplete?: (message: string) => Promise<void>,
+    refLabelToComponentId?: Map<string, string>,
   ) {
     this.id = characterId;
     this.characterName = characterName;
@@ -112,6 +115,7 @@ export class CharacterAccessor implements StructuredCloneSafe {
     this.rollFn = rollFn;
     this.rollSplitFn = rollSplitFn;
     this.onRollComplete = onRollComplete;
+    this.refLabelToComponentId = refLabelToComponentId;
   }
 
   /**
@@ -625,6 +629,23 @@ export class CharacterAccessor implements StructuredCloneSafe {
     let matching = this.inventoryItems.filter(
       (inv) => inv.entityId === item.id && inv.type === 'item',
     );
+    if (referenceLabel != null && referenceLabel !== '') {
+      if (this.refLabelToComponentId == null) {
+        matching = [];
+      } else {
+        const componentId = this.refLabelToComponentId.get(referenceLabel);
+        if (componentId != null) {
+          matching = matching.filter((inv) => inv.componentId === componentId);
+        } else {
+          matching = [];
+        }
+      }
+    }
+
+    const deleteValue =
+      referenceLabel != null && referenceLabel !== ''
+        ? { referenceLabel }
+        : true;
 
     let toRemove = quantity;
     const idsToDelete = new Set<string>();
@@ -633,7 +654,7 @@ export class CharacterAccessor implements StructuredCloneSafe {
       if (inv.quantity <= toRemove) {
         toRemove -= inv.quantity;
         idsToDelete.add(inv.id);
-        this.pendingUpdates.set(`inventoryDelete:${inv.id}`, true);
+        this.pendingUpdates.set(`inventoryDelete:${inv.id}`, deleteValue);
       } else {
         inv.quantity -= toRemove;
         inv.updatedAt = new Date().toISOString();
