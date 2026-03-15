@@ -3,8 +3,8 @@
  * Sync is UI-driven only (e.g. "Sync Now" button); no auto-sync on open or visibility.
  */
 
-import { cloudClient, isCloudConfigured } from '@/lib/cloud/client';
 import { getSession } from '@/lib/cloud/auth';
+import { cloudClient, isCloudConfigured } from '@/lib/cloud/client';
 import { useCloudAuthStore } from '@/stores/cloud-auth-store';
 import type { DB } from '@/stores/db/hooks/types';
 import { syncPull } from './sync-pull';
@@ -36,7 +36,7 @@ export async function listCloudRulesets(): Promise<CloudRulesetSummary[]> {
     .eq('user_id', session.user.id);
   if (error) throw error;
   const rows = (data ?? []) as Record<string, unknown>[];
-  return rows.map((row) => prepareRemoteForLocal(row) as CloudRulesetSummary);
+  return rows.map((row) => prepareRemoteForLocal(row) as unknown as CloudRulesetSummary);
 }
 
 /**
