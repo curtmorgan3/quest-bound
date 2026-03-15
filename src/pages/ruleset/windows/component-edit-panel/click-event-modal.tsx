@@ -22,6 +22,7 @@ import {
   ScriptLookup,
   WindowLookup,
   useComponents,
+  type ComponentUpdate,
 } from '@/lib/compass-api';
 import { useActions } from '@/lib/compass-api/hooks/rulesets/use-actions';
 import { useRulesetPages } from '@/lib/compass-api/hooks/rulesets/use-ruleset-pages';
@@ -276,7 +277,7 @@ export const ClickEventModal = ({ component, allCanOpenChildWindow }: Props) => 
     delete baseData.childWindowCollapse;
     delete baseData.scriptParameterValues;
 
-    const update: Record<string, unknown> = {
+    const update: ComponentUpdate = {
       id: component.id,
       data: JSON.stringify(baseData),
       childWindowId: null,
@@ -406,7 +407,12 @@ export const ClickEventModal = ({ component, allCanOpenChildWindow }: Props) => 
                   label='Open Window'
                   value={component.childWindowId}
                   onSelect={(win) => {
-                    void handleSetOpenWindowClick(win.id, openWindowX, openWindowY, childWindowCollapse);
+                    void handleSetOpenWindowClick(
+                      win.id,
+                      openWindowX,
+                      openWindowY,
+                      childWindowCollapse,
+                    );
                   }}
                   onDelete={() => {
                     void handleClearOpenWindowClick();
@@ -424,7 +430,12 @@ export const ClickEventModal = ({ component, allCanOpenChildWindow }: Props) => 
                         const val = e.target.value === '' ? 0 : Number(e.target.value);
                         setOpenWindowX(val);
                         if (component.childWindowId) {
-                          void handleSetOpenWindowClick(component.childWindowId, val, openWindowY, childWindowCollapse);
+                          void handleSetOpenWindowClick(
+                            component.childWindowId,
+                            val,
+                            openWindowY,
+                            childWindowCollapse,
+                          );
                         }
                       }}
                     />
@@ -439,7 +450,12 @@ export const ClickEventModal = ({ component, allCanOpenChildWindow }: Props) => 
                         const val = e.target.value === '' ? 0 : Number(e.target.value);
                         setOpenWindowY(val);
                         if (component.childWindowId) {
-                          void handleSetOpenWindowClick(component.childWindowId, openWindowX, val, childWindowCollapse);
+                          void handleSetOpenWindowClick(
+                            component.childWindowId,
+                            openWindowX,
+                            val,
+                            childWindowCollapse,
+                          );
                         }
                       }}
                     />
@@ -453,7 +469,12 @@ export const ClickEventModal = ({ component, allCanOpenChildWindow }: Props) => 
                       const val = checked === true;
                       setChildWindowCollapse(val);
                       if (component.childWindowId) {
-                        void handleSetOpenWindowClick(component.childWindowId, openWindowX, openWindowY, val);
+                        void handleSetOpenWindowClick(
+                          component.childWindowId,
+                          openWindowX,
+                          openWindowY,
+                          val,
+                        );
                       }
                     }}
                   />

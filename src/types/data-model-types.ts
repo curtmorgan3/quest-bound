@@ -236,8 +236,8 @@ export type Component = BaseDetails & {
   selected?: boolean;
   groupId?: string | null;
   attributeId?: string | null;
-  actionId?: string;
-  childWindowId?: string;
+  actionId?: string | null;
+  childWindowId?: string | null;
   /** Optional script attached to this window component (e.g. Game Manager script). */
   scriptId?: string | null;
 };
