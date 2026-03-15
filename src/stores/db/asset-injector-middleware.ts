@@ -12,9 +12,6 @@ function resolveAssetUrl(assetId: string | null | undefined): string | undefined
 
 function injectImageData(record: any) {
   if (!record) return record;
-  if (record.id.includes('8e86e55b')) {
-    console.log(record);
-  }
 
   let next = record;
 

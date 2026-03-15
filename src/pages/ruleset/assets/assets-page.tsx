@@ -200,7 +200,7 @@ export function AssetsPage() {
   const sortedAssets = useMemo(
     () =>
       [...assets]
-        .filter((a) => a.type !== 'application/pdf')
+        // .filter((a) => a.type !== 'application/pdf')
         .sort((a, b) => a.filename.localeCompare(b.filename, undefined, { sensitivity: 'base' })),
     [assets],
   );
