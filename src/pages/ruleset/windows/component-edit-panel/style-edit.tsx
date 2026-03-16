@@ -39,18 +39,6 @@ export const StyleEdit = ({ components, handleUpdate }: Props) => {
   const outlineColorCustomPropOpacity = toOpacityNumber(
     style.outlineColorCustomPropOpacity?.raw ?? 1,
   );
-  const backgroundColorGradientStop1CustomPropOpacity = toOpacityNumber(
-    style.backgroundColorGradientStop1CustomPropOpacity?.raw ?? 1,
-  );
-  const backgroundColorGradientStop2CustomPropOpacity = toOpacityNumber(
-    style.backgroundColorGradientStop2CustomPropOpacity?.raw ?? 1,
-  );
-  const colorGradientStop1CustomPropOpacity = toOpacityNumber(
-    style.colorGradientStop1CustomPropOpacity?.raw ?? 1,
-  );
-  const colorGradientStop2CustomPropOpacity = toOpacityNumber(
-    style.colorGradientStop2CustomPropOpacity?.raw ?? 1,
-  );
   const borderRadiusTopLeft = style.borderRadiusTopLeft.raw;
   const borderRadiusTopRight = style.borderRadiusTopRight.raw;
   const borderRadiusBottomLeft = style.borderRadiusBottomLeft.raw;
@@ -141,12 +129,6 @@ export const StyleEdit = ({ components, handleUpdate }: Props) => {
           customPropOpacity={backgroundColorCustomPropOpacity}
           customPropOpacityStyleKey='backgroundColorCustomPropOpacity'
           onCustomPropOpacityChange={(styleKey, alpha) => handleUpdate(styleKey, alpha)}
-          gradientStop1CustomPropOpacity={backgroundColorGradientStop1CustomPropOpacity}
-          gradientStop2CustomPropOpacity={backgroundColorGradientStop2CustomPropOpacity}
-          gradientStop1CustomPropOpacityStyleKey='backgroundColorGradientStop1CustomPropOpacity'
-          gradientStop2CustomPropOpacityStyleKey='backgroundColorGradientStop2CustomPropOpacity'
-          onGradientStop1CustomPropOpacityChange={(styleKey, alpha) => handleUpdate(styleKey, alpha)}
-          onGradientStop2CustomPropOpacityChange={(styleKey, alpha) => handleUpdate(styleKey, alpha)}
         />
 
         <RulesetColorPicker
@@ -162,12 +144,6 @@ export const StyleEdit = ({ components, handleUpdate }: Props) => {
           customPropOpacity={colorCustomPropOpacity}
           customPropOpacityStyleKey='colorCustomPropOpacity'
           onCustomPropOpacityChange={(styleKey, alpha) => handleUpdate(styleKey, alpha)}
-          gradientStop1CustomPropOpacity={colorGradientStop1CustomPropOpacity}
-          gradientStop2CustomPropOpacity={colorGradientStop2CustomPropOpacity}
-          gradientStop1CustomPropOpacityStyleKey='colorGradientStop1CustomPropOpacity'
-          gradientStop2CustomPropOpacityStyleKey='colorGradientStop2CustomPropOpacity'
-          onGradientStop1CustomPropOpacityChange={(styleKey, alpha) => handleUpdate(styleKey, alpha)}
-          onGradientStop2CustomPropOpacityChange={(styleKey, alpha) => handleUpdate(styleKey, alpha)}
         />
       </div>
 
