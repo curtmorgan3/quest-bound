@@ -35,9 +35,11 @@ import {
 import { isCloudConfigured } from '@/lib/cloud/client';
 import { useSyncStateStore } from '@/lib/cloud/sync/sync-state';
 import { useCloudAuthStore } from '@/stores/cloud-auth-store';
-import { AlertCircle, CheckCircle, Cloud, Download, Plus, Upload, X } from 'lucide-react';
-import { useRef, useState } from 'react';
+import { AlertCircle, CheckCircle, Cloud, Download, Loader2, Plus, Upload, X } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+
+const DELETE_SPINNER_DELAY_MS = 1000;
 
 export const Rulesets = () => {
   const { rulesets, createRuleset, deleteRuleset } = useRulesets();
@@ -72,9 +74,41 @@ export const Rulesets = () => {
   );
   const [duplicateTitle, setDuplicateTitle] = useState('');
   const [duplicateVersion, setDuplicateVersion] = useState('');
+  const [deletingRulesetId, setDeletingRulesetId] = useState<string | null>(null);
+  const [showDeletingSpinner, setShowDeletingSpinner] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const deleteSpinnerTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (deletingRulesetId) {
+      deleteSpinnerTimeoutRef.current = setTimeout(() => {
+        setShowDeletingSpinner(true);
+        deleteSpinnerTimeoutRef.current = null;
+      }, DELETE_SPINNER_DELAY_MS);
+    } else {
+      if (deleteSpinnerTimeoutRef.current) {
+        clearTimeout(deleteSpinnerTimeoutRef.current);
+        deleteSpinnerTimeoutRef.current = null;
+      }
+      setShowDeletingSpinner(false);
+    }
+    return () => {
+      if (deleteSpinnerTimeoutRef.current) {
+        clearTimeout(deleteSpinnerTimeoutRef.current);
+      }
+    };
+  }, [deletingRulesetId]);
+
+  const handleDelete = async (id: string) => {
+    setDeletingRulesetId(id);
+    try {
+      await deleteRuleset(id);
+    } finally {
+      setDeletingRulesetId(null);
+    }
+  };
 
   const handleCreate = async () => {
     const id = await createRuleset({
@@ -183,7 +217,11 @@ export const Rulesets = () => {
           <Dialog>
             <form>
               <DialogTrigger asChild>
-                <Button size='sm' className='gap-1' data-testid='create-ruleset-button'>
+                <Button
+                  size='sm'
+                  className='gap-1'
+                  data-testid='create-ruleset-button'
+                  disabled={!!deletingRulesetId}>
                   <Plus className='h-4 w-4' />
                   Create Ruleset
                 </Button>
@@ -238,7 +276,7 @@ export const Rulesets = () => {
             variant='outline'
             size='sm'
             className='gap-1'
-            disabled={isImporting}
+            disabled={isImporting || !!deletingRulesetId}
             onClick={handleImport}
             data-testid='import-ruleset-button'>
             {isImporting ? (
@@ -306,8 +344,16 @@ export const Rulesets = () => {
                       size='sm'
                       className='h-8 flex-1 text-red-500'
                       data-testid='preview-card-delete'
-                      onClick={() => deleteRuleset(r.id)}>
-                      Delete
+                      disabled={!!deletingRulesetId}
+                      onClick={() => handleDelete(r.id)}>
+                      {deletingRulesetId === r.id && showDeletingSpinner ? (
+                        <>
+                          <Loader2 className='h-3.5 w-3.5 animate-spin' />
+                          Deleting…
+                        </>
+                      ) : (
+                        'Delete'
+                      )}
                     </Button>
                   ) : (
                     <AlertDialog>
@@ -316,7 +362,8 @@ export const Rulesets = () => {
                           variant='ghost'
                           size='sm'
                           className='h-8 flex-1 text-red-500'
-                          data-testid='preview-card-delete'>
+                          data-testid='preview-card-delete'
+                          disabled={!!deletingRulesetId}>
                           Delete
                         </Button>
                       </AlertDialogTrigger>
@@ -337,11 +384,19 @@ export const Rulesets = () => {
                           </div>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogCancel disabled={!!deletingRulesetId}>Cancel</AlertDialogCancel>
                           <AlertDialogAction
                             data-testid='preview-card-delete-confirm'
-                            onClick={() => deleteRuleset(r.id)}>
-                            Delete
+                            disabled={deletingRulesetId === r.id}
+                            onClick={() => handleDelete(r.id)}>
+                            {deletingRulesetId === r.id && showDeletingSpinner ? (
+                              <>
+                                <Loader2 className='h-3.5 w-3.5 animate-spin' />
+                                Deleting…
+                              </>
+                            ) : (
+                              'Delete'
+                            )}
                           </AlertDialogAction>
                         </AlertDialogFooter>
                       </AlertDialogContent>
@@ -351,6 +406,7 @@ export const Rulesets = () => {
                     variant='outline'
                     size='sm'
                     className='h-8 flex-1'
+                    disabled={!!deletingRulesetId}
                     onClick={() => navigate(`/landing/${r.id}`)}
                     data-testid='preview-card-open'>
                     Open
@@ -408,7 +464,7 @@ export const Rulesets = () => {
           ))}
       </div>
 
-      {(isImporting || isInstallingCloud) && (
+      {(isImporting || isInstallingCloud || showDeletingSpinner) && (
         <div className='fixed inset-0 z-50 bg-background'>
           <Loading />
           {isImporting && importStep && (
@@ -416,9 +472,14 @@ export const Rulesets = () => {
               {importStep}...
             </p>
           )}
-          {isInstallingCloud && !isImporting && (
+          {isInstallingCloud && !isImporting && !showDeletingSpinner && (
             <p className='absolute inset-x-0 bottom-1/3 text-center text-sm text-muted-foreground'>
               Installing from cloud...
+            </p>
+          )}
+          {showDeletingSpinner && !isImporting && !isInstallingCloud && (
+            <p className='absolute inset-x-0 bottom-1/3 text-center text-sm text-muted-foreground'>
+              Deleting ruleset...
             </p>
           )}
         </div>
