@@ -5,6 +5,12 @@ type BaseComponentStyle = {
   backgroundColor?: string;
   /** Set when backgroundColor is a linear-gradient; use this for the style. */
   background?: string;
+  /** When backgroundColor is a custom-prop reference, opacity to apply (0–1). */
+  backgroundColorCustomPropOpacity?: number;
+  /** When backgroundColor is a gradient and stop 1 is a custom prop, opacity to apply (0–1). */
+  backgroundColorGradientStop1CustomPropOpacity?: number;
+  /** When backgroundColor is a gradient and stop 2 is a custom prop, opacity to apply (0–1). */
+  backgroundColorGradientStop2CustomPropOpacity?: number;
   opacity: number;
   outline?: string;
   borderRadius?: string;
@@ -14,6 +20,8 @@ type BaseComponentStyle = {
   borderRadiusBottomRight: number;
   outlineWidth: number;
   outlineColor: string;
+  /** When outlineColor is a custom-prop reference, opacity to apply (0–1). */
+  outlineColorCustomPropOpacity?: number;
   paddingRight?: number;
   paddingLeft?: number;
   paddingTop?: number;
@@ -23,6 +31,12 @@ type BaseComponentStyle = {
 export type TextComponentStyle = BaseComponentStyle & {
   /** Solid color or linear-gradient string. When gradient, use colorStyle for gradient text. */
   color?: string;
+  /** When color is a custom-prop reference, opacity to apply (0–1). */
+  colorCustomPropOpacity?: number;
+  /** When color is a gradient and stop 1 is a custom prop, opacity to apply (0–1). */
+  colorGradientStop1CustomPropOpacity?: number;
+  /** When color is a gradient and stop 2 is a custom prop, opacity to apply (0–1). */
+  colorGradientStop2CustomPropOpacity?: number;
   /** When color is a gradient, use this object for the text element (background + backgroundClip + color). */
   colorStyle?: Record<string, string | number>;
   fontSize?: number;

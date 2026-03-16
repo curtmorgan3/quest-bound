@@ -106,6 +106,24 @@ interface RulesetColorPicker {
   showLabel?: boolean;
   /** When true, shows a solid/gradient toggle and gradient controls (angle + two colors). Only for backgroundColor and color. */
   allowGradient?: boolean;
+  /** When color is a custom prop (solid), opacity to apply (0–1). */
+  customPropOpacity?: number;
+  /** When color is a custom prop (solid), called when opacity changes. Pass the style key so the parent updates the correct field. */
+  onCustomPropOpacityChange?: (styleKey: string, alpha: number) => void;
+  /** Style key to pass when calling onCustomPropOpacityChange (e.g. 'backgroundColorCustomPropOpacity'). */
+  customPropOpacityStyleKey?: string;
+  /** When gradient stop 1 is a custom prop, opacity to apply (0–1). */
+  gradientStop1CustomPropOpacity?: number;
+  /** When gradient stop 2 is a custom prop, opacity to apply (0–1). */
+  gradientStop2CustomPropOpacity?: number;
+  /** When gradient stop 1 is a custom prop, called when opacity changes. Pass the style key so the parent updates the correct field. */
+  onGradientStop1CustomPropOpacityChange?: (styleKey: string, alpha: number) => void;
+  /** Style key for gradient stop 1 (e.g. 'backgroundColorGradientStop1CustomPropOpacity'). */
+  gradientStop1CustomPropOpacityStyleKey?: string;
+  /** When gradient stop 2 is a custom prop, called when opacity changes. Pass the style key so the parent updates the correct field. */
+  onGradientStop2CustomPropOpacityChange?: (styleKey: string, alpha: number) => void;
+  /** Style key for gradient stop 2 (e.g. 'backgroundColorGradientStop2CustomPropOpacity'). */
+  gradientStop2CustomPropOpacityStyleKey?: string;
 }
 
 export const RulesetColorPicker = ({
@@ -118,6 +136,15 @@ export const RulesetColorPicker = ({
   showLabel,
   disableAlpha,
   allowGradient = false,
+  customPropOpacity = 1,
+  onCustomPropOpacityChange,
+  customPropOpacityStyleKey,
+  gradientStop1CustomPropOpacity = 1,
+  gradientStop2CustomPropOpacity = 1,
+  onGradientStop1CustomPropOpacityChange,
+  gradientStop1CustomPropOpacityStyleKey,
+  onGradientStop2CustomPropOpacityChange,
+  gradientStop2CustomPropOpacityStyleKey,
 }: RulesetColorPicker) => {
   const { activeRuleset } = useActiveRuleset();
   const { customProperties } = useCustomProperties(activeRuleset?.id);
@@ -384,23 +411,44 @@ export const RulesetColorPicker = ({
             <div className='flex flex-col gap-2'>
               <Label className='text-xs'>Color 1</Label>
               {gradientColor1IsCustomProp ? (
-                <div className='flex h-[40px] items-center gap-1 rounded-[4px] border border-border bg-muted/50 px-1.5'>
-                  <span
-                    className='min-w-0 flex-1 truncate text-xs'
-                    title={gradientColor1CustomProp?.label ?? 'unknown'}>
-                    {gradientColor1CustomProp?.label ?? 'unknown'}
-                  </span>
-                  <Button
-                    type='button'
-                    variant='ghost'
-                    size='icon'
-                    className='size-4 shrink-0 rounded'
-                    aria-label='Remove custom property'
-                    disabled={disabled}
-                    onClick={() => clearGradientColorCustomProp(1)}>
-                    <X className='size-3' />
-                  </Button>
-                </div>
+                <>
+                  <div className='flex h-[40px] items-center gap-1 rounded-[4px] border border-border bg-muted/50 px-1.5'>
+                    <span
+                      className='min-w-0 flex-1 truncate text-xs'
+                      title={gradientColor1CustomProp?.label ?? 'unknown'}>
+                      {gradientColor1CustomProp?.label ?? 'unknown'}
+                    </span>
+                    <Button
+                      type='button'
+                      variant='ghost'
+                      size='icon'
+                      className='size-4 shrink-0 rounded'
+                      aria-label='Remove custom property'
+                      disabled={disabled}
+                      onClick={() => clearGradientColorCustomProp(1)}>
+                      <X className='size-3' />
+                    </Button>
+                  </div>
+                  {onGradientStop1CustomPropOpacityChange && gradientStop1CustomPropOpacityStyleKey && (
+                    <div className='flex flex-col gap-1'>
+                      <Label className='text-xs'>Opacity</Label>
+                      <Slider
+                        key={gradientStop1CustomPropOpacityStyleKey}
+                        min={0}
+                        max={100}
+                        step={1}
+                        value={[Math.round((typeof gradientStop1CustomPropOpacity === 'number' ? gradientStop1CustomPropOpacity : 1) * 100)]}
+                        onValueChange={(v) =>
+                          onGradientStop1CustomPropOpacityChange(
+                            gradientStop1CustomPropOpacityStyleKey,
+                            (v[0] ?? 100) / 100,
+                          )
+                        }
+                        aria-label='Gradient color 1 opacity'
+                      />
+                    </div>
+                  )}
+                </>
               ) : (
                 <>
                   <div className='flex items-center gap-2'>
@@ -440,23 +488,44 @@ export const RulesetColorPicker = ({
             <div className='flex flex-col gap-2'>
               <Label className='text-xs'>Color 2</Label>
               {gradientColor2IsCustomProp ? (
-                <div className='flex h-[40px] items-center gap-1 rounded-[4px] border border-border bg-muted/50 px-1.5'>
-                  <span
-                    className='min-w-0 flex-1 truncate text-xs'
-                    title={gradientColor2CustomProp?.label ?? 'unknown'}>
-                    {gradientColor2CustomProp?.label ?? 'unknown'}
-                  </span>
-                  <Button
-                    type='button'
-                    variant='ghost'
-                    size='icon'
-                    className='size-4 shrink-0 rounded'
-                    aria-label='Remove custom property'
-                    disabled={disabled}
-                    onClick={() => clearGradientColorCustomProp(2)}>
-                    <X className='size-3' />
-                  </Button>
-                </div>
+                <>
+                  <div className='flex h-[40px] items-center gap-1 rounded-[4px] border border-border bg-muted/50 px-1.5'>
+                    <span
+                      className='min-w-0 flex-1 truncate text-xs'
+                      title={gradientColor2CustomProp?.label ?? 'unknown'}>
+                      {gradientColor2CustomProp?.label ?? 'unknown'}
+                    </span>
+                    <Button
+                      type='button'
+                      variant='ghost'
+                      size='icon'
+                      className='size-4 shrink-0 rounded'
+                      aria-label='Remove custom property'
+                      disabled={disabled}
+                      onClick={() => clearGradientColorCustomProp(2)}>
+                      <X className='size-3' />
+                    </Button>
+                  </div>
+                  {onGradientStop2CustomPropOpacityChange && gradientStop2CustomPropOpacityStyleKey && (
+                    <div className='flex flex-col gap-1'>
+                      <Label className='text-xs'>Opacity</Label>
+                      <Slider
+                        key={gradientStop2CustomPropOpacityStyleKey}
+                        min={0}
+                        max={100}
+                        step={1}
+                        value={[Math.round((typeof gradientStop2CustomPropOpacity === 'number' ? gradientStop2CustomPropOpacity : 1) * 100)]}
+                        onValueChange={(v) =>
+                          onGradientStop2CustomPropOpacityChange(
+                            gradientStop2CustomPropOpacityStyleKey,
+                            (v[0] ?? 100) / 100,
+                          )
+                        }
+                        aria-label='Gradient color 2 opacity'
+                      />
+                    </div>
+                  )}
+                </>
               ) : (
                 <>
                   <div className='flex items-center gap-2'>
@@ -529,20 +598,39 @@ export const RulesetColorPicker = ({
       {showCustomPropPill ? (
         <div className='flex flex-col gap-0.5 items-center'>
           {showLabel && smallLabel}
-          <div className='flex h-[20px] items-center gap-1 rounded-[4px] border border-border bg-muted/50 px-1.5'>
-            <span className='min-w-0 flex-1 truncate text-xs' title={customPropLabel ?? 'unknown'}>
-              {customPropLabel ?? 'unknown'}
-            </span>
-            <Button
-              type='button'
-              variant='ghost'
-              size='icon'
-              className='size-4 shrink-0 rounded'
-              aria-label='Remove custom property'
-              disabled={disabled}
-              onClick={() => onUpdate({ r: 0, g: 0, b: 0, a: 1 })}>
-              <X className='size-3' />
-            </Button>
+          <div className='flex flex-col gap-1 items-center'>
+            <div className='flex h-[20px] items-center gap-1 rounded-[4px] border border-border bg-muted/50 px-1.5'>
+              <span className='min-w-0 flex-1 truncate text-xs' title={customPropLabel ?? 'unknown'}>
+                {customPropLabel ?? 'unknown'}
+              </span>
+              <Button
+                type='button'
+                variant='ghost'
+                size='icon'
+                className='size-4 shrink-0 rounded'
+                aria-label='Remove custom property'
+                disabled={disabled}
+                onClick={() => onUpdate({ r: 0, g: 0, b: 0, a: 1 })}>
+                <X className='size-3' />
+              </Button>
+            </div>
+            {!disableAlpha && onCustomPropOpacityChange && customPropOpacityStyleKey && (
+              <div className='flex items-center gap-1.5 w-full min-w-0'>
+                <span className='text-[10px] text-muted-foreground shrink-0'>Opacity</span>
+                <Slider
+                  key={customPropOpacityStyleKey}
+                  min={0}
+                  max={100}
+                  step={1}
+                  value={[Math.round((typeof customPropOpacity === 'number' ? customPropOpacity : 1) * 100)]}
+                  onValueChange={(v) =>
+                    onCustomPropOpacityChange(customPropOpacityStyleKey, (v[0] ?? 100) / 100)
+                  }
+                  aria-label='Custom property opacity'
+                  className='flex-1 min-w-0'
+                />
+              </div>
+            )}
           </div>
         </div>
       ) : (

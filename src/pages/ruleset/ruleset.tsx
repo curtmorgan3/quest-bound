@@ -8,10 +8,16 @@ import {
   DialogTitle,
 } from '@/components';
 import { PageWrapper } from '@/components/composites';
-import { useActiveRuleset, useAssets, useCharts, useDocuments, useExportChart } from '@/lib/compass-api';
+import {
+  useActiveRuleset,
+  useAssets,
+  useCharts,
+  useDocuments,
+  useExportChart,
+} from '@/lib/compass-api';
 import { ArrowDownToLine, Loader2, Pencil, Plus, Upload } from 'lucide-react';
 import { useRef, useState } from 'react';
-import { Navigate, useSearchParams } from 'react-router-dom';
+import { Navigate, useParams, useSearchParams } from 'react-router-dom';
 import { ActionChart } from './actions';
 import { ArchetypeCreateDialog } from './archetypes/archetype-create-dialog';
 import { Archetypes } from './archetypes/archetypes';
@@ -20,8 +26,8 @@ import { ChartSelect } from './charts';
 import { ChartImport, Export, Import } from './components';
 import { BaseCreate } from './create';
 import { Documents } from './documents';
-import { ManageItemCustomPropertiesModal } from './items/manage-item-custom-properties-modal';
 import { ItemChart } from './items/item-chart';
+import { ManageItemCustomPropertiesModal } from './items/manage-item-custom-properties-modal';
 import { PageSelect } from './pages';
 import { WindowSelect } from './windows';
 
@@ -49,7 +55,8 @@ export const Ruleset = ({
     | 'pages'
     | 'archetypes';
 }) => {
-  const { activeRuleset } = useActiveRuleset();
+  const { rulesetId } = useParams();
+  const { activeRuleset, isRulesetsLoading } = useActiveRuleset();
   const [searchParams, setSearchParams] = useSearchParams();
   const [open, setOpen] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
@@ -68,14 +75,21 @@ export const Ruleset = ({
 
   if (!page) {
     const target =
-      activeRuleset?.id != null
-        ? `/rulesets/${activeRuleset.id}/attributes`
-        : '/rulesets';
+      activeRuleset?.id != null ? `/rulesets/${activeRuleset.id}/attributes` : '/rulesets';
     return <Navigate to={target} replace={true} />;
   }
 
   if (!activeRuleset) {
-    return <Navigate to='/rulesets' replace={true} />;
+    if (rulesetId && rulesetId !== 'undefined' && isRulesetsLoading) {
+      return (
+        <PageWrapper title="">
+          <div className="flex flex-1 items-center justify-center p-8">
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+          </div>
+        </PageWrapper>
+      );
+    }
+    return <Navigate to="/rulesets" replace />;
   }
 
   const handleDocumentUploadClick = () => {

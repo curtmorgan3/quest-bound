@@ -19,6 +19,12 @@ interface Props {
 
 const MIXED_VALUE_LABEL = '-';
 
+function toOpacityNumber(raw: string | number | undefined): number {
+  if (raw === '-' || raw === undefined) return 1;
+  const n = Number(raw);
+  return Number.isFinite(n) ? Math.min(1, Math.max(0, n)) : 1;
+}
+
 export const StyleEdit = ({ components, handleUpdate }: Props) => {
   const style = useStyleValues(components);
   const opacity = style.opacity.raw;
@@ -26,6 +32,25 @@ export const StyleEdit = ({ components, handleUpdate }: Props) => {
   const backgroundColorResolved = style.backgroundColor.resolved as string;
   const color = style.color.raw as string;
   const colorResolved = style.color.resolved as string;
+  const backgroundColorCustomPropOpacity = toOpacityNumber(
+    style.backgroundColorCustomPropOpacity?.raw ?? 1,
+  );
+  const colorCustomPropOpacity = toOpacityNumber(style.colorCustomPropOpacity?.raw ?? 1);
+  const outlineColorCustomPropOpacity = toOpacityNumber(
+    style.outlineColorCustomPropOpacity?.raw ?? 1,
+  );
+  const backgroundColorGradientStop1CustomPropOpacity = toOpacityNumber(
+    style.backgroundColorGradientStop1CustomPropOpacity?.raw ?? 1,
+  );
+  const backgroundColorGradientStop2CustomPropOpacity = toOpacityNumber(
+    style.backgroundColorGradientStop2CustomPropOpacity?.raw ?? 1,
+  );
+  const colorGradientStop1CustomPropOpacity = toOpacityNumber(
+    style.colorGradientStop1CustomPropOpacity?.raw ?? 1,
+  );
+  const colorGradientStop2CustomPropOpacity = toOpacityNumber(
+    style.colorGradientStop2CustomPropOpacity?.raw ?? 1,
+  );
   const borderRadiusTopLeft = style.borderRadiusTopLeft.raw;
   const borderRadiusTopRight = style.borderRadiusTopRight.raw;
   const borderRadiusBottomLeft = style.borderRadiusBottomLeft.raw;
@@ -104,6 +129,7 @@ export const StyleEdit = ({ components, handleUpdate }: Props) => {
           onChange={(val) => handleUpdate('opacity', Math.min(1, Math.max(0, parseValue(val))))}
         />
         <RulesetColorPicker
+          key='backgroundColor'
           showLabel
           label='Background Color'
           propertyKey='backgroundColor'
@@ -112,9 +138,19 @@ export const StyleEdit = ({ components, handleUpdate }: Props) => {
           onUpdate={(value) => handleUpdate('backgroundColor', value)}
           disabled={backgroundColor === MIXED_VALUE_LABEL}
           allowGradient={allowGradient}
+          customPropOpacity={backgroundColorCustomPropOpacity}
+          customPropOpacityStyleKey='backgroundColorCustomPropOpacity'
+          onCustomPropOpacityChange={(styleKey, alpha) => handleUpdate(styleKey, alpha)}
+          gradientStop1CustomPropOpacity={backgroundColorGradientStop1CustomPropOpacity}
+          gradientStop2CustomPropOpacity={backgroundColorGradientStop2CustomPropOpacity}
+          gradientStop1CustomPropOpacityStyleKey='backgroundColorGradientStop1CustomPropOpacity'
+          gradientStop2CustomPropOpacityStyleKey='backgroundColorGradientStop2CustomPropOpacity'
+          onGradientStop1CustomPropOpacityChange={(styleKey, alpha) => handleUpdate(styleKey, alpha)}
+          onGradientStop2CustomPropOpacityChange={(styleKey, alpha) => handleUpdate(styleKey, alpha)}
         />
 
         <RulesetColorPicker
+          key='color'
           showLabel
           label='Color'
           propertyKey='color'
@@ -123,6 +159,15 @@ export const StyleEdit = ({ components, handleUpdate }: Props) => {
           onUpdate={(value) => handleUpdate('color', value)}
           disabled={color === MIXED_VALUE_LABEL}
           allowGradient={allowGradient}
+          customPropOpacity={colorCustomPropOpacity}
+          customPropOpacityStyleKey='colorCustomPropOpacity'
+          onCustomPropOpacityChange={(styleKey, alpha) => handleUpdate(styleKey, alpha)}
+          gradientStop1CustomPropOpacity={colorGradientStop1CustomPropOpacity}
+          gradientStop2CustomPropOpacity={colorGradientStop2CustomPropOpacity}
+          gradientStop1CustomPropOpacityStyleKey='colorGradientStop1CustomPropOpacity'
+          gradientStop2CustomPropOpacityStyleKey='colorGradientStop2CustomPropOpacity'
+          onGradientStop1CustomPropOpacityChange={(styleKey, alpha) => handleUpdate(styleKey, alpha)}
+          onGradientStop2CustomPropOpacityChange={(styleKey, alpha) => handleUpdate(styleKey, alpha)}
         />
       </div>
 
@@ -163,6 +208,7 @@ export const StyleEdit = ({ components, handleUpdate }: Props) => {
             </div>
 
             <RulesetColorPicker
+              key='outlineColor'
               label='Border Color'
               showLabel
               propertyKey='outlineColor'
@@ -170,6 +216,9 @@ export const StyleEdit = ({ components, handleUpdate }: Props) => {
               resolvedColor={outlineColorResolved}
               disabled={outlineColor === MIXED_VALUE_LABEL}
               onUpdate={(color) => handleUpdate('outlineColor', color)}
+              customPropOpacity={outlineColorCustomPropOpacity}
+              customPropOpacityStyleKey='outlineColorCustomPropOpacity'
+              onCustomPropOpacityChange={(styleKey, alpha) => handleUpdate(styleKey, alpha)}
             />
           </div>
         </div>

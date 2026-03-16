@@ -53,5 +53,6 @@ export const useActiveRuleset = () => {
   return {
     activeRuleset,
     testCharacter,
+    isRulesetsLoading: _rulesets === undefined,
   };
 };

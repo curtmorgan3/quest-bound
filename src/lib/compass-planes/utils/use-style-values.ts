@@ -13,13 +13,20 @@ function isCustomPropValue(value: string | number): value is string {
 export const STYLE_KEYS = [
   'opacity',
   'backgroundColor',
+  'backgroundColorCustomPropOpacity',
+  'backgroundColorGradientStop1CustomPropOpacity',
+  'backgroundColorGradientStop2CustomPropOpacity',
   'color',
+  'colorCustomPropOpacity',
+  'colorGradientStop1CustomPropOpacity',
+  'colorGradientStop2CustomPropOpacity',
   'borderRadiusTopLeft',
   'borderRadiusTopRight',
   'borderRadiusBottomLeft',
   'borderRadiusBottomRight',
   'outlineWidth',
   'outlineColor',
+  'outlineColorCustomPropOpacity',
   'paddingTop',
   'paddingRight',
   'paddingBottom',
@@ -68,11 +75,32 @@ function resolveCustomProp(
   return raw;
 }
 
+/** Convert resolved color (hex or rgb/rgba) to rgba with given alpha (0–1). */
+function applyOpacityToColor(resolved: string, alpha: number): string {
+  const s = String(resolved).trim();
+  const a = Math.min(1, Math.max(0, alpha));
+  const hexMatch = s.match(/^#([0-9A-Fa-f]{6})$/);
+  if (hexMatch) {
+    const hex = hexMatch[1];
+    const r = parseInt(hex.slice(0, 2), 16);
+    const g = parseInt(hex.slice(2, 4), 16);
+    const b = parseInt(hex.slice(4, 6), 16);
+    return `rgba(${r},${g},${b},${a})`;
+  }
+  const rgbaMatch = s.match(/^rgba?\s*\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)(?:\s*,\s*[\d.]+)?\s*\)$/);
+  if (rgbaMatch) {
+    return `rgba(${rgbaMatch[1]},${rgbaMatch[2]},${rgbaMatch[3]},${a})`;
+  }
+  return s;
+}
+
 /** Parse linear-gradient(angle deg, color1, color2) and resolve custom props in colors. */
 function resolveGradient(
   raw: string,
   character: { customProperties?: Record<string, string | number | boolean> } | null,
   customProperties: Array<{ id: string; defaultValue?: string | number | boolean }>,
+  stop1Opacity?: number,
+  stop2Opacity?: number,
 ): string {
   const s = raw.trim();
   if (!s.startsWith('linear-gradient(')) return raw;
@@ -85,12 +113,18 @@ function resolveGradient(
   if (!angleMatch) return raw;
   const angle = angleMatch[1];
   const color1Raw = angleMatch[2].trim();
-  const color1 = String(
+  let color1 = String(
     resolveCustomProp(color1Raw, character, customProperties),
   );
-  const color2 = String(
+  let color2 = String(
     resolveCustomProp(color2Raw, character, customProperties),
   );
+  if (isCustomPropValue(color1Raw) && typeof stop1Opacity === 'number') {
+    color1 = applyOpacityToColor(color1, stop1Opacity);
+  }
+  if (isCustomPropValue(color2Raw) && typeof stop2Opacity === 'number') {
+    color2 = applyOpacityToColor(color2, stop2Opacity);
+  }
   return `linear-gradient(${angle}deg, ${color1}, ${color2})`;
 }
 
@@ -114,15 +148,60 @@ export function useStyleValues(components: Array<Component>): StyleValues {
 
   return useMemo(() => {
     const result = {} as StyleValues;
+    const getRaw = (k: string) => valueIfAllAreEqual(components, k, true);
     for (const key of STYLE_KEYS) {
-      const raw = valueIfAllAreEqual(components, key, true);
+      const raw = getRaw(key);
       let resolved: string | number;
       if (
         (key === 'backgroundColor' || key === 'color') &&
         typeof raw === 'string' &&
         raw.trim().startsWith('linear-gradient(')
       ) {
-        resolved = resolveGradient(raw, character, customProperties);
+        const stop1 =
+          key === 'backgroundColor'
+            ? getRaw('backgroundColorGradientStop1CustomPropOpacity')
+            : getRaw('colorGradientStop1CustomPropOpacity');
+        const stop2 =
+          key === 'backgroundColor'
+            ? getRaw('backgroundColorGradientStop2CustomPropOpacity')
+            : getRaw('colorGradientStop2CustomPropOpacity');
+        const stop1Opacity =
+          stop1 !== '-' && typeof stop1 === 'number' ? stop1 : undefined;
+        const stop2Opacity =
+          stop2 !== '-' && typeof stop2 === 'number' ? stop2 : undefined;
+        resolved = resolveGradient(
+          raw,
+          character,
+          customProperties,
+          stop1Opacity,
+          stop2Opacity,
+        );
+      } else if (
+        (key === 'backgroundColor' || key === 'color' || key === 'outlineColor') &&
+        typeof raw === 'string' &&
+        isCustomPropValue(raw)
+      ) {
+        const opacityKey =
+          key === 'backgroundColor'
+            ? 'backgroundColorCustomPropOpacity'
+            : key === 'color'
+              ? 'colorCustomPropOpacity'
+              : 'outlineColorCustomPropOpacity';
+        resolved = resolveCustomProp(raw, character, customProperties);
+        const opacityRaw = getRaw(opacityKey);
+        if (
+          opacityRaw !== '-' &&
+          typeof opacityRaw === 'number' &&
+          typeof resolved === 'string'
+        ) {
+          resolved = applyOpacityToColor(resolved, opacityRaw);
+        }
+      } else if (
+        key.endsWith('CustomPropOpacity') ||
+        key.endsWith('GradientStop1CustomPropOpacity') ||
+        key.endsWith('GradientStop2CustomPropOpacity')
+      ) {
+        resolved = raw;
       } else {
         resolved = resolveCustomProp(raw, character, customProperties);
       }
