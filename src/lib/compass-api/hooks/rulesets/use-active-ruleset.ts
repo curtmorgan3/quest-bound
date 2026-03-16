@@ -1,4 +1,4 @@
-import { db, useArchetypeStore } from '@/stores';
+import { db, useArchetypeStore, useCrossTabDbVersion } from '@/stores';
 import type { Archetype } from '@/types';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useMemo } from 'react';
@@ -11,11 +11,15 @@ export const useActiveRuleset = () => {
   const campaign = useCampaign(campaignId);
 
   const lastEditedRulesetId = localStorage.getItem('qb.lastEditedRulesetId');
+  const crossTabDbVersion = useCrossTabDbVersion();
 
-  const _rulesets = useLiveQuery(() => db.rulesets.toArray(), []);
+  const _rulesets = useLiveQuery(() => db.rulesets.toArray(), [crossTabDbVersion]);
   // Local users: all rulesets in DB. Synced users: scoped by cloud (sync layer).
   const rulesets = _rulesets ?? [];
-  const characters = useLiveQuery(() => db.characters.toArray(), [characterId]);
+  const characters = useLiveQuery(
+    () => db.characters.toArray(),
+    [characterId, crossTabDbVersion],
+  );
 
   const character = useMemo(() => characters?.find((c) => c.id === characterId), [characters]);
 

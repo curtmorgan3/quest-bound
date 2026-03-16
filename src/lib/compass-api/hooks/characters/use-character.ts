@@ -4,7 +4,7 @@ import {
   executeCharacterLoader,
 } from '@/lib/compass-logic/reactive/event-handler-executor';
 import { getQBScriptClient } from '@/lib/compass-logic/worker';
-import { db, deleteAssetIfUnreferenced, useCurrentUser } from '@/stores';
+import { db, deleteAssetIfUnreferenced, useCrossTabDbVersion, useCurrentUser } from '@/stores';
 import type { Archetype, Character, Inventory } from '@/types';
 import { duplicateCharacterFromTemplate } from '@/utils/duplicate-character-from-template';
 import { useLiveQuery } from 'dexie-react-hooks';
@@ -33,6 +33,7 @@ export const useCharacter = (_id?: string) => {
 
   const { addNotification } = useNotifications();
 
+  const crossTabDbVersion = useCrossTabDbVersion();
   const characters =
     useLiveQuery(
       () =>
@@ -40,7 +41,7 @@ export const useCharacter = (_id?: string) => {
           .where('rulesetId')
           .equals(activeRuleset?.id ?? '')
           .toArray(),
-      [currentUser],
+      [currentUser, activeRuleset?.id, crossTabDbVersion],
     ) ?? [];
 
   const id = _id ?? characterId;

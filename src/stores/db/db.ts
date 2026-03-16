@@ -37,6 +37,8 @@ import type {
 import Dexie, { type EntityTable } from 'dexie';
 import { assetInjectorMiddleware } from './asset-injector-middleware';
 import { chartOptionsMiddleware } from './chart-options-middleware';
+import { initCrossTabDb } from './cross-tab-db';
+import { crossTabNotifyMiddleware } from './cross-tab-notify-middleware';
 import { registerDbHooks } from './hooks/db-hooks';
 import { registerVersions } from './migrations/run-migrations';
 import { createRulesetCascadeDeleteMiddleware } from './ruleset-cascade-delete-middleware';
@@ -89,6 +91,9 @@ registerVersions(db);
 db.use(assetInjectorMiddleware);
 db.use(chartOptionsMiddleware);
 db.use(createRulesetCascadeDeleteMiddleware(() => db));
+db.use(crossTabNotifyMiddleware);
 registerDbHooks(db);
+
+initCrossTabDb();
 
 export { db };
