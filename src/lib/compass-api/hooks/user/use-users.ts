@@ -154,11 +154,9 @@ export const useUsers = () => {
       }
 
       // Delete rulesets owned by this user (createdBy matches username)
-      const allRulesets = await db.rulesets.toArray();
-      for (const r of allRulesets) {
-        if (r.createdBy === user.username) {
-          await deleteRuleset(r.id);
-        }
+      const userRulesets = await db.rulesets.where('createdBy').equals(user.username).toArray();
+      for (const r of userRulesets) {
+        await deleteRuleset(r.id);
       }
 
       await db.users.delete(id);

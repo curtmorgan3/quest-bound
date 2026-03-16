@@ -10,6 +10,7 @@ import { duplicateCharacterFromTemplate } from '@/utils/duplicate-character-from
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useMemo } from 'react';
 import { useParams } from 'react-router-dom';
+import { useActiveRuleset } from '../rulesets';
 
 export type CharacterWithInventories = Character & {
   inventory: Inventory;
@@ -25,13 +26,22 @@ export const useCharacters = (rulesetId: string | undefined): Character[] => {
 };
 
 export const useCharacter = (_id?: string) => {
+  const { activeRuleset } = useActiveRuleset();
   const { characterId } = useParams();
   const { currentUser } = useCurrentUser();
   const { handleError } = useErrorHandler();
 
   const { addNotification } = useNotifications();
 
-  const characters = useLiveQuery(() => db.characters.toArray(), [currentUser]) ?? [];
+  const characters =
+    useLiveQuery(
+      () =>
+        db.characters
+          .where('rulesetId')
+          .equals(activeRuleset?.id ?? '')
+          .toArray(),
+      [currentUser],
+    ) ?? [];
 
   const id = _id ?? characterId;
 
