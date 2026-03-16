@@ -2,7 +2,32 @@ import { buildDependencyGraph } from '@/lib/compass-logic/reactive/dependency-gr
 import { getSyncState } from '@/lib/cloud/sync/sync-state';
 import type { DB } from './types';
 
+const DEPENDENCY_GRAPH_DEBOUNCE_MS = 400;
+
+/** Debounce rebuilds by rulesetId so rapid edits or multiple tabs don't trigger many full rebuilds in parallel. */
+function createDebouncedRebuild(db: DB) {
+  const timeoutsByRuleset = new Map<string, ReturnType<typeof setTimeout>>();
+
+  return function scheduleRebuild(rulesetId: string) {
+    const existing = timeoutsByRuleset.get(rulesetId);
+    if (existing) clearTimeout(existing);
+
+    const timeoutId = setTimeout(async () => {
+      timeoutsByRuleset.delete(rulesetId);
+      try {
+        await buildDependencyGraph(rulesetId, db);
+      } catch (error) {
+        console.error('Failed to rebuild dependency graph:', error);
+      }
+    }, DEPENDENCY_GRAPH_DEBOUNCE_MS);
+
+    timeoutsByRuleset.set(rulesetId, timeoutId);
+  };
+}
+
 export function registerScriptHooks(db: DB) {
+  const scheduleDependencyGraphRebuild = createDebouncedRebuild(db);
+
   const safeDeleteDependencyGraphNodesByRulesetId = async (rulesetId: string) => {
     try {
       await db.dependencyGraphNodes.where({ rulesetId }).delete();
@@ -14,20 +39,12 @@ export function registerScriptHooks(db: DB) {
     }
   };
 
-  // Hook for when scripts are created or updated - rebuild dependency graph
+  // Hook for when scripts are created or updated - rebuild dependency graph (debounced)
   db.scripts.hook('creating', async (primKey, obj) => {
     if (getSyncState().isSyncing) return;
-    // After script is created, rebuild the dependency graph for its ruleset
     const rulesetId = obj.rulesetId;
     if (rulesetId) {
-      // Use setTimeout to run after the transaction completes
-      setTimeout(async () => {
-        try {
-          await buildDependencyGraph(rulesetId, db);
-        } catch (error) {
-          console.error('Failed to rebuild dependency graph:', error);
-        }
-      }, 0);
+      setTimeout(() => scheduleDependencyGraphRebuild(rulesetId), 0);
     }
   });
 
@@ -39,7 +56,6 @@ export function registerScriptHooks(db: DB) {
       entityType?: string;
       entityId?: string | null;
     };
-    // If source code, enabled, or entity association changed, clean up and rebuild dependency graph
     const associationChanged = mods.entityType !== undefined || mods.entityId !== undefined;
     const needsRebuild =
       mods.sourceCode !== undefined || mods.enabled !== undefined || associationChanged;
@@ -47,13 +63,7 @@ export function registerScriptHooks(db: DB) {
     if (needsRebuild) {
       const script = await db.scripts.get(primKey);
       if (script) {
-        setTimeout(async () => {
-          try {
-            await buildDependencyGraph(script.rulesetId, db);
-          } catch (error) {
-            console.error('Failed to rebuild dependency graph:', error);
-          }
-        }, 0);
+        setTimeout(() => scheduleDependencyGraphRebuild(script.rulesetId), 0);
       }
     }
   });
@@ -76,15 +86,8 @@ export function registerScriptHooks(db: DB) {
       await db.scriptErrors.where({ scriptId }).delete();
     }, 0);
 
-    // Rebuild dependency graph if we have the ruleset
     if (script) {
-      setTimeout(async () => {
-        try {
-          await buildDependencyGraph(script.rulesetId, db);
-        } catch (error) {
-          console.error('Failed to rebuild dependency graph:', error);
-        }
-      }, 0);
+      setTimeout(() => scheduleDependencyGraphRebuild(script.rulesetId), 0);
     }
   });
 
