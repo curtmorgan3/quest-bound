@@ -36,9 +36,8 @@ import type {
 } from '@/types';
 import Dexie, { type EntityTable } from 'dexie';
 import { assetInjectorMiddleware } from './asset-injector-middleware';
-import { chartOptionsMiddleware, memoizedCharts } from './chart-options-middleware';
+import { chartOptionsMiddleware } from './chart-options-middleware';
 import { registerDbHooks } from './hooks/db-hooks';
-import { memoizedAssets } from './memoization-cache';
 import { registerVersions } from './migrations/run-migrations';
 import { createRulesetCascadeDeleteMiddleware } from './ruleset-cascade-delete-middleware';
 
@@ -84,27 +83,8 @@ const db = new Dexie('qbdb') as Dexie & {
 
 registerVersions(db);
 
-// Cache assets for reference in the asset injector middleware
-db.on('ready', async () => {
-  await db.assets
-    .where('id')
-    .above(0)
-    .each((asset) => {
-      memoizedAssets[asset.id] = asset.data;
-    });
-
-  // Cache charts for reference in the chart options middleware
-  await db.charts
-    .where('id')
-    .above(0)
-    .each((chart) => {
-      try {
-        memoizedCharts[chart.id] = JSON.parse(chart.data);
-      } catch {
-        // Invalid JSON, skip
-      }
-    });
-});
+// Assets and charts are lazy-loaded on first use in middleware (see asset-injector-middleware
+// and chart-options-middleware). No full-table preload at ready, avoiding multi-tab memory and I/O.
 
 db.use(assetInjectorMiddleware);
 db.use(chartOptionsMiddleware);
