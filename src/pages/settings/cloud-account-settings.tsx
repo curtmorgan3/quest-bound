@@ -9,196 +9,14 @@ import {
   Input,
   Label,
 } from '@/components';
-import { signIn, signOut, signUp, updatePassword } from '@/lib/cloud/auth';
+import { SignInSignUpModal } from '@/pages/signin';
+import { signOut, updatePassword } from '@/lib/cloud/auth';
 import { isCloudConfigured } from '@/lib/cloud/client';
 import { db } from '@/stores';
 import { useCloudAuthStore } from '@/stores/cloud-auth-store';
 import { useCurrentUser } from '@/stores/current-user-store';
-import { AlertCircle, Mail } from 'lucide-react';
+import { AlertCircle } from 'lucide-react';
 import { useState } from 'react';
-
-function SignInDialog({
-  open,
-  onOpenChange,
-  onSuccess,
-}: {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  onSuccess: () => void;
-}) {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    setLoading(true);
-    try {
-      const result = await signIn(email, password);
-      if ('error' in result) {
-        setError(result.error.message);
-        return;
-      }
-      onSuccess();
-      onOpenChange(false);
-      setEmail('');
-      setPassword('');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Sign in to Cloud</DialogTitle>
-          <DialogDescription>
-            Use your Quest Bound Cloud account to enable sync across devices.
-          </DialogDescription>
-        </DialogHeader>
-        <form onSubmit={handleSubmit} className='flex flex-col gap-4'>
-          {error && (
-            <div className='flex items-center gap-2 rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive'>
-              <AlertCircle className='size-4 shrink-0' />
-              {error}
-            </div>
-          )}
-          <div className='grid gap-2'>
-            <Label htmlFor='cloud-signin-email'>Email</Label>
-            <Input
-              id='cloud-signin-email'
-              type='email'
-              autoComplete='email'
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
-          </div>
-          <div className='grid gap-2'>
-            <Label htmlFor='cloud-signin-password'>Password</Label>
-            <Input
-              id='cloud-signin-password'
-              type='password'
-              autoComplete='current-password'
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
-          </div>
-          <DialogFooter>
-            <Button type='button' variant='outline' onClick={() => onOpenChange(false)}>
-              Cancel
-            </Button>
-            <Button type='submit' disabled={loading}>
-              {loading ? 'Signing in…' : 'Sign in'}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-function SignUpDialog({
-  open,
-  onOpenChange,
-  onSuccess,
-}: {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  onSuccess: () => void;
-}) {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState<string | null>(null);
-  const [emailVerificationSent, setEmailVerificationSent] = useState(false);
-  const [loading, setLoading] = useState(false);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    setEmailVerificationSent(false);
-    setLoading(true);
-    try {
-      const result = await signUp(email, password);
-      if ('error' in result) {
-        setError(result.error.message);
-        return;
-      }
-      if ('needsEmailVerification' in result) {
-        setEmailVerificationSent(true);
-        return;
-      }
-      onSuccess();
-      onOpenChange(false);
-      setEmail('');
-      setPassword('');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Create cloud account</DialogTitle>
-          <DialogDescription>
-            Create a Quest Bound Cloud account to sync your rulesets across devices.
-          </DialogDescription>
-        </DialogHeader>
-        <form onSubmit={handleSubmit} className='flex flex-col gap-4'>
-          {error && (
-            <div className='flex items-center gap-2 rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive'>
-              <AlertCircle className='size-4 shrink-0' />
-              {error}
-            </div>
-          )}
-          {emailVerificationSent && (
-            <div className='flex items-center gap-2 rounded-md bg-muted px-3 py-2 text-sm text-muted-foreground'>
-              <Mail className='size-4 shrink-0' />
-              Check your email for a verification link to complete your account setup.
-            </div>
-          )}
-          <div className='grid gap-2'>
-            <Label htmlFor='cloud-signup-email'>Email</Label>
-            <Input
-              id='cloud-signup-email'
-              type='email'
-              autoComplete='email'
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
-          </div>
-          <div className='grid gap-2'>
-            <Label htmlFor='cloud-signup-password'>Password</Label>
-            <Input
-              id='cloud-signup-password'
-              type='password'
-              autoComplete='new-password'
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              minLength={6}
-            />
-          </div>
-          <DialogFooter>
-            <Button type='button' variant='outline' onClick={() => onOpenChange(false)}>
-              Cancel
-            </Button>
-            <Button type='submit' disabled={loading}>
-              {loading ? 'Creating account…' : 'Create account'}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
-  );
-}
 
 function ChangePasswordDialog({
   open,
@@ -354,8 +172,18 @@ export function CloudAccountSettings() {
         </div>
       )}
 
-      <SignInDialog open={signInOpen} onOpenChange={setSignInOpen} onSuccess={handleAuthSuccess} />
-      <SignUpDialog open={signUpOpen} onOpenChange={setSignUpOpen} onSuccess={handleAuthSuccess} />
+      <SignInSignUpModal
+        open={signInOpen}
+        onOpenChange={setSignInOpen}
+        onSuccess={handleAuthSuccess}
+        mode='sign-in-only'
+      />
+      <SignInSignUpModal
+        open={signUpOpen}
+        onOpenChange={setSignUpOpen}
+        onSuccess={handleAuthSuccess}
+        mode='sign-up-only'
+      />
       <ChangePasswordDialog open={changePasswordOpen} onOpenChange={setChangePasswordOpen} />
     </div>
   );
