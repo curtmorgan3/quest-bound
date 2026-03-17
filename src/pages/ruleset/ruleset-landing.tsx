@@ -1,23 +1,13 @@
 import { Card } from '@/components';
 import { PageWrapper } from '@/components/composites';
 import { LogoIcon } from '@/components/ui/logo-icon';
-import {
-  useActiveRuleset,
-  useCampaigns,
-  useCharacters,
-  usePreloadLandingAssets,
-} from '@/lib/compass-api';
+import { useActiveRuleset } from '@/lib/compass-api';
 import { Map, Users } from 'lucide-react';
 import Markdown from 'react-markdown';
 import { Link } from 'react-router-dom';
 
 export function RulesetLanding() {
   const { activeRuleset } = useActiveRuleset();
-  const characters = useCharacters(activeRuleset?.id);
-  const { campaigns } = useCampaigns(
-    activeRuleset?.id ? { rulesetId: activeRuleset.id } : { rulesetId: '' },
-  );
-  usePreloadLandingAssets(activeRuleset, characters, activeRuleset?.id ? campaigns : undefined);
 
   if (!activeRuleset) {
     return (

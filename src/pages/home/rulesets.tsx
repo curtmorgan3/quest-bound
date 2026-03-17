@@ -29,7 +29,6 @@ import {
 import {
   useCloudRulesets,
   useImportRuleset,
-  usePreloadRulesetAssets,
   useRulesets,
   type ImportRulesetResult,
 } from '@/lib/compass-api';
@@ -44,7 +43,6 @@ const DELETE_SPINNER_DELAY_MS = 1000;
 
 export const Rulesets = () => {
   const { rulesets, createRuleset, deleteRuleset } = useRulesets();
-  usePreloadRulesetAssets(rulesets);
   const { importRuleset, isImporting, importStep } = useImportRuleset();
   const {
     cloudRulesets,

@@ -1,6 +1,7 @@
 import { Avatar, AvatarFallback, AvatarImage, Button, Label, Switch } from '@/components';
 import { PageWrapper } from '@/components/composites';
 import {
+  useActiveRuleset,
   useCampaign,
   useCampaignCharacters,
   useCampaignScenes,
@@ -67,6 +68,11 @@ function saveColumnState(state: StoredColumnState) {
 export function CampaignDashboard() {
   const { campaignId, sceneId } = useParams<{ campaignId: string; sceneId?: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
+  // Ensure active ruleset (and its assets) are resolved for this campaign view.
+  // useActiveRuleset will derive the rulesetId from the campaignId route param
+  // and trigger the ruleset-scoped asset preload effect.
+  useActiveRuleset();
+
   const campaign = useCampaign(campaignId);
   const navigate = useNavigate();
   const {

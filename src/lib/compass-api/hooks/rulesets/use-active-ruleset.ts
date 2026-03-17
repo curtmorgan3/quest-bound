@@ -1,5 +1,5 @@
 import { useCampaign } from '@/lib/compass-api/hooks/campaigns/use-campaign';
-import { db, useArchetypeStore, useAssetPreloadStore, useCrossTabDbVersion } from '@/stores';
+import { db, useArchetypeStore, useCrossTabDbVersion } from '@/stores';
 import type { Archetype } from '@/types';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useMemo } from 'react';
@@ -15,12 +15,8 @@ export const useActiveRuleset = () => {
 
   const lastEditedRulesetId = localStorage.getItem('qb.lastEditedRulesetId');
   const crossTabDbVersion = useCrossTabDbVersion();
-  const landingPreloadVersion = useAssetPreloadStore((s) => s.landingPreloadVersion);
 
-  const _rulesets = useLiveQuery(() => db.rulesets.toArray(), [
-    crossTabDbVersion,
-    landingPreloadVersion,
-  ]);
+  const _rulesets = useLiveQuery(() => db.rulesets.toArray(), [crossTabDbVersion]);
   // Local users: all rulesets in DB. Synced users: scoped by cloud (sync layer).
   const rulesets = _rulesets ?? [];
   const characters = useLiveQuery(

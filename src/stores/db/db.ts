@@ -40,6 +40,7 @@ import { chartOptionsMiddleware } from './chart-options-middleware';
 import { initCrossTabDb } from './cross-tab-db';
 import { crossTabNotifyMiddleware } from './cross-tab-notify-middleware';
 import { registerDbHooks } from './hooks/db-hooks';
+import { memoizedAssets } from './memoization-cache';
 import { registerVersions } from './migrations/run-migrations';
 import { createRulesetCascadeDeleteMiddleware } from './ruleset-cascade-delete-middleware';
 
@@ -85,8 +86,22 @@ const db = new Dexie('qbdb') as Dexie & {
 
 registerVersions(db);
 
-// Assets and charts are lazy-loaded on first use in middleware (see asset-injector-middleware
-// and chart-options-middleware). No full-table preload at ready, avoiding multi-tab memory and I/O.
+// On app load, eagerly load all assets into the in-memory memoizedAssets cache so that
+// asset-injector-middleware can synchronously inject image/pdf/background data for any
+// record that references an assetId (regardless of table or ruleset).
+db.on('ready', async () => {
+  try {
+    const assets = await db.assets.toArray();
+    for (const asset of assets) {
+      if (asset.id && asset.data != null) {
+        memoizedAssets[asset.id] = asset.data as string;
+      }
+    }
+  } catch (error) {
+    // If preload fails, leave the cache empty; UI can still fall back to other paths.
+    console.error('Failed to preload assets into memoized cache:', error);
+  }
+});
 
 db.use(assetInjectorMiddleware);
 db.use(chartOptionsMiddleware);

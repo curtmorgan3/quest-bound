@@ -65,6 +65,7 @@ const ViewInventoryNodeComponent = ({ component }: { component: Component }) => 
 
   const css = useComponentStyles(component);
   const data = getComponentData(component) as InventoryComponentData;
+
   const gridColor = css.color || '#ccc';
   const bgStyle = getBackgroundStyle(css);
   const gridImage = `
