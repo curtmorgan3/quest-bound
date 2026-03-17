@@ -1,3 +1,15 @@
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+  Checkbox,
+} from '@/components';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -160,10 +172,8 @@ export const EditorTopBar = ({
 
   const handleDelete = async () => {
     if (!script || isNew) return;
-    if (window.confirm('Delete this script? This cannot be undone.')) {
-      await deleteScript(script.id);
-      navigate(campaignId ? `/campaigns/${campaignId}/scripts` : `/rulesets/${rulesetId}/scripts`);
-    }
+    await deleteScript(script.id);
+    navigate(campaignId ? `/campaigns/${campaignId}/scripts` : `/rulesets/${rulesetId}/scripts`);
   };
 
   return (
@@ -268,11 +278,48 @@ export const EditorTopBar = ({
           <Button variant='outline' onClick={handleCancel}>
             <X className='h-4 w-4' />
           </Button>
-          {!isNew && script && (
-            <Button variant='destructive' onClick={handleDelete}>
-              <Trash2 className='h-4 w-4' />
-            </Button>
-          )}
+          {!isNew &&
+            script &&
+            (() => {
+              const doNotAsk = localStorage.getItem('qb.confirmOnDelete') === 'false';
+              if (doNotAsk) {
+                return (
+                  <Button variant='destructive' onClick={handleDelete}>
+                    <Trash2 className='h-4 w-4' />
+                  </Button>
+                );
+              }
+              return (
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant='destructive'>
+                      <Trash2 className='h-4 w-4' />
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Permanently delete this content?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Permanently delete this content?
+                      </AlertDialogDescription>
+                      <div className='flex gap-2'>
+                        <Label htmlFor='script-editor-do-not-ask-again'>Do not ask again</Label>
+                        <Checkbox
+                          id='script-editor-do-not-ask-again'
+                          onCheckedChange={(checked) =>
+                            localStorage.setItem('qb.confirmOnDelete', String(!checked))
+                          }
+                        />
+                      </div>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              );
+            })()}
         </div>
       </div>
     </div>

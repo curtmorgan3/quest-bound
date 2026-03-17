@@ -23,7 +23,7 @@ import { getComponentData } from '@/lib/compass-planes/utils';
 import { colorBlack } from '@/palette';
 import type { ConditionalRenderLogic, TextComponentData } from '@/types';
 import { rgbToHex } from '@/utils';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { RGBColor } from 'react-color';
 import { useParams } from 'react-router-dom';
 import { ActionEdit } from './action-edit';
@@ -63,6 +63,7 @@ export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
   const { components, updateComponents } = useComponents(windowId);
   const { activeRuleset } = useRulesets();
   const [customPropertiesModalOpen, setCustomPropertiesModalOpen] = useState(false);
+  const [referenceLabelInput, setReferenceLabelInput] = useState('');
   const customPropertiesModalParamsRef = useRef<{
     styleKey: string | null;
     onSelect?: (customPropertyId: string) => void;
@@ -74,6 +75,14 @@ export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
   if (selectedComponents.length > 1) {
     selectedComponents = selectedComponents.filter((c) => !c.locked);
   }
+
+  useEffect(() => {
+    if (selectedComponents.length === 1) {
+      setReferenceLabelInput(getComponentData(selectedComponents[0]).referenceLabel ?? '');
+    } else {
+      setReferenceLabelInput('');
+    }
+  }, [selectedComponents.length, selectedComponents[0]?.id]);
 
   const handleUpdate = (key: string | string[], value: number | string | boolean | null) => {
     const toUpdate = selectedComponents.filter((c) => (key === 'locked' ? true : !c.locked));
@@ -184,6 +193,26 @@ export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
       })),
     );
   };
+
+  const referenceLabelDebounceTimeoutRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (selectedComponents.length !== 1) return;
+
+    if (referenceLabelDebounceTimeoutRef.current !== null) {
+      window.clearTimeout(referenceLabelDebounceTimeoutRef.current);
+    }
+
+    referenceLabelDebounceTimeoutRef.current = window.setTimeout(() => {
+      setReferenceLabel(referenceLabelInput);
+    }, 300);
+
+    return () => {
+      if (referenceLabelDebounceTimeoutRef.current !== null) {
+        window.clearTimeout(referenceLabelDebounceTimeoutRef.current);
+      }
+    };
+  }, [referenceLabelInput, selectedComponents.length, selectedComponents[0]?.id]);
 
   const setAnimation = (animation: string | null) => {
     const toUpdate = selectedComponents.filter((c) => !c.locked);
@@ -380,8 +409,8 @@ export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
                     id='component-edit-reference-label'
                     className='h-8 rounded-[4px]'
                     placeholder='Used for reference in script'
-                    value={getComponentData(selectedComponents[0]).referenceLabel ?? ''}
-                    onChange={(e) => setReferenceLabel(e.target.value)}
+                    value={referenceLabelInput}
+                    onChange={(e) => setReferenceLabelInput(e.target.value)}
                   />
                 </div>
               )}
