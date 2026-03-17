@@ -26,6 +26,9 @@ describe('DependencyGraph', () => {
         }),
         bulkAdd: vi.fn().mockResolvedValue(undefined),
       } as any,
+      transaction: vi.fn().mockImplementation((_mode, _table, scope) => {
+        return scope();
+      }),
     };
 
     graph = new DependencyGraph('ruleset-1', mockDb as DB);

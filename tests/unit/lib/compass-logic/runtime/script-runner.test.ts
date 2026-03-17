@@ -4,7 +4,7 @@ import { Parser } from '@/lib/compass-logic/interpreter/parser';
 import { OwnerAccessor, RulesetAccessor } from '@/lib/compass-logic/runtime/accessors';
 import { ScriptRunner } from '@/lib/compass-logic/runtime/script-runner';
 import type { Attribute, Asset, Character, CharacterAttribute, Chart, InventoryItem, Item } from '@/types';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import type { DB } from '@/stores/db/hooks/types';
 
 /**
@@ -322,6 +322,15 @@ result
             }),
           }),
         },
+        components: {
+          where: vi.fn().mockReturnValue({
+            equals: vi.fn().mockReturnValue({
+              filter: vi.fn().mockReturnValue({
+                toArray: vi.fn().mockResolvedValue([]),
+              }),
+            }),
+          }),
+        },
       } as unknown as DB;
 
       const context = {
@@ -417,6 +426,15 @@ Owner.setImage("https://example.com/portrait.png")
                     ? portraitAsset
                     : undefined,
                 ),
+            }),
+          }),
+        },
+        components: {
+          where: vi.fn().mockReturnValue({
+            equals: vi.fn().mockReturnValue({
+              filter: vi.fn().mockReturnValue({
+                toArray: vi.fn().mockResolvedValue([]),
+              }),
             }),
           }),
         },
@@ -1077,6 +1095,15 @@ Owner.setImage("nonexistent.png")
           where: () => ({ filter: () => ({ toArray: emptyArray }) }),
         },
         archetypes: { get: () => Promise.resolve(null) },
+        components: {
+          where: vi.fn().mockReturnValue({
+            equals: vi.fn().mockReturnValue({
+              filter: vi.fn().mockReturnValue({
+                toArray: vi.fn().mockResolvedValue([]),
+              }),
+            }),
+          }),
+        },
       } as unknown as DB;
 
       const context = {
