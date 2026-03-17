@@ -1,44 +1,38 @@
 import type { DBCore, Middleware } from 'dexie';
 import { memoizedAssets } from './memoization-cache';
 
-type GetAssetData = (assetId: string) => Promise<string | undefined>;
-
-async function injectImageData(record: any, getAssetData: GetAssetData): Promise<any> {
+/**
+ * Injects asset data into a record using only the memoization cache (sync).
+ * Resolving after awaiting would run outside the Dexie transaction; Dexie's
+ * cache layer then reads ctx.trans.mode and throws when trans is undefined.
+ * So we only inject when data is already cached and never await in the chain.
+ */
+function injectImageDataSync(record: any): any {
   if (!record) return record;
 
   let next = record;
 
-  if (record.assetId) {
-    const asset = await getAssetData(record.assetId);
-    if (asset) next = { ...next, image: asset };
+  if (record.assetId && memoizedAssets[record.assetId] !== undefined) {
+    next = { ...next, image: memoizedAssets[record.assetId] };
   }
-
-  if (record.pdfAssetId) {
-    const pdfData = await getAssetData(record.pdfAssetId as string);
-    if (pdfData) next = { ...next, pdfData };
+  if (record.pdfAssetId && memoizedAssets[record.pdfAssetId as string] !== undefined) {
+    next = { ...next, pdfData: memoizedAssets[record.pdfAssetId as string] };
   }
-
-  if (record.backgroundAssetId) {
-    const backgroundImage = await getAssetData(record.backgroundAssetId);
-    if (backgroundImage) next = { ...next, backgroundImage };
+  if (record.backgroundAssetId && memoizedAssets[record.backgroundAssetId] !== undefined) {
+    next = { ...next, backgroundImage: memoizedAssets[record.backgroundAssetId] };
   }
-
-  if (record.charactersCtaAssetId) {
-    const charactersCtaImage = await getAssetData(record.charactersCtaAssetId);
-    if (charactersCtaImage) next = { ...next, charactersCtaImage };
+  if (record.charactersCtaAssetId && memoizedAssets[record.charactersCtaAssetId] !== undefined) {
+    next = { ...next, charactersCtaImage: memoizedAssets[record.charactersCtaAssetId] };
   }
-
-  if (record.campaignsCtaAssetId) {
-    const campaignsCtaImage = await getAssetData(record.campaignsCtaAssetId);
-    if (campaignsCtaImage) next = { ...next, campaignsCtaImage };
+  if (record.campaignsCtaAssetId && memoizedAssets[record.campaignsCtaAssetId] !== undefined) {
+    next = { ...next, campaignsCtaImage: memoizedAssets[record.campaignsCtaAssetId] };
   }
-
-  // Inject image data for image-typed custom properties whose defaultValue holds an assetId.
-  if (record.type === 'image' && typeof record.defaultValue === 'string') {
-    const imageData = await getAssetData(record.defaultValue);
-    if (imageData) {
-      next = { ...next, defaultValue: imageData };
-    }
+  if (
+    record.type === 'image' &&
+    typeof record.defaultValue === 'string' &&
+    memoizedAssets[record.defaultValue] !== undefined
+  ) {
+    next = { ...next, defaultValue: memoizedAssets[record.defaultValue] };
   }
 
   return next;
@@ -48,23 +42,6 @@ export const assetInjectorMiddleware: Middleware<DBCore> = {
   stack: 'dbcore',
   name: 'AssetReplacer',
   create(downlevelDatabase) {
-    const assetsTable = downlevelDatabase.table('assets');
-
-    // Use a fresh transaction per load: the parent request's transaction may already be
-    // finished by the time we await (after get/query resolves), which causes InvalidStateError.
-    const loadAsset = async (assetId: string): Promise<string | undefined> => {
-      if (memoizedAssets[assetId] !== undefined) {
-        return memoizedAssets[assetId];
-      }
-      const trans = downlevelDatabase.transaction(['assets'], 'readonly');
-      const row = await assetsTable.get({ key: assetId, trans });
-      if (row?.data) {
-        memoizedAssets[assetId] = row.data as string;
-        return row.data as string;
-      }
-      return undefined;
-    };
-
     return {
       ...downlevelDatabase,
       table(tableName) {
@@ -97,51 +74,37 @@ export const assetInjectorMiddleware: Middleware<DBCore> = {
         return {
           ...downlevelTable,
           get: (req) => {
-            return downlevelTable.get(req).then((record) => injectImageData(record, loadAsset));
+            return downlevelTable.get(req).then(injectImageDataSync);
           },
           getMany: (req) => {
-            return downlevelTable
-              .getMany(req)
-              .then((results) => Promise.all(results.map((r) => injectImageData(r, loadAsset))));
+            return downlevelTable.getMany(req).then((results) => results.map(injectImageDataSync));
           },
           query: (req) => {
-            return downlevelTable.query(req).then(async (originalResult) => {
+            return downlevelTable.query(req).then((originalResult) => {
               if (!originalResult) return originalResult;
-              const records = originalResult?.result ?? [];
-              const processedRecords = await Promise.all(
-                records.map((r) => injectImageData(r, loadAsset)),
-              );
-
+              const records = originalResult.result ?? [];
               return {
                 ...originalResult,
-                result: processedRecords,
+                result: records.map(injectImageDataSync),
               };
             });
           },
           mutate: (req) => {
-            return downlevelTable.mutate(req).then(async (res) => {
-              const myResponse = { ...res };
+            return downlevelTable.mutate(req).then((res) => {
+              const myResponse = res != null ? { ...res } : { numFailures: 0, failures: {}, lastResult: undefined };
 
               // Add newly created or updated assets to the memoization cache (lazy-load on write)
               if (tableName === 'assets' && (req.type === 'add' || req.type === 'put')) {
                 const values = 'values' in req ? req.values : [];
                 for (const value of values) {
-                  if (value.id && value.data) {
+                  if (value?.id && value?.data) {
                     memoizedAssets[value.id] = value.data as string;
                   }
                 }
               }
 
-              if (req.type === 'put') {
-                const values = 'values' in req ? req.values : [];
-                const processedRecords = await Promise.all(
-                  values.map((v: any) => injectImageData(v, loadAsset)),
-                );
-                myResponse.results = processedRecords;
-                return {
-                  ...myResponse,
-                  results: processedRecords,
-                };
+              if (req.type === 'put' && myResponse.results) {
+                myResponse.results = (myResponse.results as any[]).map(injectImageDataSync);
               }
 
               return myResponse;

@@ -37,6 +37,16 @@ const db = new Dexie('qbdb') as DB;
 
 db.version(dbSchemaVersion).stores(latestDbSchema);
 
+// Release our connection when another context (main thread or tab) upgrades or deletes
+// the DB. Otherwise the worker keeps the connection open and the app can get stuck
+// until the browser is force-quit (see agents/indexeddb-connection-loss.md).
+db.on('versionchange', () => {
+  db.close();
+});
+db.on('blocked', () => {
+  db.close();
+});
+
 // ============================================================================
 // Worker State
 // ============================================================================

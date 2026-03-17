@@ -7,6 +7,7 @@ export * from './export';
 export * from './fonts';
 export * from './rulesets';
 export * from './scripts';
+export * from './use-preload-assets';
 export * from './use-register-email';
 export * from './use-ruleset-bundle';
 export * from './user';

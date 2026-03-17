@@ -96,4 +96,19 @@ registerDbHooks(db);
 
 initCrossTabDb();
 
+// When another tab (or a future open) upgrades/deletes the DB, close and reload so we don't
+// hold a connection indefinitely and get a fresh schema. Avoids stuck state that only
+// force-quit could fix (see agents/indexeddb-connection-loss.md).
+db.on('versionchange', () => {
+  db.close();
+  if (typeof window !== 'undefined') {
+    window.location.reload();
+  }
+});
+db.on('blocked', () => {
+  if (typeof window !== 'undefined') {
+    window.location.reload();
+  }
+});
+
 export { db };

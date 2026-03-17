@@ -1,24 +1,31 @@
-import { db, useArchetypeStore, useCrossTabDbVersion } from '@/stores';
+import { useCampaign } from '@/lib/compass-api/hooks/campaigns/use-campaign';
+import { db, useArchetypeStore, useAssetPreloadStore, useCrossTabDbVersion } from '@/stores';
 import type { Archetype } from '@/types';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useMemo } from 'react';
-import { useParams } from 'react-router-dom';
-import { useCampaign } from '@/lib/compass-api/hooks/campaigns/use-campaign';
+import { useParams, useSearchParams } from 'react-router-dom';
 
 export const useActiveRuleset = () => {
-  const { rulesetId, characterId, campaignId } = useParams();
+  const { rulesetId: rulesetIdFromParams, characterId, campaignId } = useParams();
+  const [searchParams] = useSearchParams();
+  const rulesetIdFromQuery = searchParams.get('rulesetId');
+  const rulesetId = rulesetIdFromParams ?? rulesetIdFromQuery;
   const getSelectedArchetype = useArchetypeStore((s) => s.getSelectedArchetype);
   const campaign = useCampaign(campaignId);
 
   const lastEditedRulesetId = localStorage.getItem('qb.lastEditedRulesetId');
   const crossTabDbVersion = useCrossTabDbVersion();
+  const landingPreloadVersion = useAssetPreloadStore((s) => s.landingPreloadVersion);
 
-  const _rulesets = useLiveQuery(() => db.rulesets.toArray(), [crossTabDbVersion]);
+  const _rulesets = useLiveQuery(() => db.rulesets.toArray(), [
+    crossTabDbVersion,
+    landingPreloadVersion,
+  ]);
   // Local users: all rulesets in DB. Synced users: scoped by cloud (sync layer).
   const rulesets = _rulesets ?? [];
   const characters = useLiveQuery(
     () => db.characters.toArray(),
-    [characterId, crossTabDbVersion],
+    [characterId, crossTabDbVersion, rulesets],
   );
 
   const character = useMemo(() => characters?.find((c) => c.id === characterId), [characters]);
@@ -26,7 +33,7 @@ export const useActiveRuleset = () => {
   const rulesetIdToUse =
     rulesetId && rulesetId !== 'undefined'
       ? rulesetId
-      : campaign?.rulesetId ?? (character ? character.rulesetId : lastEditedRulesetId);
+      : (campaign?.rulesetId ?? (character ? character.rulesetId : lastEditedRulesetId));
 
   const activeRuleset = rulesetIdToUse ? rulesets?.find((r) => r.id === rulesetIdToUse) : null;
 

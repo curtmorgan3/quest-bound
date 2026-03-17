@@ -14,7 +14,14 @@ import {
   Label,
 } from '@/components';
 import { PageWrapper } from '@/components/composites';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { useCharacter, useImportCharacter } from '@/lib/compass-api';
 import { db } from '@/stores';
 import type { Archetype, CharacterArchetype } from '@/types';
@@ -37,11 +44,7 @@ export const Characters = () => {
         rulesetIdParam
           ? db.characterArchetypes
               .where('characterId')
-              .anyOf(
-                characters
-                  .filter((c) => c.rulesetId === rulesetIdParam)
-                  .map((c) => c.id),
-              )
+              .anyOf(characters.filter((c) => c.rulesetId === rulesetIdParam).map((c) => c.id))
               .sortBy('loadOrder')
           : Promise.resolve([] as CharacterArchetype[]),
       [rulesetIdParam, characters],

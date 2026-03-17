@@ -48,7 +48,7 @@ export function registerScriptHooks(db: DB) {
     }
   });
 
-  db.scripts.hook('updating', async (modifications, primKey, obj) => {
+  db.scripts.hook('updating', (modifications, _primKey, obj) => {
     if (getSyncState().isSyncing) return;
     const mods = modifications as {
       sourceCode?: string;
@@ -60,11 +60,10 @@ export function registerScriptHooks(db: DB) {
     const needsRebuild =
       mods.sourceCode !== undefined || mods.enabled !== undefined || associationChanged;
 
-    if (needsRebuild) {
-      const script = await db.scripts.get(primKey);
-      if (script) {
-        setTimeout(() => scheduleDependencyGraphRebuild(script.rulesetId), 0);
-      }
+    // Use obj (existing script) to get rulesetId — avoid db.scripts.get() inside the hook,
+    // which can cause connection contention / deadlock when saving scripts (IndexedDB).
+    if (needsRebuild && obj?.rulesetId) {
+      setTimeout(() => scheduleDependencyGraphRebuild(obj.rulesetId), 0);
     }
   });
 

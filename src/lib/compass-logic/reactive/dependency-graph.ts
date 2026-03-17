@@ -205,12 +205,10 @@ export class DependencyGraph {
 
   /**
    * Save the dependency graph to the database.
+   * Uses a single transaction so delete + bulkAdd are atomic and we avoid
+   * connection churn / empty-graph window that could contribute to IndexedDB issues.
    */
   async saveToDatabase(): Promise<void> {
-    // Delete existing nodes for this ruleset
-    await this.db.dependencyGraphNodes.where({ rulesetId: this.rulesetId }).delete();
-
-    // Convert graph nodes to database records
     const dbNodes: Omit<DependencyGraphNode, 'id' | 'createdAt' | 'updatedAt'>[] = [];
 
     for (const [_scriptId, node] of this.nodes.entries()) {
@@ -224,10 +222,12 @@ export class DependencyGraph {
       });
     }
 
-    // Bulk insert
-    if (dbNodes.length > 0) {
-      await this.db.dependencyGraphNodes.bulkAdd(dbNodes as any[]);
-    }
+    await this.db.transaction('rw', this.db.dependencyGraphNodes, async () => {
+      await this.db.dependencyGraphNodes.where({ rulesetId: this.rulesetId }).delete();
+      if (dbNodes.length > 0) {
+        await this.db.dependencyGraphNodes.bulkAdd(dbNodes as any[]);
+      }
+    });
   }
 
   /**
