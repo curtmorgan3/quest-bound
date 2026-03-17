@@ -776,8 +776,7 @@ export class ScriptRunner {
         ) {
           const inventoryItem = await db.inventoryItems.get(id);
           if (inventoryItem) {
-            const componentIdForRef =
-              this.refLabelToComponentId.get(deletePayload.referenceLabel);
+            const componentIdForRef = this.refLabelToComponentId.get(deletePayload.referenceLabel);
             const itemComponentId = (inventoryItem as { componentId?: string }).componentId ?? '';
             if (
               componentIdForRef != null &&
@@ -982,7 +981,6 @@ export class ScriptRunner {
                 (cw as CharacterWindow).title === windowDef!.title,
             )
             .first()) as CharacterWindow | undefined;
-
           if (existing) {
             if (existing.isCollapsed) {
               await db.characterWindows.update(existing.id, {

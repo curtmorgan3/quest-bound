@@ -226,7 +226,6 @@ const ViewInventoryNodeComponent = ({ component }: { component: Component }) => 
                     width: '100%',
                     height: '100%',
                     objectFit: 'cover',
-                    opacity: invItem.value === false ? 0.3 : 1,
                   }}
                 />
               ) : (
@@ -238,7 +237,6 @@ const ViewInventoryNodeComponent = ({ component }: { component: Component }) => 
                     fontSize: css.fontSize,
                     fontStyle: css.fontStyle,
                     fontWeight: css.fontWeight,
-                    opacity: invItem.value === false ? 0.3 : 1,
                   }}>
                   {invItem.title}
                 </span>

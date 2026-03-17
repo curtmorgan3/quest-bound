@@ -37,7 +37,12 @@ export const SYNC_TABLE_CONFIGS: SyncTableConfig[] = [
     excludedFields: ['options', 'image'],
     hasRulesetId: true,
   },
-  { tableName: 'actions', remoteTableName: 'actions', excludedFields: [], hasRulesetId: true },
+  {
+    tableName: 'actions',
+    remoteTableName: 'actions',
+    excludedFields: ['image'],
+    hasRulesetId: true,
+  },
   {
     tableName: 'items',
     remoteTableName: 'items',
@@ -74,7 +79,7 @@ export const SYNC_TABLE_CONFIGS: SyncTableConfig[] = [
   {
     tableName: 'rulesetWindows',
     remoteTableName: 'ruleset_windows',
-    excludedFields: [],
+    excludedFields: ['rulesetPageId'],
     hasRulesetId: true,
   },
   { tableName: 'scripts', remoteTableName: 'scripts', excludedFields: [], hasRulesetId: true },

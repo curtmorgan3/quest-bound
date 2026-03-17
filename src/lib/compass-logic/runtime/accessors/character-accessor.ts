@@ -670,10 +670,7 @@ export class CharacterAccessor implements StructuredCloneSafe {
       }
     }
 
-    const deleteValue =
-      referenceLabel != null && referenceLabel !== ''
-        ? { referenceLabel }
-        : true;
+    const deleteValue = referenceLabel != null && referenceLabel !== '' ? { referenceLabel } : true;
 
     let toRemove = quantity;
     const idsToDelete = new Set<string>();

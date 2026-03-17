@@ -62,6 +62,35 @@ export function prepareRecordForRemote(
   record: Record<string, unknown>,
 ): Record<string, unknown> {
   const stripped = stripForPush(tableName, record);
+  if (tableName === 'documents') {
+    const d = stripped as { description?: unknown };
+    if (d.description == null) {
+      d.description = '';
+    }
+  }
+  if (tableName === 'archetypes') {
+    const a = stripped as { description?: unknown; variantsChartRef?: unknown };
+    if (a.description == null) {
+      a.description = '';
+    }
+    if (a.variantsChartRef != null) {
+      const n = Number(a.variantsChartRef);
+      a.variantsChartRef = Number.isFinite(n) ? Math.trunc(n) : undefined;
+    }
+  }
+  if (tableName === 'characters') {
+    const c = stripped as Record<string, unknown> & {
+      pinnedSidebarDocuments?: unknown;
+      pinnedSidebarCharts?: unknown;
+      componentData?: unknown;
+    };
+    if (c.pinnedSidebarDocuments == null) c.pinnedSidebarDocuments = [];
+    if (c.pinnedSidebarCharts == null) c.pinnedSidebarCharts = [];
+    if (c.componentData == null) c.componentData = {};
+    if (c['pinned_sidebar_documents'] == null) c['pinned_sidebar_documents'] = [];
+    if (c['pinned_sidebar_charts'] == null) c['pinned_sidebar_charts'] = [];
+    if (c['component_data'] == null) c['component_data'] = {};
+  }
   const out = toSnakeCaseKeys(stripped);
   if (tableName === 'inventoryItems' && 'quantity' in out) {
     const n = Number((out as { quantity: unknown }).quantity);

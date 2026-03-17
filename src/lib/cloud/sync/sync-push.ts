@@ -97,6 +97,25 @@ export async function syncPush(rulesetId: string, db: DB): Promise<{ error?: str
         }
       }
 
+      // Backfill ruleset_id for character_pages from parent character when missing (required by remote)
+      if (config.tableName === 'characterPages') {
+        const charactersTable = tables['characters'] as TableWithGet | undefined;
+        if (charactersTable?.get) {
+          for (const r of rows) {
+            if (
+              (r.rulesetId == null || r.ruleset_id == null) &&
+              typeof (r.characterId ?? r.character_id) === 'string'
+            ) {
+              const char = await charactersTable.get((r.characterId ?? r.character_id) as string);
+              const rid = (char as { rulesetId?: string } | undefined)?.rulesetId;
+              if (typeof rid === 'string' && rid.length > 0) {
+                r.rulesetId = rid;
+              }
+            }
+          }
+        }
+      }
+
       const remoteRows = rows.map((r) => {
         const row: { user_id: string; user_id_local?: string } = {
           ...prepareRecordForRemote(config.tableName, r),

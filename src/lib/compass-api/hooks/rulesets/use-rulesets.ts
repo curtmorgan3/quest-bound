@@ -20,10 +20,10 @@ export const useRulesets = () => {
   const [loading, setLoading] = useState(false);
   const crossTabDbVersion = useCrossTabDbVersion();
   const rulesetListPreloadVersion = useAssetPreloadStore((s) => s.rulesetListPreloadVersion);
-  const _rulesets = useLiveQuery(() => db.rulesets.toArray(), [
-    crossTabDbVersion,
-    rulesetListPreloadVersion,
-  ]);
+  const _rulesets = useLiveQuery(
+    () => db.rulesets.toArray(),
+    [crossTabDbVersion, rulesetListPreloadVersion],
+  );
   // Local users: all rulesets in DB belong to the active user. Synced users: scoped by cloud (handled in sync layer).
   const rulesets = _rulesets ?? [];
 

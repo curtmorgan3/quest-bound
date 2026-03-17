@@ -47,10 +47,31 @@ export async function duplicateCharacterFromTemplate(
   );
 
   // 2. Character pages (share same pageIds; create new join records)
-  const sourceCharacterPages = await db.characterPages
+  let pagesSourceCharacterId = sourceCharacterId;
+  let sourceCharacterPages = await db.characterPages
     .where('characterId')
     .equals(sourceCharacterId)
     .toArray();
+
+  // If the source character has no pages (older/partial templates), fall back
+  // to duplicating the pages from the default archetype's test character.
+  if (sourceCharacterPages.length === 0) {
+    const defaultArchetype = await db.archetypes
+      .where('rulesetId')
+      .equals(targetCharacter.rulesetId)
+      .filter((a) => a.isDefault)
+      .first();
+
+    if (!defaultArchetype?.testCharacterId) {
+      throw new Error('No default archetype test character found');
+    }
+
+    pagesSourceCharacterId = defaultArchetype.testCharacterId;
+    sourceCharacterPages = await db.characterPages
+      .where('characterId')
+      .equals(pagesSourceCharacterId)
+      .toArray();
+  }
 
   const characterPageIdMap = new Map<string, string>();
 
@@ -70,7 +91,7 @@ export async function duplicateCharacterFromTemplate(
   // 3. Character windows (map characterPageIds)
   const sourceWindows = await db.characterWindows
     .where('characterId')
-    .equals(sourceCharacterId)
+    .equals(pagesSourceCharacterId)
     .toArray();
 
   for (const cw of sourceWindows) {
