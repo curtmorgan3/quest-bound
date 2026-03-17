@@ -341,12 +341,28 @@ export class CharacterAccessor implements StructuredCloneSafe {
     return new AttributeProxy(characterAttribute, attribute, this.pendingUpdates);
   }
 
-  Item(name: string): ReturnType<typeof createItemInstanceProxy> | undefined {
+  Item(
+    name: string,
+    referenceLabel?: string,
+  ): ReturnType<typeof createItemInstanceProxy> | undefined {
     const item = Array.from(this.itemsCache.values()).find((i) => i.title === name);
     if (!item) return undefined;
-    const inventoryItem = this.inventoryItems.find(
+    let matching = this.inventoryItems.filter(
       (inv) => inv.entityId === item.id && inv.type === 'item',
     );
+    if (referenceLabel != null && referenceLabel !== '') {
+      if (this.refLabelToComponentId == null) {
+        matching = [];
+      } else {
+        const componentId = this.refLabelToComponentId.get(referenceLabel);
+        if (componentId != null) {
+          matching = matching.filter((inv) => inv.componentId === componentId);
+        } else {
+          matching = [];
+        }
+      }
+    }
+    const inventoryItem = matching[0];
     if (!inventoryItem) return undefined;
     return this.createItemInstanceProxyFor(inventoryItem, item);
   }
@@ -418,12 +434,24 @@ export class CharacterAccessor implements StructuredCloneSafe {
     );
   }
 
-  Items(name: string): ReturnType<typeof createItemInstanceProxy>[] {
+  Items(name: string, referenceLabel?: string): ReturnType<typeof createItemInstanceProxy>[] {
     const item = Array.from(this.itemsCache.values()).find((i) => i.title === name);
     if (!item) return [];
-    const matching = this.inventoryItems.filter(
+    let matching = this.inventoryItems.filter(
       (inv) => inv.entityId === item.id && inv.type === 'item',
     );
+    if (referenceLabel != null && referenceLabel !== '') {
+      if (this.refLabelToComponentId == null) {
+        matching = [];
+      } else {
+        const componentId = this.refLabelToComponentId.get(referenceLabel);
+        if (componentId != null) {
+          matching = matching.filter((inv) => inv.componentId === componentId);
+        } else {
+          matching = [];
+        }
+      }
+    }
     return matching.map((inv) => {
       const getMergedUpdate = (patch: Partial<InventoryItem>) => {
         const existing = this.pendingUpdates.get(`inventoryUpdate:${inv.id}`) as
