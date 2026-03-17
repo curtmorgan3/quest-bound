@@ -56,6 +56,30 @@ function filenameFromUrlForImport(url: string): string {
   return crypto.randomUUID();
 }
 
+/** Chunk size for bulk IndexedDB writes. Smaller = more yields, less lock risk; larger = fewer round-trips. */
+const BULK_CHUNK_SIZE = 1000;
+/** Smaller chunk for large records (assets, fonts, documents with embedded data). */
+const BULK_CHUNK_SIZE_LARGE = 100;
+
+/**
+ * Write many records in chunks to avoid long-running IndexedDB transactions and main-thread blocking.
+ * Yields to the event loop between chunks so the browser stays responsive and the DB connection doesn't lock.
+ * Table type is permissive so Dexie EntityTable (bulkAdd with optional args and PromiseExtended return) is accepted.
+ */
+async function bulkAddInChunks<T>(
+  table: { bulkAdd(items: readonly T[] | T[], ...args: unknown[]): Promise<unknown> },
+  items: T[],
+  chunkSize: number = BULK_CHUNK_SIZE,
+): Promise<void> {
+  for (let i = 0; i < items.length; i += chunkSize) {
+    const chunk = items.slice(i, i + chunkSize);
+    await table.bulkAdd(chunk);
+    if (i + chunkSize < items.length) {
+      await new Promise<void>((r) => setTimeout(r, 0));
+    }
+  }
+}
+
 /** Create a URL asset for import when entity has image (URL) and no assetId. Returns new asset id. */
 async function createUrlAssetForImport(url: string, rulesetId: string | null): Promise<string> {
   const id = crypto.randomUUID();
@@ -887,15 +911,13 @@ export const useImportRuleset = () => {
 
           const validation = validateData(characterAttributes, 'characterAttributes');
           if (validation.isValid) {
-            for (const characterAttribute of characterAttributes) {
-              const newCharacterAttribute: CharacterAttribute = {
-                ...characterAttribute,
-                createdAt: now,
-                updatedAt: now,
-              };
-              await db.characterAttributes.add(newCharacterAttribute);
-              importedCounts.characterAttributes++;
-            }
+            const toAdd: CharacterAttribute[] = characterAttributes.map((ca) => ({
+              ...ca,
+              createdAt: now,
+              updatedAt: now,
+            }));
+            await bulkAddInChunks(db.characterAttributes, toAdd);
+            importedCounts.characterAttributes = toAdd.length;
           } else {
             allErrors.push(...validation.errors);
           }
@@ -935,18 +957,20 @@ export const useImportRuleset = () => {
 
           const validation = validateData(attributes, 'attributes');
           if (validation.isValid) {
+            const toAdd: Attribute[] = [];
             for (const attribute of attributes) {
-              const toAdd = { ...attribute };
-              if (toAdd.image && isUrl(toAdd.image) && !toAdd.assetId) {
-                const id = await getOrCreateUrlAssetId(toAdd.image, newRulesetId, urlToAssetIdMap);
+              const rec = { ...attribute };
+              if (rec.image && isUrl(rec.image) && !rec.assetId) {
+                const id = await getOrCreateUrlAssetId(rec.image, newRulesetId, urlToAssetIdMap);
                 if (id) {
-                  toAdd.assetId = id;
-                  toAdd.image = undefined;
+                  rec.assetId = id;
+                  rec.image = undefined;
                 }
               }
-              await db.attributes.add(toAdd);
-              importedCounts.attributes++;
+              toAdd.push(rec);
             }
+            await bulkAddInChunks(db.attributes, toAdd);
+            importedCounts.attributes = toAdd.length;
           } else {
             allErrors.push(...validation.errors);
           }
@@ -987,18 +1011,20 @@ export const useImportRuleset = () => {
 
           const validation = validateData(actions, 'actions');
           if (validation.isValid) {
+            const toAdd: Action[] = [];
             for (const action of actions) {
-              const toAdd = { ...action };
-              if (toAdd.image && isUrl(toAdd.image) && !toAdd.assetId) {
-                const id = await getOrCreateUrlAssetId(toAdd.image, newRulesetId, urlToAssetIdMap);
+              const rec = { ...action };
+              if (rec.image && isUrl(rec.image) && !rec.assetId) {
+                const id = await getOrCreateUrlAssetId(rec.image, newRulesetId, urlToAssetIdMap);
                 if (id) {
-                  toAdd.assetId = id;
-                  toAdd.image = undefined;
+                  rec.assetId = id;
+                  rec.image = undefined;
                 }
               }
-              await db.actions.add(toAdd);
-              importedCounts.actions++;
+              toAdd.push(rec);
             }
+            await bulkAddInChunks(db.actions, toAdd);
+            importedCounts.actions = toAdd.length;
           } else {
             allErrors.push(...validation.errors);
           }
@@ -1048,18 +1074,20 @@ export const useImportRuleset = () => {
 
           const validation = validateData(items, 'items');
           if (validation.isValid) {
+            const toAdd: Item[] = [];
             for (const item of items) {
-              const toAdd = { ...item };
-              if (toAdd.image && isUrl(toAdd.image) && !toAdd.assetId) {
-                const id = await getOrCreateUrlAssetId(toAdd.image, newRulesetId, urlToAssetIdMap);
+              const rec = { ...item };
+              if (rec.image && isUrl(rec.image) && !rec.assetId) {
+                const id = await getOrCreateUrlAssetId(rec.image, newRulesetId, urlToAssetIdMap);
                 if (id) {
-                  toAdd.assetId = id;
-                  toAdd.image = undefined;
+                  rec.assetId = id;
+                  rec.image = undefined;
                 }
               }
-              await db.items.add(toAdd);
-              importedCounts.items++;
+              toAdd.push(rec);
             }
+            await bulkAddInChunks(db.items, toAdd);
+            importedCounts.items = toAdd.length;
           } else {
             allErrors.push(...validation.errors);
           }
@@ -1114,6 +1142,7 @@ export const useImportRuleset = () => {
 
           const validation = validateData(charts, 'charts');
           if (validation.isValid) {
+            const toAdd: Chart[] = [];
             for (const chart of charts) {
               const newChart: Chart = {
                 ...chart,
@@ -1132,9 +1161,10 @@ export const useImportRuleset = () => {
                   newChart.image = undefined;
                 }
               }
-              await db.charts.add(newChart);
-              importedCounts.charts++;
+              toAdd.push(newChart);
             }
+            await bulkAddInChunks(db.charts, toAdd);
+            importedCounts.charts = toAdd.length;
           } else {
             allErrors.push(...validation.errors);
           }
@@ -1154,16 +1184,14 @@ export const useImportRuleset = () => {
 
           const validation = validateData(customPropertiesToImport, 'customProperties');
           if (validation.isValid) {
-            for (const cp of customPropertiesToImport) {
-              const newCp: CustomProperty = {
-                ...cp,
-                rulesetId: newRulesetId,
-                createdAt: now,
-                updatedAt: now,
-              };
-              await db.customProperties.add(newCp);
-              importedCounts.customProperties++;
-            }
+            const toAdd: CustomProperty[] = customPropertiesToImport.map((cp) => ({
+              ...cp,
+              rulesetId: newRulesetId,
+              createdAt: now,
+              updatedAt: now,
+            }));
+            await bulkAddInChunks(db.customProperties, toAdd);
+            importedCounts.customProperties = toAdd.length;
           } else {
             allErrors.push(...validation.errors);
           }
@@ -1184,15 +1212,13 @@ export const useImportRuleset = () => {
 
           const validation = validateData(itemCustomPropertiesToImport, 'itemCustomProperties');
           if (validation.isValid) {
-            for (const icp of itemCustomPropertiesToImport) {
-              const newIcp: ItemCustomProperty = {
-                ...icp,
-                createdAt: now,
-                updatedAt: now,
-              };
-              await db.itemCustomProperties.add(newIcp);
-              importedCounts.itemCustomProperties++;
-            }
+            const toAdd: ItemCustomProperty[] = itemCustomPropertiesToImport.map((icp) => ({
+              ...icp,
+              createdAt: now,
+              updatedAt: now,
+            }));
+            await bulkAddInChunks(db.itemCustomProperties, toAdd);
+            importedCounts.itemCustomProperties = toAdd.length;
           } else {
             allErrors.push(...validation.errors);
           }
@@ -1214,16 +1240,14 @@ export const useImportRuleset = () => {
 
           const validation = validateData(windows, 'windows');
           if (validation.isValid) {
-            for (const window of windows) {
-              const newWindow: Window = {
-                ...window,
-                rulesetId: newRulesetId,
-                createdAt: now,
-                updatedAt: now,
-              };
-              await db.windows.add(newWindow);
-              importedCounts.windows++;
-            }
+            const toAdd: Window[] = windows.map((w) => ({
+              ...w,
+              rulesetId: newRulesetId,
+              createdAt: now,
+              updatedAt: now,
+            }));
+            await bulkAddInChunks(db.windows, toAdd);
+            importedCounts.windows = toAdd.length;
           } else {
             allErrors.push(...validation.errors);
           }
@@ -1245,15 +1269,13 @@ export const useImportRuleset = () => {
 
           const validation = validateData(components, 'components');
           if (validation.isValid) {
-            for (const component of components) {
-              const newComponent: Component = {
-                ...component,
-                createdAt: now,
-                updatedAt: now,
-              };
-              await db.components.add(newComponent);
-              importedCounts.components++;
-            }
+            const toAdd: Component[] = components.map((c) => ({
+              ...c,
+              createdAt: now,
+              updatedAt: now,
+            }));
+            await bulkAddInChunks(db.components, toAdd);
+            importedCounts.components = toAdd.length;
           } else {
             allErrors.push(...validation.errors);
           }
@@ -1322,16 +1344,14 @@ export const useImportRuleset = () => {
 
           const validation = validateData(assets, 'assets');
           if (validation.isValid) {
-            for (const asset of assets) {
-              const newAsset: Asset = {
-                ...asset,
-                rulesetId: newRulesetId,
-                createdAt: now,
-                updatedAt: now,
-              };
-              await db.assets.add(newAsset);
-              importedCounts.assets++;
-            }
+            const toAdd: Asset[] = assets.map((a) => ({
+              ...a,
+              rulesetId: newRulesetId,
+              createdAt: now,
+              updatedAt: now,
+            }));
+            await bulkAddInChunks(db.assets, toAdd, BULK_CHUNK_SIZE_LARGE);
+            importedCounts.assets = toAdd.length;
           } else {
             allErrors.push(...validation.errors);
           }
@@ -1383,16 +1403,14 @@ export const useImportRuleset = () => {
 
           const validation = validateData(fonts, 'fonts');
           if (validation.isValid) {
-            for (const font of fonts) {
-              const newFont: Font = {
-                ...font,
-                rulesetId: newRulesetId,
-                createdAt: now,
-                updatedAt: now,
-              };
-              await db.fonts.add(newFont);
-              importedCounts.fonts++;
-            }
+            const toAdd: Font[] = fonts.map((f) => ({
+              ...f,
+              rulesetId: newRulesetId,
+              createdAt: now,
+              updatedAt: now,
+            }));
+            await bulkAddInChunks(db.fonts, toAdd, BULK_CHUNK_SIZE_LARGE);
+            importedCounts.fonts = toAdd.length;
           } else {
             allErrors.push(...validation.errors);
           }
@@ -1437,6 +1455,7 @@ export const useImportRuleset = () => {
               }
             }
 
+            const toAdd: Document[] = [];
             for (const document of documents) {
               const newDocument: Document = {
                 ...document,
@@ -1460,9 +1479,10 @@ export const useImportRuleset = () => {
                   newDocument.image = undefined;
                 }
               }
-              await db.documents.add(newDocument);
-              importedCounts.documents++;
+              toAdd.push(newDocument);
             }
+            await bulkAddInChunks(db.documents, toAdd, BULK_CHUNK_SIZE_LARGE);
+            importedCounts.documents = toAdd.length;
           } else {
             allErrors.push(...validation.errors);
           }
@@ -1482,15 +1502,13 @@ export const useImportRuleset = () => {
 
           const validation = validateData(characterInventories, 'inventories');
           if (validation.isValid) {
-            for (const characterInventory of characterInventories) {
-              const newCharacterInventory: Inventory = {
-                ...characterInventory,
-                createdAt: now,
-                updatedAt: now,
-              };
-              await db.inventories.add(newCharacterInventory);
-              importedCounts.inventories++;
-            }
+            const toAdd: Inventory[] = characterInventories.map((inv) => ({
+              ...inv,
+              createdAt: now,
+              updatedAt: now,
+            }));
+            await bulkAddInChunks(db.inventories, toAdd);
+            importedCounts.inventories = toAdd.length;
           } else {
             allErrors.push(...validation.errors);
           }
@@ -1510,15 +1528,13 @@ export const useImportRuleset = () => {
 
           const validation = validateData(characterWindows, 'characterWindows');
           if (validation.isValid) {
-            for (const characterWindow of characterWindows) {
-              const newCharacterWindow: CharacterWindow = {
-                ...characterWindow,
-                createdAt: now,
-                updatedAt: now,
-              };
-              await db.characterWindows.add(newCharacterWindow);
-              importedCounts.characterWindows++;
-            }
+            const toAdd: CharacterWindow[] = characterWindows.map((cw) => ({
+              ...cw,
+              createdAt: now,
+              updatedAt: now,
+            }));
+            await bulkAddInChunks(db.characterWindows, toAdd);
+            importedCounts.characterWindows = toAdd.length;
           } else {
             allErrors.push(...validation.errors);
           }
@@ -1538,15 +1554,13 @@ export const useImportRuleset = () => {
 
           const validation = validateData(pagesToImport, 'pages');
           if (validation.isValid) {
-            for (const page of pagesToImport) {
-              const newPage: Page = {
-                ...page,
-                rulesetId: newRulesetId,
-                createdAt: now,
-                updatedAt: now,
-              };
-              await db.pages.add(newPage);
-            }
+            const toAdd: Page[] = pagesToImport.map((p) => ({
+              ...p,
+              rulesetId: newRulesetId,
+              createdAt: now,
+              updatedAt: now,
+            }));
+            await bulkAddInChunks(db.pages, toAdd);
           } else {
             allErrors.push(...validation.errors);
           }
@@ -1581,12 +1595,12 @@ export const useImportRuleset = () => {
 
           const validation = validateData(rulesetWindowsToImport, 'rulesetWindows');
           if (validation.isValid) {
-            for (const rw of rulesetWindowsToImport) {
+            const toAdd: RulesetWindow[] = rulesetWindowsToImport.map((rw) => {
               const legacyPageId = (rw as { rulesetPageId?: string | null }).rulesetPageId;
               const pageId =
                 rw.pageId ??
                 (legacyPageId != null ? (rulesetPageIdToPageId.get(legacyPageId) ?? null) : null);
-              const newRulesetWindow: RulesetWindow = {
+              return {
                 ...rw,
                 id: crypto.randomUUID(),
                 rulesetId: newRulesetId,
@@ -1595,9 +1609,9 @@ export const useImportRuleset = () => {
                 createdAt: now,
                 updatedAt: now,
               };
-              await db.rulesetWindows.add(newRulesetWindow);
-              importedCounts.rulesetWindows++;
-            }
+            });
+            await bulkAddInChunks(db.rulesetWindows, toAdd);
+            importedCounts.rulesetWindows = toAdd.length;
           } else {
             allErrors.push(...validation.errors);
           }
@@ -1617,16 +1631,14 @@ export const useImportRuleset = () => {
 
           const validation = validateData(characterPagesToImport, 'characterPages');
           if (validation.isValid) {
-            for (const cp of characterPagesToImport) {
-              const newCharacterPage: CharacterPage = {
-                ...cp,
-                rulesetId: newRulesetId,
-                createdAt: now,
-                updatedAt: now,
-              };
-              await db.characterPages.add(newCharacterPage);
-              importedCounts.characterPages++;
-            }
+            const toAdd: CharacterPage[] = characterPagesToImport.map((cp) => ({
+              ...cp,
+              rulesetId: newRulesetId,
+              createdAt: now,
+              updatedAt: now,
+            }));
+            await bulkAddInChunks(db.characterPages, toAdd);
+            importedCounts.characterPages = toAdd.length;
           } else {
             allErrors.push(...validation.errors);
           }
@@ -1646,15 +1658,13 @@ export const useImportRuleset = () => {
 
           const validation = validateData(inventoryItems, 'inventoryItems');
           if (validation.isValid) {
-            for (const inventoryItem of inventoryItems) {
-              const newInventoryItem: InventoryItem = {
-                ...inventoryItem,
-                createdAt: now,
-                updatedAt: now,
-              };
-              await db.inventoryItems.add(newInventoryItem);
-              importedCounts.inventoryItems++;
-            }
+            const toAdd: InventoryItem[] = inventoryItems.map((ii) => ({
+              ...ii,
+              createdAt: now,
+              updatedAt: now,
+            }));
+            await bulkAddInChunks(db.inventoryItems, toAdd);
+            importedCounts.inventoryItems = toAdd.length;
           } else {
             allErrors.push(...validation.errors);
           }
@@ -1676,6 +1686,7 @@ export const useImportRuleset = () => {
 
           const validation = validateData(characters, 'characters');
           if (validation.isValid) {
+            const toAdd: Character[] = [];
             for (const character of characters) {
               const newCharacter: Character = {
                 ...character,
@@ -1694,9 +1705,10 @@ export const useImportRuleset = () => {
                   newCharacter.image = undefined;
                 }
               }
-              await db.characters.add(newCharacter);
-              importedCounts.characters++;
+              toAdd.push(newCharacter);
             }
+            await bulkAddInChunks(db.characters, toAdd);
+            importedCounts.characters = toAdd.length;
           } else {
             allErrors.push(...validation.errors);
           }
@@ -1719,6 +1731,7 @@ export const useImportRuleset = () => {
           const campaignSceneIdMap = new Map<string, string>();
           const seenCampaignIds = new Set<string>();
 
+          const campaignsToAdd: Campaign[] = [];
           for (const campaign of campaignsToImport) {
             if (seenCampaignIds.has(campaign.id)) continue;
             seenCampaignIds.add(campaign.id);
@@ -1742,8 +1755,11 @@ export const useImportRuleset = () => {
                 newCampaign.image = undefined;
               }
             }
-            await db.campaigns.add(newCampaign);
-            importedCounts.campaigns++;
+            campaignsToAdd.push(newCampaign);
+          }
+          if (campaignsToAdd.length > 0) {
+            await bulkAddInChunks(db.campaigns, campaignsToAdd);
+            importedCounts.campaigns = campaignsToAdd.length;
           }
 
           const campaignScenesFile = getZipFile('application data/campaignScenes.json');
@@ -1751,6 +1767,7 @@ export const useImportRuleset = () => {
             const scenesText = await campaignScenesFile.async('text');
             const scenesToImport: CampaignScene[] = JSON.parse(scenesText);
             const seenSceneIds = new Set<string>();
+            const scenesToAdd: CampaignScene[] = [];
             for (const scene of scenesToImport) {
               if (seenSceneIds.has(scene.id)) continue;
               seenSceneIds.add(scene.id);
@@ -1758,14 +1775,17 @@ export const useImportRuleset = () => {
               if (!newCampaignId) continue;
               const newSceneId = crypto.randomUUID();
               campaignSceneIdMap.set(scene.id, newSceneId);
-              await db.campaignScenes.add({
+              scenesToAdd.push({
                 ...scene,
                 id: newSceneId,
                 campaignId: newCampaignId,
                 createdAt: now,
                 updatedAt: now,
               });
-              importedCounts.campaignScenes++;
+            }
+            if (scenesToAdd.length > 0) {
+              await bulkAddInChunks(db.campaignScenes, scenesToAdd);
+              importedCounts.campaignScenes = scenesToAdd.length;
             }
           }
 
@@ -1773,13 +1793,14 @@ export const useImportRuleset = () => {
           if (campaignCharactersFile) {
             const ccText = await campaignCharactersFile.async('text');
             const ccToImport: CampaignCharacter[] = JSON.parse(ccText);
+            const ccToAdd: CampaignCharacter[] = [];
             for (const cc of ccToImport) {
               const newCampaignId = campaignIdMap.get(cc.campaignId);
               if (!newCampaignId) continue;
               const newSceneId = cc.campaignSceneId
                 ? campaignSceneIdMap.get(cc.campaignSceneId)
                 : undefined;
-              await db.campaignCharacters.add({
+              ccToAdd.push({
                 ...cc,
                 id: crypto.randomUUID(),
                 campaignId: newCampaignId,
@@ -1787,7 +1808,10 @@ export const useImportRuleset = () => {
                 createdAt: now,
                 updatedAt: now,
               });
-              importedCounts.campaignCharacters++;
+            }
+            if (ccToAdd.length > 0) {
+              await bulkAddInChunks(db.campaignCharacters, ccToAdd);
+              importedCounts.campaignCharacters = ccToAdd.length;
             }
           }
 
@@ -1795,12 +1819,13 @@ export const useImportRuleset = () => {
           if (campaignEventsFile) {
             const ceText = await campaignEventsFile.async('text');
             const ceToImport: CampaignEvent[] = JSON.parse(ceText);
+            const ceToAdd: CampaignEvent[] = [];
             for (const ev of ceToImport) {
               const newCampaignId = campaignIdMap.get(ev.campaignId);
               if (!newCampaignId) continue;
               const newSceneId = campaignSceneIdMap.get(ev.sceneId);
               if (!newSceneId) continue;
-              await db.campaignEvents.add({
+              ceToAdd.push({
                 ...ev,
                 id: crypto.randomUUID(),
                 campaignId: newCampaignId,
@@ -1808,7 +1833,10 @@ export const useImportRuleset = () => {
                 createdAt: now,
                 updatedAt: now,
               });
-              importedCounts.campaignEvents++;
+            }
+            if (ceToAdd.length > 0) {
+              await bulkAddInChunks(db.campaignEvents, ceToAdd);
+              importedCounts.campaignEvents = ceToAdd.length;
             }
           }
 
@@ -1816,17 +1844,21 @@ export const useImportRuleset = () => {
           if (sceneTurnCallbacksFile) {
             const stcText = await sceneTurnCallbacksFile.async('text');
             const stcToImport: SceneTurnCallback[] = JSON.parse(stcText);
+            const stcToAdd: SceneTurnCallback[] = [];
             for (const stc of stcToImport) {
               const newSceneId = campaignSceneIdMap.get(stc.campaignSceneId);
               if (!newSceneId) continue;
-              await db.sceneTurnCallbacks.add({
+              stcToAdd.push({
                 ...stc,
                 id: crypto.randomUUID(),
                 campaignSceneId: newSceneId,
                 createdAt: now,
                 updatedAt: now,
               });
-              importedCounts.sceneTurnCallbacks++;
+            }
+            if (stcToAdd.length > 0) {
+              await bulkAddInChunks(db.sceneTurnCallbacks, stcToAdd);
+              importedCounts.sceneTurnCallbacks = stcToAdd.length;
             }
           }
         } catch (error) {
@@ -1843,6 +1875,7 @@ export const useImportRuleset = () => {
           const archetypesText = await archetypesFile.async('text');
           const archetypesToImport: Archetype[] = JSON.parse(archetypesText);
 
+          const archetypesToAdd: Archetype[] = [];
           for (const archetype of archetypesToImport) {
             const newArchetype: Archetype = {
               ...archetype,
@@ -1862,8 +1895,11 @@ export const useImportRuleset = () => {
                 newArchetype.image = undefined;
               }
             }
-            await db.archetypes.add(newArchetype);
-            importedCounts.archetypes++;
+            archetypesToAdd.push(newArchetype);
+          }
+          if (archetypesToAdd.length > 0) {
+            await bulkAddInChunks(db.archetypes, archetypesToAdd);
+            importedCounts.archetypes = archetypesToAdd.length;
           }
         } catch (error) {
           allErrors.push(
@@ -1888,15 +1924,15 @@ export const useImportRuleset = () => {
             'archetypeCustomProperties',
           );
           if (validation.isValid) {
-            for (const acp of archetypeCustomPropertiesToImport) {
-              const newAcp: ArchetypeCustomProperty = {
+            const toAdd: ArchetypeCustomProperty[] = archetypeCustomPropertiesToImport.map(
+              (acp) => ({
                 ...acp,
                 createdAt: now,
                 updatedAt: now,
-              };
-              await db.archetypeCustomProperties.add(newAcp);
-              importedCounts.archetypeCustomProperties++;
-            }
+              }),
+            );
+            await bulkAddInChunks(db.archetypeCustomProperties, toAdd);
+            importedCounts.archetypeCustomProperties = toAdd.length;
           } else {
             allErrors.push(...validation.errors);
           }
