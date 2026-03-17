@@ -35,6 +35,16 @@ export function BaseEditor({
   const longPressTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const touchPositionRef = useRef<{ x: number; y: number } | null>(null);
 
+  const isMac =
+    typeof navigator !== 'undefined' &&
+    /Mac|macOS|iPhone|iPad|iPod/.test(
+      // navigator.platform is deprecated but still widely supported; userAgentData isn't universal yet
+      (navigator as Navigator & { userAgentData?: { platform?: string } }).userAgentData
+        ?.platform ?? navigator.platform,
+    );
+
+  const selectionKeyCode = isMac ? 'Meta' : 'Control';
+
   const clearLongPress = () => {
     if (longPressTimeoutRef.current != null) {
       clearTimeout(longPressTimeoutRef.current);
@@ -53,6 +63,11 @@ export function BaseEditor({
       className='flex-grow-1'
       style={{ position: 'relative' }}
       onContextMenu={(e) => {
+        // Avoid opening any context menu (native or custom) when using selection modifier keys
+        if (e.ctrlKey || e.metaKey) {
+          e.preventDefault();
+          return false;
+        }
         if (!renderContextMenu) return;
         e.preventDefault();
         setContextMenu({
@@ -111,7 +126,7 @@ export function BaseEditor({
         snapGrid={[20, 20]}
         snapToGrid={useGrid}
         multiSelectionKeyCode={'Shift'}
-        selectionKeyCode={'Meta'}
+        selectionKeyCode={selectionKeyCode}
         fitView={false}
         panOnDrag={false}
         panOnScroll={false}
