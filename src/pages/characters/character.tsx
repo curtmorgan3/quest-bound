@@ -19,7 +19,6 @@ import {
   InventoryDragProvider,
   type InventoryPanelConfig,
 } from '@/stores';
-import { useScriptModifiedAttributesStore } from '@/stores/script-modified-attributes-store';
 import { type CharacterAttribute } from '@/types';
 import { useContext, useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
@@ -77,10 +76,6 @@ export const CharacterPage = ({
   const characterInventoryPanel = useContext(CharacterInventoryPanelContext);
   const characterArchetypesPanel = useContext(CharacterArchetypesPanelContext);
 
-  const scriptModifiedGeneration = useScriptModifiedAttributesStore(
-    (state) => state.generation,
-  );
-
   console.log('render');
 
   const { rollDice } = useContext(DiceContext);
@@ -116,34 +111,6 @@ export const CharacterPage = ({
   const { characterAttributes, updateCharacterAttribute, syncWithRuleset } = useCharacterAttributes(
     character?.id,
   );
-
-  // #region agent log
-  if (character) {
-    fetch('http://127.0.0.1:7643/ingest/30479a74-e9e6-4d16-925f-426162eb5707', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Debug-Session-Id': '7ab3ae',
-      },
-      body: JSON.stringify({
-        sessionId: '7ab3ae',
-        runId: 'initial',
-        hypothesisId: 'H10',
-        location: 'character.tsx:CharacterPage',
-        message: 'CharacterPage render snapshot',
-        data: {
-          characterId: character.id,
-          updatedAt: character.updatedAt,
-          lastSyncedAt: (character as any).lastSyncedAt,
-          sheetLocked: character.sheetLocked,
-          attributeCount: characterAttributes.length,
-          scriptModifiedGeneration,
-        },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-  }
-  // #endregion agent log
 
   // On character open, sync only attributes created or updated since the last sync.
   useEffect(() => {

@@ -7,7 +7,15 @@
 
 import type { DB } from '@/stores/db/hooks/types';
 import { dbSchemaVersion, latestDbSchema } from '@/stores/db/schema';
-import type { PromptFn, PromptInputFn, PromptMultipleFn, RollFn, RollSplitFn, SelectCharacterFn, SelectCharactersFn } from '@/types';
+import type {
+  PromptFn,
+  PromptInputFn,
+  PromptMultipleFn,
+  RollFn,
+  RollSplitFn,
+  SelectCharacterFn,
+  SelectCharactersFn,
+} from '@/types';
 import Dexie from 'dexie';
 import { Lexer } from '../interpreter/lexer';
 import { Parser } from '../interpreter/parser';
@@ -270,7 +278,6 @@ function sendSignal(signal: WorkerToMainSignal): void {
  * Handle incoming signals from the main thread
  */
 async function handleSignal(signal: MainToWorkerSignal): Promise<void> {
-  const signalStartTime = performance.now();
   try {
     switch (signal.type) {
       case 'EXECUTE_SCRIPT':
@@ -365,29 +372,6 @@ async function handleSignal(signal: MainToWorkerSignal): Promise<void> {
         stackTrace: error instanceof Error ? error.stack : undefined,
       },
     });
-  } finally {
-    const signalDurationMs = performance.now() - signalStartTime;
-    // #region agent log
-    fetch('http://127.0.0.1:7643/ingest/30479a74-e9e6-4d16-925f-426162eb5707', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Debug-Session-Id': '7ab3ae',
-      },
-      body: JSON.stringify({
-        sessionId: '7ab3ae',
-        runId: 'initial',
-        hypothesisId: 'H1',
-        location: 'qbscript-worker.ts:handleSignal',
-        message: 'Worker handleSignal duration',
-        data: {
-          type: (signal as any)?.type,
-          durationMs: signalDurationMs,
-        },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-    // #endregion agent log
   }
 }
 
@@ -579,33 +563,6 @@ async function runReactiveChainForModifiedAttributes(
     }
   }
 
-  const elapsedMs = Date.now() - chainStartTime;
-
-  // #region agent log
-  fetch('http://127.0.0.1:7643/ingest/30479a74-e9e6-4d16-925f-426162eb5707', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Debug-Session-Id': '7ab3ae',
-    },
-    body: JSON.stringify({
-      sessionId: '7ab3ae',
-      runId: 'initial',
-      hypothesisId: 'H2',
-      location: 'qbscript-worker.ts:runReactiveChainForModifiedAttributes',
-      message: 'Reactive chain summary',
-      data: {
-        initialCount: initialAttributeIds.length,
-        processedCount: processed.size,
-        executionCount,
-        truncated,
-        elapsedMs,
-      },
-      timestamp: Date.now(),
-    }),
-  }).catch(() => {});
-  // #endregion agent log
-
   return {
     allModifiedIds: Array.from(allModifiedIds),
     scriptsExecuted,
@@ -741,29 +698,6 @@ async function handleExecuteScript(payload: ExecuteScriptPayload): Promise<void>
     const result = await runner.run(payload.sourceCode);
 
     const executionTime = performance.now() - startTime;
-
-    // #region agent log
-    fetch('http://127.0.0.1:7643/ingest/30479a74-e9e6-4d16-925f-426162eb5707', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Debug-Session-Id': '7ab3ae',
-      },
-      body: JSON.stringify({
-        sessionId: '7ab3ae',
-        runId: 'initial',
-        hypothesisId: 'H3',
-        location: 'qbscript-worker.ts:handleExecuteScript',
-        message: 'Script execution timing',
-        data: {
-          scriptId: payload.scriptId,
-          triggerType: payload.triggerType,
-          executionTimeMs: executionTime,
-        },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-    // #endregion agent log
 
     const contextLabel = payload.triggerType ?? 'load';
     await persistScriptLogs(db, {
@@ -1044,31 +978,6 @@ async function handleAttributeChanged(payload: AttributeChangedPayload): Promise
       payload.rulesetId,
       reactiveOptions,
     );
-
-    // #region agent log
-    fetch('http://127.0.0.1:7643/ingest/30479a74-e9e6-4d16-925f-426162eb5707', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Debug-Session-Id': '7ab3ae',
-      },
-      body: JSON.stringify({
-        sessionId: '7ab3ae',
-        runId: 'initial',
-        hypothesisId: 'H4',
-        location: 'qbscript-worker.ts:handleAttributeChanged',
-        message: 'AttributeChanged reactive chain result',
-        data: {
-          attributeId: payload.attributeId,
-          totalModified: chainResult.allModifiedIds.length,
-          scriptsExecuted: chainResult.scriptsExecuted.length,
-          executionCount: chainResult.executionCount,
-          hasError: !!chainResult.lastError,
-        },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-    // #endregion agent log
 
     if (!chainResult.lastError) {
       if (chainResult.allModifiedIds.length > 0) {

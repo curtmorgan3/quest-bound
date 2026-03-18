@@ -24,29 +24,6 @@ export const useScriptModifiedAttributesStore = create<ScriptModifiedAttributesS
 
     addModified(characterId: string, attributeIds: string[]) {
       if (attributeIds.length === 0) return;
-
-      // #region agent log
-      fetch('http://127.0.0.1:7643/ingest/30479a74-e9e6-4d16-925f-426162eb5707', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Debug-Session-Id': '7ab3ae',
-        },
-        body: JSON.stringify({
-          sessionId: '7ab3ae',
-          runId: 'initial',
-          hypothesisId: 'H9',
-          location: 'script-modified-attributes-store.ts:addModified',
-          message: 'Script-modified attributes added',
-          data: {
-            characterId,
-            addedCount: attributeIds.length,
-          },
-          timestamp: Date.now(),
-        }),
-      }).catch(() => {});
-      // #endregion agent log
-
       set((state) => {
         const next = new Set(state.modifiedKeys);
         attributeIds.forEach((attrId) => next.add(key(characterId, attrId)));

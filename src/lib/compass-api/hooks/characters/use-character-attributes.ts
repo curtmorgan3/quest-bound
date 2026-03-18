@@ -19,30 +19,6 @@ export const useCharacterAttributes = (characterId?: string) => {
     [character],
   );
 
-  // #region agent log
-  if (character?.id) {
-    fetch('http://127.0.0.1:7643/ingest/30479a74-e9e6-4d16-925f-426162eb5707', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Debug-Session-Id': '7ab3ae',
-      },
-      body: JSON.stringify({
-        sessionId: '7ab3ae',
-        runId: 'initial',
-        hypothesisId: 'H8',
-        location: 'use-character-attributes.ts:useCharacterAttributes',
-        message: 'Character attributes hook snapshot',
-        data: {
-          characterId: character.id,
-          attributeCount: characterAttributes?.length ?? 0,
-        },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-  }
-  // #endregion agent log
-
   const createCharacterAttribute = async (
     data: Omit<CharacterAttribute, 'id' | 'createdAt' | 'updatedAt'>,
   ) => {
