@@ -126,6 +126,8 @@ export type Character = BaseDetails & {
   componentStyleOverrides?: Record<string, Record<string, unknown>>;
   /** ISO timestamp of the last time this character was synced with its ruleset attributes. */
   lastSyncedAt?: string | null;
+  /** Optional variant (e.g. first archetype variant); persisted for cloud sync on the character row. */
+  variant?: string | null;
 };
 
 export type CharacterAttribute = Attribute & {

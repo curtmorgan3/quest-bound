@@ -6,7 +6,7 @@ import { colorWhite } from '@/palette';
 import { defaultKeymap, history, historyKeymap, indentWithTab } from '@codemirror/commands';
 import { indentUnit } from '@codemirror/language';
 import { Compartment, EditorState } from '@codemirror/state';
-import { EditorView, keymap } from '@codemirror/view';
+import { EditorView, keymap, lineNumbers } from '@codemirror/view';
 import { useEffect, useRef } from 'react';
 import { qbscriptAutocomplete } from './qbscript-autocomplete';
 import { qbscript } from './qbscript-language';
@@ -60,7 +60,14 @@ export function CodeMirrorEditor({
         '&': { height: '100%' },
         '.cm-scroller': { overflow: 'auto', minHeight: '100%' },
         '.cm-content': { caretColor },
+        '.cm-gutters': {
+          backgroundColor: '#282c34',
+          borderRight: '1px solid #3e4451',
+          color: '#636d83',
+        },
+        '.cm-activeLineGutter': { backgroundColor: '#2c313a' },
       }),
+      lineNumbers(),
       (readOnlyCompartmentRef.current = new Compartment()).of([
         EditorView.editable.of(!readOnlyRef.current),
         EditorState.readOnly.of(readOnlyRef.current),

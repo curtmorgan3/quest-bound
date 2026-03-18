@@ -335,6 +335,7 @@ CREATE TABLE public.characters (
   custom_properties JSONB,
   component_style_overrides JSONB,
   last_synced_at TIMESTAMPTZ,
+  variant    TEXT,
   PRIMARY KEY (user_id, id)
 );
 SELECT apply_rls_policies('characters');
