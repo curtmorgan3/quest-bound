@@ -76,8 +76,6 @@ export const CharacterPage = ({
   const characterInventoryPanel = useContext(CharacterInventoryPanelContext);
   const characterArchetypesPanel = useContext(CharacterArchetypesPanelContext);
 
-  console.log('render');
-
   const { rollDice } = useContext(DiceContext);
   const roll = async (diceString: string, rerollMessage?: string) =>
     rollDice(diceString, { rerollMessage }).then((res) => res.total);
