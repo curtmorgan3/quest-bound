@@ -3,205 +3,231 @@ import { getQBScriptClient } from '@/lib/compass-logic/worker';
 import { db } from '@/stores';
 import type { CharacterAttribute } from '@/types';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { useCharacter } from './use-character';
+import { useCallback, useMemo, useRef } from 'react';
+
+const EMPTY_CHARACTER_ATTRIBUTES: CharacterAttribute[] = [];
+
+/**
+ * Stable empty result when no characterId — avoids new [] each render during loading.
+ */
+function emptyAttributesOr(
+  rows: CharacterAttribute[] | undefined,
+): CharacterAttribute[] {
+  return rows ?? EMPTY_CHARACTER_ATTRIBUTES;
+}
 
 export const useCharacterAttributes = (characterId?: string) => {
-  const { character } = useCharacter(characterId);
   const { handleError } = useErrorHandler();
   const { addNotification } = useNotifications();
 
+  const handleErrorRef = useRef(handleError);
+  const addNotificationRef = useRef(addNotification);
+  handleErrorRef.current = handleError;
+  addNotificationRef.current = addNotification;
+
   const characterAttributes = useLiveQuery(
     () =>
-      db.characterAttributes
-        .where('characterId')
-        .equals(character?.id ?? 0)
-        .toArray(),
-    [character],
+      characterId
+        ? db.characterAttributes.where('characterId').equals(characterId).toArray()
+        : Promise.resolve(EMPTY_CHARACTER_ATTRIBUTES),
+    [characterId],
   );
 
-  const createCharacterAttribute = async (
-    data: Omit<CharacterAttribute, 'id' | 'createdAt' | 'updatedAt'>,
-  ) => {
-    if (!character) return;
-    const now = new Date().toISOString();
-    try {
-      await db.characterAttributes.add({
-        ...data,
-        id: crypto.randomUUID(),
-        characterId: character.id,
-        createdAt: now,
-        updatedAt: now,
-      } as CharacterAttribute);
-    } catch (e) {
-      handleError(e as Error, {
-        component: 'useCharacterAttributes/createCharacterAttribute',
-        severity: 'medium',
-      });
-    }
-  };
-
-  const updateCharacterAttribute = async (id: string, data: Partial<CharacterAttribute>) => {
-    const now = new Date().toISOString();
-
-    const newMin = data.min;
-    const newMax = data.max;
-    const newDefaultValue = data.defaultValue;
-
-    // Ensure min is not greater than max
-    if (newMin !== undefined && newMax !== undefined && newMin > newMax) {
-      console.warn('Min cannot be greater than Max. Adjusting Max to match Min.');
-      data.max = newMin;
-    }
-
-    // Ensure defaultValue is within the new min and max bounds
-    if (newDefaultValue !== undefined) {
-      if (newMin !== undefined && typeof newDefaultValue === 'number' && newDefaultValue < newMin) {
-        console.warn('Default value is less than Min. Adjusting Default value to match Min.');
-        data.defaultValue = newMin;
-      } else if (
-        newMax !== undefined &&
-        typeof newDefaultValue === 'number' &&
-        newDefaultValue > newMax
-      ) {
-        console.warn('Default value is greater than Max. Adjusting Default value to match Max.');
-        data.max = newDefaultValue;
+  const createCharacterAttribute = useCallback(
+    async (data: Omit<CharacterAttribute, 'id' | 'createdAt' | 'updatedAt'>) => {
+      if (!characterId) return;
+      const character = await db.characters.get(characterId);
+      if (!character) return;
+      const now = new Date().toISOString();
+      try {
+        await db.characterAttributes.add({
+          ...data,
+          id: crypto.randomUUID(),
+          characterId: character.id,
+          createdAt: now,
+          updatedAt: now,
+        } as CharacterAttribute);
+      } catch (e) {
+        handleErrorRef.current(e as Error, {
+          component: 'useCharacterAttributes/createCharacterAttribute',
+          severity: 'medium',
+        });
       }
-    }
+    },
+    [characterId],
+  );
 
-    try {
-      await db.characterAttributes.update(id, {
-        ...data,
-        updatedAt: now,
-      });
-    } catch (e) {
-      handleError(e as Error, {
-        component: 'useCharacterAttributes/updateCharacterAttribute',
-        severity: 'medium',
-      });
-    }
-  };
+  const updateCharacterAttribute = useCallback(
+    async (id: string, data: Partial<CharacterAttribute>) => {
+      const now = new Date().toISOString();
 
-  const deleteCharacterAttribute = async (id: string) => {
+      const newMin = data.min;
+      const newMax = data.max;
+      const newDefaultValue = data.defaultValue;
+
+      if (newMin !== undefined && newMax !== undefined && newMin > newMax) {
+        console.warn('Min cannot be greater than Max. Adjusting Max to match Min.');
+        data.max = newMin;
+      }
+
+      if (newDefaultValue !== undefined) {
+        if (newMin !== undefined && typeof newDefaultValue === 'number' && newDefaultValue < newMin) {
+          console.warn('Default value is less than Min. Adjusting Default value to match Min.');
+          data.defaultValue = newMin;
+        } else if (
+          newMax !== undefined &&
+          typeof newDefaultValue === 'number' &&
+          newDefaultValue > newMax
+        ) {
+          console.warn('Default value is greater than Max. Adjusting Default value to match Max.');
+          data.max = newDefaultValue;
+        }
+      }
+
+      try {
+        await db.characterAttributes.update(id, {
+          ...data,
+          updatedAt: now,
+        });
+      } catch (e) {
+        handleErrorRef.current(e as Error, {
+          component: 'useCharacterAttributes/updateCharacterAttribute',
+          severity: 'medium',
+        });
+      }
+    },
+    [],
+  );
+
+  const deleteCharacterAttribute = useCallback(async (id: string) => {
     try {
       await db.characterAttributes.delete(id);
     } catch (e) {
-      handleError(e as Error, {
+      handleErrorRef.current(e as Error, {
         component: 'useCharacterAttributes/deleteCharacterAttribute',
         severity: 'medium',
       });
     }
-  };
+  }, []);
 
-  const syncWithRuleset = async (options?: { ignoreLastSyncedAt?: boolean }): Promise<number> => {
-    if (!character?.rulesetId) return 0;
+  const syncWithRuleset = useCallback(
+    async (options?: { ignoreLastSyncedAt?: boolean }): Promise<number> => {
+      if (!characterId) return 0;
+      const character = await db.characters.get(characterId);
+      if (!character?.rulesetId) return 0;
 
-    try {
-      const lastSyncedAt = options?.ignoreLastSyncedAt ? null : (character.lastSyncedAt ?? null);
+      try {
+        const lastSyncedAt = options?.ignoreLastSyncedAt ? null : (character.lastSyncedAt ?? null);
 
-      // When a lastSyncedAt timestamp exists, only fetch attributes created or updated since then.
-      // On first sync (or when ignoreLastSyncedAt is true), fetch all attributes for the ruleset.
-      const rulesetAttributes = lastSyncedAt
-        ? await db.attributes
-            .where({ rulesetId: character.rulesetId })
-            .filter((attr) => attr.updatedAt > lastSyncedAt || attr.createdAt > lastSyncedAt)
-            .toArray()
-        : await db.attributes.where({ rulesetId: character.rulesetId }).toArray();
+        const rulesetAttributes = lastSyncedAt
+          ? await db.attributes
+              .where({ rulesetId: character.rulesetId })
+              .filter((attr) => attr.updatedAt > lastSyncedAt || attr.createdAt > lastSyncedAt)
+              .toArray()
+          : await db.attributes.where({ rulesetId: character.rulesetId }).toArray();
 
-      const existingCharacterAttributes = await db.characterAttributes
-        .where('characterId')
-        .equals(character.id)
-        .toArray();
-      const existingByAttributeId = new Map(
-        existingCharacterAttributes.map((ca) => [ca.attributeId, ca]),
-      );
+        const existingCharacterAttributes = await db.characterAttributes
+          .where('characterId')
+          .equals(character.id)
+          .toArray();
+        const existingByAttributeId = new Map(
+          existingCharacterAttributes.map((ca) => [ca.attributeId, ca]),
+        );
 
-      const now = new Date().toISOString();
-      const toAdd: CharacterAttribute[] = [];
-      const toUpdate: { id: string; data: Partial<CharacterAttribute> }[] = [];
+        const now = new Date().toISOString();
+        const toAdd: CharacterAttribute[] = [];
+        const toUpdate: { id: string; data: Partial<CharacterAttribute> }[] = [];
 
-      for (const attr of rulesetAttributes) {
-        const existing = existingByAttributeId.get(attr.id);
+        for (const attr of rulesetAttributes) {
+          const existing = existingByAttributeId.get(attr.id);
 
-        if (!existing) {
-          toAdd.push({
-            ...attr,
-            id: crypto.randomUUID(),
-            characterId: character.id,
-            attributeId: attr.id,
-            value: attr.defaultValue,
-            createdAt: now,
-            updatedAt: now,
-          } as CharacterAttribute);
-        } else {
-          // Does not sync value, only updates definition from Ruleset
-          toUpdate.push({
-            id: existing.id,
-            data: {
-              title: attr.title,
-              defaultValue: attr.defaultValue,
-              type: attr.type,
-              description: attr.description,
-              min: attr.min,
-              max: attr.max,
-              options: attr.options,
-              optionsChartRef: attr.optionsChartRef,
-              optionsChartColumnHeader: attr.optionsChartColumnHeader,
-              category: attr.category,
-              allowMultiSelect: attr.allowMultiSelect,
-              scriptId: attr.scriptId,
+          if (!existing) {
+            toAdd.push({
+              ...attr,
+              id: crypto.randomUUID(),
+              characterId: character.id,
+              attributeId: attr.id,
+              value: attr.defaultValue,
+              createdAt: now,
               updatedAt: now,
-            },
-          });
+            } as CharacterAttribute);
+          } else {
+            toUpdate.push({
+              id: existing.id,
+              data: {
+                title: attr.title,
+                defaultValue: attr.defaultValue,
+                type: attr.type,
+                description: attr.description,
+                min: attr.min,
+                max: attr.max,
+                options: attr.options,
+                optionsChartRef: attr.optionsChartRef,
+                optionsChartColumnHeader: attr.optionsChartColumnHeader,
+                category: attr.category,
+                allowMultiSelect: attr.allowMultiSelect,
+                scriptId: attr.scriptId,
+                updatedAt: now,
+              },
+            });
+          }
         }
-      }
 
-      if (toAdd.length > 0) {
-        await db.characterAttributes.bulkAdd(toAdd);
-      }
-
-      for (const { id, data } of toUpdate) {
-        await db.characterAttributes.update(id, data);
-      }
-
-      const count = toAdd.length + toUpdate.length;
-
-      // After syncing, run attribute scripts once in dependency order so derived values are correct.
-      if (count > 0) {
-        try {
-          const client = getQBScriptClient();
-          await client.runInitialAttributeSync(character.id, character.rulesetId);
-        } catch (error) {
-          const err = error as Error & { scriptName?: string };
-          const scriptInfo = err.scriptName ? ` [script: ${err.scriptName}.qbs]` : '';
-          console.warn(
-            'Reactive script execution during syncWithRuleset failed' + scriptInfo + ':',
-            error,
-          );
-          addNotification(`Failure in script ${err.scriptName}.qbs | ${error}`, {
-            type: 'error',
-          });
+        if (toAdd.length > 0) {
+          await db.characterAttributes.bulkAdd(toAdd);
         }
+
+        for (const { id, data } of toUpdate) {
+          await db.characterAttributes.update(id, data);
+        }
+
+        const count = toAdd.length + toUpdate.length;
+
+        if (count > 0) {
+          try {
+            const client = getQBScriptClient();
+            await client.runInitialAttributeSync(character.id, character.rulesetId);
+          } catch (error) {
+            const err = error as Error & { scriptName?: string };
+            const scriptInfo = err.scriptName ? ` [script: ${err.scriptName}.qbs]` : '';
+            console.warn(
+              'Reactive script execution during syncWithRuleset failed' + scriptInfo + ':',
+              error,
+            );
+            addNotificationRef.current(`Failure in script ${err.scriptName}.qbs | ${error}`, {
+              type: 'error',
+            });
+          }
+        }
+
+        await db.characters.update(character.id, { lastSyncedAt: now });
+
+        return count;
+      } catch (e) {
+        handleErrorRef.current(e as Error, {
+          component: 'useCharacterAttributes/syncWithRuleset',
+          severity: 'medium',
+        });
+        return 0;
       }
+    },
+    [characterId],
+  );
 
-      // Record the sync timestamp regardless of whether there were changes,
-      // so future syncs only check for attributes modified after this point.
-      await db.characters.update(character.id, { lastSyncedAt: now });
-
-      return count;
-    } catch (e) {
-      handleError(e as Error, {
-        component: 'useCharacterAttributes/syncWithRuleset',
-        severity: 'medium',
-      });
-      return 0;
-    }
-  };
-
-  return {
-    characterAttributes: characterAttributes ?? [],
-    createCharacterAttribute,
-    updateCharacterAttribute,
-    deleteCharacterAttribute,
-    syncWithRuleset,
-  };
+  return useMemo(
+    () => ({
+      characterAttributes: emptyAttributesOr(characterAttributes),
+      createCharacterAttribute,
+      updateCharacterAttribute,
+      deleteCharacterAttribute,
+      syncWithRuleset,
+    }),
+    [
+      characterAttributes,
+      createCharacterAttribute,
+      updateCharacterAttribute,
+      deleteCharacterAttribute,
+      syncWithRuleset,
+    ],
+  );
 };
