@@ -3,6 +3,7 @@ import type {
   ArrayAccess,
   ArrayLiteral,
   Assignment,
+  MemberAssignment,
   AtEndOfNextTurnCall,
   AtStartOfNextTurnCall,
   AtStartOfTurnCall,
@@ -72,6 +73,14 @@ export function astToSource(
     case 'Assignment': {
       const a = node as Assignment;
       return `${prefix}${a.name} = ${exprToSource(a.value)}`;
+    }
+    case 'MemberAssignment': {
+      const m = node as MemberAssignment;
+      const lhs = exprToSource(m.target);
+      if (m.compoundOperator) {
+        return `${prefix}${lhs} ${m.compoundOperator}= ${exprToSource(m.value)}`;
+      }
+      return `${prefix}${lhs} = ${exprToSource(m.value)}`;
     }
     case 'FunctionCall': {
       const fc = node as FunctionCall;

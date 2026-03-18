@@ -200,6 +200,32 @@ y`);
     it('should throw error on undefined variable', async () => {
       await expect(evaluate('undefined_var')).rejects.toThrow('Undefined variable');
     });
+
+    it('should assign to object property', async () => {
+      const result = await evaluate(`test = {key: 'value'}
+test.key = 'new_value'
+test.key`);
+      expect(result).toBe('new_value');
+    });
+
+    it('should assign to nested object property', async () => {
+      const result = await evaluate(`o = {a: {b: 1}}
+o.a.b = 7
+o.a.b`);
+      expect(result).toBe(7);
+    });
+
+    it('should support compound assignment on member', async () => {
+      const result = await evaluate(`x = {n: 10}
+x.n += 5
+x.n`);
+      expect(result).toBe(15);
+    });
+
+    it('should throw when setting property on non-object', async () => {
+      await expect(evaluate(`x = 42
+x.y = 1`)).rejects.toThrow('Cannot set property on non-object');
+    });
   });
 
   describe('Arrays', async () => {

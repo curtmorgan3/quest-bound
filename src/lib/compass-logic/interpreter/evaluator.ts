@@ -1,7 +1,7 @@
 import type { PromptFn, PromptInputFn, PromptMultipleFn, RollFn, RollSplitFn, SelectCharacterFn, SelectCharactersFn } from '@/types';
 import { parseDiceExpression, rollDie } from '@/utils/dice-utils';
 import { prepareForStructuredClone } from '../runtime/structured-clone-safe';
-import type { ASTNode, ObjectLiteral } from './ast';
+import type { ASTNode, BinaryOp, MemberAssignment, ObjectLiteral } from './ast';
 import { blockStatementsToSource } from './ast-to-source';
 import { isBuiltInArrayMethod, registerArrayMethod } from './built-ins';
 
@@ -150,6 +150,9 @@ export class Evaluator {
       case 'Assignment':
         return this.evalAssignment(node);
 
+      case 'MemberAssignment':
+        return this.evalMemberAssignment(node as MemberAssignment);
+
       case 'FunctionCall':
         return this.evalFunctionCall(node);
 
@@ -227,8 +230,11 @@ export class Evaluator {
   private async evalBinaryOp(node: any): Promise<any> {
     const left = await this.eval(node.left);
     const right = await this.eval(node.right);
+    return this.applyBinaryOperator(node.operator, left, right);
+  }
 
-    switch (node.operator) {
+  private applyBinaryOperator(operator: BinaryOp['operator'], left: any, right: any): any {
+    switch (operator) {
       case '+':
         return left + right;
       case '-':
@@ -264,7 +270,7 @@ export class Evaluator {
       case '||':
         return this.isTruthy(left) || this.isTruthy(right);
       default:
-        throw new RuntimeError(`Unknown binary operator: ${node.operator}`);
+        throw new RuntimeError(`Unknown binary operator: ${operator}`);
     }
   }
 
@@ -296,6 +302,29 @@ export class Evaluator {
     }
 
     return value;
+  }
+
+  private async evalMemberAssignment(node: MemberAssignment): Promise<any> {
+    const { target: ma, compoundOperator } = node;
+    const parent = await this.eval(ma.object);
+    if (parent === null || parent === undefined) {
+      throw new RuntimeError('Cannot set property on null or undefined');
+    }
+    if (typeof parent !== 'object' && typeof parent !== 'function') {
+      throw new RuntimeError('Cannot set property on non-object');
+    }
+    const key = ma.property;
+    const obj = parent as Record<string, unknown>;
+    let newVal: unknown;
+    if (compoundOperator) {
+      const oldVal = obj[key];
+      const rhs = await this.eval(node.value);
+      newVal = this.applyBinaryOperator(compoundOperator, oldVal, rhs);
+    } else {
+      newVal = await this.eval(node.value);
+    }
+    obj[key] = newVal;
+    return newVal;
   }
 
   private async evalFunctionCall(node: any): Promise<any> {

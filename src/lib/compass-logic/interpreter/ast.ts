@@ -8,6 +8,7 @@ export type ASTNode =
   | BinaryOp
   | UnaryOp
   | Assignment
+  | MemberAssignment
   | FunctionCall
   | MethodCall
   | FunctionDef
@@ -79,6 +80,15 @@ export interface Assignment {
   type: 'Assignment';
   name: string;
   value: ASTNode;
+}
+
+/** Assignment to a property, e.g. `obj.prop = v` or `a.b.c += 1`. */
+export interface MemberAssignment {
+  type: 'MemberAssignment';
+  target: MemberAccess;
+  value: ASTNode;
+  /** If set, new value is `old <op> rhs` (e.g. `+=`). */
+  compoundOperator?: BinaryOp['operator'];
 }
 
 export interface FunctionCall {

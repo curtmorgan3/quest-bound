@@ -22,6 +22,7 @@ import type {
   ArrayLiteral,
   ArrayAccess,
   MemberAccess,
+  MemberAssignment,
   MethodCall,
 } from '@/lib/compass-logic/interpreter/ast';
 
@@ -238,6 +239,29 @@ describe('Parser', () => {
       const stmt = ast.statements[0] as Assignment;
       expect(stmt.name).toBe('y');
       expect((stmt.value as Identifier).name).toBe('x');
+    });
+
+    it('should parse member assignment', () => {
+      const ast = parse("test.key = 'new_value'");
+      const stmt = ast.statements[0] as MemberAssignment;
+      expect(stmt.type).toBe('MemberAssignment');
+      expect(stmt.target.object.type).toBe('Identifier');
+      expect((stmt.target.object as Identifier).name).toBe('test');
+      expect(stmt.target.property).toBe('key');
+      expect((stmt.value as StringLiteral).value).toBe('new_value');
+    });
+
+    it('should parse nested member assignment', () => {
+      const ast = parse('a.b.c = 1');
+      const stmt = ast.statements[0] as MemberAssignment;
+      expect(stmt.target.property).toBe('c');
+      expect((stmt.target.object as MemberAccess).property).toBe('b');
+    });
+
+    it('should parse member compound assignment', () => {
+      const ast = parse('x.n += 2');
+      const stmt = ast.statements[0] as MemberAssignment;
+      expect(stmt.compoundOperator).toBe('+');
     });
   });
 

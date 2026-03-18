@@ -16,6 +16,7 @@ import type {
   AtStartOfTurnCall,
   AtEndOfTurnCall,
   Assignment,
+  MemberAssignment,
   BinaryOp,
   UnaryOp,
   FunctionCall,
@@ -388,58 +389,98 @@ export class Parser {
         TokenType.MODULO_ASSIGN,
       )
     ) {
-      if (expr.type !== 'Identifier') {
-        throw this.error('Invalid assignment target');
-      }
-
-      const target = expr as Identifier;
       const operatorToken = this.previous();
       const right = this.expression();
 
-      // Simple assignment: x = expr
-      if (operatorToken.type === TokenType.ASSIGN) {
+      if (expr.type === 'Identifier') {
+        const target = expr as Identifier;
+
+        // Simple assignment: x = expr
+        if (operatorToken.type === TokenType.ASSIGN) {
+          return {
+            type: 'Assignment',
+            name: target.name,
+            value: right,
+          } as Assignment;
+        }
+
+        // Compound assignment: x += expr, x -= expr, etc.
+        let binaryOperator: BinaryOp['operator'];
+        switch (operatorToken.type) {
+          case TokenType.PLUS_ASSIGN:
+            binaryOperator = '+';
+            break;
+          case TokenType.MINUS_ASSIGN:
+            binaryOperator = '-';
+            break;
+          case TokenType.MULTIPLY_ASSIGN:
+            binaryOperator = '*';
+            break;
+          case TokenType.DIVIDE_ASSIGN:
+            binaryOperator = '/';
+            break;
+          case TokenType.MODULO_ASSIGN:
+            binaryOperator = '%';
+            break;
+          default:
+            throw this.error('Unsupported assignment operator');
+        }
+
+        const value: BinaryOp = {
+          type: 'BinaryOp',
+          operator: binaryOperator,
+          left: { type: 'Identifier', name: target.name } as Identifier,
+          right,
+        };
+
         return {
           type: 'Assignment',
           name: target.name,
-          value: right,
+          value,
         } as Assignment;
       }
 
-      // Compound assignment: x += expr, x -= expr, etc.
-      // Desugar to: x = x <op> expr
-      let binaryOperator: string;
-      switch (operatorToken.type) {
-        case TokenType.PLUS_ASSIGN:
-          binaryOperator = '+';
-          break;
-        case TokenType.MINUS_ASSIGN:
-          binaryOperator = '-';
-          break;
-        case TokenType.MULTIPLY_ASSIGN:
-          binaryOperator = '*';
-          break;
-        case TokenType.DIVIDE_ASSIGN:
-          binaryOperator = '/';
-          break;
-        case TokenType.MODULO_ASSIGN:
-          binaryOperator = '%';
-          break;
-        default:
-          throw this.error('Unsupported assignment operator');
+      if (expr.type === 'MemberAccess') {
+        const targetMa = expr as MemberAccess;
+
+        if (operatorToken.type === TokenType.ASSIGN) {
+          return {
+            type: 'MemberAssignment',
+            target: targetMa,
+            value: right,
+          } as MemberAssignment;
+        }
+
+        let compoundOperator: BinaryOp['operator'];
+        switch (operatorToken.type) {
+          case TokenType.PLUS_ASSIGN:
+            compoundOperator = '+';
+            break;
+          case TokenType.MINUS_ASSIGN:
+            compoundOperator = '-';
+            break;
+          case TokenType.MULTIPLY_ASSIGN:
+            compoundOperator = '*';
+            break;
+          case TokenType.DIVIDE_ASSIGN:
+            compoundOperator = '/';
+            break;
+          case TokenType.MODULO_ASSIGN:
+            compoundOperator = '%';
+            break;
+          default:
+            throw this.error('Unsupported assignment operator');
+        }
+
+        return {
+          type: 'MemberAssignment',
+          target: targetMa,
+          value: right,
+          compoundOperator,
+        } as MemberAssignment;
       }
 
-      const value: BinaryOp = {
-        type: 'BinaryOp',
-        operator: binaryOperator as BinaryOp['operator'],
-        left: { type: 'Identifier', name: target.name } as Identifier,
-        right,
-      };
-
-      return {
-        type: 'Assignment',
-        name: target.name,
-        value,
-      } as Assignment;
+      throw this.error('Invalid assignment target');
     }
 
     return expr;
