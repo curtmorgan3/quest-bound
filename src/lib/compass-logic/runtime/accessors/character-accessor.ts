@@ -328,7 +328,9 @@ export class CharacterAccessor implements StructuredCloneSafe {
   }
 
   Attribute(name: string): AttributeProxy | null {
-    const attribute = Array.from(this.attributesCache.values()).find((attr) => attr.title === name);
+    const attribute = Array.from(this.attributesCache.values()).find(
+      (attr) => attr.title.trim() === name.trim(),
+    );
     if (!attribute) {
       return null;
     }
@@ -345,7 +347,7 @@ export class CharacterAccessor implements StructuredCloneSafe {
     name: string,
     referenceLabel?: string,
   ): ReturnType<typeof createItemInstanceProxy> | undefined {
-    const item = Array.from(this.itemsCache.values()).find((i) => i.title === name);
+    const item = Array.from(this.itemsCache.values()).find((i) => i.title.trim() === name.trim());
     if (!item) return undefined;
     let matching = this.inventoryItems.filter(
       (inv) => inv.entityId === item.id && inv.type === 'item',
@@ -435,7 +437,7 @@ export class CharacterAccessor implements StructuredCloneSafe {
   }
 
   Items(name: string, referenceLabel?: string): ReturnType<typeof createItemInstanceProxy>[] {
-    const item = Array.from(this.itemsCache.values()).find((i) => i.title === name);
+    const item = Array.from(this.itemsCache.values()).find((i) => i.title.trim() === name.trim());
     if (!item) return [];
     let matching = this.inventoryItems.filter(
       (inv) => inv.entityId === item.id && inv.type === 'item',
@@ -518,7 +520,7 @@ export class CharacterAccessor implements StructuredCloneSafe {
     if (quantity < 1) {
       throw new Error('addItem quantity must be at least 1');
     }
-    const item = Array.from(this.itemsCache.values()).find((i) => i.title === name);
+    const item = Array.from(this.itemsCache.values()).find((i) => i.title.trim() === name.trim());
     if (!item) {
       throw new Error(`Item '${name}' not found`);
     }
@@ -554,7 +556,9 @@ export class CharacterAccessor implements StructuredCloneSafe {
    * Example: Owner.addAction('Attack', 'my-inventory')
    */
   addAction(name: string, referenceLabel?: string): void {
-    const action = Array.from(this.actionsCache.values()).find((a) => a.title === name);
+    const action = Array.from(this.actionsCache.values()).find(
+      (a) => a.title.trim() === name.trim(),
+    );
     if (!action) {
       throw new Error(`Action '${name}' not found`);
     }
@@ -589,7 +593,9 @@ export class CharacterAccessor implements StructuredCloneSafe {
    * Example: Owner.addAttribute('Health', 'my-inventory')
    */
   addAttribute(name: string, referenceLabel?: string): void {
-    const attribute = Array.from(this.attributesCache.values()).find((attr) => attr.title === name);
+    const attribute = Array.from(this.attributesCache.values()).find(
+      (attr) => attr.title.trim() === name.trim(),
+    );
     if (!attribute) {
       throw new Error(`Attribute '${name}' not found`);
     }
@@ -619,7 +625,7 @@ export class CharacterAccessor implements StructuredCloneSafe {
   }
 
   setItem(name: string, quantity: number = 0): void {
-    const item = Array.from(this.itemsCache.values()).find((i) => i.title === name);
+    const item = Array.from(this.itemsCache.values()).find((i) => i.title.trim() === name.trim());
     if (!item) {
       throw new Error(`Item '${name}' not found`);
     }
@@ -650,7 +656,7 @@ export class CharacterAccessor implements StructuredCloneSafe {
    */
   removeItem(name: string, quantity: number = 1, referenceLabel?: string): void {
     if (quantity < 1) return;
-    const item = Array.from(this.itemsCache.values()).find((i) => i.title === name);
+    const item = Array.from(this.itemsCache.values()).find((i) => i.title.trim() === name.trim());
     if (!item) {
       throw new Error(`Item '${name}' not found`);
     }
