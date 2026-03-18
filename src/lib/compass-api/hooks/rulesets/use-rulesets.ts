@@ -4,7 +4,6 @@ import {
   deleteAssetIfUnreferenced,
   useApiLoadingStore,
   useArchetypeStore,
-  useCrossTabDbVersion,
   useCurrentUser,
 } from '@/stores';
 import type { Archetype, Character, Inventory, Ruleset } from '@/types';
@@ -17,11 +16,7 @@ export const useRulesets = () => {
   const { currentUser } = useCurrentUser();
 
   const [loading, setLoading] = useState(false);
-  const crossTabDbVersion = useCrossTabDbVersion();
-  const _rulesets = useLiveQuery(
-    () => db.rulesets.toArray(),
-    [crossTabDbVersion],
-  );
+  const _rulesets = useLiveQuery(() => db.rulesets.toArray(), []);
   // Local users: all rulesets in DB belong to the active user. Synced users: scoped by cloud (handled in sync layer).
   const rulesets = _rulesets ?? [];
 

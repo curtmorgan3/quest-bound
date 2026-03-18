@@ -37,8 +37,6 @@ import type {
 import Dexie, { type EntityTable } from 'dexie';
 import { assetInjectorMiddleware } from './asset-injector-middleware';
 import { chartOptionsMiddleware } from './chart-options-middleware';
-import { initCrossTabDb } from './cross-tab-db';
-import { crossTabNotifyMiddleware } from './cross-tab-notify-middleware';
 import { registerDbHooks } from './hooks/db-hooks';
 import { memoizedAssets } from './memoization-cache';
 import { registerVersions } from './migrations/run-migrations';
@@ -106,10 +104,7 @@ db.on('ready', async () => {
 db.use(assetInjectorMiddleware);
 db.use(chartOptionsMiddleware);
 db.use(createRulesetCascadeDeleteMiddleware(() => db));
-db.use(crossTabNotifyMiddleware);
 registerDbHooks(db);
-
-initCrossTabDb();
 
 // When another tab (or a future open) upgrades/deletes the DB, close and reload so we don't
 // hold a connection indefinitely and get a fresh schema. Avoids stuck state that only

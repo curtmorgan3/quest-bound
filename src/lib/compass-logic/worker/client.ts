@@ -142,6 +142,7 @@ export class QBScriptClient {
    * Handle signals from the worker
    */
   private handleWorkerSignal(signal: WorkerToMainSignal): void {
+    const startTime = performance.now();
     // Notify subscribers first (e.g. Console panel)
     this.signalHandlers.forEach((handler) => {
       try {
@@ -227,6 +228,29 @@ export class QBScriptClient {
       default:
         console.warn('Unknown signal type:', (signal as any).type);
     }
+
+    const durationMs = performance.now() - startTime;
+    // #region agent log
+    fetch('http://127.0.0.1:7643/ingest/30479a74-e9e6-4d16-925f-426162eb5707', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Debug-Session-Id': '7ab3ae',
+      },
+      body: JSON.stringify({
+        sessionId: '7ab3ae',
+        runId: 'initial',
+        hypothesisId: 'H5',
+        location: 'worker/client.ts:handleWorkerSignal',
+        message: 'Main-thread handleWorkerSignal duration',
+        data: {
+          type: (signal as any)?.type,
+          durationMs,
+        },
+        timestamp: Date.now(),
+      }),
+    }).catch(() => {});
+    // #endregion agent log
   }
 
   private handleAttributesModifiedByScript(payload: {
@@ -238,6 +262,28 @@ export class QBScriptClient {
         .getState()
         .addModified(payload.characterId, payload.attributeIds);
     }
+
+    // #region agent log
+    fetch('http://127.0.0.1:7643/ingest/30479a74-e9e6-4d16-925f-426162eb5707', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Debug-Session-Id': '7ab3ae',
+      },
+      body: JSON.stringify({
+        sessionId: '7ab3ae',
+        runId: 'initial',
+        hypothesisId: 'H6',
+        location: 'worker/client.ts:handleAttributesModifiedByScript',
+        message: 'Attributes modified by script on main thread',
+        data: {
+          characterId: payload.characterId,
+          attributeCount: payload.attributeIds.length,
+        },
+        timestamp: Date.now(),
+      }),
+    }).catch(() => {});
+    // #endregion agent log
   }
 
   private async handleRollRequest(payload: {
@@ -445,6 +491,30 @@ export class QBScriptClient {
       this.pendingRollHandlers.delete(payload.requestId);
       this.pendingRollSplitHandlers.delete(payload.requestId);
     }
+
+    // #region agent log
+    fetch('http://127.0.0.1:7643/ingest/30479a74-e9e6-4d16-925f-426162eb5707', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Debug-Session-Id': '7ab3ae',
+      },
+      body: JSON.stringify({
+        sessionId: '7ab3ae',
+        runId: 'initial',
+        hypothesisId: 'H7',
+        location: 'worker/client.ts:handleScriptResult',
+        message: 'ScriptResult processing summary on main thread',
+        data: {
+          requestId: payload.requestId,
+          modifiedAttributeCount: payload.modifiedAttributeIds?.length ?? 0,
+          componentAnimationCount: payload.componentAnimations?.length ?? 0,
+          executionTimeMs: payload.executionTime,
+        },
+        timestamp: Date.now(),
+      }),
+    }).catch(() => {});
+    // #endregion agent log
   }
 
   private handleScriptError(payload: ScriptErrorPayload): void {
