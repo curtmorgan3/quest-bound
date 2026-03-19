@@ -129,6 +129,8 @@ const ViewContentNodeComponent = ({
         defaultValue={data.value?.toString()}
         onBlur={handleBlur}
         onKeyDown={handleKeyDown}
+        onWheelCapture={(e) => e.stopPropagation()}
+        className="nowheel nodrag"
         style={{
           ...css,
           background: 'transparent',
@@ -151,6 +153,7 @@ const ViewContentNodeComponent = ({
         setIsEditing(true);
         handleDoubleClick?.();
       }}
+      onWheelCapture={(e) => e.stopPropagation()}
       style={{
         position: 'relative',
         height: component.height,
@@ -166,12 +169,14 @@ const ViewContentNodeComponent = ({
         overflow: 'auto',
       }}>
       <div
+        onWheelCapture={(e) => e.stopPropagation()}
         style={{
           ...css,
           width: '100%',
           height: '100%',
+          overflow: 'auto',
         }}
-        className="prose prose-invert max-w-none editor-content md-content">
+        className="nowheel nodrag prose prose-invert max-w-none editor-content md-content">
         <MarkdownViewer value={data?.interpolatedValue?.toString() ?? ''} />
       </div>
     </section>
