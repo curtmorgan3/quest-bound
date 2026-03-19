@@ -1,17 +1,8 @@
 import { cn } from '@/lib/utils';
 import { useState } from 'react';
-import Markdown, { defaultUrlTransform } from 'react-markdown';
 import { Button } from '../ui/button';
 import { Textarea } from '../ui/textarea';
-
-function urlTransform(url: string): string {
-  const trimmed = url.trim();
-  const lower = trimmed.toLowerCase();
-  if (lower.startsWith('data:') || lower.startsWith('blob:')) {
-    return trimmed;
-  }
-  return defaultUrlTransform(url);
-}
+import { MarkdownViewer } from './markdown-viewer';
 
 interface MarkdownPanelProps {
   value: string;
@@ -37,7 +28,7 @@ export function MarkdownPanel({
       <div className={cn('flex flex-1 flex-col gap-2 p-2 md-content', className)}>
         <div className='min-h-0 flex-1 overflow-y-auto px-3 py-3 text-base md:text-sm'>
           {value ? (
-            <Markdown urlTransform={urlTransform}>{value}</Markdown>
+            <MarkdownViewer value={value} />
           ) : (
             <span className='text-muted-foreground'>{placeholder || 'Nothing to preview.'}</span>
           )}
@@ -59,7 +50,7 @@ export function MarkdownPanel({
       {previewing ? (
         <div className='min-h-0 flex-1 overflow-y-auto px-3 py-3 text-base md:text-sm'>
           {value ? (
-            <Markdown urlTransform={urlTransform}>{value}</Markdown>
+            <MarkdownViewer value={value} />
           ) : (
             <span className='text-muted-foreground'>{placeholder || 'Nothing to preview.'}</span>
           )}

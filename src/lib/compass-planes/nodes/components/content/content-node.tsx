@@ -9,7 +9,7 @@ import { CharacterContext, WindowEditorContext } from '@/stores';
 import type { Component, ContentComponentData, TextComponentStyle } from '@/types';
 import { useNodeId } from '@xyflow/react';
 import { memo, useContext, useEffect, useRef, useState } from 'react';
-import Markdown from 'react-markdown';
+import { MarkdownViewer } from '@/components/composites';
 import { ResizableNode } from '../../decorators';
 
 export const EditContentNode = () => {
@@ -172,7 +172,7 @@ const ViewContentNodeComponent = ({
           height: '100%',
         }}
         className="prose prose-invert max-w-none editor-content md-content">
-        <Markdown>{data?.interpolatedValue?.toString() ?? ''}</Markdown>
+        <MarkdownViewer value={data?.interpolatedValue?.toString() ?? ''} />
       </div>
     </section>
   );

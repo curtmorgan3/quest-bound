@@ -1,6 +1,19 @@
 import { persistScriptLogs } from '@/lib/compass-logic/script-logs';
 import type { DB } from '@/stores/db/hooks/types';
-import type { Attribute, Chart, Item, RollFn, SceneTurnCallback, ScriptError } from '@/types';
+import type {
+  Attribute,
+  Chart,
+  Item,
+  PromptFn,
+  PromptInputFn,
+  PromptMultipleFn,
+  RollFn,
+  RollSplitFn,
+  SceneTurnCallback,
+  SelectCharacterFn,
+  SelectCharactersFn,
+  ScriptError,
+} from '@/types';
 import { Evaluator } from '../interpreter/evaluator';
 import { Lexer } from '../interpreter/lexer';
 import { Parser } from '../interpreter/parser';
@@ -33,6 +46,12 @@ export async function executeTurnCallback(
   getCharacterAccessorById: (characterId: string) => Promise<AnyCharacterAccessor | null>,
   rulesetId: string,
   roll?: RollFn,
+  rollSplit?: RollSplitFn,
+  prompt?: PromptFn,
+  promptMultiple?: PromptMultipleFn,
+  promptInput?: PromptInputFn,
+  selectCharacter?: SelectCharacterFn,
+  selectCharacters?: SelectCharactersFn,
   campaignId?: string | null,
 ): Promise<TurnCallbackResult> {
   let evaluator: Evaluator | null = null;
@@ -52,9 +71,38 @@ export async function executeTurnCallback(
 
     const owner = callback.ownerId ? await getCharacterAccessorById(callback.ownerId) : null;
 
-    evaluator = new Evaluator({ roll });
+    const selectCharacterHost = selectCharacter
+      ? async (title?: string, description?: string): Promise<any | null> => {
+          const rawId = await selectCharacter(title, description);
+          if (!rawId) return null;
+          return getCharacterAccessorById(String(rawId));
+        }
+      : undefined;
+
+    const selectCharactersHost = selectCharacters
+      ? async (title?: string, description?: string): Promise<any[]> => {
+          const rawIds = await selectCharacters(title, description);
+          const results: AnyCharacterAccessor[] = [];
+          for (const rawId of rawIds ?? []) {
+            const accessor = await getCharacterAccessorById(String(rawId));
+            if (accessor) results.push(accessor);
+          }
+          return results;
+        }
+      : undefined;
+
+    evaluator = new Evaluator({
+      roll,
+      rollSplit,
+      prompt,
+      promptMultiple,
+      promptInput,
+      selectCharacter: selectCharacterHost,
+      selectCharacters: selectCharactersHost,
+    });
     evaluator.globalEnv.define('Scene', sceneAccessor);
     evaluator.globalEnv.define('Ruleset', ruleset);
+    evaluator.globalEnv.define('__scriptId', callback.scriptId);
     if (owner) {
       evaluator.globalEnv.define('Owner', owner);
     }

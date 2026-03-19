@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import Markdown from 'react-markdown';
 import { Button } from '../ui/button';
 import { Label } from '../ui/label';
 import {
@@ -8,6 +7,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from '../ui/sheet';
+import { MarkdownViewer } from './markdown-viewer';
 import { MarkdownPanel } from './markdown-panel';
 
 interface DescriptionEditorProps {
@@ -78,7 +78,7 @@ export const DescriptionViewer = ({
       onClick={onClick}
       className={` md-content min-h-24 max-h-[200px] w-full overflow-y-auto bg-transparent px-3 py-2 text-base shadow-xs md:text-sm ${className ?? ''}`}>
       {value ? (
-        <Markdown>{value}</Markdown>
+        <MarkdownViewer value={value} />
       ) : (
         <span className='text-muted-foreground'>{placeholder || 'No description.'}</span>
       )}

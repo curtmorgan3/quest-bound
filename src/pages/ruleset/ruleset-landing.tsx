@@ -1,9 +1,8 @@
 import { Card } from '@/components';
-import { PageWrapper } from '@/components/composites';
+import { MarkdownViewer, PageWrapper } from '@/components/composites';
 import { LogoIcon } from '@/components/ui/logo-icon';
 import { useActiveRuleset } from '@/lib/compass-api';
 import { Map, Users } from 'lucide-react';
-import Markdown from 'react-markdown';
 import { Link } from 'react-router-dom';
 
 export function RulesetLanding() {
@@ -63,7 +62,7 @@ export function RulesetLanding() {
               </span>
               {description ? (
                 <div className='md-content text-muted-foreground'>
-                  <Markdown>{description}</Markdown>
+                  <MarkdownViewer value={description} />
                 </div>
               ) : (
                 <p className='text-sm text-muted-foreground'>No description set.</p>

@@ -25,6 +25,8 @@ import type {
   Window,
 } from '@/types';
 import { buildItemCustomProperties } from '@/utils/custom-property-utils';
+import { useCharacterSelectModalStore } from '@/stores/character-select-modal-store';
+import { usePromptModalStore } from '@/stores/prompt-modal-store';
 import { Evaluator } from '../interpreter/evaluator';
 import { Lexer } from '../interpreter/lexer';
 import { Parser } from '../interpreter/parser';
@@ -1106,6 +1108,12 @@ export class ScriptRunner {
         (id: string) => this.getCharacterAccessorById(id),
         this.context.rulesetId,
         this.context.roll,
+        this.context.rollSplit,
+        this.context.prompt,
+        this.context.promptMultiple,
+        this.context.promptInput,
+        this.context.selectCharacter,
+        this.context.selectCharacters,
         this.context.campaignId ?? null,
       );
       this.evaluator.addAnnounceMessages(result.announceMessages);
@@ -1378,6 +1386,46 @@ export async function runSceneAdvanceFromUI(
     'db' | 'rulesetId' | 'campaignId' | 'campaignSceneId' | 'roll'
   >,
 ): Promise<void> {
-  const runner = new ScriptRunner(context as ScriptExecutionContext);
+  // Provide main-thread implementations so turn callbacks can use prompt()/selectCharacter()/etc.
+  const prompt: PromptFn = (msg: string, choices: string[]) =>
+    usePromptModalStore.getState().show(msg, choices);
+
+  const promptMultiple: PromptMultipleFn = (msg: string, choices: string[]) =>
+    usePromptModalStore.getState().showMultiple(msg, choices);
+
+  const promptInput: PromptInputFn = (msg: string) => usePromptModalStore.getState().showInput(msg);
+
+  const selectCharacter: SelectCharacterFn = async (title?: string, description?: string) => {
+    const { characterIds } = await useCharacterSelectModalStore.getState().show({
+      mode: 'single',
+      title,
+      description,
+      rulesetId: context.rulesetId,
+      campaignId: context.campaignId,
+    });
+
+    return characterIds[0] ?? null;
+  };
+
+  const selectCharacters: SelectCharactersFn = async (title?: string, description?: string) => {
+    const { characterIds } = await useCharacterSelectModalStore.getState().show({
+      mode: 'multi',
+      title,
+      description,
+      rulesetId: context.rulesetId,
+      campaignId: context.campaignId,
+    });
+
+    return characterIds;
+  };
+
+  const runner = new ScriptRunner({
+    ...(context as ScriptExecutionContext),
+    prompt,
+    promptMultiple,
+    promptInput,
+    selectCharacter,
+    selectCharacters,
+  });
   await runner.runAdvanceTurnOrder();
 }

@@ -1,19 +1,9 @@
 import { cn } from '@/lib/utils';
 import { useState } from 'react';
-import Markdown, { defaultUrlTransform } from 'react-markdown';
 import { Label } from '../ui/label';
 import { Textarea } from '../ui/textarea';
 import { ToggleGroup, ToggleGroupItem } from '../ui/toggle-group';
-
-/** Allow data: and blob: URLs (e.g. embedded images) in addition to default safe protocols. */
-function urlTransform(url: string): string {
-  const trimmed = url.trim();
-  const lower = trimmed.toLowerCase();
-  if (lower.startsWith('data:') || lower.startsWith('blob:')) {
-    return trimmed;
-  }
-  return defaultUrlTransform(url);
-}
+import { MarkdownViewer } from './markdown-viewer';
 
 export type DocumentMarkdownMode = 'view' | 'edit';
 
@@ -51,7 +41,7 @@ export function DocumentMarkdownContent({
         {title && <h2 className='text-sm font-medium text-muted-foreground'>{title}</h2>}
         <div className='min-h-[120px] w-full flex-1 overflow-y-auto px-3 py-3 text-base md:text-sm'>
           {value ? (
-            <Markdown urlTransform={urlTransform}>{value}</Markdown>
+            <MarkdownViewer value={value} />
           ) : (
             <span className='text-muted-foreground'>{placeholder}</span>
           )}
@@ -97,7 +87,7 @@ export function DocumentMarkdownContent({
         ) : (
           <div className='min-h-[600px] w-full flex-1 overflow-y-auto px-3 py-3 text-base md:text-sm'>
             {value ? (
-              <Markdown urlTransform={urlTransform}>{value}</Markdown>
+              <MarkdownViewer value={value} />
             ) : (
               <span className='text-muted-foreground'>{placeholder}</span>
             )}

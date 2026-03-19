@@ -7,6 +7,7 @@ export * from './grid';
 export * from './image-upload';
 export * from './import-ruleset-overwrite-modals';
 export * from './loading';
+export * from './markdown-viewer';
 export * from './markdown-panel';
 export * from './number-input';
 export * from './page-wrapper';

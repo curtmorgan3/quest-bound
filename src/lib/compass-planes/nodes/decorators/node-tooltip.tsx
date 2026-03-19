@@ -1,8 +1,8 @@
 import { useAttributes } from '@/lib/compass-api';
 import { cn } from '@/lib/utils';
 import type { Component, ComponentData } from '@/types';
+import { MarkdownViewer } from '@/components/composites';
 import { useRef, useState, type CSSProperties, type ReactNode } from 'react';
-import Markdown from 'react-markdown';
 import { createPortal } from 'react-dom';
 import { getComponentData } from '../../utils/node-conversion';
 
@@ -77,7 +77,7 @@ export const NodeTooltip = ({
             className={cn(
               'pointer-events-none w-max max-w-xs rounded-md border border-border bg-popover px-3 py-2 text-xs text-popover-foreground shadow-md md-content',
             )}>
-            <Markdown>{tooltipContent}</Markdown>
+            <MarkdownViewer value={tooltipContent} />
           </div>,
           document.body,
         )}
