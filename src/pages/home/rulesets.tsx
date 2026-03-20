@@ -123,8 +123,8 @@ export const Rulesets = () => {
     fileInputRef.current?.click();
   };
 
-  const navigateToRulesetWithReload = (rulesetId: string) => {
-    window.location.replace(`/rulesets/${rulesetId}`);
+  const navigateToLandingWithReload = (rulesetId: string) => {
+    window.location.replace(`/#/landing/${rulesetId}`);
   };
 
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -156,7 +156,7 @@ export const Rulesets = () => {
           if (fileInputRef.current) {
             fileInputRef.current.value = '';
           }
-          navigateToRulesetWithReload(result.importedRuleset.id);
+          navigateToLandingWithReload(result.importedRuleset.id);
           return;
         }
         setImportResult(result);
@@ -176,7 +176,7 @@ export const Rulesets = () => {
     try {
       const result = await importRuleset(pendingReplaceFile, { replaceIfNewer: true });
       if (result.success && result.importedRuleset?.id) {
-        navigateToRulesetWithReload(result.importedRuleset.id);
+        navigateToLandingWithReload(result.importedRuleset.id);
         return;
       }
       setImportResult(result);
@@ -205,7 +205,7 @@ export const Rulesets = () => {
         duplicateVersion: duplicateVersion || pendingDuplicateResult?.importedRuleset?.version,
       });
       if (result.success && result.importedRuleset?.id) {
-        navigateToRulesetWithReload(result.importedRuleset.id);
+        navigateToLandingWithReload(result.importedRuleset.id);
         return;
       }
       setImportResult(result);
