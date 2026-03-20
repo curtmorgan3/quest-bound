@@ -123,6 +123,10 @@ export const Rulesets = () => {
     fileInputRef.current?.click();
   };
 
+  const navigateToRulesetWithReload = (rulesetId: string) => {
+    window.location.replace(`/rulesets/${rulesetId}`);
+  };
+
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -148,6 +152,13 @@ export const Rulesets = () => {
         setDuplicateVersion(result.importedRuleset?.version || '');
         setDuplicateConfirmOpen(true);
       } else {
+        if (result.success && result.importedRuleset?.id) {
+          if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+          }
+          navigateToRulesetWithReload(result.importedRuleset.id);
+          return;
+        }
         setImportResult(result);
       }
 
@@ -164,6 +175,10 @@ export const Rulesets = () => {
     setReplaceConfirmOpen(false);
     try {
       const result = await importRuleset(pendingReplaceFile, { replaceIfNewer: true });
+      if (result.success && result.importedRuleset?.id) {
+        navigateToRulesetWithReload(result.importedRuleset.id);
+        return;
+      }
       setImportResult(result);
     } finally {
       setPendingReplaceFile(null);
@@ -189,6 +204,10 @@ export const Rulesets = () => {
         duplicateTitle: duplicateTitle || pendingDuplicateResult?.importedRuleset?.title,
         duplicateVersion: duplicateVersion || pendingDuplicateResult?.importedRuleset?.version,
       });
+      if (result.success && result.importedRuleset?.id) {
+        navigateToRulesetWithReload(result.importedRuleset.id);
+        return;
+      }
       setImportResult(result);
     } finally {
       setPendingDuplicateFile(null);
