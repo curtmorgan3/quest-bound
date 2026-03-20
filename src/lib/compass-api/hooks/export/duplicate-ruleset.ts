@@ -19,6 +19,7 @@ import type {
   Item,
   ItemCustomProperty,
   Page,
+  Ruleset,
   Window,
   Script,
   RulesetWindow,
@@ -756,6 +757,33 @@ export async function duplicateRuleset({
       await db.characterArchetypes.where('archetypeId').equals(a.id).delete();
       await db.archetypes.delete(a.id);
     }
+  }
+
+  // 15. Point the target ruleset row at cloned assets (cover + landing CTAs). Assets were remapped to new ids above;
+  // createRuleset / import metadata still referenced source ids, so the new ruleset would otherwise miss CTA images.
+  const sourceRulesetRow = await db.rulesets.get(sourceRulesetId);
+  const targetRulesetRow = await db.rulesets.get(targetRulesetId);
+  if (sourceRulesetRow && targetRulesetRow) {
+    const mapAssetRef = (id: string | null | undefined): string | null =>
+      id ? (assetIdMap.get(id) ?? id) : null;
+
+    const stripped = { ...(targetRulesetRow as Record<string, unknown>) };
+    delete stripped.charactersCtaImage;
+    delete stripped.campaignsCtaImage;
+    delete stripped.image;
+
+    await db.rulesets.put({
+      ...(stripped as Ruleset),
+      assetId: mapAssetRef(sourceRulesetRow.assetId),
+      charactersCtaAssetId: mapAssetRef(sourceRulesetRow.charactersCtaAssetId),
+      campaignsCtaAssetId: mapAssetRef(sourceRulesetRow.campaignsCtaAssetId),
+      characterCtaTitle: sourceRulesetRow.characterCtaTitle ?? null,
+      characterCtaDescription: sourceRulesetRow.characterCtaDescription ?? null,
+      campaignsCtaTitle: sourceRulesetRow.campaignsCtaTitle ?? null,
+      campaignCtaDescription: sourceRulesetRow.campaignCtaDescription ?? null,
+      palette: Array.isArray(sourceRulesetRow.palette) ? sourceRulesetRow.palette : [],
+      updatedAt: new Date().toISOString(),
+    });
   }
 
   return counts;

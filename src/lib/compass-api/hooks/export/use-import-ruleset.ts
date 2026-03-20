@@ -219,6 +219,104 @@ interface ImportedMetadata {
   scripts?: ScriptMetadata[];
 }
 
+/** Injected at read time by asset middleware; must not be persisted on the ruleset row. */
+function stripInjectedRulesetReadFields(r: Ruleset): Ruleset {
+  const o = { ...(r as Record<string, unknown>) };
+  delete o.charactersCtaImage;
+  delete o.campaignsCtaImage;
+  delete o.image;
+  return o as Ruleset;
+}
+
+/**
+ * Landing-page CTA fields from metadata.json `ruleset` (case-insensitive keys; trims asset ids).
+ * Export may duplicate keys or use injected `*CtaImage` blobs on the same object — we only read id/title fields.
+ */
+function landingCtaFromImportedMetadata(
+  rs: ImportedMetadata['ruleset'] | Record<string, unknown> | undefined | null,
+): Pick<
+  Ruleset,
+  | 'charactersCtaAssetId'
+  | 'campaignsCtaAssetId'
+  | 'characterCtaTitle'
+  | 'characterCtaDescription'
+  | 'campaignsCtaTitle'
+  | 'campaignCtaDescription'
+> {
+  const empty = {
+    charactersCtaAssetId: null as string | null,
+    campaignsCtaAssetId: null as string | null,
+    characterCtaTitle: null as string | null,
+    characterCtaDescription: null as string | null,
+    campaignsCtaTitle: null as string | null,
+    campaignCtaDescription: null as string | null,
+  };
+  if (!rs || typeof rs !== 'object') return empty;
+
+  const o = rs as Record<string, unknown>;
+
+  const pick = (canonical: string): unknown => {
+    if (canonical in o) return o[canonical];
+    const lower = canonical.toLowerCase();
+    for (const k of Object.keys(o)) {
+      if (k.toLowerCase() === lower) return o[k];
+    }
+    return undefined;
+  };
+
+  const assetId = (v: unknown): string | null => {
+    if (v === undefined || v === null) return null;
+    if (typeof v === 'string') {
+      const t = v.trim();
+      return t !== '' ? t : null;
+    }
+    return null;
+  };
+
+  const text = (v: unknown): string | null => {
+    if (v === undefined || v === null) return null;
+    if (typeof v === 'string') return v;
+    return null;
+  };
+
+  return {
+    charactersCtaAssetId:
+      assetId(pick('charactersCtaAssetId')) ??
+      assetId(pick('characterCtaAssetId')) ??
+      assetId(pick('characters_cta_asset_id')),
+    campaignsCtaAssetId:
+      assetId(pick('campaignsCtaAssetId')) ??
+      assetId(pick('campaignCtaAssetId')) ??
+      assetId(pick('campaigns_cta_asset_id')),
+    characterCtaTitle: text(pick('characterCtaTitle')),
+    characterCtaDescription: text(pick('characterCtaDescription')),
+    campaignsCtaTitle: text(pick('campaignsCtaTitle')),
+    campaignCtaDescription: text(pick('campaignCtaDescription')),
+  };
+}
+
+/**
+ * Merge landing CTA ids + copy from zip metadata onto the ruleset row.
+ * Uses put(get+merge) instead of update(): Dexie update/modify skips keys when old === new and can no-op if no row matched.
+ */
+async function persistRulesetLandingCtaFromMetadata(
+  rulesetId: string,
+  rulesetMeta: ImportedMetadata['ruleset'],
+): Promise<void> {
+  const row = await db.rulesets.get(rulesetId);
+  if (!row) return;
+
+  const cta = landingCtaFromImportedMetadata(rulesetMeta);
+  const base = stripInjectedRulesetReadFields(row);
+  const now = new Date().toISOString();
+
+  await db.rulesets.put({
+    ...base,
+    ...cta,
+    updatedAt: now,
+  });
+}
+
 export const useImportRuleset = () => {
   const [isImporting, setIsImporting] = useState(false);
   const [importStep, setImportStep] = useState<string | null>(null);
@@ -490,7 +588,8 @@ export const useImportRuleset = () => {
           if (!item.characterId || typeof item.characterId !== 'string') {
             errors.push(`CharacterPage ${index + 1}: characterId is required and must be a string`);
           }
-          if (!item.pageId || typeof item.pageId !== 'string') {
+          // pageId may be '' for blank pages (see useCharacterPages create from label); only reject missing/non-string
+          if (item.pageId === undefined || item.pageId === null || typeof item.pageId !== 'string') {
             errors.push(`CharacterPage ${index + 1}: pageId is required and must be a string`);
           }
           break;
@@ -684,6 +783,8 @@ export const useImportRuleset = () => {
           ? await getOrCreateUrlAssetId(rulesetImage.trim(), newRulesetId, urlToAssetIdMap)
           : null;
 
+      const landingCta = landingCtaFromImportedMetadata(metadata.ruleset);
+
       const newRuleset: Ruleset = {
         id: newRulesetId,
         title: metadata.ruleset.title,
@@ -696,12 +797,7 @@ export const useImportRuleset = () => {
         createdAt: now,
         updatedAt: now,
         palette: Array.isArray(metadata.ruleset.palette) ? metadata.ruleset.palette : [],
-        charactersCtaAssetId: metadata.ruleset.charactersCtaAssetId ?? null,
-        campaignsCtaAssetId: metadata.ruleset.campaignsCtaAssetId ?? null,
-        characterCtaTitle: metadata.ruleset.characterCtaTitle ?? null,
-        characterCtaDescription: metadata.ruleset.characterCtaDescription ?? null,
-        campaignsCtaTitle: metadata.ruleset.campaignsCtaTitle ?? null,
-        campaignCtaDescription: metadata.ruleset.campaignCtaDescription ?? null,
+        ...landingCta,
       };
 
       // Content-only import: fill an existing ruleset (e.g. temp ruleset for add-module-from-zip)
@@ -2011,6 +2107,16 @@ export const useImportRuleset = () => {
       } catch (error) {
         allErrors.push(
           `Failed to import scripts: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        );
+      }
+
+      // Landing CTA asset ids + titles: merge from metadata with put() after all content (assets) exists.
+      // Skipped when createRuleset is not run (content-only + existing row); still applied here.
+      try {
+        await persistRulesetLandingCtaFromMetadata(newRulesetId, metadata.ruleset);
+      } catch (error) {
+        allErrors.push(
+          `Failed to apply ruleset landing CTA fields: ${error instanceof Error ? error.message : 'Unknown error'}`,
         );
       }
 
