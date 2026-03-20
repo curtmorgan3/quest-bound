@@ -2,13 +2,10 @@ import { Loading } from '@/components';
 import { ImportRulesetOverwriteModals } from '@/components/composites';
 import { useImportRuleset, useRulesetBundle, type ImportRulesetResult } from '@/lib/compass-api';
 import { useEffect, useRef, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 
 export function PlayPage() {
   const { slug } = useParams<{ slug: string }>();
-  const navigate = useNavigate();
-  const navigateRef = useRef(navigate);
-  navigateRef.current = navigate;
   const { importRuleset, isImporting } = useImportRuleset();
   const { getRulesetBundle } = useRulesetBundle();
   const importRulesetRef = useRef(importRuleset);
@@ -30,7 +27,7 @@ export function PlayPage() {
   const [duplicateVersion, setDuplicateVersion] = useState('');
 
   const navigateToRuleset = (rulesetId: string) => {
-    navigateRef.current(`/landing/${rulesetId}`, { replace: true });
+    window.location.replace(`/landing/${rulesetId}`);
   };
 
   useEffect(() => {
