@@ -55,7 +55,10 @@ export const useCharacter = (_id?: string) => {
       const err = error as Error & { scriptName?: string };
       const scriptInfo = err.scriptName ? ` [script: ${err.scriptName}.qbs]` : '';
       console.warn('Initial reactive script execution failed' + scriptInfo + ':', error);
-      addNotification(`Failure in script ${err.scriptName}.qbs | ${error}`, {
+      const message = err.scriptName
+        ? `Failure in script ${err.scriptName}.qbs | ${error}`
+        : `Initial attribute sync failed | ${error}`;
+      addNotification(message, {
         type: 'error',
       });
     }

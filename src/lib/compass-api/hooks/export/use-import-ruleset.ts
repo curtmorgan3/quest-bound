@@ -589,7 +589,11 @@ export const useImportRuleset = () => {
             errors.push(`CharacterPage ${index + 1}: characterId is required and must be a string`);
           }
           // pageId may be '' for blank pages (see useCharacterPages create from label); only reject missing/non-string
-          if (item.pageId === undefined || item.pageId === null || typeof item.pageId !== 'string') {
+          if (
+            item.pageId === undefined ||
+            item.pageId === null ||
+            typeof item.pageId !== 'string'
+          ) {
             errors.push(`CharacterPage ${index + 1}: pageId is required and must be a string`);
           }
           break;
@@ -2119,6 +2123,9 @@ export const useImportRuleset = () => {
           `Failed to apply ruleset landing CTA fields: ${error instanceof Error ? error.message : 'Unknown error'}`,
         );
       }
+
+      setImportStep('Finalizing');
+      await new Promise<void>((resolve) => setTimeout(resolve, 3000));
 
       const totalImported =
         importedCounts.attributes +

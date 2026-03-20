@@ -26,14 +26,14 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
+import { isCloudConfigured } from '@/lib/cloud/client';
+import { useSyncStateStore } from '@/lib/cloud/sync/sync-state';
 import {
   useCloudRulesets,
   useImportRuleset,
   useRulesets,
   type ImportRulesetResult,
 } from '@/lib/compass-api';
-import { isCloudConfigured } from '@/lib/cloud/client';
-import { useSyncStateStore } from '@/lib/cloud/sync/sync-state';
 import { useCloudAuthStore } from '@/stores/cloud-auth-store';
 import { AlertCircle, CheckCircle, Cloud, Download, Loader2, Plus, Upload, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
@@ -125,6 +125,7 @@ export const Rulesets = () => {
 
   const navigateToLandingWithReload = (rulesetId: string) => {
     window.location.replace(`/#/landing/${rulesetId}`);
+    window.location.reload();
   };
 
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -403,7 +404,9 @@ export const Rulesets = () => {
                           </div>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
-                          <AlertDialogCancel disabled={!!deletingRulesetId}>Cancel</AlertDialogCancel>
+                          <AlertDialogCancel disabled={!!deletingRulesetId}>
+                            Cancel
+                          </AlertDialogCancel>
                           <AlertDialogAction
                             data-testid='preview-card-delete-confirm'
                             disabled={deletingRulesetId === r.id}

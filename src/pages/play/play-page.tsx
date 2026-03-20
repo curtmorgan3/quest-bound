@@ -6,7 +6,7 @@ import { useParams } from 'react-router-dom';
 
 export function PlayPage() {
   const { slug } = useParams<{ slug: string }>();
-  const { importRuleset, isImporting } = useImportRuleset();
+  const { importRuleset, isImporting, importStep } = useImportRuleset();
   const { getRulesetBundle } = useRulesetBundle();
   const importRulesetRef = useRef(importRuleset);
   importRulesetRef.current = importRuleset;
@@ -28,6 +28,7 @@ export function PlayPage() {
 
   const navigateToRuleset = (rulesetId: string) => {
     window.location.replace(`/#/landing/${rulesetId}`);
+    window.location.reload();
   };
 
   useEffect(() => {
@@ -171,7 +172,14 @@ export function PlayPage() {
 
   return (
     <>
-      <Loading />
+      <div className='fixed inset-0 z-50 bg-background'>
+        <Loading />
+        {isImporting && importStep && (
+          <p className='absolute inset-x-0 bottom-1/3 text-center text-sm text-muted-foreground'>
+            {importStep}...
+          </p>
+        )}
+      </div>
       <ImportRulesetOverwriteModals
         replaceOpen={replaceConfirmOpen}
         onReplaceOpenChange={setReplaceConfirmOpen}

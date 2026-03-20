@@ -194,7 +194,10 @@ export const useCharacterAttributes = (characterId?: string) => {
               'Reactive script execution during syncWithRuleset failed' + scriptInfo + ':',
               error,
             );
-            addNotificationRef.current(`Failure in script ${err.scriptName}.qbs | ${error}`, {
+            const message = err.scriptName
+              ? `Failure in script ${err.scriptName}.qbs | ${error}`
+              : `Attribute sync failed | ${error}`;
+            addNotificationRef.current(message, {
               type: 'error',
             });
           }
