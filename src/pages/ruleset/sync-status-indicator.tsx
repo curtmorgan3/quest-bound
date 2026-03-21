@@ -16,11 +16,21 @@ interface SyncStatusIndicatorProps {
 
 export function SyncStatusIndicator({ rulesetId }: SyncStatusIndicatorProps) {
   const isAuthenticated = useCloudAuthStore((s) => s.isAuthenticated);
+  const cloudSyncEnabled = useCloudAuthStore((s) => s.cloudSyncEnabled);
+  const cloudSyncEligibilityLoading = useCloudAuthStore((s) => s.isCloudSyncEligibilityLoading);
   const { isCloudSynced, isSyncing, syncError, lastSyncedAt, setSyncError } = useSyncStateStore();
   const synced = isCloudSynced(rulesetId);
   const lastSynced = lastSyncedAt[rulesetId];
 
-  if (!isCloudConfigured || !isAuthenticated || !synced) return null;
+  if (
+    !isCloudConfigured ||
+    !isAuthenticated ||
+    !cloudSyncEnabled ||
+    cloudSyncEligibilityLoading ||
+    !synced
+  ) {
+    return null;
+  }
 
   const isOffline = !navigator.onLine;
 

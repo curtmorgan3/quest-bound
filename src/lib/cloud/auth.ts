@@ -46,6 +46,17 @@ export async function getSession(): Promise<CloudSession | null> {
   return data.session;
 }
 
+/**
+ * Whether Quest Bound Cloud data sync is enabled for the signed-in user (public.users.cloud_enabled).
+ * Uses an RPC because RLS hides the users row when sync is disabled, so the flag cannot be read from the table API.
+ */
+export async function fetchCloudSyncEnabled(): Promise<boolean> {
+  if (!cloudClient) return false;
+  const { data, error } = await cloudClient.rpc('cloud_sync_enabled');
+  if (error) return false;
+  return data === true;
+}
+
 export type AuthChangeCallback = (event: string, session: CloudSession | null) => void;
 
 export function onAuthStateChange(callback: AuthChangeCallback): () => void {

@@ -35,6 +35,8 @@ interface CloudSyncActionsProps {
 export const CloudSyncActions = forwardRef<CloudSyncActionsRef, CloudSyncActionsProps>(
   function CloudSyncActions({ rulesetId }, ref) {
     const isAuthenticated = useCloudAuthStore((s) => s.isAuthenticated);
+    const cloudSyncEnabled = useCloudAuthStore((s) => s.cloudSyncEnabled);
+    const cloudSyncEligibilityLoading = useCloudAuthStore((s) => s.isCloudSyncEligibilityLoading);
     const { isCloudSynced, isSyncing, syncError } = useSyncStateStore();
     const [pushConfirmOpen, setPushConfirmOpen] = useState(false);
     const [pushInProgress, setPushInProgress] = useState(false);
@@ -43,7 +45,14 @@ export const CloudSyncActions = forwardRef<CloudSyncActionsRef, CloudSyncActions
       openPushDialog: () => setPushConfirmOpen(true),
     }));
 
-  if (!isCloudConfigured || !isAuthenticated) return null;
+  if (
+    !isCloudConfigured ||
+    !isAuthenticated ||
+    !cloudSyncEnabled ||
+    cloudSyncEligibilityLoading
+  ) {
+    return null;
+  }
 
   const synced = isCloudSynced(rulesetId);
   const busy = isSyncing || pushInProgress;

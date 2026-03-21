@@ -51,8 +51,14 @@ export const Rulesets = () => {
     installingRulesetId,
   } = useCloudRulesets();
   const isAuthenticated = useCloudAuthStore((s) => s.isAuthenticated);
+  const cloudSyncEnabled = useCloudAuthStore((s) => s.cloudSyncEnabled);
+  const cloudSyncEligibilityLoading = useCloudAuthStore((s) => s.isCloudSyncEligibilityLoading);
   const isCloudSynced = useSyncStateStore((s) => s.isCloudSynced);
-  const showCloudBadge = isCloudConfigured && isAuthenticated;
+  const showCloudBadge =
+    isCloudConfigured &&
+    isAuthenticated &&
+    cloudSyncEnabled &&
+    !cloudSyncEligibilityLoading;
 
   const localIds = new Set(rulesets.map((r) => r.id));
   const cloudOnlyRulesets = cloudRulesets.filter((r) => !localIds.has(r.id));

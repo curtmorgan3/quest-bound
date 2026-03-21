@@ -12,12 +12,14 @@ export type { CloudRulesetSummary };
 
 export function useCloudRulesets() {
   const isAuthenticated = useCloudAuthStore((s) => s.isAuthenticated);
+  const cloudSyncEnabled = useCloudAuthStore((s) => s.cloudSyncEnabled);
+  const cloudSyncEligibilityLoading = useCloudAuthStore((s) => s.isCloudSyncEligibilityLoading);
   const [cloudRulesets, setCloudRulesets] = useState<CloudRulesetSummary[]>([]);
   const [loading, setLoading] = useState(false);
   const [installingRulesetId, setInstallingRulesetId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!isCloudConfigured || !isAuthenticated) {
+    if (!isCloudConfigured || !isAuthenticated || !cloudSyncEnabled || cloudSyncEligibilityLoading) {
       setCloudRulesets([]);
       return;
     }
@@ -36,7 +38,7 @@ export function useCloudRulesets() {
     return () => {
       cancelled = true;
     };
-  }, [isAuthenticated]);
+  }, [isAuthenticated, cloudSyncEnabled, cloudSyncEligibilityLoading]);
 
   const installFromCloud = useCallback(async (rulesetId: string) => {
     setInstallingRulesetId(rulesetId);

@@ -115,6 +115,8 @@ export function AppSidebar() {
   const rulesetId = activeRuleset?.id;
   const cloudSignInEnabled = useFeatureFlag(CLOUD_SIGN_IN_FEATURE_FLAG, false);
   const isAuthenticated = useCloudAuthStore((s) => s.isAuthenticated);
+  const cloudSyncEnabled = useCloudAuthStore((s) => s.cloudSyncEnabled);
+  const cloudSyncEligibilityLoading = useCloudAuthStore((s) => s.isCloudSyncEligibilityLoading);
   const {
     isCloudSynced,
     isSyncing,
@@ -129,6 +131,8 @@ export function AppSidebar() {
     cloudSignInEnabled &&
     isCloudConfigured &&
     isAuthenticated &&
+    cloudSyncEnabled &&
+    !cloudSyncEligibilityLoading &&
     rulesetId &&
     !isHomepage &&
     !isLandingRoute &&
