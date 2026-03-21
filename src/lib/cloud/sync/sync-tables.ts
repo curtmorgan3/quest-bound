@@ -20,8 +20,9 @@ export interface SyncTableConfig {
 }
 
 /** Excluded per phase-1: image, backgroundImage, mapAsset, charactersCtaImage, campaignsCtaImage (resolved from assetId);
- * selected on Component; options on Attribute/CharacterAttribute; variantOptions on Archetype;
+ * selected on Component; variantOptions on Archetype;
  * sprites when resolved asset data — we strip entire sprites for items/archetypes to avoid syncing resolved blobs.
+ * Attribute/CharacterAttribute `options` sync when not chart-backed; chart-derived options are omitted in prepareRecordForRemote.
  */
 export const SYNC_TABLE_CONFIGS: SyncTableConfig[] = [
   {
@@ -39,7 +40,7 @@ export const SYNC_TABLE_CONFIGS: SyncTableConfig[] = [
   {
     tableName: 'attributes',
     remoteTableName: 'attributes',
-    excludedFields: ['options', 'image'],
+    excludedFields: ['image'],
     hasRulesetId: true,
   },
   {
@@ -117,7 +118,7 @@ export const SYNC_TABLE_CONFIGS: SyncTableConfig[] = [
   {
     tableName: 'characterAttributes',
     remoteTableName: 'character_attributes',
-    excludedFields: ['options', 'image'],
+    excludedFields: ['image'],
     hasRulesetId: true,
     parentTable: 'characters',
     parentKey: 'characterId',

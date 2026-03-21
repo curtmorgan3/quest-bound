@@ -62,6 +62,12 @@ export function prepareRecordForRemote(
   record: Record<string, unknown>,
 ): Record<string, unknown> {
   const stripped = stripForPush(tableName, record);
+  if (tableName === 'attributes' || tableName === 'characterAttributes') {
+    const s = stripped as { optionsChartRef?: unknown; options?: unknown };
+    if (s.optionsChartRef != null && s.optionsChartRef !== '') {
+      delete s.options;
+    }
+  }
   if (tableName === 'documents') {
     const d = stripped as { description?: unknown };
     if (d.description == null) {
