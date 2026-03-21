@@ -10,6 +10,12 @@ import {
   AlertDialogTrigger,
   Button,
   Checkbox,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
   ImageUpload,
   Input,
   Label,
@@ -18,16 +24,21 @@ import {
   TabsList,
   TabsTrigger,
 } from '@/components';
+import { isCloudConfigured } from '@/lib/cloud/client';
 import { useUsers } from '@/lib/compass-api';
 import { errorLogger, useOnboardingStore, usePwaInstallStore } from '@/stores';
+import { useCloudAuthStore } from '@/stores/cloud-auth-store';
 import { Download, PlayCircleIcon, Settings, Shield, User } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { CloudAccountSettings } from './cloud-account-settings';
+
+const QB_CLOUD_BETA_FORM_URL = 'https://forms.gle/yMqY41qBjCkdRfX6A';
 
 export const UserSettings = () => {
   const { currentUser, updateUser, deleteUser } = useUsers();
   const { setForceShowAgain } = useOnboardingStore();
   const { deferredPrompt, triggerInstall } = usePwaInstallStore();
+  const { cloudSyncEnabled, isCloudSyncEligibilityLoading, isAuthenticated } = useCloudAuthStore();
   const [installLoading, setInstallLoading] = useState(false);
 
   const [username, setUsername] = useState(currentUser?.username || '');
@@ -70,6 +81,9 @@ export const UserSettings = () => {
   };
 
   if (!currentUser) return null;
+
+  const showEnableQBCloud =
+    isCloudConfigured && !cloudSyncEnabled && (!isAuthenticated || !isCloudSyncEligibilityLoading);
 
   return (
     <Tabs defaultValue='profile' className='w-full'>
@@ -164,6 +178,33 @@ export const UserSettings = () => {
 
       <TabsContent value='account' className='flex flex-col gap-4 mt-4'>
         <CloudAccountSettings />
+
+        {showEnableQBCloud && (
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button variant='outline' className='gap-2 w-fit'>
+                Enable QBCloud
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Quest Bound Cloud</DialogTitle>
+                <DialogDescription className='space-y-3 pt-1'>
+                  <span className='block'>
+                    Enable cloud backups, device sync, collaboration and multiplayer campaigns.
+                  </span>
+                  <a
+                    href={QB_CLOUD_BETA_FORM_URL}
+                    target='_blank'
+                    rel='noopener noreferrer'
+                    className='inline-flex font-medium text-primary underline underline-offset-4 hover:text-primary/90'>
+                    Request access to the free beta
+                  </a>
+                </DialogDescription>
+              </DialogHeader>
+            </DialogContent>
+          </Dialog>
+        )}
 
         <div className='flex flex-col gap-2'>
           <Button
