@@ -4,6 +4,7 @@ import { Button, Input, Link } from '@/components';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { DISCORD_URL } from '@/constants';
 import { getSession, signIn as cloudSignIn, signUp as cloudSignUp } from '@/lib/cloud/auth';
+import { ensureRemoteUserRow } from '@/lib/cloud/ensure-remote-user';
 import { isCloudConfigured } from '@/lib/cloud/client';
 import { useRegisterEmail, useUsers } from '@/lib/compass-api';
 import { db, useCurrentUser } from '@/stores';
@@ -29,6 +30,7 @@ async function linkLocalUserToCloud(cloudUid: string): Promise<void> {
   await db.users.update(currentUser.id, { cloudUserId: cloudUid });
   const updated = await db.users.get(currentUser.id);
   if (updated) useCurrentUser.getState().setCurrentUser(updated);
+  await ensureRemoteUserRow(db);
 }
 
 export interface SignInSignUpModalProps {

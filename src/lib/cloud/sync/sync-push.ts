@@ -5,6 +5,7 @@
 
 import { getSession } from '@/lib/cloud/auth';
 import { cloudClient } from '@/lib/cloud/client';
+import { useCloudAuthStore } from '@/stores/cloud-auth-store';
 import { uploadAssetsForPush, uploadFontsForPush } from '@/lib/cloud/sync/sync-assets';
 import {
   getStoredLastSyncedAt,
@@ -146,9 +147,17 @@ export async function syncPush(rulesetId: string, db: DB): Promise<{ error?: str
         await uploadFontsForPush(client, userId, remoteRows);
       }
 
-      const { error } = await client
-        .from(config.remoteTableName)
-        .upsert(remoteRows, { onConflict: 'user_id,id' });
+      // `users`: default upsert merges on conflict → UPDATE, which RLS denies unless cloud_enabled (sync_is_allowed).
+      // When sync is disabled, only insert missing rows; when sync is enabled, merge profile updates.
+      const upsertOptions =
+        config.tableName === 'users'
+          ? {
+              onConflict: 'user_id,id' as const,
+              ignoreDuplicates: !useCloudAuthStore.getState().cloudSyncEnabled,
+            }
+          : { onConflict: 'user_id,id' as const };
+
+      const { error } = await client.from(config.remoteTableName).upsert(remoteRows, upsertOptions);
       if (error) throw error;
     }
 
