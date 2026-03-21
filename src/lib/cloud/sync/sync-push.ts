@@ -19,7 +19,10 @@ import type { DB } from '@/stores/db/hooks/types';
 
 type TableWithWhere = {
   where: (key: string) => {
-    equals: (v: string) => { toArray: () => Promise<Record<string, unknown>[]> };
+    equals: (v: string) => {
+      toArray: () => Promise<Record<string, unknown>[]>;
+      first: () => Promise<Record<string, unknown> | undefined>;
+    };
     anyOf: (v: string[]) => { toArray: () => Promise<Record<string, unknown>[]> };
   };
 };
