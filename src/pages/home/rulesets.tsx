@@ -26,6 +26,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
+import { officialRulesets } from '@/content/official-rulesets';
 import { isCloudConfigured } from '@/lib/cloud/client';
 import { useSyncStateStore } from '@/lib/cloud/sync/sync-state';
 import {
@@ -47,7 +48,7 @@ import {
   X,
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 const DELETE_SPINNER_DELAY_MS = 1000;
 
@@ -67,16 +68,16 @@ export const Rulesets = () => {
   const cloudSyncEnabled = useCloudAuthStore((s) => s.cloudSyncEnabled);
   const cloudSyncEligibilityLoading = useCloudAuthStore((s) => s.isCloudSyncEligibilityLoading);
   const isCloudSynced = useSyncStateStore((s) => s.isCloudSynced);
+  console.log(isCloudSynced);
   const showCloudBadge =
-    isCloudConfigured &&
-    isAuthenticated &&
-    cloudSyncEnabled &&
-    !cloudSyncEligibilityLoading;
+    isCloudConfigured && isAuthenticated && cloudSyncEnabled && !cloudSyncEligibilityLoading;
 
   const localIds = new Set(rulesets.map((r) => r.id));
   const cloudOnlyRulesets = cloudRulesets.filter((r) => !localIds.has(r.id));
   const sortedRulesets = [...rulesets].sort((a, b) => a.title.localeCompare(b.title));
   const sortedCloudOnly = [...cloudOnlyRulesets].sort((a, b) => a.title.localeCompare(b.title));
+  const hasNoRulesetsToShow =
+    sortedRulesets.length === 0 && (!showCloudBadge || sortedCloudOnly.length === 0);
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -358,113 +359,153 @@ export const Rulesets = () => {
         </div>
       }>
       <div className='flex flex-wrap gap-4'>
-        {sortedRulesets?.map((r) => {
-          const doNotAsk = localStorage.getItem('qb.confirmOnDelete') === 'false';
-          return (
-            <Card
-              key={r.id}
-              className='flex aspect-square w-[min(100%,280px)] flex-col overflow-hidden p-0'
-              data-testid='ruleset-card'>
-              <div
-                className='min-h-0 flex-1 bg-muted bg-cover bg-center'
-                style={r.image ? { backgroundImage: `url(${r.image})` } : undefined}
-              />
-              <div className='flex shrink-0 flex-col gap-2 border-t p-3'>
-                <div className='flex min-w-0 items-baseline justify-between gap-2'>
-                  <h2 className='flex min-w-0 items-center gap-1.5 truncate text-sm font-semibold'>
-                    <span className='truncate'>{r.title}</span>
-                    {showCloudBadge && isCloudSynced(r.id) && (
-                      <Cloud
-                        className='h-3.5 w-3.5 shrink-0 text-muted-foreground'
-                        aria-label='Synced with Quest Bound Cloud'
-                        data-testid='ruleset-cloud-badge'
+        {hasNoRulesetsToShow ? (
+          <div className='flex w-full flex-col gap-4'>
+            <p className='text-sm text-muted-foreground'>
+              Try one of Quest Bound's official rulesets
+            </p>
+            <div className='flex flex-wrap gap-4'>
+              {officialRulesets.map((o) => (
+                <Card
+                  key={o.id}
+                  className='flex aspect-square w-[min(100%,280px)] flex-col overflow-hidden p-0'
+                  data-testid='official-ruleset-card'>
+                  <div className='relative min-h-0 flex-1 bg-muted'>
+                    {o.image ? (
+                      <img
+                        src={o.image}
+                        alt=''
+                        className='h-full w-full object-cover'
+                        loading='lazy'
                       />
-                    )}
-                  </h2>
-                  <span className='shrink-0 text-xs text-muted-foreground'>v{r.version}</span>
-                </div>
-                <div className='flex items-center gap-2'>
-                  {doNotAsk ? (
-                    <Button
-                      variant='ghost'
-                      size='sm'
-                      className='h-8 flex-1 text-red-500'
-                      data-testid='preview-card-delete'
-                      disabled={!!deletingRulesetId || !!deletingCloudRulesetId}
-                      onClick={() => handleDelete(r.id)}>
-                      {deletingRulesetId === r.id && showDeletingSpinner ? (
-                        <>
-                          <Loader2 className='h-3.5 w-3.5 animate-spin' />
-                          Deleting…
-                        </>
-                      ) : (
-                        'Delete'
-                      )}
+                    ) : null}
+                  </div>
+                  <div className='flex shrink-0 flex-col gap-2 border-t p-3'>
+                    <h2 className='truncate text-sm font-semibold'>{o.title}</h2>
+                    {o.description ? (
+                      <p className='line-clamp-3 text-xs text-muted-foreground'>{o.description}</p>
+                    ) : null}
+                    <Button asChild variant='outline' size='sm' className='h-8 w-full'>
+                      <Link to={`/play/${encodeURIComponent(o.slug)}`}>Install</Link>
                     </Button>
-                  ) : (
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button
-                          variant='ghost'
-                          size='sm'
-                          className='h-8 flex-1 text-red-500'
-                          data-testid='preview-card-delete'
-                          disabled={!!deletingRulesetId || !!deletingCloudRulesetId}>
-                          Delete
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Permanently delete this content?</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            Permanently delete this content?
-                          </AlertDialogDescription>
-                          <div className='flex gap-2'>
-                            <Label htmlFor='preview-card-do-not-ask-again'>Do not ask again</Label>
-                            <Checkbox
-                              id='preview-card-do-not-ask-again'
-                              onCheckedChange={(checked) =>
-                                localStorage.setItem('qb.confirmOnDelete', String(!checked))
-                              }
-                            />
-                          </div>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel disabled={!!deletingRulesetId || !!deletingCloudRulesetId}>
-                            Cancel
-                          </AlertDialogCancel>
-                          <AlertDialogAction
-                            data-testid='preview-card-delete-confirm'
-                            disabled={deletingRulesetId === r.id}
-                            onClick={() => handleDelete(r.id)}>
-                            {deletingRulesetId === r.id && showDeletingSpinner ? (
-                              <>
-                                <Loader2 className='h-3.5 w-3.5 animate-spin' />
-                                Deleting…
-                              </>
-                            ) : (
-                              'Delete'
-                            )}
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  )}
-                  <Button
-                    variant='outline'
-                    size='sm'
-                    className='h-8 flex-1'
-                    disabled={!!deletingRulesetId || !!deletingCloudRulesetId}
-                    onClick={() => navigate(`/landing/${r.id}`)}
-                    data-testid='preview-card-open'>
-                    Open
-                  </Button>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          </div>
+        ) : null}
+        {!hasNoRulesetsToShow &&
+          sortedRulesets?.map((r) => {
+            const doNotAsk = localStorage.getItem('qb.confirmOnDelete') === 'false';
+            return (
+              <Card
+                key={r.id}
+                className='flex aspect-square w-[min(100%,280px)] flex-col overflow-hidden p-0'
+                data-testid='ruleset-card'>
+                <div
+                  className='min-h-0 flex-1 bg-muted bg-cover bg-center'
+                  style={r.image ? { backgroundImage: `url(${r.image})` } : undefined}
+                />
+                <div className='flex shrink-0 flex-col gap-2 border-t p-3'>
+                  <div className='flex min-w-0 items-baseline justify-between gap-2'>
+                    <h2 className='flex min-w-0 items-center gap-1.5 truncate text-sm font-semibold'>
+                      <span className='truncate'>{r.title}</span>
+                      {showCloudBadge && isCloudSynced(r.id) && (
+                        <Cloud
+                          className='h-3.5 w-3.5 shrink-0 text-muted-foreground'
+                          aria-label='Synced with Quest Bound Cloud'
+                          data-testid='ruleset-cloud-badge'
+                        />
+                      )}
+                    </h2>
+                    <span className='shrink-0 text-xs text-muted-foreground'>v{r.version}</span>
+                  </div>
+                  <div className='flex items-center gap-2'>
+                    {doNotAsk ? (
+                      <Button
+                        variant='ghost'
+                        size='sm'
+                        className='h-8 flex-1 text-red-500'
+                        data-testid='preview-card-delete'
+                        disabled={!!deletingRulesetId || !!deletingCloudRulesetId}
+                        onClick={() => handleDelete(r.id)}>
+                        {deletingRulesetId === r.id && showDeletingSpinner ? (
+                          <>
+                            <Loader2 className='h-3.5 w-3.5 animate-spin' />
+                            Deleting…
+                          </>
+                        ) : (
+                          'Delete'
+                        )}
+                      </Button>
+                    ) : (
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            variant='ghost'
+                            size='sm'
+                            className='h-8 flex-1 text-red-500'
+                            data-testid='preview-card-delete'
+                            disabled={!!deletingRulesetId || !!deletingCloudRulesetId}>
+                            Delete
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Permanently delete this content?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Permanently delete this content?
+                            </AlertDialogDescription>
+                            <div className='flex gap-2'>
+                              <Label htmlFor='preview-card-do-not-ask-again'>
+                                Do not ask again
+                              </Label>
+                              <Checkbox
+                                id='preview-card-do-not-ask-again'
+                                onCheckedChange={(checked) =>
+                                  localStorage.setItem('qb.confirmOnDelete', String(!checked))
+                                }
+                              />
+                            </div>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel
+                              disabled={!!deletingRulesetId || !!deletingCloudRulesetId}>
+                              Cancel
+                            </AlertDialogCancel>
+                            <AlertDialogAction
+                              data-testid='preview-card-delete-confirm'
+                              disabled={deletingRulesetId === r.id}
+                              onClick={() => handleDelete(r.id)}>
+                              {deletingRulesetId === r.id && showDeletingSpinner ? (
+                                <>
+                                  <Loader2 className='h-3.5 w-3.5 animate-spin' />
+                                  Deleting…
+                                </>
+                              ) : (
+                                'Delete'
+                              )}
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    )}
+                    <Button
+                      variant='outline'
+                      size='sm'
+                      className='h-8 flex-1'
+                      disabled={!!deletingRulesetId || !!deletingCloudRulesetId}
+                      onClick={() => navigate(`/landing/${r.id}`)}
+                      data-testid='preview-card-open'>
+                      Open
+                    </Button>
+                  </div>
                 </div>
-              </div>
-            </Card>
-          );
-        })}
-        {showCloudBadge &&
+              </Card>
+            );
+          })}
+        {!hasNoRulesetsToShow &&
+          showCloudBadge &&
           sortedCloudOnly.map((r) => (
             <Card
               key={r.id}
@@ -522,9 +563,9 @@ export const Rulesets = () => {
                       <AlertDialogHeader>
                         <AlertDialogTitle>Delete from Quest Bound Cloud?</AlertDialogTitle>
                         <AlertDialogDescription>
-                          This permanently removes this ruleset and all cloud data tied to it for your
-                          account (campaigns, characters, assets, and other synced content). This
-                          cannot be undone.
+                          This permanently removes this ruleset and all cloud data tied to it for
+                          your account (campaigns, characters, assets, and other synced content).
+                          This cannot be undone.
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>

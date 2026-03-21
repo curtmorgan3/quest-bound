@@ -273,9 +273,14 @@ export const Characters = () => {
       </div>
 
       {selectableCharacters.length === 0 && (
-        <div className='flex flex-col items-center justify-center py-12 text-muted-foreground'>
-          <p className='text-lg'>No characters yet</p>
+        <div className='flex flex-col items-center justify-center gap-4 py-12 text-center text-muted-foreground'>
+          <p className='text-lg'>No Characters</p>
           <p className='text-sm'>Create your first character to get started</p>
+          <CreateCharacterModal
+            rulesetId={rulesetIdParam}
+            onCreate={createCharacter}
+            triggerTestId='create-character-empty-cta'
+          />
         </div>
       )}
     </PageWrapper>

@@ -12,8 +12,8 @@ import {
   Card,
 } from '@/components';
 import { PageWrapper } from '@/components/composites';
-import { NewCampaignModal } from '@/pages/campaigns/new-campaign-modal';
 import { useCampaigns, useRulesets } from '@/lib/compass-api';
+import { NewCampaignModal } from '@/pages/campaigns/new-campaign-modal';
 import { Plus } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -131,8 +131,17 @@ export function Campaigns() {
       </div>
 
       {filteredCampaigns.length === 0 && (
-        <div className='flex flex-col items-center justify-center py-12 text-muted-foreground'>
-          <p className='text-lg'>No campaigns</p>
+        <div className='flex flex-col items-center justify-center gap-4 py-12 text-center text-muted-foreground'>
+          <p className='text-lg'>No Campaigns</p>
+          <p className='text-sm'>Create your first campaign to get started</p>
+          <Button
+            size='sm'
+            className='gap-1'
+            data-testid='campaigns-create-empty-cta'
+            onClick={() => setNewCampaignModalOpen(true)}>
+            <Plus className='h-4 w-4' />
+            Create Campaign
+          </Button>
         </div>
       )}
     </PageWrapper>

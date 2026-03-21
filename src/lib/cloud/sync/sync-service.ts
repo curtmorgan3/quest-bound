@@ -107,6 +107,8 @@ export async function deleteRulesetFromCloud(rulesetId: string): Promise<{ error
     console.warn('Storage cleanup after remote ruleset delete failed:', e);
   }
 
+  await useSyncStateStore.getState().removeSyncedRulesetId(rulesetId);
+
   return {};
 }
 

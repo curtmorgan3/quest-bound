@@ -34,9 +34,14 @@ interface CreateCharacterModalProps {
     variant?: string;
     assetId: string | null;
   }) => Promise<any>;
+  triggerTestId?: string;
 }
 
-export function CreateCharacterModal({ rulesetId, onCreate }: CreateCharacterModalProps) {
+export function CreateCharacterModal({
+  rulesetId,
+  onCreate,
+  triggerTestId = 'create-character-button',
+}: CreateCharacterModalProps) {
   const { assets, deleteAsset } = useAssets();
 
   const [step, setStep] = useState<1 | 2>(1);
@@ -133,7 +138,7 @@ export function CreateCharacterModal({ rulesetId, onCreate }: CreateCharacterMod
     <>
       <Dialog open={open} onOpenChange={handleOpenChange}>
         <DialogTrigger asChild>
-          <Button size='sm' className='gap-1' data-testid='create-character-button'>
+          <Button size='sm' className='gap-1' data-testid={triggerTestId}>
             <Plus className='h-4 w-4' />
             Create Character
           </Button>

@@ -1,6 +1,8 @@
 import { useCallback } from 'react';
 
-const DEV = window.location.hostname.includes('localhost');
+const DEV =
+  window.location.hostname.includes('localhost') &&
+  localStorage.getItem('localRulesetBundle') === 'true';
 
 const RULESET_BUNDLE_API_BASE = DEV
   ? 'http://localhost:8888/get-ruleset-bundle'

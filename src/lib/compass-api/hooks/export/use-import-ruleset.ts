@@ -647,6 +647,8 @@ export const useImportRuleset = () => {
     options?: ImportRulesetOptions,
   ): Promise<ImportRulesetResult> => {
     setIsImporting(true);
+    setImportStep('Initializing');
+    await Promise.resolve();
     setImportStep('Reading zip file');
 
     try {

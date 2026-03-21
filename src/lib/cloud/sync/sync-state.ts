@@ -40,6 +40,7 @@ export interface SyncState {
   setLastSyncCompletedAt: (timestamp: number) => void;
   loadSyncedRulesetIds: () => Promise<void>;
   markRulesetSynced: (rulesetId: string) => Promise<void>;
+  removeSyncedRulesetId: (rulesetId: string) => Promise<void>;
   isCloudSynced: (rulesetId: string) => boolean;
   setPushDialogOpen: (open: boolean) => void;
 }
@@ -95,6 +96,12 @@ export const useSyncStateStore = create<SyncState>((set, get) => ({
   },
   markRulesetSynced: async (rulesetId) => {
     const next = new Set(get().syncedRulesetIds).add(rulesetId);
+    set({ syncedRulesetIds: next });
+    await setKeyval(SYNCED_RULESETS_KEY, Array.from(next));
+  },
+  removeSyncedRulesetId: async (rulesetId) => {
+    const next = new Set(get().syncedRulesetIds);
+    next.delete(rulesetId);
     set({ syncedRulesetIds: next });
     await setKeyval(SYNCED_RULESETS_KEY, Array.from(next));
   },
