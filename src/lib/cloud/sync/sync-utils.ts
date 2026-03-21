@@ -109,7 +109,9 @@ export function prepareRemoteForLocal(
   tableName?: string,
 ): Record<string, unknown> {
   if (tableName === 'users') {
-    const out = toCamelCaseKeys(record);
+    const rest = { ...record };
+    delete rest.cloud_enabled;
+    const out = toCamelCaseKeys(rest);
     const authUid =
       typeof record.user_id === 'string'
         ? record.user_id
