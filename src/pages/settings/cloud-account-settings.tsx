@@ -17,6 +17,7 @@ import { useCloudAuthStore } from '@/stores/cloud-auth-store';
 import { useCurrentUser } from '@/stores/current-user-store';
 import { AlertCircle } from 'lucide-react';
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 function ChangePasswordDialog({
   open,
@@ -125,6 +126,7 @@ async function linkLocalUserToCloud(cloudUid: string): Promise<void> {
 }
 
 export function CloudAccountSettings() {
+  const navigate = useNavigate();
   const { isAuthenticated, cloudUser, isLoading } = useCloudAuthStore();
   const [signInOpen, setSignInOpen] = useState(false);
   const [signUpOpen, setSignUpOpen] = useState(false);
@@ -137,6 +139,7 @@ export function CloudAccountSettings() {
 
   const handleSignOut = async () => {
     await signOut();
+    navigate('/', { replace: true });
   };
 
   if (!isCloudConfigured) return null;

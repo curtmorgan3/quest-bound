@@ -40,7 +40,7 @@ import {
 } from '@/lib/compass-api/hooks/export/remove-module-from-ruleset';
 import type { Ruleset, RulesetModuleEntry } from '@/types';
 import { rgbToHex } from '@/utils';
-import { Download, Package, Plus, Sliders, Trash, Upload } from 'lucide-react';
+import { Download, FileText, Package, Plus, Sliders, Trash, Upload } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 
@@ -311,10 +311,19 @@ export const RulesetSettings = ({ activeRuleset }: RulesetSettingsProps) => {
 
   return (
     <Tabs defaultValue='details' className='flex min-h-0 flex-1 flex-col gap-4'>
-      <TabsList>
-        <TabsTrigger value='details'>Details</TabsTrigger>
-        <TabsTrigger value='defaults'>Content</TabsTrigger>
-        <TabsTrigger value='modules'>Modules</TabsTrigger>
+      <TabsList className='w-full max-w-md grid grid-cols-3'>
+        <TabsTrigger value='details' className='gap-2'>
+          <FileText className='size-4' />
+          Details
+        </TabsTrigger>
+        <TabsTrigger value='defaults' className='gap-2'>
+          <Sliders className='size-4' />
+          Content
+        </TabsTrigger>
+        <TabsTrigger value='modules' className='gap-2'>
+          <Package className='size-4' />
+          Modules
+        </TabsTrigger>
       </TabsList>
 
       <TabsContent
