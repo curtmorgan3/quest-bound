@@ -7,6 +7,7 @@ import { getSession } from '@/lib/cloud/auth';
 import { cloudClient, isCloudConfigured } from '@/lib/cloud/client';
 import { useCloudAuthStore } from '@/stores/cloud-auth-store';
 import type { DB } from '@/stores/db/hooks/types';
+import { ASSETS_BUCKET, FONTS_BUCKET, removeStoragePaths } from './sync-assets';
 import { syncPull } from './sync-pull';
 import { syncPush } from './sync-push';
 import { useSyncStateStore } from './sync-state';
@@ -59,6 +60,53 @@ export async function installFromCloud(rulesetId: string, db: DB): Promise<{ err
   const now = new Date().toISOString();
   useSyncStateStore.getState().setLastSyncedAt(rulesetId, now);
   await useSyncStateStore.getState().markRulesetSynced(rulesetId);
+  return {};
+}
+
+export interface DeleteRemoteRulesetPayload {
+  assetPaths: string[];
+  fontPaths: string[];
+}
+
+/**
+ * Permanently remove a ruleset and all associated remote rows for the current user, then
+ * delete referenced files from Supabase Storage (best-effort if storage fails).
+ */
+export async function deleteRulesetFromCloud(rulesetId: string): Promise<{ error?: string }> {
+  if (!isCloudConfigured || !cloudClient) return { error: 'Cloud not configured' };
+  const { isAuthenticated } = useCloudAuthStore.getState();
+  if (!isAuthenticated) return { error: 'Not signed in' };
+  if (!navigator.onLine) return { error: 'Offline' };
+
+  const { isSyncing } = useSyncStateStore.getState();
+  if (isSyncing) return { error: 'Sync already in progress' };
+
+  const session = await getSession();
+  if (!session?.user?.id) return { error: 'Not signed in' };
+
+  const { data, error } = await cloudClient.rpc('delete_remote_ruleset', {
+    p_ruleset_id: rulesetId,
+  });
+
+  if (error) {
+    const msg =
+      error.message?.includes('Ruleset not found') || error.code === 'P0002'
+        ? 'Ruleset not found in cloud'
+        : error.message;
+    return { error: msg || 'Delete failed' };
+  }
+
+  const payload = data as DeleteRemoteRulesetPayload | null;
+  const assetPaths = payload?.assetPaths ?? [];
+  const fontPaths = payload?.fontPaths ?? [];
+
+  try {
+    await removeStoragePaths(cloudClient, ASSETS_BUCKET, assetPaths);
+    await removeStoragePaths(cloudClient, FONTS_BUCKET, fontPaths);
+  } catch (e) {
+    console.warn('Storage cleanup after remote ruleset delete failed:', e);
+  }
+
   return {};
 }
 

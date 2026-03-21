@@ -6,8 +6,27 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { memoizedAssets } from '@/stores/db/memoization-cache';
 
-const ASSETS_BUCKET = 'assets';
-const FONTS_BUCKET = 'fonts';
+export const ASSETS_BUCKET = 'assets';
+export const FONTS_BUCKET = 'fonts';
+
+const STORAGE_REMOVE_BATCH = 100;
+
+/**
+ * Remove objects from a private bucket by path (e.g. after remote ruleset delete).
+ */
+export async function removeStoragePaths(
+  client: SupabaseClient,
+  bucket: string,
+  paths: string[],
+): Promise<void> {
+  const filtered = paths.filter((p): p is string => typeof p === 'string' && p.length > 0);
+  if (filtered.length === 0) return;
+  for (let i = 0; i < filtered.length; i += STORAGE_REMOVE_BATCH) {
+    const batch = filtered.slice(i, i + STORAGE_REMOVE_BATCH);
+    const { error } = await client.storage.from(bucket).remove(batch);
+    if (error) throw error;
+  }
+}
 
 /** Check if a string is a base64 data URL (data:...;base64,...). */
 export function isDataUrl(value: string): boolean {

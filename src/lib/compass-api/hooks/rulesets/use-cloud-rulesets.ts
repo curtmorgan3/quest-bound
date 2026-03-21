@@ -1,4 +1,5 @@
 import {
+  deleteRulesetFromCloud,
   installFromCloud as doInstallFromCloud,
   listCloudRulesets,
   type CloudRulesetSummary,
@@ -17,6 +18,7 @@ export function useCloudRulesets() {
   const [cloudRulesets, setCloudRulesets] = useState<CloudRulesetSummary[]>([]);
   const [loading, setLoading] = useState(false);
   const [installingRulesetId, setInstallingRulesetId] = useState<string | null>(null);
+  const [deletingRulesetId, setDeletingRulesetId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isCloudConfigured || !isAuthenticated || !cloudSyncEnabled || cloudSyncEligibilityLoading) {
@@ -49,11 +51,27 @@ export function useCloudRulesets() {
     }
   }, []);
 
+  const deleteFromCloud = useCallback(async (rulesetId: string) => {
+    setDeletingRulesetId(rulesetId);
+    try {
+      const result = await deleteRulesetFromCloud(rulesetId);
+      if (result.error) return result;
+      const list = await listCloudRulesets();
+      setCloudRulesets(list);
+      return {};
+    } finally {
+      setDeletingRulesetId(null);
+    }
+  }, []);
+
   return {
     cloudRulesets,
     loading: loading,
     installFromCloud,
+    deleteFromCloud,
     isInstalling: installingRulesetId !== null,
     installingRulesetId,
+    isDeletingCloud: deletingRulesetId !== null,
+    deletingCloudRulesetId: deletingRulesetId,
   };
 }

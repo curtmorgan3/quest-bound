@@ -35,7 +35,17 @@ import {
   type ImportRulesetResult,
 } from '@/lib/compass-api';
 import { useCloudAuthStore } from '@/stores/cloud-auth-store';
-import { AlertCircle, CheckCircle, Cloud, Download, Loader2, Plus, Upload, X } from 'lucide-react';
+import {
+  AlertCircle,
+  CheckCircle,
+  Cloud,
+  Download,
+  Loader2,
+  Plus,
+  Trash2,
+  Upload,
+  X,
+} from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -47,8 +57,11 @@ export const Rulesets = () => {
   const {
     cloudRulesets,
     installFromCloud,
+    deleteFromCloud,
     isInstalling: isInstallingCloud,
     installingRulesetId,
+    isDeletingCloud,
+    deletingCloudRulesetId,
   } = useCloudRulesets();
   const isAuthenticated = useCloudAuthStore((s) => s.isAuthenticated);
   const cloudSyncEnabled = useCloudAuthStore((s) => s.cloudSyncEnabled);
@@ -82,6 +95,7 @@ export const Rulesets = () => {
   const [duplicateVersion, setDuplicateVersion] = useState('');
   const [deletingRulesetId, setDeletingRulesetId] = useState<string | null>(null);
   const [showDeletingSpinner, setShowDeletingSpinner] = useState(false);
+  const [cloudDeleteError, setCloudDeleteError] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const deleteSpinnerTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -114,6 +128,12 @@ export const Rulesets = () => {
     } finally {
       setDeletingRulesetId(null);
     }
+  };
+
+  const handleCloudDelete = async (id: string) => {
+    setCloudDeleteError(null);
+    const result = await deleteFromCloud(id);
+    if (result.error) setCloudDeleteError(result.error);
   };
 
   const handleCreate = async () => {
@@ -247,7 +267,7 @@ export const Rulesets = () => {
                   size='sm'
                   className='gap-1'
                   data-testid='create-ruleset-button'
-                  disabled={!!deletingRulesetId}>
+                  disabled={!!deletingRulesetId || !!deletingCloudRulesetId}>
                   <Plus className='h-4 w-4' />
                   Create Ruleset
                 </Button>
@@ -302,7 +322,7 @@ export const Rulesets = () => {
             variant='outline'
             size='sm'
             className='gap-1'
-            disabled={isImporting || !!deletingRulesetId}
+            disabled={isImporting || !!deletingRulesetId || !!deletingCloudRulesetId}
             onClick={handleImport}
             data-testid='import-ruleset-button'>
             {isImporting ? (
@@ -370,7 +390,7 @@ export const Rulesets = () => {
                       size='sm'
                       className='h-8 flex-1 text-red-500'
                       data-testid='preview-card-delete'
-                      disabled={!!deletingRulesetId}
+                      disabled={!!deletingRulesetId || !!deletingCloudRulesetId}
                       onClick={() => handleDelete(r.id)}>
                       {deletingRulesetId === r.id && showDeletingSpinner ? (
                         <>
@@ -389,7 +409,7 @@ export const Rulesets = () => {
                           size='sm'
                           className='h-8 flex-1 text-red-500'
                           data-testid='preview-card-delete'
-                          disabled={!!deletingRulesetId}>
+                          disabled={!!deletingRulesetId || !!deletingCloudRulesetId}>
                           Delete
                         </Button>
                       </AlertDialogTrigger>
@@ -410,7 +430,7 @@ export const Rulesets = () => {
                           </div>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
-                          <AlertDialogCancel disabled={!!deletingRulesetId}>
+                          <AlertDialogCancel disabled={!!deletingRulesetId || !!deletingCloudRulesetId}>
                             Cancel
                           </AlertDialogCancel>
                           <AlertDialogAction
@@ -434,7 +454,7 @@ export const Rulesets = () => {
                     variant='outline'
                     size='sm'
                     className='h-8 flex-1'
-                    disabled={!!deletingRulesetId}
+                    disabled={!!deletingRulesetId || !!deletingCloudRulesetId}
                     onClick={() => navigate(`/landing/${r.id}`)}
                     data-testid='preview-card-open'>
                     Open
@@ -471,7 +491,7 @@ export const Rulesets = () => {
                     variant='outline'
                     size='sm'
                     className='h-8 flex-1 gap-1'
-                    disabled={isInstallingCloud}
+                    disabled={isInstallingCloud || !!deletingCloudRulesetId}
                     onClick={() => installFromCloud(r.id)}
                     data-testid='ruleset-card-install'>
                     {installingRulesetId === r.id ? (
@@ -486,13 +506,50 @@ export const Rulesets = () => {
                       </>
                     )}
                   </Button>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button
+                        variant='outline'
+                        size='sm'
+                        className='h-8 flex-1 gap-1 text-destructive hover:text-destructive'
+                        disabled={isInstallingCloud || !!deletingCloudRulesetId}
+                        data-testid='ruleset-card-cloud-delete'>
+                        <Trash2 className='h-3.5 w-3.5' />
+                        Delete
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Delete from Quest Bound Cloud?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          This permanently removes this ruleset and all cloud data tied to it for your
+                          account (campaigns, characters, assets, and other synced content). This
+                          cannot be undone.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel
+                          disabled={deletingCloudRulesetId === r.id}
+                          data-testid='ruleset-card-cloud-delete-cancel'>
+                          Cancel
+                        </AlertDialogCancel>
+                        <AlertDialogAction
+                          className='bg-destructive text-destructive-foreground hover:bg-destructive/90'
+                          data-testid='ruleset-card-cloud-delete-confirm'
+                          disabled={deletingCloudRulesetId === r.id}
+                          onClick={() => void handleCloudDelete(r.id)}>
+                          Delete from cloud
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
                 </div>
               </div>
             </Card>
           ))}
       </div>
 
-      {(isImporting || isInstallingCloud || showDeletingSpinner) && (
+      {(isImporting || isInstallingCloud || showDeletingSpinner || isDeletingCloud) && (
         <div className='fixed inset-0 z-50 bg-background'>
           <Loading />
           {isImporting && importStep && (
@@ -500,14 +557,19 @@ export const Rulesets = () => {
               {importStep}...
             </p>
           )}
-          {isInstallingCloud && !isImporting && !showDeletingSpinner && (
+          {isInstallingCloud && !isImporting && !showDeletingSpinner && !isDeletingCloud && (
             <p className='absolute inset-x-0 bottom-1/3 text-center text-sm text-muted-foreground'>
               Installing from cloud...
             </p>
           )}
-          {showDeletingSpinner && !isImporting && !isInstallingCloud && (
+          {showDeletingSpinner && !isImporting && !isInstallingCloud && !isDeletingCloud && (
             <p className='absolute inset-x-0 bottom-1/3 text-center text-sm text-muted-foreground'>
               Deleting ruleset...
+            </p>
+          )}
+          {isDeletingCloud && !isImporting && !isInstallingCloud && !showDeletingSpinner && (
+            <p className='absolute inset-x-0 bottom-1/3 text-center text-sm text-muted-foreground'>
+              Deleting from cloud...
             </p>
           )}
         </div>
@@ -566,6 +628,25 @@ export const Rulesets = () => {
               </ul>
             </div>
           )}
+        </div>
+      )}
+
+      {cloudDeleteError && (
+        <div className='fixed bottom-4 right-4 z-50 flex max-w-sm flex-col gap-2 rounded-lg border border-red-200 bg-red-50 p-3 text-red-800 shadow-lg'>
+          <div className='flex items-start justify-between gap-2'>
+            <div className='flex items-center gap-2'>
+              <AlertCircle className='h-4 w-4 shrink-0' />
+              <span className='text-sm font-medium'>{cloudDeleteError}</span>
+            </div>
+            <Button
+              variant='ghost'
+              size='icon'
+              className='h-6 w-6 shrink-0'
+              onClick={() => setCloudDeleteError(null)}
+              aria-label='Dismiss'>
+              <X className='h-4 w-4' />
+            </Button>
+          </div>
         </div>
       )}
     </PageWrapper>
