@@ -61,6 +61,12 @@ export async function syncPush(rulesetId: string, db: DB): Promise<{ error?: str
         if (parentIds.length === 0) continue;
         const all = await table.where(config.parentKey).anyOf(parentIds).toArray();
         rows = all.filter((r) => (r.updatedAt as string) > lastSyncedAt);
+      } else if (config.tableName === 'users' && table.where) {
+        const linked = await table.where('cloudUserId').equals(userId).first();
+        rows =
+          linked && (linked.updatedAt as string) > lastSyncedAt
+            ? [linked as Record<string, unknown>]
+            : [];
       } else if (config.hasRulesetId) {
         // rulesets table uses id as key, not rulesetId (no rulesetId index)
         if (config.tableName === 'rulesets') {

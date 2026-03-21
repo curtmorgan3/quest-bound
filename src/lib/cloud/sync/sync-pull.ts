@@ -88,7 +88,22 @@ export async function syncPull(rulesetId: string, db: DB): Promise<{ error?: str
     > extends undefined ? never : NonNullable<ReturnType<typeof getSyncTableConfig>>[];
 
     for (const config of configs) {
-      if (config.hasRulesetId) {
+      if (config.tableName === 'users') {
+        if (!cloudClient) continue;
+        const { data, error } = await cloudClient
+          .from('users')
+          .select('*')
+          .eq('user_id', userId)
+          .gt('updated_at', lastSyncedAt);
+        if (error) throw error;
+        const rows = (data ?? []) as Record<string, unknown>[];
+        const localLinked = await db.users.where('cloudUserId').equals(userId).first();
+        const filtered =
+          localLinked && rows.length > 0
+            ? rows.filter((r) => r.id === localLinked.id)
+            : rows;
+        await mergeTable(db, config.tableName, filtered);
+      } else if (config.hasRulesetId) {
         let rows: Record<string, unknown>[];
         if (config.tableName === 'rulesets') {
           if (!cloudClient) rows = [];
@@ -203,7 +218,13 @@ async function mergeTable(
     const local = await table.get(row.id as string);
     const remoteUpdated = row.updated_at as string;
     if (!local || !local.updatedAt || remoteUpdated >= local.updatedAt) {
-      toPut.push(prepareRemoteForLocal(row));
+      const prepared = prepareRemoteForLocal(row, tableName);
+      if (tableName === 'users' && local) {
+        const loc = local as Record<string, unknown>;
+        if (loc.emailVerified !== undefined) prepared.emailVerified = loc.emailVerified;
+        if (loc.cloudEnabled !== undefined) prepared.cloudEnabled = loc.cloudEnabled;
+      }
+      toPut.push(prepared);
     }
   }
   if (toPut.length > 0) await table.bulkPut(toPut);

@@ -24,7 +24,12 @@ export interface SyncTableConfig {
  * sprites when resolved asset data — we strip entire sprites for items/archetypes to avoid syncing resolved blobs.
  */
 export const SYNC_TABLE_CONFIGS: SyncTableConfig[] = [
-  { tableName: 'users', remoteTableName: 'users', excludedFields: ['image'], hasRulesetId: false },
+  {
+    tableName: 'users',
+    remoteTableName: 'users',
+    excludedFields: ['image', 'emailVerified', 'cloudEnabled'],
+    hasRulesetId: false,
+  },
   {
     tableName: 'rulesets',
     remoteTableName: 'rulesets',
@@ -231,8 +236,9 @@ export const RULESET_SCOPED_TABLES = SYNC_TABLE_CONFIGS.filter((c) => c.hasRules
   (c) => c.tableName,
 );
 
-/** Order for sync: ruleset first, then direct children, then characters + children, then campaigns + children. */
+/** Order for sync: user profile, then ruleset and children, then characters + children, then campaigns + children. */
 export const SYNC_TABLE_ORDER: string[] = [
+  'users',
   'rulesets',
   'attributes',
   'actions',

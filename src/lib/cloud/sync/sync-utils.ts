@@ -102,8 +102,24 @@ export function prepareRecordForRemote(
 /**
  * Prepare a remote record for local bulkPut: convert keys to camelCase.
  * Does not add or remove fields beyond key mapping.
+ * For `users`, maps Postgres `user_id` to Dexie `cloudUserId` (not `userId`).
  */
-export function prepareRemoteForLocal(record: Record<string, unknown>): Record<string, unknown> {
+export function prepareRemoteForLocal(
+  record: Record<string, unknown>,
+  tableName?: string,
+): Record<string, unknown> {
+  if (tableName === 'users') {
+    const out = toCamelCaseKeys(record);
+    const authUid =
+      typeof record.user_id === 'string'
+        ? record.user_id
+        : typeof out.userId === 'string'
+          ? out.userId
+          : undefined;
+    delete out.userId;
+    if (authUid != null) out.cloudUserId = authUid;
+    return out;
+  }
   return toCamelCaseKeys(record);
 }
 
