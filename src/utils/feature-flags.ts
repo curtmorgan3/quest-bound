@@ -1,9 +1,6 @@
 /** localStorage key prefix for feature flags. Values are "true" or "false". */
 export const FEATURE_FLAG_PREFIX = 'feature.';
 
-/** Feature flag for cloud account sign-in and account settings. */
-export const CLOUD_SIGN_IN_FEATURE_FLAG = 'cloudSignIn';
-
 export function getFeatureFlagKey(name: string): string {
   return `${FEATURE_FLAG_PREFIX}${name}`;
 }
