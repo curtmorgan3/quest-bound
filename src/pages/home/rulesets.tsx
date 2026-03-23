@@ -547,43 +547,45 @@ export const Rulesets = () => {
                       </>
                     )}
                   </Button>
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button
-                        variant='outline'
-                        size='sm'
-                        className='h-8 flex-1 gap-1 text-destructive hover:text-destructive'
-                        disabled={isInstallingCloud || !!deletingCloudRulesetId}
-                        data-testid='ruleset-card-cloud-delete'>
-                        <Trash2 className='h-3.5 w-3.5' />
-                        Delete
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Delete from Quest Bound Cloud?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          This permanently removes this ruleset and all cloud data tied to it for
-                          your account (campaigns, characters, assets, and other synced content).
-                          This cannot be undone.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel
-                          disabled={deletingCloudRulesetId === r.id}
-                          data-testid='ruleset-card-cloud-delete-cancel'>
-                          Cancel
-                        </AlertDialogCancel>
-                        <AlertDialogAction
-                          className='bg-destructive text-destructive-foreground hover:bg-destructive/90'
-                          data-testid='ruleset-card-cloud-delete-confirm'
-                          disabled={deletingCloudRulesetId === r.id}
-                          onClick={() => void handleCloudDelete(r.id)}>
-                          Delete from cloud
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
+                  {r.ownedByCurrentUser ? (
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button
+                          variant='outline'
+                          size='sm'
+                          className='h-8 flex-1 gap-1 text-destructive hover:text-destructive'
+                          disabled={isInstallingCloud || !!deletingCloudRulesetId}
+                          data-testid='ruleset-card-cloud-delete'>
+                          <Trash2 className='h-3.5 w-3.5' />
+                          Delete
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Delete from Quest Bound Cloud?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            This permanently removes this ruleset and all cloud data tied to it for
+                            your account (campaigns, characters, assets, and other synced content).
+                            This cannot be undone.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel
+                            disabled={deletingCloudRulesetId === r.id}
+                            data-testid='ruleset-card-cloud-delete-cancel'>
+                            Cancel
+                          </AlertDialogCancel>
+                          <AlertDialogAction
+                            className='bg-destructive text-destructive-foreground hover:bg-destructive/90'
+                            data-testid='ruleset-card-cloud-delete-confirm'
+                            disabled={deletingCloudRulesetId === r.id}
+                            onClick={() => void handleCloudDelete(r.id)}>
+                            Delete from cloud
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  ) : null}
                 </div>
               </div>
             </Card>

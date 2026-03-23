@@ -8,6 +8,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
   Button,
+  DescriptionEditor,
   Input,
   Label,
   Select,
@@ -15,7 +16,6 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-  DescriptionEditor,
   Tabs,
   TabsContent,
   TabsList,
@@ -43,22 +43,22 @@ import {
   listOwnCloudRulesetSummaries,
   listPendingInvitesForCurrentUser,
   organizationAdminListMembers,
+  removeOrganizationMember,
+  revokeOrganizationInvite,
+  unlinkRulesetFromOrganization,
+  updateOrganizationProfile,
+  uploadOrgLogoAndSetUrl,
   type MyOrganizationMembershipRow,
   type OrganizationInviteRow,
   type OrganizationMemberRow,
   type OrganizationRow,
   type OrganizationRulesetLinkRow,
   type PendingInviteForUserRow,
-  removeOrganizationMember,
-  revokeOrganizationInvite,
-  unlinkRulesetFromOrganization,
-  updateOrganizationProfile,
-  uploadOrgLogoAndSetUrl,
 } from '@/lib/cloud/organizations/org-api';
 import { assertNotSvgOrganizationLogo } from '@/lib/cloud/sync/sync-assets';
 import { cn } from '@/lib/utils';
 import { useCloudAuthStore } from '@/stores/cloud-auth-store';
-import { FileText, Library, Loader2, Users } from 'lucide-react';
+import { FileText, Library, Loader2, Users, X } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 
 function readFileAsDataUrl(file: File): Promise<string> {
@@ -105,39 +105,37 @@ export function OrganizationSettings() {
   const [deleteOrgOpen, setDeleteOrgOpen] = useState(false);
   const [pendingForMe, setPendingForMe] = useState<PendingInviteForUserRow[]>([]);
   const [myMemberships, setMyMemberships] = useState<MyOrganizationMembershipRow[]>([]);
+  const [membershipLogoUrls, setMembershipLogoUrls] = useState<Record<string, string>>({});
   const [leaveOrgId, setLeaveOrgId] = useState<string | null>(null);
 
-  const refreshOrgDetails = useCallback(
-    async (row: OrganizationRow, uid: string) => {
-      if (!cloudClient) return;
-      const [mem, inv, seats, links, owned, globalLinked] = await Promise.all([
-        organizationAdminListMembers(row.id),
-        listOrganizationInvites(row.id),
-        countOrganizationSeats(row.id),
-        listOrganizationRulesetLinks(row.id),
-        listOwnCloudRulesetSummaries(uid),
-        listAllLinkedRulesetIds(),
-      ]);
-      setMembers(mem);
-      setInvites(inv);
-      setSeatMemberCount(seats.memberCount);
-      setSeatPendingCount(seats.pendingInviteCount);
-      setLinkedRulesets(links);
-      setOwnedCloudRulesets(owned);
-      setGloballyLinkedRulesetIds(globalLinked);
+  const refreshOrgDetails = useCallback(async (row: OrganizationRow, uid: string) => {
+    if (!cloudClient) return;
+    const [mem, inv, seats, links, owned, globalLinked] = await Promise.all([
+      organizationAdminListMembers(row.id),
+      listOrganizationInvites(row.id),
+      countOrganizationSeats(row.id),
+      listOrganizationRulesetLinks(row.id),
+      listOwnCloudRulesetSummaries(uid),
+      listAllLinkedRulesetIds(),
+    ]);
+    setMembers(mem);
+    setInvites(inv);
+    setSeatMemberCount(seats.memberCount);
+    setSeatPendingCount(seats.pendingInviteCount);
+    setLinkedRulesets(links);
+    setOwnedCloudRulesets(owned);
+    setGloballyLinkedRulesetIds(globalLinked);
 
-      let display: string | null = null;
-      if (row.image_url) {
-        if (/^https?:\/\//i.test(row.image_url)) {
-          display = row.image_url;
-        } else {
-          display = await getAssetSignedUrl(cloudClient, row.image_url);
-        }
+    let display: string | null = null;
+    if (row.image_url) {
+      if (/^https?:\/\//i.test(row.image_url)) {
+        display = row.image_url;
+      } else {
+        display = await getAssetSignedUrl(cloudClient, row.image_url);
       }
-      setLogoDisplayUrl(display);
-    },
-    [],
-  );
+    }
+    setLogoDisplayUrl(display);
+  }, []);
 
   const load = useCallback(
     async (opts?: { isCancelled?: () => boolean }) => {
@@ -196,10 +194,48 @@ export function OrganizationSettings() {
     };
   }, [load]);
 
+  useEffect(() => {
+    let cancelled = false;
+
+    if (!cloudClient) {
+      setMembershipLogoUrls({});
+      return;
+    }
+
+    const resolveMembershipLogos = async () => {
+      if (!cloudClient) return;
+      const next: Record<string, string> = {};
+      for (const membership of myMemberships) {
+        const orgSummary = membership.organizations;
+        const imageUrl = orgSummary?.image_url;
+        const orgId = orgSummary?.id;
+        if (!orgId || !imageUrl) continue;
+
+        if (/^https?:\/\//i.test(imageUrl)) {
+          next[orgId] = imageUrl;
+          continue;
+        }
+
+        const signedUrl = await getAssetSignedUrl(cloudClient, imageUrl);
+        if (signedUrl) next[orgId] = signedUrl;
+      }
+
+      if (!cancelled) setMembershipLogoUrls(next);
+    };
+
+    void resolveMembershipLogos();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [myMemberships]);
+
   const pendingInvites = invites.filter((i) => i.status === 'pending');
   const seatFull = isOrganizationSeatFull(seatMemberCount, seatPendingCount);
 
-  const linkableRulesets = ownedCloudRulesets.filter((r) => !globallyLinkedRulesetIds.includes(r.id));
+  const linkableRulesets = ownedCloudRulesets.filter(
+    (r) => !globallyLinkedRulesetIds.includes(r.id),
+  );
 
   const handleCreate = async () => {
     if (!userId) return;
@@ -238,7 +274,12 @@ export function OrganizationSettings() {
         slug: editSlug,
         description: editDesc,
       });
-      const next = { ...org, name: editName.trim(), slug: editSlug.trim().toLowerCase(), description: editDesc };
+      const next = {
+        ...org,
+        name: editName.trim(),
+        slug: editSlug.trim().toLowerCase(),
+        description: editDesc,
+      };
       setOrg({ ...org, ...next });
       setMessage({ type: 'ok', text: 'Organization profile saved.' });
     } catch (e) {
@@ -445,7 +486,10 @@ export function OrganizationSettings() {
       setPendingForMe(await listPendingInvitesForCurrentUser());
       setMyMemberships(await listMyOrganizationMemberships());
       touchCloudRulesetList();
-      setMessage({ type: 'ok', text: 'You joined the organization. Shared cloud rulesets appear in your cloud list when you open it.' });
+      setMessage({
+        type: 'ok',
+        text: 'You joined the organization. Shared cloud rulesets appear in your cloud list when you open it.',
+      });
     } catch (e) {
       setMessage({ type: 'err', text: formatOrgSaveError(e) });
     } finally {
@@ -487,6 +531,7 @@ export function OrganizationSettings() {
   const otherMemberships = org
     ? myMemberships.filter((m) => m.organization_id !== org.id)
     : myMemberships;
+  const membershipsForMemberTab = org ? otherMemberships : myMemberships;
 
   const membershipCanLeave = (m: MyOrganizationMembershipRow) =>
     m.organizations != null && m.organizations.admin_user_id !== userId;
@@ -523,60 +568,425 @@ export function OrganizationSettings() {
         </div>
       )}
 
-      {pendingForMe.length > 0 ? (
-        <div className='flex flex-col gap-3 rounded-lg border p-4'>
-          <h4 className='text-sm font-medium'>Pending invitations</h4>
-          <p className='text-sm text-muted-foreground'>
-            Accept to join and sync shared cloud rulesets with that organization. Dismiss if you are not
-            interested.
-          </p>
-          <ul className='divide-y rounded-md border text-sm'>
-            {pendingForMe.map((inv) => (
-              <li
-                key={inv.id}
-                className='flex flex-col gap-3 px-3 py-3 sm:flex-row sm:items-center sm:justify-between'>
-                <div>
-                  <div className='font-medium'>{inv.organizations?.name ?? 'Organization'}</div>
-                  {inv.organizations?.slug ? (
-                    <div className='text-muted-foreground text-xs'>Slug: {inv.organizations.slug}</div>
-                  ) : null}
-                </div>
-                <div className='flex shrink-0 flex-wrap gap-2'>
-                  <Button type='button' disabled={busy} onClick={() => void handleAcceptInvite(inv.id)}>
-                    Accept
-                  </Button>
-                  <Button
-                    type='button'
-                    variant='outline'
-                    disabled={busy}
-                    onClick={() => void handleDismissInvite(inv.id)}>
-                    Dismiss
-                  </Button>
-                </div>
-              </li>
-            ))}
-          </ul>
-        </div>
-      ) : null}
+      <Tabs defaultValue='admin' className='w-full'>
+        <TabsList className='grid w-full max-w-md grid-cols-2'>
+          <TabsTrigger value='admin'>Admin</TabsTrigger>
+          <TabsTrigger value='member'>Member</TabsTrigger>
+        </TabsList>
 
-      {!org ? (
-        <div className='flex flex-col gap-8'>
-          {myMemberships.length > 0 ? (
-            <div className='flex flex-col gap-3'>
-              <h3 className='text-lg font-medium'>Organizations you’re in</h3>
+        <TabsContent value='admin' className='mt-4'>
+          {!org ? (
+            <div className='flex flex-col gap-4'>
+              <div>
+                <h3 className='text-lg font-medium'>Create an organization</h3>
+                <p className='text-sm text-muted-foreground'>
+                  You can administer one organization. Members get full sync access to linked cloud
+                  rulesets.
+                </p>
+              </div>
+              <div className='grid gap-2'>
+                <Label htmlFor='org-create-name'>Name</Label>
+                <Input
+                  id='org-create-name'
+                  value={createName}
+                  onChange={(e) => setCreateName(e.target.value)}
+                  autoComplete='organization'
+                />
+              </div>
+              <div className='grid gap-2'>
+                <Label htmlFor='org-create-logo'>Logo</Label>
+                {!logoDisplayUrl ? (
+                  <Input
+                    id='org-create-logo'
+                    type='file'
+                    accept='image/*'
+                    onChange={(e) => void handleCreateLogoPick(e.target.files?.[0] ?? null)}
+                  />
+                ) : null}
+                {logoDisplayUrl && !org ? (
+                  <div className='flex items-center gap-2'>
+                    <img
+                      src={logoDisplayUrl}
+                      alt=''
+                      className='size-16 rounded-md border object-cover'
+                    />
+                    <Button type='button' variant='outline' size='sm' onClick={handleClearLogo}>
+                      Remove
+                    </Button>
+                  </div>
+                ) : null}
+              </div>
+              <div className='grid gap-2'>
+                <Label htmlFor='org-create-slug'>Slug (internal)</Label>
+                <Input
+                  id='org-create-slug'
+                  value={createSlug}
+                  onChange={(e) => setCreateSlug(e.target.value.toLowerCase())}
+                  placeholder='my-group'
+                />
+              </div>
+              <DescriptionEditor
+                id='org-create-desc'
+                label='Description (optional)'
+                value={createDesc}
+                onChange={setCreateDesc}
+                disabled={busy}
+                placeholder='No description yet.'
+              />
+              <Button type='button' disabled={busy} onClick={() => void handleCreate()}>
+                {busy ? (
+                  <>
+                    <Loader2 className='mr-2 size-4 animate-spin' />
+                    Creating…
+                  </>
+                ) : (
+                  'Create organization'
+                )}
+              </Button>
+            </div>
+          ) : (
+            <div className='flex flex-col gap-6'>
+              <div>
+                <h3 className='text-lg font-medium'>{org.name}</h3>
+                <p className='text-sm text-muted-foreground'>You are the organization admin.</p>
+              </div>
+
+              <Tabs defaultValue='details' className='w-full'>
+                <TabsList className='grid w-full max-w-2xl grid-cols-3'>
+                  <TabsTrigger value='details' className='gap-1.5 px-2 sm:gap-2 sm:px-3'>
+                    <FileText className='size-4 shrink-0' />
+                    <span className='truncate'>Details</span>
+                  </TabsTrigger>
+                  <TabsTrigger value='members' className='gap-1.5 px-2 sm:gap-2 sm:px-3'>
+                    <Users className='size-4 shrink-0' />
+                    <span className='truncate'>Members</span>
+                  </TabsTrigger>
+                  <TabsTrigger value='content' className='gap-1.5 px-2 sm:gap-2 sm:px-3'>
+                    <Library className='size-4 shrink-0' />
+                    <span className='truncate'>Content</span>
+                  </TabsTrigger>
+                </TabsList>
+
+                <TabsContent value='details' className='mt-4 flex flex-col gap-6'>
+                  <div className='flex flex-col gap-4'>
+                    <h4 className='text-sm font-medium'>Profile</h4>
+                    <div className='grid gap-2'>
+                      <Label htmlFor='org-edit-name'>Name</Label>
+                      <Input
+                        id='org-edit-name'
+                        value={editName}
+                        onChange={(e) => setEditName(e.target.value)}
+                      />
+                    </div>
+                    <div className='grid gap-4 sm:grid-cols-2'>
+                      <div className='grid gap-2'>
+                        <Label htmlFor='org-edit-logo'>Logo</Label>
+                        {!logoDisplayUrl ? (
+                          <Input
+                            id='org-edit-logo'
+                            type='file'
+                            accept='image/*'
+                            onChange={(e) => void handleLogoFile(e.target.files?.[0] ?? null)}
+                          />
+                        ) : null}
+                        {logoDisplayUrl ? (
+                          <div className='group relative h-16 w-16'>
+                            <img
+                              src={logoDisplayUrl}
+                              alt=''
+                              className='size-16 rounded-md border object-cover'
+                            />
+                            <Button
+                              type='button'
+                              variant='destructive'
+                              size='icon'
+                              className='absolute right-1 top-1 size-6 opacity-0 transition-opacity group-hover:opacity-100'
+                              onClick={() => void handleClearLogo()}>
+                              <X className='size-3.5' />
+                              <span className='sr-only'>Remove logo</span>
+                            </Button>
+                          </div>
+                        ) : null}
+                      </div>
+                      <div className='grid gap-2'>
+                        <Label htmlFor='org-edit-slug'>Slug</Label>
+                        <Input
+                          id='org-edit-slug'
+                          value={editSlug}
+                          onChange={(e) => setEditSlug(e.target.value.toLowerCase())}
+                        />
+                      </div>
+                    </div>
+                    <DescriptionEditor
+                      id='org-edit-desc'
+                      value={editDesc}
+                      onChange={setEditDesc}
+                      disabled={busy}
+                      placeholder='No description yet.'
+                    />
+                    <div className='flex flex-wrap gap-2'>
+                      <Button
+                        type='button'
+                        variant='secondary'
+                        disabled={busy}
+                        onClick={() => void handleSaveProfile()}>
+                        Save profile
+                      </Button>
+                      <AlertDialog open={deleteOrgOpen} onOpenChange={setDeleteOrgOpen}>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            type='button'
+                            variant='destructive'
+                            disabled={busy}
+                            className='w-fit'>
+                            Delete organization
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Delete this organization?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              This cannot be undone. Members lose cloud access to linked rulesets;
+                              pending invites are removed.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <Button
+                              type='button'
+                              variant='destructive'
+                              disabled={busy}
+                              onClick={() => void handleDeleteOrg()}>
+                              {busy ? 'Deleting…' : 'Delete organization'}
+                            </Button>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
+                  </div>
+                </TabsContent>
+
+                <TabsContent value='content' className='mt-4 flex flex-col gap-3'>
+                  <h4 className='text-sm font-medium'>Linked cloud rulesets</h4>
+                  <p className='text-sm text-muted-foreground'>
+                    Only rulesets you own in the cloud can be linked. Each ruleset can belong to at
+                    most one organization.
+                  </p>
+                  {linkedRulesets.length ? (
+                    <ul className='divide-y rounded-md border text-sm'>
+                      {linkedRulesets.map((l) => {
+                        const title = ownedCloudRulesets.find((r) => r.id === l.ruleset_id)?.title;
+                        return (
+                          <li
+                            key={l.ruleset_id}
+                            className='flex items-center justify-between gap-2 px-3 py-2'>
+                        <span className='truncate'>{title ?? l.ruleset_id}</span>
+                            <Button
+                              type='button'
+                              variant='outline'
+                              size='sm'
+                              disabled={busy}
+                              onClick={() => void handleUnlinkRuleset(l.ruleset_id)}>
+                              Unlink
+                            </Button>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  ) : (
+                    <p className='text-sm text-muted-foreground'>No linked rulesets.</p>
+                  )}
+                  {linkableRulesets.length ? (
+                    <div className='flex flex-wrap items-end gap-2'>
+                      <div className='grid gap-2 min-w-[220px]'>
+                        <Label>Link ruleset</Label>
+                        <Select value={linkRulesetId || undefined} onValueChange={setLinkRulesetId}>
+                          <SelectTrigger className='w-full min-w-[220px]'>
+                            <SelectValue placeholder='Choose a ruleset…' />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {linkableRulesets.map((r) => (
+                              <SelectItem key={r.id} value={r.id}>
+                                {r.title || r.id}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <Button
+                        type='button'
+                        disabled={busy || !linkRulesetId}
+                        onClick={() => void handleLinkRuleset()}>
+                        Link
+                      </Button>
+                    </div>
+                  ) : (
+                    <p className='text-sm text-muted-foreground'>
+                      No eligible cloud rulesets to link (all owned rulesets may already be linked
+                      elsewhere).
+                    </p>
+                  )}
+                </TabsContent>
+
+                <TabsContent value='members' className='mt-4 flex flex-col gap-8'>
+                  <div className='flex flex-col gap-3'>
+                    <h4 className='text-sm font-medium'>Invites</h4>
+                    <div className='flex flex-wrap items-end gap-2'>
+                      <div className='grid flex-1 gap-2 min-w-[200px]'>
+                        <Label htmlFor='org-invite-email'>Email</Label>
+                        <Input
+                          id='org-invite-email'
+                          type='email'
+                          value={inviteEmail}
+                          onChange={(e) => setInviteEmail(e.target.value)}
+                          placeholder='player@example.com'
+                          disabled={seatFull}
+                        />
+                      </div>
+                      <Button
+                        type='button'
+                        disabled={busy || seatFull || !inviteEmail.trim()}
+                        onClick={() => void handleInvite()}>
+                        Invite
+                      </Button>
+                    </div>
+                    {seatFull ? (
+                      <p className='text-sm text-amber-600 dark:text-amber-500'>
+                        Seat limit reached. Revoke a pending invite or remove a member to invite
+                        someone new.
+                      </p>
+                    ) : null}
+                    {pendingInvites.length ? (
+                      <ul className='divide-y rounded-md border text-sm'>
+                        {pendingInvites.map((inv) => (
+                          <li
+                            key={inv.id}
+                            className='flex items-center justify-between gap-2 px-3 py-2'>
+                            <span className='truncate'>{inv.invitee_email_normalized}</span>
+                            <Button
+                              type='button'
+                              variant='outline'
+                              size='sm'
+                              disabled={busy}
+                              onClick={() => void handleRevokeInvite(inv.id)}>
+                              Revoke
+                            </Button>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className='text-sm text-muted-foreground'>No pending invites.</p>
+                    )}
+                  </div>
+
+                  <div className='flex flex-col gap-3'>
+                    <h4 className='text-sm font-medium'>Members</h4>
+                    {members.length ? (
+                      <ul className='divide-y rounded-md border text-sm'>
+                        {members.map((m) => (
+                          <li
+                            key={m.user_id}
+                            className='flex items-center justify-between gap-2 px-3 py-2'>
+                            <span className='truncate'>{m.email}</span>
+                            <Button
+                              type='button'
+                              variant='outline'
+                              size='sm'
+                              onClick={() => setRemoveMember(m)}>
+                              Remove
+                            </Button>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className='text-sm text-muted-foreground'>No members yet besides you.</p>
+                    )}
+                  </div>
+
+                  <p className='text-sm text-muted-foreground'>
+                    Seats in use: {seatMemberCount + seatPendingCount} of 4
+                  </p>
+                </TabsContent>
+              </Tabs>
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value='member' className='mt-4 flex flex-col gap-8'>
+          {pendingForMe.length > 0 ? (
+            <div className='flex flex-col gap-3 rounded-lg border p-4'>
+              <h4 className='text-sm font-medium'>Pending invitations</h4>
               <p className='text-sm text-muted-foreground'>
-                Leave an organization to stop syncing its linked cloud rulesets on this account.
+                Accept to join and sync shared cloud rulesets with that organization. Dismiss if you
+                are not interested.
               </p>
               <ul className='divide-y rounded-md border text-sm'>
-                {myMemberships.map((m) => (
+                {pendingForMe.map((inv) => (
+                  <li
+                    key={inv.id}
+                    className='flex flex-col gap-3 px-3 py-3 sm:flex-row sm:items-center sm:justify-between'>
+                    <div>
+                      <div className='font-medium'>{inv.organizations?.name ?? 'Organization'}</div>
+                      {inv.organizations?.slug ? (
+                        <div className='text-muted-foreground text-xs'>
+                          Slug: {inv.organizations.slug}
+                        </div>
+                      ) : null}
+                    </div>
+                    <div className='flex shrink-0 flex-wrap gap-2'>
+                      <Button
+                        type='button'
+                        disabled={busy}
+                        onClick={() => void handleAcceptInvite(inv.id)}>
+                        Accept
+                      </Button>
+                      <Button
+                        type='button'
+                        variant='outline'
+                        disabled={busy}
+                        onClick={() => void handleDismissInvite(inv.id)}>
+                        Dismiss
+                      </Button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+
+          {membershipsForMemberTab.length > 0 ? (
+            <div className='flex flex-col gap-3'>
+              <h4 className='text-sm font-medium'>
+                {org ? 'Other organizations' : 'Organizations you’re in'}
+              </h4>
+              <p className='text-sm text-muted-foreground'>
+                {org
+                  ? 'Groups where you are a member (not the one you administer above).'
+                  : 'Leave an organization to stop syncing its linked cloud rulesets on this account.'}
+              </p>
+              <ul className='divide-y rounded-md border text-sm'>
+                {membershipsForMemberTab.map((m) => (
                   <li
                     key={m.organization_id}
                     className='flex flex-col gap-2 px-3 py-3 sm:flex-row sm:items-center sm:justify-between'>
-                    <div>
-                      <div className='font-medium'>{m.organizations?.name ?? m.organization_id}</div>
-                      {m.organizations?.slug ? (
-                        <div className='text-muted-foreground text-xs'>{m.organizations.slug}</div>
+                    <div className='flex items-start gap-2'>
+                      {m.organizations?.id && membershipLogoUrls[m.organizations.id] ? (
+                        <img
+                          src={membershipLogoUrls[m.organizations.id]}
+                          alt=''
+                          className='mt-0.5 size-9 shrink-0 rounded-sm border object-cover'
+                        />
                       ) : null}
+                      <div>
+                        <div className='font-medium'>
+                          {m.organizations?.name ?? m.organization_id}
+                        </div>
+                        {m.organizations?.slug ? (
+                          <div className='text-muted-foreground text-xs'>
+                            {m.organizations.slug}
+                          </div>
+                        ) : null}
+                      </div>
                     </div>
                     {membershipCanLeave(m) ? (
                       <Button
@@ -588,345 +998,23 @@ export function OrganizationSettings() {
                         Leave
                       </Button>
                     ) : (
-                      <p className='text-muted-foreground w-fit text-xs sm:text-right'>You administer this organization.</p>
+                      <p className='text-muted-foreground w-fit text-xs sm:text-right'>
+                        You administer this organization.
+                      </p>
                     )}
                   </li>
                 ))}
               </ul>
             </div>
-          ) : null}
-
-          <div className='flex flex-col gap-4'>
-            <div>
-              <h3 className='text-lg font-medium'>Create an organization</h3>
+          ) : (
+            pendingForMe.length === 0 && (
               <p className='text-sm text-muted-foreground'>
-                You can administer one organization. Members get full sync access to linked cloud
-                rulesets.
+                You are not currently a member of any organizations.
               </p>
-            </div>
-          <div className='grid gap-2'>
-            <Label htmlFor='org-create-name'>Name</Label>
-            <Input
-              id='org-create-name'
-              value={createName}
-              onChange={(e) => setCreateName(e.target.value)}
-              autoComplete='organization'
-            />
-          </div>
-          <div className='grid gap-2'>
-            <Label htmlFor='org-create-slug'>Slug (internal)</Label>
-            <Input
-              id='org-create-slug'
-              value={createSlug}
-              onChange={(e) => setCreateSlug(e.target.value.toLowerCase())}
-              placeholder='my-group'
-            />
-          </div>
-          <DescriptionEditor
-            id='org-create-desc'
-            label='Description (optional)'
-            value={createDesc}
-            onChange={setCreateDesc}
-            disabled={busy}
-            placeholder='No description yet.'
-          />
-          <div className='grid gap-2'>
-            <Label htmlFor='org-create-logo'>Logo (optional, no SVG)</Label>
-            <Input
-              id='org-create-logo'
-              type='file'
-              accept='image/*'
-              onChange={(e) => void handleCreateLogoPick(e.target.files?.[0] ?? null)}
-            />
-            {logoDisplayUrl && !org ? (
-              <div className='flex items-center gap-2'>
-                <img src={logoDisplayUrl} alt='' className='size-16 rounded-md border object-cover' />
-                <Button type='button' variant='outline' size='sm' onClick={handleClearLogo}>
-                  Remove
-                </Button>
-              </div>
-            ) : null}
-          </div>
-          <Button type='button' disabled={busy} onClick={() => void handleCreate()}>
-            {busy ? (
-              <>
-                <Loader2 className='mr-2 size-4 animate-spin' />
-                Creating…
-              </>
-            ) : (
-              'Create organization'
-            )}
-          </Button>
-          </div>
-        </div>
-      ) : (
-        <>
-          <div>
-            <h3 className='text-lg font-medium'>{org.name}</h3>
-            <p className='text-sm text-muted-foreground'>You are the organization admin.</p>
-          </div>
-
-          <Tabs defaultValue='details' className='w-full'>
-            <TabsList className='grid w-full max-w-2xl grid-cols-3'>
-              <TabsTrigger value='details' className='gap-1.5 px-2 sm:gap-2 sm:px-3'>
-                <FileText className='size-4 shrink-0' />
-                <span className='truncate'>Details</span>
-              </TabsTrigger>
-              <TabsTrigger value='members' className='gap-1.5 px-2 sm:gap-2 sm:px-3'>
-                <Users className='size-4 shrink-0' />
-                <span className='truncate'>Members</span>
-              </TabsTrigger>
-              <TabsTrigger value='content' className='gap-1.5 px-2 sm:gap-2 sm:px-3'>
-                <Library className='size-4 shrink-0' />
-                <span className='truncate'>Content</span>
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent value='details' className='mt-4 flex flex-col gap-6'>
-              <div className='flex flex-col gap-4'>
-                <h4 className='text-sm font-medium'>Profile</h4>
-                <div className='grid gap-2'>
-                  <Label htmlFor='org-edit-name'>Name</Label>
-                  <Input id='org-edit-name' value={editName} onChange={(e) => setEditName(e.target.value)} />
-                </div>
-                <div className='grid gap-2'>
-                  <Label htmlFor='org-edit-slug'>Slug</Label>
-                  <Input
-                    id='org-edit-slug'
-                    value={editSlug}
-                    onChange={(e) => setEditSlug(e.target.value.toLowerCase())}
-                  />
-                </div>
-                <DescriptionEditor
-                  id='org-edit-desc'
-                  value={editDesc}
-                  onChange={setEditDesc}
-                  disabled={busy}
-                  placeholder='No description yet.'
-                />
-                <div className='grid gap-2'>
-                  <Label htmlFor='org-edit-logo'>Logo (no SVG)</Label>
-                  <Input
-                    id='org-edit-logo'
-                    type='file'
-                    accept='image/*'
-                    onChange={(e) => void handleLogoFile(e.target.files?.[0] ?? null)}
-                  />
-                  {logoDisplayUrl ? (
-                    <div className='flex items-center gap-2'>
-                      <img src={logoDisplayUrl} alt='' className='size-16 rounded-md border object-cover' />
-                      <Button type='button' variant='outline' size='sm' onClick={() => void handleClearLogo()}>
-                        Remove logo
-                      </Button>
-                    </div>
-                  ) : null}
-                </div>
-                <Button type='button' variant='secondary' disabled={busy} onClick={() => void handleSaveProfile()}>
-                  Save profile
-                </Button>
-              </div>
-
-              <div className='flex flex-col gap-3'>
-                <h4 className='text-sm font-medium text-destructive'>Danger zone</h4>
-                <p className='text-sm text-muted-foreground'>
-                  Deleting the organization removes all members and invites and unlinks all rulesets.
-                  Local copies of rulesets stay on each device.
-                </p>
-                <AlertDialog open={deleteOrgOpen} onOpenChange={setDeleteOrgOpen}>
-                  <AlertDialogTrigger asChild>
-                    <Button type='button' variant='destructive' disabled={busy} className='w-fit'>
-                      Delete organization
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Delete this organization?</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        This cannot be undone. Members lose cloud access to linked rulesets; pending invites
-                        are removed.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <Button
-                        type='button'
-                        variant='destructive'
-                        disabled={busy}
-                        onClick={() => void handleDeleteOrg()}>
-                        {busy ? 'Deleting…' : 'Delete organization'}
-                      </Button>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              </div>
-            </TabsContent>
-
-            <TabsContent value='content' className='mt-4 flex flex-col gap-3'>
-              <h4 className='text-sm font-medium'>Linked cloud rulesets</h4>
-              <p className='text-sm text-muted-foreground'>
-                Only rulesets you own in the cloud can be linked. Each ruleset can belong to at most one
-                organization.
-              </p>
-              {linkedRulesets.length ? (
-                <ul className='divide-y rounded-md border text-sm'>
-                  {linkedRulesets.map((l) => {
-                    const title = ownedCloudRulesets.find((r) => r.id === l.ruleset_id)?.title;
-                    return (
-                      <li key={l.ruleset_id} className='flex items-center justify-between gap-2 px-3 py-2'>
-                        <span className='truncate'>
-                          {title ?? l.ruleset_id}
-                          <span className='ml-2 text-muted-foreground font-mono text-xs'>{l.ruleset_id}</span>
-                        </span>
-                        <Button
-                          type='button'
-                          variant='outline'
-                          size='sm'
-                          disabled={busy}
-                          onClick={() => void handleUnlinkRuleset(l.ruleset_id)}>
-                          Unlink
-                        </Button>
-                      </li>
-                    );
-                  })}
-                </ul>
-              ) : (
-                <p className='text-sm text-muted-foreground'>No linked rulesets.</p>
-              )}
-              {linkableRulesets.length ? (
-                <div className='flex flex-wrap items-end gap-2'>
-                  <div className='grid gap-2 min-w-[220px]'>
-                    <Label>Link ruleset</Label>
-                    <Select value={linkRulesetId || undefined} onValueChange={setLinkRulesetId}>
-                      <SelectTrigger className='w-full min-w-[220px]'>
-                        <SelectValue placeholder='Choose a ruleset…' />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {linkableRulesets.map((r) => (
-                          <SelectItem key={r.id} value={r.id}>
-                            {r.title || r.id}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <Button
-                    type='button'
-                    disabled={busy || !linkRulesetId}
-                    onClick={() => void handleLinkRuleset()}>
-                    Link
-                  </Button>
-                </div>
-              ) : (
-                <p className='text-sm text-muted-foreground'>
-                  No eligible cloud rulesets to link (all owned rulesets may already be linked
-                  elsewhere).
-                </p>
-              )}
-            </TabsContent>
-
-            <TabsContent value='members' className='mt-4 flex flex-col gap-8'>
-              <div className='flex flex-col gap-3'>
-                <h4 className='text-sm font-medium'>Invites</h4>
-                <p className='text-sm text-muted-foreground'>
-                  Seats in use: {seatMemberCount + seatPendingCount} of 4 (plus you as admin). Pending
-                  invites count toward the cap. No email is sent — share the invite in your own channel.
-                </p>
-                <div className='flex flex-wrap items-end gap-2'>
-                  <div className='grid flex-1 gap-2 min-w-[200px]'>
-                    <Label htmlFor='org-invite-email'>Email</Label>
-                    <Input
-                      id='org-invite-email'
-                      type='email'
-                      value={inviteEmail}
-                      onChange={(e) => setInviteEmail(e.target.value)}
-                      placeholder='player@example.com'
-                      disabled={seatFull}
-                    />
-                  </div>
-                  <Button type='button' disabled={busy || seatFull || !inviteEmail.trim()} onClick={() => void handleInvite()}>
-                    Invite
-                  </Button>
-                </div>
-                {seatFull ? (
-                  <p className='text-sm text-amber-600 dark:text-amber-500'>
-                    Seat limit reached. Revoke a pending invite or remove a member to invite someone new.
-                  </p>
-                ) : null}
-                {pendingInvites.length ? (
-                  <ul className='divide-y rounded-md border text-sm'>
-                    {pendingInvites.map((inv) => (
-                      <li key={inv.id} className='flex items-center justify-between gap-2 px-3 py-2'>
-                        <span className='truncate'>{inv.invitee_email_normalized}</span>
-                        <Button
-                          type='button'
-                          variant='outline'
-                          size='sm'
-                          disabled={busy}
-                          onClick={() => void handleRevokeInvite(inv.id)}>
-                          Revoke
-                        </Button>
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className='text-sm text-muted-foreground'>No pending invites.</p>
-                )}
-              </div>
-
-              <div className='flex flex-col gap-3'>
-                <h4 className='text-sm font-medium'>Members</h4>
-                {members.length ? (
-                  <ul className='divide-y rounded-md border text-sm'>
-                    {members.map((m) => (
-                      <li key={m.user_id} className='flex items-center justify-between gap-2 px-3 py-2'>
-                        <span className='truncate'>{m.email}</span>
-                        <Button type='button' variant='outline' size='sm' onClick={() => setRemoveMember(m)}>
-                          Remove
-                        </Button>
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className='text-sm text-muted-foreground'>No members yet besides you.</p>
-                )}
-              </div>
-            </TabsContent>
-          </Tabs>
-
-          {otherMemberships.length > 0 ? (
-            <div className='flex flex-col gap-3'>
-              <h4 className='text-sm font-medium'>Other organizations</h4>
-              <p className='text-sm text-muted-foreground'>
-                Groups where you are a member (not the one you administer above).
-              </p>
-              <ul className='divide-y rounded-md border text-sm'>
-                {otherMemberships.map((m) => (
-                  <li
-                    key={m.organization_id}
-                    className='flex flex-col gap-2 px-3 py-3 sm:flex-row sm:items-center sm:justify-between'>
-                    <div>
-                      <div className='font-medium'>{m.organizations?.name ?? m.organization_id}</div>
-                      {m.organizations?.slug ? (
-                        <div className='text-muted-foreground text-xs'>{m.organizations.slug}</div>
-                      ) : null}
-                    </div>
-                    {membershipCanLeave(m) ? (
-                      <Button
-                        type='button'
-                        variant='outline'
-                        size='sm'
-                        className='w-fit shrink-0'
-                        onClick={() => setLeaveOrgId(m.organization_id)}>
-                        Leave
-                      </Button>
-                    ) : null}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ) : null}
-        </>
-      )}
+            )
+          )}
+        </TabsContent>
+      </Tabs>
 
       <AlertDialog open={!!removeMember} onOpenChange={(o) => !o && setRemoveMember(null)}>
         <AlertDialogContent>
@@ -940,7 +1028,11 @@ export function OrganizationSettings() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <Button type='button' variant='destructive' disabled={busy} onClick={() => void confirmRemoveMember()}>
+            <Button
+              type='button'
+              variant='destructive'
+              disabled={busy}
+              onClick={() => void confirmRemoveMember()}>
               {busy ? 'Removing…' : 'Remove'}
             </Button>
           </AlertDialogFooter>
@@ -952,13 +1044,17 @@ export function OrganizationSettings() {
           <AlertDialogHeader>
             <AlertDialogTitle>Leave this organization?</AlertDialogTitle>
             <AlertDialogDescription>
-              You will lose cloud access to rulesets linked to this organization. Local copies stay on
-              your devices.
+              You will lose cloud access to rulesets linked to this organization. Local copies stay
+              on your devices.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <Button type='button' variant='destructive' disabled={busy} onClick={() => void confirmLeaveOrganization()}>
+            <Button
+              type='button'
+              variant='destructive'
+              disabled={busy}
+              onClick={() => void confirmLeaveOrganization()}>
               {busy ? 'Leaving…' : 'Leave organization'}
             </Button>
           </AlertDialogFooter>

@@ -380,7 +380,10 @@ export async function unlinkRulesetFromOrganization(
   if (error) throw error;
 }
 
-export type OrganizationSummary = Pick<OrganizationRow, 'id' | 'name' | 'slug' | 'admin_user_id'>;
+export type OrganizationSummary = Pick<
+  OrganizationRow,
+  'id' | 'name' | 'slug' | 'admin_user_id' | 'image_url'
+>;
 
 export type PendingInviteForUserRow = OrganizationInviteRow & {
   organizations: OrganizationSummary | null;
@@ -405,7 +408,7 @@ export async function listPendingInvitesForCurrentUser(): Promise<PendingInviteF
   const { data, error } = await client
     .from('organization_invites')
     .select(
-      'id, organization_id, invitee_email_normalized, invited_by, status, created_at, organizations(id, name, slug, admin_user_id)',
+      'id, organization_id, invitee_email_normalized, invited_by, status, created_at, organizations(id, name, slug, admin_user_id, image_url)',
     )
     .eq('status', 'pending');
   if (error) throw error;
@@ -421,7 +424,7 @@ export async function listMyOrganizationMemberships(): Promise<MyOrganizationMem
 
   const { data, error } = await client
     .from('organization_members')
-    .select('organization_id, created_at, organizations(id, name, slug, admin_user_id)')
+    .select('organization_id, created_at, organizations(id, name, slug, admin_user_id, image_url)')
     .eq('user_id', uid);
   if (error) throw error;
   return (
