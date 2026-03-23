@@ -16,6 +16,9 @@ interface CloudAuthState {
   init: () => Promise<void>;
   /** Re-fetch cloud sync eligibility (e.g. after an admin enables sync in the dashboard). */
   refreshCloudSyncEligibility: () => Promise<void>;
+  /** Bumped after org invite accept / leave so cloud ruleset lists refetch (org-linked rulesets). */
+  cloudRulesetListEpoch: number;
+  touchCloudRulesetList: () => void;
 }
 
 /** Dedupes RPC: same Supabase user id + not forced → skip; concurrent calls share one in-flight promise. */
@@ -73,6 +76,9 @@ export const useCloudAuthStore = create<CloudAuthState>((set) => ({
   isLoading: true,
   cloudSyncEnabled: false,
   isCloudSyncEligibilityLoading: false,
+  cloudRulesetListEpoch: 0,
+
+  touchCloudRulesetList: () => set((s) => ({ cloudRulesetListEpoch: s.cloudRulesetListEpoch + 1 })),
 
   refreshCloudSyncEligibility: async () => {
     const session = await getSession();

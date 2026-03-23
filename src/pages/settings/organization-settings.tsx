@@ -23,25 +23,32 @@ import {
 } from '@/components';
 import { cloudClient } from '@/lib/cloud/client';
 import {
+  acceptOrganizationInvite,
   clearOrgLogo,
   countOrganizationSeats,
   createOrganization,
   deleteOrganization,
+  dismissOrganizationInvite,
   fetchOrganizationAsAdmin,
   formatOrgSaveError,
   getAssetSignedUrl,
   inviteUserToOrganization,
   isOrganizationSeatFull,
+  leaveOrganization,
   linkRulesetToOrganization,
   listAllLinkedRulesetIds,
+  listMyOrganizationMemberships,
   listOrganizationInvites,
   listOrganizationRulesetLinks,
   listOwnCloudRulesetSummaries,
+  listPendingInvitesForCurrentUser,
   organizationAdminListMembers,
+  type MyOrganizationMembershipRow,
   type OrganizationInviteRow,
   type OrganizationMemberRow,
   type OrganizationRow,
   type OrganizationRulesetLinkRow,
+  type PendingInviteForUserRow,
   removeOrganizationMember,
   revokeOrganizationInvite,
   unlinkRulesetFromOrganization,
@@ -65,6 +72,7 @@ function readFileAsDataUrl(file: File): Promise<string> {
 
 export function OrganizationSettings() {
   const cloudUser = useCloudAuthStore((s) => s.cloudUser);
+  const touchCloudRulesetList = useCloudAuthStore((s) => s.touchCloudRulesetList);
   const userId = cloudUser?.id ?? null;
 
   const [loading, setLoading] = useState(true);
@@ -95,6 +103,9 @@ export function OrganizationSettings() {
 
   const [removeMember, setRemoveMember] = useState<OrganizationMemberRow | null>(null);
   const [deleteOrgOpen, setDeleteOrgOpen] = useState(false);
+  const [pendingForMe, setPendingForMe] = useState<PendingInviteForUserRow[]>([]);
+  const [myMemberships, setMyMemberships] = useState<MyOrganizationMembershipRow[]>([]);
+  const [leaveOrgId, setLeaveOrgId] = useState<string | null>(null);
 
   const refreshOrgDetails = useCallback(
     async (row: OrganizationRow, uid: string) => {
@@ -135,6 +146,8 @@ export function OrganizationSettings() {
         if (!drop()) {
           setLoading(false);
           setOrg(null);
+          setPendingForMe([]);
+          setMyMemberships([]);
         }
         return;
       }
@@ -143,8 +156,14 @@ export function OrganizationSettings() {
         setMessage(null);
       }
       try {
-        const o = await fetchOrganizationAsAdmin(userId);
+        const [o, pending, memberships] = await Promise.all([
+          fetchOrganizationAsAdmin(userId),
+          listPendingInvitesForCurrentUser(),
+          listMyOrganizationMemberships(),
+        ]);
         if (drop()) return;
+        setPendingForMe(pending);
+        setMyMemberships(memberships);
         setOrg(o);
         if (o) {
           setEditName(o.name);
@@ -401,6 +420,13 @@ export function OrganizationSettings() {
       setCreateName('');
       setCreateSlug('');
       setCreateDesc('');
+      const [p, m] = await Promise.all([
+        listPendingInvitesForCurrentUser(),
+        listMyOrganizationMemberships(),
+      ]);
+      setPendingForMe(p);
+      setMyMemberships(m);
+      touchCloudRulesetList();
       setMessage({ type: 'ok', text: 'Organization deleted.' });
     } catch (e) {
       setMessage({ type: 'err', text: formatOrgSaveError(e) });
@@ -408,6 +434,60 @@ export function OrganizationSettings() {
       setBusy(false);
     }
   };
+
+  const handleAcceptInvite = async (inviteId: string) => {
+    setBusy(true);
+    setMessage(null);
+    try {
+      await acceptOrganizationInvite(inviteId);
+      setPendingForMe(await listPendingInvitesForCurrentUser());
+      setMyMemberships(await listMyOrganizationMemberships());
+      touchCloudRulesetList();
+      setMessage({ type: 'ok', text: 'You joined the organization. Shared cloud rulesets appear in your cloud list when you open it.' });
+    } catch (e) {
+      setMessage({ type: 'err', text: formatOrgSaveError(e) });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleDismissInvite = async (inviteId: string) => {
+    setBusy(true);
+    setMessage(null);
+    try {
+      await dismissOrganizationInvite(inviteId);
+      setPendingForMe(await listPendingInvitesForCurrentUser());
+      setMessage({ type: 'ok', text: 'Invite dismissed.' });
+    } catch (e) {
+      setMessage({ type: 'err', text: formatOrgSaveError(e) });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const confirmLeaveOrganization = async () => {
+    if (!leaveOrgId) return;
+    setBusy(true);
+    setMessage(null);
+    try {
+      await leaveOrganization(leaveOrgId);
+      setLeaveOrgId(null);
+      setMyMemberships(await listMyOrganizationMemberships());
+      touchCloudRulesetList();
+      setMessage({ type: 'ok', text: 'You left the organization.' });
+    } catch (e) {
+      setMessage({ type: 'err', text: formatOrgSaveError(e) });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const otherMemberships = org
+    ? myMemberships.filter((m) => m.organization_id !== org.id)
+    : myMemberships;
+
+  const membershipCanLeave = (m: MyOrganizationMembershipRow) =>
+    m.organizations != null && m.organizations.admin_user_id !== userId;
 
   if (!cloudClient || !userId) {
     return (
@@ -441,15 +521,87 @@ export function OrganizationSettings() {
         </div>
       )}
 
+      {pendingForMe.length > 0 ? (
+        <div className='flex flex-col gap-3 rounded-lg border p-4'>
+          <h4 className='text-sm font-medium'>Pending invitations</h4>
+          <p className='text-sm text-muted-foreground'>
+            Accept to join and sync shared cloud rulesets with that organization. Dismiss if you are not
+            interested.
+          </p>
+          <ul className='divide-y rounded-md border text-sm'>
+            {pendingForMe.map((inv) => (
+              <li
+                key={inv.id}
+                className='flex flex-col gap-3 px-3 py-3 sm:flex-row sm:items-center sm:justify-between'>
+                <div>
+                  <div className='font-medium'>{inv.organizations?.name ?? 'Organization'}</div>
+                  {inv.organizations?.slug ? (
+                    <div className='text-muted-foreground text-xs'>Slug: {inv.organizations.slug}</div>
+                  ) : null}
+                </div>
+                <div className='flex shrink-0 flex-wrap gap-2'>
+                  <Button type='button' disabled={busy} onClick={() => void handleAcceptInvite(inv.id)}>
+                    Accept
+                  </Button>
+                  <Button
+                    type='button'
+                    variant='outline'
+                    disabled={busy}
+                    onClick={() => void handleDismissInvite(inv.id)}>
+                    Dismiss
+                  </Button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+
       {!org ? (
-        <div className='flex flex-col gap-4'>
-          <div>
-            <h3 className='text-lg font-medium'>Create an organization</h3>
-            <p className='text-sm text-muted-foreground'>
-              You can administer one organization. Members get full sync access to linked cloud
-              rulesets.
-            </p>
-          </div>
+        <div className='flex flex-col gap-8'>
+          {myMemberships.length > 0 ? (
+            <div className='flex flex-col gap-3'>
+              <h3 className='text-lg font-medium'>Organizations you’re in</h3>
+              <p className='text-sm text-muted-foreground'>
+                Leave an organization to stop syncing its linked cloud rulesets on this account.
+              </p>
+              <ul className='divide-y rounded-md border text-sm'>
+                {myMemberships.map((m) => (
+                  <li
+                    key={m.organization_id}
+                    className='flex flex-col gap-2 px-3 py-3 sm:flex-row sm:items-center sm:justify-between'>
+                    <div>
+                      <div className='font-medium'>{m.organizations?.name ?? m.organization_id}</div>
+                      {m.organizations?.slug ? (
+                        <div className='text-muted-foreground text-xs'>{m.organizations.slug}</div>
+                      ) : null}
+                    </div>
+                    {membershipCanLeave(m) ? (
+                      <Button
+                        type='button'
+                        variant='outline'
+                        size='sm'
+                        className='w-fit shrink-0'
+                        onClick={() => setLeaveOrgId(m.organization_id)}>
+                        Leave
+                      </Button>
+                    ) : (
+                      <p className='text-muted-foreground w-fit text-xs sm:text-right'>You administer this organization.</p>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+
+          <div className='flex flex-col gap-4'>
+            <div>
+              <h3 className='text-lg font-medium'>Create an organization</h3>
+              <p className='text-sm text-muted-foreground'>
+                You can administer one organization. Members get full sync access to linked cloud
+                rulesets.
+              </p>
+            </div>
           <div className='grid gap-2'>
             <Label htmlFor='org-create-name'>Name</Label>
             <Input
@@ -503,6 +655,7 @@ export function OrganizationSettings() {
               'Create organization'
             )}
           </Button>
+          </div>
         </div>
       ) : (
         <>
@@ -737,6 +890,39 @@ export function OrganizationSettings() {
               </div>
             </TabsContent>
           </Tabs>
+
+          {otherMemberships.length > 0 ? (
+            <div className='flex flex-col gap-3'>
+              <h4 className='text-sm font-medium'>Other organizations</h4>
+              <p className='text-sm text-muted-foreground'>
+                Groups where you are a member (not the one you administer above).
+              </p>
+              <ul className='divide-y rounded-md border text-sm'>
+                {otherMemberships.map((m) => (
+                  <li
+                    key={m.organization_id}
+                    className='flex flex-col gap-2 px-3 py-3 sm:flex-row sm:items-center sm:justify-between'>
+                    <div>
+                      <div className='font-medium'>{m.organizations?.name ?? m.organization_id}</div>
+                      {m.organizations?.slug ? (
+                        <div className='text-muted-foreground text-xs'>{m.organizations.slug}</div>
+                      ) : null}
+                    </div>
+                    {membershipCanLeave(m) ? (
+                      <Button
+                        type='button'
+                        variant='outline'
+                        size='sm'
+                        className='w-fit shrink-0'
+                        onClick={() => setLeaveOrgId(m.organization_id)}>
+                        Leave
+                      </Button>
+                    ) : null}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
         </>
       )}
 
@@ -754,6 +940,24 @@ export function OrganizationSettings() {
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <Button type='button' variant='destructive' disabled={busy} onClick={() => void confirmRemoveMember()}>
               {busy ? 'Removing…' : 'Remove'}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={!!leaveOrgId} onOpenChange={(o) => !o && setLeaveOrgId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Leave this organization?</AlertDialogTitle>
+            <AlertDialogDescription>
+              You will lose cloud access to rulesets linked to this organization. Local copies stay on
+              your devices.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <Button type='button' variant='destructive' disabled={busy} onClick={() => void confirmLeaveOrganization()}>
+              {busy ? 'Leaving…' : 'Leave organization'}
             </Button>
           </AlertDialogFooter>
         </AlertDialogContent>

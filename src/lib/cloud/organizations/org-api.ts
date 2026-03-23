@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 
+import { getSession } from '@/lib/cloud/auth';
 import { cloudClient } from '@/lib/cloud/client';
 import { ASSETS_BUCKET, uploadOrganizationLogoToStorage } from '@/lib/cloud/sync/sync-assets';
 
@@ -161,14 +162,20 @@ export async function uploadOrgLogoAndSetUrl(
 ): Promise<string> {
   const client = requireClient();
   const path = await uploadOrganizationLogoToStorage(client, organizationId, dataUrl);
-  const { error } = await client.from('organizations').update({ image_url: path }).eq('id', organizationId);
+  const { error } = await client
+    .from('organizations')
+    .update({ image_url: path })
+    .eq('id', organizationId);
   if (error) throw error;
   return path;
 }
 
 export async function clearOrgLogo(organizationId: string): Promise<void> {
   const client = requireClient();
-  const { error } = await client.from('organizations').update({ image_url: null }).eq('id', organizationId);
+  const { error } = await client
+    .from('organizations')
+    .update({ image_url: null })
+    .eq('id', organizationId);
   if (error) throw error;
 }
 
@@ -201,7 +208,9 @@ export async function removeOrganizationMember(
   if (error) throw error;
 }
 
-export async function listOrganizationInvites(organizationId: string): Promise<OrganizationInviteRow[]> {
+export async function listOrganizationInvites(
+  organizationId: string,
+): Promise<OrganizationInviteRow[]> {
   const client = requireClient();
   const { data, error } = await client
     .from('organization_invites')
@@ -319,9 +328,9 @@ export async function listOrganizationRulesetLinks(
   return (data ?? []) as OrganizationRulesetLinkRow[];
 }
 
-export async function listOwnCloudRulesetSummaries(ownerUserId: string): Promise<
-  { id: string; title: string }[]
-> {
+export async function listOwnCloudRulesetSummaries(
+  ownerUserId: string,
+): Promise<{ id: string; title: string }[]> {
   const client = requireClient();
   const { data, error } = await client
     .from('rulesets')
@@ -366,8 +375,101 @@ export async function unlinkRulesetFromOrganization(
   if (error) throw error;
 }
 
+export type OrganizationSummary = Pick<OrganizationRow, 'id' | 'name' | 'slug' | 'admin_user_id'>;
+
+export type PendingInviteForUserRow = OrganizationInviteRow & {
+  organizations: OrganizationSummary | null;
+};
+
+export type MyOrganizationMembershipRow = {
+  organization_id: string;
+  joined_at: string;
+  organizations: OrganizationSummary | null;
+};
+
+/**
+ * Pending invites addressed to the signed-in user's email (also filters client-side so org admins
+ * only see their own pending invites in this list, not every invite they can read via RLS).
+ */
+export async function listPendingInvitesForCurrentUser(): Promise<PendingInviteForUserRow[]> {
+  const client = requireClient();
+  const session = await getSession();
+  const emailNorm = normalizeInviteEmail(session?.user?.email ?? '');
+  if (!emailNorm) return [];
+
+  const { data, error } = await client
+    .from('organization_invites')
+    .select(
+      'id, organization_id, invitee_email_normalized, invited_by, status, created_at, organizations(id, name, slug, admin_user_id)',
+    )
+    .eq('status', 'pending');
+  if (error) throw error;
+  const rows = (data ?? []) as unknown as PendingInviteForUserRow[];
+  return rows.filter((r) => r.invitee_email_normalized === emailNorm);
+}
+
+export async function listMyOrganizationMemberships(): Promise<MyOrganizationMembershipRow[]> {
+  const client = requireClient();
+  const session = await getSession();
+  const uid = session?.user?.id;
+  if (!uid) return [];
+
+  const { data, error } = await client
+    .from('organization_members')
+    .select('organization_id, created_at, organizations(id, name, slug, admin_user_id)')
+    .eq('user_id', uid);
+  if (error) throw error;
+  return (
+    (data ?? []) as unknown as {
+      organization_id: string;
+      created_at: string;
+      organizations: OrganizationSummary | null;
+    }[]
+  ).map((r) => ({
+    organization_id: r.organization_id,
+    joined_at: r.created_at,
+    organizations: r.organizations,
+  }));
+}
+
+export async function acceptOrganizationInvite(inviteId: string): Promise<void> {
+  const client = requireClient();
+  const { error } = await client.rpc('accept_organization_invite', { p_invite_id: inviteId });
+  if (error) throw error;
+}
+
+export async function dismissOrganizationInvite(inviteId: string): Promise<void> {
+  const client = requireClient();
+  const { error } = await client
+    .from('organization_invites')
+    .update({ status: 'dismissed' })
+    .eq('id', inviteId)
+    .eq('status', 'pending');
+  if (error) throw error;
+}
+
+/** Removes the current user from an organization. Fails via RLS if they are the org admin. */
+export async function leaveOrganization(organizationId: string): Promise<void> {
+  const client = requireClient();
+  const session = await getSession();
+  const uid = session?.user?.id;
+  if (!uid) throw new Error('Not signed in');
+
+  const { error } = await client
+    .from('organization_members')
+    .delete()
+    .eq('organization_id', organizationId)
+    .eq('user_id', uid);
+  if (error) throw error;
+}
+
 export function isUniqueViolation(err: unknown): boolean {
-  return typeof err === 'object' && err !== null && 'code' in err && (err as { code: string }).code === '23505';
+  return (
+    typeof err === 'object' &&
+    err !== null &&
+    'code' in err &&
+    (err as { code: string }).code === '23505'
+  );
 }
 
 export function formatOrgSaveError(err: unknown): string {
