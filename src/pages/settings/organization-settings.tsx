@@ -378,6 +378,7 @@ export function OrganizationSettings() {
       setLinkRulesetId('');
       setLinkedRulesets(await listOrganizationRulesetLinks(org.id));
       setGloballyLinkedRulesetIds(await listAllLinkedRulesetIds());
+      touchCloudRulesetList();
       setMessage({ type: 'ok', text: 'Ruleset linked to the organization.' });
     } catch (e) {
       setMessage({
@@ -397,6 +398,7 @@ export function OrganizationSettings() {
       await unlinkRulesetFromOrganization(org.id, rulesetId);
       setLinkedRulesets(await listOrganizationRulesetLinks(org.id));
       setGloballyLinkedRulesetIds(await listAllLinkedRulesetIds());
+      touchCloudRulesetList();
       setMessage({ type: 'ok', text: 'Ruleset unlinked.' });
     } catch (e) {
       setMessage({ type: 'err', text: formatOrgSaveError(e) });

@@ -88,6 +88,11 @@ export async function createOrganization(input: CreateOrganizationInput): Promis
   const slugErr = validateOrgSlug(input.slug);
   if (slugErr) throw new Error(slugErr);
 
+  const existingAdminOrg = await fetchOrganizationAsAdmin(input.adminUserId);
+  if (existingAdminOrg) {
+    throw new Error('You already administer an organization. Delete it before creating another.');
+  }
+
   const client = requireClient();
   const description = sanitizeOrgDescription(input.description ?? '');
   const { data, error } = await client
@@ -455,12 +460,18 @@ export async function leaveOrganization(organizationId: string): Promise<void> {
   const uid = session?.user?.id;
   if (!uid) throw new Error('Not signed in');
 
-  const { error } = await client
+  const { data, error } = await client
     .from('organization_members')
     .delete()
     .eq('organization_id', organizationId)
-    .eq('user_id', uid);
+    .eq('user_id', uid)
+    .select('organization_id');
   if (error) throw error;
+  if (!data?.length) {
+    throw new Error(
+      'Could not leave this organization. If you are the org admin, delete the organization instead.',
+    );
+  }
 }
 
 export function isUniqueViolation(err: unknown): boolean {
@@ -472,8 +483,21 @@ export function isUniqueViolation(err: unknown): boolean {
   );
 }
 
+/** Maps Postgres 23505 / Supabase errors to user-facing copy (Phase 7). */
 export function formatOrgSaveError(err: unknown): string {
   if (isUniqueViolation(err)) {
+    const msg = String((err as { message?: string }).message ?? '');
+    const details = String((err as { details?: string }).details ?? '');
+    const combined = `${msg} ${details}`.toLowerCase();
+    if (combined.includes('admin_user_id') || combined.includes('organizations_one_admin')) {
+      return 'You already administer an organization. Delete it before creating another.';
+    }
+    if (combined.includes('organizations_name_lower') || combined.includes('(lower(name))')) {
+      return 'That organization name is already taken.';
+    }
+    if (combined.includes('organizations_slug_lower') || combined.includes('(lower(slug))')) {
+      return 'That slug is already taken.';
+    }
     return 'That name or slug is already taken. Try another.';
   }
   if (err instanceof Error) return err.message;

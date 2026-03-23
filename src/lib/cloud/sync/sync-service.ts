@@ -106,6 +106,8 @@ export async function deleteRulesetFromCloud(rulesetId: string): Promise<{ error
 
   await useSyncStateStore.getState().removeSyncedRulesetId(rulesetId);
 
+  useCloudAuthStore.getState().touchCloudRulesetList();
+
   return {};
 }
 
