@@ -18,6 +18,8 @@ interface DescriptionEditorProps {
   id?: string;
   onSave?: () => void;
   className?: string;
+  /** Visible label next to the Edit control (default: "Description"). */
+  label?: string;
 }
 
 export const DescriptionEditor = ({
@@ -27,6 +29,7 @@ export const DescriptionEditor = ({
   placeholder = '',
   disabled = false,
   className = '',
+  label = 'Description',
 }: DescriptionEditorProps) => {
   const [open, setOpen] = useState(false);
 
@@ -34,7 +37,7 @@ export const DescriptionEditor = ({
     <>
       <div id={id} className={`flex flex-col gap-2 md-content ${className}`}>
         <div className='flex items-center justify-between gap-2'>
-          <Label>Description</Label>
+          <Label>{label}</Label>
           {!disabled && (
             <Button variant='outline' size='sm' onClick={() => setOpen(true)}>
               Edit

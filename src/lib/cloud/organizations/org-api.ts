@@ -48,17 +48,30 @@ function requireClient(): SupabaseClient {
   return cloudClient;
 }
 
+/** Coalesce concurrent fetches (e.g. React Strict Mode double-mount) into one HTTP request per user. */
+const fetchOrganizationAsAdminInflight = new Map<string, Promise<OrganizationRow | null>>();
+
 export async function fetchOrganizationAsAdmin(
   adminUserId: string,
 ): Promise<OrganizationRow | null> {
+  const existing = fetchOrganizationAsAdminInflight.get(adminUserId);
+  if (existing) return existing;
+
   const client = requireClient();
-  const { data, error } = await client
-    .from('organizations')
-    .select('*')
-    .eq('admin_user_id', adminUserId)
-    .maybeSingle();
-  if (error) throw error;
-  return (data as OrganizationRow | null) ?? null;
+  const promise = (async () => {
+    const { data, error } = await client
+      .from('organizations')
+      .select('*')
+      .eq('admin_user_id', adminUserId)
+      .maybeSingle();
+    if (error) throw error;
+    return (data as OrganizationRow | null) ?? null;
+  })().finally(() => {
+    fetchOrganizationAsAdminInflight.delete(adminUserId);
+  });
+
+  fetchOrganizationAsAdminInflight.set(adminUserId, promise);
+  return promise;
 }
 
 export interface CreateOrganizationInput {

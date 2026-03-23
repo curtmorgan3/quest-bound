@@ -15,8 +15,11 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-  Separator,
-  Textarea,
+  DescriptionEditor,
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
 } from '@/components';
 import { cloudClient } from '@/lib/cloud/client';
 import {
@@ -45,11 +48,10 @@ import {
   updateOrganizationProfile,
   uploadOrgLogoAndSetUrl,
 } from '@/lib/cloud/organizations/org-api';
-import { previewSanitizedOrgDescription } from '@/lib/cloud/organizations/validation';
 import { assertNotSvgOrganizationLogo } from '@/lib/cloud/sync/sync-assets';
 import { cn } from '@/lib/utils';
 import { useCloudAuthStore } from '@/stores/cloud-auth-store';
-import { Loader2 } from 'lucide-react';
+import { FileText, Library, Loader2, Users } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 
 function readFileAsDataUrl(file: File): Promise<string> {
@@ -126,39 +128,53 @@ export function OrganizationSettings() {
     [],
   );
 
-  const load = useCallback(async () => {
-    if (!userId || !cloudClient) {
-      setLoading(false);
-      setOrg(null);
-      return;
-    }
-    setLoading(true);
-    setMessage(null);
-    try {
-      const o = await fetchOrganizationAsAdmin(userId);
-      setOrg(o);
-      if (o) {
-        setEditName(o.name);
-        setEditSlug(o.slug);
-        setEditDesc(o.description);
-        await refreshOrgDetails(o, userId);
-      } else {
-        setMembers([]);
-        setInvites([]);
-        setLinkedRulesets([]);
-        setOwnedCloudRulesets([]);
-        setGloballyLinkedRulesetIds([]);
-        setLogoDisplayUrl(null);
+  const load = useCallback(
+    async (opts?: { isCancelled?: () => boolean }) => {
+      const drop = () => opts?.isCancelled?.() ?? false;
+      if (!userId || !cloudClient) {
+        if (!drop()) {
+          setLoading(false);
+          setOrg(null);
+        }
+        return;
       }
-    } catch (e) {
-      setMessage({ type: 'err', text: formatOrgSaveError(e) });
-    } finally {
-      setLoading(false);
-    }
-  }, [userId, refreshOrgDetails]);
+      if (!drop()) {
+        setLoading(true);
+        setMessage(null);
+      }
+      try {
+        const o = await fetchOrganizationAsAdmin(userId);
+        if (drop()) return;
+        setOrg(o);
+        if (o) {
+          setEditName(o.name);
+          setEditSlug(o.slug);
+          setEditDesc(o.description);
+          await refreshOrgDetails(o, userId);
+          if (drop()) return;
+        } else {
+          setMembers([]);
+          setInvites([]);
+          setLinkedRulesets([]);
+          setOwnedCloudRulesets([]);
+          setGloballyLinkedRulesetIds([]);
+          setLogoDisplayUrl(null);
+        }
+      } catch (e) {
+        if (!drop()) setMessage({ type: 'err', text: formatOrgSaveError(e) });
+      } finally {
+        if (!drop()) setLoading(false);
+      }
+    },
+    [userId, refreshOrgDetails],
+  );
 
   useEffect(() => {
-    void load();
+    let cancelled = false;
+    void load({ isCancelled: () => cancelled });
+    return () => {
+      cancelled = true;
+    };
   }, [load]);
 
   const pendingInvites = invites.filter((i) => i.status === 'pending');
@@ -452,25 +468,14 @@ export function OrganizationSettings() {
               placeholder='my-group'
             />
           </div>
-          <div className='grid gap-2'>
-            <Label htmlFor='org-create-desc'>Description (optional)</Label>
-            <Textarea
-              id='org-create-desc'
-              value={createDesc}
-              onChange={(e) => setCreateDesc(e.target.value)}
-              rows={4}
-            />
-            {createDesc.trim() ? (
-              <div className='rounded-md border bg-muted/20 p-3 text-sm'>
-                <div className='mb-1 text-xs font-medium text-muted-foreground'>Preview</div>
-                <div
-                  className='prose prose-sm dark:prose-invert max-w-none'
-                  // eslint-disable-next-line react/no-danger
-                  dangerouslySetInnerHTML={{ __html: previewSanitizedOrgDescription(createDesc) }}
-                />
-              </div>
-            ) : null}
-          </div>
+          <DescriptionEditor
+            id='org-create-desc'
+            label='Description (optional)'
+            value={createDesc}
+            onChange={setCreateDesc}
+            disabled={busy}
+            placeholder='No description yet.'
+          />
           <div className='grid gap-2'>
             <Label htmlFor='org-create-logo'>Logo (optional, no SVG)</Label>
             <Input
@@ -506,231 +511,232 @@ export function OrganizationSettings() {
             <p className='text-sm text-muted-foreground'>You are the organization admin.</p>
           </div>
 
-          <div className='flex flex-col gap-4'>
-            <h4 className='text-sm font-medium'>Profile</h4>
-            <div className='grid gap-2'>
-              <Label htmlFor='org-edit-name'>Name</Label>
-              <Input id='org-edit-name' value={editName} onChange={(e) => setEditName(e.target.value)} />
-            </div>
-            <div className='grid gap-2'>
-              <Label htmlFor='org-edit-slug'>Slug</Label>
-              <Input
-                id='org-edit-slug'
-                value={editSlug}
-                onChange={(e) => setEditSlug(e.target.value.toLowerCase())}
-              />
-            </div>
-            <div className='grid gap-2'>
-              <Label htmlFor='org-edit-desc'>Description</Label>
-              <Textarea
-                id='org-edit-desc'
-                value={editDesc}
-                onChange={(e) => setEditDesc(e.target.value)}
-                rows={4}
-              />
-              {editDesc.trim() ? (
-                <div className='rounded-md border bg-muted/20 p-3 text-sm'>
-                  <div className='mb-1 text-xs font-medium text-muted-foreground'>Preview</div>
-                  <div
-                    className='prose prose-sm dark:prose-invert max-w-none'
-                    // eslint-disable-next-line react/no-danger
-                    dangerouslySetInnerHTML={{ __html: previewSanitizedOrgDescription(editDesc) }}
+          <Tabs defaultValue='details' className='w-full'>
+            <TabsList className='grid w-full max-w-2xl grid-cols-3'>
+              <TabsTrigger value='details' className='gap-1.5 px-2 sm:gap-2 sm:px-3'>
+                <FileText className='size-4 shrink-0' />
+                <span className='truncate'>Details</span>
+              </TabsTrigger>
+              <TabsTrigger value='members' className='gap-1.5 px-2 sm:gap-2 sm:px-3'>
+                <Users className='size-4 shrink-0' />
+                <span className='truncate'>Members</span>
+              </TabsTrigger>
+              <TabsTrigger value='content' className='gap-1.5 px-2 sm:gap-2 sm:px-3'>
+                <Library className='size-4 shrink-0' />
+                <span className='truncate'>Content</span>
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value='details' className='mt-4 flex flex-col gap-6'>
+              <div className='flex flex-col gap-4'>
+                <h4 className='text-sm font-medium'>Profile</h4>
+                <div className='grid gap-2'>
+                  <Label htmlFor='org-edit-name'>Name</Label>
+                  <Input id='org-edit-name' value={editName} onChange={(e) => setEditName(e.target.value)} />
+                </div>
+                <div className='grid gap-2'>
+                  <Label htmlFor='org-edit-slug'>Slug</Label>
+                  <Input
+                    id='org-edit-slug'
+                    value={editSlug}
+                    onChange={(e) => setEditSlug(e.target.value.toLowerCase())}
                   />
                 </div>
-              ) : null}
-            </div>
-            <div className='grid gap-2'>
-              <Label htmlFor='org-edit-logo'>Logo (no SVG)</Label>
-              <Input
-                id='org-edit-logo'
-                type='file'
-                accept='image/*'
-                onChange={(e) => void handleLogoFile(e.target.files?.[0] ?? null)}
-              />
-              {logoDisplayUrl ? (
-                <div className='flex items-center gap-2'>
-                  <img src={logoDisplayUrl} alt='' className='size-16 rounded-md border object-cover' />
-                  <Button type='button' variant='outline' size='sm' onClick={() => void handleClearLogo()}>
-                    Remove logo
-                  </Button>
-                </div>
-              ) : null}
-            </div>
-            <Button type='button' variant='secondary' disabled={busy} onClick={() => void handleSaveProfile()}>
-              Save profile
-            </Button>
-          </div>
-
-          <Separator />
-
-          <div className='flex flex-col gap-3'>
-            <h4 className='text-sm font-medium'>Invites</h4>
-            <p className='text-sm text-muted-foreground'>
-              Seats in use: {seatMemberCount + seatPendingCount} of 4 (plus you as admin). Pending
-              invites count toward the cap. No email is sent — share the invite in your own channel.
-            </p>
-            <div className='flex flex-wrap items-end gap-2'>
-              <div className='grid flex-1 gap-2 min-w-[200px]'>
-                <Label htmlFor='org-invite-email'>Email</Label>
-                <Input
-                  id='org-invite-email'
-                  type='email'
-                  value={inviteEmail}
-                  onChange={(e) => setInviteEmail(e.target.value)}
-                  placeholder='player@example.com'
-                  disabled={seatFull}
+                <DescriptionEditor
+                  id='org-edit-desc'
+                  value={editDesc}
+                  onChange={setEditDesc}
+                  disabled={busy}
+                  placeholder='No description yet.'
                 />
+                <div className='grid gap-2'>
+                  <Label htmlFor='org-edit-logo'>Logo (no SVG)</Label>
+                  <Input
+                    id='org-edit-logo'
+                    type='file'
+                    accept='image/*'
+                    onChange={(e) => void handleLogoFile(e.target.files?.[0] ?? null)}
+                  />
+                  {logoDisplayUrl ? (
+                    <div className='flex items-center gap-2'>
+                      <img src={logoDisplayUrl} alt='' className='size-16 rounded-md border object-cover' />
+                      <Button type='button' variant='outline' size='sm' onClick={() => void handleClearLogo()}>
+                        Remove logo
+                      </Button>
+                    </div>
+                  ) : null}
+                </div>
+                <Button type='button' variant='secondary' disabled={busy} onClick={() => void handleSaveProfile()}>
+                  Save profile
+                </Button>
               </div>
-              <Button type='button' disabled={busy || seatFull || !inviteEmail.trim()} onClick={() => void handleInvite()}>
-                Invite
-              </Button>
-            </div>
-            {seatFull ? (
-              <p className='text-sm text-amber-600 dark:text-amber-500'>
-                Seat limit reached. Revoke a pending invite or remove a member to invite someone new.
-              </p>
-            ) : null}
-            {pendingInvites.length ? (
-              <ul className='divide-y rounded-md border text-sm'>
-                {pendingInvites.map((inv) => (
-                  <li key={inv.id} className='flex items-center justify-between gap-2 px-3 py-2'>
-                    <span className='truncate'>{inv.invitee_email_normalized}</span>
-                    <Button
-                      type='button'
-                      variant='outline'
-                      size='sm'
-                      disabled={busy}
-                      onClick={() => void handleRevokeInvite(inv.id)}>
-                      Revoke
+
+              <div className='flex flex-col gap-3'>
+                <h4 className='text-sm font-medium text-destructive'>Danger zone</h4>
+                <p className='text-sm text-muted-foreground'>
+                  Deleting the organization removes all members and invites and unlinks all rulesets.
+                  Local copies of rulesets stay on each device.
+                </p>
+                <AlertDialog open={deleteOrgOpen} onOpenChange={setDeleteOrgOpen}>
+                  <AlertDialogTrigger asChild>
+                    <Button type='button' variant='destructive' disabled={busy} className='w-fit'>
+                      Delete organization
                     </Button>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className='text-sm text-muted-foreground'>No pending invites.</p>
-            )}
-          </div>
-
-          <Separator />
-
-          <div className='flex flex-col gap-3'>
-            <h4 className='text-sm font-medium'>Members</h4>
-            {members.length ? (
-              <ul className='divide-y rounded-md border text-sm'>
-                {members.map((m) => (
-                  <li key={m.user_id} className='flex items-center justify-between gap-2 px-3 py-2'>
-                    <span className='truncate'>{m.email}</span>
-                    <Button type='button' variant='outline' size='sm' onClick={() => setRemoveMember(m)}>
-                      Remove
-                    </Button>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className='text-sm text-muted-foreground'>No members yet besides you.</p>
-            )}
-          </div>
-
-          <Separator />
-
-          <div className='flex flex-col gap-3'>
-            <h4 className='text-sm font-medium'>Linked cloud rulesets</h4>
-            <p className='text-sm text-muted-foreground'>
-              Only rulesets you own in the cloud can be linked. Each ruleset can belong to at most one
-              organization.
-            </p>
-            {linkedRulesets.length ? (
-              <ul className='divide-y rounded-md border text-sm'>
-                {linkedRulesets.map((l) => {
-                  const title = ownedCloudRulesets.find((r) => r.id === l.ruleset_id)?.title;
-                  return (
-                    <li key={l.ruleset_id} className='flex items-center justify-between gap-2 px-3 py-2'>
-                      <span className='truncate'>
-                        {title ?? l.ruleset_id}
-                        <span className='ml-2 text-muted-foreground font-mono text-xs'>{l.ruleset_id}</span>
-                      </span>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Delete this organization?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This cannot be undone. Members lose cloud access to linked rulesets; pending invites
+                        are removed.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
                       <Button
                         type='button'
-                        variant='outline'
-                        size='sm'
+                        variant='destructive'
                         disabled={busy}
-                        onClick={() => void handleUnlinkRuleset(l.ruleset_id)}>
-                        Unlink
+                        onClick={() => void handleDeleteOrg()}>
+                        {busy ? 'Deleting…' : 'Delete organization'}
                       </Button>
-                    </li>
-                  );
-                })}
-              </ul>
-            ) : (
-              <p className='text-sm text-muted-foreground'>No linked rulesets.</p>
-            )}
-            {linkableRulesets.length ? (
-              <div className='flex flex-wrap items-end gap-2'>
-                <div className='grid gap-2 min-w-[220px]'>
-                  <Label>Link ruleset</Label>
-                  <Select value={linkRulesetId || undefined} onValueChange={setLinkRulesetId}>
-                    <SelectTrigger className='w-full min-w-[220px]'>
-                      <SelectValue placeholder='Choose a ruleset…' />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {linkableRulesets.map((r) => (
-                        <SelectItem key={r.id} value={r.id}>
-                          {r.title || r.id}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <Button
-                  type='button'
-                  disabled={busy || !linkRulesetId}
-                  onClick={() => void handleLinkRuleset()}>
-                  Link
-                </Button>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               </div>
-            ) : (
+            </TabsContent>
+
+            <TabsContent value='content' className='mt-4 flex flex-col gap-3'>
+              <h4 className='text-sm font-medium'>Linked cloud rulesets</h4>
               <p className='text-sm text-muted-foreground'>
-                No eligible cloud rulesets to link (all owned rulesets may already be linked
-                elsewhere).
+                Only rulesets you own in the cloud can be linked. Each ruleset can belong to at most one
+                organization.
               </p>
-            )}
-          </div>
-
-          <Separator />
-
-          <div className='flex flex-col gap-3'>
-            <h4 className='text-sm font-medium text-destructive'>Danger zone</h4>
-            <p className='text-sm text-muted-foreground'>
-              Deleting the organization removes all members and invites and unlinks all rulesets.
-              Local copies of rulesets stay on each device.
-            </p>
-            <AlertDialog open={deleteOrgOpen} onOpenChange={setDeleteOrgOpen}>
-              <AlertDialogTrigger asChild>
-                <Button type='button' variant='destructive' disabled={busy}>
-                  Delete organization
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Delete this organization?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    This cannot be undone. Members lose cloud access to linked rulesets; pending invites
-                    are removed.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+              {linkedRulesets.length ? (
+                <ul className='divide-y rounded-md border text-sm'>
+                  {linkedRulesets.map((l) => {
+                    const title = ownedCloudRulesets.find((r) => r.id === l.ruleset_id)?.title;
+                    return (
+                      <li key={l.ruleset_id} className='flex items-center justify-between gap-2 px-3 py-2'>
+                        <span className='truncate'>
+                          {title ?? l.ruleset_id}
+                          <span className='ml-2 text-muted-foreground font-mono text-xs'>{l.ruleset_id}</span>
+                        </span>
+                        <Button
+                          type='button'
+                          variant='outline'
+                          size='sm'
+                          disabled={busy}
+                          onClick={() => void handleUnlinkRuleset(l.ruleset_id)}>
+                          Unlink
+                        </Button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              ) : (
+                <p className='text-sm text-muted-foreground'>No linked rulesets.</p>
+              )}
+              {linkableRulesets.length ? (
+                <div className='flex flex-wrap items-end gap-2'>
+                  <div className='grid gap-2 min-w-[220px]'>
+                    <Label>Link ruleset</Label>
+                    <Select value={linkRulesetId || undefined} onValueChange={setLinkRulesetId}>
+                      <SelectTrigger className='w-full min-w-[220px]'>
+                        <SelectValue placeholder='Choose a ruleset…' />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {linkableRulesets.map((r) => (
+                          <SelectItem key={r.id} value={r.id}>
+                            {r.title || r.id}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                   <Button
                     type='button'
-                    variant='destructive'
-                    disabled={busy}
-                    onClick={() => void handleDeleteOrg()}>
-                    {busy ? 'Deleting…' : 'Delete organization'}
+                    disabled={busy || !linkRulesetId}
+                    onClick={() => void handleLinkRuleset()}>
+                    Link
                   </Button>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          </div>
+                </div>
+              ) : (
+                <p className='text-sm text-muted-foreground'>
+                  No eligible cloud rulesets to link (all owned rulesets may already be linked
+                  elsewhere).
+                </p>
+              )}
+            </TabsContent>
+
+            <TabsContent value='members' className='mt-4 flex flex-col gap-8'>
+              <div className='flex flex-col gap-3'>
+                <h4 className='text-sm font-medium'>Invites</h4>
+                <p className='text-sm text-muted-foreground'>
+                  Seats in use: {seatMemberCount + seatPendingCount} of 4 (plus you as admin). Pending
+                  invites count toward the cap. No email is sent — share the invite in your own channel.
+                </p>
+                <div className='flex flex-wrap items-end gap-2'>
+                  <div className='grid flex-1 gap-2 min-w-[200px]'>
+                    <Label htmlFor='org-invite-email'>Email</Label>
+                    <Input
+                      id='org-invite-email'
+                      type='email'
+                      value={inviteEmail}
+                      onChange={(e) => setInviteEmail(e.target.value)}
+                      placeholder='player@example.com'
+                      disabled={seatFull}
+                    />
+                  </div>
+                  <Button type='button' disabled={busy || seatFull || !inviteEmail.trim()} onClick={() => void handleInvite()}>
+                    Invite
+                  </Button>
+                </div>
+                {seatFull ? (
+                  <p className='text-sm text-amber-600 dark:text-amber-500'>
+                    Seat limit reached. Revoke a pending invite or remove a member to invite someone new.
+                  </p>
+                ) : null}
+                {pendingInvites.length ? (
+                  <ul className='divide-y rounded-md border text-sm'>
+                    {pendingInvites.map((inv) => (
+                      <li key={inv.id} className='flex items-center justify-between gap-2 px-3 py-2'>
+                        <span className='truncate'>{inv.invitee_email_normalized}</span>
+                        <Button
+                          type='button'
+                          variant='outline'
+                          size='sm'
+                          disabled={busy}
+                          onClick={() => void handleRevokeInvite(inv.id)}>
+                          Revoke
+                        </Button>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className='text-sm text-muted-foreground'>No pending invites.</p>
+                )}
+              </div>
+
+              <div className='flex flex-col gap-3'>
+                <h4 className='text-sm font-medium'>Members</h4>
+                {members.length ? (
+                  <ul className='divide-y rounded-md border text-sm'>
+                    {members.map((m) => (
+                      <li key={m.user_id} className='flex items-center justify-between gap-2 px-3 py-2'>
+                        <span className='truncate'>{m.email}</span>
+                        <Button type='button' variant='outline' size='sm' onClick={() => setRemoveMember(m)}>
+                          Remove
+                        </Button>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className='text-sm text-muted-foreground'>No members yet besides you.</p>
+                )}
+              </div>
+            </TabsContent>
+          </Tabs>
         </>
       )}
 

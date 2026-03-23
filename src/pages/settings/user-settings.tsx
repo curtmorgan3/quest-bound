@@ -42,9 +42,26 @@ export const UserSettings = () => {
   const { deferredPrompt, triggerInstall } = usePwaInstallStore();
   const { cloudSyncEnabled, isCloudSyncEligibilityLoading, isAuthenticated } = useCloudAuthStore();
   const [installLoading, setInstallLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState('profile');
 
   const [username, setUsername] = useState(currentUser?.username || '');
   const [exportLoading, setExportLoading] = useState(false);
+
+  /** Mirrors `public.users.cloud_enabled` via `cloud_sync_enabled` RPC (see `fetchCloudSyncEnabled`). */
+  const showOrganizationTab =
+    isCloudConfigured &&
+    isAuthenticated &&
+    cloudSyncEnabled &&
+    !isCloudSyncEligibilityLoading;
+
+  const showEnableQBCloud =
+    isCloudConfigured && !cloudSyncEnabled && (!isAuthenticated || !isCloudSyncEligibilityLoading);
+
+  useEffect(() => {
+    if (!showOrganizationTab && activeTab === 'organization') {
+      setActiveTab('profile');
+    }
+  }, [showOrganizationTab, activeTab]);
 
   const handleUpdate = async () => {
     if (currentUser) {
@@ -84,17 +101,8 @@ export const UserSettings = () => {
 
   if (!currentUser) return null;
 
-  const showEnableQBCloud =
-    isCloudConfigured && !cloudSyncEnabled && (!isAuthenticated || !isCloudSyncEligibilityLoading);
-
-  const showOrganizationTab =
-    isCloudConfigured &&
-    isAuthenticated &&
-    cloudSyncEnabled &&
-    !isCloudSyncEligibilityLoading;
-
   return (
-    <Tabs defaultValue='profile' className='w-full'>
+    <Tabs value={activeTab} onValueChange={setActiveTab} className='w-full'>
       <TabsList
         className={cn(
           'w-full max-w-2xl grid',
