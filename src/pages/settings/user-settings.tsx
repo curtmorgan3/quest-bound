@@ -26,11 +26,13 @@ import {
 } from '@/components';
 import { isCloudConfigured } from '@/lib/cloud/client';
 import { useUsers } from '@/lib/compass-api';
+import { cn } from '@/lib/utils';
 import { errorLogger, useOnboardingStore, usePwaInstallStore } from '@/stores';
 import { useCloudAuthStore } from '@/stores/cloud-auth-store';
-import { Download, PlayCircleIcon, Settings, Shield, User } from 'lucide-react';
+import { Building2, Download, PlayCircleIcon, Settings, Shield, User } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { CloudAccountSettings } from './cloud-account-settings';
+import { OrganizationSettings } from './organization-settings';
 
 const QB_CLOUD_BETA_FORM_URL = 'https://forms.gle/yMqY41qBjCkdRfX6A';
 
@@ -85,9 +87,19 @@ export const UserSettings = () => {
   const showEnableQBCloud =
     isCloudConfigured && !cloudSyncEnabled && (!isAuthenticated || !isCloudSyncEligibilityLoading);
 
+  const showOrganizationTab =
+    isCloudConfigured &&
+    isAuthenticated &&
+    cloudSyncEnabled &&
+    !isCloudSyncEligibilityLoading;
+
   return (
     <Tabs defaultValue='profile' className='w-full'>
-      <TabsList className='w-full max-w-md grid grid-cols-3'>
+      <TabsList
+        className={cn(
+          'w-full max-w-2xl grid',
+          showOrganizationTab ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-3 max-w-md',
+        )}>
         <TabsTrigger value='profile' className='gap-2'>
           <User className='size-4' />
           Profile
@@ -100,6 +112,12 @@ export const UserSettings = () => {
           <Shield className='size-4' />
           Account
         </TabsTrigger>
+        {showOrganizationTab ? (
+          <TabsTrigger value='organization' className='gap-2'>
+            <Building2 className='size-4' />
+            Organization
+          </TabsTrigger>
+        ) : null}
       </TabsList>
 
       <TabsContent value='profile' className='flex flex-col gap-4 mt-4'>
@@ -175,6 +193,12 @@ export const UserSettings = () => {
           )}
         </div>
       </TabsContent>
+
+      {showOrganizationTab ? (
+        <TabsContent value='organization' className='flex flex-col gap-4 mt-4'>
+          <OrganizationSettings />
+        </TabsContent>
+      ) : null}
 
       <TabsContent value='account' className='flex flex-col gap-4 mt-4'>
         <CloudAccountSettings />
