@@ -6,7 +6,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 /**
- * @param rowOwnerUserId - Cloud `user_id` on synced rows (typically the session user; later the ruleset owner for org-member pushes).
+ * @param rowOwnerUserId - Cloud `user_id` on synced rows (ruleset owner; same as session user when you own the ruleset).
  * @param rulesetId - Ruleset primary id in Dexie / cloud `rulesets.id`
  */
 export async function fetchRulesetStorageFolderPrefix(

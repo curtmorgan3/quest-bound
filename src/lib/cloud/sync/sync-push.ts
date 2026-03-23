@@ -1,6 +1,9 @@
 /**
  * Push local changes for a ruleset: collect changed records, strip fields, upsert to Supabase.
  * Also push pending sync_deletes and clear them for this ruleset.
+ *
+ * Remote rows use the ruleset owner's `user_id` (not necessarily the session user) so RLS matches
+ * org-linked collaboration. Tombstones use the same owner plus `ruleset_id` so collaborators can pull deletes.
  */
 
 import { getSession } from '@/lib/cloud/auth';
@@ -171,7 +174,8 @@ export async function syncPush(rulesetId: string, db: DB): Promise<{ error?: str
     if (pendingDeletes.length > 0) {
       const now = new Date().toISOString();
       const deleteRows = pendingDeletes.map((d) => ({
-        user_id: sessionUserId,
+        user_id: rowOwnerId,
+        ruleset_id: rulesetId,
         table_name: getRemoteTableName(d.tableName),
         entity_id: d.entityId,
         deleted_at: now,

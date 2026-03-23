@@ -1,5 +1,6 @@
 /**
  * Pull remote changes for a ruleset: fetch from Supabase, LWW merge, bulkPut with isSyncing guard.
+ * Ruleset-scoped fetches use the cloud row owner’s `user_id`; tombstones are scoped by owner + `ruleset_id`.
  */
 
 import { getSession } from '@/lib/cloud/auth';
@@ -57,12 +58,18 @@ async function fetchTableRecordsByParent(
   return (data ?? []) as Record<string, unknown>[];
 }
 
-async function fetchSyncDeletes(userId: string, since: string): Promise<{ table_name: string; entity_id: string }[]> {
+/** Tombstones for this ruleset live under the cloud row owner with ruleset_id set (org collaboration). */
+async function fetchSyncDeletes(
+  rowOwnerId: string,
+  rulesetId: string,
+  since: string,
+): Promise<{ table_name: string; entity_id: string }[]> {
   if (!cloudClient) return [];
   const { data, error } = await cloudClient
     .from('sync_deletes')
     .select('table_name, entity_id')
-    .eq('user_id', userId)
+    .eq('user_id', rowOwnerId)
+    .eq('ruleset_id', rulesetId)
     .gt('deleted_at', since);
   if (error) throw error;
   return (data ?? []) as { table_name: string; entity_id: string }[];
@@ -182,7 +189,7 @@ export async function syncPull(rulesetId: string, db: DB): Promise<{ error?: str
       }
     }
 
-    const deleteEntries = await fetchSyncDeletes(sessionUserId, lastSyncedAt);
+    const deleteEntries = await fetchSyncDeletes(rowOwnerId, rulesetId, lastSyncedAt);
     for (const entry of deleteEntries) {
       const config = getSyncTableConfigByRemote(entry.table_name);
       if (!config) continue;
