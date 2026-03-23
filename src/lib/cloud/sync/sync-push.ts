@@ -6,6 +6,7 @@
 import { getSession } from '@/lib/cloud/auth';
 import { cloudClient } from '@/lib/cloud/client';
 import { useCloudAuthStore } from '@/stores/cloud-auth-store';
+import { fetchRulesetStorageFolderPrefix } from '@/lib/cloud/sync/fetch-ruleset-storage-prefix';
 import { uploadAssetsForPush, uploadFontsForPush } from '@/lib/cloud/sync/sync-assets';
 import {
   getStoredLastSyncedAt,
@@ -47,6 +48,8 @@ export async function syncPush(rulesetId: string, db: DB): Promise<{ error?: str
 
   setSyncError(null);
   try {
+    const rulesetStoragePrefix = await fetchRulesetStorageFolderPrefix(client, userId, rulesetId);
+
     const configs: SyncTableConfig[] = [];
     for (const name of SYNC_TABLE_ORDER) {
       const c = getSyncTableConfig(name);
@@ -142,9 +145,9 @@ export async function syncPush(rulesetId: string, db: DB): Promise<{ error?: str
       });
 
       if (config.tableName === 'assets') {
-        await uploadAssetsForPush(client, userId, remoteRows);
+        await uploadAssetsForPush(client, rulesetStoragePrefix, remoteRows);
       } else if (config.tableName === 'fonts') {
-        await uploadFontsForPush(client, userId, remoteRows);
+        await uploadFontsForPush(client, rulesetStoragePrefix, remoteRows);
       }
 
       // `users`: default upsert merges on conflict → UPDATE, which RLS denies unless cloud_enabled (sync_is_allowed).

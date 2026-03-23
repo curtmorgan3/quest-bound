@@ -68,23 +68,25 @@ function getExtensionFromDataUrl(dataUrl: string): string {
   return 'bin';
 }
 
-/** Storage path: {userId}/{entityId}.{ext} */
-function storagePath(userId: string, entityId: string, ext: string): string {
-  return `${userId}/${entityId}.${ext}`;
+/** Storage path: `{folderPrefix}/{entityId}.{ext}` (folderPrefix = userId/rulesetId or orgId/rulesetId). */
+function storagePath(folderPrefix: string, entityId: string, ext: string): string {
+  const base = folderPrefix.replace(/\/+$/, '');
+  return `${base}/${entityId}.${ext}`;
 }
 
 /**
  * Upload a single asset (base64 data URL) to Supabase Storage. Returns the storage path.
+ * @param folderPrefix - From {@link fetchRulesetStorageFolderPrefix} (e.g. `uid/rulesetId` or `orgId/rulesetId`).
  */
 export async function uploadAssetToStorage(
   client: SupabaseClient,
-  userId: string,
+  folderPrefix: string,
   assetId: string,
   dataUrl: string,
 ): Promise<string> {
   const blob = dataUrlToBlob(dataUrl);
   const ext = getExtensionFromDataUrl(dataUrl);
-  const path = storagePath(userId, assetId, ext);
+  const path = storagePath(folderPrefix, assetId, ext);
   const { error } = await client.storage.from(ASSETS_BUCKET).upload(path, blob, {
     upsert: true,
     contentType: blob.type,
@@ -95,16 +97,17 @@ export async function uploadAssetToStorage(
 
 /**
  * Upload a single font (base64 data URL) to Supabase Storage. Returns the storage path.
+ * @param folderPrefix - From {@link fetchRulesetStorageFolderPrefix}.
  */
 export async function uploadFontToStorage(
   client: SupabaseClient,
-  userId: string,
+  folderPrefix: string,
   fontId: string,
   dataUrl: string,
 ): Promise<string> {
   const blob = dataUrlToBlob(dataUrl);
   const ext = getExtensionFromDataUrl(dataUrl);
-  const path = storagePath(userId, fontId, ext);
+  const path = storagePath(folderPrefix, fontId, ext);
   const { error } = await client.storage.from(FONTS_BUCKET).upload(path, blob, {
     upsert: true,
     contentType: blob.type,
@@ -133,7 +136,7 @@ export async function downloadFromStorage(
  */
 export async function uploadAssetsForPush(
   client: SupabaseClient,
-  userId: string,
+  folderPrefix: string,
   remoteRows: Record<string, unknown>[],
 ): Promise<void> {
   for (const row of remoteRows) {
@@ -141,7 +144,7 @@ export async function uploadAssetsForPush(
     if (!data || !isDataUrl(data)) continue;
     const id = row.id as string;
     try {
-      const path = await uploadAssetToStorage(client, userId, id, data);
+      const path = await uploadAssetToStorage(client, folderPrefix, id, data);
       row.storage_path = path;
       row.data = null;
     } catch (err) {
@@ -155,7 +158,7 @@ export async function uploadAssetsForPush(
  */
 export async function uploadFontsForPush(
   client: SupabaseClient,
-  userId: string,
+  folderPrefix: string,
   remoteRows: Record<string, unknown>[],
 ): Promise<void> {
   for (const row of remoteRows) {
@@ -163,7 +166,7 @@ export async function uploadFontsForPush(
     if (!data || !isDataUrl(data)) continue;
     const id = row.id as string;
     try {
-      const path = await uploadFontToStorage(client, userId, id, data);
+      const path = await uploadFontToStorage(client, folderPrefix, id, data);
       row.storage_path = path;
       row.data = null;
     } catch (err) {
@@ -229,4 +232,37 @@ export function updateMemoizedAssetsForRecords(entries: { id: string; data: stri
   for (const { id, data } of entries) {
     memoizedAssets[id] = data;
   }
+}
+
+const SVG_DATA_URL = /^data:image\/svg\+xml/i;
+
+/** Reject SVG org logos (product + storage policy). */
+export function assertNotSvgOrganizationLogo(dataUrl: string): void {
+  if (SVG_DATA_URL.test(dataUrl)) {
+    throw new Error('SVG logos are not allowed for organizations');
+  }
+}
+
+/**
+ * Upload org branding to `{organizationId}/logo.{ext}` (assets bucket).
+ * SVG data URLs are rejected.
+ */
+export async function uploadOrganizationLogoToStorage(
+  client: SupabaseClient,
+  organizationId: string,
+  dataUrl: string,
+): Promise<string> {
+  assertNotSvgOrganizationLogo(dataUrl);
+  const blob = dataUrlToBlob(dataUrl);
+  const ext = getExtensionFromDataUrl(dataUrl);
+  if (ext === 'svg') {
+    throw new Error('SVG logos are not allowed for organizations');
+  }
+  const path = `${organizationId.replace(/\/+$/, '')}/logo.${ext}`;
+  const { error } = await client.storage.from(ASSETS_BUCKET).upload(path, blob, {
+    upsert: true,
+    contentType: blob.type,
+  });
+  if (error) throw error;
+  return path;
 }
