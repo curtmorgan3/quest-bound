@@ -6,6 +6,7 @@
 import { getSession } from '@/lib/cloud/auth';
 import { cloudClient } from '@/lib/cloud/client';
 import { useCloudAuthStore } from '@/stores/cloud-auth-store';
+import { fetchCloudRulesetRowOwnerId } from '@/lib/cloud/sync/fetch-cloud-ruleset-row-owner';
 import { fetchRulesetStorageFolderPrefix } from '@/lib/cloud/sync/fetch-ruleset-storage-prefix';
 import { uploadAssetsForPush, uploadFontsForPush } from '@/lib/cloud/sync/sync-assets';
 import {
@@ -40,7 +41,7 @@ export async function syncPush(rulesetId: string, db: DB): Promise<{ error?: str
   if (!client || !session?.user?.id) {
     return { error: 'Not authenticated' };
   }
-  const userId = session.user.id;
+  const sessionUserId = session.user.id;
   const { setSyncError, setLastSyncedAt, loadLastSyncedAt } = useSyncStateStore.getState();
   await loadLastSyncedAt();
   const lastSyncedAtMap = await getStoredLastSyncedAt();
@@ -48,7 +49,8 @@ export async function syncPush(rulesetId: string, db: DB): Promise<{ error?: str
 
   setSyncError(null);
   try {
-    const rulesetStoragePrefix = await fetchRulesetStorageFolderPrefix(client, userId, rulesetId);
+    const rowOwnerId = await fetchCloudRulesetRowOwnerId(client, rulesetId);
+    const rulesetStoragePrefix = await fetchRulesetStorageFolderPrefix(client, rowOwnerId, rulesetId);
 
     const configs: SyncTableConfig[] = [];
     for (const name of SYNC_TABLE_ORDER) {
@@ -69,7 +71,7 @@ export async function syncPush(rulesetId: string, db: DB): Promise<{ error?: str
         const all = await table.where(config.parentKey).anyOf(parentIds).toArray();
         rows = all.filter((r) => (r.updatedAt as string) > lastSyncedAt);
       } else if (config.tableName === 'users' && table.where) {
-        const linked = await table.where('cloudUserId').equals(userId).first();
+        const linked = await table.where('cloudUserId').equals(sessionUserId).first();
         rows =
           linked && (linked.updatedAt as string) > lastSyncedAt
             ? [linked as Record<string, unknown>]
@@ -130,9 +132,10 @@ export async function syncPush(rulesetId: string, db: DB): Promise<{ error?: str
       }
 
       const remoteRows = rows.map((r) => {
+        const cloudRowUserId = config.tableName === 'users' ? sessionUserId : rowOwnerId;
         const row: { user_id: string; user_id_local?: string } = {
           ...prepareRecordForRemote(config.tableName, r),
-          user_id: userId,
+          user_id: cloudRowUserId,
         };
         // Remote schema has user_id_local (local app user); required for characters and dice_rolls
         if (
@@ -168,7 +171,7 @@ export async function syncPush(rulesetId: string, db: DB): Promise<{ error?: str
     if (pendingDeletes.length > 0) {
       const now = new Date().toISOString();
       const deleteRows = pendingDeletes.map((d) => ({
-        user_id: userId,
+        user_id: sessionUserId,
         table_name: getRemoteTableName(d.tableName),
         entity_id: d.entityId,
         deleted_at: now,

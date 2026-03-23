@@ -24,17 +24,14 @@ export interface CloudRulesetSummary {
 }
 
 /**
- * List rulesets that exist in the cloud for the current user.
- * Returns camelCase records suitable for display.
+ * List rulesets visible in the cloud for the current user (owned + org-linked).
+ * RLS on `rulesets` restricts rows; do not filter by `user_id` here.
  */
 export async function listCloudRulesets(): Promise<CloudRulesetSummary[]> {
   if (!cloudClient || !isCloudConfigured) return [];
   const session = await getSession();
   if (!session?.user?.id) return [];
-  const { data, error } = await cloudClient
-    .from('rulesets')
-    .select('id, title, version, asset_id')
-    .eq('user_id', session.user.id);
+  const { data, error } = await cloudClient.from('rulesets').select('id, title, version, asset_id');
   if (error) throw error;
   const rows = (data ?? []) as Record<string, unknown>[];
   return rows.map((row) => prepareRemoteForLocal(row) as unknown as CloudRulesetSummary);

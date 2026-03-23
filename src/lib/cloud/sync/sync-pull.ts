@@ -2,8 +2,9 @@
  * Pull remote changes for a ruleset: fetch from Supabase, LWW merge, bulkPut with isSyncing guard.
  */
 
-import { cloudClient } from '@/lib/cloud/client';
 import { getSession } from '@/lib/cloud/auth';
+import { cloudClient } from '@/lib/cloud/client';
+import { fetchCloudRulesetRowOwnerId } from '@/lib/cloud/sync/fetch-cloud-ruleset-row-owner';
 import type { DB } from '@/stores/db/hooks/types';
 import {
   getSyncTableConfig,
@@ -73,7 +74,7 @@ export async function syncPull(rulesetId: string, db: DB): Promise<{ error?: str
   if (!client || !session?.user?.id) {
     return { error: 'Not authenticated' };
   }
-  const userId = session.user.id;
+  const sessionUserId = session.user.id;
   const { setSyncing, setSyncError, loadLastSyncedAt } = useSyncStateStore.getState();
   await loadLastSyncedAt();
   const lastSyncedAtMap = await getStoredLastSyncedAt();
@@ -82,6 +83,8 @@ export async function syncPull(rulesetId: string, db: DB): Promise<{ error?: str
   setSyncing(true);
   setSyncError(null);
   try {
+    const rowOwnerId = await fetchCloudRulesetRowOwnerId(client, rulesetId);
+
     const tablesByParent = new Map<string, string[]>();
     const configs = SYNC_TABLE_ORDER.map((name) => getSyncTableConfig(name)).filter(Boolean) as ReturnType<
       typeof getSyncTableConfig
@@ -93,11 +96,11 @@ export async function syncPull(rulesetId: string, db: DB): Promise<{ error?: str
         const { data, error } = await cloudClient
           .from('users')
           .select('*')
-          .eq('user_id', userId)
+          .eq('user_id', sessionUserId)
           .gt('updated_at', lastSyncedAt);
         if (error) throw error;
         const rows = (data ?? []) as Record<string, unknown>[];
-        const localLinked = await db.users.where('cloudUserId').equals(userId).first();
+        const localLinked = await db.users.where('cloudUserId').equals(sessionUserId).first();
         const filtered =
           localLinked && rows.length > 0
             ? rows.filter((r) => r.id === localLinked.id)
@@ -111,7 +114,7 @@ export async function syncPull(rulesetId: string, db: DB): Promise<{ error?: str
             const { data, error } = await cloudClient
               .from(config.remoteTableName)
               .select('*')
-              .eq('user_id', userId)
+              .eq('user_id', rowOwnerId)
               .eq('id', rulesetId)
               .gt('updated_at', lastSyncedAt);
             if (error) throw error;
@@ -122,7 +125,7 @@ export async function syncPull(rulesetId: string, db: DB): Promise<{ error?: str
             config.remoteTableName,
             rulesetId,
             lastSyncedAt,
-            userId,
+            rowOwnerId,
           );
         }
 
@@ -171,7 +174,7 @@ export async function syncPull(rulesetId: string, db: DB): Promise<{ error?: str
           config.parentKey,
           effectiveParentIds,
           lastSyncedAt,
-          userId,
+          rowOwnerId,
         );
         const ids = rows.map((r) => r.id as string).filter(Boolean);
         if (ids.length > 0) tablesByParent.set(config.tableName, ids);
@@ -179,7 +182,7 @@ export async function syncPull(rulesetId: string, db: DB): Promise<{ error?: str
       }
     }
 
-    const deleteEntries = await fetchSyncDeletes(userId, lastSyncedAt);
+    const deleteEntries = await fetchSyncDeletes(sessionUserId, lastSyncedAt);
     for (const entry of deleteEntries) {
       const config = getSyncTableConfigByRemote(entry.table_name);
       if (!config) continue;
