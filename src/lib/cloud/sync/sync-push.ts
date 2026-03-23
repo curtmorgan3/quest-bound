@@ -52,7 +52,19 @@ export async function syncPush(rulesetId: string, db: DB): Promise<{ error?: str
 
   setSyncError(null);
   try {
-    const rowOwnerId = await fetchCloudRulesetRowOwnerId(client, rulesetId);
+    // First push path: ruleset row may not exist remotely yet.
+    // In that case, use the signed-in user as row owner so `rulesets` upsert can create it.
+    let rowOwnerId = sessionUserId;
+    try {
+      rowOwnerId = await fetchCloudRulesetRowOwnerId(client, rulesetId);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      const isMissingRemoteRuleset =
+        message.includes('Ruleset not found in the cloud or you do not have access');
+      if (!isMissingRemoteRuleset) {
+        throw error;
+      }
+    }
     const rulesetStoragePrefix = await fetchRulesetStorageFolderPrefix(client, rowOwnerId, rulesetId);
 
     const configs: SyncTableConfig[] = [];
