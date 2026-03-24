@@ -1,3 +1,8 @@
+import {
+  CAMPAIGN_PLAY_RECONNECT_MAX_ATTEMPTS,
+  nextCampaignPlayReconnectDelayMs,
+} from '@/lib/campaign-play/campaign-play-reconnect-backoff';
+import { campaignPlayEnvelopeRefreshesMultiplayerView } from '@/lib/campaign-play/campaign-play-stale-sync';
 import { cloudClient } from '@/lib/cloud/client';
 import {
   CAMPAIGN_PLAY_HEARTBEAT_INTERVAL_MS,
@@ -13,8 +18,9 @@ import {
   type CampaignPlayTransportHandle,
   type CampaignRealtimeEnvelopeV1,
 } from '@/lib/campaign-play/realtime';
+import { onAuthStateChange } from '@/lib/cloud/auth';
 import { useCampaignPlaySessionStore } from '@/stores/campaign-play-session-store';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
 export interface UseCampaignPlayRealtimeOptions {
@@ -23,8 +29,9 @@ export interface UseCampaignPlayRealtimeOptions {
 }
 
 /**
- * Phase 2.3: subscribe to the private campaign Broadcast channel for the active session.
- * Host emits heartbeats; clients infer `hostSessionActive` from the last host heartbeat age.
+ * Phase 2.3+: private Broadcast for campaign play.
+ * Phase 2.7: resubscribe with backoff after errors, bump on online/visibility/auth recovery,
+ * and mark joiner data as potentially stale until the next host-driven batch.
  */
 export function useCampaignPlayRealtime({
   campaignId,
@@ -32,6 +39,8 @@ export function useCampaignPlayRealtime({
 }: UseCampaignPlayRealtimeOptions): void {
   const session = useCampaignPlaySessionStore((s) => s.session);
   const authToastShownRef = useRef(false);
+  const [reconnectEpoch, setReconnectEpoch] = useState(0);
+  const reconnectAttemptRef = useRef(0);
 
   useEffect(() => {
     if (!enabled || !campaignId) return;
@@ -53,13 +62,60 @@ export function useCampaignPlayRealtime({
     let heartbeatTimer: ReturnType<typeof setInterval> | null = null;
     let staleCheckTimer: ReturnType<typeof setInterval> | null = null;
     const lastHostHeartbeatAt = { t: Date.now() };
+    const retryTimerRef: { current: ReturnType<typeof setTimeout> | null } = { current: null };
 
     const clearTimers = () => {
       if (heartbeatTimer) clearInterval(heartbeatTimer);
       if (staleCheckTimer) clearInterval(staleCheckTimer);
       heartbeatTimer = null;
       staleCheckTimer = null;
+      if (retryTimerRef.current) {
+        clearTimeout(retryTimerRef.current);
+        retryTimerRef.current = null;
+      }
     };
+
+    const scheduleReconnect = () => {
+      if (cancelled) return;
+      const attempt = reconnectAttemptRef.current;
+      if (attempt >= CAMPAIGN_PLAY_RECONNECT_MAX_ATTEMPTS) {
+        toast.error('Campaign realtime: reconnect limit reached. Reload the page or leave the session.');
+        return;
+      }
+      if (retryTimerRef.current) return;
+      const delay = nextCampaignPlayReconnectDelayMs(attempt);
+      reconnectAttemptRef.current = attempt + 1;
+      retryTimerRef.current = setTimeout(() => {
+        retryTimerRef.current = null;
+        if (!cancelled) setReconnectEpoch((e) => e + 1);
+      }, delay);
+    };
+
+    const tryBumpReconnectAfterDrop = () => {
+      if (cancelled) return;
+      const s = useCampaignPlaySessionStore.getState().session;
+      if (s?.campaignId !== campaignId) return;
+      if (s.realtimeStatus === 'error' || s.realtimeStatus === 'disconnected') {
+        reconnectAttemptRef.current = 0;
+        setReconnectEpoch((e) => e + 1);
+      }
+    };
+
+    const onOnline = () => tryBumpReconnectAfterDrop();
+
+    const onVisible = () => {
+      if (document.visibilityState !== 'visible') return;
+      tryBumpReconnectAfterDrop();
+    };
+
+    window.addEventListener('online', onOnline);
+    document.addEventListener('visibilitychange', onVisible);
+
+    const unsubAuth = onAuthStateChange((event, sess) => {
+      if (cancelled || !sess) return;
+      if (event !== 'SIGNED_IN' && event !== 'TOKEN_REFRESHED') return;
+      tryBumpReconnectAfterDrop();
+    });
 
     const onEnvelope = (envelope: CampaignRealtimeEnvelopeV1) => {
       if (envelope.campaignId !== campaignId) return;
@@ -70,6 +126,14 @@ export function useCampaignPlayRealtime({
             hostSessionActive: true,
           });
         }
+      }
+      if (
+        role === 'client' &&
+        campaignPlayEnvelopeRefreshesMultiplayerView(envelope.kind)
+      ) {
+        useCampaignPlaySessionStore.getState().updateSessionIfCampaign(campaignId, {
+          multiplayerDataMayBeStale: false,
+        });
       }
       dispatchCampaignPlayEnvelope(campaignId, envelope);
     };
@@ -106,11 +170,23 @@ export function useCampaignPlayRealtime({
           const store = useCampaignPlaySessionStore.getState();
 
           if (status === 'SUBSCRIBED') {
+            reconnectAttemptRef.current = 0;
+
             store.updateSessionIfCampaign(campaignId, {
               realtimeStatus: 'subscribed',
               realtimeChannelName: transport.channelName,
               realtimeLastError: null,
             });
+
+            if (role === 'client') {
+              store.updateSessionIfCampaign(campaignId, {
+                multiplayerDataMayBeStale: true,
+              });
+            } else {
+              store.updateSessionIfCampaign(campaignId, {
+                multiplayerDataMayBeStale: false,
+              });
+            }
 
             if (role === 'host') {
               hostQueue = new CampaignPlayHostActionQueue(campaignId);
@@ -157,11 +233,13 @@ export function useCampaignPlayRealtime({
               realtimeChannelName: null,
             });
             toast.error(`Campaign realtime: ${msg}`);
+            scheduleReconnect();
           } else if (status === 'CLOSED') {
             store.updateSessionIfCampaign(campaignId, {
               realtimeStatus: 'disconnected',
               realtimeChannelName: null,
             });
+            scheduleReconnect();
           }
         },
       });
@@ -181,6 +259,9 @@ export function useCampaignPlayRealtime({
     return () => {
       cancelled = true;
       clearTimers();
+      window.removeEventListener('online', onOnline);
+      document.removeEventListener('visibilitychange', onVisible);
+      unsubAuth();
       hostQueue?.stop();
       hostQueue = null;
       hostManualQueue?.stop();
@@ -205,5 +286,5 @@ export function useCampaignPlayRealtime({
         });
       }
     };
-  }, [enabled, campaignId, session?.campaignId, session?.role]);
+  }, [enabled, campaignId, session?.campaignId, session?.role, reconnectEpoch]);
 }

@@ -18,6 +18,11 @@ export interface CampaignPlaySession {
   hostSessionActive: boolean;
   realtimeStatus: CampaignPlayRealtimeConnectionStatus;
   realtimeLastError: string | null;
+  /**
+   * Client only (Phase 2.7): after reconnect, shared state may lag until the next host-driven batch.
+   * Cleared when an `action_result`, `manual_character_update`, or `host_reactive_result` arrives.
+   */
+  multiplayerDataMayBeStale: boolean;
 }
 
 interface CampaignPlaySessionState {
@@ -27,6 +32,7 @@ interface CampaignPlaySessionState {
       hostSessionActive?: boolean;
       realtimeStatus?: CampaignPlayRealtimeConnectionStatus;
       realtimeLastError?: string | null;
+      multiplayerDataMayBeStale?: boolean;
     },
   ) => void;
   clearSessionIfCampaign: (campaignId: string) => void;
@@ -41,6 +47,7 @@ interface CampaignPlaySessionState {
         | 'realtimeStatus'
         | 'realtimeLastError'
         | 'hostSessionActive'
+        | 'multiplayerDataMayBeStale'
       >
     >,
   ) => void;
@@ -57,6 +64,7 @@ export const useCampaignPlaySessionStore = create<CampaignPlaySessionState>((set
         hostSessionActive: partial.hostSessionActive ?? true,
         realtimeStatus: partial.realtimeStatus ?? 'idle',
         realtimeLastError: partial.realtimeLastError ?? null,
+        multiplayerDataMayBeStale: partial.multiplayerDataMayBeStale ?? false,
       },
     }),
   clearSessionIfCampaign: (campaignId) => {

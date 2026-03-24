@@ -87,6 +87,23 @@ export function CampaignDashboard() {
     campaignPlaySession?.campaignId === campaignId &&
     campaignPlaySession.role === 'client';
 
+  const showMultiplayerStaleNotice =
+    campaignRealtimePlayEnabled &&
+    !!campaignId &&
+    campaignPlaySession?.campaignId === campaignId &&
+    campaignPlaySession.role === 'client' &&
+    campaignPlaySession.realtimeStatus === 'subscribed' &&
+    campaignPlaySession.hostSessionActive &&
+    campaignPlaySession.multiplayerDataMayBeStale;
+
+  const showHostRealtimeReconnectNotice =
+    campaignRealtimePlayEnabled &&
+    !!campaignId &&
+    campaignPlaySession?.campaignId === campaignId &&
+    campaignPlaySession.role === 'host' &&
+    (campaignPlaySession.realtimeStatus === 'connecting' ||
+      campaignPlaySession.realtimeStatus === 'error');
+
   useEffect(() => {
     if (!campaignId || !getFeatureFlag(CAMPAIGN_REALTIME_PLAY_FEATURE_FLAG)) return;
     const role = campaignPlayRoleQuery === 'client' ? 'client' : 'host';
@@ -413,6 +430,23 @@ export function CampaignDashboard() {
                   this session.
                 </>
               )}
+            </AlertDescription>
+          </Alert>
+        )}
+        {showMultiplayerStaleNotice && (
+          <Alert className='mx-4 mt-2 shrink-0 border-border bg-muted/30'>
+            <AlertDescription className='text-muted-foreground text-sm'>
+              Party and sheet data may be briefly out of date until the host runs an action or shares an
+              update.
+            </AlertDescription>
+          </Alert>
+        )}
+        {showHostRealtimeReconnectNotice && (
+          <Alert className='mx-4 mt-2 shrink-0 border-amber-500/40 bg-amber-500/10 text-amber-950 dark:text-amber-100'>
+            <AlertDescription className='text-sm'>
+              {campaignPlaySession?.realtimeStatus === 'connecting'
+                ? 'Reconnecting to campaign realtime…'
+                : (campaignPlaySession?.realtimeLastError ?? 'Campaign realtime connection error')}
             </AlertDescription>
           </Alert>
         )}
