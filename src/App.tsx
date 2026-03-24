@@ -9,6 +9,7 @@ import {
   CharacterChartViewer,
   CharacterPage,
   Characters,
+  CampaignJoinPage,
   DevTools,
   ErrorPage,
   ManageCustomProperties,
@@ -78,6 +79,8 @@ function CompassRoutes() {
               path={`/rulesets/:rulesetId/custom-properties`}
               element={<ManageCustomProperties />}
             />
+
+            <Route path={`/join/:rulesetId`} element={<CampaignJoinPage />} />
 
             <Route path={`/campaigns`} element={<Campaigns />} />
             <Route path={`/campaigns/new`} element={<Navigate to='/campaigns?new=1' replace />} />

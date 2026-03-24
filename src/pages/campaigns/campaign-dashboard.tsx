@@ -19,13 +19,15 @@ import {
 import type { SheetViewerBackdropClickDetail } from '@/lib/compass-planes/sheet-viewer';
 import { SHEET_VIEWER_BACKDROP_CLICK } from '@/lib/compass-planes/sheet-viewer';
 import { cn } from '@/lib/utils';
-import { db } from '@/stores';
+import { db, useCloudAuthStore } from '@/stores';
 import { useCampaignPlaySessionStore } from '@/stores/campaign-play-session-store';
 import { getFeatureFlag } from '@/utils/feature-flags';
+import type { Character } from '@/types';
 import { ChevronLeft, ChevronRight, FileText, Zap } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { ActiveScene } from './active-scene';
+import { CampaignPlayInvitePanel } from './campaign-play-invite-panel';
 import { CampaignCharacterSheet } from './campaign-controls';
 import { CampaignEventsPanel } from './campaign-events-panel';
 import { CampaignGameLog } from './campaign-game-log';
@@ -76,6 +78,7 @@ export function CampaignDashboard() {
   const [searchParams, setSearchParams] = useSearchParams();
   const campaignRealtimePlayEnabled = useFeatureFlag(CAMPAIGN_REALTIME_PLAY_FEATURE_FLAG);
   const campaignPlaySession = useCampaignPlaySessionStore((s) => s.session);
+  const hostCloudUserId = useCloudAuthStore((s) => s.cloudUser?.id ?? null);
   const campaignPlayRoleQuery = searchParams.get('campaignPlayRole');
   const orchestrationBlocked = shouldBlockCampaignOrchestration(campaignId);
   const showGuestSessionBanner =
@@ -118,6 +121,12 @@ export function CampaignDashboard() {
   } = useCampaignCharacters(campaignId);
   const withNames = useCampaignPlayCharacterList({ campaignCharacters });
   const { characters } = useCharacter();
+
+  const charactersById = useMemo(() => {
+    const m = new Map<string, Character>();
+    for (const ch of characters) m.set(ch.id, ch);
+    return m;
+  }, [characters]);
 
   const [sheetCharacterId, setSheetCharacterId] = useState<string | null>(null);
   const [hoveredCampaignCharacterId, setHoveredCampaignCharacterId] = useState<string | null>(null);
@@ -407,6 +416,22 @@ export function CampaignDashboard() {
             </AlertDescription>
           </Alert>
         )}
+        {campaignRealtimePlayEnabled &&
+          campaignId &&
+          campaign &&
+          campaignPlaySession?.campaignId === campaignId &&
+          campaignPlaySession.role === 'host' && (
+            <div className='mx-4 mt-3 shrink-0'>
+              <CampaignPlayInvitePanel
+                campaignId={campaign.id}
+                rulesetId={campaign.rulesetId}
+                campaignLabel={campaign.label}
+                campaignCharacters={campaignCharacters}
+                charactersById={charactersById}
+                hostCloudUserId={hostCloudUserId}
+              />
+            </div>
+          )}
         <div className='flex min-h-0 flex-1'>
           {/* Left column: Stage NPCs */}
           <div
