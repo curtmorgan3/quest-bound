@@ -1,7 +1,7 @@
 import {
-  buildCampaignActionResultBatches,
-  expandCampaignBatchesForRealtimeLimit,
-} from '@/lib/campaign-play/realtime/build-campaign-action-result-batches';
+  buildCampaignPlayDeltaBatches,
+  expandMergedCampaignDeltaBatches,
+} from '@/lib/campaign-play/realtime/build-campaign-play-delta-batches';
 import { getCampaignPlaySender, subscribeCampaignPlayEnvelopes } from '@/lib/campaign-play/realtime/campaign-play-realtime-dispatcher';
 import type {
   CampaignRealtimeActionRequestEnvelopeV1,
@@ -104,13 +104,13 @@ export class CampaignPlayHostActionQueue {
         );
       }
 
-      const rawBatches = await buildCampaignActionResultBatches(
+      const rawBatches = await buildCampaignPlayDeltaBatches(
         db,
-        request.body.characterId,
-        exec.modifiedAttributeIds ?? [],
+        this.campaignId,
+        [request.body.characterId],
         startedAtMs,
       );
-      const batches = expandCampaignBatchesForRealtimeLimit(rawBatches);
+      const batches = expandMergedCampaignDeltaBatches(rawBatches);
 
       await this.sendResult({
         v: CAMPAIGN_REALTIME_PROTOCOL_VERSION,

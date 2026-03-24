@@ -3,6 +3,7 @@ import {
   CAMPAIGN_PLAY_HEARTBEAT_INTERVAL_MS,
   CAMPAIGN_PLAY_HOST_STALE_AFTER_MS,
   CampaignPlayHostActionQueue,
+  CampaignPlayHostManualQueue,
   dispatchCampaignPlayEnvelope,
   registerCampaignPlaySender,
   startCampaignPlayClientActionBridge,
@@ -47,6 +48,7 @@ export function useCampaignPlayRealtime({
     const role = session.role;
     let cancelled = false;
     let hostQueue: CampaignPlayHostActionQueue | null = null;
+    let hostManualQueue: CampaignPlayHostManualQueue | null = null;
     const transportRef: { current: CampaignPlayTransportHandle | null } = { current: null };
     let heartbeatTimer: ReturnType<typeof setInterval> | null = null;
     let staleCheckTimer: ReturnType<typeof setInterval> | null = null;
@@ -113,6 +115,8 @@ export function useCampaignPlayRealtime({
             if (role === 'host') {
               hostQueue = new CampaignPlayHostActionQueue(campaignId);
               hostQueue.start();
+              hostManualQueue = new CampaignPlayHostManualQueue(campaignId);
+              hostManualQueue.start();
             } else if (role === 'client') {
               startCampaignPlayClientActionBridge(campaignId);
             }
@@ -179,6 +183,8 @@ export function useCampaignPlayRealtime({
       clearTimers();
       hostQueue?.stop();
       hostQueue = null;
+      hostManualQueue?.stop();
+      hostManualQueue = null;
       if (role === 'client') {
         stopCampaignPlayClientActionBridge();
       }

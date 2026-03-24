@@ -61,6 +61,7 @@ export interface CampaignRealtimeManualCharacterUpdateEnvelopeV1 {
   updateId: string;
   campaignId: string;
   sentAt: string;
+  campaignSceneId?: string;
   batches: CampaignRealtimeBulkPutBatchV1[];
 }
 
@@ -71,6 +72,7 @@ export interface CampaignRealtimeHostReactiveResultEnvelopeV1 {
   campaignId: string;
   sentAt: string;
   batches: CampaignRealtimeBulkPutBatchV1[];
+  announceMessages?: string[];
 }
 
 export interface CampaignRealtimeSessionHeartbeatEnvelopeV1 {
@@ -216,12 +218,15 @@ export function parseCampaignRealtimeEnvelope(raw: unknown): CampaignRealtimeEnv
   if (kind === 'manual_character_update') {
     if (typeof raw.updateId !== 'string' || typeof raw.sentAt !== 'string') return null;
     if (!Array.isArray(raw.batches) || !raw.batches.every(isBulkPutBatchV1)) return null;
+    const campaignSceneId = raw.campaignSceneId;
+    if (campaignSceneId !== undefined && typeof campaignSceneId !== 'string') return null;
     return {
       v: CAMPAIGN_REALTIME_PROTOCOL_VERSION,
       kind: 'manual_character_update',
       updateId: raw.updateId,
       campaignId: raw.campaignId,
       sentAt: raw.sentAt,
+      campaignSceneId,
       batches: raw.batches,
     };
   }
@@ -229,6 +234,12 @@ export function parseCampaignRealtimeEnvelope(raw: unknown): CampaignRealtimeEnv
   if (kind === 'host_reactive_result') {
     if (typeof raw.correlationId !== 'string' || typeof raw.sentAt !== 'string') return null;
     if (!Array.isArray(raw.batches) || !raw.batches.every(isBulkPutBatchV1)) return null;
+    let announceMessages: string[] | undefined;
+    if (raw.announceMessages !== undefined) {
+      if (!Array.isArray(raw.announceMessages)) return null;
+      if (!raw.announceMessages.every((m) => typeof m === 'string')) return null;
+      announceMessages = raw.announceMessages as string[];
+    }
     return {
       v: CAMPAIGN_REALTIME_PROTOCOL_VERSION,
       kind: 'host_reactive_result',
@@ -236,6 +247,7 @@ export function parseCampaignRealtimeEnvelope(raw: unknown): CampaignRealtimeEnv
       campaignId: raw.campaignId,
       sentAt: raw.sentAt,
       batches: raw.batches,
+      announceMessages,
     };
   }
 

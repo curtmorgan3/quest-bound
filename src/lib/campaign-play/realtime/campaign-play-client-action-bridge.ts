@@ -9,6 +9,7 @@ import type {
 } from '@/lib/campaign-play/realtime/campaign-realtime-envelopes';
 import { CAMPAIGN_REALTIME_PROTOCOL_VERSION } from '@/lib/campaign-play/realtime/campaign-realtime-envelopes';
 import { db } from '@/stores';
+import { toast } from 'sonner';
 
 const DEFAULT_CLIENT_ACTION_TIMEOUT_MS = 60_000;
 
@@ -19,13 +20,54 @@ type Pending = {
 };
 
 const pendingByRequestId = new Map<string, Pending>();
+const pendingManualCorrelationIds = new Set<string>();
 
 let unsub: (() => void) | null = null;
 let activeCampaignId: string | null = null;
 
+export function registerPendingCampaignManualUpdate(correlationId: string): void {
+  pendingManualCorrelationIds.add(correlationId);
+}
+
+export function unregisterPendingCampaignManualUpdate(correlationId: string): void {
+  pendingManualCorrelationIds.delete(correlationId);
+}
+
 function onEnvelope(campaignId: string, envelope: CampaignRealtimeEnvelopeV1): void {
-  if (envelope.kind !== 'action_result') return;
   if (envelope.campaignId !== campaignId) return;
+
+  if (envelope.kind === 'manual_character_update') {
+    void (async () => {
+      try {
+        await applyCampaignRealtimeBatches(db, envelope.batches);
+      } catch (e) {
+        console.error('[CampaignPlayClientBridge] manual_character_update ingest failed', e);
+      }
+    })();
+    return;
+  }
+
+  if (envelope.kind === 'host_reactive_result') {
+    void (async () => {
+      try {
+        await applyCampaignRealtimeBatches(db, envelope.batches);
+        for (const msg of envelope.announceMessages ?? []) {
+          window.dispatchEvent(
+            new CustomEvent('qbscript:announce', { detail: { message: msg } }),
+          );
+        }
+        if (pendingManualCorrelationIds.has(envelope.correlationId)) {
+          pendingManualCorrelationIds.delete(envelope.correlationId);
+          toast.info('The host applied ruleset updates; your sheet may have changed.');
+        }
+      } catch (e) {
+        console.error('[CampaignPlayClientBridge] host_reactive_result ingest failed', e);
+      }
+    })();
+    return;
+  }
+
+  if (envelope.kind !== 'action_result') return;
   const entry = pendingByRequestId.get(envelope.requestId);
   if (!entry) return;
 
@@ -65,6 +107,7 @@ export function stopCampaignPlayClientActionBridge(): void {
   unsub?.();
   unsub = null;
   activeCampaignId = null;
+  pendingManualCorrelationIds.clear();
   for (const [, p] of pendingByRequestId) {
     clearTimeout(p.timeoutId);
     p.reject(new Error('Campaign realtime session ended'));

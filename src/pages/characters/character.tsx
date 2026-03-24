@@ -26,7 +26,7 @@ import {
 } from '@/stores';
 import { useCampaignPlaySessionStore } from '@/stores/campaign-play-session-store';
 import { type CharacterAttribute } from '@/types';
-import { useContext, useEffect, useState } from 'react';
+import { useContext, useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { CharacterArchetypesPanel } from './character-archetypes-panel';
@@ -113,8 +113,14 @@ export const CharacterPage = ({
 
   const { character, updateCharacter } = useCharacter(id ?? characterId);
 
+  const campaignPlayManualContext = useMemo(
+    () => (campaignId ? { campaignId, campaignSceneId } : undefined),
+    [campaignId, campaignSceneId],
+  );
+
   const { characterAttributes, updateCharacterAttribute, syncWithRuleset } = useCharacterAttributes(
     character?.id,
+    campaignPlayManualContext,
   );
 
   // On character open, sync only attributes created or updated since the last sync.

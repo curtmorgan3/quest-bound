@@ -69,4 +69,30 @@ describe('parseCampaignRealtimeEnvelope', () => {
       }),
     ).toBeNull();
   });
+
+  it('parses manual_character_update with optional campaignSceneId', () => {
+    const raw = {
+      v: 1,
+      kind: 'manual_character_update' as const,
+      updateId: 'u1',
+      campaignId: 'c1',
+      sentAt: '2025-01-01T00:00:00.000Z',
+      campaignSceneId: 'scene-1',
+      batches: [{ table: 'characterAttributes', rows: [{ id: 'a1', characterId: 'ch1' }] }],
+    };
+    expect(parseCampaignRealtimeEnvelope(raw)).toEqual(raw);
+  });
+
+  it('parses host_reactive_result with optional announceMessages', () => {
+    const raw = {
+      v: 1,
+      kind: 'host_reactive_result' as const,
+      correlationId: 'u1',
+      campaignId: 'c1',
+      sentAt: '2025-01-01T00:00:00.000Z',
+      batches: [{ table: 'characterAttributes', rows: [{ id: 'a1' }] }],
+      announceMessages: ['hello'],
+    };
+    expect(parseCampaignRealtimeEnvelope(raw)).toEqual(raw);
+  });
 });

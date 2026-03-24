@@ -1,10 +1,18 @@
 import { filterNotSoftDeleted, softDeletePatch } from '@/lib/data/soft-delete';
 import { useErrorHandler, useNotifications } from '@/hooks';
+import { isCampaignPlayClientRelayForCampaign } from '@/lib/campaign-play/campaign-play-action-relay';
+import { sendCampaignPlayManualCharacterUpdate } from '@/lib/campaign-play/realtime/campaign-play-manual-broadcast';
 import { getQBScriptClient } from '@/lib/compass-logic/worker';
 import { db } from '@/stores';
 import type { CharacterAttribute } from '@/types';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useCallback, useMemo, useRef } from 'react';
+
+/** When set on the character sheet during campaign play, manual attribute writes are relayed to the host (Phase 2.5). */
+export interface CharacterSheetCampaignPlayContext {
+  campaignId: string;
+  campaignSceneId?: string;
+}
 
 const EMPTY_CHARACTER_ATTRIBUTES: CharacterAttribute[] = [];
 
@@ -17,7 +25,10 @@ function emptyAttributesOr(
   return rows ?? EMPTY_CHARACTER_ATTRIBUTES;
 }
 
-export const useCharacterAttributes = (characterId?: string) => {
+export const useCharacterAttributes = (
+  characterId?: string,
+  campaignPlay?: CharacterSheetCampaignPlayContext,
+) => {
   const { handleError } = useErrorHandler();
   const { addNotification } = useNotifications();
 
@@ -25,6 +36,24 @@ export const useCharacterAttributes = (characterId?: string) => {
   const addNotificationRef = useRef(addNotification);
   handleErrorRef.current = handleError;
   addNotificationRef.current = addNotification;
+
+  const broadcastAttributeRows = useCallback(
+    (rows: CharacterAttribute[]) => {
+      if (!campaignPlay || rows.length === 0) return;
+      if (!isCampaignPlayClientRelayForCampaign(campaignPlay.campaignId)) return;
+      void sendCampaignPlayManualCharacterUpdate({
+        campaignId: campaignPlay.campaignId,
+        campaignSceneId: campaignPlay.campaignSceneId,
+        batches: [
+          {
+            table: 'characterAttributes',
+            rows: rows.map((r) => ({ ...r } as Record<string, unknown>)),
+          },
+        ],
+      }).catch((err) => console.warn('[useCharacterAttributes] campaign manual broadcast failed', err));
+    },
+    [campaignPlay],
+  );
 
   const characterAttributes = useLiveQuery(
     async () => {
@@ -41,14 +70,17 @@ export const useCharacterAttributes = (characterId?: string) => {
       const character = await db.characters.get(characterId);
       if (!character) return;
       const now = new Date().toISOString();
+      const newId = crypto.randomUUID();
       try {
         await db.characterAttributes.add({
           ...data,
-          id: crypto.randomUUID(),
+          id: newId,
           characterId: character.id,
           createdAt: now,
           updatedAt: now,
         } as CharacterAttribute);
+        const row = await db.characterAttributes.get(newId);
+        if (row) broadcastAttributeRows([row]);
       } catch (e) {
         handleErrorRef.current(e as Error, {
           component: 'useCharacterAttributes/createCharacterAttribute',
@@ -56,7 +88,7 @@ export const useCharacterAttributes = (characterId?: string) => {
         });
       }
     },
-    [characterId],
+    [characterId, broadcastAttributeRows],
   );
 
   const updateCharacterAttribute = useCallback(
@@ -91,6 +123,8 @@ export const useCharacterAttributes = (characterId?: string) => {
           ...data,
           updatedAt: now,
         });
+        const row = await db.characterAttributes.get(id);
+        if (row) broadcastAttributeRows([row]);
       } catch (e) {
         handleErrorRef.current(e as Error, {
           component: 'useCharacterAttributes/updateCharacterAttribute',
@@ -98,19 +132,24 @@ export const useCharacterAttributes = (characterId?: string) => {
         });
       }
     },
-    [],
+    [broadcastAttributeRows],
   );
 
-  const deleteCharacterAttribute = useCallback(async (id: string) => {
-    try {
-      await db.characterAttributes.update(id, softDeletePatch());
-    } catch (e) {
-      handleErrorRef.current(e as Error, {
-        component: 'useCharacterAttributes/deleteCharacterAttribute',
-        severity: 'medium',
-      });
-    }
-  }, []);
+  const deleteCharacterAttribute = useCallback(
+    async (id: string) => {
+      try {
+        await db.characterAttributes.update(id, softDeletePatch());
+        const row = await db.characterAttributes.get(id);
+        if (row) broadcastAttributeRows([row]);
+      } catch (e) {
+        handleErrorRef.current(e as Error, {
+          component: 'useCharacterAttributes/deleteCharacterAttribute',
+          severity: 'medium',
+        });
+      }
+    },
+    [broadcastAttributeRows],
+  );
 
   const syncWithRuleset = useCallback(
     async (options?: { ignoreLastSyncedAt?: boolean }): Promise<number> => {

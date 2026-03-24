@@ -32,6 +32,11 @@ export {
   expandCampaignBatchesForRealtimeLimit,
 } from '@/lib/campaign-play/realtime/build-campaign-action-result-batches';
 export {
+  buildCampaignPlayDeltaBatches,
+  expandMergedCampaignDeltaBatches,
+  mergeRealtimeBatchesByTable,
+} from '@/lib/campaign-play/realtime/build-campaign-play-delta-batches';
+export {
   dispatchCampaignPlayEnvelope,
   getCampaignPlaySender,
   registerCampaignPlaySender,
@@ -39,9 +44,11 @@ export {
   unregisterCampaignPlaySender,
 } from '@/lib/campaign-play/realtime/campaign-play-realtime-dispatcher';
 export { CampaignPlayHostActionQueue } from '@/lib/campaign-play/realtime/campaign-play-host-action-queue';
+export { CampaignPlayHostManualQueue } from '@/lib/campaign-play/realtime/campaign-play-host-manual-queue';
 export {
   sendCampaignPlayClientActionRequest,
   startCampaignPlayClientActionBridge,
   stopCampaignPlayClientActionBridge,
 } from '@/lib/campaign-play/realtime/campaign-play-client-action-bridge';
+export { sendCampaignPlayManualCharacterUpdate } from '@/lib/campaign-play/realtime/campaign-play-manual-broadcast';
 export { validateCampaignActionRequest } from '@/lib/campaign-play/realtime/validate-campaign-action-request';

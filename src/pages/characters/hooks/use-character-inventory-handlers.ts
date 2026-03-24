@@ -39,8 +39,15 @@ export const useCharacterInventoryHandlers = ({
   inventoryPanelConfig,
   setInventoryPanelConfig,
 }: UseInventoryUpdateWrapperes) => {
+  const campaignPlayInventoryContext =
+    campaignId != null ? { campaignId, campaignSceneId } : undefined;
+
   const { inventoryItems, addInventoryItem, updateInventoryItem, removeInventoryItem } =
-    useInventory(character?.inventoryId ?? '', character?.id ?? '');
+    useInventory(
+      character?.inventoryId ?? '',
+      character?.id ?? '',
+      campaignPlayInventoryContext,
+    );
 
   const { executeItemEvent } = useExecuteItemEvent();
 
