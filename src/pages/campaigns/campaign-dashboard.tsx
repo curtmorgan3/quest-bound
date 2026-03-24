@@ -1,7 +1,7 @@
 import { Avatar, AvatarFallback, AvatarImage, Button, Label, Switch } from '@/components';
 import { PageWrapper } from '@/components/composites';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { useFeatureFlag } from '@/hooks';
+import { useCampaignPlayRealtime, useFeatureFlag } from '@/hooks';
 import { CAMPAIGN_REALTIME_PLAY_FEATURE_FLAG } from '@/lib/campaign-play/campaign-play-constants';
 import { shouldBlockCampaignOrchestration } from '@/lib/campaign-play/campaign-play-orchestration-gate';
 import {
@@ -97,6 +97,11 @@ export function CampaignDashboard() {
       useCampaignPlaySessionStore.getState().clearSessionIfCampaign(campaignId);
     };
   }, [campaignId, campaignPlayRoleQuery]);
+
+  useCampaignPlayRealtime({
+    campaignId,
+    enabled: campaignRealtimePlayEnabled && !!campaignId,
+  });
 
   // Ensure active ruleset (and its assets) are resolved for this campaign view.
   // useActiveRuleset will derive the rulesetId from the campaignId route param
