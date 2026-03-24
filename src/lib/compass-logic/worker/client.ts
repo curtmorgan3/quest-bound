@@ -440,6 +440,9 @@ export class QBScriptClient {
         announceMessages: payload.announceMessages,
         logMessages: payload.logMessages,
         executionTime: payload.executionTime,
+        modifiedAttributeIds: payload.modifiedAttributeIds,
+        navigateTargets: payload.navigateTargets,
+        componentAnimations: payload.componentAnimations,
       });
 
       this.pendingRequests.delete(payload.requestId);
@@ -708,6 +711,9 @@ export class QBScriptClient {
     announceMessages: string[];
     logMessages: any[][];
     executionTime: number;
+    modifiedAttributeIds?: string[];
+    navigateTargets?: { characterId: string; pageId: string }[];
+    componentAnimations?: Array<{ characterId: string; referenceLabel: string; animation: string }>;
   }> {
     const requestId = generateRequestId();
     this.pendingRollHandlers.set(requestId, roll ?? defaultScriptDiceRoller);
@@ -755,6 +761,9 @@ export class QBScriptClient {
     announceMessages: string[];
     logMessages: any[][];
     executionTime: number;
+    modifiedAttributeIds?: string[];
+    navigateTargets?: { characterId: string; pageId: string }[];
+    componentAnimations?: Array<{ characterId: string; referenceLabel: string; animation: string }>;
   }> {
     const requestId = generateRequestId();
     this.pendingRollHandlers.set(requestId, roll ?? defaultScriptDiceRoller);

@@ -2,7 +2,13 @@ import { cloudClient } from '@/lib/cloud/client';
 import {
   CAMPAIGN_PLAY_HEARTBEAT_INTERVAL_MS,
   CAMPAIGN_PLAY_HOST_STALE_AFTER_MS,
+  CampaignPlayHostActionQueue,
+  dispatchCampaignPlayEnvelope,
+  registerCampaignPlaySender,
+  startCampaignPlayClientActionBridge,
+  stopCampaignPlayClientActionBridge,
   subscribeCampaignPlayTransport,
+  unregisterCampaignPlaySender,
   type CampaignPlayTransportHandle,
   type CampaignRealtimeEnvelopeV1,
 } from '@/lib/campaign-play/realtime';
@@ -40,6 +46,7 @@ export function useCampaignPlayRealtime({
 
     const role = session.role;
     let cancelled = false;
+    let hostQueue: CampaignPlayHostActionQueue | null = null;
     const transportRef: { current: CampaignPlayTransportHandle | null } = { current: null };
     let heartbeatTimer: ReturnType<typeof setInterval> | null = null;
     let staleCheckTimer: ReturnType<typeof setInterval> | null = null;
@@ -62,6 +69,7 @@ export function useCampaignPlayRealtime({
           });
         }
       }
+      dispatchCampaignPlayEnvelope(campaignId, envelope);
     };
 
     void (async () => {
@@ -101,6 +109,13 @@ export function useCampaignPlayRealtime({
               realtimeChannelName: transport.channelName,
               realtimeLastError: null,
             });
+
+            if (role === 'host') {
+              hostQueue = new CampaignPlayHostActionQueue(campaignId);
+              hostQueue.start();
+            } else if (role === 'client') {
+              startCampaignPlayClientActionBridge(campaignId);
+            }
 
             if (role === 'host') {
               const sendBeat = () => {
@@ -148,6 +163,7 @@ export function useCampaignPlayRealtime({
       });
 
       transportRef.current = transport;
+      registerCampaignPlaySender(campaignId, transport.sendEnvelope);
       useCampaignPlaySessionStore.getState().updateSessionIfCampaign(campaignId, {
         realtimeChannelName: transport.channelName,
       });
@@ -161,6 +177,12 @@ export function useCampaignPlayRealtime({
     return () => {
       cancelled = true;
       clearTimers();
+      hostQueue?.stop();
+      hostQueue = null;
+      if (role === 'client') {
+        stopCampaignPlayClientActionBridge();
+      }
+      unregisterCampaignPlaySender(campaignId);
       const t = transportRef.current;
       transportRef.current = null;
       if (t) {

@@ -1,5 +1,7 @@
 import { useInventory } from '@/lib/compass-api';
+import { isCampaignPlayClientRelayForCampaign } from '@/lib/campaign-play/campaign-play-action-relay';
 import { useExecuteItemEvent } from '@/lib/compass-logic';
+import { sendCampaignPlayClientActionRequest } from '@/lib/campaign-play/realtime/campaign-play-client-action-bridge';
 import type { InventoryPanelConfig } from '@/stores';
 import type {
   Action,
@@ -11,6 +13,7 @@ import type {
   RollSplitFn,
 } from '@/types';
 import { useMemo } from 'react';
+import { toast } from 'sonner';
 import { findFirstEmptySlot } from '../character-inventory-panel';
 
 type ItemEvent = 'on_equip' | 'on_unequip' | 'on_consume' | 'on_activate';
@@ -57,6 +60,24 @@ export const useCharacterInventoryHandlers = ({
     inventoryItemInstanceId: string,
   ) => {
     if (!character) return;
+    if (isCampaignPlayClientRelayForCampaign(campaignId)) {
+      try {
+        await sendCampaignPlayClientActionRequest({
+          campaignId: campaignId!,
+          campaignSceneId,
+          body: {
+            type: 'use_item',
+            itemId: rulesetItemId,
+            characterId: character.id,
+            eventType: event,
+            inventoryItemInstanceId,
+          },
+        });
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : 'Item action failed');
+      }
+      return;
+    }
     executeItemEvent(
       rulesetItemId,
       character.id,
@@ -78,14 +99,11 @@ export const useCharacterInventoryHandlers = ({
   const updateItemAndFireEvent = async (invItemId: string, data: Partial<InventoryItem>) => {
     const rulesetItemId = inventoryItemIdToRulesetItemId.get(invItemId);
     if (rulesetItemId) {
-      const fireEvent = (event: ItemEvent) => fireItemEvent(rulesetItemId, event, invItemId);
-
       if (data.isEquipped === true) {
-        fireEvent('on_equip');
+        await fireItemEvent(rulesetItemId, 'on_equip', invItemId);
       }
-
       if (data.isEquipped === false) {
-        fireEvent('on_unequip');
+        await fireItemEvent(rulesetItemId, 'on_unequip', invItemId);
       }
     }
 
@@ -97,28 +115,34 @@ export const useCharacterInventoryHandlers = ({
    * Removes item if new qty is 0
    */
   const consumeItem = (invItemId: string) => {
-    const rulesetItemId = inventoryItemIdToRulesetItemId.get(invItemId);
-    if (rulesetItemId) {
-      fireItemEvent(rulesetItemId, 'on_consume', invItemId);
-    }
+    void (async () => {
+      const rulesetItemId = inventoryItemIdToRulesetItemId.get(invItemId);
+      if (rulesetItemId) {
+        await fireItemEvent(rulesetItemId, 'on_consume', invItemId);
+        if (isCampaignPlayClientRelayForCampaign(campaignId)) {
+          return;
+        }
+      }
 
-    const item = inventoryItems.find((item) => item.id === invItemId);
-    if (!item) return;
+      const item = inventoryItems.find((item) => item.id === invItemId);
+      if (!item) return;
 
-    if (item.quantity <= 1) {
-      removeInventoryItem(invItemId);
-    } else {
-      updateInventoryItem(invItemId, {
-        quantity: item.quantity - 1,
-      });
-    }
+      if (item.quantity <= 1) {
+        removeInventoryItem(invItemId);
+      } else {
+        updateInventoryItem(invItemId, {
+          quantity: item.quantity - 1,
+        });
+      }
+    })();
   };
 
   const activateItem = (invItemId: string) => {
-    const rulesetItemId = inventoryItemIdToRulesetItemId.get(invItemId);
-    if (rulesetItemId) {
-      fireItemEvent(rulesetItemId, 'on_activate', invItemId);
-    }
+    void (async () => {
+      const rulesetItemId = inventoryItemIdToRulesetItemId.get(invItemId);
+      if (!rulesetItemId) return;
+      await fireItemEvent(rulesetItemId, 'on_activate', invItemId);
+    })();
   };
 
   const removeItemAndFireEvent = async (id: string) => {

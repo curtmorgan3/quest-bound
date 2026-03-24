@@ -1,7 +1,9 @@
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useSidebar } from '@/components/ui/sidebar';
 import { useFeatureFlag } from '@/hooks';
+import { isCampaignPlayClientRelayForCampaign } from '@/lib/campaign-play/campaign-play-action-relay';
 import { CAMPAIGN_REALTIME_PLAY_FEATURE_FLAG } from '@/lib/campaign-play/campaign-play-constants';
+import { sendCampaignPlayClientActionRequest } from '@/lib/campaign-play/realtime/campaign-play-client-action-bridge';
 import { useCharacter, useCharacterAttributes } from '@/lib/compass-api';
 import { useExecuteActionEvent } from '@/lib/compass-logic';
 import {
@@ -26,6 +28,7 @@ import { useCampaignPlaySessionStore } from '@/stores/campaign-play-session-stor
 import { type CharacterAttribute } from '@/types';
 import { useContext, useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
+import { toast } from 'sonner';
 import { CharacterArchetypesPanel } from './character-archetypes-panel';
 import { CharacterAttributeEditPanel } from './character-attribute-edit-panel';
 import { CharacterInventoryPanel } from './character-inventory-panel';
@@ -173,6 +176,24 @@ export const CharacterPage = ({
 
   const fireAction = async (actionId: string) => {
     if (!character) return;
+    if (isCampaignPlayClientRelayForCampaign(campaignId)) {
+      try {
+        await sendCampaignPlayClientActionRequest({
+          campaignId: campaignId!,
+          campaignSceneId,
+          body: {
+            type: 'execute_action',
+            actionId,
+            characterId: character.id,
+            targetId: null,
+            eventType: 'on_activate',
+          },
+        });
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : 'Action failed');
+      }
+      return;
+    }
     await executeActionEvent(
       actionId,
       character.id,
@@ -188,6 +209,25 @@ export const CharacterPage = ({
 
   const fireActionFromItem = async (actionId: string, inventoryItemId: string) => {
     if (!character) return;
+    if (isCampaignPlayClientRelayForCampaign(campaignId)) {
+      try {
+        await sendCampaignPlayClientActionRequest({
+          campaignId: campaignId!,
+          campaignSceneId,
+          body: {
+            type: 'execute_action',
+            actionId,
+            characterId: character.id,
+            targetId: null,
+            eventType: 'on_activate',
+            callerInventoryItemInstanceId: inventoryItemId,
+          },
+        });
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : 'Action failed');
+      }
+      return;
+    }
     executeActionEvent(
       actionId,
       character.id,

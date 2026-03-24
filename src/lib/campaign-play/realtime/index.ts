@@ -26,3 +26,22 @@ export {
   type CampaignPlayTransportOptions,
   subscribeCampaignPlayTransport,
 } from '@/lib/campaign-play/realtime/campaign-realtime-transport';
+export { applyCampaignRealtimeBatches } from '@/lib/campaign-play/realtime/apply-campaign-realtime-batches';
+export {
+  buildCampaignActionResultBatches,
+  expandCampaignBatchesForRealtimeLimit,
+} from '@/lib/campaign-play/realtime/build-campaign-action-result-batches';
+export {
+  dispatchCampaignPlayEnvelope,
+  getCampaignPlaySender,
+  registerCampaignPlaySender,
+  subscribeCampaignPlayEnvelopes,
+  unregisterCampaignPlaySender,
+} from '@/lib/campaign-play/realtime/campaign-play-realtime-dispatcher';
+export { CampaignPlayHostActionQueue } from '@/lib/campaign-play/realtime/campaign-play-host-action-queue';
+export {
+  sendCampaignPlayClientActionRequest,
+  startCampaignPlayClientActionBridge,
+  stopCampaignPlayClientActionBridge,
+} from '@/lib/campaign-play/realtime/campaign-play-client-action-bridge';
+export { validateCampaignActionRequest } from '@/lib/campaign-play/realtime/validate-campaign-action-request';

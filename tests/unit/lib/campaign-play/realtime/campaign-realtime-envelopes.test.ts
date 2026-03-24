@@ -20,7 +20,25 @@ describe('parseCampaignRealtimeEnvelope', () => {
       requestId: 'r1',
       campaignId: 'c1',
       sentAt: '2025-01-01T00:00:00.000Z',
-      body: { type: 'use_item', itemId: 'i1', characterId: 'ch1' },
+      body: {
+        type: 'execute_action',
+        actionId: 'a1',
+        characterId: 'ch1',
+        targetId: null,
+        eventType: 'on_activate' as const,
+      },
+    };
+    expect(parseCampaignRealtimeEnvelope(raw)).toEqual(raw);
+  });
+
+  it('parses use_item action_request', () => {
+    const raw = {
+      v: 1,
+      kind: 'action_request',
+      requestId: 'r2',
+      campaignId: 'c1',
+      sentAt: '2025-01-01T00:00:00.000Z',
+      body: { type: 'use_item', itemId: 'i1', characterId: 'ch1', eventType: 'on_consume' },
     };
     expect(parseCampaignRealtimeEnvelope(raw)).toEqual(raw);
   });

@@ -1421,7 +1421,7 @@ async function handleExecuteActionEvent(payload: {
           logMessages: result.logMessages.map((args) => prepareForStructuredClone(args)),
           executionTime: 0,
           characterId: payload.characterId,
-          modifiedAttributeIds: result.modifiedAttributeIds,
+          modifiedAttributeIds,
           navigateTargets: result.navigateTargets,
           componentAnimations: [...(result.componentAnimations ?? []), ...allReactiveAnimations],
         },
@@ -1559,6 +1559,7 @@ async function handleExecuteItemEvent(payload: {
         },
       });
     } else {
+      (result.modifiedAttributeIds ?? []).forEach((id) => allModifiedIds.add(id));
       const modifiedAttributeIds = Array.from(allModifiedIds);
       if (modifiedAttributeIds.length > 0) {
         sendSignal({
@@ -1578,7 +1579,7 @@ async function handleExecuteItemEvent(payload: {
           logMessages: result.logMessages.map((args) => prepareForStructuredClone(args)),
           executionTime: 0,
           characterId: payload.characterId,
-          modifiedAttributeIds: result.modifiedAttributeIds,
+          modifiedAttributeIds,
           navigateTargets: result.navigateTargets,
           componentAnimations: [...(result.componentAnimations ?? []), ...allReactiveAnimations],
         },
