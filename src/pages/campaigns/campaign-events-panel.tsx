@@ -7,6 +7,7 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet';
 import { ScriptLookup, useScripts } from '@/lib/compass-api';
+import { shouldBlockCampaignOrchestration } from '@/lib/campaign-play/campaign-play-orchestration-gate';
 import { useQBScriptClient } from '@/lib/compass-logic/worker/hooks';
 import { activateButtonStyle } from '@/palette';
 import { db, DiceContext } from '@/stores';
@@ -45,6 +46,7 @@ export function CampaignEventsPanel({
   );
 
   const hasScene = Boolean(campaignId && sceneId);
+  const orchestrationBlocked = shouldBlockCampaignOrchestration(campaignId);
 
   const eventsForScene = useLiveQuery(async (): Promise<CampaignEvent[]> => {
     if (!sceneId || !campaignId) return [];
@@ -121,7 +123,7 @@ export function CampaignEventsPanel({
 
   const handleActivateEvent = useCallback(
     async (event: CampaignEvent) => {
-      if (!event.scriptId || !event.sceneId) return;
+      if (!event.scriptId || !event.sceneId || orchestrationBlocked || !campaignId) return;
       setActivatingEventId(event.id);
       try {
         await client
@@ -131,13 +133,16 @@ export function CampaignEventsPanel({
             'on_activate',
             actingCharacterId ?? null,
             roll,
+            10000,
+            undefined,
+            campaignId,
           )
           .catch((err) => console.warn('[CampaignEventsPanel] on_activate script failed:', err));
       } finally {
         setActivatingEventId((current) => (current === event.id ? null : current));
       }
     },
-    [actingCharacterId, client, roll, sceneId],
+    [actingCharacterId, campaignId, client, orchestrationBlocked, roll],
   );
 
   const hasEvents = sortedEventsForScene.length > 0;
@@ -279,7 +284,7 @@ export function CampaignEventsPanel({
                                 type='button'
                                 variant='outline'
                                 size='icon'
-                                disabled={!canActivate || isActivating}
+                                disabled={!canActivate || isActivating || orchestrationBlocked}
                                 style={activateButtonStyle}
                                 title={!event.scriptId ? 'No script assigned' : 'Run on_activate'}
                                 onClick={() => handleActivateEvent(event)}

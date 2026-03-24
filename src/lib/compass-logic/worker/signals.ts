@@ -5,6 +5,8 @@
  * between the main thread and the QBScript Web Worker.
  */
 
+import type { CampaignPlayScriptWorkerPolicy } from '@/lib/campaign-play/campaign-play-script-gate';
+
 // ============================================================================
 // Main Thread → Worker Signals
 // ============================================================================
@@ -20,6 +22,7 @@ export type MainToWorkerSignal =
   | ExecuteItemEventSignal
   | ExecuteArchetypeEventSignal
   | ExecuteCampaignEventEventSignal
+  | SetCampaignPlayScriptPolicySignal
   | RollResponseSignal
   | RollSplitResponseSignal
   | PromptResponseSignal
@@ -27,6 +30,11 @@ export type MainToWorkerSignal =
   | PromptInputResponseSignal
   | CharacterSelectResponseSignal
   | ClearGraphSignal;
+
+export interface SetCampaignPlayScriptPolicySignal {
+  type: 'SET_CAMPAIGN_PLAY_SCRIPT_POLICY';
+  payload: CampaignPlayScriptWorkerPolicy;
+}
 
 export interface ExecuteScriptSignal {
   type: 'EXECUTE_SCRIPT';
@@ -61,6 +69,8 @@ export interface InitialAttributeSyncSignal {
     characterId: string;
     rulesetId: string;
     requestId: string;
+    /** When set (e.g. character sheet in campaign play), guest clients skip script VM execution. */
+    campaignId?: string;
   };
 }
 
@@ -71,6 +81,8 @@ export interface ExecuteActionSignal {
     characterId: string;
     targetId?: string;
     requestId: string;
+    campaignId?: string;
+    campaignSceneId?: string;
   };
 }
 
@@ -123,6 +135,8 @@ export interface ExecuteCampaignEventEventSignal {
   payload: {
     campaignEventId: string;
     campaignSceneId: string;
+    /** When set, used for guest script gating without waiting on DB. */
+    campaignId?: string;
     /** Character that triggered the event; may be omitted for ownerless campaign event scripts. */
     characterId?: string;
     eventType: 'on_enter' | 'on_leave' | 'on_activate';

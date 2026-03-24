@@ -5,6 +5,10 @@
  * Communicates with the main thread via a signal-based message protocol.
  */
 
+import {
+  shouldBlockClientCampaignScript,
+  type CampaignPlayScriptWorkerPolicy,
+} from '@/lib/campaign-play/campaign-play-script-gate';
 import type { DB } from '@/stores/db/hooks/types';
 import { dbSchemaVersion, latestDbSchema } from '@/stores/db/schema';
 import type {
@@ -61,6 +65,42 @@ db.on('blocked', () => {
 
 let reactiveExecutor: ReactiveExecutor | null = null;
 let messagePort: MessagePort | null = null;
+
+let campaignPlayScriptPolicy: CampaignPlayScriptWorkerPolicy = {
+  featureEnabled: false,
+  role: null,
+  sessionCampaignId: null,
+};
+
+function sendBlockedGeneralScriptResult(requestId: string): void {
+  sendSignal({
+    type: 'SCRIPT_RESULT',
+    payload: {
+      requestId,
+      result: null,
+      announceMessages: [],
+      logMessages: [],
+      executionTime: 0,
+    },
+  });
+}
+
+function sendBlockedReactiveStyleResult(requestId: string, characterId?: string): void {
+  sendSignal({
+    type: 'SCRIPT_RESULT',
+    payload: {
+      requestId,
+      result: {
+        scriptsExecuted: [] as string[],
+        executionCount: 0,
+      },
+      announceMessages: [],
+      logMessages: [],
+      executionTime: 0,
+      ...(characterId ? { characterId } : {}),
+    },
+  });
+}
 
 // ============================================================================
 // Roll bridge (worker requests roll from main thread; main thread responds)
@@ -318,6 +358,10 @@ async function handleSignal(signal: MainToWorkerSignal): Promise<void> {
 
       case 'EXECUTE_CAMPAIGN_EVENT_EVENT':
         await handleExecuteCampaignEventEvent(signal.payload);
+        break;
+
+      case 'SET_CAMPAIGN_PLAY_SCRIPT_POLICY':
+        campaignPlayScriptPolicy = signal.payload;
         break;
 
       case 'CLEAR_GRAPH':
@@ -580,6 +624,11 @@ type ReactiveExecutionResult = Awaited<ReturnType<ReactiveExecutor['onAttributeC
 // ============================================================================
 
 async function handleExecuteScript(payload: ExecuteScriptPayload): Promise<void> {
+  if (shouldBlockClientCampaignScript(campaignPlayScriptPolicy, payload.campaignId)) {
+    sendBlockedGeneralScriptResult(payload.requestId);
+    return;
+  }
+
   const startTime = performance.now();
   const rollFn: RollFn = (expression: string, rerollMessage?: string) =>
     rollBridge.requestRoll(expression, payload.requestId, rerollMessage);
@@ -886,6 +935,11 @@ async function handleValidateScript(payload: {
 }
 
 async function handleAttributeChanged(payload: AttributeChangedPayload): Promise<void> {
+  if (shouldBlockClientCampaignScript(campaignPlayScriptPolicy, payload.campaignId)) {
+    sendBlockedReactiveStyleResult(payload.requestId, payload.characterId);
+    return;
+  }
+
   try {
     const rollFn: RollFn = (expression: string, rerollMessage?: string) =>
       rollBridge.requestRoll(expression, payload.requestId, rerollMessage);
@@ -1041,7 +1095,13 @@ async function handleInitialAttributeSync(payload: {
   characterId: string;
   rulesetId: string;
   requestId: string;
+  campaignId?: string;
 }): Promise<void> {
+  if (shouldBlockClientCampaignScript(campaignPlayScriptPolicy, payload.campaignId)) {
+    sendBlockedReactiveStyleResult(payload.requestId, payload.characterId);
+    return;
+  }
+
   try {
     if (!reactiveExecutor) {
       reactiveExecutor = new ReactiveExecutor(db);
@@ -1178,7 +1238,14 @@ async function handleExecuteAction(payload: {
   characterId: string;
   targetId?: string;
   requestId: string;
+  campaignId?: string;
+  campaignSceneId?: string;
 }): Promise<void> {
+  if (shouldBlockClientCampaignScript(campaignPlayScriptPolicy, payload.campaignId)) {
+    sendBlockedGeneralScriptResult(payload.requestId);
+    return;
+  }
+
   try {
     // Get the action from database
     const action = await db.actions.get(payload.actionId);
@@ -1204,6 +1271,8 @@ async function handleExecuteAction(payload: {
       rulesetId: action.rulesetId,
       triggerType: 'action_click',
       requestId: payload.requestId,
+      campaignId: payload.campaignId,
+      campaignSceneId: payload.campaignSceneId,
     });
   } catch (error) {
     sendSignal({
@@ -1231,6 +1300,11 @@ async function handleExecuteActionEvent(payload: {
   callerInventoryItemInstanceId?: string;
   roll?: RollFn;
 }): Promise<void> {
+  if (shouldBlockClientCampaignScript(campaignPlayScriptPolicy, payload.campaignId)) {
+    sendBlockedGeneralScriptResult(payload.requestId);
+    return;
+  }
+
   try {
     const action = await db.actions.get(payload.actionId);
     if (!action) {
@@ -1376,6 +1450,11 @@ async function handleExecuteItemEvent(payload: {
   campaignSceneId?: string;
   inventoryItemInstanceId?: string;
 }): Promise<void> {
+  if (shouldBlockClientCampaignScript(campaignPlayScriptPolicy, payload.campaignId)) {
+    sendBlockedGeneralScriptResult(payload.requestId);
+    return;
+  }
+
   try {
     const item = await db.items.get(payload.itemId);
     if (!item) {
@@ -1527,6 +1606,11 @@ async function handleExecuteArchetypeEvent(payload: {
   campaignId?: string;
   campaignSceneId?: string;
 }): Promise<void> {
+  if (shouldBlockClientCampaignScript(campaignPlayScriptPolicy, payload.campaignId)) {
+    sendBlockedGeneralScriptResult(payload.requestId);
+    return;
+  }
+
   try {
     const archetype = await db.archetypes.get(payload.archetypeId);
     if (!archetype) {
@@ -1660,6 +1744,7 @@ async function handleExecuteArchetypeEvent(payload: {
 async function handleExecuteCampaignEventEvent(payload: {
   campaignEventId: string;
   campaignSceneId: string;
+  campaignId?: string;
   /** Character that triggered the event; may be undefined for ownerless runs. */
   characterId?: string;
   eventType: 'on_enter' | 'on_leave' | 'on_activate';
@@ -1667,6 +1752,11 @@ async function handleExecuteCampaignEventEvent(payload: {
 }): Promise<void> {
   try {
     const campaignEvent = await db.campaignEvents.get(payload.campaignEventId);
+    const effectiveCampaignId = payload.campaignId ?? campaignEvent?.campaignId;
+    if (shouldBlockClientCampaignScript(campaignPlayScriptPolicy, effectiveCampaignId)) {
+      sendBlockedGeneralScriptResult(payload.requestId);
+      return;
+    }
     const campaign = campaignEvent ? await db.campaigns.get(campaignEvent.campaignId) : undefined;
     const rulesetId = campaign?.rulesetId ?? '';
     const campaignId = campaignEvent?.campaignId;

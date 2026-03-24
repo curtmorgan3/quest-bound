@@ -5,6 +5,7 @@
  * Provides a clean async API for script execution and reactive updates.
  */
 
+import type { CampaignPlayScriptWorkerPolicy } from '@/lib/campaign-play/campaign-play-script-gate';
 import {
   getCurrentCampaignIdForScripts,
   getCurrentCampaignSceneIdForScripts,
@@ -625,7 +626,12 @@ export class QBScriptClient {
       }>(
         {
           type: 'RUN_INITIAL_ATTRIBUTE_SYNC',
-          payload: { characterId, rulesetId, requestId },
+          payload: {
+            characterId,
+            rulesetId,
+            requestId,
+            campaignId: getCurrentCampaignIdForScripts(),
+          },
         },
         requestId,
         timeout,
@@ -640,6 +646,17 @@ export class QBScriptClient {
   /**
    * Execute an action script
    */
+  /**
+   * Updates guest/host script policy in the worker (no response). Safe before worker ready (message queues).
+   */
+  setCampaignPlayScriptPolicy(policy: CampaignPlayScriptWorkerPolicy): void {
+    if (!this.worker) return;
+    this.worker.postMessage({
+      type: 'SET_CAMPAIGN_PLAY_SCRIPT_POLICY',
+      payload: policy,
+    } satisfies MainToWorkerSignal);
+  }
+
   async executeAction(
     actionId: string,
     characterId: string,
@@ -656,7 +673,14 @@ export class QBScriptClient {
     return this.sendSignal(
       {
         type: 'EXECUTE_ACTION',
-        payload: { actionId, characterId, targetId, requestId },
+        payload: {
+          actionId,
+          characterId,
+          targetId,
+          requestId,
+          campaignId: getCurrentCampaignIdForScripts(),
+          campaignSceneId: getCurrentCampaignSceneIdForScripts(),
+        },
       },
       requestId,
       timeout,
@@ -698,8 +722,8 @@ export class QBScriptClient {
             targetId,
             eventType,
             requestId,
-            campaignId,
-            campaignSceneId,
+            campaignId: campaignId ?? getCurrentCampaignIdForScripts(),
+            campaignSceneId: campaignSceneId ?? getCurrentCampaignSceneIdForScripts(),
             callerInventoryItemInstanceId,
           },
         },
@@ -744,8 +768,8 @@ export class QBScriptClient {
             characterId,
             eventType,
             requestId,
-            campaignId,
-            campaignSceneId,
+            campaignId: campaignId ?? getCurrentCampaignIdForScripts(),
+            campaignSceneId: campaignSceneId ?? getCurrentCampaignSceneIdForScripts(),
             inventoryItemInstanceId,
           },
         },
@@ -784,7 +808,14 @@ export class QBScriptClient {
       return await this.sendSignal(
         {
           type: 'EXECUTE_ARCHETYPE_EVENT',
-          payload: { archetypeId, characterId, eventType, requestId, campaignId, campaignSceneId },
+          payload: {
+            archetypeId,
+            characterId,
+            eventType,
+            requestId,
+            campaignId: campaignId ?? getCurrentCampaignIdForScripts(),
+            campaignSceneId: campaignSceneId ?? getCurrentCampaignSceneIdForScripts(),
+          },
         },
         requestId,
         timeout,
@@ -808,6 +839,7 @@ export class QBScriptClient {
     roll?: RollFn,
     timeout = 10000,
     rollSplit?: RollSplitFn,
+    campaignId?: string,
   ): Promise<{
     value: any;
     announceMessages: string[];
@@ -827,6 +859,7 @@ export class QBScriptClient {
             eventType,
             requestId,
             characterId: characterId ?? undefined,
+            campaignId: campaignId ?? getCurrentCampaignIdForScripts(),
           },
         },
         requestId,

@@ -1,5 +1,9 @@
 import { Avatar, AvatarFallback, AvatarImage, Button, Label, Switch } from '@/components';
 import { PageWrapper } from '@/components/composites';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useFeatureFlag } from '@/hooks';
+import { CAMPAIGN_REALTIME_PLAY_FEATURE_FLAG } from '@/lib/campaign-play/campaign-play-constants';
+import { shouldBlockCampaignOrchestration } from '@/lib/campaign-play/campaign-play-orchestration-gate';
 import {
   useActiveRuleset,
   useCampaign,
@@ -16,6 +20,8 @@ import type { SheetViewerBackdropClickDetail } from '@/lib/compass-planes/sheet-
 import { SHEET_VIEWER_BACKDROP_CLICK } from '@/lib/compass-planes/sheet-viewer';
 import { cn } from '@/lib/utils';
 import { db } from '@/stores';
+import { useCampaignPlaySessionStore } from '@/stores/campaign-play-session-store';
+import { getFeatureFlag } from '@/utils/feature-flags';
 import { ChevronLeft, ChevronRight, FileText, Zap } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
@@ -68,6 +74,30 @@ function saveColumnState(state: StoredColumnState) {
 export function CampaignDashboard() {
   const { campaignId, sceneId } = useParams<{ campaignId: string; sceneId?: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
+  const campaignRealtimePlayEnabled = useFeatureFlag(CAMPAIGN_REALTIME_PLAY_FEATURE_FLAG);
+  const campaignPlaySession = useCampaignPlaySessionStore((s) => s.session);
+  const campaignPlayRoleQuery = searchParams.get('campaignPlayRole');
+  const orchestrationBlocked = shouldBlockCampaignOrchestration(campaignId);
+  const showGuestSessionBanner =
+    campaignRealtimePlayEnabled &&
+    !!campaignId &&
+    campaignPlaySession?.campaignId === campaignId &&
+    campaignPlaySession.role === 'client';
+
+  useEffect(() => {
+    if (!campaignId || !getFeatureFlag(CAMPAIGN_REALTIME_PLAY_FEATURE_FLAG)) return;
+    const role = campaignPlayRoleQuery === 'client' ? 'client' : 'host';
+    useCampaignPlaySessionStore.getState().enterSession({
+      campaignId,
+      realtimeChannelName: null,
+      role,
+      hostSessionActive: true,
+    });
+    return () => {
+      useCampaignPlaySessionStore.getState().clearSessionIfCampaign(campaignId);
+    };
+  }, [campaignId, campaignPlayRoleQuery]);
+
   // Ensure active ruleset (and its assets) are resolved for this campaign view.
   // useActiveRuleset will derive the rulesetId from the campaignId route param
   // and trigger the ruleset-scoped asset preload effect.
@@ -227,6 +257,7 @@ export function CampaignDashboard() {
                   campaignCharacters={campaignCharacters}
                   characters={characters}
                   rulesetId={campaign.rulesetId}
+                  disabled={orchestrationBlocked}
                   onAddCharacter={async (characterId) => {
                     await createCampaignCharacter(campaign.id, characterId, {
                       ...(sceneId ? { campaignSceneId: sceneId } : {}),
@@ -241,8 +272,9 @@ export function CampaignDashboard() {
                   <Switch
                     id='turn-based-mode'
                     checked={!!currentScene.turnBasedMode}
+                    disabled={orchestrationBlocked}
                     onCheckedChange={async (checked) => {
-                      if (!campaignId || !sceneId) return;
+                      if (!campaignId || !sceneId || orchestrationBlocked) return;
                       try {
                         if (checked) {
                           await startSceneTurnBasedMode(db, campaignId, sceneId);
@@ -265,7 +297,13 @@ export function CampaignDashboard() {
                       variant='outline'
                       size='sm'
                       onClick={async () => {
-                        if (!campaignId || !sceneId || !campaign?.rulesetId) return;
+                        if (
+                          !campaignId ||
+                          !sceneId ||
+                          !campaign?.rulesetId ||
+                          orchestrationBlocked
+                        )
+                          return;
                         setAdvancing(true);
                         try {
                           await runSceneAdvanceFromUI({
@@ -280,7 +318,7 @@ export function CampaignDashboard() {
                           setAdvancing(false);
                         }
                       }}
-                      disabled={advancing}
+                      disabled={advancing || orchestrationBlocked}
                       aria-label='Next turn'
                       data-testid='next-turn-button'>
                       <ChevronRight className='h-4 w-4' />
@@ -345,6 +383,25 @@ export function CampaignDashboard() {
             />
           </div>
         }>
+        {showGuestSessionBanner && (
+          <Alert
+            className='mx-4 mt-3 shrink-0 border-amber-500/40 bg-amber-500/10 text-amber-950 dark:text-amber-100'>
+            <AlertDescription>
+              {campaignPlaySession?.hostSessionActive ? (
+                <>
+                  You are viewing this campaign as a guest. Scripted actions, reactive rules, and
+                  computed sheet logic run on the host only, so some sheet behavior may differ until
+                  multiplayer sync is active.
+                </>
+              ) : (
+                <>
+                  The host is offline. Campaign actions are paused until they return or you leave
+                  this session.
+                </>
+              )}
+            </AlertDescription>
+          </Alert>
+        )}
         <div className='flex min-h-0 flex-1'>
           {/* Left column: Stage NPCs */}
           <div
@@ -434,13 +491,17 @@ export function CampaignDashboard() {
                       onAvatarClick={(characterId) =>
                         setSheetCharacterId((prev) => (prev === characterId ? null : characterId))
                       }
-                      onReorderTurnOrder={async (orderedCampaignCharacterIds) => {
-                        for (let i = 0; i < orderedCampaignCharacterIds.length; i++) {
-                          await updateCampaignCharacter(orderedCampaignCharacterIds[i], {
-                            turnOrder: i,
-                          });
-                        }
-                      }}
+                      onReorderTurnOrder={
+                        orchestrationBlocked
+                          ? undefined
+                          : async (orderedCampaignCharacterIds) => {
+                              for (let i = 0; i < orderedCampaignCharacterIds.length; i++) {
+                                await updateCampaignCharacter(orderedCampaignCharacterIds[i], {
+                                  turnOrder: i,
+                                });
+                              }
+                            }
+                      }
                     />
                   ) : (
                     <ActiveScene

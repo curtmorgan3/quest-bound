@@ -22,6 +22,8 @@ interface ManagePlayerCharactersProps {
   campaignCharacters: CampaignCharacter[];
   characters: Character[];
   rulesetId?: string | null;
+  /** When true (e.g. campaign guest), add/remove controls are disabled. */
+  disabled?: boolean;
   onAddCharacter: (characterId: string) => Promise<void> | void;
   onRemoveCharacter: (campaignCharacterId: string) => Promise<void> | void;
 }
@@ -30,6 +32,7 @@ export function ManagePlayerCharacters({
   campaignCharacters,
   characters,
   rulesetId,
+  disabled = false,
   onAddCharacter,
   onRemoveCharacter,
 }: ManagePlayerCharactersProps) {
@@ -90,13 +93,15 @@ export function ManagePlayerCharacters({
   );
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
+    <Dialog open={disabled ? false : open} onOpenChange={disabled ? undefined : handleOpenChange}>
       <DialogTrigger asChild>
         <Button
           variant='ghost'
           size='sm'
           data-testid='campaign-dashboard-add-character'
-          className='gap-1'>
+          className='gap-1'
+          disabled={disabled}
+          aria-label='Manage player characters'>
           <UserPlus className='h-4 w-4' />
         </Button>
       </DialogTrigger>
@@ -138,6 +143,7 @@ export function ManagePlayerCharacters({
                       size='icon'
                       className='h-7 w-7 text-muted-foreground hover:text-destructive'
                       aria-label={`Remove ${character?.name ?? 'character'} from campaign`}
+                      disabled={disabled}
                       onClick={() => void handleRemove(cc.id)}>
                       <Trash2 className='h-4 w-4' />
                     </Button>

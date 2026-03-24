@@ -3,7 +3,7 @@ import { CharacterSelectModal } from '@/components/character-select-modal';
 import { GlobalLoadingOverlay } from '@/components/global-loading-overlay';
 import { OnboardingPanel, useOnboardingStatus } from '@/components/onboarding';
 import { PromptModal } from '@/components/prompt-modal';
-import { useNotifications } from '@/hooks';
+import { useCampaignPlayWorkerPolicySync, useNotifications } from '@/hooks';
 import { ensureEmailRegistered, isCloudEmailVerified } from '@/lib/cloud/auth';
 import { initSyncTriggers } from '@/lib/cloud/sync/sync-service';
 import { useSyncOnRulesetOpen } from '@/lib/cloud/sync/use-sync-on-ruleset-open';
@@ -30,6 +30,7 @@ import { Toaster } from './ui/sonner';
 const DEV_TOOLS_STORAGE_KEY = 'dev.tools';
 
 export function Layout() {
+  useCampaignPlayWorkerPolicySync();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const location = useLocation();
