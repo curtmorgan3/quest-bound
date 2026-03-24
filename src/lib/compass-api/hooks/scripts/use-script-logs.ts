@@ -1,3 +1,4 @@
+import { filterNotSoftDeleted, softDeletePatch } from '@/lib/data/soft-delete';
 import { useErrorHandler } from '@/hooks';
 import { persistScriptLogs, type PersistScriptLogsParams } from '@/lib/compass-logic/script-logs';
 import { db } from '@/stores';
@@ -69,7 +70,8 @@ export const useScriptLogs = (
 
   const logs = useLiveQuery(async (): Promise<ScriptLog[]> => {
     if (campaignId) {
-      return db.scriptLogs.where('campaignId').equals(campaignId).reverse().toArray();
+      const raw = await db.scriptLogs.where('campaignId').equals(campaignId).reverse().toArray();
+      return filterNotSoftDeleted(raw);
     }
     if (effectiveRulesetId) {
       if (isGameLogMode) {
@@ -81,14 +83,17 @@ export const useScriptLogs = (
           .reverse()
           .limit(limit * 3)
           .toArray();
-        return raw.filter((log) => log.timestamp > minTimestamp).slice(0, limit);
+        return filterNotSoftDeleted(raw)
+          .filter((log) => log.timestamp > minTimestamp)
+          .slice(0, limit);
       }
-      return db.scriptLogs
+      const raw = await db.scriptLogs
         .where('rulesetId')
         .equals(effectiveRulesetId)
         .reverse()
         .limit(limit)
         .toArray();
+      return filterNotSoftDeleted(raw);
     }
     return [];
   }, [effectiveRulesetId, limit, campaignId, isGameLogMode, gameLogResetAt]);
@@ -118,11 +123,19 @@ export const useScriptLogs = (
   const clearLogs = async () => {
     try {
       if (campaignId) {
-        await db.scriptLogs.where('campaignId').equals(campaignId).delete();
+        const rows = await db.scriptLogs.where('campaignId').equals(campaignId).toArray();
+        const patch = softDeletePatch();
+        await Promise.all(
+          rows.filter((r) => r.deleted !== true).map((r) => db.scriptLogs.update(r.id, patch)),
+        );
       } else if (isGameLogMode && effectiveRulesetId && characterId) {
         await setGameLogResetAt(Date.now());
       } else if (effectiveRulesetId) {
-        await db.scriptLogs.where('rulesetId').equals(effectiveRulesetId).delete();
+        const rows = await db.scriptLogs.where('rulesetId').equals(effectiveRulesetId).toArray();
+        const patch = softDeletePatch();
+        await Promise.all(
+          rows.filter((r) => r.deleted !== true).map((r) => db.scriptLogs.update(r.id, patch)),
+        );
       }
     } catch (e) {
       handleError(e as Error, {
@@ -134,7 +147,7 @@ export const useScriptLogs = (
 
   const deleteLog = async (id: string) => {
     try {
-      await db.scriptLogs.delete(id);
+      await db.scriptLogs.update(id, softDeletePatch());
     } catch (e) {
       handleError(e as Error, {
         component: 'useScriptLogs/deleteLog',

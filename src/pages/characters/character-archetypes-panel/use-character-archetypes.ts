@@ -1,3 +1,4 @@
+import { filterNotSoftDeleted, softDeletePatch } from '@/lib/data/soft-delete';
 import { useErrorHandler } from '@/hooks';
 import { executeArchetypeEvent } from '@/lib/compass-logic/reactive/event-handler-executor';
 import { db } from '@/stores';
@@ -15,10 +16,9 @@ export function useCharacterArchetypes(
   const characterArchetypes: CharacterArchetypeWithArchetype[] =
     useLiveQuery(async () => {
       if (!characterId) return [];
-      const cas = await db.characterArchetypes
-        .where('characterId')
-        .equals(characterId)
-        .sortBy('loadOrder');
+      const cas = filterNotSoftDeleted(
+        await db.characterArchetypes.where('characterId').equals(characterId).sortBy('loadOrder'),
+      );
       const archetypes = await Promise.all(cas.map((ca) => db.archetypes.get(ca.archetypeId)));
       return cas
         .map((ca) => {
@@ -36,12 +36,23 @@ export function useCharacterArchetypes(
         .where('[characterId+archetypeId]')
         .equals([characterId, archetypeId])
         .first();
-      if (existing) return;
-
+      const activeOrdered = filterNotSoftDeleted(
+        await db.characterArchetypes.where('characterId').equals(characterId).sortBy('loadOrder'),
+      );
       const maxOrder =
-        (
-          await db.characterArchetypes.where('characterId').equals(characterId).sortBy('loadOrder')
-        ).pop()?.loadOrder ?? -1;
+        activeOrdered.length > 0 ? (activeOrdered[activeOrdered.length - 1]!.loadOrder ?? 0) : -1;
+
+      if (existing && existing.deleted !== true) return;
+
+      if (existing && existing.deleted === true) {
+        await db.characterArchetypes.update(existing.id, {
+          deleted: false,
+          variant,
+          loadOrder: maxOrder + 1,
+          updatedAt: now,
+        });
+        return;
+      }
 
       await db.characterArchetypes.add({
         id: crypto.randomUUID(),
@@ -51,6 +62,7 @@ export function useCharacterArchetypes(
         loadOrder: maxOrder + 1,
         createdAt: now,
         updatedAt: now,
+        deleted: false,
       });
 
       const archetypeResult = await executeArchetypeEvent(
@@ -91,7 +103,7 @@ export function useCharacterArchetypes(
       if (archetypeResult.error) {
         console.warn('Archetype on_remove script failed:', archetypeResult.error);
       }
-      await db.characterArchetypes.delete(characterArchetypeId);
+      await db.characterArchetypes.update(characterArchetypeId, softDeletePatch());
     } catch (e) {
       handleError(e as Error, {
         component: 'useCharacterArchetypes/removeArchetype',

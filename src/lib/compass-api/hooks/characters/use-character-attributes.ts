@@ -1,3 +1,4 @@
+import { filterNotSoftDeleted, softDeletePatch } from '@/lib/data/soft-delete';
 import { useErrorHandler, useNotifications } from '@/hooks';
 import { getQBScriptClient } from '@/lib/compass-logic/worker';
 import { db } from '@/stores';
@@ -26,10 +27,11 @@ export const useCharacterAttributes = (characterId?: string) => {
   addNotificationRef.current = addNotification;
 
   const characterAttributes = useLiveQuery(
-    () =>
-      characterId
-        ? db.characterAttributes.where('characterId').equals(characterId).toArray()
-        : Promise.resolve(EMPTY_CHARACTER_ATTRIBUTES),
+    async () => {
+      if (!characterId) return EMPTY_CHARACTER_ATTRIBUTES;
+      const rows = await db.characterAttributes.where('characterId').equals(characterId).toArray();
+      return filterNotSoftDeleted(rows);
+    },
     [characterId],
   );
 
@@ -101,7 +103,7 @@ export const useCharacterAttributes = (characterId?: string) => {
 
   const deleteCharacterAttribute = useCallback(async (id: string) => {
     try {
-      await db.characterAttributes.delete(id);
+      await db.characterAttributes.update(id, softDeletePatch());
     } catch (e) {
       handleErrorRef.current(e as Error, {
         component: 'useCharacterAttributes/deleteCharacterAttribute',

@@ -1,3 +1,4 @@
+import { filterNotSoftDeleted, softDeletePatch } from '@/lib/data/soft-delete';
 import { useErrorHandler } from '@/hooks';
 import { db } from '@/stores';
 import type { CampaignScene } from '@/types';
@@ -7,8 +8,11 @@ export const useCampaignScenes = (campaignId: string | undefined) => {
   const { handleError } = useErrorHandler();
 
   const campaignScenes = useLiveQuery(
-    async (): Promise<CampaignScene[]> =>
-      campaignId ? db.campaignScenes.where('campaignId').equals(campaignId).toArray() : [],
+    async (): Promise<CampaignScene[]> => {
+      if (!campaignId) return [];
+      const rows = await db.campaignScenes.where('campaignId').equals(campaignId).toArray();
+      return filterNotSoftDeleted(rows);
+    },
     [campaignId],
   );
 
@@ -24,6 +28,7 @@ export const useCampaignScenes = (campaignId: string | undefined) => {
         campaignId,
         name: data.name,
         category: data.category?.trim() || undefined,
+        deleted: false,
         createdAt: now,
         updatedAt: now,
       } as CampaignScene);
@@ -56,7 +61,7 @@ export const useCampaignScenes = (campaignId: string | undefined) => {
 
   const deleteCampaignScene = async (id: string) => {
     try {
-      await db.campaignScenes.delete(id);
+      await db.campaignScenes.update(id, softDeletePatch());
     } catch (e) {
       handleError(e as Error, {
         component: 'useCampaignScenes/deleteCampaignScene',

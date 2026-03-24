@@ -9,6 +9,7 @@ import {
 } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
+import { filterNotSoftDeleted } from '@/lib/data/soft-delete';
 import { db } from '@/stores';
 import { useCharacterSelectModalStore } from '@/stores/character-select-modal-store';
 import type { CampaignCharacter, Character } from '@/types';
@@ -206,10 +207,9 @@ function useCharacterLists(
 ): { pcs: CharacterWithCampaign[]; npcs: CharacterWithCampaign[] } {
   const fromCampaign = useLiveQuery(async () => {
     if (!campaignId) return null;
-    const campaignCharacters = await db.campaignCharacters
-      .where('campaignId')
-      .equals(campaignId)
-      .toArray();
+    const campaignCharacters = filterNotSoftDeleted(
+      await db.campaignCharacters.where('campaignId').equals(campaignId).toArray(),
+    );
     if (campaignCharacters.length === 0) return { pcs: [], npcs: [] };
 
     const characters = await db.characters.bulkGet(campaignCharacters.map((cc) => cc.characterId));

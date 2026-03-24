@@ -23,6 +23,7 @@ import {
   useCampaignCharacters,
   useCharacter,
 } from '@/lib/compass-api';
+import { filterNotSoftDeleted } from '@/lib/data/soft-delete';
 import { useCharacterArchetypes } from '@/pages/characters/character-archetypes-panel/use-character-archetypes';
 import { db } from '@/stores';
 import type { Archetype, CampaignCharacter, Character } from '@/types';
@@ -65,10 +66,9 @@ function useNpcStageEntries(campaignCharacters: CampaignCharacter[]): NpcStageEn
     for (const { cc, character } of sorted) {
       let archetypeTitle: string | null = null;
       if (character?.id) {
-        const cas = await db.characterArchetypes
-          .where('characterId')
-          .equals(character.id)
-          .sortBy('loadOrder');
+        const cas = filterNotSoftDeleted(
+          await db.characterArchetypes.where('characterId').equals(character.id).sortBy('loadOrder'),
+        );
         const firstCa = cas[0];
         const firstArchetypeId = firstCa?.archetypeId;
         if (firstArchetypeId) {

@@ -1,3 +1,4 @@
+import { filterNotSoftDeleted, softDeletePatch } from '@/lib/data/soft-delete';
 import { useErrorHandler } from '@/hooks';
 import { db, type InventoryItemWithData } from '@/stores';
 import type { Inventory, InventoryItem } from '@/types';
@@ -16,11 +17,12 @@ export const useInventory = (inventoryId: string, characterId: string) => {
   const inventory = useLiveQuery(() => db.inventories.get(inventoryId), [inventoryId]);
 
   const inventoryItems = useLiveQuery(
-    () =>
-      db.inventoryItems
-        .where('inventoryId')
-        .equals(inventory?.id ?? '')
-        .toArray(),
+    async () => {
+      const id = inventory?.id ?? '';
+      if (!id) return [];
+      const rows = await db.inventoryItems.where('inventoryId').equals(id).toArray();
+      return filterNotSoftDeleted(rows);
+    },
     [inventory],
   );
 
@@ -116,7 +118,7 @@ export const useInventory = (inventoryId: string, characterId: string) => {
       await new Promise<void>((resolve, reject) => {
         setTimeout(async () => {
           try {
-            await db.inventoryItems.delete(id);
+            await db.inventoryItems.update(id, softDeletePatch());
             resolve();
           } catch (err) {
             reject(err);

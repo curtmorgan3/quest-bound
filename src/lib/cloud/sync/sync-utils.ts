@@ -3,6 +3,7 @@
  * Strip excluded fields before pushing to remote.
  */
 
+import { isSoftDeleteSyncTable } from '@/lib/data/soft-delete';
 import type { DB } from '@/stores/db/hooks/types';
 import { getSyncTableConfig } from './sync-tables';
 
@@ -96,6 +97,10 @@ export function prepareRecordForRemote(
     if (c['pinned_sidebar_documents'] == null) c['pinned_sidebar_documents'] = [];
     if (c['pinned_sidebar_charts'] == null) c['pinned_sidebar_charts'] = [];
     if (c['component_data'] == null) c['component_data'] = {};
+  }
+  if (isSoftDeleteSyncTable(tableName)) {
+    const s = stripped as { deleted?: unknown };
+    s.deleted = s.deleted === true;
   }
   const out = toSnakeCaseKeys(stripped);
   if (tableName === 'inventoryItems' && 'quantity' in out) {

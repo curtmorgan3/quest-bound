@@ -24,6 +24,7 @@ import type {
   SelectCharactersFn,
   Window,
 } from '@/types';
+import { filterNotSoftDeleted } from '@/lib/data/soft-delete';
 import { buildItemCustomProperties } from '@/utils/custom-property-utils';
 import { Evaluator } from '../interpreter/evaluator';
 import { Lexer } from '../interpreter/lexer';
@@ -100,11 +101,13 @@ async function resolveInventoryRefLabel(
   const itemWidthInCells = Math.ceil((itemW * CELL_SIZE_PX) / cellWidthPx);
   const itemHeightInCells = Math.ceil((itemH * CELL_SIZE_PX) / cellHeightPx);
 
-  const existingItems = await db.inventoryItems
-    .where('inventoryId')
-    .equals(item.inventoryId)
-    .filter((i) => (i as { componentId?: string }).componentId === comp.id)
-    .toArray();
+  const existingItems = (
+    await db.inventoryItems
+      .where('inventoryId')
+      .equals(item.inventoryId)
+      .filter((i) => (i as { componentId?: string }).componentId === comp.id)
+      .toArray()
+  ).filter((i) => (i as { deleted?: boolean }).deleted !== true);
 
   const existingDims = await Promise.all(
     existingItems.map(async (invItem) => {
@@ -380,25 +383,26 @@ export class ScriptRunner {
       this.ownerInventoryId = ownerCharacter?.inventoryId ?? '';
       this.ownerCharacterCustomProperties = ownerCharacter?.customProperties ?? {};
       if (ownerCharacter?.inventoryId) {
-        this.ownerInventoryItems = await db.inventoryItems
-          .where('inventoryId')
-          .equals(ownerCharacter.inventoryId)
-          .toArray();
+        this.ownerInventoryItems = filterNotSoftDeleted(
+          await db.inventoryItems
+            .where('inventoryId')
+            .equals(ownerCharacter.inventoryId)
+            .toArray(),
+        );
       }
 
       // Load character attributes for owner
-      const ownerAttributes = await db.characterAttributes
-        .where({ characterId: ownerId })
-        .toArray();
+      const ownerAttributes = filterNotSoftDeleted(
+        await db.characterAttributes.where({ characterId: ownerId }).toArray(),
+      );
       for (const charAttr of ownerAttributes) {
         this.characterAttributesCache.set(charAttr.id, charAttr);
       }
 
       // Load archetype names and variants for owner (CharacterArchetype join Archetype), in load order
-      const ownerCharArchetypesRaw = await db.characterArchetypes
-        .where('characterId')
-        .equals(ownerId)
-        .toArray();
+      const ownerCharArchetypesRaw = filterNotSoftDeleted(
+        await db.characterArchetypes.where('characterId').equals(ownerId).toArray(),
+      );
       const ownerCharArchetypes = ownerCharArchetypesRaw.sort((a, b) => a.loadOrder - b.loadOrder);
       for (const ca of ownerCharArchetypes) {
         const archetype = await db.archetypes.get(ca.archetypeId);
@@ -466,20 +470,23 @@ export class ScriptRunner {
 
     let inventoryItems: InventoryItem[] = [];
     if (inventoryId) {
-      inventoryItems = await db.inventoryItems.where('inventoryId').equals(inventoryId).toArray();
+      inventoryItems = filterNotSoftDeleted(
+        await db.inventoryItems.where('inventoryId').equals(inventoryId).toArray(),
+      );
     }
 
-    const charAttrs = await db.characterAttributes.where({ characterId }).toArray();
+    const charAttrs = filterNotSoftDeleted(
+      await db.characterAttributes.where({ characterId }).toArray(),
+    );
     for (const charAttr of charAttrs) {
       this.characterAttributesCache.set(charAttr.id, charAttr);
     }
 
     const archetypeNames = new Set<string>();
     const archetypeVariantByName = new Map<string, string | undefined>();
-    const charArchetypesRaw = await db.characterArchetypes
-      .where('characterId')
-      .equals(characterId)
-      .toArray();
+    const charArchetypesRaw = filterNotSoftDeleted(
+      await db.characterArchetypes.where('characterId').equals(characterId).toArray(),
+    );
     const charArchetypes = charArchetypesRaw.sort((a, b) => a.loadOrder - b.loadOrder);
     for (const ca of charArchetypes) {
       const archetype = await db.archetypes.get(ca.archetypeId);
@@ -783,11 +790,17 @@ export class ScriptRunner {
               itemComponentId !== '' &&
               itemComponentId === componentIdForRef
             ) {
-              await db.inventoryItems.delete(id);
+              await db.inventoryItems.update(id, {
+                deleted: true,
+                updatedAt: new Date().toISOString(),
+              });
             }
           }
         } else {
-          await db.inventoryItems.delete(id);
+          await db.inventoryItems.update(id, {
+            deleted: true,
+            updatedAt: new Date().toISOString(),
+          });
         }
       } else if (type === 'archetypeAdd') {
         const entries = value as { characterId: string; archetypeName: string }[];
@@ -798,35 +811,47 @@ export class ScriptRunner {
             .where('[characterId+archetypeId]')
             .equals([characterId, archetype.id])
             .first();
-          if (existing) continue;
-          const maxOrder =
-            (
-              await db.characterArchetypes
-                .where('characterId')
-                .equals(characterId)
-                .sortBy('loadOrder')
-            ).pop()?.loadOrder ?? -1;
-          const now = new Date().toISOString();
-          await db.characterArchetypes.add({
-            id: crypto.randomUUID(),
-            characterId,
-            archetypeId: archetype.id,
-            loadOrder: maxOrder + 1,
-            createdAt: now,
-            updatedAt: now,
-          });
-          const result = await executeArchetypeEvent(
-            db,
-            archetype.id,
-            characterId,
-            'on_add',
-            this.context.roll,
-            this.context.campaignId,
-            this.context.rollSplit,
-            this.context.campaignSceneId,
+          const archetypeNow = new Date().toISOString();
+          const activeRows = filterNotSoftDeleted(
+            await db.characterArchetypes.where('characterId').equals(characterId).sortBy('loadOrder'),
           );
-          if (result.error) {
-            console.warn('Archetype on_add script failed:', result.error);
+          const maxOrder =
+            activeRows.length > 0 ? (activeRows[activeRows.length - 1]!.loadOrder ?? 0) : -1;
+          if (existing && existing.deleted !== true) continue;
+
+          let runOnAdd = false;
+          if (existing && existing.deleted === true) {
+            await db.characterArchetypes.update(existing.id, {
+              deleted: false,
+              loadOrder: maxOrder + 1,
+              updatedAt: archetypeNow,
+            });
+          } else {
+            await db.characterArchetypes.add({
+              id: crypto.randomUUID(),
+              characterId,
+              archetypeId: archetype.id,
+              loadOrder: maxOrder + 1,
+              createdAt: archetypeNow,
+              updatedAt: archetypeNow,
+              deleted: false,
+            });
+            runOnAdd = true;
+          }
+          if (runOnAdd) {
+            const result = await executeArchetypeEvent(
+              db,
+              archetype.id,
+              characterId,
+              'on_add',
+              this.context.roll,
+              this.context.campaignId,
+              this.context.rollSplit,
+              this.context.campaignSceneId,
+            );
+            if (result.error) {
+              console.warn('Archetype on_add script failed:', result.error);
+            }
           }
         }
       } else if (type === 'archetypeRemove') {
@@ -852,7 +877,10 @@ export class ScriptRunner {
           if (result.error) {
             console.warn('Archetype on_remove script failed:', result.error);
           }
-          await db.characterArchetypes.delete(ca.id);
+          await db.characterArchetypes.update(ca.id, {
+            deleted: true,
+            updatedAt: new Date().toISOString(),
+          });
         }
       } else if (type === 'characterPageAdd') {
         const entries = value as { characterId: string; label: string }[];

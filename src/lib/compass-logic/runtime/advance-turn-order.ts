@@ -1,3 +1,4 @@
+import { filterNotSoftDeleted } from '@/lib/data/soft-delete';
 import { persistScriptLogs } from '@/lib/compass-logic/script-logs';
 import type { DB } from '@/stores/db/hooks/types';
 import type { CampaignCharacter, CampaignScene, Character, SceneTurnCallback } from '@/types';
@@ -23,10 +24,9 @@ export async function getSceneTurnOrderCharacters(
   campaignId: string,
   campaignSceneId: string,
 ): Promise<CampaignCharacter[]> {
-  const rows = (await db.campaignCharacters
-    .where('campaignId')
-    .equals(campaignId)
-    .toArray()) as CampaignCharacter[];
+  const rows = filterNotSoftDeleted(
+    (await db.campaignCharacters.where('campaignId').equals(campaignId).toArray()) as CampaignCharacter[],
+  );
 
   if (rows.length === 0) return [];
 
@@ -60,7 +60,7 @@ export async function advanceSceneTurnState(
   campaignSceneId: string,
 ): Promise<AdvanceTurnResult | null> {
   const scene = (await db.campaignScenes.get(campaignSceneId)) as CampaignScene | undefined;
-  if (!scene?.turnBasedMode) {
+  if (!scene?.turnBasedMode || scene.deleted === true) {
     return null;
   }
 
@@ -306,11 +306,13 @@ export async function stopSceneTurnBasedMode(
   campaignSceneId: string,
 ): Promise<void> {
   const now = new Date().toISOString();
-  const rows = (await db.campaignCharacters
-    .where('campaignId')
-    .equals(campaignId)
-    .filter((cc: CampaignCharacter) => cc.campaignSceneId === campaignSceneId)
-    .toArray()) as CampaignCharacter[];
+  const rows = filterNotSoftDeleted(
+    (await db.campaignCharacters
+      .where('campaignId')
+      .equals(campaignId)
+      .filter((cc: CampaignCharacter) => cc.campaignSceneId === campaignSceneId)
+      .toArray()) as CampaignCharacter[],
+  );
 
   for (const cc of rows) {
     await db.campaignCharacters.update(cc.id, {

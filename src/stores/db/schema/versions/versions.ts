@@ -215,5 +215,10 @@ export const dbSchemaV58 = {
   users: `${common}, username, assetId, image, preferences, cloudUserId`,
 };
 
+/** Schema for v59: same indexes as v58; migration backfills `deleted` on coordinated sync rows. */
+export const dbSchemaV59 = {
+  ...dbSchemaV58,
+};
+
 // latestDbSchema should always be used for the worker thread db instance
-export const latestDbSchema = { ...dbSchemaV58 };
+export const latestDbSchema = { ...dbSchemaV59 };

@@ -23,6 +23,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { useCharacter, useImportCharacter } from '@/lib/compass-api';
+import { filterNotSoftDeleted } from '@/lib/data/soft-delete';
 import { db } from '@/stores';
 import type { Archetype, CharacterArchetype } from '@/types';
 import { useLiveQuery } from 'dexie-react-hooks';
@@ -40,13 +41,16 @@ export const Characters = () => {
 
   const characterArchetypes: CharacterArchetype[] =
     useLiveQuery(
-      () =>
-        rulesetIdParam
-          ? db.characterArchetypes
-              .where('characterId')
-              .anyOf(characters.filter((c) => c.rulesetId === rulesetIdParam).map((c) => c.id))
-              .sortBy('loadOrder')
-          : Promise.resolve([] as CharacterArchetype[]),
+      async () => {
+        if (!rulesetIdParam) return [] as CharacterArchetype[];
+        const ids = characters.filter((c) => c.rulesetId === rulesetIdParam).map((c) => c.id);
+        if (ids.length === 0) return [];
+        const rows = await db.characterArchetypes
+          .where('characterId')
+          .anyOf(ids)
+          .sortBy('loadOrder');
+        return filterNotSoftDeleted(rows);
+      },
       [rulesetIdParam, characters],
     ) ?? [];
 

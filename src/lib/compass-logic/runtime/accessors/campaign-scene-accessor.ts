@@ -9,6 +9,7 @@ import type {
   RollFn,
   SceneTurnCallback,
 } from '@/types';
+import { filterNotSoftDeleted } from '@/lib/data/soft-delete';
 import type Dexie from 'dexie';
 import {
   executeArchetypeEvent,
@@ -180,11 +181,13 @@ export class CampaignSceneAccessor {
    */
   async stopTurnBasedMode(): Promise<void> {
     const now = new Date().toISOString();
-    const rows = (await this.db.campaignCharacters
-      .where('campaignId')
-      .equals(this.campaignId)
-      .filter((cc: CampaignCharacter) => cc.campaignSceneId === this.campaignSceneId)
-      .toArray()) as CampaignCharacter[];
+    const rows = filterNotSoftDeleted(
+      (await this.db.campaignCharacters
+        .where('campaignId')
+        .equals(this.campaignId)
+        .filter((cc: CampaignCharacter) => cc.campaignSceneId === this.campaignSceneId)
+        .toArray()) as CampaignCharacter[],
+    );
 
     for (const cc of rows) {
       await this.db.campaignCharacters.update(cc.id, {

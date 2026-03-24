@@ -1,3 +1,4 @@
+import { filterNotSoftDeleted, softDeletePatch } from '@/lib/data/soft-delete';
 import { useErrorHandler } from '@/hooks';
 import { db } from '@/stores';
 import type { CampaignCharacter } from '@/types';
@@ -9,8 +10,11 @@ export const useCampaignCharacters = (campaignId: string | undefined) => {
   const { deleteCharacter } = useCharacter();
 
   const campaignCharacters = useLiveQuery(
-    async (): Promise<CampaignCharacter[]> =>
-      campaignId ? db.campaignCharacters.where('campaignId').equals(campaignId).toArray() : [],
+    async (): Promise<CampaignCharacter[]> => {
+      if (!campaignId) return [];
+      const rows = await db.campaignCharacters.where('campaignId').equals(campaignId).toArray();
+      return filterNotSoftDeleted(rows);
+    },
     [campaignId],
   );
 
@@ -35,6 +39,7 @@ export const useCampaignCharacters = (campaignId: string | undefined) => {
         characterId,
         campaignSceneId: data?.campaignSceneId,
         active: data?.active,
+        deleted: false,
         createdAt: now,
         updatedAt: now,
       } as CampaignCharacter);
@@ -71,7 +76,7 @@ export const useCampaignCharacters = (campaignId: string | undefined) => {
     try {
       const campaignCharacter = await db.campaignCharacters.get(id);
       const characterId = campaignCharacter?.characterId;
-      await db.campaignCharacters.delete(id);
+      await db.campaignCharacters.update(id, softDeletePatch());
       if (characterId) {
         const character = await db.characters.get(characterId);
         if (character?.isNpc) {

@@ -94,15 +94,19 @@ export class TransactionManager {
       inventory: new Map(),
     };
 
-    // Snapshot all attributes
-    const attributes = await this.db.characterAttributes.where({ characterId }).toArray();
+    // Snapshot all attributes (exclude soft-deleted rows)
+    const attributes = (
+      await this.db.characterAttributes.where({ characterId }).toArray()
+    ).filter((attr) => attr.deleted !== true);
 
     for (const attr of attributes) {
       snapshot.attributes.set(attr.id, attr.value);
     }
 
     // Snapshot all inventory items
-    const items = await this.db.inventoryItems.where({ characterId }).toArray();
+    const items = (
+      await this.db.inventoryItems.where({ characterId }).toArray()
+    ).filter((item) => item.deleted !== true);
 
     for (const item of items) {
       snapshot.inventory.set(item.id, JSON.parse(JSON.stringify(item)));

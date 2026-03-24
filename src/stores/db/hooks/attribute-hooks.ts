@@ -1,3 +1,4 @@
+import { softDeletePatch } from '@/lib/data/soft-delete';
 import type { Attribute } from '@/types';
 import { getSyncState } from '@/lib/cloud/sync/sync-state';
 import type { DB } from './types';
@@ -84,7 +85,7 @@ export function registerAttributeDbHooks(db: DB) {
             .and((ca) => ca.attributeId === (primKey as string))
             .toArray();
           for (const ca of characterAttributes) {
-            await db.characterAttributes.delete(ca.id);
+            await db.characterAttributes.update(ca.id, softDeletePatch());
           }
         }
       } catch (error) {

@@ -12,6 +12,7 @@ import {
   getSyncTableConfigByRemote,
   SYNC_TABLE_ORDER,
 } from '@/lib/cloud/sync/sync-tables';
+import { isSoftDeleteSyncTable } from '@/lib/data/soft-delete';
 import { prepareRemoteForLocal } from '@/lib/cloud/sync/sync-utils';
 import { useSyncStateStore, getStoredLastSyncedAt } from '@/lib/cloud/sync/sync-state';
 import {
@@ -229,6 +230,9 @@ async function mergeTable(
     const remoteUpdated = row.updated_at as string;
     if (!local || !local.updatedAt || remoteUpdated >= local.updatedAt) {
       const prepared = prepareRemoteForLocal(row, tableName);
+      if (isSoftDeleteSyncTable(tableName)) {
+        prepared.deleted = prepared.deleted === true;
+      }
       if (tableName === 'users' && local) {
         const loc = local as Record<string, unknown>;
         if (loc.emailVerified !== undefined) prepared.emailVerified = loc.emailVerified;
