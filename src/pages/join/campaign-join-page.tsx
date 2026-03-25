@@ -1,8 +1,30 @@
-import { Button, Input, Label } from '@/components';
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+  Button,
+  Command,
+  CommandEmpty,
+  CommandInput,
+  CommandItem,
+  CommandList,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  Input,
+  Label,
+} from '@/components';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Checkbox } from '@/components/ui/checkbox';
 import { PageWrapper } from '@/components/composites';
 import { ensureLocalCampaignJoinStub } from '@/lib/campaign-play/join/ensure-local-campaign-stub';
+import {
+  createJoinerCampaignCharacter,
+  joinerHasPlayableCampaignCharacter,
+  listJoinableCharactersForCampaign,
+} from '@/lib/campaign-play/join/joiner-campaign-character';
 import { parseJoinTokenOrUrl } from '@/lib/campaign-play/join/generate-join-token';
 import { resolveCampaignJoinToken } from '@/lib/campaign-play/join/resolve-campaign-join-token';
 import { getSession } from '@/lib/cloud/auth';
@@ -10,10 +32,18 @@ import { linkLocalUserToCloudAuth } from '@/lib/cloud/link-local-user-to-cloud-a
 import { isCloudConfigured } from '@/lib/cloud/client';
 import { SignInSignUpModal } from '@/pages/signin';
 import { db, useCloudAuthStore, useCurrentUser } from '@/stores';
+import type { Character } from '@/types';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
+
+type JoinCharacterPickState = {
+  campaignId: string;
+  defaultCampaignSceneId: string | null;
+  dest: string;
+  characters: Character[];
+};
 
 export function CampaignJoinPage() {
   const { rulesetId: rulesetIdParam } = useParams<{ rulesetId: string }>();
@@ -28,6 +58,9 @@ export function CampaignJoinPage() {
   const [busy, setBusy] = useState(false);
   const [rulesetMismatchAck, setRulesetMismatchAck] = useState(false);
   const [signInModalOpen, setSignInModalOpen] = useState(false);
+  const [joinCharacterPick, setJoinCharacterPick] = useState<JoinCharacterPickState | null>(null);
+  const [confirmingCharacter, setConfirmingCharacter] = useState(false);
+  const [characterSearch, setCharacterSearch] = useState('');
 
   const rulesetId = rulesetIdParam ? decodeURIComponent(rulesetIdParam) : '';
 
@@ -120,14 +153,72 @@ export function CampaignJoinPage() {
         ? `/campaigns/${resolved.campaignId}/scenes/${resolved.defaultCampaignSceneId}?campaignPlayRole=client`
         : `/campaigns/${resolved.campaignId}/scenes?campaignPlayRole=client`;
 
-      navigate(dest, { replace: true });
-      toast.success('Joined campaign');
+      const alreadyLinked = await joinerHasPlayableCampaignCharacter(
+        resolved.campaignId,
+        currentUser.id,
+      );
+      if (alreadyLinked) {
+        navigate(dest, { replace: true });
+        toast.success('Joined campaign');
+        return;
+      }
+
+      const joinable = await listJoinableCharactersForCampaign(
+        resolved.campaignId,
+        resolved.rulesetId,
+        currentUser.id,
+      );
+      if (joinable.length === 0) {
+        toast.error(
+          "No player character for this campaign's ruleset is available to add. Create one that uses the host's ruleset, or re-import the ruleset if ids differ.",
+        );
+        return;
+      }
+
+      setCharacterSearch('');
+      setJoinCharacterPick({
+        campaignId: resolved.campaignId,
+        defaultCampaignSceneId: resolved.defaultCampaignSceneId,
+        dest,
+        characters: joinable,
+      });
     } catch (e) {
       toast.error(e instanceof Error ? e.message : 'Join failed');
     } finally {
       setBusy(false);
     }
   }, [currentUser, effectiveToken, navigate, rulesetMismatchAck, rulesetId]);
+
+  const filteredJoinPickCharacters = useMemo(() => {
+    if (!joinCharacterPick) return [];
+    const q = characterSearch.toLowerCase().trim();
+    if (!q) return joinCharacterPick.characters;
+    return joinCharacterPick.characters.filter((c) =>
+      (c.name ?? '').toLowerCase().includes(q),
+    );
+  }, [joinCharacterPick, characterSearch]);
+
+  const completeJoinWithCharacter = useCallback(
+    async (characterId: string) => {
+      if (!joinCharacterPick) return;
+      setConfirmingCharacter(true);
+      try {
+        await createJoinerCampaignCharacter({
+          campaignId: joinCharacterPick.campaignId,
+          characterId,
+          campaignSceneId: joinCharacterPick.defaultCampaignSceneId,
+        });
+        navigate(joinCharacterPick.dest, { replace: true });
+        toast.success('Joined campaign');
+        setJoinCharacterPick(null);
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : 'Could not link character');
+      } finally {
+        setConfirmingCharacter(false);
+      }
+    },
+    [joinCharacterPick, navigate],
+  );
 
   const playableRulesetCounts = useLiveQuery(
     async () => {
@@ -192,7 +283,9 @@ export function CampaignJoinPage() {
           </label>
         )}
 
-        <Button disabled={busy || !isCloudConfigured || !currentUser} onClick={() => void runJoin()}>
+        <Button
+          disabled={busy || !isCloudConfigured || !currentUser || joinCharacterPick !== null}
+          onClick={() => void runJoin()}>
           {busy ? 'Joining…' : 'Join campaign'}
         </Button>
 
@@ -202,6 +295,50 @@ export function CampaignJoinPage() {
           onSuccess={() => void runJoin()}
           mode='default'
         />
+
+        <Dialog
+          open={joinCharacterPick !== null}
+          onOpenChange={(open) => {
+            if (!open && !confirmingCharacter) {
+              setJoinCharacterPick(null);
+            }
+          }}>
+          <DialogContent className='sm:max-w-md' showCloseButton={!confirmingCharacter}>
+            <DialogHeader>
+              <DialogTitle>Choose your character</DialogTitle>
+              <DialogDescription>
+                Select which of your characters from this ruleset you are playing in this campaign.
+              </DialogDescription>
+            </DialogHeader>
+            <Command shouldFilter={false} className='rounded-lg border'>
+              <CommandInput
+                placeholder='Search characters…'
+                value={characterSearch}
+                onValueChange={setCharacterSearch}
+                disabled={confirmingCharacter}
+              />
+              <CommandList>
+                <CommandEmpty>No matching characters.</CommandEmpty>
+                {filteredJoinPickCharacters.map((character) => (
+                  <CommandItem
+                    key={character.id}
+                    value={`${character.id} ${character.name ?? ''}`}
+                    disabled={confirmingCharacter}
+                    onSelect={() => void completeJoinWithCharacter(character.id)}
+                    className='flex items-center gap-2'>
+                    <Avatar className='size-8 shrink-0 rounded-md'>
+                      <AvatarImage src={character.image ?? ''} alt={character.name ?? 'Character'} />
+                      <AvatarFallback className='rounded-md text-xs'>
+                        {(character.name ?? '?').slice(0, 1).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span>{character.name ?? 'Unnamed'}</span>
+                  </CommandItem>
+                ))}
+              </CommandList>
+            </Command>
+          </DialogContent>
+        </Dialog>
       </div>
     </PageWrapper>
   );

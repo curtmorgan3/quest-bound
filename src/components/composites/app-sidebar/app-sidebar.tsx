@@ -134,6 +134,7 @@ export function AppSidebar() {
     rulesetId &&
     !isHomepage &&
     !isLandingRoute &&
+    !isJoinRoute &&
     !isCharacterRoute &&
     !isCampaignsRoute &&
     !isDevTools;

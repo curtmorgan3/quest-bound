@@ -15,13 +15,14 @@ interface NodeDiceClickProps {
  * Does not wrap when the component has a script (script click takes precedence).
  */
 export const NodeDiceClick = ({ children, component }: NodeDiceClickProps) => {
-  const { rollDice } = useContext(DiceContext);
+  const diceContext = useContext(DiceContext);
+  const rollDice = diceContext?.rollDice;
   const data = useNodeData(component);
   const raw = data?.interpolatedValue;
   const text = raw != null ? String(raw) : '';
   const diceRolls = parseTextForDiceRolls(text);
 
-  if (!diceRolls.length || component.scriptId) {
+  if (!diceRolls.length || component.scriptId || !rollDice) {
     return <>{children}</>;
   }
 
