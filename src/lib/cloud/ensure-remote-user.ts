@@ -1,6 +1,8 @@
 /**
  * Ensures a `public.users` row exists for the current Supabase session (bootstrap insert).
- * Uses INSERT only: upsert/merge would run ON CONFLICT UPDATE, which RLS denies when cloud_enabled is false.
+ * Uses upsert with `ignoreDuplicates` so PostgREST applies ON CONFLICT DO NOTHING on (user_id, id).
+ * Plain INSERT fails with 409 when the row already exists (e.g. sign-in modal + join flow both call this).
+ * A merge upsert (ON CONFLICT UPDATE) is avoided here so RLS does not block updates when cloud sync is off.
  */
 
 import { getSession } from '@/lib/cloud/auth';
@@ -22,11 +24,10 @@ export async function ensureRemoteUserRow(db: DB): Promise<void> {
     user_id: authUid,
   };
 
-  const { error } = await client.from('users').insert(remoteRow);
-  if (error?.code === '23505') {
-    // Row already exists (unique on user_id, id)
-    return;
-  }
+  const { error } = await client.from('users').upsert(remoteRow, {
+    onConflict: 'user_id,id',
+    ignoreDuplicates: true,
+  });
   if (error) {
     console.warn('ensureRemoteUserRow:', error.message);
   }

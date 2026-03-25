@@ -38,6 +38,7 @@ import { SceneDocumentPanel } from './scene-document-panel';
 import { TurnOrderScene } from './turn-order-scene';
 
 const DASHBOARD_COLUMNS_STORAGE_KEY = 'qb.campaignDashboard.columns';
+const HOST_REALTIME_BY_CAMPAIGN_STORAGE_KEY = 'qb.campaignDashboard.hostRealtimeByCampaignId';
 
 interface StoredColumnState {
   left: boolean;
@@ -68,6 +69,31 @@ function loadColumnState(): StoredColumnState {
 function saveColumnState(state: StoredColumnState) {
   try {
     localStorage.setItem(DASHBOARD_COLUMNS_STORAGE_KEY, JSON.stringify(state));
+  } catch {
+    // ignore quota / private mode
+  }
+}
+
+function loadHostRealtimeByCampaignId(): Record<string, boolean> {
+  if (typeof window === 'undefined') return {};
+  try {
+    const raw = localStorage.getItem(HOST_REALTIME_BY_CAMPAIGN_STORAGE_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw) as unknown;
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return {};
+    const out: Record<string, boolean> = {};
+    for (const [k, v] of Object.entries(parsed as Record<string, unknown>)) {
+      if (v === true) out[k] = true;
+    }
+    return out;
+  } catch {
+    return {};
+  }
+}
+
+function saveHostRealtimeByCampaignId(state: Record<string, boolean>) {
+  try {
+    localStorage.setItem(HOST_REALTIME_BY_CAMPAIGN_STORAGE_KEY, JSON.stringify(state));
   } catch {
     // ignore quota / private mode
   }
@@ -127,9 +153,9 @@ export function CampaignDashboard() {
   const [sceneDocumentPanelOpen, setSceneDocumentPanelOpen] = useState(false);
   const [sceneEventsPanelOpen, setSceneEventsPanelOpen] = useState(false);
   const [guestJoinInviteSheetOpen, setGuestJoinInviteSheetOpen] = useState(false);
-  const [hostRealtimeByCampaignId, setHostRealtimeByCampaignId] = useState<Record<string, boolean>>(
-    {},
-  );
+  const [hostRealtimeByCampaignId, setHostRealtimeByCampaignId] = useState<
+    Record<string, boolean>
+  >(() => loadHostRealtimeByCampaignId());
   const hostCampaignRealtimeEnabled = Boolean(
     campaignId && hostRealtimeByCampaignId[campaignId],
   );
@@ -160,6 +186,10 @@ export function CampaignDashboard() {
       right: rightColumnCollapsed,
     });
   }, [leftColumnCollapsed, centerColumnCollapsed, rightColumnCollapsed]);
+
+  useEffect(() => {
+    saveHostRealtimeByCampaignId(hostRealtimeByCampaignId);
+  }, [hostRealtimeByCampaignId]);
 
   useEffect(() => {
     if (!campaignId || !getFeatureFlag(CAMPAIGN_REALTIME_PLAY_FEATURE_FLAG)) return;
