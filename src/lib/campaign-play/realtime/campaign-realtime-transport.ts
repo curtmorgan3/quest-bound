@@ -40,8 +40,8 @@ function extractBroadcastPayload(payload: unknown): unknown {
 }
 
 /**
- * Subscribe to the private Broadcast channel for this campaign. Caller must be authenticated
- * (including anonymous) for `private: true` per project Realtime authorization rules.
+ * Subscribe to the private Broadcast channel for this campaign. Caller must be authenticated for
+ * `private: true` per project Realtime authorization rules.
  */
 export function subscribeCampaignPlayTransport(
   client: SupabaseClient,

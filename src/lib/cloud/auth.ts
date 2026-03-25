@@ -40,19 +40,6 @@ export async function signOut(): Promise<void> {
   }
 }
 
-/** Anonymous session for campaign join links when the user has no email account (Phase 2.6). */
-export async function signInAnonymously(): Promise<
-  { session: CloudSession } | { error: Error }
-> {
-  if (!cloudClient) {
-    return { error: new Error('Cloud is not configured') };
-  }
-  const { data, error } = await cloudClient.auth.signInAnonymously();
-  if (error) return { error };
-  if (!data.session) return { error: new Error('Anonymous sign-in did not return a session') };
-  return { session: data.session };
-}
-
 export async function getSession(): Promise<CloudSession | null> {
   if (!cloudClient) return null;
   const { data } = await cloudClient.auth.getSession();

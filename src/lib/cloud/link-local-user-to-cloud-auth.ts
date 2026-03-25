@@ -4,7 +4,7 @@ import type { DB } from '@/stores/db/hooks/types';
 
 /**
  * Associates the active local profile with the current Supabase session (sets `cloudUserId`).
- * Used after anonymous (or password) sign-in so Layout treats the user as cloud-linked (Phase 2.6 join).
+ * Used after cloud sign-in so Layout treats the user as cloud-linked (e.g. campaign join).
  */
 export async function linkLocalUserToCloudAuth(cloudUid: string): Promise<void> {
   const { currentUser } = useCurrentUser.getState();

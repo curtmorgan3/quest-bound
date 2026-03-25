@@ -50,7 +50,7 @@ export function CampaignPlayInviteSheet({
           </SheetTitle>
           <SheetDescription>
             {hostRealtimeEnabled
-              ? 'Share a link so players can join this campaign as guests.'
+              ? 'Share a link so signed-in players can join this campaign as guests.'
               : 'Turn on Host to connect to campaign realtime and create join links.'}
           </SheetDescription>
         </SheetHeader>

@@ -5,12 +5,13 @@ import { PageWrapper } from '@/components/composites';
 import { ensureLocalCampaignJoinStub } from '@/lib/campaign-play/join/ensure-local-campaign-stub';
 import { parseJoinTokenOrUrl } from '@/lib/campaign-play/join/generate-join-token';
 import { resolveCampaignJoinToken } from '@/lib/campaign-play/join/resolve-campaign-join-token';
-import { getSession, signInAnonymously } from '@/lib/cloud/auth';
+import { getSession } from '@/lib/cloud/auth';
 import { linkLocalUserToCloudAuth } from '@/lib/cloud/link-local-user-to-cloud-auth';
 import { isCloudConfigured } from '@/lib/cloud/client';
-import { db, useCurrentUser } from '@/stores';
+import { SignInSignUpModal } from '@/pages/signin';
+import { db, useCloudAuthStore, useCurrentUser } from '@/stores';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 
@@ -19,11 +20,14 @@ export function CampaignJoinPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const currentUser = useCurrentUser((s) => s.currentUser);
+  const isAuthenticated = useCloudAuthStore((s) => s.isAuthenticated);
+  const authLoading = useCloudAuthStore((s) => s.isLoading);
 
   const tokenFromQuery = searchParams.get('token')?.trim() ?? '';
   const [pastedToken, setPastedToken] = useState('');
   const [busy, setBusy] = useState(false);
   const [rulesetMismatchAck, setRulesetMismatchAck] = useState(false);
+  const [signInModalOpen, setSignInModalOpen] = useState(false);
 
   const rulesetId = rulesetIdParam ? decodeURIComponent(rulesetIdParam) : '';
 
@@ -31,6 +35,19 @@ export function CampaignJoinPage() {
     const raw = tokenFromQuery || pastedToken;
     return parseJoinTokenOrUrl(raw);
   }, [tokenFromQuery, pastedToken]);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      setSignInModalOpen(false);
+    }
+  }, [isAuthenticated]);
+
+  useEffect(() => {
+    if (authLoading || !isCloudConfigured || isAuthenticated) return;
+    if (tokenFromQuery) {
+      setSignInModalOpen(true);
+    }
+  }, [authLoading, isAuthenticated, tokenFromQuery]);
 
   const runJoin = useCallback(async () => {
     if (!rulesetId) {
@@ -52,14 +69,11 @@ export function CampaignJoinPage() {
 
     setBusy(true);
     try {
-      let session = await getSession();
+      const session = await getSession();
       if (!session) {
-        const anon = await signInAnonymously();
-        if ('error' in anon) {
-          toast.error(anon.error.message);
-          return;
-        }
-        session = anon.session;
+        setSignInModalOpen(true);
+        toast.info('Sign in to join this campaign.');
+        return;
       }
 
       await linkLocalUserToCloudAuth(session.user.id);
@@ -148,8 +162,8 @@ export function CampaignJoinPage() {
         )}
 
         <p className='text-muted-foreground text-sm'>
-          Join a hosted campaign using the link the host shared. You can paste the token if the app did not
-          open the link automatically.
+          Join a hosted campaign using the link the host shared. You must be signed in with a Quest Bound
+          account. You can paste the token if the app did not open the link automatically.
         </p>
 
         {!tokenFromQuery && (
@@ -181,6 +195,13 @@ export function CampaignJoinPage() {
         <Button disabled={busy || !isCloudConfigured || !currentUser} onClick={() => void runJoin()}>
           {busy ? 'Joining…' : 'Join campaign'}
         </Button>
+
+        <SignInSignUpModal
+          open={signInModalOpen}
+          onOpenChange={setSignInModalOpen}
+          onSuccess={() => void runJoin()}
+          mode='default'
+        />
       </div>
     </PageWrapper>
   );

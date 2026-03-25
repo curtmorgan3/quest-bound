@@ -112,7 +112,7 @@ export function CampaignPlayInvitePanel({
         </div>
       )}
       <p className='text-muted-foreground'>
-        Share this link so players can join as guests (anonymous or signed-in). Up to{' '}
+        Share this link so signed-in players can join as guests. Up to{' '}
         {CAMPAIGN_PLAY_MAX_JOINERS} guest characters are recommended in this phase ({joinerSlots}{' '}
         now).
       </p>

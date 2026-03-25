@@ -9,8 +9,7 @@ export type ResolvedCampaignJoin = {
 };
 
 /**
- * Calls `resolve_campaign_join_token` (SECURITY DEFINER). Caller must have a Supabase session
- * (including anonymous).
+ * Calls `resolve_campaign_join_token` (SECURITY DEFINER). Requires an authenticated Supabase session.
  */
 export async function resolveCampaignJoinToken(
   joinToken: string,

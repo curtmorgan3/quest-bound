@@ -162,6 +162,10 @@ export function SignInSignUpModal({
 
       if (isCloudConfigured && cloudUid) {
         await linkLocalUserToCloud(cloudUid);
+        if (mode === 'default') {
+          onSuccess?.();
+          onOpenChange?.(false);
+        }
       }
 
       if (mode === 'default' && !isCloudConfigured && !registerEmail.emailRegistered) {
