@@ -9,19 +9,28 @@ import {
   useSidebar,
 } from '@/components/ui/sidebar';
 import { useCharacter, useCharts, useDocuments } from '@/lib/compass-api';
-import { CharacterArchetypesPanelContext, CharacterInventoryPanelContext } from '@/stores';
+import { filterNotSoftDeleted } from '@/lib/data/soft-delete';
+import {
+  CharacterArchetypesPanelContext,
+  CharacterInventoryPanelContext,
+  db,
+  useCloudAuthStore,
+} from '@/stores';
+import { useLiveQuery } from 'dexie-react-hooks';
 import {
   ArrowLeft,
   FileSpreadsheet,
   FileText,
+  Globe,
   Handbag,
   Home,
   Pin,
   PinOff,
   UserPlus,
 } from 'lucide-react';
-import { useContext } from 'react';
+import { useContext, useState } from 'react';
 import { Link, useLocation, useParams } from 'react-router-dom';
+import { JoinCampaignPanel } from './join-campaign-panel';
 
 export function CharacterSidebar() {
   const { character, updateCharacter } = useCharacter();
@@ -30,6 +39,15 @@ export function CharacterSidebar() {
   const { open } = useSidebar();
   const { documentId, chartId } = useParams<{ documentId?: string; chartId?: string }>();
   const location = useLocation();
+  const isAuthenticated = useCloudAuthStore((s) => s.isAuthenticated);
+  const [joinCampaignOpen, setJoinCampaignOpen] = useState(false);
+  const characterId = character?.id;
+  const linkedToCampaignLive = useLiveQuery(async () => {
+    if (!characterId) return false;
+    const rows = await db.campaignCharacters.where('characterId').equals(characterId).toArray();
+    return filterNotSoftDeleted(rows).length > 0;
+  }, [characterId]);
+  const isCharacterLinkedToCampaign = linkedToCampaignLive ?? false;
 
   const characterInventoryPanel = useContext(CharacterInventoryPanelContext);
   const characterArchetypesPanel = useContext(CharacterArchetypesPanelContext);
@@ -73,6 +91,13 @@ export function CharacterSidebar() {
 
   return (
     <>
+      {isAuthenticated && (
+        <JoinCampaignPanel
+          open={joinCampaignOpen}
+          onOpenChange={setJoinCampaignOpen}
+          character={character}
+        />
+      )}
       <SidebarGroup>
         <SidebarGroupContent>
           <SidebarMenu>
@@ -115,6 +140,17 @@ export function CharacterSidebar() {
                 data-testid='nav-character-archetypes'>
                 <UserPlus className='w-4 h-4' />
                 <span>Archetypes</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          )}
+          {isAuthenticated && (
+            <SidebarMenuItem className={isCharacterLinkedToCampaign ? 'text-primary' : ''}>
+              <SidebarMenuButton
+                type='button'
+                onClick={() => setJoinCampaignOpen(true)}
+                data-testid='nav-join-campaign'>
+                <Globe className='w-4 h-4' />
+                <span>Join campaign</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
           )}
