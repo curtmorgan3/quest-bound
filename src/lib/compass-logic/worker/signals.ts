@@ -390,6 +390,12 @@ export interface ScriptResultPayload {
   navigateTargets?: { characterId: string; pageId: string }[];
   /** Component animations to trigger in the sheet viewer (by referenceLabel). */
   componentAnimations?: Array<{ characterId: string; referenceLabel: string; animation: string }>;
+  /** Scene.spawnCharacter during script run; main thread loads Dexie rows and broadcasts roster. */
+  rosterBroadcasts?: Array<{
+    campaignId: string;
+    characterId: string;
+    campaignCharacterId: string;
+  }>;
 }
 
 export interface ScriptErrorPayload {

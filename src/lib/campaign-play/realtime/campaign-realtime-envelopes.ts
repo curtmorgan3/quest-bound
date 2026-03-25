@@ -75,6 +75,16 @@ export interface CampaignRealtimeHostReactiveResultEnvelopeV1 {
   announceMessages?: string[];
 }
 
+/** Player/host roster changes: `characters` + `campaignCharacters` bulkPut for peers. */
+export interface CampaignRealtimeRosterUpdateEnvelopeV1 {
+  v: typeof CAMPAIGN_REALTIME_PROTOCOL_VERSION;
+  kind: 'campaign_roster_update';
+  updateId: string;
+  campaignId: string;
+  sentAt: string;
+  batches: CampaignRealtimeBulkPutBatchV1[];
+}
+
 export interface CampaignRealtimeSessionHeartbeatEnvelopeV1 {
   v: typeof CAMPAIGN_REALTIME_PROTOCOL_VERSION;
   kind: 'session_heartbeat';
@@ -88,6 +98,7 @@ export type CampaignRealtimeEnvelopeV1 =
   | CampaignRealtimeActionResultEnvelopeV1
   | CampaignRealtimeManualCharacterUpdateEnvelopeV1
   | CampaignRealtimeHostReactiveResultEnvelopeV1
+  | CampaignRealtimeRosterUpdateEnvelopeV1
   | CampaignRealtimeSessionHeartbeatEnvelopeV1;
 
 function isRecord(v: unknown): v is Record<string, unknown> {
@@ -248,6 +259,19 @@ export function parseCampaignRealtimeEnvelope(raw: unknown): CampaignRealtimeEnv
       sentAt: raw.sentAt,
       batches: raw.batches,
       announceMessages,
+    };
+  }
+
+  if (kind === 'campaign_roster_update') {
+    if (typeof raw.updateId !== 'string' || typeof raw.sentAt !== 'string') return null;
+    if (!Array.isArray(raw.batches) || !raw.batches.every(isBulkPutBatchV1)) return null;
+    return {
+      v: CAMPAIGN_REALTIME_PROTOCOL_VERSION,
+      kind: 'campaign_roster_update',
+      updateId: raw.updateId,
+      campaignId: raw.campaignId,
+      sentAt: raw.sentAt,
+      batches: raw.batches,
     };
   }
 

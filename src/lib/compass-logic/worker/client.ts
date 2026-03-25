@@ -6,6 +6,7 @@
  */
 
 import type { CampaignPlayScriptWorkerPolicy } from '@/lib/campaign-play/campaign-play-script-gate';
+import { tryBroadcastCampaignRosterFromDexie } from '@/lib/campaign-play/realtime/broadcast-campaign-roster-update';
 import {
   getCurrentCampaignIdForScripts,
   getCurrentCampaignSceneIdForScripts,
@@ -399,6 +400,16 @@ export class QBScriptClient {
   }
 
   private handleScriptResult(payload: ScriptResultPayload): void {
+    if (payload.rosterBroadcasts?.length) {
+      for (const entry of payload.rosterBroadcasts) {
+        void tryBroadcastCampaignRosterFromDexie({
+          campaignId: entry.campaignId,
+          characterIds: [entry.characterId],
+          campaignCharacterIds: [entry.campaignCharacterId],
+        }).catch(() => {});
+      }
+    }
+
     if (payload.modifiedAttributeIds?.length && payload.characterId) {
       useScriptModifiedAttributesStore
         .getState()

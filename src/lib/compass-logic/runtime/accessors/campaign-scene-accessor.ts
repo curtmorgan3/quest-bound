@@ -29,6 +29,13 @@ type GetCharacterAccessorByIdFn = (characterId: string) => Promise<AnyCharacterA
 
 type RegisterSceneCharacterIdFn = (characterId: string) => void;
 
+/** Report roster changes to the ScriptRunner (main thread broadcasts over campaign realtime). */
+export type CampaignRosterChangedFn = (payload: {
+  campaignId: string;
+  characterId: string;
+  campaignCharacterId: string;
+}) => void;
+
 export type ExecuteTurnCallbacksFn = (callbacks: SceneTurnCallback[]) => Promise<void>;
 
 /**
@@ -53,6 +60,7 @@ export class CampaignSceneAccessor {
   private roll?: RollFn;
   private deferredAdvanceRef?: { current: boolean };
   private executeTurnCallbacks?: ExecuteTurnCallbacksFn;
+  private onCampaignRosterChanged?: CampaignRosterChangedFn;
   private insideCallbackRun = false;
 
   constructor(
@@ -66,6 +74,7 @@ export class CampaignSceneAccessor {
     roll?: RollFn,
     deferredAdvanceRef?: { current: boolean },
     executeTurnCallbacks?: ExecuteTurnCallbacksFn,
+    onCampaignRosterChanged?: CampaignRosterChangedFn,
   ) {
     this.db = db as DB;
     this.campaignId = campaignId;
@@ -78,6 +87,7 @@ export class CampaignSceneAccessor {
     this.roll = roll;
     this.deferredAdvanceRef = deferredAdvanceRef;
     this.executeTurnCallbacks = executeTurnCallbacks;
+    this.onCampaignRosterChanged = onCampaignRosterChanged;
   }
 
   /** Set by the runner when running turn callbacks; when true, advanceTurnOrder() only sets deferred. */
@@ -634,6 +644,12 @@ export class CampaignSceneAccessor {
     };
 
     await this.db.campaignCharacters.add(campaignCharacter as any);
+
+    this.onCampaignRosterChanged?.({
+      campaignId: this.campaignId,
+      characterId,
+      campaignCharacterId: campaignCharacter.id,
+    });
 
     // Update local caches so .characters() includes this NPC.
     if (!this.cachedCharacterIds) {

@@ -1,3 +1,4 @@
+import { tryBroadcastCampaignRosterFromDexie } from '@/lib/campaign-play/realtime/broadcast-campaign-roster-update';
 import { filterNotSoftDeleted, softDeletePatch } from '@/lib/data/soft-delete';
 import { useErrorHandler } from '@/hooks';
 import { db } from '@/stores';
@@ -43,6 +44,11 @@ export const useCampaignCharacters = (campaignId: string | undefined) => {
         createdAt: now,
         updatedAt: now,
       } as CampaignCharacter);
+      void tryBroadcastCampaignRosterFromDexie({
+        campaignId,
+        characterIds: [characterId],
+        campaignCharacterIds: [id],
+      }).catch(() => {});
       return id;
     } catch (e) {
       handleError(e as Error, {
@@ -60,10 +66,19 @@ export const useCampaignCharacters = (campaignId: string | undefined) => {
   ) => {
     const now = new Date().toISOString();
     try {
+      const existing = await db.campaignCharacters.get(id);
       await db.campaignCharacters.update(id, {
         ...data,
         updatedAt: now,
       });
+      const cid = existing?.campaignId ?? campaignId;
+      if (cid) {
+        void tryBroadcastCampaignRosterFromDexie({
+          campaignId: cid,
+          characterIds: [],
+          campaignCharacterIds: [id],
+        }).catch(() => {});
+      }
     } catch (e) {
       handleError(e as Error, {
         component: 'useCampaignCharacters/updateCampaignCharacter',
@@ -76,7 +91,15 @@ export const useCampaignCharacters = (campaignId: string | undefined) => {
     try {
       const campaignCharacter = await db.campaignCharacters.get(id);
       const characterId = campaignCharacter?.characterId;
+      const rosterCampaignId = campaignCharacter?.campaignId;
       await db.campaignCharacters.update(id, softDeletePatch());
+      if (rosterCampaignId) {
+        void tryBroadcastCampaignRosterFromDexie({
+          campaignId: rosterCampaignId,
+          characterIds: [],
+          campaignCharacterIds: [id],
+        }).catch(() => {});
+      }
       if (characterId) {
         const character = await db.characters.get(characterId);
         if (character?.isNpc) {

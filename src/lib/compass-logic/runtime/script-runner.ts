@@ -209,6 +209,15 @@ export interface ScriptExecutionContext {
   campaignEvent?: CampaignEvent;
   /** Optional helper exposed to QBScript as `params` (e.g. params.get('Name')). */
   params?: ScriptParamsHelper;
+  /**
+   * When set (e.g. worker `handleExecuteScript`), `Scene.spawnCharacter` records ids here so the
+   * main thread can broadcast roster rows (worker has no `window` / campaign realtime sender).
+   */
+  sharedRosterBroadcasts?: Array<{
+    campaignId: string;
+    characterId: string;
+    campaignCharacterId: string;
+  }>;
 }
 
 /**
@@ -225,6 +234,12 @@ export interface ScriptExecutionResult {
   navigateTargets?: { characterId: string; pageId: string }[];
   /** Component animations to trigger in the sheet viewer (by referenceLabel). */
   componentAnimations?: Array<{ characterId: string; referenceLabel: string; animation: string }>;
+  /** NPCs spawned via Scene.spawnCharacter during this run (for campaign play roster realtime). */
+  rosterBroadcasts?: Array<{
+    campaignId: string;
+    characterId: string;
+    campaignCharacterId: string;
+  }>;
 }
 
 /**
@@ -1205,6 +1220,11 @@ export class ScriptRunner {
         this.context.roll,
         deferredAdvanceRef,
         (callbacks: SceneTurnCallback[]) => this.runTurnCallbacks(callbacks, this.sceneAccessor!),
+        this.context.sharedRosterBroadcasts
+          ? (p) => {
+              this.context.sharedRosterBroadcasts!.push(p);
+            }
+          : undefined,
       );
     } else {
       this.sceneAccessor = null;
@@ -1382,6 +1402,7 @@ export class ScriptRunner {
       // Flush changes to database and capture any navigation targets
       const { navigateTargets } = await this.flushCache();
 
+      const rb = this.context.sharedRosterBroadcasts;
       return {
         value,
         announceMessages: this.evaluator.getAnnounceMessages(),
@@ -1389,6 +1410,7 @@ export class ScriptRunner {
         modifiedAttributeIds,
         navigateTargets,
         componentAnimations: componentUpdates.animations ?? [],
+        ...(rb && rb.length > 0 ? { rosterBroadcasts: rb } : {}),
       };
     } catch (error) {
       return {

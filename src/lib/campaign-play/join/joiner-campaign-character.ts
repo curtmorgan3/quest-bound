@@ -1,3 +1,4 @@
+import { tryBroadcastCampaignRosterFromDexie } from '@/lib/campaign-play/realtime/broadcast-campaign-roster-update';
 import { filterNotSoftDeleted } from '@/lib/data/soft-delete';
 import { db } from '@/stores';
 import type { CampaignCharacter, Character } from '@/types';
@@ -59,5 +60,10 @@ export async function createJoinerCampaignCharacter(options: {
     createdAt: now,
     updatedAt: now,
   } as CampaignCharacter);
+  void tryBroadcastCampaignRosterFromDexie({
+    campaignId: options.campaignId,
+    characterIds: [options.characterId],
+    campaignCharacterIds: [id],
+  }).catch(() => {});
   return id;
 }

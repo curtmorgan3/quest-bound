@@ -10,6 +10,7 @@ export function campaignPlayEnvelopeRefreshesMultiplayerView(
   return (
     kind === 'action_result' ||
     kind === 'manual_character_update' ||
-    kind === 'host_reactive_result'
+    kind === 'host_reactive_result' ||
+    kind === 'campaign_roster_update'
   );
 }

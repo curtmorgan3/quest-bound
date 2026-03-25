@@ -700,6 +700,12 @@ async function handleExecuteScript(payload: ExecuteScriptPayload): Promise<void>
   }> = [];
 
   try {
+    const sharedRosterBroadcasts: Array<{
+      campaignId: string;
+      characterId: string;
+      campaignCharacterId: string;
+    }> = [];
+
     const context: ScriptExecutionContext = {
       ownerId: payload.characterId,
       rulesetId: payload.rulesetId,
@@ -710,6 +716,7 @@ async function handleExecuteScript(payload: ExecuteScriptPayload): Promise<void>
       entityId: payload.entityId,
       campaignId: payload.campaignId,
       campaignSceneId: payload.campaignSceneId,
+      sharedRosterBroadcasts,
       roll: rollFn,
       rollSplit: rollSplitFn,
       prompt: promptFn,
@@ -845,6 +852,9 @@ async function handleExecuteScript(payload: ExecuteScriptPayload): Promise<void>
           characterId: payload.characterId,
           navigateTargets: result.navigateTargets,
           componentAnimations: allComponentAnimations,
+          ...(result.rosterBroadcasts && result.rosterBroadcasts.length > 0
+            ? { rosterBroadcasts: result.rosterBroadcasts }
+            : {}),
         },
       });
     }

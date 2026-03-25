@@ -95,4 +95,19 @@ describe('parseCampaignRealtimeEnvelope', () => {
     };
     expect(parseCampaignRealtimeEnvelope(raw)).toEqual(raw);
   });
+
+  it('parses campaign_roster_update', () => {
+    const raw = {
+      v: 1,
+      kind: 'campaign_roster_update' as const,
+      updateId: 'u-roster',
+      campaignId: 'c1',
+      sentAt: '2025-01-01T00:00:00.000Z',
+      batches: [
+        { table: 'characters', rows: [{ id: 'ch1', rulesetId: 'r1', userId: 'u1' }] },
+        { table: 'campaignCharacters', rows: [{ id: 'cc1', campaignId: 'c1', characterId: 'ch1' }] },
+      ],
+    };
+    expect(parseCampaignRealtimeEnvelope(raw)).toEqual(raw);
+  });
 });

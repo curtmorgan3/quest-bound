@@ -11,6 +11,7 @@ export {
   type CampaignRealtimeEnvelopeV1,
   type CampaignRealtimeHostReactiveResultEnvelopeV1,
   type CampaignRealtimeManualCharacterUpdateEnvelopeV1,
+  type CampaignRealtimeRosterUpdateEnvelopeV1,
   type CampaignRealtimeSessionHeartbeatEnvelopeV1,
   parseCampaignRealtimeEnvelope,
 } from '@/lib/campaign-play/realtime/campaign-realtime-envelopes';
@@ -51,4 +52,10 @@ export {
   stopCampaignPlayClientActionBridge,
 } from '@/lib/campaign-play/realtime/campaign-play-client-action-bridge';
 export { sendCampaignPlayManualCharacterUpdate } from '@/lib/campaign-play/realtime/campaign-play-manual-broadcast';
+export {
+  sendCampaignRosterUpdate,
+  tryBroadcastCampaignRosterFromDexie,
+} from '@/lib/campaign-play/realtime/broadcast-campaign-roster-update';
+export { ingestCampaignRosterUpdateIfValid } from '@/lib/campaign-play/realtime/ingest-campaign-roster-update';
+export { validateCampaignRosterUpdateBatches } from '@/lib/campaign-play/realtime/validate-campaign-roster-update';
 export { validateCampaignActionRequest } from '@/lib/campaign-play/realtime/validate-campaign-action-request';

@@ -5,6 +5,7 @@ import type { DB } from '@/stores/db/hooks/types';
 /** Tables allowed for Phase 2 campaign realtime ingest (soft-delete + session entities). */
 const REALTIME_INGEST_TABLES = new Set<string>([
   'campaignCharacters',
+  'characters',
   'inventoryItems',
   'characterAttributes',
   'characterArchetypes',

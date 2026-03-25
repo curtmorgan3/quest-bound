@@ -3,6 +3,7 @@ import {
   nextCampaignPlayReconnectDelayMs,
 } from '@/lib/campaign-play/campaign-play-reconnect-backoff';
 import { campaignPlayEnvelopeRefreshesMultiplayerView } from '@/lib/campaign-play/campaign-play-stale-sync';
+import { ingestCampaignRosterUpdateIfValid } from '@/lib/campaign-play/realtime/ingest-campaign-roster-update';
 import { cloudClient } from '@/lib/cloud/client';
 import {
   CAMPAIGN_PLAY_HEARTBEAT_INTERVAL_MS,
@@ -19,6 +20,7 @@ import {
   type CampaignRealtimeEnvelopeV1,
 } from '@/lib/campaign-play/realtime';
 import { onAuthStateChange } from '@/lib/cloud/auth';
+import { db } from '@/stores';
 import { useCampaignPlaySessionStore } from '@/stores/campaign-play-session-store';
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
@@ -119,6 +121,11 @@ export function useCampaignPlayRealtime({
 
     const onEnvelope = (envelope: CampaignRealtimeEnvelopeV1) => {
       if (envelope.campaignId !== campaignId) return;
+      if (envelope.kind === 'campaign_roster_update') {
+        void ingestCampaignRosterUpdateIfValid(db, envelope).catch((e) => {
+          console.error('[CampaignPlay] roster ingest failed', e);
+        });
+      }
       if (envelope.kind === 'session_heartbeat' && envelope.role === 'host') {
         lastHostHeartbeatAt.t = Date.now();
         if (role === 'client') {
