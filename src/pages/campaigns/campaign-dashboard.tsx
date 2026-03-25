@@ -21,16 +21,16 @@ import { SHEET_VIEWER_BACKDROP_CLICK } from '@/lib/compass-planes/sheet-viewer';
 import { cn } from '@/lib/utils';
 import { db, useCloudAuthStore } from '@/stores';
 import { useCampaignPlaySessionStore } from '@/stores/campaign-play-session-store';
-import { getFeatureFlag } from '@/utils/feature-flags';
 import type { Character } from '@/types';
-import { ChevronLeft, ChevronRight, FileText, Zap } from 'lucide-react';
+import { getFeatureFlag } from '@/utils/feature-flags';
+import { ChevronLeft, ChevronRight, FileText, Globe, Zap } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { ActiveScene } from './active-scene';
-import { CampaignPlayInvitePanel } from './campaign-play-invite-panel';
 import { CampaignCharacterSheet } from './campaign-controls';
 import { CampaignEventsPanel } from './campaign-events-panel';
 import { CampaignGameLog } from './campaign-game-log';
+import { CampaignPlayInviteSheet } from './campaign-play-invite-sheet';
 import { useCampaignPlayCharacterList } from './hooks';
 import { ManagePlayerCharacters } from './manage-player-characters';
 import { NpcStage } from './npc-stage';
@@ -80,6 +80,7 @@ export function CampaignDashboard() {
   const campaignPlaySession = useCampaignPlaySessionStore((s) => s.session);
   const hostCloudUserId = useCloudAuthStore((s) => s.cloudUser?.id ?? null);
   const campaignPlayRoleQuery = searchParams.get('campaignPlayRole');
+  const isCampaignPlayClient = campaignPlayRoleQuery === 'client';
   const orchestrationBlocked = shouldBlockCampaignOrchestration(campaignId);
   const showGuestSessionBanner =
     campaignRealtimePlayEnabled &&
@@ -104,30 +105,6 @@ export function CampaignDashboard() {
     (campaignPlaySession.realtimeStatus === 'connecting' ||
       campaignPlaySession.realtimeStatus === 'error');
 
-  useEffect(() => {
-    if (!campaignId || !getFeatureFlag(CAMPAIGN_REALTIME_PLAY_FEATURE_FLAG)) return;
-    const role = campaignPlayRoleQuery === 'client' ? 'client' : 'host';
-    useCampaignPlaySessionStore.getState().enterSession({
-      campaignId,
-      realtimeChannelName: null,
-      role,
-      hostSessionActive: true,
-    });
-    return () => {
-      useCampaignPlaySessionStore.getState().clearSessionIfCampaign(campaignId);
-    };
-  }, [campaignId, campaignPlayRoleQuery]);
-
-  useCampaignPlayRealtime({
-    campaignId,
-    enabled: campaignRealtimePlayEnabled && !!campaignId,
-  });
-
-  // Ensure active ruleset (and its assets) are resolved for this campaign view.
-  // useActiveRuleset will derive the rulesetId from the campaignId route param
-  // and trigger the ruleset-scoped asset preload effect.
-  useActiveRuleset();
-
   const campaign = useCampaign(campaignId);
   const navigate = useNavigate();
   const {
@@ -149,6 +126,24 @@ export function CampaignDashboard() {
   const [hoveredCampaignCharacterId, setHoveredCampaignCharacterId] = useState<string | null>(null);
   const [sceneDocumentPanelOpen, setSceneDocumentPanelOpen] = useState(false);
   const [sceneEventsPanelOpen, setSceneEventsPanelOpen] = useState(false);
+  const [guestJoinInviteSheetOpen, setGuestJoinInviteSheetOpen] = useState(false);
+  const [hostRealtimeByCampaignId, setHostRealtimeByCampaignId] = useState<Record<string, boolean>>(
+    {},
+  );
+  const hostCampaignRealtimeEnabled = Boolean(
+    campaignId && hostRealtimeByCampaignId[campaignId],
+  );
+  const setHostCampaignRealtimeEnabled = (enabled: boolean) => {
+    if (!campaignId) return;
+    setHostRealtimeByCampaignId((prev) => {
+      if (!enabled) {
+        const next = { ...prev };
+        delete next[campaignId];
+        return next;
+      }
+      return { ...prev, [campaignId]: enabled };
+    });
+  };
   const [characterSheetTransparentBackground, setCharacterSheetTransparentBackground] =
     useState(true);
   const [advancing, setAdvancing] = useState(false);
@@ -165,6 +160,49 @@ export function CampaignDashboard() {
       right: rightColumnCollapsed,
     });
   }, [leftColumnCollapsed, centerColumnCollapsed, rightColumnCollapsed]);
+
+  useEffect(() => {
+    if (!campaignId || !getFeatureFlag(CAMPAIGN_REALTIME_PLAY_FEATURE_FLAG)) return;
+
+    if (isCampaignPlayClient) {
+      useCampaignPlaySessionStore.getState().enterSession({
+        campaignId,
+        realtimeChannelName: null,
+        role: 'client',
+        hostSessionActive: true,
+      });
+      return () => {
+        useCampaignPlaySessionStore.getState().clearSessionIfCampaign(campaignId);
+      };
+    }
+
+    if (hostCampaignRealtimeEnabled) {
+      useCampaignPlaySessionStore.getState().enterSession({
+        campaignId,
+        realtimeChannelName: null,
+        role: 'host',
+        hostSessionActive: true,
+      });
+      return () => {
+        useCampaignPlaySessionStore.getState().clearSessionIfCampaign(campaignId);
+      };
+    }
+
+    useCampaignPlaySessionStore.getState().clearSessionIfCampaign(campaignId);
+    return () => {
+      useCampaignPlaySessionStore.getState().clearSessionIfCampaign(campaignId);
+    };
+  }, [campaignId, isCampaignPlayClient, hostCampaignRealtimeEnabled]);
+
+  useCampaignPlayRealtime({
+    campaignId,
+    enabled: campaignRealtimePlayEnabled && !!campaignId,
+  });
+
+  // Ensure active ruleset (and its assets) are resolved for this campaign view.
+  // useActiveRuleset will derive the rulesetId from the campaignId route param
+  // and trigger the ruleset-scoped asset preload effect.
+  useActiveRuleset();
 
   const { campaignScenes } = useCampaignScenes(campaignId);
   const currentScene = sceneId ? campaignScenes.find((s) => s.id === sceneId) : undefined;
@@ -328,12 +366,7 @@ export function CampaignDashboard() {
                       variant='outline'
                       size='sm'
                       onClick={async () => {
-                        if (
-                          !campaignId ||
-                          !sceneId ||
-                          !campaign?.rulesetId ||
-                          orchestrationBlocked
-                        )
+                        if (!campaignId || !sceneId || !campaign?.rulesetId || orchestrationBlocked)
                           return;
                         setAdvancing(true);
                         try {
@@ -380,6 +413,31 @@ export function CampaignDashboard() {
               data-testid='scene-events-panel-trigger'>
               <Zap className='h-4 w-4' />
             </Button>
+            {campaignRealtimePlayEnabled && campaignId && !isCampaignPlayClient && (
+              <>
+                <Button
+                  variant='ghost'
+                  size='icon'
+                  onClick={() => setGuestJoinInviteSheetOpen(true)}
+                  aria-label='Guest join link'
+                  title='Guest join link and host session'
+                  data-testid='guest-join-invite-sheet-trigger'>
+                  <Globe className='h-4 w-4' />
+                </Button>
+                <CampaignPlayInviteSheet
+                  open={guestJoinInviteSheetOpen}
+                  onOpenChange={setGuestJoinInviteSheetOpen}
+                  campaignId={campaign.id}
+                  rulesetId={campaign.rulesetId}
+                  campaignLabel={campaign.label}
+                  campaignCharacters={campaignCharacters}
+                  charactersById={charactersById}
+                  hostCloudUserId={hostCloudUserId}
+                  hostRealtimeEnabled={hostCampaignRealtimeEnabled}
+                  onHostRealtimeEnabledChange={setHostCampaignRealtimeEnabled}
+                />
+              </>
+            )}
             <SceneDocumentPanel
               open={sceneDocumentPanelOpen}
               onOpenChange={setSceneDocumentPanelOpen}
@@ -415,8 +473,7 @@ export function CampaignDashboard() {
           </div>
         }>
         {showGuestSessionBanner && (
-          <Alert
-            className='mx-4 mt-3 shrink-0 border-amber-500/40 bg-amber-500/10 text-amber-950 dark:text-amber-100'>
+          <Alert className='mx-4 mt-3 shrink-0 border-amber-500/40 bg-amber-500/10 text-amber-950 dark:text-amber-100'>
             <AlertDescription>
               {campaignPlaySession?.hostSessionActive ? (
                 <>
@@ -436,8 +493,8 @@ export function CampaignDashboard() {
         {showMultiplayerStaleNotice && (
           <Alert className='mx-4 mt-2 shrink-0 border-border bg-muted/30'>
             <AlertDescription className='text-muted-foreground text-sm'>
-              Party and sheet data may be briefly out of date until the host runs an action or shares an
-              update.
+              Party and sheet data may be briefly out of date until the host runs an action or
+              shares an update.
             </AlertDescription>
           </Alert>
         )}
@@ -450,22 +507,6 @@ export function CampaignDashboard() {
             </AlertDescription>
           </Alert>
         )}
-        {campaignRealtimePlayEnabled &&
-          campaignId &&
-          campaign &&
-          campaignPlaySession?.campaignId === campaignId &&
-          campaignPlaySession.role === 'host' && (
-            <div className='mx-4 mt-3 shrink-0'>
-              <CampaignPlayInvitePanel
-                campaignId={campaign.id}
-                rulesetId={campaign.rulesetId}
-                campaignLabel={campaign.label}
-                campaignCharacters={campaignCharacters}
-                charactersById={charactersById}
-                hostCloudUserId={hostCloudUserId}
-              />
-            </div>
-          )}
         <div className='flex min-h-0 flex-1'>
           {/* Left column: Stage NPCs */}
           <div

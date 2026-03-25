@@ -4,14 +4,14 @@ import {
   CAMPAIGN_PLAY_MAX_JOINERS,
   countCampaignPlayJoinerSlots,
 } from '@/lib/campaign-play/campaign-play-joiner-cap';
-import { buildCampaignJoinUrl } from '@/lib/campaign-play/join/generate-join-token';
 import {
   fetchCampaignPlayInvite,
   upsertCampaignPlayInvite,
 } from '@/lib/campaign-play/join/campaign-play-invite-api';
+import { buildCampaignJoinUrl } from '@/lib/campaign-play/join/generate-join-token';
 import { useCloudAuthStore } from '@/stores';
 import type { CampaignCharacter, Character } from '@/types';
-import { Copy, Link2, RefreshCw } from 'lucide-react';
+import { Copy, Globe, RefreshCw } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -22,6 +22,8 @@ interface CampaignPlayInvitePanelProps {
   campaignCharacters: CampaignCharacter[];
   charactersById: Map<string, Character>;
   hostCloudUserId: string | null;
+  /** Omit card chrome and title row when embedded in a sheet header. */
+  variant?: 'card' | 'plain';
 }
 
 export function CampaignPlayInvitePanel({
@@ -31,6 +33,7 @@ export function CampaignPlayInvitePanel({
   campaignCharacters,
   charactersById,
   hostCloudUserId,
+  variant = 'card',
 }: CampaignPlayInvitePanelProps) {
   const cloudSyncEnabled = useCloudAuthStore((s) => s.cloudSyncEnabled);
   const [joinToken, setJoinToken] = useState<string | null>(null);
@@ -100,21 +103,24 @@ export function CampaignPlayInvitePanel({
     );
   }
 
-  return (
-    <div className='flex flex-col gap-2 rounded-md border border-border bg-muted/20 p-3 text-sm'>
-      <div className='flex items-center gap-2 font-medium text-foreground'>
-        <Link2 className='size-4' aria-hidden />
-        Guest join link
-      </div>
+  const body = (
+    <>
+      {variant === 'card' && (
+        <div className='flex items-center gap-2 font-medium text-foreground'>
+          <Globe className='size-4' aria-hidden />
+          Host this Campaign
+        </div>
+      )}
       <p className='text-muted-foreground'>
         Share this link so players can join as guests (anonymous or signed-in). Up to{' '}
-        {CAMPAIGN_PLAY_MAX_JOINERS} guest characters are recommended in this phase ({joinerSlots} now).
+        {CAMPAIGN_PLAY_MAX_JOINERS} guest characters are recommended in this phase ({joinerSlots}{' '}
+        now).
       </p>
       {atJoinerCap && (
         <Alert>
           <AlertDescription>
-            You already have {CAMPAIGN_PLAY_MAX_JOINERS} or more guest character slots in this campaign.
-            Remove a guest character before inviting more players.
+            You already have {CAMPAIGN_PLAY_MAX_JOINERS} or more guest character slots in this
+            campaign. Remove a guest character before inviting more players.
           </AlertDescription>
         </Alert>
       )}
@@ -143,6 +149,16 @@ export function CampaignPlayInvitePanel({
           {joinUrl}
         </p>
       )}
+    </>
+  );
+
+  if (variant === 'plain') {
+    return <div className='flex flex-col gap-3 text-sm'>{body}</div>;
+  }
+
+  return (
+    <div className='flex flex-col gap-2 rounded-md border border-border bg-muted/20 p-3 text-sm'>
+      {body}
     </div>
   );
 }
