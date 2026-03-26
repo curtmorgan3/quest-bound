@@ -1,4 +1,5 @@
 import type { CampaignRealtimeActionRequestBodyV1 } from '@/lib/campaign-play/realtime/campaign-realtime-envelopes';
+import { resolveActiveCampaignCharacter } from '@/lib/campaign-play/realtime/resolve-active-campaign-character';
 import type { DB } from '@/stores/db/hooks/types';
 
 export type ValidateCampaignActionResult =
@@ -18,11 +19,8 @@ export async function validateCampaignActionRequest(
     return { ok: false, code: 'campaign_not_found', message: 'Campaign not found' };
   }
 
-  const cc = await database.campaignCharacters
-    .where('[campaignId+characterId]')
-    .equals([campaignId, body.characterId])
-    .first();
-  if (!cc || cc.deleted === true) {
+  const cc = await resolveActiveCampaignCharacter(database, campaignId, body.characterId);
+  if (!cc) {
     return {
       ok: false,
       code: 'character_not_in_campaign',

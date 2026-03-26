@@ -1,4 +1,3 @@
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useSidebar } from '@/components/ui/sidebar';
 import { useCampaignPlayClientForCharacter, useFeatureFlag } from '@/hooks';
 import { isCampaignPlayClientRelayForCampaign } from '@/lib/campaign-play/campaign-play-action-relay';
@@ -24,7 +23,6 @@ import {
   InventoryDragProvider,
   type InventoryPanelConfig,
 } from '@/stores';
-import { useCampaignPlaySessionStore } from '@/stores/campaign-play-session-store';
 import { type CharacterAttribute } from '@/types';
 import { useContext, useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
@@ -149,12 +147,6 @@ export const CharacterPage = ({
   const [inventoryPanelConfig, setInventoryPanelConfig] = useState<InventoryPanelConfig>({});
 
   const { executeActionEvent } = useExecuteActionEvent();
-  const campaignPlaySession = useCampaignPlaySessionStore((s) => s.session);
-  const showCampaignGuestSheetNotice =
-    !!effectiveCampaignId &&
-    campaignRealtimePlayEnabled &&
-    campaignPlaySession?.campaignId === effectiveCampaignId &&
-    campaignPlaySession.role === 'client';
 
   const {
     inventoryItems,
@@ -300,22 +292,6 @@ export const CharacterPage = ({
               onOpenInventory: openInventory,
               onClose: onClose!,
             })}
-          </div>
-        )}
-        {showCampaignGuestSheetNotice && (
-          <div className='relative z-30 mx-3 mt-2'>
-            <Alert className='border-amber-500/40 bg-amber-500/10 text-amber-950 dark:text-amber-100'>
-              <AlertDescription>
-                {campaignPlaySession?.hostSessionActive ? (
-                  <>
-                    As a guest, scripted actions and computed sheet logic are turned off here; the
-                    host runs those rules for the session.
-                  </>
-                ) : (
-                  <>The host is offline. Scripted actions stay paused until they reconnect.</>
-                )}
-              </AlertDescription>
-            </Alert>
           </div>
         )}
         <SheetViewer

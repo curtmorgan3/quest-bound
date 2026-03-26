@@ -1,10 +1,8 @@
 import type { CampaignRealtimeBulkPutBatchV1 } from '@/lib/campaign-play/realtime/campaign-realtime-envelopes';
+import { resolveActiveCampaignCharacter } from '@/lib/campaign-play/realtime/resolve-active-campaign-character';
 import type { DB } from '@/stores/db/hooks/types';
 
-const ALLOWED_MANUAL_TABLES = new Set([
-  'characterAttributes',
-  'inventoryItems',
-]);
+const ALLOWED_MANUAL_TABLES = new Set(['characterAttributes', 'inventoryItems']);
 
 export type ValidateManualUpdateResult =
   | { ok: true }
@@ -52,11 +50,8 @@ export async function validateCampaignManualUpdate(
   }
 
   for (const characterId of characterIds) {
-    const cc = await database.campaignCharacters
-      .where('[campaignId+characterId]')
-      .equals([campaignId, characterId])
-      .first();
-    if (!cc || cc.deleted === true) {
+    const cc = await resolveActiveCampaignCharacter(database, campaignId, characterId);
+    if (!cc) {
       return {
         ok: false,
         code: 'character_not_in_campaign',
