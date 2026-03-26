@@ -3,7 +3,10 @@ import {
   buildCampaignPlayDeltaBatches,
   expandMergedCampaignDeltaBatches,
 } from '@/lib/campaign-play/realtime/build-campaign-play-delta-batches';
-import { getCampaignPlaySender, subscribeCampaignPlayEnvelopes } from '@/lib/campaign-play/realtime/campaign-play-realtime-dispatcher';
+import {
+  getCampaignPlaySender,
+  subscribeCampaignPlayEnvelopes,
+} from '@/lib/campaign-play/realtime/campaign-play-realtime-dispatcher';
 import type {
   CampaignRealtimeHostReactiveResultEnvelopeV1,
   CampaignRealtimeManualCharacterUpdateEnvelopeV1,
@@ -14,8 +17,8 @@ import {
   validateCampaignManualUpdate,
 } from '@/lib/campaign-play/realtime/validate-campaign-manual-update';
 import { getQBScriptClient } from '@/lib/compass-logic/worker/client';
-import { defaultScriptDiceRoller, defaultScriptDiceRollerSplit } from '@/utils/dice-utils';
 import { db } from '@/stores';
+import { defaultScriptDiceRoller, defaultScriptDiceRollerSplit } from '@/utils/dice-utils';
 
 const MANUAL_REACTIVE_TIMEOUT_MS = 120_000;
 
@@ -96,7 +99,12 @@ export class CampaignPlayHostManualQueue {
       }
     }
 
-    const delta = await buildCampaignPlayDeltaBatches(db, this.campaignId, characterIds, startedAtMs);
+    const delta = await buildCampaignPlayDeltaBatches(
+      db,
+      this.campaignId,
+      characterIds,
+      startedAtMs,
+    );
     const expanded = expandMergedCampaignDeltaBatches(delta);
 
     const send = getCampaignPlaySender(this.campaignId);

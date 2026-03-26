@@ -685,7 +685,7 @@ export class ScriptRunner {
       }
 
       if (type === 'characterAttribute') {
-        await db.characterAttributes.update(id, { value });
+        await db.characterAttributes.update(id, { value, updatedAt: now });
       } else if (type === 'characterUpdate') {
         const patch = value as {
           customProperties?: Record<string, string | number | boolean>;
@@ -766,11 +766,11 @@ export class ScriptRunner {
 
         await db.characters.update(id, update);
       } else if (type === 'characterAttributeMax') {
-        await db.characterAttributes.update(id, { max: value });
+        await db.characterAttributes.update(id, { max: value, updatedAt: now });
       } else if (type === 'characterAttributeMin') {
-        await db.characterAttributes.update(id, { min: value });
+        await db.characterAttributes.update(id, { min: value, updatedAt: now });
       } else if (type === 'characterAttributeOptions') {
-        await db.characterAttributes.update(id, { options: value });
+        await db.characterAttributes.update(id, { options: value, updatedAt: now });
       } else if (type === 'inventoryAdd') {
         const items = value as (InventoryItem & { _inventoryRefLabel?: string })[];
         for (const item of items) {
