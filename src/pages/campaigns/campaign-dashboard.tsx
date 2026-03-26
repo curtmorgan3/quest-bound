@@ -105,24 +105,7 @@ export function CampaignDashboard() {
   const campaignRealtimePlayEnabled = useFeatureFlag(CAMPAIGN_REALTIME_PLAY_FEATURE_FLAG);
   const campaignPlaySession = useCampaignPlaySessionStore((s) => s.session);
   const hostCloudUserId = useCloudAuthStore((s) => s.cloudUser?.id ?? null);
-  const campaignPlayRoleQuery = searchParams.get('campaignPlayRole');
-  const isCampaignPlayClient = campaignPlayRoleQuery === 'client';
   const orchestrationBlocked = shouldBlockCampaignOrchestration(campaignId);
-  const showGuestSessionBanner =
-    campaignRealtimePlayEnabled &&
-    !!campaignId &&
-    campaignPlaySession?.campaignId === campaignId &&
-    campaignPlaySession.role === 'client';
-
-  const showMultiplayerStaleNotice =
-    campaignRealtimePlayEnabled &&
-    !!campaignId &&
-    campaignPlaySession?.campaignId === campaignId &&
-    campaignPlaySession.role === 'client' &&
-    campaignPlaySession.realtimeStatus === 'subscribed' &&
-    campaignPlaySession.hostSessionActive &&
-    campaignPlaySession.multiplayerDataMayBeStale;
-
   const showHostRealtimeReconnectNotice =
     campaignRealtimePlayEnabled &&
     !!campaignId &&
@@ -133,12 +116,8 @@ export function CampaignDashboard() {
 
   const campaign = useCampaign(campaignId);
   const navigate = useNavigate();
-  const {
-    campaignCharacters,
-    createCampaignCharacter,
-    deleteCampaignCharacter,
-    updateCampaignCharacter,
-  } = useCampaignCharacters(campaignId);
+  const { campaignCharacters, deleteCampaignCharacter, updateCampaignCharacter } =
+    useCampaignCharacters(campaignId);
   const withNames = useCampaignPlayCharacterList({ campaignCharacters });
   const { characters } = useCharacter();
 
@@ -194,18 +173,6 @@ export function CampaignDashboard() {
   useEffect(() => {
     if (!campaignId || !getFeatureFlag(CAMPAIGN_REALTIME_PLAY_FEATURE_FLAG)) return;
 
-    if (isCampaignPlayClient) {
-      useCampaignPlaySessionStore.getState().enterSession({
-        campaignId,
-        realtimeChannelName: null,
-        role: 'client',
-        hostSessionActive: true,
-      });
-      return () => {
-        useCampaignPlaySessionStore.getState().clearSessionIfCampaign(campaignId);
-      };
-    }
-
     if (hostCampaignRealtimeEnabled) {
       useCampaignPlaySessionStore.getState().enterSession({
         campaignId,
@@ -222,7 +189,7 @@ export function CampaignDashboard() {
     return () => {
       useCampaignPlaySessionStore.getState().clearSessionIfCampaign(campaignId);
     };
-  }, [campaignId, isCampaignPlayClient, hostCampaignRealtimeEnabled]);
+  }, [campaignId, hostCampaignRealtimeEnabled]);
 
   useCampaignPlayRealtime({
     campaignId,
@@ -357,11 +324,6 @@ export function CampaignDashboard() {
                   characters={characters}
                   rulesetId={campaign.rulesetId}
                   disabled={orchestrationBlocked}
-                  onAddCharacter={async (characterId) => {
-                    await createCampaignCharacter(campaign.id, characterId, {
-                      ...(sceneId ? { campaignSceneId: sceneId } : {}),
-                    });
-                  }}
                   onRemoveCharacter={async (campaignCharacterId) => {
                     await deleteCampaignCharacter(campaignCharacterId);
                   }}
@@ -443,7 +405,7 @@ export function CampaignDashboard() {
               data-testid='scene-events-panel-trigger'>
               <Zap className='h-4 w-4' />
             </Button>
-            {campaignRealtimePlayEnabled && campaignId && !isCampaignPlayClient && (
+            {campaignRealtimePlayEnabled && campaignId && (
               <>
                 <Button
                   variant='ghost'
@@ -502,32 +464,6 @@ export function CampaignDashboard() {
             />
           </div>
         }>
-        {showGuestSessionBanner && (
-          <Alert className='mx-4 mt-3 shrink-0 border-amber-500/40 bg-amber-500/10 text-amber-950 dark:text-amber-100'>
-            <AlertDescription>
-              {campaignPlaySession?.hostSessionActive ? (
-                <>
-                  You are viewing this campaign as a guest. Scripted actions, reactive rules, and
-                  computed sheet logic run on the host only, so some sheet behavior may differ until
-                  multiplayer sync is active.
-                </>
-              ) : (
-                <>
-                  The host is offline. Campaign actions are paused until they return or you leave
-                  this session.
-                </>
-              )}
-            </AlertDescription>
-          </Alert>
-        )}
-        {showMultiplayerStaleNotice && (
-          <Alert className='mx-4 mt-2 shrink-0 border-border bg-muted/30'>
-            <AlertDescription className='text-muted-foreground text-sm'>
-              Party and sheet data may be briefly out of date until the host runs an action or
-              shares an update.
-            </AlertDescription>
-          </Alert>
-        )}
         {showHostRealtimeReconnectNotice && (
           <Alert className='mx-4 mt-2 shrink-0 border-amber-500/40 bg-amber-500/10 text-amber-950 dark:text-amber-100'>
             <AlertDescription className='text-sm'>

@@ -1,6 +1,6 @@
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useSidebar } from '@/components/ui/sidebar';
-import { useFeatureFlag } from '@/hooks';
+import { useCampaignPlayClientForCharacter, useFeatureFlag } from '@/hooks';
 import { isCampaignPlayClientRelayForCampaign } from '@/lib/campaign-play/campaign-play-action-relay';
 import { CAMPAIGN_REALTIME_PLAY_FEATURE_FLAG } from '@/lib/campaign-play/campaign-play-constants';
 import { sendCampaignPlayClientActionRequest } from '@/lib/campaign-play/realtime/campaign-play-client-action-bridge';
@@ -79,7 +79,17 @@ export const CharacterPage = ({
   showHiddenWindows = false,
 }: CharacterPage) => {
   const { open } = useSidebar();
-  const { characterId } = useParams<{ characterId: string }>();
+  const { characterId: routeCharacterId } = useParams<{ characterId: string }>();
+  const resolvedCharacterId = id ?? routeCharacterId;
+  const campaignRealtimePlayEnabled = useFeatureFlag(CAMPAIGN_REALTIME_PLAY_FEATURE_FLAG);
+  const { playCampaignId, playCampaignSceneId } = useCampaignPlayClientForCharacter({
+    characterId: resolvedCharacterId,
+    propCampaignId: campaignId,
+    propCampaignSceneId: campaignSceneId,
+    realtimePlayEnabled: campaignRealtimePlayEnabled,
+  });
+  const effectiveCampaignId = playCampaignId;
+  const effectiveCampaignSceneId = playCampaignSceneId;
   const characterInventoryPanel = useContext(CharacterInventoryPanelContext);
   const characterArchetypesPanel = useContext(CharacterArchetypesPanelContext);
 
@@ -103,19 +113,22 @@ export const CharacterPage = ({
   // When viewing character sheet in campaign play, set campaign and scene refs so scripts
   // get campaignId/campaignSceneId in context (e.g. Scene accessor in reactive/attribute scripts).
   useEffect(() => {
-    setCurrentCampaignIdForScripts(campaignId ?? undefined);
-    setCurrentCampaignSceneIdForScripts(campaignSceneId ?? undefined);
+    setCurrentCampaignIdForScripts(effectiveCampaignId ?? undefined);
+    setCurrentCampaignSceneIdForScripts(effectiveCampaignSceneId ?? undefined);
     return () => {
       setCurrentCampaignIdForScripts(undefined);
       setCurrentCampaignSceneIdForScripts(undefined);
     };
-  }, [campaignId, campaignSceneId]);
+  }, [effectiveCampaignId, effectiveCampaignSceneId]);
 
-  const { character, updateCharacter } = useCharacter(id ?? characterId);
+  const { character, updateCharacter } = useCharacter(resolvedCharacterId);
 
   const campaignPlayManualContext = useMemo(
-    () => (campaignId ? { campaignId, campaignSceneId } : undefined),
-    [campaignId, campaignSceneId],
+    () =>
+      effectiveCampaignId
+        ? { campaignId: effectiveCampaignId, campaignSceneId: effectiveCampaignSceneId }
+        : undefined,
+    [effectiveCampaignId, effectiveCampaignSceneId],
   );
 
   const { characterAttributes, updateCharacterAttribute, syncWithRuleset } = useCharacterAttributes(
@@ -136,12 +149,11 @@ export const CharacterPage = ({
   const [inventoryPanelConfig, setInventoryPanelConfig] = useState<InventoryPanelConfig>({});
 
   const { executeActionEvent } = useExecuteActionEvent();
-  const campaignRealtimePlayEnabled = useFeatureFlag(CAMPAIGN_REALTIME_PLAY_FEATURE_FLAG);
   const campaignPlaySession = useCampaignPlaySessionStore((s) => s.session);
   const showCampaignGuestSheetNotice =
-    !!campaignId &&
+    !!effectiveCampaignId &&
     campaignRealtimePlayEnabled &&
-    campaignPlaySession?.campaignId === campaignId &&
+    campaignPlaySession?.campaignId === effectiveCampaignId &&
     campaignPlaySession.role === 'client';
 
   const {
@@ -156,8 +168,8 @@ export const CharacterPage = ({
     character,
     roll,
     rollSplit,
-    campaignId,
-    campaignSceneId,
+    campaignId: effectiveCampaignId,
+    campaignSceneId: effectiveCampaignSceneId,
     inventoryPanelConfig,
     setInventoryPanelConfig,
   });
@@ -182,11 +194,11 @@ export const CharacterPage = ({
 
   const fireAction = async (actionId: string) => {
     if (!character) return;
-    if (isCampaignPlayClientRelayForCampaign(campaignId)) {
+    if (isCampaignPlayClientRelayForCampaign(effectiveCampaignId)) {
       try {
         await sendCampaignPlayClientActionRequest({
-          campaignId: campaignId!,
-          campaignSceneId,
+          campaignId: effectiveCampaignId!,
+          campaignSceneId: effectiveCampaignSceneId,
           body: {
             type: 'execute_action',
             actionId,
@@ -206,20 +218,20 @@ export const CharacterPage = ({
       null,
       'on_activate',
       roll,
-      campaignId,
+      effectiveCampaignId,
       undefined,
       rollSplit,
-      campaignSceneId,
+      effectiveCampaignSceneId,
     );
   };
 
   const fireActionFromItem = async (actionId: string, inventoryItemId: string) => {
     if (!character) return;
-    if (isCampaignPlayClientRelayForCampaign(campaignId)) {
+    if (isCampaignPlayClientRelayForCampaign(effectiveCampaignId)) {
       try {
         await sendCampaignPlayClientActionRequest({
-          campaignId: campaignId!,
-          campaignSceneId,
+          campaignId: effectiveCampaignId!,
+          campaignSceneId: effectiveCampaignSceneId,
           body: {
             type: 'execute_action',
             actionId,
@@ -240,10 +252,10 @@ export const CharacterPage = ({
       null,
       'on_activate',
       roll,
-      campaignId,
+      effectiveCampaignId,
       inventoryItemId,
       rollSplit,
-      campaignSceneId,
+      effectiveCampaignSceneId,
     );
   };
 
@@ -264,8 +276,8 @@ export const CharacterPage = ({
     <CharacterProvider
       value={{
         character,
-        campaignId,
-        campaignSceneId,
+        campaignId: effectiveCampaignId,
+        campaignSceneId: effectiveCampaignSceneId,
         characterAttributes,
         getCharacterAttribute,
         updateCharacterAttribute: handleUpdateCharacterAttribute,
@@ -300,9 +312,7 @@ export const CharacterPage = ({
                     host runs those rules for the session.
                   </>
                 ) : (
-                  <>
-                    The host is offline. Scripted actions stay paused until they reconnect.
-                  </>
+                  <>The host is offline. Scripted actions stay paused until they reconnect.</>
                 )}
               </AlertDescription>
             </Alert>
@@ -325,7 +335,7 @@ export const CharacterPage = ({
         {!hideGameLog && (
           <GameLog
             className={`fixed bottom-[50px] z-30 ${open ? 'left-[295px]' : 'left-[85px]'}`}
-            characterId={character?.id ?? characterId}
+            characterId={character?.id ?? routeCharacterId}
           />
         )}
         <InventoryPanel

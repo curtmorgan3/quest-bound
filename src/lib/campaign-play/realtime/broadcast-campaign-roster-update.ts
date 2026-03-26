@@ -1,10 +1,10 @@
 import { expandCampaignBatchesForRealtimeLimit } from '@/lib/campaign-play/realtime/build-campaign-action-result-batches';
 import { mergeRealtimeBatchesByTable } from '@/lib/campaign-play/realtime/build-campaign-play-delta-batches';
+import { getCampaignPlaySender } from '@/lib/campaign-play/realtime/campaign-play-realtime-dispatcher';
 import {
   CAMPAIGN_REALTIME_PROTOCOL_VERSION,
   type CampaignRealtimeBulkPutBatchV1,
 } from '@/lib/campaign-play/realtime/campaign-realtime-envelopes';
-import { getCampaignPlaySender } from '@/lib/campaign-play/realtime/campaign-play-realtime-dispatcher';
 import { db } from '@/stores/db/db';
 import type { CampaignCharacter, Character } from '@/types';
 

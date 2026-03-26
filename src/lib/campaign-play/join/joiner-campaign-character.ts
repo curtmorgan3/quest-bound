@@ -13,7 +13,7 @@ function rowRecord<T extends object>(row: T): Record<string, unknown> {
  * Sends attribute and inventory rows for the character when campaign realtime is connected.
  * No-ops when offline from the channel (joiner often connects after navigating to play).
  */
-async function tryBroadcastJoinerCharacterAssociatedRows(
+export async function tryBroadcastJoinerCharacterAssociatedRows(
   campaignId: string,
   characterId: string,
 ): Promise<void> {
@@ -42,6 +42,20 @@ async function tryBroadcastJoinerCharacterAssociatedRows(
   } catch {
     // No registered sender (e.g. not yet in campaign play view).
   }
+}
+
+/** Pushes character + campaignCharacter rows and related attributes/inventory over campaign realtime. */
+export async function syncJoinerCharacterStateToCampaignRealtime(options: {
+  campaignId: string;
+  characterId: string;
+  campaignCharacterId: string;
+}): Promise<void> {
+  await tryBroadcastCampaignRosterFromDexie({
+    campaignId: options.campaignId,
+    characterIds: [options.characterId],
+    campaignCharacterIds: [options.campaignCharacterId],
+  });
+  await tryBroadcastJoinerCharacterAssociatedRows(options.campaignId, options.characterId);
 }
 
 /**

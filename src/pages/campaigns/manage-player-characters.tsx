@@ -15,7 +15,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import type { CampaignCharacter, Character } from '@/types';
-import { Trash2, UserPlus } from 'lucide-react';
+import { Trash2, Users } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
 
 interface ManagePlayerCharactersProps {
@@ -24,7 +24,12 @@ interface ManagePlayerCharactersProps {
   rulesetId?: string | null;
   /** When true (e.g. campaign guest), add/remove controls are disabled. */
   disabled?: boolean;
-  onAddCharacter: (characterId: string) => Promise<void> | void;
+  /**
+   * When true, host can add roster entries from local characters. Players normally join from the
+   * character page with a join token; keep false on the campaign dashboard.
+   */
+  allowAdd?: boolean;
+  onAddCharacter?: (characterId: string) => Promise<void> | void;
   onRemoveCharacter: (campaignCharacterId: string) => Promise<void> | void;
 }
 
@@ -33,6 +38,7 @@ export function ManagePlayerCharacters({
   characters,
   rulesetId,
   disabled = false,
+  allowAdd = false,
   onAddCharacter,
   onRemoveCharacter,
 }: ManagePlayerCharactersProps) {
@@ -79,6 +85,7 @@ export function ManagePlayerCharacters({
 
   const handleAdd = useCallback(
     async (characterId: string) => {
+      if (!onAddCharacter) return;
       await onAddCharacter(characterId);
       handleOpenChange(false);
     },
@@ -98,18 +105,20 @@ export function ManagePlayerCharacters({
         <Button
           variant='ghost'
           size='sm'
-          data-testid='campaign-dashboard-add-character'
+          data-testid='campaign-dashboard-player-roster'
           className='gap-1'
           disabled={disabled}
-          aria-label='Manage player characters'>
-          <UserPlus className='h-4 w-4' />
+          aria-label='Player roster'>
+          <Users className='h-4 w-4' />
         </Button>
       </DialogTrigger>
       <DialogContent className='sm:max-w-md' showCloseButton>
         <DialogHeader>
-          <DialogTitle>Manage Player Characters</DialogTitle>
+          <DialogTitle>Player roster</DialogTitle>
           <DialogDescription>
-            Add player characters to this campaign or remove existing ones.
+            {allowAdd
+              ? 'Add player characters to this campaign or remove existing ones.'
+              : 'Remove characters from this campaign. Players join from their character using a join token from the host.'}
           </DialogDescription>
         </DialogHeader>
 
@@ -153,37 +162,39 @@ export function ManagePlayerCharacters({
             )}
           </div>
 
-          <div className='flex flex-col gap-2'>
-            <Label className='text-xs text-muted-foreground'>Add from ruleset</Label>
-            <Command shouldFilter={false} className='rounded-lg border'>
-              <CommandInput
-                placeholder='Search characters...'
-                value={search}
-                onValueChange={setSearch}
-              />
-              <CommandList>
-                <CommandEmpty>No characters to add.</CommandEmpty>
-                {filteredAddableCharacters.map((character) => (
-                  <CommandItem
-                    key={character.id}
-                    value={`${character.id} ${character.name ?? ''}`}
-                    onSelect={() => void handleAdd(character.id)}
-                    className='flex items-center gap-2'>
-                    <Avatar className='size-8 shrink-0 rounded-md'>
-                      <AvatarImage
-                        src={character.image ?? ''}
-                        alt={character.name ?? 'Character'}
-                      />
-                      <AvatarFallback className='rounded-md text-xs'>
-                        {(character.name ?? '?').slice(0, 1).toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
-                    <span>{character.name ?? 'Unnamed'}</span>
-                  </CommandItem>
-                ))}
-              </CommandList>
-            </Command>
-          </div>
+          {allowAdd && onAddCharacter && (
+            <div className='flex flex-col gap-2'>
+              <Label className='text-xs text-muted-foreground'>Add from ruleset</Label>
+              <Command shouldFilter={false} className='rounded-lg border'>
+                <CommandInput
+                  placeholder='Search characters...'
+                  value={search}
+                  onValueChange={setSearch}
+                />
+                <CommandList>
+                  <CommandEmpty>No characters to add.</CommandEmpty>
+                  {filteredAddableCharacters.map((character) => (
+                    <CommandItem
+                      key={character.id}
+                      value={`${character.id} ${character.name ?? ''}`}
+                      onSelect={() => void handleAdd(character.id)}
+                      className='flex items-center gap-2'>
+                      <Avatar className='size-8 shrink-0 rounded-md'>
+                        <AvatarImage
+                          src={character.image ?? ''}
+                          alt={character.name ?? 'Character'}
+                        />
+                        <AvatarFallback className='rounded-md text-xs'>
+                          {(character.name ?? '?').slice(0, 1).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span>{character.name ?? 'Unnamed'}</span>
+                    </CommandItem>
+                  ))}
+                </CommandList>
+              </Command>
+            </div>
+          )}
         </div>
       </DialogContent>
     </Dialog>
