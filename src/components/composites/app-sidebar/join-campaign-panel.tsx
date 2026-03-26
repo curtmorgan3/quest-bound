@@ -17,7 +17,7 @@ import {
   joinerHasPlayableCampaignCharacter,
 } from '@/lib/campaign-play/join/joiner-campaign-character';
 import { resolveCampaignJoinToken } from '@/lib/campaign-play/join/resolve-campaign-join-token';
-import { tryBroadcastCampaignRosterFromDexie } from '@/lib/campaign-play/realtime/broadcast-campaign-roster-update';
+import { tryBroadcastCampaignPlayerLeave } from '@/lib/campaign-play/realtime/broadcast-campaign-roster-update';
 import { getSession } from '@/lib/cloud/auth';
 import { isCloudConfigured } from '@/lib/cloud/client';
 import { linkLocalUserToCloudAuth } from '@/lib/cloud/link-local-user-to-cloud-auth';
@@ -171,12 +171,8 @@ export function JoinCampaignPanel({ open, onOpenChange, character }: JoinCampaig
     async (campaignCharacterId: string, campaignId: string) => {
       setLeavingCampaignCharacterId(campaignCharacterId);
       try {
+        await tryBroadcastCampaignPlayerLeave({ campaignId, campaignCharacterId });
         await db.campaignCharacters.update(campaignCharacterId, softDeletePatch());
-        void tryBroadcastCampaignRosterFromDexie({
-          campaignId,
-          characterIds: [],
-          campaignCharacterIds: [campaignCharacterId],
-        }).catch(() => {});
         toast.success('Left campaign');
       } catch (e) {
         toast.error(e instanceof Error ? e.message : 'Could not leave campaign');

@@ -5,8 +5,16 @@ import {
   CAMPAIGN_REALTIME_PROTOCOL_VERSION,
   type CampaignRealtimeBulkPutBatchV1,
 } from '@/lib/campaign-play/realtime/campaign-realtime-envelopes';
+import { MAX_ROSTER_ROWS_PER_ENVELOPE } from '@/lib/campaign-play/realtime/validate-campaign-roster-update';
+import { filterNotSoftDeleted, softDeletePatch } from '@/lib/data/soft-delete';
 import { db } from '@/stores/db/db';
-import type { CampaignCharacter, Character } from '@/types';
+import type {
+  CampaignCharacter,
+  Character,
+  CharacterArchetype,
+  CharacterAttribute,
+  InventoryItem,
+} from '@/types';
 
 function rowRecord<T extends object>(row: T): Record<string, unknown> {
   return { ...row } as Record<string, unknown>;
@@ -84,4 +92,96 @@ export async function tryBroadcastCampaignRosterFromDexie(options: {
     characterRows: chars,
     campaignCharacterRows: ccs,
   });
+}
+
+type LeaveRosterDataRow =
+  | { table: 'characterAttributes'; row: CharacterAttribute }
+  | { table: 'inventoryItems'; row: InventoryItem }
+  | { table: 'characterArchetypes'; row: CharacterArchetype };
+
+/**
+ * Notifies other participants (e.g. host) that this player left: tombstones campaignCharacter,
+ * mirrored character row, attributes, inventory, and archetypes. Does not mutate local Dexie
+ * (caller soft-deletes the campaignCharacter after this). No-op when not connected to realtime.
+ */
+export async function tryBroadcastCampaignPlayerLeave(options: {
+  campaignId: string;
+  campaignCharacterId: string;
+}): Promise<void> {
+  const send = getCampaignPlaySender(options.campaignId);
+  console.log('send: ', send);
+  if (!send) return;
+
+  const cc = await db.campaignCharacters.get(options.campaignCharacterId);
+  console.log('cc: ', cc);
+  if (!cc || cc.deleted === true) return;
+
+  const characterId = cc.characterId;
+  const patch = softDeletePatch();
+  const ccTomb: CampaignCharacter = { ...cc, ...patch };
+
+  const character = await db.characters.get(characterId);
+  const charTomb: Character | null = character ? { ...character, ...patch } : null;
+
+  const attrs = filterNotSoftDeleted(
+    await db.characterAttributes.where('characterId').equals(characterId).toArray(),
+  );
+  const items = filterNotSoftDeleted(
+    await db.inventoryItems.where('characterId').equals(characterId).toArray(),
+  );
+  const archetypes = filterNotSoftDeleted(
+    await db.characterArchetypes.where('characterId').equals(characterId).toArray(),
+  );
+
+  const data: LeaveRosterDataRow[] = [
+    ...attrs.map((row) => ({ table: 'characterAttributes' as const, row: { ...row, ...patch } })),
+    ...items.map((row) => ({ table: 'inventoryItems' as const, row: { ...row, ...patch } })),
+    ...archetypes.map((row) => ({
+      table: 'characterArchetypes' as const,
+      row: { ...row, ...patch },
+    })),
+  ];
+
+  const staticRowCount = 1 + (charTomb ? 1 : 0);
+  const dataSlots = Math.max(1, MAX_ROSTER_ROWS_PER_ENVELOPE - staticRowCount);
+
+  const sendLeaveChunk = async (dataSlice: LeaveRosterDataRow[]) => {
+    const batches: CampaignRealtimeBulkPutBatchV1[] = [
+      { table: 'campaignCharacters', rows: [rowRecord(ccTomb)] },
+    ];
+    if (charTomb) {
+      batches.push({ table: 'characters', rows: [rowRecord(charTomb)] });
+    }
+    const byTable = new Map<string, Record<string, unknown>[]>();
+    for (const entry of dataSlice) {
+      const cur = byTable.get(entry.table) ?? [];
+      cur.push(rowRecord(entry.row));
+      byTable.set(entry.table, cur);
+    }
+    for (const [table, rows] of byTable) {
+      batches.push({ table, rows });
+    }
+
+    const merged = mergeRealtimeBatchesByTable(batches);
+    if (merged.length === 0) return;
+
+    const expanded = expandCampaignBatchesForRealtimeLimit(merged);
+    await send({
+      v: CAMPAIGN_REALTIME_PROTOCOL_VERSION,
+      kind: 'campaign_roster_update',
+      updateId: crypto.randomUUID(),
+      campaignId: options.campaignId,
+      sentAt: new Date().toISOString(),
+      batches: expanded,
+    });
+  };
+
+  if (data.length === 0) {
+    await sendLeaveChunk([]);
+    return;
+  }
+
+  for (let i = 0; i < data.length; i += dataSlots) {
+    await sendLeaveChunk(data.slice(i, i + dataSlots));
+  }
 }
