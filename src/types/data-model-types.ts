@@ -187,6 +187,8 @@ export type Page = BaseDetails & {
   moduleId?: string;
   moduleEntityId?: string;
   moduleName?: string;
+  /** Tombstone for cloud / realtime sync. */
+  deleted?: boolean;
 };
 
 /** Character sheet page: full page content plus link to ruleset template. */
@@ -208,6 +210,8 @@ export type CharacterWindow = BaseDetails & {
   moduleId?: string;
   moduleEntityId?: string;
   moduleName?: string;
+  /** Tombstone for cloud / realtime sync. */
+  deleted?: boolean;
 };
 
 /** Template window layout for a ruleset page (used as sheet template). */

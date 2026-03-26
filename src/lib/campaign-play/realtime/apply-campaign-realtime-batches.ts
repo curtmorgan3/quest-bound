@@ -41,6 +41,8 @@ const REALTIME_INGEST_TABLES = new Set<string>([
   'inventoryItems',
   'characterAttributes',
   'characterArchetypes',
+  'characterPages',
+  'characterWindows',
   'scriptLogs',
   'campaignScenes',
 ]);

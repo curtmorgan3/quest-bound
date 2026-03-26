@@ -32,18 +32,37 @@ async function loadInventoryItemsForJoinerBroadcast(characterId: string): Promis
 }
 
 /**
- * Sends attribute and inventory rows for the character when campaign realtime is connected.
+ * Sends sheet layout, attributes, and inventory for the character when campaign realtime is connected.
+ * Character pages/windows let the host render the joiner's sheet (ruleset `components` are already local).
  * No-ops when offline from the channel (joiner often connects after navigating to play).
  */
 export async function tryBroadcastJoinerCharacterAssociatedRows(
   campaignId: string,
   characterId: string,
 ): Promise<void> {
+  const pages = filterNotSoftDeleted(
+    await db.characterPages.where('characterId').equals(characterId).toArray(),
+  );
+  const windows = filterNotSoftDeleted(
+    await db.characterWindows.where('characterId').equals(characterId).toArray(),
+  );
   const attrs = filterNotSoftDeleted(
     await db.characterAttributes.where('characterId').equals(characterId).toArray(),
   );
   const items = await loadInventoryItemsForJoinerBroadcast(characterId);
   const batches: CampaignRealtimeBulkPutBatchV1[] = [];
+  if (pages.length > 0) {
+    batches.push({
+      table: 'characterPages',
+      rows: pages.map((r) => rowRecord(r)),
+    });
+  }
+  if (windows.length > 0) {
+    batches.push({
+      table: 'characterWindows',
+      rows: windows.map((r) => rowRecord(r)),
+    });
+  }
   if (attrs.length > 0) {
     batches.push({
       table: 'characterAttributes',

@@ -91,6 +91,14 @@ describe('validateCampaignManualUpdate', () => {
     expect(r).toEqual({ ok: true, characterIds: ['ch1'] });
   });
 
+  it('accepts characterPages and characterWindows for an in-campaign character', async () => {
+    const r = await validateCampaignManualUpdate(mockDb({ deleted: false }), 'c1', [
+      { table: 'characterPages', rows: [{ id: 'p1', characterId: 'ch1' }] },
+      { table: 'characterWindows', rows: [{ id: 'w1', characterId: 'ch1', windowId: 'rw1' }] },
+    ]);
+    expect(r).toEqual({ ok: true, characterIds: ['ch1'] });
+  });
+
   it('accepts when compound index misses but roster row matches (e.g. UUID case)', async () => {
     const rosterRow = {
       id: 'cc1',

@@ -2,7 +2,12 @@ import type { CampaignRealtimeBulkPutBatchV1 } from '@/lib/campaign-play/realtim
 import { resolveActiveCampaignCharacter } from '@/lib/campaign-play/realtime/resolve-active-campaign-character';
 import type { DB } from '@/stores/db/hooks/types';
 
-const ALLOWED_MANUAL_TABLES = new Set(['characterAttributes', 'inventoryItems']);
+const ALLOWED_MANUAL_TABLES = new Set([
+  'characterAttributes',
+  'inventoryItems',
+  'characterPages',
+  'characterWindows',
+]);
 
 export type ValidateManualUpdateResult =
   | { ok: true; characterIds: string[] }
@@ -74,6 +79,22 @@ async function collectResolvedCharacterIdsForManualUpdate(
         }
         ids.add(invCid.trim());
       }
+      continue;
+    }
+
+    if (b.table === 'characterPages' || b.table === 'characterWindows') {
+      for (const row of b.rows) {
+        const cid = row.characterId;
+        if (typeof cid !== 'string' || cid.trim() === '') {
+          return {
+            ok: false,
+            code: 'no_character',
+            message: 'Manual update must include rows with characterId',
+          };
+        }
+        ids.add(cid.trim());
+      }
+      continue;
     }
   }
 
