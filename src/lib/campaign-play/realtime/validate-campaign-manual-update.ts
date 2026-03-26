@@ -5,9 +5,10 @@ import type { DB } from '@/stores/db/hooks/types';
 const ALLOWED_MANUAL_TABLES = new Set(['characterAttributes', 'inventoryItems']);
 
 export type ValidateManualUpdateResult =
-  | { ok: true }
+  | { ok: true; characterIds: string[] }
   | { ok: false; code: string; message: string };
 
+/** Character IDs explicitly present on rows (does not resolve `inventoryItems` via `inventoryId`). */
 export function extractCharacterIdsFromManualBatches(
   batches: CampaignRealtimeBulkPutBatchV1[],
 ): string[] {
@@ -19,6 +20,73 @@ export function extractCharacterIdsFromManualBatches(
     }
   }
   return Array.from(ids);
+}
+
+async function collectResolvedCharacterIdsForManualUpdate(
+  database: DB,
+  batches: CampaignRealtimeBulkPutBatchV1[],
+): Promise<ValidateManualUpdateResult> {
+  const ids = new Set<string>();
+
+  for (const b of batches) {
+    if (b.table === 'characterAttributes') {
+      for (const row of b.rows) {
+        const cid = row.characterId;
+        if (typeof cid !== 'string' || cid.trim() === '') {
+          return {
+            ok: false,
+            code: 'no_character',
+            message: 'Manual update must include rows with characterId',
+          };
+        }
+        ids.add(cid.trim());
+      }
+      continue;
+    }
+
+    if (b.table === 'inventoryItems') {
+      for (const row of b.rows) {
+        const direct = row.characterId;
+        if (typeof direct === 'string' && direct.trim() !== '') {
+          ids.add(direct.trim());
+          continue;
+        }
+        const invId = row.inventoryId;
+        if (typeof invId !== 'string' || invId.trim() === '') {
+          return {
+            ok: false,
+            code: 'inventory_item_missing_scope',
+            message:
+              'Inventory item rows must include characterId or inventoryId so the host can validate and persist them',
+          };
+        }
+        const inv = (await database.inventories.get(invId.trim())) as
+          | { characterId?: string }
+          | undefined;
+        const invCid = inv?.characterId;
+        console.log('inv: ', inv);
+        if (typeof invCid !== 'string' || invCid.trim() === '') {
+          return {
+            ok: false,
+            code: 'inventory_not_found',
+            message:
+              'Could not resolve character for inventory item (inventory missing or has no character)',
+          };
+        }
+        ids.add(invCid.trim());
+      }
+    }
+  }
+
+  if (ids.size === 0) {
+    return {
+      ok: false,
+      code: 'no_character',
+      message: 'Manual update must include rows with characterId',
+    };
+  }
+
+  return { ok: true, characterIds: Array.from(ids) };
 }
 
 export async function validateCampaignManualUpdate(
@@ -40,14 +108,9 @@ export async function validateCampaignManualUpdate(
     }
   }
 
-  const characterIds = extractCharacterIdsFromManualBatches(batches);
-  if (characterIds.length === 0) {
-    return {
-      ok: false,
-      code: 'no_character',
-      message: 'Manual update must include rows with characterId',
-    };
-  }
+  const collected = await collectResolvedCharacterIdsForManualUpdate(database, batches);
+  if (!collected.ok) return collected;
+  const characterIds = collected.characterIds;
 
   for (const characterId of characterIds) {
     const cc = await resolveActiveCampaignCharacter(database, campaignId, characterId);
@@ -60,5 +123,5 @@ export async function validateCampaignManualUpdate(
     }
   }
 
-  return { ok: true };
+  return { ok: true, characterIds };
 }

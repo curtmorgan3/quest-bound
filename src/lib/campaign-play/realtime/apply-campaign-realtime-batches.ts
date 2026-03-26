@@ -2,6 +2,38 @@ import type { CampaignRealtimeBulkPutBatchV1 } from '@/lib/campaign-play/realtim
 import { useSyncStateStore } from '@/lib/cloud/sync/sync-state';
 import type { DB } from '@/stores/db/hooks/types';
 
+async function normalizeInventoryItemRowsForIngest(
+  database: DB,
+  rows: Record<string, unknown>[],
+): Promise<Record<string, unknown>[]> {
+  return Promise.all(
+    rows.map(async (row) => {
+      const cid = row.characterId;
+      if (typeof cid === 'string' && cid.trim() !== '') return row;
+
+      const invId = row.inventoryId;
+      if (typeof invId === 'string' && invId.trim() !== '') {
+        const inv = (await database.inventories.get(invId.trim())) as { characterId?: string } | undefined;
+        const ic = inv?.characterId;
+        if (typeof ic === 'string' && ic.trim() !== '') {
+          return { ...row, characterId: ic.trim() };
+        }
+      }
+
+      const id = row.id;
+      if (typeof id === 'string' && id.trim() !== '') {
+        const existing = (await database.inventoryItems.get(id.trim())) as { characterId?: string } | undefined;
+        const ec = existing?.characterId;
+        if (typeof ec === 'string' && ec.trim() !== '') {
+          return { ...row, characterId: ec.trim() };
+        }
+      }
+
+      return row;
+    }),
+  );
+}
+
 /** Tables allowed for Phase 2 campaign realtime ingest (soft-delete + session entities). */
 const REALTIME_INGEST_TABLES = new Set<string>([
   'campaignCharacters',
@@ -29,7 +61,11 @@ export async function applyCampaignRealtimeBatches(
         batch.table
       ];
       if (table?.bulkPut) {
-        await table.bulkPut(batch.rows);
+        const rows =
+          batch.table === 'inventoryItems'
+            ? await normalizeInventoryItemRowsForIngest(database, batch.rows)
+            : batch.rows;
+        await table.bulkPut(rows);
       }
     }
   } finally {

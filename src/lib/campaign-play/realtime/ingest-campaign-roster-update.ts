@@ -1,4 +1,5 @@
 import { applyCampaignRealtimeBatches } from '@/lib/campaign-play/realtime/apply-campaign-realtime-batches';
+import { ensureInventoriesAfterCampaignRosterIngest } from '@/lib/campaign-play/realtime/ensure-roster-character-inventories';
 import type { CampaignRealtimeRosterUpdateEnvelopeV1 } from '@/lib/campaign-play/realtime/campaign-realtime-envelopes';
 import { validateCampaignRosterUpdateBatches } from '@/lib/campaign-play/realtime/validate-campaign-roster-update';
 import type { DB } from '@/stores/db/hooks/types';
@@ -17,4 +18,5 @@ export async function ingestCampaignRosterUpdateIfValid(
     return;
   }
   await applyCampaignRealtimeBatches(database, envelope.batches);
+  await ensureInventoriesAfterCampaignRosterIngest(database, envelope.batches);
 }

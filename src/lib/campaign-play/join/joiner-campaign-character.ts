@@ -1,12 +1,34 @@
 import { tryBroadcastCampaignRosterFromDexie } from '@/lib/campaign-play/realtime/broadcast-campaign-roster-update';
-import type { CampaignRealtimeBulkPutBatchV1 } from '@/lib/campaign-play/realtime/campaign-realtime-envelopes';
 import { sendCampaignPlayManualCharacterUpdate } from '@/lib/campaign-play/realtime/campaign-play-manual-broadcast';
+import type { CampaignRealtimeBulkPutBatchV1 } from '@/lib/campaign-play/realtime/campaign-realtime-envelopes';
 import { filterNotSoftDeleted } from '@/lib/data/soft-delete';
 import { db } from '@/stores';
-import type { CampaignCharacter, Character } from '@/types';
+import type { CampaignCharacter, Character, InventoryItem } from '@/types';
 
 function rowRecord<T extends object>(row: T): Record<string, unknown> {
   return { ...row } as Record<string, unknown>;
+}
+
+/**
+ * Inventory rows for a character: indexed by `characterId` and/or by the character's `inventoryId`.
+ * Sheet code often only sets `inventoryId` on items, so both queries are required for a full snapshot.
+ */
+async function loadInventoryItemsForJoinerBroadcast(characterId: string): Promise<InventoryItem[]> {
+  const byCharacterId = filterNotSoftDeleted(
+    await db.inventoryItems.where('characterId').equals(characterId).toArray(),
+  );
+  const character = await db.characters.get(characterId);
+  const inventoryId = character?.inventoryId?.trim();
+  const byInventoryId =
+    inventoryId != null && inventoryId !== ''
+      ? filterNotSoftDeleted(
+          await db.inventoryItems.where('inventoryId').equals(inventoryId).toArray(),
+        )
+      : [];
+  const merged = new Map<string, InventoryItem>();
+  for (const row of byCharacterId) merged.set(row.id, row);
+  for (const row of byInventoryId) merged.set(row.id, row);
+  return Array.from(merged.values());
 }
 
 /**
@@ -20,9 +42,7 @@ export async function tryBroadcastJoinerCharacterAssociatedRows(
   const attrs = filterNotSoftDeleted(
     await db.characterAttributes.where('characterId').equals(characterId).toArray(),
   );
-  const items = filterNotSoftDeleted(
-    await db.inventoryItems.where('characterId').equals(characterId).toArray(),
-  );
+  const items = await loadInventoryItemsForJoinerBroadcast(characterId);
   const batches: CampaignRealtimeBulkPutBatchV1[] = [];
   if (attrs.length > 0) {
     batches.push({
@@ -33,7 +53,7 @@ export async function tryBroadcastJoinerCharacterAssociatedRows(
   if (items.length > 0) {
     batches.push({
       table: 'inventoryItems',
-      rows: items.map((r) => rowRecord(r)),
+      rows: items.map((r) => rowRecord({ ...r, characterId })),
     });
   }
   if (batches.length === 0) return;
@@ -92,10 +112,7 @@ export async function listJoinableCharactersForCampaign(
   const rows = await db.characters.where('rulesetId').equals(rulesetId).toArray();
   return rows.filter(
     (c) =>
-      c.isNpc !== true &&
-      !c.isTestCharacter &&
-      c.userId === localUserId &&
-      !inCampaign.has(c.id),
+      c.isNpc !== true && !c.isTestCharacter && c.userId === localUserId && !inCampaign.has(c.id),
   );
 }
 
@@ -120,9 +137,7 @@ export async function createJoinerCampaignCharacter(options: {
     characterIds: [options.characterId],
     campaignCharacterIds: [id],
   })
-    .then(() =>
-      tryBroadcastJoinerCharacterAssociatedRows(options.campaignId, options.characterId),
-    )
+    .then(() => tryBroadcastJoinerCharacterAssociatedRows(options.campaignId, options.characterId))
     .catch(() => {});
   return id;
 }

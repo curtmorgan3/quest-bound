@@ -6,8 +6,15 @@ import {
 } from '@/lib/campaign-play/realtime/validate-campaign-manual-update';
 import type { DB } from '@/stores/db/hooks/types';
 
-function mockDb(compoundFirst: { deleted?: boolean } | null): DB {
-  return mockCampaignCharactersDb(compoundFirst == null ? [] : [compoundFirst], []);
+function mockDb(
+  compoundFirst: { deleted?: boolean } | null,
+  inventoriesById: Record<string, { characterId?: string }> = {},
+): DB {
+  return mockCampaignCharactersDb(
+    compoundFirst == null ? [] : [compoundFirst],
+    [],
+    inventoriesById,
+  );
 }
 
 /** Supports compound index + campaignId fallback used by resolveActiveCampaignCharacter. */
@@ -24,6 +31,7 @@ function mockCampaignCharactersDb(
     campaignId?: string;
     id?: string;
   }>,
+  inventoriesById: Record<string, { characterId?: string }> = {},
 ): DB {
   return {
     campaignCharacters: {
@@ -38,6 +46,9 @@ function mockCampaignCharactersDb(
           return { toArray: async () => [] };
         },
       }),
+    },
+    inventories: {
+      get: async (id: string) => inventoriesById[id],
     },
   } as unknown as DB;
 }
@@ -77,7 +88,7 @@ describe('validateCampaignManualUpdate', () => {
     const r = await validateCampaignManualUpdate(mockDb({ deleted: false }), 'c1', [
       { table: 'characterAttributes', rows: [{ id: 'a1', characterId: 'ch1' }] },
     ]);
-    expect(r).toEqual({ ok: true });
+    expect(r).toEqual({ ok: true, characterIds: ['ch1'] });
   });
 
   it('accepts when compound index misses but roster row matches (e.g. UUID case)', async () => {
@@ -94,7 +105,10 @@ describe('validateCampaignManualUpdate', () => {
         rows: [{ id: 'a1', characterId: 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee' }],
       },
     ]);
-    expect(r).toEqual({ ok: true });
+    expect(r).toEqual({
+      ok: true,
+      characterIds: ['aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee'],
+    });
   });
 
   it('accepts when compound matches list tombstone before active row', async () => {
@@ -108,7 +122,7 @@ describe('validateCampaignManualUpdate', () => {
     const r = await validateCampaignManualUpdate(db, 'c1', [
       { table: 'characterAttributes', rows: [{ id: 'a1', characterId: 'ch1' }] },
     ]);
-    expect(r).toEqual({ ok: true });
+    expect(r).toEqual({ ok: true, characterIds: ['ch1'] });
   });
 
   it('accepts when campaign roster lists tombstone before active row for same characterId', async () => {
@@ -122,7 +136,40 @@ describe('validateCampaignManualUpdate', () => {
     const r = await validateCampaignManualUpdate(db, 'c1', [
       { table: 'characterAttributes', rows: [{ id: 'a1', characterId: 'ch1' }] },
     ]);
-    expect(r).toEqual({ ok: true });
+    expect(r).toEqual({ ok: true, characterIds: ['ch1'] });
+  });
+
+  it('accepts inventoryItems without characterId when inventoryId resolves on host', async () => {
+    const db = mockDb({ deleted: false }, { inv1: { characterId: 'ch1' } });
+    const r = await validateCampaignManualUpdate(db, 'c1', [
+      {
+        table: 'inventoryItems',
+        rows: [{ id: 'ii1', inventoryId: 'inv1', entityId: 'e1', quantity: 1 }],
+      },
+    ]);
+    expect(r).toEqual({ ok: true, characterIds: ['ch1'] });
+  });
+
+  it('rejects inventoryItems without characterId when inventory is missing', async () => {
+    const r = await validateCampaignManualUpdate(mockDb({ deleted: false }, {}), 'c1', [
+      {
+        table: 'inventoryItems',
+        rows: [{ id: 'ii1', inventoryId: 'missing', entityId: 'e1', quantity: 1 }],
+      },
+    ]);
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.code).toBe('inventory_not_found');
+  });
+
+  it('rejects inventoryItems with neither characterId nor inventoryId', async () => {
+    const r = await validateCampaignManualUpdate(mockDb({ deleted: false }), 'c1', [
+      {
+        table: 'inventoryItems',
+        rows: [{ id: 'ii1', entityId: 'e1', quantity: 1 }],
+      },
+    ]);
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.code).toBe('inventory_item_missing_scope');
   });
 });
 

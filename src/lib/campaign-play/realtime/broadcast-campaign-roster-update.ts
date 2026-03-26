@@ -109,11 +109,9 @@ export async function tryBroadcastCampaignPlayerLeave(options: {
   campaignCharacterId: string;
 }): Promise<void> {
   const send = getCampaignPlaySender(options.campaignId);
-  console.log('send: ', send);
   if (!send) return;
 
   const cc = await db.campaignCharacters.get(options.campaignCharacterId);
-  console.log('cc: ', cc);
   if (!cc || cc.deleted === true) return;
 
   const characterId = cc.characterId;

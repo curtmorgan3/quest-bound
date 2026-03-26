@@ -12,10 +12,7 @@ import type {
   CampaignRealtimeManualCharacterUpdateEnvelopeV1,
 } from '@/lib/campaign-play/realtime/campaign-realtime-envelopes';
 import { CAMPAIGN_REALTIME_PROTOCOL_VERSION } from '@/lib/campaign-play/realtime/campaign-realtime-envelopes';
-import {
-  extractCharacterIdsFromManualBatches,
-  validateCampaignManualUpdate,
-} from '@/lib/campaign-play/realtime/validate-campaign-manual-update';
+import { validateCampaignManualUpdate } from '@/lib/campaign-play/realtime/validate-campaign-manual-update';
 import { getQBScriptClient } from '@/lib/compass-logic/worker/client';
 import { db } from '@/stores';
 import { defaultScriptDiceRoller, defaultScriptDiceRollerSplit } from '@/utils/dice-utils';
@@ -56,13 +53,14 @@ export class CampaignPlayHostManualQueue {
   }
 
   private async processOne(env: CampaignRealtimeManualCharacterUpdateEnvelopeV1): Promise<void> {
+    console.log(env);
     const validation = await validateCampaignManualUpdate(db, this.campaignId, env.batches);
     if (!validation.ok) {
       console.warn('[CampaignPlayHostManualQueue]', validation.message);
       return;
     }
 
-    const characterIds = extractCharacterIdsFromManualBatches(env.batches);
+    const { characterIds } = validation;
     const startedAtMs = Date.now();
     await applyCampaignRealtimeBatches(db, env.batches);
 
