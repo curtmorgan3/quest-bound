@@ -91,7 +91,9 @@ export const CharacterPage = ({
   const characterInventoryPanel = useContext(CharacterInventoryPanelContext);
   const characterArchetypesPanel = useContext(CharacterArchetypesPanelContext);
 
-  const { rollDice } = useContext(DiceContext);
+  const diceContext = useContext(DiceContext);
+  const rollDice = diceContext?.rollDice;
+
   const roll = async (diceString: string, rerollMessage?: string) =>
     rollDice(diceString, { rerollMessage }).then((res) => res.total);
   const rollSplit = async (diceString: string, rerollMessage?: string) =>
