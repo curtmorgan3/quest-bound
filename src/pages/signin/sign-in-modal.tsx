@@ -3,11 +3,12 @@ import videoSrc from '@/assets/logo-animation.mp4';
 import { Button, Input, Link } from '@/components';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { DISCORD_URL } from '@/constants';
-import { getSession, signIn as cloudSignIn, signUp as cloudSignUp } from '@/lib/cloud/auth';
-import { ensureRemoteUserRow } from '@/lib/cloud/ensure-remote-user';
+import { signIn as cloudSignIn, signUp as cloudSignUp, getSession } from '@/lib/cloud/auth';
 import { isCloudConfigured } from '@/lib/cloud/client';
+import { ensureRemoteUserRow } from '@/lib/cloud/ensure-remote-user';
 import { useRegisterEmail, useUsers } from '@/lib/compass-api';
 import { db, useCurrentUser } from '@/stores';
+import { DialogDescription } from '@radix-ui/react-dialog';
 import { motion } from 'framer-motion';
 import { useEffect, useState } from 'react';
 
@@ -65,10 +66,7 @@ export function SignInSignUpModal({
   const userHasCloudUserId = !!users?.[0]?.cloudUserId;
   const isSignInOnlyMode =
     mode === 'sign-in-only' ||
-    (mode === 'default' &&
-      isCloudConfigured &&
-      hasCloudSession === false &&
-      userHasCloudUserId);
+    (mode === 'default' && isCloudConfigured && hasCloudSession === false && userHasCloudUserId);
 
   const usesLocalEmail = mode === 'sign-up-only' || mode === 'sign-in-only';
   const email = usesLocalEmail ? localEmail : (registerEmail.email ?? '');
@@ -187,9 +185,7 @@ export function SignInSignUpModal({
   const hasEmailValue = Boolean(email?.trim());
   const emailInvalid = hasEmailValue && !isValidEmail(email);
   const isSubmitDisabled = isSignInOnlyMode
-    ? !email?.trim() ||
-      !isValidEmail(email) ||
-      !passwordValue.trim()
+    ? !email?.trim() || !isValidEmail(email) || !passwordValue.trim()
     : !email?.trim() ||
       !isValidEmail(email) ||
       !usernameValue.trim() ||
@@ -206,6 +202,7 @@ export function SignInSignUpModal({
           <DialogTitle>
             {mode === 'sign-up-only' ? 'Create account' : 'Sign in to Quest Bound'}
           </DialogTitle>
+          <DialogDescription></DialogDescription>
         </DialogHeader>
 
         <div className='flex flex-col items-center gap-6'>
@@ -226,7 +223,12 @@ export function SignInSignUpModal({
                 Please check your email to verify your account.
               </p>
             ) : (
-              <>
+              <form
+                className='flex w-full flex-col gap-4'
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  void handleSubmit();
+                }}>
                 <div className='w-full flex justify-center items-center'>
                   <p className='text-sm text-muted-foreground'>
                     Free & Open Source Tabletop Game Engine
@@ -235,6 +237,8 @@ export function SignInSignUpModal({
                 <div className='flex w-full flex-col gap-1'>
                   <Input
                     type='email'
+                    name='email'
+                    autoComplete='email'
                     className='w-full'
                     placeholder='Email'
                     value={email ?? ''}
@@ -260,6 +264,7 @@ export function SignInSignUpModal({
                 {isCloudConfigured && (
                   <Input
                     type='password'
+                    name='password'
                     className='w-full'
                     placeholder='Password'
                     value={passwordValue}
@@ -278,22 +283,24 @@ export function SignInSignUpModal({
                 )}
                 {!isSignInOnlyMode && (
                   <Input
+                    name='username'
                     className='w-full'
                     placeholder='Username'
                     value={usernameValue}
                     onChange={(e) => setUsernameValue(e.target.value)}
+                    autoComplete='username'
                     data-testid='username-input'
                   />
                 )}
                 <Button
+                  type='submit'
                   loading={submitting}
-                  onClick={handleSubmit}
                   disabled={isSubmitDisabled || submitting}
                   className='w-full'
                   data-testid='submit-button'>
                   Submit
                 </Button>
-              </>
+              </form>
             )}
           </div>
 
