@@ -81,8 +81,6 @@ export function AppSidebar() {
   const { activeRuleset } = useActiveRuleset();
 
   const isLandingRoute = location.pathname.startsWith('/landing/');
-  const isJoinRoute =
-    location.pathname === '/join' || location.pathname.startsWith('/join/');
   const isHomepage =
     location.pathname === '/rulesets' ||
     location.pathname === '/characters' ||
@@ -134,7 +132,6 @@ export function AppSidebar() {
     rulesetId &&
     !isHomepage &&
     !isLandingRoute &&
-    !isJoinRoute &&
     !isCharacterRoute &&
     !isCampaignsRoute &&
     !isDevTools;
@@ -206,7 +203,7 @@ export function AppSidebar() {
     setSettingsOpen(false);
   }, [location.pathname]);
 
-  const sidebarContent = isLandingRoute ? null : isJoinRoute ? null : isCharacterRoute ? (
+  const sidebarContent = isLandingRoute ? null : isCharacterRoute ? (
     <CharacterSidebar />
   ) : isCampaignsRoute ? (
     <CampaignSidebar />

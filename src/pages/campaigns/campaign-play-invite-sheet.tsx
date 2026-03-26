@@ -50,8 +50,8 @@ export function CampaignPlayInviteSheet({
           </SheetTitle>
           <SheetDescription>
             {hostRealtimeEnabled
-              ? 'Share a link so signed-in players can join this campaign as guests.'
-              : 'Turn on Host to connect to campaign realtime and create join links.'}
+              ? 'Share a join token so signed-in players can join this campaign as guests.'
+              : 'Turn on Host to connect to campaign realtime and create join tokens.'}
           </SheetDescription>
         </SheetHeader>
         <div className='flex min-h-0 flex-1 flex-col gap-4 overflow-auto p-6'>
@@ -72,7 +72,7 @@ export function CampaignPlayInviteSheet({
             <Alert className='border-muted'>
               <AlertDescription>
                 You are in local mode. Enable Host to go online for this campaign and generate join
-                links for guests.
+                tokens for guests.
               </AlertDescription>
             </Alert>
           ) : (

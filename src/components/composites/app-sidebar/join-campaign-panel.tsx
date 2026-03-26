@@ -86,7 +86,7 @@ export function JoinCampaignPanel({ open, onOpenChange, character }: JoinCampaig
     }
     const effectiveToken = parseJoinTokenOrUrl(tokenInput);
     if (!effectiveToken) {
-      toast.error('Paste the full join link or token');
+      toast.error('Paste the join token from the host');
       return;
     }
     if (character.isNpc === true || character.isTestCharacter) {
@@ -205,7 +205,7 @@ export function JoinCampaignPanel({ open, onOpenChange, character }: JoinCampaig
             <SheetDescription>
               {!shouldShowJoinForm
                 ? 'This character is on one or more campaign rosters. Leave a campaign to remove it from the roster.'
-                : `Paste the join link or token from the host. This character (${character.name || 'Unnamed'}) will be added to the campaign roster.`}
+                : `Paste the join token from the host. This character (${character.name || 'Unnamed'}) will be added to the campaign roster.`}
             </SheetDescription>
           </SheetHeader>
           <div className='flex min-h-0 flex-1 flex-col gap-4 overflow-auto p-6'>
@@ -253,12 +253,12 @@ export function JoinCampaignPanel({ open, onOpenChange, character }: JoinCampaig
             {shouldShowJoinForm && (
               <>
                 <div className='flex flex-col gap-2'>
-                  <Label htmlFor='sidebar-join-token'>Join token or full URL</Label>
+                  <Label htmlFor='sidebar-join-token'>Join token</Label>
                   <Input
                     id='sidebar-join-token'
                     value={tokenInput}
                     onChange={(e) => setTokenInput(e.target.value)}
-                    placeholder='Paste token or https://…?token=…'
+                    placeholder='Paste the token from the host'
                     autoComplete='off'
                     disabled={busy || leavingCampaignCharacterId !== null}
                   />

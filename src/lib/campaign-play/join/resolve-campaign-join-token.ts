@@ -27,12 +27,12 @@ export async function resolveCampaignJoinToken(
   });
 
   if (error) {
-    return { error: error.message || 'Could not resolve join link' };
+    return { error: error.message || 'Could not resolve join token' };
   }
 
   const row = Array.isArray(data) ? data[0] : data;
   if (!row || typeof row !== 'object') {
-    return { error: 'Invalid or expired join link' };
+    return { error: 'Invalid or expired join token' };
   }
 
   const r = row as Record<string, unknown>;
@@ -40,7 +40,7 @@ export async function resolveCampaignJoinToken(
   const campaignId = r.campaign_id;
   const rulesetId = r.ruleset_id;
   if (typeof channelName !== 'string' || typeof campaignId !== 'string' || typeof rulesetId !== 'string') {
-    return { error: 'Invalid or expired join link' };
+    return { error: 'Invalid or expired join token' };
   }
 
   const campaignLabel = r.campaign_label;

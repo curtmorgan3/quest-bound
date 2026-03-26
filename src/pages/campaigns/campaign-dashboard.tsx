@@ -449,8 +449,8 @@ export function CampaignDashboard() {
                   variant='ghost'
                   size='icon'
                   onClick={() => setGuestJoinInviteSheetOpen(true)}
-                  aria-label='Guest join link'
-                  title='Guest join link and host session'
+                  aria-label='Guest join token and host session'
+                  title='Guest join token and host session'
                   data-testid='guest-join-invite-sheet-trigger'>
                   <Globe className='h-4 w-4' />
                 </Button>

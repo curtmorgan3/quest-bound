@@ -1,5 +1,5 @@
 /**
- * URL-safe token, ≥128 bits (16 bytes), for campaign join links (Phase 2.6).
+ * URL-safe token, ≥128 bits (16 bytes), for campaign guest invites (Phase 2.6).
  */
 export function generateCampaignJoinToken(): string {
   const bytes = new Uint8Array(32);
@@ -9,7 +9,7 @@ export function generateCampaignJoinToken(): string {
   return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
 
-/** Accepts a raw token or a full URL/query that contains `token=`. */
+/** Accepts a raw token or pasted text that contains `token=` (e.g. legacy share URLs). */
 export function parseJoinTokenOrUrl(input: string): string {
   const t = input.trim();
   const m = t.match(/[?&#]token=([^&]+)/);
@@ -21,12 +21,4 @@ export function parseJoinTokenOrUrl(input: string): string {
     }
   }
   return t;
-}
-
-export function buildCampaignJoinUrl(rulesetId: string, joinToken: string): string {
-  const { origin, pathname } = window.location;
-  const base = `${origin}${pathname}`;
-  const encRuleset = encodeURIComponent(rulesetId);
-  const encToken = encodeURIComponent(joinToken);
-  return `${base}#/join/${encRuleset}?token=${encToken}`;
 }

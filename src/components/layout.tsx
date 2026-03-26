@@ -156,12 +156,10 @@ export function Layout() {
   }, []);
 
   const isPlayPage = location.pathname.startsWith('/play/');
-  const isJoinRoute = location.pathname.startsWith('/join/');
   const isSignInRequiredRoute =
-    !isJoinRoute &&
-    (location.pathname.startsWith('/rulesets/') ||
-      (location.pathname.startsWith('/campaigns/') &&
-        !location.pathname.startsWith('/campaigns/new')));
+    location.pathname.startsWith('/rulesets/') ||
+    (location.pathname.startsWith('/campaigns/') &&
+      !location.pathname.startsWith('/campaigns/new'));
 
   const showSignInModal =
     isOnline &&

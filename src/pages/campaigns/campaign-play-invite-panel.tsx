@@ -8,7 +8,6 @@ import {
   fetchCampaignPlayInvite,
   upsertCampaignPlayInvite,
 } from '@/lib/campaign-play/join/campaign-play-invite-api';
-import { buildCampaignJoinUrl } from '@/lib/campaign-play/join/generate-join-token';
 import { useCloudAuthStore } from '@/stores';
 import type { CampaignCharacter, Character } from '@/types';
 import { Copy, Globe, RefreshCw } from 'lucide-react';
@@ -58,7 +57,7 @@ export function CampaignPlayInvitePanel({
         return;
       }
       setJoinToken(result.row.join_token);
-      toast.success('New join link generated (old links no longer work).');
+      toast.success('New join token generated (old tokens no longer work).');
     } finally {
       setLoading(false);
     }
@@ -81,13 +80,11 @@ export function CampaignPlayInvitePanel({
     };
   }, [campaignId]);
 
-  const joinUrl = joinToken ? buildCampaignJoinUrl(rulesetId, joinToken) : null;
-
-  const copyLink = async () => {
-    if (!joinUrl) return;
+  const copyToken = async () => {
+    if (!joinToken) return;
     try {
-      await navigator.clipboard.writeText(joinUrl);
-      toast.success('Join link copied');
+      await navigator.clipboard.writeText(joinToken);
+      toast.success('Join token copied');
     } catch {
       toast.error('Could not copy to clipboard');
     }
@@ -97,7 +94,7 @@ export function CampaignPlayInvitePanel({
     return (
       <Alert className='border-muted'>
         <AlertDescription>
-          Cloud sync must be enabled for your account to create campaign join links.
+          Cloud sync must be enabled for your account to create campaign join tokens.
         </AlertDescription>
       </Alert>
     );
@@ -112,7 +109,7 @@ export function CampaignPlayInvitePanel({
         </div>
       )}
       <p className='text-muted-foreground'>
-        Share this link so signed-in players can join as guests. Up to{' '}
+        Share this token so signed-in players can join as guests. Up to{' '}
         {CAMPAIGN_PLAY_MAX_JOINERS} guest characters are recommended in this phase ({joinerSlots}{' '}
         now).
       </p>
@@ -129,10 +126,10 @@ export function CampaignPlayInvitePanel({
           type='button'
           variant='secondary'
           size='sm'
-          disabled={fetching || loading || !joinUrl}
-          onClick={() => void copyLink()}>
+          disabled={fetching || loading || !joinToken}
+          onClick={() => void copyToken()}>
           <Copy className='mr-1 size-3.5' />
-          Copy link
+          Copy token
         </Button>
         <Button
           type='button'
@@ -141,12 +138,12 @@ export function CampaignPlayInvitePanel({
           disabled={loading}
           onClick={() => void refreshToken()}>
           <RefreshCw className='mr-1 size-3.5' />
-          {joinToken ? 'Rotate link' : 'Create link'}
+          {joinToken ? 'Rotate token' : 'Create token'}
         </Button>
       </div>
-      {joinUrl && (
+      {joinToken && (
         <p className='break-all rounded bg-background/80 px-2 py-1 font-mono text-xs text-muted-foreground'>
-          {joinUrl}
+          {joinToken}
         </p>
       )}
     </>
