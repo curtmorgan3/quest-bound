@@ -64,7 +64,6 @@ async function collectResolvedCharacterIdsForManualUpdate(
           | { characterId?: string }
           | undefined;
         const invCid = inv?.characterId;
-        console.log('inv: ', inv);
         if (typeof invCid !== 'string' || invCid.trim() === '') {
           return {
             ok: false,

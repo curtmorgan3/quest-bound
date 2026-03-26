@@ -53,7 +53,6 @@ export class CampaignPlayHostManualQueue {
   }
 
   private async processOne(env: CampaignRealtimeManualCharacterUpdateEnvelopeV1): Promise<void> {
-    console.log(env);
     const validation = await validateCampaignManualUpdate(db, this.campaignId, env.batches);
     if (!validation.ok) {
       console.warn('[CampaignPlayHostManualQueue]', validation.message);

@@ -68,7 +68,6 @@ export const Rulesets = () => {
   const cloudSyncEnabled = useCloudAuthStore((s) => s.cloudSyncEnabled);
   const cloudSyncEligibilityLoading = useCloudAuthStore((s) => s.isCloudSyncEligibilityLoading);
   const isCloudSynced = useSyncStateStore((s) => s.isCloudSynced);
-  console.log(isCloudSynced);
   const showCloudBadge =
     isCloudConfigured && isAuthenticated && cloudSyncEnabled && !cloudSyncEligibilityLoading;
 
