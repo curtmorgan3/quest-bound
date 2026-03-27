@@ -414,7 +414,9 @@ export function CampaignDashboard() {
                   aria-label='Guest join token and host session'
                   title='Guest join token and host session'
                   data-testid='guest-join-invite-sheet-trigger'>
-                  <Globe className='h-4 w-4' />
+                  <Globe
+                    className={cn('h-4 w-4', hostCampaignRealtimeEnabled && 'text-primary')}
+                  />
                 </Button>
                 <CampaignPlayInviteSheet
                   open={guestJoinInviteSheetOpen}

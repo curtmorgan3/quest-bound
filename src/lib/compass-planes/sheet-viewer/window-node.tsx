@@ -6,6 +6,7 @@ import { useCallback, useContext, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { renderViewComponent } from '../nodes';
 import { useComponentPositionMap } from '../utils';
+import { WindowRuntimeProvider } from './window-runtime-context';
 
 /** Minimal window shape shared by CharacterWindow and RulesetWindow. */
 export interface WindowNodeWindow {
@@ -135,33 +136,33 @@ export const WindowNode = ({ data }: { data: WindowNodeData }) => {
           width: '100%',
           height: windowHeight,
         }}>
-        {components.map((component) => {
-          const pos = positionMap.get(component.id);
-          const canOpenChild = component.childWindowId && !component.scriptId;
-          return (
-            <div
-              key={component.id}
-              style={{
-                position: 'absolute',
-                left: component.x - minX,
-                top: component.y - minY,
-                width: component.width,
-                height: component.height,
-                zIndex: pos?.z ?? component.z,
-                cursor: canOpenChild ? 'pointer' : undefined,
-              }}
-              onClick={
-                canOpenChild
-                  ? (e) => {
-                      e.stopPropagation();
-                      handleChildWindowClick(component.childWindowId!);
-                    }
-                  : undefined
-              }>
-              {renderViewComponent(component, characterContext?.characterAttributes, pos)}
-            </div>
-          );
-        })}
+        <WindowRuntimeProvider
+          value={
+            'characterId' in windowData
+              ? {}
+              : {
+                  openRulesetChildWindow: (childWindowId: string) =>
+                    handleChildWindowClick(childWindowId),
+                }
+          }>
+          {components.map((component) => {
+            const pos = positionMap.get(component.id);
+            return (
+              <div
+                key={component.id}
+                style={{
+                  position: 'absolute',
+                  left: component.x - minX,
+                  top: component.y - minY,
+                  width: component.width,
+                  height: component.height,
+                  zIndex: pos?.z ?? component.z,
+                }}>
+                {renderViewComponent(component, characterContext?.characterAttributes, pos)}
+              </div>
+            );
+          })}
+        </WindowRuntimeProvider>
       </div>
     </div>
   );

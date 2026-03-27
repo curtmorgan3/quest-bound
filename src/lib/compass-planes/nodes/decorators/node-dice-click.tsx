@@ -1,7 +1,8 @@
+import { useScripts } from '@/lib/compass-api/hooks/scripts/use-scripts';
 import { DiceContext } from '@/stores';
 import type { Component } from '@/types';
 import { parseTextForDiceRolls } from '@/utils';
-import { useContext, type ReactNode } from 'react';
+import { useContext, useMemo, type ReactNode } from 'react';
 import { useNodeData } from '../../utils';
 
 interface NodeDiceClickProps {
@@ -17,12 +18,19 @@ interface NodeDiceClickProps {
 export const NodeDiceClick = ({ children, component }: NodeDiceClickProps) => {
   const diceContext = useContext(DiceContext);
   const rollDice = diceContext?.rollDice;
+  const { scripts } = useScripts();
   const data = useNodeData(component);
   const raw = data?.interpolatedValue;
   const text = raw != null ? String(raw) : '';
   const diceRolls = parseTextForDiceRolls(text);
 
-  if (!diceRolls.length || component.scriptId || !rollDice) {
+  const hasVisibleClickScript = useMemo(() => {
+    if (!component.scriptId) return false;
+    const s = scripts.find((x) => x.id === component.scriptId);
+    return Boolean(s && !s.hidden);
+  }, [component.scriptId, scripts]);
+
+  if (!diceRolls.length || hasVisibleClickScript || !rollDice) {
     return <>{children}</>;
   }
 

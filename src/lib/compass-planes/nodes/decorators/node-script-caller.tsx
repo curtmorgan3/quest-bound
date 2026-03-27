@@ -23,10 +23,12 @@ export const NodeScriptCaller = ({ children, component }: NodeScriptCallerProps)
   );
 
   const { scripts } = useScripts();
-  const script = useMemo(
-    () => (hasScript ? scripts.find((s) => s.id === component.scriptId) : undefined),
-    [scripts, hasScript, component.scriptId],
-  );
+  const script = useMemo(() => {
+    if (!hasScript) return undefined;
+    const found = scripts.find((s) => s.id === component.scriptId);
+    if (!found || found.hidden) return undefined;
+    return found;
+  }, [scripts, hasScript, component.scriptId]);
 
   const { execute, isExecuting } = useReactiveScriptExecution();
 

@@ -44,7 +44,7 @@ interface Props {
 export const ClickEventModal = ({ component, allCanOpenChildWindow }: Props) => {
   const { windowId } = useParams();
   const { updateComponents } = useComponents(windowId);
-  const { scripts, createScript, updateScript, deleteScript } = useScripts();
+  const { scripts, deleteScript } = useScripts();
   const { pages } = useRulesetPages();
   const { windows } = useWindows();
   const { actions } = useActions();
@@ -64,71 +64,16 @@ export const ClickEventModal = ({ component, allCanOpenChildWindow }: Props) => 
 
   const hasScriptParameters = (selectedScript?.parameters?.length ?? 0) > 0;
 
-  const buildClickScriptSource = (
-    kind: Extract<ClickEventType, 'openPage' | 'openWindow' | 'fireAction'>,
-    targetId: string,
-    x?: number,
-    y?: number,
-    collapse?: boolean,
-  ): string => {
-    const header =
-      '// Auto-generated click handler script. Uses stable entity IDs so it keeps working when labels change.\n\n';
-    if (kind === 'openPage') return `${header}Owner.navigateToPage('${targetId}')\n`;
-    if (kind === 'openWindow')
-      return `${header}Owner.openWindow('${targetId}', ${x ?? 0}, ${y ?? 0}, ${collapse ?? false})\n`;
-    return `${header}Owner.Action('${targetId}').activate()\n`;
-  };
-
-  const ensureClickScript = async (
-    kind: Extract<ClickEventType, 'openPage' | 'openWindow' | 'fireAction'>,
-    targetId: string,
-    x?: number,
-    y?: number,
-    collapse?: boolean,
-  ): Promise<string | undefined> => {
-    const existingId = component.scriptId ?? undefined;
-    const sourceCode = buildClickScriptSource(kind, targetId, x, y, collapse);
-
-    if (existingId) {
-      const existing = scripts.find((s) => s.id === existingId);
-      if (existing && existing.hidden) {
-        await updateScript(existingId, {
-          sourceCode,
-          entityType: 'gameManager',
-          entityId: null,
-          hidden: true,
-          enabled: true,
-          category: existing.category ?? 'Component Click',
-          name: existing.name || `component_click_${component.id}`,
-        });
-        return existingId;
-      }
-    }
-
-    return createScript({
-      name: `component_click_${component.id}`,
-      sourceCode,
-      entityType: 'gameManager',
-      entityId: null,
-      enabled: true,
-      hidden: true,
-      category: 'Component Click',
-    });
-  };
-
   const getCurrentClickEventType = (): ClickEventType | null => {
     const data = getComponentData(component);
-    if (component.scriptId && selectedScript) {
-      if (!selectedScript.hidden) return 'fireScript';
-      if (data.pageId) return 'openPage';
-      if (component.childWindowId) return 'openWindow';
-      if (component.actionId) return 'fireAction';
+    if (component.scriptId && selectedScript && !selectedScript.hidden) {
       return 'fireScript';
     }
     if (data.pageId) return 'openPage';
     if (component.childWindowId) return 'openWindow';
     if (component.actionId) return 'fireAction';
     if (data.viewAttributeId) return 'viewAttribute';
+    if (component.scriptId && selectedScript) return 'fireScript';
     return null;
   };
 
@@ -138,7 +83,7 @@ export const ClickEventModal = ({ component, allCanOpenChildWindow }: Props) => 
     const data = getComponentData(component);
 
     if (type === 'openPage') {
-      const pageId = (data as any).pageId as string | undefined;
+      const pageId = data.pageId;
       const page = pageId ? pages.find((p) => p.id === pageId) : undefined;
       return page ? `Open Page: ${page.label}` : 'Open Page';
     }
@@ -161,27 +106,31 @@ export const ClickEventModal = ({ component, allCanOpenChildWindow }: Props) => 
     return null;
   };
 
-  const handleSetOpenPageClick = async (pageId: string) => {
+  const removeLegacyHiddenClickScriptIfPresent = async () => {
+    if (selectedScript?.hidden) {
+      await deleteScript(selectedScript.id);
+      return true;
+    }
+    return false;
+  };
+
+  const handleSetOpenPageClick = (pageId: string) => {
     const baseData = JSON.parse(component.data);
     baseData.pageId = pageId;
-    const scriptId = await ensureClickScript('openPage', pageId);
-    const update: any = { id: component.id, data: JSON.stringify(baseData) };
-    if (scriptId) update.scriptId = scriptId;
-    await updateComponents([update]);
+    void updateComponents([{ id: component.id, data: JSON.stringify(baseData) }]);
   };
 
   const handleClearOpenPageClick = async () => {
     const baseData = JSON.parse(component.data);
     delete baseData.pageId;
-    const update: any = { id: component.id, data: JSON.stringify(baseData) };
-    if (selectedScript?.hidden) {
+    const update: ComponentUpdate = { id: component.id, data: JSON.stringify(baseData) };
+    if (await removeLegacyHiddenClickScriptIfPresent()) {
       update.scriptId = null;
-      await deleteScript(selectedScript.id);
     }
     await updateComponents([update]);
   };
 
-  const handleSetOpenWindowClick = async (
+  const handleSetOpenWindowClick = (
     childWindowId: string,
     x: number,
     y: number,
@@ -191,47 +140,38 @@ export const ClickEventModal = ({ component, allCanOpenChildWindow }: Props) => 
     baseData.childWindowX = x;
     baseData.childWindowY = y;
     baseData.childWindowCollapse = collapse ?? false;
-    const scriptId = await ensureClickScript('openWindow', childWindowId, x, y, collapse);
-    const update: any = { id: component.id, childWindowId, data: JSON.stringify(baseData) };
-    if (scriptId) update.scriptId = scriptId;
-    await updateComponents([update]);
+    void updateComponents([
+      { id: component.id, childWindowId, data: JSON.stringify(baseData) },
+    ]);
   };
 
   const handleClearOpenWindowClick = async () => {
     const baseData = JSON.parse(component.data);
-    delete baseData.openWindowX;
-    delete baseData.openWindowY;
+    delete baseData.childWindowX;
+    delete baseData.childWindowY;
     delete baseData.childWindowCollapse;
-    const update: any = {
+    const update: ComponentUpdate = {
       id: component.id,
-      childWindowId: null as string | null,
+      childWindowId: null,
       data: JSON.stringify(baseData),
     };
-    if (selectedScript?.hidden) {
+    if (await removeLegacyHiddenClickScriptIfPresent()) {
       update.scriptId = null;
-      await deleteScript(selectedScript.id);
     }
     await updateComponents([update]);
   };
 
-  const handleSetFireActionClick = async (actionId: string) => {
-    const baseData = JSON.parse(component.data);
-    const scriptId = await ensureClickScript('fireAction', actionId);
-    const update: any = { id: component.id, actionId, data: JSON.stringify(baseData) };
-    if (scriptId) update.scriptId = scriptId;
-    await updateComponents([update]);
+  const handleSetFireActionClick = (actionId: string) => {
+    void updateComponents([{ id: component.id, actionId }]);
   };
 
   const handleClearFireActionClick = async () => {
-    const baseData = JSON.parse(component.data);
-    const update: any = {
+    const update: ComponentUpdate = {
       id: component.id,
-      actionId: null as string | null,
-      data: JSON.stringify(baseData),
+      actionId: null,
     };
-    if (selectedScript?.hidden) {
+    if (await removeLegacyHiddenClickScriptIfPresent()) {
       update.scriptId = null;
-      await deleteScript(selectedScript.id);
     }
     await updateComponents([update]);
   };
@@ -376,7 +316,7 @@ export const ClickEventModal = ({ component, allCanOpenChildWindow }: Props) => 
                 label='Open Page'
                 value={getComponentData(component).pageId ?? null}
                 onSelect={(page) => {
-                  void handleSetOpenPageClick(page.id);
+                  handleSetOpenPageClick(page.id);
                 }}
                 onDelete={() => {
                   void handleClearOpenPageClick();
@@ -393,7 +333,7 @@ export const ClickEventModal = ({ component, allCanOpenChildWindow }: Props) => 
                   data-testid='component-data-action-lookup'
                   value={component.actionId}
                   onSelect={(attr) => {
-                    void handleSetFireActionClick(attr.id);
+                    handleSetFireActionClick(attr.id);
                   }}
                   onDelete={() => {
                     void handleClearFireActionClick();
@@ -407,7 +347,7 @@ export const ClickEventModal = ({ component, allCanOpenChildWindow }: Props) => 
                   label='Open Window'
                   value={component.childWindowId}
                   onSelect={(win) => {
-                    void handleSetOpenWindowClick(
+                    handleSetOpenWindowClick(
                       win.id,
                       openWindowX,
                       openWindowY,
@@ -430,7 +370,7 @@ export const ClickEventModal = ({ component, allCanOpenChildWindow }: Props) => 
                         const val = e.target.value === '' ? 0 : Number(e.target.value);
                         setOpenWindowX(val);
                         if (component.childWindowId) {
-                          void handleSetOpenWindowClick(
+                          handleSetOpenWindowClick(
                             component.childWindowId,
                             val,
                             openWindowY,
@@ -450,7 +390,7 @@ export const ClickEventModal = ({ component, allCanOpenChildWindow }: Props) => 
                         const val = e.target.value === '' ? 0 : Number(e.target.value);
                         setOpenWindowY(val);
                         if (component.childWindowId) {
-                          void handleSetOpenWindowClick(
+                          handleSetOpenWindowClick(
                             component.childWindowId,
                             openWindowX,
                             val,
@@ -469,7 +409,7 @@ export const ClickEventModal = ({ component, allCanOpenChildWindow }: Props) => 
                       const val = checked === true;
                       setChildWindowCollapse(val);
                       if (component.childWindowId) {
-                        void handleSetOpenWindowClick(
+                        handleSetOpenWindowClick(
                           component.childWindowId,
                           openWindowX,
                           openWindowY,
