@@ -52,6 +52,7 @@ export {
   stopCampaignPlayClientActionBridge,
 } from '@/lib/campaign-play/realtime/campaign-play-client-action-bridge';
 export { sendCampaignPlayManualCharacterUpdate } from '@/lib/campaign-play/realtime/campaign-play-manual-broadcast';
+export { broadcastHostCharacterDataAfterHostReactives } from '@/lib/campaign-play/realtime/campaign-play-host-character-broadcast';
 export {
   sendCampaignRosterUpdate,
   tryBroadcastCampaignRosterFromDexie,

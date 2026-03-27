@@ -1,6 +1,10 @@
 import { filterNotSoftDeleted, softDeletePatch } from '@/lib/data/soft-delete';
 import { useErrorHandler, useNotifications } from '@/hooks';
-import { isCampaignPlayClientRelayForCampaign } from '@/lib/campaign-play/campaign-play-action-relay';
+import {
+  isCampaignPlayClientRelayForCampaign,
+  isCampaignPlayHostBroadcastForCampaign,
+} from '@/lib/campaign-play/campaign-play-action-relay';
+import { broadcastHostCharacterDataAfterHostReactives } from '@/lib/campaign-play/realtime/campaign-play-host-character-broadcast';
 import { sendCampaignPlayManualCharacterUpdate } from '@/lib/campaign-play/realtime/campaign-play-manual-broadcast';
 import { getQBScriptClient } from '@/lib/compass-logic/worker';
 import { db } from '@/stores';
@@ -40,17 +44,29 @@ export const useCharacterAttributes = (
   const broadcastAttributeRows = useCallback(
     (rows: CharacterAttribute[]) => {
       if (!campaignPlay || rows.length === 0) return;
-      if (!isCampaignPlayClientRelayForCampaign(campaignPlay.campaignId)) return;
-      void sendCampaignPlayManualCharacterUpdate({
-        campaignId: campaignPlay.campaignId,
-        campaignSceneId: campaignPlay.campaignSceneId,
-        batches: [
-          {
-            table: 'characterAttributes',
-            rows: rows.map((r) => ({ ...r } as Record<string, unknown>)),
-          },
-        ],
-      }).catch((err) => console.warn('[useCharacterAttributes] campaign manual broadcast failed', err));
+      const batches = [
+        {
+          table: 'characterAttributes' as const,
+          rows: rows.map((r) => ({ ...r } as Record<string, unknown>)),
+        },
+      ];
+      if (isCampaignPlayClientRelayForCampaign(campaignPlay.campaignId)) {
+        void sendCampaignPlayManualCharacterUpdate({
+          campaignId: campaignPlay.campaignId,
+          campaignSceneId: campaignPlay.campaignSceneId,
+          batches,
+        }).catch((err) => console.warn('[useCharacterAttributes] campaign manual broadcast failed', err));
+        return;
+      }
+      if (isCampaignPlayHostBroadcastForCampaign(campaignPlay.campaignId)) {
+        void broadcastHostCharacterDataAfterHostReactives({
+          campaignId: campaignPlay.campaignId,
+          campaignSceneId: campaignPlay.campaignSceneId,
+          batches,
+        }).catch((err) =>
+          console.warn('[useCharacterAttributes] campaign host broadcast failed', err),
+        );
+      }
     },
     [campaignPlay],
   );

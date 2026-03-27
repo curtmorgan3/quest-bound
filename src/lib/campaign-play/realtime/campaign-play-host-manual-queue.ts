@@ -13,12 +13,9 @@ import type {
   CampaignRealtimeManualCharacterUpdateEnvelopeV1,
 } from '@/lib/campaign-play/realtime/campaign-realtime-envelopes';
 import { CAMPAIGN_REALTIME_PROTOCOL_VERSION } from '@/lib/campaign-play/realtime/campaign-realtime-envelopes';
+import { runManualUpdateAttributeReactives } from '@/lib/campaign-play/realtime/campaign-play-manual-attribute-reactives';
 import { validateCampaignManualUpdate } from '@/lib/campaign-play/realtime/validate-campaign-manual-update';
-import { getQBScriptClient } from '@/lib/compass-logic/worker/client';
 import { db } from '@/stores';
-import { defaultScriptDiceRoller, defaultScriptDiceRollerSplit } from '@/utils/dice-utils';
-
-const MANUAL_REACTIVE_TIMEOUT_MS = 120_000;
 
 /**
  * Serialized host queue for `manual_character_update` (Phase 2.5): validate → apply → reactives → `host_reactive_result`.
@@ -76,38 +73,12 @@ export class CampaignPlayHostManualQueue {
     const startedAtMs = Date.now();
     await applyCampaignRealtimeBatches(db, env.batches);
 
-    const client = getQBScriptClient();
-    const attrRows = env.batches
-      .filter((b) => b.table === 'characterAttributes')
-      .flatMap((b) => b.rows);
-
-    const seen = new Set<string>();
-    for (const row of attrRows) {
-      const characterId = row.characterId;
-      const attributeId = row.attributeId;
-      if (typeof characterId !== 'string' || typeof attributeId !== 'string') continue;
-      const key = `${characterId}:${attributeId}`;
-      if (seen.has(key)) continue;
-      seen.add(key);
-
-      const character = await db.characters.get(characterId);
-      if (!character?.rulesetId) continue;
-
-      try {
-        await client.onAttributeChange({
-          attributeId,
-          characterId,
-          rulesetId: character.rulesetId,
-          campaignId: this.campaignId,
-          campaignSceneId: env.campaignSceneId,
-          roll: defaultScriptDiceRoller,
-          rollSplit: defaultScriptDiceRollerSplit,
-          timeout: MANUAL_REACTIVE_TIMEOUT_MS,
-        });
-      } catch (e) {
-        console.warn('[CampaignPlayHostManualQueue] onAttributeChange failed', e);
-      }
-    }
+    await runManualUpdateAttributeReactives({
+      database: db,
+      campaignId: this.campaignId,
+      campaignSceneId: env.campaignSceneId,
+      batches: env.batches,
+    });
 
     const delta = await buildCampaignPlayDeltaBatches(
       db,

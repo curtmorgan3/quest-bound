@@ -1,6 +1,10 @@
 import { filterNotSoftDeleted, softDeletePatch } from '@/lib/data/soft-delete';
 import { useErrorHandler } from '@/hooks';
-import { isCampaignPlayClientRelayForCampaign } from '@/lib/campaign-play/campaign-play-action-relay';
+import {
+  isCampaignPlayClientRelayForCampaign,
+  isCampaignPlayHostBroadcastForCampaign,
+} from '@/lib/campaign-play/campaign-play-action-relay';
+import { broadcastHostCharacterDataAfterHostReactives } from '@/lib/campaign-play/realtime/campaign-play-host-character-broadcast';
 import { sendCampaignPlayManualCharacterUpdate } from '@/lib/campaign-play/realtime/campaign-play-manual-broadcast';
 import { db, type InventoryItemWithData } from '@/stores';
 import type { Inventory, InventoryItem } from '@/types';
@@ -24,17 +28,27 @@ export const useInventory = (
   const broadcastInventoryRows = useCallback(
     (rows: InventoryItem[]) => {
       if (!campaignPlay || rows.length === 0) return;
-      if (!isCampaignPlayClientRelayForCampaign(campaignPlay.campaignId)) return;
-      void sendCampaignPlayManualCharacterUpdate({
-        campaignId: campaignPlay.campaignId,
-        campaignSceneId: campaignPlay.campaignSceneId,
-        batches: [
-          {
-            table: 'inventoryItems',
-            rows: rows.map((r) => ({ ...r } as Record<string, unknown>)),
-          },
-        ],
-      }).catch((err) => console.warn('[useInventory] campaign manual broadcast failed', err));
+      const batches = [
+        {
+          table: 'inventoryItems' as const,
+          rows: rows.map((r) => ({ ...r } as Record<string, unknown>)),
+        },
+      ];
+      if (isCampaignPlayClientRelayForCampaign(campaignPlay.campaignId)) {
+        void sendCampaignPlayManualCharacterUpdate({
+          campaignId: campaignPlay.campaignId,
+          campaignSceneId: campaignPlay.campaignSceneId,
+          batches,
+        }).catch((err) => console.warn('[useInventory] campaign manual broadcast failed', err));
+        return;
+      }
+      if (isCampaignPlayHostBroadcastForCampaign(campaignPlay.campaignId)) {
+        void broadcastHostCharacterDataAfterHostReactives({
+          campaignId: campaignPlay.campaignId,
+          campaignSceneId: campaignPlay.campaignSceneId,
+          batches,
+        }).catch((err) => console.warn('[useInventory] campaign host broadcast failed', err));
+      }
     },
     [campaignPlay],
   );
