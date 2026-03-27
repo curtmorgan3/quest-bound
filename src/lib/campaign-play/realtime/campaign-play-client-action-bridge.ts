@@ -9,7 +9,6 @@ import type {
 } from '@/lib/campaign-play/realtime/campaign-realtime-envelopes';
 import { CAMPAIGN_REALTIME_PROTOCOL_VERSION } from '@/lib/campaign-play/realtime/campaign-realtime-envelopes';
 import { db } from '@/stores';
-import { toast } from 'sonner';
 
 const DEFAULT_CLIENT_ACTION_TIMEOUT_MS = 60_000;
 
@@ -56,10 +55,7 @@ function onEnvelope(campaignId: string, envelope: CampaignRealtimeEnvelopeV1): v
             new CustomEvent('qbscript:announce', { detail: { message: msg } }),
           );
         }
-        if (pendingManualCorrelationIds.has(envelope.correlationId)) {
-          pendingManualCorrelationIds.delete(envelope.correlationId);
-          toast.info('The host applied ruleset updates; your sheet may have changed.');
-        }
+        pendingManualCorrelationIds.delete(envelope.correlationId);
       } catch (e) {
         console.error('[CampaignPlayClientBridge] host_reactive_result ingest failed', e);
       }
