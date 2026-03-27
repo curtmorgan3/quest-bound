@@ -105,6 +105,10 @@ export function CampaignDashboard() {
   const campaignRealtimePlayEnabled = useFeatureFlag(CAMPAIGN_REALTIME_PLAY_FEATURE_FLAG);
   const campaignPlaySession = useCampaignPlaySessionStore((s) => s.session);
   const hostCloudUserId = useCloudAuthStore((s) => s.cloudUser?.id ?? null);
+  const cloudSyncEnabled = useCloudAuthStore((s) => s.cloudSyncEnabled);
+  const isCloudSyncEligibilityLoading = useCloudAuthStore((s) => s.isCloudSyncEligibilityLoading);
+  const showHostCampaignCloudPanel =
+    cloudSyncEnabled && !isCloudSyncEligibilityLoading;
   const orchestrationBlocked = shouldBlockCampaignOrchestration(campaignId);
   const showHostRealtimeReconnectNotice =
     campaignRealtimePlayEnabled &&
@@ -173,6 +177,11 @@ export function CampaignDashboard() {
   useEffect(() => {
     if (!campaignId || !getFeatureFlag(CAMPAIGN_REALTIME_PLAY_FEATURE_FLAG)) return;
 
+    if (!cloudSyncEnabled || isCloudSyncEligibilityLoading) {
+      useCampaignPlaySessionStore.getState().clearSessionIfCampaign(campaignId);
+      return;
+    }
+
     if (hostCampaignRealtimeEnabled) {
       useCampaignPlaySessionStore.getState().enterSession({
         campaignId,
@@ -189,7 +198,18 @@ export function CampaignDashboard() {
     return () => {
       useCampaignPlaySessionStore.getState().clearSessionIfCampaign(campaignId);
     };
-  }, [campaignId, hostCampaignRealtimeEnabled]);
+  }, [
+    campaignId,
+    hostCampaignRealtimeEnabled,
+    cloudSyncEnabled,
+    isCloudSyncEligibilityLoading,
+  ]);
+
+  useEffect(() => {
+    if (!cloudSyncEnabled || isCloudSyncEligibilityLoading) {
+      setGuestJoinInviteSheetOpen(false);
+    }
+  }, [cloudSyncEnabled, isCloudSyncEligibilityLoading]);
 
   useCampaignPlayRealtime({
     campaignId,
@@ -405,7 +425,7 @@ export function CampaignDashboard() {
               data-testid='scene-events-panel-trigger'>
               <Zap className='h-4 w-4' />
             </Button>
-            {campaignRealtimePlayEnabled && campaignId && (
+            {campaignRealtimePlayEnabled && campaignId && showHostCampaignCloudPanel && (
               <>
                 <Button
                   variant='ghost'

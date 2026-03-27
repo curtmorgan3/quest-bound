@@ -3,7 +3,7 @@ import videoSrc from '@/assets/logo-animation.mp4';
 import { Button, Input, Link } from '@/components';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { DISCORD_URL } from '@/constants';
-import { signIn as cloudSignIn, signUp as cloudSignUp, getSession } from '@/lib/cloud/auth';
+import { getSession, signIn, signUp } from '@/lib/cloud/auth';
 import { isCloudConfigured } from '@/lib/cloud/client';
 import { linkLocalUserToCloudAuth } from '@/lib/cloud/link-local-user-to-cloud-auth';
 import { useRegisterEmail, useUsers } from '@/lib/compass-api';
@@ -91,7 +91,7 @@ export function SignInSignUpModal({
       }
 
       if (isSignInOnlyMode) {
-        const result = await cloudSignIn(trimmed, passwordValue.trim());
+        const result = await signIn(trimmed, passwordValue.trim());
         if ('error' in result) {
           setSubmitError(result.error.message);
           return;
@@ -114,8 +114,8 @@ export function SignInSignUpModal({
       if (isCloudConfigured) {
         const hasCloudAccount = mode === 'sign-up-only' ? false : !needUser && userHasCloudUserId;
         const result = hasCloudAccount
-          ? await cloudSignIn(trimmed, passwordValue.trim())
-          : await cloudSignUp(trimmed, passwordValue.trim());
+          ? await signIn(trimmed, passwordValue.trim())
+          : await signUp(trimmed, passwordValue.trim());
 
         if ('error' in result) {
           setSubmitError(result.error.message);

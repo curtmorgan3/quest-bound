@@ -30,7 +30,7 @@ import {
   PinOff,
   UserPlus,
 } from 'lucide-react';
-import { useContext, useState } from 'react';
+import { useContext, useEffect, useState } from 'react';
 import { Link, useLocation, useParams } from 'react-router-dom';
 import { JoinCampaignPanel } from './join-campaign-panel';
 
@@ -42,7 +42,10 @@ export function CharacterSidebar() {
   const { documentId, chartId } = useParams<{ documentId?: string; chartId?: string }>();
   const location = useLocation();
   const isAuthenticated = useCloudAuthStore((s) => s.isAuthenticated);
+  const cloudSyncEnabled = useCloudAuthStore((s) => s.cloudSyncEnabled);
+  const isCloudSyncEligibilityLoading = useCloudAuthStore((s) => s.isCloudSyncEligibilityLoading);
   const campaignRealtimePlayEnabled = useFeatureFlag(CAMPAIGN_REALTIME_PLAY_FEATURE_FLAG);
+  const showJoinCampaignForCloud = cloudSyncEnabled && !isCloudSyncEligibilityLoading;
   const [joinCampaignOpen, setJoinCampaignOpen] = useState(false);
   const characterId = character?.id;
   const linkedToCampaignLive = useLiveQuery(async () => {
@@ -54,6 +57,12 @@ export function CharacterSidebar() {
 
   const characterInventoryPanel = useContext(CharacterInventoryPanelContext);
   const characterArchetypesPanel = useContext(CharacterArchetypesPanelContext);
+
+  useEffect(() => {
+    if (!showJoinCampaignForCloud) {
+      setJoinCampaignOpen(false);
+    }
+  }, [showJoinCampaignForCloud]);
 
   if (!character) return null;
 
@@ -94,7 +103,7 @@ export function CharacterSidebar() {
 
   return (
     <>
-      {isAuthenticated && campaignRealtimePlayEnabled && (
+      {isAuthenticated && campaignRealtimePlayEnabled && showJoinCampaignForCloud && (
         <JoinCampaignPanel
           open={joinCampaignOpen}
           onOpenChange={setJoinCampaignOpen}
@@ -146,7 +155,7 @@ export function CharacterSidebar() {
               </SidebarMenuButton>
             </SidebarMenuItem>
           )}
-          {isAuthenticated && campaignRealtimePlayEnabled && (
+          {isAuthenticated && campaignRealtimePlayEnabled && showJoinCampaignForCloud && (
             <SidebarMenuItem className={isCharacterLinkedToCampaign ? 'text-primary' : ''}>
               <SidebarMenuButton
                 type='button'
