@@ -5,9 +5,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { DISCORD_URL } from '@/constants';
 import { signIn as cloudSignIn, signUp as cloudSignUp, getSession } from '@/lib/cloud/auth';
 import { isCloudConfigured } from '@/lib/cloud/client';
-import { ensureRemoteUserRow } from '@/lib/cloud/ensure-remote-user';
+import { linkLocalUserToCloudAuth } from '@/lib/cloud/link-local-user-to-cloud-auth';
 import { useRegisterEmail, useUsers } from '@/lib/compass-api';
-import { db, useCurrentUser } from '@/stores';
 import { DialogDescription } from '@radix-ui/react-dialog';
 import { motion } from 'framer-motion';
 import { useEffect, useState } from 'react';
@@ -16,22 +15,6 @@ const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 function isValidEmail(value: string | null | undefined): boolean {
   return Boolean(value?.trim() && EMAIL_REGEX.test(value.trim()));
-}
-
-/** Links the current local user to the cloud identity (sets cloudUserId). */
-async function linkLocalUserToCloud(cloudUid: string): Promise<void> {
-  const { currentUser } = useCurrentUser.getState();
-  if (!currentUser) return;
-
-  const existingUserWithCloud = await db.users.where('cloudUserId').equals(cloudUid).first();
-  if (existingUserWithCloud && existingUserWithCloud.id !== currentUser.id) {
-    return;
-  }
-
-  await db.users.update(currentUser.id, { cloudUserId: cloudUid });
-  const updated = await db.users.get(currentUser.id);
-  if (updated) useCurrentUser.getState().setCurrentUser(updated);
-  await ensureRemoteUserRow(db);
 }
 
 export interface SignInSignUpModalProps {
@@ -113,7 +96,7 @@ export function SignInSignUpModal({
           setSubmitError(result.error.message);
           return;
         }
-        await linkLocalUserToCloud(result.user.id);
+        await linkLocalUserToCloudAuth(result.user.id);
         const firstUser = users?.[0];
         if (firstUser) {
           await setCurrentUserById(firstUser.id);
@@ -146,7 +129,7 @@ export function SignInSignUpModal({
       }
 
       if (needUser) {
-        await createUser(trimmedUsername);
+        await createUser(trimmedUsername, trimmed);
       } else {
         const firstUser = users?.[0];
         if (firstUser) {
@@ -159,7 +142,7 @@ export function SignInSignUpModal({
       }
 
       if (isCloudConfigured && cloudUid) {
-        await linkLocalUserToCloud(cloudUid);
+        await linkLocalUserToCloudAuth(cloudUid);
         if (mode === 'default') {
           onSuccess?.();
           onOpenChange?.(false);

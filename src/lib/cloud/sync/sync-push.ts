@@ -146,6 +146,17 @@ export async function syncPush(rulesetId: string, db: DB): Promise<{ error?: str
         }
       }
 
+      if (config.tableName === 'users') {
+        const authEmail = session.user.email?.trim();
+        if (authEmail) {
+          const normalized = authEmail.toLowerCase();
+          for (const r of rows) {
+            const has = typeof r.email === 'string' && r.email.trim() !== '';
+            if (!has) r.email = normalized;
+          }
+        }
+      }
+
       const remoteRows = rows.map((r) => {
         const cloudRowUserId = config.tableName === 'users' ? sessionUserId : rowOwnerId;
         const row: { user_id: string; user_id_local?: string } = {

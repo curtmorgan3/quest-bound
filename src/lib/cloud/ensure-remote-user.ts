@@ -16,11 +16,22 @@ export async function ensureRemoteUserRow(db: DB): Promise<void> {
   if (!client || !session?.user?.id) return;
 
   const authUid = session.user.id;
+  const sessionEmail = session.user.email?.trim();
   const local = await db.users.where('cloudUserId').equals(authUid).first();
   if (!local) return;
 
+  const email =
+    (typeof local.email === 'string' && local.email.trim() !== ''
+      ? local.email.trim().toLowerCase()
+      : null) ??
+    (sessionEmail && sessionEmail.length > 0 ? sessionEmail.toLowerCase() : null);
+  if (!email) {
+    console.warn('ensureRemoteUserRow: missing email, skipping remote profile insert');
+    return;
+  }
+
   const remoteRow = {
-    ...prepareRecordForRemote('users', local as Record<string, unknown>),
+    ...prepareRecordForRemote('users', { ...(local as Record<string, unknown>), email } as Record<string, unknown>),
     user_id: authUid,
   };
 

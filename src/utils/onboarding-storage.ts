@@ -21,3 +21,15 @@ export async function clearOnboardingCompleted(userId: string): Promise<void> {
   const key = getOnboardingStorageKey(userId);
   await del(key);
 }
+
+/** Copies onboarding completion from a replaced local profile id to the cloud profile id. */
+export async function migrateOnboardingUserId(oldUserId: string, newUserId: string): Promise<void> {
+  if (oldUserId === newUserId) return;
+  const oldKey = getOnboardingStorageKey(oldUserId);
+  const newKey = getOnboardingStorageKey(newUserId);
+  const value = await get(oldKey);
+  if (value === true) {
+    await set(newKey, true);
+    await del(oldKey);
+  }
+}

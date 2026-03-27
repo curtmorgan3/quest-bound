@@ -1,4 +1,5 @@
 import { useErrorHandler } from '@/hooks/use-error-handler';
+import { useSyncStateStore } from '@/lib/cloud/sync/sync-state';
 import {
   db,
   deleteAssetIfUnreferenced,
@@ -222,6 +223,11 @@ export const useRulesets = () => {
     try {
       await db.rulesets.delete(id);
       // Note: associated entities and test character are deleted automatically via db hook
+
+      const sync = useSyncStateStore.getState();
+      await sync.removeLastSyncedAtEntry(id);
+      await sync.removeSyncedRulesetId(id);
+      sync.clearPendingPushRuleset(id);
 
       if (activeRuleset?.id === id) {
         localStorage.removeItem('qb.lastEditedRulesetId');

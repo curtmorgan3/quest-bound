@@ -77,12 +77,16 @@ export const useUsers = () => {
     }
   }, [setCurrentUser, users]);
 
-  const createUser = async (username: string) => {
+  const createUser = async (username: string, emailForProfile?: string | null) => {
     setLoading(true);
+    const normalizedEmail =
+      typeof emailForProfile === 'string' && emailForProfile.trim() !== ''
+        ? emailForProfile.trim().toLowerCase()
+        : null;
     const id = await db.users.add({
       id: crypto.randomUUID(),
       username,
-      email: null,
+      email: normalizedEmail,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       preferences: {},

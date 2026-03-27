@@ -1,3 +1,4 @@
+import { useSyncStateStore } from '@/lib/cloud/sync/sync-state';
 import { db } from '@/stores';
 
 /**
@@ -45,4 +46,9 @@ export async function deleteRulesetAndRelatedData(rulesetId: string): Promise<vo
   await db.scriptLogs.where('rulesetId').equals(rulesetId).delete();
   await db.dependencyGraphNodes.where('rulesetId').equals(rulesetId).delete();
   await db.rulesets.delete(rulesetId);
+
+  const sync = useSyncStateStore.getState();
+  await sync.removeLastSyncedAtEntry(rulesetId);
+  await sync.removeSyncedRulesetId(rulesetId);
+  sync.clearPendingPushRuleset(rulesetId);
 }

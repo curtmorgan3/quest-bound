@@ -36,17 +36,7 @@ import {
   type ImportRulesetResult,
 } from '@/lib/compass-api';
 import { useCloudAuthStore } from '@/stores/cloud-auth-store';
-import {
-  AlertCircle,
-  CheckCircle,
-  Cloud,
-  Download,
-  Loader2,
-  Plus,
-  Trash2,
-  Upload,
-  X,
-} from 'lucide-react';
+import { AlertCircle, CheckCircle, Cloud, Download, Loader2, Plus, Upload, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
@@ -527,35 +517,15 @@ export const Rulesets = () => {
                   <span className='shrink-0 text-xs text-muted-foreground'>v{r.version}</span>
                 </div>
                 <div className='flex items-center gap-2'>
-                  <Button
-                    variant='outline'
-                    size='sm'
-                    className='h-8 flex-1 gap-1'
-                    disabled={isInstallingCloud || !!deletingCloudRulesetId}
-                    onClick={() => installFromCloud(r.id)}
-                    data-testid='ruleset-card-install'>
-                    {installingRulesetId === r.id ? (
-                      <>
-                        <Download className='h-3.5 w-3.5 animate-pulse' />
-                        Installing…
-                      </>
-                    ) : (
-                      <>
-                        <Download className='h-3.5 w-3.5' />
-                        Install
-                      </>
-                    )}
-                  </Button>
                   {r.ownedByCurrentUser ? (
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
                         <Button
-                          variant='outline'
+                          variant='ghost'
                           size='sm'
                           className='h-8 flex-1 gap-1 text-destructive hover:text-destructive'
                           disabled={isInstallingCloud || !!deletingCloudRulesetId}
                           data-testid='ruleset-card-cloud-delete'>
-                          <Trash2 className='h-3.5 w-3.5' />
                           Delete
                         </Button>
                       </AlertDialogTrigger>
@@ -585,6 +555,25 @@ export const Rulesets = () => {
                       </AlertDialogContent>
                     </AlertDialog>
                   ) : null}
+                  <Button
+                    variant='outline'
+                    size='sm'
+                    className='h-8 flex-1 gap-1'
+                    disabled={isInstallingCloud || !!deletingCloudRulesetId}
+                    onClick={() => installFromCloud(r.id)}
+                    data-testid='ruleset-card-install'>
+                    {installingRulesetId === r.id ? (
+                      <>
+                        <Download className='h-3.5 w-3.5 animate-pulse' />
+                        Installing…
+                      </>
+                    ) : (
+                      <>
+                        <Download className='h-3.5 w-3.5' />
+                        Install
+                      </>
+                    )}
+                  </Button>
                 </div>
               </div>
             </Card>

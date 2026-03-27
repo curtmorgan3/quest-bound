@@ -12,9 +12,8 @@ import {
 import { SignInSignUpModal } from '@/pages/signin';
 import { signOut, updatePassword } from '@/lib/cloud/auth';
 import { isCloudConfigured } from '@/lib/cloud/client';
-import { db } from '@/stores';
+import { linkLocalUserToCloudAuth } from '@/lib/cloud/link-local-user-to-cloud-auth';
 import { useCloudAuthStore } from '@/stores/cloud-auth-store';
-import { useCurrentUser } from '@/stores/current-user-store';
 import { AlertCircle } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -108,23 +107,6 @@ function ChangePasswordDialog({
   );
 }
 
-/** Links the current local user to the cloud identity (sets cloudUserId). Handles re-link if already linked to another account. */
-async function linkLocalUserToCloud(cloudUid: string): Promise<void> {
-  const { currentUser } = useCurrentUser.getState();
-  if (!currentUser) return;
-
-  const existingUserWithCloud = await db.users.where('cloudUserId').equals(cloudUid).first();
-  if (existingUserWithCloud && existingUserWithCloud.id !== currentUser.id) {
-    // Another local user is already linked to this cloud account; leave current user unchanged
-    // (one cloud per device: we could optionally switch active user to existingUserWithCloud)
-    return;
-  }
-
-  await db.users.update(currentUser.id, { cloudUserId: cloudUid });
-  const updated = await db.users.get(currentUser.id);
-  if (updated) useCurrentUser.getState().setCurrentUser(updated);
-}
-
 export function CloudAccountSettings() {
   const navigate = useNavigate();
   const { isAuthenticated, cloudUser, isLoading } = useCloudAuthStore();
@@ -134,7 +116,7 @@ export function CloudAccountSettings() {
 
   const handleAuthSuccess = () => {
     const uid = useCloudAuthStore.getState().cloudUser?.id;
-    if (uid) linkLocalUserToCloud(uid);
+    if (uid) void linkLocalUserToCloudAuth(uid);
   };
 
   const handleSignOut = async () => {

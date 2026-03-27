@@ -33,6 +33,8 @@ export interface SyncState {
   setSyncError: (error: string | null) => void;
   setSyncProgress: (progress: { current: number; total: number } | null) => void;
   setLastSyncedAt: (rulesetId: string, iso: string) => void;
+  /** Remove persisted pull cursor for a ruleset (e.g. after local ruleset delete). */
+  removeLastSyncedAtEntry: (rulesetId: string) => Promise<void>;
   loadLastSyncedAt: () => Promise<void>;
   addPendingPushRuleset: (rulesetId: string) => void;
   clearPendingPushRuleset: (rulesetId: string) => void;
@@ -63,6 +65,12 @@ export const useSyncStateStore = create<SyncState>((set, get) => ({
     const next = { ...get().lastSyncedAt, [rulesetId]: iso };
     set({ lastSyncedAt: next });
     setKeyval(LAST_SYNCED_KEY, next).catch(() => {});
+  },
+  removeLastSyncedAtEntry: async (rulesetId) => {
+    const next = { ...get().lastSyncedAt };
+    delete next[rulesetId];
+    set({ lastSyncedAt: next });
+    await setKeyval(LAST_SYNCED_KEY, next);
   },
   loadLastSyncedAt: async () => {
     try {

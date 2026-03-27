@@ -85,6 +85,13 @@ export function prepareRecordForRemote(
       a.variantsChartRef = Number.isFinite(n) ? Math.trunc(n) : undefined;
     }
   }
+  if (tableName === 'users') {
+    const u = stripped as { email?: unknown };
+    if (typeof u.email === 'string') {
+      const n = u.email.trim().toLowerCase();
+      u.email = n.length > 0 ? n : undefined;
+    }
+  }
   if (tableName === 'characters') {
     const c = stripped as Record<string, unknown> & {
       pinnedSidebarDocuments?: unknown;

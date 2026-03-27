@@ -22,6 +22,8 @@ import {
 } from '@/lib/cloud/sync/sync-assets';
 
 const IS_SYNCING_CLEAR_DELAY_MS = 80;
+/** When no local ruleset row exists, pull everything from remote (ignore stored incremental cursor). */
+const FULL_PULL_SINCE = '1970-01-01T00:00:00Z';
 
 async function fetchTableRecords(
   remoteTableName: string,
@@ -86,7 +88,10 @@ export async function syncPull(rulesetId: string, db: DB): Promise<{ error?: str
   const { setSyncing, setSyncError, loadLastSyncedAt } = useSyncStateStore.getState();
   await loadLastSyncedAt();
   const lastSyncedAtMap = await getStoredLastSyncedAt();
-  const lastSyncedAt = lastSyncedAtMap[rulesetId] ?? '1970-01-01T00:00:00Z';
+  const localRuleset = await db.rulesets.get(rulesetId);
+  const lastSyncedAt = localRuleset
+    ? (lastSyncedAtMap[rulesetId] ?? FULL_PULL_SINCE)
+    : FULL_PULL_SINCE;
 
   setSyncing(true);
   setSyncError(null);
