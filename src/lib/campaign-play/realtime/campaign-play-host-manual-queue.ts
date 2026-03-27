@@ -1,4 +1,5 @@
 import { applyCampaignRealtimeBatches } from '@/lib/campaign-play/realtime/apply-campaign-realtime-batches';
+import { getCampaignRosterIngestTail } from '@/lib/campaign-play/realtime/campaign-play-host-roster-ingest-tail';
 import {
   buildCampaignPlayDeltaBatches,
   expandMergedCampaignDeltaBatches,
@@ -53,7 +54,19 @@ export class CampaignPlayHostManualQueue {
   }
 
   private async processOne(env: CampaignRealtimeManualCharacterUpdateEnvelopeV1): Promise<void> {
-    const validation = await validateCampaignManualUpdate(db, this.campaignId, env.batches);
+    await getCampaignRosterIngestTail(this.campaignId);
+    let validation = await validateCampaignManualUpdate(db, this.campaignId, env.batches);
+
+    if (!validation.ok && validation.code === 'character_not_in_campaign') {
+      for (let i = 0; i < 8; i++) {
+        await new Promise<void>((r) => setTimeout(r, 64));
+        await getCampaignRosterIngestTail(this.campaignId);
+        validation = await validateCampaignManualUpdate(db, this.campaignId, env.batches);
+        if (validation.ok) break;
+        if (validation.code !== 'character_not_in_campaign') break;
+      }
+    }
+
     if (!validation.ok) {
       console.warn('[CampaignPlayHostManualQueue]', validation.message);
       return;
