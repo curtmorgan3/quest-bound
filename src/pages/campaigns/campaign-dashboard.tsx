@@ -1,8 +1,7 @@
 import { Avatar, AvatarFallback, AvatarImage, Button, Label, Switch } from '@/components';
 import { PageWrapper } from '@/components/composites';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { useCampaignPlayRealtime, useFeatureFlag } from '@/hooks';
-import { CAMPAIGN_REALTIME_PLAY_FEATURE_FLAG } from '@/lib/campaign-play/campaign-play-constants';
+import { useCampaignPlayRealtime } from '@/hooks';
 import { shouldBlockCampaignOrchestration } from '@/lib/campaign-play/campaign-play-orchestration-gate';
 import {
   useActiveRuleset,
@@ -22,7 +21,6 @@ import { cn } from '@/lib/utils';
 import { db, useCloudAuthStore } from '@/stores';
 import { useCampaignPlaySessionStore } from '@/stores/campaign-play-session-store';
 import type { Character } from '@/types';
-import { getFeatureFlag } from '@/utils/feature-flags';
 import { ChevronLeft, ChevronRight, FileText, Globe, Zap } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
@@ -102,16 +100,13 @@ function saveHostRealtimeByCampaignId(state: Record<string, boolean>) {
 export function CampaignDashboard() {
   const { campaignId, sceneId } = useParams<{ campaignId: string; sceneId?: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
-  const campaignRealtimePlayEnabled = useFeatureFlag(CAMPAIGN_REALTIME_PLAY_FEATURE_FLAG);
   const campaignPlaySession = useCampaignPlaySessionStore((s) => s.session);
   const hostCloudUserId = useCloudAuthStore((s) => s.cloudUser?.id ?? null);
   const cloudSyncEnabled = useCloudAuthStore((s) => s.cloudSyncEnabled);
   const isCloudSyncEligibilityLoading = useCloudAuthStore((s) => s.isCloudSyncEligibilityLoading);
-  const showHostCampaignCloudPanel =
-    cloudSyncEnabled && !isCloudSyncEligibilityLoading;
+  const showHostCampaignCloudPanel = cloudSyncEnabled && !isCloudSyncEligibilityLoading;
   const orchestrationBlocked = shouldBlockCampaignOrchestration(campaignId);
   const showHostRealtimeReconnectNotice =
-    campaignRealtimePlayEnabled &&
     !!campaignId &&
     campaignPlaySession?.campaignId === campaignId &&
     campaignPlaySession.role === 'host' &&
@@ -136,12 +131,10 @@ export function CampaignDashboard() {
   const [sceneDocumentPanelOpen, setSceneDocumentPanelOpen] = useState(false);
   const [sceneEventsPanelOpen, setSceneEventsPanelOpen] = useState(false);
   const [guestJoinInviteSheetOpen, setGuestJoinInviteSheetOpen] = useState(false);
-  const [hostRealtimeByCampaignId, setHostRealtimeByCampaignId] = useState<
-    Record<string, boolean>
-  >(() => loadHostRealtimeByCampaignId());
-  const hostCampaignRealtimeEnabled = Boolean(
-    campaignId && hostRealtimeByCampaignId[campaignId],
+  const [hostRealtimeByCampaignId, setHostRealtimeByCampaignId] = useState<Record<string, boolean>>(
+    () => loadHostRealtimeByCampaignId(),
   );
+  const hostCampaignRealtimeEnabled = Boolean(campaignId && hostRealtimeByCampaignId[campaignId]);
   const setHostCampaignRealtimeEnabled = (enabled: boolean) => {
     if (!campaignId) return;
     setHostRealtimeByCampaignId((prev) => {
@@ -175,7 +168,7 @@ export function CampaignDashboard() {
   }, [hostRealtimeByCampaignId]);
 
   useEffect(() => {
-    if (!campaignId || !getFeatureFlag(CAMPAIGN_REALTIME_PLAY_FEATURE_FLAG)) return;
+    if (!campaignId) return;
 
     if (!cloudSyncEnabled || isCloudSyncEligibilityLoading) {
       useCampaignPlaySessionStore.getState().clearSessionIfCampaign(campaignId);
@@ -198,12 +191,7 @@ export function CampaignDashboard() {
     return () => {
       useCampaignPlaySessionStore.getState().clearSessionIfCampaign(campaignId);
     };
-  }, [
-    campaignId,
-    hostCampaignRealtimeEnabled,
-    cloudSyncEnabled,
-    isCloudSyncEligibilityLoading,
-  ]);
+  }, [campaignId, hostCampaignRealtimeEnabled, cloudSyncEnabled, isCloudSyncEligibilityLoading]);
 
   useEffect(() => {
     if (!cloudSyncEnabled || isCloudSyncEligibilityLoading) {
@@ -213,7 +201,7 @@ export function CampaignDashboard() {
 
   useCampaignPlayRealtime({
     campaignId,
-    enabled: campaignRealtimePlayEnabled && !!campaignId,
+    enabled: !!campaignId,
   });
 
   // Ensure active ruleset (and its assets) are resolved for this campaign view.
@@ -425,7 +413,7 @@ export function CampaignDashboard() {
               data-testid='scene-events-panel-trigger'>
               <Zap className='h-4 w-4' />
             </Button>
-            {campaignRealtimePlayEnabled && campaignId && showHostCampaignCloudPanel && (
+            {campaignId && showHostCampaignCloudPanel && (
               <>
                 <Button
                   variant='ghost'
@@ -434,9 +422,7 @@ export function CampaignDashboard() {
                   aria-label='Guest join token and host session'
                   title='Guest join token and host session'
                   data-testid='guest-join-invite-sheet-trigger'>
-                  <Globe
-                    className={cn('h-4 w-4', hostCampaignRealtimeEnabled && 'text-primary')}
-                  />
+                  <Globe className={cn('h-4 w-4', hostCampaignRealtimeEnabled && 'text-primary')} />
                 </Button>
                 <CampaignPlayInviteSheet
                   open={guestJoinInviteSheetOpen}

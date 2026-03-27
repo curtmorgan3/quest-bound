@@ -53,8 +53,13 @@ function loadCloudSyncEligibility(
     eligibilityRef.inFlight;
   }
 
+  /** Avoid hiding UI that keys off cloud_sync during background refetch for the same user. */
+  const showEligibilityLoading = eligibilityRef.lastFetchedUserId !== userId;
+
   eligibilityRef.inFlight = (async () => {
-    set({ isCloudSyncEligibilityLoading: true });
+    if (showEligibilityLoading) {
+      set({ isCloudSyncEligibilityLoading: true });
+    }
     try {
       const enabled = await fetchCloudSyncEnabled();
       set({ cloudSyncEnabled: enabled, isCloudSyncEligibilityLoading: false });
@@ -93,13 +98,23 @@ export const useCloudAuthStore = create<CloudAuthState>((set) => ({
     }
 
     const applySession = (session: Session | null) => {
-      set({
-        session: session ?? null,
-        cloudUser: session?.user ?? null,
-        isAuthenticated: !!session,
-        isLoading: false,
+      const nextUserId = session?.user?.id ?? null;
+      set((state) => {
+        const prevUserId = state.cloudUser?.id ?? null;
+        const userChanged = prevUserId !== nextUserId;
+        return {
+          session: session ?? null,
+          cloudUser: session?.user ?? null,
+          isAuthenticated: !!session,
+          isLoading: false,
+          ...(userChanged && nextUserId
+            ? { cloudSyncEnabled: false, isCloudSyncEligibilityLoading: true }
+            : userChanged && !nextUserId
+              ? { cloudSyncEnabled: false, isCloudSyncEligibilityLoading: false }
+              : {}),
+        };
       });
-      void loadCloudSyncEligibility(set, !!session, session?.user?.id);
+      void loadCloudSyncEligibility(set, !!session, nextUserId ?? undefined);
     };
 
     try {

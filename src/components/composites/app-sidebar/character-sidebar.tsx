@@ -8,8 +8,6 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from '@/components/ui/sidebar';
-import { useFeatureFlag } from '@/hooks';
-import { CAMPAIGN_REALTIME_PLAY_FEATURE_FLAG } from '@/lib/campaign-play/campaign-play-constants';
 import { useCharacter, useCharts, useDocuments } from '@/lib/compass-api';
 import { filterNotSoftDeleted } from '@/lib/data/soft-delete';
 import {
@@ -44,7 +42,6 @@ export function CharacterSidebar() {
   const isAuthenticated = useCloudAuthStore((s) => s.isAuthenticated);
   const cloudSyncEnabled = useCloudAuthStore((s) => s.cloudSyncEnabled);
   const isCloudSyncEligibilityLoading = useCloudAuthStore((s) => s.isCloudSyncEligibilityLoading);
-  const campaignRealtimePlayEnabled = useFeatureFlag(CAMPAIGN_REALTIME_PLAY_FEATURE_FLAG);
   const showJoinCampaignForCloud = cloudSyncEnabled && !isCloudSyncEligibilityLoading;
   const [joinCampaignOpen, setJoinCampaignOpen] = useState(false);
   const characterId = character?.id;
@@ -103,7 +100,7 @@ export function CharacterSidebar() {
 
   return (
     <>
-      {isAuthenticated && campaignRealtimePlayEnabled && showJoinCampaignForCloud && (
+      {isAuthenticated && showJoinCampaignForCloud && (
         <JoinCampaignPanel
           open={joinCampaignOpen}
           onOpenChange={setJoinCampaignOpen}
@@ -155,7 +152,7 @@ export function CharacterSidebar() {
               </SidebarMenuButton>
             </SidebarMenuItem>
           )}
-          {isAuthenticated && campaignRealtimePlayEnabled && showJoinCampaignForCloud && (
+          {isAuthenticated && showJoinCampaignForCloud && (
             <SidebarMenuItem className={isCharacterLinkedToCampaign ? 'text-primary' : ''}>
               <SidebarMenuButton
                 type='button'
