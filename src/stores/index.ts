@@ -1,6 +1,7 @@
 export * from './api-loading-store';
 export * from './archetype-store';
 export * from './cloud-auth-store';
+export * from './cloud-sync-review-store';
 export * from './cloud-sync-summary-panel-store';
 export * from './context';
 export * from './current-user-store';

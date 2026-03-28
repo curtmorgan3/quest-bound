@@ -1,4 +1,10 @@
-import { CloudSyncOverlayDialog, CloudSyncSummaryPanel, Loading, PWAInstallPrompt } from '@/components';
+import {
+  CloudSyncOverlayDialog,
+  CloudSyncReviewDialog,
+  CloudSyncSummaryPanel,
+  Loading,
+  PWAInstallPrompt,
+} from '@/components';
 import { CharacterSelectModal } from '@/components/character-select-modal';
 import { GlobalLoadingOverlay } from '@/components/global-loading-overlay';
 import { OnboardingPanel, useOnboardingStatus } from '@/components/onboarding';
@@ -220,6 +226,7 @@ export function Layout() {
                 maxWidth: 'calc(100vw - 400px)',
               }}></canvas>
             <CloudSyncOverlayDialog />
+            <CloudSyncReviewDialog />
             <CloudSyncSummaryPanel />
             <Toaster />
           </DiceProvider>

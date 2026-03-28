@@ -1,15 +1,9 @@
-import { ChevronDown, CloudCheck, X } from 'lucide-react';
-import {
-  Button,
-  Card,
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from '@/components';
+import { Button, Card, Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components';
 import { getOrderedSyncEntityLines } from '@/lib/cloud/sync/sync-entity-labels';
 import { getCloudSyncCollapsedSummary } from '@/lib/cloud/sync/sync-service';
 import { cn } from '@/lib/utils';
 import { useCloudSyncSummaryPanelStore } from '@/stores';
+import { ChevronDown, CloudCheck, X } from 'lucide-react';
 
 export function CloudSyncSummaryPanel() {
   const open = useCloudSyncSummaryPanelStore((s) => s.open);
@@ -76,7 +70,7 @@ export function CloudSyncSummaryPanel() {
           </div>
           {hasDetails ? (
             <CollapsibleContent>
-              <div className='text-muted-foreground space-y-4 border-t px-4 pt-3 pb-4 text-sm'>
+              <div className='text-muted-foreground space-y-4 border-t px-4 pt-3 pb-4 text-sm overflow-auto'>
                 {pushedLines.length > 0 ? (
                   <div>
                     <div className='text-foreground mb-2 text-xs font-medium tracking-wide uppercase'>

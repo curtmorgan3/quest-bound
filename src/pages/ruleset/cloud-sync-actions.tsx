@@ -4,11 +4,11 @@
  */
 
 import { isCloudConfigured } from '@/lib/cloud/client';
-import { pushToCloudAndMarkSynced, syncRuleset } from '@/lib/cloud/sync/sync-service';
+import { pushToCloudAndMarkSynced } from '@/lib/cloud/sync/sync-service';
 import { useSyncStateStore } from '@/lib/cloud/sync/sync-state';
 import { Cloud, Loader2, RefreshCw } from 'lucide-react';
 import { forwardRef, useImperativeHandle, useState } from 'react';
-import { db, useCloudSyncSummaryPanelStore } from '@/stores';
+import { db, useCloudSyncReviewStore, useCloudSyncSummaryPanelStore } from '@/stores';
 import type { DB } from '@/stores/db/hooks/types';
 import { useCloudAuthStore } from '@/stores/cloud-auth-store';
 import {
@@ -37,6 +37,9 @@ export const CloudSyncActions = forwardRef<CloudSyncActionsRef, CloudSyncActions
     const cloudSyncEnabled = useCloudAuthStore((s) => s.cloudSyncEnabled);
     const cloudSyncEligibilityLoading = useCloudAuthStore((s) => s.isCloudSyncEligibilityLoading);
     const { isCloudSynced, isSyncing, syncError } = useSyncStateStore();
+    const planning = useCloudSyncReviewStore((s) => s.planning);
+    const committing = useCloudSyncReviewStore((s) => s.committing);
+    const startReview = useCloudSyncReviewStore((s) => s.startReview);
     const [pushConfirmOpen, setPushConfirmOpen] = useState(false);
     const [pushInProgress, setPushInProgress] = useState(false);
 
@@ -54,14 +57,11 @@ export const CloudSyncActions = forwardRef<CloudSyncActionsRef, CloudSyncActions
   }
 
   const synced = isCloudSynced(rulesetId);
-  const busy = isSyncing || pushInProgress;
+  const busy = isSyncing || pushInProgress || planning || committing;
 
   const handleSyncNow = async () => {
     if (busy) return;
-    const result = await syncRuleset(rulesetId, db as DB);
-    if (!result.error) {
-      useCloudSyncSummaryPanelStore.getState().showSummary(result);
-    }
+    await startReview(rulesetId, db as DB);
   };
 
   const handlePushConfirm = async () => {

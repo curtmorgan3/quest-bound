@@ -8,12 +8,22 @@ import { cloudClient, isCloudConfigured } from '@/lib/cloud/client';
 import { useCloudAuthStore } from '@/stores/cloud-auth-store';
 import type { DB } from '@/stores/db/hooks/types';
 import { ASSETS_BUCKET, FONTS_BUCKET, removeStoragePaths } from './sync-assets';
-import { syncPull } from './sync-pull';
-import { syncPush } from './sync-push';
+import { applyStagedPull, planSyncPull, syncPull, type StagedPullPayload } from './sync-pull';
+import { planSyncPush, syncPush } from './sync-push';
 import { useSyncStateStore } from './sync-state';
 import { prepareRemoteForLocal } from './sync-utils';
 
-export { syncPull, syncPush };
+export { applyStagedPull, planSyncPull, syncPull, syncPush, type StagedPullPayload };
+
+/** Successful plan for staged ruleset sync (review UI). */
+export interface RulesetSyncPlanOk {
+  stagedPull: StagedPullPayload;
+  pulledByEntity: Record<string, number>;
+  pushedByEntity: Record<string, number>;
+  pulledCount: number;
+}
+
+export type RulesetSyncPlanResult = { error: string } | RulesetSyncPlanOk;
 
 /** Brief delay before clearing `isSyncing` / overlay so Dexie hooks settle after bulk writes. */
 const CLOUD_SYNC_UI_CLEAR_DELAY_MS = 80;
@@ -33,6 +43,92 @@ async function withCloudSyncUi<T>(fn: () => Promise<T>): Promise<T> {
       }, CLOUD_SYNC_UI_CLEAR_DELAY_MS);
     });
   }
+}
+
+/** Overlay only (no Dexie `isSyncing`) while fetching pull/push plans. */
+async function withCloudSyncPlanningUi<T>(fn: () => Promise<T>): Promise<T> {
+  const { setCloudSyncOverlayOpen } = useSyncStateStore.getState();
+  setCloudSyncOverlayOpen(true);
+  try {
+    return await fn();
+  } finally {
+    setCloudSyncOverlayOpen(false);
+  }
+}
+
+/**
+ * Fetch remote deltas and local push preview without mutating IndexedDB.
+ */
+export async function planRulesetSync(rulesetId: string, db: DB): Promise<RulesetSyncPlanResult> {
+  if (!isCloudConfigured) return { error: 'Cloud not configured' };
+  const { isAuthenticated } = useCloudAuthStore.getState();
+  if (!isAuthenticated) return { error: 'Not signed in' };
+  if (!navigator.onLine) return { error: 'Offline' };
+
+  const { isSyncing, setSyncError } = useSyncStateStore.getState();
+  if (isSyncing) return { error: 'Sync already in progress' };
+
+  setSyncError(null);
+  return await withCloudSyncPlanningUi(async () => {
+    const pullPlan = await planSyncPull(rulesetId, db);
+    if (pullPlan.error) return { error: pullPlan.error };
+    if (
+      !pullPlan.payload ||
+      pullPlan.pulledByEntity === undefined ||
+      pullPlan.pulledCount === undefined
+    ) {
+      return { error: 'Pull plan incomplete' };
+    }
+    const pushPlan = await planSyncPush(rulesetId, db);
+    if (pushPlan.error) return { error: pushPlan.error };
+    return {
+      stagedPull: pullPlan.payload,
+      pulledByEntity: pullPlan.pulledByEntity,
+      pushedByEntity: pushPlan.pushedByEntity ?? {},
+      pulledCount: pullPlan.pulledCount,
+    };
+  });
+}
+
+/**
+ * Apply staged pull (downloads assets/fonts), then push. Caller supplies the plan from {@link planRulesetSync}.
+ */
+export async function commitRulesetSync(
+  rulesetId: string,
+  db: DB,
+  plan: RulesetSyncPlanOk,
+): Promise<CloudSyncOutcome> {
+  if (!isCloudConfigured) return { error: 'Cloud not configured' };
+  const { isAuthenticated } = useCloudAuthStore.getState();
+  if (!isAuthenticated) return { error: 'Not signed in' };
+  if (!navigator.onLine) return { error: 'Offline' };
+
+  const { isSyncing, setSyncError } = useSyncStateStore.getState();
+  if (isSyncing) return { error: 'Sync already in progress' };
+
+  const client = cloudClient;
+  if (!client) return { error: 'Cloud not configured' };
+
+  setSyncError(null);
+  return await withCloudSyncUi(async () => {
+    await applyStagedPull(db, client, plan.stagedPull);
+    const pushResult = await syncPush(rulesetId, db);
+    if (pushResult.error) {
+      return {
+        error: pushResult.error,
+        pulledCount: plan.pulledCount,
+        pulledByEntity: plan.pulledByEntity,
+      };
+    }
+
+    useSyncStateStore.getState().setLastSyncCompletedAt(Date.now());
+    return {
+      pulledCount: plan.pulledCount,
+      pulledByEntity: plan.pulledByEntity,
+      pushedCount: pushResult.pushedCount,
+      pushedByEntity: pushResult.pushedByEntity,
+    };
+  });
 }
 
 /** Result of a ruleset cloud sync (manual sync or first push). */
@@ -184,22 +280,26 @@ export async function syncRuleset(rulesetId: string, db: DB): Promise<CloudSyncO
   if (isSyncing) return { error: 'Sync already in progress' };
 
   setSyncError(null);
+  const syncClient = cloudClient;
+  if (!syncClient) return { error: 'Cloud not configured' };
   return await withCloudSyncUi(async () => {
-    const pullResult = await syncPull(rulesetId, db);
-    if (pullResult.error) return pullResult;
+    const pullPlan = await planSyncPull(rulesetId, db);
+    if (pullPlan.error) return { error: pullPlan.error };
+    if (!pullPlan.payload) return { error: 'Pull failed' };
+    await applyStagedPull(db, syncClient, pullPlan.payload);
     const pushResult = await syncPush(rulesetId, db);
     if (pushResult.error) {
       return {
         error: pushResult.error,
-        pulledCount: pullResult.pulledCount,
-        pulledByEntity: pullResult.pulledByEntity,
+        pulledCount: pullPlan.pulledCount,
+        pulledByEntity: pullPlan.pulledByEntity,
       };
     }
 
     useSyncStateStore.getState().setLastSyncCompletedAt(Date.now());
     return {
-      pulledCount: pullResult.pulledCount,
-      pulledByEntity: pullResult.pulledByEntity,
+      pulledCount: pullPlan.pulledCount,
+      pulledByEntity: pullPlan.pulledByEntity,
       pushedCount: pushResult.pushedCount,
       pushedByEntity: pushResult.pushedByEntity,
     };

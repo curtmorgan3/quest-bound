@@ -13,6 +13,7 @@ import { fetchCloudRulesetRowOwnerId } from '@/lib/cloud/sync/fetch-cloud-rulese
 import { fetchRulesetStorageFolderPrefix } from '@/lib/cloud/sync/fetch-ruleset-storage-prefix';
 import { uploadAssetsForPush, uploadFontsForPush } from '@/lib/cloud/sync/sync-assets';
 import {
+  getPendingSyncDeletes,
   getStoredLastSyncedAt,
   setStoredLastSyncedAt,
   takePendingSyncDeletesForRuleset,
@@ -226,6 +227,94 @@ export async function syncPush(
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     setSyncError(message);
+    return { error: message };
+  }
+}
+
+/**
+ * Same row selection as {@link syncPush} without uploads or upserts; includes pending delete tombstones.
+ */
+export async function planSyncPush(
+  rulesetId: string,
+  db: DB,
+): Promise<{ error?: string; pushedByEntity?: Record<string, number> }> {
+  const client = cloudClient;
+  const session = await getSession();
+
+  if (!client || !session?.user?.id) {
+    return { error: 'Not authenticated' };
+  }
+  const sessionUserId = session.user.id;
+  const { loadLastSyncedAt } = useSyncStateStore.getState();
+  await loadLastSyncedAt();
+  const lastSyncedAtMap = await getStoredLastSyncedAt();
+  const lastSyncedAt = lastSyncedAtMap[rulesetId] ?? '1970-01-01T00:00:00Z';
+
+  const pushedByEntity: Record<string, number> = {};
+  try {
+    let rowOwnerId = sessionUserId;
+    try {
+      rowOwnerId = await fetchCloudRulesetRowOwnerId(client, rulesetId);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      const isMissingRemoteRuleset =
+        message.includes('Ruleset not found in the cloud or you do not have access');
+      if (!isMissingRemoteRuleset) {
+        throw error;
+      }
+    }
+
+    const configs: SyncTableConfig[] = [];
+    for (const name of SYNC_TABLE_ORDER) {
+      const c = getSyncTableConfig(name);
+      if (c) configs.push(c);
+    }
+
+    for (const config of configs) {
+      const tables = db as unknown as Record<string, TableWithWhere & TableWithGet>;
+      const table = tables[config.tableName];
+      if (!table) continue;
+
+      let rows: Record<string, unknown>[];
+      if (config.parentTable && config.parentKey && table.where) {
+        const parentIds = await getParentIds(db, config.parentTable, rulesetId);
+        if (parentIds.length === 0) continue;
+        const all = await table.where(config.parentKey).anyOf(parentIds).toArray();
+        rows = all.filter((r) => (r.updatedAt as string) > lastSyncedAt);
+      } else if (config.tableName === 'users' && table.where) {
+        const linked = await table.where('cloudUserId').equals(sessionUserId).first();
+        rows =
+          linked && (linked.updatedAt as string) > lastSyncedAt
+            ? [linked as Record<string, unknown>]
+            : [];
+      } else if (config.hasRulesetId) {
+        if (config.tableName === 'rulesets') {
+          const row = await table.get?.(rulesetId);
+          rows = row && (row.updatedAt as string) > lastSyncedAt ? [row] : [];
+        } else if (table.where) {
+          const all = await table.where('rulesetId').equals(rulesetId).toArray();
+          rows = all.filter((r) => (r.updatedAt as string) > lastSyncedAt);
+        } else {
+          continue;
+        }
+      } else {
+        continue;
+      }
+
+      if (rows.length === 0) continue;
+      addSyncEntityCount(pushedByEntity, config.tableName, rows.length);
+    }
+
+    const pendingDeletes = (await getPendingSyncDeletes()).filter((r) => r.rulesetId === rulesetId);
+    for (const d of pendingDeletes) {
+      addSyncEntityCount(pushedByEntity, d.tableName, 1);
+    }
+
+    void rowOwnerId;
+    return { pushedByEntity };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    useSyncStateStore.getState().setSyncError(message);
     return { error: message };
   }
 }

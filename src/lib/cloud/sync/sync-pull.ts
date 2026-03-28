@@ -1,8 +1,9 @@
 /**
- * Pull remote changes for a ruleset: fetch from Supabase, LWW merge, bulkPut with isSyncing guard.
- * Ruleset-scoped fetches use the cloud row owner’s `user_id`; tombstones are scoped by owner + `ruleset_id`.
+ * Pull remote changes for a ruleset: fetch from Supabase, LWW merge, then either stage for review
+ * or apply immediately (install path). Tombstones are scoped by owner + `ruleset_id`.
  */
 
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { getSession } from '@/lib/cloud/auth';
 import { cloudClient } from '@/lib/cloud/client';
 import { fetchCloudRulesetRowOwnerId } from '@/lib/cloud/sync/fetch-cloud-ruleset-row-owner';
@@ -13,7 +14,7 @@ import {
   SYNC_TABLE_ORDER,
 } from '@/lib/cloud/sync/sync-tables';
 import { isSoftDeleteSyncTable } from '@/lib/data/soft-delete';
-import { prepareRemoteForLocal } from '@/lib/cloud/sync/sync-utils';
+import { prepareRemoteForLocal, toSnakeCaseKeys } from '@/lib/cloud/sync/sync-utils';
 import { useSyncStateStore, getStoredLastSyncedAt } from '@/lib/cloud/sync/sync-state';
 import {
   resolveAssetRowsForPull,
@@ -24,6 +25,17 @@ import { addSyncEntityCount, sumSyncEntityCounts } from '@/lib/cloud/sync/sync-e
 
 /** When no local ruleset row exists, pull everything from remote (ignore stored incremental cursor). */
 const FULL_PULL_SINCE = '1970-01-01T00:00:00Z';
+
+export interface StagedPullDelete {
+  tableName: string;
+  entityId: string;
+}
+
+/** In-memory staged pull: prepared local rows per table + remote tombstones (not applied until confirm). */
+export interface StagedPullPayload {
+  upsertsByTable: Partial<Record<string, Record<string, unknown>[]>>;
+  deletes: StagedPullDelete[];
+}
 
 async function fetchTableRecords(
   remoteTableName: string,
@@ -78,10 +90,52 @@ async function fetchSyncDeletes(
   return (data ?? []) as { table_name: string; entity_id: string }[];
 }
 
-export async function syncPull(
-  rulesetId: string,
+async function mergeTablePlan(
   db: DB,
-): Promise<{ error?: string; pulledCount?: number; pulledByEntity?: Record<string, number> }> {
+  tableName: string,
+  remoteRows: Record<string, unknown>[],
+): Promise<{ count: number; toPut: Record<string, unknown>[] }> {
+  if (remoteRows.length === 0) return { count: 0, toPut: [] };
+  const table = (db as unknown as Record<
+    string,
+    {
+      bulkPut: (objs: unknown[]) => Promise<void>;
+      get: (id: string) => Promise<{ updatedAt?: string } | undefined>;
+    }
+  >)[tableName];
+  if (!table?.bulkPut) return { count: 0, toPut: [] };
+  const toPut: Record<string, unknown>[] = [];
+  for (const row of remoteRows) {
+    const local = await table.get(row.id as string);
+    const remoteUpdated = row.updated_at as string;
+    if (!local || !local.updatedAt || remoteUpdated >= local.updatedAt) {
+      const prepared = prepareRemoteForLocal(row, tableName);
+      if (isSoftDeleteSyncTable(tableName)) {
+        prepared.deleted = prepared.deleted === true;
+      }
+      if (tableName === 'users' && local) {
+        const loc = local as Record<string, unknown>;
+        if (loc.emailVerified !== undefined) prepared.emailVerified = loc.emailVerified;
+        if (loc.cloudEnabled !== undefined) prepared.cloudEnabled = loc.cloudEnabled;
+      }
+      toPut.push(prepared);
+    }
+  }
+  return { count: toPut.length, toPut };
+}
+
+export interface PlanSyncPullResult {
+  error?: string;
+  payload?: StagedPullPayload;
+  pulledCount?: number;
+  pulledByEntity?: Record<string, number>;
+}
+
+/**
+ * Fetch remote deltas and compute LWW merges without writing IndexedDB.
+ * Asset/font binary data is not downloaded; rows keep storage_path / storagePath for apply.
+ */
+export async function planSyncPull(rulesetId: string, db: DB): Promise<PlanSyncPullResult> {
   const client = cloudClient;
   const session = await getSession();
   if (!client || !session?.user?.id) {
@@ -100,6 +154,8 @@ export async function syncPull(
   try {
     const rowOwnerId = await fetchCloudRulesetRowOwnerId(client, rulesetId);
     const pulledByEntity: Record<string, number> = {};
+    const upsertsByTable: Partial<Record<string, Record<string, unknown>[]>> = {};
+    const deletes: StagedPullDelete[] = [];
 
     const tablesByParent = new Map<string, string[]>();
     const configs = SYNC_TABLE_ORDER.map((name) => getSyncTableConfig(name)).filter(Boolean) as ReturnType<
@@ -121,7 +177,9 @@ export async function syncPull(
           localLinked && rows.length > 0
             ? rows.filter((r) => r.id === localLinked.id)
             : rows;
-        addSyncEntityCount(pulledByEntity, config.tableName, await mergeTable(db, config.tableName, filtered));
+        const { count, toPut } = await mergeTablePlan(db, config.tableName, filtered);
+        if (toPut.length > 0) upsertsByTable[config.tableName] = toPut;
+        addSyncEntityCount(pulledByEntity, config.tableName, count);
       } else if (config.hasRulesetId) {
         let rows: Record<string, unknown>[];
         if (config.tableName === 'rulesets') {
@@ -145,21 +203,30 @@ export async function syncPull(
           );
         }
 
-        if (config.tableName === 'assets' && client && rows.length > 0) {
-          const resolved = await resolveAssetRowsForPull(client, rows);
-          rows = resolved.rows;
-          tablesByParent.set(config.tableName, rows.map((r) => r.id as string).filter(Boolean));
-          addSyncEntityCount(pulledByEntity, config.tableName, await mergeTable(db, config.tableName, rows));
-          if (resolved.downloaded.length > 0) {
-            updateMemoizedAssetsForRecords(resolved.downloaded);
-          }
-        } else if (config.tableName === 'fonts' && client && rows.length > 0) {
-          rows = await resolveFontRowsForPull(client, rows);
-          tablesByParent.set(config.tableName, rows.map((r) => r.id as string).filter(Boolean));
-          addSyncEntityCount(pulledByEntity, config.tableName, await mergeTable(db, config.tableName, rows));
+        if (config.tableName === 'assets' && rows.length > 0) {
+          tablesByParent.set(
+            config.tableName,
+            rows.map((r) => r.id as string).filter(Boolean),
+          );
+          const { count, toPut } = await mergeTablePlan(db, config.tableName, rows);
+          if (toPut.length > 0) upsertsByTable[config.tableName] = toPut;
+          addSyncEntityCount(pulledByEntity, config.tableName, count);
+        } else if (config.tableName === 'fonts' && rows.length > 0) {
+          tablesByParent.set(
+            config.tableName,
+            rows.map((r) => r.id as string).filter(Boolean),
+          );
+          const { count, toPut } = await mergeTablePlan(db, config.tableName, rows);
+          if (toPut.length > 0) upsertsByTable[config.tableName] = toPut;
+          addSyncEntityCount(pulledByEntity, config.tableName, count);
         } else {
-          tablesByParent.set(config.tableName, rows.map((r) => r.id as string).filter(Boolean));
-          addSyncEntityCount(pulledByEntity, config.tableName, await mergeTable(db, config.tableName, rows));
+          tablesByParent.set(
+            config.tableName,
+            rows.map((r) => r.id as string).filter(Boolean),
+          );
+          const { count, toPut } = await mergeTablePlan(db, config.tableName, rows);
+          if (toPut.length > 0) upsertsByTable[config.tableName] = toPut;
+          addSyncEntityCount(pulledByEntity, config.tableName, count);
         }
       } else if (config.parentTable && config.parentKey) {
         let parentIds = [...(tablesByParent.get(config.parentTable) ?? [])];
@@ -194,7 +261,9 @@ export async function syncPull(
         );
         const ids = rows.map((r) => r.id as string).filter(Boolean);
         if (ids.length > 0) tablesByParent.set(config.tableName, ids);
-        addSyncEntityCount(pulledByEntity, config.tableName, await mergeTable(db, config.tableName, rows));
+        const { count, toPut } = await mergeTablePlan(db, config.tableName, rows);
+        if (toPut.length > 0) upsertsByTable[config.tableName] = toPut;
+        addSyncEntityCount(pulledByEntity, config.tableName, count);
       }
     }
 
@@ -202,22 +271,16 @@ export async function syncPull(
     for (const entry of deleteEntries) {
       const config = getSyncTableConfigByRemote(entry.table_name);
       if (!config) continue;
-      const table = (db as unknown as Record<string, { delete: (id: string) => Promise<void> }>)[config.tableName];
-      if (!table) continue;
-      try {
-        await table.delete(entry.entity_id);
-        addSyncEntityCount(pulledByEntity, config.tableName, 1);
-      } catch {
-        /* row may already be gone */
-      }
+      deletes.push({ tableName: config.tableName, entityId: entry.entity_id });
+      addSyncEntityCount(pulledByEntity, config.tableName, 1);
     }
 
-    // Do not advance lastSyncedAt here. syncPush (or the full sync in syncRuleset) must
-    // use the same lastSyncedAt to decide which local rows to push. If we advance it now,
-    // local changes made before this pull would have updatedAt < lastSyncedAt and would
-    // never be pushed. lastSyncedAt is only updated after a successful push.
     const pulledCount = sumSyncEntityCounts(pulledByEntity);
-    return { pulledCount, pulledByEntity };
+    return {
+      payload: { upsertsByTable, deletes },
+      pulledCount,
+      pulledByEntity,
+    };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     setSyncError(message);
@@ -225,31 +288,67 @@ export async function syncPull(
   }
 }
 
-async function mergeTable(
+/**
+ * Write staged pull to IndexedDB: download assets/fonts from storage, then bulkPut in table order, then deletes.
+ */
+export async function applyStagedPull(
   db: DB,
-  tableName: string,
-  remoteRows: Record<string, unknown>[],
-): Promise<number> {
-  if (remoteRows.length === 0) return 0;
-  const table = (db as unknown as Record<string, { bulkPut: (objs: unknown[]) => Promise<void>; get: (id: string) => Promise<{ updatedAt?: string } | undefined> }>)[tableName];
-  if (!table?.bulkPut) return 0;
-  const toPut: Record<string, unknown>[] = [];
-  for (const row of remoteRows) {
-    const local = await table.get(row.id as string);
-    const remoteUpdated = row.updated_at as string;
-    if (!local || !local.updatedAt || remoteUpdated >= local.updatedAt) {
-      const prepared = prepareRemoteForLocal(row, tableName);
-      if (isSoftDeleteSyncTable(tableName)) {
-        prepared.deleted = prepared.deleted === true;
+  client: SupabaseClient,
+  payload: StagedPullPayload,
+): Promise<void> {
+  type BulkTable = { bulkPut: (objs: unknown[]) => Promise<void> };
+  const dbTables = db as unknown as Record<string, BulkTable>;
+
+  for (const name of SYNC_TABLE_ORDER) {
+    const rows = payload.upsertsByTable[name];
+    if (!rows?.length) continue;
+    const table = dbTables[name];
+    if (!table?.bulkPut) continue;
+
+    if (name === 'assets') {
+      const snakeRows = rows.map((r) => toSnakeCaseKeys(r as Record<string, unknown>));
+      const resolved = await resolveAssetRowsForPull(client, snakeRows);
+      const prepared = resolved.rows.map((r) => prepareRemoteForLocal(r, 'assets'));
+      await table.bulkPut(prepared);
+      if (resolved.downloaded.length > 0) {
+        updateMemoizedAssetsForRecords(resolved.downloaded);
       }
-      if (tableName === 'users' && local) {
-        const loc = local as Record<string, unknown>;
-        if (loc.emailVerified !== undefined) prepared.emailVerified = loc.emailVerified;
-        if (loc.cloudEnabled !== undefined) prepared.cloudEnabled = loc.cloudEnabled;
-      }
-      toPut.push(prepared);
+    } else if (name === 'fonts') {
+      const snakeRows = rows.map((r) => toSnakeCaseKeys(r as Record<string, unknown>));
+      const resolved = await resolveFontRowsForPull(client, snakeRows);
+      const prepared = resolved.map((r) => prepareRemoteForLocal(r, 'fonts'));
+      await table.bulkPut(prepared);
+    } else {
+      await table.bulkPut(rows);
     }
   }
-  if (toPut.length > 0) await table.bulkPut(toPut);
-  return toPut.length;
+
+  for (const d of payload.deletes) {
+    const delTable = (db as unknown as Record<string, { delete: (id: string) => Promise<void> }>)[
+      d.tableName
+    ];
+    if (!delTable?.delete) continue;
+    try {
+      await delTable.delete(d.entityId);
+    } catch {
+      /* row may already be gone */
+    }
+  }
+}
+
+/** Full pull + immediate local apply (e.g. install from cloud). */
+export async function syncPull(
+  rulesetId: string,
+  db: DB,
+): Promise<{ error?: string; pulledCount?: number; pulledByEntity?: Record<string, number> }> {
+  const plan = await planSyncPull(rulesetId, db);
+  if (plan.error) return { error: plan.error };
+  if (!plan.payload) return { error: 'No pull payload' };
+  const client = cloudClient;
+  if (!client) return { error: 'Cloud not configured' };
+  await applyStagedPull(db, client, plan.payload);
+  return {
+    pulledCount: plan.pulledCount,
+    pulledByEntity: plan.pulledByEntity,
+  };
 }

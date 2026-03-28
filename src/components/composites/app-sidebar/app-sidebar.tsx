@@ -23,11 +23,11 @@ import {
 } from '@/components/ui/sidebar';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { isCloudConfigured } from '@/lib/cloud/client';
-import { pushToCloudAndMarkSynced, syncRuleset } from '@/lib/cloud/sync/sync-service';
+import { pushToCloudAndMarkSynced } from '@/lib/cloud/sync/sync-service';
 import { useSyncStateStore } from '@/lib/cloud/sync/sync-state';
 import { useActiveRuleset, useUsers } from '@/lib/compass-api';
 import { Settings } from '@/pages';
-import { db, DiceContext, useCloudSyncSummaryPanelStore } from '@/stores';
+import { db, DiceContext, useCloudSyncReviewStore, useCloudSyncSummaryPanelStore } from '@/stores';
 import { useCloudAuthStore } from '@/stores/cloud-auth-store';
 import type { DB } from '@/stores/db/hooks/types';
 import { formatDistanceToNow } from 'date-fns';
@@ -122,6 +122,9 @@ export function AppSidebar() {
     pushDialogOpen,
     setPushDialogOpen,
   } = useSyncStateStore();
+  const planning = useCloudSyncReviewStore((s) => s.planning);
+  const committing = useCloudSyncReviewStore((s) => s.committing);
+  const startReview = useCloudSyncReviewStore((s) => s.startReview);
 
   const showCloudSync =
     isCloudConfigured &&
@@ -135,7 +138,7 @@ export function AppSidebar() {
     !isCampaignsRoute &&
     !isDevTools;
   const synced = rulesetId ? isCloudSynced(rulesetId) : false;
-  const busy = isSyncing || pushInProgress;
+  const busy = isSyncing || pushInProgress || planning || committing;
   const isOffline = !navigator.onLine;
   const lastSynced = rulesetId ? lastSyncedAt[rulesetId] : undefined;
 
@@ -177,10 +180,7 @@ export function AppSidebar() {
       return;
     }
     if (synced) {
-      const result = await syncRuleset(rulesetId, db as DB);
-      if (!result.error) {
-        useCloudSyncSummaryPanelStore.getState().showSummary(result);
-      }
+      await startReview(rulesetId, db as DB);
     } else {
       setPushDialogOpen(true);
     }
