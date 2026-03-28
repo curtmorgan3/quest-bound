@@ -55,6 +55,16 @@ function labelPairForTable(tableName: string): LabelPair {
   return { one: words, many: `${words}s` };
 }
 
+/** Singular entity label for one row (e.g. sync review pull list). */
+export function getSyncEntityTypeLabelOne(tableName: string): string {
+  return labelPairForTable(tableName).one;
+}
+
+/** Plural entity label (e.g. "3 components"). */
+export function getSyncEntityTypeLabelMany(tableName: string): string {
+  return labelPairForTable(tableName).many;
+}
+
 export function addSyncEntityCount(
   map: Record<string, number>,
   tableName: string,
