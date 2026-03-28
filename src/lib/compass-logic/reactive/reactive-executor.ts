@@ -35,6 +35,9 @@ export interface ReactiveExecutionOptions {
   roll?: RollFn;
   /** Optional rollSplit function for script built-in rollSplit(). */
   rollSplit?: RollSplitFn;
+  /** Per-character roll closures (worker delegated UI routing). */
+  createRollForCharacter?: (characterId: string) => RollFn;
+  createRollSplitForCharacter?: (characterId: string) => RollSplitFn;
   /** Optional prompt function for script built-in prompt(msg, choices). */
   prompt?: PromptFn;
   /** Optional promptMultiple function for script built-in promptMultiple(msg, choices). */
@@ -355,6 +358,8 @@ export class ReactiveExecutor {
         executeActionEvent: options.executeActionEvent,
         roll: options.roll,
         rollSplit: options.rollSplit,
+        createRollForCharacter: options.createRollForCharacter,
+        createRollSplitForCharacter: options.createRollSplitForCharacter,
         prompt: options.prompt,
         promptMultiple: options.promptMultiple,
         promptInput: options.promptInput,

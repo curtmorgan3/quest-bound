@@ -187,6 +187,11 @@ export interface ScriptExecutionContext {
   roll?: RollFn;
   /** Optional rollSplit function for script built-in rollSplit(). When set, used instead of default local roll. */
   rollSplit?: RollSplitFn;
+  /**
+   * When set (worker), `Character('id').roll()` uses a roll closure tagged with that character for delegated UI.
+   */
+  createRollForCharacter?: (characterId: string) => RollFn;
+  createRollSplitForCharacter?: (characterId: string) => RollSplitFn;
   /** Optional prompt function for script built-in prompt(msg, choices). When set, used to show modal and return selected choice. */
   prompt?: PromptFn;
   /** Optional promptMultiple function for script built-in promptMultiple(msg, choices). When set, used to show multi-select modal and return selected choices. */
@@ -512,6 +517,9 @@ export class ScriptRunner {
     }
 
     const turnOrder = this.sceneCharacterTurnOrder?.get(characterId) ?? 0;
+    const charRoll = this.context.createRollForCharacter?.(characterId) ?? this.context.roll;
+    const charRollSplit =
+      this.context.createRollSplitForCharacter?.(characterId) ?? this.context.rollSplit;
     const accessor = new CharacterAccessor(
       characterId,
       characterName,
@@ -533,8 +541,8 @@ export class ScriptRunner {
       this.context.campaignId,
       this.context.campaignSceneId,
       this.registerComponentUpdate,
-      this.context.roll,
-      this.context.rollSplit,
+      charRoll,
+      charRollSplit,
       this.context.onRollComplete,
       this.refLabelToComponentId,
     );
@@ -1225,6 +1233,7 @@ export class ScriptRunner {
               this.context.sharedRosterBroadcasts!.push(p);
             }
           : undefined,
+        this.context.createRollForCharacter,
       );
     } else {
       this.sceneAccessor = null;
@@ -1240,6 +1249,9 @@ export class ScriptRunner {
     }
 
     const ownerTurnOrder = this.sceneCharacterTurnOrder?.get(ownerId) ?? 0;
+    const ownerRoll = this.context.createRollForCharacter?.(ownerId) ?? this.context.roll;
+    const ownerRollSplit =
+      this.context.createRollSplitForCharacter?.(ownerId) ?? this.context.rollSplit;
     const owner = new OwnerAccessor(
       ownerId,
       this.ownerCharacterName,
@@ -1261,8 +1273,8 @@ export class ScriptRunner {
       this.context.campaignId,
       this.context.campaignSceneId,
       this.registerComponentUpdate,
-      this.context.roll,
-      this.context.rollSplit,
+      ownerRoll,
+      ownerRollSplit,
       this.context.onRollComplete,
       this.refLabelToComponentId,
     );

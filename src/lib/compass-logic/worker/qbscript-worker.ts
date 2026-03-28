@@ -115,14 +115,21 @@ const rollBridge = {
   requestRoll(
     expression: string,
     executionRequestId: string,
-    rerollMessage?: string,
+    rerollMessage: string | undefined,
+    surfaceCharacterId: string,
   ): Promise<number> {
     const rollRequestId = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
     return new Promise<number>((resolve, reject) => {
       this.pending.set(rollRequestId, { resolve, reject });
       sendSignal({
         type: 'ROLL_REQUEST',
-        payload: { executionRequestId, rollRequestId, expression, rerollMessage },
+        payload: {
+          executionRequestId,
+          rollRequestId,
+          expression,
+          rerollMessage,
+          surfaceCharacterId,
+        },
       });
     });
   },
@@ -139,14 +146,21 @@ const rollBridge = {
   requestRollSplit(
     expression: string,
     executionRequestId: string,
-    rerollMessage?: string,
+    rerollMessage: string | undefined,
+    surfaceCharacterId: string,
   ): Promise<number[]> {
     const rollRequestId = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
     return new Promise<number[]>((resolve, reject) => {
       this.pendingSplit.set(rollRequestId, { resolve, reject });
       sendSignal({
         type: 'ROLL_SPLIT_REQUEST',
-        payload: { executionRequestId, rollRequestId, expression, rerollMessage },
+        payload: {
+          executionRequestId,
+          rollRequestId,
+          expression,
+          rerollMessage,
+          surfaceCharacterId,
+        },
       });
     });
   },
@@ -168,13 +182,18 @@ const rollBridge = {
 
 const promptBridge = {
   pending: new Map<string, { resolve: (value: string) => void; reject: (err: Error) => void }>(),
-  requestPrompt(msg: string, choices: string[], executionRequestId: string): Promise<string> {
+  requestPrompt(
+    msg: string,
+    choices: string[],
+    executionRequestId: string,
+    surfaceCharacterId: string,
+  ): Promise<string> {
     const promptRequestId = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
     return new Promise<string>((resolve, reject) => {
       this.pending.set(promptRequestId, { resolve, reject });
       sendSignal({
         type: 'PROMPT_REQUEST',
-        payload: { executionRequestId, promptRequestId, msg, choices },
+        payload: { executionRequestId, promptRequestId, msg, choices, surfaceCharacterId },
       });
     });
   },
@@ -200,13 +219,14 @@ const promptMultipleBridge = {
     msg: string,
     choices: string[],
     executionRequestId: string,
+    surfaceCharacterId: string,
   ): Promise<string[]> {
     const promptRequestId = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
     return new Promise<string[]>((resolve, reject) => {
       this.pending.set(promptRequestId, { resolve, reject });
       sendSignal({
         type: 'PROMPT_MULTIPLE_REQUEST',
-        payload: { executionRequestId, promptRequestId, msg, choices },
+        payload: { executionRequestId, promptRequestId, msg, choices, surfaceCharacterId },
       });
     });
   },
@@ -228,13 +248,17 @@ const promptMultipleBridge = {
 
 const promptInputBridge = {
   pending: new Map<string, { resolve: (value: string) => void; reject: (err: Error) => void }>(),
-  requestPromptInput(msg: string, executionRequestId: string): Promise<string> {
+  requestPromptInput(
+    msg: string,
+    executionRequestId: string,
+    surfaceCharacterId: string,
+  ): Promise<string> {
     const promptRequestId = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
     return new Promise<string>((resolve, reject) => {
       this.pending.set(promptRequestId, { resolve, reject });
       sendSignal({
         type: 'PROMPT_INPUT_REQUEST',
-        payload: { executionRequestId, promptRequestId, msg },
+        payload: { executionRequestId, promptRequestId, msg, surfaceCharacterId },
       });
     });
   },
@@ -268,7 +292,8 @@ const characterSelectBridge = {
     description: string | undefined,
     executionRequestId: string,
     rulesetId: string,
-    campaignId?: string,
+    campaignId: string | undefined,
+    surfaceCharacterId: string,
   ): Promise<string[]> {
     const selectRequestId = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
     return new Promise<string[]>((resolve, reject) => {
@@ -283,6 +308,7 @@ const characterSelectBridge = {
           description,
           rulesetId,
           campaignId,
+          surfaceCharacterId,
         },
       });
     });
@@ -298,6 +324,72 @@ const characterSelectBridge = {
     }
   },
 };
+
+/** Main-thread UI bridges for worker scripts (roll/prompt/select with surfaceCharacterId for delegation). */
+function createWorkerMainThreadUiBridges(options: {
+  executionRequestId: string;
+  /** Acting character for prompts/selects and default global roll(). */
+  actingCharacterId: string;
+  rulesetId: string;
+  campaignId?: string;
+}): {
+  rollFn: RollFn;
+  rollSplitFn: RollSplitFn;
+  createRollForCharacter: (characterId: string) => RollFn;
+  createRollSplitForCharacter: (characterId: string) => RollSplitFn;
+  promptFn: PromptFn;
+  promptMultipleFn: PromptMultipleFn;
+  promptInputFn: PromptInputFn;
+  selectCharacterFn: SelectCharacterFn;
+  selectCharactersFn: SelectCharactersFn;
+} {
+  const { executionRequestId, actingCharacterId, rulesetId, campaignId } = options;
+  const createRollForCharacter = (surfaceId: string): RollFn => (expression, rerollMessage) =>
+    rollBridge.requestRoll(expression, executionRequestId, rerollMessage, surfaceId);
+  const createRollSplitForCharacter = (surfaceId: string): RollSplitFn => (expression, rerollMessage) =>
+    rollBridge.requestRollSplit(expression, executionRequestId, rerollMessage, surfaceId);
+  const rollFn = createRollForCharacter(actingCharacterId);
+  const rollSplitFn = createRollSplitForCharacter(actingCharacterId);
+  const promptFn: PromptFn = (msg, choices) =>
+    promptBridge.requestPrompt(msg, choices, executionRequestId, actingCharacterId);
+  const promptMultipleFn: PromptMultipleFn = (msg, choices) =>
+    promptMultipleBridge.requestPromptMultiple(msg, choices, executionRequestId, actingCharacterId);
+  const promptInputFn: PromptInputFn = (msg) =>
+    promptInputBridge.requestPromptInput(msg, executionRequestId, actingCharacterId);
+  const selectCharacterFn: SelectCharacterFn = (title, description) =>
+    characterSelectBridge
+      .requestSelect(
+        'single',
+        title,
+        description,
+        executionRequestId,
+        rulesetId,
+        campaignId,
+        actingCharacterId,
+      )
+      .then((ids) => (ids.length > 0 ? ids[0]! : null));
+  const selectCharactersFn: SelectCharactersFn = (title, description) =>
+    characterSelectBridge.requestSelect(
+      'multi',
+      title,
+      description,
+      executionRequestId,
+      rulesetId,
+      campaignId,
+      actingCharacterId,
+    );
+  return {
+    rollFn,
+    rollSplitFn,
+    createRollForCharacter,
+    createRollSplitForCharacter,
+    promptFn,
+    promptMultipleFn,
+    promptInputFn,
+    selectCharacterFn,
+    selectCharactersFn,
+  };
+}
 
 // ============================================================================
 // Message Handling
@@ -442,6 +534,8 @@ function createOnAttributesModified(
     animation: string;
   }>,
   promptInputFn?: PromptInputFn,
+  createRollForCharacter?: (characterId: string) => RollFn,
+  createRollSplitForCharacter?: (characterId: string) => RollSplitFn,
 ): OnAttributesModifiedFn {
   return async (attributeIds: string[], characterId: string, rulesetId: string) => {
     if (attributeIds.length === 0) return;
@@ -463,8 +557,11 @@ function createOnAttributesModified(
           {
             roll: rollFn,
             rollSplit: rollSplitFn,
+            createRollForCharacter,
+            createRollSplitForCharacter,
             prompt: promptFn,
             promptMultiple: promptMultipleFn,
+            promptInput: promptInputFn,
             selectCharacter: selectCharacterFn,
             selectCharacters: selectCharactersFn,
             campaignId,
@@ -484,6 +581,9 @@ function createOnAttributesModified(
                 selectCharactersFn,
                 campaignSceneId,
                 promptMultipleFn,
+                promptInputFn,
+                createRollForCharacter,
+                createRollSplitForCharacter,
               ),
           },
         );
@@ -630,36 +730,22 @@ async function handleExecuteScript(payload: ExecuteScriptPayload): Promise<void>
   }
 
   const startTime = performance.now();
-  const rollFn: RollFn = (expression: string, rerollMessage?: string) =>
-    rollBridge.requestRoll(expression, payload.requestId, rerollMessage);
-  const rollSplitFn: RollSplitFn = (expression: string, rerollMessage?: string) =>
-    rollBridge.requestRollSplit(expression, payload.requestId, rerollMessage);
-  const promptFn: PromptFn = (msg: string, choices: string[]) =>
-    promptBridge.requestPrompt(msg, choices, payload.requestId);
-  const promptMultipleFn: PromptMultipleFn = (msg: string, choices: string[]) =>
-    promptMultipleBridge.requestPromptMultiple(msg, choices, payload.requestId);
-  const promptInputFn: PromptInputFn = (msg: string) =>
-    promptInputBridge.requestPromptInput(msg, payload.requestId);
-  const selectCharacterFn: SelectCharacterFn = (title?: string, description?: string) =>
-    characterSelectBridge
-      .requestSelect(
-        'single',
-        title,
-        description,
-        payload.requestId,
-        payload.rulesetId,
-        payload.campaignId,
-      )
-      .then((ids) => (ids.length > 0 ? ids[0]! : null));
-  const selectCharactersFn: SelectCharactersFn = (title?: string, description?: string) =>
-    characterSelectBridge.requestSelect(
-      'multi',
-      title,
-      description,
-      payload.requestId,
-      payload.rulesetId,
-      payload.campaignId,
-    );
+  const {
+    rollFn,
+    rollSplitFn,
+    createRollForCharacter,
+    createRollSplitForCharacter,
+    promptFn,
+    promptMultipleFn,
+    promptInputFn,
+    selectCharacterFn,
+    selectCharactersFn,
+  } = createWorkerMainThreadUiBridges({
+    executionRequestId: payload.requestId,
+    actingCharacterId: payload.characterId,
+    rulesetId: payload.rulesetId,
+    campaignId: payload.campaignId,
+  });
   let executor: EventHandlerExecutor;
   executor = new EventHandlerExecutor(
     db,
@@ -676,6 +762,8 @@ async function handleExecuteScript(payload: ExecuteScriptPayload): Promise<void>
       payload.campaignSceneId,
       undefined,
       promptInputFn,
+      createRollForCharacter,
+      createRollSplitForCharacter,
     ),
   );
 
@@ -719,6 +807,8 @@ async function handleExecuteScript(payload: ExecuteScriptPayload): Promise<void>
       sharedRosterBroadcasts,
       roll: rollFn,
       rollSplit: rollSplitFn,
+      createRollForCharacter,
+      createRollSplitForCharacter,
       prompt: promptFn,
       promptMultiple: promptMultipleFn,
       promptInput: promptInputFn,
@@ -741,6 +831,8 @@ async function handleExecuteScript(payload: ExecuteScriptPayload): Promise<void>
           payload.campaignSceneId,
           promptMultipleFn,
           promptInputFn,
+          createRollForCharacter,
+          createRollSplitForCharacter,
         );
         for (const entry of r.componentAnimations ?? []) {
           reactiveComponentAnimations.push(entry);
@@ -806,10 +898,17 @@ async function handleExecuteScript(payload: ExecuteScriptPayload): Promise<void>
               promptFn,
               selectCharacterFn,
               selectCharactersFn,
+              payload.campaignSceneId,
+              promptMultipleFn,
+              promptInputFn,
+              createRollForCharacter,
+              createRollSplitForCharacter,
             ),
           roll: rollFn,
           rollSplit: rollSplitFn,
           prompt: promptFn,
+          promptMultiple: promptMultipleFn,
+          promptInput: promptInputFn,
           selectCharacter: selectCharacterFn,
           selectCharacters: selectCharactersFn,
         };
@@ -951,36 +1050,22 @@ async function handleAttributeChanged(payload: AttributeChangedPayload): Promise
   }
 
   try {
-    const rollFn: RollFn = (expression: string, rerollMessage?: string) =>
-      rollBridge.requestRoll(expression, payload.requestId, rerollMessage);
-    const rollSplitFn: RollSplitFn = (expression: string, rerollMessage?: string) =>
-      rollBridge.requestRollSplit(expression, payload.requestId, rerollMessage);
-    const promptFn: PromptFn = (msg: string, choices: string[]) =>
-      promptBridge.requestPrompt(msg, choices, payload.requestId);
-    const promptMultipleFn: PromptMultipleFn = (msg: string, choices: string[]) =>
-      promptMultipleBridge.requestPromptMultiple(msg, choices, payload.requestId);
-    const promptInputFn: PromptInputFn = (msg: string) =>
-      promptInputBridge.requestPromptInput(msg, payload.requestId);
-    const selectCharacterFn: SelectCharacterFn = (title?: string, description?: string) =>
-      characterSelectBridge
-        .requestSelect(
-          'single',
-          title,
-          description,
-          payload.requestId,
-          payload.rulesetId,
-          payload.campaignId,
-        )
-        .then((ids) => (ids.length > 0 ? ids[0]! : null));
-    const selectCharactersFn: SelectCharactersFn = (title?: string, description?: string) =>
-      characterSelectBridge.requestSelect(
-        'multi',
-        title,
-        description,
-        payload.requestId,
-        payload.rulesetId,
-        payload.campaignId,
-      );
+    const {
+      rollFn,
+      rollSplitFn,
+      createRollForCharacter,
+      createRollSplitForCharacter,
+      promptFn,
+      promptMultipleFn,
+      promptInputFn,
+      selectCharacterFn,
+      selectCharactersFn,
+    } = createWorkerMainThreadUiBridges({
+      executionRequestId: payload.requestId,
+      actingCharacterId: payload.characterId,
+      rulesetId: payload.rulesetId,
+      campaignId: payload.campaignId,
+    });
     let executor: EventHandlerExecutor;
     executor = new EventHandlerExecutor(
       db,
@@ -997,6 +1082,8 @@ async function handleAttributeChanged(payload: AttributeChangedPayload): Promise
         undefined,
         undefined,
         promptInputFn,
+        createRollForCharacter,
+        createRollSplitForCharacter,
       ),
     );
 
@@ -1025,6 +1112,8 @@ async function handleAttributeChanged(payload: AttributeChangedPayload): Promise
           payload.campaignSceneId,
           promptMultipleFn,
           promptInputFn,
+          createRollForCharacter,
+          createRollSplitForCharacter,
         ),
       roll: rollFn,
       rollSplit: rollSplitFn,
@@ -1117,28 +1206,22 @@ async function handleInitialAttributeSync(payload: {
       reactiveExecutor = new ReactiveExecutor(db);
     }
 
-    const rollFn: RollFn = (expression: string, rerollMessage?: string) =>
-      rollBridge.requestRoll(expression, payload.requestId, rerollMessage);
-    const rollSplitFn: RollSplitFn = (expression: string, rerollMessage?: string) =>
-      rollBridge.requestRollSplit(expression, payload.requestId, rerollMessage);
-    const promptFn: PromptFn = (msg: string, choices: string[]) =>
-      promptBridge.requestPrompt(msg, choices, payload.requestId);
-    const promptMultipleFn: PromptMultipleFn = (msg: string, choices: string[]) =>
-      promptMultipleBridge.requestPromptMultiple(msg, choices, payload.requestId);
-    const promptInputFn: PromptInputFn = (msg: string) =>
-      promptInputBridge.requestPromptInput(msg, payload.requestId);
-    const selectCharacterFn: SelectCharacterFn = (title?: string, description?: string) =>
-      characterSelectBridge
-        .requestSelect('single', title, description, payload.requestId, payload.rulesetId)
-        .then((ids) => (ids.length > 0 ? ids[0]! : null));
-    const selectCharactersFn: SelectCharactersFn = (title?: string, description?: string) =>
-      characterSelectBridge.requestSelect(
-        'multi',
-        title,
-        description,
-        payload.requestId,
-        payload.rulesetId,
-      );
+    const {
+      rollFn,
+      rollSplitFn,
+      createRollForCharacter,
+      createRollSplitForCharacter,
+      promptFn,
+      promptMultipleFn,
+      promptInputFn,
+      selectCharacterFn,
+      selectCharactersFn,
+    } = createWorkerMainThreadUiBridges({
+      executionRequestId: payload.requestId,
+      actingCharacterId: payload.characterId,
+      rulesetId: payload.rulesetId,
+      campaignId: payload.campaignId,
+    });
     let executor: EventHandlerExecutor;
     executor = new EventHandlerExecutor(
       db,
@@ -1155,6 +1238,8 @@ async function handleInitialAttributeSync(payload: {
         undefined,
         undefined,
         promptInputFn,
+        createRollForCharacter,
+        createRollSplitForCharacter,
       ),
     );
 
@@ -1175,6 +1260,8 @@ async function handleInitialAttributeSync(payload: {
           undefined,
           promptMultipleFn,
           promptInputFn,
+          createRollForCharacter,
+          createRollSplitForCharacter,
         ),
       roll: rollFn,
       rollSplit: rollSplitFn,
@@ -1321,36 +1408,22 @@ async function handleExecuteActionEvent(payload: {
       throw new Error(`Action not found: ${payload.actionId}`);
     }
 
-    const rollFn: RollFn = (expression: string, rerollMessage?: string) =>
-      rollBridge.requestRoll(expression, payload.requestId, rerollMessage);
-    const rollSplitFn: RollSplitFn = (expression: string, rerollMessage?: string) =>
-      rollBridge.requestRollSplit(expression, payload.requestId, rerollMessage);
-    const promptFn: PromptFn = (msg: string, choices: string[]) =>
-      promptBridge.requestPrompt(msg, choices, payload.requestId);
-    const promptMultipleFn: PromptMultipleFn = (msg: string, choices: string[]) =>
-      promptMultipleBridge.requestPromptMultiple(msg, choices, payload.requestId);
-    const promptInputFn: PromptInputFn = (msg: string) =>
-      promptInputBridge.requestPromptInput(msg, payload.requestId);
-    const selectCharacterFn: SelectCharacterFn = (title?: string, description?: string) =>
-      characterSelectBridge
-        .requestSelect(
-          'single',
-          title,
-          description,
-          payload.requestId,
-          action.rulesetId,
-          payload.campaignId,
-        )
-        .then((ids) => (ids.length > 0 ? ids[0]! : null));
-    const selectCharactersFn: SelectCharactersFn = (title?: string, description?: string) =>
-      characterSelectBridge.requestSelect(
-        'multi',
-        title,
-        description,
-        payload.requestId,
-        action.rulesetId,
-        payload.campaignId,
-      );
+    const {
+      rollFn,
+      rollSplitFn,
+      createRollForCharacter,
+      createRollSplitForCharacter,
+      promptFn,
+      promptMultipleFn,
+      promptInputFn,
+      selectCharacterFn,
+      selectCharactersFn,
+    } = createWorkerMainThreadUiBridges({
+      executionRequestId: payload.requestId,
+      actingCharacterId: payload.characterId,
+      rulesetId: action.rulesetId,
+      campaignId: payload.campaignId,
+    });
 
     const allModifiedIds = new Set<string>();
     const allReactiveAnimations: Array<{
@@ -1376,6 +1449,8 @@ async function handleExecuteActionEvent(payload: {
         payload.campaignSceneId,
         getAnimationsCollector,
         promptInputFn,
+        createRollForCharacter,
+        createRollSplitForCharacter,
       ),
     );
     const result = await executor.executeActionEvent(
@@ -1393,6 +1468,8 @@ async function handleExecuteActionEvent(payload: {
       payload.campaignSceneId,
       promptMultipleFn,
       promptInputFn,
+      createRollForCharacter,
+      createRollSplitForCharacter,
     );
 
     if (result.error || !result.success) {
@@ -1471,36 +1548,22 @@ async function handleExecuteItemEvent(payload: {
       throw new Error(`Item not found: ${payload.itemId}`);
     }
 
-    const rollFn: RollFn = (expression: string, rerollMessage?: string) =>
-      rollBridge.requestRoll(expression, payload.requestId, rerollMessage);
-    const rollSplitFn: RollSplitFn = (expression: string, rerollMessage?: string) =>
-      rollBridge.requestRollSplit(expression, payload.requestId, rerollMessage);
-    const promptFn: PromptFn = (msg: string, choices: string[]) =>
-      promptBridge.requestPrompt(msg, choices, payload.requestId);
-    const promptMultipleFn: PromptMultipleFn = (msg: string, choices: string[]) =>
-      promptMultipleBridge.requestPromptMultiple(msg, choices, payload.requestId);
-    const promptInputFn: PromptInputFn = (msg: string) =>
-      promptInputBridge.requestPromptInput(msg, payload.requestId);
-    const selectCharacterFn: SelectCharacterFn = (title?: string, description?: string) =>
-      characterSelectBridge
-        .requestSelect(
-          'single',
-          title,
-          description,
-          payload.requestId,
-          item.rulesetId,
-          payload.campaignId,
-        )
-        .then((ids) => (ids.length > 0 ? ids[0]! : null));
-    const selectCharactersFn: SelectCharactersFn = (title?: string, description?: string) =>
-      characterSelectBridge.requestSelect(
-        'multi',
-        title,
-        description,
-        payload.requestId,
-        item.rulesetId,
-        payload.campaignId,
-      );
+    const {
+      rollFn,
+      rollSplitFn,
+      createRollForCharacter,
+      createRollSplitForCharacter,
+      promptFn,
+      promptMultipleFn,
+      promptInputFn,
+      selectCharacterFn,
+      selectCharactersFn,
+    } = createWorkerMainThreadUiBridges({
+      executionRequestId: payload.requestId,
+      actingCharacterId: payload.characterId,
+      rulesetId: item.rulesetId,
+      campaignId: payload.campaignId,
+    });
 
     const allModifiedIds = new Set<string>();
     const allReactiveAnimations: Array<{
@@ -1526,6 +1589,8 @@ async function handleExecuteItemEvent(payload: {
         payload.campaignSceneId,
         getAnimationsCollector,
         promptInputFn,
+        createRollForCharacter,
+        createRollSplitForCharacter,
       ),
     );
     const result = await executor.executeItemEvent(
@@ -1542,6 +1607,8 @@ async function handleExecuteItemEvent(payload: {
       payload.campaignSceneId,
       promptMultipleFn,
       promptInputFn,
+      createRollForCharacter,
+      createRollSplitForCharacter,
     );
 
     const script = await db.scripts.where({ entityId: payload.itemId, entityType: 'item' }).first();
@@ -1628,36 +1695,22 @@ async function handleExecuteArchetypeEvent(payload: {
       throw new Error(`Archetype not found: ${payload.archetypeId}`);
     }
 
-    const rollFn: RollFn = (expression: string, rerollMessage?: string) =>
-      rollBridge.requestRoll(expression, payload.requestId, rerollMessage);
-    const rollSplitFn: RollSplitFn = (expression: string, rerollMessage?: string) =>
-      rollBridge.requestRollSplit(expression, payload.requestId, rerollMessage);
-    const promptFn: PromptFn = (msg: string, choices: string[]) =>
-      promptBridge.requestPrompt(msg, choices, payload.requestId);
-    const promptMultipleFn: PromptMultipleFn = (msg: string, choices: string[]) =>
-      promptMultipleBridge.requestPromptMultiple(msg, choices, payload.requestId);
-    const promptInputFn: PromptInputFn = (msg: string) =>
-      promptInputBridge.requestPromptInput(msg, payload.requestId);
-    const selectCharacterFn: SelectCharacterFn = (title?: string, description?: string) =>
-      characterSelectBridge
-        .requestSelect(
-          'single',
-          title,
-          description,
-          payload.requestId,
-          archetype.rulesetId,
-          payload.campaignId,
-        )
-        .then((ids) => (ids.length > 0 ? ids[0]! : null));
-    const selectCharactersFn: SelectCharactersFn = (title?: string, description?: string) =>
-      characterSelectBridge.requestSelect(
-        'multi',
-        title,
-        description,
-        payload.requestId,
-        archetype.rulesetId,
-        payload.campaignId,
-      );
+    const {
+      rollFn,
+      rollSplitFn,
+      createRollForCharacter,
+      createRollSplitForCharacter,
+      promptFn,
+      promptMultipleFn,
+      promptInputFn,
+      selectCharacterFn,
+      selectCharactersFn,
+    } = createWorkerMainThreadUiBridges({
+      executionRequestId: payload.requestId,
+      actingCharacterId: payload.characterId,
+      rulesetId: archetype.rulesetId,
+      campaignId: payload.campaignId,
+    });
 
     const allModifiedIds = new Set<string>();
     const allReactiveAnimations: Array<{
@@ -1683,6 +1736,8 @@ async function handleExecuteArchetypeEvent(payload: {
         payload.campaignSceneId,
         getAnimationsCollector,
         promptInputFn,
+        createRollForCharacter,
+        createRollSplitForCharacter,
       ),
     );
     const result = await executor.executeArchetypeEvent(
@@ -1698,6 +1753,8 @@ async function handleExecuteArchetypeEvent(payload: {
       payload.campaignSceneId,
       promptMultipleFn,
       promptInputFn,
+      createRollForCharacter,
+      createRollSplitForCharacter,
     );
 
     // Logs are persisted inside EventHandlerExecutor.executeArchetypeEvent so they
@@ -1772,29 +1829,23 @@ async function handleExecuteCampaignEventEvent(payload: {
     const rulesetId = campaign?.rulesetId ?? '';
     const campaignId = campaignEvent?.campaignId;
 
-    const rollFn: RollFn = (expression: string, rerollMessage?: string) =>
-      rollBridge.requestRoll(expression, payload.requestId, rerollMessage);
-    const rollSplitFn: RollSplitFn = (expression: string, rerollMessage?: string) =>
-      rollBridge.requestRollSplit(expression, payload.requestId, rerollMessage);
-    const promptFn: PromptFn = (msg: string, choices: string[]) =>
-      promptBridge.requestPrompt(msg, choices, payload.requestId);
-    const promptMultipleFn: PromptMultipleFn = (msg: string, choices: string[]) =>
-      promptMultipleBridge.requestPromptMultiple(msg, choices, payload.requestId);
-    const promptInputFn: PromptInputFn = (msg: string) =>
-      promptInputBridge.requestPromptInput(msg, payload.requestId);
-    const selectCharacterFn: SelectCharacterFn = (title?: string, description?: string) =>
-      characterSelectBridge
-        .requestSelect('single', title, description, payload.requestId, rulesetId, campaignId)
-        .then((ids) => (ids.length > 0 ? ids[0]! : null));
-    const selectCharactersFn: SelectCharactersFn = (title?: string, description?: string) =>
-      characterSelectBridge.requestSelect(
-        'multi',
-        title,
-        description,
-        payload.requestId,
-        rulesetId,
-        campaignId,
-      );
+    const actingCharacterId = payload.characterId ?? '';
+    const {
+      rollFn,
+      rollSplitFn,
+      createRollForCharacter,
+      createRollSplitForCharacter,
+      promptFn,
+      promptMultipleFn,
+      promptInputFn,
+      selectCharacterFn,
+      selectCharactersFn,
+    } = createWorkerMainThreadUiBridges({
+      executionRequestId: payload.requestId,
+      actingCharacterId,
+      rulesetId,
+      campaignId,
+    });
 
     const allModifiedIds = new Set<string>();
     const allReactiveAnimations: Array<{
@@ -1820,6 +1871,8 @@ async function handleExecuteCampaignEventEvent(payload: {
         payload.campaignSceneId,
         getAnimationsCollector,
         promptInputFn,
+        createRollForCharacter,
+        createRollSplitForCharacter,
       ),
     );
     const result = await executor.executeCampaignEventEvent(
@@ -1835,6 +1888,8 @@ async function handleExecuteCampaignEventEvent(payload: {
       undefined,
       promptMultipleFn,
       promptInputFn,
+      createRollForCharacter,
+      createRollSplitForCharacter,
     );
 
     if (result.error || !result.success) {

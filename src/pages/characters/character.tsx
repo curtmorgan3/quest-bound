@@ -3,6 +3,10 @@ import { useCampaignPlayClientForCharacter, useFeatureFlag } from '@/hooks';
 import { isCampaignPlayClientRelayForCampaign } from '@/lib/campaign-play/campaign-play-action-relay';
 import { CAMPAIGN_REALTIME_PLAY_FEATURE_FLAG } from '@/lib/campaign-play/campaign-play-constants';
 import { sendCampaignPlayClientActionRequest } from '@/lib/campaign-play/realtime/campaign-play-client-action-bridge';
+import {
+  flushDelegatedUiQueueForCharacter,
+  registerCampaignPlayDelegatedCharacterSurface,
+} from '@/lib/campaign-play/realtime/campaign-play-delegated-ui-client';
 import { useCharacter, useCharacterAttributes } from '@/lib/compass-api';
 import { useExecuteActionEvent } from '@/lib/compass-logic';
 import {
@@ -109,6 +113,12 @@ export const CharacterPage = ({
       setCurrentRollSplitHandlerForScripts(undefined);
     };
   }, [roll, rollSplit]);
+
+  useEffect(() => {
+    if (!resolvedCharacterId) return;
+    flushDelegatedUiQueueForCharacter(resolvedCharacterId);
+    return registerCampaignPlayDelegatedCharacterSurface(resolvedCharacterId);
+  }, [resolvedCharacterId]);
 
   // When viewing character sheet in campaign play, set campaign and scene refs so scripts
   // get campaignId/campaignSceneId in context (e.g. Scene accessor in reactive/attribute scripts).

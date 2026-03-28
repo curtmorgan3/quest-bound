@@ -2,6 +2,7 @@ import {
   buildCampaignPlayDeltaBatches,
   expandMergedCampaignDeltaBatches,
 } from '@/lib/campaign-play/realtime/build-campaign-play-delta-batches';
+import { subscribeCampaignPlayHostDelegatedUiResponses } from '@/lib/campaign-play/realtime/campaign-play-delegated-ui-host';
 import { getCampaignPlaySender, subscribeCampaignPlayEnvelopes } from '@/lib/campaign-play/realtime/campaign-play-realtime-dispatcher';
 import type {
   CampaignRealtimeActionRequestEnvelopeV1,
@@ -22,6 +23,7 @@ export class CampaignPlayHostActionQueue {
   private readonly campaignId: string;
   private chain: Promise<void> = Promise.resolve();
   private unsub: (() => void) | null = null;
+  private delegatedUnsub: (() => void) | null = null;
 
   constructor(campaignId: string) {
     this.campaignId = campaignId;
@@ -34,11 +36,14 @@ export class CampaignPlayHostActionQueue {
       if (envelope.campaignId !== this.campaignId) return;
       this.enqueue(envelope);
     });
+    this.delegatedUnsub = subscribeCampaignPlayHostDelegatedUiResponses(this.campaignId);
   }
 
   stop(): void {
     this.unsub?.();
     this.unsub = null;
+    this.delegatedUnsub?.();
+    this.delegatedUnsub = null;
     this.chain = Promise.resolve();
   }
 
@@ -71,6 +76,15 @@ export class CampaignPlayHostActionQueue {
     const startedAtMs = Date.now();
     const client = getQBScriptClient();
 
+    const delegatedHostRun =
+      request.initiatorUserId != null && request.initiatorUserId !== ''
+        ? {
+            campaignId: this.campaignId,
+            executionRequestId: request.requestId,
+            timeoutMs: ACTION_SCRIPT_TIMEOUT_MS,
+          }
+        : undefined;
+
     try {
       let exec: {
         announceMessages: string[];
@@ -89,6 +103,7 @@ export class CampaignPlayHostActionQueue {
           request.body.callerInventoryItemInstanceId,
           undefined,
           request.campaignSceneId,
+          delegatedHostRun,
         );
       } else {
         exec = await client.executeItemEvent(
@@ -101,6 +116,7 @@ export class CampaignPlayHostActionQueue {
           request.body.inventoryItemInstanceId,
           undefined,
           request.campaignSceneId,
+          delegatedHostRun,
         );
       }
 

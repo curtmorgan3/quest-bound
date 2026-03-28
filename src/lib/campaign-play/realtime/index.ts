@@ -8,7 +8,10 @@ export {
   type CampaignRealtimeActionRequestEnvelopeV1,
   type CampaignRealtimeActionResultEnvelopeV1,
   type CampaignRealtimeBulkPutBatchV1,
+  type CampaignRealtimeDelegatedUiRequestEnvelopeV1,
+  type CampaignRealtimeDelegatedUiResponseEnvelopeV1,
   type CampaignRealtimeEnvelopeV1,
+  type DelegatedUiRequestBodyV1,
   type CampaignRealtimeHostReactiveResultEnvelopeV1,
   type CampaignRealtimeManualCharacterUpdateEnvelopeV1,
   type CampaignRealtimeRosterUpdateEnvelopeV1,
@@ -51,6 +54,21 @@ export {
   startCampaignPlayClientActionBridge,
   stopCampaignPlayClientActionBridge,
 } from '@/lib/campaign-play/realtime/campaign-play-client-action-bridge';
+export {
+  flushDelegatedUiQueueForCharacter,
+  getCampaignPlayDelegatedUiRoutePath,
+  parseCharacterIdFromAppPathname,
+  registerCampaignPlayDelegatedCharacterSurface,
+  startCampaignPlayDelegatedUiClient,
+  stopCampaignPlayDelegatedUiClient,
+} from '@/lib/campaign-play/realtime/campaign-play-delegated-ui-client';
+export {
+  type CampaignPlayDelegatedUiHostRunOptions,
+  characterShouldUseRemoteDelegatedUi,
+  handleCampaignPlayDelegatedUiResponse,
+  hostAwaitDelegatedUiInteraction,
+  subscribeCampaignPlayHostDelegatedUiResponses,
+} from '@/lib/campaign-play/realtime/campaign-play-delegated-ui-host';
 export { sendCampaignPlayManualCharacterUpdate } from '@/lib/campaign-play/realtime/campaign-play-manual-broadcast';
 export { broadcastHostCharacterDataAfterHostReactives } from '@/lib/campaign-play/realtime/campaign-play-host-character-broadcast';
 export {

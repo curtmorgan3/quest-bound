@@ -58,6 +58,8 @@ export class CampaignSceneAccessor {
   private cachedCharacterIds: Set<string> | null;
   private cachedAccessors: AnyCharacterAccessor[] | null;
   private roll?: RollFn;
+  /** When set, spawned/loaded characters use rolls tagged to their id (worker delegated UI). */
+  private createRollForCharacter?: (characterId: string) => RollFn;
   private deferredAdvanceRef?: { current: boolean };
   private executeTurnCallbacks?: ExecuteTurnCallbacksFn;
   private onCampaignRosterChanged?: CampaignRosterChangedFn;
@@ -75,6 +77,7 @@ export class CampaignSceneAccessor {
     deferredAdvanceRef?: { current: boolean },
     executeTurnCallbacks?: ExecuteTurnCallbacksFn,
     onCampaignRosterChanged?: CampaignRosterChangedFn,
+    createRollForCharacter?: (characterId: string) => RollFn,
   ) {
     this.db = db as DB;
     this.campaignId = campaignId;
@@ -85,6 +88,7 @@ export class CampaignSceneAccessor {
     this.cachedCharacterIds = initialCharacterIds ? new Set(initialCharacterIds) : null;
     this.cachedAccessors = null;
     this.roll = roll;
+    this.createRollForCharacter = createRollForCharacter;
     this.deferredAdvanceRef = deferredAdvanceRef;
     this.executeTurnCallbacks = executeTurnCallbacks;
     this.onCampaignRosterChanged = onCampaignRosterChanged;
@@ -597,13 +601,15 @@ export class CampaignSceneAccessor {
       updatedAt: now,
     } as any);
 
+    const rollForSpawn = this.createRollForCharacter?.(characterId) ?? this.roll;
+
     // Run Character Loader script (if present) for this character.
     try {
       const loaderResult = await executeCharacterLoader(
         this.db,
         characterId,
         this.rulesetId,
-        this.roll,
+        rollForSpawn,
       );
       if (loaderResult.error) {
         console.warn('Character Loader script failed for spawned NPC:', loaderResult.error);
@@ -619,7 +625,7 @@ export class CampaignSceneAccessor {
         archetype.id,
         characterId,
         'on_add',
-        this.roll,
+        rollForSpawn,
         this.campaignId,
         undefined,
         this.campaignSceneId,

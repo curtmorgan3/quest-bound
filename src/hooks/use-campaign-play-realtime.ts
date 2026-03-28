@@ -14,7 +14,9 @@ import {
   dispatchCampaignPlayEnvelope,
   registerCampaignPlaySender,
   startCampaignPlayClientActionBridge,
+  startCampaignPlayDelegatedUiClient,
   stopCampaignPlayClientActionBridge,
+  stopCampaignPlayDelegatedUiClient,
   subscribeCampaignPlayTransport,
   unregisterCampaignPlaySender,
   type CampaignPlayTransportHandle,
@@ -201,6 +203,7 @@ export function useCampaignPlayRealtime({
               hostManualQueue.start();
             } else if (role === 'client') {
               startCampaignPlayClientActionBridge(campaignId);
+              startCampaignPlayDelegatedUiClient(campaignId);
             }
 
             if (role === 'host') {
@@ -274,6 +277,7 @@ export function useCampaignPlayRealtime({
       hostManualQueue = null;
       if (role === 'client') {
         stopCampaignPlayClientActionBridge();
+        stopCampaignPlayDelegatedUiClient();
       }
       unregisterCampaignPlaySender(campaignId);
       const t = transportRef.current;

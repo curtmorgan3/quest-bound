@@ -3,6 +3,7 @@ import {
   getCampaignPlaySender,
   subscribeCampaignPlayEnvelopes,
 } from '@/lib/campaign-play/realtime/campaign-play-realtime-dispatcher';
+import { cloudClient } from '@/lib/cloud/client';
 import type {
   CampaignRealtimeActionRequestBodyV1,
   CampaignRealtimeEnvelopeV1,
@@ -116,10 +117,18 @@ export async function sendCampaignPlayClientActionRequest(options: {
   campaignSceneId?: string;
   body: CampaignRealtimeActionRequestBodyV1;
   timeoutMs?: number;
+  /** When omitted, filled from Supabase session user id when cloud is configured. */
+  initiatorUserId?: string;
 }): Promise<void> {
   const send = getCampaignPlaySender(options.campaignId);
   if (!send) {
     throw new Error('Campaign realtime is not connected');
+  }
+
+  let initiatorUserId = options.initiatorUserId;
+  if (initiatorUserId === undefined && cloudClient) {
+    const { data } = await cloudClient.auth.getSession();
+    initiatorUserId = data.session?.user?.id;
   }
 
   const requestId = crypto.randomUUID();
@@ -145,6 +154,7 @@ export async function sendCampaignPlayClientActionRequest(options: {
       campaignId: options.campaignId,
       sentAt: new Date().toISOString(),
       campaignSceneId: options.campaignSceneId,
+      ...(initiatorUserId ? { initiatorUserId } : {}),
       body: options.body,
     }).catch((err) => {
       const p = pendingByRequestId.get(requestId);

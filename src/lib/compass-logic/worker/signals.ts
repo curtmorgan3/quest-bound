@@ -209,6 +209,8 @@ export interface RollRequestSignal {
     rollRequestId: string;
     expression: string;
     rerollMessage?: string;
+    /** Character the roll UI is for (delegated campaign play routing; see joiner-rolls.md). */
+    surfaceCharacterId: string;
   };
 }
 
@@ -219,6 +221,7 @@ export interface RollSplitRequestSignal {
     rollRequestId: string;
     expression: string;
     rerollMessage?: string;
+    surfaceCharacterId: string;
   };
 }
 
@@ -229,6 +232,8 @@ export interface PromptRequestSignal {
     promptRequestId: string;
     msg: string;
     choices: string[];
+    /** Acting script character for delegated UI gating (always owner/actor, not accessor target). */
+    surfaceCharacterId: string;
   };
 }
 
@@ -239,6 +244,7 @@ export interface PromptMultipleRequestSignal {
     promptRequestId: string;
     msg: string;
     choices: string[];
+    surfaceCharacterId: string;
   };
 }
 
@@ -248,6 +254,7 @@ export interface PromptInputRequestSignal {
     executionRequestId: string;
     promptRequestId: string;
     msg: string;
+    surfaceCharacterId: string;
   };
 }
 
@@ -261,6 +268,7 @@ export interface CharacterSelectRequestSignal {
     description?: string;
     rulesetId: string;
     campaignId?: string;
+    surfaceCharacterId: string;
   };
 }
 

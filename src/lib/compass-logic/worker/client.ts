@@ -8,6 +8,11 @@
 import type { CampaignPlayScriptWorkerPolicy } from '@/lib/campaign-play/campaign-play-script-gate';
 import { tryBroadcastCampaignRosterFromDexie } from '@/lib/campaign-play/realtime/broadcast-campaign-roster-update';
 import {
+  abandonPendingDelegatedUiForExecution,
+  hostAwaitDelegatedUiInteraction,
+  type CampaignPlayDelegatedUiHostRunOptions,
+} from '@/lib/campaign-play/realtime/campaign-play-delegated-ui-host';
+import {
   getCurrentCampaignIdForScripts,
   getCurrentCampaignSceneIdForScripts,
 } from '@/lib/compass-logic/worker/current-campaign-ref';
@@ -99,6 +104,8 @@ export class QBScriptClient {
   private pendingRollHandlers: Map<string, RollFn> = new Map();
   /** RollSplit handler per execution request */
   private pendingRollSplitHandlers: Map<string, RollSplitFn> = new Map();
+  /** When set, blocking UI for this worker execution is delegated via campaign realtime (host). */
+  private delegatedHostByRequestId = new Map<string, { campaignId: string; timeoutMs: number }>();
   private isReady = false;
   private readyCallbacks: Array<() => void> = [];
   private signalHandlers: Set<WorkerSignalHandler> = new Set();
@@ -247,12 +254,35 @@ export class QBScriptClient {
     rollRequestId: string;
     expression: string;
     rerollMessage?: string;
+    surfaceCharacterId: string;
   }): Promise<void> {
+    const delegated = this.delegatedHostByRequestId.get(payload.executionRequestId);
     const rollFn =
       this.pendingRollHandlers.get(payload.executionRequestId) ?? defaultScriptDiceRoller;
     if (!this.worker) return;
     try {
-      const value = await Promise.resolve(rollFn(payload.expression, payload.rerollMessage));
+      let value: number;
+      if (delegated) {
+        const raw = await hostAwaitDelegatedUiInteraction({
+          campaignId: delegated.campaignId,
+          executionRequestId: payload.executionRequestId,
+          interactionId: payload.rollRequestId,
+          characterId: payload.surfaceCharacterId,
+          body: {
+            interactionType: 'roll',
+            expression: payload.expression,
+            rerollMessage: payload.rerollMessage,
+          },
+          timeoutMs: delegated.timeoutMs,
+          localRunner: () =>
+            Promise.resolve(rollFn(payload.expression, payload.rerollMessage)).then((v) =>
+              typeof v === 'number' ? v : Number(v),
+            ),
+        });
+        value = typeof raw === 'number' ? raw : Number(raw);
+      } else {
+        value = await Promise.resolve(rollFn(payload.expression, payload.rerollMessage));
+      }
       this.worker.postMessage({
         type: 'ROLL_RESPONSE',
         payload: { rollRequestId: payload.rollRequestId, value },
@@ -273,12 +303,35 @@ export class QBScriptClient {
     rollRequestId: string;
     expression: string;
     rerollMessage?: string;
+    surfaceCharacterId: string;
   }): Promise<void> {
+    const delegated = this.delegatedHostByRequestId.get(payload.executionRequestId);
     const rollSplitFn =
       this.pendingRollSplitHandlers.get(payload.executionRequestId) ?? defaultScriptDiceRollerSplit;
     if (!this.worker) return;
     try {
-      const value = await Promise.resolve(rollSplitFn(payload.expression, payload.rerollMessage));
+      let value: number[];
+      if (delegated) {
+        const raw = await hostAwaitDelegatedUiInteraction({
+          campaignId: delegated.campaignId,
+          executionRequestId: payload.executionRequestId,
+          interactionId: payload.rollRequestId,
+          characterId: payload.surfaceCharacterId,
+          body: {
+            interactionType: 'roll_split',
+            expression: payload.expression,
+            rerollMessage: payload.rerollMessage,
+          },
+          timeoutMs: delegated.timeoutMs,
+          localRunner: () =>
+            Promise.resolve(rollSplitFn(payload.expression, payload.rerollMessage)).then((v) =>
+              Array.isArray(v) ? v : [],
+            ),
+        });
+        value = Array.isArray(raw) ? (raw as number[]) : [];
+      } else {
+        value = await Promise.resolve(rollSplitFn(payload.expression, payload.rerollMessage));
+      }
       this.worker.postMessage({
         type: 'ROLL_SPLIT_RESPONSE',
         payload: { rollRequestId: payload.rollRequestId, value },
@@ -299,10 +352,29 @@ export class QBScriptClient {
     promptRequestId: string;
     msg: string;
     choices: string[];
+    surfaceCharacterId: string;
   }): Promise<void> {
+    const delegated = this.delegatedHostByRequestId.get(payload.executionRequestId);
     if (!this.worker) return;
     try {
-      const value = await usePromptModalStore.getState().show(payload.msg, payload.choices);
+      let value: string;
+      if (delegated) {
+        value = (await hostAwaitDelegatedUiInteraction({
+          campaignId: delegated.campaignId,
+          executionRequestId: payload.executionRequestId,
+          interactionId: payload.promptRequestId,
+          characterId: payload.surfaceCharacterId,
+          body: {
+            interactionType: 'prompt',
+            message: payload.msg,
+            choices: payload.choices,
+          },
+          timeoutMs: delegated.timeoutMs,
+          localRunner: () => usePromptModalStore.getState().show(payload.msg, payload.choices),
+        })) as string;
+      } else {
+        value = await usePromptModalStore.getState().show(payload.msg, payload.choices);
+      }
       this.worker.postMessage({
         type: 'PROMPT_RESPONSE',
         payload: { promptRequestId: payload.promptRequestId, value },
@@ -323,10 +395,30 @@ export class QBScriptClient {
     promptRequestId: string;
     msg: string;
     choices: string[];
+    surfaceCharacterId: string;
   }): Promise<void> {
+    const delegated = this.delegatedHostByRequestId.get(payload.executionRequestId);
     if (!this.worker) return;
     try {
-      const value = await usePromptModalStore.getState().showMultiple(payload.msg, payload.choices);
+      let value: string[];
+      if (delegated) {
+        value = (await hostAwaitDelegatedUiInteraction({
+          campaignId: delegated.campaignId,
+          executionRequestId: payload.executionRequestId,
+          interactionId: payload.promptRequestId,
+          characterId: payload.surfaceCharacterId,
+          body: {
+            interactionType: 'prompt_multiple',
+            message: payload.msg,
+            choices: payload.choices,
+          },
+          timeoutMs: delegated.timeoutMs,
+          localRunner: () =>
+            usePromptModalStore.getState().showMultiple(payload.msg, payload.choices),
+        })) as string[];
+      } else {
+        value = await usePromptModalStore.getState().showMultiple(payload.msg, payload.choices);
+      }
       this.worker.postMessage({
         type: 'PROMPT_MULTIPLE_RESPONSE',
         payload: { promptRequestId: payload.promptRequestId, value },
@@ -346,10 +438,28 @@ export class QBScriptClient {
     executionRequestId: string;
     promptRequestId: string;
     msg: string;
+    surfaceCharacterId: string;
   }): Promise<void> {
+    const delegated = this.delegatedHostByRequestId.get(payload.executionRequestId);
     if (!this.worker) return;
     try {
-      const value = await usePromptModalStore.getState().showInput(payload.msg);
+      let value: string;
+      if (delegated) {
+        value = (await hostAwaitDelegatedUiInteraction({
+          campaignId: delegated.campaignId,
+          executionRequestId: payload.executionRequestId,
+          interactionId: payload.promptRequestId,
+          characterId: payload.surfaceCharacterId,
+          body: {
+            interactionType: 'prompt_input',
+            message: payload.msg,
+          },
+          timeoutMs: delegated.timeoutMs,
+          localRunner: () => usePromptModalStore.getState().showInput(payload.msg),
+        })) as string;
+      } else {
+        value = await usePromptModalStore.getState().showInput(payload.msg);
+      }
       this.worker.postMessage({
         type: 'PROMPT_INPUT_RESPONSE',
         payload: { promptRequestId: payload.promptRequestId, value },
@@ -373,16 +483,73 @@ export class QBScriptClient {
     description?: string;
     rulesetId: string;
     campaignId?: string;
+    surfaceCharacterId: string;
   }): Promise<void> {
+    const delegated = this.delegatedHostByRequestId.get(payload.executionRequestId);
     if (!this.worker) return;
     try {
-      const { characterIds } = await useCharacterSelectModalStore.getState().show({
-        mode: payload.mode,
-        title: payload.title,
-        description: payload.description,
-        rulesetId: payload.rulesetId,
-        campaignId: payload.campaignId,
-      });
+      let characterIds: string[];
+      if (delegated) {
+        if (payload.mode === 'single') {
+          const raw = await hostAwaitDelegatedUiInteraction<string | null>({
+            campaignId: delegated.campaignId,
+            executionRequestId: payload.executionRequestId,
+            interactionId: payload.selectRequestId,
+            characterId: payload.surfaceCharacterId,
+            body: {
+              interactionType: 'select_character',
+              title: payload.title,
+              description: payload.description,
+              rulesetId: payload.rulesetId,
+              campaignId: payload.campaignId,
+            },
+            timeoutMs: delegated.timeoutMs,
+            localRunner: async () => {
+              const { characterIds: ids } = await useCharacterSelectModalStore.getState().show({
+                mode: 'single',
+                title: payload.title,
+                description: payload.description,
+                rulesetId: payload.rulesetId,
+                campaignId: payload.campaignId,
+              });
+              return ids.length > 0 ? ids[0]! : null;
+            },
+          });
+          characterIds = raw ? [raw] : [];
+        } else {
+          characterIds = (await hostAwaitDelegatedUiInteraction<string[]>({
+            campaignId: delegated.campaignId,
+            executionRequestId: payload.executionRequestId,
+            interactionId: payload.selectRequestId,
+            characterId: payload.surfaceCharacterId,
+            body: {
+              interactionType: 'select_characters',
+              title: payload.title,
+              description: payload.description,
+              rulesetId: payload.rulesetId,
+              campaignId: payload.campaignId,
+            },
+            timeoutMs: delegated.timeoutMs,
+            localRunner: () =>
+              useCharacterSelectModalStore.getState().show({
+                mode: 'multi',
+                title: payload.title,
+                description: payload.description,
+                rulesetId: payload.rulesetId,
+                campaignId: payload.campaignId,
+              }).then((r) => r.characterIds),
+          })) as string[];
+        }
+      } else {
+        const { characterIds: ids } = await useCharacterSelectModalStore.getState().show({
+          mode: payload.mode,
+          title: payload.title,
+          description: payload.description,
+          rulesetId: payload.rulesetId,
+          campaignId: payload.campaignId,
+        });
+        characterIds = ids;
+      }
 
       this.worker.postMessage({
         type: 'SELECT_CHARACTER_RESPONSE',
@@ -530,6 +697,10 @@ export class QBScriptClient {
       const timeout = setTimeout(() => {
         if (this.pendingRequests.has(requestId)) {
           this.pendingRequests.delete(requestId);
+          abandonPendingDelegatedUiForExecution(
+            requestId,
+            `Script execution timeout after ${timeoutMs}ms`,
+          );
           reject(new Error(`Script execution timeout after ${timeoutMs}ms`));
         }
       }, timeoutMs);
@@ -717,6 +888,7 @@ export class QBScriptClient {
     callerInventoryItemInstanceId?: string,
     rollSplit?: RollSplitFn,
     campaignSceneId?: string,
+    delegatedHostRun?: CampaignPlayDelegatedUiHostRunOptions,
   ): Promise<{
     value: any;
     announceMessages: string[];
@@ -726,7 +898,13 @@ export class QBScriptClient {
     navigateTargets?: { characterId: string; pageId: string }[];
     componentAnimations?: Array<{ characterId: string; referenceLabel: string; animation: string }>;
   }> {
-    const requestId = generateRequestId();
+    const requestId = delegatedHostRun?.executionRequestId ?? generateRequestId();
+    if (delegatedHostRun) {
+      this.delegatedHostByRequestId.set(requestId, {
+        campaignId: delegatedHostRun.campaignId,
+        timeoutMs: delegatedHostRun.timeoutMs,
+      });
+    }
     this.pendingRollHandlers.set(requestId, roll ?? defaultScriptDiceRoller);
     this.pendingRollSplitHandlers.set(requestId, rollSplit ?? defaultScriptDiceRollerSplit);
     try {
@@ -748,6 +926,8 @@ export class QBScriptClient {
         timeout,
       );
     } finally {
+      abandonPendingDelegatedUiForExecution(requestId);
+      this.delegatedHostByRequestId.delete(requestId);
       this.pendingRollHandlers.delete(requestId);
       this.pendingRollSplitHandlers.delete(requestId);
     }
@@ -767,6 +947,7 @@ export class QBScriptClient {
     inventoryItemInstanceId?: string,
     rollSplit?: RollSplitFn,
     campaignSceneId?: string,
+    delegatedHostRun?: CampaignPlayDelegatedUiHostRunOptions,
   ): Promise<{
     value: any;
     announceMessages: string[];
@@ -776,7 +957,13 @@ export class QBScriptClient {
     navigateTargets?: { characterId: string; pageId: string }[];
     componentAnimations?: Array<{ characterId: string; referenceLabel: string; animation: string }>;
   }> {
-    const requestId = generateRequestId();
+    const requestId = delegatedHostRun?.executionRequestId ?? generateRequestId();
+    if (delegatedHostRun) {
+      this.delegatedHostByRequestId.set(requestId, {
+        campaignId: delegatedHostRun.campaignId,
+        timeoutMs: delegatedHostRun.timeoutMs,
+      });
+    }
     this.pendingRollHandlers.set(requestId, roll ?? defaultScriptDiceRoller);
     this.pendingRollSplitHandlers.set(requestId, rollSplit ?? defaultScriptDiceRollerSplit);
     try {
@@ -797,6 +984,8 @@ export class QBScriptClient {
         timeout,
       );
     } finally {
+      abandonPendingDelegatedUiForExecution(requestId);
+      this.delegatedHostByRequestId.delete(requestId);
       this.pendingRollHandlers.delete(requestId);
       this.pendingRollSplitHandlers.delete(requestId);
     }
@@ -951,6 +1140,7 @@ export class QBScriptClient {
       this.worker = null;
       this.isReady = false;
       this.pendingRequests.clear();
+      this.delegatedHostByRequestId.clear();
     }
   }
 

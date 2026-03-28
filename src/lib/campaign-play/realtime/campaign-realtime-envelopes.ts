@@ -41,7 +41,61 @@ export interface CampaignRealtimeActionRequestEnvelopeV1 {
   sentAt: string;
   /** Scene context for script `Scene` accessor (optional). */
   campaignSceneId?: string;
+  /**
+   * Joiner auth user id (Supabase) for host correlation / logging.
+   * Authorization remains private channel membership; not a second auth layer (see joiner-rolls.md).
+   */
+  initiatorUserId?: string;
   body: CampaignRealtimeActionRequestBodyV1;
+}
+
+/** QBScript blocking UI delegated to another client (joiner rolls, prompts, etc.). */
+export type DelegatedUiRequestBodyV1 =
+  | { interactionType: 'roll'; expression: string; rerollMessage?: string }
+  | { interactionType: 'roll_split'; expression: string; rerollMessage?: string }
+  | { interactionType: 'prompt'; message: string; choices: string[] }
+  | { interactionType: 'prompt_multiple'; message: string; choices: string[] }
+  | { interactionType: 'prompt_input'; message: string }
+  | {
+      interactionType: 'select_character';
+      title?: string;
+      description?: string;
+      rulesetId: string;
+      campaignId?: string;
+    }
+  | {
+      interactionType: 'select_characters';
+      title?: string;
+      description?: string;
+      rulesetId: string;
+      campaignId?: string;
+    };
+
+export interface CampaignRealtimeDelegatedUiRequestEnvelopeV1 {
+  v: typeof CAMPAIGN_REALTIME_PROTOCOL_VERSION;
+  kind: 'delegated_ui_request';
+  campaignId: string;
+  /** Same as the QBScript worker execution request id (joiner `action_request.requestId` when applicable). */
+  executionRequestId: string;
+  interactionId: string;
+  /** Host-issued opaque token; client echoes it in `delegated_ui_response` for single-use consume. */
+  responseToken: string;
+  /** Sheet surface for client gating (`/characters/:characterId`). */
+  characterId: string;
+  body: DelegatedUiRequestBodyV1;
+  sentAt: string;
+}
+
+export interface CampaignRealtimeDelegatedUiResponseEnvelopeV1 {
+  v: typeof CAMPAIGN_REALTIME_PROTOCOL_VERSION;
+  kind: 'delegated_ui_response';
+  campaignId: string;
+  executionRequestId: string;
+  interactionId: string;
+  responseToken: string;
+  /** Structured per `interactionType` on the matching request (JSON-serializable). */
+  result?: unknown;
+  error?: { code: string; message: string };
 }
 
 export interface CampaignRealtimeActionResultEnvelopeV1 {
@@ -99,7 +153,9 @@ export type CampaignRealtimeEnvelopeV1 =
   | CampaignRealtimeManualCharacterUpdateEnvelopeV1
   | CampaignRealtimeHostReactiveResultEnvelopeV1
   | CampaignRealtimeRosterUpdateEnvelopeV1
-  | CampaignRealtimeSessionHeartbeatEnvelopeV1;
+  | CampaignRealtimeSessionHeartbeatEnvelopeV1
+  | CampaignRealtimeDelegatedUiRequestEnvelopeV1
+  | CampaignRealtimeDelegatedUiResponseEnvelopeV1;
 
 function isRecord(v: unknown): v is Record<string, unknown> {
   return typeof v === 'object' && v !== null && !Array.isArray(v);
@@ -159,6 +215,53 @@ function parseBodyV1(raw: unknown): CampaignRealtimeActionRequestBodyV1 | null {
   return null;
 }
 
+function parseDelegatedUiRequestBodyV1(raw: unknown): DelegatedUiRequestBodyV1 | null {
+  if (!isRecord(raw)) return null;
+  const interactionType = raw.interactionType;
+  if (interactionType === 'roll' || interactionType === 'roll_split') {
+    if (typeof raw.expression !== 'string') return null;
+    const rerollMessage = raw.rerollMessage;
+    if (rerollMessage !== undefined && typeof rerollMessage !== 'string') return null;
+    return interactionType === 'roll'
+      ? { interactionType: 'roll', expression: raw.expression, rerollMessage }
+      : { interactionType: 'roll_split', expression: raw.expression, rerollMessage };
+  }
+  if (interactionType === 'prompt' || interactionType === 'prompt_multiple') {
+    if (typeof raw.message !== 'string' || !Array.isArray(raw.choices)) return null;
+    if (!raw.choices.every((c) => typeof c === 'string')) return null;
+    return interactionType === 'prompt'
+      ? { interactionType: 'prompt', message: raw.message, choices: raw.choices as string[] }
+      : {
+          interactionType: 'prompt_multiple',
+          message: raw.message,
+          choices: raw.choices as string[],
+        };
+  }
+  if (interactionType === 'prompt_input') {
+    if (typeof raw.message !== 'string') return null;
+    return { interactionType: 'prompt_input', message: raw.message };
+  }
+  if (interactionType === 'select_character' || interactionType === 'select_characters') {
+    if (typeof raw.rulesetId !== 'string') return null;
+    const campaignId = raw.campaignId;
+    if (campaignId !== undefined && typeof campaignId !== 'string') return null;
+    const title = raw.title;
+    const description = raw.description;
+    if (title !== undefined && typeof title !== 'string') return null;
+    if (description !== undefined && typeof description !== 'string') return null;
+    const base = {
+      title,
+      description,
+      rulesetId: raw.rulesetId,
+      campaignId,
+    };
+    return interactionType === 'select_character'
+      ? { interactionType: 'select_character', ...base }
+      : { interactionType: 'select_characters', ...base };
+  }
+  return null;
+}
+
 /**
  * Parse and validate a broadcast payload. Returns null if the shape is not a supported v1 envelope.
  */
@@ -189,6 +292,8 @@ export function parseCampaignRealtimeEnvelope(raw: unknown): CampaignRealtimeEnv
     if (!body) return null;
     const campaignSceneId = raw.campaignSceneId;
     if (campaignSceneId !== undefined && typeof campaignSceneId !== 'string') return null;
+    const initiatorUserId = raw.initiatorUserId;
+    if (initiatorUserId !== undefined && typeof initiatorUserId !== 'string') return null;
     return {
       v: CAMPAIGN_REALTIME_PROTOCOL_VERSION,
       kind: 'action_request',
@@ -196,7 +301,59 @@ export function parseCampaignRealtimeEnvelope(raw: unknown): CampaignRealtimeEnv
       campaignId: raw.campaignId,
       sentAt: raw.sentAt,
       campaignSceneId,
+      initiatorUserId,
       body,
+    };
+  }
+
+  if (kind === 'delegated_ui_request') {
+    if (
+      typeof raw.executionRequestId !== 'string' ||
+      typeof raw.interactionId !== 'string' ||
+      typeof raw.responseToken !== 'string' ||
+      typeof raw.characterId !== 'string' ||
+      typeof raw.sentAt !== 'string'
+    ) {
+      return null;
+    }
+    const body = parseDelegatedUiRequestBodyV1(raw.body);
+    if (!body) return null;
+    return {
+      v: CAMPAIGN_REALTIME_PROTOCOL_VERSION,
+      kind: 'delegated_ui_request',
+      campaignId: raw.campaignId,
+      executionRequestId: raw.executionRequestId,
+      interactionId: raw.interactionId,
+      responseToken: raw.responseToken,
+      characterId: raw.characterId,
+      body,
+      sentAt: raw.sentAt,
+    };
+  }
+
+  if (kind === 'delegated_ui_response') {
+    if (
+      typeof raw.executionRequestId !== 'string' ||
+      typeof raw.interactionId !== 'string' ||
+      typeof raw.responseToken !== 'string'
+    ) {
+      return null;
+    }
+    let error: { code: string; message: string } | undefined;
+    if (raw.error !== undefined) {
+      if (!isRecord(raw.error)) return null;
+      if (typeof raw.error.code !== 'string' || typeof raw.error.message !== 'string') return null;
+      error = { code: raw.error.code, message: raw.error.message };
+    }
+    return {
+      v: CAMPAIGN_REALTIME_PROTOCOL_VERSION,
+      kind: 'delegated_ui_response',
+      campaignId: raw.campaignId,
+      executionRequestId: raw.executionRequestId,
+      interactionId: raw.interactionId,
+      responseToken: raw.responseToken,
+      result: raw.result,
+      error,
     };
   }
 

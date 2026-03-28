@@ -265,6 +265,8 @@ export class EventHandlerExecutor {
     campaignSceneId?: string,
     promptMultiple?: PromptMultipleFn,
     promptInput?: PromptInputFn,
+    createRollForCharacter?: (characterId: string) => RollFn,
+    createRollSplitForCharacter?: (characterId: string) => RollSplitFn,
   ): Promise<EventHandlerResult> {
     // Get item
     const item = await this.db.items.get(itemId);
@@ -331,6 +333,8 @@ export class EventHandlerExecutor {
       campaignSceneId,
       roll,
       rollSplit,
+      createRollForCharacter,
+      createRollSplitForCharacter,
       prompt,
       promptMultiple,
       promptInput,
@@ -358,6 +362,8 @@ export class EventHandlerExecutor {
           campaignSceneId,
           promptMultiple,
           promptInput,
+          createRollForCharacter,
+          createRollSplitForCharacter,
         ),
     };
 
@@ -427,6 +433,8 @@ export class EventHandlerExecutor {
     campaignSceneId?: string,
     promptMultiple?: PromptMultipleFn,
     promptInput?: PromptInputFn,
+    createRollForCharacter?: (characterId: string) => RollFn,
+    createRollSplitForCharacter?: (characterId: string) => RollSplitFn,
   ): Promise<EventHandlerResult> {
     // Get action
     const action = await this.db.actions.get(actionId);
@@ -502,6 +510,8 @@ export class EventHandlerExecutor {
         campaignId,
         roll,
         rollSplit,
+        createRollForCharacter,
+        createRollSplitForCharacter,
         prompt,
         promptMultiple,
         promptInput,
@@ -533,6 +543,8 @@ export class EventHandlerExecutor {
               campaignSceneId,
               promptMultiple,
               promptInput,
+              createRollForCharacter,
+              createRollSplitForCharacter,
             );
             for (const entry of r.componentAnimations ?? []) {
               nestedAnimations.push(entry);
@@ -682,6 +694,8 @@ export class EventHandlerExecutor {
     campaignSceneId?: string,
     promptMultiple?: PromptMultipleFn,
     promptInput?: PromptInputFn,
+    createRollForCharacter?: (characterId: string) => RollFn,
+    createRollSplitForCharacter?: (characterId: string) => RollSplitFn,
   ): Promise<EventHandlerResult> {
     const archetype = await this.db.archetypes.get(archetypeId);
     if (!archetype) {
@@ -736,6 +750,8 @@ export class EventHandlerExecutor {
       campaignSceneId,
       roll,
       rollSplit,
+      createRollForCharacter,
+      createRollSplitForCharacter,
       prompt,
       promptMultiple,
       promptInput,
@@ -763,6 +779,8 @@ export class EventHandlerExecutor {
           campaignSceneId,
           promptMultiple,
           promptInput,
+          createRollForCharacter,
+          createRollSplitForCharacter,
         ),
     };
 
@@ -813,6 +831,8 @@ export class EventHandlerExecutor {
     campaignId?: string | null,
     promptMultiple?: PromptMultipleFn,
     promptInput?: PromptInputFn,
+    createRollForCharacter?: (characterId: string) => RollFn,
+    createRollSplitForCharacter?: (characterId: string) => RollSplitFn,
   ): Promise<EventHandlerResult> {
     const script = await this.db.scripts
       .where({ rulesetId, entityType: 'characterLoader' })
@@ -836,6 +856,8 @@ export class EventHandlerExecutor {
       entityId: undefined,
       roll,
       rollSplit,
+      createRollForCharacter,
+      createRollSplitForCharacter,
       prompt,
       promptMultiple,
       promptInput,
@@ -863,6 +885,8 @@ export class EventHandlerExecutor {
           undefined,
           promptMultiple,
           promptInput,
+          createRollForCharacter,
+          createRollSplitForCharacter,
         ),
     };
 
@@ -912,6 +936,8 @@ export class EventHandlerExecutor {
     _campaignEventSceneId?: string | null,
     promptMultiple?: PromptMultipleFn,
     promptInput?: PromptInputFn,
+    createRollForCharacter?: (characterId: string) => RollFn,
+    createRollSplitForCharacter?: (characterId: string) => RollSplitFn,
   ): Promise<EventHandlerResult> {
     const campaignEvent = await this.db.campaignEvents.get(campaignEventId);
     if (!campaignEvent) {
@@ -973,6 +999,8 @@ export class EventHandlerExecutor {
       campaignEvent,
       roll,
       rollSplit,
+      createRollForCharacter,
+      createRollSplitForCharacter,
       prompt,
       promptMultiple,
       promptInput,
@@ -1000,6 +1028,8 @@ export class EventHandlerExecutor {
           (campaignEvent as CampaignEvent).sceneId ?? campaignSceneId,
           promptMultiple,
           promptInput,
+          createRollForCharacter,
+          createRollSplitForCharacter,
         ),
       params: paramsHelper,
     };
