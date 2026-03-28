@@ -22,8 +22,40 @@ import {
 import type { SyncTableConfig } from '@/lib/cloud/sync/sync-tables';
 import { getSyncTableConfig, SYNC_TABLE_ORDER } from '@/lib/cloud/sync/sync-tables';
 import { addSyncEntityCount, sumSyncEntityCounts } from '@/lib/cloud/sync/sync-entity-labels';
+import type { StagedPullPayload } from '@/lib/cloud/sync/sync-pull';
 import { prepareRecordForRemote } from '@/lib/cloud/sync/sync-utils';
 import type { DB } from '@/stores/db/hooks/types';
+
+/** Row keys (`tableName:id`) merged from pull in the same sync pass — must not count or upsert as push. */
+export function syncPushSkipKeysFromAppliedPull(payload: StagedPullPayload): Set<string> {
+  const keys = new Set<string>();
+  for (const [tableName, rows] of Object.entries(payload.upsertsByTable ?? {})) {
+    if (!rows?.length) continue;
+    for (const row of rows) {
+      const id = (row as { id?: unknown }).id;
+      if (typeof id === 'string' && id.length > 0) keys.add(`${tableName}:${id}`);
+    }
+  }
+  return keys;
+}
+
+function filterRowsExcludedByAppliedPull(
+  tableName: string,
+  rows: Record<string, unknown>[],
+  skipKeys: Set<string> | null,
+): Record<string, unknown>[] {
+  if (!skipKeys || skipKeys.size === 0) return rows;
+  return rows.filter((r) => {
+    const id = r.id;
+    if (typeof id !== 'string' || id.length === 0) return true;
+    return !skipKeys.has(`${tableName}:${id}`);
+  });
+}
+
+export interface SyncPushOptions {
+  /** Same-pass pull payload: rows written by apply before push must not be re-pushed. */
+  appliedPull?: StagedPullPayload;
+}
 
 type TableWithWhere = {
   where: (key: string) => {
@@ -42,6 +74,7 @@ type TableWithGet = {
 export async function syncPush(
   rulesetId: string,
   db: DB,
+  options?: SyncPushOptions,
 ): Promise<{ error?: string; pushedCount?: number; pushedByEntity?: Record<string, number> }> {
   const client = cloudClient;
   const session = await getSession();
@@ -54,6 +87,9 @@ export async function syncPush(
   await loadLastSyncedAt();
   const lastSyncedAtMap = await getStoredLastSyncedAt();
   const lastSyncedAt = lastSyncedAtMap[rulesetId] ?? '1970-01-01T00:00:00Z';
+  const skipKeysAfterPull = options?.appliedPull
+    ? syncPushSkipKeysFromAppliedPull(options.appliedPull)
+    : null;
 
   setSyncError(null);
   const pushedByEntity: Record<string, number> = {};
@@ -111,6 +147,8 @@ export async function syncPush(
       } else {
         continue;
       }
+
+      rows = filterRowsExcludedByAppliedPull(config.tableName, rows, skipKeysAfterPull);
 
       if (rows.length === 0) continue;
 
@@ -237,6 +275,7 @@ export async function syncPush(
 export async function planSyncPush(
   rulesetId: string,
   db: DB,
+  options?: SyncPushOptions,
 ): Promise<{ error?: string; pushedByEntity?: Record<string, number> }> {
   const client = cloudClient;
   const session = await getSession();
@@ -249,6 +288,9 @@ export async function planSyncPush(
   await loadLastSyncedAt();
   const lastSyncedAtMap = await getStoredLastSyncedAt();
   const lastSyncedAt = lastSyncedAtMap[rulesetId] ?? '1970-01-01T00:00:00Z';
+  const skipKeysAfterPull = options?.appliedPull
+    ? syncPushSkipKeysFromAppliedPull(options.appliedPull)
+    : null;
 
   const pushedByEntity: Record<string, number> = {};
   try {
@@ -300,6 +342,8 @@ export async function planSyncPush(
       } else {
         continue;
       }
+
+      rows = filterRowsExcludedByAppliedPull(config.tableName, rows, skipKeysAfterPull);
 
       if (rows.length === 0) continue;
       addSyncEntityCount(pushedByEntity, config.tableName, rows.length);

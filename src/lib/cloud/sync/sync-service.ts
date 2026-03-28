@@ -11,6 +11,7 @@ import { ASSETS_BUCKET, FONTS_BUCKET, removeStoragePaths } from './sync-assets';
 import { applyStagedPull, planSyncPull, syncPull, type StagedPullPayload } from './sync-pull';
 import { planSyncPush, syncPush } from './sync-push';
 import { useSyncStateStore } from './sync-state';
+import { filterSyncEntityCountsForUi, sumSyncEntityCounts } from './sync-entity-labels';
 import { prepareRemoteForLocal } from './sync-utils';
 
 export { applyStagedPull, planSyncPull, syncPull, syncPush, type StagedPullPayload };
@@ -79,7 +80,7 @@ export async function planRulesetSync(rulesetId: string, db: DB): Promise<Rulese
     ) {
       return { error: 'Pull plan incomplete' };
     }
-    const pushPlan = await planSyncPush(rulesetId, db);
+    const pushPlan = await planSyncPush(rulesetId, db, { appliedPull: pullPlan.payload });
     if (pushPlan.error) return { error: pushPlan.error };
     return {
       stagedPull: pullPlan.payload,
@@ -112,7 +113,7 @@ export async function commitRulesetSync(
   setSyncError(null);
   return await withCloudSyncUi(async () => {
     await applyStagedPull(db, client, plan.stagedPull);
-    const pushResult = await syncPush(rulesetId, db);
+    const pushResult = await syncPush(rulesetId, db, { appliedPull: plan.stagedPull });
     if (pushResult.error) {
       return {
         error: pushResult.error,
@@ -155,6 +156,37 @@ export function getCloudSyncCollapsedSummary(
   const pushWord = pushed === 1 ? 'change' : 'changes';
   const pullWord = pulled === 1 ? 'update' : 'updates';
   return `${pushed} ${pushWord} pushed · ${pulled} ${pullWord} applied locally`;
+}
+
+/**
+ * Like {@link getCloudSyncCollapsedSummary}, but excludes hidden entity types from counts
+ * (same tables as review dialog). Falls back to aggregate counts when `*ByEntity` is absent.
+ */
+export function getCloudSyncUiCollapsedSummary(
+  outcome: Pick<
+    CloudSyncOutcome,
+    'pushedCount' | 'pulledCount' | 'pushedByEntity' | 'pulledByEntity'
+  >,
+): string {
+  const { pushedByEntity, pulledByEntity, pushedCount, pulledCount } = outcome;
+  const pushVis =
+    pushedByEntity !== undefined
+      ? sumSyncEntityCounts(filterSyncEntityCountsForUi(pushedByEntity))
+      : (pushedCount ?? 0);
+  const pullVis =
+    pulledByEntity !== undefined
+      ? sumSyncEntityCounts(filterSyncEntityCountsForUi(pulledByEntity))
+      : (pulledCount ?? 0);
+  const pushTot = pushedCount ?? (pushedByEntity ? sumSyncEntityCounts(pushedByEntity) : 0);
+  const pullTot = pulledCount ?? (pulledByEntity ? sumSyncEntityCounts(pulledByEntity) : 0);
+
+  if (pushVis === 0 && pullVis === 0) {
+    if (pushTot > 0 || pullTot > 0) {
+      return 'Character sheet data synced (not listed).';
+    }
+    return 'Already up to date';
+  }
+  return getCloudSyncCollapsedSummary({ pushedCount: pushVis, pulledCount: pullVis });
 }
 
 /** Minimal ruleset shape for cloud listing (id, title, version, image). */
@@ -287,7 +319,7 @@ export async function syncRuleset(rulesetId: string, db: DB): Promise<CloudSyncO
     if (pullPlan.error) return { error: pullPlan.error };
     if (!pullPlan.payload) return { error: 'Pull failed' };
     await applyStagedPull(db, syncClient, pullPlan.payload);
-    const pushResult = await syncPush(rulesetId, db);
+    const pushResult = await syncPush(rulesetId, db, { appliedPull: pullPlan.payload });
     if (pushResult.error) {
       return {
         error: pushResult.error,

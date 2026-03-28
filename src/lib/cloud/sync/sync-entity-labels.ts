@@ -69,6 +69,21 @@ export function sumSyncEntityCounts(counts: Record<string, number> | undefined):
   return Object.values(counts).reduce((a, b) => a + b, 0);
 }
 
+/** Dexie tables omitted from cloud sync review / success panel breakdowns (rows still sync). */
+export const CLOUD_SYNC_UI_HIDDEN_ENTITY_TABLES: ReadonlySet<string> = new Set([
+  'characterAttributes',
+  'inventoryItems',
+  'characterArchetypes',
+]);
+
+export function filterSyncEntityCountsForUi(counts: Record<string, number>): Record<string, number> {
+  const out: Record<string, number> = { ...counts };
+  for (const key of CLOUD_SYNC_UI_HIDDEN_ENTITY_TABLES) {
+    delete out[key];
+  }
+  return out;
+}
+
 export interface SyncEntityLine {
   tableName: string;
   count: number;

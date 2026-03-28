@@ -1,6 +1,9 @@
 import { Button, Card, Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components';
-import { getOrderedSyncEntityLines } from '@/lib/cloud/sync/sync-entity-labels';
-import { getCloudSyncCollapsedSummary } from '@/lib/cloud/sync/sync-service';
+import {
+  filterSyncEntityCountsForUi,
+  getOrderedSyncEntityLines,
+} from '@/lib/cloud/sync/sync-entity-labels';
+import { getCloudSyncUiCollapsedSummary } from '@/lib/cloud/sync/sync-service';
 import { cn } from '@/lib/utils';
 import { useCloudSyncSummaryPanelStore } from '@/stores';
 import { ChevronDown, CloudCheck, X } from 'lucide-react';
@@ -16,10 +19,14 @@ export function CloudSyncSummaryPanel() {
     return null;
   }
 
-  const pushedLines = getOrderedSyncEntityLines(outcome.pushedByEntity ?? {});
-  const pulledLines = getOrderedSyncEntityLines(outcome.pulledByEntity ?? {});
+  const pushedLines = getOrderedSyncEntityLines(
+    filterSyncEntityCountsForUi(outcome.pushedByEntity ?? {}),
+  );
+  const pulledLines = getOrderedSyncEntityLines(
+    filterSyncEntityCountsForUi(outcome.pulledByEntity ?? {}),
+  );
   const hasDetails = pushedLines.length > 0 || pulledLines.length > 0;
-  const collapsedText = getCloudSyncCollapsedSummary(outcome);
+  const collapsedText = getCloudSyncUiCollapsedSummary(outcome);
 
   return (
     <div

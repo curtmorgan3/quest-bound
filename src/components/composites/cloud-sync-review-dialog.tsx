@@ -8,7 +8,11 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { getOrderedSyncEntityLines } from '@/lib/cloud/sync/sync-entity-labels';
+import {
+  filterSyncEntityCountsForUi,
+  getOrderedSyncEntityLines,
+  sumSyncEntityCounts,
+} from '@/lib/cloud/sync/sync-entity-labels';
 import { db, useCloudSyncReviewStore } from '@/stores';
 import type { DB } from '@/stores/db/hooks/types';
 import { Loader2 } from 'lucide-react';
@@ -20,8 +24,19 @@ function EntityList({
   counts: Record<string, number>;
   emptyLabel: string;
 }) {
-  const lines = getOrderedSyncEntityLines(counts);
+  const displayed = filterSyncEntityCountsForUi(counts);
+  const lines = getOrderedSyncEntityLines(displayed);
+  const anyTotal = sumSyncEntityCounts(counts) > 0;
+  const anyDisplayed = sumSyncEntityCounts(displayed) > 0;
+
   if (lines.length === 0) {
+    if (anyTotal && !anyDisplayed) {
+      return (
+        <p className='text-muted-foreground text-sm'>
+          Character sheet data will sync (not listed here).
+        </p>
+      );
+    }
     return <p className='text-muted-foreground text-sm'>{emptyLabel}</p>;
   }
   return (
