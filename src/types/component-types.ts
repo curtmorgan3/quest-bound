@@ -63,6 +63,8 @@ export type TextComponentData = {
 
 export type ContentComponentData = {
   value?: string;
+  /** When true, players cannot open edit mode on the sheet (view mode only). */
+  readOnly?: boolean;
 };
 
 export type ImageComponentData = {
@@ -136,6 +138,7 @@ export type ConditionalRenderLogic = {
 
 export type ComponentData = ShapeComponentData &
   TextComponentData &
+  ContentComponentData &
   ImageComponentData &
   InputComponentData &
   InventoryComponentData &

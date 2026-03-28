@@ -176,7 +176,7 @@ const ViewInputNodeComponent = ({
         <NumberInput
           disabled={editMode}
           placeholder={data?.placeholder ?? data?.name ?? data.type}
-          value={data.value as number}
+          value={Number(data.value)}
           onChange={(value) => handleChange(value)}
           style={inputStyle}
           inputMin={data.min}

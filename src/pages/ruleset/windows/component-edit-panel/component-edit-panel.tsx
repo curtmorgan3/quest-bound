@@ -13,6 +13,7 @@ import { AttributeLookup, useComponents, useRulesets } from '@/lib/compass-api';
 import { ComponentTypes } from '@/lib/compass-planes/nodes';
 import {
   CheckboxDataEdit,
+  ContentDataEdit,
   FrameDataEdit,
   GraphDataEdit,
   InputDataEdit,
@@ -324,6 +325,10 @@ export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
     selectedComponents.length > 0 &&
     selectedComponents.every((c) => c.type === ComponentTypes.IMAGE);
 
+  const allAreContent =
+    selectedComponents.length > 0 &&
+    selectedComponents.every((c) => c.type === ComponentTypes.CONTENT);
+
   const allAreText =
     selectedComponents.length > 0 &&
     selectedComponents.every(
@@ -535,6 +540,14 @@ export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
 
               {allAreImages && (
                 <ImageDataEdit
+                  components={selectedComponents}
+                  handleUpdate={handleUpdate}
+                  updateComponents={updateComponents}
+                />
+              )}
+
+              {allAreContent && (
+                <ContentDataEdit
                   components={selectedComponents}
                   handleUpdate={handleUpdate}
                   updateComponents={updateComponents}

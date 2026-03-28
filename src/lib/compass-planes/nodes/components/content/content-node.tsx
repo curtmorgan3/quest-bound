@@ -150,6 +150,7 @@ const ViewContentNodeComponent = ({
     <section
       onDoubleClick={() => {
         if (!windowEditorMode && !characterContext) return;
+        if (!windowEditorMode && data.readOnly) return;
         setIsEditing(true);
         handleDoubleClick?.();
       }}
@@ -176,7 +177,7 @@ const ViewContentNodeComponent = ({
           height: '100%',
           overflow: 'auto',
         }}
-        className="nowheel nodrag prose prose-invert max-w-none editor-content md-content">
+        className={`nowheel${windowEditorMode ? '' : ' nodrag'} prose prose-invert max-w-none editor-content md-content`}>
         <MarkdownViewer value={data?.interpolatedValue?.toString() ?? ''} />
       </div>
     </section>
