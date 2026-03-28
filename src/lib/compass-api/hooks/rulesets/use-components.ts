@@ -88,11 +88,13 @@ export const useComponents = (windowId?: string) => {
     const now = new Date().toISOString();
     try {
       await db.components.bulkUpdate(
-        updates.map((u) => ({
-          key: u.id,
-          changes: u,
-          updatedAt: now,
-        })),
+        updates.map((u) => {
+          const { id, ...rest } = u;
+          return {
+            key: id,
+            changes: { ...rest, updatedAt: now },
+          };
+        }),
       );
     } catch (e) {
       handleError(e as Error, {

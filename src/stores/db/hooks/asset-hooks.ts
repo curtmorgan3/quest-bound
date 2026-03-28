@@ -130,7 +130,7 @@ export async function clearAssetReferences(db: DB, assetId: string): Promise<voi
       const data = JSON.parse(comp.data) as Record<string, unknown>;
       if (data.assetId === assetId) {
         data.assetId = null;
-        await db.components.update(comp.id, { data: JSON.stringify(data) });
+        await db.components.update(comp.id, { data: JSON.stringify(data), updatedAt: now });
       }
     } catch {
       // skip
