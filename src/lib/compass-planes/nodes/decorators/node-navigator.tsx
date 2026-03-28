@@ -29,19 +29,15 @@ export const NodeNavigator = ({ children, component, componentData }: NodeNaviga
   const { openRulesetChildWindow } = useWindowRuntime();
   const characterId = characterContext?.character?.id;
 
+  const pageTemplateId = data.pageId;
+  const childWindowId = component.childWindowId;
+  const href = data.href;
+
   const hasVisibleClickScript = useMemo(() => {
     if (!component.scriptId) return false;
     const s = scripts.find((x) => x.id === component.scriptId);
     return Boolean(s && !s.hidden);
   }, [component.scriptId, scripts]);
-
-  if (hasVisibleClickScript) {
-    return <>{children}</>;
-  }
-
-  const pageTemplateId = data.pageId;
-  const childWindowId = component.childWindowId;
-  const href = data.href;
 
   const handleProgrammaticNav = useCallback(
     async (e: React.MouseEvent) => {
@@ -83,6 +79,10 @@ export const NodeNavigator = ({ children, component, componentData }: NodeNaviga
       data.childWindowCollapse,
     ],
   );
+
+  if (hasVisibleClickScript) {
+    return <>{children}</>;
+  }
 
   if (pageTemplateId || childWindowId) {
     return (
