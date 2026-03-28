@@ -22,7 +22,6 @@ import {
 } from '@/lib/cloud/sync/sync-assets';
 import { addSyncEntityCount, sumSyncEntityCounts } from '@/lib/cloud/sync/sync-entity-labels';
 
-const IS_SYNCING_CLEAR_DELAY_MS = 80;
 /** When no local ruleset row exists, pull everything from remote (ignore stored incremental cursor). */
 const FULL_PULL_SINCE = '1970-01-01T00:00:00Z';
 
@@ -89,7 +88,7 @@ export async function syncPull(
     return { error: 'Not authenticated' };
   }
   const sessionUserId = session.user.id;
-  const { setSyncing, setSyncError, loadLastSyncedAt } = useSyncStateStore.getState();
+  const { setSyncError, loadLastSyncedAt } = useSyncStateStore.getState();
   await loadLastSyncedAt();
   const lastSyncedAtMap = await getStoredLastSyncedAt();
   const localRuleset = await db.rulesets.get(rulesetId);
@@ -97,7 +96,6 @@ export async function syncPull(
     ? (lastSyncedAtMap[rulesetId] ?? FULL_PULL_SINCE)
     : FULL_PULL_SINCE;
 
-  setSyncing(true);
   setSyncError(null);
   try {
     const rowOwnerId = await fetchCloudRulesetRowOwnerId(client, rulesetId);
@@ -224,12 +222,6 @@ export async function syncPull(
     const message = err instanceof Error ? err.message : String(err);
     setSyncError(message);
     return { error: message };
-  } finally {
-    queueMicrotask(() => {
-      setTimeout(() => {
-        useSyncStateStore.getState().setSyncing(false);
-      }, IS_SYNCING_CLEAR_DELAY_MS);
-    });
   }
 }
 

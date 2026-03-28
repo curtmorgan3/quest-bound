@@ -15,6 +15,26 @@ import { prepareRemoteForLocal } from './sync-utils';
 
 export { syncPull, syncPush };
 
+/** Brief delay before clearing `isSyncing` / overlay so Dexie hooks settle after bulk writes. */
+const CLOUD_SYNC_UI_CLEAR_DELAY_MS = 80;
+
+async function withCloudSyncUi<T>(fn: () => Promise<T>): Promise<T> {
+  const { setSyncing, setCloudSyncOverlayOpen } = useSyncStateStore.getState();
+  setSyncing(true);
+  setCloudSyncOverlayOpen(true);
+  try {
+    return await fn();
+  } finally {
+    queueMicrotask(() => {
+      setTimeout(() => {
+        const s = useSyncStateStore.getState();
+        s.setSyncing(false);
+        s.setCloudSyncOverlayOpen(false);
+      }, CLOUD_SYNC_UI_CLEAR_DELAY_MS);
+    });
+  }
+}
+
 /** Result of a ruleset cloud sync (manual sync or first push). */
 export interface CloudSyncOutcome {
   error?: string;
@@ -90,7 +110,7 @@ export async function installFromCloud(rulesetId: string, db: DB): Promise<{ err
   if (isSyncing) return { error: 'Sync already in progress' };
 
   setSyncError(null);
-  const pullResult = await syncPull(rulesetId, db);
+  const pullResult = await withCloudSyncUi(() => syncPull(rulesetId, db));
   if (pullResult.error) return pullResult;
 
   const now = new Date().toISOString();
@@ -164,24 +184,26 @@ export async function syncRuleset(rulesetId: string, db: DB): Promise<CloudSyncO
   if (isSyncing) return { error: 'Sync already in progress' };
 
   setSyncError(null);
-  const pullResult = await syncPull(rulesetId, db);
-  if (pullResult.error) return pullResult;
-  const pushResult = await syncPush(rulesetId, db);
-  if (pushResult.error) {
+  return await withCloudSyncUi(async () => {
+    const pullResult = await syncPull(rulesetId, db);
+    if (pullResult.error) return pullResult;
+    const pushResult = await syncPush(rulesetId, db);
+    if (pushResult.error) {
+      return {
+        error: pushResult.error,
+        pulledCount: pullResult.pulledCount,
+        pulledByEntity: pullResult.pulledByEntity,
+      };
+    }
+
+    useSyncStateStore.getState().setLastSyncCompletedAt(Date.now());
     return {
-      error: pushResult.error,
       pulledCount: pullResult.pulledCount,
       pulledByEntity: pullResult.pulledByEntity,
+      pushedCount: pushResult.pushedCount,
+      pushedByEntity: pushResult.pushedByEntity,
     };
-  }
-
-  useSyncStateStore.getState().setLastSyncCompletedAt(Date.now());
-  return {
-    pulledCount: pullResult.pulledCount,
-    pulledByEntity: pullResult.pulledByEntity,
-    pushedCount: pushResult.pushedCount,
-    pushedByEntity: pushResult.pushedByEntity,
-  };
+  });
 }
 
 /**
@@ -201,16 +223,18 @@ export async function pushToCloudAndMarkSynced(
   if (isSyncing) return { error: 'Sync already in progress' };
 
   setSyncError(null);
-  const result = await syncPush(rulesetId, db);
-  if (result.error) return result;
-  await useSyncStateStore.getState().markRulesetSynced(rulesetId);
-  useSyncStateStore.getState().setLastSyncCompletedAt(Date.now());
-  return {
-    pushedCount: result.pushedCount,
-    pushedByEntity: result.pushedByEntity,
-    pulledCount: 0,
-    pulledByEntity: {},
-  };
+  return await withCloudSyncUi(async () => {
+    const result = await syncPush(rulesetId, db);
+    if (result.error) return result;
+    await useSyncStateStore.getState().markRulesetSynced(rulesetId);
+    useSyncStateStore.getState().setLastSyncCompletedAt(Date.now());
+    return {
+      pushedCount: result.pushedCount,
+      pushedByEntity: result.pushedByEntity,
+      pulledCount: 0,
+      pulledByEntity: {},
+    };
+  });
 }
 
 let initDone = false;

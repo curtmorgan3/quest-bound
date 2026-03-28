@@ -15,6 +15,8 @@ export interface PendingSyncDelete {
 
 export interface SyncState {
   isSyncing: boolean;
+  /** True while a Quest Bound Cloud pull/push/install is in progress (UI overlay). */
+  cloudSyncOverlayOpen: boolean;
   /** keyed by rulesetId → ISO timestamp */
   lastSyncedAt: Record<string, string>;
   syncError: string | null;
@@ -45,10 +47,12 @@ export interface SyncState {
   removeSyncedRulesetId: (rulesetId: string) => Promise<void>;
   isCloudSynced: (rulesetId: string) => boolean;
   setPushDialogOpen: (open: boolean) => void;
+  setCloudSyncOverlayOpen: (open: boolean) => void;
 }
 
 export const useSyncStateStore = create<SyncState>((set, get) => ({
   isSyncing: false,
+  cloudSyncOverlayOpen: false,
   lastSyncedAt: {},
   syncError: null,
   syncProgress: null,
@@ -59,6 +63,7 @@ export const useSyncStateStore = create<SyncState>((set, get) => ({
   pushDialogOpen: false,
 
   setSyncing: (value) => set({ isSyncing: value }),
+  setCloudSyncOverlayOpen: (open) => set({ cloudSyncOverlayOpen: open }),
   setSyncError: (error) => set({ syncError: error }),
   setSyncProgress: (progress) => set({ syncProgress: progress }),
   setLastSyncedAt: (rulesetId, iso) => {
