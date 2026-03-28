@@ -82,6 +82,7 @@ export class CampaignPlayHostActionQueue {
             campaignId: this.campaignId,
             executionRequestId: request.requestId,
             timeoutMs: ACTION_SCRIPT_TIMEOUT_MS,
+            delegationSurfaceCharacterId: request.body.characterId,
           }
         : undefined;
 

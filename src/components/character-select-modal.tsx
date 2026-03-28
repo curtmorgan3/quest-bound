@@ -8,6 +8,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import type { CharacterSelectModalDelegatedRoster } from '@/lib/campaign-play/realtime/build-delegated-character-select-roster';
 import { cn } from '@/lib/utils';
 import { filterNotSoftDeleted } from '@/lib/data/soft-delete';
 import { db } from '@/stores';
@@ -16,18 +17,20 @@ import type { CampaignCharacter, Character } from '@/types';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useMemo, useState } from 'react';
 
+type CharacterSelectRow = Pick<Character, 'id' | 'name' | 'image' | 'isNpc'>;
+
 type CharacterWithCampaign = {
   cc?: CampaignCharacter;
-  character: Character;
+  character: CharacterSelectRow;
 };
 
 export function CharacterSelectModal() {
-  const { open, mode, title, description, rulesetId, campaignId, select, cancel } =
+  const { open, mode, title, description, rulesetId, campaignId, delegatedRoster, select, cancel } =
     useCharacterSelectModalStore();
 
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
-  const { pcs, npcs } = useCharacterLists(rulesetId, campaignId);
+  const { pcs, npcs } = useCharacterLists(rulesetId, campaignId, delegatedRoster);
 
   const handleOpenChange = (isOpen: boolean) => {
     if (!isOpen) {
@@ -156,7 +159,7 @@ export function CharacterSelectModal() {
 
 interface CharacterRowProps {
   mode: 'single' | 'multi';
-  character: Character;
+  character: CharacterSelectRow;
   checked: boolean;
   onCheckedChange: (checked: boolean | string) => void;
 }
@@ -204,8 +207,10 @@ function CharacterRow({ mode, character, checked, onCheckedChange }: CharacterRo
 function useCharacterLists(
   rulesetId?: string,
   campaignId?: string,
+  delegatedRoster?: CharacterSelectModalDelegatedRoster,
 ): { pcs: CharacterWithCampaign[]; npcs: CharacterWithCampaign[] } {
   const fromCampaign = useLiveQuery(async () => {
+    if (delegatedRoster) return null;
     if (!campaignId) return null;
     const campaignCharacters = filterNotSoftDeleted(
       await db.campaignCharacters.where('campaignId').equals(campaignId).toArray(),
@@ -233,9 +238,10 @@ function useCharacterLists(
       .sort((a, b) => (a.character.name ?? '').localeCompare(b.character.name ?? '', 'en'));
 
     return { pcs, npcs };
-  }, [campaignId, rulesetId]);
+  }, [campaignId, rulesetId, delegatedRoster]);
 
   const fromRuleset = useLiveQuery(async () => {
+    if (delegatedRoster) return null;
     if (!rulesetId || campaignId) return null;
     const characters = await db.characters.where('rulesetId').equals(rulesetId).toArray();
 
@@ -250,11 +256,17 @@ function useCharacterLists(
       .sort((a, b) => (a.character.name ?? '').localeCompare(b.character.name ?? '', 'en'));
 
     return { pcs, npcs };
-  }, [rulesetId, campaignId]);
+  }, [rulesetId, campaignId, delegatedRoster]);
 
   return useMemo(() => {
+    if (delegatedRoster) {
+      return {
+        pcs: delegatedRoster.pcs,
+        npcs: delegatedRoster.npcs,
+      };
+    }
     if (fromCampaign) return fromCampaign;
     if (fromRuleset) return fromRuleset;
     return { pcs: [], npcs: [] };
-  }, [fromCampaign, fromRuleset]);
+  }, [delegatedRoster, fromCampaign, fromRuleset]);
 }

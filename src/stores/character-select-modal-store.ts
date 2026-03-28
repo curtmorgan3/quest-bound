@@ -1,3 +1,4 @@
+import type { CharacterSelectModalDelegatedRoster } from '@/lib/campaign-play/realtime/build-delegated-character-select-roster';
 import { create } from 'zustand';
 
 export type CharacterSelectMode = 'single' | 'multi';
@@ -8,6 +9,8 @@ type CharacterSelectRequest = {
   description?: string;
   rulesetId: string;
   campaignId?: string;
+  /** When set, list rows come from the host snapshot (delegated play) instead of local Dexie. */
+  delegatedRoster?: CharacterSelectModalDelegatedRoster;
 };
 
 type CharacterSelectResolution = {
@@ -21,6 +24,7 @@ export type CharacterSelectModalState = {
   description?: string;
   rulesetId?: string;
   campaignId?: string;
+  delegatedRoster?: CharacterSelectModalDelegatedRoster;
   /** Resolve the promise returned by show() with selected character ids (empty on cancel). */
   _resolve: ((value: CharacterSelectResolution) => void) | undefined;
   _reject: ((err: Error) => void) | undefined;
@@ -42,6 +46,7 @@ export const useCharacterSelectModalStore = create<CharacterSelectModalState>()(
     description: undefined,
     rulesetId: undefined,
     campaignId: undefined,
+    delegatedRoster: undefined,
     _resolve: undefined,
     _reject: undefined,
     _queue: [],
@@ -60,6 +65,7 @@ export const useCharacterSelectModalStore = create<CharacterSelectModalState>()(
             description: request.description,
             rulesetId: request.rulesetId,
             campaignId: request.campaignId,
+            delegatedRoster: request.delegatedRoster,
             _resolve: resolve,
             _reject: reject,
           });
@@ -87,6 +93,7 @@ export const useCharacterSelectModalStore = create<CharacterSelectModalState>()(
             description: undefined,
             rulesetId: undefined,
             campaignId: undefined,
+            delegatedRoster: undefined,
             _resolve: undefined,
             _reject: undefined,
             _queue: [],
@@ -101,6 +108,7 @@ export const useCharacterSelectModalStore = create<CharacterSelectModalState>()(
           description: next.request.description,
           rulesetId: next.request.rulesetId,
           campaignId: next.request.campaignId,
+          delegatedRoster: next.request.delegatedRoster,
           _resolve: next.resolve,
           _reject: next.reject,
           _queue: rest,
@@ -123,6 +131,7 @@ export const useCharacterSelectModalStore = create<CharacterSelectModalState>()(
             description: undefined,
             rulesetId: undefined,
             campaignId: undefined,
+            delegatedRoster: undefined,
             _resolve: undefined,
             _reject: undefined,
             _queue: [],
@@ -137,6 +146,7 @@ export const useCharacterSelectModalStore = create<CharacterSelectModalState>()(
           description: next.request.description,
           rulesetId: next.request.rulesetId,
           campaignId: next.request.campaignId,
+          delegatedRoster: next.request.delegatedRoster,
           _resolve: next.resolve,
           _reject: next.reject,
           _queue: rest,

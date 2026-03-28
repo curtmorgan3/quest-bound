@@ -1,3 +1,4 @@
+import { toCharacterSelectModalDelegatedRoster } from '@/lib/campaign-play/realtime/build-delegated-character-select-roster';
 import {
   getCampaignPlaySender,
   subscribeCampaignPlayEnvelopes,
@@ -69,6 +70,12 @@ function delegatedUiSurfaceIsActive(envelopeCharacterId: string): boolean {
 async function fulfillDelegatedRequest(
   envelope: CampaignRealtimeDelegatedUiRequestEnvelopeV1,
 ): Promise<void> {
+  /** Modal listing uses campaign roster when set; body may omit `campaignId` while the envelope always has it. */
+  const effectiveCampaignIdForSelect =
+    envelope.body.interactionType === 'select_character' ||
+    envelope.body.interactionType === 'select_characters'
+      ? envelope.body.campaignId ?? envelope.campaignId
+      : undefined;
   const send = getCampaignPlaySender(envelope.campaignId);
   if (!send) return;
 
@@ -123,23 +130,39 @@ async function fulfillDelegatedRequest(
         break;
       }
       case 'select_character': {
+        const delegatedSelectRoster =
+          body.rosterNpcs !== undefined || body.rosterPcs !== undefined
+            ? toCharacterSelectModalDelegatedRoster({
+                rosterNpcs: body.rosterNpcs ?? [],
+                rosterPcs: body.rosterPcs ?? [],
+              })
+            : undefined;
         const { characterIds } = await useCharacterSelectModalStore.getState().show({
           mode: 'single',
           title: body.title,
           description: body.description,
           rulesetId: body.rulesetId,
-          campaignId: body.campaignId,
+          campaignId: effectiveCampaignIdForSelect,
+          delegatedRoster: delegatedSelectRoster,
         });
         await reply(characterIds.length > 0 ? characterIds[0]! : null);
         break;
       }
       case 'select_characters': {
+        const delegatedSelectRoster =
+          body.rosterNpcs !== undefined || body.rosterPcs !== undefined
+            ? toCharacterSelectModalDelegatedRoster({
+                rosterNpcs: body.rosterNpcs ?? [],
+                rosterPcs: body.rosterPcs ?? [],
+              })
+            : undefined;
         const { characterIds } = await useCharacterSelectModalStore.getState().show({
           mode: 'multi',
           title: body.title,
           description: body.description,
           rulesetId: body.rulesetId,
-          campaignId: body.campaignId,
+          campaignId: effectiveCampaignIdForSelect,
+          delegatedRoster: delegatedSelectRoster,
         });
         await reply(characterIds);
         break;
@@ -158,7 +181,23 @@ function enqueueDelegatedRequest(envelope: CampaignRealtimeDelegatedUiRequestEnv
   const list = queueByCharacterId.get(characterId) ?? [];
   list.push(envelope);
   queueByCharacterId.set(characterId, list);
-  toast.message('This character needs your input — open their sheet to continue.');
+
+  const tryFlushIfSurfaceReady = (): boolean => {
+    if (!delegatedUiSurfaceIsActive(characterId)) return false;
+    flushDelegatedUiQueueForCharacter(characterId);
+    return true;
+  };
+
+  /** Surface registration (layout effect) or hash updates may lag one frame behind this enqueue. */
+  queueMicrotask(() => {
+    if (tryFlushIfSurfaceReady()) return;
+    window.setTimeout(() => {
+      if (tryFlushIfSurfaceReady()) return;
+      const pending = queueByCharacterId.get(characterId);
+      if (!pending?.length) return;
+      toast.message('This character needs your input — open their sheet to continue.');
+    }, 0);
+  });
 }
 
 export function flushDelegatedUiQueueForCharacter(characterId: string): void {

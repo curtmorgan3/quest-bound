@@ -49,6 +49,21 @@ export interface CampaignRealtimeActionRequestEnvelopeV1 {
   body: CampaignRealtimeActionRequestBodyV1;
 }
 
+/**
+ * Host-authored roster for delegated character pickers so the joiner UI does not depend on
+ * their local `campaignCharacters` / `characters` sync completeness.
+ */
+export type DelegatedUiCharacterSelectRosterEntryV1 = {
+  characterId: string;
+  name: string;
+  image?: string | null;
+};
+
+export type DelegatedUiCharacterSelectRosterPayloadV1 = {
+  rosterNpcs: DelegatedUiCharacterSelectRosterEntryV1[];
+  rosterPcs: DelegatedUiCharacterSelectRosterEntryV1[];
+};
+
 /** QBScript blocking UI delegated to another client (joiner rolls, prompts, etc.). */
 export type DelegatedUiRequestBodyV1 =
   | { interactionType: 'roll'; expression: string; rerollMessage?: string }
@@ -62,6 +77,8 @@ export type DelegatedUiRequestBodyV1 =
       description?: string;
       rulesetId: string;
       campaignId?: string;
+      rosterNpcs?: DelegatedUiCharacterSelectRosterEntryV1[];
+      rosterPcs?: DelegatedUiCharacterSelectRosterEntryV1[];
     }
   | {
       interactionType: 'select_characters';
@@ -69,6 +86,8 @@ export type DelegatedUiRequestBodyV1 =
       description?: string;
       rulesetId: string;
       campaignId?: string;
+      rosterNpcs?: DelegatedUiCharacterSelectRosterEntryV1[];
+      rosterPcs?: DelegatedUiCharacterSelectRosterEntryV1[];
     };
 
 export interface CampaignRealtimeDelegatedUiRequestEnvelopeV1 {
@@ -215,6 +234,59 @@ function parseBodyV1(raw: unknown): CampaignRealtimeActionRequestBodyV1 | null {
   return null;
 }
 
+function parseDelegatedCharacterSelectRosterEntryV1(
+  item: unknown,
+): DelegatedUiCharacterSelectRosterEntryV1 | null {
+  if (!isRecord(item)) return null;
+  if (typeof item.characterId !== 'string' || typeof item.name !== 'string') return null;
+  const image = item.image;
+  if (image !== null && image !== undefined && typeof image !== 'string') return null;
+  return {
+    characterId: item.characterId,
+    name: item.name,
+    ...(image !== undefined ? { image } : {}),
+  };
+}
+
+/**
+ * Optional `rosterNpcs` / `rosterPcs` on delegated select bodies. If a key is present it must be a valid array.
+ */
+function parseDelegatedSelectRosterFields(
+  raw: Record<string, unknown>,
+): Partial<Pick<DelegatedUiCharacterSelectRosterPayloadV1, 'rosterNpcs' | 'rosterPcs'>> | null {
+  let rosterNpcs: DelegatedUiCharacterSelectRosterEntryV1[] | undefined;
+  let rosterPcs: DelegatedUiCharacterSelectRosterEntryV1[] | undefined;
+
+  if (Object.prototype.hasOwnProperty.call(raw, 'rosterNpcs')) {
+    const a = raw.rosterNpcs;
+    if (!Array.isArray(a)) return null;
+    rosterNpcs = [];
+    for (const item of a) {
+      const e = parseDelegatedCharacterSelectRosterEntryV1(item);
+      if (!e) return null;
+      rosterNpcs.push(e);
+    }
+  }
+  if (Object.prototype.hasOwnProperty.call(raw, 'rosterPcs')) {
+    const a = raw.rosterPcs;
+    if (!Array.isArray(a)) return null;
+    rosterPcs = [];
+    for (const item of a) {
+      const e = parseDelegatedCharacterSelectRosterEntryV1(item);
+      if (!e) return null;
+      rosterPcs.push(e);
+    }
+  }
+
+  if (rosterNpcs === undefined && rosterPcs === undefined) {
+    return {};
+  }
+  const out: Partial<Pick<DelegatedUiCharacterSelectRosterPayloadV1, 'rosterNpcs' | 'rosterPcs'>> = {};
+  if (rosterNpcs !== undefined) out.rosterNpcs = rosterNpcs;
+  if (rosterPcs !== undefined) out.rosterPcs = rosterPcs;
+  return out;
+}
+
 function parseDelegatedUiRequestBodyV1(raw: unknown): DelegatedUiRequestBodyV1 | null {
   if (!isRecord(raw)) return null;
   const interactionType = raw.interactionType;
@@ -249,11 +321,14 @@ function parseDelegatedUiRequestBodyV1(raw: unknown): DelegatedUiRequestBodyV1 |
     const description = raw.description;
     if (title !== undefined && typeof title !== 'string') return null;
     if (description !== undefined && typeof description !== 'string') return null;
+    const rosterFields = parseDelegatedSelectRosterFields(raw);
+    if (rosterFields === null) return null;
     const base = {
       title,
       description,
       rulesetId: raw.rulesetId,
       campaignId,
+      ...rosterFields,
     };
     return interactionType === 'select_character'
       ? { interactionType: 'select_character', ...base }

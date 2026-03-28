@@ -28,7 +28,7 @@ import {
   type InventoryPanelConfig,
 } from '@/stores';
 import { type CharacterAttribute } from '@/types';
-import { useContext, useEffect, useMemo, useState } from 'react';
+import { useContext, useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { CharacterArchetypesPanel } from './character-archetypes-panel';
@@ -114,10 +114,13 @@ export const CharacterPage = ({
     };
   }, [roll, rollSplit]);
 
-  useEffect(() => {
+  // Layout effect so the delegated-UI surface is registered before paint and before deferred
+  // realtime handlers that would otherwise toast "open their sheet" while this sheet is mounting.
+  useLayoutEffect(() => {
     if (!resolvedCharacterId) return;
+    const unregister = registerCampaignPlayDelegatedCharacterSurface(resolvedCharacterId);
     flushDelegatedUiQueueForCharacter(resolvedCharacterId);
-    return registerCampaignPlayDelegatedCharacterSurface(resolvedCharacterId);
+    return unregister;
   }, [resolvedCharacterId]);
 
   // When viewing character sheet in campaign play, set campaign and scene refs so scripts

@@ -21,6 +21,13 @@ export interface CampaignPlayDelegatedUiHostRunOptions {
   /** Same id as `action_request.requestId` / worker execution request id. */
   executionRequestId: string;
   timeoutMs: number;
+  /**
+   * Joiner-originated action: the character whose sheet client receives **all** delegated blocking UI
+   * for this execution. Worker calls may use a different `surfaceCharacterId` (e.g. after
+   * `selectCharacter`); realtime envelopes must still target this id so the joiner is not asked to
+   * open a sheet for an NPC or another PC they are not viewing.
+   */
+  delegationSurfaceCharacterId: string;
 }
 
 type PendingEntry = {

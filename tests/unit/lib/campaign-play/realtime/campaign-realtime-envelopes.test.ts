@@ -96,6 +96,47 @@ describe('parseCampaignRealtimeEnvelope', () => {
     expect(parseCampaignRealtimeEnvelope(raw)).toEqual(raw);
   });
 
+  it('parses delegated_ui_request select_character with roster snapshot', () => {
+    const raw = {
+      v: 1,
+      kind: 'delegated_ui_request' as const,
+      campaignId: 'c1',
+      executionRequestId: 'ex1',
+      interactionId: 'int1',
+      responseToken: 'tok1',
+      characterId: 'ch-surface',
+      sentAt: '2025-01-01T00:00:00.000Z',
+      body: {
+        interactionType: 'select_character' as const,
+        rulesetId: 'r1',
+        campaignId: 'c1',
+        rosterNpcs: [{ characterId: 'npc1', name: 'Goblin', image: null }],
+        rosterPcs: [{ characterId: 'pc1', name: 'Alice' }],
+      },
+    };
+    expect(parseCampaignRealtimeEnvelope(raw)).toEqual(raw);
+  });
+
+  it('rejects delegated_ui_request select_character with invalid roster row', () => {
+    const raw = {
+      v: 1,
+      kind: 'delegated_ui_request' as const,
+      campaignId: 'c1',
+      executionRequestId: 'ex1',
+      interactionId: 'int1',
+      responseToken: 'tok1',
+      characterId: 'ch-surface',
+      sentAt: '2025-01-01T00:00:00.000Z',
+      body: {
+        interactionType: 'select_character' as const,
+        rulesetId: 'r1',
+        rosterNpcs: [{ characterId: 'npc1', name: 1 }],
+        rosterPcs: [],
+      },
+    };
+    expect(parseCampaignRealtimeEnvelope(raw)).toBeNull();
+  });
+
   it('parses campaign_roster_update', () => {
     const raw = {
       v: 1,

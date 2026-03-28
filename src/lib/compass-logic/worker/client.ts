@@ -8,6 +8,10 @@
 import type { CampaignPlayScriptWorkerPolicy } from '@/lib/campaign-play/campaign-play-script-gate';
 import { tryBroadcastCampaignRosterFromDexie } from '@/lib/campaign-play/realtime/broadcast-campaign-roster-update';
 import {
+  buildDelegatedCharacterSelectRoster,
+  toCharacterSelectModalDelegatedRoster,
+} from '@/lib/campaign-play/realtime/build-delegated-character-select-roster';
+import {
   abandonPendingDelegatedUiForExecution,
   hostAwaitDelegatedUiInteraction,
   type CampaignPlayDelegatedUiHostRunOptions,
@@ -105,7 +109,10 @@ export class QBScriptClient {
   /** RollSplit handler per execution request */
   private pendingRollSplitHandlers: Map<string, RollSplitFn> = new Map();
   /** When set, blocking UI for this worker execution is delegated via campaign realtime (host). */
-  private delegatedHostByRequestId = new Map<string, { campaignId: string; timeoutMs: number }>();
+  private delegatedHostByRequestId = new Map<
+    string,
+    { campaignId: string; timeoutMs: number; delegationSurfaceCharacterId: string }
+  >();
   private isReady = false;
   private readyCallbacks: Array<() => void> = [];
   private signalHandlers: Set<WorkerSignalHandler> = new Set();
@@ -238,6 +245,16 @@ export class QBScriptClient {
     }
   }
 
+  /** Realtime envelope `characterId` for joiner-delegated runs (vs per-call worker surface). */
+  private envelopeCharacterIdForDelegatedUi(
+    delegated:
+      | { delegationSurfaceCharacterId: string; campaignId: string; timeoutMs: number }
+      | undefined,
+    surfaceCharacterId: string,
+  ): string {
+    return delegated?.delegationSurfaceCharacterId ?? surfaceCharacterId;
+  }
+
   private handleAttributesModifiedByScript(payload: {
     characterId: string;
     attributeIds: string[];
@@ -267,7 +284,7 @@ export class QBScriptClient {
           campaignId: delegated.campaignId,
           executionRequestId: payload.executionRequestId,
           interactionId: payload.rollRequestId,
-          characterId: payload.surfaceCharacterId,
+          characterId: this.envelopeCharacterIdForDelegatedUi(delegated, payload.surfaceCharacterId),
           body: {
             interactionType: 'roll',
             expression: payload.expression,
@@ -316,7 +333,7 @@ export class QBScriptClient {
           campaignId: delegated.campaignId,
           executionRequestId: payload.executionRequestId,
           interactionId: payload.rollRequestId,
-          characterId: payload.surfaceCharacterId,
+          characterId: this.envelopeCharacterIdForDelegatedUi(delegated, payload.surfaceCharacterId),
           body: {
             interactionType: 'roll_split',
             expression: payload.expression,
@@ -363,7 +380,7 @@ export class QBScriptClient {
           campaignId: delegated.campaignId,
           executionRequestId: payload.executionRequestId,
           interactionId: payload.promptRequestId,
-          characterId: payload.surfaceCharacterId,
+          characterId: this.envelopeCharacterIdForDelegatedUi(delegated, payload.surfaceCharacterId),
           body: {
             interactionType: 'prompt',
             message: payload.msg,
@@ -406,7 +423,7 @@ export class QBScriptClient {
           campaignId: delegated.campaignId,
           executionRequestId: payload.executionRequestId,
           interactionId: payload.promptRequestId,
-          characterId: payload.surfaceCharacterId,
+          characterId: this.envelopeCharacterIdForDelegatedUi(delegated, payload.surfaceCharacterId),
           body: {
             interactionType: 'prompt_multiple',
             message: payload.msg,
@@ -449,7 +466,7 @@ export class QBScriptClient {
           campaignId: delegated.campaignId,
           executionRequestId: payload.executionRequestId,
           interactionId: payload.promptRequestId,
-          characterId: payload.surfaceCharacterId,
+          characterId: this.envelopeCharacterIdForDelegatedUi(delegated, payload.surfaceCharacterId),
           body: {
             interactionType: 'prompt_input',
             message: payload.msg,
@@ -490,18 +507,26 @@ export class QBScriptClient {
     try {
       let characterIds: string[];
       if (delegated) {
+        const campaignIdForRoster = payload.campaignId ?? delegated.campaignId;
+        const rosterWire = await buildDelegatedCharacterSelectRoster(
+          campaignIdForRoster,
+          payload.rulesetId,
+        );
+        const delegatedRoster = toCharacterSelectModalDelegatedRoster(rosterWire);
         if (payload.mode === 'single') {
           const raw = await hostAwaitDelegatedUiInteraction<string | null>({
             campaignId: delegated.campaignId,
             executionRequestId: payload.executionRequestId,
             interactionId: payload.selectRequestId,
-            characterId: payload.surfaceCharacterId,
+            characterId: this.envelopeCharacterIdForDelegatedUi(delegated, payload.surfaceCharacterId),
             body: {
               interactionType: 'select_character',
               title: payload.title,
               description: payload.description,
               rulesetId: payload.rulesetId,
               campaignId: payload.campaignId,
+              rosterNpcs: rosterWire.rosterNpcs,
+              rosterPcs: rosterWire.rosterPcs,
             },
             timeoutMs: delegated.timeoutMs,
             localRunner: async () => {
@@ -510,7 +535,8 @@ export class QBScriptClient {
                 title: payload.title,
                 description: payload.description,
                 rulesetId: payload.rulesetId,
-                campaignId: payload.campaignId,
+                campaignId: payload.campaignId ?? delegated.campaignId,
+                delegatedRoster,
               });
               return ids.length > 0 ? ids[0]! : null;
             },
@@ -521,13 +547,15 @@ export class QBScriptClient {
             campaignId: delegated.campaignId,
             executionRequestId: payload.executionRequestId,
             interactionId: payload.selectRequestId,
-            characterId: payload.surfaceCharacterId,
+            characterId: this.envelopeCharacterIdForDelegatedUi(delegated, payload.surfaceCharacterId),
             body: {
               interactionType: 'select_characters',
               title: payload.title,
               description: payload.description,
               rulesetId: payload.rulesetId,
               campaignId: payload.campaignId,
+              rosterNpcs: rosterWire.rosterNpcs,
+              rosterPcs: rosterWire.rosterPcs,
             },
             timeoutMs: delegated.timeoutMs,
             localRunner: () =>
@@ -536,7 +564,8 @@ export class QBScriptClient {
                 title: payload.title,
                 description: payload.description,
                 rulesetId: payload.rulesetId,
-                campaignId: payload.campaignId,
+                campaignId: payload.campaignId ?? delegated.campaignId,
+                delegatedRoster,
               }).then((r) => r.characterIds),
           })) as string[];
         }
@@ -903,6 +932,7 @@ export class QBScriptClient {
       this.delegatedHostByRequestId.set(requestId, {
         campaignId: delegatedHostRun.campaignId,
         timeoutMs: delegatedHostRun.timeoutMs,
+        delegationSurfaceCharacterId: delegatedHostRun.delegationSurfaceCharacterId,
       });
     }
     this.pendingRollHandlers.set(requestId, roll ?? defaultScriptDiceRoller);
@@ -962,6 +992,7 @@ export class QBScriptClient {
       this.delegatedHostByRequestId.set(requestId, {
         campaignId: delegatedHostRun.campaignId,
         timeoutMs: delegatedHostRun.timeoutMs,
+        delegationSurfaceCharacterId: delegatedHostRun.delegationSurfaceCharacterId,
       });
     }
     this.pendingRollHandlers.set(requestId, roll ?? defaultScriptDiceRoller);
