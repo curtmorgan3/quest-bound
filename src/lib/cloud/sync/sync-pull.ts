@@ -20,6 +20,7 @@ import {
   resolveFontRowsForPull,
   updateMemoizedAssetsForRecords,
 } from '@/lib/cloud/sync/sync-assets';
+import { addSyncEntityCount, sumSyncEntityCounts } from '@/lib/cloud/sync/sync-entity-labels';
 
 const IS_SYNCING_CLEAR_DELAY_MS = 80;
 /** When no local ruleset row exists, pull everything from remote (ignore stored incremental cursor). */
@@ -78,7 +79,10 @@ async function fetchSyncDeletes(
   return (data ?? []) as { table_name: string; entity_id: string }[];
 }
 
-export async function syncPull(rulesetId: string, db: DB): Promise<{ error?: string }> {
+export async function syncPull(
+  rulesetId: string,
+  db: DB,
+): Promise<{ error?: string; pulledCount?: number; pulledByEntity?: Record<string, number> }> {
   const client = cloudClient;
   const session = await getSession();
   if (!client || !session?.user?.id) {
@@ -97,6 +101,7 @@ export async function syncPull(rulesetId: string, db: DB): Promise<{ error?: str
   setSyncError(null);
   try {
     const rowOwnerId = await fetchCloudRulesetRowOwnerId(client, rulesetId);
+    const pulledByEntity: Record<string, number> = {};
 
     const tablesByParent = new Map<string, string[]>();
     const configs = SYNC_TABLE_ORDER.map((name) => getSyncTableConfig(name)).filter(Boolean) as ReturnType<
@@ -118,7 +123,7 @@ export async function syncPull(rulesetId: string, db: DB): Promise<{ error?: str
           localLinked && rows.length > 0
             ? rows.filter((r) => r.id === localLinked.id)
             : rows;
-        await mergeTable(db, config.tableName, filtered);
+        addSyncEntityCount(pulledByEntity, config.tableName, await mergeTable(db, config.tableName, filtered));
       } else if (config.hasRulesetId) {
         let rows: Record<string, unknown>[];
         if (config.tableName === 'rulesets') {
@@ -146,17 +151,17 @@ export async function syncPull(rulesetId: string, db: DB): Promise<{ error?: str
           const resolved = await resolveAssetRowsForPull(client, rows);
           rows = resolved.rows;
           tablesByParent.set(config.tableName, rows.map((r) => r.id as string).filter(Boolean));
-          await mergeTable(db, config.tableName, rows);
+          addSyncEntityCount(pulledByEntity, config.tableName, await mergeTable(db, config.tableName, rows));
           if (resolved.downloaded.length > 0) {
             updateMemoizedAssetsForRecords(resolved.downloaded);
           }
         } else if (config.tableName === 'fonts' && client && rows.length > 0) {
           rows = await resolveFontRowsForPull(client, rows);
           tablesByParent.set(config.tableName, rows.map((r) => r.id as string).filter(Boolean));
-          await mergeTable(db, config.tableName, rows);
+          addSyncEntityCount(pulledByEntity, config.tableName, await mergeTable(db, config.tableName, rows));
         } else {
           tablesByParent.set(config.tableName, rows.map((r) => r.id as string).filter(Boolean));
-          await mergeTable(db, config.tableName, rows);
+          addSyncEntityCount(pulledByEntity, config.tableName, await mergeTable(db, config.tableName, rows));
         }
       } else if (config.parentTable && config.parentKey) {
         let parentIds = [...(tablesByParent.get(config.parentTable) ?? [])];
@@ -191,7 +196,7 @@ export async function syncPull(rulesetId: string, db: DB): Promise<{ error?: str
         );
         const ids = rows.map((r) => r.id as string).filter(Boolean);
         if (ids.length > 0) tablesByParent.set(config.tableName, ids);
-        await mergeTable(db, config.tableName, rows);
+        addSyncEntityCount(pulledByEntity, config.tableName, await mergeTable(db, config.tableName, rows));
       }
     }
 
@@ -200,14 +205,21 @@ export async function syncPull(rulesetId: string, db: DB): Promise<{ error?: str
       const config = getSyncTableConfigByRemote(entry.table_name);
       if (!config) continue;
       const table = (db as unknown as Record<string, { delete: (id: string) => Promise<void> }>)[config.tableName];
-      if (table) await table.delete(entry.entity_id).catch(() => {});
+      if (!table) continue;
+      try {
+        await table.delete(entry.entity_id);
+        addSyncEntityCount(pulledByEntity, config.tableName, 1);
+      } catch {
+        /* row may already be gone */
+      }
     }
 
     // Do not advance lastSyncedAt here. syncPush (or the full sync in syncRuleset) must
     // use the same lastSyncedAt to decide which local rows to push. If we advance it now,
     // local changes made before this pull would have updatedAt < lastSyncedAt and would
     // never be pushed. lastSyncedAt is only updated after a successful push.
-    return {};
+    const pulledCount = sumSyncEntityCounts(pulledByEntity);
+    return { pulledCount, pulledByEntity };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     setSyncError(message);
@@ -225,10 +237,10 @@ async function mergeTable(
   db: DB,
   tableName: string,
   remoteRows: Record<string, unknown>[],
-): Promise<void> {
-  if (remoteRows.length === 0) return;
+): Promise<number> {
+  if (remoteRows.length === 0) return 0;
   const table = (db as unknown as Record<string, { bulkPut: (objs: unknown[]) => Promise<void>; get: (id: string) => Promise<{ updatedAt?: string } | undefined> }>)[tableName];
-  if (!table?.bulkPut) return;
+  if (!table?.bulkPut) return 0;
   const toPut: Record<string, unknown>[] = [];
   for (const row of remoteRows) {
     const local = await table.get(row.id as string);
@@ -247,4 +259,5 @@ async function mergeTable(
     }
   }
   if (toPut.length > 0) await table.bulkPut(toPut);
+  return toPut.length;
 }

@@ -1,4 +1,4 @@
-import { Loading, PWAInstallPrompt } from '@/components';
+import { CloudSyncSummaryPanel, Loading, PWAInstallPrompt } from '@/components';
 import { CharacterSelectModal } from '@/components/character-select-modal';
 import { GlobalLoadingOverlay } from '@/components/global-loading-overlay';
 import { OnboardingPanel, useOnboardingStatus } from '@/components/onboarding';
@@ -219,6 +219,7 @@ export function Layout() {
                 zIndex: 1000,
                 maxWidth: 'calc(100vw - 400px)',
               }}></canvas>
+            <CloudSyncSummaryPanel />
             <Toaster />
           </DiceProvider>
         </CharacterArchetypesPanelContext.Provider>

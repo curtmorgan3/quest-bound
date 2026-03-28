@@ -20,6 +20,7 @@ import {
 } from '@/lib/cloud/sync/sync-state';
 import type { SyncTableConfig } from '@/lib/cloud/sync/sync-tables';
 import { getSyncTableConfig, SYNC_TABLE_ORDER } from '@/lib/cloud/sync/sync-tables';
+import { addSyncEntityCount, sumSyncEntityCounts } from '@/lib/cloud/sync/sync-entity-labels';
 import { prepareRecordForRemote } from '@/lib/cloud/sync/sync-utils';
 import type { DB } from '@/stores/db/hooks/types';
 
@@ -37,7 +38,10 @@ type TableWithGet = {
   get: (key: string) => Promise<Record<string, unknown> | undefined>;
 };
 
-export async function syncPush(rulesetId: string, db: DB): Promise<{ error?: string }> {
+export async function syncPush(
+  rulesetId: string,
+  db: DB,
+): Promise<{ error?: string; pushedCount?: number; pushedByEntity?: Record<string, number> }> {
   const client = cloudClient;
   const session = await getSession();
 
@@ -51,6 +55,7 @@ export async function syncPush(rulesetId: string, db: DB): Promise<{ error?: str
   const lastSyncedAt = lastSyncedAtMap[rulesetId] ?? '1970-01-01T00:00:00Z';
 
   setSyncError(null);
+  const pushedByEntity: Record<string, number> = {};
   try {
     // First push path: ruleset row may not exist remotely yet.
     // In that case, use the signed-in user as row owner so `rulesets` upsert can create it.
@@ -191,6 +196,7 @@ export async function syncPush(rulesetId: string, db: DB): Promise<{ error?: str
 
       const { error } = await client.from(config.remoteTableName).upsert(remoteRows, upsertOptions);
       if (error) throw error;
+      addSyncEntityCount(pushedByEntity, config.tableName, remoteRows.length);
     }
 
     const pendingDeletes = await takePendingSyncDeletesForRuleset(rulesetId);
@@ -207,12 +213,16 @@ export async function syncPush(rulesetId: string, db: DB): Promise<{ error?: str
         onConflict: 'user_id,table_name,entity_id',
       });
       if (error) throw error;
+      for (const d of pendingDeletes) {
+        addSyncEntityCount(pushedByEntity, d.tableName, 1);
+      }
     }
 
     const now = new Date().toISOString();
     setLastSyncedAt(rulesetId, now);
     await setStoredLastSyncedAt({ ...lastSyncedAtMap, [rulesetId]: now });
-    return {};
+    const pushedCount = sumSyncEntityCounts(pushedByEntity);
+    return { pushedCount, pushedByEntity };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     setSyncError(message);

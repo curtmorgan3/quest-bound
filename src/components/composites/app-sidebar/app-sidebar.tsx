@@ -27,11 +27,10 @@ import { pushToCloudAndMarkSynced, syncRuleset } from '@/lib/cloud/sync/sync-ser
 import { useSyncStateStore } from '@/lib/cloud/sync/sync-state';
 import { useActiveRuleset, useUsers } from '@/lib/compass-api';
 import { Settings } from '@/pages';
-import { db, DiceContext } from '@/stores';
+import { db, DiceContext, useCloudSyncSummaryPanelStore } from '@/stores';
 import { useCloudAuthStore } from '@/stores/cloud-auth-store';
 import type { DB } from '@/stores/db/hooks/types';
 import { formatDistanceToNow } from 'date-fns';
-import { toast } from 'sonner';
 import {
   CloudAlert,
   CloudCheck,
@@ -179,7 +178,9 @@ export function AppSidebar() {
     }
     if (synced) {
       const result = await syncRuleset(rulesetId, db as DB);
-      if (!result.error) toast.success('Synced to Quest Bound Cloud');
+      if (!result.error) {
+        useCloudSyncSummaryPanelStore.getState().showSummary(result);
+      }
     } else {
       setPushDialogOpen(true);
     }
@@ -192,7 +193,7 @@ export function AppSidebar() {
       const result = await pushToCloudAndMarkSynced(rulesetId, db as DB);
       if (!result.error) {
         setPushDialogOpen(false);
-        toast.success('Synced to Quest Bound Cloud');
+        useCloudSyncSummaryPanelStore.getState().showSummary(result);
       }
     } finally {
       setPushInProgress(false);

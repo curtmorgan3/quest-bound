@@ -15,6 +15,32 @@ import { prepareRemoteForLocal } from './sync-utils';
 
 export { syncPull, syncPush };
 
+/** Result of a ruleset cloud sync (manual sync or first push). */
+export interface CloudSyncOutcome {
+  error?: string;
+  /** Rows upserted remotely plus delete tombstones pushed. */
+  pushedCount?: number;
+  /** Local rows written from remote merges plus rows removed via remote delete tombstones. */
+  pulledCount?: number;
+  /** Counts keyed by Dexie table name (e.g. components, attributes). */
+  pushedByEntity?: Record<string, number>;
+  pulledByEntity?: Record<string, number>;
+}
+
+/** Collapsed cloud sync panel: total pushed and total applied locally. */
+export function getCloudSyncCollapsedSummary(
+  outcome: Pick<CloudSyncOutcome, 'pushedCount' | 'pulledCount'>,
+): string {
+  const pushed = outcome.pushedCount ?? 0;
+  const pulled = outcome.pulledCount ?? 0;
+  if (pushed === 0 && pulled === 0) {
+    return 'Already up to date';
+  }
+  const pushWord = pushed === 1 ? 'change' : 'changes';
+  const pullWord = pulled === 1 ? 'update' : 'updates';
+  return `${pushed} ${pushWord} pushed · ${pulled} ${pullWord} applied locally`;
+}
+
 /** Minimal ruleset shape for cloud listing (id, title, version, image). */
 export interface CloudRulesetSummary {
   id: string;
@@ -128,7 +154,7 @@ export async function deleteRulesetFromCloud(rulesetId: string): Promise<{ error
  * Full sync for a ruleset: pull then push, update lastSyncedAt and lastSyncCompletedAt.
  * No-ops if cloud not configured, not authenticated, or offline. Skips if already syncing.
  */
-export async function syncRuleset(rulesetId: string, db: DB): Promise<{ error?: string }> {
+export async function syncRuleset(rulesetId: string, db: DB): Promise<CloudSyncOutcome> {
   if (!isCloudConfigured) return {};
   const { isAuthenticated } = useCloudAuthStore.getState();
   if (!isAuthenticated) return {};
@@ -141,10 +167,21 @@ export async function syncRuleset(rulesetId: string, db: DB): Promise<{ error?: 
   const pullResult = await syncPull(rulesetId, db);
   if (pullResult.error) return pullResult;
   const pushResult = await syncPush(rulesetId, db);
-  if (pushResult.error) return pushResult;
+  if (pushResult.error) {
+    return {
+      error: pushResult.error,
+      pulledCount: pullResult.pulledCount,
+      pulledByEntity: pullResult.pulledByEntity,
+    };
+  }
 
   useSyncStateStore.getState().setLastSyncCompletedAt(Date.now());
-  return {};
+  return {
+    pulledCount: pullResult.pulledCount,
+    pulledByEntity: pullResult.pulledByEntity,
+    pushedCount: pushResult.pushedCount,
+    pushedByEntity: pushResult.pushedByEntity,
+  };
 }
 
 /**
@@ -154,7 +191,7 @@ export async function syncRuleset(rulesetId: string, db: DB): Promise<{ error?: 
 export async function pushToCloudAndMarkSynced(
   rulesetId: string,
   db: DB,
-): Promise<{ error?: string }> {
+): Promise<CloudSyncOutcome> {
   if (!isCloudConfigured) return { error: 'Cloud not configured' };
   const { isAuthenticated } = useCloudAuthStore.getState();
   if (!isAuthenticated) return { error: 'Not signed in' };
@@ -168,7 +205,12 @@ export async function pushToCloudAndMarkSynced(
   if (result.error) return result;
   await useSyncStateStore.getState().markRulesetSynced(rulesetId);
   useSyncStateStore.getState().setLastSyncCompletedAt(Date.now());
-  return {};
+  return {
+    pushedCount: result.pushedCount,
+    pushedByEntity: result.pushedByEntity,
+    pulledCount: 0,
+    pulledByEntity: {},
+  };
 }
 
 let initDone = false;
