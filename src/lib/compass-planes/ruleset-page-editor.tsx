@@ -13,13 +13,14 @@ import {
   useRulesetWindows,
   useWindows,
 } from '@/lib/compass-api';
+import { repairOrphanCharacterWindowsForRulesetWindows } from '@/lib/compass-api/utils/default-archetype-test-character';
 import { PageDetailsForm } from '@/lib/compass-planes/page-details-form';
 import type { RulesetWindow as RulesetWindowType } from '@/types';
 import type { Node, NodeChange, NodePositionChange } from '@xyflow/react';
 import { applyNodeChanges } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { Pencil, Plus } from 'lucide-react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { InventoryDragProvider } from '@/stores';
 import { BaseEditor } from './base-editor';
 import { InventoryDragPreview } from './nodes/components/inventory/inventory-drag-preview';
@@ -56,6 +57,26 @@ export const RulesetPageEditor = ({ pageId }: RulesetPageEditorProps) => {
     w.title.toLowerCase().includes(filterText.toLowerCase()),
   );
   const existingWindowIds = new Set(templateWindows.map((w) => w.windowId));
+
+  const pageRulesetWindowIdsKey = useMemo(
+    () => JSON.stringify([...new Set(templateWindows.map((tw) => tw.windowId))].sort()),
+    [templateWindows],
+  );
+
+  useEffect(() => {
+    const rulesetId = currentPage?.rulesetId ?? activeRuleset?.id;
+    if (!effectivePageId || !rulesetId) return;
+    const windowIds: string[] = JSON.parse(pageRulesetWindowIdsKey || '[]') as string[];
+    if (windowIds.length === 0) return;
+    let cancelled = false;
+    void (async () => {
+      if (cancelled) return;
+      await repairOrphanCharacterWindowsForRulesetWindows(rulesetId, windowIds);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [effectivePageId, currentPage?.rulesetId, activeRuleset?.id, pageRulesetWindowIdsKey]);
 
   const handleChildWindowClick = useCallback(
     (

@@ -1,13 +1,14 @@
 import { useSidebar } from '@/components/ui/sidebar';
 import { useComponents, useRulesets, type ComponentUpdate } from '@/lib/compass-api';
+import { repairOrphanCharacterWindowsForRulesetWindows } from '@/lib/compass-api/utils/default-archetype-test-character';
 import { SheetEditor } from '@/lib/compass-planes';
 import { CharacterPage } from '@/pages/characters';
 import { colorPrimary, colorWhite } from '@/palette';
-import { WindowEditorProvider } from '@/stores';
+import { db, WindowEditorProvider } from '@/stores';
 import type { Component } from '@/types';
 import { debugLog } from '@/utils';
 import { Eye } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { ComponentEditPanel } from './component-edit-panel';
 
@@ -58,6 +59,19 @@ export const WindowEditor = () => {
   };
 
   const eyeLeft = open ? 265 : 65;
+
+  useEffect(() => {
+    if (!windowId) return;
+    let cancelled = false;
+    void (async () => {
+      const rulesetWindow = await db.windows.get(windowId);
+      if (!rulesetWindow || cancelled) return;
+      await repairOrphanCharacterWindowsForRulesetWindows(rulesetWindow.rulesetId, [windowId]);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [windowId]);
 
   if (!windowId) return null;
 

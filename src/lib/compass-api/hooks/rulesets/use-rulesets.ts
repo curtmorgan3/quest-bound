@@ -7,11 +7,104 @@ import {
   useArchetypeStore,
   useCurrentUser,
 } from '@/stores';
-import type { Archetype, Character, Inventory, Ruleset } from '@/types';
+import type { Archetype, Character, CharacterAttribute, Inventory, Ruleset } from '@/types';
+import { duplicateCharacterFromTemplate } from '@/utils/duplicate-character-from-template';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useCharacter } from '../characters';
+
+async function isArchetypeTestCharacterValid(
+  rulesetId: string,
+  testCharacterId: string | undefined,
+): Promise<boolean> {
+  if (!testCharacterId) return false;
+  const c = await db.characters.get(testCharacterId);
+  return !!(c?.isTestCharacter && c.rulesetId === rulesetId);
+}
+
+/** Ensures every archetype references an existing test character; creates missing ones before reset. */
+async function ensureTestCharactersForRulesetArchetypes(rulesetId: string, userId: string) {
+  const archetypes = await db.archetypes.where('rulesetId').equals(rulesetId).sortBy('loadOrder');
+  if (archetypes.length === 0) return;
+
+  let templateCharacterId: string | null = null;
+  for (const a of archetypes) {
+    if (await isArchetypeTestCharacterValid(rulesetId, a.testCharacterId)) {
+      templateCharacterId = a.testCharacterId;
+      break;
+    }
+  }
+
+  for (const arch of archetypes) {
+    if (await isArchetypeTestCharacterValid(rulesetId, arch.testCharacterId)) continue;
+
+    const now = new Date().toISOString();
+    const characterId = crypto.randomUUID();
+    const inventoryId = crypto.randomUUID();
+    const invTitle = arch.isDefault
+      ? "Test Character's Inventory"
+      : `Test Character (${arch.name})`;
+    const charName = arch.isDefault ? 'Test Character' : `Test Character (${arch.name})`;
+
+    await db.inventories.add({
+      id: inventoryId,
+      characterId,
+      rulesetId,
+      title: invTitle,
+      category: null,
+      type: null,
+      entities: [],
+      items: [],
+      createdAt: now,
+      updatedAt: now,
+    } as unknown as Inventory);
+
+    await db.characters.add({
+      id: characterId,
+      rulesetId,
+      userId,
+      inventoryId,
+      name: charName,
+      assetId: null,
+      image: null,
+      isTestCharacter: true,
+      componentData: {},
+      pinnedSidebarDocuments: [],
+      pinnedSidebarCharts: [],
+      lastViewedPageId: null,
+      sheetLocked: false,
+      createdAt: now,
+      updatedAt: now,
+    } as Character);
+
+    if (templateCharacterId) {
+      await duplicateCharacterFromTemplate(templateCharacterId, characterId, inventoryId);
+    } else {
+      const rulesetAttributes = await db.attributes.where('rulesetId').equals(rulesetId).toArray();
+      await db.characterAttributes.bulkAdd(
+        rulesetAttributes.map(
+          (attr) =>
+            ({
+              ...attr,
+              id: crypto.randomUUID(),
+              characterId,
+              attributeId: attr.id,
+              value: attr.defaultValue,
+              createdAt: now,
+              updatedAt: now,
+            }) as CharacterAttribute,
+        ),
+      );
+      templateCharacterId = characterId;
+    }
+
+    await db.archetypes.update(arch.id, {
+      testCharacterId: characterId,
+      updatedAt: now,
+    });
+  }
+}
 
 export const useRulesets = () => {
   const { currentUser } = useCurrentUser();
@@ -247,6 +340,10 @@ export const useRulesets = () => {
     if (!id) return;
 
     try {
+      const ruleset = await db.rulesets.get(id);
+      const userId = ruleset?.createdBy ?? currentUser?.username ?? 'unknown';
+      await ensureTestCharactersForRulesetArchetypes(id, userId);
+
       const defaultArchetype = await db.archetypes
         .where('rulesetId')
         .equals(id)
