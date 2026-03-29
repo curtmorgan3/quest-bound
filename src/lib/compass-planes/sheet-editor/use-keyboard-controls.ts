@@ -3,6 +3,7 @@ import type { Component } from '@/types';
 import { useKeyListeners } from '@/utils';
 import { useState } from 'react';
 import { fireExternalComponentChangeEvent } from '../utils';
+import { expandDeleteIds } from './component-world-geometry';
 
 interface UseKeyboardControls {
   components: Component[];
@@ -27,7 +28,8 @@ export const useKeyboardControls = ({
   const copy = (shouldCut?: boolean) => {
     setCopiedComponents([...selectedComponents]);
     if (shouldCut) {
-      onComponentsDeleted(selectedComponents.map((c) => c.id));
+      const ids = selectedComponents.filter((c) => !c.locked).map((c) => c.id);
+      if (ids.length) onComponentsDeleted(expandDeleteIds(components, ids));
     }
   };
 

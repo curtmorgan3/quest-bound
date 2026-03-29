@@ -11,7 +11,13 @@ import { db, WindowEditorProvider } from '@/stores';
 import type { Component } from '@/types';
 import { debugLog } from '@/utils';
 import { Eye, ScanSearch, ZoomIn, ZoomOut } from 'lucide-react';
-import { useCallback, useEffect, useState } from 'react';
+import {
+  canGroupSelection,
+  canUngroupSelection,
+  planGroupSelection,
+  planUngroupSelection,
+} from '@/lib/compass-planes/sheet-editor/group-operations';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { ComponentEditPanel } from './component-edit-panel';
 
@@ -54,13 +60,14 @@ export const WindowEditor = () => {
   const {
     components,
     createComponent,
+    createComponents,
     updateComponents,
     updateComponent,
     deleteComponent,
     replaceComponents,
   } = useComponents(windowId);
 
-  const { testCharacter } = useRulesets();
+  const { testCharacter, activeRuleset } = useRulesets();
 
   const [viewMode, setViewMode] = useState<boolean>(false);
   const [editorGridSize, setEditorGridSize] = useState(readStoredWindowEditorGrid);
@@ -106,6 +113,33 @@ export const WindowEditor = () => {
     log('components restored (undo/redo)', restored.length);
     replaceComponents(restored);
   };
+
+  const canGroupSelected = useMemo(() => canGroupSelection(components), [components]);
+  const canUngroupSelected = useMemo(() => canUngroupSelection(components), [components]);
+
+  const groupSelectedComponents = useCallback(() => {
+    if (!windowId || !activeRuleset?.id) return;
+    const plan = planGroupSelection(components, activeRuleset.id, windowId);
+    if (!plan) return;
+    void (async () => {
+      await createComponents(plan.toCreate);
+      await updateComponents(plan.toUpdate);
+      for (const id of plan.toDelete) {
+        await deleteComponent(id);
+      }
+    })();
+  }, [activeRuleset?.id, components, createComponents, deleteComponent, updateComponents, windowId]);
+
+  const ungroupSelectedComponents = useCallback(() => {
+    const plan = planUngroupSelection(components);
+    if (!plan) return;
+    void (async () => {
+      await updateComponents(plan.toUpdate);
+      for (const id of plan.toDelete) {
+        await deleteComponent(id);
+      }
+    })();
+  }, [components, deleteComponent, updateComponents]);
 
   const stackLeftPx = open ? 265 : 65;
 
@@ -159,7 +193,17 @@ export const WindowEditor = () => {
 
   return (
     <WindowEditorProvider
-      value={{ viewMode, components, getComponent, updateComponent, updateComponents }}>
+      value={{
+        viewMode,
+        components,
+        getComponent,
+        updateComponent,
+        updateComponents,
+        groupSelectedComponents,
+        ungroupSelectedComponents,
+        canGroupSelected,
+        canUngroupSelected,
+      }}>
       <div className='relative flex h-full min-h-0 w-full flex-col overflow-hidden'>
         <div className='flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden'>
           {viewMode ? (

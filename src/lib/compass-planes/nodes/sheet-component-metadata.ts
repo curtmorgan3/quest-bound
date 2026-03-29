@@ -2,6 +2,7 @@ import { checkboxConfig } from './components/checkbox/checkbox-config';
 import { contentConfig } from './components/content/content-config';
 import { frameConfig } from './components/frame/frame-config';
 import { graphConfig } from './components/graph/graph-config';
+import { groupConfig } from './components/group/group-config';
 import { imageConfig } from './components/image/image-config';
 import { inputConfig } from './components/input/input-config';
 import { inventoryConfig } from './components/inventory/inventory-config';
@@ -19,6 +20,7 @@ export const baseComponentTypes: SheetComponentType[] = [
   inventoryConfig,
   graphConfig,
   frameConfig,
+  groupConfig,
 ];
 
 export const getComponentType = (type: ComponentTypes): SheetComponentType => {

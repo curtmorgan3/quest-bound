@@ -5,6 +5,7 @@ import {
   DEFAULT_CONTENT,
   DEFAULT_FRAME,
   DEFAULT_GRAPH,
+  DEFAULT_GROUP,
   DEFAULT_IMAGE,
   DEFAULT_INPUT,
   DEFAULT_INVENTORY,
@@ -33,6 +34,7 @@ export function injectDefaultComponent(component: Partial<Component>) {
     [ComponentTypes.INVENTORY, DEFAULT_INVENTORY],
     [ComponentTypes.GRAPH, DEFAULT_GRAPH],
     [ComponentTypes.FRAME, DEFAULT_FRAME],
+    [ComponentTypes.GROUP, DEFAULT_GROUP],
   ]);
 
   const defaults = defaultMap.get(component.type as ComponentTypes);

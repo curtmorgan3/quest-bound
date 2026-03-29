@@ -220,5 +220,11 @@ export const dbSchemaV59 = {
   ...dbSchemaV58,
 };
 
+/** Schema for v60: `components.parentComponentId` for window editor grouping (Phase 4a). */
+export const dbSchemaV60 = {
+  ...dbSchemaV59,
+  components: `${common}, rulesetId, windowId, type, x, y, z, height, width, rotation, selected, assetId, groupId, parentComponentId, attributeId, actionId, data, style`,
+};
+
 // latestDbSchema should always be used for the worker thread db instance
-export const latestDbSchema = { ...dbSchemaV59 };
+export const latestDbSchema = { ...dbSchemaV60 };

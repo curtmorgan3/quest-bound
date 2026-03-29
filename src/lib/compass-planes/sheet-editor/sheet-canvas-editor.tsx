@@ -29,10 +29,24 @@ import { sheetNodeTypes, type EditorMenuOption } from '../nodes';
 import { ComponentTypes } from '../nodes/node-types';
 import { injectDefaultComponent } from '../utils/inject-defaults';
 import {
+  buildEffectiveLayoutMap,
+  componentByIdMap,
+  expandDeleteIds,
+  worldTopLeftWithEffective,
+} from './component-world-geometry';
+import {
   updatesForClickSelection,
   updatesForMarqueeSelection,
   updatesToClearSelection,
 } from './selection-updates';
+
+function isEditableKeyboardTarget(target: EventTarget | null): boolean {
+  if (!target || !(target instanceof HTMLElement)) return false;
+  if (target.closest('[contenteditable="true"]')) return true;
+  const tag = target.tagName;
+  if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return true;
+  return target.isContentEditable;
+}
 
 export interface SheetCanvasEditorProps {
   components: Component[];
@@ -65,7 +79,8 @@ export function SheetCanvasEditor({
   onComponentsUpdated,
   onComponentsDeleted,
 }: SheetCanvasEditorProps) {
-  const { getComponent } = useContext(WindowEditorContext);
+  const { getComponent, groupSelectedComponents, canGroupSelected } =
+    useContext(WindowEditorContext);
   const canvasRootRef = useRef<HTMLDivElement>(null);
   const opacity = !backgroundColor && !backgroundImage ? 1 : (backgroundOpacity ?? 0.1);
   const longPressTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -99,6 +114,13 @@ export function SheetCanvasEditor({
   }, [viewScaleProp]);
 
   const sorted = useMemo(() => [...components].sort((a, b) => a.z - b.z), [components]);
+
+  const byId = useMemo(() => componentByIdMap(components), [components]);
+
+  const effectiveLayout = useMemo(
+    () => buildEffectiveLayoutMap(components, movePreviewById, resizePreview),
+    [components, movePreviewById, resizePreview],
+  );
 
   const selectedIdSet = useMemo(() => {
     const s = new Set<string>();
@@ -151,16 +173,19 @@ export function SheetCanvasEditor({
 
   const getDragItemDimensions = useCallback(
     (id: string) => {
+      const eff = effectiveLayout.get(id);
+      if (eff) return { width: eff.width, height: eff.height };
       const c = components.find((x) => x.id === id);
       return { width: c?.width ?? 1, height: c?.height ?? 1 };
     },
-    [components],
+    [components, effectiveLayout],
   );
 
   const { beginMove } = usePointerDrag({
     containerRef: canvasRootRef,
     gridSize: useGrid ? resolvedGridSize : null,
     getItemDimensions: getDragItemDimensions,
+    shouldClampItem: (id) => !getComponent(id)?.parentComponentId,
     viewScale: resolvedViewScale,
     onCommit: (updates) => {
       const next: Record<string, { x: number; y: number }> = {};
@@ -218,14 +243,18 @@ export function SheetCanvasEditor({
 
   const getSelectableItems = useCallback(
     () =>
-      components.map((c) => ({
-        id: c.id,
-        x: c.x,
-        y: c.y,
-        width: c.width,
-        height: c.height,
-      })),
-    [components],
+      components.map((c) => {
+        const eff = effectiveLayout.get(c.id)!;
+        const tl = worldTopLeftWithEffective(c, byId, effectiveLayout);
+        return {
+          id: c.id,
+          x: tl.x,
+          y: tl.y,
+          width: eff.width,
+          height: eff.height,
+        };
+      }),
+    [byId, components, effectiveLayout],
   );
 
   /** Marquee uses pointer capture; pointerup can fire with the cursor over the edit panel or a Radix portal. */
@@ -313,35 +342,50 @@ export function SheetCanvasEditor({
       const skipMoveStart = Boolean(t.closest('[data-no-canvas-drag], .nodrag'));
       if (!c.locked && !skipMoveStart) {
         const movableSelected = components.filter((x) => x.selected && !x.locked);
+        const selectedIds = new Set(movableSelected.map((x) => x.id));
+        const rootsOnly = movableSelected.filter(
+          (x) => !x.parentComponentId || !selectedIds.has(x.parentComponentId),
+        );
         const followers =
-          c.selected && movableSelected.length > 1
-            ? movableSelected
+          c.selected && rootsOnly.length > 1
+            ? rootsOnly
                 .filter((x) => x.id !== c.id)
-                .map((x) => ({ id: x.id, x: x.x, y: x.y }))
+                .map((x) => ({
+                  id: x.id,
+                  x: movePreviewById[x.id]?.x ?? x.x,
+                  y: movePreviewById[x.id]?.y ?? x.y,
+                }))
             : undefined;
-        beginMove(e, { id: c.id, x: c.x, y: c.y, followers });
+        beginMove(e, {
+          id: c.id,
+          x: movePreviewById[c.id]?.x ?? c.x,
+          y: movePreviewById[c.id]?.y ?? c.y,
+          followers,
+        });
       }
     },
-    [beginMove, components, onComponentsUpdated],
+    [beginMove, components, movePreviewById, onComponentsUpdated],
   );
 
   useKeyListeners({
     onKeyDown: (e) => {
-      if (e.key !== 'Backspace' && e.key !== 'Delete') return;
-      const ae = document.activeElement as HTMLElement | null;
-      if (
-        ae &&
-        (ae.tagName === 'INPUT' ||
-          ae.tagName === 'TEXTAREA' ||
-          ae.isContentEditable ||
-          ae.closest('[contenteditable="true"]'))
-      ) {
+      const ae = document.activeElement;
+
+      if ((e.meta || e.control) && e.key.toLowerCase() === 'g' && !e.shift) {
+        if (isEditableKeyboardTarget(ae)) return;
+        if (!canGroupSelected) return;
+        e.preventDefault?.();
+        groupSelectedComponents();
         return;
       }
+
+      if (e.key !== 'Backspace' && e.key !== 'Delete') return;
+      if (isEditableKeyboardTarget(ae)) return;
+
       const ids = components.filter((c) => c.selected && !c.locked).map((c) => c.id);
       if (ids.length) {
         e.preventDefault?.();
-        onComponentsDeleted(ids);
+        onComponentsDeleted(expandDeleteIds(components, ids));
       }
     },
   });
@@ -439,22 +483,14 @@ export function SheetCanvasEditor({
           {sorted.map((c) => {
             const Edit = sheetNodeTypes[c.type as ComponentTypes] as ComponentType | undefined;
             if (!Edit) return null;
-            const layout =
-              resizePreview?.id === c.id
-                ? {
-                    left: resizePreview.x,
-                    top: resizePreview.y,
-                    width: resizePreview.width,
-                    height: resizePreview.height,
-                  }
-                : movePreviewById[c.id]
-                  ? {
-                      left: movePreviewById[c.id].x,
-                      top: movePreviewById[c.id].y,
-                      width: c.width,
-                      height: c.height,
-                    }
-                  : { left: c.x, top: c.y, width: c.width, height: c.height };
+            const eff = effectiveLayout.get(c.id)!;
+            const world = worldTopLeftWithEffective(c, byId, effectiveLayout);
+            const layout = {
+              left: world.x,
+              top: world.y,
+              width: eff.width,
+              height: eff.height,
+            };
             return (
               <div
                 key={c.id}

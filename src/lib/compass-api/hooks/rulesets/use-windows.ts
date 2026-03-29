@@ -119,6 +119,10 @@ export const useWindows = () => {
         const newId = componentIdMap.get(c.id)!;
         const newGroupId =
           c.groupId && componentIdMap.has(c.groupId) ? componentIdMap.get(c.groupId)! : c.groupId;
+        const newParentId =
+          c.parentComponentId && componentIdMap.has(c.parentComponentId)
+            ? componentIdMap.get(c.parentComponentId)!
+            : c.parentComponentId;
         const newChildWindowId =
           c.childWindowId === id ? newWindowId : (c.childWindowId ?? undefined);
         return {
@@ -126,6 +130,7 @@ export const useWindows = () => {
           id: newId,
           windowId: newWindowId,
           groupId: newGroupId ?? null,
+          parentComponentId: newParentId ?? null,
           childWindowId: newChildWindowId,
           createdAt: now,
           updatedAt: now,

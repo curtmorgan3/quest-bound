@@ -56,6 +56,25 @@ export type ShapeComponentData = {
   sides?: number;
 };
 
+export type GroupLayoutMode = 'absolute' | 'flex';
+
+/** Layout for `ComponentTypes.GROUP` roots (`data` JSON). */
+export type GroupComponentData = {
+  layoutMode?: GroupLayoutMode;
+  flexDirection?: 'row' | 'column' | 'row-reverse' | 'column-reverse';
+  flexWrap?: 'nowrap' | 'wrap' | 'wrap-reverse';
+  alignItems?: 'flex-start' | 'flex-end' | 'center' | 'stretch' | 'baseline';
+  justifyContent?:
+    | 'flex-start'
+    | 'flex-end'
+    | 'center'
+    | 'space-between'
+    | 'space-around'
+    | 'space-evenly';
+  /** Uniform inner padding (px) for the flex host in v1. */
+  padding?: number;
+};
+
 export type TextComponentData = {
   value?: string | number | boolean;
   showSign?: boolean;
@@ -144,7 +163,8 @@ export type ComponentData = ShapeComponentData &
   InventoryComponentData &
   CheckboxComponentData &
   GraphComponentData &
-  FrameComponentData & {
+  FrameComponentData &
+  GroupComponentData & {
     referenceLabel?: string | null;
     conditionalRenderAttributeId?: string | null;
     conditionalRenderInverse?: boolean;

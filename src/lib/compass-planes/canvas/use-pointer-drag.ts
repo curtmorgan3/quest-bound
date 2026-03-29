@@ -49,6 +49,8 @@ export type UsePointerDragOptions = {
   skipCommitIfUnchanged?: boolean;
   /** When set with a resolved container, dragged positions are clamped so each item stays inside the container. */
   getItemDimensions?: (id: string) => { width: number; height: number };
+  /** If false for an id, that item is not clamped to the container (e.g. group children use parent-relative coords). */
+  shouldClampItem?: (id: string) => boolean;
   /** Matches CSS `transform: scale()` on the canvas coordinate root (default 1). */
   viewScale?: number;
 };
@@ -107,6 +109,7 @@ export function usePointerDrag({
   canDrag = () => true,
   skipCommitIfUnchanged = true,
   getItemDimensions,
+  shouldClampItem,
   viewScale = 1,
 }: UsePointerDragOptions) {
   const optsRef = useRef({
@@ -118,6 +121,7 @@ export function usePointerDrag({
     gridSize: gridSize ?? null,
     containerRef,
     getItemDimensions,
+    shouldClampItem,
     viewScale,
   });
   optsRef.current = {
@@ -129,6 +133,7 @@ export function usePointerDrag({
     gridSize: gridSize ?? null,
     containerRef,
     getItemDimensions,
+    shouldClampItem,
     viewScale,
   };
 
@@ -234,8 +239,12 @@ export function usePointerDrag({
           oc.gridSize,
         );
         const dim = oc.getItemDimensions;
+        const clampItem = oc.shouldClampItem ?? (() => true);
         if (dim && c) {
-          positions = clampCanvasPositions(positions, c, dim);
+          positions = positions.map((p) => {
+            if (!clampItem(p.id)) return p;
+            return clampCanvasPositions([p], c, dim)[0];
+          });
         }
         lastPositionsRef.current = positions;
         pendingRef.current = positions;

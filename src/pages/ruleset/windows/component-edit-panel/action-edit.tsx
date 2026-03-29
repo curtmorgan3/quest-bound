@@ -1,7 +1,11 @@
 import { useComponents } from '@/lib/compass-api';
+import { expandDeleteIds } from '@/lib/compass-planes/sheet-editor/component-world-geometry';
 import { colorPrimary } from '@/palette';
+import { WindowEditorContext } from '@/stores';
 import type { Component } from '@/types';
-import { Copy, Lock, Trash } from 'lucide-react';
+import { Copy, Group, Lock, Trash, Ungroup } from 'lucide-react';
+import { useContext } from 'react';
+import { useParams } from 'react-router-dom';
 import { valueIfAllAreEqual } from './utils';
 
 interface Props {
@@ -12,20 +16,20 @@ interface Props {
 const MIXED_VALUE_LABEL = '-';
 
 export const ActionEdit = ({ components, handleUpdate }: Props) => {
-  const { createComponents, deleteComponent } = useComponents();
+  const { windowId } = useParams();
+  const { createComponents, deleteComponent, components: allComponents } = useComponents(windowId);
+  const {
+    groupSelectedComponents,
+    ungroupSelectedComponents,
+    canGroupSelected,
+    canUngroupSelected,
+  } = useContext(WindowEditorContext);
 
   const locked = valueIfAllAreEqual(components, 'locked') as string | boolean;
-  // const groupId = valueIfAllAreEqual(components, 'groupId');
 
   const handleLock = () => {
     handleUpdate('locked', !locked);
   };
-
-  // const handleGroup = () => {
-  //   if (components.length < 2) return;
-  //   const newGroupId = groupId === '-' || groupId === null ? crypto.randomUUID() : null;
-  //   handleUpdate('groupId', newGroupId);
-  // };
 
   const handleCopy = () => {
     createComponents(
@@ -39,8 +43,9 @@ export const ActionEdit = ({ components, handleUpdate }: Props) => {
   };
 
   const handleDelete = () => {
-    for (const comp of components.filter((c) => !c.locked)) {
-      deleteComponent(comp.id);
+    const ids = components.filter((c) => !c.locked).map((c) => c.id);
+    for (const id of expandDeleteIds(allComponents, ids)) {
+      deleteComponent(id);
     }
   };
 
@@ -51,13 +56,26 @@ export const ActionEdit = ({ components, handleUpdate }: Props) => {
       <div className='w-full flex flex-row gap-4 items-end'>
         <Copy className={`text-xs h-[18px] w-[18px] cursor-pointer`} onClick={handleCopy} />
 
-        {/* <Group
-          className={`text-xs h-[18px] w-[18px] cursor-${components.length === 1 ? 'not-allowed' : 'pointer'}`}
+        <Group
+          className={`text-xs h-[18px] w-[18px] cursor-${canGroupSelected ? 'pointer' : 'not-allowed'}`}
           style={{
-            color: groupId === MIXED_VALUE_LABEL || groupId === null ? 'unset' : colorPrimary,
+            color: canGroupSelected ? colorPrimary : 'unset',
+            opacity: canGroupSelected ? 1 : 0.45,
           }}
-          onClick={handleGroup}
-        /> */}
+          onClick={() => {
+            if (canGroupSelected) groupSelectedComponents();
+          }}
+        />
+        <Ungroup
+          className={`text-xs h-[18px] w-[18px] cursor-${canUngroupSelected ? 'pointer' : 'not-allowed'}`}
+          style={{
+            color: canUngroupSelected ? colorPrimary : 'unset',
+            opacity: canUngroupSelected ? 1 : 0.45,
+          }}
+          onClick={() => {
+            if (canUngroupSelected) ungroupSelectedComponents();
+          }}
+        />
         <Lock
           className={`text-xs h-[18px] w-[18px] cursor-pointer`}
           style={{

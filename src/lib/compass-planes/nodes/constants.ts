@@ -4,6 +4,7 @@ import {
   EditContentNode,
   EditFrameNode,
   EditGraphNode,
+  EditGroupNode,
   EditImageNode,
   EditInputNode,
   EditInventoryNode,
@@ -25,6 +26,7 @@ export const sheetNodeTypes: Record<ComponentTypes, ComponentType> = {
   [ComponentTypes.INVENTORY]: EditInventoryNode,
   [ComponentTypes.GRAPH]: EditGraphNode,
   [ComponentTypes.FRAME]: EditFrameNode,
+  [ComponentTypes.GROUP]: EditGroupNode,
 };
 
 export const componentTypes = [...baseComponentTypes];

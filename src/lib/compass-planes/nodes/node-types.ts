@@ -8,6 +8,7 @@ export enum ComponentTypes {
   INVENTORY = 'inventory',
   GRAPH = 'graph',
   FRAME = 'frame',
+  GROUP = 'group',
 }
 
 export type SheetComponentType = {

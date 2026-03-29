@@ -7,6 +7,7 @@ import {
   ViewContentNode,
   ViewFrameNode,
   ViewGraphNode,
+  ViewGroupNode,
   ViewImageNode,
   ViewInputNode,
   ViewInventoryNode,
@@ -132,6 +133,17 @@ export const renderViewComponent = (
           position={position}
           characterAttributes={characterAttributes}>
           <ViewFrameNode key={component.id} component={component} />
+        </WrapDecorators>
+      );
+    case ComponentTypes.GROUP:
+      return (
+        <WrapDecorators
+          key={component.id}
+          component={component}
+          componentData={componentData}
+          position={position}
+          characterAttributes={characterAttributes}>
+          <ViewGroupNode component={component} />
         </WrapDecorators>
       );
     default:

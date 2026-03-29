@@ -4,6 +4,11 @@ import { ExternalLink, OctagonMinus, OctagonX } from 'lucide-react';
 import { useCallback, useContext, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { renderViewComponent } from '../nodes';
+import {
+  buildEffectiveLayoutMap,
+  componentByIdMap,
+  worldTopLeftWithEffective,
+} from '../sheet-editor/component-world-geometry';
 import { useComponentPositionMap } from '../utils';
 import { WindowRuntimeProvider } from './window-runtime-context';
 
@@ -40,6 +45,12 @@ export const WindowNode = ({ data }: { data: WindowNodeData }) => {
   const { components } = useComponents(windowData.windowId);
   const positionMap = useComponentPositionMap(components);
 
+  const byId = useMemo(() => componentByIdMap(components), [components]);
+  const effectiveLayout = useMemo(
+    () => buildEffectiveLayoutMap(components, {}, null),
+    [components],
+  );
+
   const handleChildWindowClick = useCallback(
     (childWindowId: string) => {
       onChildWindowClick(childWindowId, { x: windowData.x, y: windowData.y });
@@ -47,29 +58,33 @@ export const WindowNode = ({ data }: { data: WindowNodeData }) => {
     [onChildWindowClick, windowData.x, windowData.y],
   );
 
-  // Calculate offsets based on leftmost and topmost components
-  const minX = useMemo(() => {
-    if (components.length === 0) return 0;
-    return Math.min(...components.map((c) => c.x));
-  }, [components]);
-
-  const minY = useMemo(() => {
-    if (components.length === 0) return 0;
-    return Math.min(...components.map((c) => c.y));
-  }, [components]);
-
-  // Calculate window size based on components (adjusted for offsets)
-  const windowWidth = useMemo(() => {
-    if (components.length === 0) return 400;
-    const maxX = Math.max(...components.map((c) => c.x + c.width));
-    const adjustedMaxX = maxX - minX;
-    return adjustedMaxX;
-  }, [components, minX]);
-
-  const windowHeight = useMemo(() => {
-    if (components.length === 0) return 300;
-    return Math.max(...components.map((c) => c.y - minY + c.height));
-  }, [components, minY]);
+  const { minX, minY, windowWidth, windowHeight } = useMemo(() => {
+    if (components.length === 0) {
+      return { minX: 0, minY: 0, windowWidth: 400, windowHeight: 300 };
+    }
+    let minX = Infinity;
+    let minY = Infinity;
+    let maxR = -Infinity;
+    let maxB = -Infinity;
+    for (const c of components) {
+      const eff = effectiveLayout.get(c.id);
+      if (!eff) continue;
+      const tl = worldTopLeftWithEffective(c, byId, effectiveLayout);
+      minX = Math.min(minX, tl.x);
+      minY = Math.min(minY, tl.y);
+      maxR = Math.max(maxR, tl.x + eff.width);
+      maxB = Math.max(maxB, tl.y + eff.height);
+    }
+    if (!Number.isFinite(minX)) {
+      return { minX: 0, minY: 0, windowWidth: 400, windowHeight: 300 };
+    }
+    return {
+      minX,
+      minY,
+      windowWidth: Math.max(0, maxR - minX),
+      windowHeight: Math.max(0, maxB - minY),
+    };
+  }, [byId, components, effectiveLayout]);
 
   const [isHovered, setIsHovered] = useState(false);
 
@@ -146,15 +161,17 @@ export const WindowNode = ({ data }: { data: WindowNodeData }) => {
           }>
           {components.map((component) => {
             const pos = positionMap.get(component.id);
+            const eff = effectiveLayout.get(component.id)!;
+            const tl = worldTopLeftWithEffective(component, byId, effectiveLayout);
             return (
               <div
                 key={component.id}
                 style={{
                   position: 'absolute',
-                  left: component.x - minX,
-                  top: component.y - minY,
-                  width: component.width,
-                  height: component.height,
+                  left: tl.x - minX,
+                  top: tl.y - minY,
+                  width: eff.width,
+                  height: eff.height,
                   zIndex: pos?.z ?? component.z,
                 }}>
                 {renderViewComponent(component, characterContext?.characterAttributes, pos)}

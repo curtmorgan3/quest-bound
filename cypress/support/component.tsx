@@ -78,14 +78,18 @@ export const createMockCharacterContext = (overrides: Partial<any> = {}) => {
 
 // Helper to create mock window editor context
 export const createMockWindowEditorContext = (components: any[] = []) => {
-  const componentsMap = new Map(components.map(c => [c.id, c]));
-  
+  const componentsMap = new Map(components.map((c) => [c.id, c]));
+
   return {
     components,
-    getComponent: (id: string) => componentsMap.get(id),
+    viewMode: false,
+    getComponent: (id: string) => componentsMap.get(id) ?? null,
     updateComponent: cy.stub(),
-    addComponent: cy.stub(),
-    deleteComponent: cy.stub(),
+    updateComponents: cy.stub(),
+    groupSelectedComponents: cy.stub(),
+    ungroupSelectedComponents: cy.stub(),
+    canGroupSelected: false,
+    canUngroupSelected: false,
   };
 };
 

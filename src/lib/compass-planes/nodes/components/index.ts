@@ -2,6 +2,7 @@ export * from './checkbox';
 export * from './common';
 export * from './content';
 export * from './frame';
+export * from './group';
 export * from './graph';
 export * from './image';
 export * from './input';
