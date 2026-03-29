@@ -3,12 +3,13 @@ import { CharacterContext } from '@/stores';
 import { ExternalLink, OctagonMinus, OctagonX } from 'lucide-react';
 import { useCallback, useContext, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { renderViewComponent } from '../nodes';
+import { renderViewComponent, type ViewRenderContext } from '../nodes';
 import {
   buildEffectiveLayoutMap,
   componentByIdMap,
   worldTopLeftWithEffective,
 } from '../sheet-editor/component-world-geometry';
+import { isFlexHostedChild } from '../sheet-editor/group-flex-utils';
 import { useComponentPositionMap } from '../utils';
 import { WindowRuntimeProvider } from './window-runtime-context';
 
@@ -56,6 +57,21 @@ export const WindowNode = ({ data }: { data: WindowNodeData }) => {
       onChildWindowClick(childWindowId, { x: windowData.x, y: windowData.y });
     },
     [onChildWindowClick, windowData.x, windowData.y],
+  );
+
+  const viewRenderContext = useMemo<ViewRenderContext>(
+    () => ({
+      allComponents: components,
+      byId,
+      effectiveLayout,
+      positionMap,
+    }),
+    [byId, components, effectiveLayout, positionMap],
+  );
+
+  const rootComponents = useMemo(
+    () => components.filter((c) => !isFlexHostedChild(c, byId)).sort((a, b) => a.z - b.z),
+    [byId, components],
   );
 
   const { minX, minY, windowWidth, windowHeight } = useMemo(() => {
@@ -159,7 +175,7 @@ export const WindowNode = ({ data }: { data: WindowNodeData }) => {
                     handleChildWindowClick(childWindowId),
                 }
           }>
-          {components.map((component) => {
+          {rootComponents.map((component) => {
             const pos = positionMap.get(component.id);
             const eff = effectiveLayout.get(component.id)!;
             const tl = worldTopLeftWithEffective(component, byId, effectiveLayout);
@@ -174,7 +190,12 @@ export const WindowNode = ({ data }: { data: WindowNodeData }) => {
                   height: eff.height,
                   zIndex: pos?.z ?? component.z,
                 }}>
-                {renderViewComponent(component, characterContext?.characterAttributes, pos)}
+                {renderViewComponent(
+                  component,
+                  characterContext?.characterAttributes,
+                  pos,
+                  viewRenderContext,
+                )}
               </div>
             );
           })}

@@ -1,0 +1,73 @@
+import type { CSSProperties } from 'react';
+
+import type { Component, ComponentStyle } from '@/types';
+
+import { getComponentData } from '../utils';
+
+export function isFlexLayoutGroup(component: Component): boolean {
+  return getComponentData(component).layoutMode === 'flex';
+}
+
+/** True if this component is laid out inside a flex group parent (omit from root absolute list). */
+export function isFlexHostedChild(component: Component, byId: Map<string, Component>): boolean {
+  const pid = component.parentComponentId;
+  if (!pid) return false;
+  const p = byId.get(pid);
+  return p != null && isFlexLayoutGroup(p);
+}
+
+/** Direct children of `groupId`, sorted by stored `y` then `x` (canvas “top”). */
+export function directChildrenSortedByTop(components: Component[], groupId: string): Component[] {
+  return components
+    .filter((c) => c.parentComponentId === groupId)
+    .sort((a, b) => a.y - b.y || a.x - b.x || a.id.localeCompare(b.id));
+}
+
+const FLEX_STYLE_KEYS = new Set([
+  'flexDirection',
+  'flexWrap',
+  'gap',
+  'alignItems',
+  'justifyContent',
+]);
+
+/**
+ * Outer shell style for a group: full component style minus flex-host keys
+ * (those apply only on the inner flex wrapper).
+ */
+export function groupOuterChromeStyle(
+  css: ComponentStyle,
+  width: number,
+  height: number,
+): CSSProperties {
+  const out = { ...(css as Record<string, unknown>) };
+  for (const k of FLEX_STYLE_KEYS) {
+    delete out[k];
+  }
+  return {
+    ...(out as CSSProperties),
+    width,
+    height,
+    boxSizing: 'border-box',
+  };
+}
+
+/** Flex container style from stored group style (inner host). */
+export function groupFlexContainerStyle(css: ComponentStyle): CSSProperties {
+  const gap = css.gap ?? 8;
+  return {
+    display: 'flex',
+    flexDirection: css.flexDirection ?? 'row',
+    flexWrap: css.flexWrap ?? 'nowrap',
+    gap: `${Number(gap)}px`,
+    alignItems: css.alignItems ?? 'stretch',
+    justifyContent: css.justifyContent ?? 'flex-start',
+    flex: 1,
+    minHeight: 0,
+    minWidth: 0,
+    boxSizing: 'border-box',
+    width: '100%',
+    height: '100%',
+    overflow: 'auto',
+  };
+}

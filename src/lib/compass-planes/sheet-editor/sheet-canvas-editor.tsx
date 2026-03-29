@@ -28,6 +28,8 @@ import { DEFAULT_GRID_SIZE } from '../editor-config';
 import { sheetNodeTypes, type EditorMenuOption } from '../nodes';
 import { ComponentTypes } from '../nodes/node-types';
 import { injectDefaultComponent } from '../utils/inject-defaults';
+import { isFlexHostedChild } from './group-flex-utils';
+import { SheetCanvasLayoutContext } from './sheet-canvas-layout-context';
 import {
   buildEffectiveLayoutMap,
   componentByIdMap,
@@ -400,6 +402,11 @@ export function SheetCanvasEditor({
 
   const LONG_PRESS_MS = 500;
 
+  const canvasLayoutValue = useMemo(
+    () => ({ byId, effectiveLayout, onItemPointerDown }),
+    [byId, effectiveLayout, onItemPointerDown],
+  );
+
   return (
     <EditorCanvasChromeProvider value={chromeValue}>
       <section
@@ -477,42 +484,45 @@ export function SheetCanvasEditor({
           {...marqueeHandlers}
         />
 
-        <div
-          className='pointer-events-none absolute inset-0 z-[2]'
-          style={{ touchAction: 'manipulation' }}>
-          {sorted.map((c) => {
-            const Edit = sheetNodeTypes[c.type as ComponentTypes] as ComponentType | undefined;
-            if (!Edit) return null;
-            const eff = effectiveLayout.get(c.id)!;
-            const world = worldTopLeftWithEffective(c, byId, effectiveLayout);
-            const layout = {
-              left: world.x,
-              top: world.y,
-              width: eff.width,
-              height: eff.height,
-            };
-            return (
-              <div
-                key={c.id}
-                data-canvas-item={c.id}
-                className='pointer-events-auto absolute'
-                style={{
-                  left: layout.left,
-                  top: layout.top,
-                  width: layout.width,
-                  height: layout.height,
-                  zIndex: c.z,
-                }}
-                onPointerDown={(e) => onItemPointerDown(e, c)}>
-                <EditorItemLayoutProvider value={{ width: layout.width, height: layout.height }}>
-                  <EditorItemIdProvider id={c.id}>
-                    <Edit />
-                  </EditorItemIdProvider>
-                </EditorItemLayoutProvider>
-              </div>
-            );
-          })}
-        </div>
+        <SheetCanvasLayoutContext.Provider value={canvasLayoutValue}>
+          <div
+            className='pointer-events-none absolute inset-0 z-[2]'
+            style={{ touchAction: 'manipulation' }}>
+            {sorted.map((c) => {
+              if (isFlexHostedChild(c, byId)) return null;
+              const Edit = sheetNodeTypes[c.type as ComponentTypes] as ComponentType | undefined;
+              if (!Edit) return null;
+              const eff = effectiveLayout.get(c.id)!;
+              const world = worldTopLeftWithEffective(c, byId, effectiveLayout);
+              const layout = {
+                left: world.x,
+                top: world.y,
+                width: eff.width,
+                height: eff.height,
+              };
+              return (
+                <div
+                  key={c.id}
+                  data-canvas-item={c.id}
+                  className='pointer-events-auto absolute'
+                  style={{
+                    left: layout.left,
+                    top: layout.top,
+                    width: layout.width,
+                    height: layout.height,
+                    zIndex: c.z,
+                  }}
+                  onPointerDown={(e) => onItemPointerDown(e, c)}>
+                  <EditorItemLayoutProvider value={{ width: layout.width, height: layout.height }}>
+                    <EditorItemIdProvider id={c.id}>
+                      <Edit />
+                    </EditorItemIdProvider>
+                  </EditorItemLayoutProvider>
+                </div>
+              );
+            })}
+          </div>
+        </SheetCanvasLayoutContext.Provider>
 
         {marqueeRect != null ? (
           <div

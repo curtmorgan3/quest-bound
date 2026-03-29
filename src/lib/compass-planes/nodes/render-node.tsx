@@ -1,5 +1,6 @@
 import type { CharacterAttribute, Component, ComponentData } from '@/types';
 import type { ReactNode } from 'react';
+import type { EffectiveLayout } from '../sheet-editor/component-world-geometry';
 import type { PositionValues } from '../utils';
 import { ComponentTypes } from '../nodes';
 import {
@@ -27,11 +28,19 @@ import {
 import { NodeRotation } from './decorators/node-rotation';
 import { getComponentData } from '../utils';
 
-export const renderViewComponent = (
+export type ViewRenderContext = {
+  allComponents: Component[];
+  byId: Map<string, Component>;
+  effectiveLayout: Map<string, EffectiveLayout>;
+  positionMap: Map<string, PositionValues>;
+};
+
+export function renderViewComponent(
   component: Component,
   characterAttributes?: CharacterAttribute[],
   position?: PositionValues,
-) => {
+  ctx?: ViewRenderContext,
+): ReactNode {
   const componentData = getComponentData(component);
 
   switch (component.type) {
@@ -143,14 +152,29 @@ export const renderViewComponent = (
           componentData={componentData}
           position={position}
           characterAttributes={characterAttributes}>
-          <ViewGroupNode component={component} />
+          <ViewGroupNode
+            component={component}
+            allComponents={ctx?.allComponents ?? []}
+            effectiveLayout={ctx?.effectiveLayout}
+            renderChild={
+              ctx
+                ? (child) =>
+                    renderViewComponent(
+                      child,
+                      characterAttributes,
+                      ctx.positionMap.get(child.id),
+                      ctx,
+                    )
+                : undefined
+            }
+          />
         </WrapDecorators>
       );
     default:
       console.warn(`Attempted to render an unregistered view component: `, component.type);
       return null;
   }
-};
+}
 
 function WrapDecorators({
   children,
