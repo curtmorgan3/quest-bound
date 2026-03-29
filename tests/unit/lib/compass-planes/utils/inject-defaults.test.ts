@@ -30,6 +30,25 @@ describe('injectDefaultComponent', () => {
     expect(result?.style).toBeDefined();
   });
 
+  it('accepts x and y of 0 as valid placement', () => {
+    const partialComponent: Partial<Component> = {
+      type: ComponentTypes.SHAPE,
+      x: 0,
+      y: 0,
+      id: 'shape-origin',
+      rulesetId: 'ruleset-1',
+      windowId: 'window-1',
+      createdAt: '2024-01-01T00:00:00.000Z',
+      updatedAt: '2024-01-01T00:00:00.000Z',
+    };
+
+    const result = injectDefaultComponent(partialComponent);
+
+    expect(result).toBeDefined();
+    expect(result?.x).toBe(0);
+    expect(result?.y).toBe(0);
+  });
+
   it('should inject defaults for text component', () => {
     const partialComponent: Partial<Component> = {
       type: ComponentTypes.TEXT,

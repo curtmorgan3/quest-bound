@@ -15,7 +15,9 @@ import {
 
 export function injectDefaultComponent(component: Partial<Component>) {
   for (const required of REQUIRED_COMPONENT_FIELDS) {
-    if (!component[required]) {
+    const v = component[required];
+    // Allow x/y === 0 (valid canvas origin); reject only nullish / empty type.
+    if (v === undefined || v === null || v === '') {
       console.error(`Missing required field for component creation: ${required}`);
       return;
     }

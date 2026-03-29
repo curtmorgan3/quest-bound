@@ -1,7 +1,5 @@
 import type { ComponentType } from 'react';
 import {
-  checkboxConfig,
-  contentConfig,
   EditCheckboxNode,
   EditContentNode,
   EditFrameNode,
@@ -11,15 +9,11 @@ import {
   EditInventoryNode,
   EditShapeNode,
   EditTextNode,
-  frameConfig,
-  graphConfig,
-  imageConfig,
-  inputConfig,
-  inventoryConfig,
-  shapeConfig,
-  textConfig,
 } from './components';
-import { ComponentTypes, type SheetComponentType } from './node-types';
+import { baseComponentTypes, getComponentType } from './sheet-component-metadata';
+import { ComponentTypes } from './node-types';
+
+export { baseComponentTypes, getComponentType };
 
 export const sheetNodeTypes: Record<ComponentTypes, ComponentType> = {
   [ComponentTypes.SHAPE]: EditShapeNode,
@@ -33,20 +27,4 @@ export const sheetNodeTypes: Record<ComponentTypes, ComponentType> = {
   [ComponentTypes.FRAME]: EditFrameNode,
 };
 
-export const baseComponentTypes: SheetComponentType[] = [
-  shapeConfig,
-  textConfig,
-  imageConfig,
-  inputConfig,
-  checkboxConfig,
-  contentConfig,
-  inventoryConfig,
-  graphConfig,
-  frameConfig,
-];
-
 export const componentTypes = [...baseComponentTypes];
-
-export const getComponentType = (type: ComponentTypes): SheetComponentType => {
-  return baseComponentTypes.find((comp) => comp.type === type)!;
-};

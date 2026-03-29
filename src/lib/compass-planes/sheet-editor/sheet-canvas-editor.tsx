@@ -12,7 +12,7 @@ import {
 } from 'react';
 
 import { WindowEditorContext } from '@/stores';
-import { ContextMenu } from '../base-editor/context-menu';
+import { AddComponentPanel } from './add-component-panel';
 import {
   CanvasGridBackground,
   clampTopLeftInRect,
@@ -71,9 +71,7 @@ export function SheetCanvasEditor({
   const longPressTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const touchPositionRef = useRef<{ x: number; y: number } | null>(null);
 
-  const [contextMenu, setContextMenu] = useState<{
-    clientX: number;
-    clientY: number;
+  const [addComponentPanel, setAddComponentPanel] = useState<{
     add: Coordinates;
   } | null>(null);
 
@@ -258,17 +256,24 @@ export function SheetCanvasEditor({
     shouldSuppressMicroDragClear,
   });
 
-  const openContextMenuFromClient = useCallback((clientX: number, clientY: number) => {
-    const sidebarCollapsed = localStorage.getItem('qb.sidebarCollapsed') === 'true';
-    const sidebarOffset = sidebarCollapsed ? 47 : 255;
-    const adjX = clientX - sidebarOffset;
-    const root = canvasRootRef.current;
-    let add = root ? clientToCanvas(adjX, clientY, root, resolvedViewScale) : { x: 0, y: 0 };
-    if (root) {
-      add = clampTopLeftInRect(add.x, add.y, 1, 1, root.clientWidth, root.clientHeight);
-    }
-    setContextMenu({ clientX, clientY, add });
-  }, [resolvedViewScale]);
+  const templateComponent = useMemo(() => components[0] ?? null, [components]);
+
+  const openAddComponentPanelFromClient = useCallback(
+    (clientX: number, clientY: number) => {
+      const sidebarCollapsed = localStorage.getItem('qb.sidebarCollapsed') === 'true';
+      const sidebarOffset = sidebarCollapsed ? 47 : 255;
+      const adjX = clientX - sidebarOffset;
+      const root = canvasRootRef.current;
+      let add = root ? clientToCanvas(adjX, clientY, root, resolvedViewScale) : { x: 0, y: 0 };
+      if (root) {
+        add = clampTopLeftInRect(add.x, add.y, 1, 1, root.clientWidth, root.clientHeight);
+      }
+      const clearUpdates = updatesToClearSelection(components);
+      if (clearUpdates.length) onComponentsUpdated(clearUpdates);
+      setAddComponentPanel({ add });
+    },
+    [components, onComponentsUpdated, resolvedViewScale],
+  );
 
   const onContextMenuSelect = useCallback(
     (option: EditorMenuOption, coordinates: Coordinates) => {
@@ -363,7 +368,7 @@ export function SheetCanvasEditor({
           }
           if (!renderContextMenu) return;
           e.preventDefault();
-          openContextMenuFromClient(e.clientX, e.clientY);
+          openAddComponentPanelFromClient(e.clientX, e.clientY);
           return false;
         }}
         onTouchStart={(e) => {
@@ -372,7 +377,7 @@ export function SheetCanvasEditor({
           touchPositionRef.current = { x: touch.clientX, y: touch.clientY };
           longPressTimeoutRef.current = setTimeout(() => {
             const pos = touchPositionRef.current;
-            if (pos) openContextMenuFromClient(pos.x, pos.y);
+            if (pos) openAddComponentPanelFromClient(pos.x, pos.y);
             clearLongPress();
           }, LONG_PRESS_MS);
         }}
@@ -487,15 +492,16 @@ export function SheetCanvasEditor({
         ) : null}
 
         </div>
-        {renderContextMenu && contextMenu != null && (
-          <ContextMenu
-            isOpen
+        {renderContextMenu && (
+          <AddComponentPanel
+            open={addComponentPanel != null}
+            onOpenChange={(open) => {
+              if (!open) setAddComponentPanel(null);
+            }}
             options={menuOptions ?? []}
-            onSelect={onContextMenuSelect}
-            onClose={() => setContextMenu(null)}
-            x={contextMenu.clientX}
-            y={contextMenu.clientY}
-            addComponentCoordinates={contextMenu.add}
+            placement={addComponentPanel?.add ?? { x: 0, y: 0 }}
+            onPick={onContextMenuSelect}
+            templateComponent={templateComponent}
           />
         )}
       </section>

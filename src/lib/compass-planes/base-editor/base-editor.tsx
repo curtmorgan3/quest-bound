@@ -4,6 +4,7 @@ import { Background, BackgroundVariant, ReactFlow } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { useEffect, useRef, useState } from 'react';
 import type { EditorMenuOption } from '../nodes/node-types';
+import { editorContextMenuOptions } from '../nodes/sheet-component-metadata';
 import { FlowContextMenu } from './flow-context-menu';
 
 interface BaseEditorProps extends ReactFlowProps {
@@ -158,7 +159,7 @@ export function BaseEditor({
         {renderContextMenu && (
           <FlowContextMenu
             isOpen={!!contextMenu}
-            options={menuOptions ?? []}
+            options={menuOptions ?? editorContextMenuOptions}
             onSelect={(...args) => onSelectFromMenu?.(...args)}
             onClose={() => {
               setContextMenu(null);

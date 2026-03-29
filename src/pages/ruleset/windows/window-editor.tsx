@@ -10,7 +10,7 @@ import { colorPrimary, colorWhite } from '@/palette';
 import { db, WindowEditorProvider } from '@/stores';
 import type { Component } from '@/types';
 import { debugLog } from '@/utils';
-import { Eye, Minus, Plus, RotateCcw } from 'lucide-react';
+import { Eye, ScanSearch, ZoomIn, ZoomOut } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { ComponentEditPanel } from './component-edit-panel';
@@ -211,7 +211,7 @@ export const WindowEditor = () => {
                   aria-label='Zoom editor canvas in'
                   className='size-8 shrink-0 text-white hover:bg-white/15 hover:text-white'
                   onClick={zoomCanvasIn}>
-                  <Plus className='size-4' strokeWidth={2} aria-hidden />
+                  <ZoomIn className='size-4' strokeWidth={2} aria-hidden />
                 </Button>
                 <Button
                   type='button'
@@ -220,7 +220,7 @@ export const WindowEditor = () => {
                   aria-label='Zoom editor canvas out'
                   className='size-8 shrink-0 text-white hover:bg-white/15 hover:text-white'
                   onClick={zoomCanvasOut}>
-                  <Minus className='size-4' strokeWidth={2} aria-hidden />
+                  <ZoomOut className='size-4' strokeWidth={2} aria-hidden />
                 </Button>
                 <Button
                   type='button'
@@ -229,7 +229,7 @@ export const WindowEditor = () => {
                   aria-label='Reset canvas zoom to 100%'
                   className='size-8 shrink-0 text-white hover:bg-white/15 hover:text-white'
                   onClick={() => setCanvasViewScale(1)}>
-                  <RotateCcw className='size-4' strokeWidth={2} aria-hidden />
+                  <ScanSearch className='size-4' strokeWidth={2} aria-hidden />
                 </Button>
                 <Button
                   type='button'

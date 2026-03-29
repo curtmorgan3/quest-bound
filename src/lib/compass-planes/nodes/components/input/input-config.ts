@@ -5,7 +5,7 @@ import { ComponentTypes, type SheetComponentType } from '../../node-types';
 
 export const inputConfig: SheetComponentType = {
   label: 'Input',
-  description: 'A disabled input field for displaying form values.',
+  description: 'A field for controlling attributes or static values',
   type: ComponentTypes.INPUT,
   minWidth: DEFAULT_GRID_SIZE,
   minHeight: DEFAULT_GRID_SIZE,
