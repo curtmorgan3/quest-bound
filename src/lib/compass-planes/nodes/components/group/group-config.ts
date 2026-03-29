@@ -36,6 +36,11 @@ const DEFAULT_GROUP_STYLES: ComponentStyle = {
   paddingBottom: 0,
   paddingLeft: 0,
   paddingRight: 0,
+  flexDirection: 'row',
+  flexWrap: 'nowrap',
+  gap: 8,
+  alignItems: 'stretch',
+  justifyContent: 'flex-start',
 };
 
 export const DEFAULT_GROUP: Partial<Component> = {

@@ -26,6 +26,18 @@ type BaseComponentStyle = {
   paddingLeft?: number;
   paddingTop?: number;
   paddingBottom?: number;
+  /** Group nodes: flex container (when `layoutMode` in data is `flex`). */
+  flexDirection?: 'row' | 'column' | 'row-reverse' | 'column-reverse';
+  flexWrap?: 'nowrap' | 'wrap' | 'wrap-reverse';
+  gap?: number;
+  alignItems?: 'flex-start' | 'flex-end' | 'center' | 'stretch' | 'baseline';
+  justifyContent?:
+    | 'flex-start'
+    | 'flex-end'
+    | 'center'
+    | 'space-between'
+    | 'space-around'
+    | 'space-evenly';
 };
 
 export type TextComponentStyle = BaseComponentStyle & {
@@ -58,21 +70,9 @@ export type ShapeComponentData = {
 
 export type GroupLayoutMode = 'absolute' | 'flex';
 
-/** Layout for `ComponentTypes.GROUP` roots (`data` JSON). */
+/** Layout for `ComponentTypes.GROUP` roots (`data` JSON). Flex details live in `style`. */
 export type GroupComponentData = {
   layoutMode?: GroupLayoutMode;
-  flexDirection?: 'row' | 'column' | 'row-reverse' | 'column-reverse';
-  flexWrap?: 'nowrap' | 'wrap' | 'wrap-reverse';
-  alignItems?: 'flex-start' | 'flex-end' | 'center' | 'stretch' | 'baseline';
-  justifyContent?:
-    | 'flex-start'
-    | 'flex-end'
-    | 'center'
-    | 'space-between'
-    | 'space-around'
-    | 'space-evenly';
-  /** Uniform inner padding (px) for the flex host in v1. */
-  padding?: number;
 };
 
 export type TextComponentData = {

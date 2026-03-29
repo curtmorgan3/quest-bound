@@ -106,6 +106,19 @@ export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
     }
   };
 
+  const handleGroupDataUpdate = (key: string, value: string) => {
+    const toUpdate = selectedComponents.filter((c) => !c.locked);
+    updateComponents(
+      toUpdate.map((c) => ({
+        id: c.id,
+        data: JSON.stringify({
+          ...JSON.parse(c.data),
+          [key]: value,
+        }),
+      })),
+    );
+  };
+
   const handleStyleUpdate = (
     key: string | string[],
     value: number | string | boolean | null | RGBColor,
@@ -403,7 +416,11 @@ export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
             <TabsContent value='style' className='w-full flex flex-col gap-2 mt-2'>
               <ActionEdit components={selectedComponents} handleUpdate={handleUpdate} />
               <PositionEdit components={selectedComponents} handleUpdate={handleUpdate} />
-              <StyleEdit components={selectedComponents} handleUpdate={handleStyleUpdate} />
+              <StyleEdit
+                components={selectedComponents}
+                handleUpdate={handleStyleUpdate}
+                handleDataUpdate={handleGroupDataUpdate}
+              />
               {allAreText && (
                 <TextEdit components={selectedComponents} handleUpdate={handleStyleUpdate} />
               )}

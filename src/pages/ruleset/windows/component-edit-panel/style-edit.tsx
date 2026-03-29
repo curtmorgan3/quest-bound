@@ -6,6 +6,7 @@ import { SquareRoundCorner } from 'lucide-react';
 import { useState } from 'react';
 import { type RGBColor } from 'react-color';
 import { EditPanelInput } from './component-edit-panel-input';
+import { GroupStyleEdit } from './group-style-edit';
 import { useStyleValues } from './use-style-values';
 import { parseValue } from './utils';
 
@@ -15,6 +16,8 @@ interface Props {
     key: string | string[],
     value: number | string | boolean | null | RGBColor,
   ) => void;
+  /** Required for group layout mode (`data`); omit only if group block is unused. */
+  handleDataUpdate?: (key: string, value: string) => void;
 }
 
 const MIXED_VALUE_LABEL = '-';
@@ -25,7 +28,7 @@ function toOpacityNumber(raw: string | number | undefined): number {
   return Number.isFinite(n) ? Math.min(1, Math.max(0, n)) : 1;
 }
 
-export const StyleEdit = ({ components, handleUpdate }: Props) => {
+export const StyleEdit = ({ components, handleUpdate, handleDataUpdate }: Props) => {
   const style = useStyleValues(components);
   const opacity = style.opacity.raw;
   const backgroundColor = style.backgroundColor.raw as string;
@@ -77,6 +80,11 @@ export const StyleEdit = ({ components, handleUpdate }: Props) => {
   const [isCornersOpen, setIsCornersOpen] = useState(false);
   const [isPaddingsOpen, setIsPaddingsOpen] = useState(false);
 
+  const singleSelectedGroup =
+    components.length === 1 &&
+    components[0].type === ComponentTypes.GROUP &&
+    Boolean(handleDataUpdate);
+
   const allowGradient =
     components.length > 0 &&
     components.every(
@@ -104,6 +112,14 @@ export const StyleEdit = ({ components, handleUpdate }: Props) => {
   return (
     <div className='flex-col w-full flex flex-col gap-3 pb-2 border-b-1'>
       <p className='text-sm'>Style</p>
+
+      {singleSelectedGroup && handleDataUpdate ? (
+        <GroupStyleEdit
+          component={components[0]}
+          handleStyleUpdate={(key, value) => handleUpdate(key, value)}
+          handleDataUpdate={handleDataUpdate}
+        />
+      ) : null}
 
       <div className='w-full flex flex-row gap-4 items-end flex-wrap'>
         <EditPanelInput
