@@ -117,7 +117,6 @@ const ViewContentNodeComponent = ({
 
   return isEditing ? (
     <section
-      data-no-canvas-drag={windowEditorMode ? '' : undefined}
       style={{
         height: ch,
         width: cw,
@@ -131,7 +130,8 @@ const ViewContentNodeComponent = ({
         onBlur={handleBlur}
         onKeyDown={handleKeyDown}
         onWheelCapture={(e) => e.stopPropagation()}
-        className="nowheel nodrag"
+        className='nowheel nodrag'
+        data-no-canvas-drag={windowEditorMode ? '' : undefined}
         style={{
           ...css,
           background: 'transparent',
@@ -149,7 +149,6 @@ const ViewContentNodeComponent = ({
     </section>
   ) : (
     <section
-      data-no-canvas-drag={windowEditorMode ? '' : undefined}
       onDoubleClick={() => {
         if (!windowEditorMode && !characterContext) return;
         if (!windowEditorMode && data.readOnly) return;

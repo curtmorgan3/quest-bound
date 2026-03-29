@@ -29,7 +29,7 @@ export function updatesForClickSelection(
       }))
       .filter((u) => {
         const prev = components.find((c) => c.id === u.id);
-        return prev != null && selectionChanged(prev.selected, u.selected!);
+        return prev != null && selectionChanged(prev.selected ?? false, u.selected!);
       });
   }
 
@@ -57,7 +57,7 @@ export function updatesForMarqueeSelection(
       }))
       .filter((u) => {
         const prev = components.find((c) => c.id === u.id);
-        return prev != null && selectionChanged(prev.selected, u.selected!);
+        return prev != null && selectionChanged(prev.selected ?? false, u.selected!);
       });
   }
 

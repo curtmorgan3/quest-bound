@@ -234,12 +234,13 @@ export function SheetCanvasEditor({
     (e: React.PointerEvent, c: Component) => {
       if (e.button !== 0) return;
       const t = e.target as HTMLElement;
-      if (t.closest('[data-no-canvas-drag], .nodrag, [data-native-resize-handle]')) return;
+      if (t.closest('[data-native-resize-handle]')) return;
 
       const updates = updatesForClickSelection(components, c.id, e);
       if (updates.length) onComponentsUpdated(updates);
 
-      if (!c.locked) {
+      const skipMoveStart = Boolean(t.closest('[data-no-canvas-drag], .nodrag'));
+      if (!c.locked && !skipMoveStart) {
         const movableSelected = components.filter((x) => x.selected && !x.locked);
         const followers =
           c.selected && movableSelected.length > 1

@@ -5,6 +5,9 @@ import { clientToCanvas, snapPointToGrid } from './client-to-canvas';
 
 export type PointerDragFollower = { id: string; x: number; y: number };
 
+/** Device pixels before we treat the gesture as a drag (not a click). Avoids capturing the pointer immediately, which would retarget click/dblclick away from inner targets (e.g. text nodes). */
+const DRAG_THRESHOLD_PX = 5;
+
 export type UsePointerDragOptions = {
   containerRef: React.RefObject<HTMLElement | null>;
   /** Omit or pass `null` / `0` to disable snapping. */
@@ -125,33 +128,62 @@ export function usePointerDrag({
       const container = o.containerRef.current;
       if (!container) return;
 
-      e.preventDefault();
+      // Do not preventDefault on pointerdown — allows click / dblclick on inner elements (e.g. text span).
       e.stopPropagation();
 
+      const startClientX = e.clientX;
+      const startClientY = e.clientY;
       const local = clientToCanvas(e.clientX, e.clientY, container);
       const followers = (params.followers ?? []).map((f) => ({
         id: f.id,
         originX: f.x,
         originY: f.y,
       }));
+      const pointerId = e.pointerId;
       phaseRef.current = {
         leaderId: params.id,
         originX: params.x,
         originY: params.y,
         startLocalX: local.x,
         startLocalY: local.y,
-        pointerId: e.pointerId,
+        pointerId,
         followers,
       };
-      lastPositionsRef.current = [{ id: params.id, x: params.x, y: params.y }, ...followers.map((f) => ({ id: f.id, x: f.originX, y: f.originY }))];
+      lastPositionsRef.current = [
+        { id: params.id, x: params.x, y: params.y },
+        ...followers.map((f) => ({ id: f.id, x: f.originX, y: f.originY })),
+      ];
 
       const el = e.currentTarget;
-      el.setPointerCapture(e.pointerId);
+      let dragStarted = false;
+
+      const teardownWindow = () => {
+        window.removeEventListener('pointermove', onMove);
+        window.removeEventListener('pointerup', onUp);
+        window.removeEventListener('pointercancel', onUp);
+      };
 
       const onMove = (ev: PointerEvent) => {
+        if (ev.pointerId !== pointerId) return;
         const ph = phaseRef.current;
         const oc = optsRef.current;
-        if (!ph || ev.pointerId !== ph.pointerId) return;
+        if (!ph) return;
+
+        if (!dragStarted) {
+          const d = Math.hypot(ev.clientX - startClientX, ev.clientY - startClientY);
+          if (d < DRAG_THRESHOLD_PX) return;
+          dragStarted = true;
+          try {
+            (el as HTMLElement).setPointerCapture(pointerId);
+          } catch {
+            /* */
+          }
+        }
+
+        if (dragStarted) {
+          ev.preventDefault();
+        }
+
         const c = oc.containerRef.current;
         if (!c) return;
         const cur = clientToCanvas(ev.clientX, ev.clientY, c);
@@ -172,16 +204,16 @@ export function usePointerDrag({
       };
 
       const onUp = (ev: PointerEvent) => {
-        if (ev.pointerId !== e.pointerId) return;
-        el.removeEventListener('pointermove', onMove);
-        el.removeEventListener('pointerup', onUp);
-        el.removeEventListener('pointercancel', onUp);
+        if (ev.pointerId !== pointerId) return;
+        teardownWindow();
 
         if (rafRef.current != null) {
           cancelAnimationFrame(rafRef.current);
           rafRef.current = null;
         }
-        flushTransient();
+        if (dragStarted) {
+          flushTransient();
+        }
         pendingRef.current = null;
 
         const ph = phaseRef.current;
@@ -189,17 +221,17 @@ export function usePointerDrag({
 
         let didCommit = false;
         try {
-          if (ph && ph.pointerId === ev.pointerId) {
+          if (dragStarted && ph) {
             try {
-              el.releasePointerCapture(ev.pointerId);
+              (el as HTMLElement).releasePointerCapture(pointerId);
             } catch {
-              /* already released */
+              /* */
             }
           }
 
           const last = lastPositionsRef.current;
           lastPositionsRef.current = null;
-          if (ph && ph.pointerId === ev.pointerId && last?.length) {
+          if (dragStarted && ph && ev.pointerId === ph.pointerId && last?.length) {
             const leaderPos = last.find((p) => p.id === ph.leaderId);
             const skip =
               optsRef.current.skipCommitIfUnchanged &&
@@ -217,9 +249,9 @@ export function usePointerDrag({
         }
       };
 
-      el.addEventListener('pointermove', onMove);
-      el.addEventListener('pointerup', onUp);
-      el.addEventListener('pointercancel', onUp);
+      window.addEventListener('pointermove', onMove, { passive: false });
+      window.addEventListener('pointerup', onUp);
+      window.addEventListener('pointercancel', onUp);
     },
     [flushTransient, scheduleTransient],
   );

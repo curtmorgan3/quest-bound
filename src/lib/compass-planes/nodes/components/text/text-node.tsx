@@ -88,32 +88,53 @@ export const EditTextNode = () => {
   return (
     <ResizableNode component={component}>
       {isEditing ? (
-        <section
+        <div
           style={{
+            position: 'relative',
             height: ch,
             width: cw,
-            display: 'flex',
-            justifyContent: css.textAlign ?? 'start',
-            alignItems: css.verticalAlign ?? 'start',
+            overflow: 'visible',
           }}>
-          <input
-            ref={inputRef}
-            type='text'
-            defaultValue={data.value?.toString()}
-            onKeyDown={handleKeyDown}
-            onBlur={handleBlur}
+          <section
             style={{
-              ...css,
-              background: 'transparent',
-              border: 'none',
-              outline: 'none',
-              padding: 0,
-              margin: 0,
-              width: '100%',
-              height: '100%',
-            }}
-          />
-        </section>
+              position: 'absolute',
+              inset: 0,
+              display: 'flex',
+              justifyContent: css.textAlign ?? 'start',
+              alignItems: css.verticalAlign ?? 'start',
+              ...getBackgroundStyle(css),
+              borderRadius: css.borderRadius,
+              outline: css.outline,
+              outlineColor: css.outlineColor,
+              outlineWidth: css.outlineWidth,
+              overflow: 'hidden',
+            }}>
+            <input
+              ref={inputRef}
+              type='text'
+              defaultValue={data.value?.toString()}
+              onKeyDown={handleKeyDown}
+              onBlur={handleBlur}
+              style={{
+                ...css,
+                ...getColorStyle(css),
+                background: 'transparent',
+                border: 'none',
+                outline: 'none',
+                padding: 0,
+                margin: 0,
+                minWidth: 0,
+                maxWidth: '100%',
+                width: 'auto',
+                boxSizing: 'border-box',
+                textAlign: css.textAlign ?? 'start',
+                lineHeight:
+                  typeof css.lineHeight === 'number' ? `${css.lineHeight}px` : undefined,
+                fieldSizing: 'content',
+              }}
+            />
+          </section>
+        </div>
       ) : (
         <ViewTextNode component={component} onDoubleClick={handleDoubleClick} />
       )}
