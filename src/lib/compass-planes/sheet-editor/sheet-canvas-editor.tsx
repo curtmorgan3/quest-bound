@@ -41,6 +41,8 @@ export interface SheetCanvasEditorProps {
   useGrid?: boolean;
   /** Snap and background grid spacing in pixels (when `useGrid` is true). Defaults to `DEFAULT_GRID_SIZE`. */
   gridSize?: number;
+  /** View-only zoom; does not change stored component geometry. */
+  viewScale?: number;
   backgroundColor?: string;
   backgroundOpacity?: number;
   backgroundImage?: string | null;
@@ -55,6 +57,7 @@ export function SheetCanvasEditor({
   onSelectFromMenu,
   useGrid = true,
   gridSize: gridSizeProp = DEFAULT_GRID_SIZE,
+  viewScale: viewScaleProp = 1,
   backgroundColor,
   backgroundOpacity,
   backgroundImage,
@@ -63,7 +66,7 @@ export function SheetCanvasEditor({
   onComponentsDeleted,
 }: SheetCanvasEditorProps) {
   const { getComponent } = useContext(WindowEditorContext);
-  const sectionRef = useRef<HTMLElement>(null);
+  const canvasRootRef = useRef<HTMLDivElement>(null);
   const opacity = !backgroundColor && !backgroundImage ? 1 : (backgroundOpacity ?? 0.1);
   const longPressTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const touchPositionRef = useRef<{ x: number; y: number } | null>(null);
@@ -90,6 +93,12 @@ export function SheetCanvasEditor({
     if (!Number.isFinite(n) || n < 1) return DEFAULT_GRID_SIZE;
     return Math.min(200, Math.max(1, n));
   }, [gridSizeProp]);
+
+  const resolvedViewScale = useMemo(() => {
+    const n = Number(viewScaleProp);
+    if (!Number.isFinite(n) || n <= 0) return 1;
+    return Math.min(3, Math.max(0.25, n));
+  }, [viewScaleProp]);
 
   const sorted = useMemo(() => [...components].sort((a, b) => a.z - b.z), [components]);
 
@@ -122,15 +131,24 @@ export function SheetCanvasEditor({
 
   const chromeValue = useMemo(
     () => ({
-      containerRef: sectionRef,
+      containerRef: canvasRootRef,
       isSelected,
       onResizeCommit,
       useGrid,
       gridSize: resolvedGridSize,
+      viewScale: resolvedViewScale,
       onResizeTransient,
       onResizeGestureEnd,
     }),
-    [isSelected, onResizeCommit, onResizeGestureEnd, onResizeTransient, resolvedGridSize, useGrid],
+    [
+      isSelected,
+      onResizeCommit,
+      onResizeGestureEnd,
+      onResizeTransient,
+      resolvedGridSize,
+      resolvedViewScale,
+      useGrid,
+    ],
   );
 
   const getDragItemDimensions = useCallback(
@@ -142,9 +160,10 @@ export function SheetCanvasEditor({
   );
 
   const { beginMove } = usePointerDrag({
-    containerRef: sectionRef,
+    containerRef: canvasRootRef,
     gridSize: useGrid ? resolvedGridSize : null,
     getItemDimensions: getDragItemDimensions,
+    viewScale: resolvedViewScale,
     onCommit: (updates) => {
       const next: Record<string, { x: number; y: number }> = {};
       for (const u of updates) {
@@ -223,7 +242,8 @@ export function SheetCanvasEditor({
   }, []);
 
   const { marqueeRect, marqueeHandlers } = useMarqueeSelection({
-    containerRef: sectionRef,
+    containerRef: canvasRootRef,
+    viewScale: resolvedViewScale,
     getItems: getSelectableItems,
     onComplete: (hitIds, modifiers) => {
       const updates = updatesForMarqueeSelection(components, hitIds, modifiers);
@@ -242,18 +262,18 @@ export function SheetCanvasEditor({
     const sidebarCollapsed = localStorage.getItem('qb.sidebarCollapsed') === 'true';
     const sidebarOffset = sidebarCollapsed ? 47 : 255;
     const adjX = clientX - sidebarOffset;
-    const root = sectionRef.current;
-    let add = root ? clientToCanvas(adjX, clientY, root) : { x: 0, y: 0 };
+    const root = canvasRootRef.current;
+    let add = root ? clientToCanvas(adjX, clientY, root, resolvedViewScale) : { x: 0, y: 0 };
     if (root) {
       add = clampTopLeftInRect(add.x, add.y, 1, 1, root.clientWidth, root.clientHeight);
     }
     setContextMenu({ clientX, clientY, add });
-  }, []);
+  }, [resolvedViewScale]);
 
   const onContextMenuSelect = useCallback(
     (option: EditorMenuOption, coordinates: Coordinates) => {
       if (!onSelectFromMenu) return;
-      const root = sectionRef.current;
+      const root = canvasRootRef.current;
       const draft = injectDefaultComponent({
         type: option.nodeType,
         x: coordinates.x,
@@ -334,9 +354,8 @@ export function SheetCanvasEditor({
   return (
     <EditorCanvasChromeProvider value={chromeValue}>
       <section
-        ref={sectionRef}
         id='base-editor'
-        className='relative flex h-full min-h-0 w-full min-w-0 flex-1 overflow-hidden'
+        className='relative flex h-full min-h-0 w-full min-w-0 flex-1 overflow-auto'
         onContextMenu={(e) => {
           if (e.ctrlKey || e.metaKey) {
             e.preventDefault();
@@ -359,6 +378,15 @@ export function SheetCanvasEditor({
         }}
         onTouchEnd={clearLongPress}
         onTouchCancel={clearLongPress}>
+        <div
+          ref={canvasRootRef}
+          className='relative min-h-full min-w-full'
+          style={{
+            transform: `scale(${resolvedViewScale})`,
+            transformOrigin: '0 0',
+            width: `${100 / resolvedViewScale}%`,
+            height: `${100 / resolvedViewScale}%`,
+          }}>
         {backgroundColor != null && (
           <div
             aria-hidden
@@ -458,6 +486,7 @@ export function SheetCanvasEditor({
           />
         ) : null}
 
+        </div>
         {renderContextMenu && contextMenu != null && (
           <ContextMenu
             isOpen

@@ -49,6 +49,8 @@ export type UsePointerDragOptions = {
   skipCommitIfUnchanged?: boolean;
   /** When set with a resolved container, dragged positions are clamped so each item stays inside the container. */
   getItemDimensions?: (id: string) => { width: number; height: number };
+  /** Matches CSS `transform: scale()` on the canvas coordinate root (default 1). */
+  viewScale?: number;
 };
 
 type DragPhase = {
@@ -105,6 +107,7 @@ export function usePointerDrag({
   canDrag = () => true,
   skipCommitIfUnchanged = true,
   getItemDimensions,
+  viewScale = 1,
 }: UsePointerDragOptions) {
   const optsRef = useRef({
     onCommit,
@@ -115,6 +118,7 @@ export function usePointerDrag({
     gridSize: gridSize ?? null,
     containerRef,
     getItemDimensions,
+    viewScale,
   });
   optsRef.current = {
     onCommit,
@@ -125,6 +129,7 @@ export function usePointerDrag({
     gridSize: gridSize ?? null,
     containerRef,
     getItemDimensions,
+    viewScale,
   };
 
   const phaseRef = useRef<DragPhase | null>(null);
@@ -161,7 +166,7 @@ export function usePointerDrag({
 
       const startClientX = e.clientX;
       const startClientY = e.clientY;
-      const local = clientToCanvas(e.clientX, e.clientY, container);
+      const local = clientToCanvas(e.clientX, e.clientY, container, o.viewScale);
       const followers = (params.followers ?? []).map((f) => ({
         id: f.id,
         originX: f.x,
@@ -216,7 +221,7 @@ export function usePointerDrag({
 
         const c = oc.containerRef.current;
         if (!c) return;
-        const cur = clientToCanvas(ev.clientX, ev.clientY, c);
+        const cur = clientToCanvas(ev.clientX, ev.clientY, c, oc.viewScale);
         const rawDx = cur.x - ph.startLocalX;
         const rawDy = cur.y - ph.startLocalY;
         let positions = positionsForDelta(

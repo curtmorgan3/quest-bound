@@ -79,6 +79,7 @@ describe('InventoryNode Component', () => {
           onResizeCommit: cy.stub(),
           useGrid: true,
           gridSize: 20,
+          viewScale: 1,
         }}>
         <WindowEditorContext.Provider value={windowEditorContext}>
           <EditorItemIdProvider id={component.id}>

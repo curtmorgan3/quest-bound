@@ -23,6 +23,8 @@ export type UseMarqueeSelectionOptions = {
   /** Ignore tiny box drags (accidental clicks on the marquee layer). */
   minDragPx?: number;
   enabled?: boolean;
+  /** Matches CSS `transform: scale()` on the canvas coordinate root (default 1). */
+  viewScale?: number;
 };
 
 type ActiveMarquee = {
@@ -44,6 +46,7 @@ export function useMarqueeSelection({
   shouldSuppressMicroDragClear,
   minDragPx = 4,
   enabled = true,
+  viewScale = 1,
 }: UseMarqueeSelectionOptions) {
   const [marqueeRect, setMarqueeRect] = useState<CanvasAxisRect | null>(null);
 
@@ -55,6 +58,7 @@ export function useMarqueeSelection({
     minDragPx,
     enabled,
     containerRef,
+    viewScale,
   });
   optsRef.current = {
     getItems,
@@ -64,6 +68,7 @@ export function useMarqueeSelection({
     minDragPx,
     enabled,
     containerRef,
+    viewScale,
   };
 
   const activeRef = useRef<ActiveMarquee | null>(null);
@@ -75,7 +80,7 @@ export function useMarqueeSelection({
     if (!container) return;
 
     e.preventDefault();
-    const { x, y } = clientToCanvas(e.clientX, e.clientY, container);
+    const { x, y } = clientToCanvas(e.clientX, e.clientY, container, o.viewScale);
     activeRef.current = {
       pointerId: e.pointerId,
       startX: x,
@@ -91,7 +96,7 @@ export function useMarqueeSelection({
     if (!a || e.pointerId !== a.pointerId) return;
     const container = optsRef.current.containerRef.current;
     if (!container) return;
-    const { x, y } = clientToCanvas(e.clientX, e.clientY, container);
+    const { x, y } = clientToCanvas(e.clientX, e.clientY, container, optsRef.current.viewScale);
     setMarqueeRect(normalizeMarqueeRect(a.startX, a.startY, x, y));
   }, []);
 
@@ -110,7 +115,7 @@ export function useMarqueeSelection({
 
     if (!container) return;
 
-    const { x, y } = clientToCanvas(e.clientX, e.clientY, container);
+    const { x, y } = clientToCanvas(e.clientX, e.clientY, container, optsRef.current.viewScale);
     const rect = normalizeMarqueeRect(a.startX, a.startY, x, y);
     const minPx = optsRef.current.minDragPx;
     if (rect.width < minPx && rect.height < minPx) {

@@ -17,6 +17,8 @@ interface SheetEditorProps {
   onComponentsRestored?: (components: Component[]) => void;
   /** Canvas snap / grid spacing in pixels. */
   gridSize?: number;
+  /** View-only canvas zoom; does not change stored layout. */
+  viewScale?: number;
 }
 
 export const SheetEditor = ({
@@ -26,6 +28,7 @@ export const SheetEditor = ({
   onComponentsDeleted,
   onComponentsRestored,
   gridSize = DEFAULT_GRID_SIZE,
+  viewScale = 1,
 }: SheetEditorProps) => {
   const { pushUndoSnapshot, undo, redo } = useUndoRedo({
     components,
@@ -88,6 +91,7 @@ export const SheetEditor = ({
         onComponentsDeleted={wrappedOnComponentsDeleted}
         onComponentsUpdated={wrappedOnComponentsUpdated}
         gridSize={gridSize}
+        viewScale={viewScale}
       />
     </div>
   );

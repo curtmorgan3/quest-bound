@@ -7,6 +7,8 @@ export type EditorCanvasChromeContextValue = {
   useGrid: boolean;
   /** Pixel step for snap and resize when `useGrid` is true. */
   gridSize: number;
+  /** View-only zoom; pointer/resize math uses this with `transform: scale` on the canvas root. */
+  viewScale: number;
   /** Live box during resize (canvas space); omit if the host renders without transient geometry. */
   onResizeTransient?: (id: string, width: number, height: number, x: number, y: number) => void;
   /** Clear resize overlay when the gesture ends without a commit (cancel / no change). */

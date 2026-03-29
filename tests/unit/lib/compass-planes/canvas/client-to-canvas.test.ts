@@ -46,4 +46,24 @@ describe('clientToCanvas', () => {
 
     expect(clientToCanvas(130, 80, el)).toEqual({ x: 40, y: 50 });
   });
+
+  it('divides pointer delta by viewScale when the canvas root is CSS-scaled', () => {
+    const el = document.createElement('div');
+    el.getBoundingClientRect = () =>
+      ({
+        left: 100,
+        top: 50,
+        right: 400,
+        bottom: 350,
+        width: 300,
+        height: 300,
+        x: 100,
+        y: 50,
+        toJSON: () => ({}),
+      }) as DOMRect;
+    Object.defineProperty(el, 'scrollLeft', { value: 10, configurable: true });
+    Object.defineProperty(el, 'scrollTop', { value: 20, configurable: true });
+
+    expect(clientToCanvas(130, 80, el, 2)).toEqual({ x: 25, y: 35 });
+  });
 });

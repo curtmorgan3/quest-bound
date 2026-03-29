@@ -53,8 +53,9 @@ function rectAfterResize(
   minH: number,
   maxH: number,
   container: HTMLElement,
+  viewScale: number,
 ): { x: number; y: number; w: number; h: number } {
-  const cur = clientToCanvas(clientX, clientY, container);
+  const cur = clientToCanvas(clientX, clientY, container, viewScale);
   let { x, y, w, h } = boundsForHandle(handle, startRect, cur, shiftKey);
   w = clampDim(w, minW, maxW);
   h = clampDim(h, minH, maxH);
@@ -206,6 +207,7 @@ export const ResizableNode = ({
     onResizeGestureEnd,
     useGrid,
     gridSize: gridSizePx,
+    viewScale: viewScaleCanvas,
   } = useEditorCanvasChrome();
   const pos = useComponentPosition(component);
   const locked = component?.locked ?? props?.locked;
@@ -277,6 +279,7 @@ export const ResizableNode = ({
           minH,
           maxH,
           root,
+          viewScaleCanvas,
         );
         scheduleTransient();
       };
@@ -318,6 +321,7 @@ export const ResizableNode = ({
               minH,
               maxH,
               root,
+              viewScaleCanvas,
             );
             const { x: sx, y: sy, w: sw, h: sh } = d.startRect;
             if (x !== sx || y !== sy || w !== sw || h !== sh) {

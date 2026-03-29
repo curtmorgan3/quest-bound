@@ -10,8 +10,8 @@ import { colorPrimary, colorWhite } from '@/palette';
 import { db, WindowEditorProvider } from '@/stores';
 import type { Component } from '@/types';
 import { debugLog } from '@/utils';
-import { Eye } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { Eye, Minus, Plus, RotateCcw } from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { ComponentEditPanel } from './component-edit-panel';
 
@@ -20,6 +20,22 @@ const { log } = debugLog('pages', 'editor');
 const WINDOW_EDITOR_GRID_STORAGE_KEY = 'qb.windowEditor.gridSize';
 const WINDOW_EDITOR_GRID_MIN = 4;
 const WINDOW_EDITOR_GRID_MAX = 200;
+const CANVAS_VIEW_ZOOM_STEP = 1.12;
+
+/** Cmd on Apple platforms, Ctrl elsewhere (Windows / Linux). */
+function canvasZoomModifierActive(e: KeyboardEvent): boolean {
+  if (typeof navigator === 'undefined') return e.ctrlKey;
+  const apple = /Mac|iPhone|iPod|iPad/i.test(navigator.userAgent);
+  return apple ? e.metaKey : e.ctrlKey;
+}
+
+function isEditableKeyboardTarget(target: EventTarget | null): boolean {
+  if (!target || !(target instanceof HTMLElement)) return false;
+  if (target.closest('[contenteditable="true"]')) return true;
+  const tag = target.tagName;
+  if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return true;
+  return target.isContentEditable;
+}
 
 function readStoredWindowEditorGrid(): number {
   try {
@@ -48,6 +64,7 @@ export const WindowEditor = () => {
 
   const [viewMode, setViewMode] = useState<boolean>(false);
   const [editorGridSize, setEditorGridSize] = useState(readStoredWindowEditorGrid);
+  const [canvasViewScale, setCanvasViewScale] = useState(1);
   const getComponent = (id: string) => components.find((c) => c.id === id) ?? null;
 
   const persistEditorGridSize = (n: number) => {
@@ -92,6 +109,39 @@ export const WindowEditor = () => {
 
   const stackLeftPx = open ? 265 : 65;
 
+  const zoomCanvasIn = useCallback(() => {
+    setCanvasViewScale((s) => Math.min(3, Math.round(s * CANVAS_VIEW_ZOOM_STEP * 1000) / 1000));
+  }, []);
+
+  const zoomCanvasOut = useCallback(() => {
+    setCanvasViewScale((s) =>
+      Math.max(0.25, Math.round((s / CANVAS_VIEW_ZOOM_STEP) * 1000) / 1000),
+    );
+  }, []);
+
+  useEffect(() => {
+    if (!windowId || viewMode) return;
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (!canvasZoomModifierActive(e)) return;
+      if (isEditableKeyboardTarget(e.target)) return;
+
+      const zoomIn = e.key === '+' || e.key === '=' || e.code === 'Equal' || e.code === 'NumpadAdd';
+      const zoomOut = e.key === '-' || e.code === 'Minus' || e.code === 'NumpadSubtract';
+
+      if (zoomIn) {
+        e.preventDefault();
+        zoomCanvasIn();
+      } else if (zoomOut) {
+        e.preventDefault();
+        zoomCanvasOut();
+      }
+    };
+
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [windowId, viewMode, zoomCanvasIn, zoomCanvasOut]);
+
   useEffect(() => {
     if (!windowId) return;
     let cancelled = false;
@@ -122,10 +172,13 @@ export const WindowEditor = () => {
               onComponentsRestored={onComponentsRestored}
               onComponentsUpdated={onComponentsUpdated}
               gridSize={editorGridSize}
+              viewScale={canvasViewScale}
             />
           )}
         </div>
-        <div className='fixed bottom-4 z-[60] flex flex-col gap-2' style={{ left: stackLeftPx }}>
+        <div
+          className='fixed bottom-4 z-[60] flex flex-row flex-wrap items-end gap-2'
+          style={{ left: stackLeftPx }}>
           {viewMode && testCharacter?.id ? (
             <GameLog
               characterId={testCharacter.id}
@@ -133,13 +186,8 @@ export const WindowEditor = () => {
               className='text-white hover:bg-white/15 hover:text-white'
             />
           ) : null}
-          {!viewMode && (
-            <div className='flex flex-col gap-0.5'>
-              <label
-                htmlFor='window-editor-grid'
-                className='text-[10px] font-medium uppercase tracking-wide text-white/70'>
-                Grid
-              </label>
+          {!viewMode ? (
+            <div className='flex flex-row flex-wrap items-center gap-2'>
               <Input
                 id='window-editor-grid'
                 type='number'
@@ -155,21 +203,64 @@ export const WindowEditor = () => {
                 className='h-8 w-12 border-white/25 bg-black/50 px-1 text-center text-xs text-white [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none'
                 aria-label='Editor grid size in pixels'
               />
+              <div className='flex flex-row items-center gap-0.5'>
+                <Button
+                  type='button'
+                  variant='ghost'
+                  size='icon'
+                  aria-label='Zoom editor canvas in'
+                  className='size-8 shrink-0 text-white hover:bg-white/15 hover:text-white'
+                  onClick={zoomCanvasIn}>
+                  <Plus className='size-4' strokeWidth={2} aria-hidden />
+                </Button>
+                <Button
+                  type='button'
+                  variant='ghost'
+                  size='icon'
+                  aria-label='Zoom editor canvas out'
+                  className='size-8 shrink-0 text-white hover:bg-white/15 hover:text-white'
+                  onClick={zoomCanvasOut}>
+                  <Minus className='size-4' strokeWidth={2} aria-hidden />
+                </Button>
+                <Button
+                  type='button'
+                  variant='ghost'
+                  size='icon'
+                  aria-label='Reset canvas zoom to 100%'
+                  className='size-8 shrink-0 text-white hover:bg-white/15 hover:text-white'
+                  onClick={() => setCanvasViewScale(1)}>
+                  <RotateCcw className='size-4' strokeWidth={2} aria-hidden />
+                </Button>
+                <Button
+                  type='button'
+                  variant='ghost'
+                  size='icon'
+                  aria-pressed={viewMode}
+                  aria-label={viewMode ? 'Return to window editor' : 'Preview with test character'}
+                  className='size-10 shrink-0 shadow-none hover:bg-white/15'
+                  style={{
+                    color: viewMode ? colorPrimary : colorWhite,
+                  }}
+                  onClick={() => setViewMode((prev) => !prev)}>
+                  <Eye className='size-4' strokeWidth={2} aria-hidden />
+                </Button>
+              </div>
             </div>
+          ) : (
+            <Button
+              type='button'
+              variant='ghost'
+              size='icon'
+              aria-pressed={viewMode}
+              aria-label={viewMode ? 'Return to window editor' : 'Preview with test character'}
+              className='size-10 shrink-0 shadow-none hover:bg-white/15'
+              style={{
+                color: viewMode ? colorPrimary : colorWhite,
+              }}
+              onClick={() => setViewMode((prev) => !prev)}>
+              <Eye className='size-4' strokeWidth={2} aria-hidden />
+            </Button>
           )}
-          <Button
-            type='button'
-            variant='ghost'
-            size='icon'
-            aria-pressed={viewMode}
-            aria-label={viewMode ? 'Return to window editor' : 'Preview with test character'}
-            className='size-10 shrink-0 shadow-none hover:bg-white/15'
-            style={{
-              color: viewMode ? colorPrimary : colorWhite,
-            }}
-            onClick={() => setViewMode((prev) => !prev)}>
-            <Eye className='size-4' strokeWidth={2} aria-hidden />
-          </Button>
         </div>
         <ComponentEditPanel viewMode={viewMode} />
       </div>
