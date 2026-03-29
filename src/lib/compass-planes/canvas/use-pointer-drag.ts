@@ -9,6 +9,28 @@ export type PointerDragFollower = { id: string; x: number; y: number };
 /** Device pixels before we treat the gesture as a drag (not a click). Avoids capturing the pointer immediately, which would retarget click/dblclick away from inner targets (e.g. text nodes). */
 const DRAG_THRESHOLD_PX = 5;
 
+/** While dragging windows/components over rich content, the browser may select text or drag images; suppress during the move and restore after. */
+function beginDocumentDragChromeSuppress(): () => void {
+  if (typeof document === 'undefined') {
+    return () => {};
+  }
+  const body = document.body;
+  const prevUserSelect = body.style.userSelect;
+  const prevWebkit = body.style.getPropertyValue('-webkit-user-select');
+  const prevMoz = body.style.getPropertyValue('-moz-user-select');
+  body.style.userSelect = 'none';
+  body.style.setProperty('-webkit-user-select', 'none');
+  body.style.setProperty('-moz-user-select', 'none');
+  window.getSelection()?.removeAllRanges();
+  return () => {
+    body.style.userSelect = prevUserSelect;
+    if (prevWebkit) body.style.setProperty('-webkit-user-select', prevWebkit);
+    else body.style.removeProperty('-webkit-user-select');
+    if (prevMoz) body.style.setProperty('-moz-user-select', prevMoz);
+    else body.style.removeProperty('-moz-user-select');
+  };
+}
+
 export type UsePointerDragOptions = {
   containerRef: React.RefObject<HTMLElement | null>;
   /** Omit or pass `null` / `0` to disable snapping. */
@@ -162,6 +184,7 @@ export function usePointerDrag({
 
       const el = e.currentTarget;
       let dragStarted = false;
+      let releaseDocumentDragChrome: (() => void) | null = null;
 
       const teardownWindow = () => {
         window.removeEventListener('pointermove', onMove);
@@ -179,6 +202,7 @@ export function usePointerDrag({
           const d = Math.hypot(ev.clientX - startClientX, ev.clientY - startClientY);
           if (d < DRAG_THRESHOLD_PX) return;
           dragStarted = true;
+          releaseDocumentDragChrome = beginDocumentDragChromeSuppress();
           try {
             (el as HTMLElement).setPointerCapture(pointerId);
           } catch {
@@ -255,6 +279,8 @@ export function usePointerDrag({
             }
           }
         } finally {
+          releaseDocumentDragChrome?.();
+          releaseDocumentDragChrome = null;
           optsRef.current.onDragEnd?.({ didCommit });
         }
       };

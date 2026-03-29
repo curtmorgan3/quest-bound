@@ -152,6 +152,8 @@ const ViewTextNodeComponent = ({
   const data = useNodeData(component);
   const css = useComponentStyles(component) as TextComponentStyle;
   const { width: cw, height: ch } = useComponentCanvasDimensions(component);
+  /** Sheet editor: idle text is not selectable so drag/click selection does not fight the canvas. */
+  const editorChrome = onDoubleClick != null;
 
   return (
     <div
@@ -174,6 +176,7 @@ const ViewTextNodeComponent = ({
           outlineColor: css.outlineColor,
           outlineWidth: css.outlineWidth,
           overflow: 'hidden',
+          ...(editorChrome ? { userSelect: 'none', WebkitUserSelect: 'none' } : {}),
         }}>
         <span
           onDoubleClick={onDoubleClick}
@@ -183,6 +186,7 @@ const ViewTextNodeComponent = ({
             outline: 'none',
             outlineColor: 'unset',
             outlineWidth: 'unset',
+            ...(editorChrome ? { userSelect: 'none', WebkitUserSelect: 'none' } : {}),
           }}>
           {data?.interpolatedValue}
         </span>

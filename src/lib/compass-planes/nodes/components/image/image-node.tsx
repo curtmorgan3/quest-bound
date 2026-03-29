@@ -57,6 +57,8 @@ export const EditImageNode = () => {
           <img
             src={imageSrc}
             alt=''
+            draggable={false}
+            onDragStart={(e) => e.preventDefault()}
             style={{
               width: '100%',
               height: '100%',
