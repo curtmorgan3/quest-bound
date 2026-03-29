@@ -10,7 +10,7 @@ import { colorPrimary, colorWhite } from '@/palette';
 import { db, WindowEditorProvider } from '@/stores';
 import type { Component } from '@/types';
 import { debugLog } from '@/utils';
-import { Eye, ScanSearch, ZoomIn, ZoomOut } from 'lucide-react';
+import { Eye, Magnet, ScanSearch, ZoomIn, ZoomOut } from 'lucide-react';
 import {
   canGroupSelection,
   canUngroupSelection,
@@ -24,6 +24,7 @@ import { ComponentEditPanel } from './component-edit-panel';
 const { log } = debugLog('pages', 'editor');
 
 const WINDOW_EDITOR_GRID_STORAGE_KEY = 'qb.windowEditor.gridSize';
+const WINDOW_EDITOR_SNAP_STORAGE_KEY = 'qb.windowEditor.snapToGrid';
 const WINDOW_EDITOR_GRID_MIN = 4;
 const WINDOW_EDITOR_GRID_MAX = 200;
 const CANVAS_VIEW_ZOOM_STEP = 1.12;
@@ -54,6 +55,16 @@ function readStoredWindowEditorGrid(): number {
   }
 }
 
+function readStoredSnapToGrid(): boolean {
+  try {
+    const raw = localStorage.getItem(WINDOW_EDITOR_SNAP_STORAGE_KEY);
+    if (raw === null) return true;
+    return raw === 'true';
+  } catch {
+    return true;
+  }
+}
+
 export const WindowEditor = () => {
   const { windowId } = useParams();
   const { open } = useSidebar();
@@ -71,6 +82,7 @@ export const WindowEditor = () => {
 
   const [viewMode, setViewMode] = useState<boolean>(false);
   const [editorGridSize, setEditorGridSize] = useState(readStoredWindowEditorGrid);
+  const [snapToGrid, setSnapToGrid] = useState(readStoredSnapToGrid);
   const [canvasViewScale, setCanvasViewScale] = useState(1);
   const getComponent = (id: string) => components.find((c) => c.id === id) ?? null;
 
@@ -82,6 +94,15 @@ export const WindowEditor = () => {
     setEditorGridSize(clamped);
     try {
       localStorage.setItem(WINDOW_EDITOR_GRID_STORAGE_KEY, String(clamped));
+    } catch {
+      /* ignore quota / private mode */
+    }
+  };
+
+  const persistSnapToGrid = (next: boolean) => {
+    setSnapToGrid(next);
+    try {
+      localStorage.setItem(WINDOW_EDITOR_SNAP_STORAGE_KEY, String(next));
     } catch {
       /* ignore quota / private mode */
     }
@@ -215,6 +236,7 @@ export const WindowEditor = () => {
               onComponentsDeleted={onComponentsDeleted}
               onComponentsRestored={onComponentsRestored}
               onComponentsUpdated={onComponentsUpdated}
+              useGrid={snapToGrid}
               gridSize={editorGridSize}
               viewScale={canvasViewScale}
             />
@@ -247,6 +269,21 @@ export const WindowEditor = () => {
                 className='h-8 w-12 border-white/25 bg-black/50 px-1 text-center text-xs text-white [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none'
                 aria-label='Editor grid size in pixels'
               />
+              <Button
+                type='button'
+                variant='ghost'
+                size='icon'
+                aria-pressed={snapToGrid}
+                aria-label={
+                  snapToGrid ? 'Turn snap to grid off' : 'Turn snap to grid on'
+                }
+                className='size-8 shrink-0 text-white hover:bg-white/15 hover:text-white'
+                style={{
+                  opacity: snapToGrid ? 1 : 0.45,
+                }}
+                onClick={() => persistSnapToGrid(!snapToGrid)}>
+                <Magnet className='size-4' strokeWidth={2} aria-hidden />
+              </Button>
               <div className='flex flex-row items-center gap-0.5'>
                 <Button
                   type='button'

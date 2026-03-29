@@ -15,7 +15,9 @@ interface SheetEditorProps {
   onComponentsCreated: (updates: Array<Partial<Component>>) => void;
   onComponentsDeleted: (ids: Array<string>) => void;
   onComponentsRestored?: (components: Component[]) => void;
-  /** Canvas snap / grid spacing in pixels. */
+  /** When false, no background grid and moves/resizes are not snapped to `gridSize`. */
+  useGrid?: boolean;
+  /** Canvas snap / grid spacing in pixels (when `useGrid` is true). */
   gridSize?: number;
   /** View-only canvas zoom; does not change stored layout. */
   viewScale?: number;
@@ -27,6 +29,7 @@ export const SheetEditor = ({
   onComponentsUpdated,
   onComponentsDeleted,
   onComponentsRestored,
+  useGrid = true,
   gridSize = DEFAULT_GRID_SIZE,
   viewScale = 1,
 }: SheetEditorProps) => {
@@ -90,6 +93,7 @@ export const SheetEditor = ({
         onSelectFromMenu={handleContextMenuSelection}
         onComponentsDeleted={wrappedOnComponentsDeleted}
         onComponentsUpdated={wrappedOnComponentsUpdated}
+        useGrid={useGrid}
         gridSize={gridSize}
         viewScale={viewScale}
       />
