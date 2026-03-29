@@ -47,6 +47,7 @@ function rectAfterResize(
   clientY: number,
   shiftKey: boolean,
   useGrid: boolean,
+  gridSizePx: number,
   minW: number,
   maxW: number,
   minH: number,
@@ -58,7 +59,7 @@ function rectAfterResize(
   w = clampDim(w, minW, maxW);
   h = clampDim(h, minH, maxH);
   if (useGrid) {
-    const g = DEFAULT_GRID_SIZE;
+    const g = Math.max(1, gridSizePx);
     ({ x, y, w, h } = snapRect(x, y, w, h, g));
     w = clampDim(w, minW, maxW);
     h = clampDim(h, minH, maxH);
@@ -204,6 +205,7 @@ export const ResizableNode = ({
     onResizeTransient,
     onResizeGestureEnd,
     useGrid,
+    gridSize: gridSizePx,
   } = useEditorCanvasChrome();
   const pos = useComponentPosition(component);
   const locked = component?.locked ?? props?.locked;
@@ -269,6 +271,7 @@ export const ResizableNode = ({
           ev.clientY,
           ev.shiftKey,
           useGrid,
+          gridSizePx,
           minW,
           maxW,
           minH,
@@ -309,6 +312,7 @@ export const ResizableNode = ({
               ev.clientY,
               ev.shiftKey,
               useGrid,
+              gridSizePx,
               minW,
               maxW,
               minH,
@@ -343,6 +347,7 @@ export const ResizableNode = ({
       onResizeGestureEnd,
       onResizeTransient,
       useGrid,
+      gridSizePx,
     ],
   );
 
@@ -374,7 +379,7 @@ export const ResizableNode = ({
 
   return (
     <div
-      className={`${locked ? 'nodrag' : className ?? ''}`}
+      className={`${locked ? 'nodrag' : (className ?? '')}`}
       style={{
         transform: `rotate(${pos.rotation}deg)`,
         zIndex: pos.z,

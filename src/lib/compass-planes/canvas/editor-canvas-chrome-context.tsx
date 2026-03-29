@@ -5,6 +5,8 @@ export type EditorCanvasChromeContextValue = {
   isSelected: (id: string) => boolean;
   onResizeCommit: (id: string, width: number, height: number, x: number, y: number) => void;
   useGrid: boolean;
+  /** Pixel step for snap and resize when `useGrid` is true. */
+  gridSize: number;
   /** Live box during resize (canvas space); omit if the host renders without transient geometry. */
   onResizeTransient?: (id: string, width: number, height: number, x: number, y: number) => void;
   /** Clear resize overlay when the gesture ends without a commit (cancel / no change). */
@@ -21,7 +23,9 @@ export function EditorCanvasChromeProvider({
   children: ReactNode;
 }) {
   return (
-    <EditorCanvasChromeContext.Provider value={value}>{children}</EditorCanvasChromeContext.Provider>
+    <EditorCanvasChromeContext.Provider value={value}>
+      {children}
+    </EditorCanvasChromeContext.Provider>
   );
 }
 

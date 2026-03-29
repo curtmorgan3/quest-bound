@@ -1,10 +1,11 @@
 import type { ComponentUpdate } from '@/lib/compass-api';
 import type { Component, Coordinates } from '@/types';
 import { useCallback } from 'react';
+import { DEFAULT_GRID_SIZE } from '../editor-config';
 import type { EditorMenuOption } from '../nodes';
 import { injectDefaultComponent } from '../utils/inject-defaults';
-import { contextOptions } from './sheet-context-options';
 import { SheetCanvasEditor } from './sheet-canvas-editor';
+import { contextOptions } from './sheet-context-options';
 import { useKeyboardControls } from './use-keyboard-controls';
 import { useUndoRedo } from './use-undo-redo';
 
@@ -14,6 +15,8 @@ interface SheetEditorProps {
   onComponentsCreated: (updates: Array<Partial<Component>>) => void;
   onComponentsDeleted: (ids: Array<string>) => void;
   onComponentsRestored?: (components: Component[]) => void;
+  /** Canvas snap / grid spacing in pixels. */
+  gridSize?: number;
 }
 
 export const SheetEditor = ({
@@ -22,6 +25,7 @@ export const SheetEditor = ({
   onComponentsUpdated,
   onComponentsDeleted,
   onComponentsRestored,
+  gridSize = DEFAULT_GRID_SIZE,
 }: SheetEditorProps) => {
   const { pushUndoSnapshot, undo, redo } = useUndoRedo({
     components,
@@ -83,6 +87,7 @@ export const SheetEditor = ({
         onSelectFromMenu={handleContextMenuSelection}
         onComponentsDeleted={wrappedOnComponentsDeleted}
         onComponentsUpdated={wrappedOnComponentsUpdated}
+        gridSize={gridSize}
       />
     </div>
   );

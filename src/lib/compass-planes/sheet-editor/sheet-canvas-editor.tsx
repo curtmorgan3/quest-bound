@@ -39,6 +39,8 @@ export interface SheetCanvasEditorProps {
   menuOptions?: EditorMenuOption[];
   onSelectFromMenu?: (option: EditorMenuOption, coordinates: Coordinates) => void;
   useGrid?: boolean;
+  /** Snap and background grid spacing in pixels (when `useGrid` is true). Defaults to `DEFAULT_GRID_SIZE`. */
+  gridSize?: number;
   backgroundColor?: string;
   backgroundOpacity?: number;
   backgroundImage?: string | null;
@@ -52,6 +54,7 @@ export function SheetCanvasEditor({
   menuOptions,
   onSelectFromMenu,
   useGrid = true,
+  gridSize: gridSizeProp = DEFAULT_GRID_SIZE,
   backgroundColor,
   backgroundOpacity,
   backgroundImage,
@@ -81,6 +84,12 @@ export function SheetCanvasEditor({
     width: number;
     height: number;
   } | null>(null);
+
+  const resolvedGridSize = useMemo(() => {
+    const n = Math.round(Number(gridSizeProp));
+    if (!Number.isFinite(n) || n < 1) return DEFAULT_GRID_SIZE;
+    return Math.min(200, Math.max(1, n));
+  }, [gridSizeProp]);
 
   const sorted = useMemo(() => [...components].sort((a, b) => a.z - b.z), [components]);
 
@@ -117,10 +126,11 @@ export function SheetCanvasEditor({
       isSelected,
       onResizeCommit,
       useGrid,
+      gridSize: resolvedGridSize,
       onResizeTransient,
       onResizeGestureEnd,
     }),
-    [isSelected, onResizeCommit, onResizeGestureEnd, onResizeTransient, useGrid],
+    [isSelected, onResizeCommit, onResizeGestureEnd, onResizeTransient, resolvedGridSize, useGrid],
   );
 
   const getDragItemDimensions = useCallback(
@@ -133,7 +143,7 @@ export function SheetCanvasEditor({
 
   const { beginMove } = usePointerDrag({
     containerRef: sectionRef,
-    gridSize: useGrid ? DEFAULT_GRID_SIZE : null,
+    gridSize: useGrid ? resolvedGridSize : null,
     getItemDimensions: getDragItemDimensions,
     onCommit: (updates) => {
       const next: Record<string, { x: number; y: number }> = {};
@@ -380,7 +390,7 @@ export function SheetCanvasEditor({
         )}
 
         <div className='pointer-events-none absolute inset-0 z-[1]'>
-          {useGrid && <CanvasGridBackground style={{ opacity }} />}
+          {useGrid && <CanvasGridBackground gridSize={resolvedGridSize} style={{ opacity }} />}
         </div>
 
         <div

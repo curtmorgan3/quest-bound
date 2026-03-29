@@ -78,6 +78,7 @@ describe('InventoryNode Component', () => {
           isSelected: () => false,
           onResizeCommit: cy.stub(),
           useGrid: true,
+          gridSize: 20,
         }}>
         <WindowEditorContext.Provider value={windowEditorContext}>
           <EditorItemIdProvider id={component.id}>
