@@ -4,7 +4,12 @@ import { Background, BackgroundVariant, ReactFlow } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { useEffect, useRef, useState } from 'react';
 import type { EditorMenuOption } from '../nodes/node-types';
+import { CanvasPointerSpike } from './canvas-pointer-spike';
 import { ContextMenu } from './context-menu';
+
+/** Phase 0: set `VITE_CANVAS_POINTER_SPIKE=1` when running `npm run dev` to show the native pointer spike. */
+const SHOW_CANVAS_POINTER_SPIKE =
+  import.meta.env.DEV && import.meta.env.VITE_CANVAS_POINTER_SPIKE === '1';
 
 interface BaseEditorProps extends ReactFlowProps {
   nodes: Node[];
@@ -30,6 +35,7 @@ export function BaseEditor({
   backgroundImage,
   ...props
 }: BaseEditorProps) {
+  const editorSectionRef = useRef<HTMLElement>(null);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
   const opacity = !backgroundColor && !backgroundImage ? 0.1 : (backgroundOpacity ?? 0.1);
   const longPressTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -59,6 +65,7 @@ export function BaseEditor({
 
   return (
     <section
+      ref={editorSectionRef}
       id='base-editor'
       className='flex-grow-1'
       style={{ position: 'relative' }}
@@ -166,6 +173,11 @@ export function BaseEditor({
           />
         )}
       </ReactFlow>
+      {SHOW_CANVAS_POINTER_SPIKE && (
+        <div aria-hidden className='pointer-events-none absolute inset-0 z-20 overflow-visible'>
+          <CanvasPointerSpike containerRef={editorSectionRef} />
+        </div>
+      )}
     </section>
   );
 }
