@@ -1,6 +1,7 @@
 import type { Component } from '@/types';
 import { useCallback, useRef } from 'react';
 
+import { clampRectInContainer } from '../../canvas/canvas-bounds';
 import { clientToCanvas, snapScalarToGrid } from '../../canvas/client-to-canvas';
 import { useEditorCanvasChrome } from '../../canvas/editor-canvas-chrome-context';
 import { DEFAULT_GRID_SIZE } from '../../editor-config';
@@ -62,7 +63,9 @@ function rectAfterResize(
     w = clampDim(w, minW, maxW);
     h = clampDim(h, minH, maxH);
   }
-  return { x, y, w, h };
+  const cw = container.clientWidth;
+  const ch = container.clientHeight;
+  return clampRectInContainer(x, y, w, h, cw, ch, minW, minH);
 }
 
 /**

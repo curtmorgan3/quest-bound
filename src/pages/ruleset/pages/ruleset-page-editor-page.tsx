@@ -1,6 +1,7 @@
 import { useCharacter, useCharacterAttributes, useRulesets } from '@/lib/compass-api';
 import { RulesetPageEditor } from '@/lib/compass-planes';
-import { CharacterProvider, type InventoryPanelConfig } from '@/stores';
+import { InventoryDragPreview } from '@/lib/compass-planes/nodes/components/inventory/inventory-drag-preview';
+import { CharacterProvider, InventoryDragProvider, type InventoryPanelConfig } from '@/stores';
 import type { CharacterAttribute } from '@/types';
 import { useState } from 'react';
 import { useParams } from 'react-router-dom';
@@ -35,28 +36,30 @@ export const RulesetPageEditorPage = () => {
   };
 
   return (
-    <CharacterProvider
-      value={{
-        character,
-        characterAttributes,
-        getCharacterAttribute,
-        updateCharacterAttribute: handleUpdateCharacterAttribute,
-        updateCharacterComponentData: handleCharacterComponentDataUpdate,
-        inventoryPanelConfig,
-        setInventoryPanelConfig,
-        inventoryItems: [],
-        addInventoryItem: () => {},
-        updateInventoryItem: () => {},
-        removeInventoryItem: () => {},
-        fireAction: () => {},
-        fireActionFromItem: () => {},
-        consumeItem: () => {},
-        activateItem: () => {},
-      }}>
-      <div className='flex flex-col' style={{ overflow: 'hidden' }}>
-        <RulesetPageEditor pageId={pageId} />
-      </div>
-    </CharacterProvider>
+    <InventoryDragProvider>
+      <CharacterProvider
+        value={{
+          character,
+          characterAttributes,
+          getCharacterAttribute,
+          updateCharacterAttribute: handleUpdateCharacterAttribute,
+          updateCharacterComponentData: handleCharacterComponentDataUpdate,
+          inventoryPanelConfig,
+          setInventoryPanelConfig,
+          inventoryItems: [],
+          addInventoryItem: () => {},
+          updateInventoryItem: () => {},
+          removeInventoryItem: () => {},
+          fireAction: () => {},
+          fireActionFromItem: () => {},
+          consumeItem: () => {},
+          activateItem: () => {},
+        }}>
+        <div className='flex flex-col' style={{ overflow: 'hidden' }}>
+          <RulesetPageEditor pageId={pageId} />
+        </div>
+      </CharacterProvider>
+      <InventoryDragPreview />
+    </InventoryDragProvider>
   );
 };
-

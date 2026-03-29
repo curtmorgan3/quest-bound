@@ -1,6 +1,5 @@
 import { useComponents } from '@/lib/compass-api';
 import { CharacterContext } from '@/stores';
-import '@xyflow/react/dist/style.css';
 import { ExternalLink, OctagonMinus, OctagonX } from 'lucide-react';
 import { useCallback, useContext, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';

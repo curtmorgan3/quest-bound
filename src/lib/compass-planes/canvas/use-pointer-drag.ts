@@ -1,6 +1,7 @@
 import type { ComponentUpdate } from '@/lib/compass-api';
 import { useCallback, useRef } from 'react';
 
+import { clampCanvasPositions } from './canvas-bounds';
 import { clientToCanvas, snapPointToGrid } from './client-to-canvas';
 
 export type PointerDragFollower = { id: string; x: number; y: number };
@@ -24,6 +25,8 @@ export type UsePointerDragOptions = {
   canDrag?: (id: string) => boolean;
   /** If true, skip `onCommit` when the leader's snapped position equals its start. */
   skipCommitIfUnchanged?: boolean;
+  /** When set with a resolved container, dragged positions are clamped so each item stays inside the container. */
+  getItemDimensions?: (id: string) => { width: number; height: number };
 };
 
 type DragPhase = {
@@ -79,6 +82,7 @@ export function usePointerDrag({
   onDragEnd,
   canDrag = () => true,
   skipCommitIfUnchanged = true,
+  getItemDimensions,
 }: UsePointerDragOptions) {
   const optsRef = useRef({
     onCommit,
@@ -88,6 +92,7 @@ export function usePointerDrag({
     skipCommitIfUnchanged,
     gridSize: gridSize ?? null,
     containerRef,
+    getItemDimensions,
   });
   optsRef.current = {
     onCommit,
@@ -97,6 +102,7 @@ export function usePointerDrag({
     skipCommitIfUnchanged,
     gridSize: gridSize ?? null,
     containerRef,
+    getItemDimensions,
   };
 
   const phaseRef = useRef<DragPhase | null>(null);
@@ -189,7 +195,7 @@ export function usePointerDrag({
         const cur = clientToCanvas(ev.clientX, ev.clientY, c);
         const rawDx = cur.x - ph.startLocalX;
         const rawDy = cur.y - ph.startLocalY;
-        const positions = positionsForDelta(
+        let positions = positionsForDelta(
           ph.leaderId,
           ph.originX,
           ph.originY,
@@ -198,6 +204,10 @@ export function usePointerDrag({
           rawDy,
           oc.gridSize,
         );
+        const dim = oc.getItemDimensions;
+        if (dim && c) {
+          positions = clampCanvasPositions(positions, c, dim);
+        }
         lastPositionsRef.current = positions;
         pendingRef.current = positions;
         scheduleTransient();

@@ -6,19 +6,12 @@ import {
 } from '@/lib/compass-api';
 import { db } from '@/stores';
 import type { CharacterWindow } from '@/types';
-import type { Node, NodeChange, NodePositionChange } from '@xyflow/react';
-import { applyNodeChanges } from '@xyflow/react';
-import '@xyflow/react/dist/style.css';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { BaseEditor } from '../base-editor';
 import { dispatchSheetViewerBackdropClick } from './backdrop-click-event';
+import { WindowCanvasHost } from './window-canvas-host';
 import { WindowNode } from './window-node';
 import { WindowsTabs } from './windows-tabs';
-
-const windowNodeTypes = {
-  window: WindowNode,
-};
 
 interface SheetViewerProps {
   characterId?: string;
@@ -32,7 +25,7 @@ interface SheetViewerProps {
   /** Called when the locked state changes (e.g. to persist). */
   onLockedChange?: (locked: boolean) => void;
   editorWindowId?: string;
-  /** When true, no background color/image is shown; only the React Flow nodes are visible. */
+  /** When true, no page background color/image is shown (e.g. character editor embed). */
   transparentBackground?: boolean;
   /** When true, windows marked as hidden from player view are still shown in the add-window list. */
   showHiddenWindows?: boolean;
@@ -162,151 +155,46 @@ export const SheetViewer = ({
     }
   };
 
-  function convertWindowsToNode(windows: CharacterWindow[]): Node[] {
-    return windows.map((window, index) => {
-      const position = { x: window.x, y: window.y };
-
-      return {
-        id: `window-${window.id}`,
-        type: 'window',
-        position,
-        draggable: !locked,
-        selectable: false,
-        zIndex: index, // Render the lastest one open on top
-        data: {
-          locked,
-          window,
-          onMinimize: !editorWindowId
-            ? (id: string) => {
-                onWindowUpdated?.({ id, isCollapsed: true });
-              }
-            : undefined,
-          onClose: !editorWindowId
-            ? (id: string) => {
-                onWindowDeleted?.(id);
-              }
-            : undefined,
-          onChildWindowClick: (childWindowId: string, parentWindow: { x: number; y: number }) =>
-            handleChildWindowClick(childWindowId, parentWindow, window),
-        },
-      };
-    });
-  }
-
-  const [nodes, setNodes] = useState<Node[]>(() => convertWindowsToNode(openCharacterWindows));
-  const positionUpdateTimeouts = useRef<Map<string, NodeJS.Timeout>>(new Map());
-
-  useEffect(() => {
-    setNodes(convertWindowsToNode(openCharacterWindows));
-  }, [openCharacterWindows, locked]);
-
-  const onNodesChange = (changes: NodeChange[]) => {
-    for (const change of changes) {
-      if (change.type === 'position' && change.position) {
-        const positionChange = change as NodePositionChange;
-        const windowId = positionChange.id.replace('window-', '');
-        const { x, y } = positionChange.position!;
-
-        // Clear existing timeout for this window
-        const existingTimeout = positionUpdateTimeouts.current.get(windowId);
-        if (existingTimeout) {
-          clearTimeout(existingTimeout);
-        }
-
-        // Debounce the update call
-        const timeout = setTimeout(() => {
-          onWindowUpdated?.({ id: windowId, x, y });
-          positionUpdateTimeouts.current.delete(windowId);
-        }, 150);
-
-        positionUpdateTimeouts.current.set(windowId, timeout);
-      }
-    }
-
-    setNodes((prev) => applyNodeChanges(changes, prev));
-  };
-
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', position: 'relative' }}>
-      {locked ? (
-        <div
-          style={{ position: 'relative', flex: 1, overflow: 'hidden' }}
-          onClick={(e) => {
-            if (!(e.target as Element).closest('.window-node')) {
-              dispatchSheetViewerBackdropClick(e.clientX, e.clientY);
-            }
-          }}>
-          {!transparentBackground && !editorWindowId && currentPage?.backgroundColor != null && (
-            <div
-              aria-hidden
-              style={{
-                position: 'absolute',
-                inset: 0,
-                zIndex: 0,
-                backgroundColor: currentPage.backgroundColor,
-                opacity: currentPage.backgroundOpacity ?? 1,
-                pointerEvents: 'none',
+      <WindowCanvasHost
+        className='relative min-h-0 w-full flex-1 overflow-hidden'
+        windows={openCharacterWindows}
+        locked={locked}
+        onWindowPositionUpdate={(id, x, y) => onWindowUpdated?.({ id, x, y })}
+        transparentBackground={transparentBackground && !editorWindowId}
+        backgroundColor={
+          !transparentBackground && !editorWindowId ? currentPage?.backgroundColor : undefined
+        }
+        backgroundImage={!transparentBackground && !editorWindowId ? currentPage?.image : undefined}
+        backgroundOpacity={!transparentBackground && !editorWindowId ? currentPage?.backgroundOpacity : undefined}
+        onBackdropClick={(clientX, clientY) =>
+          dispatchSheetViewerBackdropClick(clientX, clientY)
+        }
+        renderWindow={(window, layout) => {
+          const wAt = { ...window, x: layout.x, y: layout.y };
+          return (
+            <WindowNode
+              data={{
+                locked,
+                window: wAt,
+                onMinimize: !editorWindowId
+                  ? (id: string) => {
+                      onWindowUpdated?.({ id, isCollapsed: true });
+                    }
+                  : undefined,
+                onClose: !editorWindowId
+                  ? (id: string) => {
+                      onWindowDeleted?.(id);
+                    }
+                  : undefined,
+                onChildWindowClick: (childWindowId, parentWindow) =>
+                  handleChildWindowClick(childWindowId, parentWindow, wAt),
               }}
             />
-          )}
-          {!transparentBackground && currentPage?.image != null && (
-            <div
-              aria-hidden
-              style={{
-                position: 'absolute',
-                inset: 0,
-                zIndex: 0,
-                backgroundImage: `url(${currentPage.image})`,
-                backgroundSize: 'cover',
-                backgroundPosition: 'center',
-                backgroundRepeat: 'no-repeat',
-                opacity: currentPage.backgroundOpacity ?? 1,
-                pointerEvents: 'none',
-              }}
-            />
-          )}
-          {openCharacterWindows.map((window, index) => (
-            <div
-              key={window.id}
-              style={{
-                position: 'absolute',
-                left: window.x,
-                top: window.y,
-                zIndex: index + 1,
-              }}>
-              <WindowNode
-                data={{
-                  locked,
-                  window,
-                  onMinimize: !editorWindowId
-                    ? (id: string) => onWindowUpdated?.({ id, isCollapsed: true })
-                    : undefined,
-                  onClose: !editorWindowId ? (id: string) => onWindowDeleted?.(id) : undefined,
-                  onChildWindowClick: (childWindowId, parentWindow) =>
-                    handleChildWindowClick(childWindowId, parentWindow, window),
-                }}
-              />
-            </div>
-          ))}
-        </div>
-      ) : (
-        <BaseEditor
-          nodes={nodes}
-          onNodesChange={onNodesChange}
-          nodeTypes={windowNodeTypes}
-          useGrid={false}
-          nodesConnectable={false}
-          selectNodesOnDrag={false}
-          panOnScroll={false}
-          zoomOnScroll={false}
-          nodesDraggable={!locked}
-          renderContextMenu={false}
-          backgroundColor={transparentBackground ? undefined : currentPage?.backgroundColor}
-          backgroundImage={transparentBackground ? undefined : currentPage?.image}
-          backgroundOpacity={currentPage?.backgroundOpacity}
-          onPaneClick={(e) => dispatchSheetViewerBackdropClick(e.clientX, e.clientY)}
-        />
-      )}
+          );
+        }}
+      />
       {!editorWindowId && (
         <WindowsTabs
           pageId={currentPageId}

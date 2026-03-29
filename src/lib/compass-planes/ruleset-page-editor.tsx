@@ -16,19 +16,10 @@ import {
 import { repairOrphanCharacterWindowsForRulesetWindows } from '@/lib/compass-api/utils/default-archetype-test-character';
 import { PageDetailsForm } from '@/lib/compass-planes/page-details-form';
 import type { RulesetWindow as RulesetWindowType } from '@/types';
-import type { Node, NodeChange, NodePositionChange } from '@xyflow/react';
-import { applyNodeChanges } from '@xyflow/react';
-import '@xyflow/react/dist/style.css';
 import { Pencil, Plus } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { InventoryDragProvider } from '@/stores';
-import { BaseEditor } from './base-editor';
-import { InventoryDragPreview } from './nodes/components/inventory/inventory-drag-preview';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { WindowCanvasHost } from './sheet-viewer/window-canvas-host';
 import { WindowNode } from './sheet-viewer/window-node';
-
-const windowNodeTypes = {
-  window: WindowNode,
-};
 
 interface RulesetPageEditorProps {
   /** Page entity id (from route /rulesets/:rulesetId/pages/:pageId). */
@@ -100,69 +91,8 @@ export const RulesetPageEditor = ({ pageId }: RulesetPageEditorProps) => {
         isCollapsed: false,
       });
     },
-    [
-      templateWindows,
-      rulesetWindowDefs,
-      effectivePageId,
-      createRulesetWindow,
-      deleteRulesetWindow,
-    ],
+    [templateWindows, rulesetWindowDefs, effectivePageId, createRulesetWindow, deleteRulesetWindow],
   );
-
-  const convertWindowsToNode = (windows: RulesetWindowType[]): Node[] => {
-    return windows.map((window, index) => {
-      const position = { x: window.x, y: window.y };
-
-      return {
-        id: `window-${window.id}`,
-        type: 'window',
-        position,
-        draggable: true,
-        selectable: false,
-        zIndex: index,
-        data: {
-          window,
-          locked: false,
-          onClose: (id: string) => deleteRulesetWindow(id),
-          onChildWindowClick: (childWindowId: string, parentWindow: { x: number; y: number }) =>
-            handleChildWindowClick(childWindowId, parentWindow, window),
-          editWindowHref:
-            activeRuleset?.id != null
-              ? `/rulesets/${activeRuleset.id}/windows/${window.windowId}`
-              : undefined,
-        },
-      };
-    });
-  };
-
-  const [nodes, setNodes] = useState<Node[]>(convertWindowsToNode(templateWindows));
-  const positionUpdateTimeouts = useRef<Map<string, NodeJS.Timeout>>(new Map());
-
-  useEffect(() => {
-    setNodes(convertWindowsToNode(templateWindows));
-  }, [templateWindows, activeRuleset?.id]);
-
-  const onNodesChange = (changes: NodeChange[]) => {
-    for (const change of changes) {
-      if (change.type === 'position' && change.position) {
-        const positionChange = change as NodePositionChange;
-        const windowId = positionChange.id.replace('window-', '');
-        const { x, y } = positionChange.position!;
-
-        const existingTimeout = positionUpdateTimeouts.current.get(windowId);
-        if (existingTimeout) clearTimeout(existingTimeout);
-
-        const timeout = setTimeout(() => {
-          updateRulesetWindow(windowId, { x, y });
-          positionUpdateTimeouts.current.delete(windowId);
-        }, 150);
-
-        positionUpdateTimeouts.current.set(windowId, timeout);
-      }
-    }
-
-    setNodes((prev) => applyNodeChanges(changes, prev));
-  };
 
   const handleAddWindow = async (windowDef: { id: string; title: string }) => {
     if (!effectivePageId) return;
@@ -179,22 +109,33 @@ export const RulesetPageEditor = ({ pageId }: RulesetPageEditorProps) => {
   };
 
   return (
-    <InventoryDragProvider>
-      <div style={{ display: 'flex', flexDirection: 'column', height: '100%', position: 'relative' }}>
-        <BaseEditor
-        nodes={nodes}
-        onNodesChange={onNodesChange}
-        nodeTypes={windowNodeTypes}
-        useGrid={false}
-        nodesConnectable={false}
-        selectNodesOnDrag={false}
-        panOnScroll={false}
-        zoomOnScroll={false}
-        nodesDraggable
-        renderContextMenu={false}
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', position: 'relative' }}>
+      <WindowCanvasHost
+        className='relative min-h-0 min-w-0 flex-1 overflow-hidden'
+        windows={templateWindows}
+        locked={false}
+        onWindowPositionUpdate={(id, x, y) => updateRulesetWindow(id, { x, y })}
         backgroundColor={currentPage?.backgroundColor}
         backgroundImage={currentPage?.image}
         backgroundOpacity={currentPage?.backgroundOpacity}
+        renderWindow={(window, layout) => {
+          const wAt = { ...window, x: layout.x, y: layout.y };
+          return (
+            <WindowNode
+              data={{
+                window: wAt,
+                locked: false,
+                onClose: (id: string) => deleteRulesetWindow(id),
+                onChildWindowClick: (childWindowId, parentWindow) =>
+                  handleChildWindowClick(childWindowId, parentWindow, wAt),
+                editWindowHref:
+                  activeRuleset?.id != null
+                    ? `/rulesets/${activeRuleset.id}/windows/${window.windowId}`
+                    : undefined,
+              }}
+            />
+          );
+        }}
       />
       {currentPage && (
         <div
@@ -315,8 +256,6 @@ export const RulesetPageEditor = ({ pageId }: RulesetPageEditorProps) => {
           </div>
         </DialogContent>
       </Dialog>
-      <InventoryDragPreview />
     </div>
-    </InventoryDragProvider>
   );
 };

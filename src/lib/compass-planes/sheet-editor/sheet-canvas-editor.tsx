@@ -12,10 +12,10 @@ import {
 } from 'react';
 
 import { WindowEditorContext } from '@/stores';
-import { CanvasPointerSpike } from '../base-editor/canvas-pointer-spike';
 import { ContextMenu } from '../base-editor/context-menu';
 import {
   CanvasGridBackground,
+  clampTopLeftInRect,
   clientToCanvas,
   EditorCanvasChromeProvider,
   EditorItemIdProvider,
@@ -27,14 +27,12 @@ import { isAdditiveEditorSelection } from '../canvas/selection-modifiers';
 import { DEFAULT_GRID_SIZE } from '../editor-config';
 import { sheetNodeTypes, type EditorMenuOption } from '../nodes';
 import { ComponentTypes } from '../nodes/node-types';
+import { injectDefaultComponent } from '../utils/inject-defaults';
 import {
   updatesForClickSelection,
   updatesForMarqueeSelection,
   updatesToClearSelection,
 } from './selection-updates';
-
-const SHOW_CANVAS_POINTER_SPIKE =
-  import.meta.env.DEV && import.meta.env.VITE_CANVAS_POINTER_SPIKE === '1';
 
 export interface SheetCanvasEditorProps {
   components: Component[];
@@ -125,9 +123,18 @@ export function SheetCanvasEditor({
     [isSelected, onResizeCommit, onResizeGestureEnd, onResizeTransient, useGrid],
   );
 
+  const getDragItemDimensions = useCallback(
+    (id: string) => {
+      const c = components.find((x) => x.id === id);
+      return { width: c?.width ?? 1, height: c?.height ?? 1 };
+    },
+    [components],
+  );
+
   const { beginMove } = usePointerDrag({
     containerRef: sectionRef,
     gridSize: useGrid ? DEFAULT_GRID_SIZE : null,
+    getItemDimensions: getDragItemDimensions,
     onCommit: (updates) => {
       const next: Record<string, { x: number; y: number }> = {};
       for (const u of updates) {
@@ -226,9 +233,38 @@ export function SheetCanvasEditor({
     const sidebarOffset = sidebarCollapsed ? 47 : 255;
     const adjX = clientX - sidebarOffset;
     const root = sectionRef.current;
-    const add = root ? clientToCanvas(adjX, clientY, root) : { x: 0, y: 0 };
+    let add = root ? clientToCanvas(adjX, clientY, root) : { x: 0, y: 0 };
+    if (root) {
+      add = clampTopLeftInRect(add.x, add.y, 1, 1, root.clientWidth, root.clientHeight);
+    }
     setContextMenu({ clientX, clientY, add });
   }, []);
+
+  const onContextMenuSelect = useCallback(
+    (option: EditorMenuOption, coordinates: Coordinates) => {
+      if (!onSelectFromMenu) return;
+      const root = sectionRef.current;
+      const draft = injectDefaultComponent({
+        type: option.nodeType,
+        x: coordinates.x,
+        y: coordinates.y,
+      });
+      if (!draft || !root) {
+        onSelectFromMenu(option, coordinates);
+        return;
+      }
+      const clamped = clampTopLeftInRect(
+        coordinates.x,
+        coordinates.y,
+        draft.width,
+        draft.height,
+        root.clientWidth,
+        root.clientHeight,
+      );
+      onSelectFromMenu(option, clamped);
+    },
+    [onSelectFromMenu],
+  );
 
   const onItemPointerDown = useCallback(
     (e: React.PointerEvent, c: Component) => {
@@ -414,18 +450,12 @@ export function SheetCanvasEditor({
           <ContextMenu
             isOpen
             options={menuOptions ?? []}
-            onSelect={(...args) => onSelectFromMenu?.(...args)}
+            onSelect={onContextMenuSelect}
             onClose={() => setContextMenu(null)}
             x={contextMenu.clientX}
             y={contextMenu.clientY}
             addComponentCoordinates={contextMenu.add}
           />
-        )}
-
-        {SHOW_CANVAS_POINTER_SPIKE && (
-          <div aria-hidden className='pointer-events-none absolute inset-0 z-20 overflow-visible'>
-            <CanvasPointerSpike containerRef={sectionRef} />
-          </div>
         )}
       </section>
     </EditorCanvasChromeProvider>

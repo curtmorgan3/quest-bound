@@ -1,3 +1,4 @@
+export * from './canvas-bounds';
 export * from './canvas-grid-background';
 export * from './canvas-marquee-layer';
 export * from './client-to-canvas';
