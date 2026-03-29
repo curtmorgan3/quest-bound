@@ -1,8 +1,9 @@
+import { Button } from '@/components/ui/button';
 import { useSidebar } from '@/components/ui/sidebar';
 import { useComponents, useRulesets, type ComponentUpdate } from '@/lib/compass-api';
 import { repairOrphanCharacterWindowsForRulesetWindows } from '@/lib/compass-api/utils/default-archetype-test-character';
 import { SheetEditor } from '@/lib/compass-planes';
-import { CharacterPage } from '@/pages/characters';
+import { CharacterPage, GameLog } from '@/pages/characters';
 import { colorPrimary, colorWhite } from '@/palette';
 import { db, WindowEditorProvider } from '@/stores';
 import type { Component } from '@/types';
@@ -58,7 +59,7 @@ export const WindowEditor = () => {
     replaceComponents(restored);
   };
 
-  const eyeLeft = open ? 265 : 65;
+  const stackLeftPx = open ? 265 : 65;
 
   useEffect(() => {
     if (!windowId) return;
@@ -81,7 +82,7 @@ export const WindowEditor = () => {
       <div className='relative flex h-full min-h-0 w-full flex-col overflow-hidden'>
         <div className='flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden'>
           {viewMode ? (
-            <CharacterPage id={testCharacter?.id} editorWindowId={windowId} />
+            <CharacterPage id={testCharacter?.id} editorWindowId={windowId} hideGameLog />
           ) : (
             <SheetEditor
               components={components}
@@ -92,16 +93,28 @@ export const WindowEditor = () => {
             />
           )}
         </div>
-        <Eye
-          className='clickable'
-          onClick={() => setViewMode((prev) => !prev)}
-          style={{
-            position: 'absolute',
-            left: eyeLeft,
-            bottom: 55,
-            color: viewMode ? colorPrimary : colorWhite,
-          }}
-        />
+        <div className='fixed bottom-4 z-[60] flex flex-col' style={{ left: stackLeftPx }}>
+          {viewMode && testCharacter?.id ? (
+            <GameLog
+              characterId={testCharacter.id}
+              docked
+              className='text-white hover:bg-white/15 hover:text-white'
+            />
+          ) : null}
+          <Button
+            type='button'
+            variant='ghost'
+            size='icon'
+            aria-pressed={viewMode}
+            aria-label={viewMode ? 'Return to window editor' : 'Preview with test character'}
+            className='size-10 shrink-0 shadow-none hover:bg-white/15'
+            style={{
+              color: viewMode ? colorPrimary : colorWhite,
+            }}
+            onClick={() => setViewMode((prev) => !prev)}>
+            <Eye className='size-4' strokeWidth={2} aria-hidden />
+          </Button>
+        </div>
         <ComponentEditPanel viewMode={viewMode} />
       </div>
     </WindowEditorProvider>

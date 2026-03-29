@@ -71,9 +71,9 @@ export function SheetCanvasEditor({
     add: Coordinates;
   } | null>(null);
 
-  const [movePreviewById, setMovePreviewById] = useState<
-    Record<string, { x: number; y: number }>
-  >({});
+  const [movePreviewById, setMovePreviewById] = useState<Record<string, { x: number; y: number }>>(
+    {},
+  );
   const [resizePreview, setResizePreview] = useState<{
     id: string;
     x: number;
@@ -256,8 +256,8 @@ export function SheetCanvasEditor({
       const clamped = clampTopLeftInRect(
         coordinates.x,
         coordinates.y,
-        draft.width,
-        draft.height,
+        draft.width ?? 0,
+        draft.height ?? 0,
         root.clientWidth,
         root.clientHeight,
       );
@@ -280,7 +280,9 @@ export function SheetCanvasEditor({
         const movableSelected = components.filter((x) => x.selected && !x.locked);
         const followers =
           c.selected && movableSelected.length > 1
-            ? movableSelected.filter((x) => x.id !== c.id).map((x) => ({ id: x.id, x: x.x, y: x.y }))
+            ? movableSelected
+                .filter((x) => x.id !== c.id)
+                .map((x) => ({ id: x.id, x: x.x, y: x.y }))
             : undefined;
         beginMove(e, { id: c.id, x: c.x, y: c.y, followers });
       }

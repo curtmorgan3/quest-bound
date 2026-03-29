@@ -324,10 +324,10 @@ export const CharacterPage = ({
         />
 
         {!hideGameLog && (
-          <GameLog
-            className={`fixed bottom-[50px] z-30 ${open ? 'left-[295px]' : 'left-[85px]'}`}
-            characterId={character?.id ?? routeCharacterId}
-          />
+          <div
+            className={`fixed bottom-4 z-30 flex flex-col gap-2 ${open ? 'left-[295px]' : 'left-[85px]'}`}>
+            <GameLog characterId={character?.id ?? routeCharacterId} docked />
+          </div>
         )}
         <InventoryPanel
           open={inventoryPanelConfig.open ?? false}

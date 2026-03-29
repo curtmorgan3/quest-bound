@@ -1,6 +1,7 @@
 import { Checkbox, Label } from '@/components';
 import { Button } from '@/components/ui/button';
 import { useScriptLogs, useUsers } from '@/lib/compass-api';
+import { cn } from '@/lib/utils';
 import { colorPrimary } from '@/palette';
 import type { ScriptLog } from '@/types';
 import { format } from 'date-fns';
@@ -21,9 +22,14 @@ interface GameLogProps {
   className?: string;
   /** When set, clear only resets the view for this character (no delete); only last N logs after reset are shown. */
   characterId?: string;
+  /**
+   * When true, the toggle is in normal flow inside a positioned parent; the panel opens above the toggle.
+   * Use with a fixed bottom-left stack (e.g. window editor preview + log).
+   */
+  docked?: boolean;
 }
 
-export const GameLog = ({ className, characterId }: GameLogProps) => {
+export const GameLog = ({ className, characterId, docked = false }: GameLogProps) => {
   const { logs: scriptLogs, clearLogs } = useScriptLogs(
     GAME_LOG_LIMIT,
     undefined,
@@ -65,78 +71,92 @@ export const GameLog = ({ className, characterId }: GameLogProps) => {
     })
     .filter((log) => !!log.msg);
 
+  const toggleButton = (
+    <Button
+      variant='ghost'
+      size='icon'
+      onClick={() => setOpen((o) => !o)}
+      aria-label='Toggle game log'
+      className={cn('clickable shrink-0', docked && 'h-10 w-10 shadow-none', className)}>
+      <ScrollText className='size-4' />
+    </Button>
+  );
+
+  const panelClasses = docked
+    ? 'absolute bottom-full left-0 z-[100] mb-2 flex w-80 max-h-[250px] flex-col rounded-lg border bg-background shadow-lg'
+    : 'fixed bottom-[90px] left-[55px] z-50 flex w-80 max-h-[250px] flex-col rounded-lg border bg-background shadow-lg';
+
+  const panel = open ? (
+    <div className={panelClasses} role='dialog' aria-label='Game log'>
+      <div className='flex items-center justify-between border-b px-3 py-2'>
+        <span className='text-sm font-medium'>Game log</span>
+        <div className='flex gap-2'>
+          <Button
+            variant='ghost'
+            size='icon'
+            onClick={clearLogs}
+            aria-label='Clear game log'
+            className='size-7'>
+            <CircleOff className='size-3.5' />
+          </Button>
+          <Button
+            variant='ghost'
+            size='icon'
+            onClick={() => setOpen(false)}
+            aria-label='Close game log'
+            className='size-7'>
+            <X className='size-3.5' />
+          </Button>
+        </div>
+      </div>
+      <div className='flex max-h-64 flex-col gap-2 p-2'>
+        <div className='flex items-center gap-2'>
+          <Checkbox
+            id='character-game-log-show-auto'
+            checked={showAutoEntries}
+            onCheckedChange={(c) => handleShowAutoEntriesChange(c === true)}
+            aria-label='Show auto entries'
+            data-testid='character-game-log-show-auto'
+          />
+          <Label
+            htmlFor='character-game-log-show-auto'
+            className='cursor-pointer text-xs font-normal text-muted-foreground'>
+            Show auto entries
+          </Label>
+        </div>
+        <div className='min-h-0 max-h-[160px] flex-1 overflow-y-auto'>
+          {logs.length === 0 ? (
+            <p className='text-xs text-muted-foreground'>No log entries yet.</p>
+          ) : (
+            <div className='flex flex-col gap-0.5 font-mono text-xs'>
+              {logs.map((log, i) => (
+                <div key={i} className='break-words'>
+                  <span className='text-muted-foreground'>{`[${log.time}]: `}</span>
+                  <span style={log.isAuto ? { color: colorPrimary } : undefined}>
+                    {log.isAuto ? `[QB] ${log.msg}` : log.msg}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  ) : null;
+
+  if (docked) {
+    return (
+      <div className='relative'>
+        {toggleButton}
+        {panel}
+      </div>
+    );
+  }
+
   return (
     <>
-      <Button
-        variant='ghost'
-        size='icon'
-        onClick={() => setOpen((o) => !o)}
-        aria-label='Toggle game log'
-        className={`${className} clickable`}>
-        <ScrollText className='size-4' />
-      </Button>
-      {open && (
-        <>
-          <div
-            className='fixed bottom-[90px] left-[55px] z-50 flex w-80 max-h-[250px] flex-col rounded-lg border bg-background shadow-lg'
-            role='dialog'
-            aria-label='Game log'>
-            <div className='flex items-center justify-between border-b px-3 py-2'>
-              <span className='text-sm font-medium'>Game log</span>
-              <div className='flex gap-2'>
-                <Button
-                  variant='ghost'
-                  size='icon'
-                  onClick={clearLogs}
-                  aria-label='Clear game log'
-                  className='size-7'>
-                  <CircleOff className='size-3.5' />
-                </Button>
-                <Button
-                  variant='ghost'
-                  size='icon'
-                  onClick={() => setOpen(false)}
-                  aria-label='Close game log'
-                  className='size-7'>
-                  <X className='size-3.5' />
-                </Button>
-              </div>
-            </div>
-            <div className='flex max-h-64 flex-col gap-2 p-2'>
-              <div className='flex items-center gap-2'>
-                <Checkbox
-                  id='character-game-log-show-auto'
-                  checked={showAutoEntries}
-                  onCheckedChange={(c) => handleShowAutoEntriesChange(c === true)}
-                  aria-label='Show auto entries'
-                  data-testid='character-game-log-show-auto'
-                />
-                <Label
-                  htmlFor='character-game-log-show-auto'
-                  className='cursor-pointer text-xs font-normal text-muted-foreground'>
-                  Show auto entries
-                </Label>
-              </div>
-              <div className='min-h-0 flex-1 overflow-y-auto max-h-[160px]'>
-                {logs.length === 0 ? (
-                  <p className='text-xs text-muted-foreground'>No log entries yet.</p>
-                ) : (
-                  <div className='flex flex-col gap-0.5 font-mono text-xs'>
-                    {logs.map((log, i) => (
-                      <div key={i} className='break-words'>
-                        <span className='text-muted-foreground'>{`[${log.time}]: `}</span>
-                        <span style={log.isAuto ? { color: colorPrimary } : undefined}>
-                          {log.isAuto ? `[QB] ${log.msg}` : log.msg}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </>
-      )}
+      {toggleButton}
+      {panel}
     </>
   );
 };
