@@ -7,6 +7,7 @@ import {
 import { CharacterContext, WindowEditorContext, useInventoryDragContext } from '@/stores';
 import type { Component, InventoryComponentData } from '@/types';
 import { useEditorItemId } from '@/lib/compass-planes/canvas/editor-item-context';
+import { useComponentCanvasDimensions } from '@/lib/compass-planes/canvas/editor-item-layout-context';
 import { memo, useContext, useEffect, useState } from 'react';
 import { ResizableNode } from '../../decorators';
 import { ItemContextMenu, type ContextMenuState } from './item-context-menu';
@@ -31,6 +32,7 @@ export const EditInventoryNode = () => {
 
   const cellWidth = (data.cellWidth ?? 1) * 20;
   const cellHeight = (data.cellHeight ?? 1) * 20;
+  const { width: cw, height: ch } = useComponentCanvasDimensions(component);
 
   const containerStyle = bgStyle.background
     ? {
@@ -47,8 +49,8 @@ export const EditInventoryNode = () => {
     <ResizableNode component={component}>
       <div
         style={{
-          height: component.height,
-          width: component.width,
+          height: ch,
+          width: cw,
           ...containerStyle,
           borderRadius: css.borderRadius,
           overflow: 'hidden',
@@ -74,8 +76,9 @@ const ViewInventoryNodeComponent = ({ component }: { component: Component }) => 
 
   const cellWidth = (data.cellWidth ?? 1) * 20;
   const cellHeight = (data.cellHeight ?? 1) * 20;
-  const gridCols = Math.floor(component.width / cellWidth);
-  const gridRows = Math.floor(component.height / cellHeight);
+  const { width: cw, height: ch } = useComponentCanvasDimensions(component);
+  const gridCols = Math.floor(cw / cellWidth);
+  const gridRows = Math.floor(ch / cellHeight);
   const showItemAs = data.showItemAs ?? 'image';
   const typeRestriction = data.typeRestriction;
   const categoryRestriction = data.categoryRestriction;
@@ -172,8 +175,8 @@ const ViewInventoryNodeComponent = ({ component }: { component: Component }) => 
         onPointerUp={handlePointerUp}
         style={{
           position: 'relative',
-          height: component.height,
-          width: component.width,
+          height: ch,
+          width: cw,
           ...(bgStyle.background
             ? {
                 backgroundImage: `${bgStyle.background}, ${gridImage}`,

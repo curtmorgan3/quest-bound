@@ -7,6 +7,7 @@ import {
 import { CharacterContext, WindowEditorContext } from '@/stores';
 import type { Component, ImageComponentData } from '@/types';
 import { useEditorItemId } from '@/lib/compass-planes/canvas/editor-item-context';
+import { useComponentCanvasDimensions } from '@/lib/compass-planes/canvas/editor-item-layout-context';
 import { memo, useContext } from 'react';
 import { ResizableNode } from '../../decorators';
 
@@ -38,12 +39,14 @@ export const EditImageNode = () => {
     imageSrc = asset?.data ?? data.assetUrl;
   }
 
+  const { width: cw, height: ch } = useComponentCanvasDimensions(component);
+
   return (
     <ResizableNode component={component}>
       <div
         style={{
-          height: `${component.height}px`,
-          width: `${component.width}px`,
+          height: `${ch}px`,
+          width: `${cw}px`,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -86,6 +89,7 @@ export const EditImageNode = () => {
 
 const ViewImageNodeComponent = ({ component }: { component: Component }) => {
   const css = useComponentStyles(component);
+  const { width: cw, height: ch } = useComponentCanvasDimensions(component);
   const data = getComponentData(component) as ImageComponentData;
   const { assets } = useAssets();
   const characterContext = useContext(CharacterContext);
@@ -129,8 +133,8 @@ const ViewImageNodeComponent = ({ component }: { component: Component }) => {
       alt=''
       draggable={false}
       style={{
-        height: `${component.height}px`,
-        width: `${component.width}px`,
+        height: `${ch}px`,
+        width: `${cw}px`,
         maxWidth: '100%',
         maxHeight: '100%',
         objectFit: 'cover',

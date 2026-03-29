@@ -39,6 +39,32 @@ function snapRect(
   };
 }
 
+function rectAfterResize(
+  handle: HandleId,
+  startRect: { x: number; y: number; w: number; h: number },
+  clientX: number,
+  clientY: number,
+  shiftKey: boolean,
+  useGrid: boolean,
+  minW: number,
+  maxW: number,
+  minH: number,
+  maxH: number,
+  container: HTMLElement,
+): { x: number; y: number; w: number; h: number } {
+  const cur = clientToCanvas(clientX, clientY, container);
+  let { x, y, w, h } = boundsForHandle(handle, startRect, cur, shiftKey);
+  w = clampDim(w, minW, maxW);
+  h = clampDim(h, minH, maxH);
+  if (useGrid) {
+    const g = DEFAULT_GRID_SIZE;
+    ({ x, y, w, h } = snapRect(x, y, w, h, g));
+    w = clampDim(w, minW, maxW);
+    h = clampDim(h, minH, maxH);
+  }
+  return { x, y, w, h };
+}
+
 /**
  * Pointer `cur` is canvas-local. Each handle keeps the opposite corner/edge fixed
  * (same behavior family as React Flow `NodeResizer`).
@@ -168,7 +194,14 @@ export const ResizableNode = ({
   props,
   className,
 }: ResizableNodeSelectedProps) => {
-  const { containerRef, isSelected, onResizeCommit, useGrid } = useEditorCanvasChrome();
+  const {
+    containerRef,
+    isSelected,
+    onResizeCommit,
+    onResizeTransient,
+    onResizeGestureEnd,
+    useGrid,
+  } = useEditorCanvasChrome();
   const pos = useComponentPosition(component);
   const locked = component?.locked ?? props?.locked;
   const selected = component ? isSelected(component.id) : false;
@@ -190,49 +223,124 @@ export const ResizableNode = ({
       if (!component || locked || pos.rotation !== 0) return;
       e.preventDefault();
       e.stopPropagation();
+      const compId = component.id;
+      const startRect = {
+        x: component.x,
+        y: component.y,
+        w: component.width,
+        h: component.height,
+      };
       dragRef.current = {
         handle,
         pointerId: e.pointerId,
-        startRect: {
-          x: component.x,
-          y: component.y,
-          w: component.width,
-          h: component.height,
-        },
+        startRect,
       };
-      (e.target as HTMLElement).setPointerCapture(e.pointerId);
-    },
-    [component, locked, pos.rotation],
-  );
+      const el = e.target as HTMLElement;
+      el.setPointerCapture(e.pointerId);
 
-  const finishResize = useCallback(
-    (e: React.PointerEvent<HTMLElement>) => {
-      const d = dragRef.current;
-      if (!d || e.pointerId !== d.pointerId || !component) return;
-      dragRef.current = null;
-      try {
-        (e.target as HTMLElement).releasePointerCapture(e.pointerId);
-      } catch {
-        /* */
-      }
-      const root = containerRef.current;
-      if (!root) return;
-      const cur = clientToCanvas(e.clientX, e.clientY, root);
-      let { x, y, w, h } = boundsForHandle(d.handle, d.startRect, cur, e.shiftKey);
-      w = clampDim(w, minW, maxW);
-      h = clampDim(h, minH, maxH);
-      if (useGrid) {
-        const g = DEFAULT_GRID_SIZE;
-        ({ x, y, w, h } = snapRect(x, y, w, h, g));
-        w = clampDim(w, minW, maxW);
-        h = clampDim(h, minH, maxH);
-      }
-      const { x: sx, y: sy, w: sw, h: sh } = d.startRect;
-      if (x !== sx || y !== sy || w !== sw || h !== sh) {
-        onResizeCommit(component.id, w, h, x, y);
-      }
+      let rafId: number | null = null;
+      let pending: { x: number; y: number; w: number; h: number } | null = null;
+
+      const flushTransient = () => {
+        rafId = null;
+        const p = pending;
+        if (p) {
+          onResizeTransient?.(compId, p.w, p.h, p.x, p.y);
+        }
+      };
+
+      const scheduleTransient = () => {
+        if (rafId != null) return;
+        rafId = requestAnimationFrame(flushTransient);
+      };
+
+      const onMove = (ev: PointerEvent) => {
+        if (ev.pointerId !== e.pointerId) return;
+        const d = dragRef.current;
+        const root = containerRef.current;
+        if (!d || !root) return;
+        pending = rectAfterResize(
+          d.handle,
+          d.startRect,
+          ev.clientX,
+          ev.clientY,
+          ev.shiftKey,
+          useGrid,
+          minW,
+          maxW,
+          minH,
+          maxH,
+          root,
+        );
+        scheduleTransient();
+      };
+
+      const onUp = (ev: PointerEvent) => {
+        if (ev.pointerId !== e.pointerId) return;
+        el.removeEventListener('pointermove', onMove);
+        el.removeEventListener('pointerup', onUp);
+        el.removeEventListener('pointercancel', onUp);
+        if (rafId != null) {
+          cancelAnimationFrame(rafId);
+          rafId = null;
+        }
+        flushTransient();
+        pending = null;
+
+        const d = dragRef.current;
+        dragRef.current = null;
+        try {
+          el.releasePointerCapture(ev.pointerId);
+        } catch {
+          /* */
+        }
+
+        let didCommit = false;
+        try {
+          const root = containerRef.current;
+          if (d && root) {
+            const { x, y, w, h } = rectAfterResize(
+              d.handle,
+              d.startRect,
+              ev.clientX,
+              ev.clientY,
+              ev.shiftKey,
+              useGrid,
+              minW,
+              maxW,
+              minH,
+              maxH,
+              root,
+            );
+            const { x: sx, y: sy, w: sw, h: sh } = d.startRect;
+            if (x !== sx || y !== sy || w !== sw || h !== sh) {
+              onResizeCommit(compId, w, h, x, y);
+              didCommit = true;
+            }
+          }
+        } finally {
+          if (!didCommit) onResizeGestureEnd?.();
+        }
+      };
+
+      el.addEventListener('pointermove', onMove);
+      el.addEventListener('pointerup', onUp);
+      el.addEventListener('pointercancel', onUp);
     },
-    [component, containerRef, maxH, maxW, minH, minW, onResizeCommit, useGrid],
+    [
+      component,
+      locked,
+      pos.rotation,
+      containerRef,
+      maxH,
+      maxW,
+      minH,
+      minW,
+      onResizeCommit,
+      onResizeGestureEnd,
+      onResizeTransient,
+      useGrid,
+    ],
   );
 
   const showHandles = selected && !disabled && !locked && pos.rotation === 0;
@@ -289,8 +397,6 @@ export const ResizableNode = ({
               data-native-resize-handle
               style={{ ...handleBase(hid), ...posStyle }}
               onPointerDown={(e) => startResize(e, hid)}
-              onPointerUp={finishResize}
-              onPointerCancel={finishResize}
             />
           ))}
         </>

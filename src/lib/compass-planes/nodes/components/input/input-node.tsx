@@ -18,6 +18,7 @@ import {
 import { CharacterContext, WindowEditorContext } from '@/stores';
 import type { Component, TextComponentStyle } from '@/types';
 import { useEditorItemId } from '@/lib/compass-planes/canvas/editor-item-context';
+import { useComponentCanvasDimensions } from '@/lib/compass-planes/canvas/editor-item-layout-context';
 import { memo, useContext, useState } from 'react';
 import { ResizableNode } from '../../decorators';
 
@@ -44,6 +45,7 @@ const ViewInputNodeComponent = ({
   const data = useNodeData(component);
   const css = useComponentStyles(component) as TextComponentStyle;
   const characterContext = useContext(CharacterContext);
+  const { width: cw, height: ch } = useComponentCanvasDimensions(component);
 
   const handleChange = (value: string | number) => {
     if (!characterContext) return;
@@ -91,8 +93,8 @@ const ViewInputNodeComponent = ({
 
   const sectionStyle = {
     position: 'relative' as const,
-    height: component.height,
-    width: component.width,
+    height: ch,
+    width: cw,
     pointerEvents: editMode ? 'none' : undefined,
     display: 'flex',
     justifyContent: css.textAlign ?? 'start',

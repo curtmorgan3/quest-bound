@@ -381,8 +381,15 @@ export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
   return (
     <ComponentEditPanelContext.Provider value={contextValue}>
       <div
-        className='w-[240px] h-[100vh] flex flex-col gap-2 items-center p-2'
-        style={{ position: 'absolute', right: 0, backgroundColor: colorBlack, overflow: 'auto' }}>
+        data-component-edit-panel
+        className='z-20 flex h-[100vh] w-[240px] flex-col items-center gap-2 p-2'
+        style={{
+          position: 'absolute',
+          top: 0,
+          right: 0,
+          backgroundColor: colorBlack,
+          overflow: 'auto',
+        }}>
         {selectedComponents.length > 0 ? (
           <Tabs defaultValue='style' className='w-full flex flex-col'>
             <TabsList className='w-full'>

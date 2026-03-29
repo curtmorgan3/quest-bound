@@ -15,6 +15,11 @@ export type UseMarqueeSelectionOptions = {
   onComplete: (hitIds: string[], modifiers: EditorSelectionPointerModifiers) => void;
   /** Down+up on the pane without a real marquee drag (e.g. clear selection). */
   onMicroDrag?: (modifiers: EditorSelectionPointerModifiers) => void;
+  /**
+   * When pointer capture ends over UI above the canvas (e.g. edit panel), skip clearing selection.
+   * Called with the pointerup event (use `elementFromPoint` if needed).
+   */
+  shouldSuppressMicroDragClear?: (e: React.PointerEvent<HTMLDivElement>) => boolean;
   /** Ignore tiny box drags (accidental clicks on the marquee layer). */
   minDragPx?: number;
   enabled?: boolean;
@@ -36,6 +41,7 @@ export function useMarqueeSelection({
   getItems,
   onComplete,
   onMicroDrag,
+  shouldSuppressMicroDragClear,
   minDragPx = 4,
   enabled = true,
 }: UseMarqueeSelectionOptions) {
@@ -45,11 +51,20 @@ export function useMarqueeSelection({
     getItems,
     onComplete,
     onMicroDrag,
+    shouldSuppressMicroDragClear,
     minDragPx,
     enabled,
     containerRef,
   });
-  optsRef.current = { getItems, onComplete, onMicroDrag, minDragPx, enabled, containerRef };
+  optsRef.current = {
+    getItems,
+    onComplete,
+    onMicroDrag,
+    shouldSuppressMicroDragClear,
+    minDragPx,
+    enabled,
+    containerRef,
+  };
 
   const activeRef = useRef<ActiveMarquee | null>(null);
 
@@ -99,6 +114,9 @@ export function useMarqueeSelection({
     const rect = normalizeMarqueeRect(a.startX, a.startY, x, y);
     const minPx = optsRef.current.minDragPx;
     if (rect.width < minPx && rect.height < minPx) {
+      if (optsRef.current.shouldSuppressMicroDragClear?.(e)) {
+        return;
+      }
       optsRef.current.onMicroDrag?.({
         shiftKey: e.shiftKey,
         metaKey: e.metaKey,

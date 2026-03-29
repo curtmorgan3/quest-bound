@@ -78,30 +78,32 @@ export const WindowEditor = () => {
   return (
     <WindowEditorProvider
       value={{ viewMode, components, getComponent, updateComponent, updateComponents }}>
-      <div className='flex flex-col' style={{ overflow: 'hidden' }}>
-        {viewMode ? (
-          <CharacterPage id={testCharacter?.id} editorWindowId={windowId} />
-        ) : (
-          <SheetEditor
-            components={components}
-            onComponentsCreated={onComponentsCreated}
-            onComponentsDeleted={onComponentsDeleted}
-            onComponentsRestored={onComponentsRestored}
-            onComponentsUpdated={onComponentsUpdated}
-          />
-        )}
+      <div className='relative flex h-full min-h-0 w-full flex-col overflow-hidden'>
+        <div className='flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden'>
+          {viewMode ? (
+            <CharacterPage id={testCharacter?.id} editorWindowId={windowId} />
+          ) : (
+            <SheetEditor
+              components={components}
+              onComponentsCreated={onComponentsCreated}
+              onComponentsDeleted={onComponentsDeleted}
+              onComponentsRestored={onComponentsRestored}
+              onComponentsUpdated={onComponentsUpdated}
+            />
+          )}
+        </div>
+        <Eye
+          className='clickable'
+          onClick={() => setViewMode((prev) => !prev)}
+          style={{
+            position: 'absolute',
+            left: eyeLeft,
+            bottom: 55,
+            color: viewMode ? colorPrimary : colorWhite,
+          }}
+        />
+        <ComponentEditPanel viewMode={viewMode} />
       </div>
-      <Eye
-        className='clickable'
-        onClick={() => setViewMode((prev) => !prev)}
-        style={{
-          position: 'absolute',
-          left: eyeLeft,
-          bottom: 55,
-          color: viewMode ? colorPrimary : colorWhite,
-        }}
-      />
-      <ComponentEditPanel viewMode={viewMode} />
     </WindowEditorProvider>
   );
 };

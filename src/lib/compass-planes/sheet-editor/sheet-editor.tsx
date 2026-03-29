@@ -76,12 +76,14 @@ export const SheetEditor = ({
   };
 
   return (
-    <SheetCanvasEditor
-      components={components}
-      menuOptions={contextOptions}
-      onSelectFromMenu={handleContextMenuSelection}
-      onComponentsDeleted={wrappedOnComponentsDeleted}
-      onComponentsUpdated={wrappedOnComponentsUpdated}
-    />
+    <div className='flex h-full min-h-0 min-w-0 w-full flex-1 flex-col overflow-hidden'>
+      <SheetCanvasEditor
+        components={components}
+        menuOptions={contextOptions}
+        onSelectFromMenu={handleContextMenuSelection}
+        onComponentsDeleted={wrappedOnComponentsDeleted}
+        onComponentsUpdated={wrappedOnComponentsUpdated}
+      />
+    </div>
   );
 };

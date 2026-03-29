@@ -1,8 +1,17 @@
 import type { ComponentUpdate } from '@/lib/compass-api';
-import type { Coordinates, Component } from '@/types';
-import { useCallback, useContext, useMemo, useRef, useState, type ComponentType } from 'react';
+import type { Component, Coordinates } from '@/types';
 import { useKeyListeners } from '@/utils';
+import {
+  useCallback,
+  useContext,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ComponentType,
+} from 'react';
 
+import { WindowEditorContext } from '@/stores';
 import { CanvasPointerSpike } from '../base-editor/canvas-pointer-spike';
 import { ContextMenu } from '../base-editor/context-menu';
 import {
@@ -10,6 +19,7 @@ import {
   clientToCanvas,
   EditorCanvasChromeProvider,
   EditorItemIdProvider,
+  EditorItemLayoutProvider,
   useMarqueeSelection,
   usePointerDrag,
 } from '../canvas';
@@ -17,7 +27,6 @@ import { isAdditiveEditorSelection } from '../canvas/selection-modifiers';
 import { DEFAULT_GRID_SIZE } from '../editor-config';
 import { sheetNodeTypes, type EditorMenuOption } from '../nodes';
 import { ComponentTypes } from '../nodes/node-types';
-import { WindowEditorContext } from '@/stores';
 import {
   updatesForClickSelection,
   updatesForMarqueeSelection,
@@ -54,7 +63,7 @@ export function SheetCanvasEditor({
 }: SheetCanvasEditorProps) {
   const { getComponent } = useContext(WindowEditorContext);
   const sectionRef = useRef<HTMLElement>(null);
-  const opacity = !backgroundColor && !backgroundImage ? 0.1 : (backgroundOpacity ?? 0.1);
+  const opacity = !backgroundColor && !backgroundImage ? 1 : (backgroundOpacity ?? 0.1);
   const longPressTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const touchPositionRef = useRef<{ x: number; y: number } | null>(null);
 
@@ -64,10 +73,16 @@ export function SheetCanvasEditor({
     add: Coordinates;
   } | null>(null);
 
-  const sorted = useMemo(
-    () => [...components].sort((a, b) => a.z - b.z),
-    [components],
-  );
+  const [movePreview, setMovePreview] = useState<{ id: string; x: number; y: number } | null>(null);
+  const [resizePreview, setResizePreview] = useState<{
+    id: string;
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  } | null>(null);
+
+  const sorted = useMemo(() => [...components].sort((a, b) => a.z - b.z), [components]);
 
   const selectedIdSet = useMemo(() => {
     const s = new Set<string>();
@@ -81,10 +96,20 @@ export function SheetCanvasEditor({
 
   const onResizeCommit = useCallback(
     (id: string, width: number, height: number, x: number, y: number) => {
+      setResizePreview({ id, x, y, width, height });
       onComponentsUpdated([{ id, width, height, x, y }]);
     },
     [onComponentsUpdated],
   );
+
+  const onResizeTransient = useCallback(
+    (id: string, width: number, height: number, x: number, y: number) => {
+      setResizePreview({ id, x, y, width, height });
+    },
+    [],
+  );
+
+  const onResizeGestureEnd = useCallback(() => setResizePreview(null), []);
 
   const chromeValue = useMemo(
     () => ({
@@ -92,16 +117,56 @@ export function SheetCanvasEditor({
       isSelected,
       onResizeCommit,
       useGrid,
+      onResizeTransient,
+      onResizeGestureEnd,
     }),
-    [isSelected, onResizeCommit, useGrid],
+    [isSelected, onResizeCommit, onResizeGestureEnd, onResizeTransient, useGrid],
   );
 
   const { beginMove } = usePointerDrag({
     containerRef: sectionRef,
     gridSize: useGrid ? DEFAULT_GRID_SIZE : null,
-    onCommit: (u) => onComponentsUpdated([u]),
+    onCommit: (u) => {
+      if (u.id != null && typeof u.x === 'number' && typeof u.y === 'number') {
+        setMovePreview({ id: u.id, x: u.x, y: u.y });
+      }
+      onComponentsUpdated([u]);
+    },
+    onTransientPosition: (id, x, y) => setMovePreview({ id, x, y }),
+    onDragEnd: ({ didCommit }) => {
+      if (!didCommit) setMovePreview(null);
+    },
     canDrag: (id) => !getComponent(id)?.locked,
   });
+
+  useLayoutEffect(() => {
+    if (!movePreview) return;
+    const c = components.find((x) => x.id === movePreview.id);
+    if (!c) {
+      setMovePreview(null);
+      return;
+    }
+    if (c.x === movePreview.x && c.y === movePreview.y) {
+      setMovePreview(null);
+    }
+  }, [components, movePreview]);
+
+  useLayoutEffect(() => {
+    if (!resizePreview) return;
+    const c = components.find((x) => x.id === resizePreview.id);
+    if (!c) {
+      setResizePreview(null);
+      return;
+    }
+    if (
+      c.x === resizePreview.x &&
+      c.y === resizePreview.y &&
+      c.width === resizePreview.width &&
+      c.height === resizePreview.height
+    ) {
+      setResizePreview(null);
+    }
+  }, [components, resizePreview]);
 
   const getSelectableItems = useCallback(
     () =>
@@ -114,6 +179,17 @@ export function SheetCanvasEditor({
       })),
     [components],
   );
+
+  /** Marquee uses pointer capture; pointerup can fire with the cursor over the edit panel or a Radix portal. */
+  const shouldSuppressMicroDragClear = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    const el = document.elementFromPoint(e.clientX, e.clientY);
+    if (!el) return false;
+    return Boolean(
+      el.closest('[data-component-edit-panel]') ||
+      el.closest('[data-radix-popper-content-wrapper]') ||
+      el.closest('[role="dialog"]'),
+    );
+  }, []);
 
   const { marqueeRect, marqueeHandlers } = useMarqueeSelection({
     containerRef: sectionRef,
@@ -128,6 +204,7 @@ export function SheetCanvasEditor({
         if (updates.length) onComponentsUpdated(updates);
       }
     },
+    shouldSuppressMicroDragClear,
   });
 
   const openContextMenuFromClient = useCallback((clientX: number, clientY: number) => {
@@ -191,8 +268,7 @@ export function SheetCanvasEditor({
       <section
         ref={sectionRef}
         id='base-editor'
-        className='flex min-h-0 min-w-0 flex-1 overflow-auto'
-        style={{ position: 'relative' }}
+        className='relative flex h-full min-h-0 w-full min-w-0 flex-1 overflow-hidden'
         onContextMenu={(e) => {
           if (e.ctrlKey || e.metaKey) {
             e.preventDefault();
@@ -245,39 +321,57 @@ export function SheetCanvasEditor({
           />
         )}
 
-        <div className='pointer-events-none absolute inset-0 z-[1] min-h-[4000px] min-w-[4000px]'>
+        <div className='pointer-events-none absolute inset-0 z-[1]'>
           {useGrid && <CanvasGridBackground style={{ opacity }} />}
         </div>
 
         <div
           role='presentation'
-          className='absolute inset-0 z-[1] min-h-[4000px] min-w-[4000px] touch-none'
+          className='absolute inset-0 z-[1] touch-none'
           style={{ touchAction: 'none' }}
           {...marqueeHandlers}
         />
 
         <div
-          className='pointer-events-none absolute left-0 top-0 z-[2] min-h-[4000px] min-w-[4000px]'
+          className='pointer-events-none absolute inset-0 z-[2]'
           style={{ touchAction: 'manipulation' }}>
           {sorted.map((c) => {
             const Edit = sheetNodeTypes[c.type as ComponentTypes] as ComponentType | undefined;
             if (!Edit) return null;
+            const layout =
+              resizePreview?.id === c.id
+                ? {
+                    left: resizePreview.x,
+                    top: resizePreview.y,
+                    width: resizePreview.width,
+                    height: resizePreview.height,
+                  }
+                : movePreview?.id === c.id
+                  ? {
+                      left: movePreview.x,
+                      top: movePreview.y,
+                      width: c.width,
+                      height: c.height,
+                    }
+                  : { left: c.x, top: c.y, width: c.width, height: c.height };
             return (
               <div
                 key={c.id}
                 data-canvas-item={c.id}
                 className='pointer-events-auto absolute'
                 style={{
-                  left: c.x,
-                  top: c.y,
-                  width: c.width,
-                  height: c.height,
+                  left: layout.left,
+                  top: layout.top,
+                  width: layout.width,
+                  height: layout.height,
                   zIndex: c.z,
                 }}
                 onPointerDown={(e) => onItemPointerDown(e, c)}>
-                <EditorItemIdProvider id={c.id}>
-                  <Edit />
-                </EditorItemIdProvider>
+                <EditorItemLayoutProvider value={{ width: layout.width, height: layout.height }}>
+                  <EditorItemIdProvider id={c.id}>
+                    <Edit />
+                  </EditorItemIdProvider>
+                </EditorItemLayoutProvider>
               </div>
             );
           })}

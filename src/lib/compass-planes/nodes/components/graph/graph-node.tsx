@@ -1,6 +1,7 @@
 import { CharacterContext, WindowEditorContext } from '@/stores';
 import type { Component, GraphComponentData, GraphVariant } from '@/types';
 import { useEditorItemId } from '@/lib/compass-planes/canvas/editor-item-context';
+import { useComponentCanvasDimensions } from '@/lib/compass-planes/canvas/editor-item-layout-context';
 import { memo, useContext, useEffect, useState } from 'react';
 import {
   getBackgroundStyle,
@@ -74,10 +75,11 @@ export const EditGraphNode = () => {
 
   const data = getComponentData(component) as GraphComponentData;
   const variant = data.graphVariant ?? 'horizontal-linear';
+  const { width: cw, height: ch } = useComponentCanvasDimensions(component);
 
   return (
     <ResizableNode component={component}>
-      <div style={{ height: component.height, width: component.width }}>
+      <div style={{ height: ch, width: cw }}>
         <GraphEditPlaceholder component={component} variant={variant} />
       </div>
     </ResizableNode>
@@ -97,8 +99,7 @@ function GraphEditPlaceholder({
   const data = getComponentData(component) as GraphComponentData;
   const css = useComponentStyles(component);
   const fillColor = getSolidFallback((css as { color?: string }).color) ?? '#7BA3C7';
-  const w = component.width;
-  const h = component.height;
+  const { width: w, height: h } = useComponentCanvasDimensions(component);
   const editFillRatio = data.inverseFill ? 1 - EDIT_FILL_RATIO : EDIT_FILL_RATIO;
 
   const commonContainer = {
@@ -226,8 +227,7 @@ const ViewGraphNodeLive = memo(function ViewGraphNodeLive({
     Object.keys(fillStyle).length > 0 ? fillStyle : { backgroundColor: fillColor };
   const fillGradient = parseLinearGradient(colorValue ?? '');
 
-  const w = component.width;
-  const h = component.height;
+  const { width: w, height: h } = useComponentCanvasDimensions(component);
 
   const commonContainer = {
     width: w,

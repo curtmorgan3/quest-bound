@@ -9,6 +9,7 @@ import {
 import { WindowEditorContext } from '@/stores';
 import type { Component, TextComponentData, TextComponentStyle } from '@/types';
 import { useEditorItemId } from '@/lib/compass-planes/canvas/editor-item-context';
+import { useComponentCanvasDimensions } from '@/lib/compass-planes/canvas/editor-item-layout-context';
 import { memo, useContext, useEffect, useRef, useState } from 'react';
 import { ResizableNode } from '../../decorators';
 
@@ -30,6 +31,7 @@ export const EditTextNode = () => {
 
   if (!component) return null;
 
+  const { width: cw, height: ch } = useComponentCanvasDimensions(component);
   const data = getComponentData(component) as TextComponentData;
 
   const handleDoubleClick = () => {
@@ -88,8 +90,8 @@ export const EditTextNode = () => {
       {isEditing ? (
         <section
           style={{
-            height: component.height,
-            width: component.width,
+            height: ch,
+            width: cw,
             display: 'flex',
             justifyContent: css.textAlign ?? 'start',
             alignItems: css.verticalAlign ?? 'start',
@@ -128,13 +130,14 @@ const ViewTextNodeComponent = ({
 }) => {
   const data = useNodeData(component);
   const css = useComponentStyles(component) as TextComponentStyle;
+  const { width: cw, height: ch } = useComponentCanvasDimensions(component);
 
   return (
     <div
       style={{
         position: 'relative',
-        height: component.height,
-        width: component.width,
+        height: ch,
+        width: cw,
         overflow: 'visible',
       }}>
       <section

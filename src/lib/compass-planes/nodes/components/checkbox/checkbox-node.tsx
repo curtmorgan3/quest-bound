@@ -8,6 +8,7 @@ import {
 import { CharacterContext, WindowEditorContext } from '@/stores';
 import type { Component, ComponentStyle } from '@/types';
 import { useEditorItemId } from '@/lib/compass-planes/canvas/editor-item-context';
+import { useComponentCanvasDimensions } from '@/lib/compass-planes/canvas/editor-item-layout-context';
 import { CheckIcon, SquareIcon } from 'lucide-react';
 import { memo, useContext } from 'react';
 import { ResizableNode } from '../../decorators';
@@ -44,6 +45,7 @@ const ViewCheckboxNodeComponent = ({
 
   const checkedImageUrl = checkedAsset?.data ?? data.checkedAssetUrl;
   const uncheckedImageUrl = uncheckedAsset?.data ?? data.uncheckedAssetUrl;
+  const { width: cw, height: ch } = useComponentCanvasDimensions(component);
 
   const handleChange = () => {
     if (!characterContext) return;
@@ -62,8 +64,8 @@ const ViewCheckboxNodeComponent = ({
       onClick={editMode ? undefined : handleChange}
       style={{
         position: 'relative',
-        height: component.height,
-        width: component.width,
+        height: ch,
+        width: cw,
         pointerEvents: editMode ? 'none' : undefined,
         display: 'flex',
         justifyContent: css.textAlign ?? 'center',

@@ -1,6 +1,7 @@
 import { CharacterContext, useCurrentUser } from '@/stores';
 import type { Component } from '@/types';
 import { useContext, useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
+import { useComponentCanvasDimensions } from '@/lib/compass-planes/canvas/editor-item-layout-context';
 import {
   getComponentData,
   useComponentAnimationTrigger,
@@ -21,6 +22,7 @@ export const NodeAnimation = ({ component, children }: NodeAnimationProps) => {
   const character = context?.character;
   const { value, attributeType } = useNodeData(component);
   const style = useComponentStyles(component);
+  const { width: cw, height: ch } = useComponentCanvasDimensions(component);
 
   const numericCurrent =
     attributeType === 'number'
@@ -108,8 +110,8 @@ export const NodeAnimation = ({ component, children }: NodeAnimationProps) => {
               key={`tic-${flashKey}-${ticRange.from}-${ticRange.to}`}
               style={{
                 ...style,
-                height: `${component.height}px`,
-                width: `${component.width}px`,
+                height: `${ch}px`,
+                width: `${cw}px`,
               }}
               from={ticRange.from}
               to={ticRange.to}

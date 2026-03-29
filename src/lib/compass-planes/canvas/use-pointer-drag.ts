@@ -11,6 +11,11 @@ export type UsePointerDragOptions = {
   onCommit: (update: ComponentUpdate) => void;
   /** Optional live preview during drag (rAF-throttled). */
   onTransientPosition?: (id: string, x: number, y: number) => void;
+  /**
+   * Called after pointer up/cancel. `didCommit` is true when `onCommit` ran this gesture.
+   * Keep showing committed geometry until props catch up when `didCommit` is true.
+   */
+  onDragEnd?: (info: { didCommit: boolean }) => void;
   canDrag?: (id: string) => boolean;
   /** If true, skip `onCommit` when the snapped position equals the start position. */
   skipCommitIfUnchanged?: boolean;
@@ -34,12 +39,14 @@ export function usePointerDrag({
   gridSize,
   onCommit,
   onTransientPosition,
+  onDragEnd,
   canDrag = () => true,
   skipCommitIfUnchanged = true,
 }: UsePointerDragOptions) {
   const optsRef = useRef({
     onCommit,
     onTransientPosition,
+    onDragEnd,
     canDrag,
     skipCommitIfUnchanged,
     gridSize: gridSize ?? null,
@@ -48,6 +55,7 @@ export function usePointerDrag({
   optsRef.current = {
     onCommit,
     onTransientPosition,
+    onDragEnd,
     canDrag,
     skipCommitIfUnchanged,
     gridSize: gridSize ?? null,
@@ -73,7 +81,7 @@ export function usePointerDrag({
   }, [flushTransient]);
 
   const beginMove = useCallback(
-    (e: React.PointerEvent<HTMLElement>, params: { id: string; x: number; y: number }) => {
+    (e: React.PointerEvent<Element>, params: { id: string; x: number; y: number }) => {
       const o = optsRef.current;
       if (e.button !== 0) return;
       if (!o.canDrag(params.id)) return;
@@ -132,24 +140,31 @@ export function usePointerDrag({
 
         const ph = phaseRef.current;
         phaseRef.current = null;
-        if (!ph || ph.pointerId !== ev.pointerId) return;
 
+        let didCommit = false;
         try {
-          el.releasePointerCapture(ev.pointerId);
-        } catch {
-          /* already released */
-        }
+          if (ph && ph.pointerId === ev.pointerId) {
+            try {
+              el.releasePointerCapture(ev.pointerId);
+            } catch {
+              /* already released */
+            }
+          }
 
-        const last = lastPosRef.current;
-        lastPosRef.current = null;
-        if (!last) return;
-
-        const skip =
-          optsRef.current.skipCommitIfUnchanged &&
-          last.x === params.x &&
-          last.y === params.y;
-        if (!skip) {
-          optsRef.current.onCommit({ id: ph.id, x: last.x, y: last.y });
+          const last = lastPosRef.current;
+          lastPosRef.current = null;
+          if (ph && ph.pointerId === ev.pointerId && last) {
+            const skip =
+              optsRef.current.skipCommitIfUnchanged &&
+              last.x === params.x &&
+              last.y === params.y;
+            if (!skip) {
+              optsRef.current.onCommit({ id: ph.id, x: last.x, y: last.y });
+              didCommit = true;
+            }
+          }
+        } finally {
+          optsRef.current.onDragEnd?.({ didCommit });
         }
       };
 

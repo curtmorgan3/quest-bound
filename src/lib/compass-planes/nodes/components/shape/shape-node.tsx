@@ -1,6 +1,7 @@
 import { WindowEditorContext } from '@/stores';
 import type { Component, ShapeComponentData } from '@/types';
 import { useEditorItemId } from '@/lib/compass-planes/canvas/editor-item-context';
+import { useComponentCanvasDimensions } from '@/lib/compass-planes/canvas/editor-item-layout-context';
 import { memo, useContext } from 'react';
 import {
   getBackgroundStyle,
@@ -27,6 +28,7 @@ export const EditShapeNode = () => {
 const ViewShapeNodeComponent = ({ component }: { component: Component }) => {
   const data = getComponentData(component) as ShapeComponentData;
   const css = useComponentStyles(component);
+  const { width: cw, height: ch } = useComponentCanvasDimensions(component);
   const outlineWidth = Math.max(0, css.outlineWidth);
   const numSides = data.sides ?? 4;
 
@@ -37,8 +39,8 @@ const ViewShapeNodeComponent = ({ component }: { component: Component }) => {
     return (
       <div
         style={{
-          height: `${component.height}px`,
-          width: `${component.width}px`,
+          height: `${ch}px`,
+          width: `${cw}px`,
           ...css,
           ...bgStyle,
         }}
@@ -53,8 +55,8 @@ const ViewShapeNodeComponent = ({ component }: { component: Component }) => {
     return (
       <div
         style={{
-          height: `${component.height}px`,
-          width: `${component.width}px`,
+          height: `${ch}px`,
+          width: `${cw}px`,
           background: bg,
           clipPath,
           WebkitClipPath: clipPath,
@@ -67,7 +69,7 @@ const ViewShapeNodeComponent = ({ component }: { component: Component }) => {
     <Polygon
       key={JSON.stringify(css)}
       sides={numSides}
-      diameter={component.width}
+      diameter={cw}
       color={getSolidFallback(css.backgroundColor) ?? 'transparent'}
       outlineWidth={outlineWidth}
       outlineColor={css.outlineColor}

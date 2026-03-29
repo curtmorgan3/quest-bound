@@ -3,6 +3,7 @@ export * from './canvas-marquee-layer';
 export * from './client-to-canvas';
 export * from './editor-canvas-chrome-context';
 export * from './editor-item-context';
+export * from './editor-item-layout-context';
 export * from './editor-selection-context';
 export * from './editor-selection-store';
 export * from './marquee-hit-test';

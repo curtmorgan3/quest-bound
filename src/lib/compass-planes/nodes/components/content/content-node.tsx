@@ -8,6 +8,7 @@ import {
 import { CharacterContext, WindowEditorContext } from '@/stores';
 import type { Component, ContentComponentData, TextComponentStyle } from '@/types';
 import { useEditorItemId } from '@/lib/compass-planes/canvas/editor-item-context';
+import { useComponentCanvasDimensions } from '@/lib/compass-planes/canvas/editor-item-layout-context';
 import { memo, useContext, useEffect, useRef, useState } from 'react';
 import { MarkdownViewer } from '@/components/composites';
 import { ResizableNode } from '../../decorators';
@@ -73,6 +74,7 @@ const ViewContentNodeComponent = ({
   const data = useNodeData(component);
   const css = useComponentStyles(component) as TextComponentStyle;
   const characterContext = useContext(CharacterContext);
+  const { width: cw, height: ch } = useComponentCanvasDimensions(component);
 
   const { characterAttributeId } = data;
 
@@ -117,8 +119,8 @@ const ViewContentNodeComponent = ({
     <section
       data-no-canvas-drag={windowEditorMode ? '' : undefined}
       style={{
-        height: component.height,
-        width: component.width,
+        height: ch,
+        width: cw,
         display: 'flex',
         justifyContent: css.textAlign ?? 'start',
         alignItems: css.verticalAlign ?? 'start',
@@ -157,8 +159,8 @@ const ViewContentNodeComponent = ({
       onWheelCapture={(e) => e.stopPropagation()}
       style={{
         position: 'relative',
-        height: component.height,
-        width: component.width,
+        height: ch,
+        width: cw,
         display: 'flex',
         justifyContent: css.textAlign ?? 'start',
         alignItems: css.verticalAlign ?? 'start',
