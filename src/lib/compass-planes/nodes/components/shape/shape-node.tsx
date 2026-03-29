@@ -1,6 +1,6 @@
 import { WindowEditorContext } from '@/stores';
 import type { Component, ShapeComponentData } from '@/types';
-import { useNodeId } from '@xyflow/react';
+import { useEditorItemId } from '@/lib/compass-planes/canvas/editor-item-context';
 import { memo, useContext } from 'react';
 import {
   getBackgroundStyle,
@@ -13,8 +13,7 @@ import { ResizableNode } from '../../decorators';
 export const EditShapeNode = () => {
   const { getComponent } = useContext(WindowEditorContext);
 
-  const id = useNodeId();
-  if (!id) return null;
+  const id = useEditorItemId();
   const component = getComponent(id);
 
   if (!component) return null;

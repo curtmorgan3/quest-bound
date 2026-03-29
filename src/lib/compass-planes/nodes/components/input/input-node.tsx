@@ -17,15 +17,13 @@ import {
 } from '@/lib/compass-planes/utils';
 import { CharacterContext, WindowEditorContext } from '@/stores';
 import type { Component, TextComponentStyle } from '@/types';
-import { useNodeId } from '@xyflow/react';
+import { useEditorItemId } from '@/lib/compass-planes/canvas/editor-item-context';
 import { memo, useContext, useState } from 'react';
 import { ResizableNode } from '../../decorators';
 
 export const EditInputNode = () => {
   const { getComponent } = useContext(WindowEditorContext);
-  const id = useNodeId();
-
-  if (!id) return null;
+  const id = useEditorItemId();
   const component = getComponent(id);
   if (!component) return null;
 

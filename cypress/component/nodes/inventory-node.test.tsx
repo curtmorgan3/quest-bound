@@ -1,3 +1,5 @@
+import { EditorCanvasChromeProvider } from '@/lib/compass-planes/canvas/editor-canvas-chrome-context';
+import { EditorItemIdProvider } from '@/lib/compass-planes/canvas/editor-item-context';
 import {
   EditInventoryNode,
   ViewInventoryNode,
@@ -69,12 +71,20 @@ describe('InventoryNode Component', () => {
       updateComponents: cy.stub(),
     } as any;
 
-    cy.stub(require('@xyflow/react'), 'useNodeId').returns(component.id);
-
     cy.mount(
-      <WindowEditorContext.Provider value={windowEditorContext}>
-        <EditInventoryNode />
-      </WindowEditorContext.Provider>,
+      <EditorCanvasChromeProvider
+        value={{
+          containerRef: { current: null },
+          isSelected: () => false,
+          onResizeCommit: cy.stub(),
+          useGrid: true,
+        }}>
+        <WindowEditorContext.Provider value={windowEditorContext}>
+          <EditorItemIdProvider id={component.id}>
+            <EditInventoryNode />
+          </EditorItemIdProvider>
+        </WindowEditorContext.Provider>
+      </EditorCanvasChromeProvider>,
     );
 
     // The root of the ResizableNode content should have the styled grid

@@ -6,7 +6,7 @@ import {
 } from '@/lib/compass-planes/utils';
 import { CharacterContext, WindowEditorContext, useInventoryDragContext } from '@/stores';
 import type { Component, InventoryComponentData } from '@/types';
-import { useNodeId } from '@xyflow/react';
+import { useEditorItemId } from '@/lib/compass-planes/canvas/editor-item-context';
 import { memo, useContext, useEffect, useState } from 'react';
 import { ResizableNode } from '../../decorators';
 import { ItemContextMenu, type ContextMenuState } from './item-context-menu';
@@ -15,11 +15,10 @@ import { useInventoryPointers } from './use-inventory-pointers';
 
 export const EditInventoryNode = () => {
   const { getComponent } = useContext(WindowEditorContext);
-  const id = useNodeId();
+  const id = useEditorItemId();
   const component = id ? getComponent(id) : null;
   const css = useComponentStyles(component);
 
-  if (!id) return null;
   if (!component) return null;
 
   const data = getComponentData(component) as InventoryComponentData;

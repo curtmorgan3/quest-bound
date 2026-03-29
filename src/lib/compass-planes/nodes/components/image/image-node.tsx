@@ -6,7 +6,7 @@ import {
 } from '@/lib/compass-planes/utils';
 import { CharacterContext, WindowEditorContext } from '@/stores';
 import type { Component, ImageComponentData } from '@/types';
-import { useNodeId } from '@xyflow/react';
+import { useEditorItemId } from '@/lib/compass-planes/canvas/editor-item-context';
 import { memo, useContext } from 'react';
 import { ResizableNode } from '../../decorators';
 
@@ -16,11 +16,10 @@ export const EditImageNode = () => {
   const { activeRuleset } = useActiveRuleset();
   const { customProperties } = useCustomProperties(activeRuleset?.id);
 
-  const id = useNodeId();
-  const component = getComponent(id ?? '');
+  const id = useEditorItemId();
+  const component = getComponent(id);
   const css = useComponentStyles(component);
 
-  if (!id) return null;
   if (!component) return null;
 
   const data = getComponentData(component) as ImageComponentData;

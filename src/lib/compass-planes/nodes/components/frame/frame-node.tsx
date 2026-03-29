@@ -6,18 +6,17 @@ import {
 import { colorWhite } from '@/palette';
 import { WindowEditorContext } from '@/stores';
 import type { Component, FrameComponentData } from '@/types';
-import { useNodeId } from '@xyflow/react';
+import { useEditorItemId } from '@/lib/compass-planes/canvas/editor-item-context';
 import { Frame as FrameIcon } from 'lucide-react';
 import { memo, useContext } from 'react';
 import { ResizableNode } from '../../decorators';
 
 export const EditFrameNode = () => {
   const { getComponent } = useContext(WindowEditorContext);
-  const id = useNodeId();
-  const component = id ? getComponent(id) : null;
+  const id = useEditorItemId();
+  const component = getComponent(id);
   const css = useComponentStyles(component);
 
-  if (!id) return null;
   if (!component) return null;
 
   return (

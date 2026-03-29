@@ -1,6 +1,6 @@
 import { CharacterContext, WindowEditorContext } from '@/stores';
 import type { Component, GraphComponentData, GraphVariant } from '@/types';
-import { useNodeId } from '@xyflow/react';
+import { useEditorItemId } from '@/lib/compass-planes/canvas/editor-item-context';
 import { memo, useContext, useEffect, useState } from 'react';
 import {
   getBackgroundStyle,
@@ -68,9 +68,7 @@ function useDebouncedRatio(ratio: number, debounceMs: number): number {
 
 export const EditGraphNode = () => {
   const { getComponent } = useContext(WindowEditorContext);
-  const id = useNodeId();
-
-  if (!id) return null;
+  const id = useEditorItemId();
   const component = getComponent(id);
   if (!component) return null;
 

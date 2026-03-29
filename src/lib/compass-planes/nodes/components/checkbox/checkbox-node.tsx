@@ -7,16 +7,14 @@ import {
 } from '@/lib/compass-planes/utils';
 import { CharacterContext, WindowEditorContext } from '@/stores';
 import type { Component, ComponentStyle } from '@/types';
-import { useNodeId } from '@xyflow/react';
+import { useEditorItemId } from '@/lib/compass-planes/canvas/editor-item-context';
 import { CheckIcon, SquareIcon } from 'lucide-react';
 import { memo, useContext } from 'react';
 import { ResizableNode } from '../../decorators';
 
 export const EditCheckboxNode = () => {
   const { getComponent } = useContext(WindowEditorContext);
-  const id = useNodeId();
-
-  if (!id) return null;
+  const id = useEditorItemId();
   const component = getComponent(id);
   if (!component) return null;
 

@@ -8,13 +8,13 @@ import {
 } from '@/lib/compass-planes/utils';
 import { WindowEditorContext } from '@/stores';
 import type { Component, TextComponentData, TextComponentStyle } from '@/types';
-import { useNodeId } from '@xyflow/react';
+import { useEditorItemId } from '@/lib/compass-planes/canvas/editor-item-context';
 import { memo, useContext, useEffect, useRef, useState } from 'react';
 import { ResizableNode } from '../../decorators';
 
 export const EditTextNode = () => {
   const { getComponent, updateComponent } = useContext(WindowEditorContext);
-  const id = useNodeId();
+  const id = useEditorItemId();
   const component = id ? getComponent(id) : null;
   const [isEditing, setIsEditing] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -28,7 +28,6 @@ export const EditTextNode = () => {
     }
   }, [isEditing]);
 
-  if (!id) return null;
   if (!component) return null;
 
   const data = getComponentData(component) as TextComponentData;

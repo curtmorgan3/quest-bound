@@ -7,16 +7,14 @@ import {
 } from '@/lib/compass-planes/utils';
 import { CharacterContext, WindowEditorContext } from '@/stores';
 import type { Component, ContentComponentData, TextComponentStyle } from '@/types';
-import { useNodeId } from '@xyflow/react';
+import { useEditorItemId } from '@/lib/compass-planes/canvas/editor-item-context';
 import { memo, useContext, useEffect, useRef, useState } from 'react';
 import { MarkdownViewer } from '@/components/composites';
 import { ResizableNode } from '../../decorators';
 
 export const EditContentNode = () => {
   const { getComponent, updateComponent } = useContext(WindowEditorContext);
-  const id = useNodeId();
-
-  if (!id) return null;
+  const id = useEditorItemId();
   const component = getComponent(id);
   if (!component) return null;
 
@@ -117,6 +115,7 @@ const ViewContentNodeComponent = ({
 
   return isEditing ? (
     <section
+      data-no-canvas-drag={windowEditorMode ? '' : undefined}
       style={{
         height: component.height,
         width: component.width,
@@ -148,6 +147,7 @@ const ViewContentNodeComponent = ({
     </section>
   ) : (
     <section
+      data-no-canvas-drag={windowEditorMode ? '' : undefined}
       onDoubleClick={() => {
         if (!windowEditorMode && !characterContext) return;
         if (!windowEditorMode && data.readOnly) return;

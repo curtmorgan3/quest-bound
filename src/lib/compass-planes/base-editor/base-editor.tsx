@@ -5,7 +5,7 @@ import '@xyflow/react/dist/style.css';
 import { useEffect, useRef, useState } from 'react';
 import type { EditorMenuOption } from '../nodes/node-types';
 import { CanvasPointerSpike } from './canvas-pointer-spike';
-import { ContextMenu } from './context-menu';
+import { FlowContextMenu } from './flow-context-menu';
 
 /** Phase 0: set `VITE_CANVAS_POINTER_SPIKE=1` when running `npm run dev` to show the native pointer spike. */
 const SHOW_CANVAS_POINTER_SPIKE =
@@ -161,15 +161,15 @@ export function BaseEditor({
           />
         )}
         {renderContextMenu && (
-          <ContextMenu
+          <FlowContextMenu
             isOpen={!!contextMenu}
             options={menuOptions ?? []}
             onSelect={(...args) => onSelectFromMenu?.(...args)}
             onClose={() => {
               setContextMenu(null);
             }}
-            x={contextMenu?.x ?? 0}
-            y={contextMenu?.y ?? 0}
+            clientX={contextMenu?.x ?? 0}
+            clientY={contextMenu?.y ?? 0}
           />
         )}
       </ReactFlow>

@@ -1,4 +1,4 @@
-import type { NodeTypes } from '@xyflow/react';
+import type { ComponentType } from 'react';
 import {
   checkboxConfig,
   contentConfig,
@@ -21,7 +21,7 @@ import {
 } from './components';
 import { ComponentTypes, type SheetComponentType } from './node-types';
 
-export const sheetNodeTypes: NodeTypes = {
+export const sheetNodeTypes: Record<ComponentTypes, ComponentType> = {
   [ComponentTypes.SHAPE]: EditShapeNode,
   [ComponentTypes.TEXT]: EditTextNode,
   [ComponentTypes.IMAGE]: EditImageNode,

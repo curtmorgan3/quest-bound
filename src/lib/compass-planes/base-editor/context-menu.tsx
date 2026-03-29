@@ -1,7 +1,6 @@
 import { Input } from '@/components';
 import type { Coordinates } from '@/types';
 import { useKeyListeners } from '@/utils';
-import { useViewport } from '@xyflow/react';
 import { useEffect, useRef, useState } from 'react';
 import type { EditorMenuOption } from '../nodes/node-types';
 
@@ -12,6 +11,8 @@ interface ContextMenuProps {
   y: number;
   options: EditorMenuOption[];
   onSelect: (option: EditorMenuOption, coordinates: Coordinates) => void;
+  /** Canvas / flow space coordinates for placing a new component (parent computes). */
+  addComponentCoordinates: Coordinates;
 }
 
 export const ContextMenu = ({
@@ -21,9 +22,8 @@ export const ContextMenu = ({
   options,
   x: _x,
   y: _y,
+  addComponentCoordinates,
 }: ContextMenuProps) => {
-  const sidebarCollapsed = localStorage.getItem('qb.sidebarCollapsed') === 'true';
-
   const [filterValue, setFilterValue] = useState<string>('');
 
   const filteredOptions = options.filter((option) =>
@@ -32,16 +32,9 @@ export const ContextMenu = ({
 
   const selection = filteredOptions[0];
 
-  const { x: viewportX, y: viewportY } = useViewport();
-  const x = _x - (sidebarCollapsed ? 47 : 255);
-  const y = _y;
-
-  const rightWindowBoundary = window.innerWidth - 350; // Account for width of menu
-  const bottomWindowBoundary = window.innerHeight - 250; // Account for max height of menu
+  const rightWindowBoundary = window.innerWidth - 350;
+  const bottomWindowBoundary = window.innerHeight - 250;
   const leftWindowBoundary = 350;
-
-  const relativeX = x - viewportX;
-  const relativeY = y - viewportY;
 
   const inputRef = useRef<HTMLInputElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -69,7 +62,7 @@ export const ContextMenu = ({
   };
 
   const handleSelect = (option: EditorMenuOption) => {
-    onSelect(option, { x: relativeX, y: relativeY });
+    onSelect(option, addComponentCoordinates);
     handleClose();
   };
 
@@ -94,10 +87,10 @@ export const ContextMenu = ({
         padding: '8px',
         width: '300px',
         maxHeight: '350px',
-        position: 'absolute',
-        top: _y > bottomWindowBoundary ? undefined : y,
+        position: 'fixed',
+        top: _y > bottomWindowBoundary ? undefined : _y,
         bottom: _y > bottomWindowBoundary ? 0 : undefined,
-        left: _x > rightWindowBoundary ? undefined : _x < leftWindowBoundary ? 0 : x,
+        left: _x > rightWindowBoundary ? undefined : _x < leftWindowBoundary ? 0 : _x,
         right: _x > rightWindowBoundary ? 0 : undefined,
         zIndex: 10,
         backgroundColor: '#42403D',

@@ -13,6 +13,8 @@ export type UseMarqueeSelectionOptions = {
   containerRef: React.RefObject<HTMLElement | null>;
   getItems: () => SelectableCanvasItem[];
   onComplete: (hitIds: string[], modifiers: EditorSelectionPointerModifiers) => void;
+  /** Down+up on the pane without a real marquee drag (e.g. clear selection). */
+  onMicroDrag?: (modifiers: EditorSelectionPointerModifiers) => void;
   /** Ignore tiny box drags (accidental clicks on the marquee layer). */
   minDragPx?: number;
   enabled?: boolean;
@@ -33,6 +35,7 @@ export function useMarqueeSelection({
   containerRef,
   getItems,
   onComplete,
+  onMicroDrag,
   minDragPx = 4,
   enabled = true,
 }: UseMarqueeSelectionOptions) {
@@ -41,11 +44,12 @@ export function useMarqueeSelection({
   const optsRef = useRef({
     getItems,
     onComplete,
+    onMicroDrag,
     minDragPx,
     enabled,
     containerRef,
   });
-  optsRef.current = { getItems, onComplete, minDragPx, enabled, containerRef };
+  optsRef.current = { getItems, onComplete, onMicroDrag, minDragPx, enabled, containerRef };
 
   const activeRef = useRef<ActiveMarquee | null>(null);
 
@@ -94,7 +98,14 @@ export function useMarqueeSelection({
     const { x, y } = clientToCanvas(e.clientX, e.clientY, container);
     const rect = normalizeMarqueeRect(a.startX, a.startY, x, y);
     const minPx = optsRef.current.minDragPx;
-    if (rect.width < minPx && rect.height < minPx) return;
+    if (rect.width < minPx && rect.height < minPx) {
+      optsRef.current.onMicroDrag?.({
+        shiftKey: e.shiftKey,
+        metaKey: e.metaKey,
+        ctrlKey: e.ctrlKey,
+      });
+      return;
+    }
 
     const hits = idsIntersectingMarquee(optsRef.current.getItems(), rect);
     optsRef.current.onComplete(hits, a.modifiers);

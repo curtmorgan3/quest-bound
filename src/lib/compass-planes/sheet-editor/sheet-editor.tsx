@@ -1,19 +1,11 @@
 import type { ComponentUpdate } from '@/lib/compass-api';
-import { WindowEditorContext } from '@/stores';
 import type { Component, Coordinates } from '@/types';
-import { type Node } from '@xyflow/react';
-import { useCallback, useContext, useRef, useState } from 'react';
-import { BaseEditor } from '../base-editor';
-import { sheetNodeTypes, type EditorMenuOption } from '../nodes';
-import {
-  convertComponentsToNodes,
-  useHandleNodeChange,
-  useSubscribeExteriorComponentChanges,
-} from '../utils';
+import { useCallback } from 'react';
+import type { EditorMenuOption } from '../nodes';
 import { injectDefaultComponent } from '../utils/inject-defaults';
 import { contextOptions } from './sheet-context-options';
+import { SheetCanvasEditor } from './sheet-canvas-editor';
 import { useKeyboardControls } from './use-keyboard-controls';
-import { useSyncNodes } from './use-sync-nodes';
 import { useUndoRedo } from './use-undo-redo';
 
 interface SheetEditorProps {
@@ -31,22 +23,15 @@ export const SheetEditor = ({
   onComponentsDeleted,
   onComponentsRestored,
 }: SheetEditorProps) => {
-  const { getComponent } = useContext(WindowEditorContext);
-  const [nodes, setNodes] = useState<Node[]>(convertComponentsToNodes(components));
-
-  const shouldRestoreFromSnapshot = useRef<boolean>(false);
-
   const { pushUndoSnapshot, undo, redo } = useUndoRedo({
     components,
     onComponentsRestored: (snapshot: Component[]) => {
-      shouldRestoreFromSnapshot.current = true;
       onComponentsRestored?.(snapshot);
     },
   });
 
   const wrappedOnComponentsUpdated = useCallback(
     (updates: Array<ComponentUpdate>) => {
-      shouldRestoreFromSnapshot.current = false;
       pushUndoSnapshot();
       onComponentsUpdated(updates);
     },
@@ -55,7 +40,6 @@ export const SheetEditor = ({
 
   const wrappedOnComponentsCreated = useCallback(
     (updates: Array<Partial<Component>>) => {
-      shouldRestoreFromSnapshot.current = false;
       pushUndoSnapshot();
       onComponentsCreated(updates);
     },
@@ -64,28 +48,11 @@ export const SheetEditor = ({
 
   const wrappedOnComponentsDeleted = useCallback(
     (ids: Array<string>) => {
-      shouldRestoreFromSnapshot.current = false;
       pushUndoSnapshot();
       onComponentsDeleted(ids);
     },
     [pushUndoSnapshot, onComponentsDeleted],
   );
-
-  const { onComponentsChangedExternally } = useSyncNodes({
-    components,
-    nodes,
-    setNodes,
-    shouldRecreateNodes: shouldRestoreFromSnapshot.current,
-  });
-
-  useSubscribeExteriorComponentChanges(onComponentsChangedExternally);
-
-  const onNodeChange = useHandleNodeChange({
-    setNodes,
-    getComponent,
-    onDeleteNodes: wrappedOnComponentsDeleted,
-    onChange: wrappedOnComponentsUpdated,
-  });
 
   useKeyboardControls({
     components,
@@ -109,12 +76,12 @@ export const SheetEditor = ({
   };
 
   return (
-    <BaseEditor
-      nodes={nodes}
-      onNodesChange={onNodeChange}
+    <SheetCanvasEditor
+      components={components}
       menuOptions={contextOptions}
       onSelectFromMenu={handleContextMenuSelection}
-      nodeTypes={sheetNodeTypes}
+      onComponentsDeleted={wrappedOnComponentsDeleted}
+      onComponentsUpdated={wrappedOnComponentsUpdated}
     />
   );
 };
