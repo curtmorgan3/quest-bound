@@ -9,5 +9,5 @@ export * from './editor-selection-store';
 export * from './marquee-hit-test';
 export * from './selection-modifiers';
 export * from './use-marquee-selection';
-export * from './use-pointer-drag';
+export { type PointerDragFollower, usePointerDrag } from './use-pointer-drag';
 export * from './use-shift-key';

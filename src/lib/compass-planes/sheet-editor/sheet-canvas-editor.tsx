@@ -73,7 +73,9 @@ export function SheetCanvasEditor({
     add: Coordinates;
   } | null>(null);
 
-  const [movePreview, setMovePreview] = useState<{ id: string; x: number; y: number } | null>(null);
+  const [movePreviewById, setMovePreviewById] = useState<
+    Record<string, { x: number; y: number }>
+  >({});
   const [resizePreview, setResizePreview] = useState<{
     id: string;
     x: number;
@@ -126,30 +128,42 @@ export function SheetCanvasEditor({
   const { beginMove } = usePointerDrag({
     containerRef: sectionRef,
     gridSize: useGrid ? DEFAULT_GRID_SIZE : null,
-    onCommit: (u) => {
-      if (u.id != null && typeof u.x === 'number' && typeof u.y === 'number') {
-        setMovePreview({ id: u.id, x: u.x, y: u.y });
+    onCommit: (updates) => {
+      const next: Record<string, { x: number; y: number }> = {};
+      for (const u of updates) {
+        if (u.id != null && typeof u.x === 'number' && typeof u.y === 'number') {
+          next[u.id] = { x: u.x, y: u.y };
+        }
       }
-      onComponentsUpdated([u]);
+      setMovePreviewById(next);
+      onComponentsUpdated(updates);
     },
-    onTransientPosition: (id, x, y) => setMovePreview({ id, x, y }),
+    onTransientPositions: (items) => {
+      setMovePreviewById(Object.fromEntries(items.map((i) => [i.id, { x: i.x, y: i.y }])));
+    },
     onDragEnd: ({ didCommit }) => {
-      if (!didCommit) setMovePreview(null);
+      if (!didCommit) setMovePreviewById({});
     },
     canDrag: (id) => !getComponent(id)?.locked,
   });
 
   useLayoutEffect(() => {
-    if (!movePreview) return;
-    const c = components.find((x) => x.id === movePreview.id);
-    if (!c) {
-      setMovePreview(null);
-      return;
-    }
-    if (c.x === movePreview.x && c.y === movePreview.y) {
-      setMovePreview(null);
-    }
-  }, [components, movePreview]);
+    setMovePreviewById((prev) => {
+      const ids = Object.keys(prev);
+      if (ids.length === 0) return prev;
+      let next = { ...prev };
+      let changed = false;
+      for (const id of ids) {
+        const pos = prev[id];
+        const c = components.find((x) => x.id === id);
+        if (!c || (c.x === pos.x && c.y === pos.y)) {
+          delete next[id];
+          changed = true;
+        }
+      }
+      return changed ? next : prev;
+    });
+  }, [components]);
 
   useLayoutEffect(() => {
     if (!resizePreview) return;
@@ -226,7 +240,12 @@ export function SheetCanvasEditor({
       if (updates.length) onComponentsUpdated(updates);
 
       if (!c.locked) {
-        beginMove(e, { id: c.id, x: c.x, y: c.y });
+        const movableSelected = components.filter((x) => x.selected && !x.locked);
+        const followers =
+          c.selected && movableSelected.length > 1
+            ? movableSelected.filter((x) => x.id !== c.id).map((x) => ({ id: x.id, x: x.x, y: x.y }))
+            : undefined;
+        beginMove(e, { id: c.id, x: c.x, y: c.y, followers });
       }
     },
     [beginMove, components, onComponentsUpdated],
@@ -346,10 +365,10 @@ export function SheetCanvasEditor({
                     width: resizePreview.width,
                     height: resizePreview.height,
                   }
-                : movePreview?.id === c.id
+                : movePreviewById[c.id]
                   ? {
-                      left: movePreview.x,
-                      top: movePreview.y,
+                      left: movePreviewById[c.id].x,
+                      top: movePreviewById[c.id].y,
                       width: c.width,
                       height: c.height,
                     }

@@ -16,6 +16,12 @@ export function updatesForClickSelection(
 ): ComponentUpdate[] {
   const additive = isAdditiveEditorSelection(modifiers);
   if (!additive) {
+    const clicked = components.find((c) => c.id === clickedId);
+    const selectedCount = components.filter((c) => c.selected).length;
+    // Pointer-down on an item that is already in a multi-selection: keep selection (group drag).
+    if (clicked?.selected && selectedCount > 1) {
+      return [];
+    }
     return components
       .map((c) => ({
         id: c.id,

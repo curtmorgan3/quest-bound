@@ -3,49 +3,83 @@ import { useCallback, useRef } from 'react';
 
 import { clientToCanvas, snapPointToGrid } from './client-to-canvas';
 
+export type PointerDragFollower = { id: string; x: number; y: number };
+
 export type UsePointerDragOptions = {
   containerRef: React.RefObject<HTMLElement | null>;
   /** Omit or pass `null` / `0` to disable snapping. */
   gridSize?: number | null;
-  /** Latest geometry commit (one update per gesture), mirroring `useHandleNodeChange` position commits. */
-  onCommit: (update: ComponentUpdate) => void;
-  /** Optional live preview during drag (rAF-throttled). */
-  onTransientPosition?: (id: string, x: number, y: number) => void;
+  /** One update per moved item (leader + followers) on pointerup. */
+  onCommit: (updates: ComponentUpdate[]) => void;
+  /** Live preview during drag (rAF-throttled), all items that moved this frame. */
+  onTransientPositions?: (positions: { id: string; x: number; y: number }[]) => void;
   /**
    * Called after pointer up/cancel. `didCommit` is true when `onCommit` ran this gesture.
    * Keep showing committed geometry until props catch up when `didCommit` is true.
    */
   onDragEnd?: (info: { didCommit: boolean }) => void;
   canDrag?: (id: string) => boolean;
-  /** If true, skip `onCommit` when the snapped position equals the start position. */
+  /** If true, skip `onCommit` when the leader's snapped position equals its start. */
   skipCommitIfUnchanged?: boolean;
 };
 
 type DragPhase = {
-  id: string;
+  leaderId: string;
   originX: number;
   originY: number;
   startLocalX: number;
   startLocalY: number;
   pointerId: number;
+  followers: { id: string; originX: number; originY: number }[];
 };
 
+function positionsForDelta(
+  leaderId: string,
+  leaderOriginX: number,
+  leaderOriginY: number,
+  followers: DragPhase['followers'],
+  rawDx: number,
+  rawDy: number,
+  gridSize: number | null,
+): { id: string; x: number; y: number }[] {
+  let nx = leaderOriginX + rawDx;
+  let ny = leaderOriginY + rawDy;
+  const gs = gridSize;
+  if (gs != null && gs > 0) {
+    const s = snapPointToGrid(nx, ny, gs);
+    nx = s.x;
+    ny = s.y;
+  }
+  const out: { id: string; x: number; y: number }[] = [{ id: leaderId, x: nx, y: ny }];
+  for (const f of followers) {
+    let fx = f.originX + rawDx;
+    let fy = f.originY + rawDy;
+    if (gs != null && gs > 0) {
+      const s = snapPointToGrid(fx, fy, gs);
+      fx = s.x;
+      fy = s.y;
+    }
+    out.push({ id: f.id, x: fx, y: fy });
+  }
+  return out;
+}
+
 /**
- * Pointer-driven move in canvas space. Applies optional grid snap and batches transient updates to rAF.
- * Commits a single `ComponentUpdate` on `pointerup` / `pointercancel`.
+ * Pointer-driven move in canvas space. Optional followers move by the same pointer delta (each snapped to grid).
+ * Commits `ComponentUpdate[]` on pointerup / pointercancel.
  */
 export function usePointerDrag({
   containerRef,
   gridSize,
   onCommit,
-  onTransientPosition,
+  onTransientPositions,
   onDragEnd,
   canDrag = () => true,
   skipCommitIfUnchanged = true,
 }: UsePointerDragOptions) {
   const optsRef = useRef({
     onCommit,
-    onTransientPosition,
+    onTransientPositions,
     onDragEnd,
     canDrag,
     skipCommitIfUnchanged,
@@ -54,7 +88,7 @@ export function usePointerDrag({
   });
   optsRef.current = {
     onCommit,
-    onTransientPosition,
+    onTransientPositions,
     onDragEnd,
     canDrag,
     skipCommitIfUnchanged,
@@ -64,15 +98,15 @@ export function usePointerDrag({
 
   const phaseRef = useRef<DragPhase | null>(null);
   const rafRef = useRef<number | null>(null);
-  const pendingRef = useRef<{ id: string; x: number; y: number } | null>(null);
-  const lastPosRef = useRef<{ x: number; y: number } | null>(null);
+  const pendingRef = useRef<{ id: string; x: number; y: number }[] | null>(null);
+  const lastPositionsRef = useRef<{ id: string; x: number; y: number }[] | null>(null);
 
   const flushTransient = useCallback(() => {
     rafRef.current = null;
     const pending = pendingRef.current;
     const phase = phaseRef.current;
-    if (!pending || !phase || pending.id !== phase.id) return;
-    optsRef.current.onTransientPosition?.(pending.id, pending.x, pending.y);
+    if (!pending || !phase) return;
+    optsRef.current.onTransientPositions?.(pending);
   }, []);
 
   const scheduleTransient = useCallback(() => {
@@ -81,7 +115,10 @@ export function usePointerDrag({
   }, [flushTransient]);
 
   const beginMove = useCallback(
-    (e: React.PointerEvent<Element>, params: { id: string; x: number; y: number }) => {
+    (
+      e: React.PointerEvent<Element>,
+      params: { id: string; x: number; y: number; followers?: PointerDragFollower[] },
+    ) => {
       const o = optsRef.current;
       if (e.button !== 0) return;
       if (!o.canDrag(params.id)) return;
@@ -92,15 +129,21 @@ export function usePointerDrag({
       e.stopPropagation();
 
       const local = clientToCanvas(e.clientX, e.clientY, container);
+      const followers = (params.followers ?? []).map((f) => ({
+        id: f.id,
+        originX: f.x,
+        originY: f.y,
+      }));
       phaseRef.current = {
-        id: params.id,
+        leaderId: params.id,
         originX: params.x,
         originY: params.y,
         startLocalX: local.x,
         startLocalY: local.y,
         pointerId: e.pointerId,
+        followers,
       };
-      lastPosRef.current = { x: params.x, y: params.y };
+      lastPositionsRef.current = [{ id: params.id, x: params.x, y: params.y }, ...followers.map((f) => ({ id: f.id, x: f.originX, y: f.originY }))];
 
       const el = e.currentTarget;
       el.setPointerCapture(e.pointerId);
@@ -112,16 +155,19 @@ export function usePointerDrag({
         const c = oc.containerRef.current;
         if (!c) return;
         const cur = clientToCanvas(ev.clientX, ev.clientY, c);
-        let nx = ph.originX + (cur.x - ph.startLocalX);
-        let ny = ph.originY + (cur.y - ph.startLocalY);
-        const gs = oc.gridSize;
-        if (gs != null && gs > 0) {
-          const s = snapPointToGrid(nx, ny, gs);
-          nx = s.x;
-          ny = s.y;
-        }
-        lastPosRef.current = { x: nx, y: ny };
-        pendingRef.current = { id: ph.id, x: nx, y: ny };
+        const rawDx = cur.x - ph.startLocalX;
+        const rawDy = cur.y - ph.startLocalY;
+        const positions = positionsForDelta(
+          ph.leaderId,
+          ph.originX,
+          ph.originY,
+          ph.followers,
+          rawDx,
+          rawDy,
+          oc.gridSize,
+        );
+        lastPositionsRef.current = positions;
+        pendingRef.current = positions;
         scheduleTransient();
       };
 
@@ -151,15 +197,18 @@ export function usePointerDrag({
             }
           }
 
-          const last = lastPosRef.current;
-          lastPosRef.current = null;
-          if (ph && ph.pointerId === ev.pointerId && last) {
+          const last = lastPositionsRef.current;
+          lastPositionsRef.current = null;
+          if (ph && ph.pointerId === ev.pointerId && last?.length) {
+            const leaderPos = last.find((p) => p.id === ph.leaderId);
             const skip =
               optsRef.current.skipCommitIfUnchanged &&
-              last.x === params.x &&
-              last.y === params.y;
+              leaderPos != null &&
+              leaderPos.x === params.x &&
+              leaderPos.y === params.y;
             if (!skip) {
-              optsRef.current.onCommit({ id: ph.id, x: last.x, y: last.y });
+              const updates: ComponentUpdate[] = last.map((p) => ({ id: p.id, x: p.x, y: p.y }));
+              optsRef.current.onCommit(updates);
               didCommit = true;
             }
           }
