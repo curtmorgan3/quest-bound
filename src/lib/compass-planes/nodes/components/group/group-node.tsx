@@ -1,5 +1,5 @@
-import { useComponentCanvasDimensions } from '@/lib/compass-planes/canvas/editor-item-layout-context';
 import { useEditorItemId } from '@/lib/compass-planes/canvas/editor-item-context';
+import { useComponentCanvasDimensions } from '@/lib/compass-planes/canvas/editor-item-layout-context';
 import { getBackgroundStyle, useComponentStyles } from '@/lib/compass-planes/utils';
 import { WindowEditorContext } from '@/stores';
 import type { Component, ComponentStyle } from '@/types';
@@ -22,10 +22,10 @@ export const EditGroupNode = () => {
         aria-hidden
         className='box-border h-full w-full'
         style={{
-          height: ch,
-          width: cw,
           ...css,
           ...getBackgroundStyle(css),
+          width: cw,
+          height: ch,
           overflow: 'visible',
         }}
       />
@@ -35,14 +35,17 @@ export const EditGroupNode = () => {
 
 export const ViewGroupNode = ({ component }: { component: Component }) => {
   const css = useComponentStyles(component) as ComponentStyle;
+  const { width: cw, height: ch } = useComponentCanvasDimensions(component);
 
   return (
     <div
       aria-hidden
-      className='pointer-events-none box-border h-full w-full'
+      className='pointer-events-none component-group'
       style={{
         ...css,
         ...getBackgroundStyle(css),
+        width: cw,
+        height: ch,
         overflow: 'visible',
       }}
     />

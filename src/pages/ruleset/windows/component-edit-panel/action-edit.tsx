@@ -1,12 +1,23 @@
+import type { ComponentUpdate } from '@/lib/compass-api';
 import { useComponents } from '@/lib/compass-api';
+import { ComponentTypes } from '@/lib/compass-planes/nodes';
 import { expandDeleteIds } from '@/lib/compass-planes/sheet-editor/component-world-geometry';
 import { colorPrimary } from '@/palette';
 import { WindowEditorContext } from '@/stores';
 import type { Component } from '@/types';
-import { Copy, Group, Lock, Trash, Ungroup } from 'lucide-react';
-import { useContext } from 'react';
+import { ArrowUpFromDot, Copy, Group, Lock, Trash, Ungroup } from 'lucide-react';
+import { useContext, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import { valueIfAllAreEqual } from './utils';
+
+function updatesToSelectOnly(components: Component[], id: string): ComponentUpdate[] {
+  return components
+    .map((c) => ({ id: c.id, selected: c.id === id }))
+    .filter((u) => {
+      const prev = components.find((c) => c.id === u.id);
+      return prev != null && (prev.selected ?? false) !== u.selected;
+    });
+}
 
 interface Props {
   components: Array<Component>;
@@ -23,9 +34,36 @@ export const ActionEdit = ({ components, handleUpdate }: Props) => {
     ungroupSelectedComponents,
     canGroupSelected,
     canUngroupSelected,
+    updateComponents,
   } = useContext(WindowEditorContext);
 
   const locked = valueIfAllAreEqual(components, 'locked') as string | boolean;
+
+  const { hasGroupedSelection, canSelectGroup, parentGroupId } = useMemo(() => {
+    const unlocked = components.filter((c) => !c.locked);
+    const hasParent = unlocked.some((c) => Boolean(c.parentComponentId));
+    if (!hasParent) {
+      return {
+        hasGroupedSelection: false,
+        canSelectGroup: false,
+        parentGroupId: null as string | null,
+      };
+    }
+    const allChildren = unlocked.length > 0 && unlocked.every((c) => Boolean(c.parentComponentId));
+    const parentIds = new Set(
+      unlocked.map((c) => c.parentComponentId).filter((id): id is string => Boolean(id)),
+    );
+    const onlyParent = parentIds.size === 1 ? [...parentIds][0] : null;
+    const parent =
+      onlyParent != null
+        ? allComponents.find((c) => c.id === onlyParent && c.type === ComponentTypes.GROUP)
+        : undefined;
+    return {
+      hasGroupedSelection: true,
+      canSelectGroup: Boolean(allChildren && parent),
+      parentGroupId: parent?.id ?? null,
+    };
+  }, [allComponents, components]);
 
   const handleLock = () => {
     handleUpdate('locked', !locked);
@@ -49,6 +87,12 @@ export const ActionEdit = ({ components, handleUpdate }: Props) => {
     }
   };
 
+  const handleSelectGroup = () => {
+    if (!canSelectGroup || !parentGroupId) return;
+    const updates = updatesToSelectOnly(allComponents, parentGroupId);
+    if (updates.length) updateComponents(updates);
+  };
+
   return (
     <div className='flex-col w-full flex flex-col gap-3 pb-2 border-b-1'>
       <p className='text-sm'>Actions</p>
@@ -56,20 +100,31 @@ export const ActionEdit = ({ components, handleUpdate }: Props) => {
       <div className='w-full flex flex-row gap-4 items-end'>
         <Copy className={`text-xs h-[18px] w-[18px] cursor-pointer`} onClick={handleCopy} />
 
-        <Group
-          className={`text-xs h-[18px] w-[18px] cursor-${canGroupSelected ? 'pointer' : 'not-allowed'}`}
-          style={{
-            color: canGroupSelected ? colorPrimary : 'unset',
-            opacity: canGroupSelected ? 1 : 0.45,
-          }}
-          onClick={() => {
-            if (canGroupSelected) groupSelectedComponents();
-          }}
-        />
+        {hasGroupedSelection ? (
+          <ArrowUpFromDot
+            aria-label='Select group'
+            className={`text-xs h-[18px] w-[18px] cursor-${canSelectGroup ? 'pointer' : 'not-allowed'}`}
+            style={{
+              opacity: canSelectGroup ? 1 : 0.45,
+            }}
+            onClick={() => {
+              if (canSelectGroup) handleSelectGroup();
+            }}
+          />
+        ) : (
+          <Group
+            className={`text-xs h-[18px] w-[18px] cursor-${canGroupSelected ? 'pointer' : 'not-allowed'}`}
+            style={{
+              opacity: canGroupSelected ? 1 : 0.45,
+            }}
+            onClick={() => {
+              if (canGroupSelected) groupSelectedComponents();
+            }}
+          />
+        )}
         <Ungroup
           className={`text-xs h-[18px] w-[18px] cursor-${canUngroupSelected ? 'pointer' : 'not-allowed'}`}
           style={{
-            color: canUngroupSelected ? colorPrimary : 'unset',
             opacity: canUngroupSelected ? 1 : 0.45,
           }}
           onClick={() => {
