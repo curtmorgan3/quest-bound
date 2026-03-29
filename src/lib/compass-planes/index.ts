@@ -1,4 +1,3 @@
-export * from './base-editor';
 export * from './canvas';
 export * from './page-details-form';
 export * from './ruleset-page-editor';

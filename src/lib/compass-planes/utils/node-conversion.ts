@@ -1,6 +1,5 @@
 import { CharacterContext } from '@/stores';
 import type { Component, ComponentData, ComponentStyle } from '@/types';
-import type { Node } from '@xyflow/react';
 import { useContext, useMemo } from 'react';
 import {
   type PositionValues,
@@ -13,7 +12,19 @@ import {
 const componentDataCache = new Map<string, ComponentData>();
 const componentStyleCache = new Map<string, ComponentStyle>();
 
-export function convertComponentToNode(component: Component): Node {
+/**
+ * Legacy node shape historically aligned with React Flow; kept for conversion helpers and tests.
+ */
+export type ComponentCanvasNode = {
+  id: string;
+  position: { x: number; y: number };
+  type: string;
+  zIndex: number;
+  selected?: boolean;
+  data: Component & { label: string };
+};
+
+export function convertComponentToNode(component: Component): ComponentCanvasNode {
   return {
     id: component.id,
     position: { x: component.x, y: component.y },
@@ -27,7 +38,7 @@ export function convertComponentToNode(component: Component): Node {
   };
 }
 
-export function convertComponentsToNodes(components: Component[]): Node[] {
+export function convertComponentsToNodes(components: Component[]): ComponentCanvasNode[] {
   return components.map((component) => {
     return convertComponentToNode(component);
   });

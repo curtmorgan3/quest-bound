@@ -3,7 +3,6 @@ export * from './use-attribute-changed-by-script';
 export * from './use-component-animation-trigger';
 export * from './use-register-animation';
 export * from './inject-character-data';
-export * from './node-change-handler';
 export * from './node-conversion';
 export * from './style-utils';
 export * from './use-node-data';

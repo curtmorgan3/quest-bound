@@ -19,7 +19,7 @@ export const PositionEdit = ({ components, handleUpdate }: Props) => {
   const rotation = valueIfAllAreEqual(components, 'rotation');
   const layer = valueIfAllAreEqual(components, 'z');
 
-  // We only want to fire this when the position is changed from outside react-flow context,
+  // Fire when position changes from the panel (not from an in-progress canvas drag),
   // so it's here instead of hooked into the API update hook.
   const handlePositionChange = (key: string, value: number) => {
     fireExternalComponentChangeEvent({

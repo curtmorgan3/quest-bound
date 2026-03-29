@@ -136,11 +136,6 @@ code {
   display: block;
 }
 
-.react-flow__attribution a {
-  color: #000;
-  opacity: 0.4;
-}
-
 .cm-tooltip-autocomplete {
   background-color: #2a2a2a !important;
   border-radius: 6px !important;

@@ -1,5 +1,5 @@
 /**
- * Matches BaseEditor / React Flow: Shift or platform selection modifier (⌘ on Mac, Ctrl elsewhere)
+ * Matches the sheet canvas editor: Shift or platform selection modifier (⌘ on Mac, Ctrl elsewhere)
  * extends the current selection instead of replacing it.
  */
 export type EditorSelectionPointerModifiers = {

@@ -21,8 +21,8 @@ export const COMPONENTS_POSITION_CHANGE_EVENT = 'component-position-change';
 type EventCallback = (updateMap: ExternalComponentChangeCallback) => void;
 
 /**
- * Fires when a component changes outside the context of react-flow in a way that should force
- * the nodes to rerender, e.g. component is created, position changes from the edit panel or keyboard shortcuts.
+ * Fires when a component changes outside the live canvas gesture path, e.g. position updates from
+ * the edit panel or keyboard shortcuts (kept for compatibility with `fireExternalComponentChangeEvent`).
  */
 export const useSubscribeExteriorComponentChanges = (callback: EventCallback) => {
   const subscribed = useRef<boolean>(false);

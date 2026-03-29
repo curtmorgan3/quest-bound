@@ -11,7 +11,7 @@ export type EditorSelectionState = {
 type EditorSelectionActions = {
   clearSelection: () => void;
   setSelection: (ids: Iterable<string>) => void;
-  /** Click on one canvas item (matches Shift / ⌘ / Ctrl rules from BaseEditor). */
+  /** Click on one canvas item (matches Shift / ⌘ / Ctrl rules from the sheet canvas editor). */
   applyPointerClick: (id: string, modifiers: EditorSelectionPointerModifiers) => void;
   /** Rectangle / marquee complete; `hitIds` are items intersecting the marquee. */
   applyMarquee: (hitIds: string[], modifiers: EditorSelectionPointerModifiers) => void;
