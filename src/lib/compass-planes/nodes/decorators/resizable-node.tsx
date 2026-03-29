@@ -347,6 +347,7 @@ export const ResizableNode = ({
   );
 
   const showHandles = selected && !disabled && !locked && pos.rotation === 0;
+  const showSelectionOutline = selected && !disabled;
 
   const cursorFor: Record<HandleId, string> = {
     nw: 'nwse-resize',
@@ -380,6 +381,12 @@ export const ResizableNode = ({
         position: 'relative',
         width: '100%',
         height: '100%',
+        ...(showSelectionOutline
+          ? {
+              outline: '1px solid #7dd3fc',
+              outlineOffset: '-1px',
+            }
+          : {}),
       }}>
       {showHandles && (
         <>

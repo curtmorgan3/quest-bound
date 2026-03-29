@@ -1,3 +1,6 @@
+import { MarkdownViewer } from '@/components/composites';
+import { useEditorItemId } from '@/lib/compass-planes/canvas/editor-item-context';
+import { useComponentCanvasDimensions } from '@/lib/compass-planes/canvas/editor-item-layout-context';
 import {
   fireExternalComponentChangeEvent,
   getBackgroundStyle,
@@ -7,10 +10,7 @@ import {
 } from '@/lib/compass-planes/utils';
 import { CharacterContext, WindowEditorContext } from '@/stores';
 import type { Component, ContentComponentData, TextComponentStyle } from '@/types';
-import { useEditorItemId } from '@/lib/compass-planes/canvas/editor-item-context';
-import { useComponentCanvasDimensions } from '@/lib/compass-planes/canvas/editor-item-layout-context';
 import { memo, useContext, useEffect, useRef, useState } from 'react';
-import { MarkdownViewer } from '@/components/composites';
 import { ResizableNode } from '../../decorators';
 
 export const EditContentNode = () => {
@@ -169,6 +169,8 @@ const ViewContentNodeComponent = ({
         outlineColor: css.outlineColor,
         outlineWidth: css.outlineWidth,
         overflow: 'auto',
+        userSelect: 'none',
+        WebkitUserSelect: 'none',
       }}>
       <div
         onWheelCapture={(e) => e.stopPropagation()}
@@ -177,6 +179,8 @@ const ViewContentNodeComponent = ({
           width: '100%',
           height: '100%',
           overflow: 'auto',
+          userSelect: 'none',
+          WebkitUserSelect: 'none',
         }}
         className={`nowheel${windowEditorMode ? '' : ' nodrag'} prose prose-invert max-w-none editor-content md-content`}>
         <MarkdownViewer value={data?.interpolatedValue?.toString() ?? ''} />

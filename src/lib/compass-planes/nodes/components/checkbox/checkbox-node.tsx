@@ -1,4 +1,6 @@
 import { useAssets } from '@/lib/compass-api';
+import { useEditorItemId } from '@/lib/compass-planes/canvas/editor-item-context';
+import { useComponentCanvasDimensions } from '@/lib/compass-planes/canvas/editor-item-layout-context';
 import {
   getBackgroundStyle,
   getColorStyle,
@@ -7,8 +9,6 @@ import {
 } from '@/lib/compass-planes/utils';
 import { CharacterContext, WindowEditorContext } from '@/stores';
 import type { Component, ComponentStyle } from '@/types';
-import { useEditorItemId } from '@/lib/compass-planes/canvas/editor-item-context';
-import { useComponentCanvasDimensions } from '@/lib/compass-planes/canvas/editor-item-layout-context';
 import { CheckIcon, SquareIcon } from 'lucide-react';
 import { memo, useContext } from 'react';
 import { ResizableNode } from '../../decorators';
@@ -76,6 +76,7 @@ const ViewCheckboxNodeComponent = ({
         outlineColor: css.outlineColor,
         outlineWidth: css.outlineWidth,
         cursor: editMode ? 'default' : 'pointer',
+        ...(!editMode ? { userSelect: 'none', WebkitUserSelect: 'none' } : {}),
       }}>
       {isChecked ? (
         <Checked url={checkedImageUrl} css={css} />
@@ -97,9 +98,14 @@ function Checked({ url, css }: { url?: string; css: ComponentStyle }) {
     return (
       <img
         src={url}
+        alt=''
+        draggable={false}
+        onDragStart={(e) => e.preventDefault()}
         style={{
           height: '100%',
           width: '100%',
+          userSelect: 'none',
+          WebkitUserSelect: 'none',
           ...colorStyle,
         }}
       />
@@ -123,9 +129,14 @@ function Unchecked({ url, css }: { url?: string; css: ComponentStyle }) {
     return (
       <img
         src={url}
+        alt=''
+        draggable={false}
+        onDragStart={(e) => e.preventDefault()}
         style={{
           height: '100%',
           width: '100%',
+          userSelect: 'none',
+          WebkitUserSelect: 'none',
           ...colorStyle,
         }}
       />

@@ -9,6 +9,8 @@ import {
   DialogTitle,
   NumberInput,
 } from '@/components';
+import { useEditorItemId } from '@/lib/compass-planes/canvas/editor-item-context';
+import { useComponentCanvasDimensions } from '@/lib/compass-planes/canvas/editor-item-layout-context';
 import {
   getBackgroundStyle,
   getColorStyle,
@@ -17,8 +19,6 @@ import {
 } from '@/lib/compass-planes/utils';
 import { CharacterContext, WindowEditorContext } from '@/stores';
 import type { Component, TextComponentStyle } from '@/types';
-import { useEditorItemId } from '@/lib/compass-planes/canvas/editor-item-context';
-import { useComponentCanvasDimensions } from '@/lib/compass-planes/canvas/editor-item-layout-context';
 import { memo, useContext, useState } from 'react';
 import { ResizableNode } from '../../decorators';
 
@@ -105,6 +105,7 @@ const ViewInputNodeComponent = ({
     outlineColor: css.outlineColor,
     outlineWidth: css.outlineWidth,
     opacity: css.opacity,
+    ...(!editMode ? { userSelect: 'none', WebkitUserSelect: 'none' } : {}),
   } as React.CSSProperties;
 
   const inputStyle = {
@@ -120,6 +121,11 @@ const ViewInputNodeComponent = ({
     backgroundColor: 'transparent',
     overflow: 'hidden',
   } as React.CSSProperties;
+
+  /** Section uses user-select: none on sheets; re-enable on real fields so values stay editable. */
+  const interactiveFieldStyle = !editMode
+    ? ({ userSelect: 'text', WebkitUserSelect: 'text' } as React.CSSProperties)
+    : ({} as React.CSSProperties);
 
   return (
     <section style={sectionStyle} data-attribute-name={data.name}>
@@ -162,7 +168,7 @@ const ViewInputNodeComponent = ({
           disabled={editMode}
           onChange={(e) => handleChange(e.target.value)}
           value={data.value.toString()}
-          style={inputStyle}>
+          style={{ ...inputStyle, ...interactiveFieldStyle }}>
           <option className='text-muted-foreground' value=''>
             {data.placeholder ?? data.name ?? data.type}
           </option>
@@ -178,7 +184,7 @@ const ViewInputNodeComponent = ({
           placeholder={data?.placeholder ?? data?.name ?? data.type}
           value={Number(data.value)}
           onChange={(value) => handleChange(value)}
-          style={inputStyle}
+          style={{ ...inputStyle, ...interactiveFieldStyle }}
           inputMin={data.min}
           inputMax={data.max}
         />
@@ -190,7 +196,7 @@ const ViewInputNodeComponent = ({
           placeholder={data?.placeholder ?? data?.name ?? data.type}
           onChange={(e) => handleChange(e.target.value)}
           value={editMode ? undefined : data.value.toString()}
-          style={inputStyle}
+          style={{ ...inputStyle, ...interactiveFieldStyle }}
           min={data.min}
           max={data.max}
         />

@@ -1,4 +1,6 @@
 import { useActiveRuleset, useAssets, useCustomProperties } from '@/lib/compass-api';
+import { useEditorItemId } from '@/lib/compass-planes/canvas/editor-item-context';
+import { useComponentCanvasDimensions } from '@/lib/compass-planes/canvas/editor-item-layout-context';
 import {
   getBackgroundStyle,
   getComponentData,
@@ -6,8 +8,6 @@ import {
 } from '@/lib/compass-planes/utils';
 import { CharacterContext, WindowEditorContext } from '@/stores';
 import type { Component, ImageComponentData } from '@/types';
-import { useEditorItemId } from '@/lib/compass-planes/canvas/editor-item-context';
-import { useComponentCanvasDimensions } from '@/lib/compass-planes/canvas/editor-item-layout-context';
 import { memo, useContext } from 'react';
 import { ResizableNode } from '../../decorators';
 
@@ -134,12 +134,15 @@ const ViewImageNodeComponent = ({ component }: { component: Component }) => {
       src={imageSrc}
       alt=''
       draggable={false}
+      onDragStart={(e) => e.preventDefault()}
       style={{
         height: `${ch}px`,
         width: `${cw}px`,
         maxWidth: '100%',
         maxHeight: '100%',
         objectFit: 'cover',
+        userSelect: 'none',
+        WebkitUserSelect: 'none',
         ...css,
         ...(imageSrc ? { backgroundColor: 'transparent' } : getBackgroundStyle(css)),
       }}

@@ -1,3 +1,5 @@
+import { useEditorItemId } from '@/lib/compass-planes/canvas/editor-item-context';
+import { useComponentCanvasDimensions } from '@/lib/compass-planes/canvas/editor-item-layout-context';
 import {
   fireExternalComponentChangeEvent,
   getBackgroundStyle,
@@ -8,9 +10,7 @@ import {
 } from '@/lib/compass-planes/utils';
 import { WindowEditorContext } from '@/stores';
 import type { Component, TextComponentData, TextComponentStyle } from '@/types';
-import { useEditorItemId } from '@/lib/compass-planes/canvas/editor-item-context';
-import { useComponentCanvasDimensions } from '@/lib/compass-planes/canvas/editor-item-layout-context';
-import { memo, useContext, useEffect, useRef, useState } from 'react';
+import { memo, useContext, useEffect, useRef, useState, type CSSProperties } from 'react';
 import { ResizableNode } from '../../decorators';
 
 export const EditTextNode = () => {
@@ -128,8 +128,7 @@ export const EditTextNode = () => {
                 width: 'auto',
                 boxSizing: 'border-box',
                 textAlign: css.textAlign ?? 'start',
-                lineHeight:
-                  typeof css.lineHeight === 'number' ? `${css.lineHeight}px` : undefined,
+                lineHeight: typeof css.lineHeight === 'number' ? `${css.lineHeight}px` : undefined,
                 fieldSizing: 'content',
               }}
             />
@@ -152,8 +151,10 @@ const ViewTextNodeComponent = ({
   const data = useNodeData(component);
   const css = useComponentStyles(component) as TextComponentStyle;
   const { width: cw, height: ch } = useComponentCanvasDimensions(component);
-  /** Sheet editor: idle text is not selectable so drag/click selection does not fight the canvas. */
-  const editorChrome = onDoubleClick != null;
+  const noSelect: CSSProperties = {
+    userSelect: 'none',
+    WebkitUserSelect: 'none',
+  };
 
   return (
     <div
@@ -176,7 +177,7 @@ const ViewTextNodeComponent = ({
           outlineColor: css.outlineColor,
           outlineWidth: css.outlineWidth,
           overflow: 'hidden',
-          ...(editorChrome ? { userSelect: 'none', WebkitUserSelect: 'none' } : {}),
+          ...noSelect,
         }}>
         <span
           onDoubleClick={onDoubleClick}
@@ -186,7 +187,7 @@ const ViewTextNodeComponent = ({
             outline: 'none',
             outlineColor: 'unset',
             outlineWidth: 'unset',
-            ...(editorChrome ? { userSelect: 'none', WebkitUserSelect: 'none' } : {}),
+            ...noSelect,
           }}>
           {data?.interpolatedValue}
         </span>
@@ -197,6 +198,5 @@ const ViewTextNodeComponent = ({
 
 export const ViewTextNode = memo(
   ViewTextNodeComponent,
-  (prev, next) =>
-    prev.component === next.component && prev.onDoubleClick === next.onDoubleClick,
+  (prev, next) => prev.component === next.component && prev.onDoubleClick === next.onDoubleClick,
 );
