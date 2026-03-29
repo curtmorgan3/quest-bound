@@ -401,5 +401,9 @@ async function getParentIds(db: DB, parentTable: string, rulesetId: string): Pro
     const invs = await table.where('characterId').anyOf(characterIds).toArray();
     return invs.map((i) => i.id);
   }
+  if (parentTable === 'composites') {
+    const rows = await table.where('rulesetId').equals(rulesetId).toArray();
+    return rows.map((r) => r.id);
+  }
   return [];
 }

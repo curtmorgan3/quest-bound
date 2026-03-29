@@ -11,6 +11,8 @@ export type DB = Dexie & {
   windows: Dexie.Table;
    rulesetWindows: Dexie.Table;
   components: Dexie.Table;
+  composites: Dexie.Table;
+  compositeVariants: Dexie.Table;
   fonts: Dexie.Table;
   characters: Dexie.Table;
   characterArchetypes: Dexie.Table;

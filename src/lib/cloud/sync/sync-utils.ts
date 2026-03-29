@@ -192,5 +192,10 @@ export async function getRulesetIdForDelete(
     const char = await tables.characters?.get(inv.characterId);
     return char?.rulesetId ?? null;
   }
+  if (config.parentTable === 'composites' && (entity?.compositeId ?? entity?.composite_id)) {
+    const id = (entity.compositeId ?? entity.composite_id) as string;
+    const comp = await tables.composites?.get(id);
+    return comp?.rulesetId ?? null;
+  }
   return null;
 }

@@ -19,6 +19,8 @@ const SYNC_ENTITY_LABELS: Record<string, LabelPair> = {
   fonts: { one: 'font', many: 'fonts' },
   windows: { one: 'window', many: 'windows' },
   components: { one: 'component', many: 'components' },
+  composites: { one: 'composite', many: 'composites' },
+  compositeVariants: { one: 'composite variant', many: 'composite variants' },
   pages: { one: 'page', many: 'pages' },
   rulesetWindows: { one: 'ruleset window', many: 'ruleset windows' },
   scripts: { one: 'script', many: 'scripts' },

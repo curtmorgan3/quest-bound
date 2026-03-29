@@ -246,6 +246,11 @@ export async function planSyncPull(rulesetId: string, db: DB): Promise<PlanSyncP
             parentIds = [...new Set([...parentIds, ...sceneIds])];
           }
         }
+        if (config.parentTable === 'composites') {
+          const localComposites = await db.composites.where('rulesetId').equals(rulesetId).toArray();
+          const localIds = localComposites.map((c) => c.id);
+          parentIds = [...new Set([...parentIds, ...localIds])];
+        }
         const effectiveParentIds = parentIds;
         const rows = await fetchTableRecordsByParent(
           config.remoteTableName,
