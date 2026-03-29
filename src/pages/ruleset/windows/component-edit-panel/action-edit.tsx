@@ -1,12 +1,21 @@
+import {
+  Button,
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  Input,
+} from '@/components';
 import type { ComponentUpdate } from '@/lib/compass-api';
-import { useComponents } from '@/lib/compass-api';
+import { useComposites, useComponents } from '@/lib/compass-api';
 import { ComponentTypes } from '@/lib/compass-planes/nodes';
 import { expandDeleteIds } from '@/lib/compass-planes/sheet-editor/component-world-geometry';
 import { colorPrimary } from '@/palette';
 import { WindowEditorContext } from '@/stores';
 import type { Component } from '@/types';
-import { ArrowUpFromDot, Copy, Group, Lock, Trash, Ungroup } from 'lucide-react';
-import { useContext, useMemo } from 'react';
+import { ArrowUpFromDot, BookMarked, Copy, Group, Lock, Trash, Ungroup } from 'lucide-react';
+import { useContext, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { valueIfAllAreEqual } from './utils';
 
@@ -29,6 +38,9 @@ const MIXED_VALUE_LABEL = '-';
 export const ActionEdit = ({ components, handleUpdate }: Props) => {
   const { windowId } = useParams();
   const { createComponents, deleteComponent, components: allComponents } = useComponents(windowId);
+  const { saveOrUpdateComposite } = useComposites();
+  const [saveCompositeOpen, setSaveCompositeOpen] = useState(false);
+  const [compositeName, setCompositeName] = useState('');
   const {
     groupSelectedComponents,
     ungroupSelectedComponents,
@@ -65,6 +77,14 @@ export const ActionEdit = ({ components, handleUpdate }: Props) => {
     };
   }, [allComponents, components]);
 
+  const singleGroupRoot =
+    components.length === 1 &&
+    components[0] &&
+    components[0].type === ComponentTypes.GROUP &&
+    !components[0].locked
+      ? components[0]
+      : null;
+
   const handleLock = () => {
     handleUpdate('locked', !locked);
   };
@@ -99,6 +119,17 @@ export const ActionEdit = ({ components, handleUpdate }: Props) => {
 
       <div className='w-full flex flex-row gap-4 items-end'>
         <Copy className={`text-xs h-[18px] w-[18px] cursor-pointer`} onClick={handleCopy} />
+
+        {singleGroupRoot ? (
+          <BookMarked
+            aria-label='Save as composite'
+            className='text-xs h-[18px] w-[18px] cursor-pointer'
+            onClick={() => {
+              setCompositeName('');
+              setSaveCompositeOpen(true);
+            }}
+          />
+        ) : null}
 
         {hasGroupedSelection ? (
           <ArrowUpFromDot
@@ -144,6 +175,44 @@ export const ActionEdit = ({ components, handleUpdate }: Props) => {
         />
       </div>
       <div className='w-full flex flex-row gap-4 items-end'></div>
+
+      <Dialog open={saveCompositeOpen} onOpenChange={setSaveCompositeOpen}>
+        <DialogContent className='sm:max-w-md'>
+          <DialogHeader>
+            <DialogTitle>Save as composite</DialogTitle>
+          </DialogHeader>
+          <p className='text-muted-foreground text-sm'>
+            Adds this group to the composite library for this ruleset. Stamped copies stay independent
+            of the template.
+          </p>
+          <Input
+            autoFocus
+            placeholder='Composite name'
+            value={compositeName}
+            onChange={(e) => setCompositeName(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && compositeName.trim()) {
+                void saveOrUpdateComposite(singleGroupRoot!.id, compositeName.trim());
+                setSaveCompositeOpen(false);
+              }
+            }}
+          />
+          <DialogFooter>
+            <Button type='button' variant='outline' onClick={() => setSaveCompositeOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              type='button'
+              disabled={!compositeName.trim()}
+              onClick={() => {
+                void saveOrUpdateComposite(singleGroupRoot!.id, compositeName.trim());
+                setSaveCompositeOpen(false);
+              }}>
+              Save
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

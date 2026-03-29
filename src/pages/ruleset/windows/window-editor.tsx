@@ -5,21 +5,23 @@ import { useComponents, useRulesets, type ComponentUpdate } from '@/lib/compass-
 import { repairOrphanCharacterWindowsForRulesetWindows } from '@/lib/compass-api/utils/default-archetype-test-character';
 import { SheetEditor } from '@/lib/compass-planes';
 import { DEFAULT_GRID_SIZE } from '@/lib/compass-planes/editor-config';
-import { CharacterPage, GameLog } from '@/pages/characters';
-import { colorPrimary, colorWhite } from '@/palette';
-import { db, WindowEditorProvider } from '@/stores';
-import type { Component } from '@/types';
-import { debugLog } from '@/utils';
-import { Eye, Magnet, ScanSearch, ZoomIn, ZoomOut } from 'lucide-react';
 import {
   canGroupSelection,
   canUngroupSelection,
   planGroupSelection,
   planUngroupSelection,
 } from '@/lib/compass-planes/sheet-editor/group-operations';
+import { CharacterPage, GameLog } from '@/pages/characters';
+import { colorPrimary, colorWhite } from '@/palette';
+import { db, WindowEditorProvider } from '@/stores';
+import type { Component } from '@/types';
+import { debugLog } from '@/utils';
+import { useLiveQuery } from 'dexie-react-hooks';
+import { Eye, Library, Magnet, ScanSearch, ZoomIn, ZoomOut } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { ComponentEditPanel } from './component-edit-panel';
+import { CompositeLibrarySheet } from './composite-library-sheet';
 
 const { log } = debugLog('pages', 'editor');
 
@@ -84,7 +86,35 @@ export const WindowEditor = () => {
   const [editorGridSize, setEditorGridSize] = useState(readStoredWindowEditorGrid);
   const [snapToGrid, setSnapToGrid] = useState(readStoredSnapToGrid);
   const [canvasViewScale, setCanvasViewScale] = useState(1);
+  const [compositeLibraryOpen, setCompositeLibraryOpen] = useState(false);
   const getComponent = (id: string) => components.find((c) => c.id === id) ?? null;
+
+  const compositeStampAt = useMemo(() => {
+    const roots = components.filter((c) => c.selected && !c.parentComponentId);
+    if (roots.length === 0) {
+      return { x: 40, y: 40 };
+    }
+    const maxX = Math.max(...roots.map((c) => c.x + c.width));
+    const minY = Math.min(...roots.map((c) => c.y));
+    return { x: maxX + 24, y: minY };
+  }, [components]);
+
+  const compositeTemplateRootIds = useLiveQuery(
+    async () => {
+      if (!activeRuleset?.id) return new Set<string>();
+      const [comps, vars] = await Promise.all([
+        db.composites.where('rulesetId').equals(activeRuleset.id).toArray(),
+        db.compositeVariants.where('rulesetId').equals(activeRuleset.id).toArray(),
+      ]);
+      const ids = new Set<string>();
+      for (const row of comps) ids.add(row.rootComponentId);
+      for (const row of vars) ids.add(row.groupComponentId);
+      return ids;
+    },
+    [activeRuleset?.id],
+  );
+
+  const compositeTemplateRootIdsResolved = compositeTemplateRootIds ?? new Set<string>();
 
   const persistEditorGridSize = (n: number) => {
     const clamped = Math.min(
@@ -149,7 +179,14 @@ export const WindowEditor = () => {
         await deleteComponent(id);
       }
     })();
-  }, [activeRuleset?.id, components, createComponents, deleteComponent, updateComponents, windowId]);
+  }, [
+    activeRuleset?.id,
+    components,
+    createComponents,
+    deleteComponent,
+    updateComponents,
+    windowId,
+  ]);
 
   const ungroupSelectedComponents = useCallback(() => {
     const plan = planUngroupSelection(components);
@@ -224,6 +261,7 @@ export const WindowEditor = () => {
         ungroupSelectedComponents,
         canGroupSelected,
         canUngroupSelected,
+        compositeTemplateRootIds: compositeTemplateRootIdsResolved,
       }}>
       <div className='relative flex h-full min-h-0 w-full flex-col overflow-hidden'>
         <div className='flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden'>
@@ -274,9 +312,7 @@ export const WindowEditor = () => {
                 variant='ghost'
                 size='icon'
                 aria-pressed={snapToGrid}
-                aria-label={
-                  snapToGrid ? 'Turn snap to grid off' : 'Turn snap to grid on'
-                }
+                aria-label={snapToGrid ? 'Turn snap to grid off' : 'Turn snap to grid on'}
                 className='size-8 shrink-0 text-white hover:bg-white/15 hover:text-white'
                 style={{
                   opacity: snapToGrid ? 1 : 0.45,
@@ -325,6 +361,15 @@ export const WindowEditor = () => {
                   onClick={() => setViewMode((prev) => !prev)}>
                   <Eye className='size-4' strokeWidth={2} aria-hidden />
                 </Button>
+                <Button
+                  type='button'
+                  variant='ghost'
+                  size='icon'
+                  aria-label='Open composite library'
+                  className='size-8 shrink-0 text-white hover:bg-white/15 hover:text-white'
+                  onClick={() => setCompositeLibraryOpen(true)}>
+                  <Library className='size-4' strokeWidth={2} aria-hidden />
+                </Button>
               </div>
             </div>
           ) : (
@@ -344,6 +389,12 @@ export const WindowEditor = () => {
           )}
         </div>
         <ComponentEditPanel viewMode={viewMode} />
+        <CompositeLibrarySheet
+          open={compositeLibraryOpen}
+          onOpenChange={setCompositeLibraryOpen}
+          windowId={windowId}
+          stampAt={compositeStampAt}
+        />
       </div>
     </WindowEditorProvider>
   );

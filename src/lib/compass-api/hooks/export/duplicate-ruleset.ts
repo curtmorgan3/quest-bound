@@ -11,6 +11,8 @@ import type {
   CharacterWindow,
   Chart,
   Component,
+  Composite,
+  CompositeVariant,
   CustomProperty,
   Document,
   Font,
@@ -39,6 +41,8 @@ export interface RulesetDuplicationCounts {
   charts: number;
   windows: number;
   components: number;
+  composites: number;
+  compositeVariants: number;
   assets: number;
   fonts: number;
   documents: number;
@@ -119,6 +123,12 @@ export async function duplicateRuleset({
           .toArray()
       : [];
 
+  const sourceComposites = await db.composites.where('rulesetId').equals(sourceRulesetId).toArray();
+  const sourceCompositeVariants =
+    sourceComposites.length > 0
+      ? await db.compositeVariants.where('rulesetId').equals(sourceRulesetId).toArray()
+      : [];
+
   // Load source archetypes (each has a test character)
   const sourceArchetypes = await db.archetypes
     .where('rulesetId')
@@ -155,6 +165,7 @@ export async function duplicateRuleset({
   const documentIdMap = new Map<string, string>();
   const windowIdMap = new Map<string, string>();
   const componentIdMap = new Map<string, string>();
+  const compositeIdMap = new Map<string, string>();
   const characterIdMap = new Map<string, string>();
   const characterPageIdMap = new Map<string, string>();
   const inventoryIdMap = new Map<string, string>();
@@ -170,6 +181,8 @@ export async function duplicateRuleset({
     charts: 0,
     windows: 0,
     components: 0,
+    composites: 0,
+    compositeVariants: 0,
     assets: 0,
     fonts: 0,
     documents: 0,
@@ -381,6 +394,8 @@ export async function duplicateRuleset({
       attributeId,
       actionId,
       childWindowId,
+      parentComponentId,
+      groupId,
       ...rest
     } = component;
 
@@ -392,6 +407,12 @@ export async function duplicateRuleset({
     const mappedChildWindowId = childWindowId
       ? (windowIdMap.get(childWindowId) ?? childWindowId)
       : childWindowId;
+    const mappedParentId =
+      parentComponentId && componentIdMap.has(parentComponentId)
+        ? componentIdMap.get(parentComponentId)!
+        : (parentComponentId ?? null);
+    const mappedGroupId =
+      groupId && componentIdMap.has(groupId) ? componentIdMap.get(groupId)! : (groupId ?? null);
 
     await db.components.add({
       ...rest,
@@ -401,10 +422,47 @@ export async function duplicateRuleset({
       attributeId: mappedAttributeId,
       actionId: mappedActionId,
       childWindowId: mappedChildWindowId,
+      parentComponentId: mappedParentId,
+      groupId: mappedGroupId,
       createdAt: now,
       updatedAt: now,
     } as Component);
     counts.components++;
+  }
+
+  // 9b. Composites and composite variants (map template roots via componentIdMap)
+  for (const comp of sourceComposites as Composite[]) {
+    const newRootId = componentIdMap.get(comp.rootComponentId);
+    if (!newRootId) continue;
+    const newId = crypto.randomUUID();
+    compositeIdMap.set(comp.id, newId);
+    const { id, rulesetId, createdAt, updatedAt, ...rest } = comp;
+    await db.composites.add({
+      ...rest,
+      id: newId,
+      rulesetId: targetRulesetId,
+      rootComponentId: newRootId,
+      createdAt: now,
+      updatedAt: now,
+    } as Composite);
+    counts.composites++;
+  }
+
+  for (const v of sourceCompositeVariants as CompositeVariant[]) {
+    const newCompositeId = compositeIdMap.get(v.compositeId);
+    const newGroupId = componentIdMap.get(v.groupComponentId);
+    if (!newCompositeId || !newGroupId) continue;
+    const { id, rulesetId, createdAt, updatedAt, ...rest } = v;
+    await db.compositeVariants.add({
+      ...rest,
+      id: crypto.randomUUID(),
+      rulesetId: targetRulesetId,
+      compositeId: newCompositeId,
+      groupComponentId: newGroupId,
+      createdAt: now,
+      updatedAt: now,
+    } as CompositeVariant);
+    counts.compositeVariants++;
   }
 
   // 10. Pages (ruleset templates; builds pageIdMap)

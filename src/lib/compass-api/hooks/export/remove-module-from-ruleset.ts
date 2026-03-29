@@ -1,3 +1,4 @@
+import { repairCompositesAfterComponentDeletes } from '@/lib/compass-api/utils/composite-db';
 import { db } from '@/stores';
 import type { Ruleset } from '@/types';
 
@@ -325,7 +326,15 @@ export async function deleteModuleContentFromRuleset(
 
   // 6. Components whose window is being removed
   if (removed.windowIds.size > 0) {
-    await db.components.where('windowId').anyOf([...removed.windowIds]).delete();
+    const toRemove = await db.components
+      .where('windowId')
+      .anyOf([...removed.windowIds])
+      .toArray();
+    const removedComponentIds = toRemove.map((c) => c.id);
+    if (removedComponentIds.length > 0) {
+      await db.components.bulkDelete(removedComponentIds);
+      void repairCompositesAfterComponentDeletes(removedComponentIds);
+    }
   }
 
   // 7. Ruleset windows (by moduleId)

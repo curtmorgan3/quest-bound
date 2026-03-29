@@ -9,6 +9,7 @@ export const API_LOADING_KEYS = [
   'charts',
   'documents',
   'components',
+  'composites',
   'windows',
   'rulesetPages',
 ] as const;
@@ -30,6 +31,7 @@ const initialLoading: LoadingState = {
   charts: false,
   documents: false,
   components: false,
+  composites: false,
   windows: false,
   rulesetPages: false,
 };

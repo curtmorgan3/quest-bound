@@ -254,6 +254,24 @@ export type Component = BaseDetails & {
   scriptId?: string | null;
 };
 
+/** Saved group template in the ruleset library (Phase 4b). `rootComponentId` is a `Component` with `type === 'group'`. */
+export type Composite = BaseDetails & {
+  rulesetId: string;
+  name: string;
+  /** Group root component id (template subtree lives on a window in this ruleset). */
+  rootComponentId: string;
+};
+
+/** Alternate layout for a composite; `groupComponentId` is the root of a cloned template subtree. */
+export type CompositeVariant = BaseDetails & {
+  rulesetId: string;
+  compositeId: string;
+  name: string;
+  /** Group root of this variant’s template subtree. */
+  groupComponentId: string;
+  sortOrder?: number;
+};
+
 export type DiceRoll = BaseDetails & {
   rulesetId: string;
   userId: string;

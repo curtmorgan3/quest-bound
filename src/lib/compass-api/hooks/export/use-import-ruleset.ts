@@ -16,6 +16,8 @@ import type {
   CharacterWindow,
   Chart,
   Component,
+  Composite,
+  CompositeVariant,
   CustomProperty,
   Document,
   Font,
@@ -141,6 +143,8 @@ export interface ImportRulesetResult {
     characters: number;
     windows: number;
     components: number;
+    composites: number;
+    compositeVariants: number;
     assets: number;
     fonts: number;
     documents: number;
@@ -197,6 +201,8 @@ interface ImportedMetadata {
     characters: number;
     windows: number;
     components: number;
+    composites?: number;
+    compositeVariants?: number;
     assets: number;
     fonts: number;
     documents: number;
@@ -356,6 +362,8 @@ export const useImportRuleset = () => {
       | 'characters'
       | 'windows'
       | 'components'
+      | 'composites'
+      | 'compositeVariants'
       | 'assets'
       | 'fonts'
       | 'documents'
@@ -527,6 +535,31 @@ export const useImportRuleset = () => {
           }
           break;
 
+        case 'composites':
+          if (!item.name || typeof item.name !== 'string') {
+            errors.push(`Composite ${index + 1}: name is required and must be a string`);
+          }
+          if (!item.rootComponentId || typeof item.rootComponentId !== 'string') {
+            errors.push(`Composite ${index + 1}: rootComponentId is required and must be a string`);
+          }
+          break;
+
+        case 'compositeVariants':
+          if (!item.compositeId || typeof item.compositeId !== 'string') {
+            errors.push(
+              `CompositeVariant ${index + 1}: compositeId is required and must be a string`,
+            );
+          }
+          if (!item.groupComponentId || typeof item.groupComponentId !== 'string') {
+            errors.push(
+              `CompositeVariant ${index + 1}: groupComponentId is required and must be a string`,
+            );
+          }
+          if (!item.name || typeof item.name !== 'string') {
+            errors.push(`CompositeVariant ${index + 1}: name is required and must be a string`);
+          }
+          break;
+
         case 'assets':
           if (typeof item.data !== 'string') {
             errors.push(`Asset ${index + 1}: data must be a string`);
@@ -684,6 +717,8 @@ export const useImportRuleset = () => {
             characters: 0,
             windows: 0,
             components: 0,
+            composites: 0,
+            compositeVariants: 0,
             assets: 0,
             fonts: 0,
             documents: 0,
@@ -729,6 +764,8 @@ export const useImportRuleset = () => {
             characters: 0,
             windows: 0,
             components: 0,
+            composites: 0,
+            compositeVariants: 0,
             assets: 0,
             fonts: 0,
             documents: 0,
@@ -865,6 +902,8 @@ export const useImportRuleset = () => {
                 characters: 0,
                 windows: 0,
                 components: 0,
+                composites: 0,
+                compositeVariants: 0,
                 assets: 0,
                 fonts: 0,
                 documents: 0,
@@ -905,6 +944,8 @@ export const useImportRuleset = () => {
                   characters: 0,
                   windows: 0,
                   components: 0,
+                  composites: 0,
+                  compositeVariants: 0,
                   assets: 0,
                   fonts: 0,
                   documents: 0,
@@ -943,6 +984,8 @@ export const useImportRuleset = () => {
                 characters: 0,
                 windows: 0,
                 components: 0,
+                composites: 0,
+                compositeVariants: 0,
                 assets: 0,
                 fonts: 0,
                 documents: 0,
@@ -978,6 +1021,8 @@ export const useImportRuleset = () => {
         characters: 0,
         windows: 0,
         components: 0,
+        composites: 0,
+        compositeVariants: 0,
         assets: 0,
         fonts: 0,
         documents: 0,
@@ -1384,6 +1429,58 @@ export const useImportRuleset = () => {
         } catch (error) {
           allErrors.push(
             `Failed to import components: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          );
+        }
+      }
+
+      setImportStep('Importing composites');
+
+      const compositesFile = getZipFile('application data/composites.json');
+      if (compositesFile) {
+        try {
+          const compositesText = await compositesFile.async('text');
+          const composites: Composite[] = JSON.parse(compositesText);
+          const validation = validateData(composites, 'composites');
+          if (validation.isValid) {
+            const toAdd: Composite[] = composites.map((c) => ({
+              ...c,
+              rulesetId: newRulesetId,
+              createdAt: now,
+              updatedAt: now,
+            }));
+            await bulkAddInChunks(db.composites, toAdd);
+            importedCounts.composites = toAdd.length;
+          } else {
+            allErrors.push(...validation.errors);
+          }
+        } catch (error) {
+          allErrors.push(
+            `Failed to import composites: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          );
+        }
+      }
+
+      const compositeVariantsFile = getZipFile('application data/compositeVariants.json');
+      if (compositeVariantsFile) {
+        try {
+          const compositeVariantsText = await compositeVariantsFile.async('text');
+          const compositeVariants: CompositeVariant[] = JSON.parse(compositeVariantsText);
+          const validation = validateData(compositeVariants, 'compositeVariants');
+          if (validation.isValid) {
+            const toAdd: CompositeVariant[] = compositeVariants.map((v) => ({
+              ...v,
+              rulesetId: newRulesetId,
+              createdAt: now,
+              updatedAt: now,
+            }));
+            await bulkAddInChunks(db.compositeVariants, toAdd);
+            importedCounts.compositeVariants = toAdd.length;
+          } else {
+            allErrors.push(...validation.errors);
+          }
+        } catch (error) {
+          allErrors.push(
+            `Failed to import compositeVariants: ${error instanceof Error ? error.message : 'Unknown error'}`,
           );
         }
       }
@@ -2137,6 +2234,8 @@ export const useImportRuleset = () => {
         importedCounts.characters +
         importedCounts.windows +
         importedCounts.components +
+        importedCounts.composites +
+        importedCounts.compositeVariants +
         importedCounts.assets +
         importedCounts.fonts +
         importedCounts.documents +
@@ -2182,6 +2281,8 @@ export const useImportRuleset = () => {
           characters: 0,
           windows: 0,
           components: 0,
+          composites: 0,
+          compositeVariants: 0,
           assets: 0,
           fonts: 0,
           documents: 0,

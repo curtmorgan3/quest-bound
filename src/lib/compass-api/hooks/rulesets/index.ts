@@ -5,6 +5,7 @@ export * from './use-archetype-custom-properties';
 export * from './use-attributes';
 export * from './use-charts';
 export * from './use-components';
+export * from './use-composites';
 export * from './use-custom-properties';
 export * from './use-documents';
 export * from './use-item-custom-properties';

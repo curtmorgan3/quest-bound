@@ -61,6 +61,17 @@ export const useExportRuleset = (rulesetId: string) => {
     return db.components.where('windowId').anyOf(windowIds).toArray();
   }, [rulesetId]);
 
+  const composites = useLiveQuery(
+    () => (rulesetId ? db.composites.where('rulesetId').equals(rulesetId).toArray() : []),
+    [rulesetId],
+  );
+
+  const compositeVariants = useLiveQuery(
+    () =>
+      rulesetId ? db.compositeVariants.where('rulesetId').equals(rulesetId).toArray() : [],
+    [rulesetId],
+  );
+
   const assets = useLiveQuery(
     () => (rulesetId ? db.assets.where('rulesetId').equals(rulesetId).toArray() : []),
     [rulesetId],
@@ -218,6 +229,8 @@ export const useExportRuleset = (rulesetId: string) => {
     charts === undefined ||
     windows === undefined ||
     components === undefined ||
+    composites === undefined ||
+    compositeVariants === undefined ||
     assets === undefined ||
     fonts === undefined ||
     documents === undefined ||
@@ -388,6 +401,8 @@ export const useExportRuleset = (rulesetId: string) => {
           charts: charts?.length || 0,
           windows: windows?.length || 0,
           components: components?.length || 0,
+          composites: composites?.length || 0,
+          compositeVariants: compositeVariants?.length || 0,
           assets: assets?.length || 0,
           fonts: fonts?.length || 0,
           documents: documents?.length || 0,
@@ -512,6 +527,17 @@ export const useExportRuleset = (rulesetId: string) => {
 
       if (components && components.length > 0) {
         appDataFolder.file('components.json', JSON.stringify(components, null, 2));
+      }
+
+      if (composites && composites.length > 0) {
+        appDataFolder.file('composites.json', JSON.stringify(composites, null, 2));
+      }
+
+      if (compositeVariants && compositeVariants.length > 0) {
+        appDataFolder.file(
+          'compositeVariants.json',
+          JSON.stringify(compositeVariants, null, 2),
+        );
       }
 
       if (assets && assets.length > 0) {

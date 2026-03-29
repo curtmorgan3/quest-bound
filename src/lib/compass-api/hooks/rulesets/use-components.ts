@@ -1,4 +1,5 @@
 import { useErrorHandler } from '@/hooks';
+import { repairCompositesAfterComponentDeletes } from '@/lib/compass-api/utils/composite-db';
 import { db, useApiLoadingStore } from '@/stores';
 import type { Component } from '@/types';
 import { useLiveQuery } from 'dexie-react-hooks';
@@ -107,6 +108,7 @@ export const useComponents = (windowId?: string) => {
   const deleteComponent = async (id: string) => {
     try {
       await db.components.delete(id);
+      void repairCompositesAfterComponentDeletes([id]);
     } catch (e) {
       handleError(e as Error, {
         component: 'useComponents/deleteComponent',

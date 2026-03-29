@@ -12,7 +12,7 @@ import {
 } from 'react';
 
 import { WindowEditorContext } from '@/stores';
-import { AddComponentPanel } from './add-component-panel';
+import { Component as CompositeTemplateIcon } from 'lucide-react';
 import {
   CanvasGridBackground,
   clampTopLeftInRect,
@@ -28,19 +28,20 @@ import { DEFAULT_GRID_SIZE } from '../editor-config';
 import { sheetNodeTypes, type EditorMenuOption } from '../nodes';
 import { ComponentTypes } from '../nodes/node-types';
 import { injectDefaultComponent } from '../utils/inject-defaults';
-import { isFlexHostedChild } from './group-flex-utils';
-import { SheetCanvasLayoutContext } from './sheet-canvas-layout-context';
+import { AddComponentPanel } from './add-component-panel';
 import {
   buildEffectiveLayoutMap,
   componentByIdMap,
   expandDeleteIds,
   worldTopLeftWithEffective,
 } from './component-world-geometry';
+import { isFlexHostedChild } from './group-flex-utils';
 import {
   updatesForClickSelection,
   updatesForMarqueeSelection,
   updatesToClearSelection,
 } from './selection-updates';
+import { SheetCanvasLayoutContext } from './sheet-canvas-layout-context';
 
 function isEditableKeyboardTarget(target: EventTarget | null): boolean {
   if (!target || !(target instanceof HTMLElement)) return false;
@@ -81,7 +82,7 @@ export function SheetCanvasEditor({
   onComponentsUpdated,
   onComponentsDeleted,
 }: SheetCanvasEditorProps) {
-  const { getComponent, groupSelectedComponents, canGroupSelected } =
+  const { getComponent, groupSelectedComponents, canGroupSelected, compositeTemplateRootIds } =
     useContext(WindowEditorContext);
   const canvasRootRef = useRef<HTMLDivElement>(null);
   const opacity = !backgroundColor && !backgroundImage ? 1 : (backgroundOpacity ?? 0.1);
@@ -443,100 +444,109 @@ export function SheetCanvasEditor({
             width: `${100 / resolvedViewScale}%`,
             height: `${100 / resolvedViewScale}%`,
           }}>
-        {backgroundColor != null && (
-          <div
-            aria-hidden
-            style={{
-              position: 'absolute',
-              inset: 0,
-              zIndex: 0,
-              backgroundColor,
-              opacity,
-              pointerEvents: 'none',
-            }}
-          />
-        )}
-        {backgroundImage != null && (
-          <div
-            aria-hidden
-            style={{
-              position: 'absolute',
-              inset: 0,
-              zIndex: 0,
-              backgroundImage: `url(${backgroundImage})`,
-              backgroundSize: 'cover',
-              backgroundPosition: 'center',
-              backgroundRepeat: 'no-repeat',
-              opacity,
-              pointerEvents: 'none',
-            }}
-          />
-        )}
+          {backgroundColor != null && (
+            <div
+              aria-hidden
+              style={{
+                position: 'absolute',
+                inset: 0,
+                zIndex: 0,
+                backgroundColor,
+                opacity,
+                pointerEvents: 'none',
+              }}
+            />
+          )}
+          {backgroundImage != null && (
+            <div
+              aria-hidden
+              style={{
+                position: 'absolute',
+                inset: 0,
+                zIndex: 0,
+                backgroundImage: `url(${backgroundImage})`,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+                backgroundRepeat: 'no-repeat',
+                opacity,
+                pointerEvents: 'none',
+              }}
+            />
+          )}
 
-        <div className='pointer-events-none absolute inset-0 z-[1]'>
-          {useGrid && <CanvasGridBackground gridSize={resolvedGridSize} style={{ opacity }} />}
-        </div>
-
-        <div
-          role='presentation'
-          className='absolute inset-0 z-[1] touch-none'
-          style={{ touchAction: 'none' }}
-          {...marqueeHandlers}
-        />
-
-        <SheetCanvasLayoutContext.Provider value={canvasLayoutValue}>
-          <div
-            className='pointer-events-none absolute inset-0 z-[2]'
-            style={{ touchAction: 'manipulation' }}>
-            {sorted.map((c) => {
-              if (isFlexHostedChild(c, byId)) return null;
-              const Edit = sheetNodeTypes[c.type as ComponentTypes] as ComponentType | undefined;
-              if (!Edit) return null;
-              const eff = effectiveLayout.get(c.id)!;
-              const world = worldTopLeftWithEffective(c, byId, effectiveLayout);
-              const layout = {
-                left: world.x,
-                top: world.y,
-                width: eff.width,
-                height: eff.height,
-              };
-              return (
-                <div
-                  key={c.id}
-                  data-canvas-item={c.id}
-                  className='pointer-events-auto absolute'
-                  style={{
-                    left: layout.left,
-                    top: layout.top,
-                    width: layout.width,
-                    height: layout.height,
-                    zIndex: c.z,
-                  }}
-                  onPointerDown={(e) => onItemPointerDown(e, c)}>
-                  <EditorItemLayoutProvider value={{ width: layout.width, height: layout.height }}>
-                    <EditorItemIdProvider id={c.id}>
-                      <Edit />
-                    </EditorItemIdProvider>
-                  </EditorItemLayoutProvider>
-                </div>
-              );
-            })}
+          <div className='pointer-events-none absolute inset-0 z-[1]'>
+            {useGrid && <CanvasGridBackground gridSize={resolvedGridSize} style={{ opacity }} />}
           </div>
-        </SheetCanvasLayoutContext.Provider>
 
-        {marqueeRect != null ? (
           <div
-            aria-hidden
-            className='border-primary/80 bg-primary/15 pointer-events-none absolute z-[10] border border-dashed'
-            style={{
-              left: marqueeRect.x,
-              top: marqueeRect.y,
-              width: marqueeRect.width,
-              height: marqueeRect.height,
-            }}
+            role='presentation'
+            className='absolute inset-0 z-[1] touch-none'
+            style={{ touchAction: 'none' }}
+            {...marqueeHandlers}
           />
-        ) : null}
 
+          <SheetCanvasLayoutContext.Provider value={canvasLayoutValue}>
+            <div
+              className='pointer-events-none absolute inset-0 z-[2]'
+              style={{ touchAction: 'manipulation' }}>
+              {sorted.map((c) => {
+                if (isFlexHostedChild(c, byId)) return null;
+                const Edit = sheetNodeTypes[c.type as ComponentTypes] as ComponentType | undefined;
+                if (!Edit) return null;
+                const eff = effectiveLayout.get(c.id)!;
+                const world = worldTopLeftWithEffective(c, byId, effectiveLayout);
+                const layout = {
+                  left: world.x,
+                  top: world.y,
+                  width: eff.width,
+                  height: eff.height,
+                };
+                return (
+                  <div
+                    key={c.id}
+                    data-canvas-item={c.id}
+                    className='pointer-events-auto absolute'
+                    style={{
+                      left: layout.left,
+                      top: layout.top,
+                      width: layout.width,
+                      height: layout.height,
+                      zIndex: c.z,
+                    }}
+                    onPointerDown={(e) => onItemPointerDown(e, c)}>
+                    {compositeTemplateRootIds.has(c.id) ? (
+                      <span
+                        role='img'
+                        aria-label='Composite template root'
+                        title='Composite or variant template'
+                        className='pointer-events-none absolute top-[-25px] left-0 z-[50] flex h-6 w-6 -translate-x-1/4 -translate-y-1/4 items-center justify-center rounded-md border border-border bg-background/95 text-muted-foreground shadow-sm'>
+                        <CompositeTemplateIcon className='size-3.5' strokeWidth={2} aria-hidden />
+                      </span>
+                    ) : null}
+                    <EditorItemLayoutProvider
+                      value={{ width: layout.width, height: layout.height }}>
+                      <EditorItemIdProvider id={c.id}>
+                        <Edit />
+                      </EditorItemIdProvider>
+                    </EditorItemLayoutProvider>
+                  </div>
+                );
+              })}
+            </div>
+          </SheetCanvasLayoutContext.Provider>
+
+          {marqueeRect != null ? (
+            <div
+              aria-hidden
+              className='border-primary/80 bg-primary/15 pointer-events-none absolute z-[10] border border-dashed'
+              style={{
+                left: marqueeRect.x,
+                top: marqueeRect.y,
+                width: marqueeRect.width,
+                height: marqueeRect.height,
+              }}
+            />
+          ) : null}
         </div>
         {renderContextMenu && (
           <AddComponentPanel

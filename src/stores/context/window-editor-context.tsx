@@ -13,6 +13,8 @@ type WindowEditorContext = {
   ungroupSelectedComponents: () => void;
   canGroupSelected: boolean;
   canUngroupSelected: boolean;
+  /** Component ids that are a `Composite.rootComponentId` or `CompositeVariant.groupComponentId`. */
+  compositeTemplateRootIds: ReadonlySet<string>;
 };
 
 export const WindowEditorContext = createContext<WindowEditorContext>(null!);

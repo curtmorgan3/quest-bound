@@ -11,6 +11,8 @@ const ASSOCIATED_TABLES = [
   'windows',
   'rulesetWindows',
   'components',
+  'composites',
+  'compositeVariants',
   'archetypes',
   'characters',
   'assets',

@@ -15,6 +15,8 @@ import type {
   CharacterWindow,
   Chart,
   Component,
+  Composite,
+  CompositeVariant,
   CustomProperty,
   DependencyGraphNode,
   DiceRoll,
@@ -57,6 +59,8 @@ const db = new Dexie('qbdb') as Dexie & {
   fonts: EntityTable<Font, 'id'>;
   windows: EntityTable<Window, 'id'>;
   components: EntityTable<Component, 'id'>;
+  composites: EntityTable<Composite, 'id'>;
+  compositeVariants: EntityTable<CompositeVariant, 'id'>;
   characters: EntityTable<Character, 'id'>;
   characterAttributes: EntityTable<CharacterAttribute, 'id'>;
   pages: EntityTable<Page, 'id'>;

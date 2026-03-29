@@ -11,6 +11,8 @@ import type {
   CharacterWindow,
   Chart,
   Component,
+  Composite,
+  CompositeVariant,
   DiceRoll,
   Document,
   Font,
@@ -37,6 +39,8 @@ export interface AddModuleResult {
     charts: number;
     windows: number;
     components: number;
+    composites: number;
+    compositeVariants: number;
     assets: number;
     fonts: number;
     documents: number;
@@ -214,6 +218,12 @@ export async function addModuleToRuleset({
           .toArray()
       : [];
 
+  const sourceComposites = await db.composites.where('rulesetId').equals(sourceRulesetId).toArray();
+  const sourceCompositeVariants =
+    sourceComposites.length > 0
+      ? await db.compositeVariants.where('rulesetId').equals(sourceRulesetId).toArray()
+      : [];
+
   const sourceArchetypes = await db.archetypes
     .where('rulesetId')
     .equals(sourceRulesetId)
@@ -265,6 +275,7 @@ export async function addModuleToRuleset({
   const documentIdMap = new Map<string, string>();
   const windowIdMap = new Map<string, string>();
   const componentIdMap = new Map<string, string>();
+  const compositeIdMap = new Map<string, string>();
   const characterIdMap = new Map<string, string>();
   const characterPageIdMap = new Map<string, string>();
   const inventoryIdMap = new Map<string, string>();
@@ -278,6 +289,8 @@ export async function addModuleToRuleset({
     charts: 0,
     windows: 0,
     components: 0,
+    composites: 0,
+    compositeVariants: 0,
     assets: 0,
     fonts: 0,
     documents: 0,
@@ -542,6 +555,8 @@ export async function addModuleToRuleset({
       attributeId,
       actionId,
       childWindowId,
+      parentComponentId,
+      groupId,
       data,
       ...rest
     } = component;
@@ -553,6 +568,12 @@ export async function addModuleToRuleset({
     const mappedChildWindowId = childWindowId
       ? (windowIdMap.get(childWindowId) ?? childWindowId)
       : childWindowId;
+    const mappedParentId =
+      parentComponentId && componentIdMap.has(parentComponentId)
+        ? componentIdMap.get(parentComponentId)!
+        : (parentComponentId ?? null);
+    const mappedGroupId =
+      groupId && componentIdMap.has(groupId) ? componentIdMap.get(groupId)! : (groupId ?? null);
     // Remap refs in component.data (e.g. conditionalRenderAttributeId, pageId)
     let mappedData = data;
     if (data) {
@@ -584,10 +605,46 @@ export async function addModuleToRuleset({
       attributeId: mappedAttributeId,
       actionId: mappedActionId,
       childWindowId: mappedChildWindowId,
+      parentComponentId: mappedParentId,
+      groupId: mappedGroupId,
       createdAt: now,
       updatedAt: now,
     } as Component);
     counts.components++;
+  }
+
+  for (const comp of sourceComposites as Composite[]) {
+    const newRootId = componentIdMap.get(comp.rootComponentId);
+    if (!newRootId) continue;
+    const newId = crypto.randomUUID();
+    compositeIdMap.set(comp.id, newId);
+    const { id, rulesetId, createdAt, updatedAt, ...rest } = comp;
+    await db.composites.add({
+      ...rest,
+      id: newId,
+      rulesetId: targetRulesetId,
+      rootComponentId: newRootId,
+      createdAt: now,
+      updatedAt: now,
+    } as Composite);
+    counts.composites++;
+  }
+
+  for (const v of sourceCompositeVariants as CompositeVariant[]) {
+    const newCompositeId = compositeIdMap.get(v.compositeId);
+    const newGroupId = componentIdMap.get(v.groupComponentId);
+    if (!newCompositeId || !newGroupId) continue;
+    const { id, rulesetId, createdAt, updatedAt, ...rest } = v;
+    await db.compositeVariants.add({
+      ...rest,
+      id: crypto.randomUUID(),
+      rulesetId: targetRulesetId,
+      compositeId: newCompositeId,
+      groupComponentId: newGroupId,
+      createdAt: now,
+      updatedAt: now,
+    } as CompositeVariant);
+    counts.compositeVariants++;
   }
 
   // 11. Pages (ruleset templates)

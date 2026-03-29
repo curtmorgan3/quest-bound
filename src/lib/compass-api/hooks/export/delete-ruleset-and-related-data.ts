@@ -26,6 +26,8 @@ export async function deleteRulesetAndRelatedData(rulesetId: string): Promise<vo
   if (windowIds.length > 0) {
     await db.components.where('windowId').anyOf(windowIds).delete();
   }
+  await db.compositeVariants.where('rulesetId').equals(rulesetId).delete();
+  await db.composites.where('rulesetId').equals(rulesetId).delete();
   await db.attributes.where('rulesetId').equals(rulesetId).delete();
   await db.items.where('rulesetId').equals(rulesetId).delete();
   await db.actions.where('rulesetId').equals(rulesetId).delete();

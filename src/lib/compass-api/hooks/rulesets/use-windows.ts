@@ -1,4 +1,5 @@
 import { useErrorHandler } from '@/hooks';
+import { repairCompositesAfterComponentDeletes } from '@/lib/compass-api/utils/composite-db';
 import { db, useApiLoadingStore } from '@/stores';
 import type { Component, Window } from '@/types';
 import { useLiveQuery } from 'dexie-react-hooks';
@@ -77,7 +78,9 @@ export const useWindows = () => {
   const deleteWindow = async (id: string) => {
     try {
       const components = await db.components.where({ windowId: id }).toArray();
-      await db.components.bulkDelete(components.map((c) => c.id));
+      const componentIds = components.map((c) => c.id);
+      await db.components.bulkDelete(componentIds);
+      void repairCompositesAfterComponentDeletes(componentIds);
 
       const characterWindows = await db.characterWindows.where({ windowId: id }).toArray();
       await db.characterWindows.bulkDelete(characterWindows.map((c) => c.id));

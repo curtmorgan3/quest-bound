@@ -226,5 +226,12 @@ export const dbSchemaV60 = {
   components: `${common}, rulesetId, windowId, type, x, y, z, height, width, rotation, selected, assetId, groupId, parentComponentId, attributeId, actionId, data, style`,
 };
 
+/** Schema for v61: composite library (`Composite` / `CompositeVariant`) for grouped templates (Phase 4b). */
+export const dbSchemaV61 = {
+  ...dbSchemaV60,
+  composites: `${common}, rulesetId, name, rootComponentId, [rulesetId], &[rootComponentId]`,
+  compositeVariants: `${common}, rulesetId, compositeId, groupComponentId, name, sortOrder, [compositeId], &[groupComponentId]`,
+};
+
 // latestDbSchema should always be used for the worker thread db instance
-export const latestDbSchema = { ...dbSchemaV60 };
+export const latestDbSchema = { ...dbSchemaV61 };
