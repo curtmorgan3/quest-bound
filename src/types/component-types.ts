@@ -155,6 +155,23 @@ export type ConditionalRenderLogic = {
   value: string | number | boolean;
 };
 
+/** How a click-opened child window is placed on the sheet canvas. */
+export type ChildWindowPlacementMode = 'fixed' | 'relative';
+
+/** Anchor alignment for opening a child window (see click event modal). */
+export type ChildWindowAnchor =
+  | 'center'
+  | 'topLeft'
+  | 'topCenter'
+  | 'topRight'
+  | 'leftCenter'
+  | 'rightCenter'
+  | 'bottomLeft'
+  | 'bottomCenter'
+  | 'bottomRight'
+  /** Fixed placement only: use `childWindowX` / `childWindowY`. */
+  | 'positioned';
+
 export type ComponentData = ShapeComponentData &
   TextComponentData &
   ContentComponentData &
@@ -183,4 +200,6 @@ export type ComponentData = ShapeComponentData &
     childWindowX?: number;
     childWindowY?: number;
     childWindowCollapse?: boolean;
+    childWindowPlacementMode?: ChildWindowPlacementMode;
+    childWindowAnchor?: ChildWindowAnchor;
   };

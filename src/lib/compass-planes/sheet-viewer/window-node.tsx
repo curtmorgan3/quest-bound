@@ -13,6 +13,7 @@ import {
 import { isFlexHostedChild } from '../sheet-editor/group-flex-utils';
 import { useComponentPositionMap } from '../utils';
 import { useWindowCanvasSelection } from './window-canvas-selection-context';
+import { ParentWindowFrameProvider } from './parent-window-frame-context';
 import { WindowRuntimeProvider } from './window-runtime-context';
 
 /** Minimal window shape shared by CharacterWindow and RulesetWindow. */
@@ -30,12 +31,17 @@ export interface WindowNodeData {
   window: WindowNodeWindow;
   onClose?: (id: string) => void;
   onMinimize?: (id: string) => void;
-  onChildWindowClick: (childWindowId: string, parentWindow: { x: number; y: number }) => void;
+  onChildWindowClick: (
+    childWindowId: string,
+    resolved?: { x: number; y: number; collapseIfOpen?: boolean },
+  ) => void;
   locked: boolean;
   /** When set, a link to this path is shown when the window is selected (e.g. page-editor). */
   editWindowHref?: string;
   /** Unlocked sheet (character or page editor): drag the scale control to resize uniformly. */
   onDisplayScaleChange?: (id: string, scale: number) => void;
+  /** Ruleset page template id — child-window open uses it for displayScale and layout lookups. */
+  sheetTemplatePageId?: string | null;
 }
 
 const MIN_DISPLAY_SCALE = 0.25;
@@ -75,6 +81,7 @@ export const WindowNode = ({ data }: { data: WindowNodeData }) => {
     locked,
     editWindowHref,
     onDisplayScaleChange,
+    sheetTemplatePageId,
   } = data;
   const { components } = useComponents(windowData.windowId);
   const positionMap = useComponentPositionMap(components);
@@ -86,20 +93,10 @@ export const WindowNode = ({ data }: { data: WindowNodeData }) => {
   );
 
   const handleChildWindowClick = useCallback(
-    (childWindowId: string) => {
-      onChildWindowClick(childWindowId, { x: windowData.x, y: windowData.y });
+    (childWindowId: string, resolved?: { x: number; y: number; collapseIfOpen?: boolean }) => {
+      onChildWindowClick(childWindowId, resolved);
     },
-    [onChildWindowClick, windowData.x, windowData.y],
-  );
-
-  const viewRenderContext = useMemo<ViewRenderContext>(
-    () => ({
-      allComponents: components,
-      byId,
-      effectiveLayout,
-      positionMap,
-    }),
-    [byId, components, effectiveLayout, positionMap],
+    [onChildWindowClick],
   );
 
   const rootComponents = useMemo(
@@ -160,6 +157,42 @@ export const WindowNode = ({ data }: { data: WindowNodeData }) => {
   );
   const scaledW = windowWidth * displayScale;
   const scaledH = windowHeight * displayScale;
+
+  const viewRenderContext = useMemo<ViewRenderContext>(
+    () => ({
+      allComponents: components,
+      byId,
+      effectiveLayout,
+      positionMap,
+      sheetTemplatePageId: sheetTemplatePageId ?? null,
+      getComponentCanvasRect: (componentId: string) => {
+        const c = components.find((x) => x.id === componentId);
+        if (!c) return null;
+        const eff = effectiveLayout.get(c.id);
+        if (!eff) return null;
+        const tl = worldTopLeftWithEffective(c, byId, effectiveLayout);
+        const ds = displayScale;
+        return {
+          x: windowData.x + (tl.x - minX) * ds,
+          y: windowData.y + (tl.y - minY) * ds,
+          width: eff.width * ds,
+          height: eff.height * ds,
+        };
+      },
+    }),
+    [
+      byId,
+      components,
+      displayScale,
+      effectiveLayout,
+      minX,
+      minY,
+      positionMap,
+      sheetTemplatePageId,
+      windowData.x,
+      windowData.y,
+    ],
+  );
 
   const endScaleGesture = useCallback(() => {
     scaleDragRef.current = null;
@@ -308,6 +341,7 @@ export const WindowNode = ({ data }: { data: WindowNodeData }) => {
       }}>
       {showChrome ? (
         <div
+          data-window-chrome-control
           style={{
             height: '22px',
             position: 'absolute',
@@ -380,15 +414,22 @@ export const WindowNode = ({ data }: { data: WindowNodeData }) => {
             width: '100%',
             height: windowHeight,
           }}>
-          <WindowRuntimeProvider
-            value={
-              'characterId' in windowData
-                ? {}
-                : {
-                    openRulesetChildWindow: (childWindowId: string) =>
-                      handleChildWindowClick(childWindowId),
-                  }
-            }>
+          <ParentWindowFrameProvider
+            value={{
+              x: windowData.x,
+              y: windowData.y,
+              width: scaledW,
+              height: scaledH,
+            }}>
+            <WindowRuntimeProvider
+              value={
+                'characterId' in windowData
+                  ? {}
+                  : {
+                      openRulesetChildWindow: (childWindowId, resolved) =>
+                        handleChildWindowClick(childWindowId, resolved),
+                    }
+              }>
             {rootComponents.map((component) => {
               const pos = positionMap.get(component.id);
               const eff = effectiveLayout.get(component.id)!;
@@ -413,7 +454,8 @@ export const WindowNode = ({ data }: { data: WindowNodeData }) => {
                 </div>
               );
             })}
-          </WindowRuntimeProvider>
+            </WindowRuntimeProvider>
+          </ParentWindowFrameProvider>
         </div>
       </div>
     </div>

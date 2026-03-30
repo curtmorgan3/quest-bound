@@ -85,10 +85,31 @@ export async function navigateCharacterToTemplatePage(
 export async function openCharacterSheetWindow(
   characterId: string,
   windowIdOrTitle: string,
-  options?: { x?: number; y?: number; collapseIfOpen?: boolean },
+  options?: {
+    x?: number;
+    y?: number;
+    collapseIfOpen?: boolean;
+    /**
+     * When true and both x and y are finite numbers, a newly created window uses those coordinates
+     * instead of the page template slot (component-driven open).
+     */
+    preferComponentPosition?: boolean;
+  },
 ): Promise<void> {
   const now = new Date().toISOString();
-  const { x: openX, y: openY, collapseIfOpen: collapseIfOpenOpt } = options ?? {};
+  const {
+    x: openX,
+    y: openY,
+    collapseIfOpen: collapseIfOpenOpt,
+    preferComponentPosition,
+  } = options ?? {};
+
+  const hasExplicitOpenCoords =
+    preferComponentPosition === true &&
+    typeof openX === 'number' &&
+    typeof openY === 'number' &&
+    Number.isFinite(openX) &&
+    Number.isFinite(openY);
 
   const character = (await db.characters.get(characterId)) as Character | undefined;
   if (!character) return;
@@ -158,8 +179,10 @@ export async function openCharacterSheetWindow(
       .filter((rw) => (rw as RulesetWindow).windowId === windowDef.id)
       .first()) as RulesetWindow | undefined;
     if (rulesetWindow) {
-      x = rulesetWindow.x;
-      y = rulesetWindow.y;
+      if (!hasExplicitOpenCoords) {
+        x = rulesetWindow.x;
+        y = rulesetWindow.y;
+      }
       isCollapsed = !!rulesetWindow.isCollapsed;
       displayScale = rulesetWindow.displayScale;
     }

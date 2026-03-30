@@ -17,6 +17,10 @@ import {
 import { CanvasGridBackground, usePointerDrag } from '../canvas';
 import { DEFAULT_GRID_SIZE } from '../editor-config';
 import { WindowCanvasSelectionContext } from './window-canvas-selection-context';
+import {
+  SheetCanvasBoundsProvider,
+  type SheetCanvasBounds,
+} from './sheet-canvas-bounds-context';
 
 const FALLBACK_WINDOW_DRAG_W = 320;
 const FALLBACK_WINDOW_DRAG_H = 240;
@@ -98,7 +102,11 @@ export type WindowCanvasHostProps<T extends WindowCanvasItem> = {
    * the viewport with uniform scale and padding. Ignored when `showGridToolbar` is true.
    */
   sheetFitToViewport?: boolean;
-  /** Subtract from viewport height when fitting (e.g. absolutely positioned bottom tab bar). */
+  /**
+   * Height of UI that overlaps the bottom of the sheet (e.g. absolutely positioned tab bar).
+   * Subtracted from viewport height when fitting to viewport, and from measured canvas height when
+   * resolving fixed child-window open positions so anchors stay above the bar.
+   */
   sheetFitBottomInsetPx?: number;
 };
 
@@ -123,6 +131,7 @@ export function WindowCanvasHost<T extends WindowCanvasItem>({
 }: WindowCanvasHostProps<T>) {
   const viewportRef = useRef<HTMLDivElement>(null);
   const canvasRootRef = useRef<HTMLDivElement>(null);
+  const [rawCanvasBounds, setRawCanvasBounds] = useState<SheetCanvasBounds | null>(null);
   const sheetFitTransformRef = useRef<{ tx: number; ty: number; scale: number } | null>(null);
   const windowWrapperElByIdRef = useRef(new Map<string, HTMLDivElement>());
   const [movePreviewById, setMovePreviewById] = useState<Record<string, { x: number; y: number }>>(
@@ -138,6 +147,31 @@ export function WindowCanvasHost<T extends WindowCanvasItem>({
   const [editorGridSize, setEditorGridSize] = useState(readStoredWindowEditorGrid);
   const [snapToGrid, setSnapToGrid] = useState(readStoredSnapToGrid);
   const [canvasViewScale, setCanvasViewScale] = useState(1);
+
+  const sheetPlacementCanvasBounds = useMemo((): SheetCanvasBounds | null => {
+    if (!rawCanvasBounds) return null;
+    const inset =
+      sheetFitBottomInsetPx > 0 && Number.isFinite(sheetFitBottomInsetPx)
+        ? sheetFitBottomInsetPx
+        : 0;
+    return {
+      width: rawCanvasBounds.width,
+      height: Math.max(0, rawCanvasBounds.height - inset),
+    };
+  }, [rawCanvasBounds, sheetFitBottomInsetPx]);
+
+  useLayoutEffect(() => {
+    const el = canvasRootRef.current;
+    if (!el) return;
+    const apply = () => {
+      const r = el.getBoundingClientRect();
+      setRawCanvasBounds({ width: r.width, height: r.height });
+    };
+    apply();
+    const ro = new ResizeObserver(apply);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
   const resolvedGridSize = useMemo(() => {
     const n = Math.round(Number(editorGridSize));
@@ -499,6 +533,7 @@ export function WindowCanvasHost<T extends WindowCanvasItem>({
             ref={canvasRootRef}
             className='relative min-h-full min-w-full'
             style={mergedCanvasStyle}>
+            <SheetCanvasBoundsProvider value={sheetPlacementCanvasBounds}>
             {showBg && backgroundColor != null && (
               <div
                 aria-hidden
@@ -558,7 +593,7 @@ export function WindowCanvasHost<T extends WindowCanvasItem>({
                     const t = e.target as HTMLElement;
                     if (
                       t.closest(
-                        '.clickable, a, button, input, textarea, select, label, [contenteditable="true"], [role="button"], [role="menuitem"], [role="option"], [role="tab"]',
+                        'a, button, input, textarea, select, label, [contenteditable="true"], [role="menuitem"], [role="option"], [role="tab"], [data-window-chrome-control]',
                       )
                     ) {
                       return;
@@ -569,6 +604,7 @@ export function WindowCanvasHost<T extends WindowCanvasItem>({
                 </div>
               );
             })}
+            </SheetCanvasBoundsProvider>
           </div>
         </div>
       </section>

@@ -17,7 +17,7 @@ import { repairOrphanCharacterWindowsForRulesetWindows } from '@/lib/compass-api
 import { PageDetailsForm } from '@/lib/compass-planes/page-details-form';
 import type { RulesetWindow as RulesetWindowType } from '@/types';
 import { Pencil, Plus } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { WindowCanvasHost } from './sheet-viewer/window-canvas-host';
 import { WindowNode } from './sheet-viewer/window-node';
 
@@ -41,6 +41,8 @@ export const RulesetPageEditor = ({ pageId }: RulesetPageEditorProps) => {
   const [editPageOpen, setEditPageOpen] = useState(false);
   const [addWindowOpen, setAddWindowOpen] = useState(false);
   const [filterText, setFilterText] = useState('');
+  const pageEditorBottomBarRef = useRef<HTMLDivElement>(null);
+  const [pageEditorBottomInsetPx, setPageEditorBottomInsetPx] = useState(0);
 
   const { windows: rulesetWindowDefs } = useWindows();
   const sortedWindowDefs = [...rulesetWindowDefs].sort((a, b) => a.title.localeCompare(b.title));
@@ -69,11 +71,24 @@ export const RulesetPageEditor = ({ pageId }: RulesetPageEditorProps) => {
     };
   }, [effectivePageId, currentPage?.rulesetId, activeRuleset?.id, pageRulesetWindowIdsKey]);
 
+  useLayoutEffect(() => {
+    const el = pageEditorBottomBarRef.current;
+    if (!el || !currentPage) {
+      setPageEditorBottomInsetPx(0);
+      return;
+    }
+    const update = () => setPageEditorBottomInsetPx(el.getBoundingClientRect().height);
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    update();
+    return () => ro.disconnect();
+  }, [currentPage]);
+
   const handleChildWindowClick = useCallback(
     (
       childWindowId: string,
-      parentWindow: { x: number; y: number },
       rulesetWindow: RulesetWindowType,
+      resolved?: { x: number; y: number; collapseIfOpen?: boolean },
     ) => {
       const existing = templateWindows.find((tw) => tw.windowId === childWindowId);
       if (existing) {
@@ -86,8 +101,8 @@ export const RulesetPageEditor = ({ pageId }: RulesetPageEditorProps) => {
         windowId: w.id,
         pageId: effectivePageId,
         title: w.title,
-        x: parentWindow.x + 200,
-        y: parentWindow.y + 150,
+        x: resolved?.x ?? rulesetWindow.x + 200,
+        y: resolved?.y ?? rulesetWindow.y + 150,
         isCollapsed: false,
       });
     },
@@ -113,6 +128,7 @@ export const RulesetPageEditor = ({ pageId }: RulesetPageEditorProps) => {
       <WindowCanvasHost
         className='relative min-h-0 min-w-0 flex-1 overflow-hidden'
         showGridToolbar
+        sheetFitBottomInsetPx={pageEditorBottomInsetPx}
         windows={templateWindows}
         locked={false}
         onWindowPositionUpdate={(id, x, y) => updateRulesetWindow(id, { x, y })}
@@ -125,10 +141,11 @@ export const RulesetPageEditor = ({ pageId }: RulesetPageEditorProps) => {
             <WindowNode
               data={{
                 window: wAt,
+                sheetTemplatePageId: effectivePageId ?? null,
                 locked: false,
                 onClose: (id: string) => deleteRulesetWindow(id),
-                onChildWindowClick: (childWindowId, parentWindow) =>
-                  handleChildWindowClick(childWindowId, parentWindow, wAt),
+                onChildWindowClick: (childWindowId, openResolved) =>
+                  handleChildWindowClick(childWindowId, wAt, openResolved),
                 editWindowHref:
                   activeRuleset?.id != null
                     ? `/rulesets/${activeRuleset.id}/windows/${window.windowId}`
@@ -142,6 +159,7 @@ export const RulesetPageEditor = ({ pageId }: RulesetPageEditorProps) => {
       />
       {currentPage && (
         <div
+          ref={pageEditorBottomBarRef}
           style={{
             position: 'absolute',
             bottom: 0,

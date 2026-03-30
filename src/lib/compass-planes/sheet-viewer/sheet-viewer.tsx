@@ -150,8 +150,8 @@ export const SheetViewer = ({
 
   const handleChildWindowClick = async (
     childWindowId: string,
-    parentWindow: { x: number; y: number },
     characterWindow: CharacterWindow,
+    resolved?: { x: number; y: number; collapseIfOpen?: boolean },
   ) => {
     const existing = editorWindowId
       ? characterWindows.find((cw) => !cw.characterPageId && cw.windowId === childWindowId)
@@ -177,8 +177,8 @@ export const SheetViewer = ({
       characterId,
       characterPageId: characterWindow.characterPageId ?? undefined,
       title: w.title,
-      x: parentWindow.x + 200,
-      y: parentWindow.y + 150,
+      x: resolved?.x ?? characterWindow.x + 200,
+      y: resolved?.y ?? characterWindow.y + 150,
       isCollapsed: false,
     });
     if (editorWindowId) {
@@ -210,6 +210,7 @@ export const SheetViewer = ({
             <WindowNode
               data={{
                 locked,
+                sheetTemplatePageId: !editorWindowId ? currentPage?.pageId : null,
                 window: wAt,
                 onMinimize: !editorWindowId
                   ? (id: string) => {
@@ -221,8 +222,8 @@ export const SheetViewer = ({
                       onWindowDeleted?.(id);
                     }
                   : undefined,
-                onChildWindowClick: (childWindowId, parentWindow) =>
-                  handleChildWindowClick(childWindowId, parentWindow, wAt),
+                onChildWindowClick: (childWindowId, openResolved) =>
+                  handleChildWindowClick(childWindowId, wAt, openResolved),
                 onDisplayScaleChange:
                   !locked && onWindowUpdated
                     ? (id, displayScale) => onWindowUpdated({ id, displayScale })

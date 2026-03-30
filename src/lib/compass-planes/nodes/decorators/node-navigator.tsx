@@ -3,17 +3,23 @@ import {
   navigateCharacterToTemplatePage,
   openCharacterSheetWindow,
 } from '@/lib/compass-api/utils/navigate-character-sheet';
+import { useParentWindowFrame } from '@/lib/compass-planes/sheet-viewer/parent-window-frame-context';
+import { useSheetCanvasBounds } from '@/lib/compass-planes/sheet-viewer/sheet-canvas-bounds-context';
 import { useWindowRuntime } from '@/lib/compass-planes/sheet-viewer/window-runtime-context';
+import { resolveChildWindowCanvasPosition } from '@/lib/compass-planes/utils/resolve-child-window-canvas-position';
 import { CharacterContext } from '@/stores';
-import type { Component, ComponentData } from '@/types';
+import type { ChildWindowAnchor, Component, ComponentData } from '@/types';
 import { useCallback, useContext, useMemo, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { getChildWindowCanvasContentSize } from '@/lib/compass-planes/utils/window-open-bounds';
+import type { ViewRenderContext } from '@/lib/compass-planes/nodes/render-node';
 import { getComponentData } from '../../utils';
 
 interface NodeNavigatorProps {
   children: ReactNode;
   component: Component;
   componentData?: ComponentData;
+  viewCtx?: ViewRenderContext;
 }
 
 /**
@@ -21,12 +27,14 @@ interface NodeNavigatorProps {
  * `pageId` (character sheet page), then `childWindowId` (character or ruleset template window),
  * then `href` (opens in a new tab).
  */
-export const NodeNavigator = ({ children, component, componentData }: NodeNavigatorProps) => {
+export const NodeNavigator = ({ children, component, componentData, viewCtx }: NodeNavigatorProps) => {
   const data = componentData ?? getComponentData(component);
   const navigate = useNavigate();
   const { scripts } = useScripts();
   const characterContext = useContext(CharacterContext);
   const { openRulesetChildWindow } = useWindowRuntime();
+  const parentFrame = useParentWindowFrame();
+  const canvasBounds = useSheetCanvasBounds();
   const characterId = characterContext?.character?.id;
 
   const pageTemplateId = data.pageId;
@@ -55,15 +63,54 @@ export const NodeNavigator = ({ children, component, componentData }: NodeNaviga
         return;
       }
       if (childWindowId) {
+        const placementMode = data.childWindowPlacementMode ?? 'fixed';
+        const anchor: ChildWindowAnchor = data.childWindowAnchor ?? 'positioned';
+        const parentRect = parentFrame ?? { x: 0, y: 0, width: 400, height: 300 };
+        const canvasRect =
+          canvasBounds != null && canvasBounds.width > 0 && canvasBounds.height > 0
+            ? { x: 0, y: 0, width: canvasBounds.width, height: canvasBounds.height }
+            : null;
+
+        let childWidth: number | undefined;
+        let childHeight: number | undefined;
+        if (anchor !== 'positioned') {
+          const sz = await getChildWindowCanvasContentSize(
+            childWindowId,
+            viewCtx?.sheetTemplatePageId,
+          );
+          childWidth = sz.width;
+          childHeight = sz.height;
+        }
+
+        const relativeComponentRect =
+          placementMode === 'relative' && viewCtx?.getComponentCanvasRect
+            ? viewCtx.getComponentCanvasRect(component.id)
+            : null;
+
+        const { x: resX, y: resY } = resolveChildWindowCanvasPosition({
+          mode: placementMode,
+          anchor,
+          explicitX: data.childWindowX ?? 0,
+          explicitY: data.childWindowY ?? 0,
+          parentRect,
+          canvasRect,
+          childWidth,
+          childHeight,
+          relativeComponentRect,
+        });
+        const openOpts = {
+          x: resX,
+          y: resY,
+          collapseIfOpen: data.childWindowCollapse ?? false,
+        };
         if (openRulesetChildWindow) {
-          openRulesetChildWindow(childWindowId);
+          openRulesetChildWindow(childWindowId, openOpts);
           return;
         }
         if (characterId) {
           await openCharacterSheetWindow(characterId, childWindowId, {
-            x: data.childWindowX,
-            y: data.childWindowY,
-            collapseIfOpen: data.childWindowCollapse ?? false,
+            ...openOpts,
+            preferComponentPosition: true,
           });
         }
       }
@@ -72,11 +119,18 @@ export const NodeNavigator = ({ children, component, componentData }: NodeNaviga
       pageTemplateId,
       childWindowId,
       characterId,
+      component.id,
       navigate,
       openRulesetChildWindow,
       data.childWindowX,
       data.childWindowY,
       data.childWindowCollapse,
+      data.childWindowPlacementMode,
+      data.childWindowAnchor,
+      parentFrame,
+      canvasBounds,
+      viewCtx?.getComponentCanvasRect,
+      viewCtx?.sheetTemplatePageId,
     ],
   );
 

@@ -30,11 +30,36 @@ import { useWindows } from '@/lib/compass-api/hooks/rulesets/use-windows';
 import { useScripts } from '@/lib/compass-api/hooks/scripts/use-scripts';
 import { ComponentTypes } from '@/lib/compass-planes/nodes';
 import { getComponentData } from '@/lib/compass-planes/utils';
-import type { Component, ComponentData, Script, ScriptParamValue } from '@/types';
+import type {
+  ChildWindowAnchor,
+  ChildWindowPlacementMode,
+  Component,
+  ComponentData,
+  Script,
+  ScriptParamValue,
+} from '@/types';
 import { useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 
 type ClickEventType = 'openPage' | 'openWindow' | 'fireAction' | 'fireScript' | 'viewAttribute';
+
+const CHILD_WINDOW_PLACEMENT_OPTIONS: { value: ChildWindowPlacementMode; label: string }[] = [
+  { value: 'fixed', label: 'Fixed' },
+  { value: 'relative', label: 'Relative' },
+];
+
+const CHILD_WINDOW_ANCHOR_OPTIONS: { value: Exclude<ChildWindowAnchor, 'positioned'>; label: string }[] =
+  [
+    { value: 'center', label: 'Center' },
+    { value: 'topLeft', label: 'Top Left' },
+    { value: 'topCenter', label: 'Top Center' },
+    { value: 'topRight', label: 'Top Right' },
+    { value: 'leftCenter', label: 'Left Center' },
+    { value: 'rightCenter', label: 'Right Center' },
+    { value: 'bottomLeft', label: 'Bottom Left' },
+    { value: 'bottomCenter', label: 'Bottom Center' },
+    { value: 'bottomRight', label: 'Bottom Right' },
+  ];
 
 interface Props {
   component: Component;
@@ -53,6 +78,9 @@ export const ClickEventModal = ({ component, allCanOpenChildWindow }: Props) => 
   const [openWindowX, setOpenWindowX] = useState(0);
   const [openWindowY, setOpenWindowY] = useState(0);
   const [childWindowCollapse, setChildWindowCollapse] = useState(false);
+  const [childWindowPlacementMode, setChildWindowPlacementMode] =
+    useState<ChildWindowPlacementMode>('fixed');
+  const [childWindowAnchor, setChildWindowAnchor] = useState<ChildWindowAnchor>('positioned');
 
   const selectedScript: Script | undefined = useMemo(
     () => scripts.find((s) => s.id === component.scriptId),
@@ -132,14 +160,20 @@ export const ClickEventModal = ({ component, allCanOpenChildWindow }: Props) => 
 
   const handleSetOpenWindowClick = (
     childWindowId: string,
-    x: number,
-    y: number,
-    collapse?: boolean,
+    params: {
+      x: number;
+      y: number;
+      collapse?: boolean;
+      placementMode: ChildWindowPlacementMode;
+      anchor: ChildWindowAnchor;
+    },
   ) => {
     const baseData: ComponentData = JSON.parse(component.data);
-    baseData.childWindowX = x;
-    baseData.childWindowY = y;
-    baseData.childWindowCollapse = collapse ?? false;
+    baseData.childWindowX = params.x;
+    baseData.childWindowY = params.y;
+    baseData.childWindowCollapse = params.collapse ?? false;
+    baseData.childWindowPlacementMode = params.placementMode;
+    baseData.childWindowAnchor = params.anchor;
     void updateComponents([
       { id: component.id, childWindowId, data: JSON.stringify(baseData) },
     ]);
@@ -150,6 +184,8 @@ export const ClickEventModal = ({ component, allCanOpenChildWindow }: Props) => 
     delete baseData.childWindowX;
     delete baseData.childWindowY;
     delete baseData.childWindowCollapse;
+    delete baseData.childWindowPlacementMode;
+    delete baseData.childWindowAnchor;
     const update: ComponentUpdate = {
       id: component.id,
       childWindowId: null,
@@ -215,6 +251,8 @@ export const ClickEventModal = ({ component, allCanOpenChildWindow }: Props) => 
     delete baseData.childWindowX;
     delete baseData.childWindowY;
     delete baseData.childWindowCollapse;
+    delete baseData.childWindowPlacementMode;
+    delete baseData.childWindowAnchor;
     delete baseData.scriptParameterValues;
 
     const update: ComponentUpdate = {
@@ -270,6 +308,10 @@ export const ClickEventModal = ({ component, allCanOpenChildWindow }: Props) => 
           setOpenWindowX(data.childWindowX ?? 0);
           setOpenWindowY(data.childWindowY ?? 0);
           setChildWindowCollapse(data.childWindowCollapse ?? false);
+          const nextMode = data.childWindowPlacementMode ?? 'fixed';
+          const rawAnchor = data.childWindowAnchor ?? 'positioned';
+          setChildWindowPlacementMode(nextMode);
+          setChildWindowAnchor(nextMode === 'relative' && rawAnchor === 'positioned' ? 'center' : rawAnchor);
           setOpen(true);
         }}>
         Set Click Event
@@ -347,60 +389,136 @@ export const ClickEventModal = ({ component, allCanOpenChildWindow }: Props) => 
                   label='Open Window'
                   value={component.childWindowId}
                   onSelect={(win) => {
-                    handleSetOpenWindowClick(
-                      win.id,
-                      openWindowX,
-                      openWindowY,
-                      childWindowCollapse,
-                    );
+                    handleSetOpenWindowClick(win.id, {
+                      x: openWindowX,
+                      y: openWindowY,
+                      collapse: childWindowCollapse,
+                      placementMode: childWindowPlacementMode,
+                      anchor: childWindowAnchor,
+                    });
                   }}
                   onDelete={() => {
                     void handleClearOpenWindowClick();
                   }}
                   excludeIds={[windowId]}
                 />
-                <div className='flex items-center gap-3'>
-                  <div className='flex items-center gap-1.5'>
-                    <Label className='text-xs text-muted-foreground'>X</Label>
-                    <Input
-                      className='h-7 w-20 rounded-[4px]'
-                      type='number'
-                      value={openWindowX}
-                      onChange={(e) => {
-                        const val = e.target.value === '' ? 0 : Number(e.target.value);
-                        setOpenWindowX(val);
-                        if (component.childWindowId) {
-                          handleSetOpenWindowClick(
-                            component.childWindowId,
-                            val,
-                            openWindowY,
-                            childWindowCollapse,
-                          );
+                <div className='flex flex-row gap-3'>
+                  <div className='flex min-w-0 flex-1 flex-col gap-2'>
+                    <Label className='text-xs text-muted-foreground'>Placement</Label>
+                    <Select
+                      value={childWindowPlacementMode}
+                      onValueChange={(v: ChildWindowPlacementMode) => {
+                        setChildWindowPlacementMode(v);
+                        let nextAnchor = childWindowAnchor;
+                        if (v === 'relative' && childWindowAnchor === 'positioned') {
+                          nextAnchor = 'center';
+                          setChildWindowAnchor('center');
                         }
-                      }}
-                    />
+                        if (component.childWindowId) {
+                          handleSetOpenWindowClick(component.childWindowId, {
+                            x: openWindowX,
+                            y: openWindowY,
+                            collapse: childWindowCollapse,
+                            placementMode: v,
+                            anchor: nextAnchor,
+                          });
+                        }
+                      }}>
+                      <SelectTrigger className='h-8' data-testid='child-window-placement-mode'>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {CHILD_WINDOW_PLACEMENT_OPTIONS.map((o) => (
+                          <SelectItem key={o.value} value={o.value}>
+                            {o.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
-                  <div className='flex items-center gap-1.5'>
-                    <Label className='text-xs text-muted-foreground'>Y</Label>
-                    <Input
-                      className='h-7 w-20 rounded-[4px]'
-                      type='number'
-                      value={openWindowY}
-                      onChange={(e) => {
-                        const val = e.target.value === '' ? 0 : Number(e.target.value);
-                        setOpenWindowY(val);
+                  <div className='flex min-w-0 flex-1 flex-col gap-2'>
+                    <Label className='text-xs text-muted-foreground'>Align</Label>
+                    <Select
+                      value={
+                        childWindowPlacementMode === 'relative' &&
+                        childWindowAnchor === 'positioned'
+                          ? 'center'
+                          : childWindowAnchor
+                      }
+                      onValueChange={(v: ChildWindowAnchor) => {
+                        setChildWindowAnchor(v);
                         if (component.childWindowId) {
-                          handleSetOpenWindowClick(
-                            component.childWindowId,
-                            openWindowX,
-                            val,
-                            childWindowCollapse,
-                          );
+                          handleSetOpenWindowClick(component.childWindowId, {
+                            x: openWindowX,
+                            y: openWindowY,
+                            collapse: childWindowCollapse,
+                            placementMode: childWindowPlacementMode,
+                            anchor: v,
+                          });
                         }
-                      }}
-                    />
+                      }}>
+                      <SelectTrigger className='h-8' data-testid='child-window-anchor'>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {CHILD_WINDOW_ANCHOR_OPTIONS.map((o) => (
+                          <SelectItem key={o.value} value={o.value}>
+                            {o.label}
+                          </SelectItem>
+                        ))}
+                        {childWindowPlacementMode === 'fixed' ? (
+                          <SelectItem value='positioned'>Positioned</SelectItem>
+                        ) : null}
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
+                {childWindowAnchor === 'positioned' && childWindowPlacementMode === 'fixed' ? (
+                  <div className='flex items-center gap-3'>
+                    <div className='flex items-center gap-1.5'>
+                      <Label className='text-xs text-muted-foreground'>X</Label>
+                      <Input
+                        className='h-7 w-20 rounded-[4px]'
+                        type='number'
+                        value={openWindowX}
+                        onChange={(e) => {
+                          const val = e.target.value === '' ? 0 : Number(e.target.value);
+                          setOpenWindowX(val);
+                          if (component.childWindowId) {
+                            handleSetOpenWindowClick(component.childWindowId, {
+                              x: val,
+                              y: openWindowY,
+                              collapse: childWindowCollapse,
+                              placementMode: childWindowPlacementMode,
+                              anchor: childWindowAnchor,
+                            });
+                          }
+                        }}
+                      />
+                    </div>
+                    <div className='flex items-center gap-1.5'>
+                      <Label className='text-xs text-muted-foreground'>Y</Label>
+                      <Input
+                        className='h-7 w-20 rounded-[4px]'
+                        type='number'
+                        value={openWindowY}
+                        onChange={(e) => {
+                          const val = e.target.value === '' ? 0 : Number(e.target.value);
+                          setOpenWindowY(val);
+                          if (component.childWindowId) {
+                            handleSetOpenWindowClick(component.childWindowId, {
+                              x: openWindowX,
+                              y: val,
+                              collapse: childWindowCollapse,
+                              placementMode: childWindowPlacementMode,
+                              anchor: childWindowAnchor,
+                            });
+                          }
+                        }}
+                      />
+                    </div>
+                  </div>
+                ) : null}
                 <div className='flex items-center gap-2'>
                   <Checkbox
                     id='child-window-collapse'
@@ -409,12 +527,13 @@ export const ClickEventModal = ({ component, allCanOpenChildWindow }: Props) => 
                       const val = checked === true;
                       setChildWindowCollapse(val);
                       if (component.childWindowId) {
-                        handleSetOpenWindowClick(
-                          component.childWindowId,
-                          openWindowX,
-                          openWindowY,
-                          val,
-                        );
+                        handleSetOpenWindowClick(component.childWindowId, {
+                          x: openWindowX,
+                          y: openWindowY,
+                          collapse: val,
+                          placementMode: childWindowPlacementMode,
+                          anchor: childWindowAnchor,
+                        });
                       }
                     }}
                   />

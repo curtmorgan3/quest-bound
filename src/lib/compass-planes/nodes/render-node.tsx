@@ -33,6 +33,12 @@ export type ViewRenderContext = {
   byId: Map<string, Component>;
   effectiveLayout: Map<string, EffectiveLayout>;
   positionMap: Map<string, PositionValues>;
+  /** Canvas-space bounds of a component (for relative child-window open placement). */
+  getComponentCanvasRect?: (
+    componentId: string,
+  ) => { x: number; y: number; width: number; height: number } | null;
+  /** Ruleset page template id — used to resolve child window displayScale from `RulesetWindow`. */
+  sheetTemplatePageId?: string | null;
 };
 
 export function renderViewComponent(
@@ -51,7 +57,8 @@ export function renderViewComponent(
           component={component}
           componentData={componentData}
           position={position}
-          characterAttributes={characterAttributes}>
+          characterAttributes={characterAttributes}
+          viewCtx={ctx}>
           <ViewTextNode key={component.id} component={component} />
         </WrapDecorators>
       );
@@ -62,7 +69,8 @@ export function renderViewComponent(
           component={component}
           componentData={componentData}
           position={position}
-          characterAttributes={characterAttributes}>
+          characterAttributes={characterAttributes}
+          viewCtx={ctx}>
           <ViewShapeNode component={component} />
         </WrapDecorators>
       );
@@ -73,7 +81,8 @@ export function renderViewComponent(
           component={component}
           componentData={componentData}
           position={position}
-          characterAttributes={characterAttributes}>
+          characterAttributes={characterAttributes}
+          viewCtx={ctx}>
           <ViewImageNode key={component.id} component={component} />
         </WrapDecorators>
       );
@@ -84,7 +93,8 @@ export function renderViewComponent(
           component={component}
           componentData={componentData}
           position={position}
-          characterAttributes={characterAttributes}>
+          characterAttributes={characterAttributes}
+          viewCtx={ctx}>
           <ViewInputNode key={component.id} component={component} />
         </WrapDecorators>
       );
@@ -95,7 +105,8 @@ export function renderViewComponent(
           component={component}
           componentData={componentData}
           position={position}
-          characterAttributes={characterAttributes}>
+          characterAttributes={characterAttributes}
+          viewCtx={ctx}>
           <ViewCheckboxNode key={component.id} component={component} />
         </WrapDecorators>
       );
@@ -107,7 +118,8 @@ export function renderViewComponent(
           component={component}
           componentData={componentData}
           position={position}
-          characterAttributes={characterAttributes}>
+          characterAttributes={characterAttributes}
+          viewCtx={ctx}>
           <ViewContentNode key={component.id} component={component} />
         </WrapDecorators>
       );
@@ -118,7 +130,8 @@ export function renderViewComponent(
           component={component}
           componentData={componentData}
           position={position}
-          characterAttributes={characterAttributes}>
+          characterAttributes={characterAttributes}
+          viewCtx={ctx}>
           <ViewInventoryNode key={component.id} component={component} />
         </WrapDecorators>
       );
@@ -129,7 +142,8 @@ export function renderViewComponent(
           component={component}
           componentData={componentData}
           position={position}
-          characterAttributes={characterAttributes}>
+          characterAttributes={characterAttributes}
+          viewCtx={ctx}>
           <ViewGraphNode key={component.id} component={component} />
         </WrapDecorators>
       );
@@ -140,7 +154,8 @@ export function renderViewComponent(
           component={component}
           componentData={componentData}
           position={position}
-          characterAttributes={characterAttributes}>
+          characterAttributes={characterAttributes}
+          viewCtx={ctx}>
           <ViewFrameNode key={component.id} component={component} />
         </WrapDecorators>
       );
@@ -151,7 +166,8 @@ export function renderViewComponent(
           component={component}
           componentData={componentData}
           position={position}
-          characterAttributes={characterAttributes}>
+          characterAttributes={characterAttributes}
+          viewCtx={ctx}>
           <ViewGroupNode
             component={component}
             allComponents={ctx?.allComponents ?? []}
@@ -182,12 +198,14 @@ function WrapDecorators({
   characterAttributes,
   componentData,
   position,
+  viewCtx,
 }: {
   children: ReactNode;
   component: Component;
   characterAttributes?: CharacterAttribute[];
   componentData: ComponentData;
   position?: PositionValues;
+  viewCtx?: ViewRenderContext;
 }) {
   return (
     <NodeConditionalRender
@@ -200,7 +218,7 @@ function WrapDecorators({
         <NodeScriptCaller component={component}>
           <NodeDiceClick component={component}>
             <NodeAttributeEditPanelControl component={component}>
-              <NodeNavigator component={component} componentData={componentData}>
+              <NodeNavigator component={component} componentData={componentData} viewCtx={viewCtx}>
                 <NodeActionCaller component={component} componentData={componentData}>
                   <NodeRotation rotation={position?.rotation} z={position?.z}>
                     <NodeAnimation component={component}>{children}</NodeAnimation>
