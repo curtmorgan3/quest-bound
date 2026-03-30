@@ -651,6 +651,7 @@ export class ScriptRunner {
           x: rw.x,
           y: rw.y,
           isCollapsed: rw.isCollapsed,
+          displayScale: rw.displayScale,
           createdAt: now,
           updatedAt: now,
         });
@@ -1055,6 +1056,7 @@ export class ScriptRunner {
           let x = openX ?? 100;
           let y = openY ?? 100;
           let isCollapsed = false;
+          let displayScale: number | undefined;
 
           if (characterPage.pageId) {
             const rulesetWindow = (await db.rulesetWindows
@@ -1066,6 +1068,7 @@ export class ScriptRunner {
               x = rulesetWindow.x;
               y = rulesetWindow.y;
               isCollapsed = !!rulesetWindow.isCollapsed;
+              displayScale = rulesetWindow.displayScale;
             }
           }
 
@@ -1078,6 +1081,7 @@ export class ScriptRunner {
             x,
             y,
             isCollapsed,
+            displayScale,
             createdAt: now,
             updatedAt: now,
           } as CharacterWindow);

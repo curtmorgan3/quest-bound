@@ -133,6 +133,8 @@ export const RulesetPageEditor = ({ pageId }: RulesetPageEditorProps) => {
                   activeRuleset?.id != null
                     ? `/rulesets/${activeRuleset.id}/windows/${window.windowId}`
                     : undefined,
+                onDisplayScaleChange: (id, displayScale) =>
+                  updateRulesetWindow(id, { displayScale }),
               }}
             />
           );

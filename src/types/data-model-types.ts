@@ -206,6 +206,8 @@ export type CharacterWindow = BaseDetails & {
   x: number;
   y: number;
   isCollapsed: boolean;
+  /** Uniform scale for sheet / page layout (1 = design size). From template `RulesetWindow` when present. */
+  displayScale?: number;
   /** Module origin: ruleset id, source entity id, and module name. */
   moduleId?: string;
   moduleEntityId?: string;
@@ -224,6 +226,8 @@ export type RulesetWindow = BaseDetails & {
   x: number;
   y: number;
   isCollapsed: boolean;
+  /** Uniform scale on page template and propagated to character windows (1 = design size). */
+  displayScale?: number;
   /** Module origin: ruleset id, source entity id, and module name. */
   moduleId?: string;
   moduleEntityId?: string;

@@ -14,6 +14,7 @@ import {
 
 import { CanvasGridBackground, usePointerDrag } from '../canvas';
 import { DEFAULT_GRID_SIZE } from '../editor-config';
+import { WindowCanvasSelectionContext } from './window-canvas-selection-context';
 
 const FALLBACK_WINDOW_DRAG_W = 320;
 const FALLBACK_WINDOW_DRAG_H = 240;
@@ -249,6 +250,28 @@ export function WindowCanvasHost<T extends WindowCanvasItem>({
 
   const showBg = !transparentBackground;
 
+  const [selectedWindowId, setSelectedWindowId] = useState<string | null>(null);
+
+  const selectWindow = useCallback((id: string | null) => {
+    setSelectedWindowId(id);
+  }, []);
+
+  const selectionContextValue = useMemo(
+    () => ({ selectedWindowId, selectWindow }),
+    [selectedWindowId, selectWindow],
+  );
+
+  useEffect(() => {
+    if (locked) setSelectedWindowId(null);
+  }, [locked]);
+
+  useLayoutEffect(() => {
+    if (selectedWindowId == null) return;
+    if (!windows.some((w) => w.id === selectedWindowId)) {
+      setSelectedWindowId(null);
+    }
+  }, [windows, selectedWindowId]);
+
   const canvasScaleStyle = showGridToolbar
     ? {
         transform: `scale(${resolvedViewScale})`,
@@ -259,15 +282,21 @@ export function WindowCanvasHost<T extends WindowCanvasItem>({
     : undefined;
 
   return (
+    <WindowCanvasSelectionContext.Provider value={selectionContextValue}>
     <section
       id={sectionId}
       className={className}
       onClick={(e) => {
-        if ((e.target as Element).closest('.window-node')) return;
+        const t = e.target as Element;
+        if (t.closest('.window-node')) return;
+        if (t.closest('[data-window-canvas-chrome]')) return;
+        setSelectedWindowId(null);
         onBackdropClick?.(e.clientX, e.clientY);
       }}>
       {showGridToolbar ? (
-        <div className='pointer-events-none absolute bottom-14 left-2 z-[60]'>
+        <div
+          data-window-canvas-chrome
+          className='pointer-events-none absolute bottom-14 left-2 z-[60]'>
           <div className='pointer-events-auto flex flex-row flex-wrap items-center gap-2 p-1.5'>
             <Input
               type='number'
@@ -380,6 +409,9 @@ export function WindowCanvasHost<T extends WindowCanvasItem>({
               className='pointer-events-auto absolute'
               style={{ left: layoutX, top: layoutY, zIndex: z + 1 }}
               onPointerDown={(e) => {
+                if (!locked) {
+                  setSelectedWindowId(w.id);
+                }
                 if (locked) return;
                 const t = e.target as HTMLElement;
                 if (
@@ -397,5 +429,6 @@ export function WindowCanvasHost<T extends WindowCanvasItem>({
         })}
       </div>
     </section>
+    </WindowCanvasSelectionContext.Provider>
   );
 }

@@ -108,6 +108,7 @@ export async function duplicateCharacterFromTemplate(
       x: cw.x,
       y: cw.y,
       isCollapsed: cw.isCollapsed,
+      displayScale: cw.displayScale,
       createdAt: now,
       updatedAt: now,
     } as CharacterWindow);
