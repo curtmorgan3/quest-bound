@@ -86,7 +86,10 @@ function PwaUpdateToast() {
 export function PwaUpdateProvider({ children }: { children: ReactNode }) {
   const registrationRef = useRef<ServiceWorkerRegistration | undefined>(undefined);
 
-  const { needRefresh: [needRefreshFlag, setNeedRefresh], updateServiceWorker } = useRegisterSW({
+  const {
+    needRefresh: [needRefreshFlag],
+    updateServiceWorker,
+  } = useRegisterSW({
     immediate: true,
     onRegisteredSW(_url, registration) {
       registrationRef.current = registration;
@@ -97,8 +100,7 @@ export function PwaUpdateProvider({ children }: { children: ReactNode }) {
 
   const checkForUpdate = useCallback(async () => {
     if (!swSupported) return;
-    const reg =
-      registrationRef.current ?? (await navigator.serviceWorker.getRegistration());
+    const reg = registrationRef.current ?? (await navigator.serviceWorker.getRegistration());
     await reg?.update();
   }, [swSupported]);
 
