@@ -35,7 +35,11 @@ import {
   expandDeleteIds,
   worldTopLeftWithEffective,
 } from './component-world-geometry';
-import { groupRootIfMember, isFlexHostedChild } from './group-flex-utils';
+import {
+  deepestSelectedAncestorGroup,
+  isFlexHostedChild,
+  outermostGroupRoot,
+} from './group-flex-utils';
 import {
   updatesForClickSelection,
   updatesForMarqueeSelection,
@@ -365,13 +369,17 @@ export function SheetCanvasEditor({
       }
 
       const wasSelected = Boolean(c.selected);
-      const hostGroupRoot = groupRootIfMember(c, byId);
-      // Unselected child of a group: drag the whole group (move root only; children use parent-relative x/y).
-      if (hostGroupRoot && !wasSelected && !hostGroupRoot.locked) {
+      // Unselected: hit group → move that node; else child of a selected group → move that group; else move outermost ancestor.
+      const implicitDragGroupRoot = !wasSelected
+        ? c.type === ComponentTypes.GROUP
+          ? c
+          : (deepestSelectedAncestorGroup(c, components, byId) ?? outermostGroupRoot(c, byId))
+        : null;
+      if (implicitDragGroupRoot && !wasSelected && !implicitDragGroupRoot.locked) {
         beginMove(e, {
-          id: hostGroupRoot.id,
-          x: movePreviewById[hostGroupRoot.id]?.x ?? hostGroupRoot.x,
-          y: movePreviewById[hostGroupRoot.id]?.y ?? hostGroupRoot.y,
+          id: implicitDragGroupRoot.id,
+          x: movePreviewById[implicitDragGroupRoot.id]?.x ?? implicitDragGroupRoot.x,
+          y: movePreviewById[implicitDragGroupRoot.id]?.y ?? implicitDragGroupRoot.y,
           deferredSelectionOnTap,
         });
       } else {

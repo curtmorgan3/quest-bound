@@ -1,7 +1,5 @@
 import type { Component } from '@/types';
 
-import { ComponentTypes } from '../nodes/node-types';
-
 export function componentByIdMap(components: Component[]): Map<string, Component> {
   return new Map(components.map((c) => [c.id, c]));
 }
@@ -50,15 +48,63 @@ export function worldTopLeftWithEffective(
   return { x: pw.x + self.x, y: pw.y + self.y };
 }
 
-/** Include direct children of any deleted group roots (v1: single nesting level). */
-export function expandDeleteIds(components: Component[], requestedIds: string[]): string[] {
-  const byId = componentByIdMap(components);
-  const out = new Set(requestedIds);
-  for (const id of requestedIds) {
+/**
+ * All component ids in the subtree rooted at `rootId` (including `rootId`), by `parentComponentId` edges.
+ */
+export function collectDescendantComponentIds(components: Component[], rootId: string): Set<string> {
+  const out = new Set<string>();
+  const queue = [rootId];
+  while (queue.length) {
+    const id = queue.shift()!;
+    if (out.has(id)) continue;
+    out.add(id);
+    for (const c of components) {
+      if (c.parentComponentId === id) queue.push(c.id);
+    }
+  }
+  return out;
+}
+
+/** Axis-aligned world-space bounds of every node in the subtree rooted at `rootId`. */
+export function subtreeWorldAabb(
+  rootId: string,
+  components: Component[],
+  byId: Map<string, Component>,
+  effective: Map<string, EffectiveLayout>,
+): { minX: number; minY: number; maxX: number; maxY: number } {
+  const ids = collectDescendantComponentIds(components, rootId);
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+  for (const id of ids) {
     const c = byId.get(id);
-    if (c?.type === ComponentTypes.GROUP) {
-      for (const ch of components) {
-        if (ch.parentComponentId === id) out.add(ch.id);
+    if (!c) continue;
+    const self = effective.get(id);
+    if (!self) continue;
+    const tl = worldTopLeftWithEffective(c, byId, effective);
+    minX = Math.min(minX, tl.x);
+    minY = Math.min(minY, tl.y);
+    maxX = Math.max(maxX, tl.x + self.width);
+    maxY = Math.max(maxY, tl.y + self.height);
+  }
+  if (!Number.isFinite(minX)) {
+    return { minX: 0, minY: 0, maxX: 0, maxY: 0 };
+  }
+  return { minX, minY, maxX, maxY };
+}
+
+/** Include every descendant of any deleted row (nested groups under a deleted group). */
+export function expandDeleteIds(components: Component[], requestedIds: string[]): string[] {
+  const out = new Set(requestedIds);
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (const c of components) {
+      const pid = c.parentComponentId;
+      if (pid != null && out.has(pid) && !out.has(c.id)) {
+        out.add(c.id);
+        changed = true;
       }
     }
   }

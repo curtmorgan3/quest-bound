@@ -5,16 +5,54 @@ import type { Component, ComponentStyle } from '@/types';
 import { ComponentTypes } from '../nodes/node-types';
 import { getComponentData } from '../utils';
 
-/** If `c` is parented to a group root, return that root; otherwise null. */
-export function groupRootIfMember(
+/**
+ * Closest `group` ancestor of `c` that is selected (and unlocked), or null.
+ * When the user drags a child inside a selected group, the drag targets that group, not a further-out ancestor.
+ */
+export function deepestSelectedAncestorGroup(
   c: Component,
+  components: Component[],
   byId: Map<string, Component>,
 ): Component | null {
-  const pid = c.parentComponentId;
-  if (!pid) return null;
-  const p = byId.get(pid);
-  if (!p || p.type !== ComponentTypes.GROUP) return null;
-  return p;
+  const selectedGroupIds = new Set(
+    components
+      .filter((x) => x.selected && !x.locked && x.type === ComponentTypes.GROUP)
+      .map((x) => x.id),
+  );
+  if (selectedGroupIds.size === 0) return null;
+
+  let walk: Component | null = c;
+  while (walk != null) {
+    const pid = walk.parentComponentId;
+    if (pid == null) break;
+    const p = byId.get(pid);
+    if (p == null) break;
+    if (selectedGroupIds.has(p.id)) {
+      return p;
+    }
+    walk = p;
+  }
+  return null;
+}
+
+/**
+ * Outermost (closest to the canvas root) `group` ancestor of `c`, or null if `c` is not under any group.
+ * Used when dragging an unselected nested item so the whole stack moves together.
+ */
+export function outermostGroupRoot(c: Component, byId: Map<string, Component>): Component | null {
+  let top: Component | null = null;
+  let cur: Component | null = c;
+  while (cur != null) {
+    const pid = cur.parentComponentId;
+    if (pid == null) break;
+    const p = byId.get(pid);
+    if (p == null) break;
+    if (p.type === ComponentTypes.GROUP) {
+      top = p;
+    }
+    cur = p;
+  }
+  return top;
 }
 
 export function isFlexLayoutGroup(component: Component): boolean {

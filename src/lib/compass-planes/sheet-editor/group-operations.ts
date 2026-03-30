@@ -4,6 +4,12 @@ import type { Component } from '@/types';
 import { DEFAULT_GRID_SIZE } from '../editor-config';
 import { ComponentTypes } from '../nodes/node-types';
 import { injectDefaultComponent } from '../utils/inject-defaults';
+import {
+  buildEffectiveLayoutMap,
+  componentByIdMap,
+  subtreeWorldAabb,
+  worldTopLeftWithEffective,
+} from './component-world-geometry';
 
 export type GroupMutationPlan = {
   toCreate: Partial<Component>[];
@@ -11,48 +17,40 @@ export type GroupMutationPlan = {
   toDelete: string[];
 };
 
-type Member = { comp: Component; wx: number; wy: number };
-
-function sortMembersStable(members: Member[]): Member[] {
-  return [...members].sort((a, b) => {
-    if (a.comp.z !== b.comp.z) return a.comp.z - b.comp.z;
-    return a.comp.id.localeCompare(b.comp.id);
+function sortRootsStable(roots: Component[]): Component[] {
+  return [...roots].sort((a, b) => {
+    if (a.z !== b.z) return a.z - b.z;
+    return a.id.localeCompare(b.id);
   });
 }
 
-function collectMembersForFlatten(components: Component[], selected: Component[]): Member[] {
-  const members: Member[] = [];
-  for (const s of selected) {
-    if (s.type === ComponentTypes.GROUP) {
-      for (const ch of components) {
-        if (ch.parentComponentId === s.id) {
-          members.push({ comp: ch, wx: s.x + ch.x, wy: s.y + ch.y });
-        }
-      }
-    } else {
-      members.push({ comp: s, wx: s.x, wy: s.y });
-    }
-  }
-  return members;
-}
-
-function bboxOfMembers(members: Member[]): { minX: number; minY: number; maxX: number; maxY: number } {
+function unionSubtreeWorldAABBs(
+  rootIds: string[],
+  components: Component[],
+  byId: Map<string, Component>,
+  eff: ReturnType<typeof buildEffectiveLayoutMap>,
+): { minX: number; minY: number; maxX: number; maxY: number } {
   let minX = Infinity;
   let minY = Infinity;
   let maxX = -Infinity;
   let maxY = -Infinity;
-  for (const m of members) {
-    minX = Math.min(minX, m.wx);
-    minY = Math.min(minY, m.wy);
-    maxX = Math.max(maxX, m.wx + m.comp.width);
-    maxY = Math.max(maxY, m.wy + m.comp.height);
+  for (const rid of rootIds) {
+    const bb = subtreeWorldAabb(rid, components, byId, eff);
+    if (!Number.isFinite(bb.minX)) continue;
+    minX = Math.min(minX, bb.minX);
+    minY = Math.min(minY, bb.minY);
+    maxX = Math.max(maxX, bb.maxX);
+    maxY = Math.max(maxY, bb.maxY);
+  }
+  if (!Number.isFinite(minX)) {
+    return { minX: 0, minY: 0, maxX: DEFAULT_GRID_SIZE * 2, maxY: DEFAULT_GRID_SIZE * 2 };
   }
   return { minX, minY, maxX, maxY };
 }
 
 /**
- * Group / merge selection: wraps loose roots or flattens one-or-more existing groups + loose items
- * into a single new group root. Requires ≥2 selected, unlocked, all top-level (no parent).
+ * Group / merge selection: wraps top-level roots (including existing group nodes) in a new outer group
+ * while preserving nesting. Requires ≥2 selected, unlocked, all canvas roots (no parent).
  */
 export function planGroupSelection(
   components: Component[],
@@ -63,17 +61,14 @@ export function planGroupSelection(
   if (selected.length < 2) return null;
   if (!selected.every((c) => !c.parentComponentId)) return null;
 
-  const groupRoots = selected.filter((c) => c.type === ComponentTypes.GROUP);
-  const needsFlatten = groupRoots.length >= 1;
+  const eff = buildEffectiveLayoutMap(components, {}, null);
+  const byId = componentByIdMap(components);
 
-  const membersRaw = needsFlatten
-    ? collectMembersForFlatten(components, selected)
-    : selected.map((c) => ({ comp: c, wx: c.x, wy: c.y }));
+  const sortedRoots = sortRootsStable(selected);
 
-  if (membersRaw.length < 2) return null;
+  const rootIds = sortedRoots.map((r) => r.id);
+  const { minX, minY, maxX, maxY } = unionSubtreeWorldAABBs(rootIds, components, byId, eff);
 
-  const members = sortMembersStable(membersRaw);
-  const { minX, minY, maxX, maxY } = bboxOfMembers(members);
   const baseZ = Math.min(...selected.map((s) => s.z));
   const newGroupId = crypto.randomUUID();
 
@@ -92,32 +87,37 @@ export function planGroupSelection(
   });
   if (!draft) return null;
 
-  const toUpdate: ComponentUpdate[] = members.map((m, i) => ({
-    id: m.comp.id,
-    parentComponentId: newGroupId,
-    x: m.wx - minX,
-    y: m.wy - minY,
-    z: baseZ + 1 + i,
-  }));
-
-  const toDelete = groupRoots.map((g) => g.id);
+  const toUpdate: ComponentUpdate[] = sortedRoots.map((m, i) => {
+    const tl = worldTopLeftWithEffective(m, byId, eff);
+    return {
+      id: m.id,
+      parentComponentId: newGroupId,
+      x: tl.x - minX,
+      y: tl.y - minY,
+      z: baseZ + 1 + i,
+    };
+  });
 
   return {
     toCreate: [draft],
     toUpdate,
-    toDelete,
+    toDelete: [],
   };
 }
 
-/** Ungroup when exactly one group root is selected. */
+/**
+ * Ungroup once: direct children of the selected group move to its parent (or canvas if none);
+ * inner structure of each child is unchanged.
+ */
 export function planUngroupSelection(components: Component[]): GroupMutationPlan | null {
   const sel = components.filter((c) => c.selected && !c.locked);
   if (sel.length !== 1 || sel[0].type !== ComponentTypes.GROUP) return null;
   const g = sel[0];
   const children = components.filter((c) => c.parentComponentId === g.id);
+  const parentId = g.parentComponentId ?? null;
   const toUpdate: ComponentUpdate[] = children.map((ch) => ({
     id: ch.id,
-    parentComponentId: null,
+    parentComponentId: parentId,
     x: g.x + ch.x,
     y: g.y + ch.y,
   }));
@@ -127,13 +127,7 @@ export function planUngroupSelection(components: Component[]): GroupMutationPlan
 /** True if Group action should be enabled in the editor. */
 export function canGroupSelection(components: Component[]): boolean {
   const selected = components.filter((c) => c.selected && !c.locked);
-  if (selected.length < 2 || !selected.every((c) => !c.parentComponentId)) return false;
-  const groupRoots = selected.filter((c) => c.type === ComponentTypes.GROUP);
-  const membersRaw =
-    groupRoots.length >= 1
-      ? collectMembersForFlatten(components, selected)
-      : selected.map((c) => ({ comp: c, wx: c.x, wy: c.y }));
-  return membersRaw.length >= 2;
+  return selected.length >= 2 && selected.every((c) => !c.parentComponentId);
 }
 
 export function canUngroupSelection(components: Component[]): boolean {

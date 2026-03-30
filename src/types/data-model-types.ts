@@ -245,7 +245,7 @@ export type Component = BaseDetails & {
   locked?: boolean;
   selected?: boolean;
   groupId?: string | null;
-  /** Parent group root `Component.id` when nested under `type === 'group'` (window-local hierarchy, depth 1 in v1). */
+  /** Parent group `Component.id` when nested under `type === 'group'` (window-local tree; groups may nest). */
   parentComponentId?: string | null;
   attributeId?: string | null;
   actionId?: string | null;

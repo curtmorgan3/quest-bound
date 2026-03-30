@@ -8,7 +8,7 @@ import {
   Input,
 } from '@/components';
 import type { ComponentUpdate } from '@/lib/compass-api';
-import { useComposites, useComponents } from '@/lib/compass-api';
+import { useComponents, useComposites } from '@/lib/compass-api';
 import { ComponentTypes } from '@/lib/compass-planes/nodes';
 import { expandDeleteIds } from '@/lib/compass-planes/sheet-editor/component-world-geometry';
 import { colorPrimary } from '@/palette';
@@ -120,17 +120,6 @@ export const ActionEdit = ({ components, handleUpdate }: Props) => {
       <div className='w-full flex flex-row gap-4 items-end'>
         <Copy className={`text-xs h-[18px] w-[18px] cursor-pointer`} onClick={handleCopy} />
 
-        {singleGroupRoot ? (
-          <BookMarked
-            aria-label='Save as composite'
-            className='text-xs h-[18px] w-[18px] cursor-pointer'
-            onClick={() => {
-              setCompositeName('');
-              setSaveCompositeOpen(true);
-            }}
-          />
-        ) : null}
-
         {hasGroupedSelection ? (
           <ArrowUpFromDot
             aria-label='Select group'
@@ -162,6 +151,17 @@ export const ActionEdit = ({ components, handleUpdate }: Props) => {
             if (canUngroupSelected) ungroupSelectedComponents();
           }}
         />
+        {singleGroupRoot ? (
+          <BookMarked
+            aria-label='Save as composite'
+            className='text-xs h-[18px] w-[18px] cursor-pointer'
+            onClick={() => {
+              setCompositeName('');
+              setSaveCompositeOpen(true);
+            }}
+          />
+        ) : null}
+
         <Lock
           className={`text-xs h-[18px] w-[18px] cursor-pointer`}
           style={{
@@ -182,8 +182,8 @@ export const ActionEdit = ({ components, handleUpdate }: Props) => {
             <DialogTitle>Save as composite</DialogTitle>
           </DialogHeader>
           <p className='text-muted-foreground text-sm'>
-            Adds this group to the composite library for this ruleset. Stamped copies stay independent
-            of the template.
+            Adds this group to the composite library for this ruleset. Stamped copies stay
+            independent of the template.
           </p>
           <Input
             autoFocus
