@@ -83,6 +83,7 @@ export async function duplicateCharacterFromTemplate(
       characterId: targetCharacterId,
       pageId: cp.pageId,
       label: cp.label,
+      sheetFitToViewport: cp.sheetFitToViewport,
       createdAt: now,
       updatedAt: now,
     } as CharacterPage);

@@ -2,7 +2,7 @@ import type { ComponentUpdate } from '@/lib/compass-api';
 import { useCallback, useRef } from 'react';
 
 import { clampCanvasPositions } from './canvas-bounds';
-import { clientToCanvas, snapPointToGrid } from './client-to-canvas';
+import { clientToCanvas, clientToCanvasSheetFit, snapPointToGrid } from './client-to-canvas';
 
 export type PointerDragFollower = { id: string; x: number; y: number };
 
@@ -65,6 +65,14 @@ export type UsePointerDragOptions = {
   shouldClampItem?: (id: string) => boolean;
   /** Matches CSS `transform: scale()` on the canvas coordinate root (default 1). */
   viewScale?: number;
+  /** Untransformed viewport clip (character sheet fit mode). */
+  sheetViewportRef?: React.RefObject<HTMLElement | null>;
+  /** Live `translate(tx,ty) scale(scale)` on the canvas root for fit-to-viewport. */
+  sheetFitTransformRef?: React.MutableRefObject<{
+    tx: number;
+    ty: number;
+    scale: number;
+  } | null>;
 };
 
 type DragPhase = {
@@ -123,6 +131,8 @@ export function usePointerDrag({
   getItemDimensions,
   shouldClampItem,
   viewScale = 1,
+  sheetViewportRef,
+  sheetFitTransformRef,
 }: UsePointerDragOptions) {
   const optsRef = useRef({
     onCommit,
@@ -135,6 +145,8 @@ export function usePointerDrag({
     getItemDimensions,
     shouldClampItem,
     viewScale,
+    sheetViewportRef,
+    sheetFitTransformRef,
   });
   optsRef.current = {
     onCommit,
@@ -147,6 +159,8 @@ export function usePointerDrag({
     getItemDimensions,
     shouldClampItem,
     viewScale,
+    sheetViewportRef,
+    sheetFitTransformRef,
   };
 
   const phaseRef = useRef<DragPhase | null>(null);
@@ -181,7 +195,19 @@ export function usePointerDrag({
 
       const startClientX = e.clientX;
       const startClientY = e.clientY;
-      const local = clientToCanvas(e.clientX, e.clientY, container, o.viewScale);
+      const tFit = o.sheetFitTransformRef?.current;
+      const vp = o.sheetViewportRef?.current;
+      const local =
+        tFit && vp && tFit.scale > 0
+          ? clientToCanvasSheetFit(
+              e.clientX,
+              e.clientY,
+              vp.getBoundingClientRect(),
+              tFit.tx,
+              tFit.ty,
+              tFit.scale,
+            )
+          : clientToCanvas(e.clientX, e.clientY, container, o.viewScale);
       const followers = (params.followers ?? []).map((f) => ({
         id: f.id,
         originX: f.x,
@@ -243,7 +269,19 @@ export function usePointerDrag({
 
         const c = oc.containerRef.current;
         if (!c) return;
-        const cur = clientToCanvas(ev.clientX, ev.clientY, c, oc.viewScale);
+        const tF = oc.sheetFitTransformRef?.current;
+        const vpr = oc.sheetViewportRef?.current;
+        const cur =
+          tF && vpr && tF.scale > 0
+            ? clientToCanvasSheetFit(
+                ev.clientX,
+                ev.clientY,
+                vpr.getBoundingClientRect(),
+                tF.tx,
+                tF.ty,
+                tF.scale,
+              )
+            : clientToCanvas(ev.clientX, ev.clientY, c, oc.viewScale);
         const rawDx = cur.x - ph.startLocalX;
         const rawDy = cur.y - ph.startLocalY;
         let positions = positionsForDelta(

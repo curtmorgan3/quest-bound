@@ -34,3 +34,24 @@ export function snapPointToGrid(
     y: snapScalarToGrid(y, gridSize),
   };
 }
+
+/**
+ * Inverse of `transform: translate(tx, ty) scale(scale)` with `transform-origin: 0 0` on the canvas
+ * root, where the canvas is laid out at the top-left of `viewportRect` (viewport clip element).
+ */
+export function clientToCanvasSheetFit(
+  clientX: number,
+  clientY: number,
+  viewportRect: DOMRectReadOnly,
+  translateX: number,
+  translateY: number,
+  scale: number,
+): { x: number; y: number } {
+  const s = scale > 0 && Number.isFinite(scale) ? scale : 1;
+  const relX = clientX - viewportRect.left;
+  const relY = clientY - viewportRect.top;
+  return {
+    x: (relX - translateX) / s,
+    y: (relY - translateY) / s,
+  };
+}

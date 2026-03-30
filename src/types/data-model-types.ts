@@ -196,6 +196,8 @@ export type CharacterPage = Page & {
   characterId: string;
   /** Ruleset template page id this was created from (for "from template" pages). */
   pageId: string;
+  /** When true, scale and translate the sheet so all windows fit in the viewport (per-page preference). */
+  sheetFitToViewport?: boolean;
 };
 
 export type CharacterWindow = BaseDetails & {

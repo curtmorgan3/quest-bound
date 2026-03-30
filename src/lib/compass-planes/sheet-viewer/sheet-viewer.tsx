@@ -6,7 +6,7 @@ import {
 } from '@/lib/compass-api';
 import { db } from '@/stores';
 import type { CharacterWindow } from '@/types';
-import { useMemo, useState } from 'react';
+import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { dispatchSheetViewerBackdropClick } from './backdrop-click-event';
 import { WindowCanvasHost } from './window-canvas-host';
@@ -43,7 +43,7 @@ export const SheetViewer = ({
   transparentBackground = false,
   showHiddenWindows = false,
 }: SheetViewerProps) => {
-  const { characterPages } = useCharacterPages(characterId);
+  const { characterPages, updateCharacterPage } = useCharacterPages(characterId);
 
   const sortedCharacterPages = [
     ...characterPages.sort((a, b) => a.label?.localeCompare(b.label ?? '')),
@@ -60,10 +60,40 @@ export const SheetViewer = ({
     searchParams.get('pageId') ?? initialCurrentPageId ?? sortedCharacterPages[0]?.id;
 
   const [locked, setLockedState] = useState<boolean>(initialLocked ?? lockByDefault ?? false);
+  const sheetBottomBarRef = useRef<HTMLDivElement>(null);
+  const [sheetFitBottomInsetPx, setSheetFitBottomInsetPx] = useState(0);
+
+  useLayoutEffect(() => {
+    if (editorWindowId) {
+      setSheetFitBottomInsetPx(0);
+      return;
+    }
+    const el = sheetBottomBarRef.current;
+    if (!el) {
+      setSheetFitBottomInsetPx(0);
+      return;
+    }
+    const update = () => setSheetFitBottomInsetPx(el.getBoundingClientRect().height);
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    update();
+    return () => ro.disconnect();
+  }, [editorWindowId]);
 
   const currentPage = editorWindowId
     ? undefined
     : characterPages.find((p) => p.id === currentPageId);
+
+  const sheetFitToViewport = !editorWindowId && currentPage?.sheetFitToViewport === true;
+
+  const handleSheetFitToViewportChange = useCallback(() => {
+    if (!characterId || !currentPageId) return;
+    const page = characterPages.find((p) => p.id === currentPageId);
+    if (!page) return;
+    void updateCharacterPage(currentPageId, {
+      sheetFitToViewport: !(page.sheetFitToViewport === true),
+    });
+  }, [characterId, characterPages, currentPageId, updateCharacterPage]);
 
   const setLocked = (next: boolean | ((prev: boolean) => boolean)) => {
     setLockedState((prev) => {
@@ -161,6 +191,8 @@ export const SheetViewer = ({
         className='relative min-h-0 w-full flex-1 overflow-hidden'
         windows={openCharacterWindows}
         locked={locked}
+        sheetFitToViewport={sheetFitToViewport}
+        sheetFitBottomInsetPx={sheetFitBottomInsetPx}
         onWindowPositionUpdate={(id, x, y) => onWindowUpdated?.({ id, x, y })}
         transparentBackground={transparentBackground && !editorWindowId}
         backgroundColor={
@@ -209,7 +241,12 @@ export const SheetViewer = ({
           toggleWindow={(id: string) => onWindowUpdated?.({ id, isCollapsed: openWindows.has(id) })}
           locked={locked}
           onToggleLock={() => setLocked((prev) => !prev)}
+          sheetFitToViewport={sheetFitToViewport}
+          onSheetFitToViewportChange={
+            characterId && currentPageId ? handleSheetFitToViewportChange : undefined
+          }
           showHiddenWindows={showHiddenWindows}
+          bottomBarRef={sheetBottomBarRef}
         />
       )}
     </div>

@@ -84,7 +84,8 @@ export const useCharacterPages = (characterId?: string) => {
       Pick<
         Page,
         'label' | 'assetId' | 'assetUrl' | 'backgroundOpacity' | 'backgroundColor' | 'image'
-      >
+      > &
+        Pick<CharacterPage, 'sheetFitToViewport'>
     >,
   ) => {
     const now = new Date().toISOString();

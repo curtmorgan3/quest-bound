@@ -26,8 +26,8 @@ import {
 import { PageDetailsForm } from '@/lib/compass-planes/page-details-form';
 import { colorPrimary } from '@/palette';
 import type { CharacterPage, CharacterWindow, Window } from '@/types';
-import { Lock, Pencil, Plus, Trash2 } from 'lucide-react';
-import { useState } from 'react';
+import { Lock, Maximize2, Pencil, Plus, Trash2 } from 'lucide-react';
+import { useState, type Ref } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
 interface WindowsTabsProps {
@@ -38,8 +38,13 @@ interface WindowsTabsProps {
   openWindows: Set<string>;
   locked?: boolean;
   onToggleLock: () => void;
+  /** Unlocked layout: fit all windows inside the viewport (uniform scale). */
+  sheetFitToViewport?: boolean;
+  onSheetFitToViewportChange?: (next: boolean) => void;
   pageId?: string;
   showHiddenWindows?: boolean;
+  /** Measure bottom bar height for sheet fit-to-viewport (tabs use absolute positioning). */
+  bottomBarRef?: Ref<HTMLDivElement>;
 }
 
 export const WindowsTabs = ({
@@ -50,8 +55,11 @@ export const WindowsTabs = ({
   openWindows,
   locked = false,
   onToggleLock,
+  sheetFitToViewport = false,
+  onSheetFitToViewportChange,
   pageId,
   showHiddenWindows = false,
+  bottomBarRef,
 }: WindowsTabsProps) => {
   const { character } = useCharacter(characterId);
   const rulesetPages = useRulesetPagesForRuleset(character?.rulesetId);
@@ -183,7 +191,7 @@ export const WindowsTabs = ({
 
   return (
     <>
-      <div className='window-tabs' style={tabBarStyle}>
+      <div ref={bottomBarRef} className='window-tabs' style={tabBarStyle}>
         <button
           onClick={onToggleLock}
           style={{
@@ -202,6 +210,33 @@ export const WindowsTabs = ({
           title='Lock layout'>
           <Lock size={16} />
         </button>
+
+        {!locked && onSheetFitToViewportChange ? (
+          <button
+            type='button'
+            onClick={() => onSheetFitToViewportChange(!sheetFitToViewport)}
+            aria-pressed={sheetFitToViewport}
+            style={{
+              height: '30px',
+              width: '30px',
+              minWidth: '30px',
+              backgroundColor: '#333',
+              color: sheetFitToViewport ? colorPrimary : '#fff',
+              border: '1px solid #555',
+              borderRadius: 4,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+            title={
+              sheetFitToViewport
+                ? 'Turn off fit sheet to viewport'
+                : 'Fit sheet to viewport (scale to show all windows)'
+            }>
+            <Maximize2 size={16} />
+          </button>
+        ) : null}
 
         {!locked && (
           <Button

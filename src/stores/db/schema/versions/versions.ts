@@ -20,7 +20,7 @@ export const dbSchema = {
   itemCustomProperties: `${common}, itemId, customPropertyId, defaultValue, [itemId], &[itemId+customPropertyId]`,
   inventories: `${common}, rulesetId, characterId, title, category, type`,
   inventoryItems: `${common}, characterId, inventoryId, entityId, quantity`,
-  characterPages: `${common}, characterId, pageId, rulesetId, label, category, assetId, assetUrl, backgroundOpacity, backgroundColor, image, hideFromPlayerView, [characterId+pageId]`,
+  characterPages: `${common}, characterId, pageId, rulesetId, label, category, assetId, assetUrl, backgroundOpacity, backgroundColor, image, hideFromPlayerView, sheetFitToViewport, [characterId+pageId]`,
   characterWindows: `${common}, characterId, characterPageId, windowId, title, x, y, isCollapsed, moduleId`,
   rulesetWindows: `${common}, rulesetId, pageId, windowId, title, x, y, isCollapsed, moduleId`,
   characterAttributes: `${common}, characterId, attributeId, &[characterId+attributeId], scriptDisabled`,
@@ -233,5 +233,11 @@ export const dbSchemaV61 = {
   compositeVariants: `${common}, rulesetId, compositeId, groupComponentId, name, sortOrder, [compositeId], &[groupComponentId]`,
 };
 
+/** Schema for v62: CharacterPage.sheetFitToViewport for persisted sheet scale-to-viewport. */
+export const dbSchemaV62 = {
+  ...dbSchemaV61,
+  characterPages: `${common}, characterId, pageId, rulesetId, label, category, assetId, backgroundOpacity, backgroundColor, image, hideFromPlayerView, sheetFitToViewport, [characterId+pageId]`,
+};
+
 // latestDbSchema should always be used for the worker thread db instance
-export const latestDbSchema = { ...dbSchemaV61 };
+export const latestDbSchema = { ...dbSchemaV62 };

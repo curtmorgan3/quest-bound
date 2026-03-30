@@ -629,6 +629,14 @@ export const useImportRuleset = () => {
           ) {
             errors.push(`CharacterPage ${index + 1}: pageId is required and must be a string`);
           }
+          if (
+            item.sheetFitToViewport !== undefined &&
+            typeof item.sheetFitToViewport !== 'boolean'
+          ) {
+            errors.push(
+              `CharacterPage ${index + 1}: sheetFitToViewport must be a boolean when present`,
+            );
+          }
           break;
 
         case 'rulesetWindows':

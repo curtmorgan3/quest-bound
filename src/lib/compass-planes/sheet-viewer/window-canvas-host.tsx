@@ -2,6 +2,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import type { ComponentUpdate } from '@/lib/compass-api';
 import { Magnet, ScanSearch, ZoomIn, ZoomOut } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import {
   useCallback,
   useEffect,
@@ -9,6 +10,7 @@ import {
   useMemo,
   useRef,
   useState,
+  type CSSProperties,
   type ReactNode,
 } from 'react';
 
@@ -91,6 +93,13 @@ export type WindowCanvasHostProps<T extends WindowCanvasItem> = {
    * scaling / snapping pattern as `SheetCanvasEditor` (ruleset page editor).
    */
   showGridToolbar?: boolean;
+  /**
+   * When true (character sheet layout), scale and translate the canvas so all windows fit inside
+   * the viewport with uniform scale and padding. Ignored when `showGridToolbar` is true.
+   */
+  sheetFitToViewport?: boolean;
+  /** Subtract from viewport height when fitting (e.g. absolutely positioned bottom tab bar). */
+  sheetFitBottomInsetPx?: number;
 };
 
 /**
@@ -109,12 +118,22 @@ export function WindowCanvasHost<T extends WindowCanvasItem>({
   sectionId = 'base-editor',
   renderWindow,
   showGridToolbar = false,
+  sheetFitToViewport = false,
+  sheetFitBottomInsetPx = 0,
 }: WindowCanvasHostProps<T>) {
+  const viewportRef = useRef<HTMLDivElement>(null);
   const canvasRootRef = useRef<HTMLDivElement>(null);
+  const sheetFitTransformRef = useRef<{ tx: number; ty: number; scale: number } | null>(null);
   const windowWrapperElByIdRef = useRef(new Map<string, HTMLDivElement>());
   const [movePreviewById, setMovePreviewById] = useState<Record<string, { x: number; y: number }>>(
     {},
   );
+
+  const [sheetFitStyle, setSheetFitStyle] = useState<{
+    tx: number;
+    ty: number;
+    scale: number;
+  } | null>(null);
 
   const [editorGridSize, setEditorGridSize] = useState(readStoredWindowEditorGrid);
   const [snapToGrid, setSnapToGrid] = useState(readStoredSnapToGrid);
@@ -212,11 +231,88 @@ export function WindowCanvasHost<T extends WindowCanvasItem>({
     [onWindowPositionUpdate],
   );
 
+  const windowsFitKey = useMemo(
+    () =>
+      windows
+        .map((w) => {
+          const pv = movePreviewById[w.id];
+          return `${w.id}:${pv?.x ?? w.x},${pv?.y ?? w.y}`;
+        })
+        .join('|'),
+    [windows, movePreviewById],
+  );
+
+  const recomputeSheetFit = useCallback(() => {
+    if (!sheetFitToViewport || showGridToolbar) {
+      sheetFitTransformRef.current = null;
+      setSheetFitStyle(null);
+      return;
+    }
+    const vp = viewportRef.current;
+    if (!vp) return;
+
+    const vw = vp.clientWidth;
+    const vh = vp.clientHeight;
+    const pad = 12;
+    const bottomInset =
+      sheetFitBottomInsetPx > 0 && Number.isFinite(sheetFitBottomInsetPx) ? sheetFitBottomInsetPx : 0;
+    const availW = Math.max(0, vw - 2 * pad);
+    const availH = Math.max(0, vh - 2 * pad - bottomInset);
+
+    let minX = Infinity;
+    let minY = Infinity;
+    let maxX = -Infinity;
+    let maxY = -Infinity;
+
+    for (const w of windows) {
+      const el = windowWrapperElByIdRef.current.get(w.id);
+      const lw = movePreviewById[w.id]?.x ?? w.x;
+      const ly = movePreviewById[w.id]?.y ?? w.y;
+      const ww = el?.offsetWidth ?? FALLBACK_WINDOW_DRAG_W;
+      const wh = el?.offsetHeight ?? FALLBACK_WINDOW_DRAG_H;
+      minX = Math.min(minX, lw);
+      minY = Math.min(minY, ly);
+      maxX = Math.max(maxX, lw + ww);
+      maxY = Math.max(maxY, ly + wh);
+    }
+
+    let next: { tx: number; ty: number; scale: number };
+    if (!Number.isFinite(minX) || windows.length === 0) {
+      next = { tx: 0, ty: 0, scale: 1 };
+    } else {
+      const cw = Math.max(1, maxX - minX);
+      const ch = Math.max(1, maxY - minY);
+      const s = Math.min(availW / cw, availH / ch);
+      const scaledW = cw * s;
+      const scaledH = ch * s;
+      const tx = pad + (availW - scaledW) / 2 - minX * s;
+      const ty = pad + (availH - scaledH) / 2 - minY * s;
+      next = { tx, ty, scale: s };
+    }
+
+    sheetFitTransformRef.current = next;
+    setSheetFitStyle((prev) => {
+      if (
+        prev &&
+        Math.abs(prev.tx - next.tx) < 0.25 &&
+        Math.abs(prev.ty - next.ty) < 0.25 &&
+        Math.abs(prev.scale - next.scale) < 0.0001
+      ) {
+        return prev;
+      }
+      return next;
+    });
+  }, [movePreviewById, sheetFitBottomInsetPx, sheetFitToViewport, showGridToolbar, windows]);
+
   const { beginMove } = usePointerDrag({
     containerRef: canvasRootRef,
     gridSize: showGridToolbar && snapToGrid ? resolvedGridSize : null,
     getItemDimensions: getWindowDragDimensions,
     viewScale: resolvedViewScale,
+    sheetViewportRef:
+      sheetFitToViewport && !showGridToolbar ? viewportRef : undefined,
+    sheetFitTransformRef:
+      sheetFitToViewport && !showGridToolbar ? sheetFitTransformRef : undefined,
     onCommit,
     onTransientPositions: (items) => {
       setMovePreviewById(Object.fromEntries(items.map((i) => [i.id, { x: i.x, y: i.y }])));
@@ -226,6 +322,37 @@ export function WindowCanvasHost<T extends WindowCanvasItem>({
     },
     canDrag: () => !locked,
   });
+
+  useLayoutEffect(() => {
+    if (!sheetFitToViewport || showGridToolbar) {
+      sheetFitTransformRef.current = null;
+      setSheetFitStyle(null);
+      return;
+    }
+    const vp = viewportRef.current;
+    if (!vp) return;
+
+    const ro = new ResizeObserver(() => {
+      recomputeSheetFit();
+    });
+    ro.observe(vp);
+    for (const el of windowWrapperElByIdRef.current.values()) {
+      ro.observe(el);
+    }
+
+    recomputeSheetFit();
+    const raf = requestAnimationFrame(() => recomputeSheetFit());
+
+    return () => {
+      cancelAnimationFrame(raf);
+      ro.disconnect();
+    };
+  }, [recomputeSheetFit, sheetFitToViewport, showGridToolbar, windowsFitKey]);
+
+  useLayoutEffect(() => {
+    if (!sheetFitToViewport || showGridToolbar) return;
+    recomputeSheetFit();
+  }, [movePreviewById, recomputeSheetFit, sheetFitToViewport, showGridToolbar, windows]);
 
   useLayoutEffect(() => {
     setMovePreviewById((prev) => {
@@ -275,20 +402,29 @@ export function WindowCanvasHost<T extends WindowCanvasItem>({
     }
   }, [windows, selectedWindowId]);
 
-  const canvasScaleStyle = showGridToolbar
-    ? {
+  const mergedCanvasStyle = useMemo((): CSSProperties | undefined => {
+    if (showGridToolbar) {
+      return {
         transform: `scale(${resolvedViewScale})`,
-        transformOrigin: '0 0' as const,
+        transformOrigin: '0 0',
         width: `${100 / resolvedViewScale}%`,
         height: `${100 / resolvedViewScale}%`,
-      }
-    : undefined;
+      };
+    }
+    if (sheetFitToViewport && sheetFitStyle) {
+      return {
+        transform: `translate(${sheetFitStyle.tx}px, ${sheetFitStyle.ty}px) scale(${sheetFitStyle.scale})`,
+        transformOrigin: '0 0',
+      };
+    }
+    return undefined;
+  }, [showGridToolbar, resolvedViewScale, sheetFitToViewport, sheetFitStyle]);
 
   return (
     <WindowCanvasSelectionContext.Provider value={selectionContextValue}>
     <section
       id={sectionId}
-      className={className}
+      className={cn(className)}
       onClick={(e) => {
         const t = e.target as Element;
         if (t.closest('.window-node')) return;
@@ -359,7 +495,8 @@ export function WindowCanvasHost<T extends WindowCanvasItem>({
         </div>
       ) : null}
 
-      <div ref={canvasRootRef} className='relative min-h-full min-w-full' style={canvasScaleStyle}>
+      <div ref={viewportRef} className='absolute inset-0 min-h-0 overflow-hidden'>
+      <div ref={canvasRootRef} className='relative min-h-full min-w-full' style={mergedCanvasStyle}>
         {showBg && backgroundColor != null && (
           <div
             aria-hidden
@@ -430,6 +567,7 @@ export function WindowCanvasHost<T extends WindowCanvasItem>({
             </div>
           );
         })}
+      </div>
       </div>
     </section>
     </WindowCanvasSelectionContext.Provider>
