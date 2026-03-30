@@ -110,3 +110,35 @@ export function expandDeleteIds(components: Component[], requestedIds: string[])
   }
   return [...out];
 }
+
+/**
+ * Order ids so **deepest** components (farthest from the canvas root in the parent chain) delete first.
+ * Prevents a frame where a child still exists but its parent row is gone — layout then treats local x/y as world and draws near the origin.
+ */
+export function sortComponentIdsForDeletion(components: Component[], ids: string[]): string[] {
+  const idSet = new Set(ids);
+  const byId = componentByIdMap(components);
+
+  function depthFromCanvasRoot(cid: string): number {
+    let depth = 0;
+    let cur = byId.get(cid);
+    const seen = new Set<string>();
+    while (cur?.parentComponentId) {
+      if (seen.has(cur.id)) break;
+      seen.add(cur.id);
+      depth += 1;
+      cur = byId.get(cur.parentComponentId);
+      if (depth > 4096) break;
+    }
+    return depth;
+  }
+
+  return [...idSet]
+    .filter((id) => byId.has(id))
+    .sort((a, b) => {
+      const da = depthFromCanvasRoot(a);
+      const db = depthFromCanvasRoot(b);
+      if (da !== db) return db - da;
+      return a.localeCompare(b);
+    });
+}

@@ -59,14 +59,20 @@ export const EditGroupNode = () => {
                     <div
                       key={child.id}
                       data-canvas-item={child.id}
-                      className='pointer-events-auto'
+                      className={
+                        child.locked
+                          ? 'pointer-events-none relative flex-shrink-0 [&_*]:pointer-events-none'
+                          : 'pointer-events-auto relative flex-shrink-0'
+                      }
                       style={{
                         width: eff.width,
                         height: eff.height,
-                        flexShrink: 0,
-                        position: 'relative',
                       }}
-                      onPointerDown={(e) => canvasLayout.onItemPointerDown(e, child)}>
+                      onPointerDown={
+                        child.locked
+                          ? undefined
+                          : (e) => canvasLayout.onItemPointerDown(e, child)
+                      }>
                       <EditorItemLayoutProvider value={{ width: eff.width, height: eff.height }}>
                         <EditorItemIdProvider id={child.id}>
                           <Edit />

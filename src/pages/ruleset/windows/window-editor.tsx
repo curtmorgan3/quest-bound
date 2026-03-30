@@ -77,6 +77,7 @@ export const WindowEditor = () => {
     updateComponents,
     updateComponent,
     deleteComponent,
+    deleteManyComponents,
     replaceComponents,
   } = useComponents(windowId);
 
@@ -155,9 +156,7 @@ export const WindowEditor = () => {
 
   const onComponentsDeleted = (ids: Array<string>) => {
     log('components deleted', ids);
-    for (const id of ids) {
-      deleteComponent(id);
-    }
+    void deleteManyComponents(ids);
   };
 
   const onComponentsRestored = (restored: Component[]) => {

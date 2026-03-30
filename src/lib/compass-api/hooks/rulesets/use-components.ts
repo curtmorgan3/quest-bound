@@ -1,5 +1,6 @@
 import { useErrorHandler } from '@/hooks';
 import { repairCompositesAfterComponentDeletes } from '@/lib/compass-api/utils/composite-db';
+import { sortComponentIdsForDeletion } from '@/lib/compass-planes/sheet-editor/component-world-geometry';
 import { db, useApiLoadingStore } from '@/stores';
 import type { Component } from '@/types';
 import { useLiveQuery } from 'dexie-react-hooks';
@@ -117,6 +118,26 @@ export const useComponents = (windowId?: string) => {
     }
   };
 
+  /** Deletes in depth order inside one transaction, then composite repair once (avoids orphan flash at 0,0). */
+  const deleteManyComponents = async (expandedIds: string[]) => {
+    if (expandedIds.length === 0) return;
+    const snapshot = components ?? [];
+    const ordered = sortComponentIdsForDeletion(snapshot, expandedIds);
+    try {
+      await db.transaction('rw', db.components, async () => {
+        for (const id of ordered) {
+          await db.components.delete(id);
+        }
+      });
+      await repairCompositesAfterComponentDeletes(ordered);
+    } catch (e) {
+      handleError(e as Error, {
+        component: 'useComponents/deleteManyComponents',
+        severity: 'medium',
+      });
+    }
+  };
+
   const replaceComponents = async (newComponents: Component[]) => {
     if (!windowId) return;
     const now = new Date().toISOString();
@@ -132,7 +153,18 @@ export const useComponents = (windowId?: string) => {
       const toUpdate = newComponents.filter((c) => currentIds.has(c.id));
       const toAdd = newComponents.filter((c) => !currentIds.has(c.id));
 
-      await Promise.all(toDelete.map((c) => deleteComponent(c.id)));
+      if (toDelete.length > 0) {
+        const deleteIds = sortComponentIdsForDeletion(
+          current,
+          toDelete.map((c) => c.id),
+        );
+        await db.transaction('rw', db.components, async () => {
+          for (const id of deleteIds) {
+            await db.components.delete(id);
+          }
+        });
+        await repairCompositesAfterComponentDeletes(deleteIds);
+      }
 
       if (toUpdate.length > 0) {
         await db.components.bulkUpdate(
@@ -173,6 +205,7 @@ export const useComponents = (windowId?: string) => {
     updateComponent,
     updateComponents,
     deleteComponent,
+    deleteManyComponents,
     replaceComponents,
   };
 };

@@ -37,7 +37,7 @@ const MIXED_VALUE_LABEL = '-';
 
 export const ActionEdit = ({ components, handleUpdate }: Props) => {
   const { windowId } = useParams();
-  const { createComponents, deleteComponent, components: allComponents } = useComponents(windowId);
+  const { createComponents, deleteManyComponents, components: allComponents } = useComponents(windowId);
   const { saveOrUpdateComposite } = useComposites();
   const [saveCompositeOpen, setSaveCompositeOpen] = useState(false);
   const [compositeName, setCompositeName] = useState('');
@@ -102,9 +102,7 @@ export const ActionEdit = ({ components, handleUpdate }: Props) => {
 
   const handleDelete = () => {
     const ids = components.filter((c) => !c.locked).map((c) => c.id);
-    for (const id of expandDeleteIds(allComponents, ids)) {
-      deleteComponent(id);
-    }
+    void deleteManyComponents(expandDeleteIds(allComponents, ids));
   };
 
   const handleSelectGroup = () => {

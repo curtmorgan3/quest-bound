@@ -85,11 +85,9 @@ export function CompositeLibrarySheet({
         <SheetHeader className='border-b pb-4 text-left'>
           <SheetTitle className='flex items-center gap-2'>
             <Library className='size-4' aria-hidden />
-            Composite library
+            Composites
           </SheetTitle>
-          <SheetDescription>
-            Stamp a saved group onto this window. Expand a composite to manage variants.
-          </SheetDescription>
+          <SheetDescription>Expand a composite to manage its variants.</SheetDescription>
         </SheetHeader>
 
         <div className='flex flex-col gap-1 p-4'>
@@ -97,16 +95,14 @@ export function CompositeLibrarySheet({
             <p className='text-muted-foreground text-sm'>Loading…</p>
           ) : composites.length === 0 ? (
             <p className='text-muted-foreground text-sm'>
-              No composites yet. Select a group and use Save as composite in the edit panel.
+              No composites yet. Select a group and save it as a composite in the edit panel.
             </p>
           ) : (
             composites.map((c) => {
               const expanded = expandedId === c.id;
               const variants = variantsForComposite(c.id);
               return (
-                <div
-                  key={c.id}
-                  className='border-border rounded-md border'>
+                <div key={c.id} className='border-border rounded-md border'>
                   <div className='flex items-center gap-1 p-2'>
                     <button
                       type='button'

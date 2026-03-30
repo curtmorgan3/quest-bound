@@ -358,16 +358,6 @@ export function SheetCanvasEditor({
         if (updates.length) onComponentsUpdated(updates);
       };
 
-      if (c.locked) {
-        beginMove(e, {
-          id: c.id,
-          x: movePreviewById[c.id]?.x ?? c.x,
-          y: movePreviewById[c.id]?.y ?? c.y,
-          deferredSelectionOnTap,
-        });
-        return;
-      }
-
       const wasSelected = Boolean(c.selected);
       // Unselected: hit group → move that node; else child of a selected group → move that group; else move outermost ancestor.
       const implicitDragGroupRoot = !wasSelected
@@ -545,7 +535,11 @@ export function SheetCanvasEditor({
                   <div
                     key={c.id}
                     data-canvas-item={c.id}
-                    className='pointer-events-auto absolute'
+                    className={
+                      c.locked
+                        ? 'pointer-events-none absolute [&_*]:pointer-events-none'
+                        : 'pointer-events-auto absolute'
+                    }
                     style={{
                       left: layout.left,
                       top: layout.top,
@@ -553,7 +547,7 @@ export function SheetCanvasEditor({
                       height: layout.height,
                       zIndex: c.z,
                     }}
-                    onPointerDown={(e) => onItemPointerDown(e, c)}>
+                    onPointerDown={c.locked ? undefined : (e) => onItemPointerDown(e, c)}>
                     {compositeTemplateRootIds.has(c.id) ? (
                       <span
                         role='img'
