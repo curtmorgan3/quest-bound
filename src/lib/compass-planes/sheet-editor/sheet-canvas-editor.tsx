@@ -41,6 +41,7 @@ import {
   outermostGroupRoot,
 } from './group-flex-utils';
 import {
+  canonicalizeMarqueeHitIds,
   updatesForClickSelection,
   updatesForMarqueeSelection,
   updatesToClearSelection,
@@ -282,7 +283,8 @@ export function SheetCanvasEditor({
     viewScale: resolvedViewScale,
     getItems: getSelectableItems,
     onComplete: (hitIds, modifiers) => {
-      const updates = updatesForMarqueeSelection(components, hitIds, modifiers);
+      const canonicalHits = canonicalizeMarqueeHitIds(components, hitIds);
+      const updates = updatesForMarqueeSelection(components, canonicalHits, modifiers);
       if (updates.length) onComponentsUpdated(updates);
     },
     onMicroDrag: (modifiers) => {

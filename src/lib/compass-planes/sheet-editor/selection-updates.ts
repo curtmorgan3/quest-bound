@@ -3,6 +3,30 @@ import type { Component } from '@/types';
 
 import type { EditorSelectionPointerModifiers } from '../canvas/selection-modifiers';
 import { isAdditiveEditorSelection } from '../canvas/selection-modifiers';
+import { componentByIdMap } from './component-world-geometry';
+
+/** Top-level canvas ancestor: outermost group for nested content, or the row itself if it has no parent. */
+export function canvasRootComponentId(c: Component, byId: Map<string, Component>): string {
+  let cur: Component | null = c;
+  while (cur?.parentComponentId) {
+    const p = byId.get(cur.parentComponentId);
+    if (!p) break;
+    cur = p;
+  }
+  return cur?.id ?? c.id;
+}
+
+/** Collapse marquee hits so nested items only contribute their outermost root (deduped). */
+export function canonicalizeMarqueeHitIds(components: Component[], hitIds: string[]): string[] {
+  const byId = componentByIdMap(components);
+  const roots = new Set<string>();
+  for (const id of hitIds) {
+    const c = byId.get(id);
+    if (!c) continue;
+    roots.add(canvasRootComponentId(c, byId));
+  }
+  return [...roots];
+}
 
 function selectionChanged(prev: boolean, next: boolean): boolean {
   return prev !== next;
