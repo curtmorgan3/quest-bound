@@ -196,38 +196,41 @@ export const WindowNode = ({ data }: { data: WindowNodeData }) => {
     [canvasSelection, locked, onDisplayScaleChange, windowData.displayScale, windowData.id],
   );
 
-  const onScalePointerMove = useCallback((e: React.PointerEvent) => {
-    const targetEl = e.currentTarget as HTMLElement;
-    if (!targetEl.hasPointerCapture(e.pointerId)) return;
+  const onScalePointerMove = useCallback(
+    (e: React.PointerEvent) => {
+      const targetEl = e.currentTarget as HTMLElement;
+      if (!targetEl.hasPointerCapture(e.pointerId)) return;
 
-    const pending = scalePendingRef.current;
-    if (pending && pending.pointerId === e.pointerId && !scaleDragRef.current) {
-      const dist = Math.hypot(e.clientX - pending.startClientX, e.clientY - pending.startClientY);
-      if (dist >= DRAG_THRESHOLD_PX) {
-        const gridPx = canvasSelection?.layoutGridSnapPx ?? null;
-        const preview0 = snapDisplayScaleToLayoutGrid(pending.startScale, windowWidth, gridPx);
-        scaleDragRef.current = {
-          startScale: pending.startScale,
-          d0: pending.d0,
-          px: pending.px,
-          py: pending.py,
-        };
-        lastScaleDuringDragRef.current = preview0;
-        setScalePreview(preview0);
-        scalePendingRef.current = null;
+      const pending = scalePendingRef.current;
+      if (pending && pending.pointerId === e.pointerId && !scaleDragRef.current) {
+        const dist = Math.hypot(e.clientX - pending.startClientX, e.clientY - pending.startClientY);
+        if (dist >= DRAG_THRESHOLD_PX) {
+          const gridPx = canvasSelection?.layoutGridSnapPx ?? null;
+          const preview0 = snapDisplayScaleToLayoutGrid(pending.startScale, windowWidth, gridPx);
+          scaleDragRef.current = {
+            startScale: pending.startScale,
+            d0: pending.d0,
+            px: pending.px,
+            py: pending.py,
+          };
+          lastScaleDuringDragRef.current = preview0;
+          setScalePreview(preview0);
+          scalePendingRef.current = null;
+        }
       }
-    }
 
-    const drag = scaleDragRef.current;
-    if (!drag) return;
-    const gridPx = canvasSelection?.layoutGridSnapPx ?? null;
-    const d1 = Math.hypot(e.clientX - drag.px, e.clientY - drag.py);
-    const ratio = d1 / drag.d0;
-    const nextRaw = clampDisplayScale(drag.startScale * ratio);
-    const next = snapDisplayScaleToLayoutGrid(nextRaw, windowWidth, gridPx);
-    lastScaleDuringDragRef.current = next;
-    setScalePreview(next);
-  }, [canvasSelection?.layoutGridSnapPx, windowWidth]);
+      const drag = scaleDragRef.current;
+      if (!drag) return;
+      const gridPx = canvasSelection?.layoutGridSnapPx ?? null;
+      const d1 = Math.hypot(e.clientX - drag.px, e.clientY - drag.py);
+      const ratio = d1 / drag.d0;
+      const nextRaw = clampDisplayScale(drag.startScale * ratio);
+      const next = snapDisplayScaleToLayoutGrid(nextRaw, windowWidth, gridPx);
+      lastScaleDuringDragRef.current = next;
+      setScalePreview(next);
+    },
+    [canvasSelection?.layoutGridSnapPx, windowWidth],
+  );
 
   const onScalePointerUp = useCallback(
     (e: React.PointerEvent) => {

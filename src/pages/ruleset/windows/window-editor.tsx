@@ -100,20 +100,17 @@ export const WindowEditor = () => {
     return { x: maxX + 24, y: minY };
   }, [components]);
 
-  const compositeTemplateRootIds = useLiveQuery(
-    async () => {
-      if (!activeRuleset?.id) return new Set<string>();
-      const [comps, vars] = await Promise.all([
-        db.composites.where('rulesetId').equals(activeRuleset.id).toArray(),
-        db.compositeVariants.where('rulesetId').equals(activeRuleset.id).toArray(),
-      ]);
-      const ids = new Set<string>();
-      for (const row of comps) ids.add(row.rootComponentId);
-      for (const row of vars) ids.add(row.groupComponentId);
-      return ids;
-    },
-    [activeRuleset?.id],
-  );
+  const compositeTemplateRootIds = useLiveQuery(async () => {
+    if (!activeRuleset?.id) return new Set<string>();
+    const [comps, vars] = await Promise.all([
+      db.composites.where('rulesetId').equals(activeRuleset.id).toArray(),
+      db.compositeVariants.where('rulesetId').equals(activeRuleset.id).toArray(),
+    ]);
+    const ids = new Set<string>();
+    for (const row of comps) ids.add(row.rootComponentId);
+    for (const row of vars) ids.add(row.groupComponentId);
+    return ids;
+  }, [activeRuleset?.id]);
 
   const compositeTemplateRootIdsResolved = compositeTemplateRootIds ?? new Set<string>();
 
@@ -265,7 +262,12 @@ export const WindowEditor = () => {
       <div className='relative flex h-full min-h-0 w-full flex-col overflow-hidden'>
         <div className='flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden'>
           {viewMode ? (
-            <CharacterPage id={testCharacter?.id} editorWindowId={windowId} hideGameLog />
+            <CharacterPage
+              id={testCharacter?.id}
+              editorWindowId={windowId}
+              hideGameLog
+              ignoreCharacterWindowCollapsedState
+            />
           ) : (
             <SheetEditor
               components={components}

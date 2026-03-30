@@ -29,6 +29,8 @@ interface SheetViewerProps {
   transparentBackground?: boolean;
   /** When true, windows marked as hidden from player view are still shown in the add-window list. */
   showHiddenWindows?: boolean;
+  /** When true, character windows with `isCollapsed` still render on the canvas (e.g. ruleset window editor preview). */
+  ignoreCharacterWindowCollapsedState?: boolean;
 }
 
 export const SheetViewer = ({
@@ -42,6 +44,7 @@ export const SheetViewer = ({
   editorWindowId,
   transparentBackground = false,
   showHiddenWindows = false,
+  ignoreCharacterWindowCollapsedState = false,
 }: SheetViewerProps) => {
   const { characterPages, updateCharacterPage } = useCharacterPages(characterId);
 
@@ -119,9 +122,7 @@ export const SheetViewer = ({
   // If editorWindowId is provided, render that window plus any sub-windows opened from it
   const windowsToRenderAsNodes = useMemo(() => {
     if (editorWindowId) {
-      const root = characterWindows.filter(
-        (w) => w.windowId === editorWindowId && !w.characterPageId,
-      );
+      const root = characterWindows.filter((w) => w.windowId === editorWindowId);
       const children = characterWindows.filter(
         (w) => !w.characterPageId && openedChildRulesetWindowIds.has(w.windowId),
       );
@@ -140,11 +141,11 @@ export const SheetViewer = ({
     () =>
       [
         ...windowsToRenderAsNodes.filter((w) => {
-          if (editorWindowId) return true;
+          if (editorWindowId || ignoreCharacterWindowCollapsedState) return true;
           return !w.isCollapsed;
         }),
       ].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()),
-    [windowsToRenderAsNodes],
+    [editorWindowId, ignoreCharacterWindowCollapsedState, windowsToRenderAsNodes],
   );
 
   const handleChildWindowClick = async (
@@ -199,10 +200,10 @@ export const SheetViewer = ({
           !transparentBackground && !editorWindowId ? currentPage?.backgroundColor : undefined
         }
         backgroundImage={!transparentBackground && !editorWindowId ? currentPage?.image : undefined}
-        backgroundOpacity={!transparentBackground && !editorWindowId ? currentPage?.backgroundOpacity : undefined}
-        onBackdropClick={(clientX, clientY) =>
-          dispatchSheetViewerBackdropClick(clientX, clientY)
+        backgroundOpacity={
+          !transparentBackground && !editorWindowId ? currentPage?.backgroundOpacity : undefined
         }
+        onBackdropClick={(clientX, clientY) => dispatchSheetViewerBackdropClick(clientX, clientY)}
         renderWindow={(window, layout) => {
           const wAt = { ...window, x: layout.x, y: layout.y };
           return (

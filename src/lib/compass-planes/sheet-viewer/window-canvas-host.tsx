@@ -1,8 +1,8 @@
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import type { ComponentUpdate } from '@/lib/compass-api';
-import { Magnet, ScanSearch, ZoomIn, ZoomOut } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Magnet, ScanSearch, ZoomIn, ZoomOut } from 'lucide-react';
 import {
   useCallback,
   useEffect,
@@ -255,7 +255,9 @@ export function WindowCanvasHost<T extends WindowCanvasItem>({
     const vh = vp.clientHeight;
     const pad = 12;
     const bottomInset =
-      sheetFitBottomInsetPx > 0 && Number.isFinite(sheetFitBottomInsetPx) ? sheetFitBottomInsetPx : 0;
+      sheetFitBottomInsetPx > 0 && Number.isFinite(sheetFitBottomInsetPx)
+        ? sheetFitBottomInsetPx
+        : 0;
     const availW = Math.max(0, vw - 2 * pad);
     const availH = Math.max(0, vh - 2 * pad - bottomInset);
 
@@ -309,10 +311,8 @@ export function WindowCanvasHost<T extends WindowCanvasItem>({
     gridSize: showGridToolbar && snapToGrid ? resolvedGridSize : null,
     getItemDimensions: getWindowDragDimensions,
     viewScale: resolvedViewScale,
-    sheetViewportRef:
-      sheetFitToViewport && !showGridToolbar ? viewportRef : undefined,
-    sheetFitTransformRef:
-      sheetFitToViewport && !showGridToolbar ? sheetFitTransformRef : undefined,
+    sheetViewportRef: sheetFitToViewport && !showGridToolbar ? viewportRef : undefined,
+    sheetFitTransformRef: sheetFitToViewport && !showGridToolbar ? sheetFitTransformRef : undefined,
     onCommit,
     onTransientPositions: (items) => {
       setMovePreviewById(Object.fromEntries(items.map((i) => [i.id, { x: i.x, y: i.y }])));
@@ -383,8 +383,7 @@ export function WindowCanvasHost<T extends WindowCanvasItem>({
     setSelectedWindowId(id);
   }, []);
 
-  const layoutGridSnapPx =
-    showGridToolbar && snapToGrid ? resolvedGridSize : null;
+  const layoutGridSnapPx = showGridToolbar && snapToGrid ? resolvedGridSize : null;
 
   const selectionContextValue = useMemo(
     () => ({ selectedWindowId, selectWindow, layoutGridSnapPx }),
@@ -422,154 +421,157 @@ export function WindowCanvasHost<T extends WindowCanvasItem>({
 
   return (
     <WindowCanvasSelectionContext.Provider value={selectionContextValue}>
-    <section
-      id={sectionId}
-      className={cn(className)}
-      onClick={(e) => {
-        const t = e.target as Element;
-        if (t.closest('.window-node')) return;
-        if (t.closest('[data-window-canvas-chrome]')) return;
-        setSelectedWindowId(null);
-        onBackdropClick?.(e.clientX, e.clientY);
-      }}>
-      {showGridToolbar ? (
-        <div
-          data-window-canvas-chrome
-          className='pointer-events-none absolute bottom-14 left-2 z-[60]'>
-          <div className='pointer-events-auto flex flex-row flex-wrap items-center gap-2 p-1.5'>
-            <Input
-              type='number'
-              min={WINDOW_EDITOR_GRID_MIN}
-              max={WINDOW_EDITOR_GRID_MAX}
-              step={1}
-              value={resolvedGridSize}
-              onChange={(e) => {
-                const n = parseInt(e.target.value, 10);
-                if (!Number.isFinite(n)) return;
-                persistEditorGridSize(n);
-              }}
-              className='h-8 w-12 border-white/25 bg-black/50 px-1 text-center text-xs text-white [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none'
-              aria-label='Canvas grid size in pixels'
-            />
-            <Button
-              type='button'
-              variant='ghost'
-              size='icon'
-              aria-pressed={snapToGrid}
-              aria-label={snapToGrid ? 'Turn snap to grid off' : 'Turn snap to grid on'}
-              className='size-8 shrink-0 text-white hover:bg-white/15 hover:text-white'
-              style={{ opacity: snapToGrid ? 1 : 0.45 }}
-              onClick={() => persistSnapToGrid(!snapToGrid)}>
-              <Magnet className='size-4' strokeWidth={2} aria-hidden />
-            </Button>
-            <div className='flex flex-row items-center gap-0.5'>
+      <section
+        id={sectionId}
+        className={cn(className)}
+        onClick={(e) => {
+          const t = e.target as Element;
+          if (t.closest('.window-node')) return;
+          if (t.closest('[data-window-canvas-chrome]')) return;
+          setSelectedWindowId(null);
+          onBackdropClick?.(e.clientX, e.clientY);
+        }}>
+        {showGridToolbar ? (
+          <div
+            data-window-canvas-chrome
+            className='pointer-events-none absolute bottom-14 left-2 z-[60]'>
+            <div className='pointer-events-auto flex flex-row flex-wrap items-center gap-2 p-1.5'>
+              <Input
+                type='number'
+                min={WINDOW_EDITOR_GRID_MIN}
+                max={WINDOW_EDITOR_GRID_MAX}
+                step={1}
+                value={resolvedGridSize}
+                onChange={(e) => {
+                  const n = parseInt(e.target.value, 10);
+                  if (!Number.isFinite(n)) return;
+                  persistEditorGridSize(n);
+                }}
+                className='h-8 w-12 border-white/25 bg-black/50 px-1 text-center text-xs text-white [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none'
+                aria-label='Canvas grid size in pixels'
+              />
               <Button
                 type='button'
                 variant='ghost'
                 size='icon'
-                aria-label='Zoom canvas in'
+                aria-pressed={snapToGrid}
+                aria-label={snapToGrid ? 'Turn snap to grid off' : 'Turn snap to grid on'}
                 className='size-8 shrink-0 text-white hover:bg-white/15 hover:text-white'
-                onClick={zoomCanvasIn}>
-                <ZoomIn className='size-4' strokeWidth={2} aria-hidden />
+                style={{ opacity: snapToGrid ? 1 : 0.45 }}
+                onClick={() => persistSnapToGrid(!snapToGrid)}>
+                <Magnet className='size-4' strokeWidth={2} aria-hidden />
               </Button>
-              <Button
-                type='button'
-                variant='ghost'
-                size='icon'
-                aria-label='Zoom canvas out'
-                className='size-8 shrink-0 text-white hover:bg-white/15 hover:text-white'
-                onClick={zoomCanvasOut}>
-                <ZoomOut className='size-4' strokeWidth={2} aria-hidden />
-              </Button>
-              <Button
-                type='button'
-                variant='ghost'
-                size='icon'
-                aria-label='Reset canvas zoom to 100%'
-                className='size-8 shrink-0 text-white hover:bg-white/15 hover:text-white'
-                onClick={() => setCanvasViewScale(1)}>
-                <ScanSearch className='size-4' strokeWidth={2} aria-hidden />
-              </Button>
+              <div className='flex flex-row items-center gap-0.5'>
+                <Button
+                  type='button'
+                  variant='ghost'
+                  size='icon'
+                  aria-label='Zoom canvas in'
+                  className='size-8 shrink-0 text-white hover:bg-white/15 hover:text-white'
+                  onClick={zoomCanvasIn}>
+                  <ZoomIn className='size-4' strokeWidth={2} aria-hidden />
+                </Button>
+                <Button
+                  type='button'
+                  variant='ghost'
+                  size='icon'
+                  aria-label='Zoom canvas out'
+                  className='size-8 shrink-0 text-white hover:bg-white/15 hover:text-white'
+                  onClick={zoomCanvasOut}>
+                  <ZoomOut className='size-4' strokeWidth={2} aria-hidden />
+                </Button>
+                <Button
+                  type='button'
+                  variant='ghost'
+                  size='icon'
+                  aria-label='Reset canvas zoom to 100%'
+                  className='size-8 shrink-0 text-white hover:bg-white/15 hover:text-white'
+                  onClick={() => setCanvasViewScale(1)}>
+                  <ScanSearch className='size-4' strokeWidth={2} aria-hidden />
+                </Button>
+              </div>
             </div>
-          </div>
-        </div>
-      ) : null}
-
-      <div ref={viewportRef} className='absolute inset-0 min-h-0 overflow-hidden'>
-      <div ref={canvasRootRef} className='relative min-h-full min-w-full' style={mergedCanvasStyle}>
-        {showBg && backgroundColor != null && (
-          <div
-            aria-hidden
-            style={{
-              position: 'absolute',
-              inset: 0,
-              zIndex: 0,
-              backgroundColor,
-              opacity: bgOpacity,
-              pointerEvents: 'none',
-            }}
-          />
-        )}
-        {showBg && backgroundImage != null && (
-          <div
-            aria-hidden
-            style={{
-              position: 'absolute',
-              inset: 0,
-              zIndex: 0,
-              backgroundImage: `url(${backgroundImage})`,
-              backgroundSize: 'cover',
-              backgroundPosition: 'center',
-              backgroundRepeat: 'no-repeat',
-              opacity: bgOpacity,
-              pointerEvents: 'none',
-            }}
-          />
-        )}
-
-        {showGridToolbar && snapToGrid ? (
-          <div className='pointer-events-none absolute inset-0 z-[1]'>
-            <CanvasGridBackground gridSize={resolvedGridSize} style={{ opacity: bgOpacity }} />
           </div>
         ) : null}
 
-        {windows.map((w, index) => {
-          const pv = movePreviewById[w.id];
-          const layoutX = pv?.x ?? w.x;
-          const layoutY = pv?.y ?? w.y;
-          const z = index + 1;
+        <div ref={viewportRef} className='absolute inset-0 min-h-0 overflow-hidden'>
+          <div
+            ref={canvasRootRef}
+            className='relative min-h-full min-w-full'
+            style={mergedCanvasStyle}>
+            {showBg && backgroundColor != null && (
+              <div
+                aria-hidden
+                style={{
+                  position: 'absolute',
+                  inset: 0,
+                  zIndex: 0,
+                  backgroundColor,
+                  opacity: bgOpacity,
+                  pointerEvents: 'none',
+                }}
+              />
+            )}
+            {showBg && backgroundImage != null && (
+              <div
+                aria-hidden
+                style={{
+                  position: 'absolute',
+                  inset: 0,
+                  zIndex: 0,
+                  backgroundImage: `url(${backgroundImage})`,
+                  backgroundSize: 'cover',
+                  backgroundPosition: 'center',
+                  backgroundRepeat: 'no-repeat',
+                  opacity: bgOpacity,
+                  pointerEvents: 'none',
+                }}
+              />
+            )}
 
-          return (
-            <div
-              key={w.id}
-              ref={(el) => {
-                if (el) windowWrapperElByIdRef.current.set(w.id, el);
-                else windowWrapperElByIdRef.current.delete(w.id);
-              }}
-              className='pointer-events-auto absolute'
-              style={{ left: layoutX, top: layoutY, zIndex: z + 1 }}
-              onPointerDown={(e) => {
-                if (!locked) {
-                  setSelectedWindowId(w.id);
-                }
-                if (locked) return;
-                const t = e.target as HTMLElement;
-                if (
-                  t.closest(
-                    '.clickable, a, button, input, textarea, select, label, [contenteditable="true"], [role="button"], [role="menuitem"], [role="option"], [role="tab"]',
-                  )
-                ) {
-                  return;
-                }
-                beginMove(e, { id: w.id, x: layoutX, y: layoutY });
-              }}>
-              {renderWindow(w, { x: layoutX, y: layoutY }, z)}
-            </div>
-          );
-        })}
-      </div>
-      </div>
-    </section>
+            {showGridToolbar && snapToGrid ? (
+              <div className='pointer-events-none absolute inset-0 z-[1]'>
+                <CanvasGridBackground gridSize={resolvedGridSize} style={{ opacity: bgOpacity }} />
+              </div>
+            ) : null}
+
+            {windows.map((w, index) => {
+              const pv = movePreviewById[w.id];
+              const layoutX = pv?.x ?? w.x;
+              const layoutY = pv?.y ?? w.y;
+              const z = index + 1;
+
+              return (
+                <div
+                  key={w.id}
+                  ref={(el) => {
+                    if (el) windowWrapperElByIdRef.current.set(w.id, el);
+                    else windowWrapperElByIdRef.current.delete(w.id);
+                  }}
+                  className='pointer-events-auto absolute'
+                  style={{ left: layoutX, top: layoutY, zIndex: z + 1 }}
+                  onPointerDown={(e) => {
+                    if (!locked) {
+                      setSelectedWindowId(w.id);
+                    }
+                    if (locked) return;
+                    const t = e.target as HTMLElement;
+                    if (
+                      t.closest(
+                        '.clickable, a, button, input, textarea, select, label, [contenteditable="true"], [role="button"], [role="menuitem"], [role="option"], [role="tab"]',
+                      )
+                    ) {
+                      return;
+                    }
+                    beginMove(e, { id: w.id, x: layoutX, y: layoutY });
+                  }}>
+                  {renderWindow(w, { x: layoutX, y: layoutY }, z)}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
     </WindowCanvasSelectionContext.Provider>
   );
 }

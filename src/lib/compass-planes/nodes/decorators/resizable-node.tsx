@@ -230,6 +230,9 @@ export const ResizableNode = ({
       if (!component || locked || pos.rotation !== 0) return;
       e.preventDefault();
       e.stopPropagation();
+      const root = containerRef.current;
+      if (!root) return;
+
       const compId = component.id;
       const startRect = {
         x: component.x,
@@ -237,16 +240,25 @@ export const ResizableNode = ({
         w: component.width,
         h: component.height,
       };
+      const pointerId = e.pointerId;
       dragRef.current = {
         handle,
-        pointerId: e.pointerId,
+        pointerId,
         startRect,
       };
-      const el = e.target as HTMLElement;
-      el.setPointerCapture(e.pointerId);
+
+      // Capture on the stable canvas root — not the 8px handle. Transient resize
+      // updates re-render the tree; the handle node can be replaced, which drops
+      // pointer capture and leaves listeners/completion logic stuck until refresh.
+      try {
+        root.setPointerCapture(pointerId);
+      } catch {
+        /* */
+      }
 
       let rafId: number | null = null;
       let pending: { x: number; y: number; w: number; h: number } | null = null;
+      let finished = false;
 
       const flushTransient = () => {
         rafId = null;
@@ -261,11 +273,18 @@ export const ResizableNode = ({
         rafId = requestAnimationFrame(flushTransient);
       };
 
+      const teardownWindow = () => {
+        window.removeEventListener('pointermove', onMove);
+        window.removeEventListener('pointerup', onUp);
+        window.removeEventListener('pointercancel', onUp);
+      };
+
       const onMove = (ev: PointerEvent) => {
-        if (ev.pointerId !== e.pointerId) return;
+        if (finished || ev.pointerId !== pointerId) return;
         const d = dragRef.current;
-        const root = containerRef.current;
-        if (!d || !root) return;
+        const container = containerRef.current;
+        if (!d || !container) return;
+        ev.preventDefault();
         pending = rectAfterResize(
           d.handle,
           d.startRect,
@@ -278,17 +297,16 @@ export const ResizableNode = ({
           maxW,
           minH,
           maxH,
-          root,
+          container,
           viewScaleCanvas,
         );
         scheduleTransient();
       };
 
       const onUp = (ev: PointerEvent) => {
-        if (ev.pointerId !== e.pointerId) return;
-        el.removeEventListener('pointermove', onMove);
-        el.removeEventListener('pointerup', onUp);
-        el.removeEventListener('pointercancel', onUp);
+        if (finished || ev.pointerId !== pointerId) return;
+        finished = true;
+        teardownWindow();
         if (rafId != null) {
           cancelAnimationFrame(rafId);
           rafId = null;
@@ -299,15 +317,15 @@ export const ResizableNode = ({
         const d = dragRef.current;
         dragRef.current = null;
         try {
-          el.releasePointerCapture(ev.pointerId);
+          root.releasePointerCapture(pointerId);
         } catch {
           /* */
         }
 
         let didCommit = false;
         try {
-          const root = containerRef.current;
-          if (d && root) {
+          const container = containerRef.current;
+          if (d && container) {
             const { x, y, w, h } = rectAfterResize(
               d.handle,
               d.startRect,
@@ -320,7 +338,7 @@ export const ResizableNode = ({
               maxW,
               minH,
               maxH,
-              root,
+              container,
               viewScaleCanvas,
             );
             const { x: sx, y: sy, w: sw, h: sh } = d.startRect;
@@ -334,9 +352,9 @@ export const ResizableNode = ({
         }
       };
 
-      el.addEventListener('pointermove', onMove);
-      el.addEventListener('pointerup', onUp);
-      el.addEventListener('pointercancel', onUp);
+      window.addEventListener('pointermove', onMove, { passive: false });
+      window.addEventListener('pointerup', onUp);
+      window.addEventListener('pointercancel', onUp);
     },
     [
       component,
@@ -352,6 +370,7 @@ export const ResizableNode = ({
       onResizeTransient,
       useGrid,
       gridSizePx,
+      viewScaleCanvas,
     ],
   );
 

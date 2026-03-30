@@ -66,6 +66,7 @@ interface CharacterPage {
   renderFloatingActions?: (actions: CharacterPageFloatingActions) => React.ReactNode;
   hideGameLog?: boolean;
   showHiddenWindows?: boolean;
+  ignoreCharacterWindowCollapsedState?: boolean;
 }
 
 export const CharacterPage = ({
@@ -79,6 +80,7 @@ export const CharacterPage = ({
   renderFloatingActions,
   hideGameLog = false,
   showHiddenWindows = false,
+  ignoreCharacterWindowCollapsedState = false,
 }: CharacterPage) => {
   const { open } = useSidebar();
   const { characterId: routeCharacterId } = useParams<{ characterId: string }>();
@@ -315,9 +317,7 @@ export const CharacterPage = ({
           lockByDefault={lockByDefault ?? false}
           initialCurrentPageId={character.lastViewedPageId ?? null}
           initialLocked={
-            editorWindowId != null
-              ? (character.sheetLocked ?? lockByDefault ?? false)
-              : true
+            editorWindowId != null ? (character.sheetLocked ?? lockByDefault ?? false) : true
           }
           onLockedChange={sheetViewerPersistence?.onLockedChange}
           onWindowUpdated={handleUpdateWindow}
@@ -325,6 +325,7 @@ export const CharacterPage = ({
           editorWindowId={editorWindowId}
           transparentBackground={transparentBackground}
           showHiddenWindows={showHiddenWindows}
+          ignoreCharacterWindowCollapsedState={ignoreCharacterWindowCollapsedState}
         />
 
         {!hideGameLog && (
