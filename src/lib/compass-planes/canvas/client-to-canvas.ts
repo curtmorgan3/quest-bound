@@ -37,7 +37,7 @@ export function snapPointToGrid(
 
 /**
  * Inverse of `transform: translate(tx, ty) scale(scale)` with `transform-origin: 0 0` on the canvas
- * root, where the canvas is laid out at the top-left of `viewportRect` (viewport clip element).
+ * root, where the canvas sits inside a scrollable viewport whose visible rect is `viewportRect`.
  */
 export function clientToCanvasSheetFit(
   clientX: number,
@@ -46,10 +46,12 @@ export function clientToCanvasSheetFit(
   translateX: number,
   translateY: number,
   scale: number,
+  scrollLeft = 0,
+  scrollTop = 0,
 ): { x: number; y: number } {
   const s = scale > 0 && Number.isFinite(scale) ? scale : 1;
-  const relX = clientX - viewportRect.left;
-  const relY = clientY - viewportRect.top;
+  const relX = clientX - viewportRect.left + scrollLeft;
+  const relY = clientY - viewportRect.top + scrollTop;
   return {
     x: (relX - translateX) / s,
     y: (relY - translateY) / s,

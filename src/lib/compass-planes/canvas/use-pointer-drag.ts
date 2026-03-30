@@ -206,6 +206,8 @@ export function usePointerDrag({
               tFit.tx,
               tFit.ty,
               tFit.scale,
+              vp.scrollLeft,
+              vp.scrollTop,
             )
           : clientToCanvas(e.clientX, e.clientY, container, o.viewScale);
       const followers = (params.followers ?? []).map((f) => ({
@@ -285,6 +287,8 @@ export function usePointerDrag({
                 tF.tx,
                 tF.ty,
                 tF.scale,
+                vpr.scrollLeft,
+                vpr.scrollTop,
               )
             : clientToCanvas(ev.clientX, ev.clientY, c, oc.viewScale);
         const rawDx = cur.x - ph.startLocalX;

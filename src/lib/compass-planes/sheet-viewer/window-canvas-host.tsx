@@ -98,14 +98,14 @@ export type WindowCanvasHostProps<T extends WindowCanvasItem> = {
    */
   showGridToolbar?: boolean;
   /**
-   * When true (character sheet layout), scale and translate the canvas so all windows fit inside
-   * the viewport with uniform scale and padding. Ignored when `showGridToolbar` is true.
+   * When true (character sheet layout), scale the canvas to the viewport **width** (with padding)
+   * and top-align; tall layouts scroll vertically. Ignored when `showGridToolbar` is true.
    */
   sheetFitToViewport?: boolean;
   /**
    * Height of UI that overlaps the bottom of the sheet (e.g. absolutely positioned tab bar).
-   * Subtracted from viewport height when fitting to viewport, and from measured canvas height when
-   * resolving fixed child-window open positions so anchors stay above the bar.
+   * Extra bottom padding in the scrollable sheet area and subtracted from measured canvas height
+   * when resolving child-window open positions so anchors stay above the bar.
    */
   sheetFitBottomInsetPx?: number;
 };
@@ -138,10 +138,12 @@ export function WindowCanvasHost<T extends WindowCanvasItem>({
     {},
   );
 
-  const [sheetFitStyle, setSheetFitStyle] = useState<{
+  const [sheetFitLayout, setSheetFitLayout] = useState<{
     tx: number;
     ty: number;
     scale: number;
+    scrollW: number;
+    scrollH: number;
   } | null>(null);
 
   const [editorGridSize, setEditorGridSize] = useState(readStoredWindowEditorGrid);
@@ -279,7 +281,7 @@ export function WindowCanvasHost<T extends WindowCanvasItem>({
   const recomputeSheetFit = useCallback(() => {
     if (!sheetFitToViewport || showGridToolbar) {
       sheetFitTransformRef.current = null;
-      setSheetFitStyle(null);
+      setSheetFitLayout(null);
       return;
     }
     const vp = viewportRef.current;
@@ -293,7 +295,6 @@ export function WindowCanvasHost<T extends WindowCanvasItem>({
         ? sheetFitBottomInsetPx
         : 0;
     const availW = Math.max(0, vw - 2 * pad);
-    const availH = Math.max(0, vh - 2 * pad - bottomInset);
 
     let minX = Infinity;
     let minY = Infinity;
@@ -312,27 +313,43 @@ export function WindowCanvasHost<T extends WindowCanvasItem>({
       maxY = Math.max(maxY, ly + wh);
     }
 
-    let next: { tx: number; ty: number; scale: number };
+    let next: {
+      tx: number;
+      ty: number;
+      scale: number;
+      scrollW: number;
+      scrollH: number;
+    };
     if (!Number.isFinite(minX) || windows.length === 0) {
-      next = { tx: 0, ty: 0, scale: 1 };
+      next = {
+        tx: 0,
+        ty: 0,
+        scale: 1,
+        scrollW: Math.max(1, vw),
+        scrollH: Math.max(1, vh),
+      };
     } else {
       const cw = Math.max(1, maxX - minX);
-      const ch = Math.max(1, maxY - minY);
-      const s = Math.min(availW / cw, availH / ch);
+      const s = availW / cw;
       const scaledW = cw * s;
-      const scaledH = ch * s;
       const tx = pad + (availW - scaledW) / 2 - minX * s;
-      const ty = pad + (availH - scaledH) / 2 - minY * s;
-      next = { tx, ty, scale: s };
+      const ty = pad - minY * s;
+      const right = tx + s * maxX + pad;
+      const bottom = ty + s * maxY + pad + bottomInset;
+      const scrollW = Math.max(vw, Math.ceil(right));
+      const scrollH = Math.max(vh, Math.ceil(bottom));
+      next = { tx, ty, scale: s, scrollW, scrollH };
     }
 
-    sheetFitTransformRef.current = next;
-    setSheetFitStyle((prev) => {
+    sheetFitTransformRef.current = { tx: next.tx, ty: next.ty, scale: next.scale };
+    setSheetFitLayout((prev) => {
       if (
         prev &&
         Math.abs(prev.tx - next.tx) < 0.25 &&
         Math.abs(prev.ty - next.ty) < 0.25 &&
-        Math.abs(prev.scale - next.scale) < 0.0001
+        Math.abs(prev.scale - next.scale) < 0.0001 &&
+        prev.scrollW === next.scrollW &&
+        prev.scrollH === next.scrollH
       ) {
         return prev;
       }
@@ -360,7 +377,7 @@ export function WindowCanvasHost<T extends WindowCanvasItem>({
   useLayoutEffect(() => {
     if (!sheetFitToViewport || showGridToolbar) {
       sheetFitTransformRef.current = null;
-      setSheetFitStyle(null);
+      setSheetFitLayout(null);
       return;
     }
     const vp = viewportRef.current;
@@ -444,14 +461,14 @@ export function WindowCanvasHost<T extends WindowCanvasItem>({
         height: `${100 / resolvedViewScale}%`,
       };
     }
-    if (sheetFitToViewport && sheetFitStyle) {
+    if (sheetFitToViewport && sheetFitLayout) {
       return {
-        transform: `translate(${sheetFitStyle.tx}px, ${sheetFitStyle.ty}px) scale(${sheetFitStyle.scale})`,
+        transform: `translate(${sheetFitLayout.tx}px, ${sheetFitLayout.ty}px) scale(${sheetFitLayout.scale})`,
         transformOrigin: '0 0',
       };
     }
     return undefined;
-  }, [showGridToolbar, resolvedViewScale, sheetFitToViewport, sheetFitStyle]);
+  }, [showGridToolbar, resolvedViewScale, sheetFitToViewport, sheetFitLayout]);
 
   return (
     <WindowCanvasSelectionContext.Provider value={selectionContextValue}>
@@ -528,11 +545,30 @@ export function WindowCanvasHost<T extends WindowCanvasItem>({
           </div>
         ) : null}
 
-        <div ref={viewportRef} className='absolute inset-0 min-h-0 overflow-hidden'>
+        <div
+          ref={viewportRef}
+          className={cn(
+            'absolute inset-0 min-h-0',
+            sheetFitToViewport ? 'overflow-x-hidden overflow-y-auto' : 'overflow-hidden',
+          )}>
           <div
-            ref={canvasRootRef}
-            className='relative min-h-full min-w-full'
-            style={mergedCanvasStyle}>
+            className={cn(!sheetFitToViewport && 'h-full min-h-0 min-w-0')}
+            style={
+              sheetFitToViewport && sheetFitLayout
+                ? {
+                    width: sheetFitLayout.scrollW,
+                    minWidth: '100%',
+                    height: sheetFitLayout.scrollH,
+                    position: 'relative',
+                  }
+                : sheetFitToViewport
+                  ? { minWidth: '100%', minHeight: '100%', position: 'relative' }
+                  : { height: '100%', width: '100%', position: 'relative' }
+            }>
+            <div
+              ref={canvasRootRef}
+              className='relative min-h-full min-w-full'
+              style={mergedCanvasStyle}>
             <SheetCanvasBoundsProvider value={sheetPlacementCanvasBounds}>
             {showBg && backgroundColor != null && (
               <div
@@ -605,6 +641,7 @@ export function WindowCanvasHost<T extends WindowCanvasItem>({
               );
             })}
             </SheetCanvasBoundsProvider>
+            </div>
           </div>
         </div>
       </section>

@@ -38,7 +38,7 @@ interface WindowsTabsProps {
   openWindows: Set<string>;
   locked?: boolean;
   onToggleLock: () => void;
-  /** Unlocked layout: fit all windows inside the viewport (uniform scale). */
+  /** Unlocked layout: scale sheet to viewport width; scroll vertically if needed. */
   sheetFitToViewport?: boolean;
   onSheetFitToViewportChange?: (next: boolean) => void;
   pageId?: string;
@@ -231,8 +231,8 @@ export const WindowsTabs = ({
             }}
             title={
               sheetFitToViewport
-                ? 'Turn off fit sheet to viewport'
-                : 'Fit sheet to viewport (scale to show all windows)'
+                ? 'Turn off fit sheet to viewport width'
+                : 'Fit sheet to viewport width (scroll if tall)'
             }>
             <Maximize2 size={16} />
           </button>
