@@ -1,4 +1,4 @@
-import { Button, Label } from '@/components';
+import { Button, Input, Label } from '@/components';
 import { ImageUpload } from '@/components/composites';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
@@ -13,7 +13,7 @@ import {
   updateComponentData,
 } from '@/lib/compass-planes/utils';
 import { SlidersHorizontal, X } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { Component, ImageComponentData } from '@/types';
 import { CustomPropertiesListModal } from '@/pages/ruleset/windows/component-edit-panel/custom-properties-list-modal';
 
@@ -49,6 +49,18 @@ export const ImageDataEdit = ({
 
   const useCharacterImage = firstComponentData?.useCharacterImage ?? false;
   const customPropertyId = firstComponentData?.customPropertyId ?? '';
+
+  const { altTextInputValue, altTextMixed } = useMemo(() => {
+    if (editableComponents.length === 0) {
+      return { altTextInputValue: '', altTextMixed: false };
+    }
+    const vals = editableComponents.map(
+      (c) => (getComponentData(c) as ImageComponentData).altText ?? '',
+    );
+    const first = vals[0];
+    const mixed = vals.some((v) => v !== first);
+    return { altTextInputValue: mixed ? '' : first, altTextMixed: mixed };
+  }, [editableComponents]);
 
   const handleCustomPropertyChange = async (value: string) => {
     if (components.length === 0) return;
@@ -87,6 +99,18 @@ export const ImageDataEdit = ({
     const updates = editableComponents.map((component) => ({
       id: component.id,
       data: updateComponentData(component.data, { assetId: undefined }),
+    }));
+    await updateComponents(updates);
+    fireExternalComponentChangeEvent({ updates });
+  };
+
+  const handleAltTextChange = async (value: string) => {
+    if (editableComponents.length === 0) return;
+    const updates = editableComponents.map((component) => ({
+      id: component.id,
+      data: updateComponentData(component.data, {
+        altText: value.length > 0 ? value : undefined,
+      }),
     }));
     await updateComponents(updates);
     fireExternalComponentChangeEvent({ updates });
@@ -182,11 +206,27 @@ export const ImageDataEdit = ({
       <div className='flex flex-col gap-2'>
         <ImageUpload
           image={currentImageUrl}
-          alt={firstComponentData?.assetId ? 'Component image' : ''}
+          alt={
+            firstComponentData?.altText?.trim() ||
+            (firstComponentData?.assetId ? 'Component image' : '')
+          }
           rulesetId={rulesetId ?? undefined}
           onUpload={handleUpload}
           onRemove={handleRemove}
         />
+        <div className='flex flex-col gap-1'>
+          <Label htmlFor='image-alt-text' className='text-xs text-muted-foreground'>
+            Alt text
+          </Label>
+          <Input
+            id='image-alt-text'
+            className='h-8 rounded-[4px]'
+            value={altTextInputValue}
+            placeholder={altTextMixed ? 'Mixed values…' : 'Describe the image for accessibility'}
+            onChange={(e) => void handleAltTextChange(e.target.value)}
+            disabled={editableComponents.length === 0}
+          />
+        </div>
       </div>
     </div>
   );

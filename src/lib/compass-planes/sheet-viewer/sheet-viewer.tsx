@@ -122,7 +122,18 @@ export const SheetViewer = ({
   // If editorWindowId is provided, render that window plus any sub-windows opened from it
   const windowsToRenderAsNodes = useMemo(() => {
     if (editorWindowId) {
-      const root = characterWindows.filter((w) => w.windowId === editorWindowId);
+      const matchingRoots = characterWindows.filter((w) => w.windowId === editorWindowId);
+      /** Preview must show one instance even if the test character has duplicate opens of the same template. */
+      const root =
+        matchingRoots.length <= 1
+          ? matchingRoots
+          : [
+              [...matchingRoots].sort((a, b) => {
+                const t = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+                if (t !== 0) return t;
+                return a.id.localeCompare(b.id);
+              })[0],
+            ];
       const children = characterWindows.filter(
         (w) => !w.characterPageId && openedChildRulesetWindowIds.has(w.windowId),
       );

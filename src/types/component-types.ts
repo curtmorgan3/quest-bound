@@ -92,6 +92,8 @@ export type ImageComponentData = {
   customPropertyId?: string;
   /** When true, in view mode show the character's image; fall back to this component's image when no character image. */
   useCharacterImage?: boolean;
+  /** Accessible description for the image (`<img alt>`). */
+  altText?: string;
 };
 
 export type InputComponentData = {

@@ -59,7 +59,7 @@ export const EditImageNode = () => {
         {imageSrc ? (
           <img
             src={imageSrc}
-            alt=''
+            alt={data.altText ?? ''}
             draggable={false}
             onDragStart={(e) => e.preventDefault()}
             style={{
@@ -135,7 +135,7 @@ const ViewImageNodeComponent = ({ component }: { component: Component }) => {
   return (
     <img
       src={imageSrc}
-      alt=''
+      alt={data.altText ?? ''}
       draggable={false}
       onDragStart={(e) => e.preventDefault()}
       style={{
