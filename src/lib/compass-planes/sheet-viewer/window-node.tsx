@@ -47,6 +47,23 @@ function clampDisplayScale(n: number): number {
   return Math.min(MAX_DISPLAY_SCALE, Math.max(MIN_DISPLAY_SCALE, n));
 }
 
+/** Uniform scale from snapped outer width so the window sits on the canvas grid (matches position snap). */
+function snapDisplayScaleToLayoutGrid(
+  scale: number,
+  baseWidthPx: number,
+  gridPx: number | null | undefined,
+): number {
+  const s = clampDisplayScale(scale);
+  if (gridPx == null || gridPx <= 0 || baseWidthPx <= 0) return s;
+  const g = gridPx;
+  const w = baseWidthPx * s;
+  const minW = baseWidthPx * MIN_DISPLAY_SCALE;
+  const maxW = baseWidthPx * MAX_DISPLAY_SCALE;
+  const snappedW = Math.round(w / g) * g;
+  const clampedW = Math.max(minW, Math.min(maxW, snappedW));
+  return clampDisplayScale(clampedW / baseWidthPx);
+}
+
 export const WindowNode = ({ data }: { data: WindowNodeData }) => {
   const characterContext = useContext(CharacterContext);
   const canvasSelection = useWindowCanvasSelection();
@@ -187,26 +204,30 @@ export const WindowNode = ({ data }: { data: WindowNodeData }) => {
     if (pending && pending.pointerId === e.pointerId && !scaleDragRef.current) {
       const dist = Math.hypot(e.clientX - pending.startClientX, e.clientY - pending.startClientY);
       if (dist >= DRAG_THRESHOLD_PX) {
+        const gridPx = canvasSelection?.layoutGridSnapPx ?? null;
+        const preview0 = snapDisplayScaleToLayoutGrid(pending.startScale, windowWidth, gridPx);
         scaleDragRef.current = {
           startScale: pending.startScale,
           d0: pending.d0,
           px: pending.px,
           py: pending.py,
         };
-        lastScaleDuringDragRef.current = pending.startScale;
-        setScalePreview(pending.startScale);
+        lastScaleDuringDragRef.current = preview0;
+        setScalePreview(preview0);
         scalePendingRef.current = null;
       }
     }
 
     const drag = scaleDragRef.current;
     if (!drag) return;
+    const gridPx = canvasSelection?.layoutGridSnapPx ?? null;
     const d1 = Math.hypot(e.clientX - drag.px, e.clientY - drag.py);
     const ratio = d1 / drag.d0;
-    const next = clampDisplayScale(drag.startScale * ratio);
+    const nextRaw = clampDisplayScale(drag.startScale * ratio);
+    const next = snapDisplayScaleToLayoutGrid(nextRaw, windowWidth, gridPx);
     lastScaleDuringDragRef.current = next;
     setScalePreview(next);
-  }, []);
+  }, [canvasSelection?.layoutGridSnapPx, windowWidth]);
 
   const onScalePointerUp = useCallback(
     (e: React.PointerEvent) => {
@@ -224,12 +245,24 @@ export const WindowNode = ({ data }: { data: WindowNodeData }) => {
       }
 
       if (scaleDragRef.current && onDisplayScaleChange) {
-        const committed = Math.round(lastScaleDuringDragRef.current * 1000) / 1000;
+        const raw = lastScaleDuringDragRef.current;
+        const snapped = snapDisplayScaleToLayoutGrid(
+          raw,
+          windowWidth,
+          canvasSelection?.layoutGridSnapPx ?? null,
+        );
+        const committed = Math.round(snapped * 1000) / 1000;
         onDisplayScaleChange(windowData.id, committed);
       }
       endScaleGesture();
     },
-    [endScaleGesture, onDisplayScaleChange, windowData.id],
+    [
+      canvasSelection?.layoutGridSnapPx,
+      endScaleGesture,
+      onDisplayScaleChange,
+      windowData.id,
+      windowWidth,
+    ],
   );
 
   const onScalePointerCancel = useCallback(

@@ -256,9 +256,12 @@ export function WindowCanvasHost<T extends WindowCanvasItem>({
     setSelectedWindowId(id);
   }, []);
 
+  const layoutGridSnapPx =
+    showGridToolbar && snapToGrid ? resolvedGridSize : null;
+
   const selectionContextValue = useMemo(
-    () => ({ selectedWindowId, selectWindow }),
-    [selectedWindowId, selectWindow],
+    () => ({ selectedWindowId, selectWindow, layoutGridSnapPx }),
+    [layoutGridSnapPx, selectedWindowId, selectWindow],
   );
 
   useEffect(() => {
