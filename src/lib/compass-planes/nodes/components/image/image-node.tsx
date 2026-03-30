@@ -1,6 +1,9 @@
 import { useActiveRuleset, useAssets, useCustomProperties } from '@/lib/compass-api';
 import { useEditorItemId } from '@/lib/compass-planes/canvas/editor-item-context';
-import { useComponentCanvasDimensions } from '@/lib/compass-planes/canvas/editor-item-layout-context';
+import {
+  canvasDimensionToCss,
+  useComponentCanvasDimensions,
+} from '@/lib/compass-planes/canvas/editor-item-layout-context';
 import {
   getBackgroundStyle,
   getComponentData,
@@ -39,14 +42,14 @@ export const EditImageNode = () => {
     imageSrc = asset?.data ?? data.assetUrl;
   }
 
-  const { width: cw, height: ch } = useComponentCanvasDimensions(component);
+  const { widthStyle: cw, heightStyle: ch } = useComponentCanvasDimensions(component);
 
   return (
     <ResizableNode component={component}>
       <div
         style={{
-          height: `${ch}px`,
-          width: `${cw}px`,
+          height: canvasDimensionToCss(ch),
+          width: canvasDimensionToCss(cw),
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -91,7 +94,7 @@ export const EditImageNode = () => {
 
 const ViewImageNodeComponent = ({ component }: { component: Component }) => {
   const css = useComponentStyles(component);
-  const { width: cw, height: ch } = useComponentCanvasDimensions(component);
+  const { widthStyle: cw, heightStyle: ch } = useComponentCanvasDimensions(component);
   const data = getComponentData(component) as ImageComponentData;
   const { assets } = useAssets();
   const characterContext = useContext(CharacterContext);
@@ -136,8 +139,8 @@ const ViewImageNodeComponent = ({ component }: { component: Component }) => {
       draggable={false}
       onDragStart={(e) => e.preventDefault()}
       style={{
-        height: `${ch}px`,
-        width: `${cw}px`,
+        height: canvasDimensionToCss(ch),
+        width: canvasDimensionToCss(cw),
         maxWidth: '100%',
         maxHeight: '100%',
         objectFit: 'cover',

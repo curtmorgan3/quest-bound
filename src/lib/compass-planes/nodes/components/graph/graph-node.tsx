@@ -75,7 +75,7 @@ export const EditGraphNode = () => {
 
   const data = getComponentData(component) as GraphComponentData;
   const variant = data.graphVariant ?? 'horizontal-linear';
-  const { width: cw, height: ch } = useComponentCanvasDimensions(component);
+  const { widthStyle: cw, heightStyle: ch } = useComponentCanvasDimensions(component);
 
   return (
     <ResizableNode component={component}>
@@ -99,12 +99,12 @@ function GraphEditPlaceholder({
   const data = getComponentData(component) as GraphComponentData;
   const css = useComponentStyles(component);
   const fillColor = getSolidFallback((css as { color?: string }).color) ?? '#7BA3C7';
-  const { width: w, height: h } = useComponentCanvasDimensions(component);
+  const { width, height, widthStyle, heightStyle } = useComponentCanvasDimensions(component);
   const editFillRatio = data.inverseFill ? 1 - EDIT_FILL_RATIO : EDIT_FILL_RATIO;
 
   const commonContainer = {
-    width: w,
-    height: h,
+    width: widthStyle,
+    height: heightStyle,
     ...getBackgroundStyle(css),
     borderRadius: css.borderRadius,
     border: '1px solid ' + (css.outlineColor || 'transparent'),
@@ -113,14 +113,25 @@ function GraphEditPlaceholder({
 
   if (variant === 'circular') {
     // Match view geometry: path radius r, stroke 2r → visible radius min(w,h)/2, centered
-    const r = Math.min(w, h) / 4;
-    const cx = w / 2;
-    const cy = h / 2;
+    const r = Math.min(width, height) / 4;
+    const cx = width / 2;
+    const cy = height / 2;
     const circumference = 2 * Math.PI * r;
     const strokeDashoffset = circumference * (1 - editFillRatio);
     return (
-      <div style={{ width: w, height: h, borderRadius: css.borderRadius, overflow: 'hidden' }}>
-        <svg width={w} height={h} style={{ display: 'block', transform: 'rotate(-90deg)' }}>
+      <div
+        style={{
+          width: widthStyle,
+          height: heightStyle,
+          borderRadius: css.borderRadius,
+          overflow: 'hidden',
+        }}>
+        <svg
+          width='100%'
+          height='100%'
+          viewBox={`0 0 ${width} ${height}`}
+          preserveAspectRatio='xMidYMid meet'
+          style={{ display: 'block', transform: 'rotate(-90deg)' }}>
           <circle
             cx={cx}
             cy={cy}
@@ -227,11 +238,11 @@ const ViewGraphNodeLive = memo(function ViewGraphNodeLive({
     Object.keys(fillStyle).length > 0 ? fillStyle : { backgroundColor: fillColor };
   const fillGradient = parseLinearGradient(colorValue ?? '');
 
-  const { width: w, height: h } = useComponentCanvasDimensions(component);
+  const { width, height, widthStyle, heightStyle } = useComponentCanvasDimensions(component);
 
   const commonContainer = {
-    width: w,
-    height: h,
+    width: widthStyle,
+    height: heightStyle,
     ...bgStyle,
     borderRadius: css.borderRadius,
     overflow: 'hidden' as const,
@@ -276,9 +287,9 @@ const ViewGraphNodeLive = memo(function ViewGraphNodeLive({
   }
 
   // circular: path radius r so that stroke (width 2r) fills center to edge = visible radius min(w,h)/2
-  const r = Math.min(w, h) / 4;
-  const cx = w / 2;
-  const cy = h / 2;
+  const r = Math.min(width, height) / 4;
+  const cx = width / 2;
+  const cy = height / 2;
   const circumference = 2 * Math.PI * r;
   const strokeDashoffset = circumference * (1 - displayRatio);
 
@@ -308,7 +319,12 @@ const ViewGraphNodeLive = memo(function ViewGraphNodeLive({
 
   return (
     <div style={{ ...commonContainer, backgroundColor: 'transparent', position: 'relative' }}>
-      <svg width={w} height={h} style={{ display: 'block', transform: 'rotate(-90deg)' }}>
+      <svg
+        width='100%'
+        height='100%'
+        viewBox={`0 0 ${width} ${height}`}
+        preserveAspectRatio='xMidYMid meet'
+        style={{ display: 'block', transform: 'rotate(-90deg)' }}>
         {fillStroke?.defs}
         <circle
           cx={cx}

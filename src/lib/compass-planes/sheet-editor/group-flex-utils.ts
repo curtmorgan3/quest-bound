@@ -88,8 +88,8 @@ const FLEX_STYLE_KEYS = new Set([
  */
 export function groupOuterChromeStyle(
   css: ComponentStyle,
-  width: number,
-  height: number,
+  width: number | string,
+  height: number | string,
 ): CSSProperties {
   const out = { ...(css as Record<string, unknown>) };
   for (const k of FLEX_STYLE_KEYS) {

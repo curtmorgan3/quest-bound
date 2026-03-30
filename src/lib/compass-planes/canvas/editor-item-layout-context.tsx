@@ -1,7 +1,21 @@
+import { getComponentData } from '@/lib/compass-planes/utils';
+import { WindowEditorContext } from '@/stores';
 import type { Component } from '@/types';
 import { createContext, useContext, type ReactNode } from 'react';
 
 export type EditorItemLayout = { width: number; height: number };
+
+/** Numeric size for math; `widthStyle` / `heightStyle` for CSS (may be `100dvw` / `100dvh`). */
+export type ComponentCanvasDimensions = {
+  width: number;
+  height: number;
+  widthStyle: number | string;
+  heightStyle: number | string;
+};
+
+export function canvasDimensionToCss(value: number | string): string | number {
+  return typeof value === 'string' ? value : `${value}px`;
+}
 
 const EditorItemLayoutContext = createContext<EditorItemLayout | null>(null);
 
@@ -20,12 +34,29 @@ export function EditorItemLayoutProvider({
 /**
  * Width/height of the item on the native sheet canvas (includes live resize preview).
  * Outside the provider, falls back to `component` dimensions (viewer / React Flow).
+ * Use `width` / `height` for calculations; `widthStyle` / `heightStyle` for CSS (honors data flags).
  */
 export function useComponentCanvasDimensions(
   component: Component | null | undefined,
-): { width: number; height: number } {
+): ComponentCanvasDimensions {
   const live = useContext(EditorItemLayoutContext);
-  if (!component) return { width: 0, height: 0 };
-  if (live) return { width: live.width, height: live.height };
-  return { width: component.width, height: component.height };
+  const windowEditor = useContext(WindowEditorContext);
+  /** Ruleset window editor: layout on canvas uses stored pixels; preview (`viewMode`) uses viewport CSS. */
+  const usePixelSizeOnly =
+    windowEditor != null && windowEditor.viewMode === false;
+
+  if (!component) {
+    return { width: 0, height: 0, widthStyle: 0, heightStyle: 0 };
+  }
+  const w = live ? live.width : component.width;
+  const h = live ? live.height : component.height;
+  const width = typeof w === 'number' && Number.isFinite(w) ? w : Number(w) || 0;
+  const height = typeof h === 'number' && Number.isFinite(h) ? h : Number(h) || 0;
+  const data = getComponentData(component);
+  return {
+    width,
+    height,
+    widthStyle: usePixelSizeOnly || !data.takeFullWidth ? w : '100dvw',
+    heightStyle: usePixelSizeOnly || !data.takeFullHeight ? h : '100dvh',
+  };
 }

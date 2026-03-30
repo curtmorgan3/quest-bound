@@ -14,7 +14,11 @@ import {
   isFlexLayoutGroup,
 } from '@/lib/compass-planes/sheet-editor/group-flex-utils';
 import { useSheetCanvasLayout } from '@/lib/compass-planes/sheet-editor/sheet-canvas-layout-context';
-import { getBackgroundStyle, useComponentStyles } from '@/lib/compass-planes/utils';
+import {
+  getBackgroundStyle,
+  getComponentData,
+  useComponentStyles,
+} from '@/lib/compass-planes/utils';
 import { WindowEditorContext } from '@/stores';
 import type { Component, ComponentStyle } from '@/types';
 import { useContext, useMemo, type ComponentType, type ReactNode } from 'react';
@@ -22,14 +26,14 @@ import { ResizableNode } from '../../decorators';
 
 export const EditGroupNode = () => {
   const canvasLayout = useSheetCanvasLayout();
-  const { components, getComponent } = useContext(WindowEditorContext);
+  const { components, getComponent, viewMode } = useContext(WindowEditorContext);
   const id = useEditorItemId();
   const component = id ? getComponent(id) : null;
   const css = useComponentStyles(component) as ComponentStyle;
 
   if (!component) return null;
 
-  const { width: cw, height: ch } = useComponentCanvasDimensions(component);
+  const { widthStyle: cw, heightStyle: ch } = useComponentCanvasDimensions(component);
   const isFlex = isFlexLayoutGroup(component);
 
   const childrenSorted = useMemo(
@@ -51,6 +55,7 @@ export const EditGroupNode = () => {
             {canvasLayout
               ? childrenSorted.map((child) => {
                   const eff = canvasLayout.effectiveLayout.get(child.id)!;
+                  const childData = getComponentData(child);
                   const Edit = sheetNodeTypes[child.type as ComponentTypes] as
                     | ComponentType
                     | undefined;
@@ -65,8 +70,10 @@ export const EditGroupNode = () => {
                           : 'pointer-events-auto relative flex-shrink-0'
                       }
                       style={{
-                        width: eff.width,
-                        height: eff.height,
+                        width:
+                          viewMode && childData.takeFullWidth ? '100dvw' : eff.width,
+                        height:
+                          viewMode && childData.takeFullHeight ? '100dvh' : eff.height,
                       }}
                       onPointerDown={
                         child.locked
@@ -118,7 +125,7 @@ export const ViewGroupNode = ({
   renderChild?: (child: Component) => ReactNode;
 }) => {
   const css = useComponentStyles(component) as ComponentStyle;
-  const { width: cw, height: ch } = useComponentCanvasDimensions(component);
+  const { widthStyle: cw, heightStyle: ch } = useComponentCanvasDimensions(component);
   const isFlex = isFlexLayoutGroup(component);
 
   const childrenSorted = useMemo(
@@ -139,6 +146,7 @@ export const ViewGroupNode = ({
         <div style={groupFlexContainerStyle(css)}>
           {childrenSorted.map((child) => {
             const eff = effectiveLayout?.get(child.id);
+            const childData = getComponentData(child);
             const w = eff?.width ?? child.width;
             const h = eff?.height ?? child.height;
             return (
@@ -146,8 +154,8 @@ export const ViewGroupNode = ({
                 key={child.id}
                 className='pointer-events-auto'
                 style={{
-                  width: w,
-                  height: h,
+                  width: childData.takeFullWidth ? '100dvw' : w,
+                  height: childData.takeFullHeight ? '100dvh' : h,
                   flexShrink: 0,
                   position: 'relative',
                 }}>

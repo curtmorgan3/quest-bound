@@ -1,5 +1,6 @@
+import { getComponentData } from '@/lib/compass-planes/utils';
 import type { Component } from '@/types';
-import { useCallback, useRef } from 'react';
+import { useCallback, useMemo, useRef } from 'react';
 
 import { clampRectInContainer } from '../../canvas/canvas-bounds';
 import { clientToCanvas, snapScalarToGrid } from '../../canvas/client-to-canvas';
@@ -377,6 +378,15 @@ export const ResizableNode = ({
   const showHandles = selected && !disabled && !locked && pos.rotation === 0;
   const showSelectionOutline = selected && !disabled;
 
+  const { lockResizeWidth, lockResizeHeight } = useMemo(() => {
+    if (!component) return { lockResizeWidth: false, lockResizeHeight: false };
+    const data = getComponentData(component);
+    return {
+      lockResizeWidth: !!data.takeFullWidth,
+      lockResizeHeight: !!data.takeFullHeight,
+    };
+  }, [component]);
+
   const cursorFor: Record<HandleId, string> = {
     nw: 'nwse-resize',
     n: 'ns-resize',
@@ -429,14 +439,23 @@ export const ResizableNode = ({
               ['s', { left: '50%', bottom: -HANDLE_PX / 2, transform: 'translateX(-50%)' }],
               ['se', { right: -HANDLE_PX / 2, bottom: -HANDLE_PX / 2 }],
             ] as const
-          ).map(([hid, posStyle]) => (
-            <div
-              key={hid}
-              data-native-resize-handle
-              style={{ ...handleBase(hid), ...posStyle }}
-              onPointerDown={(e) => startResize(e, hid)}
-            />
-          ))}
+          )
+            .filter(([hid]) => {
+              if (lockResizeWidth && lockResizeHeight) return false;
+              const affectsW = hid === 'w' || hid === 'e' || hid === 'nw' || hid === 'ne' || hid === 'sw' || hid === 'se';
+              const affectsH = hid === 'n' || hid === 's' || hid === 'nw' || hid === 'ne' || hid === 'sw' || hid === 'se';
+              if (lockResizeWidth && affectsW) return false;
+              if (lockResizeHeight && affectsH) return false;
+              return true;
+            })
+            .map(([hid, posStyle]) => (
+              <div
+                key={hid}
+                data-native-resize-handle
+                style={{ ...handleBase(hid), ...posStyle }}
+                onPointerDown={(e) => startResize(e, hid)}
+              />
+            ))}
         </>
       )}
       {children}

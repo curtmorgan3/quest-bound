@@ -119,6 +119,21 @@ export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
     );
   };
 
+  const handlePositionDataFlag = (
+    key: 'takeFullWidth' | 'takeFullHeight',
+    value: boolean,
+  ) => {
+    const toUpdate = selectedComponents.filter((c) => !c.locked);
+    updateComponents(
+      toUpdate.map((c) => {
+        const d = { ...JSON.parse(c.data) } as Record<string, unknown>;
+        if (value) d[key] = true;
+        else delete d[key];
+        return { id: c.id, data: JSON.stringify(d) };
+      }),
+    );
+  };
+
   const handleStyleUpdate = (
     key: string | string[],
     value: number | string | boolean | null | RGBColor,
@@ -415,7 +430,11 @@ export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
             </TabsList>
             <TabsContent value='style' className='w-full flex flex-col gap-2 mt-2'>
               <ActionEdit components={selectedComponents} handleUpdate={handleUpdate} />
-              <PositionEdit components={selectedComponents} handleUpdate={handleUpdate} />
+              <PositionEdit
+                components={selectedComponents}
+                handleUpdate={handleUpdate}
+                handleDataFlagUpdate={handlePositionDataFlag}
+              />
               <StyleEdit
                 components={selectedComponents}
                 handleUpdate={handleStyleUpdate}

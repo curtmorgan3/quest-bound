@@ -32,7 +32,7 @@ export const EditInventoryNode = () => {
 
   const cellWidth = (data.cellWidth ?? 1) * 20;
   const cellHeight = (data.cellHeight ?? 1) * 20;
-  const { width: cw, height: ch } = useComponentCanvasDimensions(component);
+  const { widthStyle: cw, heightStyle: ch } = useComponentCanvasDimensions(component);
 
   const containerStyle = bgStyle.background
     ? {
@@ -76,9 +76,10 @@ const ViewInventoryNodeComponent = ({ component }: { component: Component }) => 
 
   const cellWidth = (data.cellWidth ?? 1) * 20;
   const cellHeight = (data.cellHeight ?? 1) * 20;
-  const { width: cw, height: ch } = useComponentCanvasDimensions(component);
-  const gridCols = Math.floor(cw / cellWidth);
-  const gridRows = Math.floor(ch / cellHeight);
+  const { width, height, widthStyle: cw, heightStyle: ch } =
+    useComponentCanvasDimensions(component);
+  const gridCols = Math.floor(width / cellWidth);
+  const gridRows = Math.floor(height / cellHeight);
   const showItemAs = data.showItemAs ?? 'image';
   const typeRestriction = data.typeRestriction;
   const categoryRestriction = data.categoryRestriction;

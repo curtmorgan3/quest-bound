@@ -45,7 +45,7 @@ const ViewCheckboxNodeComponent = ({
 
   const checkedImageUrl = checkedAsset?.data ?? data.checkedAssetUrl;
   const uncheckedImageUrl = uncheckedAsset?.data ?? data.uncheckedAssetUrl;
-  const { width: cw, height: ch } = useComponentCanvasDimensions(component);
+  const { widthStyle: cw, heightStyle: ch } = useComponentCanvasDimensions(component);
 
   const handleChange = () => {
     if (!characterContext) return;

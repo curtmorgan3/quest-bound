@@ -1,7 +1,15 @@
 import { useComponents } from '@/lib/compass-api';
 import { CharacterContext } from '@/stores';
 import { ExternalLink, OctagonMinus, OctagonX, Scaling } from 'lucide-react';
-import { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  useCallback,
+  useContext,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { Link } from 'react-router-dom';
 import { DRAG_THRESHOLD_PX } from '../canvas';
 import { renderViewComponent, type ViewRenderContext } from '../nodes';
@@ -11,7 +19,7 @@ import {
   worldTopLeftWithEffective,
 } from '../sheet-editor/component-world-geometry';
 import { isFlexHostedChild } from '../sheet-editor/group-flex-utils';
-import { useComponentPositionMap } from '../utils';
+import { getComponentData, useComponentPositionMap } from '../utils';
 import { useWindowCanvasSelection } from './window-canvas-selection-context';
 import { ParentWindowFrameProvider } from './parent-window-frame-context';
 import { WindowRuntimeProvider } from './window-runtime-context';
@@ -54,6 +62,13 @@ function clampDisplayScale(n: number): number {
 }
 
 /** Uniform scale from snapped outer width so the window sits on the canvas grid (matches position snap). */
+/** Left edge of the main app column (right side of the desktop sidebar spacer), or 0 if no sidebar. */
+function mainContentLeftClientPx(): number {
+  const gap = document.querySelector<HTMLElement>('[data-slot="sidebar-gap"]');
+  if (!gap) return 0;
+  return gap.getBoundingClientRect().right;
+}
+
 function snapDisplayScaleToLayoutGrid(
   scale: number,
   baseWidthPx: number,
@@ -158,6 +173,53 @@ export const WindowNode = ({ data }: { data: WindowNodeData }) => {
   const scaledW = windowWidth * displayScale;
   const scaledH = windowHeight * displayScale;
 
+  const needsViewportEdgeAlign = useMemo(
+    () =>
+      rootComponents.some((c) => {
+        const d = getComponentData(c);
+        return Boolean(d.takeFullWidth || d.takeFullHeight);
+      }),
+    [rootComponents],
+  );
+
+  const scaledSheetRef = useRef<HTMLDivElement>(null);
+  const [viewportEdgeInSheetPx, setViewportEdgeInSheetPx] = useState({ left: 0, top: 0 });
+
+  useLayoutEffect(() => {
+    if (!needsViewportEdgeAlign) {
+      setViewportEdgeInSheetPx({ left: 0, top: 0 });
+      return;
+    }
+
+    const update = () => {
+      const sheetEl = scaledSheetRef.current;
+      if (!sheetEl) return;
+      const rect = sheetEl.getBoundingClientRect();
+      const ds = displayScale;
+      if (!Number.isFinite(ds) || ds === 0) return;
+      const targetLeftClient = mainContentLeftClientPx();
+      const targetTopClient = 0;
+      setViewportEdgeInSheetPx({
+        left: (targetLeftClient - rect.left) / ds,
+        top: (targetTopClient - rect.top) / ds,
+      });
+    };
+
+    update();
+    const ro = new ResizeObserver(update);
+    const sheetEl = scaledSheetRef.current;
+    if (sheetEl) ro.observe(sheetEl);
+    const gapEl = document.querySelector<HTMLElement>('[data-slot="sidebar-gap"]');
+    if (gapEl) ro.observe(gapEl);
+    window.addEventListener('resize', update);
+    window.addEventListener('scroll', update, true);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener('resize', update);
+      window.removeEventListener('scroll', update, true);
+    };
+  }, [needsViewportEdgeAlign, displayScale]);
+
   const viewRenderContext = useMemo<ViewRenderContext>(
     () => ({
       allComponents: components,
@@ -178,9 +240,15 @@ export const WindowNode = ({ data }: { data: WindowNodeData }) => {
         if (!eff) return null;
         const tl = worldTopLeftWithEffective(c, byId, effectiveLayout);
         const ds = displayScale;
+        const isRoot = !isFlexHostedChild(c, byId);
+        const rectData = getComponentData(c);
+        const left =
+          isRoot && rectData.takeFullWidth ? viewportEdgeInSheetPx.left : tl.x - minX;
+        const top =
+          isRoot && rectData.takeFullHeight ? viewportEdgeInSheetPx.top : tl.y - minY;
         return {
-          x: windowData.x + (tl.x - minX) * ds,
-          y: windowData.y + (tl.y - minY) * ds,
+          x: windowData.x + left * ds,
+          y: windowData.y + top * ds,
           width: eff.width * ds,
           height: eff.height * ds,
         };
@@ -199,6 +267,8 @@ export const WindowNode = ({ data }: { data: WindowNodeData }) => {
       windowData,
       windowData.x,
       windowData.y,
+      viewportEdgeInSheetPx.left,
+      viewportEdgeInSheetPx.top,
     ],
   );
 
@@ -408,6 +478,7 @@ export const WindowNode = ({ data }: { data: WindowNodeData }) => {
         </div>
       ) : null}
       <div
+        ref={scaledSheetRef}
         style={{
           width: windowWidth,
           height: windowHeight,
@@ -443,13 +514,18 @@ export const WindowNode = ({ data }: { data: WindowNodeData }) => {
               const pos = positionMap.get(component.id);
               const eff = effectiveLayout.get(component.id)!;
               const tl = worldTopLeftWithEffective(component, byId, effectiveLayout);
+              const compData = getComponentData(component);
               return (
                 <div
                   key={component.id}
                   style={{
                     position: 'absolute',
-                    left: tl.x - minX,
-                    top: tl.y - minY,
+                    left: compData.takeFullWidth
+                      ? viewportEdgeInSheetPx.left
+                      : tl.x - minX,
+                    top: compData.takeFullHeight
+                      ? viewportEdgeInSheetPx.top
+                      : tl.y - minY,
                     width: eff.width,
                     height: eff.height,
                     zIndex: pos?.z ?? component.z,

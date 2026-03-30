@@ -204,4 +204,8 @@ export type ComponentData = ShapeComponentData &
     childWindowAnchor?: ChildWindowAnchor;
     /** When true (character sheet only), click removes the character window instance that contains this component. */
     closeCharacterWindowOnClick?: boolean;
+    /** When true, render width as `100dvw` while keeping stored `width` for layout math. */
+    takeFullWidth?: boolean;
+    /** When true, render height as `100dvh` while keeping stored `height` for layout math. */
+    takeFullHeight?: boolean;
   };

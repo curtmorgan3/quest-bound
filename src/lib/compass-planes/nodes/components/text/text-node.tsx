@@ -31,7 +31,7 @@ export const EditTextNode = () => {
 
   if (!component) return null;
 
-  const { width: cw, height: ch } = useComponentCanvasDimensions(component);
+  const { widthStyle: cw, heightStyle: ch } = useComponentCanvasDimensions(component);
   const data = getComponentData(component) as TextComponentData;
 
   const handleDoubleClick = () => {
@@ -150,7 +150,7 @@ const ViewTextNodeComponent = ({
 }) => {
   const data = useNodeData(component);
   const css = useComponentStyles(component) as TextComponentStyle;
-  const { width: cw, height: ch } = useComponentCanvasDimensions(component);
+  const { widthStyle: cw, heightStyle: ch } = useComponentCanvasDimensions(component);
   const noSelect: CSSProperties = {
     userSelect: 'none',
     WebkitUserSelect: 'none',

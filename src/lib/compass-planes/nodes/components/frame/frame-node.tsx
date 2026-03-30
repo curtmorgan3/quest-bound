@@ -7,7 +7,10 @@ import { colorWhite } from '@/palette';
 import { WindowEditorContext } from '@/stores';
 import type { Component, FrameComponentData } from '@/types';
 import { useEditorItemId } from '@/lib/compass-planes/canvas/editor-item-context';
-import { useComponentCanvasDimensions } from '@/lib/compass-planes/canvas/editor-item-layout-context';
+import {
+  canvasDimensionToCss,
+  useComponentCanvasDimensions,
+} from '@/lib/compass-planes/canvas/editor-item-layout-context';
 import { Frame as FrameIcon } from 'lucide-react';
 import { memo, useContext } from 'react';
 import { ResizableNode } from '../../decorators';
@@ -20,14 +23,14 @@ export const EditFrameNode = () => {
 
   if (!component) return null;
 
-  const { width: cw, height: ch } = useComponentCanvasDimensions(component);
+  const { widthStyle: cw, heightStyle: ch } = useComponentCanvasDimensions(component);
 
   return (
     <ResizableNode component={component}>
       <div
         style={{
-          height: `${ch}px`,
-          width: `${cw}px`,
+          height: canvasDimensionToCss(ch),
+          width: canvasDimensionToCss(cw),
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -43,7 +46,7 @@ export const EditFrameNode = () => {
 const ViewFrameNodeComponent = ({ component }: { component: Component }) => {
   const data = getComponentData(component) as FrameComponentData;
   const css = useComponentStyles(component);
-  const { width: cw, height: ch } = useComponentCanvasDimensions(component);
+  const { widthStyle: cw, heightStyle: ch } = useComponentCanvasDimensions(component);
   const url = data?.url?.trim();
 
   if (!url) {
@@ -55,8 +58,8 @@ const ViewFrameNodeComponent = ({ component }: { component: Component }) => {
       src={url}
       title='Embedded content'
       style={{
-        height: `${ch}px`,
-        width: `${cw}px`,
+        height: canvasDimensionToCss(ch),
+        width: canvasDimensionToCss(cw),
         border: 'none',
         ...css,
         ...getBackgroundStyle(css),
