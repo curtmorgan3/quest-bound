@@ -233,10 +233,15 @@ export function usePointerDrag({
       let exceededThreshold = false;
       let releaseDocumentDragChrome: (() => void) | null = null;
 
-      const teardownWindow = () => {
-        window.removeEventListener('pointermove', onMove);
-        window.removeEventListener('pointerup', onUp);
-        window.removeEventListener('pointercancel', onUp);
+      const doc = typeof document !== 'undefined' ? document : null;
+      const captureOpts = { capture: true } as const;
+      const moveOpts = { passive: false, capture: true } as const;
+
+      const teardownDocument = () => {
+        if (!doc) return;
+        doc.removeEventListener('pointermove', onMove, moveOpts);
+        doc.removeEventListener('pointerup', onUp, captureOpts);
+        doc.removeEventListener('pointercancel', onUp, captureOpts);
       };
 
       const onMove = (ev: PointerEvent) => {
@@ -308,7 +313,7 @@ export function usePointerDrag({
 
       const onUp = (ev: PointerEvent) => {
         if (ev.pointerId !== pointerId) return;
-        teardownWindow();
+        teardownDocument();
 
         if (rafRef.current != null) {
           cancelAnimationFrame(rafRef.current);
@@ -357,9 +362,11 @@ export function usePointerDrag({
         }
       };
 
-      window.addEventListener('pointermove', onMove, { passive: false });
-      window.addEventListener('pointerup', onUp);
-      window.addEventListener('pointercancel', onUp);
+      if (doc) {
+        doc.addEventListener('pointermove', onMove, moveOpts);
+        doc.addEventListener('pointerup', onUp, captureOpts);
+        doc.addEventListener('pointercancel', onUp, captureOpts);
+      }
     },
     [flushTransient, scheduleTransient],
   );
