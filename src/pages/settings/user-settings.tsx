@@ -30,7 +30,15 @@ import { cn } from '@/lib/utils';
 import { usePwaUpdate } from '@/pwa/pwa-update-provider';
 import { errorLogger, useOnboardingStore, usePwaInstallStore } from '@/stores';
 import { useCloudAuthStore } from '@/stores/cloud-auth-store';
-import { Building2, Download, PlayCircleIcon, RefreshCw, Settings, Shield, User } from 'lucide-react';
+import {
+  Building2,
+  Download,
+  PlayCircleIcon,
+  RefreshCw,
+  Settings,
+  Shield,
+  User,
+} from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { CloudAccountSettings } from './cloud-account-settings';
 import { OrganizationSettings } from './organization-settings';
@@ -41,13 +49,8 @@ export const UserSettings = () => {
   const { currentUser, updateUser, deleteUser } = useUsers();
   const { setForceShowAgain } = useOnboardingStore();
   const { deferredPrompt, triggerInstall } = usePwaInstallStore();
-  const {
-    appVersion,
-    needRefresh,
-    updateServiceWorker,
-    checkForUpdate,
-    swSupported,
-  } = usePwaUpdate();
+  const { appVersion, needRefresh, updateServiceWorker, checkForUpdate, swSupported } =
+    usePwaUpdate();
   const { cloudSyncEnabled, isCloudSyncEligibilityLoading, isAuthenticated } = useCloudAuthStore();
   const [installLoading, setInstallLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('profile');
@@ -58,10 +61,7 @@ export const UserSettings = () => {
 
   /** Mirrors `public.users.cloud_enabled` via `cloud_sync_enabled` RPC (see `fetchCloudSyncEnabled`). */
   const showOrganizationTab =
-    isCloudConfigured &&
-    isAuthenticated &&
-    cloudSyncEnabled &&
-    !isCloudSyncEligibilityLoading;
+    isCloudConfigured && isAuthenticated && cloudSyncEnabled && !isCloudSyncEligibilityLoading;
 
   const showEnableQBCloud =
     isCloudConfigured && !cloudSyncEnabled && (!isAuthenticated || !isCloudSyncEligibilityLoading);
@@ -155,44 +155,6 @@ export const UserSettings = () => {
       </TabsContent>
 
       <TabsContent value='preferences' className='flex flex-col gap-4 mt-4'>
-        <div className='flex flex-col gap-2 max-w-md'>
-          <Label>App version</Label>
-          <div className='flex flex-wrap items-center gap-3'>
-            <span className='text-sm text-muted-foreground tabular-nums'>{appVersion}</span>
-            <Button
-              variant='outline'
-              className='gap-2 w-fit'
-              disabled={!swSupported || updateCheckLoading}
-              onClick={async () => {
-                if (needRefresh) {
-                  await updateServiceWorker();
-                  return;
-                }
-                setUpdateCheckLoading(true);
-                try {
-                  await checkForUpdate();
-                } finally {
-                  setUpdateCheckLoading(false);
-                }
-              }}>
-              <RefreshCw
-                className={cn('h-4 w-4', updateCheckLoading && 'animate-spin')}
-              />
-              {needRefresh
-                ? 'Restart to update'
-                : updateCheckLoading
-                  ? 'Checking…'
-                  : 'Check for updates'}
-            </Button>
-          </div>
-          {!swSupported ? (
-            <p className='text-xs text-muted-foreground'>
-              Service worker updates apply in supported browsers (for example, the installed app or
-              a production build).
-            </p>
-          ) : null}
-        </div>
-
         <div className='flex items-center gap-2'>
           <Checkbox
             id='sheetAttributeAnimations'
@@ -221,6 +183,41 @@ export const UserSettings = () => {
             <PlayCircleIcon className='h-4 w-4' />
             Run Tutorial
           </Button>
+        </div>
+
+        <div className='flex flex-col gap-2 max-w-md'>
+          <Label>App version</Label>
+          <div className='flex flex-wrap items-center gap-3'>
+            <span className='text-sm text-muted-foreground tabular-nums'>{appVersion}</span>
+            <Button
+              variant='outline'
+              className='gap-2 w-fit'
+              disabled={!swSupported || updateCheckLoading}
+              onClick={async () => {
+                if (needRefresh) {
+                  await updateServiceWorker();
+                  return;
+                }
+                setUpdateCheckLoading(true);
+                try {
+                  await checkForUpdate();
+                } finally {
+                  setUpdateCheckLoading(false);
+                }
+              }}>
+              <RefreshCw className={cn('h-4 w-4', updateCheckLoading && 'animate-spin')} />
+              {needRefresh
+                ? 'Restart to update'
+                : updateCheckLoading
+                  ? 'Checking…'
+                  : 'Check for updates'}
+            </Button>
+          </div>
+          {!swSupported ? (
+            <p className='text-xs text-muted-foreground'>
+              Progressive Web App updates apply in supported browsers
+            </p>
+          ) : null}
         </div>
 
         <div className='flex flex-col gap-2'>
