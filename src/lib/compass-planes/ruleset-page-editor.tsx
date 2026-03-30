@@ -112,6 +112,7 @@ export const RulesetPageEditor = ({ pageId }: RulesetPageEditorProps) => {
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', position: 'relative' }}>
       <WindowCanvasHost
         className='relative min-h-0 min-w-0 flex-1 overflow-hidden'
+        showGridToolbar
         windows={templateWindows}
         locked={false}
         onWindowPositionUpdate={(id, x, y) => updateRulesetWindow(id, { x, y })}
