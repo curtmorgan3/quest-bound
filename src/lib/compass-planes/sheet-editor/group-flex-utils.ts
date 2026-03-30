@@ -2,7 +2,20 @@ import type { CSSProperties } from 'react';
 
 import type { Component, ComponentStyle } from '@/types';
 
+import { ComponentTypes } from '../nodes/node-types';
 import { getComponentData } from '../utils';
+
+/** If `c` is parented to a group root, return that root; otherwise null. */
+export function groupRootIfMember(
+  c: Component,
+  byId: Map<string, Component>,
+): Component | null {
+  const pid = c.parentComponentId;
+  if (!pid) return null;
+  const p = byId.get(pid);
+  if (!p || p.type !== ComponentTypes.GROUP) return null;
+  return p;
+}
 
 export function isFlexLayoutGroup(component: Component): boolean {
   return getComponentData(component).layoutMode === 'flex';

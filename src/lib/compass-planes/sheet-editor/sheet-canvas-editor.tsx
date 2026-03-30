@@ -35,7 +35,7 @@ import {
   expandDeleteIds,
   worldTopLeftWithEffective,
 } from './component-world-geometry';
-import { isFlexHostedChild } from './group-flex-utils';
+import { groupRootIfMember, isFlexHostedChild } from './group-flex-utils';
 import {
   updatesForClickSelection,
   updatesForMarqueeSelection,
@@ -85,6 +85,8 @@ export function SheetCanvasEditor({
   const { getComponent, groupSelectedComponents, canGroupSelected, compositeTemplateRootIds } =
     useContext(WindowEditorContext);
   const canvasRootRef = useRef<HTMLDivElement>(null);
+  const componentsRef = useRef(components);
+  componentsRef.current = components;
   const opacity = !backgroundColor && !backgroundImage ? 1 : (backgroundOpacity ?? 0.1);
   const longPressTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const touchPositionRef = useRef<{ x: number; y: number } | null>(null);
@@ -339,11 +341,40 @@ export function SheetCanvasEditor({
       const t = e.target as HTMLElement;
       if (t.closest('[data-native-resize-handle]')) return;
 
-      const updates = updatesForClickSelection(components, c.id, e);
-      if (updates.length) onComponentsUpdated(updates);
-
       const skipMoveStart = Boolean(t.closest('[data-no-canvas-drag], .nodrag'));
-      if (!c.locked && !skipMoveStart) {
+      // Rich inner controls: keep immediate selection so focus/clicks behave normally.
+      if (skipMoveStart) {
+        const updates = updatesForClickSelection(components, c.id, e);
+        if (updates.length) onComponentsUpdated(updates);
+        return;
+      }
+
+      const deferredSelectionOnTap = (ev: PointerEvent) => {
+        const updates = updatesForClickSelection(componentsRef.current, c.id, ev);
+        if (updates.length) onComponentsUpdated(updates);
+      };
+
+      if (c.locked) {
+        beginMove(e, {
+          id: c.id,
+          x: movePreviewById[c.id]?.x ?? c.x,
+          y: movePreviewById[c.id]?.y ?? c.y,
+          deferredSelectionOnTap,
+        });
+        return;
+      }
+
+      const wasSelected = Boolean(c.selected);
+      const hostGroupRoot = groupRootIfMember(c, byId);
+      // Unselected child of a group: drag the whole group (move root only; children use parent-relative x/y).
+      if (hostGroupRoot && !wasSelected && !hostGroupRoot.locked) {
+        beginMove(e, {
+          id: hostGroupRoot.id,
+          x: movePreviewById[hostGroupRoot.id]?.x ?? hostGroupRoot.x,
+          y: movePreviewById[hostGroupRoot.id]?.y ?? hostGroupRoot.y,
+          deferredSelectionOnTap,
+        });
+      } else {
         const movableSelected = components.filter((x) => x.selected && !x.locked);
         const selectedIds = new Set(movableSelected.map((x) => x.id));
         const rootsOnly = movableSelected.filter(
@@ -364,10 +395,11 @@ export function SheetCanvasEditor({
           x: movePreviewById[c.id]?.x ?? c.x,
           y: movePreviewById[c.id]?.y ?? c.y,
           followers,
+          deferredSelectionOnTap,
         });
       }
     },
-    [beginMove, components, movePreviewById, onComponentsUpdated],
+    [beginMove, byId, components, movePreviewById, onComponentsUpdated],
   );
 
   useKeyListeners({

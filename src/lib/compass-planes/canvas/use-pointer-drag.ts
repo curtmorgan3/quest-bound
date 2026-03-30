@@ -6,8 +6,20 @@ import { clientToCanvas, snapPointToGrid } from './client-to-canvas';
 
 export type PointerDragFollower = { id: string; x: number; y: number };
 
+export type BeginMoveParams = {
+  id: string;
+  x: number;
+  y: number;
+  followers?: PointerDragFollower[];
+  /**
+   * When set, invoked on `pointerup` only if the pointer never moved past the drag threshold
+   * (so the gesture was a tap, not a drag). Not called on `pointercancel`.
+   */
+  deferredSelectionOnTap?: (ev: PointerEvent) => void;
+};
+
 /** Device pixels before we treat the gesture as a drag (not a click). Avoids capturing the pointer immediately, which would retarget click/dblclick away from inner targets (e.g. text nodes). */
-const DRAG_THRESHOLD_PX = 5;
+export const DRAG_THRESHOLD_PX = 5;
 
 /** While dragging windows/components over rich content, the browser may select text or drag images; suppress during the move and restore after. */
 function beginDocumentDragChromeSuppress(): () => void {
@@ -156,13 +168,11 @@ export function usePointerDrag({
   }, [flushTransient]);
 
   const beginMove = useCallback(
-    (
-      e: React.PointerEvent<Element>,
-      params: { id: string; x: number; y: number; followers?: PointerDragFollower[] },
-    ) => {
+    (e: React.PointerEvent<Element>, params: BeginMoveParams) => {
       const o = optsRef.current;
       if (e.button !== 0) return;
-      if (!o.canDrag(params.id)) return;
+      const draggable = o.canDrag(params.id);
+      if (!draggable && !params.deferredSelectionOnTap) return;
       const container = o.containerRef.current;
       if (!container) return;
 
@@ -194,6 +204,7 @@ export function usePointerDrag({
 
       const el = e.currentTarget;
       let dragStarted = false;
+      let exceededThreshold = false;
       let releaseDocumentDragChrome: (() => void) | null = null;
 
       const teardownWindow = () => {
@@ -208,9 +219,13 @@ export function usePointerDrag({
         const oc = optsRef.current;
         if (!ph) return;
 
-        if (!dragStarted) {
+        if (!exceededThreshold) {
           const d = Math.hypot(ev.clientX - startClientX, ev.clientY - startClientY);
           if (d < DRAG_THRESHOLD_PX) return;
+          exceededThreshold = true;
+          if (!oc.canDrag(ph.leaderId)) {
+            return;
+          }
           dragStarted = true;
           releaseDocumentDragChrome = beginDocumentDragChromeSuppress();
           try {
@@ -220,9 +235,11 @@ export function usePointerDrag({
           }
         }
 
-        if (dragStarted) {
-          ev.preventDefault();
+        if (!dragStarted) {
+          return;
         }
+
+        ev.preventDefault();
 
         const c = oc.containerRef.current;
         if (!c) return;
@@ -293,6 +310,9 @@ export function usePointerDrag({
             }
           }
         } finally {
+          if (!exceededThreshold && ev.type === 'pointerup') {
+            params.deferredSelectionOnTap?.(ev);
+          }
           releaseDocumentDragChrome?.();
           releaseDocumentDragChrome = null;
           optsRef.current.onDragEnd?.({ didCommit });
