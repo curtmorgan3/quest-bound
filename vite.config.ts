@@ -6,14 +6,21 @@ import { defineConfig } from 'vite';
 import { VitePWA } from 'vite-plugin-pwa';
 import tsconfigPaths from 'vite-tsconfig-paths';
 
+const packageJson = JSON.parse(
+  fs.readFileSync(path.resolve(__dirname, 'package.json'), 'utf-8'),
+) as { version: string };
+
 // https://vite.dev/config/
 export const viteConfig = defineConfig({
+  define: {
+    'import.meta.env.VITE_APP_VERSION': JSON.stringify(packageJson.version),
+  },
   plugins: [
     react(),
     tailwindcss(),
     tsconfigPaths(),
     VitePWA({
-      registerType: 'autoUpdate',
+      registerType: 'prompt',
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
       manifest: {
         name: 'Quest Bound',

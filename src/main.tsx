@@ -1,5 +1,7 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
+
+import { PwaUpdateProvider } from '@/pwa/pwa-update-provider';
 import App from './App.tsx';
 import { initAnalytics } from './lib/analytics';
 import './index.css';
@@ -7,22 +9,10 @@ import './stores/loggers/global-error-handler';
 
 initAnalytics();
 
-// Register service worker for PWA
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker
-      .register('/sw.js')
-      .then((registration) => {
-        console.log('SW registered: ', registration);
-      })
-      .catch(() => {
-        // console.log('SW registration failed: ', registrationError);
-      });
-  });
-}
-
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <App />
+    <PwaUpdateProvider>
+      <App />
+    </PwaUpdateProvider>
   </StrictMode>,
 );

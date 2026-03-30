@@ -282,7 +282,7 @@ export const WindowEditor = () => {
           )}
         </div>
         <div
-          className='fixed bottom-4 z-[60] flex flex-row flex-wrap items-end gap-2'
+          className='fixed bottom-4 z-40 flex flex-row flex-wrap items-end gap-2'
           style={{ left: stackLeftPx }}>
           {viewMode && testCharacter?.id ? (
             <GameLog

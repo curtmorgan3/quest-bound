@@ -1,0 +1,29 @@
+#!/usr/bin/env sh
+set -e
+
+# Bump patch version before pushing branch updates (skips tag-only / delete pushes).
+REPO_ROOT=$(git rev-parse --show-toplevel)
+cd "$REPO_ROOT"
+
+bump=0
+while read -r local_ref local_sha remote_ref remote_sha; do
+  [ -z "$local_ref" ] && continue
+  if [ "$local_sha" = "0000000000000000000000000000000000000000" ]; then
+    continue
+  fi
+  case "$local_ref" in
+    refs/heads/*) bump=1 ;;
+  esac
+done
+
+[ "$bump" = 0 ] && exit 0
+
+npm version patch --no-git-tag-version
+git add package.json package-lock.json
+
+if git diff --cached --quiet; then
+  exit 0
+fi
+
+VERSION=$(node -e "console.log(require('./package.json').version)")
+git commit -m "chore: bump version to ${VERSION}"

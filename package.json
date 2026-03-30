@@ -1,7 +1,7 @@
 {
   "name": "quest-bound",
   "private": true,
-  "version": "2.0.0",
+  "version": "2.1.12",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -23,7 +23,8 @@
     "test:component:open": "cypress open --component",
     "test:all": "npm run test:e2e && npm run test:component",
     "build:robots": "node build-robots.js",
-    "qbs": "tsx src/lib/compass-logic/interpreter/cli.ts"
+    "qbs": "tsx src/lib/compass-logic/interpreter/cli.ts",
+    "prepare": "husky"
   },
   "dependencies": {
     "@codemirror/autocomplete": "^6.20.0",
@@ -123,6 +124,7 @@
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.20",
     "globals": "^16.3.0",
+    "husky": "^9.1.7",
     "jsdom": "^28.0.0",
     "prettier-plugin-organize-imports": "^4.2.0",
     "sharp": "^0.34.4",

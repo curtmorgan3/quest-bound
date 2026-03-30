@@ -1,7 +1,9 @@
 /// <reference types="vite/client" />
 /// <reference types="cypress" />
+/// <reference types="vite-plugin-pwa/react" />
 
 interface ImportMetaEnv {
+  readonly VITE_APP_VERSION: string;
   readonly VITE_PLAUSIBLE_DOMAIN?: string;
   readonly VITE_SUPABASE_URL?: string;
   readonly VITE_SUPABASE_ANON_KEY?: string;

@@ -485,7 +485,7 @@ export function WindowCanvasHost<T extends WindowCanvasItem>({
         {showGridToolbar ? (
           <div
             data-window-canvas-chrome
-            className='pointer-events-none absolute bottom-14 left-2 z-[60]'>
+            className='pointer-events-none absolute bottom-14 left-2 z-40'>
             <div className='pointer-events-auto flex flex-row flex-wrap items-center gap-2 p-1.5'>
               <Input
                 type='number'
