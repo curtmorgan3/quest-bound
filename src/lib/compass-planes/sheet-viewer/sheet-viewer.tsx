@@ -190,6 +190,10 @@ export const SheetViewer = ({
                   : undefined,
                 onChildWindowClick: (childWindowId, parentWindow) =>
                   handleChildWindowClick(childWindowId, parentWindow, wAt),
+                onDisplayScaleChange:
+                  !locked && onWindowUpdated
+                    ? (id, displayScale) => onWindowUpdated({ id, displayScale })
+                    : undefined,
               }}
             />
           );

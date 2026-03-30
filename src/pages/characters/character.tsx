@@ -314,7 +314,11 @@ export const CharacterPage = ({
           characterId={character.id}
           lockByDefault={lockByDefault ?? false}
           initialCurrentPageId={character.lastViewedPageId ?? null}
-          initialLocked={character.sheetLocked}
+          initialLocked={
+            editorWindowId != null
+              ? (character.sheetLocked ?? lockByDefault ?? false)
+              : true
+          }
           onLockedChange={sheetViewerPersistence?.onLockedChange}
           onWindowUpdated={handleUpdateWindow}
           onWindowDeleted={handleDeleteWindow}

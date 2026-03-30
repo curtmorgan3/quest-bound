@@ -9,6 +9,7 @@ export type CharacterWindowUpdate = {
   x?: number;
   y?: number;
   isCollapsed?: boolean;
+  displayScale?: number;
 };
 
 /**

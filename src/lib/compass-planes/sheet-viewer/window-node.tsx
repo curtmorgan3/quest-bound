@@ -34,7 +34,7 @@ export interface WindowNodeData {
   locked: boolean;
   /** When set, a link to this path is shown when the window is selected (e.g. page-editor). */
   editWindowHref?: string;
-  /** Page editor: drag the scale control to resize uniformly (aspect ratio preserved). */
+  /** Unlocked sheet (character or page editor): drag the scale control to resize uniformly. */
   onDisplayScaleChange?: (id: string, scale: number) => void;
 }
 
@@ -281,7 +281,7 @@ export const WindowNode = ({ data }: { data: WindowNodeData }) => {
     endScaleGesture();
   }, [endScaleGesture]);
 
-  const showScaleHandle = Boolean(onDisplayScaleChange && editWindowHref && !locked);
+  const showScaleHandle = Boolean(onDisplayScaleChange && !locked);
   const isSelected = canvasSelection?.selectedWindowId === windowData.id;
   const showChrome = Boolean(!locked && isSelected);
 
