@@ -202,4 +202,6 @@ export type ComponentData = ShapeComponentData &
     childWindowCollapse?: boolean;
     childWindowPlacementMode?: ChildWindowPlacementMode;
     childWindowAnchor?: ChildWindowAnchor;
+    /** When true (character sheet only), click removes the character window instance that contains this component. */
+    closeCharacterWindowOnClick?: boolean;
   };

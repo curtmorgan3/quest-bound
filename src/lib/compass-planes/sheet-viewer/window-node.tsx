@@ -165,6 +165,12 @@ export const WindowNode = ({ data }: { data: WindowNodeData }) => {
       effectiveLayout,
       positionMap,
       sheetTemplatePageId: sheetTemplatePageId ?? null,
+      closeThisCharacterWindow:
+        onClose && 'characterId' in windowData
+          ? () => {
+              onClose(windowData.id);
+            }
+          : undefined,
       getComponentCanvasRect: (componentId: string) => {
         const c = components.find((x) => x.id === componentId);
         if (!c) return null;
@@ -187,8 +193,10 @@ export const WindowNode = ({ data }: { data: WindowNodeData }) => {
       effectiveLayout,
       minX,
       minY,
+      onClose,
       positionMap,
       sheetTemplatePageId,
+      windowData,
       windowData.x,
       windowData.y,
     ],
@@ -337,7 +345,8 @@ export const WindowNode = ({ data }: { data: WindowNodeData }) => {
         position: 'relative',
         display: 'flex',
         flexDirection: 'column',
-        overflow: 'hidden',
+        /* Allow CSS outlines / SVG strokes to paint past the layout box (overflow hidden clipped them). */
+        overflow: 'visible',
       }}>
       {showChrome ? (
         <div
@@ -406,7 +415,7 @@ export const WindowNode = ({ data }: { data: WindowNodeData }) => {
           transformOrigin: '0 0',
           position: 'relative',
           flexShrink: 0,
-          overflow: 'hidden',
+          overflow: 'visible',
         }}>
         <div
           style={{

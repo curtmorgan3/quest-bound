@@ -13,7 +13,12 @@ interface NodeActionCallerProps {
 }
 
 function hasNavigatorTargets(component: Component, data: ComponentData): boolean {
-  return Boolean(data.pageId || component.childWindowId || data.href);
+  return Boolean(
+    data.pageId ||
+      component.childWindowId ||
+      data.href ||
+      data.closeCharacterWindowOnClick,
+  );
 }
 
 export const NodeActionCaller = ({

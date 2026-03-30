@@ -24,7 +24,7 @@ interface NodeNavigatorProps {
 
 /**
  * When the component has no click script, navigates on click using data in this order:
- * `pageId` (character sheet page), then `childWindowId` (character or ruleset template window),
+ * `closeCharacterWindowOnClick` (character sheet only), then `pageId`, then `childWindowId`,
  * then `href` (opens in a new tab).
  */
 export const NodeNavigator = ({ children, component, componentData, viewCtx }: NodeNavigatorProps) => {
@@ -50,6 +50,10 @@ export const NodeNavigator = ({ children, component, componentData, viewCtx }: N
   const handleProgrammaticNav = useCallback(
     async (e: React.MouseEvent) => {
       e.stopPropagation();
+      if (data.closeCharacterWindowOnClick && viewCtx?.closeThisCharacterWindow) {
+        viewCtx.closeThisCharacterWindow();
+        return;
+      }
       if (pageTemplateId) {
         if (characterId) {
           const characterPageId = await navigateCharacterToTemplatePage(
@@ -116,6 +120,7 @@ export const NodeNavigator = ({ children, component, componentData, viewCtx }: N
       }
     },
     [
+      data.closeCharacterWindowOnClick,
       pageTemplateId,
       childWindowId,
       characterId,
@@ -129,6 +134,7 @@ export const NodeNavigator = ({ children, component, componentData, viewCtx }: N
       data.childWindowAnchor,
       parentFrame,
       canvasBounds,
+      viewCtx?.closeThisCharacterWindow,
       viewCtx?.getComponentCanvasRect,
       viewCtx?.sheetTemplatePageId,
     ],
@@ -138,7 +144,11 @@ export const NodeNavigator = ({ children, component, componentData, viewCtx }: N
     return <>{children}</>;
   }
 
-  if (pageTemplateId || childWindowId) {
+  if (
+    pageTemplateId ||
+    childWindowId ||
+    (data.closeCharacterWindowOnClick && viewCtx?.closeThisCharacterWindow)
+  ) {
     return (
       <div
         role='button'

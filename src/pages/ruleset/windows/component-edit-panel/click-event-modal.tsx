@@ -38,10 +38,29 @@ import type {
   Script,
   ScriptParamValue,
 } from '@/types';
+
+function stripClickEventFieldsFromData(baseData: ComponentData) {
+  delete baseData.pageId;
+  delete baseData.viewAttributeId;
+  delete baseData.viewAttributeReadOnly;
+  delete baseData.childWindowX;
+  delete baseData.childWindowY;
+  delete baseData.childWindowCollapse;
+  delete baseData.childWindowPlacementMode;
+  delete baseData.childWindowAnchor;
+  delete baseData.scriptParameterValues;
+  delete baseData.closeCharacterWindowOnClick;
+}
 import { useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 
-type ClickEventType = 'openPage' | 'openWindow' | 'fireAction' | 'fireScript' | 'viewAttribute';
+type ClickEventType =
+  | 'openPage'
+  | 'openWindow'
+  | 'closeThisWindow'
+  | 'fireAction'
+  | 'fireScript'
+  | 'viewAttribute';
 
 const CHILD_WINDOW_PLACEMENT_OPTIONS: { value: ChildWindowPlacementMode; label: string }[] = [
   { value: 'fixed', label: 'Fixed' },
@@ -100,6 +119,7 @@ export const ClickEventModal = ({ component, allCanOpenChildWindow }: Props) => 
     if (data.pageId) return 'openPage';
     if (component.childWindowId) return 'openWindow';
     if (component.actionId) return 'fireAction';
+    if (data.closeCharacterWindowOnClick) return 'closeThisWindow';
     if (data.viewAttributeId) return 'viewAttribute';
     if (component.scriptId && selectedScript) return 'fireScript';
     return null;
@@ -124,6 +144,9 @@ export const ClickEventModal = ({ component, allCanOpenChildWindow }: Props) => 
       const actionId = component.actionId ?? undefined;
       const action = actionId ? actions.find((a) => a.id === actionId) : undefined;
       return action ? `Fire Action: ${action.title}` : 'Fire Action';
+    }
+    if (type === 'closeThisWindow') {
+      return 'Close This Window';
     }
     if (type === 'fireScript') {
       return selectedScript ? `Fire Script: ${selectedScript.name || 'Untitled'}` : 'Fire Script';
@@ -243,17 +266,13 @@ export const ClickEventModal = ({ component, allCanOpenChildWindow }: Props) => 
     updateComponents([{ id: component.id, scriptId: null, data: JSON.stringify(baseData) }]);
   };
 
-  const clearClickEventData = async () => {
-    const baseData = JSON.parse(component.data);
-    delete baseData.pageId;
-    delete baseData.viewAttributeId;
-    delete baseData.viewAttributeReadOnly;
-    delete baseData.childWindowX;
-    delete baseData.childWindowY;
-    delete baseData.childWindowCollapse;
-    delete baseData.childWindowPlacementMode;
-    delete baseData.childWindowAnchor;
-    delete baseData.scriptParameterValues;
+  const persistClickEventAfterStrip = async (
+    baseData: ComponentData,
+    opts?: { setCloseThisWindow?: boolean },
+  ) => {
+    if (opts?.setCloseThisWindow) {
+      baseData.closeCharacterWindowOnClick = true;
+    }
 
     const update: ComponentUpdate = {
       id: component.id,
@@ -268,6 +287,14 @@ export const ClickEventModal = ({ component, allCanOpenChildWindow }: Props) => 
     }
 
     await updateComponents([update]);
+  };
+
+  const applyClickEventTypeSwitch = async (next: ClickEventType) => {
+    const baseData: ComponentData = JSON.parse(component.data);
+    stripClickEventFieldsFromData(baseData);
+    await persistClickEventAfterStrip(baseData, {
+      setCloseThisWindow: next === 'closeThisWindow',
+    });
   };
 
   const handleUpdateScriptParameterValue = (paramId: string, value: ScriptParamValue) => {
@@ -332,10 +359,11 @@ export const ClickEventModal = ({ component, allCanOpenChildWindow }: Props) => 
             <Select
               value={clickEventType}
               onValueChange={(value: ClickEventType) => {
-                if (value !== clickEventType) {
-                  void clearClickEventData();
-                }
-                setClickEventType(value);
+                if (value === clickEventType) return;
+                void (async () => {
+                  await applyClickEventTypeSwitch(value);
+                  setClickEventType(value);
+                })();
               }}>
               <SelectTrigger className='h-8' data-testid='click-event-type-trigger'>
                 <SelectValue />
@@ -343,6 +371,7 @@ export const ClickEventModal = ({ component, allCanOpenChildWindow }: Props) => 
               <SelectContent>
                 <SelectItem value='openPage'>Open Page</SelectItem>
                 <SelectItem value='openWindow'>Open Window</SelectItem>
+                <SelectItem value='closeThisWindow'>Close This Window</SelectItem>
                 <SelectItem value='fireAction' data-testid='click-event-option-fire-action'>
                   Fire Action
                 </SelectItem>
@@ -382,6 +411,13 @@ export const ClickEventModal = ({ component, allCanOpenChildWindow }: Props) => 
                   }}
                 />
               )}
+
+            {clickEventType === 'closeThisWindow' && (
+              <p className='text-[0.75rem] text-muted-foreground leading-snug'>
+                On a character sheet, clicking this component closes the window it belongs to (not
+                available in ruleset layout previews).
+              </p>
+            )}
 
             {clickEventType === 'openWindow' && windowId && allCanOpenChildWindow && (
               <div className='flex flex-col gap-3'>

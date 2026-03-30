@@ -39,6 +39,8 @@ export type ViewRenderContext = {
   ) => { x: number; y: number; width: number; height: number } | null;
   /** Ruleset page template id — used to resolve child window displayScale from `RulesetWindow`. */
   sheetTemplatePageId?: string | null;
+  /** Character sheet only: removes the window instance hosting this canvas (when `closeCharacterWindowOnClick` is set). */
+  closeThisCharacterWindow?: () => void;
 };
 
 export function renderViewComponent(
