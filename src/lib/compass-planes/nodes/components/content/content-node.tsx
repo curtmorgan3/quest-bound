@@ -94,12 +94,25 @@ const ViewContentNodeComponent = ({
       if (windowEditorMode) {
         handleComponentUpdate?.(textareaRef.current.value);
       } else if (characterContext) {
-        if (characterAttributeId) {
+        const componentData = getComponentData(component);
+        const propId = componentData.attributeCustomPropertyId;
+        const raw = textareaRef.current.value;
+        if (propId && characterAttributeId && component.attributeId) {
+          const ca = characterContext.getCharacterAttribute(component.attributeId);
+          if (ca) {
+            characterContext.updateCharacterAttribute(characterAttributeId, {
+              attributeCustomPropertyValues: {
+                ...(ca.attributeCustomPropertyValues ?? {}),
+                [propId]: raw,
+              },
+            });
+          }
+        } else if (characterAttributeId) {
           characterContext.updateCharacterAttribute(characterAttributeId, {
-            value: textareaRef.current.value,
+            value: raw,
           });
         } else {
-          characterContext.updateCharacterComponentData(component.id, textareaRef.current.value);
+          characterContext.updateCharacterComponentData(component.id, raw);
         }
       }
     }

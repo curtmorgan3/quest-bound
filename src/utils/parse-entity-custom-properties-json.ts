@@ -29,10 +29,25 @@ export function parseEntityCustomPropertiesJson(
       } else {
         defaultValue = o.defaultValue != null ? String(o.defaultValue) : '';
       }
-      out.push({ name, type, defaultValue });
+      const rawId = typeof o.id === 'string' ? o.id.trim() : '';
+      const id = rawId || `legacy:${out.length}:${name}`;
+      out.push({ id, name, type, defaultValue });
     }
     return out;
   } catch {
     return [];
   }
+}
+
+/** Resolve a custom property by stable id from ruleset attribute JSON, then character attribute snapshot. */
+export function findEntityCustomPropertyDefById(
+  propertyId: string,
+  ...customPropertyJsonSources: (string | null | undefined)[]
+): EntityCustomPropertyDef | null {
+  for (const raw of customPropertyJsonSources) {
+    const list = parseEntityCustomPropertiesJson(raw);
+    const hit = list.find((p) => p.id === propertyId);
+    if (hit) return hit;
+  }
+  return null;
 }

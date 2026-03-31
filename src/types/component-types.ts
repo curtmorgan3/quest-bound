@@ -198,6 +198,8 @@ export type ComponentData = ShapeComponentData &
     animation?: string | null;
     tooltipValue?: string | null;
     tooltipAttributeId?: string | null;
+    /** When `component.attributeId` is set, optional ruleset attribute custom property id (`EntityCustomPropertyDef.id`). */
+    attributeCustomPropertyId?: string | null;
     tooltipPlacement?: 'top' | 'right' | 'bottom' | 'left';
     childWindowX?: number;
     childWindowY?: number;

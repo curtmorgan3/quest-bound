@@ -252,5 +252,11 @@ export const dbSchemaV64 = {
   characterAttributes: `${common}, characterId, attributeId, &[characterId+attributeId], scriptDisabled, customProperties`,
 };
 
+/** Schema for v65: characterAttributes.attributeCustomPropertyValues (per-character custom field values). */
+export const dbSchemaV65 = {
+  ...dbSchemaV64,
+  characterAttributes: `${common}, characterId, attributeId, &[characterId+attributeId], scriptDisabled, customProperties, attributeCustomPropertyValues`,
+};
+
 // latestDbSchema should always be used for the worker thread db instance
-export const latestDbSchema = { ...dbSchemaV64 };
+export const latestDbSchema = { ...dbSchemaV65 };

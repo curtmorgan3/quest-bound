@@ -1,5 +1,6 @@
 import { softDeletePatch } from '@/lib/data/soft-delete';
 import type { Attribute } from '@/types';
+import { mergeAttributeCustomPropertyValuesForSchemaJson } from '@/utils/attribute-custom-property-values';
 import { seedCharacterAttributeFromRulesetAttribute } from '@/utils/character-attribute-from-ruleset-attribute';
 import { getSyncState } from '@/lib/cloud/sync/sync-state';
 import type { DB } from './types';
@@ -43,6 +44,7 @@ export function registerAttributeDbHooks(db: DB) {
             .toArray();
           const characterAttribute = characterAttributes[0];
           if (characterAttribute) {
+            const nextCustomPropsJson = mods.customProperties ?? obj.customProperties;
             await db.characterAttributes.update(characterAttribute.id, {
               title: mods.title ?? obj.title,
               defaultValue: mods.defaultValue ?? obj.defaultValue,
@@ -56,7 +58,11 @@ export function registerAttributeDbHooks(db: DB) {
                 mods.optionsChartColumnHeader ?? obj.optionsChartColumnHeader,
               category: mods.category ?? obj.category,
               allowMultiSelect: mods.allowMultiSelect ?? obj.allowMultiSelect,
-              customProperties: mods.customProperties ?? obj.customProperties,
+              customProperties: nextCustomPropsJson,
+              attributeCustomPropertyValues: mergeAttributeCustomPropertyValuesForSchemaJson(
+                characterAttribute.attributeCustomPropertyValues,
+                nextCustomPropsJson,
+              ),
               updatedAt: now,
             });
           }

@@ -1,6 +1,7 @@
 import { useAttributes } from '@/lib/compass-api';
 import { CharacterContext } from '@/stores';
 import type { AttributeType, Component, ComponentData } from '@/types';
+import { findEntityCustomPropertyDefById } from '@/utils/parse-entity-custom-properties-json';
 import { useContext, useMemo } from 'react';
 import { ComponentTypes } from '../nodes';
 import { injectCharacterData } from './inject-character-data';
@@ -78,14 +79,29 @@ export const useNodeData = (component: Component): NodeData => {
       ? characterComponentData[component.id]
       : null;
 
-    const attributeType: AttributeType = rulesetAttribute?.type ?? 'string';
+    const customPropertyId = componentData.attributeCustomPropertyId ?? null;
+    const customDef =
+      attributeId && customPropertyId
+        ? findEntityCustomPropertyDefById(
+            customPropertyId,
+            rulesetAttribute?.customProperties,
+            characterAttribute?.customProperties,
+          )
+        : null;
+
+    const attributeType: AttributeType = customDef
+      ? (customDef.type as AttributeType)
+      : (rulesetAttribute?.type ?? 'string');
 
     let value =
-      characterAttribute?.value ??
-      characterComponentDataValue ??
-      rulesetAttribute?.defaultValue ??
-      componentData.value ??
-      '';
+      customDef != null && customPropertyId
+        ? (characterAttribute?.attributeCustomPropertyValues?.[customPropertyId] ??
+            customDef.defaultValue)
+        : (characterAttribute?.value ??
+          characterComponentDataValue ??
+          rulesetAttribute?.defaultValue ??
+          componentData.value ??
+          '');
 
     value = coerceValueByComponentType(value, component, attributeType, componentData);
 
@@ -100,6 +116,10 @@ export const useNodeData = (component: Component): NodeData => {
     }
 
     let name = characterAttribute?.title ?? rulesetAttribute?.title;
+    if (customDef) {
+      const base = characterAttribute?.title ?? rulesetAttribute?.title ?? '';
+      name = base ? `${base} · ${customDef.name}` : customDef.name;
+    }
 
     if (component.type === ComponentTypes.INPUT && !component?.attributeId) {
       if (componentData?.placeholder === 'Input' && !!componentData?.type) {
@@ -121,10 +141,13 @@ export const useNodeData = (component: Component): NodeData => {
       }),
       attributeType,
       characterAttributeId: characterAttribute?.id,
-      options: characterAttribute?.options ?? rulesetAttribute?.options ?? [],
+      options:
+        customDef != null
+          ? []
+          : (characterAttribute?.options ?? rulesetAttribute?.options ?? []),
       min: characterAttribute?.min ?? rulesetAttribute?.min,
       max: characterAttribute?.max ?? rulesetAttribute?.max,
-      allowMultiSelect: rulesetAttribute?.allowMultiSelect,
+      allowMultiSelect: customDef != null ? false : rulesetAttribute?.allowMultiSelect,
     };
   }, [component, attributeId, attributes, character, getCharacterAttribute]);
 };

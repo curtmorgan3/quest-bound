@@ -2,7 +2,7 @@ import { useAttributes } from '@/lib/compass-api/hooks/rulesets/use-attributes';
 import { useCharts } from '@/lib/compass-api/hooks/rulesets/use-charts';
 import type { Attribute, EntityCustomPropertyDef } from '@/types';
 import { useEffect, useState } from 'react';
-import { parseEntityCustomPropertiesJson } from '../parse-entity-custom-properties-json';
+import { parseEntityCustomPropertiesJson } from '@/utils/parse-entity-custom-properties-json';
 
 interface UseAttributeValuesProps {
   id?: string;

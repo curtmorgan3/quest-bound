@@ -1,7 +1,7 @@
 import { useActions } from '@/lib/compass-api';
 import type { Action, EntityCustomPropertyDef } from '@/types';
 import { useEffect, useState } from 'react';
-import { parseEntityCustomPropertiesJson } from '../parse-entity-custom-properties-json';
+import { parseEntityCustomPropertiesJson } from '@/utils/parse-entity-custom-properties-json';
 
 interface UseActionValueProps {
   id?: string;

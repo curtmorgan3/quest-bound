@@ -4,6 +4,7 @@ import { useComponentCanvasDimensions } from '@/lib/compass-planes/canvas/editor
 import {
   getBackgroundStyle,
   getColorStyle,
+  getComponentData,
   useComponentStyles,
   useNodeData,
 } from '@/lib/compass-planes/utils';
@@ -49,6 +50,21 @@ const ViewCheckboxNodeComponent = ({
 
   const handleChange = () => {
     if (!characterContext) return;
+
+    const componentData = getComponentData(component);
+    const propId = componentData.attributeCustomPropertyId;
+    if (propId && data.characterAttributeId && component.attributeId) {
+      const ca = characterContext.getCharacterAttribute(component.attributeId);
+      if (ca) {
+        characterContext.updateCharacterAttribute(data.characterAttributeId, {
+          attributeCustomPropertyValues: {
+            ...(ca.attributeCustomPropertyValues ?? {}),
+            [propId]: !isChecked,
+          },
+        });
+      }
+      return;
+    }
 
     if (data.characterAttributeId) {
       characterContext.updateCharacterAttribute(data.characterAttributeId, {

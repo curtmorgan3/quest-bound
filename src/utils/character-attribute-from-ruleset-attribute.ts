@@ -1,4 +1,5 @@
 import type { Attribute, CharacterAttribute } from '@/types';
+import { initialAttributeCustomPropertyValuesFromSchemaJson } from '@/utils/attribute-custom-property-values';
 
 /**
  * Creates a new `CharacterAttribute` row from a ruleset `Attribute`, including `customProperties`
@@ -9,6 +10,8 @@ export function seedCharacterAttributeFromRulesetAttribute(
   characterId: string,
   now: string,
 ): CharacterAttribute {
+  const attributeCustomPropertyValues =
+    initialAttributeCustomPropertyValuesFromSchemaJson(attr.customProperties);
   return {
     ...attr,
     id: crypto.randomUUID(),
@@ -16,6 +19,9 @@ export function seedCharacterAttributeFromRulesetAttribute(
     attributeId: attr.id,
     value: attr.defaultValue,
     customProperties: attr.customProperties,
+    ...(attributeCustomPropertyValues != null
+      ? { attributeCustomPropertyValues }
+      : {}),
     createdAt: now,
     updatedAt: now,
   } as CharacterAttribute;

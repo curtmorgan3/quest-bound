@@ -41,7 +41,7 @@ export function EntityCustomPropertiesEditor({
     const defaultValue =
       type === 'number' ? defaultNumber : type === 'boolean' ? defaultBoolean : defaultString;
 
-    onChange([...items, { name: trimmed, type, defaultValue }]);
+    onChange([...items, { id: crypto.randomUUID(), name: trimmed, type, defaultValue }]);
     setName('');
     setDefaultString('');
     setDefaultNumber(0);
@@ -164,7 +164,7 @@ export function EntityCustomPropertiesEditor({
           ) : (
             items.map((row, index) => (
               <div
-                key={index}
+                key={row.id}
                 className='flex items-center gap-1.5 rounded-sm bg-background/80 px-1.5 py-1'>
                 <Input
                   aria-label={`Property ${index + 1} name`}

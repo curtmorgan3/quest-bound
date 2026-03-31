@@ -9,6 +9,7 @@ import { sendCampaignPlayManualCharacterUpdate } from '@/lib/campaign-play/realt
 import { getQBScriptClient } from '@/lib/compass-logic/worker';
 import { db } from '@/stores';
 import type { CharacterAttribute } from '@/types';
+import { mergeAttributeCustomPropertyValuesForSchemaJson } from '@/utils/attribute-custom-property-values';
 import { seedCharacterAttributeFromRulesetAttribute } from '@/utils/character-attribute-from-ruleset-attribute';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useCallback, useMemo, useRef } from 'react';
@@ -220,6 +221,10 @@ export const useCharacterAttributes = (
                 allowMultiSelect: attr.allowMultiSelect,
                 scriptId: attr.scriptId,
                 customProperties: attr.customProperties,
+                attributeCustomPropertyValues: mergeAttributeCustomPropertyValuesForSchemaJson(
+                  existing.attributeCustomPropertyValues,
+                  attr.customProperties,
+                ),
                 updatedAt: now,
               },
             });

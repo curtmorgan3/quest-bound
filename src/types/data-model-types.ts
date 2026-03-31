@@ -2,6 +2,8 @@ import type { BaseDetails } from './helper-types';
 
 /** Serialized as JSON array on `Action.customProperties` / `Attribute.customProperties`. */
 export type EntityCustomPropertyDef = {
+  /** Stable id for bindings (e.g. component → attribute custom field). */
+  id: string;
   name: string;
   type: 'string' | 'number' | 'boolean';
   defaultValue: string | number | boolean;
@@ -153,6 +155,8 @@ export type CharacterAttribute = Attribute & {
    * Copied when the row is created; updated when the ruleset attribute changes (test-character hooks, `syncWithRuleset`).
    */
   customProperties?: string | null;
+  /** Per-character values for entity custom properties, keyed by `EntityCustomPropertyDef.id`. */
+  attributeCustomPropertyValues?: Record<string, string | number | boolean>;
 };
 
 export type Archetype = BaseDetails & {

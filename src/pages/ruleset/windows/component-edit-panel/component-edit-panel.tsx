@@ -9,7 +9,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { AttributeLookup, useComponents, useRulesets } from '@/lib/compass-api';
+import { AttributeLookup, useAttributes, useComponents, useRulesets } from '@/lib/compass-api';
 import { ComponentTypes } from '@/lib/compass-planes/nodes';
 import {
   CheckboxDataEdit,
@@ -23,6 +23,7 @@ import { ImageDataEdit } from '@/lib/compass-planes/nodes/components/image';
 import { getComponentData } from '@/lib/compass-planes/utils';
 import { colorBlack } from '@/palette';
 import type { ConditionalRenderLogic, TextComponentData } from '@/types';
+import { parseEntityCustomPropertiesJson } from '@/utils/parse-entity-custom-properties-json';
 import { rgbToHex } from '@/utils';
 import { useEffect, useRef, useState } from 'react';
 import type { RGBColor } from 'react-color';
@@ -59,10 +60,19 @@ const COMPONENTS_TYPES_FOR_ATTR_ASSIGNMENT: string[] = [
   ComponentTypes.CONTENT,
 ];
 
+const ATTRIBUTE_CUSTOM_PROPERTY_NONE = '__none__';
+
+function stripAttributeCustomPropertyIdFromData(dataStr: string): string {
+  const d = { ...JSON.parse(dataStr) } as Record<string, unknown>;
+  delete d.attributeCustomPropertyId;
+  return JSON.stringify(d);
+}
+
 export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
   const { windowId } = useParams();
   const { components, updateComponents } = useComponents(windowId);
   const { activeRuleset } = useRulesets();
+  const { attributes } = useAttributes();
   const [customPropertiesModalOpen, setCustomPropertiesModalOpen] = useState(false);
   const [referenceLabelInput, setReferenceLabelInput] = useState('');
   const customPropertiesModalParamsRef = useRef<{
@@ -468,10 +478,82 @@ export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
                     <AttributeLookup
                       id='component-data-attribute-lookup'
                       value={selectedComponents[0].attributeId}
-                      onSelect={(attr) => handleUpdate('attributeId', attr.id)}
-                      onDelete={() => handleUpdate('attributeId', null)}
+                      onSelect={(attr) => {
+                        const c = selectedComponents[0];
+                        updateComponents([
+                          {
+                            id: c.id,
+                            attributeId: attr.id,
+                            data: stripAttributeCustomPropertyIdFromData(c.data),
+                          },
+                        ]);
+                      }}
+                      onDelete={() => {
+                        const c = selectedComponents[0];
+                        updateComponents([
+                          {
+                            id: c.id,
+                            attributeId: null,
+                            data: stripAttributeCustomPropertyIdFromData(c.data),
+                          },
+                        ]);
+                      }}
                       filterType={allAreCheckboxes ? 'boolean' : undefined}
                     />
+                    {(() => {
+                      const c = selectedComponents[0];
+                      const boundAttr = c.attributeId
+                        ? attributes.find((a) => a.id === c.attributeId)
+                        : undefined;
+                      const defs = boundAttr
+                        ? parseEntityCustomPropertiesJson(boundAttr.customProperties)
+                        : [];
+                      if (defs.length === 0) return null;
+                      const data = getComponentData(c);
+                      const storedId = data.attributeCustomPropertyId;
+                      const current =
+                        storedId && defs.some((d) => d.id === storedId)
+                          ? storedId
+                          : ATTRIBUTE_CUSTOM_PROPERTY_NONE;
+                      return (
+                        <div className='flex flex-col gap-2'>
+                          <Label
+                            htmlFor='component-attribute-custom-property'
+                            className='text-xs text-muted-foreground'>
+                            Custom property (optional)
+                          </Label>
+                          <Select
+                            value={current}
+                            onValueChange={(v) => {
+                              const nextData = { ...JSON.parse(c.data) } as Record<string, unknown>;
+                              if (v === ATTRIBUTE_CUSTOM_PROPERTY_NONE) {
+                                delete nextData.attributeCustomPropertyId;
+                              } else {
+                                nextData.attributeCustomPropertyId = v;
+                              }
+                              updateComponents([
+                                { id: c.id, data: JSON.stringify(nextData) },
+                              ]);
+                            }}>
+                            <SelectTrigger
+                              id='component-attribute-custom-property'
+                              className='h-8 w-full'>
+                              <SelectValue placeholder='Use main attribute value' />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value={ATTRIBUTE_CUSTOM_PROPERTY_NONE}>
+                                None (main attribute value)
+                              </SelectItem>
+                              {defs.map((def) => (
+                                <SelectItem key={def.id} value={def.id}>
+                                  {def.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      );
+                    })()}
                   </>
                 )}
               {selectedComponents.length === 1 && selectedComponents[0].attributeId && (
