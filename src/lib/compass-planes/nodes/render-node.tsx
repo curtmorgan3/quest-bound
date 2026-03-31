@@ -43,6 +43,8 @@ export type ViewRenderContext = {
   closeThisCharacterWindow?: () => void;
 };
 
+export { isComponentConditionallyVisible } from './decorators/conditional-render';
+
 export function renderViewComponent(
   component: Component,
   characterAttributes?: CharacterAttribute[],
@@ -174,6 +176,7 @@ export function renderViewComponent(
             component={component}
             allComponents={ctx?.allComponents ?? []}
             effectiveLayout={ctx?.effectiveLayout}
+            characterAttributes={characterAttributes}
             renderChild={
               ctx
                 ? (child) =>

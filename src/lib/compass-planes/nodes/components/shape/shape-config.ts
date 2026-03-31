@@ -7,8 +7,8 @@ export const shapeConfig: SheetComponentType = {
   description:
     'A rectangle or regular polygon. Useful for creating backgrounds and visually distinct sections.',
   type: ComponentTypes.SHAPE,
-  minWidth: DEFAULT_GRID_SIZE,
-  minHeight: DEFAULT_GRID_SIZE,
+  minWidth: 1,
+  minHeight: 1,
   defaultWidth: 3 * DEFAULT_GRID_SIZE,
   defaultHeight: 3 * DEFAULT_GRID_SIZE,
   maxHeight: 100 * DEFAULT_GRID_SIZE,

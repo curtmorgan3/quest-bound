@@ -59,12 +59,12 @@ export function isFlexLayoutGroup(component: Component): boolean {
   return getComponentData(component).layoutMode === 'flex';
 }
 
-/** True if this component is laid out inside a flex group parent (omit from root absolute list). */
-export function isFlexHostedChild(component: Component, byId: Map<string, Component>): boolean {
-  const pid = component.parentComponentId;
-  if (!pid) return false;
-  const p = byId.get(pid);
-  return p != null && isFlexLayoutGroup(p);
+/**
+ * True when this row is positioned on the sheet canvas root (no `parentComponentId`).
+ * Nested components are rendered inside their parent group so they move with flex-laid-out parents.
+ */
+export function isCanvasRootComponent(component: Component): boolean {
+  return !component.parentComponentId;
 }
 
 /** Direct children of `groupId`, sorted by stored `y` then `x` (canvas “top”). */

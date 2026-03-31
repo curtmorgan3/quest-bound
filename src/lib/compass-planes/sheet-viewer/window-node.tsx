@@ -12,13 +12,17 @@ import {
 } from 'react';
 import { Link } from 'react-router-dom';
 import { DRAG_THRESHOLD_PX } from '../canvas';
-import { renderViewComponent, type ViewRenderContext } from '../nodes';
+import {
+  isComponentConditionallyVisible,
+  renderViewComponent,
+  type ViewRenderContext,
+} from '../nodes';
 import {
   buildEffectiveLayoutMap,
   componentByIdMap,
   worldTopLeftWithEffective,
 } from '../sheet-editor/component-world-geometry';
-import { isFlexHostedChild } from '../sheet-editor/group-flex-utils';
+import { isCanvasRootComponent } from '../sheet-editor/group-flex-utils';
 import { getComponentData, useComponentPositionMap } from '../utils';
 import { useWindowCanvasSelection } from './window-canvas-selection-context';
 import { ParentWindowFrameProvider } from './parent-window-frame-context';
@@ -115,8 +119,8 @@ export const WindowNode = ({ data }: { data: WindowNodeData }) => {
   );
 
   const rootComponents = useMemo(
-    () => components.filter((c) => !isFlexHostedChild(c, byId)).sort((a, b) => a.z - b.z),
-    [byId, components],
+    () => components.filter((c) => isCanvasRootComponent(c)).sort((a, b) => a.z - b.z),
+    [components],
   );
 
   const { minX, minY, windowWidth, windowHeight } = useMemo(() => {
@@ -128,6 +132,7 @@ export const WindowNode = ({ data }: { data: WindowNodeData }) => {
     let maxR = -Infinity;
     let maxB = -Infinity;
     for (const c of components) {
+      if (!isComponentConditionallyVisible(c, characterContext?.characterAttributes)) continue;
       const eff = effectiveLayout.get(c.id);
       if (!eff) continue;
       const tl = worldTopLeftWithEffective(c, byId, effectiveLayout);
@@ -145,7 +150,7 @@ export const WindowNode = ({ data }: { data: WindowNodeData }) => {
       windowWidth: Math.max(0, maxR - minX),
       windowHeight: Math.max(0, maxB - minY),
     };
-  }, [byId, components, effectiveLayout]);
+  }, [byId, characterContext?.characterAttributes, components, effectiveLayout]);
 
   const [scalePreview, setScalePreview] = useState<number | null>(null);
   const hostRef = useRef<HTMLDivElement>(null);
@@ -176,10 +181,13 @@ export const WindowNode = ({ data }: { data: WindowNodeData }) => {
   const needsViewportEdgeAlign = useMemo(
     () =>
       rootComponents.some((c) => {
+        if (!isComponentConditionallyVisible(c, characterContext?.characterAttributes)) {
+          return false;
+        }
         const d = getComponentData(c);
         return Boolean(d.takeFullWidth || d.takeFullHeight);
       }),
-    [rootComponents],
+    [characterContext?.characterAttributes, rootComponents],
   );
 
   const scaledSheetRef = useRef<HTMLDivElement>(null);
@@ -236,11 +244,14 @@ export const WindowNode = ({ data }: { data: WindowNodeData }) => {
       getComponentCanvasRect: (componentId: string) => {
         const c = components.find((x) => x.id === componentId);
         if (!c) return null;
+        if (!isComponentConditionallyVisible(c, characterContext?.characterAttributes)) {
+          return null;
+        }
         const eff = effectiveLayout.get(c.id);
         if (!eff) return null;
         const tl = worldTopLeftWithEffective(c, byId, effectiveLayout);
         const ds = displayScale;
-        const isRoot = !isFlexHostedChild(c, byId);
+        const isRoot = isCanvasRootComponent(c);
         const rectData = getComponentData(c);
         const left =
           isRoot && rectData.takeFullWidth ? viewportEdgeInSheetPx.left : tl.x - minX;
@@ -256,6 +267,7 @@ export const WindowNode = ({ data }: { data: WindowNodeData }) => {
     }),
     [
       byId,
+      characterContext?.characterAttributes,
       components,
       displayScale,
       effectiveLayout,
@@ -511,6 +523,9 @@ export const WindowNode = ({ data }: { data: WindowNodeData }) => {
                     }
               }>
             {rootComponents.map((component) => {
+              if (!isComponentConditionallyVisible(component, characterContext?.characterAttributes)) {
+                return null;
+              }
               const pos = positionMap.get(component.id);
               const eff = effectiveLayout.get(component.id)!;
               const tl = worldTopLeftWithEffective(component, byId, effectiveLayout);

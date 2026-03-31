@@ -4,8 +4,6 @@ import {
   useComponentCanvasDimensions,
 } from '@/lib/compass-planes/canvas';
 import { useEditorItemId } from '@/lib/compass-planes/canvas/editor-item-context';
-import { sheetNodeTypes } from '../../constants';
-import { ComponentTypes } from '../../node-types';
 import type { EffectiveLayout } from '@/lib/compass-planes/sheet-editor/component-world-geometry';
 import {
   directChildrenSortedByTop,
@@ -20,9 +18,11 @@ import {
   useComponentStyles,
 } from '@/lib/compass-planes/utils';
 import { WindowEditorContext } from '@/stores';
-import type { Component, ComponentStyle } from '@/types';
+import type { CharacterAttribute, Component, ComponentStyle } from '@/types';
 import { useContext, useMemo, type ComponentType, type ReactNode } from 'react';
-import { ResizableNode } from '../../decorators';
+import { sheetNodeTypes } from '../../constants';
+import { isComponentConditionallyVisible, ResizableNode } from '../../decorators';
+import { ComponentTypes } from '../../node-types';
 
 export const EditGroupNode = () => {
   const canvasLayout = useSheetCanvasLayout();
@@ -37,8 +37,8 @@ export const EditGroupNode = () => {
   const isFlex = isFlexLayoutGroup(component);
 
   const childrenSorted = useMemo(
-    () => (isFlex ? directChildrenSortedByTop(components, component.id) : []),
-    [component.id, components, isFlex],
+    () => directChildrenSortedByTop(components, component.id),
+    [component.id, components],
   );
 
   if (isFlex) {
@@ -51,7 +51,7 @@ export const EditGroupNode = () => {
             ...getBackgroundStyle(css),
             overflow: 'hidden',
           }}>
-          <div style={groupFlexContainerStyle(css)}>
+          <div style={groupFlexContainerStyle(css)} className='p-1'>
             {canvasLayout
               ? childrenSorted.map((child) => {
                   const eff = canvasLayout.effectiveLayout.get(child.id)!;
@@ -70,15 +70,11 @@ export const EditGroupNode = () => {
                           : 'pointer-events-auto relative flex-shrink-0'
                       }
                       style={{
-                        width:
-                          viewMode && childData.takeFullWidth ? '100dvw' : eff.width,
-                        height:
-                          viewMode && childData.takeFullHeight ? '100dvh' : eff.height,
+                        width: viewMode && childData.takeFullWidth ? '100dvw' : eff.width,
+                        height: viewMode && childData.takeFullHeight ? '100dvh' : eff.height,
                       }}
                       onPointerDown={
-                        child.locked
-                          ? undefined
-                          : (e) => canvasLayout.onItemPointerDown(e, child)
+                        child.locked ? undefined : (e) => canvasLayout.onItemPointerDown(e, child)
                       }>
                       <EditorItemLayoutProvider value={{ width: eff.width, height: eff.height }}>
                         <EditorItemIdProvider id={child.id}>
@@ -98,16 +94,52 @@ export const EditGroupNode = () => {
   return (
     <ResizableNode component={component}>
       <div
-        aria-hidden
         className='box-border h-full w-full'
         style={{
+          position: 'relative',
           ...css,
           ...getBackgroundStyle(css),
           width: cw,
           height: ch,
           overflow: 'visible',
-        }}
-      />
+        }}>
+        {canvasLayout
+          ? childrenSorted.map((child) => {
+              const eff = canvasLayout.effectiveLayout.get(child.id)!;
+              const childData = getComponentData(child);
+              const Edit = sheetNodeTypes[child.type as ComponentTypes] as
+                | ComponentType
+                | undefined;
+              if (!Edit) return null;
+              return (
+                <div
+                  key={child.id}
+                  data-canvas-item={child.id}
+                  className={
+                    child.locked
+                      ? 'pointer-events-none absolute [&_*]:pointer-events-none'
+                      : 'pointer-events-auto absolute'
+                  }
+                  style={{
+                    left: eff.x,
+                    top: eff.y,
+                    width: viewMode && childData.takeFullWidth ? '100dvw' : eff.width,
+                    height: viewMode && childData.takeFullHeight ? '100dvh' : eff.height,
+                    zIndex: child.z,
+                  }}
+                  onPointerDown={
+                    child.locked ? undefined : (e) => canvasLayout.onItemPointerDown(e, child)
+                  }>
+                  <EditorItemLayoutProvider value={{ width: eff.width, height: eff.height }}>
+                    <EditorItemIdProvider id={child.id}>
+                      <Edit />
+                    </EditorItemIdProvider>
+                  </EditorItemLayoutProvider>
+                </div>
+              );
+            })
+          : null}
+      </div>
     </ResizableNode>
   );
 };
@@ -116,12 +148,14 @@ export const ViewGroupNode = ({
   component,
   allComponents,
   effectiveLayout,
+  characterAttributes,
   renderChild,
 }: {
   component: Component;
   allComponents: Component[];
   /** When set (viewer), use live width/height; else `component.width` / `height`. */
   effectiveLayout?: Map<string, EffectiveLayout>;
+  characterAttributes?: CharacterAttribute[];
   renderChild?: (child: Component) => ReactNode;
 }) => {
   const css = useComponentStyles(component) as ComponentStyle;
@@ -129,8 +163,8 @@ export const ViewGroupNode = ({
   const isFlex = isFlexLayoutGroup(component);
 
   const childrenSorted = useMemo(
-    () => (isFlex ? directChildrenSortedByTop(allComponents, component.id) : []),
-    [allComponents, component.id, isFlex],
+    () => directChildrenSortedByTop(allComponents, component.id),
+    [allComponents, component.id],
   );
 
   if (isFlex && renderChild) {
@@ -145,6 +179,9 @@ export const ViewGroupNode = ({
         }}>
         <div style={groupFlexContainerStyle(css)}>
           {childrenSorted.map((child) => {
+            if (!isComponentConditionallyVisible(child, characterAttributes)) {
+              return null;
+            }
             const eff = effectiveLayout?.get(child.id);
             const childData = getComponentData(child);
             const w = eff?.width ?? child.width;
@@ -164,6 +201,46 @@ export const ViewGroupNode = ({
             );
           })}
         </div>
+      </div>
+    );
+  }
+
+  if (renderChild) {
+    return (
+      <div
+        className='component-group pointer-events-auto box-border'
+        style={{
+          position: 'relative',
+          ...groupOuterChromeStyle(css, cw, ch),
+          ...getBackgroundStyle(css),
+          overflow: 'visible',
+        }}>
+        {childrenSorted.map((child) => {
+          if (!isComponentConditionallyVisible(child, characterAttributes)) {
+            return null;
+          }
+          const eff = effectiveLayout?.get(child.id);
+          const childData = getComponentData(child);
+          const w = eff?.width ?? child.width;
+          const h = eff?.height ?? child.height;
+          const x = eff?.x ?? child.x;
+          const y = eff?.y ?? child.y;
+          return (
+            <div
+              key={child.id}
+              className='pointer-events-auto'
+              style={{
+                position: 'absolute',
+                left: x,
+                top: y,
+                width: childData.takeFullWidth ? '100dvw' : w,
+                height: childData.takeFullHeight ? '100dvh' : h,
+                zIndex: child.z,
+              }}>
+              {renderChild(child)}
+            </div>
+          );
+        })}
       </div>
     );
   }

@@ -47,6 +47,46 @@ function evaluateLogic(
   }
 }
 
+/**
+ * Mirrors {@link NodeConditionalRender}: when false, the component should not appear in the DOM
+ * (call sites must omit layout wrappers, not only inner content).
+ */
+export function isComponentConditionallyVisible(
+  component: Component,
+  characterAttributes: CharacterAttribute[] | undefined,
+  componentData?: ComponentData,
+): boolean {
+  const data = componentData ?? getComponentData(component);
+  const attributeId = data.conditionalRenderAttributeId;
+  const logic = data.conditionalRenderLogic;
+
+  if (!attributeId) {
+    return true;
+  }
+
+  if (!characterAttributes?.length) {
+    return true;
+  }
+
+  const conditionAttribute = characterAttributes.find(
+    (attr) => attr.attributeId === attributeId,
+  );
+
+  if (conditionAttribute == null) {
+    return true;
+  }
+
+  if (logic) {
+    return evaluateLogic(conditionAttribute.value, logic);
+  }
+
+  if (conditionAttribute.value === false) {
+    return false;
+  }
+
+  return true;
+}
+
 interface NodeConditionalRenderProps {
   children: ReactNode;
   component: Component;
@@ -60,35 +100,8 @@ export const NodeConditionalRender = ({
   characterAttributes,
   componentData,
 }: NodeConditionalRenderProps) => {
-  const data = componentData ?? getComponentData(component);
-  const attributeId = data.conditionalRenderAttributeId;
-  const logic = data.conditionalRenderLogic;
-
-  if (!attributeId) {
-    return <>{children}</>;
-  }
-
-  if (!characterAttributes?.length) {
-    return <>{children}</>;
-  }
-
-  const conditionAttribute = characterAttributes.find(
-    (attr) => attr.attributeId === attributeId,
-  );
-
-  if (conditionAttribute == null) {
-    return <>{children}</>;
-  }
-
-  if (logic) {
-    const passes = evaluateLogic(conditionAttribute.value, logic);
-    if (!passes) return null;
-    return <>{children}</>;
-  }
-
-  if (conditionAttribute.value === false) {
+  if (!isComponentConditionallyVisible(component, characterAttributes, componentData)) {
     return null;
   }
-
   return <>{children}</>;
 };

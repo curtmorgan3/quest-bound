@@ -65,6 +65,47 @@ export function collectDescendantComponentIds(components: Component[], rootId: s
   return out;
 }
 
+/** True if `descendantId` is a strict descendant of `ancestorId` in the `parentComponentId` chain. */
+export function isComponentDescendantOf(
+  byId: Map<string, Component>,
+  descendantId: string,
+  ancestorId: string,
+): boolean {
+  if (descendantId === ancestorId) return false;
+  let cur = byId.get(descendantId);
+  const seen = new Set<string>();
+  while (cur?.parentComponentId) {
+    if (cur.parentComponentId === ancestorId) return true;
+    if (seen.has(cur.id)) break;
+    seen.add(cur.id);
+    cur = byId.get(cur.parentComponentId);
+    if (seen.size > 4096) break;
+  }
+  return false;
+}
+
+/**
+ * Outermost component on the path from `c` to the canvas root whose id is in `selectedMovableIds`.
+ * Used so dragging any selected nested item moves the whole selected subtree from the top.
+ */
+export function topmostSelectedMovableAncestor(
+  c: Component,
+  selectedMovableIds: Set<string>,
+  byId: Map<string, Component>,
+): Component | null {
+  let top: Component | null = null;
+  let walk: Component | null = c;
+  while (walk?.parentComponentId) {
+    const p = byId.get(walk.parentComponentId);
+    if (!p) break;
+    if (selectedMovableIds.has(p.id)) {
+      top = p;
+    }
+    walk = p;
+  }
+  return top;
+}
+
 /** Axis-aligned world-space bounds of every node in the subtree rooted at `rootId`. */
 export function subtreeWorldAabb(
   rootId: string,
@@ -109,6 +150,87 @@ export function expandDeleteIds(components: Component[], requestedIds: string[])
     }
   }
   return [...out];
+}
+
+/**
+ * Every component that should be on the clipboard when copying the current selection:
+ * each selected row plus all descendants via `parentComponentId`.
+ */
+export function expandSelectedComponentsWithDescendants(
+  components: Component[],
+  selected: Component[],
+): Component[] {
+  if (selected.length === 0) return [];
+  const allIds = new Set<string>();
+  for (const c of selected) {
+    for (const id of collectDescendantComponentIds(components, c.id)) {
+      allIds.add(id);
+    }
+  }
+  return components.filter((c) => allIds.has(c.id));
+}
+
+function depthWithinCopiedSubtree(
+  c: Component,
+  byId: Map<string, Component>,
+  idSet: Set<string>,
+): number {
+  let d = 0;
+  let cur: Component | undefined = c;
+  const seen = new Set<string>();
+  while (cur?.parentComponentId && idSet.has(cur.parentComponentId)) {
+    if (seen.has(cur.id)) break;
+    seen.add(cur.id);
+    d += 1;
+    cur = byId.get(cur.parentComponentId);
+    if (d > 4096) break;
+  }
+  return d;
+}
+
+/**
+ * Clone a clipboard snapshot (already subtree-expanded) with new ids, remapped parents/groups,
+ * and a canvas offset applied only to paste roots (nodes whose parent is not in the snapshot).
+ */
+export function remapCopiedComponentsForPaste(
+  source: Component[],
+  offsetX: number,
+  offsetY: number,
+): Partial<Component>[] {
+  if (source.length === 0) return [];
+  const byId = componentByIdMap(source);
+  const idSet = new Set(source.map((c) => c.id));
+  const idMap = new Map<string, string>();
+  for (const id of idSet) {
+    idMap.set(id, crypto.randomUUID());
+  }
+
+  const sorted = [...source].sort((a, b) => {
+    const da = depthWithinCopiedSubtree(a, byId, idSet);
+    const db = depthWithinCopiedSubtree(b, byId, idSet);
+    if (da !== db) return da - db;
+    return a.id.localeCompare(b.id);
+  });
+
+  return sorted.map((c) => {
+    const newId = idMap.get(c.id)!;
+    const mappedParent =
+      c.parentComponentId && idSet.has(c.parentComponentId)
+        ? idMap.get(c.parentComponentId)!
+        : null;
+    const mappedGroupId =
+      c.groupId && idSet.has(c.groupId) ? idMap.get(c.groupId)! : (c.groupId ?? null);
+    const isPasteRoot = !c.parentComponentId || !idSet.has(c.parentComponentId);
+    return {
+      ...c,
+      id: newId,
+      parentComponentId: mappedParent,
+      groupId: mappedGroupId,
+      x: isPasteRoot ? c.x + offsetX : c.x,
+      y: isPasteRoot ? c.y + offsetY : c.y,
+      selected: false,
+    };
+  });
 }
 
 /**

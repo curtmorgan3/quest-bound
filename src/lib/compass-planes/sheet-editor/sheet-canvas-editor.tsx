@@ -23,7 +23,10 @@ import {
   useMarqueeSelection,
   usePointerDrag,
 } from '../canvas';
-import { isAdditiveEditorSelection } from '../canvas/selection-modifiers';
+import {
+  type EditorSelectionPointerModifiers,
+  isAdditiveEditorSelection,
+} from '../canvas/selection-modifiers';
 import { DEFAULT_GRID_SIZE } from '../editor-config';
 import { sheetNodeTypes, type EditorMenuOption } from '../nodes';
 import { ComponentTypes } from '../nodes/node-types';
@@ -33,18 +36,21 @@ import {
   buildEffectiveLayoutMap,
   componentByIdMap,
   expandDeleteIds,
+  isComponentDescendantOf,
+  topmostSelectedMovableAncestor,
   worldTopLeftWithEffective,
 } from './component-world-geometry';
 import {
   deepestSelectedAncestorGroup,
-  isFlexHostedChild,
+  isCanvasRootComponent,
   outermostGroupRoot,
 } from './group-flex-utils';
 import {
   canonicalizeMarqueeHitIds,
-  updatesForClickSelection,
+  computeClickSelectionWithDrill,
   updatesForMarqueeSelection,
   updatesToClearSelection,
+  type SelectionDrillState,
 } from './selection-updates';
 import { SheetCanvasLayoutContext } from './sheet-canvas-layout-context';
 
@@ -92,6 +98,7 @@ export function SheetCanvasEditor({
   const canvasRootRef = useRef<HTMLDivElement>(null);
   const componentsRef = useRef(components);
   componentsRef.current = components;
+  const selectionDrillRef = useRef<SelectionDrillState | null>(null);
   const opacity = !backgroundColor && !backgroundImage ? 1 : (backgroundOpacity ?? 0.1);
   const longPressTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const touchPositionRef = useRef<{ x: number; y: number } | null>(null);
@@ -251,6 +258,20 @@ export function SheetCanvasEditor({
     }
   }, [components, resizePreview]);
 
+  const applyCanvasTapSelection = useCallback(
+    (comps: Component[], clickedId: string, modifiers: EditorSelectionPointerModifiers) => {
+      const { updates, nextDrillState } = computeClickSelectionWithDrill(
+        comps,
+        clickedId,
+        modifiers,
+        selectionDrillRef.current,
+      );
+      if (updates.length) onComponentsUpdated(updates);
+      selectionDrillRef.current = nextDrillState;
+    },
+    [onComponentsUpdated],
+  );
+
   const getSelectableItems = useCallback(
     () =>
       components.map((c) => {
@@ -283,12 +304,14 @@ export function SheetCanvasEditor({
     viewScale: resolvedViewScale,
     getItems: getSelectableItems,
     onComplete: (hitIds, modifiers) => {
+      selectionDrillRef.current = null;
       const canonicalHits = canonicalizeMarqueeHitIds(components, hitIds);
       const updates = updatesForMarqueeSelection(components, canonicalHits, modifiers);
       if (updates.length) onComponentsUpdated(updates);
     },
     onMicroDrag: (modifiers) => {
       if (!isAdditiveEditorSelection(modifiers)) {
+        selectionDrillRef.current = null;
         const updates = updatesToClearSelection(components);
         if (updates.length) onComponentsUpdated(updates);
       }
@@ -308,6 +331,7 @@ export function SheetCanvasEditor({
       if (root) {
         add = clampTopLeftInRect(add.x, add.y, 1, 1, root.clientWidth, root.clientHeight);
       }
+      selectionDrillRef.current = null;
       const clearUpdates = updatesToClearSelection(components);
       if (clearUpdates.length) onComponentsUpdated(clearUpdates);
       setAddComponentPanel({ add });
@@ -350,14 +374,20 @@ export function SheetCanvasEditor({
       const skipMoveStart = Boolean(t.closest('[data-no-canvas-drag], .nodrag'));
       // Rich inner controls: keep immediate selection so focus/clicks behave normally.
       if (skipMoveStart) {
-        const updates = updatesForClickSelection(components, c.id, e);
-        if (updates.length) onComponentsUpdated(updates);
+        applyCanvasTapSelection(components, c.id, {
+          shiftKey: e.shiftKey,
+          metaKey: e.metaKey,
+          ctrlKey: e.ctrlKey,
+        });
         return;
       }
 
       const deferredSelectionOnTap = (ev: PointerEvent) => {
-        const updates = updatesForClickSelection(componentsRef.current, c.id, ev);
-        if (updates.length) onComponentsUpdated(updates);
+        applyCanvasTapSelection(componentsRef.current, c.id, {
+          shiftKey: ev.shiftKey,
+          metaKey: ev.metaKey,
+          ctrlKey: ev.ctrlKey,
+        });
       };
 
       const wasSelected = Boolean(c.selected);
@@ -376,30 +406,53 @@ export function SheetCanvasEditor({
         });
       } else {
         const movableSelected = components.filter((x) => x.selected && !x.locked);
-        const selectedIds = new Set(movableSelected.map((x) => x.id));
-        const rootsOnly = movableSelected.filter(
-          (x) => !x.parentComponentId || !selectedIds.has(x.parentComponentId),
-        );
-        const followers =
-          c.selected && rootsOnly.length > 1
-            ? rootsOnly
-                .filter((x) => x.id !== c.id)
-                .map((x) => ({
-                  id: x.id,
-                  x: movePreviewById[x.id]?.x ?? x.x,
-                  y: movePreviewById[x.id]?.y ?? x.y,
-                }))
-            : undefined;
-        beginMove(e, {
-          id: c.id,
-          x: movePreviewById[c.id]?.x ?? c.x,
-          y: movePreviewById[c.id]?.y ?? c.y,
-          followers,
-          deferredSelectionOnTap,
-        });
+        const movableIds = new Set(movableSelected.map((x) => x.id));
+
+        const dragLeaderFromAncestor =
+          c.selected && !c.locked
+            ? topmostSelectedMovableAncestor(c, movableIds, byId)
+            : null;
+
+        if (dragLeaderFromAncestor) {
+          const followers = movableSelected
+            .filter(
+              (x) =>
+                x.id !== dragLeaderFromAncestor.id &&
+                !isComponentDescendantOf(byId, x.id, dragLeaderFromAncestor.id),
+            )
+            .map((x) => ({
+              id: x.id,
+              x: movePreviewById[x.id]?.x ?? x.x,
+              y: movePreviewById[x.id]?.y ?? x.y,
+            }));
+          beginMove(e, {
+            id: dragLeaderFromAncestor.id,
+            x: movePreviewById[dragLeaderFromAncestor.id]?.x ?? dragLeaderFromAncestor.x,
+            y: movePreviewById[dragLeaderFromAncestor.id]?.y ?? dragLeaderFromAncestor.y,
+            followers: followers.length ? followers : undefined,
+            deferredSelectionOnTap,
+          });
+        } else {
+          const followers = movableSelected
+            .filter(
+              (x) => x.id !== c.id && !isComponentDescendantOf(byId, x.id, c.id),
+            )
+            .map((x) => ({
+              id: x.id,
+              x: movePreviewById[x.id]?.x ?? x.x,
+              y: movePreviewById[x.id]?.y ?? x.y,
+            }));
+          beginMove(e, {
+            id: c.id,
+            x: movePreviewById[c.id]?.x ?? c.x,
+            y: movePreviewById[c.id]?.y ?? c.y,
+            followers: followers.length ? followers : undefined,
+            deferredSelectionOnTap,
+          });
+        }
       }
     },
-    [beginMove, byId, components, movePreviewById, onComponentsUpdated],
+    [applyCanvasTapSelection, beginMove, byId, components, movePreviewById, onComponentsUpdated],
   );
 
   useKeyListeners({
@@ -522,7 +575,7 @@ export function SheetCanvasEditor({
               className='pointer-events-none absolute inset-0 z-[2]'
               style={{ touchAction: 'manipulation' }}>
               {sorted.map((c) => {
-                if (isFlexHostedChild(c, byId)) return null;
+                if (!isCanvasRootComponent(c)) return null;
                 const Edit = sheetNodeTypes[c.type as ComponentTypes] as ComponentType | undefined;
                 if (!Edit) return null;
                 const eff = effectiveLayout.get(c.id)!;
