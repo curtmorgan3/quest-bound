@@ -579,7 +579,8 @@ export class ScriptRunner {
         key.startsWith('characterAttribute:') ||
         key.startsWith('characterAttributeMax:') ||
         key.startsWith('characterAttributeMin:') ||
-        key.startsWith('characterAttributeOptions:');
+        key.startsWith('characterAttributeOptions:') ||
+        key.startsWith('characterAttributeEntityCustomProps:');
       if (match) {
         const characterAttributeId = key.split(':')[1];
         const charAttr = this.characterAttributesCache.get(characterAttributeId);
@@ -780,6 +781,16 @@ export class ScriptRunner {
         await db.characterAttributes.update(id, { min: value, updatedAt: now });
       } else if (type === 'characterAttributeOptions') {
         await db.characterAttributes.update(id, { options: value, updatedAt: now });
+      } else if (type === 'characterAttributeEntityCustomProps') {
+        const patch = value as {
+          customProperties: string | null;
+          attributeCustomPropertyValues: Record<string, string | number | boolean>;
+        };
+        await db.characterAttributes.update(id, {
+          customProperties: patch.customProperties,
+          attributeCustomPropertyValues: patch.attributeCustomPropertyValues,
+          updatedAt: now,
+        });
       } else if (type === 'inventoryAdd') {
         const items = value as (InventoryItem & { _inventoryRefLabel?: string })[];
         for (const item of items) {

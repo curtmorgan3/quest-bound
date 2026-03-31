@@ -1,5 +1,11 @@
 import type { Attribute, CharacterAttribute } from '@/types';
+import { parseEntityCustomPropertiesJson } from '@/utils/parse-entity-custom-properties-json';
 import type { StructuredCloneSafe } from '../structured-clone-safe';
+
+type EntityCustomPropsPending = {
+  customProperties: string | null;
+  attributeCustomPropertyValues: Record<string, string | number | boolean>;
+};
 
 /**
  * Proxy object for character attributes, providing methods to read and modify attribute values.
@@ -60,6 +66,128 @@ export class AttributeProxy implements StructuredCloneSafe {
   /**
    * Set the attribute to a new value.
    */
+  private entityCustomPropsKey(): string {
+    return `characterAttributeEntityCustomProps:${this.characterAttribute.id}`;
+  }
+
+  private getMergedEntityCustomState(): EntityCustomPropsPending {
+    const key = this.entityCustomPropsKey();
+    if (this.pendingUpdates.has(key)) {
+      const p = this.pendingUpdates.get(key) as EntityCustomPropsPending;
+      return {
+        customProperties: p.customProperties ?? null,
+        attributeCustomPropertyValues: { ...p.attributeCustomPropertyValues },
+      };
+    }
+    return {
+      customProperties: this.characterAttribute.customProperties ?? null,
+      attributeCustomPropertyValues: {
+        ...(this.characterAttribute.attributeCustomPropertyValues ?? {}),
+      },
+    };
+  }
+
+  /** Schema JSON for defs: character snapshot when present, else ruleset attribute. */
+  private schemaJsonForMerged(merged: EntityCustomPropsPending): string | null {
+    const c = merged.customProperties;
+    if (c != null && c.trim() !== '') return c;
+    const a = this.attribute.customProperties;
+    if (a != null && a.trim() !== '') return a;
+    return null;
+  }
+
+  private inferEntityPropType(newValue: unknown): 'string' | 'number' | 'boolean' {
+    if (typeof newValue === 'boolean') return 'boolean';
+    if (typeof newValue === 'number' && Number.isFinite(newValue)) return 'number';
+    if (typeof newValue === 'string') {
+      const t = newValue.trim().toLowerCase();
+      if (t === 'true' || t === 'false') return 'boolean';
+      const n = Number(newValue);
+      if (newValue.trim() !== '' && Number.isFinite(n)) return 'number';
+    }
+    return 'string';
+  }
+
+  private coerceEntityPropValue(
+    type: 'string' | 'number' | 'boolean',
+    newValue: unknown,
+  ): string | number | boolean {
+    if (type === 'number') {
+      const n =
+        typeof newValue === 'string' ? parseFloat(newValue) : Number(newValue);
+      return Number.isFinite(n) ? n : 0;
+    }
+    if (type === 'boolean') {
+      if (typeof newValue === 'string') return newValue.toLowerCase() === 'true';
+      return Boolean(newValue);
+    }
+    return newValue != null ? String(newValue) : '';
+  }
+
+  private commitEntityCustomPropsState(next: EntityCustomPropsPending): void {
+    const key = this.entityCustomPropsKey();
+    this.pendingUpdates.set(key, {
+      customProperties: next.customProperties,
+      attributeCustomPropertyValues: { ...next.attributeCustomPropertyValues },
+    });
+    this.characterAttribute.customProperties = next.customProperties;
+    this.characterAttribute.attributeCustomPropertyValues = {
+      ...next.attributeCustomPropertyValues,
+    };
+  }
+
+  /**
+   * Read a character attribute entity custom property by name (trimmed, case-sensitive).
+   * Returns null if no definition exists with that name.
+   */
+  getProperty(name: string): string | number | boolean | null {
+    const trimmed = name.trim();
+    if (!trimmed) return null;
+    const merged = this.getMergedEntityCustomState();
+    const defs = parseEntityCustomPropertiesJson(this.schemaJsonForMerged(merged));
+    const def = defs.find((d) => d.name.trim() === trimmed);
+    if (!def) return null;
+    const stored = merged.attributeCustomPropertyValues[def.id];
+    if (stored !== undefined) return stored;
+    return def.defaultValue;
+  }
+
+  /**
+   * Set a character attribute entity custom property by name.
+   * If no definition exists, appends one to the character snapshot with type/default derived from the value.
+   */
+  setProperty(name: string, value: unknown): void {
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    const merged = this.getMergedEntityCustomState();
+    const schemaJson = this.schemaJsonForMerged(merged);
+    let defs = parseEntityCustomPropertiesJson(schemaJson);
+    let def = defs.find((d) => d.name.trim() === trimmed);
+    let nextCustomProperties = merged.customProperties ?? null;
+
+    if (!def) {
+      const type = this.inferEntityPropType(value);
+      const coerced = this.coerceEntityPropValue(type, value);
+      def = {
+        id: crypto.randomUUID(),
+        name: trimmed,
+        type,
+        defaultValue: coerced,
+      };
+      defs = [...defs, def];
+      nextCustomProperties = JSON.stringify(defs);
+    }
+
+    const coercedValue = this.coerceEntityPropValue(def.type, value);
+    this.commitEntityCustomPropsState({
+      customProperties: nextCustomProperties,
+      attributeCustomPropertyValues: {
+        ...merged.attributeCustomPropertyValues,
+        [def.id]: coercedValue,
+      },
+    });
+  }
+
   set(newValue: any): void {
     const key = `characterAttribute:${this.characterAttribute.id}`;
     // When set programmatically from a chart, numbers and bools can be passed as strings

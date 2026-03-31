@@ -250,6 +250,103 @@ describe('AttributeProxy', () => {
       expect(() => proxy.setToMax()).toThrow('has no max value defined');
     });
 
+    it('should return null for unknown custom property name', () => {
+      const attribute: Attribute = {
+        id: 'attr5',
+        rulesetId: 'ruleset1',
+        title: 'Notes',
+        description: '',
+        type: 'string',
+        defaultValue: '',
+        createdAt: '2024-01-01',
+        updatedAt: '2024-01-01',
+        customProperties: JSON.stringify([
+          { id: 'p1', name: 'Rank', type: 'number', defaultValue: 0 },
+        ]),
+      };
+      const characterAttribute: CharacterAttribute = {
+        ...attribute,
+        characterId: 'char1',
+        attributeId: 'attr5',
+        value: '',
+        attributeCustomPropertyValues: { p1: 3 },
+      };
+      const proxy = new AttributeProxy(characterAttribute, attribute, pendingUpdates);
+      expect(proxy.getProperty('Rank')).toBe(3);
+      expect(proxy.getProperty('Missing')).toBeNull();
+      expect(proxy.getProperty('')).toBeNull();
+    });
+
+    it('should setProperty update value and queue pending entity custom props', () => {
+      const attribute: Attribute = {
+        id: 'attr6',
+        rulesetId: 'ruleset1',
+        title: 'Notes',
+        description: '',
+        type: 'string',
+        defaultValue: '',
+        createdAt: '2024-01-01',
+        updatedAt: '2024-01-01',
+        customProperties: JSON.stringify([
+          { id: 'p1', name: 'Rank', type: 'number', defaultValue: 0 },
+        ]),
+      };
+      const characterAttribute: CharacterAttribute = {
+        ...attribute,
+        characterId: 'char1',
+        attributeId: 'attr6',
+        value: '',
+        attributeCustomPropertyValues: {},
+      };
+      const proxy = new AttributeProxy(characterAttribute, attribute, pendingUpdates);
+      proxy.setProperty('Rank', '5');
+      expect(proxy.getProperty('Rank')).toBe(5);
+      const key = `characterAttributeEntityCustomProps:${characterAttribute.id}`;
+      expect(pendingUpdates.get(key)).toEqual({
+        customProperties: attribute.customProperties ?? null,
+        attributeCustomPropertyValues: { p1: 5 },
+      });
+    });
+
+    it('should setProperty add new def when name not in schema', () => {
+      const attribute: Attribute = {
+        id: 'attr7',
+        rulesetId: 'ruleset1',
+        title: 'Notes',
+        description: '',
+        type: 'string',
+        defaultValue: '',
+        createdAt: '2024-01-01',
+        updatedAt: '2024-01-01',
+      };
+      const characterAttribute: CharacterAttribute = {
+        ...attribute,
+        characterId: 'char1',
+        attributeId: 'attr7',
+        value: '',
+      };
+      const proxy = new AttributeProxy(characterAttribute, attribute, pendingUpdates);
+      proxy.setProperty('Tag', 'hello');
+      expect(proxy.getProperty('Tag')).toBe('hello');
+      const key = `characterAttributeEntityCustomProps:${characterAttribute.id}`;
+      const pending = pendingUpdates.get(key) as {
+        customProperties: string;
+        attributeCustomPropertyValues: Record<string, string>;
+      };
+      expect(pending.customProperties).toBeTruthy();
+      const defs = JSON.parse(pending.customProperties) as Array<{
+        id: string;
+        name: string;
+        type: string;
+        defaultValue: string;
+      }>;
+      expect(defs).toHaveLength(1);
+      expect(defs[0]!.name).toBe('Tag');
+      expect(defs[0]!.type).toBe('string');
+      expect(defs[0]!.defaultValue).toBe('hello');
+      expect(pending.attributeCustomPropertyValues[defs[0]!.id]).toBe('hello');
+    });
+
     it('should throw error when accessing min on attribute without min', () => {
       const attribute: Attribute = {
         id: 'attr4',

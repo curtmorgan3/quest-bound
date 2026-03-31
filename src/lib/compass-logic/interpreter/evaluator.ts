@@ -1,9 +1,69 @@
 import type { PromptFn, PromptInputFn, PromptMultipleFn, RollFn, RollSplitFn, SelectCharacterFn, SelectCharactersFn } from '@/types';
 import { parseDiceExpression, rollDie } from '@/utils/dice-utils';
+import { AttributeProxy } from '../runtime/proxies/attribute-proxy';
+import { ItemInstanceProxy } from '../runtime/proxies/item-instance-proxy';
 import { prepareForStructuredClone } from '../runtime/structured-clone-safe';
 import type { ASTNode, BinaryOp, MemberAssignment, ObjectLiteral } from './ast';
 import { blockStatementsToSource } from './ast-to-source';
 import { isBuiltInArrayMethod, registerArrayMethod } from './built-ins';
+
+/** AttributeProxy members that must not be routed to entity custom `getProperty` / `setProperty`. */
+const ATTRIBUTE_PROXY_RESERVED_PROPERTIES = new Set([
+  'value',
+  'max',
+  'min',
+  'options',
+  'description',
+  'title',
+  'random',
+  'set',
+  'setMax',
+  'setMin',
+  'setOptions',
+  'resetOptions',
+  'add',
+  'subtract',
+  'multiply',
+  'divide',
+  'setToMax',
+  'setToMin',
+  'flip',
+  'setRandom',
+  'next',
+  'prev',
+  'getProperty',
+  'setProperty',
+  'constructor',
+  'toStructuredCloneSafe',
+]);
+
+/** ItemInstanceProxy members that must not be routed to item custom `getProperty` / `setProperty`. */
+const ITEM_INSTANCE_PROXY_RESERVED_PROPERTIES = new Set([
+  'title',
+  'description',
+  'quantity',
+  'count',
+  'isEquipped',
+  'destroy',
+  'setTitle',
+  'setDescription',
+  'getProperty',
+  'setProperty',
+  'addAction',
+  'removeAction',
+  'inventoryItem',
+  'item',
+  'constructor',
+  'toStructuredCloneSafe',
+]);
+
+function coerceItemInstanceSetValue(value: unknown): string | number | boolean {
+  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+    return value;
+  }
+  if (value === null || value === undefined) return '';
+  return String(value);
+}
 
 export interface EvaluatorOptions {
   /** When set, used as the script built-in roll() instead of the default local roll. */
@@ -314,6 +374,33 @@ export class Evaluator {
       throw new RuntimeError('Cannot set property on non-object');
     }
     const key = ma.property;
+
+    if (parent instanceof AttributeProxy && !ATTRIBUTE_PROXY_RESERVED_PROPERTIES.has(key)) {
+      let newVal: unknown;
+      if (compoundOperator) {
+        const oldVal = parent.getProperty(key);
+        const rhs = await this.eval(node.value);
+        newVal = this.applyBinaryOperator(compoundOperator, oldVal, rhs);
+      } else {
+        newVal = await this.eval(node.value);
+      }
+      parent.setProperty(key, newVal);
+      return newVal;
+    }
+
+    if (parent instanceof ItemInstanceProxy && !ITEM_INSTANCE_PROXY_RESERVED_PROPERTIES.has(key)) {
+      let newVal: unknown;
+      if (compoundOperator) {
+        const oldVal = parent.getProperty(key);
+        const rhs = await this.eval(node.value);
+        newVal = this.applyBinaryOperator(compoundOperator, oldVal, rhs);
+      } else {
+        newVal = await this.eval(node.value);
+      }
+      parent.setProperty(key, coerceItemInstanceSetValue(newVal));
+      return newVal;
+    }
+
     const obj = parent as Record<string, unknown>;
     let newVal: unknown;
     if (compoundOperator) {
@@ -881,10 +968,19 @@ export class Evaluator {
   }
 
   private async evalArrayAccess(node: any): Promise<any> {
-    const array = await this.eval(node.object);
+    const object = await this.eval(node.object);
     const index = await this.eval(node.index);
 
-    if (!Array.isArray(array)) {
+    if (object instanceof AttributeProxy || object instanceof ItemInstanceProxy) {
+      if (typeof index !== 'string') {
+        throw new RuntimeError(
+          'Attribute and item custom properties use bracket notation with a string key (e.g. attr["prop name"])',
+        );
+      }
+      return object.getProperty(index);
+    }
+
+    if (!Array.isArray(object)) {
       throw new RuntimeError('Cannot index non-array');
     }
 
@@ -892,11 +988,11 @@ export class Evaluator {
       throw new RuntimeError('Array index must be a number');
     }
 
-    if (index < 0 || index >= array.length) {
+    if (index < 0 || index >= object.length) {
       throw new RuntimeError(`Array index out of bounds: ${index}`);
     }
 
-    return array[index];
+    return object[index];
   }
 
   private async evalMemberAccess(node: any): Promise<any> {
@@ -906,7 +1002,15 @@ export class Evaluator {
       throw new RuntimeError(`Cannot access property '${node.property}' of ${object}`);
     }
 
-    return object[node.property];
+    const key = node.property;
+    if (object instanceof AttributeProxy && !ATTRIBUTE_PROXY_RESERVED_PROPERTIES.has(key)) {
+      return object.getProperty(key);
+    }
+    if (object instanceof ItemInstanceProxy && !ITEM_INSTANCE_PROXY_RESERVED_PROPERTIES.has(key)) {
+      return object.getProperty(key);
+    }
+
+    return object[key];
   }
 
   /**

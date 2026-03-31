@@ -419,6 +419,17 @@ Attribute scripts are reactive: they re-run when subscribed dependencies change 
 | `attr.next()`      | Set to next option (list)                 |
 | `attr.prev()`      | Set to previous option (list)             |
 
+**Entity custom properties (on the attribute definition):** Same as `getProperty` / `setProperty`, with sugar for dot, bracket, and assignment.
+
+| Syntax | Meaning |
+| ------ | ------- |
+| `attr.PropName` | `attr.getProperty('PropName')` |
+| `attr['prop name']` | `attr.getProperty('prop name')` (key must be a string) |
+| `attr.setProperty('name', value)` | Set by property name |
+| `attr.PropName = value` | `attr.setProperty('PropName', value)` |
+
+Built-in members (`value`, `max`, `set`, `add`, …) are not treated as custom property names.
+
 **Attribute subscriptions (attribute scripts only):** Declare dependencies so the script re-runs when they change. You can pass string literals or variables.
 
 ```javascript
@@ -462,13 +473,18 @@ xp_needed = getChart('Level Table').rowWhere('Level', 5).valueInColumn('XP Requi
 - `item.isEquipped` — whether the item is equipped
 - `item.isConsumable` — whether the item is consumable
 
-**Custom properties (defined on the Item):** Use `getProperty(name)` and `setProperty(name, value)` (same as character custom properties).
+**Custom properties (defined on the Item):** Use `getProperty(name)` and `setProperty(name, value)` (same as character custom properties). You can also use dot or bracket notation for reads and assignment, like attributes:
 
 ```javascript
 armor = Owner.Item('Plate Mail');
-armor_value = armor.getProperty('Armor Value'); // Read custom property (null if not found)
-Owner.Item('item name').setProperty('Armor Value', 15); // Set instance custom property
+armor_value = armor.getProperty('Armor Value'); // Read (null if not defined on the item)
+armor_value = armor['Armor Value'];           // Same, when the key is a string
+bonus = armor.Durability;                     // Same when the label is a valid identifier
+armor.Durability = 12;                        // Same as setProperty('Durability', 12)
+Owner.Item('item name').setProperty('Armor Value', 15);
 ```
+
+Built-in members (`title`, `quantity`, `getProperty`, …) are not routed to item custom properties.
 
 **Associated actions (per-instance):** Use `addAction('action name')` and `removeAction('action name')` to add or remove actions from the item's context menu. Only available when `Self` or `Caller` is an item instance (e.g. in item event scripts or when calling from an action fired from an item).
 

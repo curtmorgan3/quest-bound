@@ -2,6 +2,8 @@ import { Evaluator, RuntimeError } from '@/lib/compass-logic/interpreter/evaluat
 import { Lexer } from '@/lib/compass-logic/interpreter/lexer';
 import { Parser } from '@/lib/compass-logic/interpreter/parser';
 import { blockStatementsToSource } from '@/lib/compass-logic/interpreter/ast-to-source';
+import { AttributeProxy } from '@/lib/compass-logic/runtime/proxies/attribute-proxy';
+import type { Attribute, CharacterAttribute } from '@/types';
 import { describe, expect, it } from 'vitest';
 
 async function evaluate(source: string): Promise<any> {
@@ -901,6 +903,85 @@ arr[10]`),
 
     it('should handle assignment as expression', async () => {
       expect(await evaluate('x = 42')).toBe(42);
+    });
+  });
+
+  describe('AttributeProxy entity custom property syntax', () => {
+    function makeAttrProxy(): AttributeProxy {
+      const rulesetAttr: Attribute = {
+        id: 'a1',
+        rulesetId: 'r1',
+        title: 'HP',
+        description: '',
+        type: 'number',
+        defaultValue: 10,
+        createdAt: '2024-01-01',
+        updatedAt: '2024-01-01',
+        customProperties: JSON.stringify([
+          { id: 'cp1', name: 'Shield', type: 'number', defaultValue: 0 },
+        ]),
+      };
+      const charAttr: CharacterAttribute = {
+        ...rulesetAttr,
+        characterId: 'c1',
+        attributeId: 'a1',
+        value: 5,
+        attributeCustomPropertyValues: { cp1: 2 },
+      };
+      return new AttributeProxy(charAttr, rulesetAttr, new Map());
+    }
+
+    it('reads custom property via dot and bracket', async () => {
+      const evaluator = new Evaluator();
+      evaluator.globalEnv.define('attr', makeAttrProxy());
+      const dotAst = new Parser(new Lexer('attr.Shield').tokenize()).parse();
+      const brAst = new Parser(new Lexer('attr["Shield"]').tokenize()).parse();
+      expect(await evaluator.eval(dotAst)).toBe(2);
+      expect(await evaluator.eval(brAst)).toBe(2);
+    });
+
+    it('still uses core .value for main attribute value', async () => {
+      const evaluator = new Evaluator();
+      evaluator.globalEnv.define('attr', makeAttrProxy());
+      const ast = new Parser(new Lexer('attr.value').tokenize()).parse();
+      expect(await evaluator.eval(ast)).toBe(5);
+    });
+
+    it('setProperty method and dot assignment update custom property', async () => {
+      const pending = new Map<string, unknown>();
+      const rulesetAttr: Attribute = {
+        id: 'a1',
+        rulesetId: 'r1',
+        title: 'HP',
+        description: '',
+        type: 'number',
+        defaultValue: 10,
+        createdAt: '2024-01-01',
+        updatedAt: '2024-01-01',
+        customProperties: JSON.stringify([
+          { id: 'cp1', name: 'Shield', type: 'number', defaultValue: 0 },
+        ]),
+      };
+      const charAttr: CharacterAttribute = {
+        ...rulesetAttr,
+        characterId: 'c1',
+        attributeId: 'a1',
+        value: 5,
+        attributeCustomPropertyValues: {},
+      };
+      const proxy = new AttributeProxy(charAttr, rulesetAttr, pending);
+      const evaluator = new Evaluator();
+      evaluator.globalEnv.define('attr', proxy);
+
+      const callAst = new Parser(
+        new Lexer('attr.setProperty("Shield", 9)').tokenize(),
+      ).parse();
+      expect(await evaluator.eval(callAst)).toBeUndefined();
+      expect(proxy.getProperty('Shield')).toBe(9);
+
+      const assignAst = new Parser(new Lexer('attr.Shield = 1').tokenize()).parse();
+      expect(await evaluator.eval(assignAst)).toBe(1);
+      expect(proxy.getProperty('Shield')).toBe(1);
     });
   });
 
