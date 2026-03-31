@@ -239,5 +239,18 @@ export const dbSchemaV62 = {
   characterPages: `${common}, characterId, pageId, rulesetId, label, category, assetId, backgroundOpacity, backgroundColor, image, hideFromPlayerView, sheetFitToViewport, [characterId+pageId]`,
 };
 
+/** Schema for v63: optional customProperties JSON on actions and attributes. */
+export const dbSchemaV63 = {
+  ...dbSchemaV62,
+  actions: `${common}, rulesetId, title, description, category, scriptId, moduleId, assetId, customProperties`,
+  attributes: `${common}, rulesetId, title, description, category, type, options, defaultValue, optionsChartRef, optionsChartColumnHeader, min, max, scriptId, moduleId, assetId, customProperties`,
+};
+
+/** Schema for v64: characterAttributes.customProperties (mirrors ruleset attribute). */
+export const dbSchemaV64 = {
+  ...dbSchemaV63,
+  characterAttributes: `${common}, characterId, attributeId, &[characterId+attributeId], scriptDisabled, customProperties`,
+};
+
 // latestDbSchema should always be used for the worker thread db instance
-export const latestDbSchema = { ...dbSchemaV62 };
+export const latestDbSchema = { ...dbSchemaV64 };

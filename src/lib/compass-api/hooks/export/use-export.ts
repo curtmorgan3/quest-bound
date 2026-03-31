@@ -8,20 +8,23 @@ import { convertToTsv } from './utils';
 export const useExport = (type: 'attributes' | 'items' | 'actions') => {
   const { activeRuleset } = useActiveRuleset();
 
-  const data = useLiveQuery(() => {
-    if (!activeRuleset) return [];
+  const data = useLiveQuery<Attribute[] | Item[] | Action[] | undefined>(
+    () => {
+      if (!activeRuleset) return [];
 
-    switch (type) {
-      case 'attributes':
-        return db.attributes.where('rulesetId').equals(activeRuleset.id).toArray();
-      case 'items':
-        return db.items.where('rulesetId').equals(activeRuleset.id).toArray();
-      case 'actions':
-        return db.actions.where('rulesetId').equals(activeRuleset.id).toArray();
-      default:
-        return [];
-    }
-  }, [activeRuleset, type]);
+      switch (type) {
+        case 'attributes':
+          return db.attributes.where('rulesetId').equals(activeRuleset.id).toArray();
+        case 'items':
+          return db.items.where('rulesetId').equals(activeRuleset.id).toArray();
+        case 'actions':
+          return db.actions.where('rulesetId').equals(activeRuleset.id).toArray();
+        default:
+          return [];
+      }
+    },
+    [activeRuleset, type],
+  );
 
   const exportData = (): string | null => {
     if (!data) {

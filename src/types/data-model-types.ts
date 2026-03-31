@@ -1,5 +1,12 @@
 import type { BaseDetails } from './helper-types';
 
+/** Serialized as JSON array on `Action.customProperties` / `Attribute.customProperties`. */
+export type EntityCustomPropertyDef = {
+  name: string;
+  type: 'string' | 'number' | 'boolean';
+  defaultValue: string | number | boolean;
+};
+
 export type Action = BaseDetails & {
   rulesetId: string;
   title: string;
@@ -10,6 +17,8 @@ export type Action = BaseDetails & {
   inventoryWidth?: number;
   inventoryHeight?: number;
   scriptId?: string | null; // NEW: Associated script
+  /** JSON array of `EntityCustomPropertyDef`; null clears when updating. */
+  customProperties?: string | null;
   /** Module origin: ruleset id, source entity id, and module name. */
   moduleId?: string;
   moduleEntityId?: string;
@@ -53,6 +62,8 @@ export type Attribute = BaseDetails & {
   inventoryWidth?: number;
   inventoryHeight?: number;
   scriptId?: string | null;
+  /** JSON array of `EntityCustomPropertyDef`; null clears when updating. */
+  customProperties?: string | null;
   /** Module origin: ruleset id, source entity id, and module name. */
   moduleId?: string;
   moduleEntityId?: string;
@@ -137,6 +148,11 @@ export type CharacterAttribute = Attribute & {
   scriptDisabled?: boolean; // NEW: Player has overridden the computed value
   /** Tombstone for cloud / realtime sync; omit or false for active rows. */
   deleted?: boolean;
+  /**
+   * Snapshot of ruleset `Attribute.customProperties` (JSON array of `EntityCustomPropertyDef`).
+   * Copied when the row is created; updated when the ruleset attribute changes (test-character hooks, `syncWithRuleset`).
+   */
+  customProperties?: string | null;
 };
 
 export type Archetype = BaseDetails & {

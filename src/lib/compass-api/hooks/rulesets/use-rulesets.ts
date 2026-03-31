@@ -7,7 +7,8 @@ import {
   useArchetypeStore,
   useCurrentUser,
 } from '@/stores';
-import type { Archetype, Character, CharacterAttribute, Inventory, Ruleset } from '@/types';
+import type { Archetype, Character, Inventory, Ruleset } from '@/types';
+import { seedCharacterAttributeFromRulesetAttribute } from '@/utils/character-attribute-from-ruleset-attribute';
 import { duplicateCharacterFromTemplate } from '@/utils/duplicate-character-from-template';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useEffect, useMemo, useState } from 'react';
@@ -83,17 +84,8 @@ async function ensureTestCharactersForRulesetArchetypes(rulesetId: string, userI
     } else {
       const rulesetAttributes = await db.attributes.where('rulesetId').equals(rulesetId).toArray();
       await db.characterAttributes.bulkAdd(
-        rulesetAttributes.map(
-          (attr) =>
-            ({
-              ...attr,
-              id: crypto.randomUUID(),
-              characterId,
-              attributeId: attr.id,
-              value: attr.defaultValue,
-              createdAt: now,
-              updatedAt: now,
-            }) as CharacterAttribute,
+        rulesetAttributes.map((attr) =>
+          seedCharacterAttributeFromRulesetAttribute(attr, characterId, now),
         ),
       );
       templateCharacterId = characterId;

@@ -9,12 +9,15 @@ import {
   useRulesetPages,
   useWindows,
 } from '@/lib/compass-api';
+import { cn } from '@/lib/utils';
 import {
   AppWindow,
+  ArrowLeft,
   FileSpreadsheet,
   HandFist,
   LayoutTemplate,
   Newspaper,
+  SlidersHorizontal,
   Sword,
   UserRoundPen,
 } from 'lucide-react';
@@ -23,6 +26,7 @@ import { useLocation, useParams, useSearchParams } from 'react-router-dom';
 import { ActionCreate } from './action-create';
 import { AttributeCreate } from './attribute-create';
 import { ChartCreate } from './chart-create';
+import { EntityCustomPropertiesEditor } from './entity-custom-properties-editor';
 import { DocumentCreate } from './document-create';
 import {
   useActionValues,
@@ -78,7 +82,12 @@ export const BaseCreate = ({ onCreate, worldId, campaignId }: BaseCreateProps) =
 
   const baseProperties = { title, description, category };
 
-  const { saveAttribute, ...attributeProps } = useAttributeValues({
+  const {
+    saveAttribute,
+    entityCustomProperties: attributeEntityCustomProperties,
+    setEntityCustomProperties: setAttributeEntityCustomProperties,
+    ...attributeProps
+  } = useAttributeValues({
     id: editId || undefined,
     baseProperties,
     onCreate: () => {
@@ -89,7 +98,12 @@ export const BaseCreate = ({ onCreate, worldId, campaignId }: BaseCreateProps) =
     setCategory,
   });
 
-  const { saveAction, ...actionProps } = useActionValues({
+  const {
+    saveAction,
+    entityCustomProperties: actionEntityCustomProperties,
+    setEntityCustomProperties: setActionEntityCustomProperties,
+    ...actionProps
+  } = useActionValues({
     id: editId || undefined,
     baseProperties,
     onCreate: () => {
@@ -173,6 +187,11 @@ export const BaseCreate = ({ onCreate, worldId, campaignId }: BaseCreateProps) =
     'attributes' | 'items' | 'actions' | 'charts' | 'documents' | 'windows' | 'pages'
   >(initialType || 'attributes');
 
+  const [customPropertiesFormOpen, setCustomPropertiesFormOpen] = useState(false);
+
+  const hideBaseFieldsForCustomProperties =
+    customPropertiesFormOpen && (activeType === 'attributes' || activeType === 'actions');
+
   const existingCategories = useMemo(() => {
     const list =
       activeType === 'attributes'
@@ -200,6 +219,7 @@ export const BaseCreate = ({ onCreate, worldId, campaignId }: BaseCreateProps) =
 
   useEffect(() => {
     resetAll();
+    setCustomPropertiesFormOpen(false);
   }, [activeType]);
 
   const resetAll = () => {
@@ -296,31 +316,47 @@ export const BaseCreate = ({ onCreate, worldId, campaignId }: BaseCreateProps) =
       )}
 
       <div className='grid gap-4'>
-        <div className='w-full flex flex-row gap-4'>
-          <div className='grid gap-2 w-[50%]'>
-            <Label htmlFor='create-title'>Title</Label>
-            <Input
-              autoFocus
-              id='create-title'
-              name='title'
-              onChange={(e) => setTitle(e.target.value)}
-              value={title}
-              onKeyDown={(e) => handleKeySubmit(e)}
-            />
+        {!hideBaseFieldsForCustomProperties && (
+          <div className='w-full flex flex-row gap-4'>
+            <div className='grid gap-2 w-[50%]'>
+              <Label htmlFor='create-title'>Title</Label>
+              <Input
+                autoFocus
+                id='create-title'
+                name='title'
+                onChange={(e) => setTitle(e.target.value)}
+                value={title}
+                onKeyDown={(e) => handleKeySubmit(e)}
+              />
+            </div>
+            <div className='grid gap-3 w-[50%]'>
+              <CategoryField
+                value={category || null}
+                onChange={(v) => setCategory(v ?? '')}
+                existingCategories={existingCategories}
+                label='Category'
+              />
+            </div>
           </div>
-          <div className='grid gap-3 w-[50%]'>
-            <CategoryField
-              value={category || null}
-              onChange={(v) => setCategory(v ?? '')}
-              existingCategories={existingCategories}
-              label='Category'
-            />
-          </div>
-        </div>
-        {activeType === 'attributes' && (
+        )}
+        {activeType === 'attributes' && !customPropertiesFormOpen && (
           <AttributeCreate {...attributeProps} rulesetId={rulesetId} />
         )}
-        {activeType === 'actions' && <ActionCreate {...actionProps} rulesetId={rulesetId} />}
+        {activeType === 'attributes' && customPropertiesFormOpen && (
+          <EntityCustomPropertiesEditor
+            items={attributeEntityCustomProperties}
+            onChange={setAttributeEntityCustomProperties}
+          />
+        )}
+        {activeType === 'actions' && !customPropertiesFormOpen && (
+          <ActionCreate {...actionProps} rulesetId={rulesetId} />
+        )}
+        {activeType === 'actions' && customPropertiesFormOpen && (
+          <EntityCustomPropertiesEditor
+            items={actionEntityCustomProperties}
+            onChange={setActionEntityCustomProperties}
+          />
+        )}
         {activeType === 'items' && <ItemCreate {...itemProps} />}
         {activeType === 'charts' && <ChartCreate {...chartProps} rulesetId={rulesetId} />}
         {activeType === 'documents' && <DocumentCreate {...documentProps} rulesetId={rulesetId} />}
@@ -337,17 +373,39 @@ export const BaseCreate = ({ onCreate, worldId, campaignId }: BaseCreateProps) =
           />
         )}
 
-        <DescriptionEditor
-          id='create-description'
-          value={description}
-          onChange={(value) => setDescription(value)}
-          onSave={handleCreate}
-        />
+        {!hideBaseFieldsForCustomProperties && (
+          <DescriptionEditor
+            id='create-description'
+            value={description}
+            onChange={(value) => setDescription(value)}
+            onSave={handleCreate}
+          />
+        )}
       </div>
-      <div className='flex justify-end items-end flex-grow'>
+      <div className='flex justify-end items-end gap-2 flex-grow w-full'>
+        {(activeType === 'attributes' || activeType === 'actions') && (
+          <Button
+            type='button'
+            variant='outline'
+            size='icon'
+            className='shrink-0'
+            title={customPropertiesFormOpen ? 'Back to main fields' : 'Custom properties'}
+            aria-label={
+              customPropertiesFormOpen ? 'Back to main fields' : 'Edit custom properties'
+            }
+            aria-expanded={customPropertiesFormOpen}
+            onClick={() => setCustomPropertiesFormOpen((open) => !open)}
+            data-testid='base-create-custom-properties-toggle'>
+            {customPropertiesFormOpen ? (
+              <ArrowLeft className='size-4' />
+            ) : (
+              <SlidersHorizontal className='size-4' />
+            )}
+          </Button>
+        )}
         <Button
           type='submit'
-          className='w-full'
+          className={cn('min-w-0 flex-1')}
           onClick={handleCreate}
           disabled={!title}
           data-testid='base-create-submit'>

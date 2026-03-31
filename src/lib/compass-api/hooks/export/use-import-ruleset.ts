@@ -1105,6 +1105,10 @@ export const useImportRuleset = () => {
             min: item.min as number | undefined,
             max: item.max as number | undefined,
             image: (item.image as string)?.trim() || null,
+            customProperties:
+              item.customProperties != null && String(item.customProperties).trim() !== ''
+                ? String(item.customProperties)
+                : undefined,
             rulesetId: newRulesetId,
             createdAt: now,
             updatedAt: now,
@@ -1158,6 +1162,10 @@ export const useImportRuleset = () => {
               category: item.category as string | undefined,
               assetId: assetId || null,
               image: (item.image as string)?.trim() || null,
+              customProperties:
+                item.customProperties != null && String(item.customProperties).trim() !== ''
+                  ? String(item.customProperties)
+                  : undefined,
               rulesetId: newRulesetId,
               createdAt: now,
               updatedAt: now,

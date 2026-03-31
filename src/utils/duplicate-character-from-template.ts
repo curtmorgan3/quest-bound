@@ -1,5 +1,6 @@
 import { db } from '@/stores';
-import type { CharacterAttribute, CharacterPage, CharacterWindow, InventoryItem } from '@/types';
+import type { CharacterPage, CharacterWindow, InventoryItem } from '@/types';
+import { seedCharacterAttributeFromRulesetAttribute } from '@/utils/character-attribute-from-ruleset-attribute';
 
 /**
  * Duplicates character data from a source (template) character to a target character.
@@ -32,17 +33,8 @@ export async function duplicateCharacterFromTemplate(
     .toArray();
 
   await db.characterAttributes.bulkAdd(
-    rulesetAttributes.map(
-      (attr) =>
-        ({
-          ...attr,
-          id: crypto.randomUUID(),
-          characterId: targetCharacterId,
-          attributeId: attr.id,
-          value: attr.defaultValue,
-          createdAt: now,
-          updatedAt: now,
-        }) as CharacterAttribute,
+    rulesetAttributes.map((attr) =>
+      seedCharacterAttributeFromRulesetAttribute(attr, targetCharacterId, now),
     ),
   );
 

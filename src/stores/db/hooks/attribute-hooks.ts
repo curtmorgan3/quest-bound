@@ -1,5 +1,6 @@
 import { softDeletePatch } from '@/lib/data/soft-delete';
 import type { Attribute } from '@/types';
+import { seedCharacterAttributeFromRulesetAttribute } from '@/utils/character-attribute-from-ruleset-attribute';
 import { getSyncState } from '@/lib/cloud/sync/sync-state';
 import type { DB } from './types';
 
@@ -14,15 +15,9 @@ export function registerAttributeDbHooks(db: DB) {
         for (const archetype of archetypes) {
           const testCharacter = await db.characters.get(archetype.testCharacterId);
           if (testCharacter) {
-            await db.characterAttributes.add({
-              ...obj,
-              id: crypto.randomUUID(),
-              characterId: testCharacter.id,
-              attributeId: obj.id,
-              createdAt: now,
-              updatedAt: now,
-              value: obj.defaultValue,
-            });
+            await db.characterAttributes.add(
+              seedCharacterAttributeFromRulesetAttribute(obj, testCharacter.id, now),
+            );
           }
         }
       } catch (error) {
@@ -61,6 +56,7 @@ export function registerAttributeDbHooks(db: DB) {
                 mods.optionsChartColumnHeader ?? obj.optionsChartColumnHeader,
               category: mods.category ?? obj.category,
               allowMultiSelect: mods.allowMultiSelect ?? obj.allowMultiSelect,
+              customProperties: mods.customProperties ?? obj.customProperties,
               updatedAt: now,
             });
           }

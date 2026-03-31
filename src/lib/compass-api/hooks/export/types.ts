@@ -18,6 +18,7 @@ export const ATTRIBUTE_FIELD_TYPES: Record<string, FieldType> = {
   inventoryHeight: 'number',
   inventoryWidth: 'number',
   image: 'string',
+  customProperties: 'string',
 };
 
 export const ATTRIBUTE_COLUMNS: (keyof Attribute)[] = [
@@ -35,6 +36,7 @@ export const ATTRIBUTE_COLUMNS: (keyof Attribute)[] = [
   'inventoryWidth',
   'inventoryHeight',
   'image',
+  'customProperties',
 ];
 
 export const ITEM_FIELD_TYPES: Record<string, FieldType> = {
@@ -81,6 +83,7 @@ export const ACTION_FIELD_TYPES: Record<string, FieldType> = {
   inventoryHeight: 'number',
   inventoryWidth: 'number',
   image: 'string',
+  customProperties: 'string',
 };
 
 export const ACTION_COLUMNS: (keyof Action)[] = [
@@ -91,6 +94,7 @@ export const ACTION_COLUMNS: (keyof Action)[] = [
   'inventoryHeight',
   'inventoryWidth',
   'image',
+  'customProperties',
 ];
 
 // Extended types that include assetFilename for export

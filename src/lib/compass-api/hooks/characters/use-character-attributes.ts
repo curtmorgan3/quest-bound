@@ -9,6 +9,7 @@ import { sendCampaignPlayManualCharacterUpdate } from '@/lib/campaign-play/realt
 import { getQBScriptClient } from '@/lib/compass-logic/worker';
 import { db } from '@/stores';
 import type { CharacterAttribute } from '@/types';
+import { seedCharacterAttributeFromRulesetAttribute } from '@/utils/character-attribute-from-ruleset-attribute';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useCallback, useMemo, useRef } from 'react';
 
@@ -199,15 +200,9 @@ export const useCharacterAttributes = (
           const existing = existingByAttributeId.get(attr.id);
 
           if (!existing) {
-            toAdd.push({
-              ...attr,
-              id: crypto.randomUUID(),
-              characterId: character.id,
-              attributeId: attr.id,
-              value: attr.defaultValue,
-              createdAt: now,
-              updatedAt: now,
-            } as CharacterAttribute);
+            toAdd.push(
+              seedCharacterAttributeFromRulesetAttribute(attr, character.id, now),
+            );
           } else {
             toUpdate.push({
               id: existing.id,
@@ -224,6 +219,7 @@ export const useCharacterAttributes = (
                 category: attr.category,
                 allowMultiSelect: attr.allowMultiSelect,
                 scriptId: attr.scriptId,
+                customProperties: attr.customProperties,
                 updatedAt: now,
               },
             });

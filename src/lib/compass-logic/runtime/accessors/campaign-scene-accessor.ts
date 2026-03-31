@@ -1,6 +1,7 @@
 import type { DB } from '@/stores/db/hooks/types';
 import type {
   Archetype,
+  Attribute,
   CampaignCharacter,
   CampaignScene,
   Character,
@@ -10,6 +11,7 @@ import type {
   SceneTurnCallback,
 } from '@/types';
 import { filterNotSoftDeleted } from '@/lib/data/soft-delete';
+import { seedCharacterAttributeFromRulesetAttribute } from '@/utils/character-attribute-from-ruleset-attribute';
 import type Dexie from 'dexie';
 import {
   executeArchetypeEvent,
@@ -480,17 +482,8 @@ export class CampaignSceneAccessor {
       .equals(this.rulesetId)
       .toArray()) as any[];
 
-    const characterAttributes: CharacterAttribute[] = rulesetAttributes.map(
-      (attr: any) =>
-        ({
-          ...attr,
-          id: crypto.randomUUID(),
-          characterId,
-          attributeId: attr.id,
-          value: attr.defaultValue,
-          createdAt: now,
-          updatedAt: now,
-        }) as CharacterAttribute,
+    const characterAttributes: CharacterAttribute[] = rulesetAttributes.map((attr: Attribute) =>
+      seedCharacterAttributeFromRulesetAttribute(attr, characterId, now),
     );
 
     if (characterAttributes.length > 0) {

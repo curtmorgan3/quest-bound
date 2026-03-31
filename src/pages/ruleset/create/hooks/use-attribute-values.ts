@@ -1,7 +1,8 @@
 import { useAttributes } from '@/lib/compass-api/hooks/rulesets/use-attributes';
 import { useCharts } from '@/lib/compass-api/hooks/rulesets/use-charts';
-import type { Attribute } from '@/types';
+import type { Attribute, EntityCustomPropertyDef } from '@/types';
 import { useEffect, useState } from 'react';
+import { parseEntityCustomPropertiesJson } from '../parse-entity-custom-properties-json';
 
 interface UseAttributeValuesProps {
   id?: string;
@@ -44,6 +45,9 @@ export const useAttributeValues = ({
   const [assetId, setAssetId] = useState<string | null>(null);
   const [inventoryWidth, setInventoryWidth] = useState(2);
   const [inventoryHeight, setInventoryHeight] = useState(2);
+  const [entityCustomProperties, setEntityCustomProperties] = useState<EntityCustomPropertyDef[]>(
+    [],
+  );
 
   useEffect(() => {
     if (isEditMode && activeAttribute) {
@@ -69,6 +73,7 @@ export const useAttributeValues = ({
       } else {
         setDefaultValue(activeAttribute.defaultValue.toString());
       }
+      setEntityCustomProperties(parseEntityCustomPropertiesJson(activeAttribute.customProperties));
     } else {
       resetAll();
     }
@@ -94,6 +99,7 @@ export const useAttributeValues = ({
     setAssetId(null);
     setInventoryHeight(2);
     setInventoryWidth(2);
+    setEntityCustomProperties([]);
   };
 
   const attributeProperties: Partial<Attribute> = {
@@ -120,6 +126,11 @@ export const useAttributeValues = ({
     max: typeValue === 'number' ? max : undefined,
     inventoryHeight,
     inventoryWidth,
+    ...(entityCustomProperties.length > 0
+      ? { customProperties: JSON.stringify(entityCustomProperties) }
+      : isEditMode
+        ? { customProperties: null }
+        : {}),
   };
 
   const saveAttribute = () => {
@@ -192,5 +203,7 @@ export const useAttributeValues = ({
     inventoryHeight,
     setInventoryWidth,
     setInventoryHeight,
+    entityCustomProperties,
+    setEntityCustomProperties,
   };
 };

@@ -1,6 +1,7 @@
 import { useActions } from '@/lib/compass-api';
-import type { Action } from '@/types';
+import type { Action, EntityCustomPropertyDef } from '@/types';
 import { useEffect, useState } from 'react';
+import { parseEntityCustomPropertiesJson } from '../parse-entity-custom-properties-json';
 
 interface UseActionValueProps {
   id?: string;
@@ -32,6 +33,9 @@ export const useActionValues = ({
   const [assetId, setAssetId] = useState<string | null>(null);
   const [inventoryWidth, setInventoryWidth] = useState(2);
   const [inventoryHeight, setInventoryHeight] = useState(2);
+  const [entityCustomProperties, setEntityCustomProperties] = useState<EntityCustomPropertyDef[]>(
+    [],
+  );
 
   useEffect(() => {
     if (isEditMode && activeAction) {
@@ -42,6 +46,7 @@ export const useActionValues = ({
       setAssetId(activeAction.assetId ?? null);
       setInventoryHeight(activeAction.inventoryHeight ?? 2);
       setInventoryWidth(activeAction.inventoryWidth ?? 2);
+      setEntityCustomProperties(parseEntityCustomPropertiesJson(activeAction.customProperties));
     } else {
       resetAll();
     }
@@ -52,6 +57,7 @@ export const useActionValues = ({
     setAssetId(null);
     setInventoryWidth(2);
     setInventoryHeight(2);
+    setEntityCustomProperties([]);
   };
 
   const actionProperties: Partial<Action> = {
@@ -59,6 +65,11 @@ export const useActionValues = ({
     assetId,
     inventoryHeight,
     inventoryWidth,
+    ...(entityCustomProperties.length > 0
+      ? { customProperties: JSON.stringify(entityCustomProperties) }
+      : isEditMode
+        ? { customProperties: null }
+        : {}),
   };
 
   const saveAction = () => {
@@ -87,5 +98,7 @@ export const useActionValues = ({
     setAssetId,
     setInventoryWidth,
     setInventoryHeight,
+    entityCustomProperties,
+    setEntityCustomProperties,
   };
 };
