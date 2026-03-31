@@ -98,7 +98,5 @@ export const useActionValues = ({
     setAssetId,
     setInventoryWidth,
     setInventoryHeight,
-    entityCustomProperties,
-    setEntityCustomProperties,
   };
 };

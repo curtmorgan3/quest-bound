@@ -117,6 +117,8 @@ export type InventoryComponentData = {
   itemRestrictionRef?: string;
   actionRestrictionRef?: string;
   showItemAs?: 'image' | 'title';
+  /** When `showItemAs` is `image`, show entity label in a tooltip on hover. */
+  showLabelTooltip?: boolean;
 };
 
 export type GraphVariant = 'horizontal-linear' | 'vertical-linear' | 'circular';

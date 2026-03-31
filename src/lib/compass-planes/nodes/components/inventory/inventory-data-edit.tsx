@@ -1,5 +1,7 @@
 import { CategoryField } from '@/components/composites/category-field';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
   Select,
   SelectContent,
@@ -40,6 +42,7 @@ export const InventoryDataEdit = ({ components, updateComponents }: InventoryDat
   const cellHeight = firstComponentData?.cellHeight ?? 1;
   const categoryRestriction = firstComponentData?.categoryRestriction ?? '';
   const showItemAs = firstComponentData?.showItemAs ?? 'image';
+  const showLabelTooltip = firstComponentData?.showLabelTooltip === true;
 
   const existingCategories = useMemo(() => {
     if (!currentType) return [];
@@ -120,7 +123,24 @@ export const InventoryDataEdit = ({ components, updateComponents }: InventoryDat
 
     const updates = editableComponents.map((component) => ({
       id: component.id,
-      data: updateComponentData(component.data, { showItemAs: showItemAsValue }),
+      data: updateComponentData(component.data, {
+        showItemAs: showItemAsValue,
+        ...(showItemAsValue !== 'image' ? { showLabelTooltip: undefined } : {}),
+      }),
+    }));
+
+    await updateComponents(updates);
+    fireExternalComponentChangeEvent({ updates });
+  };
+
+  const handleShowLabelTooltipChange = async (checked: boolean) => {
+    if (editableComponents.length === 0) return;
+
+    const updates = editableComponents.map((component) => ({
+      id: component.id,
+      data: updateComponentData(component.data, {
+        showLabelTooltip: checked ? true : undefined,
+      }),
     }));
 
     await updateComponents(updates);
@@ -194,6 +214,21 @@ export const InventoryDataEdit = ({ components, updateComponents }: InventoryDat
           </SelectContent>
         </Select>
       </div>
+      {showItemAs === 'image' && (
+        <div className='flex items-center gap-2'>
+          <Checkbox
+            id='inventory-show-label-tooltip'
+            checked={showLabelTooltip}
+            onCheckedChange={(v) => handleShowLabelTooltipChange(v === true)}
+            disabled={isDisabled}
+          />
+          <Label
+            htmlFor='inventory-show-label-tooltip'
+            className='text-xs font-normal text-muted-foreground cursor-pointer'>
+            Show label tooltip on hover
+          </Label>
+        </div>
+      )}
     </div>
   );
 };

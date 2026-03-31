@@ -6,9 +6,10 @@ import {
 } from '@/lib/compass-planes/utils';
 import { CharacterContext, WindowEditorContext, useInventoryDragContext } from '@/stores';
 import type { Component, InventoryComponentData } from '@/types';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useEditorItemId } from '@/lib/compass-planes/canvas/editor-item-context';
 import { useComponentCanvasDimensions } from '@/lib/compass-planes/canvas/editor-item-layout-context';
-import { memo, useContext, useEffect, useState } from 'react';
+import { Fragment, memo, useContext, useEffect, useState } from 'react';
 import { ResizableNode } from '../../decorators';
 import { ItemContextMenu, type ContextMenuState } from './item-context-menu';
 import { useInventoryHandlers } from './use-inventory-handlers';
@@ -81,6 +82,8 @@ const ViewInventoryNodeComponent = ({ component }: { component: Component }) => 
   const gridCols = Math.floor(width / cellWidth);
   const gridRows = Math.floor(height / cellHeight);
   const showItemAs = data.showItemAs ?? 'image';
+  const showLabelTooltip =
+    showItemAs === 'image' && data.showLabelTooltip === true;
   const typeRestriction = data.typeRestriction;
   const categoryRestriction = data.categoryRestriction;
 
@@ -195,10 +198,10 @@ const ViewInventoryNodeComponent = ({ component }: { component: Component }) => 
         {inventoryItems.map((invItem) => {
           const pos = getItemPosition(invItem);
           const isDragging = dragState?.itemId === invItem.id && activeDrag?.item.id === invItem.id;
+          const entityLabel = invItem.label?.trim() ? invItem.label.trim() : invItem.title;
 
-          return (
+          const cellDiv = (
             <div
-              key={invItem.id}
               data-item-title={invItem.title}
               onDoubleClick={(e) => e.stopPropagation()}
               onClick={(e) => handleItemClick(e, invItem)}
@@ -268,6 +271,17 @@ const ViewInventoryNodeComponent = ({ component }: { component: Component }) => 
                 </span>
               )}
             </div>
+          );
+
+          return showLabelTooltip ? (
+            <Tooltip key={invItem.id}>
+              <TooltipTrigger asChild>{cellDiv}</TooltipTrigger>
+              <TooltipContent side='top' className='max-w-xs'>
+                {entityLabel}
+              </TooltipContent>
+            </Tooltip>
+          ) : (
+            <Fragment key={invItem.id}>{cellDiv}</Fragment>
           );
         })}
       </div>

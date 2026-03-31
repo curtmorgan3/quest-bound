@@ -98,12 +98,7 @@ export const BaseCreate = ({ onCreate, worldId, campaignId }: BaseCreateProps) =
     setCategory,
   });
 
-  const {
-    saveAction,
-    entityCustomProperties: actionEntityCustomProperties,
-    setEntityCustomProperties: setActionEntityCustomProperties,
-    ...actionProps
-  } = useActionValues({
+  const { saveAction, ...actionProps } = useActionValues({
     id: editId || undefined,
     baseProperties,
     onCreate: () => {
@@ -190,7 +185,7 @@ export const BaseCreate = ({ onCreate, worldId, campaignId }: BaseCreateProps) =
   const [customPropertiesFormOpen, setCustomPropertiesFormOpen] = useState(false);
 
   const hideBaseFieldsForCustomProperties =
-    customPropertiesFormOpen && (activeType === 'attributes' || activeType === 'actions');
+    customPropertiesFormOpen && activeType === 'attributes';
 
   const existingCategories = useMemo(() => {
     const list =
@@ -348,14 +343,8 @@ export const BaseCreate = ({ onCreate, worldId, campaignId }: BaseCreateProps) =
             onChange={setAttributeEntityCustomProperties}
           />
         )}
-        {activeType === 'actions' && !customPropertiesFormOpen && (
+        {activeType === 'actions' && (
           <ActionCreate {...actionProps} rulesetId={rulesetId} />
-        )}
-        {activeType === 'actions' && customPropertiesFormOpen && (
-          <EntityCustomPropertiesEditor
-            items={actionEntityCustomProperties}
-            onChange={setActionEntityCustomProperties}
-          />
         )}
         {activeType === 'items' && <ItemCreate {...itemProps} />}
         {activeType === 'charts' && <ChartCreate {...chartProps} rulesetId={rulesetId} />}
@@ -383,7 +372,7 @@ export const BaseCreate = ({ onCreate, worldId, campaignId }: BaseCreateProps) =
         )}
       </div>
       <div className='flex justify-end items-end gap-2 flex-grow w-full'>
-        {(activeType === 'attributes' || activeType === 'actions') && (
+        {activeType === 'attributes' && (
           <Button
             type='button'
             variant='outline'
