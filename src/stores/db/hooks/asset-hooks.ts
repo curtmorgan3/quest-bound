@@ -1,5 +1,13 @@
 import type { DB } from './types';
 
+function componentJsonReferencesAsset(data: Record<string, unknown>, assetId: string): boolean {
+  return (
+    data.assetId === assetId ||
+    data.checkedAssetId === assetId ||
+    data.uncheckedAssetId === assetId
+  );
+}
+
 /** Tables and how to check/clear assetId reference for asset delete flow. */
 export async function getAssetReferenceCount(db: DB, assetId: string): Promise<number> {
   const [
@@ -24,7 +32,14 @@ export async function getAssetReferenceCount(db: DB, assetId: string): Promise<n
     db.users.filter((user) => user.assetId === assetId).count(),
     db.attributes.filter((attr) => attr.assetId === assetId).count(),
     db.characters.filter((char) => char.assetId === assetId).count(),
-    db.components.filter((comp) => JSON.parse(comp.data)?.assetId === assetId).count(),
+    db.components.filter((comp) => {
+      try {
+        const data = JSON.parse(comp.data) as Record<string, unknown>;
+        return componentJsonReferencesAsset(data, assetId);
+      } catch {
+        return false;
+      }
+    }).count(),
     db.rulesets.filter(
       (r) =>
         r.assetId === assetId ||
@@ -128,8 +143,20 @@ export async function clearAssetReferences(db: DB, assetId: string): Promise<voi
   for (const comp of components) {
     try {
       const data = JSON.parse(comp.data) as Record<string, unknown>;
+      let changed = false;
       if (data.assetId === assetId) {
         data.assetId = null;
+        changed = true;
+      }
+      if (data.checkedAssetId === assetId) {
+        data.checkedAssetId = null;
+        changed = true;
+      }
+      if (data.uncheckedAssetId === assetId) {
+        data.uncheckedAssetId = null;
+        changed = true;
+      }
+      if (changed) {
         await db.components.update(comp.id, { data: JSON.stringify(data), updatedAt: now });
       }
     } catch {

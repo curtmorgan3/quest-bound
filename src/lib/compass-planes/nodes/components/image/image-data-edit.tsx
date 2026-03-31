@@ -16,6 +16,7 @@ import { SlidersHorizontal, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import type { Component, ImageComponentData } from '@/types';
 import { CustomPropertiesListModal } from '@/pages/ruleset/windows/component-edit-panel/custom-properties-list-modal';
+import { db, deleteAssetIfUnreferenced } from '@/stores';
 
 interface ImageDataEditProps {
   components: Array<Component>;
@@ -32,7 +33,7 @@ export const ImageDataEdit = ({
   const rulesetId = firstComponent?.rulesetId ?? null;
   const { activeRuleset } = useActiveRuleset();
   const { customProperties } = useCustomProperties(activeRuleset?.id);
-  const { deleteAsset, assets } = useAssets(rulesetId);
+  const { assets } = useAssets(rulesetId);
 
   // Filter out locked components (handleUpdate does this too, but we need it for UI state)
   const editableComponents = components.filter((c) => !c.locked);
@@ -86,15 +87,11 @@ export const ImageDataEdit = ({
   const handleRemove = async () => {
     if (editableComponents.length === 0) return;
 
-    const assetIdsToDelete = new Set<string>();
+    const assetIdsToMaybeDelete = new Set<string>();
     editableComponents.forEach((component) => {
       const data = getComponentData(component) as ImageComponentData;
-      if (data.assetId) assetIdsToDelete.add(data.assetId);
+      if (data.assetId) assetIdsToMaybeDelete.add(data.assetId);
     });
-
-    for (const assetId of assetIdsToDelete) {
-      await deleteAsset(assetId);
-    }
 
     const updates = editableComponents.map((component) => ({
       id: component.id,
@@ -102,6 +99,10 @@ export const ImageDataEdit = ({
     }));
     await updateComponents(updates);
     fireExternalComponentChangeEvent({ updates });
+
+    for (const assetId of assetIdsToMaybeDelete) {
+      await deleteAssetIfUnreferenced(db, assetId);
+    }
   };
 
   const handleAltTextChange = async (value: string) => {

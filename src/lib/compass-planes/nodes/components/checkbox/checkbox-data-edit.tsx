@@ -7,6 +7,7 @@ import {
   updateComponentData,
 } from '@/lib/compass-planes/utils';
 import type { CheckboxComponentData, Component } from '@/types';
+import { db, deleteAssetIfUnreferenced } from '@/stores';
 import { Trash } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
@@ -21,7 +22,7 @@ export const CheckboxDataEdit = ({
   handleUpdate,
   updateComponents,
 }: CheckboxDataEditProps) => {
-  const { createAsset, deleteAsset, assets } = useAssets();
+  const { createAsset, assets } = useAssets();
 
   const checkedFileInputRef = useRef<HTMLInputElement>(null);
   const uncheckedFileInputRef = useRef<HTMLInputElement>(null);
@@ -121,17 +122,13 @@ export const CheckboxDataEdit = ({
 
     setIsRemovingChecked(true);
     try {
-      const assetIdsToDelete = new Set<string>();
+      const assetIdsToMaybeDelete = new Set<string>();
       editableComponents.forEach((component) => {
         const data = getComponentData(component) as CheckboxComponentData;
         if (data.checkedAssetId) {
-          assetIdsToDelete.add(data.checkedAssetId);
+          assetIdsToMaybeDelete.add(data.checkedAssetId);
         }
       });
-
-      for (const assetId of assetIdsToDelete) {
-        await deleteAsset(assetId);
-      }
 
       const updates = editableComponents.map((component) => ({
         id: component.id,
@@ -144,6 +141,10 @@ export const CheckboxDataEdit = ({
       await updateComponents(updates);
       setCheckedUrlValue('');
       fireExternalComponentChangeEvent({ updates });
+
+      for (const assetId of assetIdsToMaybeDelete) {
+        await deleteAssetIfUnreferenced(db, assetId);
+      }
     } catch (error) {
       console.error('Failed to remove checked asset:', error);
     } finally {
@@ -156,17 +157,13 @@ export const CheckboxDataEdit = ({
 
     setIsRemovingUnchecked(true);
     try {
-      const assetIdsToDelete = new Set<string>();
+      const assetIdsToMaybeDelete = new Set<string>();
       editableComponents.forEach((component) => {
         const data = getComponentData(component) as CheckboxComponentData;
         if (data.uncheckedAssetId) {
-          assetIdsToDelete.add(data.uncheckedAssetId);
+          assetIdsToMaybeDelete.add(data.uncheckedAssetId);
         }
       });
-
-      for (const assetId of assetIdsToDelete) {
-        await deleteAsset(assetId);
-      }
 
       const updates = editableComponents.map((component) => ({
         id: component.id,
@@ -179,6 +176,10 @@ export const CheckboxDataEdit = ({
       await updateComponents(updates);
       setUncheckedUrlValue('');
       fireExternalComponentChangeEvent({ updates });
+
+      for (const assetId of assetIdsToMaybeDelete) {
+        await deleteAssetIfUnreferenced(db, assetId);
+      }
     } catch (error) {
       console.error('Failed to remove unchecked asset:', error);
     } finally {
