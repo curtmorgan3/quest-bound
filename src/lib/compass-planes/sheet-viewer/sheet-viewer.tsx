@@ -31,6 +31,7 @@ interface SheetViewerProps {
   showHiddenWindows?: boolean;
   /** When true, character windows with `isCollapsed` still render on the canvas (e.g. ruleset window editor preview). */
   ignoreCharacterWindowCollapsedState?: boolean;
+  forceFitSheetToViewport?: boolean;
 }
 
 export const SheetViewer = ({
@@ -45,6 +46,7 @@ export const SheetViewer = ({
   transparentBackground = false,
   showHiddenWindows = false,
   ignoreCharacterWindowCollapsedState = false,
+  forceFitSheetToViewport = false,
 }: SheetViewerProps) => {
   const { characterPages, updateCharacterPage } = useCharacterPages(characterId);
 
@@ -87,7 +89,8 @@ export const SheetViewer = ({
     ? undefined
     : characterPages.find((p) => p.id === currentPageId);
 
-  const sheetFitToViewport = !editorWindowId && currentPage?.sheetFitToViewport === true;
+  const sheetFitToViewport =
+    forceFitSheetToViewport || (!editorWindowId && currentPage?.sheetFitToViewport === true);
 
   const handleSheetFitToViewportChange = useCallback(() => {
     if (!characterId || !currentPageId) return;

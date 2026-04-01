@@ -1,9 +1,7 @@
-import { Button } from '@/components';
 import { useSidebar } from '@/components/ui/sidebar';
-import { CharacterPage } from '@/pages/characters';
+import { CharacterPage, type CharacterPageFloatingActions } from '@/pages/characters';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Backpack, EyeClosed, X } from 'lucide-react';
-import { useState, type ReactNode } from 'react';
+import { useCallback, useState, type ReactNode } from 'react';
 
 export interface CampaignCharacterSheetProps {
   /** When set, show the sheet for this character (e.g. from dashboard avatar click). */
@@ -15,12 +13,14 @@ export interface CampaignCharacterSheetProps {
   hideGameLog?: boolean;
   /** When provided, the transparency state becomes controlled by the parent. */
   transparentBackground?: boolean;
-  onTransparentBackgroundChange?: (transparentBackground: boolean) => void;
   campaignId?: string;
   /** When set (e.g. viewing character in a scene), action scripts get Scene accessor with advanceTurnOrder. */
   campaignSceneId?: string;
   /** Rendered above the character page inside the sheet panel (e.g. scene character shortcuts). */
   topBar?: ReactNode;
+  /** Receive inventory/close handlers to render actions outside CharacterPage (e.g. top bar). */
+  onFloatingActionsApi?: (api: CharacterPageFloatingActions | null) => void;
+  forceFitSheetToViewport?: boolean;
 }
 
 export const CampaignCharacterSheet = ({
@@ -29,39 +29,28 @@ export const CampaignCharacterSheet = ({
   onClose: controlledOnClose,
   hideGameLog = false,
   transparentBackground: controlledTransparentBackground,
-  onTransparentBackgroundChange,
+  forceFitSheetToViewport = false,
   campaignId,
   campaignSceneId,
   topBar,
+  onFloatingActionsApi,
 }: CampaignCharacterSheetProps = {}) => {
   const { state: sidebarState } = useSidebar();
   const [sheetOpen, setSheetOpen] = useState(false);
-  const [uncontrolledTransparentBackground, setUncontrolledTransparentBackground] = useState(false);
 
   const characterId = controlledCharacterId;
   const isControlled = controlledCharacterId != null;
   const showSheet = isControlled ? controlledOpen && !!characterId : sheetOpen && !!characterId;
 
-  const isTransparentBackgroundControlled = controlledTransparentBackground != null;
-  const transparentBackground = isTransparentBackgroundControlled
-    ? controlledTransparentBackground
-    : uncontrolledTransparentBackground;
+  const transparentBackground = controlledTransparentBackground ?? false;
 
-  const setTransparentBackground = (next: boolean) => {
-    if (isTransparentBackgroundControlled) {
-      onTransparentBackgroundChange?.(next);
-      return;
-    }
-    setUncontrolledTransparentBackground(next);
-  };
-
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
     if (isControlled) {
       controlledOnClose?.();
     } else {
       setSheetOpen(false);
     }
-  };
+  }, [isControlled, controlledOnClose]);
 
   if (!showSheet) return null;
 
@@ -84,7 +73,9 @@ export const CampaignCharacterSheet = ({
             exit={{ x: '100%' }}
             transition={{ type: 'tween', duration: 0.25, ease: 'easeInOut' }}>
             {topBar ? (
-              <div className='shrink-0 border-b border-border bg-background px-3 py-2'>{topBar}</div>
+              <div className='shrink-0 border-b border-border bg-background px-3 py-2'>
+                {topBar}
+              </div>
             ) : null}
             <div className='relative min-h-0 flex-1 w-full overflow-auto'>
               <CharacterPage
@@ -95,43 +86,8 @@ export const CampaignCharacterSheet = ({
                 transparentBackground={transparentBackground}
                 onClose={handleClose}
                 hideGameLog={hideGameLog}
-                renderFloatingActions={({ onOpenInventory, onClose }) => (
-                  <>
-                    <Button
-                      variant='ghost'
-                      size='icon'
-                      className='size-8 shrink-0'
-                      onClick={onOpenInventory}
-                      aria-label='Open inventory'>
-                      <Backpack className='size-4' />
-                    </Button>
-                    <Button
-                      variant='ghost'
-                      size='icon'
-                      className={`size-8 shrink-0 ${transparentBackground ? 'text-primary' : ''}`}
-                      onClick={() => setTransparentBackground(!transparentBackground)}
-                      aria-label={
-                        transparentBackground
-                          ? 'Disable transparent character sheet background'
-                          : 'Enable transparent character sheet background'
-                      }
-                      title={
-                        transparentBackground
-                          ? 'Disable transparent background'
-                          : 'Enable transparent background'
-                      }>
-                      <EyeClosed className='size-4' />
-                    </Button>
-                    <Button
-                      variant='ghost'
-                      size='icon'
-                      className='size-8 shrink-0'
-                      onClick={onClose}
-                      aria-label='Close character sheet'>
-                      <X className='size-4' />
-                    </Button>
-                  </>
-                )}
+                onFloatingActionsApi={onFloatingActionsApi}
+                forceFitSheetToViewport={forceFitSheetToViewport}
               />
             </div>
           </motion.div>

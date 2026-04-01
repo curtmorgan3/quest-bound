@@ -28,7 +28,15 @@ import {
   type InventoryPanelConfig,
 } from '@/stores';
 import { type CharacterAttribute } from '@/types';
-import { useContext, useEffect, useLayoutEffect, useMemo, useState } from 'react';
+import {
+  useCallback,
+  useContext,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { CharacterArchetypesPanel } from './character-archetypes-panel';
@@ -64,9 +72,15 @@ interface CharacterPage {
   onClose?: () => void;
   /** When provided with onClose, renders floating action buttons (e.g. inventory + close) in the top-right. */
   renderFloatingActions?: (actions: CharacterPageFloatingActions) => React.ReactNode;
+  /**
+   * When set with onClose, does not render floating actions in-page; calls with open/close handlers
+   * so the parent can render them (e.g. campaign sheet top bar). Takes precedence over renderFloatingActions.
+   */
+  onFloatingActionsApi?: (api: CharacterPageFloatingActions | null) => void;
   hideGameLog?: boolean;
   showHiddenWindows?: boolean;
   ignoreCharacterWindowCollapsedState?: boolean;
+  forceFitSheetToViewport?: boolean;
 }
 
 export const CharacterPage = ({
@@ -78,9 +92,11 @@ export const CharacterPage = ({
   transparentBackground,
   onClose,
   renderFloatingActions,
+  onFloatingActionsApi,
   hideGameLog = false,
   showHiddenWindows = false,
   ignoreCharacterWindowCollapsedState = false,
+  forceFitSheetToViewport = false,
 }: CharacterPage) => {
   const { open } = useSidebar();
   const { characterId: routeCharacterId } = useParams<{ characterId: string }>();
@@ -164,6 +180,14 @@ export const CharacterPage = ({
   const [inventoryPanelConfig, setInventoryPanelConfig] = useState<InventoryPanelConfig>({});
 
   const { executeActionEvent } = useExecuteActionEvent();
+
+  const openInventory = useCallback(() => {
+    if (characterInventoryPanel) {
+      characterInventoryPanel.setOpen(true);
+    } else {
+      setInventoryPanelConfig({ open: true });
+    }
+  }, [characterInventoryPanel, setInventoryPanelConfig]);
 
   const {
     inventoryItems,
@@ -268,18 +292,30 @@ export const CharacterPage = ({
     );
   };
 
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+  const openInventoryRef = useRef(openInventory);
+  openInventoryRef.current = openInventory;
+
+  useEffect(() => {
+    if (!onFloatingActionsApi) return;
+    if (!character?.id) {
+      onFloatingActionsApi(null);
+      return;
+    }
+    onFloatingActionsApi({
+      onOpenInventory: () => openInventoryRef.current(),
+      onClose: () => onCloseRef.current?.(),
+    });
+    return () => onFloatingActionsApi(null);
+  }, [character?.id, onFloatingActionsApi]);
+
   if (!character) {
     return null;
   }
 
-  const openInventory = () => {
-    if (characterInventoryPanel) {
-      characterInventoryPanel.setOpen(true);
-    } else {
-      setInventoryPanelConfig({ open: true });
-    }
-  };
-  const showFloatingActions = renderFloatingActions != null && onClose != null;
+  const showInlineFloatingActions =
+    onFloatingActionsApi == null && renderFloatingActions != null && onClose != null;
 
   return (
     <CharacterProvider
@@ -303,7 +339,7 @@ export const CharacterPage = ({
         activateItem,
       }}>
       <InventoryDragProvider>
-        {showFloatingActions && (
+        {showInlineFloatingActions && (
           <div className='absolute right-2 top-2 z-40 flex gap-2'>
             {renderFloatingActions!({
               onOpenInventory: openInventory,
@@ -326,6 +362,7 @@ export const CharacterPage = ({
           transparentBackground={transparentBackground}
           showHiddenWindows={showHiddenWindows}
           ignoreCharacterWindowCollapsedState={ignoreCharacterWindowCollapsedState}
+          forceFitSheetToViewport={forceFitSheetToViewport}
         />
 
         {!hideGameLog && (

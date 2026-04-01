@@ -18,11 +18,22 @@ import {
 import type { SheetViewerBackdropClickDetail } from '@/lib/compass-planes/sheet-viewer';
 import { SHEET_VIEWER_BACKDROP_CLICK } from '@/lib/compass-planes/sheet-viewer';
 import { cn } from '@/lib/utils';
+import type { CharacterPageFloatingActions } from '@/pages/characters';
 import { db, useCloudAuthStore } from '@/stores';
 import { useCampaignPlaySessionStore } from '@/stores/campaign-play-session-store';
 import type { Character } from '@/types';
-import { ChevronLeft, ChevronRight, FileText, Globe, Zap } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import {
+  Backpack,
+  ChevronLeft,
+  ChevronRight,
+  EyeClosed,
+  FileText,
+  Globe,
+  Maximize2,
+  X,
+  Zap,
+} from 'lucide-react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { ActiveScene } from './active-scene';
 import { CampaignCharacterSheet } from './campaign-controls';
@@ -99,7 +110,7 @@ function saveHostRealtimeByCampaignId(state: Record<string, boolean>) {
 
 export function CampaignDashboard() {
   const { campaignId, sceneId } = useParams<{ campaignId: string; sceneId?: string }>();
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [, setSearchParams] = useSearchParams();
   const campaignPlaySession = useCampaignPlaySessionStore((s) => s.session);
   const hostCloudUserId = useCloudAuthStore((s) => s.cloudUser?.id ?? null);
   const cloudSyncEnabled = useCloudAuthStore((s) => s.cloudSyncEnabled);
@@ -131,6 +142,20 @@ export function CampaignDashboard() {
   }, [characters]);
 
   const [sheetCharacterId, setSheetCharacterId] = useState<string | null>(null);
+  const handleCharacterSheetClose = useCallback(() => {
+    setSheetCharacterId(null);
+    setSearchParams(
+      (prev) => {
+        if (!prev.has('pageId')) return prev;
+        const next = new URLSearchParams(prev);
+        next.delete('pageId');
+        return next;
+      },
+      { replace: true },
+    );
+  }, [setSearchParams]);
+  const [characterSheetFloatingActions, setCharacterSheetFloatingActions] =
+    useState<CharacterPageFloatingActions | null>(null);
   const [hoveredCampaignCharacterId, setHoveredCampaignCharacterId] = useState<string | null>(null);
   const [sceneDocumentPanelOpen, setSceneDocumentPanelOpen] = useState(false);
   const [sceneEventsPanelOpen, setSceneEventsPanelOpen] = useState(false);
@@ -152,6 +177,7 @@ export function CampaignDashboard() {
   };
   const [characterSheetTransparentBackground, setCharacterSheetTransparentBackground] =
     useState(false);
+  const [forceFitSheetToViewport, setForceFitSheetToViewport] = useState(false);
   const [advancing, setAdvancing] = useState(false);
   const [leftColumnCollapsed, setLeftColumnCollapsed] = useState(() => loadColumnState().left);
   const [centerColumnCollapsed, setCenterColumnCollapsed] = useState(
@@ -261,6 +287,10 @@ export function CampaignDashboard() {
       }),
     );
   }, [sceneId, withNames, currentScene?.turnBasedMode]);
+
+  useEffect(() => {
+    if (!sheetCharacterId) setCharacterSheetFloatingActions(null);
+  }, [sheetCharacterId]);
 
   useEffect(() => {
     if (!sheetCharacterId) return;
@@ -489,59 +519,124 @@ export function CampaignDashboard() {
               characterId={sheetCharacterId ?? undefined}
               open={!!sheetCharacterId}
               transparentBackground={characterSheetTransparentBackground}
-              onTransparentBackgroundChange={setCharacterSheetTransparentBackground}
+              forceFitSheetToViewport={forceFitSheetToViewport}
+              onFloatingActionsApi={setCharacterSheetFloatingActions}
               topBar={
-                sheetCharacterId && sceneId && sceneCharacterSheetBarEntries.length > 0 ? (
-                  <div
-                    className='flex flex-wrap items-center gap-2'
-                    role='toolbar'
-                    aria-label='Characters in this scene'>
-                    {sceneCharacterSheetBarEntries.map(({ cc, character }) => {
-                      const isCurrentTurn =
-                        !!currentScene?.turnBasedMode &&
-                        currentTurnCampaignCharacterId != null &&
-                        currentTurnCampaignCharacterId === cc.id;
-                      const cid = character?.id;
-                      if (!cid) return null;
-                      return (
-                        <button
-                          type='button'
-                          key={cc.id}
-                          data-active-npc-avatar='true'
-                          onClick={() => setSheetCharacterId(cid)}
-                          className={cn(
-                            'rounded-md border-2 p-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-                            isCurrentTurn ? 'border-primary' : 'border-transparent',
-                          )}
-                          title={character?.name ?? 'Character'}
-                          aria-label={
-                            isCurrentTurn
-                              ? `Open ${character?.name ?? 'character'} sheet (current turn)`
-                              : `Open ${character?.name ?? 'character'} sheet`
-                          }>
-                          <Avatar className='size-10 shrink-0 rounded-md'>
-                            <AvatarImage
-                              src={character?.image ?? ''}
-                              alt={character?.name ?? 'Character'}
-                            />
-                            <AvatarFallback className='rounded-md text-sm'>
-                              {(character?.name ?? '?').slice(0, 1).toUpperCase()}
-                            </AvatarFallback>
-                          </Avatar>
-                        </button>
-                      );
-                    })}
+                sheetCharacterId ? (
+                  <div className='flex w-full min-w-0 items-center justify-between gap-3'>
+                    <div
+                      className='flex min-h-10 min-w-0 flex-1 flex-wrap items-center gap-2'
+                      role={
+                        sceneId && sceneCharacterSheetBarEntries.length > 0 ? 'toolbar' : undefined
+                      }
+                      aria-label={
+                        sceneId && sceneCharacterSheetBarEntries.length > 0
+                          ? 'Characters in this scene'
+                          : undefined
+                      }>
+                      {sceneId &&
+                        sceneCharacterSheetBarEntries.map(({ cc, character }) => {
+                          const isCurrentTurn =
+                            !!currentScene?.turnBasedMode &&
+                            currentTurnCampaignCharacterId != null &&
+                            currentTurnCampaignCharacterId === cc.id;
+                          const cid = character?.id;
+                          if (!cid) return null;
+                          return (
+                            <button
+                              type='button'
+                              key={cc.id}
+                              data-active-npc-avatar='true'
+                              onClick={() => setSheetCharacterId(cid)}
+                              className={cn(
+                                'rounded-md border-2 p-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                                isCurrentTurn ? 'border-primary' : 'border-transparent',
+                              )}
+                              title={character?.name ?? 'Character'}
+                              aria-label={
+                                isCurrentTurn
+                                  ? `Open ${character?.name ?? 'character'} sheet (current turn)`
+                                  : `Open ${character?.name ?? 'character'} sheet`
+                              }>
+                              <Avatar className='size-10 shrink-0 rounded-md'>
+                                <AvatarImage
+                                  src={character?.image ?? ''}
+                                  alt={character?.name ?? 'Character'}
+                                />
+                                <AvatarFallback className='rounded-md text-sm'>
+                                  {(character?.name ?? '?').slice(0, 1).toUpperCase()}
+                                </AvatarFallback>
+                              </Avatar>
+                            </button>
+                          );
+                        })}
+                    </div>
+                    <div className='flex shrink-0 items-center gap-2'>
+                      {characterSheetFloatingActions && (
+                        <>
+                          <Button
+                            variant='outline'
+                            size='icon'
+                            className='size-8 shrink-0'
+                            onClick={characterSheetFloatingActions.onOpenInventory}
+                            aria-label='Open inventory'>
+                            <Backpack className='size-4' />
+                          </Button>
+                          <Button
+                            variant='outline'
+                            size='icon'
+                            className={cn(
+                              'size-8 shrink-0',
+                              characterSheetTransparentBackground && 'text-primary',
+                            )}
+                            onClick={() => setCharacterSheetTransparentBackground((v) => !v)}
+                            aria-label={
+                              characterSheetTransparentBackground
+                                ? 'Disable transparent character sheet background'
+                                : 'Enable transparent character sheet background'
+                            }
+                            title={
+                              characterSheetTransparentBackground
+                                ? 'Disable transparent background'
+                                : 'Enable transparent background'
+                            }>
+                            <EyeClosed className='size-4' />
+                          </Button>
+                          <Button
+                            variant='outline'
+                            size='icon'
+                            className={cn(
+                              'size-8 shrink-0',
+                              forceFitSheetToViewport && 'text-primary',
+                            )}
+                            onClick={() => setForceFitSheetToViewport((v) => !v)}
+                            aria-label={
+                              forceFitSheetToViewport
+                                ? 'Turn off fit sheet to viewport'
+                                : 'Fit sheet to viewport'
+                            }
+                            title={
+                              forceFitSheetToViewport
+                                ? 'Disable fitting sheet to viewport'
+                                : 'Fit sheet to viewport'
+                            }>
+                            <Maximize2 className='size-4' />
+                          </Button>
+                          <Button
+                            variant='outline'
+                            size='icon'
+                            className='size-8 shrink-0'
+                            onClick={characterSheetFloatingActions.onClose}
+                            aria-label='Close character sheet'>
+                            <X className='size-4' />
+                          </Button>
+                        </>
+                      )}
+                    </div>
                   </div>
                 ) : undefined
               }
-              onClose={() => {
-                setSheetCharacterId(null);
-                if (searchParams.has('pageId')) {
-                  const next = new URLSearchParams(searchParams);
-                  next.delete('pageId');
-                  setSearchParams(next, { replace: true });
-                }
-              }}
+              onClose={handleCharacterSheetClose}
             />
           </div>
         }>
