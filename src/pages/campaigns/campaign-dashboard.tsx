@@ -115,8 +115,12 @@ export function CampaignDashboard() {
 
   const campaign = useCampaign(campaignId);
   const navigate = useNavigate();
-  const { campaignCharacters, deleteCampaignCharacter, updateCampaignCharacter } =
-    useCampaignCharacters(campaignId);
+  const {
+    campaignCharacters,
+    createCampaignCharacter,
+    deleteCampaignCharacter,
+    updateCampaignCharacter,
+  } = useCampaignCharacters(campaignId);
   const withNames = useCampaignPlayCharacterList({ campaignCharacters });
   const { characters } = useCharacter();
 
@@ -332,6 +336,13 @@ export function CampaignDashboard() {
                   characters={characters}
                   rulesetId={campaign.rulesetId}
                   disabled={orchestrationBlocked}
+                  allowAdd
+                  onAddCharacter={async (characterId) => {
+                    if (!campaignId || !sceneId || orchestrationBlocked) return;
+                    await createCampaignCharacter(campaignId, characterId, {
+                      campaignSceneId: sceneId,
+                    });
+                  }}
                   onRemoveCharacter={async (campaignCharacterId) => {
                     await deleteCampaignCharacter(campaignCharacterId);
                   }}

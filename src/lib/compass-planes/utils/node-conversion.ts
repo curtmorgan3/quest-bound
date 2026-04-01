@@ -60,44 +60,46 @@ function isLinearGradient(value: string | undefined): value is string {
 }
 
 function applyStyleEnrichment(styles: ComponentStyle): ComponentStyle {
-  if (styles.outlineWidth === 0) {
-    styles.outline = undefined;
+  const out = { ...styles } as ComponentStyle & Record<string, unknown>;
+
+  if (out.outlineWidth === 0) {
+    out.outline = undefined;
   } else {
-    styles.outline = `${styles.outlineWidth}px solid ${styles.outlineColor}`;
+    out.outline = `${out.outlineWidth}px solid ${out.outlineColor}`;
   }
 
-  styles.borderRadius = `${styles.borderRadiusTopLeft}px ${styles.borderRadiusTopRight}px ${styles.borderRadiusBottomRight}px ${styles.borderRadiusBottomLeft}px`;
+  out.borderRadius = `${out.borderRadiusTopLeft}px ${out.borderRadiusTopRight}px ${out.borderRadiusBottomRight}px ${out.borderRadiusBottomLeft}px`;
 
-  if (!styles.paddingBottom) styles.paddingBottom = 0;
-  if (!styles.paddingTop) styles.paddingTop = 0;
-  if (!styles.paddingLeft) styles.paddingLeft = 0;
-  if (!styles.paddingRight) styles.paddingRight = 0;
+  if (!out.paddingBottom) out.paddingBottom = 0;
+  if (!out.paddingTop) out.paddingTop = 0;
+  if (!out.paddingLeft) out.paddingLeft = 0;
+  if (!out.paddingRight) out.paddingRight = 0;
 
-  if (isLinearGradient(styles.backgroundColor)) {
-    (styles as Record<string, unknown>).background = styles.backgroundColor;
+  if (isLinearGradient(out.backgroundColor)) {
+    out.background = out.backgroundColor;
   }
 
-  if (isLinearGradient(styles.color)) {
-    (styles as Record<string, unknown>).colorStyle = {
-      background: styles.color,
+  if (isLinearGradient(out.color)) {
+    out.colorStyle = {
+      background: out.color,
       backgroundClip: 'text',
       WebkitBackgroundClip: 'text',
       color: 'transparent',
     };
   }
 
-  return styles;
+  return out as ComponentStyle;
 }
 
 export function getComponentStyles(component: Component): ComponentStyle {
   const key = component.style;
   const cached = componentStyleCache.get(key);
-  if (cached) return cached;
+  if (cached) return structuredClone(cached);
 
   const styles = JSON.parse(key) as ComponentStyle;
   const enriched = applyStyleEnrichment(styles);
   componentStyleCache.set(key, enriched);
-  return enriched;
+  return structuredClone(enriched);
 }
 
 export function useComponentStyles(component: Component | null): ComponentStyle {
