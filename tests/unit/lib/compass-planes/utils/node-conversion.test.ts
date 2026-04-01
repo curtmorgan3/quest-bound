@@ -457,6 +457,54 @@ describe('getComponentStyles', () => {
     expect(styles.outline).toBe('3px solid rgba(0,0,0,0.5)');
   });
 
+  it('should compute boxShadow from offset, blur, spread, and color', () => {
+    const component: Component = {
+      id: 'comp-1',
+      rulesetId: 'ruleset-1',
+      windowId: 'window-1',
+      type: 'shape',
+      x: 0,
+      y: 0,
+      z: 1,
+      height: 50,
+      width: 100,
+      rotation: 0,
+      data: '{}',
+      style:
+        '{"outlineWidth":0,"outlineColor":"#000","borderRadiusTopLeft":0,"borderRadiusTopRight":0,"borderRadiusBottomRight":0,"borderRadiusBottomLeft":0,"boxShadowOffsetX":2,"boxShadowOffsetY":4,"boxShadowBlur":6,"boxShadowSpread":0,"boxShadowColor":"rgba(0,0,0,0.5)"}',
+      createdAt: '2024-01-01T00:00:00.000Z',
+      updatedAt: '2024-01-01T00:00:00.000Z',
+    };
+
+    const styles = getComponentStyles(component);
+
+    expect(styles.boxShadow).toBe('2px 4px 6px 0px rgba(0,0,0,0.5)');
+  });
+
+  it('should omit boxShadow when all shadow distances are zero', () => {
+    const component: Component = {
+      id: 'comp-1',
+      rulesetId: 'ruleset-1',
+      windowId: 'window-1',
+      type: 'shape',
+      x: 0,
+      y: 0,
+      z: 1,
+      height: 50,
+      width: 100,
+      rotation: 0,
+      data: '{}',
+      style:
+        '{"outlineWidth":0,"outlineColor":"#000","borderRadiusTopLeft":0,"borderRadiusTopRight":0,"borderRadiusBottomRight":0,"borderRadiusBottomLeft":0,"boxShadowOffsetX":0,"boxShadowOffsetY":0,"boxShadowBlur":0,"boxShadowSpread":0,"boxShadowColor":"#000000"}',
+      createdAt: '2024-01-01T00:00:00.000Z',
+      updatedAt: '2024-01-01T00:00:00.000Z',
+    };
+
+    const styles = getComponentStyles(component);
+
+    expect(styles.boxShadow).toBeUndefined();
+  });
+
   it('should preserve other style properties', () => {
     const component: Component = {
       id: 'comp-1',

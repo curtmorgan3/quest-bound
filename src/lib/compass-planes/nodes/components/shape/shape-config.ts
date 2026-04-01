@@ -37,6 +37,11 @@ const DEFAULT_SHAPE_STYLES: ComponentStyle = {
   paddingBottom: 0,
   paddingLeft: 0,
   paddingRight: 0,
+  boxShadowOffsetX: 0,
+  boxShadowOffsetY: 0,
+  boxShadowBlur: 0,
+  boxShadowSpread: 0,
+  boxShadowColor: '#000000',
 };
 
 export const DEFAULT_SHAPE: Partial<Component> = {

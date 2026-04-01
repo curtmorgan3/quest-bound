@@ -41,6 +41,11 @@ const DEFAULT_GROUP_STYLES: ComponentStyle = {
   gap: 8,
   alignItems: 'stretch',
   justifyContent: 'flex-start',
+  boxShadowOffsetX: 0,
+  boxShadowOffsetY: 0,
+  boxShadowBlur: 0,
+  boxShadowSpread: 0,
+  boxShadowColor: '#000000',
 };
 
 export const DEFAULT_GROUP: Partial<Component> = {

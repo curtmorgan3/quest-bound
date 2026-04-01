@@ -27,6 +27,12 @@ export const STYLE_KEYS = [
   'outlineWidth',
   'outlineColor',
   'outlineColorCustomPropOpacity',
+  'boxShadowOffsetX',
+  'boxShadowOffsetY',
+  'boxShadowBlur',
+  'boxShadowSpread',
+  'boxShadowColor',
+  'boxShadowColorCustomPropOpacity',
   'paddingTop',
   'paddingRight',
   'paddingBottom',
@@ -177,7 +183,10 @@ export function useStyleValues(components: Array<Component>): StyleValues {
           stop2Opacity,
         );
       } else if (
-        (key === 'backgroundColor' || key === 'color' || key === 'outlineColor') &&
+        (key === 'backgroundColor' ||
+          key === 'color' ||
+          key === 'outlineColor' ||
+          key === 'boxShadowColor') &&
         typeof raw === 'string' &&
         isCustomPropValue(raw)
       ) {
@@ -186,7 +195,9 @@ export function useStyleValues(components: Array<Component>): StyleValues {
             ? 'backgroundColorCustomPropOpacity'
             : key === 'color'
               ? 'colorCustomPropOpacity'
-              : 'outlineColorCustomPropOpacity';
+              : key === 'outlineColor'
+                ? 'outlineColorCustomPropOpacity'
+                : 'boxShadowColorCustomPropOpacity';
         resolved = resolveCustomProp(raw, character, customProperties);
         const opacityRaw = getRaw(opacityKey);
         if (

@@ -22,6 +22,15 @@ type BaseComponentStyle = {
   outlineColor: string;
   /** When outlineColor is a custom-prop reference, opacity to apply (0–1). */
   outlineColorCustomPropOpacity?: number;
+  /** Computed CSS `box-shadow` from `boxShadowOffsetX` etc. (set in applyStyleEnrichment). */
+  boxShadow?: string;
+  boxShadowOffsetX?: number;
+  boxShadowOffsetY?: number;
+  boxShadowBlur?: number;
+  boxShadowSpread?: number;
+  boxShadowColor?: string;
+  /** When boxShadowColor is a custom-prop reference, opacity to apply (0–1). */
+  boxShadowColorCustomPropOpacity?: number;
   paddingRight?: number;
   paddingLeft?: number;
   paddingTop?: number;

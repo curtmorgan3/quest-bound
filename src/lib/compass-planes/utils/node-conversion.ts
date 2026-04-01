@@ -88,6 +88,20 @@ function applyStyleEnrichment(styles: ComponentStyle): ComponentStyle {
     };
   }
 
+  const sx = Number(out.boxShadowOffsetX ?? 0);
+  const sy = Number(out.boxShadowOffsetY ?? 0);
+  const sblur = Number(out.boxShadowBlur ?? 0);
+  const sspread = Number(out.boxShadowSpread ?? 0);
+  if (sx !== 0 || sy !== 0 || sblur !== 0 || sspread !== 0) {
+    const c =
+      typeof out.boxShadowColor === 'string' && out.boxShadowColor.trim() !== ''
+        ? out.boxShadowColor
+        : 'rgba(0,0,0,0.35)';
+    out.boxShadow = `${sx}px ${sy}px ${sblur}px ${sspread}px ${c}`;
+  } else {
+    delete (out as { boxShadow?: string }).boxShadow;
+  }
+
   return out as ComponentStyle;
 }
 

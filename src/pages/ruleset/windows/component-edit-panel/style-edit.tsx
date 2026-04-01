@@ -1,4 +1,10 @@
 import { RulesetColorPicker } from '@/components';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { ComponentTypes } from '@/lib/compass-planes/nodes';
 import type { Component } from '@/types';
@@ -21,11 +27,25 @@ interface Props {
 }
 
 const MIXED_VALUE_LABEL = '-';
+const MIXED_COLOR_PLACEHOLDER = '#000';
 
 function toOpacityNumber(raw: string | number | undefined): number {
-  if (raw === '-' || raw === undefined) return 1;
+  if (raw === MIXED_VALUE_LABEL) return 0;
+  if (raw === undefined) return 1;
   const n = Number(raw);
   return Number.isFinite(n) ? Math.min(1, Math.max(0, n)) : 1;
+}
+
+function displayNumeric(raw: string | number): string | number {
+  return raw === MIXED_VALUE_LABEL ? 0 : raw;
+}
+
+function displayColorRaw(raw: string): string {
+  return raw === MIXED_VALUE_LABEL ? MIXED_COLOR_PLACEHOLDER : raw;
+}
+
+function displayColorResolved(raw: string, resolved: string | number): string {
+  return raw === MIXED_VALUE_LABEL ? MIXED_COLOR_PLACEHOLDER : String(resolved);
 }
 
 export const StyleEdit = ({ components, handleUpdate, handleDataUpdate }: Props) => {
@@ -41,6 +61,15 @@ export const StyleEdit = ({ components, handleUpdate, handleDataUpdate }: Props)
   const colorCustomPropOpacity = toOpacityNumber(style.colorCustomPropOpacity?.raw ?? 1);
   const outlineColorCustomPropOpacity = toOpacityNumber(
     style.outlineColorCustomPropOpacity?.raw ?? 1,
+  );
+  const boxShadowOffsetX = style.boxShadowOffsetX.raw;
+  const boxShadowOffsetY = style.boxShadowOffsetY.raw;
+  const boxShadowBlur = style.boxShadowBlur.raw;
+  const boxShadowSpread = style.boxShadowSpread.raw;
+  const boxShadowColor = style.boxShadowColor.raw as string;
+  const boxShadowColorResolved = style.boxShadowColor.resolved as string;
+  const boxShadowColorCustomPropOpacity = toOpacityNumber(
+    style.boxShadowColorCustomPropOpacity?.raw ?? 1,
   );
   const borderRadiusTopLeft = style.borderRadiusTopLeft.raw;
   const borderRadiusTopRight = style.borderRadiusTopRight.raw;
@@ -121,11 +150,10 @@ export const StyleEdit = ({ components, handleUpdate, handleDataUpdate }: Props)
 
       <div className='w-full flex flex-row gap-4 items-end flex-wrap'>
         <EditPanelInput
-          number={opacity !== MIXED_VALUE_LABEL}
-          disabled={opacity === MIXED_VALUE_LABEL}
+          number
           label='Opacity'
           width='80px'
-          value={opacity}
+          value={displayNumeric(opacity)}
           styleKeyForCustomProperty='opacity'
           step={0.1}
           onChange={(val) => handleUpdate('opacity', Math.min(1, Math.max(0, parseValue(val))))}
@@ -135,10 +163,9 @@ export const StyleEdit = ({ components, handleUpdate, handleDataUpdate }: Props)
           showLabel
           label='Background Color'
           propertyKey='backgroundColor'
-          color={backgroundColor}
-          resolvedColor={backgroundColorResolved}
+          color={displayColorRaw(backgroundColor)}
+          resolvedColor={displayColorResolved(backgroundColor, backgroundColorResolved)}
           onUpdate={(value) => handleUpdate('backgroundColor', value)}
-          disabled={backgroundColor === MIXED_VALUE_LABEL}
           allowGradient={allowGradient}
           customPropOpacity={backgroundColorCustomPropOpacity}
           customPropOpacityStyleKey='backgroundColorCustomPropOpacity'
@@ -150,8 +177,8 @@ export const StyleEdit = ({ components, handleUpdate, handleDataUpdate }: Props)
           showLabel
           label='Color'
           propertyKey='color'
-          color={color}
-          resolvedColor={colorResolved}
+          color={displayColorRaw(color)}
+          resolvedColor={displayColorResolved(color, colorResolved)}
           onUpdate={(value) => handleUpdate('color', value)}
           allowGradient={allowGradient}
           customPropOpacity={colorCustomPropOpacity}
@@ -160,15 +187,78 @@ export const StyleEdit = ({ components, handleUpdate, handleDataUpdate }: Props)
         />
       </div>
 
+      <Accordion type='single' collapsible>
+        <AccordionItem value='drop-shadow' className='border-none'>
+          <AccordionTrigger className='py-2 text-xs text-muted-foreground hover:no-underline hover:text-foreground'>
+            Box shadow
+          </AccordionTrigger>
+          <AccordionContent className='flex flex-col gap-3 pb-2'>
+            <div className='w-full flex flex-row gap-2 items-end flex-wrap'>
+              <EditPanelInput
+                number
+                label='X'
+                width='72px'
+                value={displayNumeric(boxShadowOffsetX)}
+                step={1}
+                onChange={(val) =>
+                  handleUpdate('boxShadowOffsetX', Math.min(50, Math.max(-50, parseValue(val))))
+                }
+              />
+              <EditPanelInput
+                number
+                label='Y'
+                width='72px'
+                value={displayNumeric(boxShadowOffsetY)}
+                step={1}
+                onChange={(val) =>
+                  handleUpdate('boxShadowOffsetY', Math.min(50, Math.max(-50, parseValue(val))))
+                }
+              />
+              <EditPanelInput
+                number
+                label='Blur'
+                width='72px'
+                value={displayNumeric(boxShadowBlur)}
+                step={1}
+                onChange={(val) =>
+                  handleUpdate('boxShadowBlur', Math.min(80, Math.max(0, parseValue(val))))
+                }
+              />
+              <EditPanelInput
+                number
+                label='Spread'
+                width='72px'
+                value={displayNumeric(boxShadowSpread)}
+                step={1}
+                onChange={(val) =>
+                  handleUpdate('boxShadowSpread', Math.min(40, Math.max(-40, parseValue(val))))
+                }
+              />
+              <RulesetColorPicker
+                key='boxShadowColor'
+                showLabel
+                label='Shadow color'
+                propertyKey='boxShadowColor'
+                color={displayColorRaw(boxShadowColor)}
+                resolvedColor={displayColorResolved(boxShadowColor, boxShadowColorResolved)}
+                onUpdate={(value) => handleUpdate('boxShadowColor', value)}
+                customPropOpacity={boxShadowColorCustomPropOpacity}
+                customPropOpacityStyleKey='boxShadowColorCustomPropOpacity'
+                onCustomPropOpacityChange={(styleKey, alpha) => handleUpdate(styleKey, alpha)}
+              />
+            </div>
+          </AccordionContent>
+        </AccordionItem>
+      </Accordion>
+
       <Collapsible open={isCornersOpen} onOpenChange={setIsCornersOpen}>
         <div className='w-full flex flex-col gap-2'>
           <p className='text-xs text-muted-foreground'>Border</p>
           <div className='w-full flex flex-row gap-2 items-end flex-wrap'>
             <EditPanelInput
-              number={outlineWidth !== MIXED_VALUE_LABEL}
-              disabled={outlineWidth === MIXED_VALUE_LABEL}
+              number
               label='Width'
-              value={outlineWidth}
+              value={displayNumeric(outlineWidth)}
               styleKeyForCustomProperty='outlineWidth'
               width='80px'
               step={1}
@@ -177,11 +267,10 @@ export const StyleEdit = ({ components, handleUpdate, handleDataUpdate }: Props)
               }
             />
             <EditPanelInput
-              number={borderRadiusAll !== MIXED_VALUE_LABEL}
-              disabled={borderRadiusAll === MIXED_VALUE_LABEL}
+              number
               label='Radius'
               width='80px'
-              value={borderRadiusAll}
+              value={displayNumeric(borderRadiusAll)}
               step={1}
               onChange={handleAllCornersChange}
             />
@@ -201,9 +290,8 @@ export const StyleEdit = ({ components, handleUpdate, handleDataUpdate }: Props)
               label='Border Color'
               showLabel
               propertyKey='outlineColor'
-              color={outlineColor}
-              resolvedColor={outlineColorResolved}
-              disabled={outlineColor === MIXED_VALUE_LABEL}
+              color={displayColorRaw(outlineColor)}
+              resolvedColor={displayColorResolved(outlineColor, outlineColorResolved)}
               onUpdate={(color) => handleUpdate('outlineColor', color)}
               customPropOpacity={outlineColorCustomPropOpacity}
               customPropOpacityStyleKey='outlineColorCustomPropOpacity'
@@ -214,10 +302,9 @@ export const StyleEdit = ({ components, handleUpdate, handleDataUpdate }: Props)
         <CollapsibleContent className='pt-2'>
           <div className='w-full grid grid-cols-2 gap-2'>
             <EditPanelInput
-              number={borderRadiusTopLeft !== MIXED_VALUE_LABEL}
-              disabled={borderRadiusTopLeft === MIXED_VALUE_LABEL}
+              number
               label='Top Left'
-              value={borderRadiusTopLeft}
+              value={displayNumeric(borderRadiusTopLeft)}
               styleKeyForCustomProperty='borderRadiusTopLeft'
               step={1}
               onChange={(val) =>
@@ -225,10 +312,9 @@ export const StyleEdit = ({ components, handleUpdate, handleDataUpdate }: Props)
               }
             />
             <EditPanelInput
-              number={borderRadiusTopRight !== MIXED_VALUE_LABEL}
-              disabled={borderRadiusTopRight === MIXED_VALUE_LABEL}
+              number
               label='Top Right'
-              value={borderRadiusTopRight}
+              value={displayNumeric(borderRadiusTopRight)}
               styleKeyForCustomProperty='borderRadiusTopRight'
               step={1}
               onChange={(val) =>
@@ -236,22 +322,20 @@ export const StyleEdit = ({ components, handleUpdate, handleDataUpdate }: Props)
               }
             />
             <EditPanelInput
-              number={borderRadiusBottomLeft !== MIXED_VALUE_LABEL}
-              disabled={borderRadiusBottomLeft === MIXED_VALUE_LABEL}
+              number
               label='Bottom Left'
               styleKeyForCustomProperty='borderRadiusBottomLeft'
-              value={borderRadiusBottomLeft}
+              value={displayNumeric(borderRadiusBottomLeft)}
               step={1}
               onChange={(val) =>
                 handleUpdate('borderRadiusBottomLeft', Math.min(200, Math.max(0, parseValue(val))))
               }
             />
             <EditPanelInput
-              number={borderRadiusBottomRight !== MIXED_VALUE_LABEL}
-              disabled={borderRadiusBottomRight === MIXED_VALUE_LABEL}
+              number
               label='Bottom Right'
               styleKeyForCustomProperty='borderRadiusBottomRight'
-              value={borderRadiusBottomRight}
+              value={displayNumeric(borderRadiusBottomRight)}
               step={1}
               onChange={(val) =>
                 handleUpdate('borderRadiusBottomRight', Math.min(200, Math.max(0, parseValue(val))))
@@ -266,11 +350,10 @@ export const StyleEdit = ({ components, handleUpdate, handleDataUpdate }: Props)
           <p className='text-xs text-muted-foreground'>Padding</p>
           <div className='w-full flex flex-row gap-2 items-end'>
             <EditPanelInput
-              number={paddingAll !== MIXED_VALUE_LABEL}
-              disabled={paddingAll === MIXED_VALUE_LABEL}
+              number
               label='All'
               width='80px'
-              value={paddingAll}
+              value={displayNumeric(paddingAll)}
               step={1}
               onChange={handleAllPaddingsChange}
             />
@@ -289,44 +372,40 @@ export const StyleEdit = ({ components, handleUpdate, handleDataUpdate }: Props)
         <CollapsibleContent className='pt-2'>
           <div className='w-full grid grid-cols-2 gap-2'>
             <EditPanelInput
-              number={paddingTop !== MIXED_VALUE_LABEL}
-              disabled={paddingTop === MIXED_VALUE_LABEL}
+              number
               styleKeyForCustomProperty='paddingTop'
               label='Top'
-              value={paddingTop}
+              value={displayNumeric(paddingTop)}
               step={1}
               onChange={(val) =>
                 handleUpdate('paddingTop', Math.min(200, Math.max(0, parseValue(val))))
               }
             />
             <EditPanelInput
-              number={paddingRight !== MIXED_VALUE_LABEL}
-              disabled={paddingRight === MIXED_VALUE_LABEL}
+              number
               label='Right'
               styleKeyForCustomProperty='paddingRight'
-              value={paddingRight}
+              value={displayNumeric(paddingRight)}
               step={1}
               onChange={(val) =>
                 handleUpdate('paddingRight', Math.min(200, Math.max(0, parseValue(val))))
               }
             />
             <EditPanelInput
-              number={paddingBottom !== MIXED_VALUE_LABEL}
-              disabled={paddingBottom === MIXED_VALUE_LABEL}
+              number
               label='Bottom'
               styleKeyForCustomProperty='paddingBottom'
-              value={paddingBottom}
+              value={displayNumeric(paddingBottom)}
               step={1}
               onChange={(val) =>
                 handleUpdate('paddingBottom', Math.min(200, Math.max(0, parseValue(val))))
               }
             />
             <EditPanelInput
-              number={paddingLeft !== MIXED_VALUE_LABEL}
-              disabled={paddingLeft === MIXED_VALUE_LABEL}
+              number
               label='Left'
               styleKeyForCustomProperty='paddingLeft'
-              value={paddingLeft}
+              value={displayNumeric(paddingLeft)}
               step={1}
               onChange={(val) =>
                 handleUpdate('paddingLeft', Math.min(200, Math.max(0, parseValue(val))))

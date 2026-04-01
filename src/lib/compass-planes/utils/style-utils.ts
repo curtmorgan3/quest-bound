@@ -4,10 +4,13 @@ import type { Component } from '@/types';
 export function getBackgroundStyle(css: {
   background?: string;
   backgroundColor?: string;
+  boxShadow?: string;
 }): Record<string, string> {
-  if (css.background) return { background: css.background };
-  if (css.backgroundColor) return { backgroundColor: css.backgroundColor };
-  return {};
+  const out: Record<string, string> = {};
+  if (css.background) out.background = css.background;
+  else if (css.backgroundColor) out.backgroundColor = css.backgroundColor;
+  if (css.boxShadow) out.boxShadow = css.boxShadow;
+  return out;
 }
 
 /** Returns the color style: gradient text styles or solid color. */
