@@ -24,6 +24,7 @@ import {
 } from '../sheet-editor/component-world-geometry';
 import { isCanvasRootComponent } from '../sheet-editor/group-flex-utils';
 import { getComponentData, useComponentPositionMap } from '../utils';
+import { mergeCharacterWindowComponents } from '../utils/merge-character-window-components';
 import { useWindowCanvasSelection } from './window-canvas-selection-context';
 import { ParentWindowFrameProvider } from './parent-window-frame-context';
 import { WindowRuntimeProvider } from './window-runtime-context';
@@ -37,6 +38,8 @@ export interface WindowNodeWindow {
   y: number;
   isCollapsed: boolean;
   displayScale?: number;
+  /** Character sheet: JSON overlay from QBScript / `scriptOverlayComponents`. */
+  scriptOverlayComponents?: string | null;
 }
 
 export interface WindowNodeData {
@@ -102,7 +105,16 @@ export const WindowNode = ({ data }: { data: WindowNodeData }) => {
     onDisplayScaleChange,
     sheetTemplatePageId,
   } = data;
-  const { components } = useComponents(windowData.windowId);
+  const { components: templateComponents } = useComponents(windowData.windowId);
+  const components = useMemo(
+    () =>
+      mergeCharacterWindowComponents(
+        templateComponents ?? [],
+        { scriptOverlayComponents: windowData.scriptOverlayComponents },
+        characterContext?.character ?? null,
+      ),
+    [templateComponents, windowData.scriptOverlayComponents, characterContext?.character],
+  );
   const positionMap = useComponentPositionMap(components);
 
   const byId = useMemo(() => componentByIdMap(components), [components]);

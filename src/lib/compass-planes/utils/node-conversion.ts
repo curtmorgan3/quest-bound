@@ -1,6 +1,7 @@
 import { CharacterContext } from '@/stores';
 import type { Component, ComponentData, ComponentStyle } from '@/types';
 import { useContext, useMemo } from 'react';
+import { parseComponentDataJson } from './component-data-json';
 import {
   type PositionValues,
   STYLE_KEYS,
@@ -9,7 +10,6 @@ import {
   useStyleValues,
 } from './use-style-values';
 
-const componentDataCache = new Map<string, ComponentData>();
 const componentStyleCache = new Map<string, ComponentStyle>();
 
 /**
@@ -45,13 +45,7 @@ export function convertComponentsToNodes(components: Component[]): ComponentCanv
 }
 
 export function getComponentData(component: Component): ComponentData {
-  const key = component.data;
-  const cached = componentDataCache.get(key);
-  if (cached) return cached;
-
-  const parsed = JSON.parse(key) as ComponentData;
-  componentDataCache.set(key, parsed);
-  return parsed;
+  return parseComponentDataJson(component);
 }
 
 export function updateComponentData(data: string, update: Record<any, any>): string {

@@ -14,6 +14,8 @@ import { parseDiceExpression, rollDie } from '@/utils/dice-utils';
 import type Dexie from 'dexie';
 import type { ExecuteActionEventFn } from '../proxies';
 import { ActionProxy, AttributeProxy, createItemInstanceProxy } from '../proxies';
+import type { SheetComponentAccessor } from '../sheet-ui/sheet-component-accessor';
+import type { SheetUiCoordinator } from '../sheet-ui/sheet-ui-coordinator';
 import type { StructuredCloneSafe } from '../structured-clone-safe';
 
 /**
@@ -59,6 +61,8 @@ export class CharacterAccessor implements StructuredCloneSafe {
   protected onRollComplete: ((message: string) => Promise<void>) | undefined;
   /** Map from inventory component referenceLabel to componentId (for removeItem referenceLabel filtering). */
   protected refLabelToComponentId: Map<string, string> | undefined;
+  /** When set (ScriptRunner), sheet UI script API (createComponent, getComponent, …). */
+  protected sheetUiCoordinator: SheetUiCoordinator | null = null;
 
   constructor(
     characterId: string,
@@ -90,6 +94,7 @@ export class CharacterAccessor implements StructuredCloneSafe {
     rollSplitFn?: RollSplitFn,
     onRollComplete?: (message: string) => Promise<void>,
     refLabelToComponentId?: Map<string, string>,
+    sheetUiCoordinator?: SheetUiCoordinator | null,
   ) {
     this.id = characterId;
     this.characterName = characterName;
@@ -116,6 +121,29 @@ export class CharacterAccessor implements StructuredCloneSafe {
     this.rollSplitFn = rollSplitFn;
     this.onRollComplete = onRollComplete;
     this.refLabelToComponentId = refLabelToComponentId;
+    this.sheetUiCoordinator = sheetUiCoordinator ?? null;
+  }
+
+  /**
+   * Create a sheet component on the current character page (QBScript). See `agents/ui-script.md`.
+   * @param props Must include `window` (character window title). Returns `null` when there is no sheet context.
+   */
+  async createComponent(
+    typeOrName: string,
+    props: Record<string, unknown>,
+  ): Promise<SheetComponentAccessor | null> {
+    if (!this.sheetUiCoordinator) return null;
+    return this.sheetUiCoordinator.createComponent(this.id, typeOrName, props);
+  }
+
+  async getComponent(referenceLabel: string): Promise<SheetComponentAccessor | null> {
+    if (!this.sheetUiCoordinator) return null;
+    return this.sheetUiCoordinator.getComponent(this.id, referenceLabel);
+  }
+
+  async getComponents(referenceLabel: string): Promise<SheetComponentAccessor[]> {
+    if (!this.sheetUiCoordinator) return [];
+    return this.sheetUiCoordinator.getComponents(this.id, referenceLabel);
   }
 
   /**

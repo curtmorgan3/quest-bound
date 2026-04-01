@@ -137,6 +137,23 @@ export type Character = BaseDetails & {
   customProperties?: Record<string, string | number | boolean>;
   /** Style overrides for sheet components by referenceLabel (from setComponentStyle). Values are partial component style objects. */
   componentStyleOverrides?: Record<string, Record<string, unknown>>;
+  /**
+   * Per-template-component layout overrides for this character (QBScript `component.set` / sheet UI API).
+   * Keyed by ruleset `Component.id`.
+   */
+  componentLayoutOverrides?: Record<
+    string,
+    Partial<{ x: number; y: number; z: number; width: number; height: number; rotation: number }>
+  >;
+  /**
+   * Template `Component.id` values hidden for this character only (QBScript `component.delete` on template nodes).
+   */
+  sheetHiddenComponentIds?: string[];
+  /**
+   * Merges into template component `data` JSON for this character only (QBScript `component.set` data keys).
+   * Keyed by ruleset `Component.id`. Does not replace `componentData` (attribute value overrides).
+   */
+  componentScriptDataPatches?: Record<string, Record<string, unknown>>;
   /** ISO timestamp of the last time this character was synced with its ruleset attributes. */
   lastSyncedAt?: string | null;
   /** Optional variant (e.g. first archetype variant); persisted for cloud sync on the character row. */
@@ -236,6 +253,11 @@ export type CharacterWindow = BaseDetails & {
   moduleName?: string;
   /** Tombstone for cloud / realtime sync. */
   deleted?: boolean;
+  /**
+   * JSON array of script-created `Component` rows for this window instance (QBScript sheet UI).
+   * Same shape as `components` table rows; merged with template components in the sheet viewer.
+   */
+  scriptOverlayComponents?: string | null;
 };
 
 /** Template window layout for a ruleset page (used as sheet template). */

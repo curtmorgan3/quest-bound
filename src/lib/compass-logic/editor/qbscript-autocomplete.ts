@@ -73,6 +73,21 @@ const qbscriptCompletions = [
     info: "Close and remove a character sheet window on the current page by label (e.g. Owner.closeWindow('Inventory'))",
   },
   {
+    label: 'Owner.createComponent',
+    type: 'function',
+    info: "Create a sheet component on the current page (async). Args: type or composite name, props object with required window title plus layout/style/data keys (see agents/ui-script.md)",
+  },
+  {
+    label: 'Owner.getComponent',
+    type: 'function',
+    info: "Get a sheet component accessor by referenceLabel on the current page (async); null if none",
+  },
+  {
+    label: 'Owner.getComponents',
+    type: 'function',
+    info: "Get all sheet component accessors matching referenceLabel on the current page (async)",
+  },
+  {
     label: 'Scene',
     type: 'variable',
     info: 'Active campaign scene in campaign context; use Scene.characters(), Scene.spawnCharacter(name), and turn-based APIs',

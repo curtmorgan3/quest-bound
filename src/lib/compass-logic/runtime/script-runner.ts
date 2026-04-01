@@ -40,6 +40,7 @@ import { getSceneTurnOrderCharacters } from './advance-turn-order';
 import { executeTurnCallback } from './execute-turn-callback';
 import type { ScriptParamsHelper } from './params-helper';
 import type { ExecuteActionEventFn } from './proxies';
+import { SheetUiCoordinator } from './sheet-ui/sheet-ui-coordinator';
 
 const INVENTORY_COMPONENT_TYPE = 'inventory';
 const CELL_SIZE_PX = 20;
@@ -296,6 +297,9 @@ export class ScriptRunner {
   /** Map from inventory component referenceLabel to componentId (for removeItem filtering and delete validation). */
   private refLabelToComponentId: Map<string, string> = new Map();
 
+  /** Per-`run()` sheet UI mutations (createComponent, …); flushed in `flushCache`. */
+  private sheetUiCoordinator: SheetUiCoordinator | null = null;
+
   constructor(context: ScriptExecutionContext) {
     this.context = context;
     const selectCharacterHost =
@@ -545,6 +549,7 @@ export class ScriptRunner {
       charRollSplit,
       this.context.onRollComplete,
       this.refLabelToComponentId,
+      this.sheetUiCoordinator,
     );
 
     this.otherCharacterAccessors.set(characterId, accessor);
@@ -1148,6 +1153,8 @@ export class ScriptRunner {
       }
     }
 
+    await this.sheetUiCoordinator?.flushAll(now);
+
     // Clear pending updates
     this.pendingUpdates.clear();
 
@@ -1292,6 +1299,7 @@ export class ScriptRunner {
       ownerRollSplit,
       this.context.onRollComplete,
       this.refLabelToComponentId,
+      this.sheetUiCoordinator,
     );
 
     this.ownerAccessor = owner;
@@ -1369,6 +1377,8 @@ export class ScriptRunner {
    */
   async run(sourceCode: string): Promise<ScriptExecutionResult> {
     try {
+      this.sheetUiCoordinator = new SheetUiCoordinator(this.context.db as DB, this.context.rulesetId);
+
       // Set up component-update callback before loadCache so getCharacterAccessorById (e.g. during
       // scene preload or from Scene.characters()) and Owner always receive it. Required for
       // setComponentStyle/animateComponent in both owner and ownerless (e.g. game manager) scripts.

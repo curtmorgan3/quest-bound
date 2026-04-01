@@ -10,6 +10,7 @@ import type {
 } from '@/types';
 import type Dexie from 'dexie';
 import type { ExecuteActionEventFn } from '../proxies';
+import type { SheetUiCoordinator } from '../sheet-ui/sheet-ui-coordinator';
 import { CharacterAccessor } from './character-accessor';
 
 /**
@@ -47,6 +48,7 @@ export class OwnerAccessor extends CharacterAccessor {
     rollSplitFn?: RollSplitFn,
     onRollComplete?: (message: string) => Promise<void>,
     refLabelToComponentId?: Map<string, string>,
+    sheetUiCoordinator?: SheetUiCoordinator | null,
   ) {
     super(
       characterId,
@@ -73,6 +75,7 @@ export class OwnerAccessor extends CharacterAccessor {
       rollSplitFn,
       onRollComplete,
       refLabelToComponentId,
+      sheetUiCoordinator,
     );
   }
 

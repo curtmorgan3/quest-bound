@@ -682,12 +682,16 @@ export class Parser {
     if (this.match(TokenType.LBRACKET)) {
       const elements: ASTNode[] = [];
 
+      this.skipBracketLayout();
       if (!this.check(TokenType.RBRACKET)) {
         do {
+          this.skipBracketLayout();
           elements.push(this.expression());
+          this.skipBracketLayout();
         } while (this.match(TokenType.COMMA));
       }
 
+      this.skipBracketLayout();
       this.consume(TokenType.RBRACKET, "Expected ']' after array elements");
       return { type: 'ArrayLiteral', elements } as ArrayLiteral;
     }
@@ -696,15 +700,20 @@ export class Parser {
     if (this.match(TokenType.LBRACE)) {
       const properties: ObjectProperty[] = [];
 
+      this.skipBracketLayout();
       if (!this.check(TokenType.RBRACE)) {
         do {
+          this.skipBracketLayout();
           const keyToken = this.consume(TokenType.IDENTIFIER, 'Expected property name in object literal');
           this.consume(TokenType.COLON, "Expected ':' after property name");
+          this.skipBracketLayout();
           const value = this.expression();
           properties.push({ key: keyToken.value, value });
+          this.skipBracketLayout();
         } while (this.match(TokenType.COMMA));
       }
 
+      this.skipBracketLayout();
       this.consume(TokenType.RBRACE, "Expected '}' after object properties");
       return { type: 'ObjectLiteral', properties } as ObjectLiteral;
     }
@@ -762,6 +771,21 @@ export class Parser {
   private skipNewlines(): void {
     while (this.match(TokenType.NEWLINE)) {
       // Skip newlines
+    }
+  }
+
+  /**
+   * Inside [], {}, and similar bracketed expressions, newlines and indent/dedent
+   * from leading whitespace on continuation lines are not statement boundaries
+   * (Python-style implicit line continuation).
+   */
+  private skipBracketLayout(): void {
+    while (
+      this.match(TokenType.NEWLINE) ||
+      this.match(TokenType.INDENT) ||
+      this.match(TokenType.DEDENT)
+    ) {
+      // keep skipping
     }
   }
 

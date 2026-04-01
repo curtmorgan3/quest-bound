@@ -634,8 +634,8 @@ export class Evaluator {
 
     const args = await Promise.all(node.arguments.map((arg: ASTNode) => this.eval(arg)));
 
-    // Call the method with the object as 'this' context
-    return method.apply(object, args);
+    // Call the method with the object as 'this' context (await Promises for async accessors)
+    return await method.apply(object, args);
   }
 
   private evalFunctionDef(node: any): void {

@@ -24,6 +24,7 @@ import type {
   MemberAccess,
   MemberAssignment,
   MethodCall,
+  ObjectLiteral,
 } from '@/lib/compass-logic/interpreter/ast';
 
 function parse(source: string): Program {
@@ -383,6 +384,72 @@ describe('Parser', () => {
       const stmt = ast.statements[0] as ArrayAccess;
       expect(stmt.type).toBe('ArrayAccess');
       expect((stmt.object as ArrayAccess).type).toBe('ArrayAccess');
+    });
+
+    it('should parse array literal with line breaks between elements', () => {
+      const source = `[
+    1,
+    2
+]`;
+      const ast = parse(source);
+      const stmt = ast.statements[0] as ArrayLiteral;
+      expect(stmt.elements).toHaveLength(2);
+      expect((stmt.elements[0] as NumberLiteral).value).toBe(1);
+      expect((stmt.elements[1] as NumberLiteral).value).toBe(2);
+    });
+  });
+
+  describe('Object literals', () => {
+    it('should parse empty object literal', () => {
+      const ast = parse('{}');
+      const stmt = ast.statements[0] as ObjectLiteral;
+      expect(stmt.properties).toHaveLength(0);
+    });
+
+    it('should parse object literal with line breaks between properties', () => {
+      const source = `obj = {
+    test: 'test',
+    value: 2
+}`;
+      const ast = parse(source);
+      const stmt = ast.statements[0] as Assignment;
+      const obj = stmt.value as ObjectLiteral;
+      expect(obj.type).toBe('ObjectLiteral');
+      expect(obj.properties).toHaveLength(2);
+      expect(obj.properties[0].key).toBe('test');
+      expect((obj.properties[0].value as StringLiteral).value).toBe('test');
+      expect(obj.properties[1].key).toBe('value');
+      expect((obj.properties[1].value as NumberLiteral).value).toBe(2);
+    });
+
+    it('should parse multiline object literal inside indented block', () => {
+      const source = `if true:
+    obj = {
+        test: 'test',
+        value: 2
+    }
+    x = 1`;
+      const ast = parse(source);
+      const ifStmt = ast.statements[0] as IfStatement;
+      expect(ifStmt.thenBlock).toHaveLength(2);
+      const assign = ifStmt.thenBlock[0] as Assignment;
+      expect(assign.name).toBe('obj');
+      expect((assign.value as ObjectLiteral).properties).toHaveLength(2);
+    });
+
+    it('should parse nested multiline object literals', () => {
+      const source = `outer = {
+    inner: {
+        y: 1
+    }
+}`;
+      const ast = parse(source);
+      const outer = ast.statements[0] as Assignment;
+      const obj = outer.value as ObjectLiteral;
+      expect(obj.properties).toHaveLength(1);
+      const inner = obj.properties[0].value as ObjectLiteral;
+      expect(inner.properties[0].key).toBe('y');
+      expect((inner.properties[0].value as NumberLiteral).value).toBe(1);
     });
   });
 
