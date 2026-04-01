@@ -1,10 +1,11 @@
-import { Loading } from '@/components';
+import { Button, Loading } from '@/components';
 import { ImportRulesetOverwriteModals } from '@/components/composites';
 import { useImportRuleset, useRulesetBundle, type ImportRulesetResult } from '@/lib/compass-api';
 import { useEffect, useRef, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 
 export function PlayPage() {
+  const navigate = useNavigate();
   const { slug } = useParams<{ slug: string }>();
   const { importRuleset, isImporting, importStep } = useImportRuleset();
   const { getRulesetBundle } = useRulesetBundle();
@@ -166,7 +167,12 @@ export function PlayPage() {
 
   if (error) {
     return (
-      <div className='flex h-full w-full items-center justify-center text-destructive'>{error}</div>
+      <div className='flex h-full w-full flex-col items-center justify-center gap-4 px-4 text-center'>
+        <p className='text-destructive'>{error}</p>
+        <Button type='button' variant='outline' onClick={() => navigate('/')}>
+          Go to home
+        </Button>
+      </div>
     );
   }
 
