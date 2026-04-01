@@ -55,17 +55,17 @@ export const CampaignCharacterSheet = ({
   if (!showSheet) return null;
 
   const overlayLeft =
-    sidebarState === 'expanded' ? 'var(--sidebar-width)' : 'calc(var(--sidebar-width-icon) + 1rem)';
+    sidebarState === 'expanded' ? 'var(--sidebar-width)' : 'var(--sidebar-width-icon)';
 
   return (
     <>
       <AnimatePresence>
         {showSheet && characterId && (
           <motion.div
-            className='fixed bottom-0 right-0 z-30 flex flex-col bg-background'
+            className='fixed bottom-0 right-0 z-30 flex flex-col bg-background p-0'
             style={{
               left: overlayLeft,
-              top: '50px',
+              top: '53px',
               background: transparentBackground ? 'transparent' : undefined,
             }}
             initial={{ x: '100%' }}

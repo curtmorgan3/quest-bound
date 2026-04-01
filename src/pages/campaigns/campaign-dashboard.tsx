@@ -343,468 +343,464 @@ export function CampaignDashboard() {
   }
 
   return (
-    <>
-      <PageWrapper
-        title={campaignTitle}
-        headerActions={
-          <div className='flex items-center gap-2'>
-            {sceneId && currentScene && (
-              <div className='flex items-center gap-3'>
-                <div className='flex gap-2'>
-                  {campaignPlayerCharacters.map(({ cc, character }) => (
-                    <button
-                      type='button'
-                      key={cc.id}
-                      onClick={() =>
-                        setSheetCharacterId((current) =>
-                          current === cc.characterId ? null : cc.characterId,
-                        )
-                      }
-                      className='rounded-md focus:outline-none focus-visible:ring-2 focus-visible:ring-ring'
-                      aria-label={
-                        sheetCharacterId === cc.characterId
-                          ? 'Close character sheet'
-                          : `Open ${character?.name ?? 'character'} sheet`
-                      }
-                      title={character?.name ?? 'Character'}>
-                      <Avatar className='size-8 shrink-0 rounded-md'>
-                        <AvatarImage
-                          src={character?.image ?? ''}
-                          alt={character?.name ?? 'Character'}
-                        />
-                        <AvatarFallback className='rounded-md text-xs'>
-                          {(character?.name ?? '?').slice(0, 1).toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
-                    </button>
-                  ))}
-                </div>
-                <ManagePlayerCharacters
-                  campaignCharacters={campaignCharacters}
-                  characters={characters}
-                  rulesetId={campaign.rulesetId}
-                  disabled={orchestrationBlocked}
-                  allowAdd
-                  onAddCharacter={async (characterId) => {
-                    if (!campaignId || !sceneId || orchestrationBlocked) return;
-                    await createCampaignCharacter(campaignId, characterId, {
-                      campaignSceneId: sceneId,
-                    });
-                  }}
-                  onRemoveCharacter={async (campaignCharacterId) => {
-                    await deleteCampaignCharacter(campaignCharacterId);
-                  }}
-                />
+    <PageWrapper
+      title={campaignTitle}
+      headerActions={
+        <div className='flex items-center gap-2'>
+          {sceneId && currentScene && (
+            <div className='flex items-center gap-3'>
+              <div className='flex gap-2'>
+                {campaignPlayerCharacters.map(({ cc, character }) => (
+                  <button
+                    type='button'
+                    key={cc.id}
+                    onClick={() =>
+                      setSheetCharacterId((current) =>
+                        current === cc.characterId ? null : cc.characterId,
+                      )
+                    }
+                    className='rounded-md focus:outline-none focus-visible:ring-2 focus-visible:ring-ring'
+                    aria-label={
+                      sheetCharacterId === cc.characterId
+                        ? 'Close character sheet'
+                        : `Open ${character?.name ?? 'character'} sheet`
+                    }
+                    title={character?.name ?? 'Character'}>
+                    <Avatar className='size-8 shrink-0 rounded-md'>
+                      <AvatarImage
+                        src={character?.image ?? ''}
+                        alt={character?.name ?? 'Character'}
+                      />
+                      <AvatarFallback className='rounded-md text-xs'>
+                        {(character?.name ?? '?').slice(0, 1).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                  </button>
+                ))}
+              </div>
+              <ManagePlayerCharacters
+                campaignCharacters={campaignCharacters}
+                characters={characters}
+                rulesetId={campaign.rulesetId}
+                disabled={orchestrationBlocked}
+                allowAdd
+                onAddCharacter={async (characterId) => {
+                  if (!campaignId || !sceneId || orchestrationBlocked) return;
+                  await createCampaignCharacter(campaignId, characterId, {
+                    campaignSceneId: sceneId,
+                  });
+                }}
+                onRemoveCharacter={async (campaignCharacterId) => {
+                  await deleteCampaignCharacter(campaignCharacterId);
+                }}
+              />
 
-                <div className='flex items-center border-l pl-2 gap-2'>
-                  <Switch
-                    id='turn-based-mode'
-                    checked={!!currentScene.turnBasedMode}
-                    disabled={orchestrationBlocked}
-                    onCheckedChange={async (checked) => {
-                      if (!campaignId || !sceneId || orchestrationBlocked) return;
+              <div className='flex items-center border-l pl-2 gap-2'>
+                <Switch
+                  id='turn-based-mode'
+                  checked={!!currentScene.turnBasedMode}
+                  disabled={orchestrationBlocked}
+                  onCheckedChange={async (checked) => {
+                    if (!campaignId || !sceneId || orchestrationBlocked) return;
+                    try {
+                      if (checked) {
+                        await startSceneTurnBasedMode(db, campaignId, sceneId);
+                      } else {
+                        await stopSceneTurnBasedMode(db, campaignId, sceneId);
+                      }
+                    } catch (e) {
+                      console.warn('Turn-based mode toggle failed', e);
+                    }
+                  }}
+                  data-testid='turn-based-mode-switch'
+                />
+                <Label htmlFor='turn-based-mode' className='text-sm cursor-pointer'>
+                  Turn Mode
+                </Label>
+              </div>
+              {currentScene.turnBasedMode && (
+                <>
+                  <Button
+                    variant='outline'
+                    size='sm'
+                    onClick={async () => {
+                      if (!campaignId || !sceneId || !campaign?.rulesetId || orchestrationBlocked)
+                        return;
+                      setAdvancing(true);
                       try {
-                        if (checked) {
-                          await startSceneTurnBasedMode(db, campaignId, sceneId);
-                        } else {
-                          await stopSceneTurnBasedMode(db, campaignId, sceneId);
-                        }
+                        await runSceneAdvanceFromUI({
+                          db,
+                          rulesetId: campaign.rulesetId,
+                          campaignId,
+                          campaignSceneId: sceneId,
+                        });
                       } catch (e) {
-                        console.warn('Turn-based mode toggle failed', e);
+                        console.warn('Advance turn failed', e);
+                      } finally {
+                        setAdvancing(false);
                       }
                     }}
-                    data-testid='turn-based-mode-switch'
-                  />
-                  <Label htmlFor='turn-based-mode' className='text-sm cursor-pointer'>
-                    Turn Mode
-                  </Label>
-                </div>
-                {currentScene.turnBasedMode && (
-                  <>
-                    <Button
-                      variant='outline'
-                      size='sm'
-                      onClick={async () => {
-                        if (!campaignId || !sceneId || !campaign?.rulesetId || orchestrationBlocked)
-                          return;
-                        setAdvancing(true);
-                        try {
-                          await runSceneAdvanceFromUI({
-                            db,
-                            rulesetId: campaign.rulesetId,
-                            campaignId,
-                            campaignSceneId: sceneId,
-                          });
-                        } catch (e) {
-                          console.warn('Advance turn failed', e);
-                        } finally {
-                          setAdvancing(false);
-                        }
-                      }}
-                      disabled={advancing || orchestrationBlocked}
-                      aria-label='Next turn'
-                      data-testid='next-turn-button'>
-                      <ChevronRight className='h-4 w-4' />
-                    </Button>
-                  </>
-                )}
-              </div>
-            )}
-            {sceneId && currentScene && (
-              <div className='h-6 w-px shrink-0 bg-border self-center' aria-hidden />
-            )}
+                    disabled={advancing || orchestrationBlocked}
+                    aria-label='Next turn'
+                    data-testid='next-turn-button'>
+                    <ChevronRight className='h-4 w-4' />
+                  </Button>
+                </>
+              )}
+            </div>
+          )}
+          {sceneId && currentScene && (
+            <div className='h-6 w-px shrink-0 bg-border self-center' aria-hidden />
+          )}
 
-            <Button
-              variant='ghost'
-              size='icon'
-              onClick={() => setSceneDocumentPanelOpen(true)}
-              aria-label='Scene document'
-              title={sceneId ? 'Link a document to this scene' : 'Open a scene to link a document'}
-              data-testid='scene-document-panel-trigger'>
-              <FileText className='h-4 w-4' />
-            </Button>
-            <Button
-              variant='ghost'
-              size='icon'
-              onClick={() => setSceneEventsPanelOpen(true)}
-              aria-label='Scene events'
-              title={sceneId ? 'Link events to this scene' : 'Open a scene to link events'}
-              data-testid='scene-events-panel-trigger'>
-              <Zap className='h-4 w-4' />
-            </Button>
-            {campaignId && showHostCampaignCloudPanel && (
-              <>
+          <Button
+            variant='ghost'
+            size='icon'
+            onClick={() => setSceneDocumentPanelOpen(true)}
+            aria-label='Scene document'
+            title={sceneId ? 'Link a document to this scene' : 'Open a scene to link a document'}
+            data-testid='scene-document-panel-trigger'>
+            <FileText className='h-4 w-4' />
+          </Button>
+          <Button
+            variant='ghost'
+            size='icon'
+            onClick={() => setSceneEventsPanelOpen(true)}
+            aria-label='Scene events'
+            title={sceneId ? 'Link events to this scene' : 'Open a scene to link events'}
+            data-testid='scene-events-panel-trigger'>
+            <Zap className='h-4 w-4' />
+          </Button>
+          {campaignId && showHostCampaignCloudPanel && (
+            <>
+              <Button
+                variant='ghost'
+                size='icon'
+                onClick={() => setGuestJoinInviteSheetOpen(true)}
+                aria-label='Guest join token and host session'
+                title='Guest join token and host session'
+                data-testid='guest-join-invite-sheet-trigger'>
+                <Globe className={cn('h-4 w-4', hostCampaignRealtimeEnabled && 'text-primary')} />
+              </Button>
+              <CampaignPlayInviteSheet
+                open={guestJoinInviteSheetOpen}
+                onOpenChange={setGuestJoinInviteSheetOpen}
+                campaignId={campaign.id}
+                rulesetId={campaign.rulesetId}
+                campaignLabel={campaign.label}
+                campaignCharacters={campaignCharacters}
+                charactersById={charactersById}
+                hostCloudUserId={hostCloudUserId}
+                hostRealtimeEnabled={hostCampaignRealtimeEnabled}
+                onHostRealtimeEnabledChange={setHostCampaignRealtimeEnabled}
+              />
+            </>
+          )}
+          <SceneDocumentPanel
+            open={sceneDocumentPanelOpen}
+            onOpenChange={setSceneDocumentPanelOpen}
+            campaignId={campaign.id}
+            sceneId={sceneId}
+            sceneName={currentScene?.name}
+          />
+          <CampaignEventsPanel
+            open={sceneEventsPanelOpen}
+            onOpenChange={setSceneEventsPanelOpen}
+            campaignId={campaign.id}
+            sceneId={sceneId}
+            sceneName={currentScene?.name}
+            actingCharacterId={sheetCharacterId}
+          />
+          <CampaignCharacterSheet
+            hideGameLog
+            campaignId={campaignId}
+            campaignSceneId={sceneId ?? undefined}
+            characterId={sheetCharacterId ?? undefined}
+            open={!!sheetCharacterId}
+            transparentBackground={characterSheetTransparentBackground}
+            forceFitSheetToViewport={forceFitSheetToViewport}
+            onFloatingActionsApi={setCharacterSheetFloatingActions}
+            topBar={
+              sheetCharacterId ? (
+                <div className='flex w-full min-w-0 items-center justify-between gap-3'>
+                  <div
+                    className='flex min-h-10 min-w-0 flex-1 flex-wrap items-center gap-2'
+                    role={
+                      sceneId && sceneCharacterSheetBarEntries.length > 0 ? 'toolbar' : undefined
+                    }
+                    aria-label={
+                      sceneId && sceneCharacterSheetBarEntries.length > 0
+                        ? 'Characters in this scene'
+                        : undefined
+                    }>
+                    {sceneId &&
+                      sceneCharacterSheetBarEntries.map(({ cc, character }) => {
+                        const isCurrentTurn =
+                          !!currentScene?.turnBasedMode &&
+                          currentTurnCampaignCharacterId != null &&
+                          currentTurnCampaignCharacterId === cc.id;
+                        const cid = character?.id;
+                        if (!cid) return null;
+                        return (
+                          <button
+                            type='button'
+                            key={cc.id}
+                            data-active-npc-avatar='true'
+                            onClick={() => setSheetCharacterId(cid)}
+                            className={cn(
+                              'rounded-md border-2 p-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                              isCurrentTurn ? 'border-primary' : 'border-transparent',
+                            )}
+                            title={character?.name ?? 'Character'}
+                            aria-label={
+                              isCurrentTurn
+                                ? `Open ${character?.name ?? 'character'} sheet (current turn)`
+                                : `Open ${character?.name ?? 'character'} sheet`
+                            }>
+                            <Avatar className='size-10 shrink-0 rounded-md'>
+                              <AvatarImage
+                                src={character?.image ?? ''}
+                                alt={character?.name ?? 'Character'}
+                              />
+                              <AvatarFallback className='rounded-md text-sm'>
+                                {(character?.name ?? '?').slice(0, 1).toUpperCase()}
+                              </AvatarFallback>
+                            </Avatar>
+                          </button>
+                        );
+                      })}
+                  </div>
+                  <div className='flex shrink-0 items-center gap-2'>
+                    {characterSheetFloatingActions && (
+                      <>
+                        <Button
+                          variant='outline'
+                          size='icon'
+                          className='size-8 shrink-0'
+                          onClick={characterSheetFloatingActions.onOpenInventory}
+                          aria-label='Open inventory'>
+                          <Backpack className='size-4' />
+                        </Button>
+                        <Button
+                          variant='outline'
+                          size='icon'
+                          className={cn(
+                            'size-8 shrink-0',
+                            characterSheetTransparentBackground && 'text-primary',
+                          )}
+                          onClick={() => setCharacterSheetTransparentBackground((v) => !v)}
+                          aria-label={
+                            characterSheetTransparentBackground
+                              ? 'Disable transparent character sheet background'
+                              : 'Enable transparent character sheet background'
+                          }
+                          title={
+                            characterSheetTransparentBackground
+                              ? 'Disable transparent background'
+                              : 'Enable transparent background'
+                          }>
+                          <EyeClosed className='size-4' />
+                        </Button>
+                        <Button
+                          variant='outline'
+                          size='icon'
+                          className={cn(
+                            'size-8 shrink-0',
+                            forceFitSheetToViewport && 'text-primary',
+                          )}
+                          onClick={() => setForceFitSheetToViewport((v) => !v)}
+                          aria-label={
+                            forceFitSheetToViewport
+                              ? 'Turn off fit sheet to viewport'
+                              : 'Fit sheet to viewport'
+                          }
+                          title={
+                            forceFitSheetToViewport
+                              ? 'Disable fitting sheet to viewport'
+                              : 'Fit sheet to viewport'
+                          }>
+                          <Maximize2 className='size-4' />
+                        </Button>
+                        <Button
+                          variant='outline'
+                          size='icon'
+                          className='size-8 shrink-0'
+                          onClick={characterSheetFloatingActions.onClose}
+                          aria-label='Close character sheet'>
+                          <X className='size-4' />
+                        </Button>
+                      </>
+                    )}
+                  </div>
+                </div>
+              ) : undefined
+            }
+            onClose={handleCharacterSheetClose}
+          />
+        </div>
+      }>
+      {showHostRealtimeReconnectNotice && (
+        <Alert className='mx-4 mt-2 shrink-0 border-amber-500/40 bg-amber-500/10 text-amber-950 dark:text-amber-100'>
+          <AlertDescription className='text-sm'>
+            {campaignPlaySession?.realtimeStatus === 'connecting'
+              ? 'Reconnecting to campaign realtime…'
+              : (campaignPlaySession?.realtimeLastError ?? 'Campaign realtime connection error')}
+          </AlertDescription>
+        </Alert>
+      )}
+      <div className='flex min-h-0 flex-1'>
+        {/* Left column: Stage NPCs */}
+        <div
+          className={cn(
+            'flex min-h-0 flex-col bg-muted/20',
+            leftColumnCollapsed ? 'w-10 shrink-0 border-r border-border' : 'shrink-0',
+          )}
+          style={leftColumnCollapsed ? undefined : { width: 280 }}>
+          {leftColumnCollapsed ? (
+            <button
+              type='button'
+              onClick={() => setLeftColumnCollapsed(false)}
+              className='flex h-full min-h-0 flex-col items-center justify-center gap-1 border-r border-border bg-muted/30 px-1 py-2 hover:bg-muted/50'
+              aria-label='Expand Stage NPCs panel'>
+              <ChevronRight className='size-4 shrink-0' />
+              <span className='text-[10px] font-medium uppercase tracking-wide text-muted-foreground [writing-mode:vertical-rl]'>
+                Stage
+              </span>
+            </button>
+          ) : (
+            <>
+              <div className='flex shrink-0 items-center justify-between gap-2 border-b border-border px-2 py-1.5'>
+                <span className='text-sm font-medium text-muted-foreground'>Stage NPCs</span>
                 <Button
                   variant='ghost'
                   size='icon'
-                  onClick={() => setGuestJoinInviteSheetOpen(true)}
-                  aria-label='Guest join token and host session'
-                  title='Guest join token and host session'
-                  data-testid='guest-join-invite-sheet-trigger'>
-                  <Globe className={cn('h-4 w-4', hostCampaignRealtimeEnabled && 'text-primary')} />
+                  className='size-7'
+                  onClick={() => setLeftColumnCollapsed(true)}
+                  aria-label='Collapse Stage NPCs panel'>
+                  <ChevronLeft className='size-4' />
                 </Button>
-                <CampaignPlayInviteSheet
-                  open={guestJoinInviteSheetOpen}
-                  onOpenChange={setGuestJoinInviteSheetOpen}
+              </div>
+              <div className='min-h-0 flex-1 overflow-auto'>
+                <NpcStage
                   campaignId={campaign.id}
                   rulesetId={campaign.rulesetId}
-                  campaignLabel={campaign.label}
-                  campaignCharacters={campaignCharacters}
-                  charactersById={charactersById}
-                  hostCloudUserId={hostCloudUserId}
-                  hostRealtimeEnabled={hostCampaignRealtimeEnabled}
-                  onHostRealtimeEnabledChange={setHostCampaignRealtimeEnabled}
+                  sceneId={sceneId}
+                  onCardHover={setHoveredCampaignCharacterId}
                 />
-              </>
-            )}
-            <SceneDocumentPanel
-              open={sceneDocumentPanelOpen}
-              onOpenChange={setSceneDocumentPanelOpen}
-              campaignId={campaign.id}
-              sceneId={sceneId}
-              sceneName={currentScene?.name}
-            />
-            <CampaignEventsPanel
-              open={sceneEventsPanelOpen}
-              onOpenChange={setSceneEventsPanelOpen}
-              campaignId={campaign.id}
-              sceneId={sceneId}
-              sceneName={currentScene?.name}
-              actingCharacterId={sheetCharacterId}
-            />
-            <CampaignCharacterSheet
-              hideGameLog
-              campaignId={campaignId}
-              campaignSceneId={sceneId ?? undefined}
-              characterId={sheetCharacterId ?? undefined}
-              open={!!sheetCharacterId}
-              transparentBackground={characterSheetTransparentBackground}
-              forceFitSheetToViewport={forceFitSheetToViewport}
-              onFloatingActionsApi={setCharacterSheetFloatingActions}
-              topBar={
-                sheetCharacterId ? (
-                  <div className='flex w-full min-w-0 items-center justify-between gap-3'>
-                    <div
-                      className='flex min-h-10 min-w-0 flex-1 flex-wrap items-center gap-2'
-                      role={
-                        sceneId && sceneCharacterSheetBarEntries.length > 0 ? 'toolbar' : undefined
-                      }
-                      aria-label={
-                        sceneId && sceneCharacterSheetBarEntries.length > 0
-                          ? 'Characters in this scene'
-                          : undefined
-                      }>
-                      {sceneId &&
-                        sceneCharacterSheetBarEntries.map(({ cc, character }) => {
-                          const isCurrentTurn =
-                            !!currentScene?.turnBasedMode &&
-                            currentTurnCampaignCharacterId != null &&
-                            currentTurnCampaignCharacterId === cc.id;
-                          const cid = character?.id;
-                          if (!cid) return null;
-                          return (
-                            <button
-                              type='button'
-                              key={cc.id}
-                              data-active-npc-avatar='true'
-                              onClick={() => setSheetCharacterId(cid)}
-                              className={cn(
-                                'rounded-md border-2 p-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-                                isCurrentTurn ? 'border-primary' : 'border-transparent',
-                              )}
-                              title={character?.name ?? 'Character'}
-                              aria-label={
-                                isCurrentTurn
-                                  ? `Open ${character?.name ?? 'character'} sheet (current turn)`
-                                  : `Open ${character?.name ?? 'character'} sheet`
-                              }>
-                              <Avatar className='size-10 shrink-0 rounded-md'>
-                                <AvatarImage
-                                  src={character?.image ?? ''}
-                                  alt={character?.name ?? 'Character'}
-                                />
-                                <AvatarFallback className='rounded-md text-sm'>
-                                  {(character?.name ?? '?').slice(0, 1).toUpperCase()}
-                                </AvatarFallback>
-                              </Avatar>
-                            </button>
-                          );
-                        })}
-                    </div>
-                    <div className='flex shrink-0 items-center gap-2'>
-                      {characterSheetFloatingActions && (
-                        <>
-                          <Button
-                            variant='outline'
-                            size='icon'
-                            className='size-8 shrink-0'
-                            onClick={characterSheetFloatingActions.onOpenInventory}
-                            aria-label='Open inventory'>
-                            <Backpack className='size-4' />
-                          </Button>
-                          <Button
-                            variant='outline'
-                            size='icon'
-                            className={cn(
-                              'size-8 shrink-0',
-                              characterSheetTransparentBackground && 'text-primary',
-                            )}
-                            onClick={() => setCharacterSheetTransparentBackground((v) => !v)}
-                            aria-label={
-                              characterSheetTransparentBackground
-                                ? 'Disable transparent character sheet background'
-                                : 'Enable transparent character sheet background'
-                            }
-                            title={
-                              characterSheetTransparentBackground
-                                ? 'Disable transparent background'
-                                : 'Enable transparent background'
-                            }>
-                            <EyeClosed className='size-4' />
-                          </Button>
-                          <Button
-                            variant='outline'
-                            size='icon'
-                            className={cn(
-                              'size-8 shrink-0',
-                              forceFitSheetToViewport && 'text-primary',
-                            )}
-                            onClick={() => setForceFitSheetToViewport((v) => !v)}
-                            aria-label={
-                              forceFitSheetToViewport
-                                ? 'Turn off fit sheet to viewport'
-                                : 'Fit sheet to viewport'
-                            }
-                            title={
-                              forceFitSheetToViewport
-                                ? 'Disable fitting sheet to viewport'
-                                : 'Fit sheet to viewport'
-                            }>
-                            <Maximize2 className='size-4' />
-                          </Button>
-                          <Button
-                            variant='outline'
-                            size='icon'
-                            className='size-8 shrink-0'
-                            onClick={characterSheetFloatingActions.onClose}
-                            aria-label='Close character sheet'>
-                            <X className='size-4' />
-                          </Button>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                ) : undefined
-              }
-              onClose={handleCharacterSheetClose}
-            />
-          </div>
-        }>
-        {showHostRealtimeReconnectNotice && (
-          <Alert className='mx-4 mt-2 shrink-0 border-amber-500/40 bg-amber-500/10 text-amber-950 dark:text-amber-100'>
-            <AlertDescription className='text-sm'>
-              {campaignPlaySession?.realtimeStatus === 'connecting'
-                ? 'Reconnecting to campaign realtime…'
-                : (campaignPlaySession?.realtimeLastError ?? 'Campaign realtime connection error')}
-            </AlertDescription>
-          </Alert>
-        )}
-        <div className='flex min-h-0 flex-1'>
-          {/* Left column: Stage NPCs */}
-          <div
-            className={cn(
-              'flex min-h-0 flex-col bg-muted/20',
-              leftColumnCollapsed ? 'w-10 shrink-0 border-r border-border' : 'shrink-0',
-            )}
-            style={leftColumnCollapsed ? undefined : { width: 280 }}>
-            {leftColumnCollapsed ? (
-              <button
-                type='button'
-                onClick={() => setLeftColumnCollapsed(false)}
-                className='flex h-full min-h-0 flex-col items-center justify-center gap-1 border-r border-border bg-muted/30 px-1 py-2 hover:bg-muted/50'
-                aria-label='Expand Stage NPCs panel'>
-                <ChevronRight className='size-4 shrink-0' />
-                <span className='text-[10px] font-medium uppercase tracking-wide text-muted-foreground [writing-mode:vertical-rl]'>
-                  Stage
-                </span>
-              </button>
-            ) : (
-              <>
-                <div className='flex shrink-0 items-center justify-between gap-2 border-b border-border px-2 py-1.5'>
-                  <span className='text-sm font-medium text-muted-foreground'>Stage NPCs</span>
-                  <Button
-                    variant='ghost'
-                    size='icon'
-                    className='size-7'
-                    onClick={() => setLeftColumnCollapsed(true)}
-                    aria-label='Collapse Stage NPCs panel'>
-                    <ChevronLeft className='size-4' />
-                  </Button>
-                </div>
-                <div className='min-h-0 flex-1 overflow-auto'>
-                  <NpcStage
-                    campaignId={campaign.id}
-                    rulesetId={campaign.rulesetId}
-                    sceneId={sceneId}
-                    onCardHover={setHoveredCampaignCharacterId}
-                  />
-                </div>
-              </>
-            )}
-          </div>
-
-          {/* Center column: Scene (Active / Turn order) */}
-          <div
-            className={cn(
-              'flex min-h-0 flex-col bg-muted/20',
-              centerColumnCollapsed
-                ? 'w-10 shrink-0 border-r border-border'
-                : 'min-w-0 flex-1 border-r border-border',
-            )}>
-            {centerColumnCollapsed ? (
-              <button
-                type='button'
-                onClick={() => setCenterColumnCollapsed(false)}
-                className='flex h-full min-h-0 flex-col items-center justify-center gap-1 border-r border-border bg-muted/30 px-1 py-2 hover:bg-muted/50'
-                aria-label='Expand Scene panel'>
-                <ChevronRight className='size-4 shrink-0' />
-                <span className='text-[10px] font-medium uppercase tracking-wide text-muted-foreground [writing-mode:vertical-rl]'>
-                  Scene
-                </span>
-              </button>
-            ) : (
-              <>
-                <div className='flex shrink-0 items-center justify-between gap-2 border-b border-border px-2 py-1.5'>
-                  <span className='text-sm font-medium text-muted-foreground'>
-                    {currentScene?.turnBasedMode ? 'Turn order' : 'Active'}
-                  </span>
-                  <Button
-                    variant='ghost'
-                    size='icon'
-                    className='size-7'
-                    onClick={() => setCenterColumnCollapsed(true)}
-                    aria-label='Collapse Scene panel'>
-                    <ChevronLeft className='size-4' />
-                  </Button>
-                </div>
-                <div className='min-h-0 flex-1 overflow-auto'>
-                  {currentScene?.turnBasedMode && sceneId ? (
-                    <TurnOrderScene
-                      campaignId={campaign.id}
-                      sceneId={sceneId}
-                      currentTurnCycle={currentScene.currentTurnCycle ?? 1}
-                      currentTurnCampaignCharacterId={currentTurnCampaignCharacterId ?? null}
-                      hoveredCampaignCharacterId={hoveredCampaignCharacterId}
-                      onAvatarClick={(characterId) =>
-                        setSheetCharacterId((prev) => (prev === characterId ? null : characterId))
-                      }
-                      onReorderTurnOrder={
-                        orchestrationBlocked
-                          ? undefined
-                          : async (orderedCampaignCharacterIds) => {
-                              for (let i = 0; i < orderedCampaignCharacterIds.length; i++) {
-                                await updateCampaignCharacter(orderedCampaignCharacterIds[i], {
-                                  turnOrder: i,
-                                });
-                              }
-                            }
-                      }
-                    />
-                  ) : (
-                    <ActiveScene
-                      campaignId={campaign.id}
-                      sceneId={sceneId}
-                      hoveredCampaignCharacterId={hoveredCampaignCharacterId}
-                      onAvatarClick={(characterId) =>
-                        setSheetCharacterId((prev) => (prev === characterId ? null : characterId))
-                      }
-                    />
-                  )}
-                </div>
-              </>
-            )}
-          </div>
-
-          {/* Right column: Game Log */}
-          <div
-            className={cn(
-              'flex min-h-0 flex-col bg-muted/20',
-              rightColumnCollapsed
-                ? 'w-10 shrink-0 border-l border-border'
-                : 'min-w-[240px] flex-1',
-            )}>
-            {rightColumnCollapsed ? (
-              <button
-                type='button'
-                onClick={() => setRightColumnCollapsed(false)}
-                className='flex h-full min-h-0 flex-col items-center justify-center gap-1 border-l border-border bg-muted/30 px-1 py-2 hover:bg-muted/50'
-                aria-label='Expand Game log panel'>
-                <ChevronLeft className='size-4 shrink-0' />
-                <span className='text-[10px] font-medium uppercase tracking-wide text-muted-foreground [writing-mode:vertical-rl]'>
-                  Log
-                </span>
-              </button>
-            ) : (
-              <>
-                <div className='flex shrink-0 items-center justify-between gap-2 border-b border-border px-2 py-1.5'>
-                  <span className='text-sm font-medium text-muted-foreground'>Game log</span>
-                  <Button
-                    variant='ghost'
-                    size='icon'
-                    className='size-7'
-                    onClick={() => setRightColumnCollapsed(true)}
-                    aria-label='Collapse Game log panel'>
-                    <ChevronRight className='size-4' />
-                  </Button>
-                </div>
-                <div className='min-h-0 flex-1 overflow-auto'>
-                  <CampaignGameLog campaignId={campaign.id} rulesetId={campaign.rulesetId} />
-                </div>
-              </>
-            )}
-          </div>
+              </div>
+            </>
+          )}
         </div>
-      </PageWrapper>
-    </>
+
+        {/* Center column: Scene (Active / Turn order) */}
+        <div
+          className={cn(
+            'flex min-h-0 flex-col bg-muted/20',
+            centerColumnCollapsed
+              ? 'w-10 shrink-0 border-r border-border'
+              : 'min-w-0 flex-1 border-r border-border',
+          )}>
+          {centerColumnCollapsed ? (
+            <button
+              type='button'
+              onClick={() => setCenterColumnCollapsed(false)}
+              className='flex h-full min-h-0 flex-col items-center justify-center gap-1 border-r border-border bg-muted/30 px-1 py-2 hover:bg-muted/50'
+              aria-label='Expand Scene panel'>
+              <ChevronRight className='size-4 shrink-0' />
+              <span className='text-[10px] font-medium uppercase tracking-wide text-muted-foreground [writing-mode:vertical-rl]'>
+                Scene
+              </span>
+            </button>
+          ) : (
+            <>
+              <div className='flex shrink-0 items-center justify-between gap-2 border-b border-border px-2 py-1.5'>
+                <span className='text-sm font-medium text-muted-foreground'>
+                  {currentScene?.turnBasedMode ? 'Turn order' : 'Active'}
+                </span>
+                <Button
+                  variant='ghost'
+                  size='icon'
+                  className='size-7'
+                  onClick={() => setCenterColumnCollapsed(true)}
+                  aria-label='Collapse Scene panel'>
+                  <ChevronLeft className='size-4' />
+                </Button>
+              </div>
+              <div className='min-h-0 flex-1 overflow-auto'>
+                {currentScene?.turnBasedMode && sceneId ? (
+                  <TurnOrderScene
+                    campaignId={campaign.id}
+                    sceneId={sceneId}
+                    currentTurnCycle={currentScene.currentTurnCycle ?? 1}
+                    currentTurnCampaignCharacterId={currentTurnCampaignCharacterId ?? null}
+                    hoveredCampaignCharacterId={hoveredCampaignCharacterId}
+                    onAvatarClick={(characterId) =>
+                      setSheetCharacterId((prev) => (prev === characterId ? null : characterId))
+                    }
+                    onReorderTurnOrder={
+                      orchestrationBlocked
+                        ? undefined
+                        : async (orderedCampaignCharacterIds) => {
+                            for (let i = 0; i < orderedCampaignCharacterIds.length; i++) {
+                              await updateCampaignCharacter(orderedCampaignCharacterIds[i], {
+                                turnOrder: i,
+                              });
+                            }
+                          }
+                    }
+                  />
+                ) : (
+                  <ActiveScene
+                    campaignId={campaign.id}
+                    sceneId={sceneId}
+                    hoveredCampaignCharacterId={hoveredCampaignCharacterId}
+                    onAvatarClick={(characterId) =>
+                      setSheetCharacterId((prev) => (prev === characterId ? null : characterId))
+                    }
+                  />
+                )}
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* Right column: Game Log */}
+        <div
+          className={cn(
+            'flex min-h-0 flex-col bg-muted/20',
+            rightColumnCollapsed ? 'w-10 shrink-0 border-l border-border' : 'min-w-[240px] flex-1',
+          )}>
+          {rightColumnCollapsed ? (
+            <button
+              type='button'
+              onClick={() => setRightColumnCollapsed(false)}
+              className='flex h-full min-h-0 flex-col items-center justify-center gap-1 border-l border-border bg-muted/30 px-1 py-2 hover:bg-muted/50'
+              aria-label='Expand Game log panel'>
+              <ChevronLeft className='size-4 shrink-0' />
+              <span className='text-[10px] font-medium uppercase tracking-wide text-muted-foreground [writing-mode:vertical-rl]'>
+                Log
+              </span>
+            </button>
+          ) : (
+            <>
+              <div className='flex shrink-0 items-center justify-between gap-2 border-b border-border px-2 py-1.5'>
+                <span className='text-sm font-medium text-muted-foreground'>Game log</span>
+                <Button
+                  variant='ghost'
+                  size='icon'
+                  className='size-7'
+                  onClick={() => setRightColumnCollapsed(true)}
+                  aria-label='Collapse Game log panel'>
+                  <ChevronRight className='size-4' />
+                </Button>
+              </div>
+              <div className='min-h-0 flex-1 overflow-auto'>
+                <CampaignGameLog campaignId={campaign.id} rulesetId={campaign.rulesetId} />
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    </PageWrapper>
   );
 }
