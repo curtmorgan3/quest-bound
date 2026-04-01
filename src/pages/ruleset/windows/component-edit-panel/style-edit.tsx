@@ -87,9 +87,7 @@ export const StyleEdit = ({ components, handleUpdate, handleDataUpdate }: Props)
 
   const allowGradient =
     components.length > 0 &&
-    components.every(
-      (c) => c.type === ComponentTypes.GRAPH || c.type === ComponentTypes.SHAPE,
-    );
+    components.every((c) => c.type === ComponentTypes.GRAPH || c.type === ComponentTypes.SHAPE);
 
   const handleAllCornersChange = (val: string | number) => {
     const parsedVal = Math.min(200, Math.max(0, parseValue(val)));
@@ -155,7 +153,6 @@ export const StyleEdit = ({ components, handleUpdate, handleDataUpdate }: Props)
           color={color}
           resolvedColor={colorResolved}
           onUpdate={(value) => handleUpdate('color', value)}
-          disabled={color === MIXED_VALUE_LABEL}
           allowGradient={allowGradient}
           customPropOpacity={colorCustomPropOpacity}
           customPropOpacityStyleKey='colorCustomPropOpacity'

@@ -25,6 +25,7 @@ const DEFAULT_INPUT_DATA: InputComponentData = {
 
 const DEFAULT_INPUT_STYLES: ComponentStyle = {
   backgroundColor: 'transparent',
+  color: colorWhite,
   opacity: 1,
   borderRadiusTopLeft: 0,
   borderRadiusTopRight: 0,
