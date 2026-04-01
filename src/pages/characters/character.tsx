@@ -367,7 +367,7 @@ export const CharacterPage = ({
 
         {!hideGameLog && (
           <div
-            className={`fixed bottom-12 z-30 flex flex-col gap-2 ${open ? 'left-[295px]' : 'left-[45px]'}`}>
+            className={`fixed bottom-12 z-30 flex flex-col gap-2 ${open ? 'left-[255px]' : 'left-[45px]'}`}>
             <GameLog characterId={character?.id ?? routeCharacterId} docked />
           </div>
         )}
