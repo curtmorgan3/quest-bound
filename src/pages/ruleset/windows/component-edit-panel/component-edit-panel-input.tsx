@@ -107,7 +107,7 @@ export const EditPanelInput = ({
             )}
             <Input
               disabled={disabled}
-              className='h-[20px] rounded-[4px] p-1'
+              className='h-[20px] rounded-[4px] p-1 editor-input'
               id={`component-edit-${label.toLowerCase()}`}
               type={number ? 'number' : 'text'}
               name={label}

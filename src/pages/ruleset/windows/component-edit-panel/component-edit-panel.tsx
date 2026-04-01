@@ -23,20 +23,20 @@ import { ImageDataEdit } from '@/lib/compass-planes/nodes/components/image';
 import { getComponentData } from '@/lib/compass-planes/utils';
 import { colorBlack } from '@/palette';
 import type { ConditionalRenderLogic, TextComponentData } from '@/types';
-import { parseEntityCustomPropertiesJson } from '@/utils/parse-entity-custom-properties-json';
 import { rgbToHex } from '@/utils';
+import { parseEntityCustomPropertiesJson } from '@/utils/parse-entity-custom-properties-json';
 import { useEffect, useRef, useState } from 'react';
 import type { RGBColor } from 'react-color';
 import { useParams } from 'react-router-dom';
 import { ActionEdit } from './action-edit';
 import { ClickEventModal } from './click-event-modal';
-import { ComponentTooltipSettings } from './component-tooltip-settings';
 import {
   ComponentEditPanelContext,
   type ComponentEditPanelContextValue,
 } from './component-edit-panel-context';
 import { ConditionalRenderEdit, TextEdit } from './component-edits';
 import { ShapeEdit } from './component-edits/shape-edit';
+import { ComponentTooltipSettings } from './component-tooltip-settings';
 import { CustomPropertiesListModal } from './custom-properties-list-modal';
 import { PositionEdit } from './position-edit';
 import { StyleEdit } from './style-edit';
@@ -129,10 +129,7 @@ export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
     );
   };
 
-  const handlePositionDataFlag = (
-    key: 'takeFullWidth' | 'takeFullHeight',
-    value: boolean,
-  ) => {
+  const handlePositionDataFlag = (key: 'takeFullWidth' | 'takeFullHeight', value: boolean) => {
     const toUpdate = selectedComponents.filter((c) => !c.locked);
     updateComponents(
       toUpdate.map((c) => {
@@ -420,7 +417,7 @@ export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
     <ComponentEditPanelContext.Provider value={contextValue}>
       <div
         data-component-edit-panel
-        className='z-20 flex h-[100vh] w-[240px] flex-col items-center gap-2 p-2'
+        className='z-20 flex h-[100vh] w-[280px] flex-col items-center gap-2 p-4'
         style={{
           position: 'absolute',
           top: 0,
@@ -531,9 +528,7 @@ export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
                               } else {
                                 nextData.attributeCustomPropertyId = v;
                               }
-                              updateComponents([
-                                { id: c.id, data: JSON.stringify(nextData) },
-                              ]);
+                              updateComponents([{ id: c.id, data: JSON.stringify(nextData) }]);
                             }}>
                             <SelectTrigger
                               id='component-attribute-custom-property'
