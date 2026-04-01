@@ -17,14 +17,29 @@ export class SheetComponentAccessor implements StructuredCloneSafe {
     this.coordinator.deleteComponent(this.characterId, this.componentId, this.characterWindowInstanceId);
   }
 
-  set(key: string, value: unknown): void {
-    this.coordinator.setOnComponent(
-      this.characterId,
-      this.componentId,
-      this.characterWindowInstanceId,
-      key,
-      value,
-    );
+  set(updates: Record<string, unknown>): void;
+  set(key: string, value: unknown): void;
+  set(keyOrUpdates: string | Record<string, unknown>, value?: unknown): void {
+    if (typeof keyOrUpdates === 'string') {
+      this.coordinator.setOnComponent(
+        this.characterId,
+        this.componentId,
+        this.characterWindowInstanceId,
+        keyOrUpdates,
+        value,
+      );
+      return;
+    }
+    if (keyOrUpdates === null || Array.isArray(keyOrUpdates)) return;
+    for (const [key, val] of Object.entries(keyOrUpdates)) {
+      this.coordinator.setOnComponent(
+        this.characterId,
+        this.componentId,
+        this.characterWindowInstanceId,
+        key,
+        val,
+      );
+    }
   }
 
   /** Sets the component `data` flag `disabled` (same as `set('disabled', disabled)`). */
