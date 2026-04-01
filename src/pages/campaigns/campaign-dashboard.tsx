@@ -151,7 +151,7 @@ export function CampaignDashboard() {
     });
   };
   const [characterSheetTransparentBackground, setCharacterSheetTransparentBackground] =
-    useState(true);
+    useState(false);
   const [advancing, setAdvancing] = useState(false);
   const [leftColumnCollapsed, setLeftColumnCollapsed] = useState(() => loadColumnState().left);
   const [centerColumnCollapsed, setCenterColumnCollapsed] = useState(
@@ -243,6 +243,24 @@ export function CampaignDashboard() {
     currentStepInCycle >= 0 && sceneCharactersByTurnOrder[currentStepInCycle]
       ? sceneCharactersByTurnOrder[currentStepInCycle].id
       : null;
+
+  /** In-scene characters for the sheet strip: active NPCs + all PCs (same rule as turn order). */
+  const sceneCharacterSheetBarEntries = useMemo(() => {
+    if (!sceneId || withNames.length === 0) return [];
+    const filtered = withNames.filter(
+      (entry) =>
+        entry.cc.campaignSceneId === sceneId &&
+        (entry.cc.active === true || !entry.character?.isNpc),
+    );
+    if (currentScene?.turnBasedMode) {
+      return [...filtered].sort((a, b) => (a.cc.turnOrder ?? 0) - (b.cc.turnOrder ?? 0));
+    }
+    return [...filtered].sort((a, b) =>
+      (a.character?.name ?? '').localeCompare(b.character?.name ?? '', undefined, {
+        sensitivity: 'base',
+      }),
+    );
+  }, [sceneId, withNames, currentScene?.turnBasedMode]);
 
   useEffect(() => {
     if (!sheetCharacterId) return;
@@ -472,6 +490,50 @@ export function CampaignDashboard() {
               open={!!sheetCharacterId}
               transparentBackground={characterSheetTransparentBackground}
               onTransparentBackgroundChange={setCharacterSheetTransparentBackground}
+              topBar={
+                sheetCharacterId && sceneId && sceneCharacterSheetBarEntries.length > 0 ? (
+                  <div
+                    className='flex flex-wrap items-center gap-2'
+                    role='toolbar'
+                    aria-label='Characters in this scene'>
+                    {sceneCharacterSheetBarEntries.map(({ cc, character }) => {
+                      const isCurrentTurn =
+                        !!currentScene?.turnBasedMode &&
+                        currentTurnCampaignCharacterId != null &&
+                        currentTurnCampaignCharacterId === cc.id;
+                      const cid = character?.id;
+                      if (!cid) return null;
+                      return (
+                        <button
+                          type='button'
+                          key={cc.id}
+                          data-active-npc-avatar='true'
+                          onClick={() => setSheetCharacterId(cid)}
+                          className={cn(
+                            'rounded-md border-2 p-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                            isCurrentTurn ? 'border-primary' : 'border-transparent',
+                          )}
+                          title={character?.name ?? 'Character'}
+                          aria-label={
+                            isCurrentTurn
+                              ? `Open ${character?.name ?? 'character'} sheet (current turn)`
+                              : `Open ${character?.name ?? 'character'} sheet`
+                          }>
+                          <Avatar className='size-10 shrink-0 rounded-md'>
+                            <AvatarImage
+                              src={character?.image ?? ''}
+                              alt={character?.name ?? 'Character'}
+                            />
+                            <AvatarFallback className='rounded-md text-sm'>
+                              {(character?.name ?? '?').slice(0, 1).toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                        </button>
+                      );
+                    })}
+                  </div>
+                ) : undefined
+              }
               onClose={() => {
                 setSheetCharacterId(null);
                 if (searchParams.has('pageId')) {

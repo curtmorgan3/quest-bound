@@ -3,7 +3,7 @@ import { useSidebar } from '@/components/ui/sidebar';
 import { CharacterPage } from '@/pages/characters';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Backpack, EyeClosed, X } from 'lucide-react';
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 
 export interface CampaignCharacterSheetProps {
   /** When set, show the sheet for this character (e.g. from dashboard avatar click). */
@@ -19,6 +19,8 @@ export interface CampaignCharacterSheetProps {
   campaignId?: string;
   /** When set (e.g. viewing character in a scene), action scripts get Scene accessor with advanceTurnOrder. */
   campaignSceneId?: string;
+  /** Rendered above the character page inside the sheet panel (e.g. scene character shortcuts). */
+  topBar?: ReactNode;
 }
 
 export const CampaignCharacterSheet = ({
@@ -30,6 +32,7 @@ export const CampaignCharacterSheet = ({
   onTransparentBackgroundChange,
   campaignId,
   campaignSceneId,
+  topBar,
 }: CampaignCharacterSheetProps = {}) => {
   const { state: sidebarState } = useSidebar();
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -70,7 +73,7 @@ export const CampaignCharacterSheet = ({
       <AnimatePresence>
         {showSheet && characterId && (
           <motion.div
-            className='fixed bottom-0 right-0 z-30 bg-background'
+            className='fixed bottom-0 right-0 z-30 flex flex-col bg-background'
             style={{
               left: overlayLeft,
               top: '50px',
@@ -80,7 +83,10 @@ export const CampaignCharacterSheet = ({
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ type: 'tween', duration: 0.25, ease: 'easeInOut' }}>
-            <div className='relative h-full w-full overflow-auto'>
+            {topBar ? (
+              <div className='shrink-0 border-b border-border bg-background px-3 py-2'>{topBar}</div>
+            ) : null}
+            <div className='relative min-h-0 flex-1 w-full overflow-auto'>
               <CharacterPage
                 id={characterId}
                 campaignId={campaignId}
