@@ -577,7 +577,7 @@ function shouldResolveScriptNameFromDb(scriptId: string | undefined): scriptId i
 }
 
 // ============================================================================
-// useScriptErrorLogs - Listen for QBScript runtime errors (toast / logging)
+// useScriptErrorLogs - Listen for QBScript runtime errors (e.g. ScriptErrorNotificationsHost)
 // ============================================================================
 
 export function useScriptErrorLogs(onScriptError?: (detail: ScriptErrorEventDetail) => void): void {
