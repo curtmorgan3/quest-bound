@@ -165,6 +165,7 @@ export const WindowNode = ({ data }: { data: WindowNodeData }) => {
   }, [byId, characterContext?.characterAttributes, components, effectiveLayout]);
 
   const [scalePreview, setScalePreview] = useState<number | null>(null);
+  const [windowHovered, setWindowHovered] = useState(false);
   const hostRef = useRef<HTMLDivElement>(null);
   const scaleDragRef = useRef<{
     startScale: number;
@@ -420,8 +421,8 @@ export const WindowNode = ({ data }: { data: WindowNodeData }) => {
   }, [endScaleGesture]);
 
   const showScaleHandle = Boolean(onDisplayScaleChange && !locked);
-  const isSelected = canvasSelection?.selectedWindowId === windowData.id;
-  const showChrome = Boolean(!locked && isSelected);
+  /** Hover reveals chrome; stay visible while scaling so leaving the top band does not cancel the gesture. */
+  const showChrome = Boolean(!locked && (windowHovered || scalePreview != null));
 
   useEffect(() => {
     if (!showChrome) {
@@ -433,6 +434,8 @@ export const WindowNode = ({ data }: { data: WindowNodeData }) => {
     <div
       ref={hostRef}
       className='window-node'
+      onMouseEnter={() => setWindowHovered(true)}
+      onMouseLeave={() => setWindowHovered(false)}
       style={{
         width: scaledW,
         height: scaledH,
@@ -446,59 +449,76 @@ export const WindowNode = ({ data }: { data: WindowNodeData }) => {
         <div
           data-window-chrome-control
           style={{
-            height: '22px',
             position: 'absolute',
             right: 0,
-            top: 0,
+            /* Bottom edge slightly inside the window so there is no dead band (margin is not hit-testable). */
+            bottom: 'calc(100% - 14px)',
             zIndex: 1000,
             width: 'max-content',
-            marginLeft: 'auto',
-            backgroundColor: 'transparent',
             display: 'flex',
-            justifyContent: 'flex-end',
-            alignItems: 'center',
-            padding: '0 4px 0 4px',
-            gap: '8px',
+            flexDirection: 'column',
+            alignItems: 'flex-end',
+            gap: 0,
+            pointerEvents: 'auto',
           }}>
-          {!!onMinimize && (
-            <OctagonMinus
-              style={{ width: '14px', height: '14px' }}
-              className='clickable'
-              onClick={() => onMinimize(windowData.id)}
-            />
-          )}
-          {editWindowHref && (
-            <Link
-              to={editWindowHref}
-              className='clickable flex items-center justify-center text-inherit hover:opacity-80'
-              style={{ width: '20px', height: '20px' }}
-              title='Edit window'
-              onClick={(e) => e.stopPropagation()}>
-              <ExternalLink style={{ width: '14px', height: '14px' }} />
-            </Link>
-          )}
-          {showScaleHandle ? (
-            <button
-              type='button'
-              title='Drag to scale window'
-              aria-label='Drag to scale window'
-              className='flex cursor-ne-resize items-center justify-center border-0 bg-transparent p-0 text-inherit shadow-none outline-none focus-visible:ring-2 focus-visible:ring-ring'
-              style={{ width: '20px', height: '20px', touchAction: 'none' }}
-              onPointerDown={onScalePointerDown}
-              onPointerMove={onScalePointerMove}
-              onPointerUp={onScalePointerUp}
-              onPointerCancel={onScalePointerCancel}
-              onLostPointerCapture={onScaleLostPointerCapture}>
-              <Scaling style={{ width: '14px', height: '14px' }} aria-hidden />
-            </button>
-          ) : null}
-          {!!onClose && (
-            <OctagonX
-              style={{ width: '14px', height: '14px' }}
-              className='clickable'
-              onClick={() => onClose(windowData.id)}
-            />
-          )}
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'flex-end',
+              alignItems: 'center',
+              padding: '2px 4px',
+              gap: 8,
+            }}>
+            {!!onMinimize && (
+              <OctagonMinus
+                style={{ width: '14px', height: '14px' }}
+                className='clickable'
+                onClick={() => onMinimize(windowData.id)}
+              />
+            )}
+            {editWindowHref && (
+              <Link
+                to={editWindowHref}
+                className='clickable flex items-center justify-center text-inherit hover:opacity-80'
+                style={{ width: '20px', height: '20px' }}
+                title='Edit window'
+                onClick={(e) => e.stopPropagation()}>
+                <ExternalLink style={{ width: '14px', height: '14px' }} />
+              </Link>
+            )}
+            {showScaleHandle ? (
+              <button
+                type='button'
+                title='Drag to scale window'
+                aria-label='Drag to scale window'
+                className='flex cursor-ne-resize items-center justify-center border-0 bg-transparent p-0 text-inherit shadow-none outline-none focus-visible:ring-2 focus-visible:ring-ring'
+                style={{ width: '20px', height: '20px', touchAction: 'none' }}
+                onPointerDown={onScalePointerDown}
+                onPointerMove={onScalePointerMove}
+                onPointerUp={onScalePointerUp}
+                onPointerCancel={onScalePointerCancel}
+                onLostPointerCapture={onScaleLostPointerCapture}>
+                <Scaling style={{ width: '14px', height: '14px' }} aria-hidden />
+              </button>
+            ) : null}
+            {!!onClose && (
+              <OctagonX
+                style={{ width: '14px', height: '14px' }}
+                className='clickable'
+                onClick={() => onClose(windowData.id)}
+              />
+            )}
+          </div>
+          {/* Invisible strip overlapping the top of the sheet — keeps :hover on the host while moving toward icons */}
+          <div
+            aria-hidden
+            style={{
+              height: 14,
+              width: '100%',
+              flexShrink: 0,
+              pointerEvents: 'auto',
+            }}
+          />
         </div>
       ) : null}
       <div
