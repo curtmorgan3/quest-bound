@@ -42,7 +42,8 @@ export const NodeActionCaller = ({
   }, [component.scriptId, scripts]);
   const blockedByNavigation = hasNavigatorTargets(component, data);
 
-  const shouldHandle = Boolean(action) && !hasVisibleClickScript && !blockedByNavigation;
+  const shouldHandle =
+    Boolean(action) && !hasVisibleClickScript && !blockedByNavigation && !data.disabled;
 
   const handleClick = (e: React.MouseEvent) => {
     e.stopPropagation();

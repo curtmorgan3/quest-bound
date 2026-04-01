@@ -75,9 +75,11 @@ const ViewCheckboxNodeComponent = ({
     }
   };
 
+  const clickDisabled = editMode || data.disabled;
+
   return (
     <section
-      onClick={editMode ? undefined : handleChange}
+      onClick={clickDisabled ? undefined : handleChange}
       style={{
         position: 'relative',
         height: ch,
@@ -91,7 +93,7 @@ const ViewCheckboxNodeComponent = ({
         outline: css.outline,
         outlineColor: css.outlineColor,
         outlineWidth: css.outlineWidth,
-        cursor: editMode ? 'default' : 'pointer',
+        cursor: clickDisabled ? 'default' : 'pointer',
         ...(!editMode ? { userSelect: 'none', WebkitUserSelect: 'none' } : {}),
       }}>
       {isChecked ? (

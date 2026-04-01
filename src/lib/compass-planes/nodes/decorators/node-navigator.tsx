@@ -144,6 +144,10 @@ export const NodeNavigator = ({ children, component, componentData, viewCtx }: N
     return <>{children}</>;
   }
 
+  if (data.disabled) {
+    return <>{children}</>;
+  }
+
   if (
     pageTemplateId ||
     childWindowId ||

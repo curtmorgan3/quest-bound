@@ -95,6 +95,10 @@ export const NodeScriptCaller = ({ children, component }: NodeScriptCallerProps)
     return <>{children}</>;
   }
 
+  if (getComponentData(component).disabled) {
+    return <>{children}</>;
+  }
+
   const handleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (isExecuting) return;

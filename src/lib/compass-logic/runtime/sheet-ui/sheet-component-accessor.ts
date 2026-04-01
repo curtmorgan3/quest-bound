@@ -27,6 +27,11 @@ export class SheetComponentAccessor implements StructuredCloneSafe {
     );
   }
 
+  /** Sets the component `data` flag `disabled` (same as `set('disabled', disabled)`). */
+  setDisabled(disabled: boolean): void {
+    this.set('disabled', disabled);
+  }
+
   get(key: string): unknown {
     return this.coordinator.getOnComponent(
       this.characterId,

@@ -214,4 +214,10 @@ export type ComponentData = ShapeComponentData &
     takeFullWidth?: boolean;
     /** When true, render height as `100dvh` while keeping stored `height` for layout math. */
     takeFullHeight?: boolean;
+    /**
+     * When true, the sheet does not run component-level click handlers (scripts, navigation,
+     * actions, dice-from-text, attribute panel, and primary control clicks). Set from scripts via
+     * `SheetComponentAccessor.setDisabled` or `set('disabled', value)`.
+     */
+    disabled?: boolean;
   };

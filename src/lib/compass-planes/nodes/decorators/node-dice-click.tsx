@@ -30,7 +30,7 @@ export const NodeDiceClick = ({ children, component }: NodeDiceClickProps) => {
     return Boolean(s && !s.hidden);
   }, [component.scriptId, scripts]);
 
-  if (!diceRolls.length || hasVisibleClickScript || !rollDice) {
+  if (!diceRolls.length || hasVisibleClickScript || !rollDice || data.disabled) {
     return <>{children}</>;
   }
 

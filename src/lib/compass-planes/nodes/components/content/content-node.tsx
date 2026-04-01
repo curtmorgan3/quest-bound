@@ -165,6 +165,7 @@ const ViewContentNodeComponent = ({
       onDoubleClick={() => {
         if (!windowEditorMode && !characterContext) return;
         if (!windowEditorMode && data.readOnly) return;
+        if (data.disabled) return;
         setIsEditing(true);
         handleDoubleClick?.();
       }}

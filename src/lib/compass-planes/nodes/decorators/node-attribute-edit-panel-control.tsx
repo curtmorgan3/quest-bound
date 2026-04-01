@@ -21,7 +21,7 @@ export const NodeAttributeEditPanelControl = ({
   const data = getComponentData(component);
   const { viewAttributeId } = data;
 
-  if (!viewAttributeId || component.scriptId) {
+  if (!viewAttributeId || component.scriptId || data.disabled) {
     return <>{children}</>;
   }
 

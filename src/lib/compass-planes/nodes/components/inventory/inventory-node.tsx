@@ -66,7 +66,9 @@ const ViewInventoryNodeComponent = ({ component }: { component: Component }) => 
   const { registerDropTarget, unregisterDropTarget, activeDrag } = useInventoryDragContext();
 
   const css = useComponentStyles(component);
-  const data = getComponentData(component) as InventoryComponentData;
+  const componentData = getComponentData(component);
+  const data = componentData as InventoryComponentData;
+  const inventoryDisabled = Boolean(componentData.disabled);
 
   const gridColor = css.color || '#ccc';
   const bgStyle = getBackgroundStyle(css);
@@ -92,6 +94,7 @@ const ViewInventoryNodeComponent = ({ component }: { component: Component }) => 
   );
 
   useEffect(() => {
+    if (inventoryDisabled) return;
     const id = component.id;
     registerDropTarget(id, {
       componentId: component.id,
@@ -115,6 +118,9 @@ const ViewInventoryNodeComponent = ({ component }: { component: Component }) => 
     gridRows,
     registerDropTarget,
     unregisterDropTarget,
+    inventoryDisabled,
+    typeRestriction,
+    categoryRestriction,
   ]);
 
   useEffect(() => {
@@ -172,11 +178,11 @@ const ViewInventoryNodeComponent = ({ component }: { component: Component }) => 
     <>
       <div
         ref={containerRef}
-        role='button'
+        role={inventoryDisabled ? undefined : 'button'}
         data-testid='inventory-grid'
-        onDoubleClick={handleOpenInventory}
-        onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUp}
+        onDoubleClick={inventoryDisabled ? undefined : handleOpenInventory}
+        onPointerMove={inventoryDisabled ? undefined : handlePointerMove}
+        onPointerUp={inventoryDisabled ? undefined : handlePointerUp}
         style={{
           position: 'relative',
           height: ch,
@@ -203,19 +209,25 @@ const ViewInventoryNodeComponent = ({ component }: { component: Component }) => 
           const cellDiv = (
             <div
               data-item-title={invItem.title}
-              onDoubleClick={(e) => e.stopPropagation()}
-              onClick={(e) => handleItemClick(e, invItem)}
-              onPointerDown={(e) => handlePointerDown(e, invItem)}
-              tabIndex={0}
-              role='button'
-              aria-label={`${invItem.title} - drag to move`}
+              onDoubleClick={inventoryDisabled ? undefined : (e) => e.stopPropagation()}
+              onClick={inventoryDisabled ? undefined : (e) => handleItemClick(e, invItem)}
+              onPointerDown={inventoryDisabled ? undefined : (e) => handlePointerDown(e, invItem)}
+              tabIndex={inventoryDisabled ? -1 : 0}
+              role={inventoryDisabled ? undefined : 'button'}
+              aria-label={
+                inventoryDisabled ? undefined : `${invItem.title} - drag to move`
+              }
               style={{
                 position: 'absolute',
                 left: pos.left,
                 top: pos.top,
                 width: 20 * invItem.inventoryWidth,
                 height: 20 * invItem.inventoryHeight,
-                cursor: isDragging ? 'grabbing' : 'grab',
+                cursor: inventoryDisabled
+                  ? 'default'
+                  : isDragging
+                    ? 'grabbing'
+                    : 'grab',
                 // Hide the in-grid item while dragging so only the
                 // global drag preview is visible.
                 opacity: isDragging ? 0 : 1,

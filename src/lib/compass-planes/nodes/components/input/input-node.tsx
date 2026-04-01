@@ -47,6 +47,7 @@ const ViewInputNodeComponent = ({
   const css = useComponentStyles(component) as TextComponentStyle;
   const characterContext = useContext(CharacterContext);
   const { widthStyle: cw, heightStyle: ch } = useComponentCanvasDimensions(component);
+  const fieldDisabled = editMode || Boolean(data.disabled);
 
   const handleChange = (value: string | number) => {
     if (!characterContext) return;
@@ -149,9 +150,12 @@ const ViewInputNodeComponent = ({
         <>
           <button
             type='button'
-            onClick={openMultiSelectDialog}
+            disabled={fieldDisabled}
+            onClick={fieldDisabled ? undefined : openMultiSelectDialog}
             style={inputStyle}
-            className='cursor-pointer text-left'>
+            className={
+              fieldDisabled ? 'cursor-default text-left opacity-60' : 'cursor-pointer text-left'
+            }>
             {multiSelectValue.length > 0 ? multiSelectValue.join(', ') : (data.name ?? 'Select…')}
           </button>
           <Dialog open={multiSelectDialogOpen} onOpenChange={setMultiSelectDialogOpen}>
@@ -181,7 +185,7 @@ const ViewInputNodeComponent = ({
         </>
       ) : isListType && !editMode ? (
         <select
-          disabled={editMode}
+          disabled={fieldDisabled}
           onChange={(e) => handleChange(e.target.value)}
           value={data.value.toString()}
           style={{ ...inputStyle, ...interactiveFieldStyle }}>
@@ -196,7 +200,7 @@ const ViewInputNodeComponent = ({
         </select>
       ) : data.type === 'number' ? (
         <NumberInput
-          disabled={editMode}
+          disabled={fieldDisabled}
           placeholder={data?.placeholder ?? data?.name ?? data.type}
           value={Number(data.value)}
           onChange={(value) => handleChange(value)}
@@ -208,7 +212,7 @@ const ViewInputNodeComponent = ({
         <input
           className='editor-input'
           type='text'
-          disabled={editMode}
+          disabled={fieldDisabled}
           placeholder={data?.placeholder ?? data?.name ?? data.type}
           onChange={(e) => handleChange(e.target.value)}
           value={editMode ? undefined : data.value.toString()}
