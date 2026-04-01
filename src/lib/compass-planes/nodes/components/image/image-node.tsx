@@ -4,6 +4,7 @@ import {
   canvasDimensionToCss,
   useComponentCanvasDimensions,
 } from '@/lib/compass-planes/canvas/editor-item-layout-context';
+import { editorNodeComponentVisualEqual } from '@/lib/compass-planes/nodes/editor-node-memo';
 import {
   getBackgroundStyle,
   getComponentData,
@@ -155,5 +156,5 @@ const ViewImageNodeComponent = ({ component }: { component: Component }) => {
 
 export const ViewImageNode = memo(
   ViewImageNodeComponent,
-  (prev, next) => prev.component === next.component,
+  (prev, next) => editorNodeComponentVisualEqual(prev.component, next.component),
 );

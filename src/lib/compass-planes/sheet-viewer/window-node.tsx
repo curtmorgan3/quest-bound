@@ -12,19 +12,20 @@ import {
 } from 'react';
 import { Link } from 'react-router-dom';
 import { DRAG_THRESHOLD_PX } from '../canvas';
-import {
-  isComponentConditionallyVisible,
-  renderViewComponent,
-  type ViewRenderContext,
-} from '../nodes';
+import { isComponentConditionallyVisible, type ViewRenderContext } from '../nodes';
 import {
   buildEffectiveLayoutMap,
   componentByIdMap,
   worldTopLeftWithEffective,
 } from '../sheet-editor/component-world-geometry';
 import { isCanvasRootComponent } from '../sheet-editor/group-flex-utils';
-import { getComponentData, useComponentPositionMap } from '../utils';
+import { useComponentPositionMap } from '../utils';
+import { parseComponentActiveStatesMap } from '../utils/component-states';
 import { mergeCharacterWindowComponents } from '../utils/merge-character-window-components';
+import {
+  SheetComponentWithStates,
+  sheetComponentLayoutData,
+} from './sheet-component-with-states';
 import { useWindowCanvasSelection } from './window-canvas-selection-context';
 import { ParentWindowFrameProvider } from './parent-window-frame-context';
 import { WindowRuntimeProvider } from './window-runtime-context';
@@ -40,6 +41,10 @@ export interface WindowNodeWindow {
   displayScale?: number;
   /** Character sheet: JSON overlay from QBScript / `scriptOverlayComponents`. */
   scriptOverlayComponents?: string | null;
+  /** Character sheet: stringified map of component id → active custom state name. */
+  componentActiveStates?: string | null;
+  /** Present on `CharacterWindow` rows; used to enable persisted custom state maps. */
+  characterId?: string;
 }
 
 export interface WindowNodeData {
@@ -116,6 +121,15 @@ export const WindowNode = ({ data }: { data: WindowNodeData }) => {
     [templateComponents, windowData.scriptOverlayComponents, characterContext?.character],
   );
   const positionMap = useComponentPositionMap(components);
+
+  const useCharacterWindowStates = 'characterId' in windowData;
+  const activeStatesMap = useMemo(
+    () =>
+      useCharacterWindowStates
+        ? parseComponentActiveStatesMap(windowData.componentActiveStates)
+        : {},
+    [useCharacterWindowStates, windowData],
+  );
 
   const byId = useMemo(() => componentByIdMap(components), [components]);
   const effectiveLayout = useMemo(
@@ -197,10 +211,14 @@ export const WindowNode = ({ data }: { data: WindowNodeData }) => {
         if (!isComponentConditionallyVisible(c, characterContext?.characterAttributes)) {
           return false;
         }
-        const d = getComponentData(c);
+        const d = sheetComponentLayoutData(
+          c,
+          useCharacterWindowStates ? activeStatesMap[c.id] : undefined,
+          useCharacterWindowStates,
+        );
         return Boolean(d.takeFullWidth || d.takeFullHeight);
       }),
-    [characterContext?.characterAttributes, rootComponents],
+    [activeStatesMap, characterContext?.characterAttributes, rootComponents, useCharacterWindowStates],
   );
 
   const scaledSheetRef = useRef<HTMLDivElement>(null);
@@ -247,6 +265,8 @@ export const WindowNode = ({ data }: { data: WindowNodeData }) => {
       byId,
       effectiveLayout,
       positionMap,
+      characterSheet: useCharacterWindowStates,
+      componentActiveStatesById: useCharacterWindowStates ? activeStatesMap : undefined,
       sheetTemplatePageId: sheetTemplatePageId ?? null,
       closeThisCharacterWindow:
         onClose && 'characterId' in windowData
@@ -265,7 +285,11 @@ export const WindowNode = ({ data }: { data: WindowNodeData }) => {
         const tl = worldTopLeftWithEffective(c, byId, effectiveLayout);
         const ds = displayScale;
         const isRoot = isCanvasRootComponent(c);
-        const rectData = getComponentData(c);
+        const rectData = sheetComponentLayoutData(
+          c,
+          useCharacterWindowStates ? activeStatesMap[c.id] : undefined,
+          useCharacterWindowStates,
+        );
         const left =
           isRoot && rectData.takeFullWidth ? viewportEdgeInSheetPx.left : tl.x - minX;
         const top =
@@ -279,6 +303,7 @@ export const WindowNode = ({ data }: { data: WindowNodeData }) => {
       },
     }),
     [
+      activeStatesMap,
       byId,
       characterContext?.characterAttributes,
       components,
@@ -289,6 +314,7 @@ export const WindowNode = ({ data }: { data: WindowNodeData }) => {
       onClose,
       positionMap,
       sheetTemplatePageId,
+      useCharacterWindowStates,
       windowData,
       windowData.x,
       windowData.y,
@@ -561,7 +587,11 @@ export const WindowNode = ({ data }: { data: WindowNodeData }) => {
               const pos = positionMap.get(component.id);
               const eff = effectiveLayout.get(component.id)!;
               const tl = worldTopLeftWithEffective(component, byId, effectiveLayout);
-              const compData = getComponentData(component);
+              const compData = sheetComponentLayoutData(
+                component,
+                useCharacterWindowStates ? activeStatesMap[component.id] : undefined,
+                useCharacterWindowStates,
+              );
               return (
                 <div
                   key={component.id}
@@ -577,12 +607,12 @@ export const WindowNode = ({ data }: { data: WindowNodeData }) => {
                     height: eff.height,
                     zIndex: pos?.z ?? component.z,
                   }}>
-                  {renderViewComponent(
-                    component,
-                    characterContext?.characterAttributes,
-                    pos,
-                    viewRenderContext,
-                  )}
+                  <SheetComponentWithStates
+                    component={component}
+                    characterAttributes={characterContext?.characterAttributes}
+                    position={pos}
+                    viewRenderContext={viewRenderContext}
+                  />
                 </div>
               );
             })}

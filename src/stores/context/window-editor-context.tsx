@@ -15,6 +15,12 @@ type WindowEditorContext = {
   canUngroupSelected: boolean;
   /** Component ids that are a `Composite.rootComponentId` or `CompositeVariant.groupComponentId`. */
   compositeTemplateRootIds: ReadonlySet<string>;
+  /**
+   * From selected component(s) `editorStateTarget` (persisted): `'base'` or a `ComponentStateEntry.name`.
+   * When multiple selections disagree, reads as `'base'` until the user picks a target.
+   */
+  stateEditTarget: string;
+  setStateEditTarget: (target: string) => void;
 };
 
 export const WindowEditorContext = createContext<WindowEditorContext>(null!);

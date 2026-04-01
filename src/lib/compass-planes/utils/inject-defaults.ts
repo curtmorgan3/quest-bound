@@ -39,6 +39,7 @@ export function injectDefaultComponent(component: Partial<Component>) {
 
   return {
     ...defaults,
+    states: '[]',
     ...component,
   };
 }

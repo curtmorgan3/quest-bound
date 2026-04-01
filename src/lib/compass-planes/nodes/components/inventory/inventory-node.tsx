@@ -1,3 +1,4 @@
+import { editorNodeComponentVisualEqual } from '@/lib/compass-planes/nodes/editor-node-memo';
 import {
   getBackgroundStyle,
   getColorStyle,
@@ -326,5 +327,5 @@ const ViewInventoryNodeComponent = ({ component }: { component: Component }) => 
 
 export const ViewInventoryNode = memo(
   ViewInventoryNodeComponent,
-  (prev, next) => prev.component === next.component,
+  (prev, next) => editorNodeComponentVisualEqual(prev.component, next.component),
 );

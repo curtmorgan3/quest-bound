@@ -4,6 +4,13 @@ import type { Character, CharacterWindow, Component, Composite } from '@/types';
 import { filterNotSoftDeleted } from '@/lib/data/soft-delete';
 import { ComponentTypes } from '@/lib/compass-planes/nodes/node-types';
 import { parseComponentDataJson } from '@/lib/compass-planes/utils/component-data-json';
+import {
+  parseComponentActiveStatesMap,
+  parseComponentStatesList,
+  pruneComponentActiveStatesMap,
+  resolveSetStateTargetName,
+  stringifyComponentActiveStatesMap,
+} from '@/lib/compass-planes/utils/component-states';
 import { defaultPartialForComponentType, isComponentTypesValue } from './sheet-component-defaults';
 import { SheetComponentAccessor } from './sheet-component-accessor';
 import { classifyFlatKey } from './sheet-flat-keys';
@@ -26,6 +33,8 @@ interface CharacterSheetState {
   baseStyleOverrides: Record<string, Record<string, unknown>>;
   /** Deltas applied during this script run (flushed into componentStyleOverrides). */
   stylePatchesByRefLabel: Map<string, Record<string, unknown>>;
+  /** CharacterWindow.id -> active custom state name per template/overlay component id. */
+  activeStatesByCharWindowId: Map<string, Record<string, string>>;
 }
 
 function collectPreOrder(components: Component[]): Component[] {
@@ -137,6 +146,11 @@ export class SheetUiCoordinator {
       templateByRulesetWindowId.set(w.windowId, comps as Component[]);
     }
 
+    const activeStatesByCharWindowId = new Map<string, Record<string, string>>();
+    for (const w of windows) {
+      activeStatesByCharWindowId.set(w.id, parseComponentActiveStatesMap(w.componentActiveStates));
+    }
+
     const overlayByCharWindowId = new Map<string, Component[]>();
     for (const w of windows) {
       const raw = w.scriptOverlayComponents;
@@ -179,6 +193,7 @@ export class SheetUiCoordinator {
       dataDelta: new Map(),
       baseStyleOverrides: baseStyle,
       stylePatchesByRefLabel: new Map(),
+      activeStatesByCharWindowId,
     };
     this.charState.set(characterId, state);
     return state;
@@ -529,6 +544,47 @@ export class SheetUiCoordinator {
     return data[key] ?? null;
   }
 
+  /**
+   * Set or clear the persisted custom visual state for a component (`component.setState` from QBScript).
+   * Use `'default'` (case-insensitive) to clear. Throws if the component is missing or the name does not match any state.
+   */
+  setComponentState(
+    characterId: string,
+    componentId: string,
+    hintCharWindowId: string,
+    requestedName: string,
+  ): void {
+    const sheet = this.charState.get(characterId);
+    if (!sheet) {
+      throw new Error('setState: character sheet is not loaded');
+    }
+
+    const found = this.findStateRow(sheet, componentId, hintCharWindowId);
+    if (!found) {
+      throw new Error(`setState: component "${componentId}" not found on this sheet`);
+    }
+
+    const normalized = requestedName.trim();
+    if (normalized.toLowerCase() === 'default') {
+      const map = { ...(sheet.activeStatesByCharWindowId.get(found.cw.id) ?? {}) };
+      delete map[componentId];
+      sheet.activeStatesByCharWindowId.set(found.cw.id, map);
+      this.markTouched(characterId);
+      return;
+    }
+
+    const entries = parseComponentStatesList(found.row.states);
+    const canonical = resolveSetStateTargetName(entries, normalized);
+    if (canonical == null) {
+      throw new Error(`setState: no state named "${requestedName}"`);
+    }
+
+    const map = { ...(sheet.activeStatesByCharWindowId.get(found.cw.id) ?? {}) };
+    map[componentId] = canonical;
+    sheet.activeStatesByCharWindowId.set(found.cw.id, map);
+    this.markTouched(characterId);
+  }
+
   addChild(characterId: string, parentId: string, childId: string): void {
     const state = this.charState.get(characterId);
     if (!state) return;
@@ -617,9 +673,19 @@ export class SheetUiCoordinator {
         const persisted = (await this.db.characterWindows.get(cw.id)) as CharacterWindow | undefined;
         const prevJson = persisted?.scriptOverlayComponents ?? null;
         const nextJson = JSON.stringify(overlay);
-        if (prevJson !== nextJson) {
+
+        const merged = this.mergedPreOrderForWindow(state, cw);
+        const validIds = new Set(merged.map((c) => c.id));
+        const curMap = state.activeStatesByCharWindowId.get(cw.id) ?? {};
+        const pruned = pruneComponentActiveStatesMap(curMap, validIds);
+        state.activeStatesByCharWindowId.set(cw.id, pruned);
+        const nextActiveJson = stringifyComponentActiveStatesMap(pruned);
+        const prevActive = persisted?.componentActiveStates ?? null;
+
+        if (prevJson !== nextJson || prevActive !== nextActiveJson) {
           await this.db.characterWindows.update(cw.id, {
-            scriptOverlayComponents: nextJson,
+            ...(prevJson !== nextJson ? { scriptOverlayComponents: nextJson } : {}),
+            ...(prevActive !== nextActiveJson ? { componentActiveStates: nextActiveJson } : {}),
             updatedAt: now,
           } as Partial<CharacterWindow>);
         }

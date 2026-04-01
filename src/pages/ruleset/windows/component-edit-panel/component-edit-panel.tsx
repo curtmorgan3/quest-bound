@@ -9,7 +9,13 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { AttributeLookup, useAttributes, useComponents, useRulesets } from '@/lib/compass-api';
+import {
+  AttributeLookup,
+  useAttributes,
+  useComponents,
+  useRulesets,
+  type ComponentUpdate,
+} from '@/lib/compass-api';
 import { ComponentTypes } from '@/lib/compass-planes/nodes';
 import {
   CheckboxDataEdit,
@@ -21,11 +27,17 @@ import {
 } from '@/lib/compass-planes/nodes/components';
 import { ImageDataEdit } from '@/lib/compass-planes/nodes/components/image';
 import { getComponentData } from '@/lib/compass-planes/utils';
+import {
+  computeSparseDiff,
+  getEditorPreviewStateName,
+  updateStateEntryPartial,
+  withMergedStateLayers,
+} from '@/lib/compass-planes/utils/component-states';
 import { colorBlack } from '@/palette';
-import type { ConditionalRenderLogic, TextComponentData } from '@/types';
+import type { Component, ConditionalRenderLogic, TextComponentData } from '@/types';
 import { rgbToHex } from '@/utils';
 import { parseEntityCustomPropertiesJson } from '@/utils/parse-entity-custom-properties-json';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { RGBColor } from 'react-color';
 import { useParams } from 'react-router-dom';
 import { ActionEdit } from './action-edit';
@@ -36,6 +48,7 @@ import {
 } from './component-edit-panel-context';
 import { ConditionalRenderEdit, TextEdit } from './component-edits';
 import { ShapeEdit } from './component-edits/shape-edit';
+import { ComponentStatesEdit, ensureComponentStatesJson } from './component-states-edit';
 import { ComponentTooltipSettings } from './component-tooltip-settings';
 import { CustomPropertiesListModal } from './custom-properties-list-modal';
 import { PositionEdit } from './position-edit';
@@ -68,6 +81,24 @@ function stripAttributeCustomPropertyIdFromData(dataStr: string): string {
   return JSON.stringify(d);
 }
 
+function mapComponentUpdateDataToStateLayer(
+  u: ComponentUpdate,
+  real: Component,
+  stateName: string,
+): ComponentUpdate {
+  if (stateName === 'base' || u.data === undefined) return u;
+  const nextMerged = JSON.parse(u.data) as Record<string, unknown>;
+  const baseData = JSON.parse(real.data) as Record<string, unknown>;
+  const diff = computeSparseDiff(baseData, nextMerged);
+  const { data: _omit, ...rest } = u;
+  return {
+    ...rest,
+    states: updateStateEntryPartial(real.states, stateName, {
+      data: JSON.stringify(diff),
+    }),
+  };
+}
+
 export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
   const { windowId } = useParams();
   const { components, updateComponents } = useComponents(windowId);
@@ -87,13 +118,74 @@ export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
     selectedComponents = selectedComponents.filter((c) => !c.locked);
   }
 
+  const soleSelected = selectedComponents.length === 1 ? selectedComponents[0] : undefined;
+
   useEffect(() => {
-    if (selectedComponents.length === 1) {
-      setReferenceLabelInput(getComponentData(selectedComponents[0]).referenceLabel ?? '');
-    } else {
+    if (!soleSelected) {
       setReferenceLabelInput('');
+      return;
     }
-  }, [selectedComponents.length, selectedComponents[0]?.id]);
+    const merged =
+      getEditorPreviewStateName(soleSelected) === 'base'
+        ? soleSelected
+        : withMergedStateLayers(soleSelected, {
+            editorPreviewState: getEditorPreviewStateName(soleSelected),
+          });
+    setReferenceLabelInput(getComponentData(merged).referenceLabel ?? '');
+  }, [
+    soleSelected?.id,
+    soleSelected?.editorStateTarget,
+    soleSelected?.data,
+    soleSelected?.states,
+  ]);
+
+  const panelDisplayComponents = useMemo(
+    () =>
+      selectedComponents.map((c) => {
+        const target = getEditorPreviewStateName(c);
+        if (target === 'base') return c;
+        return withMergedStateLayers(c, { editorPreviewState: target });
+      }),
+    [selectedComponents],
+  );
+
+  const patchSelectedComponentsMergedData = (
+    nextFromMerged: (merged: Record<string, unknown>) => Record<string, unknown>,
+  ) => {
+    const toUpdate = selectedComponents.filter((c) => !c.locked);
+    updateComponents(
+      toUpdate.map((real) => {
+        const target = getEditorPreviewStateName(real);
+        if (target === 'base') {
+          const merged = { ...JSON.parse(real.data) } as Record<string, unknown>;
+          return { id: real.id, data: JSON.stringify(nextFromMerged(merged)) };
+        }
+        const display = withMergedStateLayers(real, { editorPreviewState: target });
+        const merged = { ...JSON.parse(display.data) } as Record<string, unknown>;
+        const nextMerged = nextFromMerged(merged);
+        const baseData = JSON.parse(real.data) as Record<string, unknown>;
+        const diff = computeSparseDiff(baseData, nextMerged);
+        return {
+          id: real.id,
+          states: updateStateEntryPartial(real.states, target, {
+            data: JSON.stringify(diff),
+          }),
+        };
+      }),
+    );
+  };
+
+  const persistMergedDataUpdates = async (updates: Array<ComponentUpdate>) => {
+    await updateComponents(
+      updates.map((u) => {
+        const real = selectedComponents.find((c) => c.id === u.id);
+        if (!real) return u;
+        const target = getEditorPreviewStateName(real);
+        if (target === 'base' || u.data === undefined) return u;
+        return mapComponentUpdateDataToStateLayer(u, real, target);
+      }),
+    );
+  };
 
   const handleUpdate = (key: string | string[], value: number | string | boolean | null) => {
     const toUpdate = selectedComponents.filter((c) => (key === 'locked' ? true : !c.locked));
@@ -119,13 +211,31 @@ export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
   const handleGroupDataUpdate = (key: string, value: string) => {
     const toUpdate = selectedComponents.filter((c) => !c.locked);
     updateComponents(
-      toUpdate.map((c) => ({
-        id: c.id,
-        data: JSON.stringify({
-          ...JSON.parse(c.data),
+      toUpdate.map((real) => {
+        const target = getEditorPreviewStateName(real);
+        if (target === 'base') {
+          return {
+            id: real.id,
+            data: JSON.stringify({
+              ...JSON.parse(real.data),
+              [key]: value,
+            }),
+          };
+        }
+        const display = withMergedStateLayers(real, { editorPreviewState: target });
+        const dataObj = {
+          ...(JSON.parse(display.data) as Record<string, unknown>),
           [key]: value,
-        }),
-      })),
+        };
+        const baseData = JSON.parse(real.data) as Record<string, unknown>;
+        const diff = computeSparseDiff(baseData, dataObj);
+        return {
+          id: real.id,
+          states: updateStateEntryPartial(real.states, target, {
+            data: JSON.stringify(diff),
+          }),
+        };
+      }),
     );
   };
 
@@ -154,80 +264,89 @@ export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
 
     if (typeof key === 'string') {
       updateComponents(
-        toUpdate.map((c) => ({
-          id: c.id,
-          style: JSON.stringify({
-            ...JSON.parse(c.style),
+        toUpdate.map((real) => {
+          const target = getEditorPreviewStateName(real);
+          if (target === 'base') {
+            return {
+              id: real.id,
+              style: JSON.stringify({
+                ...JSON.parse(real.style),
+                [key]: value,
+              }),
+            };
+          }
+          const display = withMergedStateLayers(real, { editorPreviewState: target });
+          const styleObj = {
+            ...(JSON.parse(display.style) as Record<string, unknown>),
             [key]: value,
-          }),
-        })),
-      );
-    } else {
-      const updated = [...toUpdate];
-      for (const component of updated) {
-        for (const k of key) {
-          Object.assign(component, {
-            style: JSON.stringify({
-              ...JSON.parse(component.style),
-              [k]: value,
+          };
+          const baseStyle = JSON.parse(real.style) as Record<string, unknown>;
+          const diff = computeSparseDiff(baseStyle, styleObj);
+          return {
+            id: real.id,
+            states: updateStateEntryPartial(real.states, target, {
+              style: JSON.stringify(diff),
             }),
-          });
-        }
-      }
-      updateComponents(updated);
+          };
+        }),
+      );
+      return;
     }
+
+    updateComponents(
+      toUpdate.map((real) => {
+        const target = getEditorPreviewStateName(real);
+        if (target === 'base') {
+          let styleObj = JSON.parse(real.style) as Record<string, unknown>;
+          for (const k of key) {
+            styleObj = { ...styleObj, [k]: value };
+          }
+          return { id: real.id, style: JSON.stringify(styleObj) };
+        }
+        let styleObj = JSON.parse(
+          withMergedStateLayers(real, { editorPreviewState: target }).style,
+        ) as Record<string, unknown>;
+        for (const k of key) {
+          styleObj = { ...styleObj, [k]: value };
+        }
+        const baseStyle = JSON.parse(real.style) as Record<string, unknown>;
+        const diff = computeSparseDiff(baseStyle, styleObj);
+        return {
+          id: real.id,
+          states: updateStateEntryPartial(real.states, target, {
+            style: JSON.stringify(diff),
+          }),
+        };
+      }),
+    );
   };
 
   const setConditionalRenderAttributeId = (id: string | null) => {
-    const toUpdate = selectedComponents.filter((c) => !c.locked);
-    updateComponents(
-      toUpdate.map((c) => ({
-        id: c.id,
-        data: JSON.stringify({
-          ...JSON.parse(c.data),
-          conditionalRenderAttributeId: id,
-        }),
-      })),
-    );
+    patchSelectedComponentsMergedData((d) => ({
+      ...d,
+      conditionalRenderAttributeId: id,
+    }));
   };
 
   const setConditionalRenderLogic = (logic: ConditionalRenderLogic | null) => {
-    const toUpdate = selectedComponents.filter((c) => !c.locked);
-    updateComponents(
-      toUpdate.map((c) => ({
-        id: c.id,
-        data: JSON.stringify({
-          ...JSON.parse(c.data),
-          conditionalRenderLogic: logic ?? undefined,
-        }),
-      })),
-    );
+    patchSelectedComponentsMergedData((d) => ({
+      ...d,
+      conditionalRenderLogic: logic ?? undefined,
+    }));
   };
 
   const setHref = (href: string) => {
-    const toUpdate = selectedComponents.filter((c) => !c.locked);
-    updateComponents(
-      toUpdate.map((c) => ({
-        id: c.id,
-        data: JSON.stringify({
-          ...JSON.parse(c.data),
-          href: href || undefined,
-        }),
-      })),
-    );
+    patchSelectedComponentsMergedData((d) => ({
+      ...d,
+      href: href || undefined,
+    }));
   };
 
   const setReferenceLabel = (referenceLabel: string) => {
-    const toUpdate = selectedComponents.filter((c) => !c.locked);
-    updateComponents(
-      toUpdate.map((c) => ({
-        id: c.id,
-        data: JSON.stringify({
-          ...JSON.parse(c.data),
-          referenceLabel: referenceLabel.trim() || undefined,
-        }),
-      })),
-    );
+    patchSelectedComponentsMergedData((d) => ({
+      ...d,
+      referenceLabel: referenceLabel.trim() || undefined,
+    }));
   };
 
   const referenceLabelDebounceTimeoutRef = useRef<number | null>(null);
@@ -251,81 +370,45 @@ export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
   }, [referenceLabelInput, selectedComponents.length, selectedComponents[0]?.id]);
 
   const setAnimation = (animation: string | null) => {
-    const toUpdate = selectedComponents.filter((c) => !c.locked);
-    updateComponents(
-      toUpdate.map((c) => ({
-        id: c.id,
-        data: JSON.stringify({
-          ...JSON.parse(c.data),
-          animation: animation && animation !== 'none' ? animation : null,
-        }),
-      })),
-    );
+    patchSelectedComponentsMergedData((d) => ({
+      ...d,
+      animation: animation && animation !== 'none' ? animation : null,
+    }));
   };
 
   const setAnimationColor = (animationColor: string | null) => {
-    const toUpdate = selectedComponents.filter((c) => !c.locked);
-    updateComponents(
-      toUpdate.map((c) => ({
-        id: c.id,
-        data: JSON.stringify({
-          ...JSON.parse(c.data),
-          animationColor: animationColor ?? null,
-        }),
-      })),
-    );
+    patchSelectedComponentsMergedData((d) => ({
+      ...d,
+      animationColor: animationColor ?? null,
+    }));
   };
 
   const setShowSign = (showSign: boolean) => {
-    const toUpdate = selectedComponents.filter((c) => !c.locked);
-    updateComponents(
-      toUpdate.map((c) => ({
-        id: c.id,
-        data: JSON.stringify({
-          ...JSON.parse(c.data),
-          showSign,
-        }),
-      })),
-    );
+    patchSelectedComponentsMergedData((d) => ({
+      ...d,
+      showSign,
+    }));
   };
 
   const setTooltipValue = (tooltipValue: string) => {
-    const toUpdate = selectedComponents.filter((c) => !c.locked);
-    updateComponents(
-      toUpdate.map((c) => ({
-        id: c.id,
-        data: JSON.stringify({
-          ...JSON.parse(c.data),
-          tooltipValue: tooltipValue || undefined,
-        }),
-      })),
-    );
+    patchSelectedComponentsMergedData((d) => ({
+      ...d,
+      tooltipValue: tooltipValue || undefined,
+    }));
   };
 
   const setTooltipAttributeId = (id: string | null) => {
-    const toUpdate = selectedComponents.filter((c) => !c.locked);
-    updateComponents(
-      toUpdate.map((c) => ({
-        id: c.id,
-        data: JSON.stringify({
-          ...JSON.parse(c.data),
-          tooltipAttributeId: id,
-        }),
-      })),
-    );
+    patchSelectedComponentsMergedData((d) => ({
+      ...d,
+      tooltipAttributeId: id,
+    }));
   };
 
   const setTooltipPlacement = (placement: 'top' | 'right' | 'bottom' | 'left') => {
-    const toUpdate = selectedComponents.filter((c) => !c.locked);
-    updateComponents(
-      toUpdate.map((c) => ({
-        id: c.id,
-        data: JSON.stringify({
-          ...JSON.parse(c.data),
-          tooltipPlacement: placement,
-        }),
-      })),
-    );
+    patchSelectedComponentsMergedData((d) => ({
+      ...d,
+      tooltipPlacement: placement,
+    }));
   };
 
   const assignStyleToCustomProperty = (styleKey: string, customPropertyId: string) => {
@@ -431,11 +514,23 @@ export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
               <TabsTrigger value='style' className='flex-1'>
                 Style
               </TabsTrigger>
-              <TabsTrigger value='data' className='flex-1' data-testid='component-edit-tab-data'>
+              <TabsTrigger
+                value='data'
+                className='flex-1'
+                data-testid='component-edit-tab-data'>
                 Content
               </TabsTrigger>
             </TabsList>
-            <TabsContent value='style' className='w-full flex flex-col gap-2 mt-2'>
+            {selectedComponents.length === 1 ? (
+              <ComponentStatesEdit
+                component={selectedComponents[0]!}
+                onStatesUpdated={(statesJson) => {
+                  const c = selectedComponents[0]!;
+                  updateComponents([{ id: c.id, states: ensureComponentStatesJson(statesJson) }]);
+                }}
+              />
+            ) : null}
+            <TabsContent value='style' className='mt-2 flex w-full flex-col gap-2'>
               <ActionEdit components={selectedComponents} handleUpdate={handleUpdate} />
               <PositionEdit
                 components={selectedComponents}
@@ -443,16 +538,19 @@ export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
                 handleDataFlagUpdate={handlePositionDataFlag}
               />
               <StyleEdit
-                components={selectedComponents}
+                components={panelDisplayComponents}
                 handleUpdate={handleStyleUpdate}
                 handleDataUpdate={handleGroupDataUpdate}
               />
               {allAreText && (
-                <TextEdit components={selectedComponents} handleUpdate={handleStyleUpdate} />
+                <TextEdit components={panelDisplayComponents} handleUpdate={handleStyleUpdate} />
               )}
-              {allAreShapes && <ShapeEdit components={selectedComponents} />}
+              {allAreShapes &&
+                selectedComponents.every((c) => getEditorPreviewStateName(c) === 'base') && (
+                  <ShapeEdit components={selectedComponents} />
+                )}
             </TabsContent>
-            <TabsContent value='data' className='w-full flex flex-col gap-4 mt-2 overflow-x-hidden'>
+            <TabsContent value='data' className='mt-2 flex w-full flex-col gap-4 overflow-x-hidden'>
               {selectedComponents.length === 1 && (
                 <div className='flex flex-col gap-2'>
                   <Label
@@ -476,22 +574,62 @@ export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
                       id='component-data-attribute-lookup'
                       value={selectedComponents[0].attributeId}
                       onSelect={(attr) => {
-                        const c = selectedComponents[0];
+                        const c = selectedComponents[0]!;
+                        const target = getEditorPreviewStateName(c);
+                        if (target === 'base') {
+                          updateComponents([
+                            {
+                              id: c.id,
+                              attributeId: attr.id,
+                              data: stripAttributeCustomPropertyIdFromData(c.data),
+                            },
+                          ]);
+                          return;
+                        }
+                        const display = withMergedStateLayers(c, {
+                          editorPreviewState: target,
+                        });
+                        const merged = { ...JSON.parse(display.data) } as Record<string, unknown>;
+                        delete merged.attributeCustomPropertyId;
+                        const baseData = JSON.parse(c.data) as Record<string, unknown>;
+                        const diff = computeSparseDiff(baseData, merged);
                         updateComponents([
                           {
                             id: c.id,
                             attributeId: attr.id,
-                            data: stripAttributeCustomPropertyIdFromData(c.data),
+                            states: updateStateEntryPartial(c.states, target, {
+                              data: JSON.stringify(diff),
+                            }),
                           },
                         ]);
                       }}
                       onDelete={() => {
-                        const c = selectedComponents[0];
+                        const c = selectedComponents[0]!;
+                        const target = getEditorPreviewStateName(c);
+                        if (target === 'base') {
+                          updateComponents([
+                            {
+                              id: c.id,
+                              attributeId: null,
+                              data: stripAttributeCustomPropertyIdFromData(c.data),
+                            },
+                          ]);
+                          return;
+                        }
+                        const display = withMergedStateLayers(c, {
+                          editorPreviewState: target,
+                        });
+                        const merged = { ...JSON.parse(display.data) } as Record<string, unknown>;
+                        delete merged.attributeCustomPropertyId;
+                        const baseData = JSON.parse(c.data) as Record<string, unknown>;
+                        const diff = computeSparseDiff(baseData, merged);
                         updateComponents([
                           {
                             id: c.id,
                             attributeId: null,
-                            data: stripAttributeCustomPropertyIdFromData(c.data),
+                            states: updateStateEntryPartial(c.states, target, {
+                              data: JSON.stringify(diff),
+                            }),
                           },
                         ]);
                       }}
@@ -499,6 +637,7 @@ export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
                     />
                     {(() => {
                       const c = selectedComponents[0];
+                      const displayC = panelDisplayComponents[0]!;
                       const boundAttr = c.attributeId
                         ? attributes.find((a) => a.id === c.attributeId)
                         : undefined;
@@ -506,7 +645,7 @@ export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
                         ? parseEntityCustomPropertiesJson(boundAttr.customProperties)
                         : [];
                       if (defs.length === 0) return null;
-                      const data = getComponentData(c);
+                      const data = getComponentData(displayC);
                       const storedId = data.attributeCustomPropertyId;
                       const current =
                         storedId && defs.some((d) => d.id === storedId)
@@ -522,13 +661,15 @@ export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
                           <Select
                             value={current}
                             onValueChange={(v) => {
-                              const nextData = { ...JSON.parse(c.data) } as Record<string, unknown>;
-                              if (v === ATTRIBUTE_CUSTOM_PROPERTY_NONE) {
-                                delete nextData.attributeCustomPropertyId;
-                              } else {
-                                nextData.attributeCustomPropertyId = v;
-                              }
-                              updateComponents([{ id: c.id, data: JSON.stringify(nextData) }]);
+                              patchSelectedComponentsMergedData((merged) => {
+                                const nextData = { ...merged };
+                                if (v === ATTRIBUTE_CUSTOM_PROPERTY_NONE) {
+                                  delete nextData.attributeCustomPropertyId;
+                                } else {
+                                  nextData.attributeCustomPropertyId = v;
+                                }
+                                return nextData;
+                              });
                             }}>
                             <SelectTrigger
                               id='component-attribute-custom-property'
@@ -561,7 +702,7 @@ export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
                     </Label>
                     <Select
                       value={
-                        getComponentData(selectedComponents[0]).animation ||
+                        getComponentData(panelDisplayComponents[0]!).animation ||
                         activeRuleset?.details?.animation ||
                         'none'
                       }
@@ -583,7 +724,7 @@ export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
                     label='Animation Color'
                     propertyKey='animationColor'
                     color={
-                      getComponentData(selectedComponents[0]).animationColor ??
+                      getComponentData(panelDisplayComponents[0]!).animationColor ??
                       activeRuleset?.details?.animationColor
                     }
                     disableAlpha
@@ -602,8 +743,8 @@ export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
                     <Checkbox
                       id='show-sign'
                       checked={
-                        (getComponentData(selectedComponents[0]) as TextComponentData).showSign ??
-                        false
+                        (getComponentData(panelDisplayComponents[0]!) as TextComponentData)
+                          .showSign ?? false
                       }
                       onCheckedChange={(checked) => setShowSign(checked === true)}
                       onKeyDown={(e) => e.stopPropagation()}
@@ -615,9 +756,11 @@ export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
                 )}
               {selectedComponents.length === 1 && (
                 <ConditionalRenderEdit
-                  attributeId={getComponentData(selectedComponents[0]).conditionalRenderAttributeId}
+                  attributeId={
+                    getComponentData(panelDisplayComponents[0]!).conditionalRenderAttributeId
+                  }
                   conditionalRenderLogic={
-                    getComponentData(selectedComponents[0]).conditionalRenderLogic
+                    getComponentData(panelDisplayComponents[0]!).conditionalRenderLogic
                   }
                   onSelect={(attr) => setConditionalRenderAttributeId(attr?.id ?? null)}
                   onDelete={() => setConditionalRenderAttributeId(null)}
@@ -634,9 +777,9 @@ export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
                     <Input
                       id='component-edit-href'
                       className='h-8 rounded-[4px]'
-                      disabled={!!getComponentData(selectedComponents[0]).pageId}
+                      disabled={!!getComponentData(panelDisplayComponents[0]!).pageId}
                       placeholder='https://...'
-                      value={getComponentData(selectedComponents[0]).href ?? ''}
+                      value={getComponentData(panelDisplayComponents[0]!).href ?? ''}
                       onChange={(e) => setHref(e.target.value)}
                     />
                   </div>
@@ -644,14 +787,15 @@ export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
 
               {selectedComponents.length === 1 && (
                 <ClickEventModal
-                  component={selectedComponents[0]}
+                  component={panelDisplayComponents[0]!}
                   allCanOpenChildWindow={allCanOpenChildWindow}
+                  persistComponentUpdates={persistMergedDataUpdates}
                 />
               )}
 
               {selectedComponents.length === 1 && (
                 <ComponentTooltipSettings
-                  component={selectedComponents[0]}
+                  component={panelDisplayComponents[0]!}
                   onTooltipValueChange={setTooltipValue}
                   onTooltipAttributeIdChange={setTooltipAttributeId}
                   onTooltipPlacementChange={setTooltipPlacement}
@@ -660,54 +804,54 @@ export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
 
               {allAreImages && (
                 <ImageDataEdit
-                  components={selectedComponents}
+                  components={panelDisplayComponents}
                   handleUpdate={handleUpdate}
-                  updateComponents={updateComponents}
+                  updateComponents={persistMergedDataUpdates}
                 />
               )}
 
               {allAreContent && (
                 <ContentDataEdit
-                  components={selectedComponents}
+                  components={panelDisplayComponents}
                   handleUpdate={handleUpdate}
-                  updateComponents={updateComponents}
+                  updateComponents={persistMergedDataUpdates}
                 />
               )}
 
               {allAreInputs && (
                 <InputDataEdit
-                  components={selectedComponents}
+                  components={panelDisplayComponents}
                   handleUpdate={handleUpdate}
-                  updateComponents={updateComponents}
+                  updateComponents={persistMergedDataUpdates}
                 />
               )}
 
               {allAreCheckboxes && (
                 <CheckboxDataEdit
-                  components={selectedComponents}
+                  components={panelDisplayComponents}
                   handleUpdate={handleUpdate}
-                  updateComponents={updateComponents}
+                  updateComponents={persistMergedDataUpdates}
                 />
               )}
 
               {allAreInventories && (
                 <InventoryDataEdit
-                  components={selectedComponents}
-                  updateComponents={updateComponents}
+                  components={panelDisplayComponents}
+                  updateComponents={persistMergedDataUpdates}
                 />
               )}
 
               {allAreGraphs && (
                 <GraphDataEdit
-                  components={selectedComponents}
-                  updateComponents={updateComponents}
+                  components={panelDisplayComponents}
+                  updateComponents={persistMergedDataUpdates}
                 />
               )}
 
               {allAreFrames && (
                 <FrameDataEdit
-                  components={selectedComponents}
-                  updateComponents={updateComponents}
+                  components={panelDisplayComponents}
+                  updateComponents={persistMergedDataUpdates}
                 />
               )}
             </TabsContent>

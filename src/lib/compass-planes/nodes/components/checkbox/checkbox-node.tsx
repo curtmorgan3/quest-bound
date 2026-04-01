@@ -1,6 +1,7 @@
 import { useAssets } from '@/lib/compass-api';
 import { useEditorItemId } from '@/lib/compass-planes/canvas/editor-item-context';
 import { useComponentCanvasDimensions } from '@/lib/compass-planes/canvas/editor-item-layout-context';
+import { editorNodeComponentVisualEqual } from '@/lib/compass-planes/nodes/editor-node-memo';
 import {
   getBackgroundStyle,
   getColorStyle,
@@ -107,7 +108,9 @@ const ViewCheckboxNodeComponent = ({
 
 export const ViewCheckboxNode = memo(
   ViewCheckboxNodeComponent,
-  (prev, next) => prev.component === next.component && prev.editMode === next.editMode,
+  (prev, next) =>
+    editorNodeComponentVisualEqual(prev.component, next.component) &&
+    prev.editMode === next.editMode,
 );
 
 function Checked({ url, css }: { url?: string; css: ComponentStyle }) {

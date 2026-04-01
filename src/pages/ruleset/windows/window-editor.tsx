@@ -4,6 +4,10 @@ import { useSidebar } from '@/components/ui/sidebar';
 import { useComponents, useRulesets, type ComponentUpdate } from '@/lib/compass-api';
 import { repairOrphanCharacterWindowsForRulesetWindows } from '@/lib/compass-api/utils/default-archetype-test-character';
 import { SheetEditor } from '@/lib/compass-planes';
+import {
+  getEditorPreviewStateName,
+  withMergedStateLayers,
+} from '@/lib/compass-planes/utils/component-states';
 import { DEFAULT_GRID_SIZE } from '@/lib/compass-planes/editor-config';
 import {
   canGroupSelection,
@@ -88,7 +92,41 @@ export const WindowEditor = () => {
   const [snapToGrid, setSnapToGrid] = useState(readStoredSnapToGrid);
   const [canvasViewScale, setCanvasViewScale] = useState(1);
   const [compositeLibraryOpen, setCompositeLibraryOpen] = useState(false);
-  const getComponent = (id: string) => components.find((c) => c.id === id) ?? null;
+  const stateEditTarget = useMemo(() => {
+    const sel = components.filter((c) => c.selected);
+    if (sel.length === 0) return 'base';
+    const targets = sel.map((c) => getEditorPreviewStateName(c));
+    const first = targets[0]!;
+    if (targets.every((t) => t === first)) return first;
+    return 'base';
+  }, [components]);
+
+  const setStateEditTarget = useCallback(
+    (target: string) => {
+      const toUpdate = components.filter((c) => c.selected && !c.locked);
+      if (toUpdate.length === 0) return;
+      void updateComponents(
+        toUpdate.map((c) => ({
+          id: c.id,
+          editorStateTarget: target === 'base' ? null : target,
+        })),
+      );
+    },
+    [components, updateComponents],
+  );
+
+  const getComponent = useCallback(
+    (id: string) => {
+      const raw = components.find((c) => c.id === id) ?? null;
+      if (!raw) return null;
+      const target = getEditorPreviewStateName(raw);
+      // Shallow-clone base rows so base ↔ state preview transitions are not skipped by
+      // `memo(..., prev.component === next.component)` on editor nodes.
+      if (target === 'base') return { ...raw };
+      return withMergedStateLayers(raw, { editorPreviewState: target });
+    },
+    [components],
+  );
 
   const compositeStampAt = useMemo(() => {
     const roots = components.filter((c) => c.selected && !c.parentComponentId);
@@ -258,6 +296,8 @@ export const WindowEditor = () => {
         canGroupSelected,
         canUngroupSelected,
         compositeTemplateRootIds: compositeTemplateRootIdsResolved,
+        stateEditTarget,
+        setStateEditTarget,
       }}>
       <div className='relative flex h-full min-h-0 w-full flex-col overflow-hidden'>
         <div className='flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden'>

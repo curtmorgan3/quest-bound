@@ -1,5 +1,6 @@
 import { MarkdownViewer } from '@/components/composites';
 import { useEditorItemId } from '@/lib/compass-planes/canvas/editor-item-context';
+import { editorNodeComponentVisualEqual } from '@/lib/compass-planes/nodes/editor-node-memo';
 import { useComponentCanvasDimensions } from '@/lib/compass-planes/canvas/editor-item-layout-context';
 import {
   fireExternalComponentChangeEvent,
@@ -206,7 +207,7 @@ const ViewContentNodeComponent = ({
 export const ViewContentNode = memo(
   ViewContentNodeComponent,
   (prev, next) =>
-    prev.component === next.component &&
+    editorNodeComponentVisualEqual(prev.component, next.component) &&
     prev.windowEditorMode === next.windowEditorMode &&
     prev.handleComponentUpdate === next.handleComponentUpdate &&
     prev.handleDoubleClick === next.handleDoubleClick,

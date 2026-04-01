@@ -1,17 +1,18 @@
-import { WindowEditorContext } from '@/stores';
-import type { Component, ShapeComponentData } from '@/types';
 import { useEditorItemId } from '@/lib/compass-planes/canvas/editor-item-context';
 import {
   canvasDimensionToCss,
   useComponentCanvasDimensions,
 } from '@/lib/compass-planes/canvas/editor-item-layout-context';
-import { memo, useContext } from 'react';
+import { editorNodeComponentVisualEqual } from '@/lib/compass-planes/nodes/editor-node-memo';
 import {
   getBackgroundStyle,
   getComponentData,
   getSolidFallback,
   useComponentStyles,
 } from '@/lib/compass-planes/utils';
+import { WindowEditorContext } from '@/stores';
+import type { Component, ShapeComponentData } from '@/types';
+import { memo, useContext } from 'react';
 import { ResizableNode } from '../../decorators';
 
 export const EditShapeNode = () => {
@@ -91,9 +92,8 @@ function getPolygonClipPath(sides: number): string {
   return `polygon(${points.join(', ')})`;
 }
 
-export const ViewShapeNode = memo(
-  ViewShapeNodeComponent,
-  (prev, next) => prev.component === next.component,
+export const ViewShapeNode = memo(ViewShapeNodeComponent, (prev, next) =>
+  editorNodeComponentVisualEqual(prev.component, next.component),
 );
 
 const Polygon = ({

@@ -258,5 +258,15 @@ export const dbSchemaV65 = {
   characterAttributes: `${common}, characterId, attributeId, &[characterId+attributeId], scriptDisabled, customProperties, attributeCustomPropertyValues`,
 };
 
+/** Schema for v66: optional `components.states`, `characterWindows.componentActiveStates` (component visual states). */
+export const dbSchemaV66 = {
+  ...dbSchemaV65,
+};
+
+/** Schema for v67: optional `components.editorStateTarget` (window editor preview; no new indexes). */
+export const dbSchemaV67 = {
+  ...dbSchemaV66,
+};
+
 // latestDbSchema should always be used for the worker thread db instance
-export const latestDbSchema = { ...dbSchemaV65 };
+export const latestDbSchema = { ...dbSchemaV67 };

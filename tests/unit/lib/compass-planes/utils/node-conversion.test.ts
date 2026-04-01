@@ -505,6 +505,31 @@ describe('getComponentStyles', () => {
     expect(styles.boxShadow).toBeUndefined();
   });
 
+  it('should not emit NaNpx when box shadow distances are non-numeric (e.g. unresolved custom-prop token)', () => {
+    const component: Component = {
+      id: 'comp-1',
+      rulesetId: 'ruleset-1',
+      windowId: 'window-1',
+      type: 'shape',
+      x: 0,
+      y: 0,
+      z: 1,
+      height: 50,
+      width: 100,
+      rotation: 0,
+      data: '{}',
+      style:
+        '{"outlineWidth":0,"outlineColor":"#000","borderRadiusTopLeft":0,"borderRadiusTopRight":0,"borderRadiusBottomRight":0,"borderRadiusBottomLeft":0,"boxShadowOffsetX":"custom-prop-missing","boxShadowOffsetY":4,"boxShadowBlur":6,"boxShadowSpread":0,"boxShadowColor":"rgba(0,0,0,0.5)"}',
+      createdAt: '2024-01-01T00:00:00.000Z',
+      updatedAt: '2024-01-01T00:00:00.000Z',
+    };
+
+    const styles = getComponentStyles(component);
+
+    expect(styles.boxShadow).toBe('0px 4px 6px 0px rgba(0,0,0,0.5)');
+    expect(styles.boxShadow).not.toMatch(/NaN/);
+  });
+
   it('should preserve other style properties', () => {
     const component: Component = {
       id: 'comp-1',

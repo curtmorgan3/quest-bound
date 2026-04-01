@@ -69,6 +69,8 @@ describe('InventoryNode Component', () => {
       getComponent: (id: string) => (id === component.id ? component : null),
       updateComponent: cy.stub(),
       updateComponents: cy.stub(),
+      stateEditTarget: 'base',
+      setStateEditTarget: cy.stub(),
     } as any;
 
     cy.mount(

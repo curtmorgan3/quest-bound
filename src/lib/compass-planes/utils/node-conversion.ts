@@ -59,6 +59,24 @@ function isLinearGradient(value: string | undefined): value is string {
   return typeof value === 'string' && value.trim().startsWith('linear-gradient(');
 }
 
+/** Box-shadow distances may be unresolved custom-prop tokens (strings) — coerce to finite px scalars. */
+function toStyleShadowDistancePx(value: unknown): number {
+  if (typeof value === 'number') {
+    return Number.isFinite(value) ? value : 0;
+  }
+  if (typeof value === 'string') {
+    const t = value.trim();
+    if (t === '') return 0;
+    const direct = Number(t);
+    if (Number.isFinite(direct)) return direct;
+    const pf = parseFloat(t);
+    return Number.isFinite(pf) ? pf : 0;
+  }
+  if (value == null) return 0;
+  const n = Number(value);
+  return Number.isFinite(n) ? n : 0;
+}
+
 function applyStyleEnrichment(styles: ComponentStyle): ComponentStyle {
   const out = { ...styles } as ComponentStyle & Record<string, unknown>;
 
@@ -88,10 +106,10 @@ function applyStyleEnrichment(styles: ComponentStyle): ComponentStyle {
     };
   }
 
-  const sx = Number(out.boxShadowOffsetX ?? 0);
-  const sy = Number(out.boxShadowOffsetY ?? 0);
-  const sblur = Number(out.boxShadowBlur ?? 0);
-  const sspread = Number(out.boxShadowSpread ?? 0);
+  const sx = toStyleShadowDistancePx(out.boxShadowOffsetX);
+  const sy = toStyleShadowDistancePx(out.boxShadowOffsetY);
+  const sblur = toStyleShadowDistancePx(out.boxShadowBlur);
+  const sspread = toStyleShadowDistancePx(out.boxShadowSpread);
   if (sx !== 0 || sy !== 0 || sblur !== 0 || sspread !== 0) {
     const c =
       typeof out.boxShadowColor === 'string' && out.boxShadowColor.trim() !== ''

@@ -11,6 +11,7 @@ import {
 } from '@/components';
 import { useEditorItemId } from '@/lib/compass-planes/canvas/editor-item-context';
 import { useComponentCanvasDimensions } from '@/lib/compass-planes/canvas/editor-item-layout-context';
+import { editorNodeComponentVisualEqual } from '@/lib/compass-planes/nodes/editor-node-memo';
 import {
   getBackgroundStyle,
   getColorStyle,
@@ -227,5 +228,7 @@ const ViewInputNodeComponent = ({
 
 export const ViewInputNode = memo(
   ViewInputNodeComponent,
-  (prev, next) => prev.component === next.component && prev.editMode === next.editMode,
+  (prev, next) =>
+    editorNodeComponentVisualEqual(prev.component, next.component) &&
+    prev.editMode === next.editMode,
 );

@@ -1,6 +1,5 @@
 import type { CharacterAttribute, Component, ComponentData } from '@/types';
 import type { ReactNode } from 'react';
-import type { EffectiveLayout } from '../sheet-editor/component-world-geometry';
 import type { PositionValues } from '../utils';
 import { ComponentTypes } from '../nodes';
 import {
@@ -23,27 +22,38 @@ import {
   NodeDiceClick,
   NodeNavigator,
   NodeScriptCaller,
+  NodeStateDecorator,
   NodeTooltip,
 } from './decorators';
 import { NodeRotation } from './decorators/node-rotation';
-import { getComponentData } from '../utils';
+import type { ViewRenderContext } from './view-render-context';
 
-export type ViewRenderContext = {
-  allComponents: Component[];
-  byId: Map<string, Component>;
-  effectiveLayout: Map<string, EffectiveLayout>;
-  positionMap: Map<string, PositionValues>;
-  /** Canvas-space bounds of a component (for relative child-window open placement). */
-  getComponentCanvasRect?: (
-    componentId: string,
-  ) => { x: number; y: number; width: number; height: number } | null;
-  /** Ruleset page template id — used to resolve child window displayScale from `RulesetWindow`. */
-  sheetTemplatePageId?: string | null;
-  /** Character sheet only: removes the window instance hosting this canvas (when `closeCharacterWindowOnClick` is set). */
-  closeThisCharacterWindow?: () => void;
-};
+export type { ViewRenderContext } from './view-render-context';
 
 export { isComponentConditionallyVisible } from './decorators/conditional-render';
+
+function renderDecoratedViewBranch(
+  component: Component,
+  characterAttributes: CharacterAttribute[] | undefined,
+  position: PositionValues | undefined,
+  viewCtx: ViewRenderContext | undefined,
+  leaf: (c: Component) => ReactNode,
+): ReactNode {
+  return (
+    <NodeStateDecorator key={component.id} component={component} viewCtx={viewCtx}>
+      {(c, data) => (
+        <WrapDecorators
+          component={c}
+          componentData={data}
+          position={position}
+          characterAttributes={characterAttributes}
+          viewCtx={viewCtx}>
+          {leaf(c)}
+        </WrapDecorators>
+      )}
+    </NodeStateDecorator>
+  );
+}
 
 export function renderViewComponent(
   component: Component,
@@ -51,146 +61,68 @@ export function renderViewComponent(
   position?: PositionValues,
   ctx?: ViewRenderContext,
 ): ReactNode {
-  const componentData = getComponentData(component);
-
   switch (component.type) {
     case ComponentTypes.TEXT:
-      return (
-        <WrapDecorators
-          key={component.id}
-          component={component}
-          componentData={componentData}
-          position={position}
-          characterAttributes={characterAttributes}
-          viewCtx={ctx}>
-          <ViewTextNode key={component.id} component={component} />
-        </WrapDecorators>
+      return renderDecoratedViewBranch(
+        component,
+        characterAttributes,
+        position,
+        ctx,
+        (c) => <ViewTextNode key={c.id} component={c} />,
       );
     case ComponentTypes.SHAPE:
-      return (
-        <WrapDecorators
-          key={component.id}
-          component={component}
-          componentData={componentData}
-          position={position}
-          characterAttributes={characterAttributes}
-          viewCtx={ctx}>
-          <ViewShapeNode component={component} />
-        </WrapDecorators>
-      );
+      return renderDecoratedViewBranch(component, characterAttributes, position, ctx, (c) => (
+        <ViewShapeNode component={c} />
+      ));
     case ComponentTypes.IMAGE:
-      return (
-        <WrapDecorators
-          key={component.id}
-          component={component}
-          componentData={componentData}
-          position={position}
-          characterAttributes={characterAttributes}
-          viewCtx={ctx}>
-          <ViewImageNode key={component.id} component={component} />
-        </WrapDecorators>
-      );
+      return renderDecoratedViewBranch(component, characterAttributes, position, ctx, (c) => (
+        <ViewImageNode key={c.id} component={c} />
+      ));
     case ComponentTypes.INPUT:
-      return (
-        <WrapDecorators
-          key={component.id}
-          component={component}
-          componentData={componentData}
-          position={position}
-          characterAttributes={characterAttributes}
-          viewCtx={ctx}>
-          <ViewInputNode key={component.id} component={component} />
-        </WrapDecorators>
-      );
+      return renderDecoratedViewBranch(component, characterAttributes, position, ctx, (c) => (
+        <ViewInputNode key={c.id} component={c} />
+      ));
     case ComponentTypes.CHECKBOX:
-      return (
-        <WrapDecorators
-          key={component.id}
-          component={component}
-          componentData={componentData}
-          position={position}
-          characterAttributes={characterAttributes}
-          viewCtx={ctx}>
-          <ViewCheckboxNode key={component.id} component={component} />
-        </WrapDecorators>
-      );
+      return renderDecoratedViewBranch(component, characterAttributes, position, ctx, (c) => (
+        <ViewCheckboxNode key={c.id} component={c} />
+      ));
 
     case ComponentTypes.CONTENT:
-      return (
-        <WrapDecorators
-          key={component.id}
-          component={component}
-          componentData={componentData}
-          position={position}
-          characterAttributes={characterAttributes}
-          viewCtx={ctx}>
-          <ViewContentNode key={component.id} component={component} />
-        </WrapDecorators>
-      );
+      return renderDecoratedViewBranch(component, characterAttributes, position, ctx, (c) => (
+        <ViewContentNode key={c.id} component={c} />
+      ));
     case ComponentTypes.INVENTORY:
-      return (
-        <WrapDecorators
-          key={component.id}
-          component={component}
-          componentData={componentData}
-          position={position}
-          characterAttributes={characterAttributes}
-          viewCtx={ctx}>
-          <ViewInventoryNode key={component.id} component={component} />
-        </WrapDecorators>
-      );
+      return renderDecoratedViewBranch(component, characterAttributes, position, ctx, (c) => (
+        <ViewInventoryNode key={c.id} component={c} />
+      ));
     case ComponentTypes.GRAPH:
-      return (
-        <WrapDecorators
-          key={component.id}
-          component={component}
-          componentData={componentData}
-          position={position}
-          characterAttributes={characterAttributes}
-          viewCtx={ctx}>
-          <ViewGraphNode key={component.id} component={component} />
-        </WrapDecorators>
-      );
+      return renderDecoratedViewBranch(component, characterAttributes, position, ctx, (c) => (
+        <ViewGraphNode key={c.id} component={c} />
+      ));
     case ComponentTypes.FRAME:
-      return (
-        <WrapDecorators
-          key={component.id}
-          component={component}
-          componentData={componentData}
-          position={position}
-          characterAttributes={characterAttributes}
-          viewCtx={ctx}>
-          <ViewFrameNode key={component.id} component={component} />
-        </WrapDecorators>
-      );
+      return renderDecoratedViewBranch(component, characterAttributes, position, ctx, (c) => (
+        <ViewFrameNode key={c.id} component={c} />
+      ));
     case ComponentTypes.GROUP:
-      return (
-        <WrapDecorators
-          key={component.id}
-          component={component}
-          componentData={componentData}
-          position={position}
+      return renderDecoratedViewBranch(component, characterAttributes, position, ctx, (c) => (
+        <ViewGroupNode
+          component={c}
+          allComponents={ctx?.allComponents ?? []}
+          effectiveLayout={ctx?.effectiveLayout}
           characterAttributes={characterAttributes}
-          viewCtx={ctx}>
-          <ViewGroupNode
-            component={component}
-            allComponents={ctx?.allComponents ?? []}
-            effectiveLayout={ctx?.effectiveLayout}
-            characterAttributes={characterAttributes}
-            renderChild={
-              ctx
-                ? (child) =>
-                    renderViewComponent(
-                      child,
-                      characterAttributes,
-                      ctx.positionMap.get(child.id),
-                      ctx,
-                    )
-                : undefined
-            }
-          />
-        </WrapDecorators>
-      );
+          renderChild={
+            ctx
+              ? (child) =>
+                  renderViewComponent(
+                    child,
+                    characterAttributes,
+                    ctx.positionMap.get(child.id),
+                    ctx,
+                  )
+              : undefined
+          }
+        />
+      ));
     default:
       console.warn(`Attempted to render an unregistered view component: `, component.type);
       return null;

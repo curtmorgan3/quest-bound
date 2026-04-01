@@ -258,6 +258,11 @@ export type CharacterWindow = BaseDetails & {
    * Same shape as `components` table rows; merged with template components in the sheet viewer.
    */
   scriptOverlayComponents?: string | null;
+  /**
+   * Stringified JSON object: `Record<componentId, stateName>` for custom visual states (`component.setState`).
+   * Missing / empty object means no active custom state per component.
+   */
+  componentActiveStates?: string | null;
 };
 
 /** Template window layout for a ruleset page (used as sheet template). */
@@ -278,6 +283,15 @@ export type RulesetWindow = BaseDetails & {
   moduleName?: string;
 };
 
+/** One named visual state (hover, disabled, or custom) with sparse `data` / `style` JSON diffs. */
+export type ComponentStateEntry = {
+  name: string;
+  /** Stringified sparse `ComponentData` diff vs base `data`. */
+  data: string;
+  /** Stringified sparse `ComponentStyle` diff vs base `style`. */
+  style: string;
+};
+
 export type Component = BaseDetails & {
   rulesetId: string;
   windowId: string;
@@ -290,6 +304,15 @@ export type Component = BaseDetails & {
   rotation: number;
   data: string;
   style: string;
+  /**
+   * Stringified JSON array of `ComponentStateEntry`. Default `[]` when omitted (legacy components).
+   */
+  states?: string | null;
+  /**
+   * Window editor only: which named state (or `'base'` / null) is being edited for this component.
+   * Not used at runtime on character sheets.
+   */
+  editorStateTarget?: string | null;
   locked?: boolean;
   selected?: boolean;
   groupId?: string | null;
@@ -300,6 +323,12 @@ export type Component = BaseDetails & {
   childWindowId?: string | null;
   /** Optional script attached to this window component (e.g. Game Manager script). */
   scriptId?: string | null;
+  /**
+   * Ephemeral: set on in-memory merge clones when the sheet viewer applies the pointer-hover
+   * state layer (`withMergedStateLayers({ showHoverLayer })`). Not persisted; forces view nodes
+   * to re-render when hover toggles even if merged `data`/`style` strings match.
+   */
+  sheetHoverLayerActive?: boolean;
 };
 
 /** Saved group template in the ruleset library (Phase 4b). `rootComponentId` is a `Component` with `type === 'group'`. */

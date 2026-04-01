@@ -90,6 +90,9 @@ export const createMockWindowEditorContext = (components: any[] = []) => {
     ungroupSelectedComponents: cy.stub(),
     canGroupSelected: false,
     canUngroupSelected: false,
+    compositeTemplateRootIds: new Set<string>(),
+    stateEditTarget: 'base',
+    setStateEditTarget: cy.stub(),
   };
 };
 

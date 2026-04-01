@@ -1,5 +1,6 @@
 import { useEditorItemId } from '@/lib/compass-planes/canvas/editor-item-context';
 import { useComponentCanvasDimensions } from '@/lib/compass-planes/canvas/editor-item-layout-context';
+import { editorNodeComponentVisualEqual } from '@/lib/compass-planes/nodes/editor-node-memo';
 import {
   fireExternalComponentChangeEvent,
   getBackgroundStyle,
@@ -198,5 +199,7 @@ const ViewTextNodeComponent = ({
 
 export const ViewTextNode = memo(
   ViewTextNodeComponent,
-  (prev, next) => prev.component === next.component && prev.onDoubleClick === next.onDoubleClick,
+  (prev, next) =>
+    editorNodeComponentVisualEqual(prev.component, next.component) &&
+    prev.onDoubleClick === next.onDoubleClick,
 );

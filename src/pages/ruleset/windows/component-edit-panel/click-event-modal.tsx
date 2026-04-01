@@ -38,6 +38,8 @@ import type {
   Script,
   ScriptParamValue,
 } from '@/types';
+import { useMemo, useState } from 'react';
+import { useParams } from 'react-router-dom';
 
 function stripClickEventFieldsFromData(baseData: ComponentData) {
   delete baseData.pageId;
@@ -51,10 +53,9 @@ function stripClickEventFieldsFromData(baseData: ComponentData) {
   delete baseData.scriptParameterValues;
   delete baseData.closeCharacterWindowOnClick;
 }
-import { useMemo, useState } from 'react';
-import { useParams } from 'react-router-dom';
 
 type ClickEventType =
+  | 'none'
   | 'openPage'
   | 'openWindow'
   | 'closeThisWindow'
@@ -83,17 +84,23 @@ const CHILD_WINDOW_ANCHOR_OPTIONS: { value: Exclude<ChildWindowAnchor, 'position
 interface Props {
   component: Component;
   allCanOpenChildWindow: boolean;
+  persistComponentUpdates?: (updates: Array<ComponentUpdate>) => void | Promise<void>;
 }
 
-export const ClickEventModal = ({ component, allCanOpenChildWindow }: Props) => {
+export const ClickEventModal = ({
+  component,
+  allCanOpenChildWindow,
+  persistComponentUpdates,
+}: Props) => {
   const { windowId } = useParams();
-  const { updateComponents } = useComponents(windowId);
+  const { updateComponents: defaultPersist } = useComponents(windowId);
+  const persist = persistComponentUpdates ?? defaultPersist;
   const { scripts, deleteScript } = useScripts();
   const { pages } = useRulesetPages();
   const { windows } = useWindows();
   const { actions } = useActions();
   const [open, setOpen] = useState(false);
-  const [clickEventType, setClickEventType] = useState<ClickEventType>('openPage');
+  const [clickEventType, setClickEventType] = useState<ClickEventType>('none');
   const [openWindowX, setOpenWindowX] = useState(0);
   const [openWindowY, setOpenWindowY] = useState(0);
   const [childWindowCollapse, setChildWindowCollapse] = useState(false);
@@ -168,7 +175,7 @@ export const ClickEventModal = ({ component, allCanOpenChildWindow }: Props) => 
   const handleSetOpenPageClick = (pageId: string) => {
     const baseData = JSON.parse(component.data);
     baseData.pageId = pageId;
-    void updateComponents([{ id: component.id, data: JSON.stringify(baseData) }]);
+    void persist([{ id: component.id, data: JSON.stringify(baseData) }]);
   };
 
   const handleClearOpenPageClick = async () => {
@@ -178,7 +185,7 @@ export const ClickEventModal = ({ component, allCanOpenChildWindow }: Props) => 
     if (await removeLegacyHiddenClickScriptIfPresent()) {
       update.scriptId = null;
     }
-    await updateComponents([update]);
+    await persist([update]);
   };
 
   const handleSetOpenWindowClick = (
@@ -197,7 +204,7 @@ export const ClickEventModal = ({ component, allCanOpenChildWindow }: Props) => 
     baseData.childWindowCollapse = params.collapse ?? false;
     baseData.childWindowPlacementMode = params.placementMode;
     baseData.childWindowAnchor = params.anchor;
-    void updateComponents([
+    void persist([
       { id: component.id, childWindowId, data: JSON.stringify(baseData) },
     ]);
   };
@@ -217,11 +224,11 @@ export const ClickEventModal = ({ component, allCanOpenChildWindow }: Props) => 
     if (await removeLegacyHiddenClickScriptIfPresent()) {
       update.scriptId = null;
     }
-    await updateComponents([update]);
+    await persist([update]);
   };
 
   const handleSetFireActionClick = (actionId: string) => {
-    void updateComponents([{ id: component.id, actionId }]);
+    void persist([{ id: component.id, actionId }]);
   };
 
   const handleClearFireActionClick = async () => {
@@ -232,38 +239,38 @@ export const ClickEventModal = ({ component, allCanOpenChildWindow }: Props) => 
     if (await removeLegacyHiddenClickScriptIfPresent()) {
       update.scriptId = null;
     }
-    await updateComponents([update]);
+    await persist([update]);
   };
 
   const handleSetViewAttributeClick = (attributeId: string) => {
     const baseData = JSON.parse(component.data);
     baseData.viewAttributeId = attributeId;
-    updateComponents([{ id: component.id, data: JSON.stringify(baseData) }]);
+    persist([{ id: component.id, data: JSON.stringify(baseData) }]);
   };
 
   const handleClearViewAttributeClick = () => {
     const baseData = JSON.parse(component.data);
     delete baseData.viewAttributeId;
     delete baseData.viewAttributeReadOnly;
-    updateComponents([{ id: component.id, data: JSON.stringify(baseData) }]);
+    persist([{ id: component.id, data: JSON.stringify(baseData) }]);
   };
 
   const handleSetViewAttributeReadOnly = (readOnly: boolean) => {
     const baseData = JSON.parse(component.data);
     baseData.viewAttributeReadOnly = readOnly;
-    updateComponents([{ id: component.id, data: JSON.stringify(baseData) }]);
+    persist([{ id: component.id, data: JSON.stringify(baseData) }]);
   };
 
   const handleSelectScript = (script: Script) => {
     const baseData = JSON.parse(component.data);
     delete baseData.scriptParameterValues;
-    updateComponents([{ id: component.id, scriptId: script.id, data: JSON.stringify(baseData) }]);
+    persist([{ id: component.id, scriptId: script.id, data: JSON.stringify(baseData) }]);
   };
 
   const handleClearScript = () => {
     const baseData = JSON.parse(component.data);
     delete baseData.scriptParameterValues;
-    updateComponents([{ id: component.id, scriptId: null, data: JSON.stringify(baseData) }]);
+    persist([{ id: component.id, scriptId: null, data: JSON.stringify(baseData) }]);
   };
 
   const persistClickEventAfterStrip = async (
@@ -286,7 +293,7 @@ export const ClickEventModal = ({ component, allCanOpenChildWindow }: Props) => 
       await deleteScript(selectedScript.id);
     }
 
-    await updateComponents([update]);
+    await persist([update]);
   };
 
   const applyClickEventTypeSwitch = async (next: ClickEventType) => {
@@ -314,7 +321,7 @@ export const ClickEventModal = ({ component, allCanOpenChildWindow }: Props) => 
       baseData.scriptParameterValues = next;
     }
 
-    updateComponents([{ id: component.id, data: JSON.stringify(baseData) }]);
+    persist([{ id: component.id, data: JSON.stringify(baseData) }]);
   };
 
   const currentLabel = getCurrentClickEventLabel();
@@ -330,7 +337,7 @@ export const ClickEventModal = ({ component, allCanOpenChildWindow }: Props) => 
         data-testid='component-set-click-event'
         onClick={() => {
           const current = getCurrentClickEventType();
-          setClickEventType(current ?? 'openPage');
+          setClickEventType(current ?? 'none');
           const data = getComponentData(component);
           setOpenWindowX(data.childWindowX ?? 0);
           setOpenWindowY(data.childWindowY ?? 0);
@@ -343,9 +350,9 @@ export const ClickEventModal = ({ component, allCanOpenChildWindow }: Props) => 
         }}>
         Set Click Event
       </Button>
-      {currentLabel && (
-        <p className='text-[0.7rem] text-muted-foreground'>Current: {currentLabel}</p>
-      )}
+      <p className='text-[0.7rem] text-muted-foreground'>
+        Current: {currentLabel ?? 'None'}
+      </p>
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className='min-w-[320px] max-w-[90vw] flex flex-col gap-4'>
@@ -369,6 +376,7 @@ export const ClickEventModal = ({ component, allCanOpenChildWindow }: Props) => 
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value='none'>None</SelectItem>
                 <SelectItem value='openPage'>Open Page</SelectItem>
                 <SelectItem value='openWindow'>Open Window</SelectItem>
                 <SelectItem value='closeThisWindow'>Close This Window</SelectItem>
@@ -382,6 +390,11 @@ export const ClickEventModal = ({ component, allCanOpenChildWindow }: Props) => 
           </div>
 
           <div className='flex flex-col gap-3'>
+            {clickEventType === 'none' && (
+              <p className='text-[0.75rem] text-muted-foreground leading-snug'>
+                This component will not run any click action.
+              </p>
+            )}
             {clickEventType === 'openPage' && component.type !== ComponentTypes.INVENTORY && (
               <PageLookup
                 label='Open Page'

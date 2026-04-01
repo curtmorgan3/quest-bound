@@ -47,6 +47,19 @@ export class SheetComponentAccessor implements StructuredCloneSafe {
     this.set('disabled', disabled);
   }
 
+  /**
+   * Activates a named custom state from the component's `states` list (case-insensitive match).
+   * Pass `'default'` to clear the active custom state for this component.
+   */
+  setState(name: string): void {
+    this.coordinator.setComponentState(
+      this.characterId,
+      this.componentId,
+      this.characterWindowInstanceId,
+      name,
+    );
+  }
+
   get(key: string): unknown {
     return this.coordinator.getOnComponent(
       this.characterId,

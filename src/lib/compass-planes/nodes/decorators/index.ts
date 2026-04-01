@@ -6,4 +6,5 @@ export * from './node-dice-click';
 export * from './node-navigator';
 export * from './node-script-caller';
 export * from './node-tooltip';
+export * from './node-state-decorator';
 export * from './resizable-node';
