@@ -414,9 +414,9 @@ export interface ScriptErrorPayload {
     column?: number;
     stackTrace?: string;
   };
-  /** ID of the script that failed (e.g. initial sync or reactive run). */
+  /** ID of the script that failed (UI may resolve `name` from Dexie on the main thread). */
   scriptId?: string;
-  /** Name of the script that failed, for user-facing messages. */
+  /** @deprecated Prefer resolving display name from `scriptId` on the main thread. */
   scriptName?: string;
   announceMessages?: string[];
   logMessages?: any[][];

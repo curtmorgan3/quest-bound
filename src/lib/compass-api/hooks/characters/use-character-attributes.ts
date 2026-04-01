@@ -1,5 +1,5 @@
 import { filterNotSoftDeleted, softDeletePatch } from '@/lib/data/soft-delete';
-import { useErrorHandler, useNotifications } from '@/hooks';
+import { useErrorHandler } from '@/hooks';
 import {
   isCampaignPlayClientRelayForCampaign,
   isCampaignPlayHostBroadcastForCampaign,
@@ -36,12 +36,9 @@ export const useCharacterAttributes = (
   campaignPlay?: CharacterSheetCampaignPlayContext,
 ) => {
   const { handleError } = useErrorHandler();
-  const { addNotification } = useNotifications();
 
   const handleErrorRef = useRef(handleError);
-  const addNotificationRef = useRef(addNotification);
   handleErrorRef.current = handleError;
-  addNotificationRef.current = addNotification;
 
   const broadcastAttributeRows = useCallback(
     (rows: CharacterAttribute[]) => {
@@ -252,12 +249,6 @@ export const useCharacterAttributes = (
               'Reactive script execution during syncWithRuleset failed' + scriptInfo + ':',
               error,
             );
-            const message = err.scriptName
-              ? `Failure in script ${err.scriptName}.qbs | ${error}`
-              : `Attribute sync failed | ${error}`;
-            addNotificationRef.current(message, {
-              type: 'error',
-            });
           }
         }
 

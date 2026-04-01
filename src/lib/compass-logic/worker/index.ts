@@ -24,6 +24,7 @@ export {
   useAttributeChange,
   useScriptValidation,
   useScriptAnnouncements,
+  useScriptErrorLogs,
   useDependencyGraph,
   useReactiveScriptExecution,
 } from './hooks';
@@ -35,6 +36,7 @@ export type {
   UseExecuteArchetypeEventResult,
   UseAttributeChangeResult,
   UseScriptValidationResult,
+  ScriptErrorEventDetail,
   UseDependencyGraphResult,
   UseReactiveScriptExecutionResult,
   ReactiveScriptExecutionOptions,

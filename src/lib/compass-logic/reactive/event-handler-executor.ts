@@ -49,6 +49,8 @@ export interface EventHandlerResult {
   announceMessages: string[];
   logMessages: any[][];
   error?: Error;
+  /** DB script row id when execution targeted a persisted script (for error UI). */
+  scriptId?: string;
   /** Ruleset attribute IDs modified by the script (for UI animation). */
   modifiedAttributeIds?: string[];
   /** Optional list of character/page pairs that should be navigated to in the UI after execution. */
@@ -401,6 +403,7 @@ export class EventHandlerExecutor {
       announceMessages: result.announceMessages,
       logMessages: result.logMessages,
       error: result.error,
+      scriptId: script.id,
       modifiedAttributeIds: result.modifiedAttributeIds,
       navigateTargets: result.navigateTargets,
       componentAnimations: result.componentAnimations,
@@ -599,6 +602,7 @@ export class EventHandlerExecutor {
         announceMessages: result.announceMessages,
         logMessages: result.logMessages,
         error: result.error,
+        scriptId: script.id,
         modifiedAttributeIds: result.modifiedAttributeIds,
         navigateTargets: result.navigateTargets,
         componentAnimations: [...(result.componentAnimations ?? []), ...nestedAnimations],
@@ -811,6 +815,7 @@ export class EventHandlerExecutor {
       announceMessages: result.announceMessages,
       logMessages: result.logMessages,
       error: result.error,
+      scriptId: script.id,
       navigateTargets: result.navigateTargets,
     };
   }
@@ -914,6 +919,7 @@ export class EventHandlerExecutor {
       announceMessages: result.announceMessages,
       logMessages: result.logMessages,
       error: result.error,
+      scriptId: script.id,
       navigateTargets: result.navigateTargets,
     };
   }
@@ -1062,6 +1068,7 @@ export class EventHandlerExecutor {
       announceMessages: result.announceMessages,
       logMessages: result.logMessages,
       error: result.error,
+      scriptId: script.id,
     };
   }
 
@@ -1111,6 +1118,7 @@ if ${eventType}:
       announceMessages: result.announceMessages,
       logMessages: result.logMessages,
       error: result.error,
+      scriptId: context.scriptId,
     };
   }
 }

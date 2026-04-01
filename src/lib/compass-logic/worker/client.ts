@@ -284,7 +284,10 @@ export class QBScriptClient {
           campaignId: delegated.campaignId,
           executionRequestId: payload.executionRequestId,
           interactionId: payload.rollRequestId,
-          characterId: this.envelopeCharacterIdForDelegatedUi(delegated, payload.surfaceCharacterId),
+          characterId: this.envelopeCharacterIdForDelegatedUi(
+            delegated,
+            payload.surfaceCharacterId,
+          ),
           body: {
             interactionType: 'roll',
             expression: payload.expression,
@@ -333,7 +336,10 @@ export class QBScriptClient {
           campaignId: delegated.campaignId,
           executionRequestId: payload.executionRequestId,
           interactionId: payload.rollRequestId,
-          characterId: this.envelopeCharacterIdForDelegatedUi(delegated, payload.surfaceCharacterId),
+          characterId: this.envelopeCharacterIdForDelegatedUi(
+            delegated,
+            payload.surfaceCharacterId,
+          ),
           body: {
             interactionType: 'roll_split',
             expression: payload.expression,
@@ -380,7 +386,10 @@ export class QBScriptClient {
           campaignId: delegated.campaignId,
           executionRequestId: payload.executionRequestId,
           interactionId: payload.promptRequestId,
-          characterId: this.envelopeCharacterIdForDelegatedUi(delegated, payload.surfaceCharacterId),
+          characterId: this.envelopeCharacterIdForDelegatedUi(
+            delegated,
+            payload.surfaceCharacterId,
+          ),
           body: {
             interactionType: 'prompt',
             message: payload.msg,
@@ -423,7 +432,10 @@ export class QBScriptClient {
           campaignId: delegated.campaignId,
           executionRequestId: payload.executionRequestId,
           interactionId: payload.promptRequestId,
-          characterId: this.envelopeCharacterIdForDelegatedUi(delegated, payload.surfaceCharacterId),
+          characterId: this.envelopeCharacterIdForDelegatedUi(
+            delegated,
+            payload.surfaceCharacterId,
+          ),
           body: {
             interactionType: 'prompt_multiple',
             message: payload.msg,
@@ -466,7 +478,10 @@ export class QBScriptClient {
           campaignId: delegated.campaignId,
           executionRequestId: payload.executionRequestId,
           interactionId: payload.promptRequestId,
-          characterId: this.envelopeCharacterIdForDelegatedUi(delegated, payload.surfaceCharacterId),
+          characterId: this.envelopeCharacterIdForDelegatedUi(
+            delegated,
+            payload.surfaceCharacterId,
+          ),
           body: {
             interactionType: 'prompt_input',
             message: payload.msg,
@@ -518,7 +533,10 @@ export class QBScriptClient {
             campaignId: delegated.campaignId,
             executionRequestId: payload.executionRequestId,
             interactionId: payload.selectRequestId,
-            characterId: this.envelopeCharacterIdForDelegatedUi(delegated, payload.surfaceCharacterId),
+            characterId: this.envelopeCharacterIdForDelegatedUi(
+              delegated,
+              payload.surfaceCharacterId,
+            ),
             body: {
               interactionType: 'select_character',
               title: payload.title,
@@ -547,7 +565,10 @@ export class QBScriptClient {
             campaignId: delegated.campaignId,
             executionRequestId: payload.executionRequestId,
             interactionId: payload.selectRequestId,
-            characterId: this.envelopeCharacterIdForDelegatedUi(delegated, payload.surfaceCharacterId),
+            characterId: this.envelopeCharacterIdForDelegatedUi(
+              delegated,
+              payload.surfaceCharacterId,
+            ),
             body: {
               interactionType: 'select_characters',
               title: payload.title,
@@ -559,14 +580,17 @@ export class QBScriptClient {
             },
             timeoutMs: delegated.timeoutMs,
             localRunner: () =>
-              useCharacterSelectModalStore.getState().show({
-                mode: 'multi',
-                title: payload.title,
-                description: payload.description,
-                rulesetId: payload.rulesetId,
-                campaignId: payload.campaignId ?? delegated.campaignId,
-                delegatedRoster,
-              }).then((r) => r.characterIds),
+              useCharacterSelectModalStore
+                .getState()
+                .show({
+                  mode: 'multi',
+                  title: payload.title,
+                  description: payload.description,
+                  rulesetId: payload.rulesetId,
+                  campaignId: payload.campaignId ?? delegated.campaignId,
+                  delegatedRoster,
+                })
+                .then((r) => r.characterIds),
           })) as string[];
         }
       } else {
@@ -671,6 +695,21 @@ export class QBScriptClient {
       error.stack = payload.error.stackTrace;
       if (payload.scriptId != null) (error as any).scriptId = payload.scriptId;
       if (payload.scriptName != null) (error as any).scriptName = payload.scriptName;
+
+      try {
+        window.dispatchEvent(
+          new CustomEvent('qbscript:scriptError', {
+            detail: {
+              message: payload.error.message,
+              scriptId: payload.scriptId,
+              line: payload.error.line,
+              column: payload.error.column,
+            },
+          }),
+        );
+      } catch (e) {
+        console.warn('Failed to dispatch qbscript:scriptError event:', e);
+      }
 
       pending.reject(error);
       this.pendingRequests.delete(payload.requestId);

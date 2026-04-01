@@ -862,6 +862,7 @@ async function handleExecuteScript(payload: ExecuteScriptPayload): Promise<void>
         type: 'SCRIPT_ERROR',
         payload: {
           requestId: payload.requestId,
+          scriptId: payload.scriptId,
           error: {
             message: result.error.message,
             line: (result.error as any).line,
@@ -967,6 +968,7 @@ async function handleExecuteScript(payload: ExecuteScriptPayload): Promise<void>
       type: 'SCRIPT_ERROR',
       payload: {
         requestId: payload.requestId,
+        scriptId: payload.scriptId,
         error: {
           message: error instanceof Error ? error.message : String(error),
           stackTrace: error instanceof Error ? error.stack : undefined,
@@ -1162,7 +1164,6 @@ async function handleAttributeChanged(payload: AttributeChangedPayload): Promise
         chainResult.scriptsExecuted.length > 0
           ? chainResult.scriptsExecuted[chainResult.scriptsExecuted.length - 1]
           : undefined;
-      const script = failedScriptId ? await db.scripts.get(failedScriptId) : null;
       sendSignal({
         type: 'SCRIPT_ERROR',
         payload: {
@@ -1172,7 +1173,6 @@ async function handleAttributeChanged(payload: AttributeChangedPayload): Promise
             stackTrace: chainResult.lastError?.stack,
           },
           scriptId: failedScriptId,
-          scriptName: script?.name,
         },
       });
     }
@@ -1302,7 +1302,6 @@ async function handleInitialAttributeSync(payload: {
         result.scriptsExecuted.length > 0
           ? result.scriptsExecuted[result.scriptsExecuted.length - 1]
           : undefined;
-      const script = failedScriptId ? await db.scripts.get(failedScriptId) : null;
       sendSignal({
         type: 'SCRIPT_ERROR',
         payload: {
@@ -1312,7 +1311,6 @@ async function handleInitialAttributeSync(payload: {
             stackTrace: result.error?.stack,
           },
           scriptId: failedScriptId,
-          scriptName: script?.name,
         },
       });
     }
@@ -1343,6 +1341,7 @@ async function handleExecuteAction(payload: {
     return;
   }
 
+  let scriptIdForError: string | undefined;
   try {
     // Get the action from database
     const action = await db.actions.get(payload.actionId);
@@ -1358,6 +1357,8 @@ async function handleExecuteAction(payload: {
     if (!script) {
       throw new Error(`No script found for action: ${payload.actionId}`);
     }
+
+    scriptIdForError = script.id;
 
     // Execute the script
     await handleExecuteScript({
@@ -1376,6 +1377,7 @@ async function handleExecuteAction(payload: {
       type: 'SCRIPT_ERROR',
       payload: {
         requestId: payload.requestId,
+        scriptId: scriptIdForError,
         error: {
           message: error instanceof Error ? error.message : String(error),
           stackTrace: error instanceof Error ? error.stack : undefined,
@@ -1402,11 +1404,14 @@ async function handleExecuteActionEvent(payload: {
     return;
   }
 
+  let actionScriptIdForError: string | undefined;
   try {
     const action = await db.actions.get(payload.actionId);
     if (!action) {
       throw new Error(`Action not found: ${payload.actionId}`);
     }
+
+    actionScriptIdForError = action.scriptId ?? undefined;
 
     const {
       rollFn,
@@ -1477,6 +1482,7 @@ async function handleExecuteActionEvent(payload: {
         type: 'SCRIPT_ERROR',
         payload: {
           requestId: payload.requestId,
+          scriptId: result.scriptId ?? actionScriptIdForError,
           error: {
             message: result.error?.message ?? 'Action event failed',
             stackTrace: result.error?.stack,
@@ -1519,6 +1525,7 @@ async function handleExecuteActionEvent(payload: {
       type: 'SCRIPT_ERROR',
       payload: {
         requestId: payload.requestId,
+        scriptId: actionScriptIdForError,
         error: {
           message: error instanceof Error ? error.message : String(error),
           stackTrace: error instanceof Error ? error.stack : undefined,
@@ -1542,11 +1549,14 @@ async function handleExecuteItemEvent(payload: {
     return;
   }
 
+  let itemScriptIdForError: string | undefined;
   try {
     const item = await db.items.get(payload.itemId);
     if (!item) {
       throw new Error(`Item not found: ${payload.itemId}`);
     }
+
+    itemScriptIdForError = item.scriptId ?? undefined;
 
     const {
       rollFn,
@@ -1612,11 +1622,11 @@ async function handleExecuteItemEvent(payload: {
     );
 
     const script = await db.scripts.where({ entityId: payload.itemId, entityType: 'item' }).first();
-    const scriptId = script?.id ?? payload.itemId;
+    const scriptIdForLogs = result.scriptId ?? script?.id ?? payload.itemId;
 
     await persistScriptLogs(db, {
       rulesetId: item.rulesetId,
-      scriptId,
+      scriptId: scriptIdForLogs,
       characterId: payload.characterId,
       logMessages: result.logMessages,
       context: 'item_event',
@@ -1628,6 +1638,7 @@ async function handleExecuteItemEvent(payload: {
         type: 'SCRIPT_ERROR',
         payload: {
           requestId: payload.requestId,
+          scriptId: result.scriptId ?? itemScriptIdForError ?? script?.id,
           error: {
             message: result.error?.message ?? 'Item event failed',
             stackTrace: result.error?.stack,
@@ -1667,6 +1678,7 @@ async function handleExecuteItemEvent(payload: {
       type: 'SCRIPT_ERROR',
       payload: {
         requestId: payload.requestId,
+        scriptId: itemScriptIdForError,
         error: {
           message: error instanceof Error ? error.message : String(error),
           stackTrace: error instanceof Error ? error.stack : undefined,
@@ -1689,11 +1701,14 @@ async function handleExecuteArchetypeEvent(payload: {
     return;
   }
 
+  let archetypeScriptIdForError: string | undefined;
   try {
     const archetype = await db.archetypes.get(payload.archetypeId);
     if (!archetype) {
       throw new Error(`Archetype not found: ${payload.archetypeId}`);
     }
+
+    archetypeScriptIdForError = archetype.scriptId ?? undefined;
 
     const {
       rollFn,
@@ -1765,6 +1780,7 @@ async function handleExecuteArchetypeEvent(payload: {
         type: 'SCRIPT_ERROR',
         payload: {
           requestId: payload.requestId,
+          scriptId: result.scriptId ?? archetypeScriptIdForError,
           error: {
             message: result.error?.message ?? 'Archetype event failed',
             stackTrace: result.error?.stack,
@@ -1800,6 +1816,7 @@ async function handleExecuteArchetypeEvent(payload: {
       type: 'SCRIPT_ERROR',
       payload: {
         requestId: payload.requestId,
+        scriptId: archetypeScriptIdForError,
         error: {
           message: error instanceof Error ? error.message : String(error),
           stackTrace: error instanceof Error ? error.stack : undefined,
@@ -1818,8 +1835,10 @@ async function handleExecuteCampaignEventEvent(payload: {
   eventType: 'on_enter' | 'on_leave' | 'on_activate';
   requestId: string;
 }): Promise<void> {
+  let campaignEventScriptIdForError: string | undefined;
   try {
     const campaignEvent = await db.campaignEvents.get(payload.campaignEventId);
+    campaignEventScriptIdForError = campaignEvent?.scriptId;
     const effectiveCampaignId = payload.campaignId ?? campaignEvent?.campaignId;
     if (shouldBlockClientCampaignScript(campaignPlayScriptPolicy, effectiveCampaignId)) {
       sendBlockedGeneralScriptResult(payload.requestId);
@@ -1897,6 +1916,7 @@ async function handleExecuteCampaignEventEvent(payload: {
         type: 'SCRIPT_ERROR',
         payload: {
           requestId: payload.requestId,
+          scriptId: result.scriptId ?? campaignEventScriptIdForError,
           error: {
             message: result.error?.message ?? 'Campaign event script failed',
             stackTrace: result.error?.stack,
@@ -1932,6 +1952,7 @@ async function handleExecuteCampaignEventEvent(payload: {
       type: 'SCRIPT_ERROR',
       payload: {
         requestId: payload.requestId,
+        scriptId: campaignEventScriptIdForError,
         error: {
           message: error instanceof Error ? error.message : String(error),
           stackTrace: error instanceof Error ? error.stack : undefined,

@@ -14,7 +14,7 @@ import { ensureEmailRegistered, isCloudEmailVerified } from '@/lib/cloud/auth';
 import { initSyncTriggers } from '@/lib/cloud/sync/sync-service';
 import { useSyncOnRulesetOpen } from '@/lib/cloud/sync/use-sync-on-ruleset-open';
 import { useFontLoader, useUsers } from '@/lib/compass-api';
-import { useScriptAnnouncements } from '@/lib/compass-logic';
+import { useScriptAnnouncements, useScriptErrorLogs } from '@/lib/compass-logic';
 import { SignIn } from '@/pages';
 import { DicePanel, PhysicalRollModal } from '@/pages/dice';
 import {
@@ -143,6 +143,16 @@ export function Layout() {
 
   const { addNotification } = useNotifications();
   useScriptAnnouncements(addNotification);
+  useScriptErrorLogs((detail) => {
+    const scriptInfo = detail.scriptName ? `Failure in script ${detail.scriptName}.qbs | ` : '';
+    const lineInfo =
+      detail.line != null
+        ? detail.column != null
+          ? ` (line ${detail.line}, col ${detail.column})`
+          : ` (line ${detail.line})`
+        : '';
+    addNotification(`${scriptInfo}${detail.message}${lineInfo}`, { type: 'error' });
+  });
 
   const [, setDevToolsToggled] = useState(0);
   const [characterInventoryPanelOpen, setCharacterInventoryPanelOpen] = useState(false);

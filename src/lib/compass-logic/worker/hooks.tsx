@@ -5,6 +5,7 @@
  */
 
 import type { RollFn, RollSplitFn } from '@/types';
+import { db } from '@/stores';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { AttributeChangeOptions, ScriptExecutionOptions } from './client';
 import { getQBScriptClient } from './client';
@@ -559,6 +560,54 @@ export function useScriptAnnouncements(onAnnounce?: (message: string) => void): 
       window.removeEventListener('qbscript:announce', handleAnnounce);
     };
   }, [onAnnounce]);
+}
+
+/** Detail payload for `qbscript:scriptError` (worker script failure surfaced on the main thread). */
+export interface ScriptErrorEventDetail {
+  message: string;
+  /** Resolved on the main thread from `scriptId` when not inline/playground. */
+  scriptName?: string;
+  scriptId?: string;
+  line?: number;
+  column?: number;
+}
+
+function shouldResolveScriptNameFromDb(scriptId: string | undefined): scriptId is string {
+  return Boolean(scriptId && !scriptId.startsWith('inline-'));
+}
+
+// ============================================================================
+// useScriptErrorLogs - Listen for QBScript runtime errors (toast / logging)
+// ============================================================================
+
+export function useScriptErrorLogs(onScriptError?: (detail: ScriptErrorEventDetail) => void): void {
+  useEffect(() => {
+    const handleScriptError = (event: Event) => {
+      const customEvent = event as CustomEvent<ScriptErrorEventDetail>;
+      if (!onScriptError || !customEvent.detail) return;
+
+      const detail = customEvent.detail;
+
+      void (async () => {
+        let scriptName = detail.scriptName;
+        if (scriptName == null && shouldResolveScriptNameFromDb(detail.scriptId)) {
+          try {
+            const row = await db.scripts.get(detail.scriptId);
+            if (row?.name) scriptName = row.name;
+          } catch {
+            // ignore Dexie lookup failures
+          }
+        }
+        onScriptError({ ...detail, scriptName });
+      })();
+    };
+
+    window.addEventListener('qbscript:scriptError', handleScriptError);
+
+    return () => {
+      window.removeEventListener('qbscript:scriptError', handleScriptError);
+    };
+  }, [onScriptError]);
 }
 
 // ============================================================================
