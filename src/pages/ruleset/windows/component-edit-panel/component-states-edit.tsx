@@ -101,7 +101,7 @@ export function ComponentStatesEdit({ component, onStatesUpdated }: Props) {
     <Accordion type='single' collapsible>
       <AccordionItem value='visual-states' className='border-none'>
         <AccordionTrigger className='py-2 text-xs text-muted-foreground hover:no-underline hover:text-foreground'>
-          Visual states
+          States
         </AccordionTrigger>
         <AccordionContent className='flex flex-col gap-3 pb-2'>
           <Select value={previewTarget} onValueChange={setStateEditTarget}>
