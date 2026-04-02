@@ -48,7 +48,7 @@ const qbscriptParser = StreamLanguage.define<QBScriptState>({
     if (stream.eatSpace()) return null;
 
     // Keywords
-    if (stream.match(/\b(if|else|elif|for|in|return|subscribe|while)\b/)) {
+    if (stream.match(/\b(if|else|elif|for|in|return|subscribe|while|on)\b/)) {
       return 'keyword';
     }
     // Booleans
@@ -59,7 +59,7 @@ const qbscriptParser = StreamLanguage.define<QBScriptState>({
     // Built-in functions (when not in call position; call position is handled below)
     if (
       stream.match(
-        /\b(roll|rollQuiet|wait|floor|ceil|round|announce|log|getAttr|getChart|number|text)\b/,
+        /\b(roll|rollQuiet|wait|floor|ceil|round|announce|log|emit|getAttr|getChart|number|text)\b/,
       )
     ) {
       stream.eatSpace();

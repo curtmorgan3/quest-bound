@@ -17,6 +17,7 @@ import type {
   IfStatement,
   InTurnsCall,
   OnTurnAdvanceCall,
+  OnCustomEventCall,
   WhileLoop,
   MemberAccess,
   MethodCall,
@@ -166,6 +167,12 @@ export function astToSource(
       const ot = node as OnTurnAdvanceCall;
       let out = `${prefix}Scene.onTurnAdvance():\n`;
       out += blockToSource(ot.block, safeLevel + 1, safeIndent);
+      return out;
+    }
+    case 'OnCustomEventCall': {
+      const oc = node as OnCustomEventCall;
+      let out = `${prefix}on(${exprToSource(oc.eventExpr)}):\n`;
+      out += blockToSource(oc.block, safeLevel + 1, safeIndent);
       return out;
     }
     case 'AtStartOfNextTurnCall': {

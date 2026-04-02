@@ -15,7 +15,7 @@ import { ensureEmailRegistered, isCloudEmailVerified } from '@/lib/cloud/auth';
 import { initSyncTriggers } from '@/lib/cloud/sync/sync-service';
 import { useSyncOnRulesetOpen } from '@/lib/cloud/sync/use-sync-on-ruleset-open';
 import { useFontLoader, useUsers } from '@/lib/compass-api';
-import { useScriptAnnouncements } from '@/lib/compass-logic';
+import { useCustomEventRulesetContextSync, useScriptAnnouncements } from '@/lib/compass-logic';
 import { SignIn } from '@/pages';
 import { DicePanel, PhysicalRollModal } from '@/pages/dice';
 import {
@@ -90,6 +90,7 @@ export function Layout() {
 
   // When viewing a ruleset, set current ruleset and ensure synced ids are loaded
   useSyncOnRulesetOpen();
+  useCustomEventRulesetContextSync();
 
   useEffect(() => {
     if (isOnAttributesRoute && wouldShowOnAttributes) {

@@ -29,7 +29,9 @@ export type MainToWorkerSignal =
   | PromptMultipleResponseSignal
   | PromptInputResponseSignal
   | CharacterSelectResponseSignal
-  | ClearGraphSignal;
+  | ClearGraphSignal
+  | DispatchCustomEventSignal
+  | SetCustomEventRulesetContextSignal;
 
 export interface SetCampaignPlayScriptPolicySignal {
   type: 'SET_CAMPAIGN_PLAY_SCRIPT_POLICY';
@@ -178,6 +180,27 @@ export interface ClearGraphSignal {
   type: 'CLEAR_GRAPH';
   payload: {
     rulesetId?: string;
+  };
+}
+
+/** Main thread → worker: run custom event listeners for a ruleset (JSON-serializable payload). */
+export interface DispatchCustomEventSignal {
+  type: 'DISPATCH_CUSTOM_EVENT';
+  payload: {
+    rulesetId: string;
+    eventName: string;
+    /** JSON-serializable only (structured clone). */
+    payload?: unknown;
+    /** Optional; forwarded for roll / delegated UI routing when listeners call roll(). */
+    surfaceCharacterId?: string;
+  };
+}
+
+/** Main thread → worker: active ruleset changed in the SPA; clears listeners for the previous ruleset. */
+export interface SetCustomEventRulesetContextSignal {
+  type: 'SET_CUSTOM_EVENT_RULESET_CONTEXT';
+  payload: {
+    rulesetId: string | null;
   };
 }
 

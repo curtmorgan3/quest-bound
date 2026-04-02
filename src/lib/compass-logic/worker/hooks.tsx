@@ -7,6 +7,7 @@
 import type { RollFn, RollSplitFn } from '@/types';
 import { db } from '@/stores';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useParams } from 'react-router-dom';
 import type { AttributeChangeOptions, ScriptExecutionOptions } from './client';
 import { getQBScriptClient } from './client';
 
@@ -17,6 +18,18 @@ import { getQBScriptClient } from './client';
 export function useQBScriptClient() {
   const client = useRef(getQBScriptClient());
   return client.current;
+}
+
+/**
+ * Keep the QBScript worker's custom-event ruleset context in sync with the ruleset id in the URL
+ * (`/rulesets/:rulesetId/...`). Clears in-memory `on` listeners when the user switches rulesets.
+ */
+export function useCustomEventRulesetContextSync(): void {
+  const { rulesetId } = useParams<{ rulesetId?: string }>();
+  const client = useQBScriptClient();
+  useEffect(() => {
+    client.setCustomEventRulesetContext(rulesetId ?? null);
+  }, [client, rulesetId]);
 }
 
 // ============================================================================

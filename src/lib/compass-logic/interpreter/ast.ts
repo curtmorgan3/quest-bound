@@ -19,6 +19,7 @@ export type ASTNode =
   | SubscribeCall
   | InTurnsCall
   | OnTurnAdvanceCall
+  | OnCustomEventCall
   | AtStartOfNextTurnCall
   | AtEndOfNextTurnCall
   | AtStartOfTurnCall
@@ -152,6 +153,13 @@ export interface InTurnsCall {
 /** Scene.onTurnAdvance(): block — register callback to run on every advance. */
 export interface OnTurnAdvanceCall {
   type: 'OnTurnAdvanceCall';
+  block: ASTNode[];
+}
+
+/** on(expr): block — register custom event listener; `payload` is injected when the handler runs. */
+export interface OnCustomEventCall {
+  type: 'OnCustomEventCall';
+  eventExpr: ASTNode;
   block: ASTNode[];
 }
 

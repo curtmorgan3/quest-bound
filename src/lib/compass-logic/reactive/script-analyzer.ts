@@ -67,6 +67,11 @@ export function extractSubscriptions(sourceCode: string): string[] {
       if (node.thenBlock) {
         node.thenBlock.forEach(walk);
       }
+      if ((node as any).type === 'OnCustomEventCall') {
+        const oc = node as any;
+        if (oc.eventExpr) walk(oc.eventExpr);
+        if (oc.block) oc.block.forEach(walk);
+      }
       if (node.elseBlock) {
         node.elseBlock.forEach(walk);
       }

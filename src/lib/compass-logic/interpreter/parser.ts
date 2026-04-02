@@ -11,6 +11,7 @@ import type {
   SubscribeCall,
   InTurnsCall,
   OnTurnAdvanceCall,
+  OnCustomEventCall,
   AtStartOfNextTurnCall,
   AtEndOfNextTurnCall,
   AtStartOfTurnCall,
@@ -94,6 +95,11 @@ export class Parser {
       return this.subscribeCall();
     }
 
+    // Custom event: on(expr):
+    if (this.match(TokenType.ON)) {
+      return this.onCustomEventCall();
+    }
+
     // If statement
     if (this.match(TokenType.IF)) {
       return this.ifStatement();
@@ -171,6 +177,18 @@ export class Parser {
     this.consume(TokenType.RPAREN, "Expected ')' after subscribe arguments");
 
     return { type: 'SubscribeCall', arguments: args };
+  }
+
+  private onCustomEventCall(): OnCustomEventCall {
+    this.consume(TokenType.LPAREN, "Expected '(' after 'on'");
+    const eventExpr = this.expression();
+    this.consume(TokenType.RPAREN, "Expected ')' after on(...)");
+    this.consume(TokenType.COLON, "Expected ':' after on(...)");
+    this.consume(TokenType.NEWLINE, "Expected newline after ':'");
+    this.skipNewlines();
+    if (this.check(TokenType.INDENT)) this.advance();
+    const block = this.block();
+    return { type: 'OnCustomEventCall', eventExpr, block };
   }
 
   private ifStatement(): IfStatement {

@@ -416,6 +416,16 @@ Owner.atEndOfTurn(2):
   Owner.strength -= 4
 ```
 
+### Custom events (`on` / `emit`)
+
+| Syntax | Description |
+| ------ | ----------- |
+| `on(expr):` … | Register a listener for the event name (`expr` evaluated to a string). Inside the block, **`payload`** is the value from `emit` (or `null` if omitted). |
+| `emit('name')` | Dispatch with `payload == null`. |
+| `emit('name', value)` | Dispatch with a payload (any value in-script). |
+
+Listeners are stored **per ruleset** in memory and cleared when the active ruleset changes in the UI (or on full page reload). **Same-name** `emit` while that event is still running its listeners throws; **different** names may nest. From TypeScript, use `QBScriptClient.emitCustomEvent({ rulesetId, eventName, payload })` with a **JSON-serializable** payload; if a script is running in the worker, that call is queued until the run finishes.
+
 ---
 
 ## 10. Proxies API

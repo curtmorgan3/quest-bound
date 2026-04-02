@@ -15,6 +15,7 @@ export enum TokenType {
   RETURN = 'RETURN',
   WHILE = 'WHILE',
   SUBSCRIBE = 'SUBSCRIBE',
+  ON = 'ON',
   SELF = 'SELF',
 
   // Operators
@@ -82,6 +83,7 @@ const KEYWORDS: Record<string, TokenType> = {
   return: TokenType.RETURN,
   while: TokenType.WHILE,
   subscribe: TokenType.SUBSCRIBE,
+  on: TokenType.ON,
   Self: TokenType.SELF,
   true: TokenType.BOOLEAN,
   false: TokenType.BOOLEAN,

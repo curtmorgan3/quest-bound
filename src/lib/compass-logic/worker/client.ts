@@ -1202,6 +1202,50 @@ export class QBScriptClient {
   }
 
   /**
+   * Notify the worker that the app's active ruleset changed (clears custom `on` listeners for the previous ruleset).
+   */
+  setCustomEventRulesetContext(rulesetId: string | null): void {
+    if (this.worker) {
+      this.worker.postMessage({
+        type: 'SET_CUSTOM_EVENT_RULESET_CONTEXT',
+        payload: { rulesetId },
+      } as MainToWorkerSignal);
+    }
+  }
+
+  /**
+   * Dispatch a custom QBScript event from the main thread (payload must be JSON-serializable).
+   */
+  emitCustomEvent(options: {
+    rulesetId: string;
+    eventName: string;
+    payload?: unknown;
+    surfaceCharacterId?: string;
+  }): void {
+    if (!this.worker) return;
+    let payload: unknown = options.payload;
+    if (payload !== undefined) {
+      try {
+        payload =
+          typeof structuredClone === 'function'
+            ? structuredClone(payload)
+            : JSON.parse(JSON.stringify(payload));
+      } catch {
+        throw new Error('emitCustomEvent: payload must be JSON-serializable');
+      }
+    }
+    this.worker.postMessage({
+      type: 'DISPATCH_CUSTOM_EVENT',
+      payload: {
+        rulesetId: options.rulesetId,
+        eventName: options.eventName,
+        ...(payload !== undefined ? { payload } : {}),
+        ...(options.surfaceCharacterId ? { surfaceCharacterId: options.surfaceCharacterId } : {}),
+      },
+    } as MainToWorkerSignal);
+  }
+
+  /**
    * Terminate the worker
    */
   terminate(): void {

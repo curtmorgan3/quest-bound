@@ -992,6 +992,33 @@ z = 3`;
     });
   });
 
+  describe('on(...) custom events', () => {
+    it('should parse on with string literal and block', () => {
+      const source = `on('long rest'):
+    announce('ok')
+`;
+      const ast = parse(source);
+      expect(ast.statements).toHaveLength(1);
+      expect(ast.statements[0].type).toBe('OnCustomEventCall');
+      const stmt = ast.statements[0] as { eventExpr: { type: string }; block: unknown[] };
+      expect(stmt.eventExpr.type).toBe('StringLiteral');
+      expect(stmt.block).toHaveLength(1);
+    });
+
+    it('should parse on with dynamic event expression', () => {
+      const source = `ev = 'tick'
+on(ev):
+    log(1)
+`;
+      const ast = parse(source);
+      expect(ast.statements).toHaveLength(2);
+      expect(ast.statements[1].type).toBe('OnCustomEventCall');
+      const stmt = ast.statements[1] as { eventExpr: { type: string; name?: string } };
+      expect(stmt.eventExpr.type).toBe('Identifier');
+      expect(stmt.eventExpr.name).toBe('ev');
+    });
+  });
+
   describe('Edge Cases', () => {
     it('should parse empty program', () => {
       const ast = parse('');

@@ -440,6 +440,18 @@ attr_name = 'Constitution';
 subscribe(attr_name, 'Level');
 ```
 
+### Custom events (`on` / `emit`)
+
+Register handlers with **`on(expression):`** and an indented block. The event name is evaluated at registration time (string literals or variables). When a handler runs, the variable **`payload`** is set: use **`emit('name')`** for `null`, or **`emit('name', value)`** for any value. Listeners are **scoped by ruleset**, **in memory only**, and cleared when the user switches to another ruleset in the app (or on full reload). Emitting the **same** event name while that event is still being delivered throws a runtime error; emitting a **different** name is allowed. The main app can dispatch events with a JSON-serializable payload via the QBScript client.
+
+```javascript
+on('long rest'):
+  announce('Rested; payload was {{payload}}')
+
+emit('long rest')
+emit('long rest', { kind: 'full' })
+```
+
 ### Charts
 
 Get a chart with `getChart('chart name')`, then use:

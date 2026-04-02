@@ -37,6 +37,17 @@ import {
   RulesetAccessor,
 } from './accessors';
 import { getSceneTurnOrderCharacters } from './advance-turn-order';
+import {
+  beginCustomEventDispatch,
+  drainMainThreadCustomEventQueue,
+  endCustomEventDispatch,
+  beginCustomEventScriptRun,
+  endCustomEventScriptRun,
+  getCustomEventListeners,
+  getCustomEventScriptRunDepth,
+  syncRulesetContextFromApplication,
+} from './custom-event-registry';
+import { executeCustomEventListener } from './execute-custom-event-listener';
 import { executeTurnCallback } from './execute-turn-callback';
 import type { ScriptParamsHelper } from './params-helper';
 import type { ExecuteActionEventFn } from './proxies';
@@ -333,6 +344,7 @@ export class ScriptRunner {
       selectCharacter: selectCharacterHost,
       selectCharacters: selectCharactersHost,
       onRollComplete: context.onRollComplete,
+      customEventEmit: (eventName, payload) => this.dispatchCustomEvent(eventName, payload),
     });
     this.pendingUpdates = new Map();
     this.characterAttributesCache = new Map();
@@ -1194,6 +1206,73 @@ export class ScriptRunner {
     sceneAccessor.setInsideCallbackRun(false);
   }
 
+  getEvaluator(): Evaluator {
+    return this.evaluator;
+  }
+
+  /**
+   * Dispatch custom `on` listeners for this ruleset. Same-name re-entrancy throws (see custom-event-registry).
+   */
+  async dispatchCustomEvent(eventName: string, payload: unknown): Promise<void> {
+    const rulesetId = this.context.rulesetId;
+    if (!rulesetId) return;
+    beginCustomEventDispatch(rulesetId, eventName);
+    try {
+      const list = getCustomEventListeners(rulesetId, eventName);
+      for (const rec of list) {
+        try {
+          const result = await executeCustomEventListener(
+            this.context.db as DB,
+            rec,
+            payload,
+            this.sceneAccessor,
+            (id) => this.getCharacterAccessorById(id),
+            this.context.roll,
+            this.context.rollSplit,
+            this.context.prompt,
+            this.context.promptMultiple,
+            this.context.promptInput,
+            this.context.selectCharacter,
+            this.context.selectCharacters,
+            this.context.campaignId ?? null,
+            (e, p) => this.dispatchCustomEvent(e, p),
+          );
+          this.evaluator.addAnnounceMessages(result.announceMessages);
+          this.evaluator.addLogMessages(result.logMessages);
+          await this.flushCache();
+        } catch (e) {
+          console.warn('[dispatchCustomEvent] unexpected listener failure', e);
+        }
+      }
+    } finally {
+      endCustomEventDispatch(rulesetId, eventName);
+    }
+  }
+
+  private async dispatchQueuedCustomEventItem(item: {
+    rulesetId: string;
+    eventName: string;
+    payload: unknown;
+  }): Promise<void> {
+    if (item.rulesetId === this.context.rulesetId) {
+      await this.dispatchCustomEvent(item.eventName, item.payload);
+      return;
+    }
+    const ctx: ScriptExecutionContext = {
+      ...this.context,
+      rulesetId: item.rulesetId,
+      ownerId: undefined,
+      scriptId: '__emit_queue__',
+    };
+    const runner = new ScriptRunner(ctx);
+    await runner.loadCache();
+    runner.setupAccessors();
+    await runner.dispatchCustomEvent(item.eventName, item.payload);
+    this.evaluator.addAnnounceMessages(runner.getEvaluator().getAnnounceMessages());
+    this.evaluator.addLogMessages(runner.getEvaluator().getLogMessages());
+    await this.flushCache();
+  }
+
   /**
    * Run the shared advance-turn flow (same as Scene.advanceTurnOrder() from script).
    * Loads cache and sets up accessors, then advances and runs any cycle/onTurnAdvance callbacks.
@@ -1209,11 +1288,12 @@ export class ScriptRunner {
   /**
    * Set up accessor objects in the interpreter environment.
    */
-  private setupAccessors(): void {
+  setupAccessors(): void {
     const { ownerId, rulesetId, db } = this.context;
 
     // Script id for turn callback registration (Scene.inTurns / Scene.onTurnAdvance).
     this.evaluator.globalEnv.define('__scriptId', this.context.scriptId ?? '');
+    this.evaluator.globalEnv.define('__rulesetId', this.context.rulesetId);
 
     // Inject generic params helper (when provided) as `params` in the script environment.
     if (this.context.params) {
@@ -1376,6 +1456,10 @@ export class ScriptRunner {
    * @returns ScriptExecutionResult with the result value, messages, and any error
    */
   async run(sourceCode: string): Promise<ScriptExecutionResult> {
+    if (getCustomEventScriptRunDepth() === 0) {
+      syncRulesetContextFromApplication(this.context.rulesetId);
+    }
+    beginCustomEventScriptRun();
     try {
       this.sheetUiCoordinator = new SheetUiCoordinator(this.context.db as DB, this.context.rulesetId);
 
@@ -1457,6 +1541,12 @@ export class ScriptRunner {
         error: error instanceof Error ? error : new Error(String(error)),
         componentAnimations: [],
       };
+    } finally {
+      await endCustomEventScriptRun(async () => {
+        for (const item of drainMainThreadCustomEventQueue()) {
+          await this.dispatchQueuedCustomEventItem(item);
+        }
+      });
     }
   }
 }

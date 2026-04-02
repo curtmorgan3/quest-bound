@@ -133,6 +133,16 @@ const qbscriptCompletions = [
     info: 'Register a block to run on every advance (e.g. Scene.onTurnAdvance(): ...). Use a colon and indented block.',
   },
   {
+    label: 'on',
+    type: 'keyword',
+    info: "Register a custom event listener for this ruleset (e.g. on('long rest'): ...). The variable `payload` is set when the handler runs.",
+  },
+  {
+    label: 'emit',
+    type: 'function',
+    info: "Emit a custom event (e.g. emit('long rest') or emit('long rest', { kind: 'full' })). Same-name nested emit throws.",
+  },
+  {
     label: 'character.atStartOfNextTurn',
     type: 'function',
     info: "Register a one-shot block to run at the start of a character's next turn (e.g. targ.atStartOfNextTurn(): ...). Use a colon and indented block.",

@@ -4,6 +4,7 @@ import { AttributeProxy } from '../runtime/proxies/attribute-proxy';
 import { ItemInstanceProxy } from '../runtime/proxies/item-instance-proxy';
 import { prepareForStructuredClone } from '../runtime/structured-clone-safe';
 import type { ASTNode, BinaryOp, MemberAssignment, ObjectLiteral } from './ast';
+import { registerCustomEventListener } from '../runtime/custom-event-registry';
 import { blockStatementsToSource } from './ast-to-source';
 import { isBuiltInArrayMethod, registerArrayMethod } from './built-ins';
 
@@ -82,6 +83,8 @@ export interface EvaluatorOptions {
   selectCharacters?: SelectCharactersFn;
   /** When set, called after roll/rollSplit with an auto-generated log message (e.g. for game log). */
   onRollComplete?: (message: string) => Promise<void>;
+  /** When set, QBScript `emit(name, payload?)` dispatches custom event listeners. */
+  customEventEmit?: (eventName: string, payload: unknown) => Promise<void>;
 }
 
 export class RuntimeError extends Error {
@@ -162,6 +165,7 @@ export class Evaluator {
   private selectCharacterFn: SelectCharacterFn | undefined;
   private selectCharactersFn: SelectCharactersFn | undefined;
   private onRollComplete: ((message: string) => Promise<void>) | undefined;
+  private customEventEmitFn: ((eventName: string, payload: unknown) => Promise<void>) | undefined;
 
   constructor(options?: EvaluatorOptions) {
     this.globalEnv = new Environment(null);
@@ -176,6 +180,7 @@ export class Evaluator {
     this.selectCharacterFn = options?.selectCharacter;
     this.selectCharactersFn = options?.selectCharacters;
     this.onRollComplete = options?.onRollComplete;
+    this.customEventEmitFn = options?.customEventEmit;
     // Detect if we're running in a worker context
     this.isWorkerContext =
       typeof self !== 'undefined' &&
@@ -242,6 +247,9 @@ export class Evaluator {
 
       case 'OnTurnAdvanceCall':
         return this.evalOnTurnAdvanceCall(node);
+
+      case 'OnCustomEventCall':
+        return this.evalOnCustomEventCall(node);
 
       case 'AtStartOfNextTurnCall':
         return this.evalAtStartOfNextTurnCall(node);
@@ -762,6 +770,28 @@ export class Evaluator {
     }
   }
 
+  private async evalOnCustomEventCall(node: any): Promise<void> {
+    if (!this.globalEnv.has('__rulesetId')) return;
+    const rulesetId = this.globalEnv.get('__rulesetId');
+    if (typeof rulesetId !== 'string' || !rulesetId) return;
+    const eventNameRaw = await this.eval(node.eventExpr);
+    const eventName = String(eventNameRaw ?? '');
+    if (!eventName) return;
+    const blockSource = blockStatementsToSource(node.block);
+    const Owner = this.globalEnv.has('Owner') ? this.globalEnv.get('Owner') : null;
+    const ownerId = Owner?.id ?? null;
+    const scriptId = this.globalEnv.has('__scriptId') ? this.globalEnv.get('__scriptId') : '';
+    const { capturedCharacterIds, capturedValues } = this.captureClosureSnapshot(node.block);
+    registerCustomEventListener(rulesetId, eventName, {
+      rulesetId,
+      scriptId,
+      ownerId,
+      blockSource,
+      capturedCharacterIds,
+      capturedValues,
+    });
+  }
+
   private async evalOnTurnAdvanceCall(node: any): Promise<void> {
     if (!this.globalEnv.has('Scene')) return;
     const Scene = this.globalEnv.get('Scene');
@@ -897,7 +927,7 @@ export class Evaluator {
     capturedCharacterIds: Record<string, string>;
     capturedValues: Record<string, string | number | boolean | null>;
   } {
-    const BUILT_IN_GLOBALS = new Set(['Scene', 'Owner', 'Ruleset', '__scriptId']);
+    const BUILT_IN_GLOBALS = new Set(['Scene', 'Owner', 'Ruleset', '__scriptId', '__rulesetId', 'payload']);
     const names = new Set<string>();
 
     const TEMPLATE_VAR_RE = /\{\{([^}]+)\}\}/g;
@@ -1292,6 +1322,17 @@ export class Evaluator {
       // In runtime, this is a no-op since subscriptions are handled by static analysis
       // But we define it so scripts can call it without errors
     });
+
+    if (this.customEventEmitFn) {
+      this.globalEnv.define('emit', async (...args: any[]): Promise<void> => {
+        if (args.length < 1) {
+          throw new RuntimeError('emit() requires an event name');
+        }
+        const eventName = String(args[0] ?? '');
+        const payload = args.length >= 2 ? args[1] : null;
+        await this.customEventEmitFn!(eventName, payload);
+      });
+    }
   }
 
   // Getters for messages (useful for testing and Phase 6)

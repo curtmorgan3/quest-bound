@@ -29,6 +29,11 @@ import {
 } from '../reactive/event-handler-executor';
 import { ReactiveExecutor } from '../reactive/reactive-executor';
 import { createParamsHelperFromRecord } from '../runtime/params-helper';
+import {
+  enqueueMainThreadCustomEvent,
+  shouldQueueMainThreadCustomEventEmit,
+  syncRulesetContextFromApplication,
+} from '../runtime/custom-event-registry';
 import { ScriptRunner, type ScriptExecutionContext } from '../runtime/script-runner';
 import { prepareForStructuredClone } from '../runtime/structured-clone-safe';
 import { persistScriptLogs } from '../script-logs';
@@ -39,6 +44,7 @@ import type {
   MainToWorkerSignal,
   WorkerToMainSignal,
 } from './signals';
+import { generateRequestId } from './signals';
 
 // ============================================================================
 // Database Setup
@@ -391,6 +397,39 @@ function createWorkerMainThreadUiBridges(options: {
   };
 }
 
+/** Run custom event listeners when the worker is not inside ScriptRunner.run (no queue). */
+async function runIdleCustomEventDispatch(
+  rulesetId: string,
+  eventName: string,
+  payload: unknown,
+  surfaceCharacterId: string,
+): Promise<void> {
+  const executionRequestId = `custom-event-${generateRequestId()}`;
+  const bridges = createWorkerMainThreadUiBridges({
+    executionRequestId,
+    actingCharacterId: surfaceCharacterId || rulesetId,
+    rulesetId,
+  });
+  const context: ScriptExecutionContext = {
+    db,
+    rulesetId,
+    scriptId: '__dispatch_custom_event__',
+    roll: bridges.rollFn,
+    rollSplit: bridges.rollSplitFn,
+    createRollForCharacter: bridges.createRollForCharacter,
+    createRollSplitForCharacter: bridges.createRollSplitForCharacter,
+    prompt: bridges.promptFn,
+    promptMultiple: bridges.promptMultipleFn,
+    promptInput: bridges.promptInputFn,
+    selectCharacter: bridges.selectCharacterFn,
+    selectCharacters: bridges.selectCharactersFn,
+  };
+  const runner = new ScriptRunner(context);
+  await runner.loadCache();
+  runner.setupAccessors();
+  await runner.dispatchCustomEvent(eventName, payload);
+}
+
 // ============================================================================
 // Message Handling
 // ============================================================================
@@ -458,6 +497,25 @@ async function handleSignal(signal: MainToWorkerSignal): Promise<void> {
 
       case 'CLEAR_GRAPH':
         handleClearGraph(signal.payload);
+        break;
+
+      case 'DISPATCH_CUSTOM_EVENT': {
+        const p = signal.payload;
+        if (shouldQueueMainThreadCustomEventEmit()) {
+          enqueueMainThreadCustomEvent(p.rulesetId, p.eventName, p.payload === undefined ? null : p.payload);
+        } else {
+          await runIdleCustomEventDispatch(
+            p.rulesetId,
+            p.eventName,
+            p.payload === undefined ? null : p.payload,
+            p.surfaceCharacterId ?? '',
+          );
+        }
+        break;
+      }
+
+      case 'SET_CUSTOM_EVENT_RULESET_CONTEXT':
+        syncRulesetContextFromApplication(signal.payload.rulesetId);
         break;
 
       case 'ROLL_RESPONSE': {
