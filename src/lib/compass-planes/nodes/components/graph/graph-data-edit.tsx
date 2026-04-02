@@ -8,13 +8,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { AttributeLookup } from '@/lib/compass-api';
+import { ImageUpload } from '@/components/composites';
+import { AttributeLookup, useAssets } from '@/lib/compass-api';
 import {
   fireExternalComponentChangeEvent,
   getComponentData,
   updateComponentData,
 } from '@/lib/compass-planes/utils';
+import { db, deleteAssetIfUnreferenced } from '@/stores';
 import type { Component, GraphComponentData, GraphVariant } from '@/types';
+import { useEffect } from 'react';
 
 interface GraphDataEditProps {
   components: Array<Component>;
@@ -30,7 +33,33 @@ const VARIANTS: { value: GraphVariant; label: string }[] = [
 export const GraphDataEdit = ({ components, updateComponents }: GraphDataEditProps) => {
   const editableComponents = components.filter((c) => !c.locked);
   const first = editableComponents[0];
+  const rulesetId = first?.rulesetId ?? null;
+  const { assets } = useAssets(rulesetId ?? undefined);
   const firstData = first ? (getComponentData(first) as GraphComponentData) : null;
+
+  const fillAsset =
+    firstData?.assetId != null ? assets.find((a) => a.id === firstData.assetId) : undefined;
+  const fillPreviewUrl =
+    fillAsset?.data && (fillAsset.type === 'url' || fillAsset.type.startsWith('image/'))
+      ? fillAsset.data
+      : firstData?.assetUrl ?? undefined;
+
+  useEffect(() => {
+    if (!firstData?.assetId) return;
+    const asset = assets.find((a) => a.id === firstData.assetId);
+    const url =
+      asset?.data && (asset.type === 'url' || asset.type.startsWith('image/'))
+        ? asset.data
+        : undefined;
+    if (!url || url === firstData.assetUrl) return;
+    const updates = editableComponents.map((c) => ({
+      id: c.id,
+      data: updateComponentData(c.data, { assetUrl: url }),
+    }));
+    void updateComponents(updates).then(() =>
+      fireExternalComponentChangeEvent({ updates: updates as any }),
+    );
+  }, [firstData?.assetId, firstData?.assetUrl, assets, editableComponents, updateComponents]);
 
   const setNumeratorAttributeId = (attributeId: string | null) => {
     const updates = editableComponents.map((c) => ({
@@ -105,6 +134,32 @@ export const GraphDataEdit = ({ components, updateComponents }: GraphDataEditPro
     fireExternalComponentChangeEvent({ updates: updates as any });
   };
 
+  const setFillAssetId = async (assetId: string) => {
+    const updates = editableComponents.map((c) => ({
+      id: c.id,
+      data: updateComponentData(c.data, { assetId, assetUrl: undefined }),
+    }));
+    await updateComponents(updates);
+    fireExternalComponentChangeEvent({ updates: updates as any });
+  };
+
+  const clearFillAsset = async () => {
+    const assetIdsToMaybeDelete = new Set<string>();
+    editableComponents.forEach((c) => {
+      const d = getComponentData(c) as GraphComponentData;
+      if (d.assetId) assetIdsToMaybeDelete.add(d.assetId);
+    });
+    const updates = editableComponents.map((c) => ({
+      id: c.id,
+      data: updateComponentData(c.data, { assetId: undefined, assetUrl: undefined }),
+    }));
+    await updateComponents(updates);
+    fireExternalComponentChangeEvent({ updates: updates as any });
+    for (const id of assetIdsToMaybeDelete) {
+      await deleteAssetIfUnreferenced(db, id);
+    }
+  };
+
   if (editableComponents.length === 0) return null;
 
   return (
@@ -134,6 +189,19 @@ export const GraphDataEdit = ({ components, updateComponents }: GraphDataEditPro
           <Label htmlFor='graph-inverse-fill' className='text-sm font-normal cursor-pointer'>
             Invert fill
           </Label>
+        </div>
+        <div className='flex flex-col gap-2'>
+          <Label className='text-xs text-muted-foreground'>Fill image (optional)</Label>
+          <p className='text-xs text-muted-foreground'>
+            When set, replaces the fill color or gradient. Leave empty to use sheet styling.
+          </p>
+          <ImageUpload
+            image={fillPreviewUrl}
+            alt={firstData?.assetId ? 'Graph fill' : ''}
+            rulesetId={rulesetId ?? undefined}
+            onUpload={(id) => void setFillAssetId(id)}
+            onRemove={() => void clearFillAsset()}
+          />
         </div>
       </div>
       <div className='flex flex-col gap-2'>

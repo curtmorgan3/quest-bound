@@ -1,8 +1,9 @@
+import { useAssets } from '@/lib/compass-api';
 import { CharacterContext, WindowEditorContext } from '@/stores';
 import type { Component, GraphComponentData, GraphVariant } from '@/types';
 import { useEditorItemId } from '@/lib/compass-planes/canvas/editor-item-context';
 import { useComponentCanvasDimensions } from '@/lib/compass-planes/canvas/editor-item-layout-context';
-import { memo, useContext, useEffect, useState } from 'react';
+import { memo, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import {
   getBackgroundStyle,
   getComponentData,
@@ -12,6 +13,20 @@ import {
   useComponentStyles,
 } from '@/lib/compass-planes/utils';
 import { ResizableNode } from '../../decorators';
+
+function resolveGraphFillImageSrc(
+  data: GraphComponentData,
+  assets: Array<{ id: string; data?: string | null }>,
+): string | undefined {
+  if (!data.assetId && !data.assetUrl) return undefined;
+  const asset = data.assetId ? assets.find((a) => a.id === data.assetId) : undefined;
+  const src = asset?.data ?? data.assetUrl ?? undefined;
+  return typeof src === 'string' && src.length > 0 ? src : undefined;
+}
+
+function cssUrl(value: string): string {
+  return `url(${JSON.stringify(value)})`;
+}
 
 function toNumber(v: string | number | boolean): number {
   if (typeof v === 'number' && !Number.isNaN(v)) return v;
@@ -71,6 +86,13 @@ export const EditGraphNode = () => {
   const { getComponent } = useContext(WindowEditorContext);
   const id = useEditorItemId();
   const component = getComponent(id);
+  const { assets } = useAssets(component?.rulesetId ?? undefined);
+
+  const fillImageSrc = useMemo(() => {
+    if (!component) return undefined;
+    return resolveGraphFillImageSrc(getComponentData(component) as GraphComponentData, assets);
+  }, [component?.data, component?.id, assets]);
+
   if (!component) return null;
 
   const data = getComponentData(component) as GraphComponentData;
@@ -80,7 +102,11 @@ export const EditGraphNode = () => {
   return (
     <ResizableNode component={component}>
       <div style={{ height: ch, width: cw }}>
-        <GraphEditPlaceholder component={component} variant={variant} />
+        <GraphEditPlaceholder
+          component={component}
+          variant={variant}
+          fillImageSrc={fillImageSrc}
+        />
       </div>
     </ResizableNode>
   );
@@ -92,9 +118,11 @@ const EDIT_FILL_RATIO = 0.1;
 function GraphEditPlaceholder({
   component,
   variant,
+  fillImageSrc,
 }: {
   component: Component;
   variant: GraphVariant;
+  fillImageSrc?: string;
 }) {
   const data = getComponentData(component) as GraphComponentData;
   const css = useComponentStyles(component);
@@ -118,6 +146,8 @@ function GraphEditPlaceholder({
     const cy = height / 2;
     const circumference = 2 * Math.PI * r;
     const strokeDashoffset = circumference * (1 - editFillRatio);
+    const patternId = `graph-edit-fill-img-${component.id}`;
+    const progressStroke = fillImageSrc ? `url(#${patternId})` : fillColor;
     return (
       <div
         style={{
@@ -132,6 +162,26 @@ function GraphEditPlaceholder({
           viewBox={`0 0 ${width} ${height}`}
           preserveAspectRatio='xMidYMid meet'
           style={{ display: 'block', transform: 'rotate(-90deg)' }}>
+          {fillImageSrc ? (
+            <defs>
+              <pattern
+                id={patternId}
+                patternUnits='userSpaceOnUse'
+                x={0}
+                y={0}
+                width={width}
+                height={height}>
+                <image
+                  href={fillImageSrc}
+                  x={0}
+                  y={0}
+                  width={width}
+                  height={height}
+                  preserveAspectRatio='xMidYMid slice'
+                />
+              </pattern>
+            </defs>
+          ) : null}
           <circle
             cx={cx}
             cy={cy}
@@ -145,7 +195,7 @@ function GraphEditPlaceholder({
             cy={cy}
             r={r}
             fill='none'
-            stroke={fillColor}
+            stroke={progressStroke}
             strokeWidth={r * 2}
             strokeDasharray={circumference}
             strokeDashoffset={strokeDashoffset}
@@ -155,7 +205,14 @@ function GraphEditPlaceholder({
     );
   }
 
-  const fillStyle = getFillStyle((css as { color?: string }).color);
+  const fillStyle = fillImageSrc
+    ? {
+        backgroundImage: cssUrl(fillImageSrc),
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat',
+      }
+    : getFillStyle((css as { color?: string }).color);
   const fillDivStyle =
     Object.keys(fillStyle).length > 0
       ? fillStyle
@@ -225,6 +282,13 @@ const ViewGraphNodeLive = memo(function ViewGraphNodeLive({
   debounceMs: number;
 }) {
   const data = getComponentData(component) as GraphComponentData;
+  const { assets } = useAssets(component.rulesetId ?? undefined);
+  const fillImageSrc = useMemo(
+    () => resolveGraphFillImageSrc(data, assets),
+    [component.data, assets],
+  );
+  const hasFillImage = Boolean(fillImageSrc);
+
   const ratio = useGraphRatio(component);
   const debouncedRatio = useDebouncedRatio(ratio, debounceMs);
   const displayRatio = data.inverseFill ? 1 - debouncedRatio : debouncedRatio;
@@ -233,10 +297,17 @@ const ViewGraphNodeLive = memo(function ViewGraphNodeLive({
   const bg = (css as { background?: string }).background ?? css.backgroundColor;
   const colorValue = (css as { color?: string }).color;
   const fillColor = getSolidFallback(colorValue) ?? '#7BA3C7';
-  const fillStyle = getFillStyle(colorValue);
+  const fillStyle = hasFillImage
+    ? {
+        backgroundImage: cssUrl(fillImageSrc!),
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat',
+      }
+    : getFillStyle(colorValue);
   const fillDivStyle =
     Object.keys(fillStyle).length > 0 ? fillStyle : { backgroundColor: fillColor };
-  const fillGradient = parseLinearGradient(colorValue ?? '');
+  const fillGradient = !hasFillImage ? parseLinearGradient(colorValue ?? '') : null;
 
   const { width, height, widthStyle, heightStyle } = useComponentCanvasDimensions(component);
 
@@ -317,6 +388,37 @@ const ViewGraphNodeLive = memo(function ViewGraphNodeLive({
       };
     })();
 
+  let fillImagePattern: { defs: ReactNode; stroke: string } | null = null;
+  if (hasFillImage && fillImageSrc) {
+    const patternId = `graph-fill-img-${component.id}`;
+    fillImagePattern = {
+      defs: (
+        <defs>
+          <pattern
+            id={patternId}
+            patternUnits='userSpaceOnUse'
+            x={0}
+            y={0}
+            width={width}
+            height={height}>
+            <image
+              href={fillImageSrc}
+              x={0}
+              y={0}
+              width={width}
+              height={height}
+              preserveAspectRatio='xMidYMid slice'
+            />
+          </pattern>
+        </defs>
+      ),
+      stroke: `url(#${patternId})`,
+    };
+  }
+
+  const progressStroke =
+    fillImagePattern?.stroke ?? fillStroke?.stroke ?? fillColor;
+
   return (
     <div style={{ ...commonContainer, backgroundColor: 'transparent', position: 'relative' }}>
       <svg
@@ -325,6 +427,7 @@ const ViewGraphNodeLive = memo(function ViewGraphNodeLive({
         viewBox={`0 0 ${width} ${height}`}
         preserveAspectRatio='xMidYMid meet'
         style={{ display: 'block', transform: 'rotate(-90deg)' }}>
+        {fillImagePattern?.defs}
         {fillStroke?.defs}
         <circle
           cx={cx}
@@ -339,7 +442,7 @@ const ViewGraphNodeLive = memo(function ViewGraphNodeLive({
           cy={cy}
           r={r}
           fill='none'
-          stroke={fillStroke?.stroke ?? fillColor}
+          stroke={progressStroke}
           strokeWidth={r * 2}
           strokeDasharray={circumference}
           strokeDashoffset={strokeDashoffset}

@@ -136,6 +136,10 @@ export type GraphComponentData = {
   graphVariant?: GraphVariant;
   /** When true, the fill is inverted (empty portion shown as fill, fill as empty). */
   inverseFill?: boolean;
+  /** When set with a resolvable URL, the progress fill uses this image instead of `color` / gradient. */
+  assetId?: string | null;
+  /** Cached image URL for the fill (e.g. synced from the asset); used when the asset is not in memory. */
+  assetUrl?: string | null;
   numeratorAttributeId?: string | null;
   denominatorAttributeId?: string | null;
   denominatorValue?: number | null;
