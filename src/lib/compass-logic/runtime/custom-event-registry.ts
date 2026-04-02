@@ -27,6 +27,15 @@ const pendingMainThreadEmits: Array<{
 
 let scriptRunDepth = 0;
 
+/** Clears all in-memory state (for unit tests only). */
+export function resetCustomEventRegistryForTests(): void {
+  listeners.clear();
+  lastApplicationRulesetId = null;
+  emitDepthByKey.clear();
+  pendingMainThreadEmits.length = 0;
+  scriptRunDepth = 0;
+}
+
 function listenerMapKey(rulesetId: string, eventName: string): string {
   return `${rulesetId}\0${eventName}`;
 }
@@ -49,6 +58,10 @@ export function syncRulesetContextFromApplication(nextRulesetId: string | null):
   lastApplicationRulesetId = nextRulesetId;
 }
 
+/**
+ * Register or replace the listener for this (rulesetId, eventName, scriptId).
+ * At most one callback per script per event name; re-running the same script updates the handler.
+ */
 export function registerCustomEventListener(
   rulesetId: string,
   eventName: string,
@@ -61,8 +74,10 @@ export function registerCustomEventListener(
     listeners.set(rulesetId, byEvent);
   }
   const list = byEvent.get(eventName) ?? [];
-  list.push(record);
-  byEvent.set(eventName, list);
+  const scriptKey = record.scriptId ?? '';
+  const next = list.filter((r) => (r.scriptId ?? '') !== scriptKey);
+  next.push(record);
+  byEvent.set(eventName, next);
 }
 
 export function getCustomEventListeners(

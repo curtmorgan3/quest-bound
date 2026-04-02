@@ -420,7 +420,7 @@ Owner.atEndOfTurn(2):
 
 | Syntax | Description |
 | ------ | ----------- |
-| `on(expr):` … | Register a listener for the event name (`expr` evaluated to a string). Inside the block, **`payload`** is the value from `emit` (or `null` if omitted). |
+| `on(expr):` … | Register a listener for the event name (`expr` evaluated to a string). Inside the block, **`payload`** is the value from `emit` (or `null` if omitted). One handler per **script** per event (re-running the script replaces it); global scripts use their own script id. |
 | `emit('name')` | Dispatch with `payload == null`. |
 | `emit('name', value)` | Dispatch with a payload (any value in-script). |
 

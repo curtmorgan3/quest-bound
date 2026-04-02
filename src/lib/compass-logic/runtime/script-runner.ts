@@ -1445,7 +1445,15 @@ export class ScriptRunner {
     for (const script of toRun) {
       const tokens = new Lexer(script.sourceCode).tokenize();
       const ast = new Parser(tokens).parse();
-      await this.evaluator.eval(ast);
+      const prevScriptId = this.evaluator.globalEnv.has('__scriptId')
+        ? this.evaluator.globalEnv.get('__scriptId')
+        : '';
+      this.evaluator.globalEnv.define('__scriptId', script.id);
+      try {
+        await this.evaluator.eval(ast);
+      } finally {
+        this.evaluator.globalEnv.define('__scriptId', prevScriptId ?? '');
+      }
     }
   }
 
