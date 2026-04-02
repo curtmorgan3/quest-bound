@@ -2,6 +2,7 @@ import DiscordImage from '@/assets/discord-icon.png';
 import videoSrc from '@/assets/logo-animation.mp4';
 import { Button, Input, Link } from '@/components';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { DISCORD_URL } from '@/constants';
 import { getSession, signIn, signUp } from '@/lib/cloud/auth';
 import { isCloudConfigured } from '@/lib/cloud/client';
@@ -43,13 +44,19 @@ export function SignInSignUpModal({
   const [submitting, setSubmitting] = useState(false);
   const [emailVerificationSent, setEmailVerificationSent] = useState(false);
   const [hasCloudSession, setHasCloudSession] = useState<boolean | null>(null);
+  const [defaultAuthTab, setDefaultAuthTab] = useState<'sign-in' | 'sign-up'>('sign-up');
 
   const needUser = !users?.length;
   const selectedUser = users?.length ? users[0] : null;
   const userHasCloudUserId = !!users?.[0]?.cloudUserId;
-  const isSignInOnlyMode =
+  const forcedCloudReSignIn =
+    mode === 'default' && isCloudConfigured && hasCloudSession === false && userHasCloudUserId;
+  const isSignInForm =
     mode === 'sign-in-only' ||
-    (mode === 'default' && isCloudConfigured && hasCloudSession === false && userHasCloudUserId);
+    forcedCloudReSignIn ||
+    (mode === 'default' && isCloudConfigured && defaultAuthTab === 'sign-in');
+
+  const showAuthModeToggle = mode === 'default' && !forcedCloudReSignIn && isCloudConfigured;
 
   const usesLocalEmail = mode === 'sign-up-only' || mode === 'sign-in-only';
   const email = usesLocalEmail ? localEmail : (registerEmail.email ?? '');
@@ -62,6 +69,12 @@ export function SignInSignUpModal({
     }
     getSession().then((session) => setHasCloudSession(!!session));
   }, []);
+
+  useEffect(() => {
+    if (!open) {
+      setDefaultAuthTab('sign-up');
+    }
+  }, [open]);
 
   useEffect(() => {
     if (selectedUser) {
@@ -90,7 +103,7 @@ export function SignInSignUpModal({
         return;
       }
 
-      if (isSignInOnlyMode) {
+      if (isSignInForm) {
         const result = await signIn(trimmed, passwordValue.trim());
         if ('error' in result) {
           setSubmitError(result.error.message);
@@ -167,12 +180,14 @@ export function SignInSignUpModal({
 
   const hasEmailValue = Boolean(email?.trim());
   const emailInvalid = hasEmailValue && !isValidEmail(email);
-  const isSubmitDisabled = isSignInOnlyMode
+  const isSubmitDisabled = isSignInForm
     ? !email?.trim() || !isValidEmail(email) || !passwordValue.trim()
     : !email?.trim() ||
       !isValidEmail(email) ||
       !usernameValue.trim() ||
       (isCloudConfigured && !passwordValue.trim());
+
+  const submitButtonLabel = isSignInForm ? 'Sign in' : 'Create account';
 
   const showCloseButton = Boolean(onOpenChange);
 
@@ -183,7 +198,7 @@ export function SignInSignUpModal({
         className='flex max-h-[90dvh] max-w-md flex-col gap-6 overflow-y-auto sm:max-w-md'>
         <DialogHeader className='sr-only'>
           <DialogTitle>
-            {mode === 'sign-up-only' ? 'Create account' : 'Sign in to Quest Bound'}
+            {isSignInForm ? 'Sign in to Quest Bound' : 'Create account'}
           </DialogTitle>
           <DialogDescription></DialogDescription>
         </DialogHeader>
@@ -212,10 +227,31 @@ export function SignInSignUpModal({
                   e.preventDefault();
                   void handleSubmit();
                 }}>
-                <div className='w-full flex justify-center items-center'>
-                  <p className='text-sm text-muted-foreground'>
+                <div className='flex w-full flex-col items-center gap-3'>
+                  <p className='text-center text-sm text-muted-foreground'>
                     Free & Open Source Tabletop Game Engine
                   </p>
+                  {showAuthModeToggle && (
+                    <ToggleGroup
+                      type='single'
+                      value={defaultAuthTab}
+                      onValueChange={(v) => {
+                        if (!v) return;
+                        setDefaultAuthTab(v as 'sign-in' | 'sign-up');
+                        setSubmitError(null);
+                        setEmailError(null);
+                      }}
+                      variant='outline'
+                      className='w-full'
+                      aria-label='Account'>
+                      <ToggleGroupItem value='sign-in' className='flex-1' data-testid='auth-tab-sign-in'>
+                        Sign in
+                      </ToggleGroupItem>
+                      <ToggleGroupItem value='sign-up' className='flex-1' data-testid='auth-tab-sign-up'>
+                        Sign up
+                      </ToggleGroupItem>
+                    </ToggleGroup>
+                  )}
                 </div>
                 <div className='flex w-full flex-col gap-1'>
                   <Input
@@ -255,7 +291,7 @@ export function SignInSignUpModal({
                       setPasswordValue(e.target.value);
                       if (submitError) setSubmitError(null);
                     }}
-                    autoComplete={mode === 'sign-up-only' ? 'new-password' : 'current-password'}
+                    autoComplete={isSignInForm ? 'current-password' : 'new-password'}
                     data-testid='password-input'
                   />
                 )}
@@ -264,7 +300,7 @@ export function SignInSignUpModal({
                     {submitError}
                   </p>
                 )}
-                {!isSignInOnlyMode && (
+                {!isSignInForm && (
                   <Input
                     name='username'
                     className='w-full'
@@ -281,7 +317,7 @@ export function SignInSignUpModal({
                   disabled={isSubmitDisabled || submitting}
                   className='w-full'
                   data-testid='submit-button'>
-                  Submit
+                  {submitButtonLabel}
                 </Button>
               </form>
             )}
