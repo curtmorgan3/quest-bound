@@ -2,7 +2,15 @@ import type { Component, ComponentStateEntry } from '@/types';
 
 export const COMPONENT_STATE_HOVER = 'Hover';
 export const COMPONENT_STATE_DISABLED = 'Disabled';
+export const COMPONENT_STATE_PRESSED = 'Pressed';
 export const COMPONENT_STATE_CLEAR_TOKEN = 'default';
+
+const RESERVED_CUSTOM_STATE_NAMES_LOWER = new Set([
+  COMPONENT_STATE_CLEAR_TOKEN.toLowerCase(),
+  COMPONENT_STATE_HOVER.toLowerCase(),
+  COMPONENT_STATE_DISABLED.toLowerCase(),
+  COMPONENT_STATE_PRESSED.toLowerCase(),
+]);
 
 /** Stored on `Component.editorStateTarget`; unset / null means base (default) layer in the window editor. */
 export function getEditorPreviewStateName(
@@ -128,9 +136,11 @@ export type MergeComponentStateLayersOptions = {
   activeCustomStateName?: string | null;
   /** True while the pointing device is logically over the component (sheet viewer: pointer hover only). */
   showHoverLayer?: boolean;
+  /** True while the primary pointer is down after targeting this component (until pointer up/cancel). */
+  showPressedLayer?: boolean;
   /** After merging base + custom, read `disabled` from data. */
   showDisabledLayer?: boolean;
-  /** Ruleset editor: force preview as if this state applies (base | Hover | Disabled | custom name). */
+  /** Ruleset editor: force preview as if this state applies (base | Hover | Disabled | Pressed | custom name). */
   editorPreviewState?: string | null;
 };
 
@@ -147,7 +157,7 @@ function parseStateDiff(entry: ComponentStateEntry | undefined): {
 
 /**
  * Merge base `component.data` / `component.style` with state layers.
- * Order: base → custom → hover → disabled (later wins). Disabled suppresses hover.
+ * Order: base → custom → hover → pressed → disabled (later wins). Disabled suppresses hover and pressed.
  */
 export function mergeComponentStateLayers(
   component: Component,
@@ -188,6 +198,13 @@ export function mergeComponentStateLayers(
     style = deepMergeRecords(style, sDiff);
   }
 
+  if (!disabled && opts.showPressedLayer) {
+    const pressed = findStateEntryByName(entries, COMPONENT_STATE_PRESSED);
+    const { data: dDiff, style: sDiff } = parseStateDiff(pressed);
+    data = deepMergeRecords(data, dDiff);
+    style = deepMergeRecords(style, sDiff);
+  }
+
   if (disabled && opts.showDisabledLayer !== false) {
     const dis = findStateEntryByName(entries, COMPONENT_STATE_DISABLED);
     const { data: dDiff, style: sDiff } = parseStateDiff(dis);
@@ -205,6 +222,7 @@ export function withMergedStateLayers(component: Component, opts: MergeComponent
     data: dataStr,
     style: styleStr,
     sheetHoverLayerActive: Boolean(opts.showHoverLayer),
+    sheetPressedLayerActive: Boolean(opts.showPressedLayer),
   };
 }
 
@@ -239,8 +257,11 @@ export function defaultStatesJson(): string {
 export function validateNewCustomStateName(name: string): string | null {
   const t = name.trim();
   if (t === '') return 'Name is required';
-  if (t.toLowerCase() === COMPONENT_STATE_CLEAR_TOKEN.toLowerCase()) {
-    return `"${COMPONENT_STATE_CLEAR_TOKEN}" is reserved`;
+  if (RESERVED_CUSTOM_STATE_NAMES_LOWER.has(t.toLowerCase())) {
+    if (t.toLowerCase() === COMPONENT_STATE_CLEAR_TOKEN.toLowerCase()) {
+      return `"${COMPONENT_STATE_CLEAR_TOKEN}" is reserved`;
+    }
+    return 'This name is reserved for a built-in state';
   }
   if (!/^[a-zA-Z0-9]+$/.test(t)) return 'Use letters and numbers only';
   return null;

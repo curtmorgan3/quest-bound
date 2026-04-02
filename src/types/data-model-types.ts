@@ -329,6 +329,11 @@ export type Component = BaseDetails & {
    * to re-render when hover toggles even if merged `data`/`style` strings match.
    */
   sheetHoverLayerActive?: boolean;
+  /**
+   * Ephemeral: set when the pressed pointer layer applies (`withMergedStateLayers({ showPressedLayer })`).
+   * Not persisted; keeps memoized nodes in sync when press toggles without data/style churn.
+   */
+  sheetPressedLayerActive?: boolean;
 };
 
 /** Saved group template in the ruleset library (Phase 4b). `rootComponentId` is a `Component` with `type === 'group'`. */

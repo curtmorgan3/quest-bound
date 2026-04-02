@@ -18,6 +18,7 @@ import {
   canAddState,
   COMPONENT_STATE_DISABLED,
   COMPONENT_STATE_HOVER,
+  COMPONENT_STATE_PRESSED,
   defaultStatesJson,
   getEditorPreviewStateName,
   parseComponentStatesList,
@@ -44,7 +45,9 @@ export function ComponentStatesEdit({ component, onStatesUpdated }: Props) {
     onStatesUpdated(JSON.stringify(next));
   };
 
-  const addBuiltin = (name: typeof COMPONENT_STATE_HOVER | typeof COMPONENT_STATE_DISABLED) => {
+  const addBuiltin = (
+    name: typeof COMPONENT_STATE_HOVER | typeof COMPONENT_STATE_DISABLED | typeof COMPONENT_STATE_PRESSED,
+  ) => {
     setAddError(null);
     if (!canAddState(entries)) {
       setAddError('Maximum 5 states per component');
@@ -82,11 +85,7 @@ export function ComponentStatesEdit({ component, onStatesUpdated }: Props) {
   };
 
   const removeState = (name: string) => {
-    if (name === COMPONENT_STATE_HOVER || name === COMPONENT_STATE_DISABLED) {
-      persistList(entries.filter((e) => e.name !== name));
-    } else {
-      persistList(entries.filter((e) => e.name !== name));
-    }
+    persistList(entries.filter((e) => e.name !== name));
     if (previewTarget !== 'base' && previewTarget.toLowerCase() === name.toLowerCase()) {
       setStateEditTarget('base');
     }
@@ -141,6 +140,18 @@ export function ComponentStatesEdit({ component, onStatesUpdated }: Props) {
               onClick={() => addBuiltin(COMPONENT_STATE_DISABLED)}>
               <Plus className='mr-1 size-3' />
               Disabled
+            </Button>
+            <Button
+              type='button'
+              variant='outline'
+              size='sm'
+              className='h-7 text-xs'
+              disabled={
+                !canAddState(entries) || entries.some((e) => e.name === COMPONENT_STATE_PRESSED)
+              }
+              onClick={() => addBuiltin(COMPONENT_STATE_PRESSED)}>
+              <Plus className='mr-1 size-3' />
+              Pressed
             </Button>
           </div>
           <div className='flex gap-1'>
