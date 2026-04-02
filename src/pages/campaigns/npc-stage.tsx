@@ -67,7 +67,10 @@ function useNpcStageEntries(campaignCharacters: CampaignCharacter[]): NpcStageEn
       let archetypeTitle: string | null = null;
       if (character?.id) {
         const cas = filterNotSoftDeleted(
-          await db.characterArchetypes.where('characterId').equals(character.id).sortBy('loadOrder'),
+          await db.characterArchetypes
+            .where('characterId')
+            .equals(character.id)
+            .sortBy('loadOrder'),
         );
         const firstCa = cas[0];
         const firstArchetypeId = firstCa?.archetypeId;
@@ -358,6 +361,7 @@ export function NpcStage({ campaignId, rulesetId, sceneId, onCardHover }: NpcSta
         <div className='flex gap-2 items-end justify-between w-[255px]'>
           <ArchetypeLookup
             rulesetId={rulesetId}
+            allowDefault
             wrapperClassName='w-[100%]'
             value={selectedArchetype?.id ?? null}
             onSelect={(archetype) => setSelectedArchetype(archetype)}

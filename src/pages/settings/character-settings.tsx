@@ -124,7 +124,10 @@ export const CharacterSettings = ({ character }: CharacterSettingsProps) => {
           <Input id='character-name' value={name} onChange={(e) => setName(e.target.value)} />
         </div>
         <Button variant='outline' onClick={exportCharacter} disabled={isExporting}>
-          <Download className='h-4 w-4' />
+          <>
+            Download
+            <Download className='h-4 w-4' />
+          </>
         </Button>
       </div>
 

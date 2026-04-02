@@ -346,10 +346,13 @@ export const RulesetSettings = ({ activeRuleset }: RulesetSettingsProps) => {
           </div>
 
           <Button
-            className='gap-2 w-[50px]'
+            className='gap-2 w-[120px]'
             variant='outline'
             onClick={() => setExportModalOpen(true)}>
-            <Download className='h-4 w-4' />
+            <>
+              Download
+              <Download className='h-4 w-4' />
+            </>
           </Button>
           <ExportRulesetModal
             open={exportModalOpen}
