@@ -73,6 +73,8 @@ export interface InitialAttributeSyncSignal {
     requestId: string;
     /** When set (e.g. character sheet in campaign play), guest clients skip script VM execution. */
     campaignId?: string;
+    /** When set (window editor preview), sheet UI resolves the previewed ruleset window. */
+    sheetPreviewRulesetWindowId?: string;
   };
 }
 
@@ -85,6 +87,7 @@ export interface ExecuteActionSignal {
     requestId: string;
     campaignId?: string;
     campaignSceneId?: string;
+    sheetPreviewRulesetWindowId?: string;
   };
 }
 
@@ -101,6 +104,7 @@ export interface ExecuteActionEventSignal {
     campaignSceneId?: string;
     /** When set (action fired from item context menu), Caller = itemInstanceProxy of this inventory item. */
     callerInventoryItemInstanceId?: string;
+    sheetPreviewRulesetWindowId?: string;
   };
 }
 
@@ -115,6 +119,7 @@ export interface ExecuteItemEventSignal {
     campaignSceneId?: string;
     /** When set, Self in the item script refers to this inventory item instance instead of the first match by name. */
     inventoryItemInstanceId?: string;
+    sheetPreviewRulesetWindowId?: string;
   };
 }
 
@@ -128,6 +133,7 @@ export interface ExecuteArchetypeEventSignal {
     requestId: string;
     campaignId?: string;
     campaignSceneId?: string;
+    sheetPreviewRulesetWindowId?: string;
   };
 }
 
@@ -390,6 +396,8 @@ export interface ExecuteScriptPayload {
   campaignSceneId?: string;
   /** Optional params map exposed to QBScript as params.get('name'). Must be JSON-serializable. */
   params?: Record<string, any>;
+  /** When set (window editor preview), sheet UI resolves the previewed ruleset window. */
+  sheetPreviewRulesetWindowId?: string;
 }
 
 export interface AttributeChangedPayload {
@@ -405,6 +413,7 @@ export interface AttributeChangedPayload {
     maxPerScript?: number;
     timeLimit?: number;
   };
+  sheetPreviewRulesetWindowId?: string;
 }
 
 export interface ScriptResultPayload {

@@ -269,6 +269,7 @@ export class EventHandlerExecutor {
     promptInput?: PromptInputFn,
     createRollForCharacter?: (characterId: string) => RollFn,
     createRollSplitForCharacter?: (characterId: string) => RollSplitFn,
+    sheetPreviewRulesetWindowId?: string | null,
   ): Promise<EventHandlerResult> {
     // Get item
     const item = await this.db.items.get(itemId);
@@ -348,6 +349,7 @@ export class EventHandlerExecutor {
         characterId,
         campaignId ?? null,
       ),
+      sheetPreviewRulesetWindowId: sheetPreviewRulesetWindowId ?? undefined,
       executeActionEvent: (actionId, ownerId, targetIdForAction, eventTypeForAction) =>
         this.executeActionEvent(
           actionId,
@@ -366,6 +368,7 @@ export class EventHandlerExecutor {
           promptInput,
           createRollForCharacter,
           createRollSplitForCharacter,
+          sheetPreviewRulesetWindowId,
         ),
     };
 
@@ -438,6 +441,7 @@ export class EventHandlerExecutor {
     promptInput?: PromptInputFn,
     createRollForCharacter?: (characterId: string) => RollFn,
     createRollSplitForCharacter?: (characterId: string) => RollSplitFn,
+    sheetPreviewRulesetWindowId?: string | null,
   ): Promise<EventHandlerResult> {
     // Get action
     const action = await this.db.actions.get(actionId);
@@ -528,6 +532,7 @@ export class EventHandlerExecutor {
         ),
         callerInventoryItemInstanceId,
         campaignSceneId,
+        sheetPreviewRulesetWindowId: sheetPreviewRulesetWindowId ?? undefined,
         // Only allow Owner.Action().activate() at top level to avoid infinite re-entrancy
         ...(actionEventDepth === 1 && {
           executeActionEvent: async (actionId, ownerId, targetIdForAction, eventTypeForAction) => {
@@ -548,6 +553,7 @@ export class EventHandlerExecutor {
               promptInput,
               createRollForCharacter,
               createRollSplitForCharacter,
+              sheetPreviewRulesetWindowId,
             );
             for (const entry of r.componentAnimations ?? []) {
               nestedAnimations.push(entry);
@@ -700,6 +706,7 @@ export class EventHandlerExecutor {
     promptInput?: PromptInputFn,
     createRollForCharacter?: (characterId: string) => RollFn,
     createRollSplitForCharacter?: (characterId: string) => RollSplitFn,
+    sheetPreviewRulesetWindowId?: string | null,
   ): Promise<EventHandlerResult> {
     const archetype = await this.db.archetypes.get(archetypeId);
     if (!archetype) {
@@ -767,6 +774,7 @@ export class EventHandlerExecutor {
         characterId,
         campaignId ?? null,
       ),
+      sheetPreviewRulesetWindowId: sheetPreviewRulesetWindowId ?? undefined,
       executeActionEvent: (actionId, ownerId, targetIdForAction, eventTypeForAction) =>
         this.executeActionEvent(
           actionId,
@@ -785,6 +793,7 @@ export class EventHandlerExecutor {
           promptInput,
           createRollForCharacter,
           createRollSplitForCharacter,
+          sheetPreviewRulesetWindowId,
         ),
     };
 
@@ -892,6 +901,7 @@ export class EventHandlerExecutor {
           promptInput,
           createRollForCharacter,
           createRollSplitForCharacter,
+          undefined,
         ),
     };
 
@@ -1036,6 +1046,7 @@ export class EventHandlerExecutor {
           promptInput,
           createRollForCharacter,
           createRollSplitForCharacter,
+          undefined,
         ),
       params: paramsHelper,
     };

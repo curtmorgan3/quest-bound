@@ -13,6 +13,7 @@ import {
   setCurrentCampaignIdForScripts,
   setCurrentCampaignSceneIdForScripts,
 } from '@/lib/compass-logic/worker/current-campaign-ref';
+import { setSheetPreviewRulesetWindowIdForScripts } from '@/lib/compass-logic/worker/current-sheet-preview-window-ref';
 import {
   setCurrentRollHandlerForScripts,
   setCurrentRollSplitHandlerForScripts,
@@ -151,6 +152,11 @@ export const CharacterPage = ({
       setCurrentCampaignSceneIdForScripts(undefined);
     };
   }, [effectiveCampaignId, effectiveCampaignSceneId]);
+
+  useEffect(() => {
+    setSheetPreviewRulesetWindowIdForScripts(editorWindowId ?? undefined);
+    return () => setSheetPreviewRulesetWindowIdForScripts(undefined);
+  }, [editorWindowId]);
 
   const { character, updateCharacter } = useCharacter(resolvedCharacterId);
 

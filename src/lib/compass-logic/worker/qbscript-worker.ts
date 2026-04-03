@@ -594,6 +594,7 @@ function createOnAttributesModified(
   promptInputFn?: PromptInputFn,
   createRollForCharacter?: (characterId: string) => RollFn,
   createRollSplitForCharacter?: (characterId: string) => RollSplitFn,
+  sheetPreviewRulesetWindowId?: string | null,
 ): OnAttributesModifiedFn {
   return async (attributeIds: string[], characterId: string, rulesetId: string) => {
     if (attributeIds.length === 0) return;
@@ -642,7 +643,9 @@ function createOnAttributesModified(
                 promptInputFn,
                 createRollForCharacter,
                 createRollSplitForCharacter,
+                sheetPreviewRulesetWindowId,
               ),
+            sheetPreviewRulesetWindowId,
           },
         );
         if (collector && reactiveResult.modifiedAttributeIds?.length) {
@@ -822,6 +825,7 @@ async function handleExecuteScript(payload: ExecuteScriptPayload): Promise<void>
       promptInputFn,
       createRollForCharacter,
       createRollSplitForCharacter,
+      payload.sheetPreviewRulesetWindowId,
     ),
   );
 
@@ -862,6 +866,7 @@ async function handleExecuteScript(payload: ExecuteScriptPayload): Promise<void>
       entityId: payload.entityId,
       campaignId: payload.campaignId,
       campaignSceneId: payload.campaignSceneId,
+      sheetPreviewRulesetWindowId: payload.sheetPreviewRulesetWindowId,
       sharedRosterBroadcasts,
       roll: rollFn,
       rollSplit: rollSplitFn,
@@ -891,6 +896,7 @@ async function handleExecuteScript(payload: ExecuteScriptPayload): Promise<void>
           promptInputFn,
           createRollForCharacter,
           createRollSplitForCharacter,
+          payload.sheetPreviewRulesetWindowId,
         );
         for (const entry of r.componentAnimations ?? []) {
           reactiveComponentAnimations.push(entry);
@@ -962,6 +968,7 @@ async function handleExecuteScript(payload: ExecuteScriptPayload): Promise<void>
               promptInputFn,
               createRollForCharacter,
               createRollSplitForCharacter,
+              payload.sheetPreviewRulesetWindowId,
             ),
           roll: rollFn,
           rollSplit: rollSplitFn,
@@ -970,6 +977,7 @@ async function handleExecuteScript(payload: ExecuteScriptPayload): Promise<void>
           promptInput: promptInputFn,
           selectCharacter: selectCharacterFn,
           selectCharacters: selectCharactersFn,
+          sheetPreviewRulesetWindowId: payload.sheetPreviewRulesetWindowId,
         };
         const chainResult = await runReactiveChainForModifiedAttributes(
           directModifiedIds,
@@ -1144,6 +1152,7 @@ async function handleAttributeChanged(payload: AttributeChangedPayload): Promise
         promptInputFn,
         createRollForCharacter,
         createRollSplitForCharacter,
+        payload.sheetPreviewRulesetWindowId,
       ),
     );
 
@@ -1151,6 +1160,7 @@ async function handleAttributeChanged(payload: AttributeChangedPayload): Promise
       ...(payload.options || {}),
       campaignId: payload.campaignId,
       campaignSceneId: payload.campaignSceneId,
+      sheetPreviewRulesetWindowId: payload.sheetPreviewRulesetWindowId,
       executeActionEvent: (
         actionId: string,
         characterId: string,
@@ -1174,6 +1184,7 @@ async function handleAttributeChanged(payload: AttributeChangedPayload): Promise
           promptInputFn,
           createRollForCharacter,
           createRollSplitForCharacter,
+          payload.sheetPreviewRulesetWindowId,
         ),
       roll: rollFn,
       rollSplit: rollSplitFn,
@@ -1253,6 +1264,7 @@ async function handleInitialAttributeSync(payload: {
   rulesetId: string;
   requestId: string;
   campaignId?: string;
+  sheetPreviewRulesetWindowId?: string;
 }): Promise<void> {
   if (shouldBlockClientCampaignScript(campaignPlayScriptPolicy, payload.campaignId)) {
     sendBlockedReactiveStyleResult(payload.requestId, payload.characterId);
@@ -1298,6 +1310,7 @@ async function handleInitialAttributeSync(payload: {
         promptInputFn,
         createRollForCharacter,
         createRollSplitForCharacter,
+        payload.sheetPreviewRulesetWindowId,
       ),
     );
 
@@ -1320,6 +1333,7 @@ async function handleInitialAttributeSync(payload: {
           promptInputFn,
           createRollForCharacter,
           createRollSplitForCharacter,
+          payload.sheetPreviewRulesetWindowId,
         ),
       roll: rollFn,
       rollSplit: rollSplitFn,
@@ -1328,6 +1342,7 @@ async function handleInitialAttributeSync(payload: {
       promptInput: promptInputFn,
       selectCharacter: selectCharacterFn,
       selectCharacters: selectCharactersFn,
+      sheetPreviewRulesetWindowId: payload.sheetPreviewRulesetWindowId,
     });
 
     if (result.success) {
@@ -1393,6 +1408,7 @@ async function handleExecuteAction(payload: {
   requestId: string;
   campaignId?: string;
   campaignSceneId?: string;
+  sheetPreviewRulesetWindowId?: string;
 }): Promise<void> {
   if (shouldBlockClientCampaignScript(campaignPlayScriptPolicy, payload.campaignId)) {
     sendBlockedGeneralScriptResult(payload.requestId);
@@ -1429,6 +1445,7 @@ async function handleExecuteAction(payload: {
       requestId: payload.requestId,
       campaignId: payload.campaignId,
       campaignSceneId: payload.campaignSceneId,
+      sheetPreviewRulesetWindowId: payload.sheetPreviewRulesetWindowId,
     });
   } catch (error) {
     sendSignal({
@@ -1455,6 +1472,7 @@ async function handleExecuteActionEvent(payload: {
   campaignId?: string;
   campaignSceneId?: string;
   callerInventoryItemInstanceId?: string;
+  sheetPreviewRulesetWindowId?: string;
   roll?: RollFn;
 }): Promise<void> {
   if (shouldBlockClientCampaignScript(campaignPlayScriptPolicy, payload.campaignId)) {
@@ -1514,6 +1532,7 @@ async function handleExecuteActionEvent(payload: {
         promptInputFn,
         createRollForCharacter,
         createRollSplitForCharacter,
+        payload.sheetPreviewRulesetWindowId,
       ),
     );
     const result = await executor.executeActionEvent(
@@ -1533,6 +1552,7 @@ async function handleExecuteActionEvent(payload: {
       promptInputFn,
       createRollForCharacter,
       createRollSplitForCharacter,
+      payload.sheetPreviewRulesetWindowId,
     );
 
     if (result.error || !result.success) {
@@ -1601,6 +1621,7 @@ async function handleExecuteItemEvent(payload: {
   campaignId?: string;
   campaignSceneId?: string;
   inventoryItemInstanceId?: string;
+  sheetPreviewRulesetWindowId?: string;
 }): Promise<void> {
   if (shouldBlockClientCampaignScript(campaignPlayScriptPolicy, payload.campaignId)) {
     sendBlockedGeneralScriptResult(payload.requestId);
@@ -1659,6 +1680,7 @@ async function handleExecuteItemEvent(payload: {
         promptInputFn,
         createRollForCharacter,
         createRollSplitForCharacter,
+        payload.sheetPreviewRulesetWindowId,
       ),
     );
     const result = await executor.executeItemEvent(
@@ -1677,6 +1699,7 @@ async function handleExecuteItemEvent(payload: {
       promptInputFn,
       createRollForCharacter,
       createRollSplitForCharacter,
+      payload.sheetPreviewRulesetWindowId,
     );
 
     const script = await db.scripts.where({ entityId: payload.itemId, entityType: 'item' }).first();
@@ -1753,6 +1776,7 @@ async function handleExecuteArchetypeEvent(payload: {
   requestId: string;
   campaignId?: string;
   campaignSceneId?: string;
+  sheetPreviewRulesetWindowId?: string;
 }): Promise<void> {
   if (shouldBlockClientCampaignScript(campaignPlayScriptPolicy, payload.campaignId)) {
     sendBlockedGeneralScriptResult(payload.requestId);
@@ -1811,6 +1835,7 @@ async function handleExecuteArchetypeEvent(payload: {
         promptInputFn,
         createRollForCharacter,
         createRollSplitForCharacter,
+        payload.sheetPreviewRulesetWindowId,
       ),
     );
     const result = await executor.executeArchetypeEvent(
@@ -1828,6 +1853,7 @@ async function handleExecuteArchetypeEvent(payload: {
       promptInputFn,
       createRollForCharacter,
       createRollSplitForCharacter,
+      payload.sheetPreviewRulesetWindowId,
     );
 
     // Logs are persisted inside EventHandlerExecutor.executeArchetypeEvent so they
@@ -1950,6 +1976,7 @@ async function handleExecuteCampaignEventEvent(payload: {
         promptInputFn,
         createRollForCharacter,
         createRollSplitForCharacter,
+        undefined,
       ),
     );
     const result = await executor.executeCampaignEventEvent(

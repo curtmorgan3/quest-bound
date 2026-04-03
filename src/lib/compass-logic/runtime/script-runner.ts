@@ -224,6 +224,11 @@ export interface ScriptExecutionContext {
   campaignSceneId?: string;
   /** When set (campaign event scripts), the CampaignEvent this script is attached to. */
   campaignEvent?: CampaignEvent;
+  /**
+   * When set (ruleset window editor preview), sheet UI APIs resolve components for this ruleset
+   * window's character instance even if it is not on the character's current sheet page.
+   */
+  sheetPreviewRulesetWindowId?: string | null;
   /** Optional helper exposed to QBScript as `params` (e.g. params.get('Name')). */
   params?: ScriptParamsHelper;
   /**
@@ -1263,6 +1268,7 @@ export class ScriptRunner {
       rulesetId: item.rulesetId,
       ownerId: undefined,
       scriptId: '__emit_queue__',
+      sheetPreviewRulesetWindowId: undefined,
     };
     const runner = new ScriptRunner(ctx);
     await runner.loadCache();
@@ -1469,7 +1475,11 @@ export class ScriptRunner {
     }
     beginCustomEventScriptRun();
     try {
-      this.sheetUiCoordinator = new SheetUiCoordinator(this.context.db as DB, this.context.rulesetId);
+      this.sheetUiCoordinator = new SheetUiCoordinator(
+        this.context.db as DB,
+        this.context.rulesetId,
+        this.context.sheetPreviewRulesetWindowId ?? undefined,
+      );
 
       // Set up component-update callback before loadCache so getCharacterAccessorById (e.g. during
       // scene preload or from Scene.characters()) and Owner always receive it. Required for

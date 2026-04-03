@@ -20,6 +20,7 @@ import {
   getCurrentCampaignIdForScripts,
   getCurrentCampaignSceneIdForScripts,
 } from '@/lib/compass-logic/worker/current-campaign-ref';
+import { getSheetPreviewRulesetWindowIdForScripts } from '@/lib/compass-logic/worker/current-sheet-preview-window-ref';
 import { useCharacterSelectModalStore } from '@/stores/character-select-modal-store';
 import { usePromptModalStore } from '@/stores/prompt-modal-store';
 import { useScriptComponentAnimationStore } from '@/stores/script-component-animation-store';
@@ -797,6 +798,7 @@ export class QBScriptClient {
     this.pendingRollHandlers.set(requestId, options.roll ?? defaultScriptDiceRoller);
     this.pendingRollSplitHandlers.set(requestId, options.rollSplit ?? defaultScriptDiceRollerSplit);
 
+    const sheetPreviewRulesetWindowId = getSheetPreviewRulesetWindowIdForScripts();
     const payload: ExecuteScriptPayload = {
       scriptId,
       sourceCode: options.sourceCode,
@@ -810,6 +812,9 @@ export class QBScriptClient {
       campaignId: options.campaignId ?? getCurrentCampaignIdForScripts(),
       campaignSceneId: options.campaignSceneId ?? getCurrentCampaignSceneIdForScripts(),
       ...(options.params ? { params: options.params } : {}),
+      ...(sheetPreviewRulesetWindowId
+        ? { sheetPreviewRulesetWindowId }
+        : {}),
     };
 
     try {
@@ -831,6 +836,7 @@ export class QBScriptClient {
     this.pendingRollHandlers.set(requestId, options.roll ?? defaultScriptDiceRoller);
     this.pendingRollSplitHandlers.set(requestId, options.rollSplit ?? defaultScriptDiceRollerSplit);
 
+    const sheetPreviewRulesetWindowId = getSheetPreviewRulesetWindowIdForScripts();
     const payload: AttributeChangedPayload = {
       attributeId: options.attributeId,
       characterId: options.characterId,
@@ -844,6 +850,9 @@ export class QBScriptClient {
         maxPerScript: options.maxPerScript,
         timeLimit: options.timeLimit,
       },
+      ...(sheetPreviewRulesetWindowId
+        ? { sheetPreviewRulesetWindowId }
+        : {}),
     };
 
     try {
@@ -874,6 +883,7 @@ export class QBScriptClient {
     this.pendingRollHandlers.set(requestId, roll ?? defaultScriptDiceRoller);
     this.pendingRollSplitHandlers.set(requestId, rollSplit ?? defaultScriptDiceRollerSplit);
     try {
+      const sheetPreviewRulesetWindowId = getSheetPreviewRulesetWindowIdForScripts();
       const response = await this.sendSignal<{
         value?: { scriptsExecuted: string[]; executionCount: number };
       }>(
@@ -884,6 +894,9 @@ export class QBScriptClient {
             rulesetId,
             requestId,
             campaignId: getCurrentCampaignIdForScripts(),
+            ...(sheetPreviewRulesetWindowId
+              ? { sheetPreviewRulesetWindowId }
+              : {}),
           },
         },
         requestId,
@@ -923,6 +936,7 @@ export class QBScriptClient {
   }> {
     const requestId = generateRequestId();
 
+    const sheetPreviewRulesetWindowId = getSheetPreviewRulesetWindowIdForScripts();
     return this.sendSignal(
       {
         type: 'EXECUTE_ACTION',
@@ -933,6 +947,9 @@ export class QBScriptClient {
           requestId,
           campaignId: getCurrentCampaignIdForScripts(),
           campaignSceneId: getCurrentCampaignSceneIdForScripts(),
+          ...(sheetPreviewRulesetWindowId
+            ? { sheetPreviewRulesetWindowId }
+            : {}),
         },
       },
       requestId,
@@ -977,6 +994,7 @@ export class QBScriptClient {
     this.pendingRollHandlers.set(requestId, roll ?? defaultScriptDiceRoller);
     this.pendingRollSplitHandlers.set(requestId, rollSplit ?? defaultScriptDiceRollerSplit);
     try {
+      const sheetPreviewRulesetWindowId = getSheetPreviewRulesetWindowIdForScripts();
       return await this.sendSignal(
         {
           type: 'EXECUTE_ACTION_EVENT',
@@ -989,6 +1007,9 @@ export class QBScriptClient {
             campaignId: campaignId ?? getCurrentCampaignIdForScripts(),
             campaignSceneId: campaignSceneId ?? getCurrentCampaignSceneIdForScripts(),
             callerInventoryItemInstanceId,
+            ...(sheetPreviewRulesetWindowId
+              ? { sheetPreviewRulesetWindowId }
+              : {}),
           },
         },
         requestId,
@@ -1037,6 +1058,7 @@ export class QBScriptClient {
     this.pendingRollHandlers.set(requestId, roll ?? defaultScriptDiceRoller);
     this.pendingRollSplitHandlers.set(requestId, rollSplit ?? defaultScriptDiceRollerSplit);
     try {
+      const sheetPreviewRulesetWindowId = getSheetPreviewRulesetWindowIdForScripts();
       return await this.sendSignal(
         {
           type: 'EXECUTE_ITEM_EVENT',
@@ -1048,6 +1070,9 @@ export class QBScriptClient {
             campaignId: campaignId ?? getCurrentCampaignIdForScripts(),
             campaignSceneId: campaignSceneId ?? getCurrentCampaignSceneIdForScripts(),
             inventoryItemInstanceId,
+            ...(sheetPreviewRulesetWindowId
+              ? { sheetPreviewRulesetWindowId }
+              : {}),
           },
         },
         requestId,
@@ -1084,6 +1109,7 @@ export class QBScriptClient {
     this.pendingRollHandlers.set(requestId, roll ?? defaultScriptDiceRoller);
     this.pendingRollSplitHandlers.set(requestId, rollSplit ?? defaultScriptDiceRollerSplit);
     try {
+      const sheetPreviewRulesetWindowId = getSheetPreviewRulesetWindowIdForScripts();
       return await this.sendSignal(
         {
           type: 'EXECUTE_ARCHETYPE_EVENT',
@@ -1094,6 +1120,9 @@ export class QBScriptClient {
             requestId,
             campaignId: campaignId ?? getCurrentCampaignIdForScripts(),
             campaignSceneId: campaignSceneId ?? getCurrentCampaignSceneIdForScripts(),
+            ...(sheetPreviewRulesetWindowId
+              ? { sheetPreviewRulesetWindowId }
+              : {}),
           },
         },
         requestId,

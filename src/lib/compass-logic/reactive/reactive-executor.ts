@@ -54,6 +54,8 @@ export interface ReactiveExecutionOptions {
   selectCharacters?: SelectCharactersFn;
   /** Optional params map exposed to QBScript as params.get('name') for reactive scripts. */
   params?: Record<string, any>;
+  /** When set (window editor preview), sheet UI resolves the previewed ruleset window. */
+  sheetPreviewRulesetWindowId?: string | null;
 }
 
 /**
@@ -355,6 +357,7 @@ export class ReactiveExecutor {
         entityId: script.entityId ?? undefined,
         campaignId: options.campaignId,
         campaignSceneId: options.campaignSceneId,
+        sheetPreviewRulesetWindowId: options.sheetPreviewRulesetWindowId,
         executeActionEvent: options.executeActionEvent,
         roll: options.roll,
         rollSplit: options.rollSplit,

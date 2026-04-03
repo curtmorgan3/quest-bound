@@ -1,7 +1,4 @@
 import { cloneComponentSubtreeForWindow } from '@/lib/compass-api/utils/composite-subtree';
-import type { DB } from '@/stores/db/hooks/types';
-import type { Character, CharacterWindow, Component, Composite } from '@/types';
-import { filterNotSoftDeleted } from '@/lib/data/soft-delete';
 import { ComponentTypes } from '@/lib/compass-planes/nodes/node-types';
 import { parseComponentDataJson } from '@/lib/compass-planes/utils/component-data-json';
 import {
@@ -11,8 +8,11 @@ import {
   resolveSetStateTargetName,
   stringifyComponentActiveStatesMap,
 } from '@/lib/compass-planes/utils/component-states';
-import { defaultPartialForComponentType, isComponentTypesValue } from './sheet-component-defaults';
+import { filterNotSoftDeleted } from '@/lib/data/soft-delete';
+import type { DB } from '@/stores/db/hooks/types';
+import type { Character, CharacterWindow, Component, Composite } from '@/types';
 import { SheetComponentAccessor } from './sheet-component-accessor';
+import { defaultPartialForComponentType, isComponentTypesValue } from './sheet-component-defaults';
 import { classifyFlatKey } from './sheet-flat-keys';
 
 type LayoutPatch = Partial<Pick<Component, 'x' | 'y' | 'z' | 'width' | 'height' | 'rotation'>>;
@@ -105,15 +105,34 @@ function mergeVirtualTemplateRow(base: Component, state: CharacterSheetState): C
   return row;
 }
 
+/** Same instance-selection rule as SheetViewer when multiple CharacterWindows share a ruleset window id. */
+function pickCharacterWindowsForSheetPreview(
+  allWindows: CharacterWindow[],
+  sheetPreviewRulesetWindowId: string,
+): CharacterWindow[] {
+  const previewMatches = allWindows.filter((w) => w.windowId === sheetPreviewRulesetWindowId);
+  if (previewMatches.length <= 1) return previewMatches;
+  return [
+    [...previewMatches].sort((a, b) => {
+      const t = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+      if (t !== 0) return t;
+      return a.id.localeCompare(b.id);
+    })[0]!,
+  ];
+}
+
 export class SheetUiCoordinator {
   private readonly db: DB;
   private readonly rulesetId: string;
+  /** Ruleset window id when hydrating sheet UI for window-editor preview (see ScriptExecutionContext). */
+  private readonly sheetPreviewRulesetWindowId?: string;
   private readonly charState = new Map<string, CharacterSheetState>();
   private readonly touched = new Set<string>();
 
-  constructor(db: DB, rulesetId: string) {
+  constructor(db: DB, rulesetId: string, sheetPreviewRulesetWindowId?: string | null) {
     this.db = db;
     this.rulesetId = rulesetId;
+    this.sheetPreviewRulesetWindowId = sheetPreviewRulesetWindowId ?? undefined;
   }
 
   private markTouched(characterId: string) {
@@ -127,15 +146,46 @@ export class SheetUiCoordinator {
     const character = await this.db.characters.get(characterId);
     if (!character) return null;
 
-    const pageId = await this.resolveCurrentPageId(characterId, character as Character);
-    if (!pageId) return null;
-
     const allWindows = filterNotSoftDeleted(
       await this.db.characterWindows.where('characterId').equals(characterId).toArray(),
     ) as CharacterWindow[];
-    const windows = allWindows
-      .filter((w) => w.characterPageId === pageId)
-      .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+
+    const resolvedPageId = await this.resolveCurrentPageId(characterId, character as Character);
+
+    let pageId: string;
+    let windows: CharacterWindow[];
+
+    if (resolvedPageId) {
+      pageId = resolvedPageId;
+      windows = allWindows
+        .filter((w) => w.characterPageId === pageId)
+        .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+
+      if (this.sheetPreviewRulesetWindowId) {
+        const picked = pickCharacterWindowsForSheetPreview(
+          allWindows,
+          this.sheetPreviewRulesetWindowId,
+        );
+        const onPageIds = new Set(windows.map((w) => w.id));
+        for (const cw of picked) {
+          if (!onPageIds.has(cw.id)) {
+            windows.push(cw);
+            onPageIds.add(cw.id);
+          }
+        }
+        windows.sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+      }
+    } else if (this.sheetPreviewRulesetWindowId) {
+      const picked = pickCharacterWindowsForSheetPreview(
+        allWindows,
+        this.sheetPreviewRulesetWindowId,
+      );
+      if (picked.length === 0) return null;
+      windows = [...picked].sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+      pageId = picked[0]!.characterPageId ?? '';
+    } else {
+      return null;
+    }
 
     const templateByRulesetWindowId = new Map<string, Component[]>();
     const seenTw = new Set<string>();
@@ -163,7 +213,10 @@ export class SheetUiCoordinator {
           parsed = [];
         }
       }
-      overlayByCharWindowId.set(w.id, parsed.map((c) => ({ ...c })));
+      overlayByCharWindowId.set(
+        w.id,
+        parsed.map((c) => ({ ...c })),
+      );
     }
 
     const ch = character as Character;
@@ -199,7 +252,10 @@ export class SheetUiCoordinator {
     return state;
   }
 
-  private async resolveCurrentPageId(characterId: string, character: Character): Promise<string | null> {
+  private async resolveCurrentPageId(
+    characterId: string,
+    character: Character,
+  ): Promise<string | null> {
     let currentPageId = character.lastViewedPageId ?? null;
     if (!currentPageId) {
       const pages = (await this.db.characterPages
@@ -240,7 +296,9 @@ export class SheetUiCoordinator {
 
     const cw = state.windows.find((w) => w.title === windowTitle);
     if (!cw) {
-      throw new Error(`createComponent: no character window with title "${windowTitle}" on the current page`);
+      throw new Error(
+        `createComponent: no character window with title "${windowTitle}" on the current page`,
+      );
     }
 
     const character = (await this.db.characters.get(characterId)) as Character | undefined;
@@ -399,7 +457,9 @@ export class SheetUiCoordinator {
     }
 
     const hint = state.windows.find((w) => w.id === hintCharWindowId);
-    const searchWindows = hint ? [hint, ...state.windows.filter((w) => w.id !== hint.id)] : state.windows;
+    const searchWindows = hint
+      ? [hint, ...state.windows.filter((w) => w.id !== hint.id)]
+      : state.windows;
     for (const cw of searchWindows) {
       const template = state.templateByRulesetWindowId.get(cw.windowId) ?? [];
       const base = template.find((c) => c.id === componentId);
@@ -670,7 +730,9 @@ export class SheetUiCoordinator {
 
       for (const cw of state.windows) {
         const overlay = state.overlayByCharWindowId.get(cw.id) ?? [];
-        const persisted = (await this.db.characterWindows.get(cw.id)) as CharacterWindow | undefined;
+        const persisted = (await this.db.characterWindows.get(cw.id)) as
+          | CharacterWindow
+          | undefined;
         const prevJson = persisted?.scriptOverlayComponents ?? null;
         const nextJson = JSON.stringify(overlay);
 
