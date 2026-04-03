@@ -201,18 +201,28 @@ export const RulesetColorPicker = ({
 
   const anyGradientStopIsCustomProp = gradientColor1IsCustomProp || gradientColor2IsCustomProp;
 
+  // Keep gradient controls in sync when the selected item / prop value changes from outside.
+  // Previously we only synced when the dialog opened, so switching components left stale angle/stops.
   useEffect(() => {
-    if (dialogOpen && isGradient && mode === 'gradient') {
-      const p = parseLinearGradient(color ?? displayColor);
-      if (p) {
-        setGradientAngle(p.angle);
-        setGradientColor1(isCustomPropValue(p.color1) ? p.color1 : colorToHex(p.color1));
-        setGradientColor2(isCustomPropValue(p.color2) ? p.color2 : colorToHex(p.color2));
-        setGradientColor1Alpha(colorToAlpha(p.color1));
-        setGradientColor2Alpha(colorToAlpha(p.color2));
-      }
+    if (!allowGradient) return;
+    const display = resolvedColor ?? color ?? '';
+    const externalIsGradient = isLinearGradient(display);
+    if (!externalIsGradient) {
+      setMode('solid');
+      return;
     }
-  }, [dialogOpen, isGradient, mode, color, displayColor]);
+    const p =
+      color && isLinearGradient(color)
+        ? parseLinearGradient(color)
+        : parseLinearGradient(display);
+    if (!p) return;
+    setMode('gradient');
+    setGradientAngle(p.angle);
+    setGradientColor1(isCustomPropValue(p.color1) ? p.color1 : colorToHex(p.color1));
+    setGradientColor2(isCustomPropValue(p.color2) ? p.color2 : colorToHex(p.color2));
+    setGradientColor1Alpha(colorToAlpha(p.color1));
+    setGradientColor2Alpha(colorToAlpha(p.color2));
+  }, [allowGradient, color, resolvedColor]);
 
   const showCustomPropPill = isCustomPropValue(color);
   const customPropId = showCustomPropPill ? color.slice(CUSTOM_PROP_PREFIX.length) : '';
