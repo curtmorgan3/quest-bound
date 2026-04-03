@@ -18,7 +18,7 @@ import {
   getSyncTableConfigByRemote,
   SYNC_TABLE_ORDER,
 } from '@/lib/cloud/sync/sync-tables';
-import { prepareRemoteForLocal, toSnakeCaseKeys } from '@/lib/cloud/sync/sync-utils';
+import { formatSyncError, prepareRemoteForLocal, toSnakeCaseKeys } from '@/lib/cloud/sync/sync-utils';
 import { isSoftDeleteSyncTable } from '@/lib/data/soft-delete';
 import type { DB } from '@/stores/db/hooks/types';
 import type { SupabaseClient } from '@supabase/supabase-js';
@@ -286,7 +286,7 @@ export async function planSyncPull(rulesetId: string, db: DB): Promise<PlanSyncP
       pulledByEntity,
     };
   } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
+    const message = formatSyncError(err);
     setSyncError(message);
     return { error: message };
   }

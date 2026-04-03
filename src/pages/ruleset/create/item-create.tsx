@@ -185,7 +185,7 @@ export const ItemCreate = ({
 
       <div className='flex flex-col gap-2'>
         <ActionLookup
-          label='Assocaited actions'
+          label='Associated actions'
           placeholder='Add action...'
           excludeIds={actionIds}
           onSelect={(action) =>

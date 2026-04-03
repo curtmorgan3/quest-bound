@@ -40,7 +40,9 @@ async function withCloudSyncUi<T>(fn: () => Promise<T>): Promise<T> {
       setTimeout(() => {
         const s = useSyncStateStore.getState();
         s.setSyncing(false);
-        s.setCloudSyncOverlayOpen(false);
+        if (!s.syncError) {
+          s.setCloudSyncOverlayOpen(false);
+        }
       }, CLOUD_SYNC_UI_CLEAR_DELAY_MS);
     });
   }
@@ -53,7 +55,9 @@ async function withCloudSyncPlanningUi<T>(fn: () => Promise<T>): Promise<T> {
   try {
     return await fn();
   } finally {
-    setCloudSyncOverlayOpen(false);
+    if (!useSyncStateStore.getState().syncError) {
+      setCloudSyncOverlayOpen(false);
+    }
   }
 }
 
@@ -72,16 +76,24 @@ export async function planRulesetSync(rulesetId: string, db: DB): Promise<Rulese
   setSyncError(null);
   return await withCloudSyncPlanningUi(async () => {
     const pullPlan = await planSyncPull(rulesetId, db);
-    if (pullPlan.error) return { error: pullPlan.error };
+    if (pullPlan.error) {
+      setSyncError(pullPlan.error);
+      return { error: pullPlan.error };
+    }
     if (
       !pullPlan.payload ||
       pullPlan.pulledByEntity === undefined ||
       pullPlan.pulledCount === undefined
     ) {
-      return { error: 'Pull plan incomplete' };
+      const msg = 'Pull plan incomplete';
+      setSyncError(msg);
+      return { error: msg };
     }
     const pushPlan = await planSyncPush(rulesetId, db, { appliedPull: pullPlan.payload });
-    if (pushPlan.error) return { error: pushPlan.error };
+    if (pushPlan.error) {
+      setSyncError(pushPlan.error);
+      return { error: pushPlan.error };
+    }
     return {
       stagedPull: pullPlan.payload,
       pulledByEntity: pullPlan.pulledByEntity,

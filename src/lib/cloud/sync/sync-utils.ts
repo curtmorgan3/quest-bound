@@ -85,6 +85,12 @@ export function prepareRecordForRemote(
       a.variantsChartRef = Number.isFinite(n) ? Math.trunc(n) : undefined;
     }
   }
+  if (tableName === 'components') {
+    const comp = stripped as { states?: unknown };
+    if (comp.states == null) {
+      comp.states = '[]';
+    }
+  }
   if (tableName === 'users') {
     const u = stripped as { email?: unknown };
     if (typeof u.email === 'string') {
@@ -104,6 +110,12 @@ export function prepareRecordForRemote(
     if (c['pinned_sidebar_documents'] == null) c['pinned_sidebar_documents'] = [];
     if (c['pinned_sidebar_charts'] == null) c['pinned_sidebar_charts'] = [];
     if (c['component_data'] == null) c['component_data'] = {};
+  }
+  if (tableName === 'characterWindows') {
+    const w = stripped as { componentActiveStates?: unknown };
+    if (w.componentActiveStates == null) {
+      w.componentActiveStates = '{}';
+    }
   }
   if (isSoftDeleteSyncTable(tableName)) {
     const s = stripped as { deleted?: unknown };
@@ -198,4 +210,45 @@ export async function getRulesetIdForDelete(
     return comp?.rulesetId ?? null;
   }
   return null;
+}
+
+/**
+ * Turn sync failures (including Supabase PostgREST plain-object errors) into readable text.
+ * Avoids `[object Object]` when `err` is not an `Error` instance.
+ */
+export function formatSyncError(err: unknown): string {
+  if (err == null) return 'Unknown error';
+  if (typeof err === 'string') return err;
+  if (err instanceof Error) {
+    const m = err.message?.trim();
+    if (m) return m;
+    try {
+      return JSON.stringify(
+        { name: err.name, message: err.message, stack: err.stack },
+        null,
+        2,
+      );
+    } catch {
+      return err.name || 'Error';
+    }
+  }
+  if (typeof err === 'object') {
+    const o = err as Record<string, unknown>;
+    const msg = typeof o.message === 'string' ? o.message.trim() : '';
+    const code = typeof o.code === 'string' ? o.code : '';
+    const details = typeof o.details === 'string' ? o.details : '';
+    const hint = typeof o.hint === 'string' ? o.hint : '';
+    const lines: string[] = [];
+    if (msg) lines.push(msg);
+    if (code) lines.push(`code: ${code}`);
+    if (details) lines.push(`details: ${details}`);
+    if (hint) lines.push(`hint: ${hint}`);
+    if (lines.length > 0) return lines.join('\n');
+    try {
+      return JSON.stringify(err, null, 2);
+    } catch {
+      return Object.prototype.toString.call(err);
+    }
+  }
+  return String(err);
 }

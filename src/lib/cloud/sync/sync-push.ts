@@ -23,7 +23,7 @@ import type { SyncTableConfig } from '@/lib/cloud/sync/sync-tables';
 import { getSyncTableConfig, SYNC_TABLE_ORDER } from '@/lib/cloud/sync/sync-tables';
 import { addSyncEntityCount, sumSyncEntityCounts } from '@/lib/cloud/sync/sync-entity-labels';
 import type { StagedPullPayload } from '@/lib/cloud/sync/sync-pull';
-import { prepareRecordForRemote } from '@/lib/cloud/sync/sync-utils';
+import { formatSyncError, prepareRecordForRemote } from '@/lib/cloud/sync/sync-utils';
 import type { DB } from '@/stores/db/hooks/types';
 
 /** Row keys (`tableName:id`) merged from pull in the same sync pass — must not count or upsert as push. */
@@ -100,7 +100,7 @@ export async function syncPush(
     try {
       rowOwnerId = await fetchCloudRulesetRowOwnerId(client, rulesetId);
     } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
+      const message = formatSyncError(error);
       const isMissingRemoteRuleset =
         message.includes('Ruleset not found in the cloud or you do not have access');
       if (!isMissingRemoteRuleset) {
@@ -263,7 +263,7 @@ export async function syncPush(
     const pushedCount = sumSyncEntityCounts(pushedByEntity);
     return { pushedCount, pushedByEntity };
   } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
+    const message = formatSyncError(err);
     setSyncError(message);
     return { error: message };
   }
@@ -298,7 +298,7 @@ export async function planSyncPush(
     try {
       rowOwnerId = await fetchCloudRulesetRowOwnerId(client, rulesetId);
     } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
+      const message = formatSyncError(error);
       const isMissingRemoteRuleset =
         message.includes('Ruleset not found in the cloud or you do not have access');
       if (!isMissingRemoteRuleset) {
@@ -357,7 +357,7 @@ export async function planSyncPush(
     void rowOwnerId;
     return { pushedByEntity };
   } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
+    const message = formatSyncError(err);
     useSyncStateStore.getState().setSyncError(message);
     return { error: message };
   }
