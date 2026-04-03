@@ -95,7 +95,12 @@ export const SYNC_TABLE_CONFIGS: SyncTableConfig[] = [
     parentTable: 'composites',
     parentKey: 'compositeId',
   },
-  { tableName: 'pages', remoteTableName: 'pages', excludedFields: [], hasRulesetId: true },
+  {
+    tableName: 'pages',
+    remoteTableName: 'pages',
+    excludedFields: ['image', 'assetUrl'],
+    hasRulesetId: true,
+  },
   {
     tableName: 'rulesetWindows',
     remoteTableName: 'ruleset_windows',
@@ -140,7 +145,7 @@ export const SYNC_TABLE_CONFIGS: SyncTableConfig[] = [
   {
     tableName: 'characterPages',
     remoteTableName: 'character_pages',
-    excludedFields: [],
+    excludedFields: ['image'],
     hasRulesetId: true,
     parentTable: 'characters',
     parentKey: 'characterId',
