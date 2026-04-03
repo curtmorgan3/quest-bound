@@ -26,6 +26,7 @@ import {
   SheetComponentWithStates,
   sheetComponentLayoutData,
 } from './sheet-component-with-states';
+import { SheetGroupPointerProvider } from './sheet-group-pointer-context';
 import { useWindowCanvasSelection } from './window-canvas-selection-context';
 import { ParentWindowFrameProvider } from './parent-window-frame-context';
 import { WindowRuntimeProvider } from './window-runtime-context';
@@ -580,6 +581,7 @@ export const WindowNode = ({ data }: { data: WindowNodeData }) => {
                         handleChildWindowClick(childWindowId, resolved),
                     }
               }>
+            <SheetGroupPointerProvider>
             {rootComponents.map((component) => {
               if (!isComponentConditionallyVisible(component, characterContext?.characterAttributes)) {
                 return null;
@@ -616,6 +618,7 @@ export const WindowNode = ({ data }: { data: WindowNodeData }) => {
                 </div>
               );
             })}
+            </SheetGroupPointerProvider>
             </WindowRuntimeProvider>
           </ParentWindowFrameProvider>
         </div>

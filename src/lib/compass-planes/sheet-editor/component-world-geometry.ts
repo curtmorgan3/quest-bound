@@ -1,3 +1,8 @@
+import { ComponentTypes } from '@/lib/compass-planes/nodes/node-types';
+import {
+  getEditorPreviewStateName,
+  withMergedStateLayers,
+} from '@/lib/compass-planes/utils/component-states';
 import type { Component } from '@/types';
 
 export function componentByIdMap(components: Component[]): Map<string, Component> {
@@ -14,10 +19,11 @@ export function buildEffectiveLayoutMap(
 ): Map<string, EffectiveLayout> {
   const m = new Map<string, EffectiveLayout>();
   for (const c of components) {
-    let x = c.x;
-    let y = c.y;
-    let width = c.width;
-    let height = c.height;
+    const geom = withMergedStateLayers(c, { editorPreviewState: getEditorPreviewStateName(c) });
+    let x = geom.x;
+    let y = geom.y;
+    let width = geom.width;
+    let height = geom.height;
     if (resizePreview?.id === c.id) {
       x = resizePreview.x;
       y = resizePreview.y;
@@ -46,6 +52,51 @@ export function worldTopLeftWithEffective(
   if (!p) return { x: self.x, y: self.y };
   const pw = worldTopLeftWithEffective(p, byId, effective);
   return { x: pw.x + self.x, y: pw.y + self.y };
+}
+
+/** Walk `parentComponentId` from `componentId` and return the nearest ancestor with `type === 'group'`. */
+export function findNearestGroupRootId(
+  componentId: string,
+  byId: Map<string, Component>,
+): string | null {
+  let cur = byId.get(componentId);
+  const seen = new Set<string>();
+  while (cur?.parentComponentId) {
+    if (seen.has(cur.id)) break;
+    seen.add(cur.id);
+    const parent = byId.get(cur.parentComponentId);
+    if (!parent) break;
+    if (parent.type === ComponentTypes.GROUP) return parent.id;
+    cur = parent;
+  }
+  return null;
+}
+
+/**
+ * Component ids that should share pointer hover/press visual state with `component`: the hovered
+ * group's subtree, or all rows sharing `groupId` when not under a group node.
+ */
+export function getGroupPointerAffinityIds(
+  component: Component,
+  allComponents: Component[],
+  byId: Map<string, Component>,
+): Set<string> {
+  if (component.type === ComponentTypes.GROUP) {
+    return collectDescendantComponentIds(allComponents, component.id);
+  }
+  const rootId = findNearestGroupRootId(component.id, byId);
+  if (rootId) {
+    return collectDescendantComponentIds(allComponents, rootId);
+  }
+  if (component.groupId) {
+    const gid = component.groupId;
+    const out = new Set<string>();
+    for (const c of allComponents) {
+      if (c.groupId === gid) out.add(c.id);
+    }
+    return out;
+  }
+  return new Set([component.id]);
 }
 
 /**

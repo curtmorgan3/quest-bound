@@ -33,6 +33,10 @@ import { ComponentTypes } from '../nodes/node-types';
 import { injectDefaultComponent } from '../utils/inject-defaults';
 import { AddComponentPanel } from './add-component-panel';
 import {
+  getEditorPreviewStateName,
+  withMergedStateLayers,
+} from '@/lib/compass-planes/utils/component-states';
+import {
   buildEffectiveLayoutMap,
   componentByIdMap,
   expandDeleteIds,
@@ -232,7 +236,10 @@ export function SheetCanvasEditor({
       for (const id of ids) {
         const pos = prev[id];
         const c = components.find((x) => x.id === id);
-        if (!c || (c.x === pos.x && c.y === pos.y)) {
+        const merged = c
+          ? withMergedStateLayers(c, { editorPreviewState: getEditorPreviewStateName(c) })
+          : null;
+        if (!c || !merged || (merged.x === pos.x && merged.y === pos.y)) {
           delete next[id];
           changed = true;
         }
@@ -248,11 +255,12 @@ export function SheetCanvasEditor({
       setResizePreview(null);
       return;
     }
+    const merged = withMergedStateLayers(c, { editorPreviewState: getEditorPreviewStateName(c) });
     if (
-      c.x === resizePreview.x &&
-      c.y === resizePreview.y &&
-      c.width === resizePreview.width &&
-      c.height === resizePreview.height
+      merged.x === resizePreview.x &&
+      merged.y === resizePreview.y &&
+      merged.width === resizePreview.width &&
+      merged.height === resizePreview.height
     ) {
       setResizePreview(null);
     }

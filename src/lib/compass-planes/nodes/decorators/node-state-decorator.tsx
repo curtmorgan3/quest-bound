@@ -1,3 +1,5 @@
+import { useSheetGroupPointer } from '@/lib/compass-planes/sheet-viewer/sheet-group-pointer-context';
+import { getGroupPointerAffinityIds } from '@/lib/compass-planes/sheet-editor/component-world-geometry';
 import type { Component, ComponentData } from '@/types';
 import type { ReactNode } from 'react';
 import { useEffect, useMemo, useState } from 'react';
@@ -45,19 +47,36 @@ export function NodeStateDecorator({
   viewCtx?: ViewRenderContext;
   children: (displayComponent: Component, displayComponentData: ComponentData) => ReactNode;
 }): ReactNode {
-  const [hovered, setHovered] = useState(false);
-  const [pressed, setPressed] = useState(false);
+  const sheetGroupPtr = useSheetGroupPointer();
+  const [localHovered, setLocalHovered] = useState(false);
+  const [localPressed, setLocalPressed] = useState(false);
+
+  const affinity = useMemo(() => {
+    if (viewCtx?.allComponents?.length && viewCtx.byId) {
+      return getGroupPointerAffinityIds(component, viewCtx.allComponents, viewCtx.byId);
+    }
+    return new Set<string>([component.id]);
+  }, [component, viewCtx]);
+
+  const useSharedGroupPointer = Boolean(sheetGroupPtr && viewCtx?.allComponents?.length);
+
+  const hovered = useSharedGroupPointer
+    ? Boolean(sheetGroupPtr!.hoverAffinity?.has(component.id))
+    : localHovered;
+  const pressed = useSharedGroupPointer
+    ? Boolean(sheetGroupPtr!.pressAffinity?.has(component.id))
+    : localPressed;
 
   useEffect(() => {
-    if (!pressed) return;
-    const endPress = () => setPressed(false);
+    if (useSharedGroupPointer || !localPressed) return;
+    const endPress = () => setLocalPressed(false);
     window.addEventListener('pointerup', endPress);
     window.addEventListener('pointercancel', endPress);
     return () => {
       window.removeEventListener('pointerup', endPress);
       window.removeEventListener('pointercancel', endPress);
     };
-  }, [pressed]);
+  }, [localPressed, useSharedGroupPointer]);
 
   const layerOpts = useMemo(
     () => mergeOptsForComponent(component, viewCtx, hovered, pressed),
@@ -77,15 +96,36 @@ export function NodeStateDecorator({
   return (
     <div
       className='h-full w-full'
-      onPointerEnter={() => setHovered(true)}
-      onPointerLeave={() => setHovered(false)}
+      data-node-state-id={component.id}
+      onPointerEnter={() => {
+        if (useSharedGroupPointer) {
+          sheetGroupPtr!.onDecoratedPointerEnter(affinity);
+        } else {
+          setLocalHovered(true);
+        }
+      }}
+      onPointerLeave={(e) => {
+        if (useSharedGroupPointer) {
+          sheetGroupPtr!.onDecoratedPointerLeave(affinity, e.relatedTarget);
+        } else {
+          setLocalHovered(false);
+        }
+      }}
       onPointerCancel={() => {
-        setHovered(false);
-        setPressed(false);
+        if (useSharedGroupPointer) {
+          sheetGroupPtr!.onDecoratedPointerLeave(affinity, null);
+        } else {
+          setLocalHovered(false);
+          setLocalPressed(false);
+        }
       }}
       onPointerDown={(e) => {
         if (e.pointerType === 'mouse' && e.button !== 0) return;
-        setPressed(true);
+        if (useSharedGroupPointer) {
+          sheetGroupPtr!.onDecoratedPointerDown(affinity);
+        } else {
+          setLocalPressed(true);
+        }
       }}>
       {children(displayComponent, displayComponentData)}
     </div>

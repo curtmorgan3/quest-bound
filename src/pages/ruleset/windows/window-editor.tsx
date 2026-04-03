@@ -6,6 +6,7 @@ import { repairOrphanCharacterWindowsForRulesetWindows } from '@/lib/compass-api
 import { SheetEditor } from '@/lib/compass-planes';
 import {
   getEditorPreviewStateName,
+  remapGeometryUpdatesForEditorState,
   withMergedStateLayers,
 } from '@/lib/compass-planes/utils/component-states';
 import { DEFAULT_GRID_SIZE } from '@/lib/compass-planes/editor-config';
@@ -175,8 +176,10 @@ export const WindowEditor = () => {
   };
 
   const onComponentsUpdated = (updates: Array<ComponentUpdate>) => {
-    log('components updated: ', updates);
-    updateComponents(updates);
+    const byId = new Map(components.map((c) => [c.id, c]));
+    const remapped = remapGeometryUpdatesForEditorState(updates, (id) => byId.get(id));
+    log('components updated: ', remapped);
+    void updateComponents(remapped);
   };
 
   const onComponentsCreated = (components: Array<Partial<Component>>) => {

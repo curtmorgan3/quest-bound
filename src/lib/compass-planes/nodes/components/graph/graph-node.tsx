@@ -1,6 +1,6 @@
 import { useAssets } from '@/lib/compass-api';
 import { CharacterContext, WindowEditorContext } from '@/stores';
-import type { Component, GraphComponentData, GraphVariant } from '@/types';
+import type { CharacterAttribute, Component, GraphComponentData, GraphVariant } from '@/types';
 import { useEditorItemId } from '@/lib/compass-planes/canvas/editor-item-context';
 import { useComponentCanvasDimensions } from '@/lib/compass-planes/canvas/editor-item-layout-context';
 import { memo, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
@@ -37,20 +37,43 @@ function toNumber(v: string | number | boolean): number {
   return 0;
 }
 
+function resolveBoundNumeric(
+  attributeId: string | null | undefined,
+  customPropertyId: string | null | undefined,
+  getCharacterAttribute: ((id: string) => CharacterAttribute | null) | undefined,
+): number {
+  if (!attributeId || !getCharacterAttribute) return 0;
+  const ca = getCharacterAttribute(attributeId);
+  if (!ca) return 0;
+  if (customPropertyId) {
+    const v = ca.attributeCustomPropertyValues?.[customPropertyId];
+    if (v !== undefined && v !== null) return toNumber(v);
+  }
+  return toNumber(ca.value ?? 0);
+}
+
 function useGraphRatio(component: Component): number {
   const characterContext = useContext(CharacterContext);
   const data = getComponentData(component) as GraphComponentData;
   const numeratorId = data.numeratorAttributeId;
   const denominatorId = data.denominatorAttributeId;
 
-  const numerator =
-    numeratorId && characterContext
-      ? toNumber(characterContext.getCharacterAttribute(numeratorId)?.value ?? 0)
-      : 0;
+  const getCa = characterContext?.getCharacterAttribute;
+  const numerator = resolveBoundNumeric(
+    numeratorId,
+    data.numeratorAttributeCustomPropertyId,
+    getCa,
+  );
   const denominator =
-    denominatorId && characterContext
-      ? toNumber(characterContext.getCharacterAttribute(denominatorId)?.value ?? 0)
-      : (data.denominatorValue != null ? toNumber(data.denominatorValue) : 0);
+    denominatorId && getCa
+      ? resolveBoundNumeric(
+          denominatorId,
+          data.denominatorAttributeCustomPropertyId,
+          getCa,
+        )
+      : data.denominatorValue != null
+        ? toNumber(data.denominatorValue)
+        : 0;
 
   const rawRatio = denominator !== 0 ? numerator / denominator : 0;
   const ratio = Math.min(1, Math.max(0, rawRatio));

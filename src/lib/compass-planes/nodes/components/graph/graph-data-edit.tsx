@@ -9,7 +9,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { ImageUpload } from '@/components/composites';
-import { AttributeLookup, useAssets } from '@/lib/compass-api';
+import { AttributeLookup, useAssets, useAttributes } from '@/lib/compass-api';
 import {
   fireExternalComponentChangeEvent,
   getComponentData,
@@ -17,7 +17,10 @@ import {
 } from '@/lib/compass-planes/utils';
 import { db, deleteAssetIfUnreferenced } from '@/stores';
 import type { Component, GraphComponentData, GraphVariant } from '@/types';
-import { useEffect } from 'react';
+import { parseEntityCustomPropertiesJson } from '@/utils/parse-entity-custom-properties-json';
+import { useEffect, useMemo } from 'react';
+
+const GRAPH_ATTR_CUSTOM_PROPERTY_NONE = '__none__';
 
 interface GraphDataEditProps {
   components: Array<Component>;
@@ -35,7 +38,42 @@ export const GraphDataEdit = ({ components, updateComponents }: GraphDataEditPro
   const first = editableComponents[0];
   const rulesetId = first?.rulesetId ?? null;
   const { assets } = useAssets(rulesetId ?? undefined);
+  const { attributes } = useAttributes();
   const firstData = first ? (getComponentData(first) as GraphComponentData) : null;
+
+  const numeratorAttr = useMemo(
+    () =>
+      firstData?.numeratorAttributeId
+        ? attributes.find((a) => a.id === firstData.numeratorAttributeId)
+        : undefined,
+    [attributes, firstData?.numeratorAttributeId],
+  );
+  const denominatorAttr = useMemo(
+    () =>
+      firstData?.denominatorAttributeId
+        ? attributes.find((a) => a.id === firstData.denominatorAttributeId)
+        : undefined,
+    [attributes, firstData?.denominatorAttributeId],
+  );
+
+  const numeratorNumberCustomDefs = useMemo(
+    () =>
+      numeratorAttr
+        ? parseEntityCustomPropertiesJson(numeratorAttr.customProperties).filter(
+            (d) => d.type === 'number',
+          )
+        : [],
+    [numeratorAttr],
+  );
+  const denominatorNumberCustomDefs = useMemo(
+    () =>
+      denominatorAttr
+        ? parseEntityCustomPropertiesJson(denominatorAttr.customProperties).filter(
+            (d) => d.type === 'number',
+          )
+        : [],
+    [denominatorAttr],
+  );
 
   const fillAsset =
     firstData?.assetId != null ? assets.find((a) => a.id === firstData.assetId) : undefined;
@@ -64,7 +102,10 @@ export const GraphDataEdit = ({ components, updateComponents }: GraphDataEditPro
   const setNumeratorAttributeId = (attributeId: string | null) => {
     const updates = editableComponents.map((c) => ({
       id: c.id,
-      data: updateComponentData(c.data, { numeratorAttributeId: attributeId }),
+      data: updateComponentData(c.data, {
+        numeratorAttributeId: attributeId,
+        numeratorAttributeCustomPropertyId: undefined,
+      }),
     }));
     updateComponents(updates);
     fireExternalComponentChangeEvent({ updates: updates as any });
@@ -73,7 +114,32 @@ export const GraphDataEdit = ({ components, updateComponents }: GraphDataEditPro
   const setDenominatorAttributeId = (attributeId: string | null) => {
     const updates = editableComponents.map((c) => ({
       id: c.id,
-      data: updateComponentData(c.data, { denominatorAttributeId: attributeId }),
+      data: updateComponentData(c.data, {
+        denominatorAttributeId: attributeId,
+        denominatorAttributeCustomPropertyId: undefined,
+      }),
+    }));
+    updateComponents(updates);
+    fireExternalComponentChangeEvent({ updates: updates as any });
+  };
+
+  const setNumeratorCustomPropertyId = (propertyId: string | null) => {
+    const updates = editableComponents.map((c) => ({
+      id: c.id,
+      data: updateComponentData(c.data, {
+        numeratorAttributeCustomPropertyId: propertyId ?? undefined,
+      }),
+    }));
+    updateComponents(updates);
+    fireExternalComponentChangeEvent({ updates: updates as any });
+  };
+
+  const setDenominatorCustomPropertyId = (propertyId: string | null) => {
+    const updates = editableComponents.map((c) => ({
+      id: c.id,
+      data: updateComponentData(c.data, {
+        denominatorAttributeCustomPropertyId: propertyId ?? undefined,
+      }),
     }));
     updateComponents(updates);
     fireExternalComponentChangeEvent({ updates: updates as any });
@@ -230,6 +296,41 @@ export const GraphDataEdit = ({ components, updateComponents }: GraphDataEditPro
         onDelete={() => setNumeratorAttributeId(null)}
         filterType='number'
       />
+      {numeratorNumberCustomDefs.length > 0 && firstData?.numeratorAttributeId ? (
+        <div className='flex flex-col gap-2'>
+          <Label
+            htmlFor='graph-numerator-custom-property'
+            className='text-xs text-muted-foreground'>
+            Numerator custom property (optional)
+          </Label>
+          <Select
+            value={
+              firstData.numeratorAttributeCustomPropertyId &&
+              numeratorNumberCustomDefs.some((d) => d.id === firstData.numeratorAttributeCustomPropertyId)
+                ? firstData.numeratorAttributeCustomPropertyId
+                : GRAPH_ATTR_CUSTOM_PROPERTY_NONE
+            }
+            onValueChange={(v) =>
+              setNumeratorCustomPropertyId(
+                v === GRAPH_ATTR_CUSTOM_PROPERTY_NONE ? null : v,
+              )
+            }>
+            <SelectTrigger id='graph-numerator-custom-property' className='h-8'>
+              <SelectValue placeholder='Use main attribute value' />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={GRAPH_ATTR_CUSTOM_PROPERTY_NONE}>
+                None (main attribute value)
+              </SelectItem>
+              {numeratorNumberCustomDefs.map((def) => (
+                <SelectItem key={def.id} value={def.id}>
+                  {def.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      ) : null}
       <AttributeLookup
         label='Denominator (number attribute)'
         value={firstData?.denominatorAttributeId ?? null}
@@ -237,6 +338,43 @@ export const GraphDataEdit = ({ components, updateComponents }: GraphDataEditPro
         onDelete={() => setDenominatorAttributeId(null)}
         filterType='number'
       />
+      {denominatorNumberCustomDefs.length > 0 && firstData?.denominatorAttributeId ? (
+        <div className='flex flex-col gap-2'>
+          <Label
+            htmlFor='graph-denominator-custom-property'
+            className='text-xs text-muted-foreground'>
+            Denominator custom property (optional)
+          </Label>
+          <Select
+            value={
+              firstData.denominatorAttributeCustomPropertyId &&
+              denominatorNumberCustomDefs.some(
+                (d) => d.id === firstData.denominatorAttributeCustomPropertyId,
+              )
+                ? firstData.denominatorAttributeCustomPropertyId
+                : GRAPH_ATTR_CUSTOM_PROPERTY_NONE
+            }
+            onValueChange={(v) =>
+              setDenominatorCustomPropertyId(
+                v === GRAPH_ATTR_CUSTOM_PROPERTY_NONE ? null : v,
+              )
+            }>
+            <SelectTrigger id='graph-denominator-custom-property' className='h-8'>
+              <SelectValue placeholder='Use main attribute value' />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={GRAPH_ATTR_CUSTOM_PROPERTY_NONE}>
+                None (main attribute value)
+              </SelectItem>
+              {denominatorNumberCustomDefs.map((def) => (
+                <SelectItem key={def.id} value={def.id}>
+                  {def.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      ) : null}
       <div className='flex flex-col gap-2'>
         <Label htmlFor='graph-denominator-value' className='text-xs text-muted-foreground'>
           Denominator (fixed value when no attribute)

@@ -131,6 +131,9 @@ export const useNodeData = (component: Component): NodeData => {
 
     return {
       ...componentData,
+      ...(component.type === ComponentTypes.INPUT && attributeType === 'number'
+        ? { type: 'number' as const }
+        : {}),
       name: name ?? component.type,
       value,
       interpolatedValue: injectCharacterData({

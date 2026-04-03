@@ -60,6 +60,7 @@ export function ComponentStatesEdit({ component, onStatesUpdated }: Props) {
     }
     const row: ComponentStateEntry = { name, data: '{}', style: '{}' };
     persistList([...entries, row]);
+    setStateEditTarget(name);
   };
 
   const addCustom = () => {
@@ -82,6 +83,7 @@ export function ComponentStatesEdit({ component, onStatesUpdated }: Props) {
     const row: ComponentStateEntry = { name, data: '{}', style: '{}' };
     persistList([...entries, row]);
     setCustomNameDraft('');
+    setStateEditTarget(name);
   };
 
   const removeState = (name: string) => {
@@ -96,11 +98,16 @@ export function ComponentStatesEdit({ component, onStatesUpdated }: Props) {
     ...entries.map((e) => ({ value: e.name, label: e.name })),
   ];
 
+  const selectedStateLabel =
+    selectItems.find((item) => item.value === previewTarget)?.label ?? previewTarget;
+
   return (
     <Accordion type='single' collapsible>
       <AccordionItem value='visual-states' className='border-none'>
         <AccordionTrigger className='py-2 text-xs text-muted-foreground hover:no-underline hover:text-foreground'>
-          States
+          <span className='min-w-0 flex-1 truncate text-left'>
+            State ({selectedStateLabel})
+          </span>
         </AccordionTrigger>
         <AccordionContent className='flex flex-col gap-3 pb-2'>
           <Select value={previewTarget} onValueChange={setStateEditTarget}>

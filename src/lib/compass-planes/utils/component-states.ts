@@ -1,4 +1,5 @@
-import type { Component, ComponentStateEntry } from '@/types';
+import type { ComponentUpdate } from '@/lib/compass-api';
+import type { Component, ComponentLayoutKey, ComponentStateEntry } from '@/types';
 
 export const COMPONENT_STATE_HOVER = 'Hover';
 export const COMPONENT_STATE_DISABLED = 'Disabled';
@@ -22,6 +23,61 @@ export function getEditorPreviewStateName(
 }
 
 const MAX_STATES = 5;
+
+/** Stored layout fields that may be overridden per `ComponentStateEntry`. */
+export const COMPONENT_LAYOUT_KEYS: readonly ComponentLayoutKey[] = [
+  'x',
+  'y',
+  'z',
+  'width',
+  'height',
+  'rotation',
+];
+
+export type MergedLayerGeometry = Pick<Component, 'x' | 'y' | 'z' | 'width' | 'height' | 'rotation'>;
+
+function parseOptionalLayoutField(v: unknown): number | string | undefined {
+  if (typeof v === 'number' && Number.isFinite(v)) return v;
+  if (typeof v === 'string' && v !== '') return v;
+  return undefined;
+}
+
+function getBaseLayout(component: Component): Record<ComponentLayoutKey, number | string> {
+  return {
+    x: component.x,
+    y: component.y,
+    z: component.z,
+    width: component.width,
+    height: component.height,
+    rotation: component.rotation,
+  };
+}
+
+function applyLayoutPatch(
+  layout: Record<ComponentLayoutKey, number | string>,
+  entry: ComponentStateEntry | undefined,
+): Record<ComponentLayoutKey, number | string> {
+  if (!entry) return layout;
+  const out = { ...layout };
+  for (const k of COMPONENT_LAYOUT_KEYS) {
+    const v = entry[k];
+    if (v === undefined || v === null) continue;
+    if (typeof v === 'number' && Number.isFinite(v)) out[k] = v;
+    else if (typeof v === 'string') out[k] = v;
+  }
+  return out;
+}
+
+function toMergedGeometry(layout: Record<ComponentLayoutKey, number | string>): MergedLayerGeometry {
+  return {
+    x: layout.x as number,
+    y: layout.y as number,
+    z: layout.z as number,
+    width: layout.width as number,
+    height: layout.height as number,
+    rotation: layout.rotation as number,
+  };
+}
 
 function isPlainObject(v: unknown): v is Record<string, unknown> {
   return v !== null && typeof v === 'object' && !Array.isArray(v);
@@ -101,7 +157,12 @@ export function parseComponentStatesList(raw: string | null | undefined): Compon
       if (typeof name !== 'string' || name.trim() === '') continue;
       const data = typeof row.data === 'string' ? row.data : '{}';
       const style = typeof row.style === 'string' ? row.style : '{}';
-      out.push({ name, data, style });
+      const entry: ComponentStateEntry = { name, data, style };
+      for (const k of COMPONENT_LAYOUT_KEYS) {
+        const pv = parseOptionalLayoutField((row as Record<string, unknown>)[k]);
+        if (pv !== undefined) entry[k] = pv;
+      }
+      out.push(entry);
     }
     return out;
   } catch {
@@ -156,16 +217,17 @@ function parseStateDiff(entry: ComponentStateEntry | undefined): {
 }
 
 /**
- * Merge base `component.data` / `component.style` with state layers.
+ * Merge base `component.data` / `component.style` / layout with state layers.
  * Order: base → custom → hover → pressed → disabled (later wins). Disabled suppresses hover and pressed.
  */
 export function mergeComponentStateLayers(
   component: Component,
   opts: MergeComponentStateLayersOptions,
-): { dataStr: string; styleStr: string } {
+): { dataStr: string; styleStr: string } & MergedLayerGeometry {
   const entries = parseComponentStatesList(component.states);
   const baseData = parseJsonObject(component.data);
   const baseStyle = parseJsonObject(component.style);
+  const baseLayout = getBaseLayout(component);
 
   if (opts.editorPreviewState != null && opts.editorPreviewState !== '' && opts.editorPreviewState !== 'base') {
     const preview = opts.editorPreviewState.trim();
@@ -174,13 +236,19 @@ export function mergeComponentStateLayers(
       const { data: dDiff, style: sDiff } = parseStateDiff(pEntry);
       const dn = deepMergeRecords(baseData, dDiff);
       const sn = deepMergeRecords(baseStyle, sDiff);
-      return { dataStr: JSON.stringify(dn), styleStr: JSON.stringify(sn) };
+      const layout = applyLayoutPatch(baseLayout, pEntry);
+      return { dataStr: JSON.stringify(dn), styleStr: JSON.stringify(sn), ...toMergedGeometry(layout) };
     }
-    return { dataStr: JSON.stringify(baseData), styleStr: JSON.stringify(baseStyle) };
+    return {
+      dataStr: JSON.stringify(baseData),
+      styleStr: JSON.stringify(baseStyle),
+      ...toMergedGeometry(baseLayout),
+    };
   }
 
   let data = { ...baseData };
   let style = { ...baseStyle };
+  let layout = { ...baseLayout };
 
   const customName = opts.activeCustomStateName?.trim();
   if (customName) {
@@ -188,6 +256,7 @@ export function mergeComponentStateLayers(
     const { data: dDiff, style: sDiff } = parseStateDiff(custom);
     data = deepMergeRecords(data, dDiff);
     style = deepMergeRecords(style, sDiff);
+    layout = applyLayoutPatch(layout, custom);
   }
 
   const disabled = Boolean(data.disabled);
@@ -196,6 +265,7 @@ export function mergeComponentStateLayers(
     const { data: dDiff, style: sDiff } = parseStateDiff(hover);
     data = deepMergeRecords(data, dDiff);
     style = deepMergeRecords(style, sDiff);
+    layout = applyLayoutPatch(layout, hover);
   }
 
   if (!disabled && opts.showPressedLayer) {
@@ -203,6 +273,7 @@ export function mergeComponentStateLayers(
     const { data: dDiff, style: sDiff } = parseStateDiff(pressed);
     data = deepMergeRecords(data, dDiff);
     style = deepMergeRecords(style, sDiff);
+    layout = applyLayoutPatch(layout, pressed);
   }
 
   if (disabled && opts.showDisabledLayer !== false) {
@@ -210,20 +281,27 @@ export function mergeComponentStateLayers(
     const { data: dDiff, style: sDiff } = parseStateDiff(dis);
     data = deepMergeRecords(data, dDiff);
     style = deepMergeRecords(style, sDiff);
+    layout = applyLayoutPatch(layout, dis);
   }
 
-  return { dataStr: JSON.stringify(data), styleStr: JSON.stringify(style) };
+  return { dataStr: JSON.stringify(data), styleStr: JSON.stringify(style), ...toMergedGeometry(layout) };
 }
 
 export function withMergedStateLayers(component: Component, opts: MergeComponentStateLayersOptions): Component {
-  const { dataStr, styleStr } = mergeComponentStateLayers(component, opts);
+  const merged = mergeComponentStateLayers(component, opts);
   return {
     ...component,
-    data: dataStr,
-    style: styleStr,
+    data: merged.dataStr,
+    style: merged.styleStr,
+    x: merged.x,
+    y: merged.y,
+    z: merged.z,
+    width: merged.width,
+    height: merged.height,
+    rotation: merged.rotation,
     sheetHoverLayerActive: Boolean(opts.showHoverLayer),
     sheetPressedLayerActive: Boolean(opts.showPressedLayer),
-  };
+  } as Component;
 }
 
 export function parseComponentActiveStatesMap(raw: string | null | undefined): Record<string, string> {
@@ -315,6 +393,68 @@ export function updateStateEntryStyleAndData(
   if (idx === -1) return statesJson ?? defaultStatesJson();
   list[idx] = { ...list[idx]!, data: next.data, style: next.style };
   return stringifyComponentStatesList(list);
+}
+
+/**
+ * Set or clear per-state layout overrides. Pass `null` for a key to remove that override (inherit base).
+ */
+export function mergeStateEntryLayout(
+  statesJson: string | null | undefined,
+  stateName: string,
+  changes: Partial<Record<ComponentLayoutKey, number | string | null>>,
+): string {
+  const list = parseComponentStatesList(statesJson);
+  const idx = list.findIndex((e) => e.name.toLowerCase() === stateName.toLowerCase());
+  if (idx === -1) return statesJson ?? defaultStatesJson();
+  const next: ComponentStateEntry = { ...list[idx]! };
+  for (const k of COMPONENT_LAYOUT_KEYS) {
+    if (!(k in changes)) continue;
+    const v = changes[k];
+    if (v === undefined) continue;
+    if (v === null) delete next[k];
+    else next[k] = v;
+  }
+  list[idx] = next;
+  return stringifyComponentStatesList(list);
+}
+
+/**
+ * When the window editor targets a named state, map top-level layout `ComponentUpdate` fields into
+ * `states` JSON instead of mutating the base row.
+ */
+export function remapGeometryUpdatesForEditorState(
+  updates: ComponentUpdate[],
+  getRow: (id: string) => Component | undefined,
+): ComponentUpdate[] {
+  return updates.map((u) => {
+    const real = getRow(u.id);
+    if (!real) return u;
+    const target = getEditorPreviewStateName(real);
+    if (target === 'base') return u;
+
+    const layoutChanges: Partial<Record<ComponentLayoutKey, number | string | null>> = {};
+    let touched = false;
+    for (const k of COMPONENT_LAYOUT_KEYS) {
+      if (!(k in u) || u[k] === undefined) continue;
+      touched = true;
+      const newVal = u[k] as number | string;
+      const baseVal = real[k];
+      layoutChanges[k] = newVal === baseVal ? null : newVal;
+    }
+    if (!touched) return u;
+
+    const next: ComponentUpdate = { id: u.id };
+    for (const key of Object.keys(u) as (keyof ComponentUpdate)[]) {
+      if (key === 'id') continue;
+      if (COMPONENT_LAYOUT_KEYS.includes(key as ComponentLayoutKey)) continue;
+      const v = u[key as keyof ComponentUpdate];
+      if (v !== undefined) (next as Record<string, unknown>)[key as string] = v;
+    }
+    return {
+      ...next,
+      states: mergeStateEntryLayout(real.states, target, layoutChanges),
+    };
+  });
 }
 
 export function updateStateEntryPartial(

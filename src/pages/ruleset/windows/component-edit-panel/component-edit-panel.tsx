@@ -28,8 +28,10 @@ import {
 import { ImageDataEdit } from '@/lib/compass-planes/nodes/components/image';
 import { getComponentData } from '@/lib/compass-planes/utils';
 import {
+  COMPONENT_LAYOUT_KEYS,
   computeSparseDiff,
   getEditorPreviewStateName,
+  remapGeometryUpdatesForEditorState,
   updateStateEntryPartial,
   withMergedStateLayers,
 } from '@/lib/compass-planes/utils/component-states';
@@ -74,6 +76,8 @@ const COMPONENTS_TYPES_FOR_ATTR_ASSIGNMENT: string[] = [
 ];
 
 const ATTRIBUTE_CUSTOM_PROPERTY_NONE = '__none__';
+
+const LAYOUT_KEY_SET = new Set<string>(COMPONENT_LAYOUT_KEYS);
 
 function stripAttributeCustomPropertyIdFromData(dataStr: string): string {
   const d = { ...JSON.parse(dataStr) } as Record<string, unknown>;
@@ -191,6 +195,18 @@ export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
     const toUpdate = selectedComponents.filter((c) => (key === 'locked' ? true : !c.locked));
 
     if (typeof key === 'string') {
+      if (LAYOUT_KEY_SET.has(key)) {
+        void updateComponents(
+          remapGeometryUpdatesForEditorState(
+            toUpdate.map((c) => ({
+              id: c.id,
+              [key]: value as number | string,
+            })),
+            (id) => components.find((row) => row.id === id),
+          ),
+        );
+        return;
+      }
       updateComponents(
         toUpdate.map((c) => ({
           id: c.id,
@@ -533,7 +549,7 @@ export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
             <TabsContent value='style' className='mt-2 flex w-full flex-col gap-2'>
               <ActionEdit components={selectedComponents} handleUpdate={handleUpdate} />
               <PositionEdit
-                components={selectedComponents}
+                components={panelDisplayComponents}
                 handleUpdate={handleUpdate}
                 handleDataFlagUpdate={handlePositionDataFlag}
               />

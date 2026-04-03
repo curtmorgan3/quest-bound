@@ -283,6 +283,10 @@ export type RulesetWindow = BaseDetails & {
   moduleName?: string;
 };
 
+/** Optional per-state overrides for stored layout fields (omit = inherit base component). */
+export type ComponentLayoutKey = 'x' | 'y' | 'z' | 'width' | 'height' | 'rotation';
+export type ComponentStateEntryLayout = Partial<Record<ComponentLayoutKey, number | string>>;
+
 /** One named visual state (hover, disabled, or custom) with sparse `data` / `style` JSON diffs. */
 export type ComponentStateEntry = {
   name: string;
@@ -290,7 +294,7 @@ export type ComponentStateEntry = {
   data: string;
   /** Stringified sparse `ComponentStyle` diff vs base `style`. */
   style: string;
-};
+} & ComponentStateEntryLayout;
 
 export type Component = BaseDetails & {
   rulesetId: string;
