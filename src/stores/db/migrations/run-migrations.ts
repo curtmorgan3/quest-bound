@@ -21,6 +21,7 @@ import {
   dbSchemaV65,
   dbSchemaV66,
   dbSchemaV67,
+  dbSchemaV68,
 } from '../schema/versions/versions';
 import { migrate32to33 } from './migrate-32-to-33';
 import { migrate38to39 } from './migrate-38-to-39';
@@ -37,6 +38,7 @@ import { migrate63to64 } from './migrate-63-to-64';
 import { migrate64to65 } from './migrate-64-to-65';
 import { migrate65to66 } from './migrate-65-to-66';
 import { migrate66to67 } from './migrate-66-to-67';
+import { migrate67to68 } from './migrate-67-to-68';
 
 export { dbSchema };
 
@@ -67,5 +69,6 @@ export function registerVersions(db: Dexie): void {
   db.version(64).stores(dbSchemaV64).upgrade(migrate63to64);
   db.version(65).stores(dbSchemaV65).upgrade(migrate64to65);
   db.version(66).stores(dbSchemaV66).upgrade(migrate65to66);
-  db.version(dbSchemaVersion).stores(dbSchemaV67).upgrade(migrate66to67);
+  db.version(67).stores(dbSchemaV67).upgrade(migrate66to67);
+  db.version(dbSchemaVersion).stores(dbSchemaV68).upgrade(migrate67to68);
 }

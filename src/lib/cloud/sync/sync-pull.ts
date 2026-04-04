@@ -1,6 +1,6 @@
 /**
- * Pull remote changes for a ruleset: fetch from Supabase, LWW merge, then either stage for review
- * or apply immediately (install path). Tombstones are scoped by owner + `ruleset_id`.
+ * Pull remote changes for a ruleset: fetch from Supabase, LWW merge with conflict detection,
+ * then either stage for review or apply immediately (install path). Tombstones are scoped by owner + `ruleset_id`.
  */
 
 import { getSession } from '@/lib/cloud/auth';
@@ -11,8 +11,15 @@ import {
   resolveFontRowsForPull,
   updateMemoizedAssetsForRecords,
 } from '@/lib/cloud/sync/sync-assets';
+import { syncRecordsDeepEqual } from '@/lib/cloud/sync/sync-conflict-equality';
+import type { SyncMergeConflict } from '@/lib/cloud/sync/sync-merge-conflict-types';
 import { addSyncEntityCount, sumSyncEntityCounts } from '@/lib/cloud/sync/sync-entity-labels';
-import { getStoredLastSyncedAt, useSyncStateStore } from '@/lib/cloud/sync/sync-state';
+import {
+  getStoredLastSyncedAt,
+  getSuppressedPullDeletes,
+  isPullDeleteSuppressed,
+  useSyncStateStore,
+} from '@/lib/cloud/sync/sync-state';
 import {
   getSyncTableConfig,
   getSyncTableConfigByRemote,
@@ -22,6 +29,8 @@ import { formatSyncError, prepareRemoteForLocal, toSnakeCaseKeys } from '@/lib/c
 import { isSoftDeleteSyncTable } from '@/lib/data/soft-delete';
 import type { DB } from '@/stores/db/hooks/types';
 import type { SupabaseClient } from '@supabase/supabase-js';
+
+export type { SyncMergeConflict } from '@/lib/cloud/sync/sync-merge-conflict-types';
 
 /** When no local ruleset row exists, pull everything from remote (ignore stored incremental cursor). */
 const FULL_PULL_SINCE = '1970-01-01T00:00:00Z';
@@ -37,6 +46,8 @@ export interface StagedPullDelete {
 export interface StagedPullPayload {
   upsertsByTable: Partial<Record<string, Record<string, unknown>[]>>;
   deletes: StagedPullDelete[];
+  /** Same as persisted `syncMergeConflicts` for this ruleset after planning. */
+  conflicts: SyncMergeConflict[];
 }
 
 async function fetchTableRecords(
@@ -92,40 +103,81 @@ async function fetchSyncDeletes(
   return (data ?? []) as { table_name: string; entity_id: string; deleted_at: string }[];
 }
 
-async function mergeTablePlan(
+type DexieMergeTable = {
+  bulkPut: (objs: unknown[]) => Promise<void>;
+  get: (id: string) => Promise<Record<string, unknown> | undefined>;
+};
+
+async function mergeTablePlanWithConflicts(
   db: DB,
   tableName: string,
   remoteRows: Record<string, unknown>[],
-): Promise<{ count: number; toPut: Record<string, unknown>[] }> {
-  if (remoteRows.length === 0) return { count: 0, toPut: [] };
-  const table = (
-    db as unknown as Record<
-      string,
-      {
-        bulkPut: (objs: unknown[]) => Promise<void>;
-        get: (id: string) => Promise<{ updatedAt?: string } | undefined>;
-      }
-    >
-  )[tableName];
-  if (!table?.bulkPut) return { count: 0, toPut: [] };
+  lastSyncedAt: string,
+  rulesetId: string,
+): Promise<{
+  applyCount: number;
+  toPut: Record<string, unknown>[];
+  conflicts: SyncMergeConflict[];
+}> {
+  if (remoteRows.length === 0) {
+    return { applyCount: 0, toPut: [], conflicts: [] };
+  }
+  const table = (db as unknown as Record<string, DexieMergeTable | undefined>)[tableName];
+  if (!table?.bulkPut || !table.get) {
+    return { applyCount: 0, toPut: [], conflicts: [] };
+  }
   const toPut: Record<string, unknown>[] = [];
+  const conflicts: SyncMergeConflict[] = [];
+
   for (const row of remoteRows) {
-    const local = await table.get(row.id as string);
+    const entityId = row.id as string;
+    const local = await table.get(entityId);
     const remoteUpdated = row.updated_at as string;
-    if (!local || !local.updatedAt || remoteUpdated >= local.updatedAt) {
-      const prepared = prepareRemoteForLocal(row, tableName);
+
+    const preparedBase = prepareRemoteForLocal(row, tableName);
+    const preparedCompare: Record<string, unknown> = { ...preparedBase };
+    if (isSoftDeleteSyncTable(tableName)) {
+      preparedCompare.deleted = preparedCompare.deleted === true;
+    }
+
+    const localRecord = local;
+    const localUpdatedAt =
+      localRecord && typeof localRecord.updatedAt === 'string' ? localRecord.updatedAt : null;
+    const localDirty = localUpdatedAt != null && localUpdatedAt > lastSyncedAt;
+
+    if (localDirty) {
+      if (syncRecordsDeepEqual(preparedCompare, localRecord as Record<string, unknown>)) {
+        continue;
+      }
+      const createdAt = new Date().toISOString();
+      conflicts.push({
+        id: crypto.randomUUID(),
+        rulesetId,
+        tableName,
+        entityId,
+        kind: 'upsert',
+        localSnapshot: localRecord ? { ...localRecord } : null,
+        remoteSnapshot: { ...preparedCompare },
+        lastSyncedAtUsed: lastSyncedAt,
+        createdAt,
+      });
+      continue;
+    }
+
+    if (!localRecord || !localRecord.updatedAt || remoteUpdated >= (localRecord.updatedAt as string)) {
+      const prepared: Record<string, unknown> = { ...preparedBase };
       if (isSoftDeleteSyncTable(tableName)) {
         prepared.deleted = prepared.deleted === true;
       }
-      if (tableName === 'users' && local) {
-        const loc = local as Record<string, unknown>;
-        if (loc.emailVerified !== undefined) prepared.emailVerified = loc.emailVerified;
-        if (loc.cloudEnabled !== undefined) prepared.cloudEnabled = loc.cloudEnabled;
+      if (tableName === 'users' && localRecord) {
+        if (localRecord.emailVerified !== undefined) prepared.emailVerified = localRecord.emailVerified;
+        if (localRecord.cloudEnabled !== undefined) prepared.cloudEnabled = localRecord.cloudEnabled;
       }
       toPut.push(prepared);
     }
   }
-  return { count: toPut.length, toPut };
+
+  return { applyCount: toPut.length, toPut, conflicts };
 }
 
 export interface PlanSyncPullResult {
@@ -133,6 +185,8 @@ export interface PlanSyncPullResult {
   payload?: StagedPullPayload;
   pulledCount?: number;
   pulledByEntity?: Record<string, number>;
+  conflictByEntity?: Record<string, number>;
+  conflictCount?: number;
 }
 
 /**
@@ -156,10 +210,13 @@ export async function planSyncPull(rulesetId: string, db: DB): Promise<PlanSyncP
 
   setSyncError(null);
   try {
+    const suppressedDeletes = await getSuppressedPullDeletes();
     const rowOwnerId = await fetchCloudRulesetRowOwnerId(client, rulesetId);
     const pulledByEntity: Record<string, number> = {};
+    const conflictByEntity: Record<string, number> = {};
     const upsertsByTable: Partial<Record<string, Record<string, unknown>[]>> = {};
     const deletes: StagedPullDelete[] = [];
+    const allConflicts: SyncMergeConflict[] = [];
 
     const tablesByParent = new Map<string, string[]>();
     const configs = SYNC_TABLE_ORDER.map((name) => getSyncTableConfig(name)).filter(
@@ -181,9 +238,19 @@ export async function planSyncPull(rulesetId: string, db: DB): Promise<PlanSyncP
         const localLinked = await db.users.where('cloudUserId').equals(sessionUserId).first();
         const filtered =
           localLinked && rows.length > 0 ? rows.filter((r) => r.id === localLinked.id) : rows;
-        const { count, toPut } = await mergeTablePlan(db, config.tableName, filtered);
+        const { applyCount, toPut, conflicts } = await mergeTablePlanWithConflicts(
+          db,
+          config.tableName,
+          filtered,
+          lastSyncedAt,
+          rulesetId,
+        );
+        allConflicts.push(...conflicts);
+        for (const c of conflicts) {
+          addSyncEntityCount(conflictByEntity, c.tableName, 1);
+        }
         if (toPut.length > 0) upsertsByTable[config.tableName] = toPut;
-        addSyncEntityCount(pulledByEntity, config.tableName, count);
+        addSyncEntityCount(pulledByEntity, config.tableName, applyCount);
       } else if (config.hasRulesetId) {
         let rows: Record<string, unknown>[];
         if (config.tableName === 'rulesets') {
@@ -209,19 +276,49 @@ export async function planSyncPull(rulesetId: string, db: DB): Promise<PlanSyncP
 
         if (config.tableName === 'assets' && rows.length > 0) {
           tablesByParent.set(config.tableName, rows.map((r) => r.id as string).filter(Boolean));
-          const { count, toPut } = await mergeTablePlan(db, config.tableName, rows);
+          const { applyCount, toPut, conflicts } = await mergeTablePlanWithConflicts(
+            db,
+            config.tableName,
+            rows,
+            lastSyncedAt,
+            rulesetId,
+          );
+          allConflicts.push(...conflicts);
+          for (const c of conflicts) {
+            addSyncEntityCount(conflictByEntity, c.tableName, 1);
+          }
           if (toPut.length > 0) upsertsByTable[config.tableName] = toPut;
-          addSyncEntityCount(pulledByEntity, config.tableName, count);
+          addSyncEntityCount(pulledByEntity, config.tableName, applyCount);
         } else if (config.tableName === 'fonts' && rows.length > 0) {
           tablesByParent.set(config.tableName, rows.map((r) => r.id as string).filter(Boolean));
-          const { count, toPut } = await mergeTablePlan(db, config.tableName, rows);
+          const { applyCount, toPut, conflicts } = await mergeTablePlanWithConflicts(
+            db,
+            config.tableName,
+            rows,
+            lastSyncedAt,
+            rulesetId,
+          );
+          allConflicts.push(...conflicts);
+          for (const c of conflicts) {
+            addSyncEntityCount(conflictByEntity, c.tableName, 1);
+          }
           if (toPut.length > 0) upsertsByTable[config.tableName] = toPut;
-          addSyncEntityCount(pulledByEntity, config.tableName, count);
+          addSyncEntityCount(pulledByEntity, config.tableName, applyCount);
         } else {
           tablesByParent.set(config.tableName, rows.map((r) => r.id as string).filter(Boolean));
-          const { count, toPut } = await mergeTablePlan(db, config.tableName, rows);
+          const { applyCount, toPut, conflicts } = await mergeTablePlanWithConflicts(
+            db,
+            config.tableName,
+            rows,
+            lastSyncedAt,
+            rulesetId,
+          );
+          allConflicts.push(...conflicts);
+          for (const c of conflicts) {
+            addSyncEntityCount(conflictByEntity, c.tableName, 1);
+          }
           if (toPut.length > 0) upsertsByTable[config.tableName] = toPut;
-          addSyncEntityCount(pulledByEntity, config.tableName, count);
+          addSyncEntityCount(pulledByEntity, config.tableName, applyCount);
         }
       } else if (config.parentTable && config.parentKey) {
         let parentIds = [...(tablesByParent.get(config.parentTable) ?? [])];
@@ -261,9 +358,19 @@ export async function planSyncPull(rulesetId: string, db: DB): Promise<PlanSyncP
         );
         const ids = rows.map((r) => r.id as string).filter(Boolean);
         if (ids.length > 0) tablesByParent.set(config.tableName, ids);
-        const { count, toPut } = await mergeTablePlan(db, config.tableName, rows);
+        const { applyCount, toPut, conflicts } = await mergeTablePlanWithConflicts(
+          db,
+          config.tableName,
+          rows,
+          lastSyncedAt,
+          rulesetId,
+        );
+        allConflicts.push(...conflicts);
+        for (const c of conflicts) {
+          addSyncEntityCount(conflictByEntity, c.tableName, 1);
+        }
         if (toPut.length > 0) upsertsByTable[config.tableName] = toPut;
-        addSyncEntityCount(pulledByEntity, config.tableName, count);
+        addSyncEntityCount(pulledByEntity, config.tableName, applyCount);
       }
     }
 
@@ -271,6 +378,37 @@ export async function planSyncPull(rulesetId: string, db: DB): Promise<PlanSyncP
     for (const entry of deleteEntries) {
       const config = getSyncTableConfigByRemote(entry.table_name);
       if (!config) continue;
+      if (
+        isPullDeleteSuppressed(suppressedDeletes, rulesetId, config.tableName, entry.entity_id)
+      ) {
+        continue;
+      }
+      const delTable = (db as unknown as Record<string, DexieMergeTable | undefined>)[
+        config.tableName
+      ];
+      const local = delTable?.get ? await delTable.get(entry.entity_id) : undefined;
+      const localUpdated =
+        local && typeof local.updatedAt === 'string' ? (local.updatedAt as string) : null;
+      const localDirty = localUpdated != null && localUpdated > lastSyncedAt;
+
+      if (localDirty) {
+        const createdAt = new Date().toISOString();
+        allConflicts.push({
+          id: crypto.randomUUID(),
+          rulesetId,
+          tableName: config.tableName,
+          entityId: entry.entity_id,
+          kind: 'delete',
+          localSnapshot: local ? { ...local } : null,
+          remoteSnapshot: null,
+          remoteDeletedAt: entry.deleted_at,
+          lastSyncedAtUsed: lastSyncedAt,
+          createdAt,
+        });
+        addSyncEntityCount(conflictByEntity, config.tableName, 1);
+        continue;
+      }
+
       deletes.push({
         tableName: config.tableName,
         entityId: entry.entity_id,
@@ -279,16 +417,56 @@ export async function planSyncPull(rulesetId: string, db: DB): Promise<PlanSyncP
       addSyncEntityCount(pulledByEntity, config.tableName, 1);
     }
 
+    await db.syncMergeConflicts.where('rulesetId').equals(rulesetId).delete();
+    if (allConflicts.length > 0) {
+      await db.syncMergeConflicts.bulkAdd(allConflicts);
+    }
+
     const pulledCount = sumSyncEntityCounts(pulledByEntity);
+    const conflictCount = sumSyncEntityCounts(conflictByEntity);
     return {
-      payload: { upsertsByTable, deletes },
+      payload: { upsertsByTable, deletes, conflicts: allConflicts },
       pulledCount,
       pulledByEntity,
+      conflictByEntity,
+      conflictCount,
     };
   } catch (err) {
     const message = formatSyncError(err);
     setSyncError(message);
     return { error: message };
+  }
+}
+
+/**
+ * Apply one staged upsert row (e.g. after manual conflict resolution). Downloads assets/fonts when needed.
+ */
+export async function applySingleStagedUpsert(
+  db: DB,
+  client: SupabaseClient,
+  tableName: string,
+  row: Record<string, unknown>,
+): Promise<void> {
+  type BulkTable = { bulkPut: (objs: unknown[]) => Promise<void> };
+  const dbTables = db as unknown as Record<string, BulkTable>;
+  const table = dbTables[tableName];
+  if (!table?.bulkPut) return;
+
+  if (tableName === 'assets') {
+    const snakeRows = [toSnakeCaseKeys(row)];
+    const resolved = await resolveAssetRowsForPull(client, snakeRows);
+    const prepared = resolved.rows.map((r) => prepareRemoteForLocal(r, 'assets'));
+    await table.bulkPut(prepared);
+    if (resolved.downloaded.length > 0) {
+      updateMemoizedAssetsForRecords(resolved.downloaded);
+    }
+  } else if (tableName === 'fonts') {
+    const snakeRows = [toSnakeCaseKeys(row)];
+    const resolved = await resolveFontRowsForPull(client, snakeRows);
+    const prepared = resolved.map((r) => prepareRemoteForLocal(r, 'fonts'));
+    await table.bulkPut(prepared);
+  } else {
+    await table.bulkPut([row]);
   }
 }
 
@@ -300,6 +478,9 @@ export async function applyStagedPull(
   client: SupabaseClient,
   payload: StagedPullPayload,
 ): Promise<void> {
+  if (payload.conflicts.length > 0) {
+    throw new Error('Cannot apply staged pull while merge conflicts are pending.');
+  }
   type BulkTable = { bulkPut: (objs: unknown[]) => Promise<void> };
   const dbTables = db as unknown as Record<string, BulkTable>;
 
@@ -348,6 +529,12 @@ export async function syncPull(
   const plan = await planSyncPull(rulesetId, db);
   if (plan.error) return { error: plan.error };
   if (!plan.payload) return { error: 'No pull payload' };
+  if ((plan.conflictCount ?? 0) > 0 || plan.payload.conflicts.length > 0) {
+    return {
+      error:
+        'This ruleset has sync conflicts. Open Review Sync from the sidebar, resolve each conflict, then sync again.',
+    };
+  }
   const client = cloudClient;
   if (!client) return { error: 'Cloud not configured' };
   await applyStagedPull(db, client, plan.payload);

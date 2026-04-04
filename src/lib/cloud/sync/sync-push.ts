@@ -13,6 +13,7 @@ import { fetchCloudRulesetRowOwnerId } from '@/lib/cloud/sync/fetch-cloud-rulese
 import { fetchRulesetStorageFolderPrefix } from '@/lib/cloud/sync/fetch-ruleset-storage-prefix';
 import { uploadAssetsForPush, uploadFontsForPush } from '@/lib/cloud/sync/sync-assets';
 import {
+  clearSuppressedPullDeletesForRuleset,
   getPendingSyncDeletes,
   getStoredLastSyncedAt,
   setStoredLastSyncedAt,
@@ -260,6 +261,7 @@ export async function syncPush(
     const now = new Date().toISOString();
     setLastSyncedAt(rulesetId, now);
     await setStoredLastSyncedAt({ ...lastSyncedAtMap, [rulesetId]: now });
+    await clearSuppressedPullDeletesForRuleset(rulesetId);
     const pushedCount = sumSyncEntityCounts(pushedByEntity);
     return { pushedCount, pushedByEntity };
   } catch (err) {

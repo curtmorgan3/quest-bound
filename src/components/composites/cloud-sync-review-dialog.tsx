@@ -1,3 +1,4 @@
+import { CloudSyncConflictResolveDialog } from '@/components/composites/cloud-sync-conflict-resolve-dialog';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -24,6 +25,7 @@ import {
   pickOptionalRowDisplayName,
   type PullReviewListItem,
 } from '@/lib/cloud/sync/sync-pull-review-items';
+import type { SyncMergeConflict } from '@/lib/cloud/sync/sync-merge-conflict-types';
 import { db, useCloudSyncReviewStore } from '@/stores';
 import type { DB } from '@/stores/db/hooks/types';
 import { Loader2 } from 'lucide-react';
@@ -178,9 +180,11 @@ export function CloudSyncReviewDialog() {
   const committing = useCloudSyncReviewStore((s) => s.committing);
   const cancel = useCloudSyncReviewStore((s) => s.cancel);
   const confirm = useCloudSyncReviewStore((s) => s.confirm);
+  const patchPlanAfterConflictResolved = useCloudSyncReviewStore((s) => s.patchPlanAfterConflictResolved);
 
   const [deleteDisplayNames, setDeleteDisplayNames] = useState<Record<string, string>>({});
   const [componentWindowTitles, setComponentWindowTitles] = useState<Record<string, string>>({});
+  const [resolveConflict, setResolveConflict] = useState<SyncMergeConflict | null>(null);
 
   const pullItems = useMemo(
     () => (plan ? buildPullReviewListItems(plan.stagedPull) : []),
@@ -260,6 +264,7 @@ export function CloudSyncReviewDialog() {
   }, [open, plan, pullItems]);
 
   return (
+    <>
     <Dialog
       open={open}
       onOpenChange={(next) => {
@@ -275,6 +280,47 @@ export function CloudSyncReviewDialog() {
             you confirm.
           </DialogDescription>
         </DialogHeader>
+        {plan && plan.stagedPull.conflicts.length > 0 ? (
+          <div className='bg-destructive/10 border-destructive/30 rounded-md border p-3'>
+            <p className='text-foreground text-sm font-medium'>
+              {plan.stagedPull.conflicts.length}{' '}
+              {plan.stagedPull.conflicts.length === 1 ? 'merge conflict' : 'merge conflicts'} must be
+              resolved before sync can run.
+            </p>
+            <p className='text-muted-foreground mt-1 text-xs leading-snug'>
+              Other incoming changes stay staged until then. After the queue is clear, confirm sync to
+              apply pulls and push.
+            </p>
+            <ul className='mt-2 space-y-1.5 text-sm'>
+              {plan.stagedPull.conflicts.map((c) => {
+                const label = getSyncEntityTypeLabelOne(c.tableName);
+                const name =
+                  pickOptionalRowDisplayName(
+                    (c.localSnapshot ?? c.remoteSnapshot ?? {}) as Record<string, unknown>,
+                  ) ?? c.entityId.slice(0, 8);
+                const suffix = c.kind === 'delete' ? ' · delete vs edit' : '';
+                return (
+                  <li
+                    key={c.id}
+                    className='flex flex-wrap items-center justify-between gap-2 border-border/60 border-b py-1.5 last:border-b-0'>
+                    <span>
+                      <span className='text-muted-foreground'>{label}</span>
+                      <span className='text-foreground font-medium'> · {name}</span>
+                      <span className='text-muted-foreground'>{suffix}</span>
+                    </span>
+                    <Button
+                      type='button'
+                      size='sm'
+                      variant='outline'
+                      onClick={() => setResolveConflict(c)}>
+                      Resolve
+                    </Button>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        ) : null}
         {plan ? (
           <div className='grid max-h-[min(58dvh,26rem)] grid-cols-1 gap-5 sm:grid-cols-2 sm:gap-6'>
             <div className='flex min-h-0 min-w-0 flex-col'>
@@ -305,7 +351,11 @@ export function CloudSyncReviewDialog() {
           <Button
             type='button'
             onClick={() => void confirm(db as DB)}
-            disabled={committing || !plan}>
+            disabled={
+              committing ||
+              !plan ||
+              (plan?.stagedPull.conflicts.length ?? 0) > 0
+            }>
             {committing ? (
               <>
                 <Loader2 className='mr-2 size-4 animate-spin' />
@@ -318,5 +368,18 @@ export function CloudSyncReviewDialog() {
         </DialogFooter>
       </DialogContent>
     </Dialog>
+    <CloudSyncConflictResolveDialog
+      db={db as DB}
+      conflict={resolveConflict}
+      open={resolveConflict != null}
+      onOpenChange={(next) => {
+        if (!next) setResolveConflict(null);
+      }}
+      onResolved={(id) => {
+        patchPlanAfterConflictResolved(id);
+        setResolveConflict(null);
+      }}
+    />
+    </>
   );
 }

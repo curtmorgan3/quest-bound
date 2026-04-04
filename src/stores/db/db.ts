@@ -41,6 +41,7 @@ import { assetInjectorMiddleware } from './asset-injector-middleware';
 import { chartOptionsMiddleware } from './chart-options-middleware';
 import { registerDbHooks } from './hooks/db-hooks';
 import { memoizedAssets } from './memoization-cache';
+import type { SyncMergeConflict } from '@/lib/cloud/sync/sync-merge-conflict-types';
 import { registerVersions } from './migrations/run-migrations';
 import { createRulesetCascadeDeleteMiddleware } from './ruleset-cascade-delete-middleware';
 
@@ -84,6 +85,7 @@ const db = new Dexie('qbdb') as Dexie & {
   campaignScenes: EntityTable<CampaignScene, 'id'>;
   sceneTurnCallbacks: EntityTable<SceneTurnCallback, 'id'>;
   campaignEvents: EntityTable<CampaignEvent, 'id'>;
+  syncMergeConflicts: EntityTable<SyncMergeConflict, 'id'>;
 };
 
 registerVersions(db);

@@ -14,6 +14,7 @@ interface CloudSyncReviewState {
   startReview: (rulesetId: string, db: DB) => Promise<void>;
   cancel: () => void;
   confirm: (db: DB) => Promise<void>;
+  patchPlanAfterConflictResolved: (conflictId: string) => void;
 }
 
 export const useCloudSyncReviewStore = create<CloudSyncReviewState>((set, get) => ({
@@ -24,6 +25,28 @@ export const useCloudSyncReviewStore = create<CloudSyncReviewState>((set, get) =
   committing: false,
 
   cancel: () => set({ open: false, plan: null, rulesetId: null }),
+
+  patchPlanAfterConflictResolved: (conflictId) => {
+    const { plan } = get();
+    if (!plan) return;
+    const hit = plan.stagedPull.conflicts.find((c) => c.id === conflictId);
+    if (!hit) return;
+    const nextConflicts = plan.stagedPull.conflicts.filter((c) => c.id !== conflictId);
+    const conflictByEntity = { ...plan.conflictByEntity };
+    const prev = conflictByEntity[hit.tableName] ?? 0;
+    const nextForTable = Math.max(0, prev - 1);
+    if (nextForTable === 0) delete conflictByEntity[hit.tableName];
+    else conflictByEntity[hit.tableName] = nextForTable;
+    const conflictCount = Math.max(0, plan.conflictCount - 1);
+    set({
+      plan: {
+        ...plan,
+        stagedPull: { ...plan.stagedPull, conflicts: nextConflicts },
+        conflictByEntity,
+        conflictCount,
+      },
+    });
+  },
 
   startReview: async (rulesetId, db) => {
     const s = get();
@@ -38,7 +61,7 @@ export const useCloudSyncReviewStore = create<CloudSyncReviewState>((set, get) =
     }
     const pullTotal = sumSyncEntityCounts(result.pulledByEntity);
     const pushTotal = sumSyncEntityCounts(result.pushedByEntity);
-    if (pullTotal === 0 && pushTotal === 0) {
+    if (pullTotal === 0 && pushTotal === 0 && result.conflictCount === 0) {
       const outcome = await commitRulesetSync(rulesetId, db, result);
       set({ rulesetId: null });
       if (!outcome.error) {

@@ -8,13 +8,25 @@ import { cloudClient, isCloudConfigured } from '@/lib/cloud/client';
 import { useCloudAuthStore } from '@/stores/cloud-auth-store';
 import type { DB } from '@/stores/db/hooks/types';
 import { ASSETS_BUCKET, FONTS_BUCKET, removeStoragePaths } from './sync-assets';
+import {
+  listUnresolvedSyncMergeConflicts,
+  resolveSyncMergeConflict,
+} from '@/lib/cloud/sync/sync-merge-conflict-actions';
 import { applyStagedPull, planSyncPull, syncPull, type StagedPullPayload } from './sync-pull';
 import { planSyncPush, syncPush } from './sync-push';
 import { useSyncStateStore } from './sync-state';
 import { filterSyncEntityCountsForUi, sumSyncEntityCounts } from './sync-entity-labels';
 import { prepareRemoteForLocal } from './sync-utils';
 
-export { applyStagedPull, planSyncPull, syncPull, syncPush, type StagedPullPayload };
+export {
+  applyStagedPull,
+  listUnresolvedSyncMergeConflicts,
+  planSyncPull,
+  resolveSyncMergeConflict,
+  syncPull,
+  syncPush,
+  type StagedPullPayload,
+};
 
 /** Successful plan for staged ruleset sync (review UI). */
 export interface RulesetSyncPlanOk {
@@ -22,6 +34,8 @@ export interface RulesetSyncPlanOk {
   pulledByEntity: Record<string, number>;
   pushedByEntity: Record<string, number>;
   pulledCount: number;
+  conflictByEntity: Record<string, number>;
+  conflictCount: number;
 }
 
 export type RulesetSyncPlanResult = { error: string } | RulesetSyncPlanOk;
@@ -99,6 +113,8 @@ export async function planRulesetSync(rulesetId: string, db: DB): Promise<Rulese
       pulledByEntity: pullPlan.pulledByEntity,
       pushedByEntity: pushPlan.pushedByEntity ?? {},
       pulledCount: pullPlan.pulledCount,
+      conflictByEntity: pullPlan.conflictByEntity ?? {},
+      conflictCount: pullPlan.conflictCount ?? 0,
     };
   });
 }
@@ -124,6 +140,13 @@ export async function commitRulesetSync(
 
   setSyncError(null);
   return await withCloudSyncUi(async () => {
+    if (plan.stagedPull.conflicts.length > 0) {
+      return { error: 'Resolve all merge conflicts before syncing.' };
+    }
+    const stillOpen = await listUnresolvedSyncMergeConflicts(db, rulesetId);
+    if (stillOpen.length > 0) {
+      return { error: 'Resolve all merge conflicts before syncing.' };
+    }
     await applyStagedPull(db, client, plan.stagedPull);
     const pushResult = await syncPush(rulesetId, db, { appliedPull: plan.stagedPull });
     if (pushResult.error) {
@@ -330,6 +353,12 @@ export async function syncRuleset(rulesetId: string, db: DB): Promise<CloudSyncO
     const pullPlan = await planSyncPull(rulesetId, db);
     if (pullPlan.error) return { error: pullPlan.error };
     if (!pullPlan.payload) return { error: 'Pull failed' };
+    if ((pullPlan.conflictCount ?? 0) > 0 || pullPlan.payload.conflicts.length > 0) {
+      return {
+        error:
+          'This ruleset has merge conflicts. Use Review Sync, resolve each conflict, then try again.',
+      };
+    }
     await applyStagedPull(db, syncClient, pullPlan.payload);
     const pushResult = await syncPush(rulesetId, db, { appliedPull: pullPlan.payload });
     if (pushResult.error) {

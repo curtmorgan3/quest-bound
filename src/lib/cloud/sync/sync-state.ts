@@ -6,6 +6,14 @@ import { getRulesetIdForDelete } from './sync-utils';
 const LAST_SYNCED_KEY = 'qb.cloud.lastSyncedAt';
 const PENDING_DELETES_KEY = 'qb.cloud.pendingDeletes';
 const SYNCED_RULESETS_KEY = 'qb.cloud.syncedRulesetIds';
+const SUPPRESSED_PULL_DELETES_KEY = 'qb.cloud.suppressedPullDeletes';
+
+/** Tombstones to ignore on pull until a successful sync advances the cursor (delete-vs-edit: keep local). */
+export interface SuppressedPullDelete {
+  rulesetId: string;
+  tableName: string;
+  entityId: string;
+}
 
 export interface PendingSyncDelete {
   tableName: string;
@@ -138,6 +146,48 @@ export async function getStoredLastSyncedAt(): Promise<Record<string, string>> {
 
 export async function setStoredLastSyncedAt(lastSyncedAt: Record<string, string>): Promise<void> {
   await setKeyval(LAST_SYNCED_KEY, lastSyncedAt);
+}
+
+export async function getSuppressedPullDeletes(): Promise<SuppressedPullDelete[]> {
+  try {
+    const list = await getKeyval<SuppressedPullDelete[]>(SUPPRESSED_PULL_DELETES_KEY);
+    return list ?? [];
+  } catch {
+    return [];
+  }
+}
+
+export async function addSuppressedPullDelete(entry: SuppressedPullDelete): Promise<void> {
+  const list = await getSuppressedPullDeletes();
+  if (
+    list.some(
+      (r) =>
+        r.rulesetId === entry.rulesetId &&
+        r.tableName === entry.tableName &&
+        r.entityId === entry.entityId,
+    )
+  ) {
+    return;
+  }
+  list.push(entry);
+  await setKeyval(SUPPRESSED_PULL_DELETES_KEY, list);
+}
+
+export async function clearSuppressedPullDeletesForRuleset(rulesetId: string): Promise<void> {
+  const list = await getSuppressedPullDeletes();
+  const next = list.filter((r) => r.rulesetId !== rulesetId);
+  if (next.length !== list.length) await setKeyval(SUPPRESSED_PULL_DELETES_KEY, next);
+}
+
+export function isPullDeleteSuppressed(
+  list: SuppressedPullDelete[],
+  rulesetId: string,
+  tableName: string,
+  entityId: string,
+): boolean {
+  return list.some(
+    (r) => r.rulesetId === rulesetId && r.tableName === tableName && r.entityId === entityId,
+  );
 }
 
 export async function getPendingSyncDeletes(): Promise<PendingSyncDelete[]> {

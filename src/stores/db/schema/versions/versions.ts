@@ -268,5 +268,11 @@ export const dbSchemaV67 = {
   ...dbSchemaV66,
 };
 
+/** Schema for v68: local queue for cloud sync merge conflicts (IndexedDB only). */
+export const dbSchemaV68 = {
+  ...dbSchemaV67,
+  syncMergeConflicts: 'id, rulesetId, tableName, entityId, createdAt, resolvedAt',
+};
+
 // latestDbSchema should always be used for the worker thread db instance
-export const latestDbSchema = { ...dbSchemaV67 };
+export const latestDbSchema = { ...dbSchemaV68 };
