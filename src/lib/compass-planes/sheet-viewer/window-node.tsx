@@ -22,13 +22,10 @@ import { isCanvasRootComponent } from '../sheet-editor/group-flex-utils';
 import { useComponentPositionMap } from '../utils';
 import { parseComponentActiveStatesMap } from '../utils/component-states';
 import { mergeCharacterWindowComponents } from '../utils/merge-character-window-components';
-import {
-  SheetComponentWithStates,
-  sheetComponentLayoutData,
-} from './sheet-component-with-states';
+import { ParentWindowFrameProvider } from './parent-window-frame-context';
+import { SheetComponentWithStates, sheetComponentLayoutData } from './sheet-component-with-states';
 import { SheetGroupPointerProvider } from './sheet-group-pointer-context';
 import { useWindowCanvasSelection } from './window-canvas-selection-context';
-import { ParentWindowFrameProvider } from './parent-window-frame-context';
 import { WindowRuntimeProvider } from './window-runtime-context';
 
 /** Minimal window shape shared by CharacterWindow and RulesetWindow. */
@@ -173,7 +170,6 @@ export const WindowNode = ({ data }: { data: WindowNodeData }) => {
     let maxR = -Infinity;
     let maxB = -Infinity;
     for (const c of components) {
-      if (!isComponentConditionallyVisible(c, characterContext?.characterAttributes)) continue;
       const eff = effectiveLayout.get(c.id);
       if (!eff) continue;
       const tl = worldTopLeftWithEffective(c, byId, effectiveLayout);
@@ -238,7 +234,12 @@ export const WindowNode = ({ data }: { data: WindowNodeData }) => {
         );
         return Boolean(d.takeFullWidth || d.takeFullHeight);
       }),
-    [activeStatesMap, characterContext?.characterAttributes, rootComponents, useCharacterWindowStates],
+    [
+      activeStatesMap,
+      characterContext?.characterAttributes,
+      rootComponents,
+      useCharacterWindowStates,
+    ],
   );
 
   const scaledSheetRef = useRef<HTMLDivElement>(null);
@@ -310,10 +311,8 @@ export const WindowNode = ({ data }: { data: WindowNodeData }) => {
           useCharacterWindowStates ? activeStatesMap[c.id] : undefined,
           useCharacterWindowStates,
         );
-        const left =
-          isRoot && rectData.takeFullWidth ? viewportEdgeInSheetPx.left : tl.x - minX;
-        const top =
-          isRoot && rectData.takeFullHeight ? viewportEdgeInSheetPx.top : tl.y - minY;
+        const left = isRoot && rectData.takeFullWidth ? viewportEdgeInSheetPx.left : tl.x - minX;
+        const top = isRoot && rectData.takeFullHeight ? viewportEdgeInSheetPx.top : tl.y - minY;
         return {
           x: windowData.x + left * ds,
           y: windowData.y + top * ds,
@@ -625,44 +624,45 @@ export const WindowNode = ({ data }: { data: WindowNodeData }) => {
                         handleChildWindowClick(childWindowId, resolved),
                     }
               }>
-            <SheetGroupPointerProvider>
-            {rootComponents.map((component) => {
-              if (!isComponentConditionallyVisible(component, characterContext?.characterAttributes)) {
-                return null;
-              }
-              const pos = positionMap.get(component.id);
-              const eff = effectiveLayout.get(component.id)!;
-              const tl = worldTopLeftWithEffective(component, byId, effectiveLayout);
-              const compData = sheetComponentLayoutData(
-                component,
-                useCharacterWindowStates ? activeStatesMap[component.id] : undefined,
-                useCharacterWindowStates,
-              );
-              return (
-                <div
-                  key={component.id}
-                  style={{
-                    position: 'absolute',
-                    left: compData.takeFullWidth
-                      ? viewportEdgeInSheetPx.left
-                      : tl.x - minX,
-                    top: compData.takeFullHeight
-                      ? viewportEdgeInSheetPx.top
-                      : tl.y - minY,
-                    width: eff.width,
-                    height: eff.height,
-                    zIndex: pos?.z ?? component.z,
-                  }}>
-                  <SheetComponentWithStates
-                    component={component}
-                    characterAttributes={characterContext?.characterAttributes}
-                    position={pos}
-                    viewRenderContext={viewRenderContext}
-                  />
-                </div>
-              );
-            })}
-            </SheetGroupPointerProvider>
+              <SheetGroupPointerProvider>
+                {rootComponents.map((component) => {
+                  if (
+                    !isComponentConditionallyVisible(
+                      component,
+                      characterContext?.characterAttributes,
+                    )
+                  ) {
+                    return null;
+                  }
+                  const pos = positionMap.get(component.id);
+                  const eff = effectiveLayout.get(component.id)!;
+                  const tl = worldTopLeftWithEffective(component, byId, effectiveLayout);
+                  const compData = sheetComponentLayoutData(
+                    component,
+                    useCharacterWindowStates ? activeStatesMap[component.id] : undefined,
+                    useCharacterWindowStates,
+                  );
+                  return (
+                    <div
+                      key={component.id}
+                      style={{
+                        position: 'absolute',
+                        left: compData.takeFullWidth ? viewportEdgeInSheetPx.left : tl.x - minX,
+                        top: compData.takeFullHeight ? viewportEdgeInSheetPx.top : tl.y - minY,
+                        width: eff.width,
+                        height: eff.height,
+                        zIndex: pos?.z ?? component.z,
+                      }}>
+                      <SheetComponentWithStates
+                        component={component}
+                        characterAttributes={characterContext?.characterAttributes}
+                        position={pos}
+                        viewRenderContext={viewRenderContext}
+                      />
+                    </div>
+                  );
+                })}
+              </SheetGroupPointerProvider>
             </WindowRuntimeProvider>
           </ParentWindowFrameProvider>
         </div>

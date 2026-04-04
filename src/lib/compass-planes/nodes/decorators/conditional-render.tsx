@@ -68,9 +68,7 @@ export function isComponentConditionallyVisible(
     return true;
   }
 
-  const conditionAttribute = characterAttributes.find(
-    (attr) => attr.attributeId === attributeId,
-  );
+  const conditionAttribute = characterAttributes.find((attr) => attr.attributeId === attributeId);
 
   if (conditionAttribute == null) {
     return true;
