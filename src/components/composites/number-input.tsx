@@ -1,9 +1,17 @@
 import { Button } from '@/components/ui/button';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Popover, PopoverAnchor, PopoverContent } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 import { diceRollLogger, PopoverScrollContainerContext } from '@/stores';
 import { Minus, Plus } from 'lucide-react';
-import { useCallback, useContext, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
+import {
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+} from 'react';
 
 export interface NumberInputProps {
   value: number | '';
@@ -41,8 +49,8 @@ export const NumberInput = ({
   const [open, setOpen] = useState(false);
   const [lastRollTotal, setLastRollTotal] = useState<number | null>(null);
 
-  const actualMin = wheelMin ?? 0;
-  const actualMax = wheelMax ?? 100;
+  const actualMin = Number(wheelMin ?? 0);
+  const actualMax = Number(wheelMax ?? 100);
   const actualStep = step > 0 ? step : 1;
   const actualValue = value === '' ? 0 : value;
 
@@ -74,7 +82,23 @@ export const NumberInput = ({
   const containerRef = useRef<HTMLDivElement | null>(null);
   const itemRefs = useRef<HTMLDivElement[]>([]);
   const scrollDebounceRef = useRef<NodeJS.Timeout | null>(null);
+  const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
   const scrollContainerRef = useContext(PopoverScrollContainerContext);
+
+  const LONG_PRESS_MS = 500;
+
+  const clearLongPressTimer = useCallback(() => {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+  }, []);
+
+  const openWheelFromLongPress = useCallback(() => {
+    setWheelValue(clampToRange(actualValue));
+    setOpen(true);
+    onOpenChange?.(true);
+  }, [clampToRange, actualValue, onOpenChange]);
 
   const scrollToValue = useCallback(
     (target: number) => {
@@ -114,12 +138,85 @@ export const NumberInput = ({
   }, [open]);
 
   useEffect(() => {
+    if (!open || disabled) return;
+
+    const digitBufferRef = { current: '' };
+    let bufferClearTimerId: ReturnType<typeof setTimeout> | null = null;
+    const BUFFER_CLEAR_MS = 1000;
+
+    const maxDigitLen = Math.max(
+      1,
+      String(Math.floor(Math.max(Math.abs(actualMin), Math.abs(actualMax)))).length,
+    );
+
+    const scheduleBufferClear = () => {
+      if (bufferClearTimerId !== null) {
+        clearTimeout(bufferClearTimerId);
+      }
+      bufferClearTimerId = setTimeout(() => {
+        bufferClearTimerId = null;
+        digitBufferRef.current = '';
+      }, BUFFER_CLEAR_MS);
+    };
+
+    const keyDigit = (e: KeyboardEvent): string | null => {
+      if (e.key.length === 1 && e.key >= '0' && e.key <= '9') return e.key;
+      const m = /^Numpad([0-9])$/.exec(e.code);
+      return m ? m[1]! : null;
+    };
+
+    const applyParsedToWheel = (raw: number) => {
+      const clamped = clampToRange(raw);
+      setWheelValue(clamped);
+      scrollToValue(clamped);
+    };
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      const digit = keyDigit(e);
+      if (digit !== null) {
+        e.preventDefault();
+        e.stopPropagation();
+        digitBufferRef.current = (digitBufferRef.current + digit).slice(-maxDigitLen);
+        const parsed = parseInt(digitBufferRef.current, 10);
+        if (!Number.isNaN(parsed)) {
+          applyParsedToWheel(parsed);
+        }
+        scheduleBufferClear();
+        return;
+      }
+
+      if (e.key === 'Backspace') {
+        e.preventDefault();
+        e.stopPropagation();
+        digitBufferRef.current = digitBufferRef.current.slice(0, -1);
+        scheduleBufferClear();
+        if (digitBufferRef.current === '') {
+          return;
+        }
+        const parsed = parseInt(digitBufferRef.current, 10);
+        if (!Number.isNaN(parsed)) {
+          applyParsedToWheel(parsed);
+        }
+      }
+    };
+
+    window.addEventListener('keydown', onKeyDown, true);
+    return () => {
+      if (bufferClearTimerId !== null) {
+        clearTimeout(bufferClearTimerId);
+      }
+      window.removeEventListener('keydown', onKeyDown, true);
+    };
+  }, [open, disabled, actualMin, actualMax, clampToRange, scrollToValue]);
+
+  useEffect(() => {
     return () => {
       if (scrollDebounceRef.current) {
         clearTimeout(scrollDebounceRef.current);
       }
+      clearLongPressTimer();
     };
-  }, []);
+  }, [clearLongPressTimer]);
 
   const handleScroll = useCallback(() => {
     if (!numbers.length) return;
@@ -193,6 +290,21 @@ export const NumberInput = ({
 
   const displayValue = Number.isFinite(value) ? value : '';
 
+  const handlePointerDown = (event: React.PointerEvent<HTMLInputElement>) => {
+    if (disabled) return;
+    if (event.pointerType === 'mouse' && event.button !== 0) return;
+
+    clearLongPressTimer();
+    longPressTimerRef.current = setTimeout(() => {
+      longPressTimerRef.current = null;
+      openWheelFromLongPress();
+    }, LONG_PRESS_MS);
+  };
+
+  const handlePointerEnd = () => {
+    clearLongPressTimer();
+  };
+
   return (
     <Popover
       open={open}
@@ -200,13 +312,16 @@ export const NumberInput = ({
         setOpen(open);
         onOpenChange?.(open);
       }}>
-      <PopoverTrigger asChild>
+      <PopoverAnchor asChild>
         <input
           type='number'
           value={displayValue}
           style={style}
           onChange={handleInputChange}
-          onClick={() => !disabled && setOpen(true)}
+          onPointerDown={handlePointerDown}
+          onPointerUp={handlePointerEnd}
+          onPointerCancel={handlePointerEnd}
+          onPointerLeave={handlePointerEnd}
           className={`${className} editor-input`}
           disabled={disabled}
           min={inputMin}
@@ -214,7 +329,7 @@ export const NumberInput = ({
           placeholder={placeholder}
           onBlur={onBlur}
         />
-      </PopoverTrigger>
+      </PopoverAnchor>
       <PopoverContent
         container={scrollContainerRef?.current ?? undefined}
         side='bottom'
