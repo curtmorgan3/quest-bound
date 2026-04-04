@@ -1,7 +1,7 @@
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverAnchor, PopoverContent } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
-import { diceRollLogger, PopoverScrollContainerContext } from '@/stores';
+import { diceRollLogger, PopoverScrollContainerContext, useCurrentUser } from '@/stores';
 import { Minus, Plus } from 'lucide-react';
 import {
   useCallback,
@@ -48,6 +48,9 @@ export const NumberInput = ({
 }: NumberInputProps) => {
   const [open, setOpen] = useState(false);
   const [lastRollTotal, setLastRollTotal] = useState<number | null>(null);
+  const numberWheelDefaultOnTouch = useCurrentUser(
+    (s) => s.currentUser?.preferences?.numberWheelDefaultOnTouch !== false,
+  );
 
   const actualMin = Number(wheelMin ?? 0);
   const actualMax = Number(wheelMax ?? 100);
@@ -296,7 +299,7 @@ export const NumberInput = ({
 
     clearLongPressTimer();
 
-    if (event.pointerType === 'touch') {
+    if (event.pointerType === 'touch' && numberWheelDefaultOnTouch) {
       openWheelFromLongPress();
       return;
     }

@@ -155,26 +155,6 @@ export const UserSettings = () => {
       </TabsContent>
 
       <TabsContent value='preferences' className='flex flex-col gap-4 mt-4'>
-        <div className='flex items-center gap-2'>
-          <Checkbox
-            id='sheetAttributeAnimations'
-            checked={currentUser.preferences?.sheetAttributeAnimations ?? true}
-            onCheckedChange={(checked) => {
-              if (currentUser) {
-                updateUser(currentUser.id, {
-                  preferences: {
-                    ...currentUser.preferences,
-                    sheetAttributeAnimations: checked === true,
-                  },
-                });
-              }
-            }}
-          />
-          <Label htmlFor='sheetAttributeAnimations' className='cursor-pointer font-normal'>
-            Animate sheet attribute changes when available
-          </Label>
-        </div>
-
         <div className='flex flex-col gap-2'>
           <Button
             variant='outline'
@@ -212,37 +192,74 @@ export const UserSettings = () => {
                   ? 'Checking…'
                   : 'Check for updates'}
             </Button>
+            <Button
+              variant='outline'
+              onClick={async () => {
+                if (!deferredPrompt) return;
+                setInstallLoading(true);
+                try {
+                  await triggerInstall();
+                } finally {
+                  setInstallLoading(false);
+                }
+              }}
+              disabled={!deferredPrompt || installLoading}
+              className='gap-2 w-fit'>
+              <Download className='h-4 w-4' />
+              {installLoading ? 'Installing…' : 'Install app'}
+            </Button>
           </div>
           {!swSupported ? (
             <p className='text-xs text-muted-foreground'>
               Progressive Web App updates apply in supported browsers
             </p>
           ) : null}
-        </div>
-
-        <div className='flex flex-col gap-2'>
-          <Button
-            variant='outline'
-            onClick={async () => {
-              if (!deferredPrompt) return;
-              setInstallLoading(true);
-              try {
-                await triggerInstall();
-              } finally {
-                setInstallLoading(false);
-              }
-            }}
-            disabled={!deferredPrompt || installLoading}
-            className='gap-2 w-[200px]'>
-            <Download className='h-4 w-4' />
-            {installLoading ? 'Installing…' : 'Install app'}
-          </Button>
-          {!deferredPrompt && (
-            <p className='text-xs text-muted-foreground max-w-[200px]'>
+          {!deferredPrompt ? (
+            <p className='text-xs text-muted-foreground'>
               Install is available when your browser supports it and the app is not already
               installed.
             </p>
-          )}
+          ) : null}
+        </div>
+
+        <div className='flex items-center gap-2'>
+          <Checkbox
+            id='sheetAttributeAnimations'
+            checked={currentUser.preferences?.sheetAttributeAnimations ?? true}
+            onCheckedChange={(checked) => {
+              if (currentUser) {
+                updateUser(currentUser.id, {
+                  preferences: {
+                    ...currentUser.preferences,
+                    sheetAttributeAnimations: checked === true,
+                  },
+                });
+              }
+            }}
+          />
+          <Label htmlFor='sheetAttributeAnimations' className='cursor-pointer font-normal'>
+            Animate sheet attribute changes when available
+          </Label>
+        </div>
+
+        <div className='flex items-center gap-2'>
+          <Checkbox
+            id='numberWheelDefaultOnTouch'
+            checked={currentUser.preferences?.numberWheelDefaultOnTouch !== false}
+            onCheckedChange={(checked) => {
+              if (currentUser) {
+                updateUser(currentUser.id, {
+                  preferences: {
+                    ...currentUser.preferences,
+                    numberWheelDefaultOnTouch: checked === true,
+                  },
+                });
+              }
+            }}
+          />
+          <Label htmlFor='numberWheelDefaultOnTouch' className='cursor-pointer font-normal'>
+            Use number wheel UI by default on touch devices
+          </Label>
         </div>
       </TabsContent>
 
