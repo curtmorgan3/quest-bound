@@ -66,12 +66,17 @@ export interface WindowNodeData {
 }
 
 const MIN_DISPLAY_SCALE = 0.25;
-const MAX_DISPLAY_SCALE = 3;
 const SCALE_PIVOT_MIN_DIST_PX = 24;
 
 function clampDisplayScale(n: number): number {
   if (!Number.isFinite(n)) return 1;
-  return Math.min(MAX_DISPLAY_SCALE, Math.max(MIN_DISPLAY_SCALE, n));
+  return Math.max(MIN_DISPLAY_SCALE, n);
+}
+
+/** Two decimal places (e.g. 1.25×), still respecting min/max scale. */
+function quantizeDisplayScaleToTwoDecimals(n: number): number {
+  const s = clampDisplayScale(n);
+  return clampDisplayScale(Math.round(s * 100) / 100);
 }
 
 /** Uniform scale from snapped outer width so the window sits on the canvas grid (matches position snap). */
@@ -88,14 +93,23 @@ function snapDisplayScaleToLayoutGrid(
   gridPx: number | null | undefined,
 ): number {
   const s = clampDisplayScale(scale);
-  if (gridPx == null || gridPx <= 0 || baseWidthPx <= 0) return s;
-  const g = gridPx;
-  const w = baseWidthPx * s;
-  const minW = baseWidthPx * MIN_DISPLAY_SCALE;
-  const maxW = baseWidthPx * MAX_DISPLAY_SCALE;
-  const snappedW = Math.round(w / g) * g;
-  const clampedW = Math.max(minW, Math.min(maxW, snappedW));
-  return clampDisplayScale(clampedW / baseWidthPx);
+  let out: number;
+  if (gridPx == null || gridPx <= 0 || baseWidthPx <= 0) {
+    out = s;
+  } else {
+    const g = gridPx;
+    const w = baseWidthPx * s;
+    const minW = baseWidthPx * MIN_DISPLAY_SCALE;
+    const snappedW = Math.round(w / g) * g;
+    const clampedW = Math.max(minW, snappedW);
+    out = clampDisplayScale(clampedW / baseWidthPx);
+  }
+  return quantizeDisplayScaleToTwoDecimals(out);
+}
+
+function formatDisplayScaleFactor(scale: number): string {
+  const s = quantizeDisplayScaleToTwoDecimals(scale);
+  return `${s}×`;
 }
 
 export const WindowNode = ({ data }: { data: WindowNodeData }) => {
@@ -200,9 +214,14 @@ export const WindowNode = ({ data }: { data: WindowNodeData }) => {
   } | null>(null);
   const lastScaleDuringDragRef = useRef(1);
 
-  const displayScale = clampDisplayScale(
+  const displayScale = quantizeDisplayScaleToTwoDecimals(
     scalePreview ?? (windowData.displayScale != null ? windowData.displayScale : 1),
   );
+  const displayScaleRef = useRef(displayScale);
+  useLayoutEffect(() => {
+    displayScaleRef.current = displayScale;
+  }, [displayScale]);
+
   const scaledW = windowWidth * displayScale;
   const scaledH = windowHeight * displayScale;
 
@@ -324,11 +343,24 @@ export const WindowNode = ({ data }: { data: WindowNodeData }) => {
     ],
   );
 
-  const endScaleGesture = useCallback(() => {
+  const clearScaleDragRefs = useCallback(() => {
     scaleDragRef.current = null;
     scalePendingRef.current = null;
-    setScalePreview(null);
   }, []);
+
+  const endScaleGesture = useCallback(() => {
+    clearScaleDragRefs();
+    setScalePreview(null);
+  }, [clearScaleDragRefs]);
+
+  /** After commit, props may lag one frame; keep preview until persisted scale matches. */
+  useEffect(() => {
+    if (scalePreview === null) return;
+    const persisted = quantizeDisplayScaleToTwoDecimals(windowData.displayScale ?? 1);
+    if (persisted === scalePreview) {
+      setScalePreview(null);
+    }
+  }, [windowData.displayScale, scalePreview]);
 
   const onScalePointerDown = useCallback(
     (e: React.PointerEvent) => {
@@ -342,7 +374,7 @@ export const WindowNode = ({ data }: { data: WindowNodeData }) => {
       const rect = hostEl.getBoundingClientRect();
       const px = rect.left;
       const py = rect.top;
-      const startScale = clampDisplayScale(windowData.displayScale ?? 1);
+      const startScale = quantizeDisplayScaleToTwoDecimals(displayScaleRef.current);
       const d0 = Math.max(SCALE_PIVOT_MIN_DIST_PX, Math.hypot(e.clientX - px, e.clientY - py));
       scaleDragRef.current = null;
       scalePendingRef.current = {
@@ -356,7 +388,7 @@ export const WindowNode = ({ data }: { data: WindowNodeData }) => {
       };
       targetEl.setPointerCapture(e.pointerId);
     },
-    [canvasSelection, locked, onDisplayScaleChange, windowData.displayScale, windowData.id],
+    [canvasSelection, locked, onDisplayScaleChange, windowData.id],
   );
 
   const onScalePointerMove = useCallback(
@@ -412,18 +444,21 @@ export const WindowNode = ({ data }: { data: WindowNodeData }) => {
 
       if (scaleDragRef.current && onDisplayScaleChange) {
         const raw = lastScaleDuringDragRef.current;
-        const snapped = snapDisplayScaleToLayoutGrid(
+        const committed = snapDisplayScaleToLayoutGrid(
           raw,
           windowWidth,
           canvasSelection?.layoutGridSnapPx ?? null,
         );
-        const committed = Math.round(snapped * 1000) / 1000;
         onDisplayScaleChange(windowData.id, committed);
+        clearScaleDragRefs();
+        setScalePreview(committed);
+      } else {
+        endScaleGesture();
       }
-      endScaleGesture();
     },
     [
       canvasSelection?.layoutGridSnapPx,
+      clearScaleDragRefs,
       endScaleGesture,
       onDisplayScaleChange,
       windowData.id,
@@ -514,19 +549,28 @@ export const WindowNode = ({ data }: { data: WindowNodeData }) => {
               </Link>
             )}
             {showScaleHandle ? (
-              <button
-                type='button'
-                title='Drag to scale window'
-                aria-label='Drag to scale window'
-                className='flex cursor-ne-resize items-center justify-center border-0 bg-transparent p-0 text-inherit shadow-none outline-none focus-visible:ring-2 focus-visible:ring-ring'
-                style={{ width: '20px', height: '20px', touchAction: 'none' }}
-                onPointerDown={onScalePointerDown}
-                onPointerMove={onScalePointerMove}
-                onPointerUp={onScalePointerUp}
-                onPointerCancel={onScalePointerCancel}
-                onLostPointerCapture={onScaleLostPointerCapture}>
-                <Scaling style={{ width: '14px', height: '14px' }} aria-hidden />
-              </button>
+              <div className='relative flex flex-col items-center'>
+                {scalePreview !== null ? (
+                  <span
+                    className='pointer-events-none absolute bottom-full left-1/2 z-[1001] mb-1 -translate-x-1/2 whitespace-nowrap rounded-md border border-border bg-popover px-2 py-0.5 text-xs font-medium tabular-nums text-popover-foreground shadow-md'
+                    aria-hidden>
+                    {formatDisplayScaleFactor(displayScale)}
+                  </span>
+                ) : null}
+                <button
+                  type='button'
+                  title='Drag to scale window'
+                  aria-label='Drag to scale window'
+                  className='flex cursor-ne-resize items-center justify-center border-0 bg-transparent p-0 text-inherit shadow-none outline-none focus-visible:ring-2 focus-visible:ring-ring'
+                  style={{ width: '20px', height: '20px', touchAction: 'none' }}
+                  onPointerDown={onScalePointerDown}
+                  onPointerMove={onScalePointerMove}
+                  onPointerUp={onScalePointerUp}
+                  onPointerCancel={onScalePointerCancel}
+                  onLostPointerCapture={onScaleLostPointerCapture}>
+                  <Scaling style={{ width: '14px', height: '14px' }} aria-hidden />
+                </button>
+              </div>
             ) : null}
             {!!onClose && (
               <OctagonX

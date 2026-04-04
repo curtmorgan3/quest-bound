@@ -91,6 +91,44 @@ function hexToRgb(hex: string, a = 1): RGBColor {
   };
 }
 
+/** Opacity 0–1 as a slider with the percent value shown above the thumb. */
+function OpacitySliderWithThumbValue({
+  alpha,
+  onAlphaChange,
+  'aria-label': ariaLabel,
+  sliderKey,
+}: {
+  alpha: number;
+  onAlphaChange: (a: number) => void;
+  'aria-label': string;
+  sliderKey?: string;
+}) {
+  const percent = Math.round(Math.min(1, Math.max(0, alpha)) * 100);
+  const labelTranslate =
+    percent <= 0 ? 'translate-x-0' : percent >= 100 ? '-translate-x-full' : '-translate-x-1/2';
+  return (
+    <div className='relative w-full'>
+      <div className='pointer-events-none relative mb-1 h-5 w-full'>
+        <span
+          className={`absolute bottom-0 text-xs font-medium tabular-nums text-foreground ${labelTranslate}`}
+          style={{ left: `${percent}%` }}
+          aria-hidden>
+          {percent}
+        </span>
+      </div>
+      <Slider
+        key={sliderKey}
+        min={0}
+        max={100}
+        step={1}
+        value={[percent]}
+        onValueChange={(v) => onAlphaChange((v[0] ?? 100) / 100)}
+        aria-label={ariaLabel}
+      />
+    </div>
+  );
+}
+
 export type RulesetColorPickerValue = RGBColor | string;
 
 interface RulesetColorPicker {
@@ -212,9 +250,7 @@ export const RulesetColorPicker = ({
       return;
     }
     const p =
-      color && isLinearGradient(color)
-        ? parseLinearGradient(color)
-        : parseLinearGradient(display);
+      color && isLinearGradient(color) ? parseLinearGradient(color) : parseLinearGradient(display);
     if (!p) return;
     setMode('gradient');
     setGradientAngle(p.angle);
@@ -403,12 +439,9 @@ export const RulesetColorPicker = ({
             {!disableAlpha && (
               <div className='flex flex-col gap-2'>
                 <Label className='text-xs'>Opacity</Label>
-                <Slider
-                  min={0}
-                  max={100}
-                  step={1}
-                  value={[Math.round(opacity * 100)]}
-                  onValueChange={(v) => handleOpacityChange((v[0] ?? 100) / 100)}
+                <OpacitySliderWithThumbValue
+                  alpha={opacity}
+                  onAlphaChange={handleOpacityChange}
                   aria-label='Opacity'
                 />
               </div>
@@ -458,22 +491,17 @@ export const RulesetColorPicker = ({
                     gradientStop1CustomPropOpacityStyleKey && (
                       <div className='flex flex-col gap-1'>
                         <Label className='text-xs'>Opacity</Label>
-                        <Slider
-                          key={gradientStop1CustomPropOpacityStyleKey}
-                          min={0}
-                          max={100}
-                          step={1}
-                          value={[
-                            Math.round(
-                              (typeof gradientStop1CustomPropOpacity === 'number'
-                                ? gradientStop1CustomPropOpacity
-                                : 1) * 100,
-                            ),
-                          ]}
-                          onValueChange={(v) =>
+                        <OpacitySliderWithThumbValue
+                          sliderKey={gradientStop1CustomPropOpacityStyleKey}
+                          alpha={
+                            typeof gradientStop1CustomPropOpacity === 'number'
+                              ? gradientStop1CustomPropOpacity
+                              : 1
+                          }
+                          onAlphaChange={(a) =>
                             onGradientStop1CustomPropOpacityChange(
                               gradientStop1CustomPropOpacityStyleKey,
-                              (v[0] ?? 100) / 100,
+                              a,
                             )
                           }
                           aria-label='Gradient color 1 opacity'
@@ -506,12 +534,9 @@ export const RulesetColorPicker = ({
                   {!anyGradientStopIsCustomProp && (
                     <div className='flex flex-col gap-1'>
                       <Label className='text-xs'>Opacity</Label>
-                      <Slider
-                        min={0}
-                        max={100}
-                        step={1}
-                        value={[Math.round(gradientColor1Alpha * 100)]}
-                        onValueChange={(v) => handleGradientColor1AlphaChange((v[0] ?? 100) / 100)}
+                      <OpacitySliderWithThumbValue
+                        alpha={gradientColor1Alpha}
+                        onAlphaChange={handleGradientColor1AlphaChange}
                         aria-label='Gradient color 1 opacity'
                       />
                     </div>
@@ -545,22 +570,17 @@ export const RulesetColorPicker = ({
                     gradientStop2CustomPropOpacityStyleKey && (
                       <div className='flex flex-col gap-1'>
                         <Label className='text-xs'>Opacity</Label>
-                        <Slider
-                          key={gradientStop2CustomPropOpacityStyleKey}
-                          min={0}
-                          max={100}
-                          step={1}
-                          value={[
-                            Math.round(
-                              (typeof gradientStop2CustomPropOpacity === 'number'
-                                ? gradientStop2CustomPropOpacity
-                                : 1) * 100,
-                            ),
-                          ]}
-                          onValueChange={(v) =>
+                        <OpacitySliderWithThumbValue
+                          sliderKey={gradientStop2CustomPropOpacityStyleKey}
+                          alpha={
+                            typeof gradientStop2CustomPropOpacity === 'number'
+                              ? gradientStop2CustomPropOpacity
+                              : 1
+                          }
+                          onAlphaChange={(a) =>
                             onGradientStop2CustomPropOpacityChange(
                               gradientStop2CustomPropOpacityStyleKey,
-                              (v[0] ?? 100) / 100,
+                              a,
                             )
                           }
                           aria-label='Gradient color 2 opacity'
@@ -593,12 +613,9 @@ export const RulesetColorPicker = ({
                   {!anyGradientStopIsCustomProp && (
                     <div className='flex flex-col gap-1'>
                       <Label className='text-xs'>Opacity</Label>
-                      <Slider
-                        min={0}
-                        max={100}
-                        step={1}
-                        value={[Math.round(gradientColor2Alpha * 100)]}
-                        onValueChange={(v) => handleGradientColor2AlphaChange((v[0] ?? 100) / 100)}
+                      <OpacitySliderWithThumbValue
+                        alpha={gradientColor2Alpha}
+                        onAlphaChange={handleGradientColor2AlphaChange}
                         aria-label='Gradient color 2 opacity'
                       />
                     </div>

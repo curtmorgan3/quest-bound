@@ -9,7 +9,6 @@ import type { Component } from '@/types';
 const DEFAULT_W = 400;
 const DEFAULT_H = 300;
 const MIN_DS = 0.25;
-const MAX_DS = 3;
 
 /** Unscaled content width/height from component layout (matches `WindowNode` bounds). */
 export function computeWindowContentUnscaledSize(components: Component[]): {
@@ -56,7 +55,7 @@ export async function getChildWindowCanvasContentSize(
     const rows = await db.rulesetWindows.where('pageId').equals(sheetTemplatePageId).toArray();
     const rw = rows.find((r) => r.windowId === childWindowId);
     if (rw?.displayScale != null && Number.isFinite(rw.displayScale)) {
-      displayScale = Math.min(MAX_DS, Math.max(MIN_DS, rw.displayScale));
+      displayScale = Math.max(MIN_DS, rw.displayScale);
     }
   }
   const { width, height } = computeWindowContentUnscaledSize(components);

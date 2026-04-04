@@ -54,7 +54,21 @@ type InventoryDragContextValue = {
   unregisterDropTarget: (id: string) => void;
 };
 
-const InventoryDragContext = createContext<InventoryDragContextValue | null>(null);
+/** No-op fallback so sheet/inventory view nodes can mount without throwing (e.g. isolated previews). */
+const defaultInventoryDragContextValue: InventoryDragContextValue = {
+  activeDrag: null,
+  dragPosition: null,
+  beginDrag: () => {},
+  updateDragPosition: () => {},
+  cancelDrag: () => {},
+  resolveDrop: () => null,
+  registerDropTarget: () => {},
+  unregisterDropTarget: () => {},
+};
+
+const InventoryDragContext = createContext<InventoryDragContextValue>(
+  defaultInventoryDragContextValue,
+);
 
 export const InventoryDragProvider = ({ children }: PropsWithChildren) => {
   const [activeDrag, setActiveDrag] = useState<ActiveInventoryDrag | null>(null);
@@ -207,10 +221,4 @@ export const InventoryDragProvider = ({ children }: PropsWithChildren) => {
   return <InventoryDragContext.Provider value={value}>{children}</InventoryDragContext.Provider>;
 };
 
-export const useInventoryDragContext = () => {
-  const ctx = useContext(InventoryDragContext);
-  if (!ctx) {
-    throw new Error('useInventoryDragContext must be used within an InventoryDragProvider');
-  }
-  return ctx;
-};
+export const useInventoryDragContext = () => useContext(InventoryDragContext);
