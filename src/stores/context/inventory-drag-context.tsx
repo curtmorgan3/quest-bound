@@ -15,6 +15,9 @@ type DragSource = 'node' | 'panel';
 export type InventoryDropTargetConfig = {
   componentId: string;
   getBounds: () => DOMRect | null;
+  /** Layout (pre-transform) size; used with getBounds() to map client coords when the window is CSS-scaled. */
+  layoutWidth: number;
+  layoutHeight: number;
   cellWidth: number;
   cellHeight: number;
   gridCols: number;
@@ -128,8 +131,17 @@ export const InventoryDragProvider = ({ children }: PropsWithChildren) => {
           clientY >= rect.top &&
           clientY <= rect.bottom
         ) {
-          const localX = clientX - rect.left;
-          const localY = clientY - rect.top;
+          let localX = clientX - rect.left;
+          let localY = clientY - rect.top;
+
+          const layoutW =
+            target.config.layoutWidth > 0 ? target.config.layoutWidth : rect.width;
+          const layoutH =
+            target.config.layoutHeight > 0 ? target.config.layoutHeight : rect.height;
+          if (rect.width > 0 && rect.height > 0) {
+            localX = (localX / rect.width) * layoutW;
+            localY = (localY / rect.height) * layoutH;
+          }
 
           let cellX: number;
           let cellY: number;

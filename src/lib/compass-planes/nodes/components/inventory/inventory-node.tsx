@@ -100,6 +100,8 @@ const ViewInventoryNodeComponent = ({ component }: { component: Component }) => 
     registerDropTarget(id, {
       componentId: component.id,
       getBounds: () => containerRef.current?.getBoundingClientRect() ?? null,
+      layoutWidth: width,
+      layoutHeight: height,
       cellWidth,
       cellHeight,
       gridCols,
@@ -113,6 +115,8 @@ const ViewInventoryNodeComponent = ({ component }: { component: Component }) => 
     };
   }, [
     component.id,
+    width,
+    height,
     cellWidth,
     cellHeight,
     gridCols,

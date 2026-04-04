@@ -1,3 +1,4 @@
+import { useComponentCanvasDimensions } from '@/lib/compass-planes/canvas/editor-item-layout-context';
 import { CharacterContext, type InventoryItemWithData, useInventoryDragContext } from '@/stores';
 import type { Component } from '@/types';
 import { useContext, useEffect, useRef, useState } from 'react';
@@ -32,6 +33,7 @@ export const useInventoryPointers = ({
   component,
 }: UseInventoryPointers) => {
   const characterContext = useContext(CharacterContext);
+  const { width: layoutWidth, height: layoutHeight } = useComponentCanvasDimensions(component);
   const [dragState, setDragState] = useState<DragState | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -155,12 +157,14 @@ export const useInventoryPointers = ({
 
   const handlePointerMove = (e: React.PointerEvent) => {
     const rect = containerRef.current?.getBoundingClientRect();
-    if (!rect) return;
+    if (!rect || rect.width <= 0 || rect.height <= 0) return;
 
     const clientX = e.clientX;
     const clientY = e.clientY;
-    const pointerX = clientX - rect.left;
-    const pointerY = clientY - rect.top;
+    const lw = layoutWidth > 0 ? layoutWidth : rect.width;
+    const lh = layoutHeight > 0 ? layoutHeight : rect.height;
+    const pointerX = ((clientX - rect.left) / rect.width) * lw;
+    const pointerY = ((clientY - rect.top) / rect.height) * lh;
 
     const pending = pendingPointerRef.current;
     if (pending) {
