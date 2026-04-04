@@ -32,7 +32,7 @@ const { log } = debugLog('pages', 'editor');
 
 const WINDOW_EDITOR_GRID_STORAGE_KEY = 'qb.windowEditor.gridSize';
 const WINDOW_EDITOR_SNAP_STORAGE_KEY = 'qb.windowEditor.snapToGrid';
-const WINDOW_EDITOR_GRID_MIN = 4;
+const WINDOW_EDITOR_GRID_MIN = 0;
 const WINDOW_EDITOR_GRID_MAX = 200;
 const CANVAS_VIEW_ZOOM_STEP = 1.12;
 
@@ -60,6 +60,12 @@ function readStoredWindowEditorGrid(): number {
   } catch {
     return DEFAULT_GRID_SIZE;
   }
+}
+
+function readInitialSnapToGrid(): boolean {
+  const grid = readStoredWindowEditorGrid();
+  if (grid <= 0) return false;
+  return readStoredSnapToGrid();
 }
 
 function readStoredSnapToGrid(): boolean {
@@ -90,7 +96,7 @@ export const WindowEditor = () => {
 
   const [viewMode, setViewMode] = useState<boolean>(false);
   const [editorGridSize, setEditorGridSize] = useState(readStoredWindowEditorGrid);
-  const [snapToGrid, setSnapToGrid] = useState(readStoredSnapToGrid);
+  const [snapToGrid, setSnapToGrid] = useState(readInitialSnapToGrid);
   const [canvasViewScale, setCanvasViewScale] = useState(1);
   const [compositeLibraryOpen, setCompositeLibraryOpen] = useState(false);
   const stateEditTarget = useMemo(() => {
@@ -153,23 +159,28 @@ export const WindowEditor = () => {
 
   const compositeTemplateRootIdsResolved = compositeTemplateRootIds ?? new Set<string>();
 
-  const persistEditorGridSize = (n: number) => {
-    // const clamped = Math.min(
-    //   WINDOW_EDITOR_GRID_MAX,
-    //   Math.max(WINDOW_EDITOR_GRID_MIN, Math.round(n)),
-    // );
-    setEditorGridSize(n);
+  const persistSnapToGrid = (next: boolean) => {
+    setSnapToGrid(next);
     try {
-      localStorage.setItem(WINDOW_EDITOR_GRID_STORAGE_KEY, String(n));
+      localStorage.setItem(WINDOW_EDITOR_SNAP_STORAGE_KEY, String(next));
     } catch {
       /* ignore quota / private mode */
     }
   };
 
-  const persistSnapToGrid = (next: boolean) => {
-    setSnapToGrid(next);
+  const persistEditorGridSize = (n: number) => {
+    const clamped = Math.min(
+      WINDOW_EDITOR_GRID_MAX,
+      Math.max(WINDOW_EDITOR_GRID_MIN, Math.round(n)),
+    );
+    if (clamped <= 0) {
+      persistSnapToGrid(false);
+    } else if (editorGridSize <= 0) {
+      persistSnapToGrid(true);
+    }
+    setEditorGridSize(clamped);
     try {
-      localStorage.setItem(WINDOW_EDITOR_SNAP_STORAGE_KEY, String(next));
+      localStorage.setItem(WINDOW_EDITOR_GRID_STORAGE_KEY, String(clamped));
     } catch {
       /* ignore quota / private mode */
     }
@@ -318,8 +329,8 @@ export const WindowEditor = () => {
               onComponentsDeleted={onComponentsDeleted}
               onComponentsRestored={onComponentsRestored}
               onComponentsUpdated={onComponentsUpdated}
-              useGrid={snapToGrid}
-              gridSize={editorGridSize}
+              useGrid={snapToGrid && editorGridSize > 0}
+              gridSize={editorGridSize > 0 ? editorGridSize : DEFAULT_GRID_SIZE}
               viewScale={canvasViewScale}
             />
           )}
@@ -340,6 +351,7 @@ export const WindowEditor = () => {
                 id='window-editor-grid'
                 type='number'
                 step={1}
+                min={0}
                 value={editorGridSize}
                 onChange={(e) => {
                   const n = parseInt(e.target.value, 10);
@@ -353,13 +365,23 @@ export const WindowEditor = () => {
                 type='button'
                 variant='ghost'
                 size='icon'
+                disabled={editorGridSize <= 0}
                 aria-pressed={snapToGrid}
-                aria-label={snapToGrid ? 'Turn snap to grid off' : 'Turn snap to grid on'}
-                className='size-8 shrink-0 text-white hover:bg-white/15 hover:text-white'
+                aria-label={
+                  editorGridSize <= 0
+                    ? 'Snap to grid (set grid size above 0 to enable)'
+                    : snapToGrid
+                      ? 'Turn snap to grid off'
+                      : 'Turn snap to grid on'
+                }
+                className='size-8 shrink-0 text-white hover:bg-white/15 hover:text-white disabled:opacity-30'
                 style={{
-                  opacity: snapToGrid ? 1 : 0.45,
+                  opacity: snapToGrid && editorGridSize > 0 ? 1 : 0.45,
                 }}
-                onClick={() => persistSnapToGrid(!snapToGrid)}>
+                onClick={() => {
+                  if (editorGridSize <= 0) return;
+                  persistSnapToGrid(!snapToGrid);
+                }}>
                 <Magnet className='size-4' strokeWidth={2} aria-hidden />
               </Button>
               <div className='flex flex-row items-center gap-0.5'>
