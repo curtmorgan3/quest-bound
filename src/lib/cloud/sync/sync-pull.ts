@@ -114,6 +114,7 @@ async function mergeTablePlanWithConflicts(
   remoteRows: Record<string, unknown>[],
   lastSyncedAt: string,
   rulesetId: string,
+  conflictDetectionEnabled: boolean,
 ): Promise<{
   applyCount: number;
   toPut: Record<string, unknown>[];
@@ -145,7 +146,7 @@ async function mergeTablePlanWithConflicts(
       localRecord && typeof localRecord.updatedAt === 'string' ? localRecord.updatedAt : null;
     const localDirty = localUpdatedAt != null && localUpdatedAt > lastSyncedAt;
 
-    if (localDirty) {
+    if (conflictDetectionEnabled && localDirty) {
       if (syncRecordsDeepEqual(preparedCompare, localRecord as Record<string, unknown>)) {
         continue;
       }
@@ -207,6 +208,8 @@ export async function planSyncPull(rulesetId: string, db: DB): Promise<PlanSyncP
   const lastSyncedAt = localRuleset
     ? (lastSyncedAtMap[rulesetId] ?? FULL_PULL_SINCE)
     : FULL_PULL_SINCE;
+  /** Full install / first pull uses epoch cursor — every row looks "dirty" vs it; conflicts would be false positives. */
+  const conflictDetectionEnabled = lastSyncedAt !== FULL_PULL_SINCE;
 
   setSyncError(null);
   try {
@@ -244,6 +247,7 @@ export async function planSyncPull(rulesetId: string, db: DB): Promise<PlanSyncP
           filtered,
           lastSyncedAt,
           rulesetId,
+          conflictDetectionEnabled,
         );
         allConflicts.push(...conflicts);
         for (const c of conflicts) {
@@ -282,6 +286,7 @@ export async function planSyncPull(rulesetId: string, db: DB): Promise<PlanSyncP
             rows,
             lastSyncedAt,
             rulesetId,
+            conflictDetectionEnabled,
           );
           allConflicts.push(...conflicts);
           for (const c of conflicts) {
@@ -297,6 +302,7 @@ export async function planSyncPull(rulesetId: string, db: DB): Promise<PlanSyncP
             rows,
             lastSyncedAt,
             rulesetId,
+            conflictDetectionEnabled,
           );
           allConflicts.push(...conflicts);
           for (const c of conflicts) {
@@ -312,6 +318,7 @@ export async function planSyncPull(rulesetId: string, db: DB): Promise<PlanSyncP
             rows,
             lastSyncedAt,
             rulesetId,
+            conflictDetectionEnabled,
           );
           allConflicts.push(...conflicts);
           for (const c of conflicts) {
@@ -364,6 +371,7 @@ export async function planSyncPull(rulesetId: string, db: DB): Promise<PlanSyncP
           rows,
           lastSyncedAt,
           rulesetId,
+          conflictDetectionEnabled,
         );
         allConflicts.push(...conflicts);
         for (const c of conflicts) {
@@ -391,7 +399,7 @@ export async function planSyncPull(rulesetId: string, db: DB): Promise<PlanSyncP
         local && typeof local.updatedAt === 'string' ? (local.updatedAt as string) : null;
       const localDirty = localUpdated != null && localUpdated > lastSyncedAt;
 
-      if (localDirty) {
+      if (conflictDetectionEnabled && localDirty) {
         const createdAt = new Date().toISOString();
         allConflicts.push({
           id: crypto.randomUUID(),

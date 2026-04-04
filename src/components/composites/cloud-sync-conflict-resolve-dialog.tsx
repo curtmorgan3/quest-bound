@@ -10,9 +10,9 @@ import {
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
+import { getSyncEntityTypeLabelOne } from '@/lib/cloud/sync/sync-entity-labels';
 import { resolveSyncMergeConflict } from '@/lib/cloud/sync/sync-merge-conflict-actions';
 import type { SyncMergeConflict } from '@/lib/cloud/sync/sync-merge-conflict-types';
-import { getSyncEntityTypeLabelOne } from '@/lib/cloud/sync/sync-entity-labels';
 import { pickOptionalRowDisplayName } from '@/lib/cloud/sync/sync-pull-review-items';
 import { useSyncStateStore } from '@/lib/cloud/sync/sync-state';
 import type { DB } from '@/stores/db/hooks/types';
@@ -61,10 +61,9 @@ export function CloudSyncConflictResolveDialog({
 
   const typeLabel = getSyncEntityTypeLabelOne(conflict.tableName);
   const displayName =
-    pickOptionalRowDisplayName((conflict.localSnapshot ?? conflict.remoteSnapshot ?? {}) as Record<
-      string,
-      unknown
-    >) ?? conflict.entityId.slice(0, 8);
+    pickOptionalRowDisplayName(
+      (conflict.localSnapshot ?? conflict.remoteSnapshot ?? {}) as Record<string, unknown>,
+    ) ?? conflict.entityId.slice(0, 8);
 
   const run = async (resolution: 'local' | 'remote' | 'merged') => {
     setBusy(true);
@@ -95,7 +94,7 @@ export function CloudSyncConflictResolveDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className='max-h-[90dvh] gap-4 sm:max-w-2xl'
+        className='max-h-[90dvh] gap-4 sm:max-w-3xl'
         data-testid='cloud-sync-conflict-resolve-dialog'>
         <DialogHeader>
           <DialogTitle>Resolve sync conflict</DialogTitle>
@@ -109,9 +108,7 @@ export function CloudSyncConflictResolveDialog({
         <div className='text-sm'>
           <span className='text-muted-foreground'>{typeLabel}</span>
           <span className='text-foreground font-medium'> · {displayName}</span>
-          {isDelete ? (
-            <span className='text-muted-foreground ml-2'>(delete vs edit)</span>
-          ) : null}
+          {isDelete ? <span className='text-muted-foreground ml-2'>(delete vs edit)</span> : null}
         </div>
 
         <Tabs defaultValue='compare' className='min-h-0 w-full flex-1'>
@@ -123,7 +120,7 @@ export function CloudSyncConflictResolveDialog({
             <div className='grid max-h-[min(50dvh,20rem)] grid-cols-1 gap-3 sm:grid-cols-2'>
               <div className='flex min-h-0 min-w-0 flex-col gap-1'>
                 <div className='text-muted-foreground text-xs font-medium tracking-wide'>Local</div>
-                <ScrollArea className='border-border rounded-md border'>
+                <ScrollArea className='border-border rounded-md border h-[300px]'>
                   <pre className='text-xs break-all whitespace-pre-wrap p-2'>
                     {jsonPreview(conflict.localSnapshot as Record<string, unknown> | null)}
                   </pre>
@@ -133,7 +130,7 @@ export function CloudSyncConflictResolveDialog({
                 <div className='text-muted-foreground text-xs font-medium tracking-wide'>
                   {isDelete ? 'Cloud' : 'Remote'}
                 </div>
-                <ScrollArea className='border-border rounded-md border'>
+                <ScrollArea className='border-border rounded-md border h-[300px]'>
                   <pre className='text-xs break-all whitespace-pre-wrap p-2'>
                     {isDelete
                       ? `Removed (tombstone)\ndeleted_at: ${conflict.remoteDeletedAt ?? '—'}`
@@ -145,7 +142,7 @@ export function CloudSyncConflictResolveDialog({
           </TabsContent>
           <TabsContent value='merge' className='mt-3'>
             <Textarea
-              className='font-mono text-xs min-h-[12rem]'
+              className='font-mono text-xs h-[300px]'
               value={mergedText}
               onChange={(e) => setMergedText(e.target.value)}
               spellCheck={false}
@@ -164,7 +161,11 @@ export function CloudSyncConflictResolveDialog({
         ) : null}
 
         <DialogFooter className='flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:justify-end'>
-          <Button type='button' variant='outline' onClick={() => onOpenChange(false)} disabled={busy}>
+          <Button
+            type='button'
+            variant='outline'
+            onClick={() => onOpenChange(false)}
+            disabled={busy}>
             Cancel
           </Button>
           <Button
@@ -174,7 +175,11 @@ export function CloudSyncConflictResolveDialog({
             disabled={busy || (isDelete && !conflict.localSnapshot)}>
             Use local
           </Button>
-          <Button type='button' variant='secondary' onClick={() => void run('remote')} disabled={busy}>
+          <Button
+            type='button'
+            variant='secondary'
+            onClick={() => void run('remote')}
+            disabled={busy}>
             Use remote
           </Button>
           <Button type='button' onClick={() => void run('merged')} disabled={busy}>
