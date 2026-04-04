@@ -295,6 +295,12 @@ export const NumberInput = ({
     if (event.pointerType === 'mouse' && event.button !== 0) return;
 
     clearLongPressTimer();
+
+    if (event.pointerType === 'touch') {
+      openWheelFromLongPress();
+      return;
+    }
+
     longPressTimerRef.current = setTimeout(() => {
       longPressTimerRef.current = null;
       openWheelFromLongPress();
