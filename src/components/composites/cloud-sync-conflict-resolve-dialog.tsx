@@ -17,15 +17,196 @@ import { pickOptionalRowDisplayName } from '@/lib/cloud/sync/sync-pull-review-it
 import { useSyncStateStore } from '@/lib/cloud/sync/sync-state';
 import type { DB } from '@/stores/db/hooks/types';
 import { Loader2 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 
-function jsonPreview(obj: Record<string, unknown> | null): string {
-  if (!obj) return '—';
+/** If `value` is a string that looks like JSON object/array, return parsed value; else return `value`. */
+function tryParseJsonString(value: unknown): unknown {
+  if (typeof value !== 'string') return value;
+  const t = value.trim();
+  if (t.length === 0) return value;
+  const first = t[0];
+  if (first !== '{' && first !== '[') return value;
   try {
-    return JSON.stringify(obj, null, 2);
+    return JSON.parse(t) as unknown;
   } catch {
-    return '—';
+    return value;
   }
+}
+
+/** Recursively parse JSON-looking strings so comparisons and display match structured data. */
+function normalizeDeep(value: unknown): unknown {
+  let v = value;
+  if (typeof v === 'string') {
+    v = tryParseJsonString(v);
+  }
+  if (Array.isArray(v)) {
+    return v.map((item) => normalizeDeep(item));
+  }
+  if (v !== null && typeof v === 'object') {
+    const obj = v as Record<string, unknown>;
+    const out: Record<string, unknown> = {};
+    for (const [k, child] of Object.entries(obj)) {
+      out[k] = normalizeDeep(child);
+    }
+    return out;
+  }
+  return v;
+}
+
+function deepEqual(a: unknown, b: unknown): boolean {
+  if (Object.is(a, b)) return true;
+  if (a == null || b == null) return a === b;
+  if (typeof a !== typeof b) return false;
+  if (typeof a !== 'object') {
+    return a === b;
+  }
+  if (Array.isArray(a) && Array.isArray(b)) {
+    if (a.length !== b.length) return false;
+    return a.every((x, i) => deepEqual(x, b[i]!));
+  }
+  if (Array.isArray(a) || Array.isArray(b)) return false;
+  const ak = Object.keys(a as object).sort();
+  const bk = Object.keys(b as object).sort();
+  if (ak.length !== bk.length) return false;
+  if (!ak.every((k, i) => k === bk[i])) return false;
+  return ak.every((k) =>
+    deepEqual(
+      (a as Record<string, unknown>)[k!],
+      (b as Record<string, unknown>)[k!],
+    ),
+  );
+}
+
+function valuesEqualForDiff(a: unknown, b: unknown): boolean {
+  return deepEqual(normalizeDeep(a), normalizeDeep(b));
+}
+
+function isNullish(value: unknown): boolean {
+  return value === null || value === undefined;
+}
+
+function getDiffingKeys(
+  local: Record<string, unknown> | null,
+  remote: Record<string, unknown> | null,
+): string[] {
+  const keys = new Set([
+    ...Object.keys(local ?? {}),
+    ...Object.keys(remote ?? {}),
+  ]);
+  return [...keys]
+    .filter((k) => {
+      const lv = local?.[k];
+      const rv = remote?.[k];
+      if (isNullish(lv) && isNullish(rv)) return false;
+      return !valuesEqualForDiff(lv, rv);
+    })
+    .sort();
+}
+
+function fieldLabel(key: string): string {
+  return key
+    .replace(/_/g, ' ')
+    .replace(/([a-z])([A-Z])/g, '$1 $2')
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+function isUpdatedAtFieldKey(key: string): boolean {
+  return key === 'updatedAt' || key === 'updated_at';
+}
+
+/** US-style date + 24h time for sync timestamps (local); returns null if not parseable. */
+function formatUpdatedAtDisplay(value: unknown): string | null {
+  let d: Date;
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    d = new Date(value);
+  } else if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (!trimmed) return null;
+    const t = Date.parse(trimmed);
+    if (Number.isNaN(t)) return null;
+    d = new Date(t);
+  } else {
+    return null;
+  }
+  if (Number.isNaN(d.getTime())) return null;
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  const yy = String(d.getFullYear()).slice(-2);
+  const hh = String(d.getHours()).padStart(2, '0');
+  const mi = String(d.getMinutes()).padStart(2, '0');
+  const ss = String(d.getSeconds()).padStart(2, '0');
+  return `${mm}/${dd}/${yy} ${hh}:${mi}:${ss}`;
+}
+
+function formatDisplayValue(fieldKey: string, value: unknown): ReactNode {
+  if (value === undefined || value === null) {
+    return <span className='text-muted-foreground'>—</span>;
+  }
+  if (isUpdatedAtFieldKey(fieldKey)) {
+    const formatted = formatUpdatedAtDisplay(value);
+    if (formatted) {
+      return <span>{formatted}</span>;
+    }
+  }
+  let displayed: unknown = value;
+  if (typeof displayed === 'string') {
+    displayed = tryParseJsonString(displayed);
+  }
+  if (displayed === null) {
+    return <span className='text-muted-foreground'>null</span>;
+  }
+  if (typeof displayed === 'boolean' || typeof displayed === 'number') {
+    return <span>{String(displayed)}</span>;
+  }
+  if (typeof displayed === 'string') {
+    return <span className='break-words'>{displayed}</span>;
+  }
+  if (Array.isArray(displayed) || typeof displayed === 'object') {
+    return (
+      <pre className='mt-0.5 max-w-full font-mono text-[11px] whitespace-pre-wrap break-all'>
+        {JSON.stringify(displayed, null, 2)}
+      </pre>
+    );
+  }
+  return String(displayed);
+}
+
+function ConflictSnapshotDiff({
+  diffKeys,
+  snapshot,
+  isDeleteRemote,
+  remoteDeletedAt,
+}: {
+  diffKeys: string[];
+  snapshot: Record<string, unknown> | null;
+  isDeleteRemote?: boolean;
+  remoteDeletedAt?: string;
+}) {
+  return (
+    <div className='space-y-3 p-2 text-xs'>
+      {isDeleteRemote ? (
+        <p className='text-muted-foreground'>
+          Removed (tombstone).{' '}
+          <span className='text-foreground'>deleted_at:</span>{' '}
+          {remoteDeletedAt ?? '—'}
+        </p>
+      ) : null}
+      {diffKeys.length === 0 ? (
+        <p className='text-muted-foreground'>No differing fields.</p>
+      ) : (
+        diffKeys.map((key) => (
+          <div
+            key={key}
+            className='border-border/60 border-b pb-2 last:border-b-0 last:pb-0'>
+            <div className='text-foreground font-medium'>{fieldLabel(key)}</div>
+            <div className='text-muted-foreground mt-1'>
+              {formatDisplayValue(key, snapshot?.[key])}
+            </div>
+          </div>
+        ))
+      )}
+    </div>
+  );
 }
 
 interface CloudSyncConflictResolveDialogProps {
@@ -90,6 +271,10 @@ export function CloudSyncConflictResolveDialog({
   };
 
   const isDelete = conflict.kind === 'delete';
+  const diffKeys = getDiffingKeys(
+    conflict.localSnapshot as Record<string, unknown> | null,
+    conflict.remoteSnapshot as Record<string, unknown> | null,
+  );
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -119,23 +304,37 @@ export function CloudSyncConflictResolveDialog({
           <TabsContent value='compare' className='mt-3 min-h-0'>
             <div className='grid max-h-[min(50dvh,20rem)] grid-cols-1 gap-3 sm:grid-cols-2'>
               <div className='flex min-h-0 min-w-0 flex-col gap-1'>
-                <div className='text-muted-foreground text-xs font-medium tracking-wide'>Local</div>
-                <ScrollArea className='border-border rounded-md border h-[300px]'>
-                  <pre className='text-xs break-all whitespace-pre-wrap p-2'>
-                    {jsonPreview(conflict.localSnapshot as Record<string, unknown> | null)}
-                  </pre>
+                <Button
+                  type='button'
+                  variant='ghost'
+                  className='text-muted-foreground hover:text-foreground h-auto justify-start p-0 text-xs font-medium tracking-wide'
+                  onClick={() => void run('local')}
+                  disabled={busy || (isDelete && !conflict.localSnapshot)}>
+                  Use Local
+                </Button>
+                <ScrollArea className='border-border h-[300px] rounded-md border'>
+                  <ConflictSnapshotDiff
+                    diffKeys={diffKeys}
+                    snapshot={conflict.localSnapshot as Record<string, unknown> | null}
+                  />
                 </ScrollArea>
               </div>
               <div className='flex min-h-0 min-w-0 flex-col gap-1'>
-                <div className='text-muted-foreground text-xs font-medium tracking-wide'>
-                  {isDelete ? 'Cloud' : 'Remote'}
-                </div>
-                <ScrollArea className='border-border rounded-md border h-[300px]'>
-                  <pre className='text-xs break-all whitespace-pre-wrap p-2'>
-                    {isDelete
-                      ? `Removed (tombstone)\ndeleted_at: ${conflict.remoteDeletedAt ?? '—'}`
-                      : jsonPreview(conflict.remoteSnapshot as Record<string, unknown> | null)}
-                  </pre>
+                <Button
+                  type='button'
+                  variant='ghost'
+                  className='text-muted-foreground hover:text-foreground h-auto justify-start p-0 text-xs font-medium tracking-wide'
+                  onClick={() => void run('remote')}
+                  disabled={busy}>
+                  Use Remote
+                </Button>
+                <ScrollArea className='border-border h-[300px] rounded-md border'>
+                  <ConflictSnapshotDiff
+                    diffKeys={diffKeys}
+                    snapshot={conflict.remoteSnapshot as Record<string, unknown> | null}
+                    isDeleteRemote={isDelete}
+                    remoteDeletedAt={conflict.remoteDeletedAt}
+                  />
                 </ScrollArea>
               </div>
             </div>
@@ -167,20 +366,6 @@ export function CloudSyncConflictResolveDialog({
             onClick={() => onOpenChange(false)}
             disabled={busy}>
             Cancel
-          </Button>
-          <Button
-            type='button'
-            variant='secondary'
-            onClick={() => void run('local')}
-            disabled={busy || (isDelete && !conflict.localSnapshot)}>
-            Use local
-          </Button>
-          <Button
-            type='button'
-            variant='secondary'
-            onClick={() => void run('remote')}
-            disabled={busy}>
-            Use remote
           </Button>
           <Button type='button' onClick={() => void run('merged')} disabled={busy}>
             {busy ? (
