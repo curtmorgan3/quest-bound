@@ -224,7 +224,7 @@ export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
     }
   };
 
-  const handleGroupDataUpdate = (key: string, value: string) => {
+  const handleGroupDataUpdate = (key: string, value: string | boolean) => {
     const toUpdate = selectedComponents.filter((c) => !c.locked);
     updateComponents(
       toUpdate.map((real) => {

@@ -15,7 +15,7 @@ import { parseValue } from './utils';
 interface Props {
   component: Component;
   handleStyleUpdate: (key: string | string[], value: number | string | boolean | null) => void;
-  handleDataUpdate: (key: string, value: string) => void;
+  handleDataUpdate: (key: string, value: string | boolean) => void;
 }
 
 function parseStyle(component: Component): ComponentStyle {
@@ -68,8 +68,10 @@ const JUSTIFY_OPTIONS: Array<{
 ];
 
 export function GroupStyleEdit({ component, handleStyleUpdate, handleDataUpdate }: Props) {
-  const layoutMode = (getComponentData(component).layoutMode ?? 'absolute') as GroupLayoutMode;
+  const data = getComponentData(component);
+  const layoutMode = (data.layoutMode ?? 'absolute') as GroupLayoutMode;
   const isFlex = layoutMode === 'flex';
+  const shareHoverPressed = data.shareHoverPressedWithGroup !== false;
 
   const s = parseStyle(component);
   const flexDirection = s.flexDirection ?? DEFAULT_FLEX.flexDirection!;
@@ -175,6 +177,20 @@ export function GroupStyleEdit({ component, handleStyleUpdate, handleDataUpdate 
           </div>
         </div>
       ) : null}
+
+      <div className='flex flex-row items-center gap-2 pt-0.5'>
+        <Checkbox
+          id='group-share-hover-pressed'
+          checked={shareHoverPressed}
+          onCheckedChange={(checked) => {
+            if (checked === 'indeterminate') return;
+            handleDataUpdate('shareHoverPressedWithGroup', checked === true);
+          }}
+        />
+        <Label htmlFor='group-share-hover-pressed' className='text-xs font-normal cursor-pointer'>
+          Share hover and pressed state events
+        </Label>
+      </div>
     </div>
   );
 }

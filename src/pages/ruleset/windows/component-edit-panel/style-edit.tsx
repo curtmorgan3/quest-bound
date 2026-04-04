@@ -23,7 +23,7 @@ interface Props {
     value: number | string | boolean | null | RGBColor,
   ) => void;
   /** Required for group layout mode (`data`); omit only if group block is unused. */
-  handleDataUpdate?: (key: string, value: string) => void;
+  handleDataUpdate?: (key: string, value: string | boolean) => void;
 }
 
 const MIXED_VALUE_LABEL = '-';

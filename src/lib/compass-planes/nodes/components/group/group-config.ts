@@ -20,6 +20,7 @@ export const groupConfig: SheetComponentType = {
 
 const DEFAULT_GROUP_DATA: GroupComponentData = {
   layoutMode: 'absolute',
+  shareHoverPressedWithGroup: true,
 };
 
 const DEFAULT_GROUP_STYLES: ComponentStyle = {

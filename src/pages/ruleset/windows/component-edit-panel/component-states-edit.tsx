@@ -22,6 +22,8 @@ import {
   defaultStatesJson,
   getEditorPreviewStateName,
   parseComponentStatesList,
+  stringifyComponentStatesList,
+  stripLayoutKeysFromAllStateEntries,
   validateNewCustomStateName,
 } from '@/lib/compass-planes/utils/component-states';
 import { WindowEditorContext } from '@/stores';
@@ -42,7 +44,9 @@ export function ComponentStatesEdit({ component, onStatesUpdated }: Props) {
   const [addError, setAddError] = useState<string | null>(null);
 
   const persistList = (next: ComponentStateEntry[]) => {
-    onStatesUpdated(JSON.stringify(next));
+    const raw = stringifyComponentStatesList(next);
+    const { json } = stripLayoutKeysFromAllStateEntries(raw, ['x', 'y']);
+    onStatesUpdated(json);
   };
 
   const addBuiltin = (

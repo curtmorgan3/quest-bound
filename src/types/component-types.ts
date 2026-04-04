@@ -82,6 +82,11 @@ export type GroupLayoutMode = 'absolute' | 'flex';
 /** Layout for `ComponentTypes.GROUP` roots (`data` JSON). Flex details live in `style`. */
 export type GroupComponentData = {
   layoutMode?: GroupLayoutMode;
+  /**
+   * When true or omitted, hover/pressed visual state is shared across the group subtree.
+   * When false, each descendant handles pointer events only for itself.
+   */
+  shareHoverPressedWithGroup?: boolean;
 };
 
 export type TextComponentData = {

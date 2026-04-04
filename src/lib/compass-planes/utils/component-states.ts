@@ -24,7 +24,10 @@ export function getEditorPreviewStateName(
 
 const MAX_STATES = 5;
 
-/** Stored layout fields that may be overridden per `ComponentStateEntry`. */
+/**
+ * Layout fields that may appear on `ComponentStateEntry` in stored JSON.
+ * At merge time, `x` and `y` always come from the base component; other keys may be overridden per state.
+ */
 export const COMPONENT_LAYOUT_KEYS: readonly ComponentLayoutKey[] = [
   'x',
   'y',
@@ -60,6 +63,7 @@ function applyLayoutPatch(
   if (!entry) return layout;
   const out = { ...layout };
   for (const k of COMPONENT_LAYOUT_KEYS) {
+    if (k === 'x' || k === 'y') continue;
     const v = entry[k];
     if (v === undefined || v === null) continue;
     if (typeof v === 'number' && Number.isFinite(v)) out[k] = v;
@@ -418,9 +422,44 @@ export function mergeStateEntryLayout(
   return stringifyComponentStatesList(list);
 }
 
+/** Layout keys stored on the component row only; state entries never override these. */
+const SHARED_ACROSS_STATES_LAYOUT_KEYS = ['x', 'y'] as const satisfies readonly ComponentLayoutKey[];
+
+const PER_STATE_LAYOUT_KEYS = COMPONENT_LAYOUT_KEYS.filter(
+  (k) => k !== 'x' && k !== 'y',
+) as ComponentLayoutKey[];
+
+/**
+ * Remove layout overrides for `keys` from every state entry so they inherit from the base component.
+ */
+export function stripLayoutKeysFromAllStateEntries(
+  statesJson: string | null | undefined,
+  keys: readonly ComponentLayoutKey[],
+): { json: string; didStrip: boolean } {
+  const list = parseComponentStatesList(statesJson);
+  let didStrip = false;
+  const nextList = list.map((entry) => {
+    const copy = { ...entry };
+    let entryChanged = false;
+    for (const k of keys) {
+      if (k in copy && copy[k] !== undefined) {
+        delete copy[k];
+        entryChanged = true;
+      }
+    }
+    if (entryChanged) didStrip = true;
+    return entryChanged ? copy : entry;
+  });
+  return {
+    json: stringifyComponentStatesList(nextList),
+    didStrip,
+  };
+}
+
 /**
  * When the window editor targets a named state, map top-level layout `ComponentUpdate` fields into
  * `states` JSON instead of mutating the base row.
+ * `x` and `y` always update the base component and are never stored per state.
  */
 export function remapGeometryUpdatesForEditorState(
   updates: ComponentUpdate[],
@@ -429,31 +468,68 @@ export function remapGeometryUpdatesForEditorState(
   return updates.map((u) => {
     const real = getRow(u.id);
     if (!real) return u;
+
+    const hasSharedLayoutChange = SHARED_ACROSS_STATES_LAYOUT_KEYS.some(
+      (k) => k in u && u[k] !== undefined,
+    );
     const target = getEditorPreviewStateName(real);
-    if (target === 'base') return u;
+
+    if (target === 'base') {
+      if (!hasSharedLayoutChange) return u;
+      const { json, didStrip } = stripLayoutKeysFromAllStateEntries(
+        real.states,
+        SHARED_ACROSS_STATES_LAYOUT_KEYS,
+      );
+      if (!didStrip) return u;
+      return { ...u, states: json };
+    }
 
     const layoutChanges: Partial<Record<ComponentLayoutKey, number | string | null>> = {};
-    let touched = false;
-    for (const k of COMPONENT_LAYOUT_KEYS) {
+    let touchedPerState = false;
+    for (const k of PER_STATE_LAYOUT_KEYS) {
       if (!(k in u) || u[k] === undefined) continue;
-      touched = true;
+      touchedPerState = true;
       const newVal = u[k] as number | string;
       const baseVal = real[k];
       layoutChanges[k] = newVal === baseVal ? null : newVal;
     }
-    if (!touched) return u;
+
+    let statesWorking = real.states;
+    if (touchedPerState) {
+      statesWorking = mergeStateEntryLayout(real.states, target, layoutChanges);
+    }
+
+    let statesJson = statesWorking;
+    let statesTouched = touchedPerState;
+    if (hasSharedLayoutChange) {
+      const { json, didStrip } = stripLayoutKeysFromAllStateEntries(
+        statesWorking,
+        SHARED_ACROSS_STATES_LAYOUT_KEYS,
+      );
+      statesJson = json;
+      statesTouched = statesTouched || didStrip;
+    }
+
+    const hasAnyLayoutInU = COMPONENT_LAYOUT_KEYS.some((k) => k in u && u[k] !== undefined);
+    if (!hasAnyLayoutInU) return u;
 
     const next: ComponentUpdate = { id: u.id };
     for (const key of Object.keys(u) as (keyof ComponentUpdate)[]) {
       if (key === 'id') continue;
-      if (COMPONENT_LAYOUT_KEYS.includes(key as ComponentLayoutKey)) continue;
+      if (COMPONENT_LAYOUT_KEYS.includes(key as ComponentLayoutKey)) {
+        if (key === 'x' || key === 'y') {
+          const v = u[key];
+          if (v !== undefined) (next as Record<string, unknown>)[key] = v;
+        }
+        continue;
+      }
       const v = u[key as keyof ComponentUpdate];
       if (v !== undefined) (next as Record<string, unknown>)[key as string] = v;
     }
-    return {
-      ...next,
-      states: mergeStateEntryLayout(real.states, target, layoutChanges),
-    };
+    if (statesTouched) {
+      next.states = statesJson;
+    }
+    return next;
   });
 }
 

@@ -1,9 +1,14 @@
 import { ComponentTypes } from '@/lib/compass-planes/nodes/node-types';
+import { getComponentData } from '@/lib/compass-planes/utils';
 import {
   getEditorPreviewStateName,
   withMergedStateLayers,
 } from '@/lib/compass-planes/utils/component-states';
 import type { Component } from '@/types';
+
+function groupSharesHoverPressed(groupComponent: Component): boolean {
+  return getComponentData(groupComponent).shareHoverPressedWithGroup !== false;
+}
 
 export function componentByIdMap(components: Component[]): Map<string, Component> {
   return new Map(components.map((c) => [c.id, c]));
@@ -82,10 +87,17 @@ export function getGroupPointerAffinityIds(
   byId: Map<string, Component>,
 ): Set<string> {
   if (component.type === ComponentTypes.GROUP) {
+    if (!groupSharesHoverPressed(component)) {
+      return new Set([component.id]);
+    }
     return collectDescendantComponentIds(allComponents, component.id);
   }
   const rootId = findNearestGroupRootId(component.id, byId);
   if (rootId) {
+    const root = byId.get(rootId);
+    if (root && !groupSharesHoverPressed(root)) {
+      return new Set([component.id]);
+    }
     return collectDescendantComponentIds(allComponents, rootId);
   }
   if (component.groupId) {
