@@ -174,7 +174,7 @@ export const ImageUpload = ({
         trigger({ openDialog: handleClick })
       ) : image ? (
         <div
-          className={`flex gap-2 `}
+          className={`relative flex gap-2`}
           style={{ height, width }}
           onPointerEnter={() => setHovering(true)}
           onPointerLeave={() => setHovering(false)}>
@@ -187,10 +187,15 @@ export const ImageUpload = ({
           />
           {hovering && (
             <Button
-              style={{ position: 'absolute' }}
+              type='button'
+              className='absolute right-0 top-0'
               variant='ghost'
               disabled={loading}
-              onClick={onRemove}>
+              onClick={(e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                onRemove?.();
+              }}>
               <Trash color='#9C3A28' />
             </Button>
           )}

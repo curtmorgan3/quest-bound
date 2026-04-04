@@ -14,6 +14,9 @@ export interface PageDetailsValue {
 export interface PageDetailsUpdate {
   label?: string;
   assetId?: string;
+  /** Clear persisted URL field when removing background (v44+). */
+  assetUrl?: string;
+  image?: string | null;
   backgroundColor?: string;
   backgroundOpacity?: number;
 }
@@ -57,7 +60,13 @@ export function PageDetailsForm({
             alt='Page background'
             rulesetId={rulesetId ?? null}
             onUpload={(assetId) => onUpdate({ assetId })}
-            onRemove={() => onUpdate({ assetId: undefined })}
+            onRemove={() =>
+              onUpdate({
+                assetId: undefined,
+                image: null,
+                assetUrl: undefined,
+              })
+            }
           />
         </div>
 
