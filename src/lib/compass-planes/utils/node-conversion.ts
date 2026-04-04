@@ -135,7 +135,6 @@ export function getComponentStyles(component: Component): ComponentStyle {
 }
 
 export function useComponentStyles(component: Component | null): ComponentStyle {
-  console.log(component);
   const styleValues = useStyleValues(component ? [component] : []);
   const characterContext = useContext(CharacterContext);
   const character = characterContext?.character ?? null;
