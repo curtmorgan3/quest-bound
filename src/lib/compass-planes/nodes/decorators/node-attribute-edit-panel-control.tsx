@@ -1,4 +1,4 @@
-import { getComponentData } from '@/lib/compass-planes/utils';
+import { getComponentData, resolveEffectiveScriptId } from '@/lib/compass-planes/utils';
 import type { Component } from '@/types';
 import type { ReactNode } from 'react';
 import { useSearchParams } from 'react-router-dom';
@@ -11,7 +11,7 @@ interface NodeAttributeEditPanelControlProps {
 /**
  * Wraps node content when the component has a viewAttributeId set.
  * On click, sets the editAttributeId query param to open the attribute edit panel.
- * When the component also has a scriptId, the script takes precedence and this decorator is a no-op.
+ * When the component has an effective click script (row or per-state overlay), the script takes precedence and this decorator is a no-op.
  */
 export const NodeAttributeEditPanelControl = ({
   children,
@@ -20,8 +20,9 @@ export const NodeAttributeEditPanelControl = ({
   const [, setSearchParams] = useSearchParams();
   const data = getComponentData(component);
   const { viewAttributeId } = data;
+  const effectiveScriptId = resolveEffectiveScriptId(component, data);
 
-  if (!viewAttributeId || component.scriptId || data.disabled) {
+  if (!viewAttributeId || effectiveScriptId || data.disabled) {
     return <>{children}</>;
   }
 

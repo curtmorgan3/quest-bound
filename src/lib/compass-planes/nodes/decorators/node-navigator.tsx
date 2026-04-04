@@ -13,7 +13,11 @@ import { useCallback, useContext, useMemo, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getChildWindowCanvasContentSize } from '@/lib/compass-planes/utils/window-open-bounds';
 import type { ViewRenderContext } from '@/lib/compass-planes/nodes/render-node';
-import { getComponentData } from '../../utils';
+import {
+  getComponentData,
+  resolveEffectiveChildWindowId,
+  resolveEffectiveScriptId,
+} from '../../utils';
 
 interface NodeNavigatorProps {
   children: ReactNode;
@@ -38,14 +42,15 @@ export const NodeNavigator = ({ children, component, componentData, viewCtx }: N
   const characterId = characterContext?.character?.id;
 
   const pageTemplateId = data.pageId;
-  const childWindowId = component.childWindowId;
+  const childWindowId = resolveEffectiveChildWindowId(component, data);
   const href = data.href;
 
+  const effectiveScriptId = resolveEffectiveScriptId(component, data);
   const hasVisibleClickScript = useMemo(() => {
-    if (!component.scriptId) return false;
-    const s = scripts.find((x) => x.id === component.scriptId);
+    if (!effectiveScriptId) return false;
+    const s = scripts.find((x) => x.id === effectiveScriptId);
     return Boolean(s && !s.hidden);
-  }, [component.scriptId, scripts]);
+  }, [effectiveScriptId, scripts]);
 
   const handleProgrammaticNav = useCallback(
     async (e: React.MouseEvent) => {

@@ -1,6 +1,6 @@
 import { useScripts } from '@/lib/compass-api/hooks/scripts/use-scripts';
 import { useReactiveScriptExecution } from '@/lib/compass-logic';
-import { getComponentData } from '@/lib/compass-planes/utils';
+import { getComponentData, resolveEffectiveScriptId } from '@/lib/compass-planes/utils';
 import { CharacterContext, DiceContext } from '@/stores';
 import type { Component, ScriptParamValue } from '@/types';
 import { useCallback, useContext, useMemo, type ReactNode } from 'react';
@@ -14,7 +14,9 @@ export const NodeScriptCaller = ({ children, component }: NodeScriptCallerProps)
   const characterContext = useContext(CharacterContext);
   const diceContext = useContext(DiceContext);
   const character = characterContext?.character;
-  const hasScript = Boolean(component.scriptId);
+  const dataForScript = getComponentData(component);
+  const effectiveScriptId = resolveEffectiveScriptId(component, dataForScript);
+  const hasScript = Boolean(effectiveScriptId);
 
   const rollFn = useCallback(
     (expression: string, rerollMessage?: string) =>
@@ -24,11 +26,11 @@ export const NodeScriptCaller = ({ children, component }: NodeScriptCallerProps)
 
   const { scripts } = useScripts();
   const script = useMemo(() => {
-    if (!hasScript) return undefined;
-    const found = scripts.find((s) => s.id === component.scriptId);
+    if (!effectiveScriptId) return undefined;
+    const found = scripts.find((s) => s.id === effectiveScriptId);
     if (!found || found.hidden) return undefined;
     return found;
-  }, [scripts, hasScript, component.scriptId]);
+  }, [scripts, effectiveScriptId]);
 
   const { execute, isExecuting } = useReactiveScriptExecution();
 
@@ -95,7 +97,7 @@ export const NodeScriptCaller = ({ children, component }: NodeScriptCallerProps)
     return <>{children}</>;
   }
 
-  if (getComponentData(component).disabled) {
+  if (dataForScript.disabled) {
     return <>{children}</>;
   }
 

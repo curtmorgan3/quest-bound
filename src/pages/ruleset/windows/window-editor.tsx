@@ -4,11 +4,6 @@ import { useSidebar } from '@/components/ui/sidebar';
 import { useComponents, useRulesets, type ComponentUpdate } from '@/lib/compass-api';
 import { repairOrphanCharacterWindowsForRulesetWindows } from '@/lib/compass-api/utils/default-archetype-test-character';
 import { SheetEditor } from '@/lib/compass-planes';
-import {
-  getEditorPreviewStateName,
-  remapGeometryUpdatesForEditorState,
-  withMergedStateLayers,
-} from '@/lib/compass-planes/utils/component-states';
 import { DEFAULT_GRID_SIZE } from '@/lib/compass-planes/editor-config';
 import {
   canGroupSelection,
@@ -16,6 +11,11 @@ import {
   planGroupSelection,
   planUngroupSelection,
 } from '@/lib/compass-planes/sheet-editor/group-operations';
+import {
+  getEditorPreviewStateName,
+  remapGeometryUpdatesForEditorState,
+  withMergedStateLayers,
+} from '@/lib/compass-planes/utils/component-states';
 import { CharacterPage, GameLog } from '@/pages/characters';
 import { colorPrimary, colorWhite } from '@/palette';
 import { db, WindowEditorProvider } from '@/stores';
@@ -154,13 +154,13 @@ export const WindowEditor = () => {
   const compositeTemplateRootIdsResolved = compositeTemplateRootIds ?? new Set<string>();
 
   const persistEditorGridSize = (n: number) => {
-    const clamped = Math.min(
-      WINDOW_EDITOR_GRID_MAX,
-      Math.max(WINDOW_EDITOR_GRID_MIN, Math.round(n)),
-    );
-    setEditorGridSize(clamped);
+    // const clamped = Math.min(
+    //   WINDOW_EDITOR_GRID_MAX,
+    //   Math.max(WINDOW_EDITOR_GRID_MIN, Math.round(n)),
+    // );
+    setEditorGridSize(n);
     try {
-      localStorage.setItem(WINDOW_EDITOR_GRID_STORAGE_KEY, String(clamped));
+      localStorage.setItem(WINDOW_EDITOR_GRID_STORAGE_KEY, String(n));
     } catch {
       /* ignore quota / private mode */
     }
@@ -339,8 +339,6 @@ export const WindowEditor = () => {
               <Input
                 id='window-editor-grid'
                 type='number'
-                min={WINDOW_EDITOR_GRID_MIN}
-                max={WINDOW_EDITOR_GRID_MAX}
                 step={1}
                 value={editorGridSize}
                 onChange={(e) => {

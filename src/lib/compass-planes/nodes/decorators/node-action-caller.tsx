@@ -3,7 +3,12 @@ import { useScripts } from '@/lib/compass-api/hooks/scripts/use-scripts';
 import { CharacterContext } from '@/stores';
 import type { Component, ComponentData } from '@/types';
 import { useContext, useMemo, type CSSProperties, type ReactNode } from 'react';
-import { getComponentData } from '../../utils';
+import {
+  getComponentData,
+  resolveEffectiveActionId,
+  resolveEffectiveChildWindowId,
+  resolveEffectiveScriptId,
+} from '../../utils';
 
 interface NodeActionCallerProps {
   children: ReactNode;
@@ -13,9 +18,10 @@ interface NodeActionCallerProps {
 }
 
 function hasNavigatorTargets(component: Component, data: ComponentData): boolean {
+  const childWindowId = resolveEffectiveChildWindowId(component, data);
   return Boolean(
     data.pageId ||
-      component.childWindowId ||
+      childWindowId ||
       data.href ||
       data.closeCharacterWindowOnClick,
   );
@@ -32,14 +38,14 @@ export const NodeActionCaller = ({
   const { scripts } = useScripts();
   const data = componentData ?? getComponentData(component);
 
-  const action = component.actionId
-    ? actions.find((a) => a.id === component.actionId)
-    : undefined;
+  const effectiveActionId = resolveEffectiveActionId(component, data);
+  const action = effectiveActionId ? actions.find((a) => a.id === effectiveActionId) : undefined;
+  const effectiveScriptId = resolveEffectiveScriptId(component, data);
   const hasVisibleClickScript = useMemo(() => {
-    if (!component.scriptId) return false;
-    const s = scripts.find((x) => x.id === component.scriptId);
+    if (!effectiveScriptId) return false;
+    const s = scripts.find((x) => x.id === effectiveScriptId);
     return Boolean(s && !s.hidden);
-  }, [component.scriptId, scripts]);
+  }, [effectiveScriptId, scripts]);
   const blockedByNavigation = hasNavigatorTargets(component, data);
 
   const shouldHandle =

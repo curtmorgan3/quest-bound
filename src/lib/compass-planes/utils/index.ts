@@ -1,3 +1,4 @@
+export * from './click-event-overlay';
 export * from './editor-emitter';
 export * from './use-attribute-changed-by-script';
 export * from './use-component-animation-trigger';

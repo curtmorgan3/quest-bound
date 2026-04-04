@@ -94,7 +94,7 @@ function mapComponentUpdateDataToStateLayer(
   const nextMerged = JSON.parse(u.data) as Record<string, unknown>;
   const baseData = JSON.parse(real.data) as Record<string, unknown>;
   const diff = computeSparseDiff(baseData, nextMerged);
-  const { data: _omit, ...rest } = u;
+  const { data: _omit, actionId: _a, childWindowId: _cw, scriptId: _s, ...rest } = u;
   return {
     ...rest,
     states: updateStateEntryPartial(real.states, stateName, {

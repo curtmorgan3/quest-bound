@@ -3,7 +3,7 @@ import { DiceContext } from '@/stores';
 import type { Component } from '@/types';
 import { parseTextForDiceRolls } from '@/utils';
 import { useContext, useMemo, type ReactNode } from 'react';
-import { useNodeData } from '../../utils';
+import { resolveEffectiveScriptId, useNodeData } from '../../utils';
 
 interface NodeDiceClickProps {
   children: ReactNode;
@@ -24,11 +24,12 @@ export const NodeDiceClick = ({ children, component }: NodeDiceClickProps) => {
   const text = raw != null ? String(raw) : '';
   const diceRolls = parseTextForDiceRolls(text);
 
+  const effectiveScriptId = resolveEffectiveScriptId(component, data);
   const hasVisibleClickScript = useMemo(() => {
-    if (!component.scriptId) return false;
-    const s = scripts.find((x) => x.id === component.scriptId);
+    if (!effectiveScriptId) return false;
+    const s = scripts.find((x) => x.id === effectiveScriptId);
     return Boolean(s && !s.hidden);
-  }, [component.scriptId, scripts]);
+  }, [effectiveScriptId, scripts]);
 
   if (!diceRolls.length || hasVisibleClickScript || !rollDice || data.disabled) {
     return <>{children}</>;

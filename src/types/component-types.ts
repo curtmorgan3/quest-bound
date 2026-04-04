@@ -227,6 +227,15 @@ export type ComponentData = ShapeComponentData &
     childWindowAnchor?: ChildWindowAnchor;
     /** When true (character sheet only), click removes the character window instance that contains this component. */
     closeCharacterWindowOnClick?: boolean;
+    /**
+     * Per-state click overlay: when set on merged `data` (including explicit `null`), overrides
+     * `Component.actionId` for that visual state layer.
+     */
+    clickActionId?: string | null;
+    /** Same pattern for `Component.childWindowId`. */
+    clickChildWindowId?: string | null;
+    /** Same pattern for `Component.scriptId` (visible click scripts). */
+    clickScriptId?: string | null;
     /** When true, render width as `100dvw` while keeping stored `width` for layout math. */
     takeFullWidth?: boolean;
     /** When true, render height as `100dvh` while keeping stored `height` for layout math. */

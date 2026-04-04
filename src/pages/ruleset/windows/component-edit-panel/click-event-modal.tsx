@@ -29,7 +29,13 @@ import { useRulesetPages } from '@/lib/compass-api/hooks/rulesets/use-ruleset-pa
 import { useWindows } from '@/lib/compass-api/hooks/rulesets/use-windows';
 import { useScripts } from '@/lib/compass-api/hooks/scripts/use-scripts';
 import { ComponentTypes } from '@/lib/compass-planes/nodes';
-import { getComponentData } from '@/lib/compass-planes/utils';
+import {
+  getComponentData,
+  resolveEffectiveActionId,
+  resolveEffectiveChildWindowId,
+  resolveEffectiveScriptId,
+} from '@/lib/compass-planes/utils';
+import { getEditorPreviewStateName } from '@/lib/compass-planes/utils/component-states';
 import type {
   ChildWindowAnchor,
   ChildWindowPlacementMode,
@@ -52,6 +58,15 @@ function stripClickEventFieldsFromData(baseData: ComponentData) {
   delete baseData.childWindowAnchor;
   delete baseData.scriptParameterValues;
   delete baseData.closeCharacterWindowOnClick;
+  delete baseData.clickActionId;
+  delete baseData.clickChildWindowId;
+  delete baseData.clickScriptId;
+}
+
+function clearInheritedClickRowIdsInMergedData(data: ComponentData) {
+  data.clickActionId = null;
+  data.clickChildWindowId = null;
+  data.clickScriptId = null;
 }
 
 type ClickEventType =
@@ -99,6 +114,10 @@ export const ClickEventModal = ({
   const { pages } = useRulesetPages();
   const { windows } = useWindows();
   const { actions } = useActions();
+  const editingBase = getEditorPreviewStateName(component) === 'base';
+  const componentData = getComponentData(component);
+  const effectiveChildWindowId = resolveEffectiveChildWindowId(component, componentData);
+  const effectiveActionId = resolveEffectiveActionId(component, componentData);
   const [open, setOpen] = useState(false);
   const [clickEventType, setClickEventType] = useState<ClickEventType>('none');
   const [openWindowX, setOpenWindowX] = useState(0);
@@ -108,27 +127,30 @@ export const ClickEventModal = ({
     useState<ChildWindowPlacementMode>('fixed');
   const [childWindowAnchor, setChildWindowAnchor] = useState<ChildWindowAnchor>('positioned');
 
+  const effectiveScriptId = resolveEffectiveScriptId(component, componentData);
+
   const selectedScript: Script | undefined = useMemo(
-    () => scripts.find((s) => s.id === component.scriptId),
-    [scripts, component.scriptId],
+    () => (effectiveScriptId ? scripts.find((s) => s.id === effectiveScriptId) : undefined),
+    [scripts, effectiveScriptId],
   );
 
   const scriptParameterValues: Record<string, ScriptParamValue> =
-    getComponentData(component).scriptParameterValues ?? {};
+    componentData.scriptParameterValues ?? {};
 
   const hasScriptParameters = (selectedScript?.parameters?.length ?? 0) > 0;
 
   const getCurrentClickEventType = (): ClickEventType | null => {
     const data = getComponentData(component);
-    if (component.scriptId && selectedScript && !selectedScript.hidden) {
+    const scriptId = resolveEffectiveScriptId(component, data);
+    if (scriptId && selectedScript && !selectedScript.hidden) {
       return 'fireScript';
     }
     if (data.pageId) return 'openPage';
-    if (component.childWindowId) return 'openWindow';
-    if (component.actionId) return 'fireAction';
+    if (resolveEffectiveChildWindowId(component, data)) return 'openWindow';
+    if (resolveEffectiveActionId(component, data)) return 'fireAction';
     if (data.closeCharacterWindowOnClick) return 'closeThisWindow';
     if (data.viewAttributeId) return 'viewAttribute';
-    if (component.scriptId && selectedScript) return 'fireScript';
+    if (scriptId && selectedScript) return 'fireScript';
     return null;
   };
 
@@ -143,12 +165,12 @@ export const ClickEventModal = ({
       return page ? `Open Page: ${page.label}` : 'Open Page';
     }
     if (type === 'openWindow') {
-      const winId = component.childWindowId ?? undefined;
+      const winId = resolveEffectiveChildWindowId(component, data) ?? undefined;
       const win = winId ? windows.find((w) => w.id === winId) : undefined;
       return win ? `Open Window: ${win.title}` : 'Open Window';
     }
     if (type === 'fireAction') {
-      const actionId = component.actionId ?? undefined;
+      const actionId = resolveEffectiveActionId(component, data) ?? undefined;
       const action = actionId ? actions.find((a) => a.id === actionId) : undefined;
       return action ? `Fire Action: ${action.title}` : 'Fire Action';
     }
@@ -173,14 +195,32 @@ export const ClickEventModal = ({
   };
 
   const handleSetOpenPageClick = (pageId: string) => {
-    const baseData = JSON.parse(component.data);
+    if (editingBase) {
+      const baseData = JSON.parse(component.data);
+      baseData.pageId = pageId;
+      void persist([{ id: component.id, data: JSON.stringify(baseData) }]);
+      return;
+    }
+    const baseData = JSON.parse(component.data) as ComponentData;
+    stripClickEventFieldsFromData(baseData);
     baseData.pageId = pageId;
+    clearInheritedClickRowIdsInMergedData(baseData);
     void persist([{ id: component.id, data: JSON.stringify(baseData) }]);
   };
 
   const handleClearOpenPageClick = async () => {
-    const baseData = JSON.parse(component.data);
-    delete baseData.pageId;
+    if (editingBase) {
+      const baseData = JSON.parse(component.data);
+      delete baseData.pageId;
+      const update: ComponentUpdate = { id: component.id, data: JSON.stringify(baseData) };
+      if (await removeLegacyHiddenClickScriptIfPresent()) {
+        update.scriptId = null;
+      }
+      await persist([update]);
+      return;
+    }
+    const baseData = JSON.parse(component.data) as ComponentData;
+    baseData.pageId = null as unknown as string | undefined;
     const update: ComponentUpdate = { id: component.id, data: JSON.stringify(baseData) };
     if (await removeLegacyHiddenClickScriptIfPresent()) {
       update.scriptId = null;
@@ -204,23 +244,50 @@ export const ClickEventModal = ({
     baseData.childWindowCollapse = params.collapse ?? false;
     baseData.childWindowPlacementMode = params.placementMode;
     baseData.childWindowAnchor = params.anchor;
-    void persist([
-      { id: component.id, childWindowId, data: JSON.stringify(baseData) },
-    ]);
+    if (editingBase) {
+      void persist([
+        { id: component.id, childWindowId, data: JSON.stringify(baseData) },
+      ]);
+      return;
+    }
+    stripClickEventFieldsFromData(baseData);
+    baseData.childWindowX = params.x;
+    baseData.childWindowY = params.y;
+    baseData.childWindowCollapse = params.collapse ?? false;
+    baseData.childWindowPlacementMode = params.placementMode;
+    baseData.childWindowAnchor = params.anchor;
+    clearInheritedClickRowIdsInMergedData(baseData);
+    baseData.clickChildWindowId = childWindowId;
+    void persist([{ id: component.id, data: JSON.stringify(baseData) }]);
   };
 
   const handleClearOpenWindowClick = async () => {
-    const baseData = JSON.parse(component.data);
+    if (editingBase) {
+      const baseData = JSON.parse(component.data);
+      delete baseData.childWindowX;
+      delete baseData.childWindowY;
+      delete baseData.childWindowCollapse;
+      delete baseData.childWindowPlacementMode;
+      delete baseData.childWindowAnchor;
+      const update: ComponentUpdate = {
+        id: component.id,
+        childWindowId: null,
+        data: JSON.stringify(baseData),
+      };
+      if (await removeLegacyHiddenClickScriptIfPresent()) {
+        update.scriptId = null;
+      }
+      await persist([update]);
+      return;
+    }
+    const baseData = JSON.parse(component.data) as ComponentData;
     delete baseData.childWindowX;
     delete baseData.childWindowY;
     delete baseData.childWindowCollapse;
     delete baseData.childWindowPlacementMode;
     delete baseData.childWindowAnchor;
-    const update: ComponentUpdate = {
-      id: component.id,
-      childWindowId: null,
-      data: JSON.stringify(baseData),
-    };
+    baseData.clickChildWindowId = null;
+    const update: ComponentUpdate = { id: component.id, data: JSON.stringify(baseData) };
     if (await removeLegacyHiddenClickScriptIfPresent()) {
       update.scriptId = null;
     }
@@ -228,14 +295,33 @@ export const ClickEventModal = ({
   };
 
   const handleSetFireActionClick = (actionId: string) => {
-    void persist([{ id: component.id, actionId }]);
+    if (editingBase) {
+      void persist([{ id: component.id, actionId }]);
+      return;
+    }
+    const baseData = JSON.parse(component.data) as ComponentData;
+    stripClickEventFieldsFromData(baseData);
+    baseData.clickActionId = actionId;
+    baseData.clickChildWindowId = null;
+    baseData.clickScriptId = null;
+    void persist([{ id: component.id, data: JSON.stringify(baseData) }]);
   };
 
   const handleClearFireActionClick = async () => {
-    const update: ComponentUpdate = {
-      id: component.id,
-      actionId: null,
-    };
+    if (editingBase) {
+      const update: ComponentUpdate = {
+        id: component.id,
+        actionId: null,
+      };
+      if (await removeLegacyHiddenClickScriptIfPresent()) {
+        update.scriptId = null;
+      }
+      await persist([update]);
+      return;
+    }
+    const baseData = JSON.parse(component.data) as ComponentData;
+    baseData.clickActionId = null;
+    const update: ComponentUpdate = { id: component.id, data: JSON.stringify(baseData) };
     if (await removeLegacyHiddenClickScriptIfPresent()) {
       update.scriptId = null;
     }
@@ -243,15 +329,30 @@ export const ClickEventModal = ({
   };
 
   const handleSetViewAttributeClick = (attributeId: string) => {
-    const baseData = JSON.parse(component.data);
+    if (editingBase) {
+      const baseData = JSON.parse(component.data);
+      baseData.viewAttributeId = attributeId;
+      persist([{ id: component.id, data: JSON.stringify(baseData) }]);
+      return;
+    }
+    const baseData = JSON.parse(component.data) as ComponentData;
+    stripClickEventFieldsFromData(baseData);
     baseData.viewAttributeId = attributeId;
+    clearInheritedClickRowIdsInMergedData(baseData);
     persist([{ id: component.id, data: JSON.stringify(baseData) }]);
   };
 
   const handleClearViewAttributeClick = () => {
-    const baseData = JSON.parse(component.data);
-    delete baseData.viewAttributeId;
-    delete baseData.viewAttributeReadOnly;
+    if (editingBase) {
+      const baseData = JSON.parse(component.data);
+      delete baseData.viewAttributeId;
+      delete baseData.viewAttributeReadOnly;
+      persist([{ id: component.id, data: JSON.stringify(baseData) }]);
+      return;
+    }
+    const baseData = JSON.parse(component.data) as ComponentData;
+    baseData.viewAttributeId = null;
+    baseData.viewAttributeReadOnly = false;
     persist([{ id: component.id, data: JSON.stringify(baseData) }]);
   };
 
@@ -262,15 +363,32 @@ export const ClickEventModal = ({
   };
 
   const handleSelectScript = (script: Script) => {
-    const baseData = JSON.parse(component.data);
+    if (editingBase) {
+      const baseData = JSON.parse(component.data);
+      delete baseData.scriptParameterValues;
+      persist([{ id: component.id, scriptId: script.id, data: JSON.stringify(baseData) }]);
+      return;
+    }
+    const baseData = JSON.parse(component.data) as ComponentData;
+    stripClickEventFieldsFromData(baseData);
     delete baseData.scriptParameterValues;
-    persist([{ id: component.id, scriptId: script.id, data: JSON.stringify(baseData) }]);
+    baseData.clickScriptId = script.id;
+    baseData.clickActionId = null;
+    baseData.clickChildWindowId = null;
+    persist([{ id: component.id, data: JSON.stringify(baseData) }]);
   };
 
   const handleClearScript = () => {
-    const baseData = JSON.parse(component.data);
+    if (editingBase) {
+      const baseData = JSON.parse(component.data);
+      delete baseData.scriptParameterValues;
+      persist([{ id: component.id, scriptId: null, data: JSON.stringify(baseData) }]);
+      return;
+    }
+    const baseData = JSON.parse(component.data) as ComponentData;
     delete baseData.scriptParameterValues;
-    persist([{ id: component.id, scriptId: null, data: JSON.stringify(baseData) }]);
+    baseData.clickScriptId = null;
+    persist([{ id: component.id, data: JSON.stringify(baseData) }]);
   };
 
   const persistClickEventAfterStrip = async (
@@ -281,12 +399,30 @@ export const ClickEventModal = ({
       baseData.closeCharacterWindowOnClick = true;
     }
 
+    if (!editingBase) {
+      clearInheritedClickRowIdsInMergedData(baseData);
+    }
+
+    if (editingBase) {
+      const update: ComponentUpdate = {
+        id: component.id,
+        data: JSON.stringify(baseData),
+        childWindowId: null,
+        actionId: null,
+        scriptId: null,
+      };
+
+      if (selectedScript?.hidden) {
+        await deleteScript(selectedScript.id);
+      }
+
+      await persist([update]);
+      return;
+    }
+
     const update: ComponentUpdate = {
       id: component.id,
       data: JSON.stringify(baseData),
-      childWindowId: null,
-      actionId: null,
-      scriptId: null,
     };
 
     if (selectedScript?.hidden) {
@@ -415,7 +551,7 @@ export const ClickEventModal = ({
                 <ActionLookup
                   id='component-data-action-lookup'
                   data-testid='component-data-action-lookup'
-                  value={component.actionId}
+                  value={effectiveActionId}
                   onSelect={(attr) => {
                     handleSetFireActionClick(attr.id);
                   }}
@@ -436,7 +572,7 @@ export const ClickEventModal = ({
               <div className='flex flex-col gap-3'>
                 <WindowLookup
                   label='Open Window'
-                  value={component.childWindowId}
+                  value={effectiveChildWindowId}
                   onSelect={(win) => {
                     handleSetOpenWindowClick(win.id, {
                       x: openWindowX,
@@ -463,8 +599,8 @@ export const ClickEventModal = ({
                           nextAnchor = 'center';
                           setChildWindowAnchor('center');
                         }
-                        if (component.childWindowId) {
-                          handleSetOpenWindowClick(component.childWindowId, {
+                        if (effectiveChildWindowId) {
+                          handleSetOpenWindowClick(effectiveChildWindowId, {
                             x: openWindowX,
                             y: openWindowY,
                             collapse: childWindowCollapse,
@@ -496,8 +632,8 @@ export const ClickEventModal = ({
                       }
                       onValueChange={(v: ChildWindowAnchor) => {
                         setChildWindowAnchor(v);
-                        if (component.childWindowId) {
-                          handleSetOpenWindowClick(component.childWindowId, {
+                        if (effectiveChildWindowId) {
+                          handleSetOpenWindowClick(effectiveChildWindowId, {
                             x: openWindowX,
                             y: openWindowY,
                             collapse: childWindowCollapse,
@@ -533,8 +669,8 @@ export const ClickEventModal = ({
                         onChange={(e) => {
                           const val = e.target.value === '' ? 0 : Number(e.target.value);
                           setOpenWindowX(val);
-                          if (component.childWindowId) {
-                            handleSetOpenWindowClick(component.childWindowId, {
+                          if (effectiveChildWindowId) {
+                            handleSetOpenWindowClick(effectiveChildWindowId, {
                               x: val,
                               y: openWindowY,
                               collapse: childWindowCollapse,
@@ -554,8 +690,8 @@ export const ClickEventModal = ({
                         onChange={(e) => {
                           const val = e.target.value === '' ? 0 : Number(e.target.value);
                           setOpenWindowY(val);
-                          if (component.childWindowId) {
-                            handleSetOpenWindowClick(component.childWindowId, {
+                          if (effectiveChildWindowId) {
+                            handleSetOpenWindowClick(effectiveChildWindowId, {
                               x: openWindowX,
                               y: val,
                               collapse: childWindowCollapse,
@@ -575,8 +711,8 @@ export const ClickEventModal = ({
                     onCheckedChange={(checked) => {
                       const val = checked === true;
                       setChildWindowCollapse(val);
-                      if (component.childWindowId) {
-                        handleSetOpenWindowClick(component.childWindowId, {
+                      if (effectiveChildWindowId) {
+                        handleSetOpenWindowClick(effectiveChildWindowId, {
                           x: openWindowX,
                           y: openWindowY,
                           collapse: val,
@@ -598,7 +734,7 @@ export const ClickEventModal = ({
                 <div className='space-y-2'>
                   <ScriptLookup
                     label='Script'
-                    value={component.scriptId ?? null}
+                    value={effectiveScriptId}
                     filterEntityType='gameManager'
                     onSelect={handleSelectScript}
                     onDelete={handleClearScript}
