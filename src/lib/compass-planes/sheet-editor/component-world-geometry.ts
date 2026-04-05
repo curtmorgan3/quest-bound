@@ -1,4 +1,4 @@
-import { ComponentTypes } from '@/lib/compass-planes/nodes/node-types';
+import { isGroupLikeComponentType } from '@/lib/compass-planes/nodes/node-types';
 import { getComponentData } from '@/lib/compass-planes/utils';
 import {
   getEditorPreviewStateName,
@@ -59,7 +59,7 @@ export function worldTopLeftWithEffective(
   return { x: pw.x + self.x, y: pw.y + self.y };
 }
 
-/** Walk `parentComponentId` from `componentId` and return the nearest ancestor with `type === 'group'`. */
+/** Walk `parentComponentId` from `componentId` and return the nearest group-like ancestor (`group` or `container`). */
 export function findNearestGroupRootId(
   componentId: string,
   byId: Map<string, Component>,
@@ -71,7 +71,7 @@ export function findNearestGroupRootId(
     seen.add(cur.id);
     const parent = byId.get(cur.parentComponentId);
     if (!parent) break;
-    if (parent.type === ComponentTypes.GROUP) return parent.id;
+    if (isGroupLikeComponentType(parent.type)) return parent.id;
     cur = parent;
   }
   return null;
@@ -86,7 +86,7 @@ export function getGroupPointerAffinityIds(
   allComponents: Component[],
   byId: Map<string, Component>,
 ): Set<string> {
-  if (component.type === ComponentTypes.GROUP) {
+  if (isGroupLikeComponentType(component.type)) {
     if (!groupSharesHoverPressed(component)) {
       return new Set([component.id]);
     }

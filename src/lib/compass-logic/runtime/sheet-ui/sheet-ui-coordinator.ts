@@ -1,5 +1,8 @@
 import { cloneComponentSubtreeForWindow } from '@/lib/compass-api/utils/composite-subtree';
-import { ComponentTypes } from '@/lib/compass-planes/nodes/node-types';
+import {
+  ComponentTypes,
+  isGroupLikeComponentType,
+} from '@/lib/compass-planes/nodes/node-types';
 import { parseComponentDataJson } from '@/lib/compass-planes/utils/component-data-json';
 import {
   parseComponentActiveStatesMap,
@@ -830,7 +833,7 @@ export class SheetUiCoordinator {
     if (!state) return;
 
     const parentFound = this.findStateRow(state, parentId, state.windows[0]?.id ?? '');
-    if (!parentFound || parentFound.row.type !== ComponentTypes.GROUP) return;
+    if (!parentFound || !isGroupLikeComponentType(parentFound.row.type)) return;
 
     const childFound = this.findStateRow(state, childId, parentFound.cw.id);
     if (!childFound) return;

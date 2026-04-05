@@ -1,5 +1,6 @@
 export * from './checkbox';
 export * from './common';
+export * from './container';
 export * from './content';
 export * from './frame';
 export * from './group';

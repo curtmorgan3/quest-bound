@@ -41,11 +41,16 @@ export const EditGroupNode = () => {
     [component.id, components],
   );
 
+  const containerEditLabel =
+    !viewMode && component.type === ComponentTypes.CONTAINER
+      ? (getComponentData(component).referenceLabel ?? '').trim()
+      : '';
+
   if (isFlex) {
     return (
       <ResizableNode component={component}>
         <div
-          className='box-border h-full w-full'
+          className='relative box-border h-full w-full'
           style={{
             ...groupOuterChromeStyle(css, cw, ch),
             ...getBackgroundStyle(css),
@@ -86,6 +91,15 @@ export const EditGroupNode = () => {
                 })
               : null}
           </div>
+          {containerEditLabel ? (
+            <div
+              aria-hidden
+              className='pointer-events-none absolute inset-0 z-[5] flex items-center justify-center overflow-hidden'>
+              <span className='max-w-full truncate px-2 text-center text-xs text-muted-foreground/80'>
+                {containerEditLabel}
+              </span>
+            </div>
+          ) : null}
         </div>
       </ResizableNode>
     );
@@ -139,6 +153,15 @@ export const EditGroupNode = () => {
               );
             })
           : null}
+        {containerEditLabel ? (
+          <div
+            aria-hidden
+            className='pointer-events-none absolute inset-0 z-[5] flex items-center justify-center overflow-hidden'>
+            <span className='max-w-full truncate px-2 text-center text-xs text-muted-foreground/80'>
+              {containerEditLabel}
+            </span>
+          </div>
+        ) : null}
       </div>
     </ResizableNode>
   );

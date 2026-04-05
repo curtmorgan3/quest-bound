@@ -1,4 +1,4 @@
-import { ComponentTypes } from '@/lib/compass-planes/nodes/node-types';
+import { isGroupLikeComponentType } from '@/lib/compass-planes/nodes/node-types';
 import type { Component } from '@/types';
 
 /**
@@ -12,7 +12,7 @@ export function takeFullWidthCss(
   if (component.parentComponentId == null) return '100dvw';
   const parent = getParent?.(component.parentComponentId);
   if (parent == null) return '100%';
-  return parent.type === ComponentTypes.GROUP ? '100%' : '100dvw';
+  return isGroupLikeComponentType(parent.type) ? '100%' : '100dvw';
 }
 
 export function takeFullHeightCss(
@@ -22,5 +22,5 @@ export function takeFullHeightCss(
   if (component.parentComponentId == null) return '100dvh';
   const parent = getParent?.(component.parentComponentId);
   if (parent == null) return '100%';
-  return parent.type === ComponentTypes.GROUP ? '100%' : '100dvh';
+  return isGroupLikeComponentType(parent.type) ? '100%' : '100dvh';
 }

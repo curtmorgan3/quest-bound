@@ -9,7 +9,7 @@ import {
 } from '@/components';
 import type { ComponentUpdate } from '@/lib/compass-api';
 import { useComponents, useComposites } from '@/lib/compass-api';
-import { ComponentTypes } from '@/lib/compass-planes/nodes';
+import { ComponentTypes, isGroupLikeComponentType } from '@/lib/compass-planes/nodes';
 import { expandDeleteIds } from '@/lib/compass-planes/sheet-editor/component-world-geometry';
 import { colorPrimary } from '@/palette';
 import { WindowEditorContext } from '@/stores';
@@ -68,7 +68,7 @@ export const ActionEdit = ({ components, handleUpdate }: Props) => {
     const onlyParent = parentIds.size === 1 ? [...parentIds][0] : null;
     const parent =
       onlyParent != null
-        ? allComponents.find((c) => c.id === onlyParent && c.type === ComponentTypes.GROUP)
+        ? allComponents.find((c) => c.id === onlyParent && isGroupLikeComponentType(c.type))
         : undefined;
     return {
       hasGroupedSelection: true,
@@ -84,6 +84,9 @@ export const ActionEdit = ({ components, handleUpdate }: Props) => {
     !components[0].locked
       ? components[0]
       : null;
+
+  const soleSelectedIsContainer =
+    components.length === 1 && components[0]?.type === ComponentTypes.CONTAINER;
 
   const handleLock = () => {
     handleUpdate('locked', !locked);
@@ -140,15 +143,17 @@ export const ActionEdit = ({ components, handleUpdate }: Props) => {
             }}
           />
         )}
-        <Ungroup
-          className={`text-xs h-[18px] w-[18px] cursor-${canUngroupSelected ? 'pointer' : 'not-allowed'}`}
-          style={{
-            opacity: canUngroupSelected ? 1 : 0.45,
-          }}
-          onClick={() => {
-            if (canUngroupSelected) ungroupSelectedComponents();
-          }}
-        />
+        {!soleSelectedIsContainer ? (
+          <Ungroup
+            className={`text-xs h-[18px] w-[18px] cursor-${canUngroupSelected ? 'pointer' : 'not-allowed'}`}
+            style={{
+              opacity: canUngroupSelected ? 1 : 0.45,
+            }}
+            onClick={() => {
+              if (canUngroupSelected) ungroupSelectedComponents();
+            }}
+          />
+        ) : null}
         {singleGroupRoot ? (
           <BookMarked
             aria-label='Save as composite'

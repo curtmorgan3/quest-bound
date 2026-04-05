@@ -2,7 +2,7 @@ import type { CSSProperties } from 'react';
 
 import type { Component, ComponentStyle } from '@/types';
 
-import { ComponentTypes } from '../nodes/node-types';
+import { isGroupLikeComponentType } from '../nodes/node-types';
 import { getComponentData } from '../utils';
 
 /**
@@ -16,7 +16,7 @@ export function deepestSelectedAncestorGroup(
 ): Component | null {
   const selectedGroupIds = new Set(
     components
-      .filter((x) => x.selected && !x.locked && x.type === ComponentTypes.GROUP)
+      .filter((x) => x.selected && !x.locked && isGroupLikeComponentType(x.type))
       .map((x) => x.id),
   );
   if (selectedGroupIds.size === 0) return null;
@@ -47,7 +47,7 @@ export function outermostGroupRoot(c: Component, byId: Map<string, Component>): 
     if (pid == null) break;
     const p = byId.get(pid);
     if (p == null) break;
-    if (p.type === ComponentTypes.GROUP) {
+    if (isGroupLikeComponentType(p.type)) {
       top = p;
     }
     cur = p;

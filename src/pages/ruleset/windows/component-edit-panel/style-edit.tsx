@@ -111,7 +111,8 @@ export const StyleEdit = ({ components, handleUpdate, handleDataUpdate }: Props)
 
   const singleSelectedGroup =
     components.length === 1 &&
-    components[0].type === ComponentTypes.GROUP &&
+    (components[0].type === ComponentTypes.GROUP ||
+      components[0].type === ComponentTypes.CONTAINER) &&
     Boolean(handleDataUpdate);
 
   const allowGradient =

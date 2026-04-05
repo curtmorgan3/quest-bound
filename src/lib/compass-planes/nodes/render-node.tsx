@@ -104,6 +104,7 @@ export function renderViewComponent(
         <ViewFrameNode key={c.id} component={c} />
       ));
     case ComponentTypes.GROUP:
+    case ComponentTypes.CONTAINER:
       return renderDecoratedViewBranch(component, characterAttributes, position, ctx, (c) => (
         <ViewGroupNode
           component={c}

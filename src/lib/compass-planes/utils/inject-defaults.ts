@@ -4,6 +4,7 @@ import { REQUIRED_COMPONENT_FIELDS } from '../nodes/components/common';
 import { DEFAULT_CONTENT } from '../nodes/components/content/content-config';
 import { DEFAULT_FRAME } from '../nodes/components/frame/frame-config';
 import { DEFAULT_GRAPH } from '../nodes/components/graph/graph-config';
+import { DEFAULT_CONTAINER } from '../nodes/components/container/container-config';
 import { DEFAULT_GROUP } from '../nodes/components/group/group-config';
 import { DEFAULT_IMAGE } from '../nodes/components/image/image-config';
 import { DEFAULT_INPUT } from '../nodes/components/input/input-config';
@@ -33,6 +34,7 @@ export function injectDefaultComponent(component: Partial<Component>) {
     [ComponentTypes.GRAPH, DEFAULT_GRAPH],
     [ComponentTypes.FRAME, DEFAULT_FRAME],
     [ComponentTypes.GROUP, DEFAULT_GROUP],
+    [ComponentTypes.CONTAINER, DEFAULT_CONTAINER],
   ]);
 
   const defaults = defaultMap.get(component.type as ComponentTypes);

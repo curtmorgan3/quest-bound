@@ -29,7 +29,7 @@ import {
 } from '../canvas/selection-modifiers';
 import { DEFAULT_GRID_SIZE } from '../editor-config';
 import { sheetNodeTypes, type EditorMenuOption } from '../nodes';
-import { ComponentTypes } from '../nodes/node-types';
+import { ComponentTypes, isGroupLikeComponentType } from '../nodes/node-types';
 import { injectDefaultComponent } from '../utils/inject-defaults';
 import { AddComponentPanel } from './add-component-panel';
 import {
@@ -401,7 +401,7 @@ export function SheetCanvasEditor({
       const wasSelected = Boolean(c.selected);
       // Unselected: hit group → move that node; else child of a selected group → move that group; else move outermost ancestor.
       const implicitDragGroupRoot = !wasSelected
-        ? c.type === ComponentTypes.GROUP
+        ? isGroupLikeComponentType(c.type)
           ? c
           : (deepestSelectedAncestorGroup(c, components, byId) ?? outermostGroupRoot(c, byId))
         : null;

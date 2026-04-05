@@ -9,6 +9,13 @@ export enum ComponentTypes {
   GRAPH = 'graph',
   FRAME = 'frame',
   GROUP = 'group',
+  /** Layout shell like a group; addable from the editor panel (not created only via Group action). */
+  CONTAINER = 'container',
+}
+
+/** Types that host nested children via `parentComponentId` (group layout, flex, `SheetComponentAccessor.add`). */
+export function isGroupLikeComponentType(type: string): boolean {
+  return type === ComponentTypes.GROUP || type === ComponentTypes.CONTAINER;
 }
 
 export type SheetComponentType = {

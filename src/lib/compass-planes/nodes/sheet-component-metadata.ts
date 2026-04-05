@@ -1,4 +1,5 @@
 import { checkboxConfig } from './components/checkbox/checkbox-config';
+import { containerConfig } from './components/container/container-config';
 import { contentConfig } from './components/content/content-config';
 import { frameConfig } from './components/frame/frame-config';
 import { graphConfig } from './components/graph/graph-config';
@@ -21,6 +22,7 @@ export const baseComponentTypes: SheetComponentType[] = [
   graphConfig,
   frameConfig,
   groupConfig,
+  containerConfig,
 ];
 
 export const getComponentType = (type: ComponentTypes): SheetComponentType => {
@@ -37,6 +39,7 @@ const includedEditorComponentTypes: ComponentTypes[] = [
   ComponentTypes.INVENTORY,
   ComponentTypes.GRAPH,
   ComponentTypes.FRAME,
+  ComponentTypes.CONTAINER,
 ];
 
 /** Sheet / window add-component UI and base flow context menu (when `menuOptions` is omitted). */

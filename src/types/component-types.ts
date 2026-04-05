@@ -79,7 +79,7 @@ export type ShapeComponentData = {
 
 export type GroupLayoutMode = 'absolute' | 'flex';
 
-/** Layout for `ComponentTypes.GROUP` roots (`data` JSON). Flex details live in `style`. */
+/** Layout for group-like roots (`group`, `container`) in `data` JSON. Flex details live in `style`. */
 export type GroupComponentData = {
   layoutMode?: GroupLayoutMode;
   /**

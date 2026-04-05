@@ -3,6 +3,7 @@ import { DEFAULT_CHECKBOX } from '@/lib/compass-planes/nodes/components/checkbox
 import { DEFAULT_CONTENT } from '@/lib/compass-planes/nodes/components/content/content-config';
 import { DEFAULT_FRAME } from '@/lib/compass-planes/nodes/components/frame/frame-config';
 import { DEFAULT_GRAPH } from '@/lib/compass-planes/nodes/components/graph/graph-config';
+import { DEFAULT_CONTAINER } from '@/lib/compass-planes/nodes/components/container/container-config';
 import { DEFAULT_GROUP } from '@/lib/compass-planes/nodes/components/group/group-config';
 import { DEFAULT_IMAGE } from '@/lib/compass-planes/nodes/components/image/image-config';
 import { DEFAULT_INPUT } from '@/lib/compass-planes/nodes/components/input/input-config';
@@ -22,6 +23,7 @@ const DEFAULT_BY_TYPE: Record<ComponentTypes, Partial<Component>> = {
   [ComponentTypes.GRAPH]: DEFAULT_GRAPH,
   [ComponentTypes.FRAME]: DEFAULT_FRAME,
   [ComponentTypes.GROUP]: DEFAULT_GROUP,
+  [ComponentTypes.CONTAINER]: DEFAULT_CONTAINER,
 };
 
 export function defaultPartialForComponentType(type: ComponentTypes): Partial<Component> {

@@ -27,6 +27,7 @@ export const sheetNodeTypes: Record<ComponentTypes, ComponentType> = {
   [ComponentTypes.GRAPH]: EditGraphNode,
   [ComponentTypes.FRAME]: EditFrameNode,
   [ComponentTypes.GROUP]: EditGroupNode,
+  [ComponentTypes.CONTAINER]: EditGroupNode,
 };
 
 export const componentTypes = [...baseComponentTypes];
