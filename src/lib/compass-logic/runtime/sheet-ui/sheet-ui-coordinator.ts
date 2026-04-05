@@ -1,8 +1,5 @@
 import { cloneComponentSubtreeForWindow } from '@/lib/compass-api/utils/composite-subtree';
-import {
-  ComponentTypes,
-  isGroupLikeComponentType,
-} from '@/lib/compass-planes/nodes/node-types';
+import { ComponentTypes, isGroupLikeComponentType } from '@/lib/compass-planes/nodes/node-types';
 import { parseComponentDataJson } from '@/lib/compass-planes/utils/component-data-json';
 import {
   parseComponentActiveStatesMap,
@@ -101,7 +98,10 @@ function mergedDataFor(
   return { ...(baseData[componentId] ?? {}), ...(dataDelta.get(componentId) ?? {}) };
 }
 
-function effectiveAttributeIdForTemplate(base: Component, state: CharacterSheetState): string | null {
+function effectiveAttributeIdForTemplate(
+  base: Component,
+  state: CharacterSheetState,
+): string | null {
   let v: string | null | undefined = base.attributeId;
   if (Object.hasOwn(state.baseAttributeIdOverrides, base.id)) {
     v = state.baseAttributeIdOverrides[base.id] ?? null;
