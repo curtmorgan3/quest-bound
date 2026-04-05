@@ -7,8 +7,11 @@ import { useEditorItemId } from '@/lib/compass-planes/canvas/editor-item-context
 import type { EffectiveLayout } from '@/lib/compass-planes/sheet-editor/component-world-geometry';
 import {
   directChildrenSortedByTop,
+  getGroupOverflowMode,
   groupFlexContainerStyle,
+  groupFlexInnerOverflowCss,
   groupOuterChromeStyle,
+  groupOuterShellOverflowCss,
   isFlexLayoutGroup,
 } from '@/lib/compass-planes/sheet-editor/group-flex-utils';
 import { useSheetCanvasLayout } from '@/lib/compass-planes/sheet-editor/sheet-canvas-layout-context';
@@ -41,6 +44,10 @@ export const EditGroupNode = () => {
     [component.id, components],
   );
 
+  const overflowMode = getGroupOverflowMode(css);
+  const outerOverflow = groupOuterShellOverflowCss(overflowMode);
+  const innerFlexOverflow = groupFlexInnerOverflowCss(overflowMode);
+
   const containerEditLabel =
     !viewMode && component.type === ComponentTypes.CONTAINER
       ? (getComponentData(component).referenceLabel ?? '').trim()
@@ -54,9 +61,9 @@ export const EditGroupNode = () => {
           style={{
             ...groupOuterChromeStyle(css, cw, ch),
             ...getBackgroundStyle(css),
-            overflow: 'hidden',
+            overflow: outerOverflow,
           }}>
-          <div style={groupFlexContainerStyle(css)} className='p-1'>
+          <div style={groupFlexContainerStyle(css, innerFlexOverflow)} className='p-1'>
             {canvasLayout
               ? childrenSorted.map((child) => {
                   const eff = canvasLayout.effectiveLayout.get(child.id)!;
@@ -111,11 +118,9 @@ export const EditGroupNode = () => {
         className='box-border h-full w-full'
         style={{
           position: 'relative',
-          ...css,
+          ...groupOuterChromeStyle(css, cw, ch),
           ...getBackgroundStyle(css),
-          width: cw,
-          height: ch,
-          overflow: 'visible',
+          overflow: outerOverflow,
         }}>
         {canvasLayout
           ? childrenSorted.map((child) => {
@@ -190,6 +195,10 @@ export const ViewGroupNode = ({
     [allComponents, component.id],
   );
 
+  const overflowMode = getGroupOverflowMode(css);
+  const outerOverflow = groupOuterShellOverflowCss(overflowMode);
+  const innerFlexOverflow = groupFlexInnerOverflowCss(overflowMode);
+
   if (isFlex && renderChild) {
     return (
       <div
@@ -197,10 +206,10 @@ export const ViewGroupNode = ({
         style={{
           ...groupOuterChromeStyle(css, cw, ch),
           ...getBackgroundStyle(css),
-          overflow: 'hidden',
+          overflow: outerOverflow,
           pointerEvents: 'auto',
         }}>
-        <div style={groupFlexContainerStyle(css)}>
+        <div style={groupFlexContainerStyle(css, innerFlexOverflow)} className='p-1'>
           {childrenSorted.map((child) => {
             if (!isComponentConditionallyVisible(child, characterAttributes)) {
               return null;
@@ -236,7 +245,7 @@ export const ViewGroupNode = ({
           position: 'relative',
           ...groupOuterChromeStyle(css, cw, ch),
           ...getBackgroundStyle(css),
-          overflow: 'visible',
+          overflow: outerOverflow,
         }}>
         {childrenSorted.map((child) => {
           if (!isComponentConditionallyVisible(child, characterAttributes)) {
@@ -273,11 +282,9 @@ export const ViewGroupNode = ({
       aria-hidden
       className='pointer-events-none component-group box-border'
       style={{
-        ...css,
+        ...groupOuterChromeStyle(css, cw, ch),
         ...getBackgroundStyle(css),
-        width: cw,
-        height: ch,
-        overflow: 'visible',
+        overflow: outerOverflow,
       }}
     />
   );

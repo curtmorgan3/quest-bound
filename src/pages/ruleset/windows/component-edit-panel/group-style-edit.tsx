@@ -97,6 +97,22 @@ export function GroupStyleEdit({ component, handleStyleUpdate, handleDataUpdate 
         </Select>
       </div>
 
+      <div className='flex flex-col gap-1.5'>
+        <Label className='text-xs text-muted-foreground'>Overflow</Label>
+        <Select
+          value={s.overflow ?? 'hidden'}
+          onValueChange={(v) => handleStyleUpdate('overflow', v)}>
+          <SelectTrigger className='h-[26px] w-full max-w-[220px]'>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value='hidden'>Hidden</SelectItem>
+            <SelectItem value='scroll'>Scroll</SelectItem>
+            <SelectItem value='visible'>Visible</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
       {isFlex ? (
         <div className='flex flex-col gap-3'>
           <div className='flex flex-col gap-1.5'>

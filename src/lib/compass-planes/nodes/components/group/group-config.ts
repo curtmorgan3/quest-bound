@@ -42,6 +42,7 @@ const DEFAULT_GROUP_STYLES: ComponentStyle = {
   gap: 8,
   alignItems: 'stretch',
   justifyContent: 'flex-start',
+  overflow: 'hidden',
   boxShadowOffsetX: 0,
   boxShadowOffsetY: 0,
   boxShadowBlur: 0,

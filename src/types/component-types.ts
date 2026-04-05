@@ -47,6 +47,8 @@ type BaseComponentStyle = {
     | 'space-between'
     | 'space-around'
     | 'space-evenly';
+  /** Group / container nodes: outer shell `overflow` behavior. */
+  overflow?: 'hidden' | 'scroll' | 'visible';
 };
 
 export type TextComponentStyle = BaseComponentStyle & {

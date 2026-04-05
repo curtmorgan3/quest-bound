@@ -82,6 +82,30 @@ const FLEX_STYLE_KEYS = new Set([
   'justifyContent',
 ]);
 
+/** Stored overflow for group-like nodes; default matches previous flex editor shell. */
+export function getGroupOverflowMode(css: ComponentStyle): 'hidden' | 'scroll' | 'visible' {
+  const o = css.overflow as 'hidden' | 'scroll' | 'visible' | 'grow' | undefined;
+  if (o === 'scroll' || o === 'visible') return o;
+  // Legacy sheets may still have `grow` in JSON; treat like visible overflow.
+  if (o === 'grow') return 'visible';
+  return 'hidden';
+}
+
+export function groupOuterShellOverflowCss(
+  mode: 'hidden' | 'scroll' | 'visible',
+): CSSProperties['overflow'] {
+  if (mode === 'scroll') return 'auto';
+  if (mode === 'visible') return 'visible';
+  return 'hidden';
+}
+
+export function groupFlexInnerOverflowCss(
+  mode: 'hidden' | 'scroll' | 'visible',
+): CSSProperties['overflow'] {
+  if (mode === 'hidden') return 'hidden';
+  return 'visible';
+}
+
 /**
  * Outer shell style for a group: full component style minus flex-host keys
  * (those apply only on the inner flex wrapper).
@@ -95,6 +119,7 @@ export function groupOuterChromeStyle(
   for (const k of FLEX_STYLE_KEYS) {
     delete out[k];
   }
+  delete out.overflow;
   return {
     ...(out as CSSProperties),
     width,
@@ -104,7 +129,10 @@ export function groupOuterChromeStyle(
 }
 
 /** Flex container style from stored group style (inner host). */
-export function groupFlexContainerStyle(css: ComponentStyle): CSSProperties {
+export function groupFlexContainerStyle(
+  css: ComponentStyle,
+  innerOverflow: CSSProperties['overflow'] = 'auto',
+): CSSProperties {
   const gap = css.gap ?? 8;
   return {
     display: 'flex',
@@ -119,6 +147,6 @@ export function groupFlexContainerStyle(css: ComponentStyle): CSSProperties {
     boxSizing: 'border-box',
     width: '100%',
     height: '100%',
-    overflow: 'auto',
+    overflow: innerOverflow,
   };
 }

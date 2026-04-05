@@ -177,7 +177,7 @@ const ViewTextNodeComponent = ({
           outline: css.outline,
           outlineColor: css.outlineColor,
           outlineWidth: css.outlineWidth,
-          overflow: 'hidden',
+          // overflow: 'hidden',
           ...noSelect,
         }}>
         <span
