@@ -241,9 +241,15 @@ export type ComponentData = ShapeComponentData &
     clickChildWindowId?: string | null;
     /** Same pattern for `Component.scriptId` (visible click scripts). */
     clickScriptId?: string | null;
-    /** When true, render width as `100dvw` while keeping stored `width` for layout math. */
+    /**
+     * When true, render width as `100dvw` on the sheet root or `100%` under a parent group,
+     * while keeping stored `width` for layout math.
+     */
     takeFullWidth?: boolean;
-    /** When true, render height as `100dvh` while keeping stored `height` for layout math. */
+    /**
+     * When true, render height as `100dvh` on the sheet root or `100%` under a parent group,
+     * while keeping stored `height` for layout math.
+     */
     takeFullHeight?: boolean;
     /**
      * When true, the sheet does not run component-level click handlers (scripts, navigation,

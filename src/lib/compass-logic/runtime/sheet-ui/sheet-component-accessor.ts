@@ -69,6 +69,54 @@ export class SheetComponentAccessor implements StructuredCloneSafe {
     );
   }
 
+  /**
+   * Resolves a descendant (nested child) of this component by `referenceLabel`, same semantics as
+   * `CharacterAccessor.getComponent` but scoped to this subtree. First preorder match wins.
+   */
+  async getComponent(referenceLabel: string): Promise<SheetComponentAccessor | null> {
+    return this.coordinator.getDescendantComponent(
+      this.characterId,
+      this.componentId,
+      this.characterWindowInstanceId,
+      referenceLabel,
+    );
+  }
+
+  /**
+   * All descendants of this component with the given `referenceLabel`, in preorder (same as
+   * `CharacterAccessor.getComponents`, scoped to this subtree).
+   */
+  async getComponents(referenceLabel: string): Promise<SheetComponentAccessor[]> {
+    return this.coordinator.getDescendantComponents(
+      this.characterId,
+      this.componentId,
+      this.characterWindowInstanceId,
+      referenceLabel,
+    );
+  }
+
+  /** Ruleset attribute title bound to this component, or null if none. */
+  async getAttribute(): Promise<string | null> {
+    return this.coordinator.getAssociatedAttributeName(
+      this.characterId,
+      this.componentId,
+      this.characterWindowInstanceId,
+    );
+  }
+
+  /**
+   * Associate this component with the ruleset attribute whose title matches (trimmed).
+   * Pass `null`, `''`, or whitespace-only to clear. Throws if the attribute name is non-empty and not found.
+   */
+  async setAttribute(attributeName: string | null): Promise<void> {
+    await this.coordinator.setAttributeByName(
+      this.characterId,
+      this.componentId,
+      this.characterWindowInstanceId,
+      attributeName,
+    );
+  }
+
   add(other: SheetComponentAccessor | null | undefined): void {
     if (!other) return;
     this.coordinator.addChild(this.characterId, this.componentId, other.componentId);

@@ -74,4 +74,24 @@ describe('mergeCharacterWindowComponents', () => {
     const data = JSON.parse(out[0]!.data);
     expect(data.value).toBe('Patched');
   });
+
+  it('applies componentAttributeIdOverrides for template components', () => {
+    const character = {
+      componentAttributeIdOverrides: { t1: 'attr-uuid' },
+    } as unknown as Character;
+    const out = mergeCharacterWindowComponents(template, {}, character);
+    expect(out[0]!.attributeId).toBe('attr-uuid');
+  });
+
+  it('can clear template attribute binding with null override', () => {
+    const withAttr = {
+      ...template[0]!,
+      attributeId: 'bound-id',
+    };
+    const character = {
+      componentAttributeIdOverrides: { t1: null },
+    } as unknown as Character;
+    const out = mergeCharacterWindowComponents([withAttr], {}, character);
+    expect(out[0]!.attributeId).toBeNull();
+  });
 });

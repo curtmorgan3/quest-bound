@@ -10,7 +10,7 @@ import {
 } from '@/lib/compass-planes/utils/component-states';
 import { filterNotSoftDeleted } from '@/lib/data/soft-delete';
 import type { DB } from '@/stores/db/hooks/types';
-import type { Character, CharacterWindow, Component, Composite } from '@/types';
+import type { Attribute, Character, CharacterWindow, Component, Composite } from '@/types';
 import { SheetComponentAccessor } from './sheet-component-accessor';
 import { defaultPartialForComponentType, isComponentTypesValue } from './sheet-component-defaults';
 import { classifyFlatKey } from './sheet-flat-keys';
@@ -35,6 +35,10 @@ interface CharacterSheetState {
   stylePatchesByRefLabel: Map<string, Record<string, unknown>>;
   /** CharacterWindow.id -> active custom state name per template/overlay component id. */
   activeStatesByCharWindowId: Map<string, Record<string, string>>;
+  /** Snapshot of `character.componentAttributeIdOverrides` at hydrate. */
+  baseAttributeIdOverrides: Record<string, string | null>;
+  /** Deltas for template `Component.attributeId` (overlay rows mutate in place). */
+  attributeIdDelta: Map<string, string | null>;
 }
 
 function collectPreOrder(components: Component[]): Component[] {
@@ -94,6 +98,17 @@ function mergedDataFor(
   return { ...(baseData[componentId] ?? {}), ...(dataDelta.get(componentId) ?? {}) };
 }
 
+function effectiveAttributeIdForTemplate(base: Component, state: CharacterSheetState): string | null {
+  let v: string | null | undefined = base.attributeId;
+  if (Object.hasOwn(state.baseAttributeIdOverrides, base.id)) {
+    v = state.baseAttributeIdOverrides[base.id] ?? null;
+  }
+  if (state.attributeIdDelta.has(base.id)) {
+    v = state.attributeIdDelta.get(base.id) ?? null;
+  }
+  return v ?? null;
+}
+
 function mergeVirtualTemplateRow(base: Component, state: CharacterSheetState): Component {
   const lp = mergedLayoutFor(base.id, state.baseLayoutOverrides, state.layoutDelta);
   let row = Object.keys(lp).length > 0 ? { ...base, ...lp } : { ...base };
@@ -102,7 +117,7 @@ function mergeVirtualTemplateRow(base: Component, state: CharacterSheetState): C
     const data = { ...parseRowData(row), ...dp };
     row = { ...row, data: JSON.stringify(data) };
   }
-  return row;
+  return { ...row, attributeId: effectiveAttributeIdForTemplate(base, state) };
 }
 
 /** Same instance-selection rule as SheetViewer when multiple CharacterWindows share a ruleset window id. */
@@ -234,6 +249,11 @@ export class SheetUiCoordinator {
       baseData[k] = { ...(v as Record<string, unknown>) };
     }
 
+    const baseAttrId: Record<string, string | null> = {};
+    for (const [k, v] of Object.entries(ch.componentAttributeIdOverrides ?? {})) {
+      baseAttrId[k] = v;
+    }
+
     const state: CharacterSheetState = {
       pageId,
       windows,
@@ -247,6 +267,8 @@ export class SheetUiCoordinator {
       baseStyleOverrides: baseStyle,
       stylePatchesByRefLabel: new Map(),
       activeStatesByCharWindowId,
+      baseAttributeIdOverrides: baseAttrId,
+      attributeIdDelta: new Map(),
     };
     this.charState.set(characterId, state);
     return state;
@@ -441,6 +463,164 @@ export class SheetUiCoordinator {
       }
     }
     return out;
+  }
+
+  /**
+   * All sheet components in preorder for the first character window on the current page whose `title`
+   * equals `windowTitle` (same matching as `createComponent`’s `props.window`).
+   */
+  async getComponentsByWindow(
+    characterId: string,
+    windowTitle: string,
+  ): Promise<SheetComponentAccessor[]> {
+    const state = await this.hydrateCharacter(characterId);
+    if (!state) return [];
+    const cw = state.windows.find((w) => w.title === windowTitle);
+    if (!cw) return [];
+    const ordered = this.mergedPreOrderForWindow(state, cw);
+    return ordered.map((c) => new SheetComponentAccessor(this, characterId, c.id, cw.id));
+  }
+
+  /** Ids of all nested children of `ancestorId` within the merged component tree for one window. */
+  private collectDescendantIds(merged: Component[], ancestorId: string): Set<string> {
+    const byParent = new Map<string | null, string[]>();
+    for (const c of merged) {
+      const p = c.parentComponentId ?? null;
+      if (!byParent.has(p)) byParent.set(p, []);
+      byParent.get(p)!.push(c.id);
+    }
+    const out = new Set<string>();
+    const walk = (id: string) => {
+      for (const childId of byParent.get(id) ?? []) {
+        out.add(childId);
+        walk(childId);
+      }
+    };
+    walk(ancestorId);
+    return out;
+  }
+
+  /**
+   * Like `getComponent`, but only matches components that are strict descendants of `ancestorComponentId`
+   * in the same character window instance (preorder: first match wins).
+   */
+  async getDescendantComponent(
+    characterId: string,
+    ancestorComponentId: string,
+    characterWindowInstanceId: string,
+    referenceLabel: string,
+  ): Promise<SheetComponentAccessor | null> {
+    const state = await this.hydrateCharacter(characterId);
+    if (!state) return null;
+    const cw = state.windows.find((w) => w.id === characterWindowInstanceId);
+    if (!cw) return null;
+    const merged = this.mergedForWindow(state, cw);
+    const descendants = this.collectDescendantIds(merged, ancestorComponentId);
+    const ordered = this.mergedPreOrderForWindow(state, cw);
+    for (const c of ordered) {
+      if (!descendants.has(c.id)) continue;
+      const ref = parseComponentDataJson(c).referenceLabel;
+      if (ref === referenceLabel) {
+        return new SheetComponentAccessor(this, characterId, c.id, cw.id);
+      }
+    }
+    return null;
+  }
+
+  /**
+   * Like `getComponents`, but only matches components that are strict descendants of `ancestorComponentId`
+   * in the same character window instance (preorder order).
+   */
+  async getDescendantComponents(
+    characterId: string,
+    ancestorComponentId: string,
+    characterWindowInstanceId: string,
+    referenceLabel: string,
+  ): Promise<SheetComponentAccessor[]> {
+    const state = await this.hydrateCharacter(characterId);
+    if (!state) return [];
+    const cw = state.windows.find((w) => w.id === characterWindowInstanceId);
+    if (!cw) return [];
+    const merged = this.mergedForWindow(state, cw);
+    const descendants = this.collectDescendantIds(merged, ancestorComponentId);
+    const ordered = this.mergedPreOrderForWindow(state, cw);
+    const out: SheetComponentAccessor[] = [];
+    for (const c of ordered) {
+      if (!descendants.has(c.id)) continue;
+      const ref = parseComponentDataJson(c).referenceLabel;
+      if (ref === referenceLabel) {
+        out.push(new SheetComponentAccessor(this, characterId, c.id, cw.id));
+      }
+    }
+    return out;
+  }
+
+  /**
+   * Ruleset attribute title for this component’s `attributeId`, or null when none / missing ruleset row.
+   */
+  async getAssociatedAttributeName(
+    characterId: string,
+    componentId: string,
+    hintCharWindowId: string,
+  ): Promise<string | null> {
+    const state = await this.hydrateCharacter(characterId);
+    if (!state) return null;
+    const found = this.findStateRow(state, componentId, hintCharWindowId);
+    if (!found) return null;
+    const id = found.row.attributeId;
+    if (id == null || id === '') return null;
+    const attr = (await this.db.attributes.get(id)) as Attribute | undefined;
+    return attr?.title ?? null;
+  }
+
+  /**
+   * Bind this component to the ruleset attribute with the given title (trimmed equality).
+   * Pass `null` or `''` to clear. Throws when the sheet is not loaded, the component is missing,
+   * or the name is non-empty and no attribute matches.
+   */
+  async setAttributeByName(
+    characterId: string,
+    componentId: string,
+    hintCharWindowId: string,
+    attributeName: string | null,
+  ): Promise<void> {
+    const state = this.charState.get(characterId);
+    if (!state) {
+      throw new Error('setAttribute: character sheet is not loaded');
+    }
+    const found = this.findStateRow(state, componentId, hintCharWindowId);
+    if (!found) {
+      throw new Error('setAttribute: component not found on this sheet');
+    }
+
+    const character = (await this.db.characters.get(characterId)) as Character | undefined;
+    const rulesetId = character?.rulesetId ?? this.rulesetId;
+
+    const trimmed = attributeName?.trim() ?? '';
+    let nextId: string | null = null;
+    if (trimmed !== '') {
+      const attrs = (await this.db.attributes
+        .where('rulesetId')
+        .equals(rulesetId)
+        .toArray()) as Attribute[];
+      const hit = attrs.find((a) => a.title.trim() === trimmed);
+      if (!hit) {
+        throw new Error(`setAttribute: Attribute '${attributeName}' not found`);
+      }
+      nextId = hit.id;
+    }
+
+    if (found.source === 'overlay') {
+      const overlay = state.overlayByCharWindowId.get(found.cw.id) ?? [];
+      const idx = overlay.findIndex((c) => c.id === componentId);
+      if (idx === -1) return;
+      const live = { ...overlay[idx]!, attributeId: nextId };
+      overlay[idx] = live;
+      state.overlayByCharWindowId.set(found.cw.id, overlay);
+    } else {
+      state.attributeIdDelta.set(componentId, nextId);
+    }
+    this.markTouched(characterId);
   }
 
   private findStateRow(
@@ -720,11 +900,20 @@ export class SheetUiCoordinator {
         }
       }
 
+      let attributeIdOut: Record<string, string | null> | undefined;
+      if (state.attributeIdDelta.size > 0) {
+        attributeIdOut = { ...(character.componentAttributeIdOverrides ?? {}) };
+        for (const [id, v] of state.attributeIdDelta) {
+          attributeIdOut[id] = v;
+        }
+      }
+
       await this.db.characters.update(characterId, {
         sheetHiddenComponentIds: hiddenMerged,
         componentLayoutOverrides: layoutMerged,
         componentScriptDataPatches: dataMerged,
         ...(styleOut ? { componentStyleOverrides: styleOut } : {}),
+        ...(attributeIdOut ? { componentAttributeIdOverrides: attributeIdOut } : {}),
         updatedAt: now,
       } as Partial<Character>);
 

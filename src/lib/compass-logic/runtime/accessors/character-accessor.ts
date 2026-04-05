@@ -147,6 +147,15 @@ export class CharacterAccessor implements StructuredCloneSafe {
   }
 
   /**
+   * All components in the first character sheet window on the current page with the given title
+   * (same title string as `createComponent`’s `props.window`), in preorder.
+   */
+  async getComponentsByWindow(windowTitle: string): Promise<SheetComponentAccessor[]> {
+    if (!this.sheetUiCoordinator) return [];
+    return this.sheetUiCoordinator.getComponentsByWindow(this.id, windowTitle);
+  }
+
+  /**
    * Set a style override for all components on this character's sheet with the given reference label.
    * Persisted on the character; merged when resolving styles in the viewer.
    */

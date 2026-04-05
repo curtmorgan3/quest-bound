@@ -154,6 +154,11 @@ export type Character = BaseDetails & {
    * Keyed by ruleset `Component.id`. Does not replace `componentData` (attribute value overrides).
    */
   componentScriptDataPatches?: Record<string, Record<string, unknown>>;
+  /**
+   * Per-template-component `attributeId` for this character (QBScript `SheetComponentAccessor.setAttribute`).
+   * Keyed by ruleset `Component.id`. `null` clears the association for that template node on this character.
+   */
+  componentAttributeIdOverrides?: Record<string, string | null>;
   /** ISO timestamp of the last time this character was synced with its ruleset attributes. */
   lastSyncedAt?: string | null;
   /** Optional variant (e.g. first archetype variant); persisted for cloud sync on the character row. */

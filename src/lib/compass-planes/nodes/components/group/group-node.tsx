@@ -70,8 +70,8 @@ export const EditGroupNode = () => {
                           : 'pointer-events-auto relative flex-shrink-0'
                       }
                       style={{
-                        width: viewMode && childData.takeFullWidth ? '100dvw' : eff.width,
-                        height: viewMode && childData.takeFullHeight ? '100dvh' : eff.height,
+                        width: viewMode && childData.takeFullWidth ? '100%' : eff.width,
+                        height: viewMode && childData.takeFullHeight ? '100%' : eff.height,
                       }}
                       onPointerDown={
                         child.locked ? undefined : (e) => canvasLayout.onItemPointerDown(e, child)
@@ -123,8 +123,8 @@ export const EditGroupNode = () => {
                   style={{
                     left: eff.x,
                     top: eff.y,
-                    width: viewMode && childData.takeFullWidth ? '100dvw' : eff.width,
-                    height: viewMode && childData.takeFullHeight ? '100dvh' : eff.height,
+                    width: viewMode && childData.takeFullWidth ? '100%' : eff.width,
+                    height: viewMode && childData.takeFullHeight ? '100%' : eff.height,
                     zIndex: child.z,
                   }}
                   onPointerDown={
@@ -191,8 +191,8 @@ export const ViewGroupNode = ({
                 key={child.id}
                 className='pointer-events-auto'
                 style={{
-                  width: childData.takeFullWidth ? '100dvw' : w,
-                  height: childData.takeFullHeight ? '100dvh' : h,
+                  width: childData.takeFullWidth ? '100%' : w,
+                  height: childData.takeFullHeight ? '100%' : h,
                   flexShrink: 0,
                   position: 'relative',
                 }}>
@@ -233,8 +233,8 @@ export const ViewGroupNode = ({
                 position: 'absolute',
                 left: x,
                 top: y,
-                width: childData.takeFullWidth ? '100dvw' : w,
-                height: childData.takeFullHeight ? '100dvh' : h,
+                width: childData.takeFullWidth ? '100%' : w,
+                height: childData.takeFullHeight ? '100%' : h,
                 zIndex: child.z,
               }}>
               {renderChild(child)}

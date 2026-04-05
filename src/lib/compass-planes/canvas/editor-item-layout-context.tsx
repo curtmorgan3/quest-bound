@@ -1,11 +1,15 @@
 import { getComponentData } from '@/lib/compass-planes/utils';
+import {
+  takeFullHeightCss,
+  takeFullWidthCss,
+} from '@/lib/compass-planes/utils/take-full-dimension-css';
 import { WindowEditorContext } from '@/stores';
 import type { Component } from '@/types';
 import { createContext, useContext, type ReactNode } from 'react';
 
 export type EditorItemLayout = { width: number; height: number };
 
-/** Numeric size for math; `widthStyle` / `heightStyle` for CSS (may be `100dvw` / `100dvh`). */
+/** Numeric size for math; `widthStyle` / `heightStyle` for CSS (viewport units at root, `100%` in a group). */
 export type ComponentCanvasDimensions = {
   width: number;
   height: number;
@@ -44,6 +48,7 @@ export function useComponentCanvasDimensions(
   /** Ruleset window editor: layout on canvas uses stored pixels; preview (`viewMode`) uses viewport CSS. */
   const usePixelSizeOnly =
     windowEditor != null && windowEditor.viewMode === false;
+  const getParent = windowEditor ? (id: string) => windowEditor.getComponent(id) : undefined;
 
   if (!component) {
     return { width: 0, height: 0, widthStyle: 0, heightStyle: 0 };
@@ -56,7 +61,9 @@ export function useComponentCanvasDimensions(
   return {
     width,
     height,
-    widthStyle: usePixelSizeOnly || !data.takeFullWidth ? w : '100dvw',
-    heightStyle: usePixelSizeOnly || !data.takeFullHeight ? h : '100dvh',
+    widthStyle:
+      usePixelSizeOnly || !data.takeFullWidth ? w : takeFullWidthCss(component, getParent),
+    heightStyle:
+      usePixelSizeOnly || !data.takeFullHeight ? h : takeFullHeightCss(component, getParent),
   };
 }

@@ -22,6 +22,7 @@ export function mergeCharacterWindowComponents(
   const hidden = new Set(character?.sheetHiddenComponentIds ?? []);
   const layoutOverrides = character?.componentLayoutOverrides ?? {};
   const dataPatches = character?.componentScriptDataPatches ?? {};
+  const attributeIdOverrides = character?.componentAttributeIdOverrides ?? {};
 
   const templateVisible = templateComponents.filter((c) => !hidden.has(c.id));
 
@@ -40,6 +41,9 @@ export function mergeCharacterWindowComponents(
       } catch {
         /* keep row */
       }
+    }
+    if (Object.hasOwn(attributeIdOverrides, c.id)) {
+      next = { ...next, attributeId: attributeIdOverrides[c.id] ?? null };
     }
     return next;
   });
