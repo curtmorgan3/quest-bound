@@ -82,13 +82,13 @@ const FLEX_STYLE_KEYS = new Set([
   'justifyContent',
 ]);
 
-/** Stored overflow for group-like nodes; default matches previous flex editor shell. */
+/** Stored overflow for group-like nodes; default is `visible` when unset. */
 export function getGroupOverflowMode(css: ComponentStyle): 'hidden' | 'scroll' | 'visible' {
   const o = css.overflow as 'hidden' | 'scroll' | 'visible' | 'grow' | undefined;
-  if (o === 'scroll' || o === 'visible') return o;
+  if (o === 'scroll' || o === 'visible' || o === 'hidden') return o;
   // Legacy sheets may still have `grow` in JSON; treat like visible overflow.
   if (o === 'grow') return 'visible';
-  return 'hidden';
+  return 'visible';
 }
 
 export function groupOuterShellOverflowCss(
