@@ -4,6 +4,7 @@ export * from './dev-tools';
 export * from './dice';
 export * from './error';
 export * from './home';
+export * from './organization';
 export * from './play';
 export * from './ruleset';
 export * from './settings';

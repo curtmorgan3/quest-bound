@@ -12,6 +12,8 @@ import {
   DevTools,
   ErrorPage,
   ManageCustomProperties,
+  OrganizationIndexRedirect,
+  OrganizationPage,
   PlayPage,
   Ruleset,
   RulesetLanding,
@@ -108,6 +110,9 @@ function CompassRoutes() {
             />
 
             <Route path={`/dev-tools`} element={<DevTools />} />
+
+            <Route path='/organization' element={<OrganizationIndexRedirect />} />
+            <Route path='/organization/:section' element={<OrganizationPage />} />
 
             <Route path='*' element={<ErrorPage type='404' />} />
           </Route>

@@ -30,18 +30,9 @@ import { cn } from '@/lib/utils';
 import { usePwaUpdate } from '@/pwa/pwa-update-provider';
 import { errorLogger, useOnboardingStore, usePwaInstallStore } from '@/stores';
 import { useCloudAuthStore } from '@/stores/cloud-auth-store';
-import {
-  Building2,
-  Download,
-  PlayCircleIcon,
-  RefreshCw,
-  Settings,
-  Shield,
-  User,
-} from 'lucide-react';
+import { Download, PlayCircleIcon, RefreshCw, Settings, Shield, User } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { CloudAccountSettings } from './cloud-account-settings';
-import { OrganizationSettings } from './organization-settings';
 
 const QB_CLOUD_BETA_FORM_URL = 'https://forms.gle/yMqY41qBjCkdRfX6A';
 
@@ -59,18 +50,8 @@ export const UserSettings = () => {
   const [exportLoading, setExportLoading] = useState(false);
   const [updateCheckLoading, setUpdateCheckLoading] = useState(false);
 
-  /** Mirrors `public.users.cloud_enabled` via `cloud_sync_enabled` RPC (see `fetchCloudSyncEnabled`). */
-  const showOrganizationTab =
-    isCloudConfigured && isAuthenticated && cloudSyncEnabled && !isCloudSyncEligibilityLoading;
-
   const showEnableQBCloud =
     isCloudConfigured && !cloudSyncEnabled && (!isAuthenticated || !isCloudSyncEligibilityLoading);
-
-  useEffect(() => {
-    if (!showOrganizationTab && activeTab === 'organization') {
-      setActiveTab('profile');
-    }
-  }, [showOrganizationTab, activeTab]);
 
   const handleUpdate = async () => {
     if (currentUser) {
@@ -112,11 +93,7 @@ export const UserSettings = () => {
 
   return (
     <Tabs value={activeTab} onValueChange={setActiveTab} className='w-full'>
-      <TabsList
-        className={cn(
-          'w-full max-w-2xl grid',
-          showOrganizationTab ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-3 max-w-md',
-        )}>
+      <TabsList className={cn('w-full max-w-md grid grid-cols-3')}>
         <TabsTrigger value='profile' className='gap-2'>
           <User className='size-4' />
           Profile
@@ -129,12 +106,6 @@ export const UserSettings = () => {
           <Shield className='size-4' />
           Account
         </TabsTrigger>
-        {showOrganizationTab ? (
-          <TabsTrigger value='organization' className='gap-2'>
-            <Building2 className='size-4' />
-            Organization
-          </TabsTrigger>
-        ) : null}
       </TabsList>
 
       <TabsContent value='profile' className='flex flex-col gap-4 mt-4'>
@@ -262,12 +233,6 @@ export const UserSettings = () => {
           </Label>
         </div>
       </TabsContent>
-
-      {showOrganizationTab ? (
-        <TabsContent value='organization' className='flex flex-col gap-4 mt-4'>
-          <OrganizationSettings />
-        </TabsContent>
-      ) : null}
 
       <TabsContent value='account' className='flex flex-col gap-4 mt-4'>
         <CloudAccountSettings />

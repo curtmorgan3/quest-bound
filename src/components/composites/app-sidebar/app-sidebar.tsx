@@ -12,15 +12,14 @@ import {
   SidebarTrigger,
   useSidebar,
 } from '@/components/ui/sidebar';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { isCloudConfigured } from '@/lib/cloud/client';
 import { useSyncStateStore } from '@/lib/cloud/sync/sync-state';
 import { useActiveRuleset, useUsers } from '@/lib/compass-api';
 import { Settings } from '@/pages';
 import { DiceContext, useCloudSyncReviewStore } from '@/stores';
 import { useCloudAuthStore } from '@/stores/cloud-auth-store';
-import { formatDistanceToNow } from 'date-fns';
 import {
+  Building2,
   CloudAlert,
   CloudCheck,
   CloudUpload,
@@ -69,6 +68,7 @@ export function AppSidebar() {
   const { activeRuleset } = useActiveRuleset();
 
   const isLandingRoute = location.pathname.startsWith('/landing/');
+  const isOrganizationRoute = location.pathname.startsWith('/organization');
   const isHomepage =
     location.pathname === '/rulesets' ||
     location.pathname === '/characters' ||
@@ -82,7 +82,9 @@ export function AppSidebar() {
     location.pathname.startsWith('/campaigns/') && location.pathname !== '/campaigns/new';
 
   const title =
-    location.pathname === '/rulesets' || !activeRuleset?.title
+    location.pathname === '/rulesets' ||
+    isOrganizationRoute ||
+    !activeRuleset?.title
       ? 'Quest Bound'
       : activeRuleset.title;
 
@@ -105,7 +107,6 @@ export function AppSidebar() {
     isCloudSynced,
     isSyncing,
     syncError,
-    lastSyncedAt,
     setSyncError,
     pushDialogOpen,
     setPushDialogOpen,
@@ -113,6 +114,12 @@ export function AppSidebar() {
   const planning = useCloudSyncReviewStore((s) => s.planning);
   const committing = useCloudSyncReviewStore((s) => s.committing);
   const reviewOpen = useCloudSyncReviewStore((s) => s.open);
+
+  const showOrganizationNav =
+    isCloudConfigured &&
+    isAuthenticated &&
+    cloudSyncEnabled &&
+    !cloudSyncEligibilityLoading;
 
   const showCloudSync =
     isCloudConfigured &&
@@ -124,11 +131,11 @@ export function AppSidebar() {
     !isLandingRoute &&
     !isCharacterRoute &&
     !isCampaignsRoute &&
-    !isDevTools;
+    !isDevTools &&
+    !isOrganizationRoute;
   const synced = rulesetId ? isCloudSynced(rulesetId) : false;
   const busy = isSyncing || planning || committing || reviewOpen;
   const isOffline = !navigator.onLine;
-  const lastSynced = rulesetId ? lastSyncedAt[rulesetId] : undefined;
 
   const getCloudSyncIcon = () => {
     if (syncError || isOffline) return CloudAlert;
@@ -142,21 +149,6 @@ export function AppSidebar() {
     if (isOffline) return 'Offline';
     if (busy) return 'Syncing…';
     return 'Cloud sync';
-  };
-
-  const getCloudSyncTooltip = () => {
-    if (syncError) return syncError;
-    if (isOffline) return 'Offline — sync when back online';
-    if (busy) return 'Syncing with Quest Bound Cloud…';
-    if (synced && lastSynced) {
-      try {
-        return `Synced ${formatDistanceToNow(new Date(lastSynced), { addSuffix: true })}`;
-      } catch {
-        return 'Synced with Quest Bound Cloud';
-      }
-    }
-    if (synced) return 'Synced with Quest Bound Cloud — open the menu to push, pull, or sync';
-    return 'Open the menu to push this ruleset to the cloud, pull from the cloud, or sync';
   };
 
   const handleCloudSyncClick = () => {
@@ -177,7 +169,7 @@ export function AppSidebar() {
     <CharacterSidebar />
   ) : isCampaignsRoute ? (
     <CampaignSidebar />
-  ) : isDevTools ? null : (
+  ) : isDevTools || isOrganizationRoute ? null : (
     <RulesetSidebar />
   );
 
@@ -225,6 +217,40 @@ export function AppSidebar() {
                 </SidebarMenuButton>
               </SidebarMenuItem>
             )}
+            {showOrganizationNav && (
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <Link to='/organization/details' data-testid='nav-organization'>
+                    <Building2 className='h-4 w-4' />
+                    <span>Organization</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            )}
+            {showCloudSync && (
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  onClick={handleCloudSyncClick}
+                  disabled={!syncError && (isOffline || busy)}
+                  data-testid='sidebar-cloud-sync'>
+                  {(() => {
+                    const Icon = getCloudSyncIcon();
+                    return (
+                      <Icon
+                        className={
+                          syncError || isOffline || !synced
+                            ? 'text-destructive'
+                            : busy
+                              ? 'animate-pulse'
+                              : ''
+                        }
+                      />
+                    );
+                  })()}
+                  <span>{getCloudSyncLabel()}</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            )}
             <SidebarMenuItem>
               <DrawerTrigger asChild>
                 <SidebarMenuButton>
@@ -233,37 +259,6 @@ export function AppSidebar() {
                 </SidebarMenuButton>
               </DrawerTrigger>
             </SidebarMenuItem>
-            {showCloudSync && (
-              <SidebarMenuItem>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <SidebarMenuButton
-                      onClick={handleCloudSyncClick}
-                      disabled={!syncError && (isOffline || busy)}
-                      data-testid='sidebar-cloud-sync'>
-                      {(() => {
-                        const Icon = getCloudSyncIcon();
-                        return (
-                          <Icon
-                            className={
-                              syncError || isOffline || !synced
-                                ? 'text-destructive'
-                                : busy
-                                  ? 'animate-pulse'
-                                  : ''
-                            }
-                          />
-                        );
-                      })()}
-                      <span>{getCloudSyncLabel()}</span>
-                    </SidebarMenuButton>
-                  </TooltipTrigger>
-                  <TooltipContent side='right' className='max-w-xs bg-muted'>
-                    {getCloudSyncTooltip()}
-                  </TooltipContent>
-                </Tooltip>
-              </SidebarMenuItem>
-            )}
             <SidebarMenuItem>
               <SidebarMenuButton asChild>
                 <a

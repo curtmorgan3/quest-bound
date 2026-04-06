@@ -21,6 +21,7 @@ import {
   TabsList,
   TabsTrigger,
 } from '@/components';
+import { useNotifications } from '@/hooks';
 import { cloudClient } from '@/lib/cloud/client';
 import {
   acceptOrganizationInvite,
@@ -56,10 +57,21 @@ import {
   type PendingInviteForUserRow,
 } from '@/lib/cloud/organizations/org-api';
 import { assertNotSvgOrganizationLogo } from '@/lib/cloud/sync/sync-assets';
-import { cn } from '@/lib/utils';
 import { useCloudAuthStore } from '@/stores/cloud-auth-store';
-import { FileText, Library, Loader2, Users, X } from 'lucide-react';
-import { useCallback, useEffect, useState } from 'react';
+import { Loader2 } from 'lucide-react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+
+import type { OrganizationAdminLogoSidebarProps } from './organization-admin-logo-sidebar';
+
+export type OrganizationAdminSection = 'details' | 'members' | 'content';
+
+export interface OrganizationSettingsProps {
+  adminSection: OrganizationAdminSection;
+  roleTab: 'admin' | 'member';
+  onRoleTabChange: (tab: 'admin' | 'member') => void;
+  onAdminOrganizationResolved?: (org: OrganizationRow | null) => void;
+  onAdminLogoSidebarChange?: (props: OrganizationAdminLogoSidebarProps | null) => void;
+}
 
 function readFileAsDataUrl(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -70,7 +82,13 @@ function readFileAsDataUrl(file: File): Promise<string> {
   });
 }
 
-export function OrganizationSettings() {
+export function OrganizationSettings({
+  adminSection,
+  roleTab,
+  onRoleTabChange,
+  onAdminOrganizationResolved,
+  onAdminLogoSidebarChange,
+}: OrganizationSettingsProps) {
   const cloudUser = useCloudAuthStore((s) => s.cloudUser);
   const touchCloudRulesetList = useCloudAuthStore((s) => s.touchCloudRulesetList);
   const userId = cloudUser?.id ?? null;
@@ -99,7 +117,10 @@ export function OrganizationSettings() {
   const [linkRulesetId, setLinkRulesetId] = useState<string>('');
 
   const [busy, setBusy] = useState(false);
-  const [message, setMessage] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
+
+  const { addNotification } = useNotifications();
+  const addNotificationRef = useRef(addNotification);
+  addNotificationRef.current = addNotification;
 
   const [removeMember, setRemoveMember] = useState<OrganizationMemberRow | null>(null);
   const [deleteOrgOpen, setDeleteOrgOpen] = useState(false);
@@ -151,7 +172,6 @@ export function OrganizationSettings() {
       }
       if (!drop()) {
         setLoading(true);
-        setMessage(null);
       }
       try {
         const [o, pending, memberships] = await Promise.all([
@@ -178,7 +198,7 @@ export function OrganizationSettings() {
           setLogoDisplayUrl(null);
         }
       } catch (e) {
-        if (!drop()) setMessage({ type: 'err', text: formatOrgSaveError(e) });
+        if (!drop()) addNotificationRef.current(formatOrgSaveError(e), { type: 'error' });
       } finally {
         if (!drop()) setLoading(false);
       }
@@ -193,6 +213,12 @@ export function OrganizationSettings() {
       cancelled = true;
     };
   }, [load]);
+
+  useEffect(() => {
+    if (!loading) {
+      onAdminOrganizationResolved?.(org);
+    }
+  }, [loading, org, onAdminOrganizationResolved]);
 
   useEffect(() => {
     let cancelled = false;
@@ -240,7 +266,6 @@ export function OrganizationSettings() {
   const handleCreate = async () => {
     if (!userId) return;
     setBusy(true);
-    setMessage(null);
     try {
       const created = await createOrganization({
         name: createName,
@@ -256,9 +281,9 @@ export function OrganizationSettings() {
       setCreateSlug('');
       setCreateDesc('');
       await load();
-      setMessage({ type: 'ok', text: 'Organization created.' });
+      addNotification('Organization created.', { type: 'success' });
     } catch (e) {
-      setMessage({ type: 'err', text: formatOrgSaveError(e) });
+      addNotification(formatOrgSaveError(e), { type: 'error' });
     } finally {
       setBusy(false);
     }
@@ -267,7 +292,6 @@ export function OrganizationSettings() {
   const handleSaveProfile = async () => {
     if (!org) return;
     setBusy(true);
-    setMessage(null);
     try {
       await updateOrganizationProfile(org.id, {
         name: editName,
@@ -281,62 +305,58 @@ export function OrganizationSettings() {
         description: editDesc,
       };
       setOrg({ ...org, ...next });
-      setMessage({ type: 'ok', text: 'Organization profile saved.' });
+      addNotification('Organization profile saved.', { type: 'success' });
     } catch (e) {
-      setMessage({ type: 'err', text: formatOrgSaveError(e) });
+      addNotification(formatOrgSaveError(e), { type: 'error' });
     } finally {
       setBusy(false);
     }
   };
 
-  const handleLogoFile = async (file: File | null) => {
-    if (!file || !org) return;
-    setBusy(true);
-    setMessage(null);
-    try {
-      const dataUrl = await readFileAsDataUrl(file);
-      assertNotSvgOrganizationLogo(dataUrl);
-      await uploadOrgLogoAndSetUrl(org.id, dataUrl);
-      const updated = await fetchOrganizationAsAdmin(userId!);
-      if (updated) {
-        setOrg(updated);
-        await refreshOrgDetails(updated, userId!);
+  const handleLogoFile = useCallback(
+    async (file: File | null) => {
+      if (!file || !org || !userId) return;
+      setBusy(true);
+      try {
+        const dataUrl = await readFileAsDataUrl(file);
+        assertNotSvgOrganizationLogo(dataUrl);
+        await uploadOrgLogoAndSetUrl(org.id, dataUrl);
+        const updated = await fetchOrganizationAsAdmin(userId);
+        if (updated) {
+          setOrg(updated);
+          await refreshOrgDetails(updated, userId);
+        }
+        addNotificationRef.current('Logo updated.', { type: 'success' });
+      } catch (e) {
+        addNotificationRef.current(e instanceof Error ? e.message : 'Could not upload logo.', {
+          type: 'error',
+        });
+      } finally {
+        setBusy(false);
       }
-      setMessage({ type: 'ok', text: 'Logo updated.' });
-    } catch (e) {
-      setMessage({
-        type: 'err',
-        text: e instanceof Error ? e.message : 'Could not upload logo.',
-      });
-    } finally {
-      setBusy(false);
-    }
-  };
+    },
+    [org, userId, refreshOrgDetails],
+  );
 
   const handleCreateLogoPick = async (file: File | null) => {
     if (!file) return;
-    setMessage(null);
     try {
       const dataUrl = await readFileAsDataUrl(file);
       assertNotSvgOrganizationLogo(dataUrl);
       setPendingLogoDataUrl(dataUrl);
       setLogoDisplayUrl(dataUrl);
     } catch (e) {
-      setMessage({
-        type: 'err',
-        text: e instanceof Error ? e.message : 'Invalid image.',
-      });
+      addNotification(e instanceof Error ? e.message : 'Invalid image.', { type: 'error' });
     }
   };
 
-  const handleClearLogo = async () => {
+  const handleClearLogo = useCallback(async () => {
     if (!org) {
       setPendingLogoDataUrl(null);
       setLogoDisplayUrl(null);
       return;
     }
     setBusy(true);
-    setMessage(null);
     try {
       await clearOrgLogo(org.id);
       const updated = { ...org, image_url: null };
@@ -344,29 +364,50 @@ export function OrganizationSettings() {
       setLogoDisplayUrl(null);
       setPendingLogoDataUrl(null);
     } catch (e) {
-      setMessage({ type: 'err', text: formatOrgSaveError(e) });
+      addNotificationRef.current(formatOrgSaveError(e), { type: 'error' });
     } finally {
       setBusy(false);
     }
-  };
+  }, [org]);
+
+  const onAdminLogoSidebarChangeRef = useRef(onAdminLogoSidebarChange);
+  onAdminLogoSidebarChangeRef.current = onAdminLogoSidebarChange;
+
+  useEffect(() => {
+    const cb = onAdminLogoSidebarChangeRef.current;
+    if (!cb) return;
+    if (!org || roleTab !== 'admin') {
+      cb(null);
+      return;
+    }
+    cb({
+      logoDisplayUrl,
+      busy,
+      onPickFile: handleLogoFile,
+      onClear: handleClearLogo,
+      organizationName: org.name,
+    });
+  }, [org, roleTab, logoDisplayUrl, busy, handleLogoFile, handleClearLogo]);
+
+  useEffect(() => {
+    return () => {
+      onAdminLogoSidebarChangeRef.current?.(null);
+    };
+  }, []);
 
   const handleInvite = async () => {
     if (!org || !userId) return;
     setBusy(true);
-    setMessage(null);
     try {
       await inviteUserToOrganization(org.id, inviteEmail, userId);
       setInviteEmail('');
-      setMessage({ type: 'ok', text: 'Invite sent.' });
+      addNotification('Invite sent.', { type: 'success' });
       const seats = await countOrganizationSeats(org.id);
       setSeatMemberCount(seats.memberCount);
       setSeatPendingCount(seats.pendingInviteCount);
       setInvites(await listOrganizationInvites(org.id));
     } catch (e) {
-      setMessage({
-        type: 'err',
-        text: e instanceof Error ? e.message : 'Invite failed.',
-      });
+      addNotification(e instanceof Error ? e.message : 'Invite failed.', { type: 'error' });
     } finally {
       setBusy(false);
     }
@@ -374,7 +415,6 @@ export function OrganizationSettings() {
 
   const handleRevokeInvite = async (inviteId: string) => {
     setBusy(true);
-    setMessage(null);
     try {
       await revokeOrganizationInvite(inviteId);
       if (org) {
@@ -383,9 +423,9 @@ export function OrganizationSettings() {
         setSeatPendingCount(seats.pendingInviteCount);
         setInvites(await listOrganizationInvites(org.id));
       }
-      setMessage({ type: 'ok', text: 'Invite revoked.' });
+      addNotification('Invite revoked.', { type: 'success' });
     } catch (e) {
-      setMessage({ type: 'err', text: formatOrgSaveError(e) });
+      addNotification(formatOrgSaveError(e), { type: 'error' });
     } finally {
       setBusy(false);
     }
@@ -394,7 +434,6 @@ export function OrganizationSettings() {
   const confirmRemoveMember = async () => {
     if (!org || !removeMember) return;
     setBusy(true);
-    setMessage(null);
     try {
       await removeOrganizationMember(org.id, removeMember.user_id);
       setRemoveMember(null);
@@ -402,9 +441,9 @@ export function OrganizationSettings() {
       setSeatMemberCount(seats.memberCount);
       setSeatPendingCount(seats.pendingInviteCount);
       setMembers(await organizationAdminListMembers(org.id));
-      setMessage({ type: 'ok', text: 'Member removed.' });
+      addNotification('Member removed.', { type: 'success' });
     } catch (e) {
-      setMessage({ type: 'err', text: formatOrgSaveError(e) });
+      addNotification(formatOrgSaveError(e), { type: 'error' });
     } finally {
       setBusy(false);
     }
@@ -413,18 +452,16 @@ export function OrganizationSettings() {
   const handleLinkRuleset = async () => {
     if (!org || !userId || !linkRulesetId) return;
     setBusy(true);
-    setMessage(null);
     try {
       await linkRulesetToOrganization(org.id, linkRulesetId, userId);
       setLinkRulesetId('');
       setLinkedRulesets(await listOrganizationRulesetLinks(org.id));
       setGloballyLinkedRulesetIds(await listAllLinkedRulesetIds());
       touchCloudRulesetList();
-      setMessage({ type: 'ok', text: 'Ruleset linked to the organization.' });
+      addNotification('Ruleset linked to the organization.', { type: 'success' });
     } catch (e) {
-      setMessage({
-        type: 'err',
-        text: e instanceof Error ? e.message : 'Could not link ruleset.',
+      addNotification(e instanceof Error ? e.message : 'Could not link ruleset.', {
+        type: 'error',
       });
     } finally {
       setBusy(false);
@@ -434,15 +471,14 @@ export function OrganizationSettings() {
   const handleUnlinkRuleset = async (rulesetId: string) => {
     if (!org) return;
     setBusy(true);
-    setMessage(null);
     try {
       await unlinkRulesetFromOrganization(org.id, rulesetId);
       setLinkedRulesets(await listOrganizationRulesetLinks(org.id));
       setGloballyLinkedRulesetIds(await listAllLinkedRulesetIds());
       touchCloudRulesetList();
-      setMessage({ type: 'ok', text: 'Ruleset unlinked.' });
+      addNotification('Ruleset unlinked.', { type: 'success' });
     } catch (e) {
-      setMessage({ type: 'err', text: formatOrgSaveError(e) });
+      addNotification(formatOrgSaveError(e), { type: 'error' });
     } finally {
       setBusy(false);
     }
@@ -451,7 +487,6 @@ export function OrganizationSettings() {
   const handleDeleteOrg = async () => {
     if (!org) return;
     setBusy(true);
-    setMessage(null);
     try {
       await deleteOrganization(org.id);
       setDeleteOrgOpen(false);
@@ -470,9 +505,9 @@ export function OrganizationSettings() {
       setPendingForMe(p);
       setMyMemberships(m);
       touchCloudRulesetList();
-      setMessage({ type: 'ok', text: 'Organization deleted.' });
+      addNotification('Organization deleted.', { type: 'success' });
     } catch (e) {
-      setMessage({ type: 'err', text: formatOrgSaveError(e) });
+      addNotification(formatOrgSaveError(e), { type: 'error' });
     } finally {
       setBusy(false);
     }
@@ -480,18 +515,17 @@ export function OrganizationSettings() {
 
   const handleAcceptInvite = async (inviteId: string) => {
     setBusy(true);
-    setMessage(null);
     try {
       await acceptOrganizationInvite(inviteId);
       setPendingForMe(await listPendingInvitesForCurrentUser());
       setMyMemberships(await listMyOrganizationMemberships());
       touchCloudRulesetList();
-      setMessage({
-        type: 'ok',
-        text: 'You joined the organization. Shared cloud rulesets appear in your cloud list when you open it.',
-      });
+      addNotification(
+        'You joined the organization. Shared cloud rulesets appear in your cloud list when you open it.',
+        { type: 'success' },
+      );
     } catch (e) {
-      setMessage({ type: 'err', text: formatOrgSaveError(e) });
+      addNotification(formatOrgSaveError(e), { type: 'error' });
     } finally {
       setBusy(false);
     }
@@ -499,13 +533,12 @@ export function OrganizationSettings() {
 
   const handleDismissInvite = async (inviteId: string) => {
     setBusy(true);
-    setMessage(null);
     try {
       await dismissOrganizationInvite(inviteId);
       setPendingForMe(await listPendingInvitesForCurrentUser());
-      setMessage({ type: 'ok', text: 'Invite dismissed.' });
+      addNotification('Invite dismissed.', { type: 'success' });
     } catch (e) {
-      setMessage({ type: 'err', text: formatOrgSaveError(e) });
+      addNotification(formatOrgSaveError(e), { type: 'error' });
     } finally {
       setBusy(false);
     }
@@ -514,15 +547,14 @@ export function OrganizationSettings() {
   const confirmLeaveOrganization = async () => {
     if (!leaveOrgId) return;
     setBusy(true);
-    setMessage(null);
     try {
       await leaveOrganization(leaveOrgId);
       setLeaveOrgId(null);
       setMyMemberships(await listMyOrganizationMemberships());
       touchCloudRulesetList();
-      setMessage({ type: 'ok', text: 'You left the organization.' });
+      addNotification('You left the organization.', { type: 'success' });
     } catch (e) {
-      setMessage({ type: 'err', text: formatOrgSaveError(e) });
+      addNotification(formatOrgSaveError(e), { type: 'error' });
     } finally {
       setBusy(false);
     }
@@ -546,7 +578,7 @@ export function OrganizationSettings() {
 
   if (loading) {
     return (
-      <div className='flex items-center gap-2 text-sm text-muted-foreground'>
+      <div className='flex items-center justify-center gap-2 text-sm text-muted-foreground h-[100%] w-[100%]'>
         <Loader2 className='size-4 animate-spin' />
         Loading organization…
       </div>
@@ -555,20 +587,10 @@ export function OrganizationSettings() {
 
   return (
     <div className='flex max-w-2xl flex-col gap-6'>
-      {message && (
-        <div
-          role='status'
-          className={cn(
-            'rounded-md border px-3 py-2 text-sm',
-            message.type === 'ok'
-              ? 'border-border bg-muted/40 text-foreground'
-              : 'border-destructive/40 bg-destructive/10 text-destructive',
-          )}>
-          {message.text}
-        </div>
-      )}
-
-      <Tabs defaultValue='admin' className='w-full'>
+      <Tabs
+        value={roleTab}
+        onValueChange={(v) => onRoleTabChange(v as 'admin' | 'member')}
+        className='w-full'>
         <TabsList className='grid w-full max-w-md grid-cols-2'>
           <TabsTrigger value='admin'>Admin</TabsTrigger>
           <TabsTrigger value='member'>Member</TabsTrigger>
@@ -646,67 +668,17 @@ export function OrganizationSettings() {
             </div>
           ) : (
             <div className='flex flex-col gap-6'>
-              <div>
-                <h3 className='text-lg font-medium'>{org.name}</h3>
-                <p className='text-sm text-muted-foreground'>You are the organization admin.</p>
-              </div>
-
-              <Tabs defaultValue='details' className='w-full'>
-                <TabsList className='grid w-full max-w-2xl grid-cols-3'>
-                  <TabsTrigger value='details' className='gap-1.5 px-2 sm:gap-2 sm:px-3'>
-                    <FileText className='size-4 shrink-0' />
-                    <span className='truncate'>Details</span>
-                  </TabsTrigger>
-                  <TabsTrigger value='members' className='gap-1.5 px-2 sm:gap-2 sm:px-3'>
-                    <Users className='size-4 shrink-0' />
-                    <span className='truncate'>Members</span>
-                  </TabsTrigger>
-                  <TabsTrigger value='content' className='gap-1.5 px-2 sm:gap-2 sm:px-3'>
-                    <Library className='size-4 shrink-0' />
-                    <span className='truncate'>Content</span>
-                  </TabsTrigger>
-                </TabsList>
-
-                <TabsContent value='details' className='mt-4 flex flex-col gap-6'>
-                  <div className='flex flex-col gap-4'>
-                    <h4 className='text-sm font-medium'>Profile</h4>
-                    <div className='grid gap-2'>
-                      <Label htmlFor='org-edit-name'>Name</Label>
-                      <Input
-                        id='org-edit-name'
-                        value={editName}
-                        onChange={(e) => setEditName(e.target.value)}
-                      />
-                    </div>
-                    <div className='grid gap-4 sm:grid-cols-2'>
+              <div className='w-full'>
+                {adminSection === 'details' ? (
+                  <div className='mt-0 flex flex-col gap-6'>
+                    <div className='flex flex-col gap-4'>
                       <div className='grid gap-2'>
-                        <Label htmlFor='org-edit-logo'>Logo</Label>
-                        {!logoDisplayUrl ? (
-                          <Input
-                            id='org-edit-logo'
-                            type='file'
-                            accept='image/*'
-                            onChange={(e) => void handleLogoFile(e.target.files?.[0] ?? null)}
-                          />
-                        ) : null}
-                        {logoDisplayUrl ? (
-                          <div className='group relative h-16 w-16'>
-                            <img
-                              src={logoDisplayUrl}
-                              alt=''
-                              className='size-16 rounded-md border object-cover'
-                            />
-                            <Button
-                              type='button'
-                              variant='destructive'
-                              size='icon'
-                              className='absolute right-1 top-1 size-6 opacity-0 transition-opacity group-hover:opacity-100'
-                              onClick={() => void handleClearLogo()}>
-                              <X className='size-3.5' />
-                              <span className='sr-only'>Remove logo</span>
-                            </Button>
-                          </div>
-                        ) : null}
+                        <Label htmlFor='org-edit-name'>Name</Label>
+                        <Input
+                          id='org-edit-name'
+                          value={editName}
+                          onChange={(e) => setEditName(e.target.value)}
+                        />
                       </div>
                       <div className='grid gap-2'>
                         <Label htmlFor='org-edit-slug'>Slug</Label>
@@ -716,198 +688,205 @@ export function OrganizationSettings() {
                           onChange={(e) => setEditSlug(e.target.value.toLowerCase())}
                         />
                       </div>
-                    </div>
-                    <DescriptionEditor
-                      id='org-edit-desc'
-                      value={editDesc}
-                      onChange={setEditDesc}
-                      disabled={busy}
-                      placeholder='No description yet.'
-                    />
-                    <div className='flex flex-wrap gap-2'>
-                      <Button
-                        type='button'
-                        variant='secondary'
+                      <DescriptionEditor
+                        id='org-edit-desc'
+                        value={editDesc}
+                        onChange={setEditDesc}
                         disabled={busy}
-                        onClick={() => void handleSaveProfile()}>
-                        Save profile
-                      </Button>
-                      <AlertDialog open={deleteOrgOpen} onOpenChange={setDeleteOrgOpen}>
-                        <AlertDialogTrigger asChild>
-                          <Button
-                            type='button'
-                            variant='destructive'
-                            disabled={busy}
-                            className='w-fit'>
-                            Delete organization
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Delete this organization?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              This cannot be undone. Members lose cloud access to linked rulesets;
-                              pending invites are removed.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        placeholder='No description yet.'
+                      />
+
+                      <div className='flex flex-wrap gap-2'>
+                        <Button
+                          type='button'
+                          variant='secondary'
+                          disabled={busy}
+                          onClick={() => void handleSaveProfile()}>
+                          Save profile
+                        </Button>
+                        <AlertDialog open={deleteOrgOpen} onOpenChange={setDeleteOrgOpen}>
+                          <AlertDialogTrigger asChild>
                             <Button
                               type='button'
                               variant='destructive'
                               disabled={busy}
-                              onClick={() => void handleDeleteOrg()}>
-                              {busy ? 'Deleting…' : 'Delete organization'}
+                              className='w-fit'>
+                              Delete Organization
                             </Button>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Delete this organization?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                This cannot be undone. Members lose cloud access to linked rulesets;
+                                pending invites are removed.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <Button
+                                type='button'
+                                variant='destructive'
+                                disabled={busy}
+                                onClick={() => void handleDeleteOrg()}>
+                                {busy ? 'Deleting…' : 'Delete organization'}
+                              </Button>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
                     </div>
                   </div>
-                </TabsContent>
+                ) : null}
 
-                <TabsContent value='content' className='mt-4 flex flex-col gap-3'>
-                  <h4 className='text-sm font-medium'>Linked cloud rulesets</h4>
-                  <p className='text-sm text-muted-foreground'>
-                    Only rulesets you own in the cloud can be linked. Each ruleset can belong to at
-                    most one organization.
-                  </p>
-                  {linkedRulesets.length ? (
-                    <ul className='divide-y rounded-md border text-sm'>
-                      {linkedRulesets.map((l) => {
-                        const title = ownedCloudRulesets.find((r) => r.id === l.ruleset_id)?.title;
-                        return (
-                          <li
-                            key={l.ruleset_id}
-                            className='flex items-center justify-between gap-2 px-3 py-2'>
-                        <span className='truncate'>{title ?? l.ruleset_id}</span>
-                            <Button
-                              type='button'
-                              variant='outline'
-                              size='sm'
-                              disabled={busy}
-                              onClick={() => void handleUnlinkRuleset(l.ruleset_id)}>
-                              Unlink
-                            </Button>
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  ) : (
-                    <p className='text-sm text-muted-foreground'>No linked rulesets.</p>
-                  )}
-                  {linkableRulesets.length ? (
-                    <div className='flex flex-wrap items-end gap-2'>
-                      <div className='grid gap-2 min-w-[220px]'>
-                        <Label>Link ruleset</Label>
-                        <Select value={linkRulesetId || undefined} onValueChange={setLinkRulesetId}>
-                          <SelectTrigger className='w-full min-w-[220px]'>
-                            <SelectValue placeholder='Choose a ruleset…' />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {linkableRulesets.map((r) => (
-                              <SelectItem key={r.id} value={r.id}>
-                                {r.title || r.id}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <Button
-                        type='button'
-                        disabled={busy || !linkRulesetId}
-                        onClick={() => void handleLinkRuleset()}>
-                        Link
-                      </Button>
-                    </div>
-                  ) : (
+                {adminSection === 'content' ? (
+                  <div className='mt-0 flex flex-col gap-3'>
+                    <h4 className='text-sm font-medium'>Linked cloud rulesets</h4>
                     <p className='text-sm text-muted-foreground'>
-                      No eligible cloud rulesets to link (all owned rulesets may already be linked
-                      elsewhere).
+                      Only rulesets you own in the cloud can be linked.
                     </p>
-                  )}
-                </TabsContent>
-
-                <TabsContent value='members' className='mt-4 flex flex-col gap-8'>
-                  <div className='flex flex-col gap-3'>
-                    <h4 className='text-sm font-medium'>Invites</h4>
-                    <div className='flex flex-wrap items-end gap-2'>
-                      <div className='grid flex-1 gap-2 min-w-[200px]'>
-                        <Label htmlFor='org-invite-email'>Email</Label>
-                        <Input
-                          id='org-invite-email'
-                          type='email'
-                          value={inviteEmail}
-                          onChange={(e) => setInviteEmail(e.target.value)}
-                          placeholder='player@example.com'
-                          disabled={seatFull}
-                        />
+                    {linkableRulesets.length ? (
+                      <div className='flex flex-wrap items-end gap-2'>
+                        <div className='grid min-w-[220px] gap-2'>
+                          <Label>Link ruleset</Label>
+                          <Select
+                            value={linkRulesetId || undefined}
+                            onValueChange={setLinkRulesetId}>
+                            <SelectTrigger className='w-full min-w-[220px]'>
+                              <SelectValue placeholder='Choose a ruleset…' />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {linkableRulesets.map((r) => (
+                                <SelectItem key={r.id} value={r.id}>
+                                  {r.title || r.id}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <Button
+                          type='button'
+                          disabled={busy || !linkRulesetId}
+                          onClick={() => void handleLinkRuleset()}>
+                          Link
+                        </Button>
                       </div>
-                      <Button
-                        type='button'
-                        disabled={busy || seatFull || !inviteEmail.trim()}
-                        onClick={() => void handleInvite()}>
-                        Invite
-                      </Button>
-                    </div>
-                    {seatFull ? (
-                      <p className='text-sm text-amber-600 dark:text-amber-500'>
-                        Seat limit reached. Revoke a pending invite or remove a member to invite
-                        someone new.
+                    ) : (
+                      <p className='text-sm text-muted-foreground'>
+                        No eligible cloud rulesets to link
                       </p>
-                    ) : null}
-                    {pendingInvites.length ? (
+                    )}
+                    {linkedRulesets.length ? (
                       <ul className='divide-y rounded-md border text-sm'>
-                        {pendingInvites.map((inv) => (
-                          <li
-                            key={inv.id}
-                            className='flex items-center justify-between gap-2 px-3 py-2'>
-                            <span className='truncate'>{inv.invitee_email_normalized}</span>
-                            <Button
-                              type='button'
-                              variant='outline'
-                              size='sm'
-                              disabled={busy}
-                              onClick={() => void handleRevokeInvite(inv.id)}>
-                              Revoke
-                            </Button>
-                          </li>
-                        ))}
+                        {linkedRulesets.map((l) => {
+                          const title = ownedCloudRulesets.find(
+                            (r) => r.id === l.ruleset_id,
+                          )?.title;
+                          return (
+                            <li
+                              key={l.ruleset_id}
+                              className='flex items-center justify-between gap-2 px-3 py-2'>
+                              <span className='truncate'>{title ?? l.ruleset_id}</span>
+                              <Button
+                                type='button'
+                                variant='outline'
+                                size='sm'
+                                disabled={busy}
+                                onClick={() => void handleUnlinkRuleset(l.ruleset_id)}>
+                                Unlink
+                              </Button>
+                            </li>
+                          );
+                        })}
                       </ul>
                     ) : (
-                      <p className='text-sm text-muted-foreground'>No pending invites.</p>
+                      <p className='text-sm text-muted-foreground'>No linked rulesets</p>
                     )}
                   </div>
+                ) : null}
 
-                  <div className='flex flex-col gap-3'>
-                    <h4 className='text-sm font-medium'>Members</h4>
-                    {members.length ? (
-                      <ul className='divide-y rounded-md border text-sm'>
-                        {members.map((m) => (
-                          <li
-                            key={m.user_id}
-                            className='flex items-center justify-between gap-2 px-3 py-2'>
-                            <span className='truncate'>{m.email}</span>
-                            <Button
-                              type='button'
-                              variant='outline'
-                              size='sm'
-                              onClick={() => setRemoveMember(m)}>
-                              Remove
-                            </Button>
-                          </li>
-                        ))}
-                      </ul>
-                    ) : (
-                      <p className='text-sm text-muted-foreground'>No members yet besides you.</p>
-                    )}
+                {adminSection === 'members' ? (
+                  <div className='mt-0 flex flex-col gap-8'>
+                    <div className='flex flex-col gap-3'>
+                      <h4 className='text-sm font-medium'>Invites</h4>
+                      <div className='flex flex-wrap items-end gap-2'>
+                        <div className='grid min-w-[200px] flex-1 gap-2'>
+                          <Label htmlFor='org-invite-email'>Email</Label>
+                          <Input
+                            id='org-invite-email'
+                            type='email'
+                            value={inviteEmail}
+                            onChange={(e) => setInviteEmail(e.target.value)}
+                            placeholder='player@example.com'
+                            disabled={seatFull}
+                          />
+                        </div>
+                        <Button
+                          type='button'
+                          disabled={busy || seatFull || !inviteEmail.trim()}
+                          onClick={() => void handleInvite()}>
+                          Invite
+                        </Button>
+                      </div>
+                      {seatFull ? (
+                        <p className='text-sm text-amber-600 dark:text-amber-500'>
+                          Seat limit reached. Revoke a pending invite or remove a member to invite
+                          someone new.
+                        </p>
+                      ) : null}
+                      {pendingInvites.length ? (
+                        <ul className='divide-y rounded-md border text-sm'>
+                          {pendingInvites.map((inv) => (
+                            <li
+                              key={inv.id}
+                              className='flex items-center justify-between gap-2 px-3 py-2'>
+                              <span className='truncate'>{inv.invitee_email_normalized}</span>
+                              <Button
+                                type='button'
+                                variant='outline'
+                                size='sm'
+                                disabled={busy}
+                                onClick={() => void handleRevokeInvite(inv.id)}>
+                                Revoke
+                              </Button>
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <p className='text-sm text-muted-foreground'>No pending invites.</p>
+                      )}
+                    </div>
+
+                    <div className='flex flex-col gap-3'>
+                      <h4 className='text-sm font-medium'>Members</h4>
+                      {members.length ? (
+                        <ul className='divide-y rounded-md border text-sm'>
+                          {members.map((m) => (
+                            <li
+                              key={m.user_id}
+                              className='flex items-center justify-between gap-2 px-3 py-2'>
+                              <span className='truncate'>{m.email}</span>
+                              <Button
+                                type='button'
+                                variant='outline'
+                                size='sm'
+                                onClick={() => setRemoveMember(m)}>
+                                Remove
+                              </Button>
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <p className='text-sm text-muted-foreground'>No members yet besides you.</p>
+                      )}
+                    </div>
+
+                    <p className='text-sm text-muted-foreground'>
+                      Seats in use: {seatMemberCount + seatPendingCount} of 4
+                    </p>
                   </div>
-
-                  <p className='text-sm text-muted-foreground'>
-                    Seats in use: {seatMemberCount + seatPendingCount} of 4
-                  </p>
-                </TabsContent>
-              </Tabs>
+                ) : null}
+              </div>
             </div>
           )}
         </TabsContent>
