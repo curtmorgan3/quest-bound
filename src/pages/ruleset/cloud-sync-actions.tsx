@@ -1,27 +1,14 @@
 /**
- * Cloud sync actions for the ruleset page: "Push to Cloud" (first push) and "Sync Now".
- * Only visible when cloud is configured and user is authenticated.
+ * Cloud sync entry for the ruleset page: opens a menu with push, pull, and sync actions.
  */
 
+import { Button, CloudSyncMenuDialogs } from '@/components';
 import { isCloudConfigured } from '@/lib/cloud/client';
-import { pushToCloudAndMarkSynced } from '@/lib/cloud/sync/sync-service';
 import { useSyncStateStore } from '@/lib/cloud/sync/sync-state';
-import { Cloud, Loader2, RefreshCw } from 'lucide-react';
+import { Cloud, Loader2 } from 'lucide-react';
 import { forwardRef, useImperativeHandle, useState } from 'react';
-import { db, useCloudSyncReviewStore, useCloudSyncSummaryPanelStore } from '@/stores';
-import type { DB } from '@/stores/db/hooks/types';
+import { useCloudSyncReviewStore } from '@/stores';
 import { useCloudAuthStore } from '@/stores/cloud-auth-store';
-import {
-  Button,
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components';
 
 export interface CloudSyncActionsRef {
   openPushDialog: () => void;
@@ -36,108 +23,55 @@ export const CloudSyncActions = forwardRef<CloudSyncActionsRef, CloudSyncActions
     const isAuthenticated = useCloudAuthStore((s) => s.isAuthenticated);
     const cloudSyncEnabled = useCloudAuthStore((s) => s.cloudSyncEnabled);
     const cloudSyncEligibilityLoading = useCloudAuthStore((s) => s.isCloudSyncEligibilityLoading);
-    const { isCloudSynced, isSyncing, syncError } = useSyncStateStore();
+    const { isSyncing, syncError } = useSyncStateStore();
     const planning = useCloudSyncReviewStore((s) => s.planning);
     const committing = useCloudSyncReviewStore((s) => s.committing);
-    const startReview = useCloudSyncReviewStore((s) => s.startReview);
-    const [pushConfirmOpen, setPushConfirmOpen] = useState(false);
-    const [pushInProgress, setPushInProgress] = useState(false);
+    const reviewOpen = useCloudSyncReviewStore((s) => s.open);
+    const [menuOpen, setMenuOpen] = useState(false);
 
     useImperativeHandle(ref, () => ({
-      openPushDialog: () => setPushConfirmOpen(true),
+      openPushDialog: () => setMenuOpen(true),
     }));
 
-  if (
-    !isCloudConfigured ||
-    !isAuthenticated ||
-    !cloudSyncEnabled ||
-    cloudSyncEligibilityLoading
-  ) {
-    return null;
-  }
-
-  const synced = isCloudSynced(rulesetId);
-  const busy = isSyncing || pushInProgress || planning || committing;
-
-  const handleSyncNow = async () => {
-    if (busy) return;
-    await startReview(rulesetId, db as DB);
-  };
-
-  const handlePushConfirm = async () => {
-    setPushInProgress(true);
-    try {
-      const result = await pushToCloudAndMarkSynced(rulesetId, db as DB);
-      if (!result.error) {
-        setPushConfirmOpen(false);
-        useCloudSyncSummaryPanelStore.getState().showSummary(result);
-      }
-    } finally {
-      setPushInProgress(false);
+    if (
+      !isCloudConfigured ||
+      !isAuthenticated ||
+      !cloudSyncEnabled ||
+      cloudSyncEligibilityLoading
+    ) {
+      return null;
     }
-  };
 
-  if (synced) {
+    const busy = isSyncing || planning || committing || reviewOpen;
+    const isOffline = !navigator.onLine;
+
     return (
-      <Button
-        variant='outline'
-        size='sm'
-        onClick={handleSyncNow}
-        disabled={busy || !navigator.onLine}
-        title={syncError ?? (navigator.onLine ? 'Sync now with Quest Bound Cloud' : 'Offline')}
-        data-testid='sync-now-button'>
-        {busy ? (
-          <Loader2 className='h-4 w-4 animate-spin' />
-        ) : (
-          <RefreshCw className='h-4 w-4' />
-        )}
-        Sync now
-      </Button>
+      <>
+        <Button
+          variant='outline'
+          size='sm'
+          onClick={() => setMenuOpen(true)}
+          disabled={busy || isOffline}
+          title={
+            syncError ??
+            (isOffline ? 'Offline' : 'Push, pull, or sync with Quest Bound Cloud')
+          }
+          data-testid='cloud-sync-menu-trigger'>
+          {busy ? (
+            <Loader2 className='h-4 w-4 animate-spin' />
+          ) : (
+            <Cloud className='h-4 w-4' />
+          )}
+          Cloud sync
+        </Button>
+        <CloudSyncMenuDialogs
+          rulesetId={rulesetId}
+          open={menuOpen}
+          onOpenChange={setMenuOpen}
+          busy={busy}
+          isOffline={isOffline}
+        />
+      </>
     );
-  }
-
-  return (
-    <>
-      <Button
-        variant='outline'
-        size='sm'
-        onClick={() => setPushConfirmOpen(true)}
-        disabled={busy || !navigator.onLine}
-        title={navigator.onLine ? 'Upload this ruleset to Quest Bound Cloud' : 'Offline'}
-        data-testid='push-to-cloud-button'>
-        <Cloud className='h-4 w-4' />
-        Push to Cloud
-      </Button>
-      <AlertDialog open={pushConfirmOpen} onOpenChange={setPushConfirmOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Push to Quest Bound Cloud</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will upload your ruleset to Quest Bound Cloud so you can access it on other
-              devices. You can sync changes anytime after this.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={pushInProgress}>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={(e) => {
-                e.preventDefault();
-                handlePushConfirm();
-              }}
-              disabled={pushInProgress}>
-              {pushInProgress ? (
-                <>
-                  <Loader2 className='h-4 w-4 animate-spin' />
-                  Uploading…
-                </>
-              ) : (
-                'Push to Cloud'
-              )}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </>
-  );
   },
 );

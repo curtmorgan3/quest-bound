@@ -1,5 +1,6 @@
 export * from './app-sidebar';
 export * from './asset-manager-modal';
+export * from './cloud-sync-menu-dialogs';
 export * from './cloud-sync-overlay-dialog';
 export * from './cloud-sync-review-dialog';
 export * from './cloud-sync-summary-panel';

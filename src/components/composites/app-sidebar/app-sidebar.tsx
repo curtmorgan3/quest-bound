@@ -1,13 +1,4 @@
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components';
+import { CloudSyncMenuDialogs } from '@/components/composites/cloud-sync-menu-dialogs';
 import {
   Sidebar,
   SidebarContent,
@@ -23,13 +14,11 @@ import {
 } from '@/components/ui/sidebar';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { isCloudConfigured } from '@/lib/cloud/client';
-import { pushToCloudAndMarkSynced } from '@/lib/cloud/sync/sync-service';
 import { useSyncStateStore } from '@/lib/cloud/sync/sync-state';
 import { useActiveRuleset, useUsers } from '@/lib/compass-api';
 import { Settings } from '@/pages';
-import { db, DiceContext, useCloudSyncReviewStore, useCloudSyncSummaryPanelStore } from '@/stores';
+import { DiceContext, useCloudSyncReviewStore } from '@/stores';
 import { useCloudAuthStore } from '@/stores/cloud-auth-store';
-import type { DB } from '@/stores/db/hooks/types';
 import { formatDistanceToNow } from 'date-fns';
 import {
   CloudAlert,
@@ -107,7 +96,6 @@ export function AppSidebar() {
   const helpDocsUrl = `https://docs.questbound.com/docs/${docsPageFromRoute(location.pathname)}`;
 
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [pushInProgress, setPushInProgress] = useState(false);
 
   const rulesetId = activeRuleset?.id;
   const isAuthenticated = useCloudAuthStore((s) => s.isAuthenticated);
@@ -124,7 +112,7 @@ export function AppSidebar() {
   } = useSyncStateStore();
   const planning = useCloudSyncReviewStore((s) => s.planning);
   const committing = useCloudSyncReviewStore((s) => s.committing);
-  const startReview = useCloudSyncReviewStore((s) => s.startReview);
+  const reviewOpen = useCloudSyncReviewStore((s) => s.open);
 
   const showCloudSync =
     isCloudConfigured &&
@@ -138,7 +126,7 @@ export function AppSidebar() {
     !isCampaignsRoute &&
     !isDevTools;
   const synced = rulesetId ? isCloudSynced(rulesetId) : false;
-  const busy = isSyncing || pushInProgress || planning || committing;
+  const busy = isSyncing || planning || committing || reviewOpen;
   const isOffline = !navigator.onLine;
   const lastSynced = rulesetId ? lastSyncedAt[rulesetId] : undefined;
 
@@ -153,8 +141,7 @@ export function AppSidebar() {
     if (syncError) return 'Sync error';
     if (isOffline) return 'Offline';
     if (busy) return 'Syncing…';
-    if (synced) return 'Cloud sync';
-    return 'Push to Cloud';
+    return 'Cloud sync';
   };
 
   const getCloudSyncTooltip = () => {
@@ -168,36 +155,18 @@ export function AppSidebar() {
         return 'Synced with Quest Bound Cloud';
       }
     }
-    if (synced) return 'Synced with Quest Bound Cloud — click to sync now';
-    return 'Push to Quest Bound Cloud to sync across devices';
+    if (synced) return 'Synced with Quest Bound Cloud — open the menu to push, pull, or sync';
+    return 'Open the menu to push this ruleset to the cloud, pull from the cloud, or sync';
   };
 
-  const handleCloudSyncClick = async () => {
+  const handleCloudSyncClick = () => {
     if (!rulesetId) return;
     if (busy || isOffline) return;
     if (syncError) {
       setSyncError(null);
       return;
     }
-    if (synced) {
-      await startReview(rulesetId, db as DB);
-    } else {
-      setPushDialogOpen(true);
-    }
-  };
-
-  const handlePushConfirm = async () => {
-    if (!rulesetId) return;
-    setPushInProgress(true);
-    try {
-      const result = await pushToCloudAndMarkSynced(rulesetId, db as DB);
-      if (!result.error) {
-        setPushDialogOpen(false);
-        useCloudSyncSummaryPanelStore.getState().showSummary(result);
-      }
-    } finally {
-      setPushInProgress(false);
-    }
+    setPushDialogOpen(true);
   };
 
   useEffect(() => {
@@ -335,28 +304,13 @@ export function AppSidebar() {
         <Settings />
       </DrawerContent>
       {showCloudSync && rulesetId && (
-        <AlertDialog open={pushDialogOpen} onOpenChange={setPushDialogOpen}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Push to Quest Bound Cloud</AlertDialogTitle>
-              <AlertDialogDescription>
-                This will upload your ruleset to Quest Bound Cloud so you can access it on other
-                devices. You can sync changes anytime after this.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel disabled={pushInProgress}>Cancel</AlertDialogCancel>
-              <AlertDialogAction
-                onClick={(e) => {
-                  e.preventDefault();
-                  handlePushConfirm();
-                }}
-                disabled={pushInProgress}>
-                {pushInProgress ? 'Uploading…' : 'Push to Cloud'}
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+        <CloudSyncMenuDialogs
+          rulesetId={rulesetId}
+          open={pushDialogOpen}
+          onOpenChange={setPushDialogOpen}
+          busy={busy}
+          isOffline={isOffline}
+        />
       )}
     </Drawer>
   );

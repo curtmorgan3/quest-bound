@@ -115,6 +115,7 @@ async function mergeTablePlanWithConflicts(
   lastSyncedAt: string,
   rulesetId: string,
   conflictDetectionEnabled: boolean,
+  preferRemote: boolean,
 ): Promise<{
   applyCount: number;
   toPut: Record<string, unknown>[];
@@ -165,7 +166,12 @@ async function mergeTablePlanWithConflicts(
       continue;
     }
 
-    if (!localRecord || !localRecord.updatedAt || remoteUpdated >= (localRecord.updatedAt as string)) {
+    if (
+      preferRemote ||
+      !localRecord ||
+      !localRecord.updatedAt ||
+      remoteUpdated >= (localRecord.updatedAt as string)
+    ) {
       const prepared: Record<string, unknown> = { ...preparedBase };
       if (isSoftDeleteSyncTable(tableName)) {
         prepared.deleted = prepared.deleted === true;
@@ -190,11 +196,20 @@ export interface PlanSyncPullResult {
   conflictCount?: number;
 }
 
+export interface PlanSyncPullOptions {
+  /** Re-fetch full remote snapshot and prefer cloud rows over local edits (destructive local overwrite). */
+  replaceLocalWithRemote?: boolean;
+}
+
 /**
  * Fetch remote deltas and compute LWW merges without writing IndexedDB.
  * Asset/font binary data is not downloaded; rows keep storage_path / storagePath for apply.
  */
-export async function planSyncPull(rulesetId: string, db: DB): Promise<PlanSyncPullResult> {
+export async function planSyncPull(
+  rulesetId: string,
+  db: DB,
+  options?: PlanSyncPullOptions,
+): Promise<PlanSyncPullResult> {
   const client = cloudClient;
   const session = await getSession();
   if (!client || !session?.user?.id) {
@@ -205,9 +220,13 @@ export async function planSyncPull(rulesetId: string, db: DB): Promise<PlanSyncP
   await loadLastSyncedAt();
   const lastSyncedAtMap = await getStoredLastSyncedAt();
   const localRuleset = await db.rulesets.get(rulesetId);
-  const lastSyncedAt = localRuleset
-    ? (lastSyncedAtMap[rulesetId] ?? FULL_PULL_SINCE)
-    : FULL_PULL_SINCE;
+  const replaceLocal = options?.replaceLocalWithRemote === true;
+  const lastSyncedAt = replaceLocal
+    ? FULL_PULL_SINCE
+    : localRuleset
+      ? (lastSyncedAtMap[rulesetId] ?? FULL_PULL_SINCE)
+      : FULL_PULL_SINCE;
+  const preferRemote = replaceLocal;
   /** Full install / first pull uses epoch cursor — every row looks "dirty" vs it; conflicts would be false positives. */
   const conflictDetectionEnabled = lastSyncedAt !== FULL_PULL_SINCE;
 
@@ -248,6 +267,7 @@ export async function planSyncPull(rulesetId: string, db: DB): Promise<PlanSyncP
           lastSyncedAt,
           rulesetId,
           conflictDetectionEnabled,
+          preferRemote,
         );
         allConflicts.push(...conflicts);
         for (const c of conflicts) {
@@ -287,6 +307,7 @@ export async function planSyncPull(rulesetId: string, db: DB): Promise<PlanSyncP
             lastSyncedAt,
             rulesetId,
             conflictDetectionEnabled,
+            preferRemote,
           );
           allConflicts.push(...conflicts);
           for (const c of conflicts) {
@@ -303,6 +324,7 @@ export async function planSyncPull(rulesetId: string, db: DB): Promise<PlanSyncP
             lastSyncedAt,
             rulesetId,
             conflictDetectionEnabled,
+            preferRemote,
           );
           allConflicts.push(...conflicts);
           for (const c of conflicts) {
@@ -319,6 +341,7 @@ export async function planSyncPull(rulesetId: string, db: DB): Promise<PlanSyncP
             lastSyncedAt,
             rulesetId,
             conflictDetectionEnabled,
+            preferRemote,
           );
           allConflicts.push(...conflicts);
           for (const c of conflicts) {
@@ -372,6 +395,7 @@ export async function planSyncPull(rulesetId: string, db: DB): Promise<PlanSyncP
           lastSyncedAt,
           rulesetId,
           conflictDetectionEnabled,
+          preferRemote,
         );
         allConflicts.push(...conflicts);
         for (const c of conflicts) {

@@ -12,12 +12,24 @@ import {
   listUnresolvedSyncMergeConflicts,
   resolveSyncMergeConflict,
 } from '@/lib/cloud/sync/sync-merge-conflict-actions';
-import { applyStagedPull, planSyncPull, syncPull, type StagedPullPayload } from './sync-pull';
+import {
+  applyStagedPull,
+  planSyncPull,
+  syncPull,
+  type PlanSyncPullOptions,
+  type StagedPullPayload,
+} from './sync-pull';
 import { planSyncPush, syncPush } from './sync-push';
-import { useSyncStateStore } from './sync-state';
+import {
+  clearPendingSyncDeletesForRuleset,
+  getStoredLastSyncedAt,
+  setStoredLastSyncedAt,
+  useSyncStateStore,
+} from './sync-state';
 import { filterSyncEntityCountsForUi, sumSyncEntityCounts } from './sync-entity-labels';
 import { prepareRemoteForLocal } from './sync-utils';
 
+export type { PlanSyncPullOptions, StagedPullPayload };
 export {
   applyStagedPull,
   listUnresolvedSyncMergeConflicts,
@@ -25,7 +37,6 @@ export {
   resolveSyncMergeConflict,
   syncPull,
   syncPush,
-  type StagedPullPayload,
 };
 
 /** Successful plan for staged ruleset sync (review UI). */
@@ -406,6 +417,84 @@ export async function pushToCloudAndMarkSynced(
       pushedByEntity: result.pushedByEntity,
       pulledCount: 0,
       pulledByEntity: {},
+    };
+  });
+}
+
+/**
+ * Push every local ruleset row to the cloud (full upsert), overwriting remote copies of those rows.
+ * Marks the ruleset as cloud-synced when needed.
+ */
+export async function pushEntireRulesetToCloud(
+  rulesetId: string,
+  db: DB,
+): Promise<CloudSyncOutcome> {
+  if (!isCloudConfigured) return { error: 'Cloud not configured' };
+  const { isAuthenticated } = useCloudAuthStore.getState();
+  if (!isAuthenticated) return { error: 'Not signed in' };
+  if (!navigator.onLine) return { error: 'Offline' };
+
+  const { isSyncing, setSyncError } = useSyncStateStore.getState();
+  if (isSyncing) return { error: 'Sync already in progress' };
+
+  setSyncError(null);
+  return await withCloudSyncUi(async () => {
+    const result = await syncPush(rulesetId, db, { forceFull: true });
+    if (result.error) return result;
+    await useSyncStateStore.getState().markRulesetSynced(rulesetId);
+    useSyncStateStore.getState().setLastSyncCompletedAt(Date.now());
+    return {
+      pushedCount: result.pushedCount,
+      pushedByEntity: result.pushedByEntity,
+      pulledCount: 0,
+      pulledByEntity: {},
+    };
+  });
+}
+
+/**
+ * Pull the full cloud snapshot and apply it locally, preferring cloud over unsynced local edits.
+ */
+export async function pullEntireRulesetFromCloud(
+  rulesetId: string,
+  db: DB,
+): Promise<CloudSyncOutcome> {
+  if (!isCloudConfigured) return { error: 'Cloud not configured' };
+  const { isAuthenticated } = useCloudAuthStore.getState();
+  if (!isAuthenticated) return { error: 'Not signed in' };
+  if (!navigator.onLine) return { error: 'Offline' };
+
+  const { isSyncing, setSyncError } = useSyncStateStore.getState();
+  if (isSyncing) return { error: 'Sync already in progress' };
+
+  const client = cloudClient;
+  if (!client) return { error: 'Cloud not configured' };
+
+  setSyncError(null);
+  return await withCloudSyncUi(async () => {
+    const plan = await planSyncPull(rulesetId, db, { replaceLocalWithRemote: true });
+    if (plan.error) return { error: plan.error };
+    if (!plan.payload) return { error: 'Pull failed' };
+    if ((plan.conflictCount ?? 0) > 0 || plan.payload.conflicts.length > 0) {
+      return {
+        error:
+          'This ruleset has merge conflicts. Use Review Sync, resolve each conflict, then try again.',
+      };
+    }
+    await applyStagedPull(db, client, plan.payload);
+    await clearPendingSyncDeletesForRuleset(rulesetId);
+    const now = new Date().toISOString();
+    await useSyncStateStore.getState().loadLastSyncedAt();
+    const lastSyncedAtMap = await getStoredLastSyncedAt();
+    useSyncStateStore.getState().setLastSyncedAt(rulesetId, now);
+    await setStoredLastSyncedAt({ ...lastSyncedAtMap, [rulesetId]: now });
+    await useSyncStateStore.getState().markRulesetSynced(rulesetId);
+    useSyncStateStore.getState().setLastSyncCompletedAt(Date.now());
+    return {
+      pulledCount: plan.pulledCount,
+      pulledByEntity: plan.pulledByEntity,
+      pushedCount: 0,
+      pushedByEntity: {},
     };
   });
 }

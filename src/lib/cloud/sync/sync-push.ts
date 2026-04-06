@@ -56,6 +56,8 @@ function filterRowsExcludedByAppliedPull(
 export interface SyncPushOptions {
   /** Same-pass pull payload: rows written by apply before push must not be re-pushed. */
   appliedPull?: StagedPullPayload;
+  /** Push every ruleset-scoped row (ignore last-sync cursor). Overwrites cloud rows for those ids. */
+  forceFull?: boolean;
 }
 
 type TableWithWhere = {
@@ -87,7 +89,9 @@ export async function syncPush(
   const { setSyncError, setLastSyncedAt, loadLastSyncedAt } = useSyncStateStore.getState();
   await loadLastSyncedAt();
   const lastSyncedAtMap = await getStoredLastSyncedAt();
-  const lastSyncedAt = lastSyncedAtMap[rulesetId] ?? '1970-01-01T00:00:00Z';
+  const lastSyncedAt = options?.forceFull
+    ? '1970-01-01T00:00:00Z'
+    : (lastSyncedAtMap[rulesetId] ?? '1970-01-01T00:00:00Z');
   const skipKeysAfterPull = options?.appliedPull
     ? syncPushSkipKeysFromAppliedPull(options.appliedPull)
     : null;
