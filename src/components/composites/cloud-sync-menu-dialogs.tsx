@@ -20,10 +20,11 @@ import {
   pullEntireRulesetFromCloud,
   pushEntireRulesetToCloud,
 } from '@/lib/cloud/sync/sync-service';
+import { useSyncStateStore } from '@/lib/cloud/sync/sync-state';
 import { db, useCloudSyncReviewStore, useCloudSyncSummaryPanelStore } from '@/stores';
 import type { DB } from '@/stores/db/hooks/types';
 import { CloudDownload, CloudUpload, Loader2, RefreshCw } from 'lucide-react';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 export interface CloudSyncMenuDialogsProps {
   rulesetId: string;
@@ -43,6 +44,8 @@ export function CloudSyncMenuDialogs({
   isOffline,
 }: CloudSyncMenuDialogsProps) {
   const startReview = useCloudSyncReviewStore((s) => s.startReview);
+  const loadSyncedRulesetIds = useSyncStateStore((s) => s.loadSyncedRulesetIds);
+  const hasCloudCopy = useSyncStateStore((s) => s.syncedRulesetIds.has(rulesetId));
   const [confirm, setConfirm] = useState<ConfirmKind>(null);
   const [pushing, setPushing] = useState(false);
   const [pulling, setPulling] = useState(false);
@@ -57,6 +60,10 @@ export function CloudSyncMenuDialogs({
   );
 
   const closeConfirm = useCallback(() => setConfirm(null), []);
+
+  useEffect(() => {
+    if (open) void loadSyncedRulesetIds();
+  }, [open, loadSyncedRulesetIds]);
 
   const handlePushConfirm = async () => {
     setPushing(true);
@@ -95,6 +102,8 @@ export function CloudSyncMenuDialogs({
   };
 
   const actionBusy = pushing || pulling || syncing;
+  const pullSyncDisabled = busy || isOffline || !hasCloudCopy;
+  const notOnCloudTitle = 'Push this ruleset to the cloud first';
 
   return (
     <>
@@ -119,7 +128,8 @@ export function CloudSyncMenuDialogs({
               type='button'
               variant='outline'
               className='w-full justify-start gap-2'
-              disabled={busy || isOffline}
+              disabled={pullSyncDisabled}
+              title={!hasCloudCopy ? notOnCloudTitle : undefined}
               onClick={() => openConfirm('pull')}
               data-testid='cloud-sync-menu-pull'>
               <CloudDownload className='h-4 w-4 shrink-0' />
@@ -129,7 +139,8 @@ export function CloudSyncMenuDialogs({
               type='button'
               variant='outline'
               className='w-full justify-start gap-2'
-              disabled={busy || isOffline}
+              disabled={pullSyncDisabled}
+              title={!hasCloudCopy ? notOnCloudTitle : undefined}
               onClick={() => openConfirm('sync')}
               data-testid='cloud-sync-menu-sync'>
               <RefreshCw className='h-4 w-4 shrink-0' />
