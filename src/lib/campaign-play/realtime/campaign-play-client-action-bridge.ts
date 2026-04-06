@@ -3,12 +3,12 @@ import {
   getCampaignPlaySender,
   subscribeCampaignPlayEnvelopes,
 } from '@/lib/campaign-play/realtime/campaign-play-realtime-dispatcher';
-import { cloudClient } from '@/lib/cloud/client';
 import type {
   CampaignRealtimeActionRequestBodyV1,
   CampaignRealtimeEnvelopeV1,
 } from '@/lib/campaign-play/realtime/campaign-realtime-envelopes';
 import { CAMPAIGN_REALTIME_PROTOCOL_VERSION } from '@/lib/campaign-play/realtime/campaign-realtime-envelopes';
+import { cloudClient } from '@/lib/cloud/client';
 import { db } from '@/stores';
 
 const DEFAULT_CLIENT_ACTION_TIMEOUT_MS = 60_000;
@@ -52,9 +52,7 @@ function onEnvelope(campaignId: string, envelope: CampaignRealtimeEnvelopeV1): v
       try {
         await applyCampaignRealtimeBatches(db, envelope.batches);
         for (const msg of envelope.announceMessages ?? []) {
-          window.dispatchEvent(
-            new CustomEvent('qbscript:announce', { detail: { message: msg } }),
-          );
+          window.dispatchEvent(new CustomEvent('qbscript:announce', { detail: { message: msg } }));
         }
         pendingManualCorrelationIds.delete(envelope.correlationId);
       } catch (e) {
@@ -78,9 +76,7 @@ function onEnvelope(campaignId: string, envelope: CampaignRealtimeEnvelopeV1): v
       }
       await applyCampaignRealtimeBatches(db, envelope.batches);
       for (const msg of envelope.announceMessages ?? []) {
-        window.dispatchEvent(
-          new CustomEvent('qbscript:announce', { detail: { message: msg } }),
-        );
+        window.dispatchEvent(new CustomEvent('qbscript:announce', { detail: { message: msg } }));
       }
       clearTimeout(entry.timeoutId);
       pendingByRequestId.delete(envelope.requestId);

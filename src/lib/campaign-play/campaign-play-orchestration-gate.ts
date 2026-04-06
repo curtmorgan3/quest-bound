@@ -1,11 +1,8 @@
-import { CAMPAIGN_REALTIME_PLAY_FEATURE_FLAG } from '@/lib/campaign-play/campaign-play-constants';
-import { getFeatureFlag } from '@/utils/feature-flags';
 import { useCampaignPlaySessionStore } from '@/stores/campaign-play-session-store';
 
 /** Host-only flows: scene turn advance, campaign event activation, turn-mode toggles, etc. */
 export function shouldBlockCampaignOrchestration(campaignId: string | undefined): boolean {
   if (!campaignId) return false;
-  if (!getFeatureFlag(CAMPAIGN_REALTIME_PLAY_FEATURE_FLAG)) return false;
   const session = useCampaignPlaySessionStore.getState().session;
   if (!session || session.campaignId !== campaignId) return false;
   return session.role === 'client';
@@ -16,7 +13,6 @@ export function shouldBlockCampaignOrchestration(campaignId: string | undefined)
  */
 export function shouldDisableCampaignGuestActions(campaignId: string | undefined): boolean {
   if (!campaignId) return false;
-  if (!getFeatureFlag(CAMPAIGN_REALTIME_PLAY_FEATURE_FLAG)) return false;
   const session = useCampaignPlaySessionStore.getState().session;
   if (!session || session.campaignId !== campaignId) return false;
   if (session.role !== 'client') return false;
@@ -27,7 +23,6 @@ export function getCampaignPlayGuestNotice(
   campaignId: string | undefined,
 ): { variant: 'guest' | 'hostOffline' } | null {
   if (!campaignId) return null;
-  if (!getFeatureFlag(CAMPAIGN_REALTIME_PLAY_FEATURE_FLAG)) return null;
   const session = useCampaignPlaySessionStore.getState().session;
   if (!session || session.campaignId !== campaignId || session.role !== 'client') return null;
   if (!session.hostSessionActive) return { variant: 'hostOffline' };

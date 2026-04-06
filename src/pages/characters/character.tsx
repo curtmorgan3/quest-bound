@@ -1,7 +1,6 @@
 import { useSidebar } from '@/components/ui/sidebar';
-import { useCampaignPlayClientForCharacter, useFeatureFlag } from '@/hooks';
+import { useCampaignPlayClientForCharacter } from '@/hooks';
 import { isCampaignPlayClientRelayForCampaign } from '@/lib/campaign-play/campaign-play-action-relay';
-import { CAMPAIGN_REALTIME_PLAY_FEATURE_FLAG } from '@/lib/campaign-play/campaign-play-constants';
 import { sendCampaignPlayClientActionRequest } from '@/lib/campaign-play/realtime/campaign-play-client-action-bridge';
 import {
   flushDelegatedUiQueueForCharacter,
@@ -13,11 +12,11 @@ import {
   setCurrentCampaignIdForScripts,
   setCurrentCampaignSceneIdForScripts,
 } from '@/lib/compass-logic/worker/current-campaign-ref';
-import { setSheetPreviewRulesetWindowIdForScripts } from '@/lib/compass-logic/worker/current-sheet-preview-window-ref';
 import {
   setCurrentRollHandlerForScripts,
   setCurrentRollSplitHandlerForScripts,
 } from '@/lib/compass-logic/worker/current-roll-handler-ref';
+import { setSheetPreviewRulesetWindowIdForScripts } from '@/lib/compass-logic/worker/current-sheet-preview-window-ref';
 import { SheetViewer } from '@/lib/compass-planes';
 import { InventoryDragPreview } from '@/lib/compass-planes/nodes/components/inventory/inventory-drag-preview';
 import {
@@ -102,12 +101,11 @@ export const CharacterPage = ({
   const { open } = useSidebar();
   const { characterId: routeCharacterId } = useParams<{ characterId: string }>();
   const resolvedCharacterId = id ?? routeCharacterId;
-  const campaignRealtimePlayEnabled = useFeatureFlag(CAMPAIGN_REALTIME_PLAY_FEATURE_FLAG);
   const { playCampaignId, playCampaignSceneId } = useCampaignPlayClientForCharacter({
     characterId: resolvedCharacterId,
     propCampaignId: campaignId,
     propCampaignSceneId: campaignSceneId,
-    realtimePlayEnabled: campaignRealtimePlayEnabled,
+    realtimePlayEnabled: true,
   });
   const effectiveCampaignId = playCampaignId;
   const effectiveCampaignSceneId = playCampaignSceneId;

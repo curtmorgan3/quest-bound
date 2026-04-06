@@ -5,9 +5,7 @@ import {
 } from '@/lib/campaign-play/realtime/build-campaign-play-delta-batches';
 import { getCampaignRosterIngestTail } from '@/lib/campaign-play/realtime/campaign-play-host-roster-ingest-tail';
 import { runManualUpdateAttributeReactives } from '@/lib/campaign-play/realtime/campaign-play-manual-attribute-reactives';
-import {
-  getCampaignPlaySender,
-} from '@/lib/campaign-play/realtime/campaign-play-realtime-dispatcher';
+import { getCampaignPlaySender } from '@/lib/campaign-play/realtime/campaign-play-realtime-dispatcher';
 import type {
   CampaignRealtimeBulkPutBatchV1,
   CampaignRealtimeHostReactiveResultEnvelopeV1,
@@ -25,6 +23,7 @@ export async function broadcastHostCharacterDataAfterHostReactives(options: {
   campaignSceneId?: string;
   batches: CampaignRealtimeBulkPutBatchV1[];
 }): Promise<void> {
+  console.log('batches: ', options.batches);
   if (options.batches.length === 0) return;
 
   await getCampaignRosterIngestTail(options.campaignId);
@@ -65,7 +64,12 @@ export async function broadcastHostCharacterDataAfterHostReactives(options: {
   const expanded = expandMergedCampaignDeltaBatches(merged);
 
   const send = getCampaignPlaySender(options.campaignId);
-  if (!send) return;
+  if (!send) {
+    console.warn(
+      '[broadcastHostCharacterDataAfterHostReactives] no campaign realtime sender (not subscribed yet?)',
+    );
+    return;
+  }
 
   const payload: CampaignRealtimeHostReactiveResultEnvelopeV1 = {
     v: CAMPAIGN_REALTIME_PROTOCOL_VERSION,
@@ -75,5 +79,11 @@ export async function broadcastHostCharacterDataAfterHostReactives(options: {
     sentAt: new Date().toISOString(),
     batches: expanded,
   };
-  await send(payload);
+  const sendResult = await send(payload);
+  if (sendResult !== 'ok') {
+    console.warn(
+      '[broadcastHostCharacterDataAfterHostReactives] realtime send failed:',
+      sendResult,
+    );
+  }
 }

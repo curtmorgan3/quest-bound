@@ -18,6 +18,8 @@ interface CampaignPlayInvitePanelProps {
   campaignId: string;
   rulesetId: string;
   campaignLabel?: string | null;
+  /** First local scene by createdAt; stored on the invite for joiners. */
+  defaultCampaignSceneId?: string | null;
   campaignCharacters: CampaignCharacter[];
   charactersById: Map<string, Character>;
   hostCloudUserId: string | null;
@@ -29,6 +31,7 @@ export function CampaignPlayInvitePanel({
   campaignId,
   rulesetId,
   campaignLabel,
+  defaultCampaignSceneId,
   campaignCharacters,
   charactersById,
   hostCloudUserId,
@@ -51,6 +54,7 @@ export function CampaignPlayInvitePanel({
         campaignId,
         rulesetId,
         campaignLabel,
+        defaultCampaignSceneId: defaultCampaignSceneId ?? null,
       });
       if ('error' in result) {
         toast.error(result.error);
@@ -61,7 +65,7 @@ export function CampaignPlayInvitePanel({
     } finally {
       setLoading(false);
     }
-  }, [campaignId, campaignLabel, rulesetId]);
+  }, [campaignId, campaignLabel, defaultCampaignSceneId, rulesetId]);
 
   useEffect(() => {
     let cancelled = false;

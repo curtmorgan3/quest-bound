@@ -49,7 +49,11 @@ export function useCampaignPlayRealtime({
 
   useEffect(() => {
     if (!enabled || !campaignId) return;
-    if (!session || session.campaignId !== campaignId) return;
+    // Read session from the store here — not from render closure. An earlier effect in the same
+    // commit (e.g. campaign dashboard enterSession) may have already set the session while this
+    // render still saw session=null, which would skip subscribe/sender registration entirely.
+    const liveSession = useCampaignPlaySessionStore.getState().session;
+    if (!liveSession || liveSession.campaignId !== campaignId) return;
 
     if (!cloudClient) {
       useCampaignPlaySessionStore.getState().updateSessionIfCampaign(campaignId, {
@@ -59,7 +63,7 @@ export function useCampaignPlayRealtime({
       return;
     }
 
-    const role = session.role;
+    const role = liveSession.role;
     let cancelled = false;
     let hostQueue: CampaignPlayHostActionQueue | null = null;
     let hostManualQueue: CampaignPlayHostManualQueue | null = null;

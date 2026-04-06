@@ -9,6 +9,7 @@ export type CampaignPlayInviteRow = {
   channel_name: string;
   campaign_id: string;
   ruleset_id: string;
+  default_campaign_scene_id: string | null;
 };
 
 export async function fetchCampaignPlayInvite(
@@ -17,7 +18,7 @@ export async function fetchCampaignPlayInvite(
   if (!cloudClient) return null;
   const { data, error } = await cloudClient
     .from('campaign_play_invites')
-    .select('join_token, channel_name, campaign_id, ruleset_id')
+    .select('join_token, channel_name, campaign_id, ruleset_id, default_campaign_scene_id')
     .eq('campaign_id', campaignId)
     .maybeSingle();
   if (error || !data) return null;
@@ -32,6 +33,8 @@ export async function upsertCampaignPlayInvite(options: {
   campaignId: string;
   rulesetId: string;
   campaignLabel?: string | null;
+  /** Earliest local campaign scene by createdAt; joiners use this when linking a character. */
+  defaultCampaignSceneId?: string | null;
 }): Promise<{ row: CampaignPlayInviteRow } | { error: string }> {
   if (!cloudClient) {
     return { error: 'Cloud is not configured' };
@@ -56,13 +59,14 @@ export async function upsertCampaignPlayInvite(options: {
       channel_name: channelName,
       ruleset_id: options.rulesetId,
       campaign_label: options.campaignLabel ?? null,
+      default_campaign_scene_id: options.defaultCampaignSceneId ?? null,
       updated_at: new Date().toISOString(),
     };
 
     const { data, error } = await cloudClient
       .from('campaign_play_invites')
       .upsert(payload, { onConflict: 'campaign_id' })
-      .select('join_token, channel_name, campaign_id, ruleset_id')
+      .select('join_token, channel_name, campaign_id, ruleset_id, default_campaign_scene_id')
       .single();
 
     if (!error && data) {

@@ -19,6 +19,7 @@ export interface CampaignPlayInviteSheetProps {
   campaignId: string;
   rulesetId: string;
   campaignLabel?: string | null;
+  defaultCampaignSceneId?: string | null;
   campaignCharacters: CampaignCharacter[];
   charactersById: Map<string, Character>;
   hostCloudUserId: string | null;
@@ -32,6 +33,7 @@ export function CampaignPlayInviteSheet({
   campaignId,
   rulesetId,
   campaignLabel,
+  defaultCampaignSceneId,
   campaignCharacters,
   charactersById,
   hostCloudUserId,
@@ -80,6 +82,7 @@ export function CampaignPlayInviteSheet({
               campaignId={campaignId}
               rulesetId={rulesetId}
               campaignLabel={campaignLabel}
+              defaultCampaignSceneId={defaultCampaignSceneId}
               campaignCharacters={campaignCharacters}
               charactersById={charactersById}
               hostCloudUserId={hostCloudUserId}

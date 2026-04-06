@@ -1,4 +1,3 @@
-import { filterNotSoftDeleted, softDeletePatch } from '@/lib/data/soft-delete';
 import { useErrorHandler } from '@/hooks';
 import {
   isCampaignPlayClientRelayForCampaign,
@@ -7,6 +6,7 @@ import {
 import { broadcastHostCharacterDataAfterHostReactives } from '@/lib/campaign-play/realtime/campaign-play-host-character-broadcast';
 import { sendCampaignPlayManualCharacterUpdate } from '@/lib/campaign-play/realtime/campaign-play-manual-broadcast';
 import { getQBScriptClient } from '@/lib/compass-logic/worker';
+import { filterNotSoftDeleted, softDeletePatch } from '@/lib/data/soft-delete';
 import { db } from '@/stores';
 import type { CharacterAttribute } from '@/types';
 import { mergeAttributeCustomPropertyValuesForSchemaJson } from '@/utils/attribute-custom-property-values';
@@ -25,9 +25,7 @@ const EMPTY_CHARACTER_ATTRIBUTES: CharacterAttribute[] = [];
 /**
  * Stable empty result when no characterId — avoids new [] each render during loading.
  */
-function emptyAttributesOr(
-  rows: CharacterAttribute[] | undefined,
-): CharacterAttribute[] {
+function emptyAttributesOr(rows: CharacterAttribute[] | undefined): CharacterAttribute[] {
   return rows ?? EMPTY_CHARACTER_ATTRIBUTES;
 }
 
@@ -46,7 +44,7 @@ export const useCharacterAttributes = (
       const batches = [
         {
           table: 'characterAttributes' as const,
-          rows: rows.map((r) => ({ ...r } as Record<string, unknown>)),
+          rows: rows.map((r) => ({ ...r }) as Record<string, unknown>),
         },
       ];
       if (isCampaignPlayClientRelayForCampaign(campaignPlay.campaignId)) {
@@ -54,7 +52,9 @@ export const useCharacterAttributes = (
           campaignId: campaignPlay.campaignId,
           campaignSceneId: campaignPlay.campaignSceneId,
           batches,
-        }).catch((err) => console.warn('[useCharacterAttributes] campaign manual broadcast failed', err));
+        }).catch((err) =>
+          console.warn('[useCharacterAttributes] campaign manual broadcast failed', err),
+        );
         return;
       }
       if (isCampaignPlayHostBroadcastForCampaign(campaignPlay.campaignId)) {
@@ -70,14 +70,11 @@ export const useCharacterAttributes = (
     [campaignPlay],
   );
 
-  const characterAttributes = useLiveQuery(
-    async () => {
-      if (!characterId) return EMPTY_CHARACTER_ATTRIBUTES;
-      const rows = await db.characterAttributes.where('characterId').equals(characterId).toArray();
-      return filterNotSoftDeleted(rows);
-    },
-    [characterId],
-  );
+  const characterAttributes = useLiveQuery(async () => {
+    if (!characterId) return EMPTY_CHARACTER_ATTRIBUTES;
+    const rows = await db.characterAttributes.where('characterId').equals(characterId).toArray();
+    return filterNotSoftDeleted(rows);
+  }, [characterId]);
 
   const createCharacterAttribute = useCallback(
     async (data: Omit<CharacterAttribute, 'id' | 'createdAt' | 'updatedAt'>) => {
@@ -120,7 +117,11 @@ export const useCharacterAttributes = (
       }
 
       if (newDefaultValue !== undefined) {
-        if (newMin !== undefined && typeof newDefaultValue === 'number' && newDefaultValue < newMin) {
+        if (
+          newMin !== undefined &&
+          typeof newDefaultValue === 'number' &&
+          newDefaultValue < newMin
+        ) {
           console.warn('Default value is less than Min. Adjusting Default value to match Min.');
           data.defaultValue = newMin;
         } else if (
@@ -198,9 +199,7 @@ export const useCharacterAttributes = (
           const existing = existingByAttributeId.get(attr.id);
 
           if (!existing) {
-            toAdd.push(
-              seedCharacterAttributeFromRulesetAttribute(attr, character.id, now),
-            );
+            toAdd.push(seedCharacterAttributeFromRulesetAttribute(attr, character.id, now));
           } else {
             toUpdate.push({
               id: existing.id,

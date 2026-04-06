@@ -245,6 +245,14 @@ export function CampaignDashboard() {
     ? `${campaign?.label ?? 'Unnamed campaign'} > ${currentScene.name ?? 'Unnamed scene'}`
     : (campaign?.label ?? 'Unnamed campaign');
 
+  const defaultCampaignSceneIdForInvite = useMemo(() => {
+    if (campaignScenes.length === 0) return null;
+    const sorted = [...campaignScenes].sort((a, b) =>
+      String(a.createdAt ?? '').localeCompare(String(b.createdAt ?? '')),
+    );
+    return sorted[0]?.id ?? null;
+  }, [campaignScenes]);
+
   const sceneCharactersByTurnOrder = useMemo(
     () =>
       sceneId && withNames.length > 0
@@ -488,6 +496,7 @@ export function CampaignDashboard() {
                 campaignId={campaign.id}
                 rulesetId={campaign.rulesetId}
                 campaignLabel={campaign.label}
+                defaultCampaignSceneId={defaultCampaignSceneIdForInvite}
                 campaignCharacters={campaignCharacters}
                 charactersById={charactersById}
                 hostCloudUserId={hostCloudUserId}

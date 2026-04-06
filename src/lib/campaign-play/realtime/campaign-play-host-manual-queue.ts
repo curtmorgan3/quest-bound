@@ -89,7 +89,10 @@ export class CampaignPlayHostManualQueue {
     const expanded = expandMergedCampaignDeltaBatches(delta);
 
     const send = getCampaignPlaySender(this.campaignId);
-    if (!send) return;
+    if (!send) {
+      console.warn('[CampaignPlayHostManualQueue] no campaign realtime sender (not subscribed yet?)');
+      return;
+    }
 
     const payload: CampaignRealtimeHostReactiveResultEnvelopeV1 = {
       v: CAMPAIGN_REALTIME_PROTOCOL_VERSION,
@@ -99,6 +102,9 @@ export class CampaignPlayHostManualQueue {
       sentAt: new Date().toISOString(),
       batches: expanded,
     };
-    await send(payload);
+    const sendResult = await send(payload);
+    if (sendResult !== 'ok') {
+      console.warn('[CampaignPlayHostManualQueue] realtime send failed:', sendResult);
+    }
   }
 }
