@@ -51,9 +51,11 @@ export {
 export { CampaignPlayHostActionQueue } from '@/lib/campaign-play/realtime/campaign-play-host-action-queue';
 export { CampaignPlayHostManualQueue } from '@/lib/campaign-play/realtime/campaign-play-host-manual-queue';
 export {
+  getCampaignPlayClientActionPendingCount,
   sendCampaignPlayClientActionRequest,
   startCampaignPlayClientActionBridge,
   stopCampaignPlayClientActionBridge,
+  subscribeCampaignPlayClientActionPending,
 } from '@/lib/campaign-play/realtime/campaign-play-client-action-bridge';
 export {
   flushDelegatedUiQueueForCharacter,

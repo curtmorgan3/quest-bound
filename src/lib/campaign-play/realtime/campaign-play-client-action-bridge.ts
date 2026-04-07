@@ -17,10 +17,53 @@ type Pending = {
   resolve: () => void;
   reject: (e: Error) => void;
   timeoutId: ReturnType<typeof setTimeout>;
+  campaignId: string;
 };
 
 const pendingByRequestId = new Map<string, Pending>();
 const pendingManualCorrelationIds = new Set<string>();
+const pendingCountByCampaignId = new Map<string, number>();
+const pendingListenersByCampaignId = new Map<string, Set<() => void>>();
+
+function notifyCampaignPlayClientActionPending(campaignId: string): void {
+  pendingListenersByCampaignId.get(campaignId)?.forEach((l) => l());
+}
+
+function incrementPendingForCampaign(campaignId: string): void {
+  pendingCountByCampaignId.set(
+    campaignId,
+    (pendingCountByCampaignId.get(campaignId) ?? 0) + 1,
+  );
+  notifyCampaignPlayClientActionPending(campaignId);
+}
+
+function decrementPendingForCampaign(campaignId: string): void {
+  const next = (pendingCountByCampaignId.get(campaignId) ?? 0) - 1;
+  if (next <= 0) pendingCountByCampaignId.delete(campaignId);
+  else pendingCountByCampaignId.set(campaignId, next);
+  notifyCampaignPlayClientActionPending(campaignId);
+}
+
+/** For UI: in-flight `sendCampaignPlayClientActionRequest` count for this campaign (joiner awaiting host). */
+export function subscribeCampaignPlayClientActionPending(
+  campaignId: string,
+  onChange: () => void,
+): () => void {
+  let set = pendingListenersByCampaignId.get(campaignId);
+  if (!set) {
+    set = new Set();
+    pendingListenersByCampaignId.set(campaignId, set);
+  }
+  set.add(onChange);
+  return () => {
+    set!.delete(onChange);
+    if (set!.size === 0) pendingListenersByCampaignId.delete(campaignId);
+  };
+}
+
+export function getCampaignPlayClientActionPendingCount(campaignId: string): number {
+  return pendingCountByCampaignId.get(campaignId) ?? 0;
+}
 
 let unsub: (() => void) | null = null;
 let activeCampaignId: string | null = null;
@@ -71,6 +114,7 @@ function onEnvelope(campaignId: string, envelope: CampaignRealtimeEnvelopeV1): v
         if (entry) {
           clearTimeout(entry.timeoutId);
           pendingByRequestId.delete(envelope.requestId);
+          decrementPendingForCampaign(entry.campaignId);
           entry.reject(new Error(envelope.error.message));
         }
         return;
@@ -84,12 +128,14 @@ function onEnvelope(campaignId: string, envelope: CampaignRealtimeEnvelopeV1): v
       if (entry) {
         clearTimeout(entry.timeoutId);
         pendingByRequestId.delete(envelope.requestId);
+        decrementPendingForCampaign(entry.campaignId);
         entry.resolve();
       }
     } catch (e) {
       if (entry) {
         clearTimeout(entry.timeoutId);
         pendingByRequestId.delete(envelope.requestId);
+        decrementPendingForCampaign(entry.campaignId);
         entry.reject(e instanceof Error ? e : new Error(String(e)));
       }
     }
@@ -110,6 +156,7 @@ export function stopCampaignPlayClientActionBridge(): void {
   pendingManualCorrelationIds.clear();
   for (const [, p] of pendingByRequestId) {
     clearTimeout(p.timeoutId);
+    decrementPendingForCampaign(p.campaignId);
     p.reject(new Error('Campaign realtime session ended'));
   }
   pendingByRequestId.clear();
@@ -139,7 +186,10 @@ export async function sendCampaignPlayClientActionRequest(options: {
 
   return new Promise<void>((resolve, reject) => {
     const timeoutId = setTimeout(() => {
-      if (pendingByRequestId.delete(requestId)) {
+      const p = pendingByRequestId.get(requestId);
+      if (p) {
+        pendingByRequestId.delete(requestId);
+        decrementPendingForCampaign(p.campaignId);
         reject(new Error('Action request timed out'));
       }
     }, timeoutMs);
@@ -148,7 +198,9 @@ export async function sendCampaignPlayClientActionRequest(options: {
       resolve: () => resolve(),
       reject: (e) => reject(e),
       timeoutId,
+      campaignId: options.campaignId,
     });
+    incrementPendingForCampaign(options.campaignId);
 
     void send({
       v: CAMPAIGN_REALTIME_PROTOCOL_VERSION,
@@ -164,6 +216,7 @@ export async function sendCampaignPlayClientActionRequest(options: {
       if (p) {
         clearTimeout(p.timeoutId);
         pendingByRequestId.delete(requestId);
+        decrementPendingForCampaign(p.campaignId);
         reject(err instanceof Error ? err : new Error(String(err)));
       }
     });

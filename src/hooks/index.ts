@@ -1,3 +1,4 @@
+export * from './use-campaign-play-client-action-pending';
 export * from './use-campaign-play-client-for-character';
 export * from './use-campaign-play-realtime';
 export * from './use-campaign-play-worker-policy-sync';

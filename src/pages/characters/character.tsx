@@ -1,5 +1,5 @@
 import { useSidebar } from '@/components/ui/sidebar';
-import { useCampaignPlayClientForCharacter } from '@/hooks';
+import { useCampaignPlayClientActionPending, useCampaignPlayClientForCharacter } from '@/hooks';
 import { isCampaignPlayClientRelayForCampaign } from '@/lib/campaign-play/campaign-play-action-relay';
 import { sendCampaignPlayClientActionRequest } from '@/lib/campaign-play/realtime/campaign-play-client-action-bridge';
 import {
@@ -28,6 +28,7 @@ import {
   type InventoryPanelConfig,
 } from '@/stores';
 import { type CharacterAttribute } from '@/types';
+import { Loader2 } from 'lucide-react';
 import {
   useCallback,
   useContext,
@@ -116,6 +117,10 @@ export const CharacterPage = ({
   });
   const effectiveCampaignId = playCampaignId;
   const effectiveCampaignSceneId = playCampaignSceneId;
+  const isRemoteCampaignClient = isCampaignPlayClientRelayForCampaign(effectiveCampaignId);
+  const hostActionPendingCount = useCampaignPlayClientActionPending(
+    isRemoteCampaignClient ? effectiveCampaignId : undefined,
+  );
   const characterInventoryPanel = useContext(CharacterInventoryPanelContext);
   const characterArchetypesPanel = useContext(CharacterArchetypesPanelContext);
 
@@ -407,6 +412,15 @@ export const CharacterPage = ({
         )}
         <InventoryDragPreview />
         <CharacterAttributeEditPanel />
+        {isRemoteCampaignClient && hostActionPendingCount > 0 && (
+          <div
+            role='status'
+            aria-live='polite'
+            className='bg-background/95 text-muted-foreground fixed right-4 bottom-4 z-50 flex items-center gap-2 rounded-md border px-3 py-2 text-sm shadow-md backdrop-blur-sm'>
+            <Loader2 className='size-4 shrink-0 animate-spin' aria-hidden />
+            Communicating with host
+          </div>
+        )}
       </InventoryDragProvider>
     </CharacterProvider>
   );
