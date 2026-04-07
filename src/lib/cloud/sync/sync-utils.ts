@@ -103,10 +103,15 @@ export function prepareRecordForRemote(
       pinnedSidebarDocuments?: unknown;
       pinnedSidebarCharts?: unknown;
       componentData?: unknown;
+      componentLayoutOverrides?: unknown;
+      componentScriptDataPatches?: unknown;
     };
     if (c.pinnedSidebarDocuments == null) c.pinnedSidebarDocuments = [];
     if (c.pinnedSidebarCharts == null) c.pinnedSidebarCharts = [];
     if (c.componentData == null) c.componentData = {};
+    // Remote JSONB columns are NOT NULL; Dexie may store null for optional fields.
+    if (c.componentLayoutOverrides == null) c.componentLayoutOverrides = {};
+    if (c.componentScriptDataPatches == null) c.componentScriptDataPatches = {};
     if (c['pinned_sidebar_documents'] == null) c['pinned_sidebar_documents'] = [];
     if (c['pinned_sidebar_charts'] == null) c['pinned_sidebar_charts'] = [];
     if (c['component_data'] == null) c['component_data'] = {};
