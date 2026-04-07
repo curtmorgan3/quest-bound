@@ -8,8 +8,8 @@ import type {
   CampaignRealtimeEnvelopeV1,
 } from '@/lib/campaign-play/realtime/campaign-realtime-envelopes';
 import { CAMPAIGN_REALTIME_PROTOCOL_VERSION } from '@/lib/campaign-play/realtime/campaign-realtime-envelopes';
-import { cloudClient } from '@/lib/cloud/client';
 import { resolveCharacterOwnerAuthUserId } from '@/lib/campaign-play/realtime/resolve-character-owner-auth-uid';
+import { cloudClient } from '@/lib/cloud/client';
 import {
   getCurrentRollHandlerForScripts,
   getCurrentRollSplitHandlerForScripts,
@@ -253,7 +253,6 @@ export function flushDelegatedUiQueueForCharacter(characterId: string): void {
 }
 
 function onDelegatedUiRequest(campaignId: string, envelope: CampaignRealtimeEnvelopeV1): void {
-  console.log('delegated ui', envelope);
   if (envelope.kind !== 'delegated_ui_request') return;
   if (envelope.campaignId !== campaignId) return;
 
@@ -261,7 +260,6 @@ function onDelegatedUiRequest(campaignId: string, envelope: CampaignRealtimeEnve
     const body = envelope.body;
     if (body.interactionType === 'roll' || body.interactionType === 'roll_split') {
       const forMe = await delegatedRollShouldBeHandledByThisClient(envelope);
-      console.log('forMe: ', forMe);
       if (!forMe) return;
       /** Dice does not require an open sheet route; waiting on surface caused action timeouts from campaign UI. */
       await fulfillDelegatedRequest(envelope);

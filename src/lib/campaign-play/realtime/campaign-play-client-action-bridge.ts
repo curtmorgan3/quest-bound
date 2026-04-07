@@ -64,27 +64,34 @@ function onEnvelope(campaignId: string, envelope: CampaignRealtimeEnvelopeV1): v
 
   if (envelope.kind !== 'action_result') return;
   const entry = pendingByRequestId.get(envelope.requestId);
-  if (!entry) return;
 
   void (async () => {
     try {
       if (envelope.error) {
-        clearTimeout(entry.timeoutId);
-        pendingByRequestId.delete(envelope.requestId);
-        entry.reject(new Error(envelope.error.message));
+        if (entry) {
+          clearTimeout(entry.timeoutId);
+          pendingByRequestId.delete(envelope.requestId);
+          entry.reject(new Error(envelope.error.message));
+        }
         return;
       }
+      // All joiners ingest host-authored rows (e.g. another character's attributes updated by script).
+      // Only the initiator has `entry` to settle the action_request promise.
       await applyCampaignRealtimeBatches(db, envelope.batches);
       for (const msg of envelope.announceMessages ?? []) {
         window.dispatchEvent(new CustomEvent('qbscript:announce', { detail: { message: msg } }));
       }
-      clearTimeout(entry.timeoutId);
-      pendingByRequestId.delete(envelope.requestId);
-      entry.resolve();
+      if (entry) {
+        clearTimeout(entry.timeoutId);
+        pendingByRequestId.delete(envelope.requestId);
+        entry.resolve();
+      }
     } catch (e) {
-      clearTimeout(entry.timeoutId);
-      pendingByRequestId.delete(envelope.requestId);
-      entry.reject(e instanceof Error ? e : new Error(String(e)));
+      if (entry) {
+        clearTimeout(entry.timeoutId);
+        pendingByRequestId.delete(envelope.requestId);
+        entry.reject(e instanceof Error ? e : new Error(String(e)));
+      }
     }
   })();
 }

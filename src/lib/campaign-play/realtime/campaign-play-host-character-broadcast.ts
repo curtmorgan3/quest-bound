@@ -23,7 +23,6 @@ export async function broadcastHostCharacterDataAfterHostReactives(options: {
   campaignSceneId?: string;
   batches: CampaignRealtimeBulkPutBatchV1[];
 }): Promise<void> {
-  console.log('batches: ', options.batches);
   if (options.batches.length === 0) return;
 
   await getCampaignRosterIngestTail(options.campaignId);

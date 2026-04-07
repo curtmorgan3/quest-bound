@@ -1,6 +1,7 @@
 import {
   buildCampaignPlayDeltaBatches,
   expandMergedCampaignDeltaBatches,
+  resolveCampaignCharacterIdsForActionResultDelta,
 } from '@/lib/campaign-play/realtime/build-campaign-play-delta-batches';
 import { subscribeCampaignPlayHostDelegatedUiResponses } from '@/lib/campaign-play/realtime/campaign-play-delegated-ui-host';
 import { getCampaignPlaySender, subscribeCampaignPlayEnvelopes } from '@/lib/campaign-play/realtime/campaign-play-realtime-dispatcher';
@@ -122,10 +123,19 @@ export class CampaignPlayHostActionQueue {
         );
       }
 
+      const deltaCharacterIds = await resolveCampaignCharacterIdsForActionResultDelta(
+        db,
+        this.campaignId,
+        {
+          actingCharacterId: request.body.characterId,
+          startedAtMs,
+          modifiedAttributeIds: exec.modifiedAttributeIds,
+        },
+      );
       const rawBatches = await buildCampaignPlayDeltaBatches(
         db,
         this.campaignId,
-        [request.body.characterId],
+        deltaCharacterIds,
         startedAtMs,
       );
       const batches = expandMergedCampaignDeltaBatches(rawBatches);

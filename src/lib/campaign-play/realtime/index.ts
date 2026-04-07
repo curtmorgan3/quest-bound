@@ -39,6 +39,7 @@ export {
   buildCampaignPlayDeltaBatches,
   expandMergedCampaignDeltaBatches,
   mergeRealtimeBatchesByTable,
+  resolveCampaignCharacterIdsForActionResultDelta,
 } from '@/lib/campaign-play/realtime/build-campaign-play-delta-batches';
 export {
   dispatchCampaignPlayEnvelope,
