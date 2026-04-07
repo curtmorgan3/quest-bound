@@ -77,6 +77,25 @@ const ViewInputNodeComponent = ({
     }
   };
 
+  const onNumberBlur = () => {
+    if (!component.attributeId || !characterContext) return;
+    const { min, max } = data;
+    if (min == null && max == null) return;
+
+    const raw = data.value;
+    if (raw === '') return;
+
+    const num = typeof raw === 'number' ? raw : Number(raw);
+    if (!Number.isFinite(num)) return;
+
+    let clamped = num;
+    if (min != null) clamped = Math.max(min, clamped);
+    if (max != null) clamped = Math.min(max, clamped);
+    if (Object.is(clamped, num)) return;
+
+    handleChange(clamped);
+  };
+
   const isListType = data.attributeType === 'list';
   const isMultiSelectList = isListType && data.allowMultiSelect;
 
@@ -205,6 +224,7 @@ const ViewInputNodeComponent = ({
           placeholder={data?.placeholder ?? data?.name ?? data.type}
           value={Number(data.value)}
           onChange={(value) => handleChange(value)}
+          onBlur={onNumberBlur}
           style={{ ...inputStyle, ...interactiveFieldStyle }}
           inputMin={data.min}
           inputMax={data.max}
