@@ -14,6 +14,9 @@ import type {
   ConditionalRenderLogic,
   ConditionalRenderOperator,
 } from '@/types';
+import { parseEntityCustomPropertiesJson } from '@/utils/parse-entity-custom-properties-json';
+
+const CONDITIONAL_RENDER_CUSTOM_PROPERTY_NONE = '__none__';
 
 const NUMERIC_OPERATORS: { value: ConditionalRenderOperator; label: string }[] = [
   { value: 'eq', label: 'Equals' },
@@ -65,22 +68,34 @@ function getComparatorPlaceholder(attributeType: AttributeType | undefined): str
 
 interface ConditionalRenderEditProps {
   attributeId?: string | null;
+  conditionalRenderAttributeCustomPropertyId?: string | null;
   conditionalRenderLogic?: ConditionalRenderLogic | null;
   onSelect: (attr: Attribute | null) => void;
   onDelete: () => void;
+  onCustomPropertyChange: (customPropertyId: string | null) => void;
   onLogicChange: (logic: ConditionalRenderLogic | null) => void;
 }
 
 export const ConditionalRenderEdit = ({
   attributeId,
+  conditionalRenderAttributeCustomPropertyId,
   conditionalRenderLogic,
   onSelect,
   onDelete,
+  onCustomPropertyChange,
   onLogicChange,
 }: ConditionalRenderEditProps) => {
   const { attributes } = useAttributes();
   const selectedAttribute = attributeId ? attributes?.find((a) => a.id === attributeId) : undefined;
-  const attributeType = selectedAttribute?.type;
+  const customPropertyDefs = selectedAttribute
+    ? parseEntityCustomPropertiesJson(selectedAttribute.customProperties)
+    : [];
+  const selectedCustomDef = conditionalRenderAttributeCustomPropertyId
+    ? customPropertyDefs.find((d) => d.id === conditionalRenderAttributeCustomPropertyId)
+    : undefined;
+  const attributeType: AttributeType | undefined = selectedCustomDef
+    ? (selectedCustomDef.type as AttributeType)
+    : selectedAttribute?.type;
 
   const logic = conditionalRenderLogic ?? { operator: 'eq', value: '' };
   const isBoolean = attributeType === 'boolean';
@@ -134,6 +149,43 @@ export const ConditionalRenderEdit = ({
       />
       {attributeId && (
         <>
+          {customPropertyDefs.length > 0 && (
+            <div className='flex flex-col gap-2'>
+              <Label
+                htmlFor='conditional-render-attribute-custom-property'
+                className='text-xs text-muted-foreground'>
+                Custom property (optional)
+              </Label>
+              <Select
+                value={
+                  conditionalRenderAttributeCustomPropertyId &&
+                  customPropertyDefs.some((d) => d.id === conditionalRenderAttributeCustomPropertyId)
+                    ? conditionalRenderAttributeCustomPropertyId
+                    : CONDITIONAL_RENDER_CUSTOM_PROPERTY_NONE
+                }
+                onValueChange={(v) =>
+                  onCustomPropertyChange(
+                    v === CONDITIONAL_RENDER_CUSTOM_PROPERTY_NONE ? null : v,
+                  )
+                }>
+                <SelectTrigger
+                  id='conditional-render-attribute-custom-property'
+                  className='h-8 w-full'>
+                  <SelectValue placeholder='Use main attribute value' />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={CONDITIONAL_RENDER_CUSTOM_PROPERTY_NONE}>
+                    None (main attribute value)
+                  </SelectItem>
+                  {customPropertyDefs.map((def) => (
+                    <SelectItem key={def.id} value={def.id}>
+                      {def.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
           <div className='flex flex-col gap-2'>
             <Label htmlFor='conditional-render-operator'>
               {isBoolean ? 'Condition' : 'Operator'}

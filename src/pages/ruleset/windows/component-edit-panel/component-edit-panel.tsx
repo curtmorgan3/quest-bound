@@ -338,10 +338,24 @@ export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
   };
 
   const setConditionalRenderAttributeId = (id: string | null) => {
-    patchSelectedComponentsMergedData((d) => ({
-      ...d,
-      conditionalRenderAttributeId: id,
-    }));
+    patchSelectedComponentsMergedData((d) => {
+      const next = { ...d } as Record<string, unknown>;
+      next.conditionalRenderAttributeId = id;
+      delete next.conditionalRenderAttributeCustomPropertyId;
+      return next;
+    });
+  };
+
+  const setConditionalRenderAttributeCustomPropertyId = (customPropertyId: string | null) => {
+    patchSelectedComponentsMergedData((d) => {
+      const next = { ...d } as Record<string, unknown>;
+      if (customPropertyId == null) {
+        delete next.conditionalRenderAttributeCustomPropertyId;
+      } else {
+        next.conditionalRenderAttributeCustomPropertyId = customPropertyId;
+      }
+      return next;
+    });
   };
 
   const setConditionalRenderLogic = (logic: ConditionalRenderLogic | null) => {
@@ -649,7 +663,6 @@ export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
                           },
                         ]);
                       }}
-                      filterType={allAreCheckboxes ? 'boolean' : undefined}
                     />
                     {(() => {
                       const c = selectedComponents[0];
@@ -775,11 +788,16 @@ export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
                   attributeId={
                     getComponentData(panelDisplayComponents[0]!).conditionalRenderAttributeId
                   }
+                  conditionalRenderAttributeCustomPropertyId={
+                    getComponentData(panelDisplayComponents[0]!)
+                      .conditionalRenderAttributeCustomPropertyId
+                  }
                   conditionalRenderLogic={
                     getComponentData(panelDisplayComponents[0]!).conditionalRenderLogic
                   }
                   onSelect={(attr) => setConditionalRenderAttributeId(attr?.id ?? null)}
                   onDelete={() => setConditionalRenderAttributeId(null)}
+                  onCustomPropertyChange={setConditionalRenderAttributeCustomPropertyId}
                   onLogicChange={setConditionalRenderLogic}
                 />
               )}

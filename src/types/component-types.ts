@@ -212,6 +212,11 @@ export type ComponentData = ShapeComponentData &
   GroupComponentData & {
     referenceLabel?: string | null;
     conditionalRenderAttributeId?: string | null;
+    /**
+     * When set, conditional render compares against this ruleset attribute custom property's value
+     * (`CharacterAttribute.attributeCustomPropertyValues[id]`), not the main attribute value.
+     */
+    conditionalRenderAttributeCustomPropertyId?: string | null;
     conditionalRenderInverse?: boolean;
     conditionalRenderLogic?: ConditionalRenderLogic | null;
     pageId?: string;

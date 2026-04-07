@@ -48,7 +48,7 @@ const coerceValueByComponentType = (
     }
 
     case ComponentTypes.TEXT:
-      return attributeType === 'number' ? Number(value) : value;
+      return attributeType === 'number' ? Number(value) : String(value);
 
     case ComponentTypes.CONTENT: {
       return typeof value === 'string' ? value : String(value);
@@ -96,7 +96,7 @@ export const useNodeData = (component: Component): NodeData => {
     let value =
       customDef != null && customPropertyId
         ? (characterAttribute?.attributeCustomPropertyValues?.[customPropertyId] ??
-            customDef.defaultValue)
+          customDef.defaultValue)
         : (characterAttribute?.value ??
           characterComponentDataValue ??
           rulesetAttribute?.defaultValue ??
@@ -145,9 +145,7 @@ export const useNodeData = (component: Component): NodeData => {
       attributeType,
       characterAttributeId: characterAttribute?.id,
       options:
-        customDef != null
-          ? []
-          : (characterAttribute?.options ?? rulesetAttribute?.options ?? []),
+        customDef != null ? [] : (characterAttribute?.options ?? rulesetAttribute?.options ?? []),
       min: characterAttribute?.min ?? rulesetAttribute?.min,
       max: characterAttribute?.max ?? rulesetAttribute?.max,
       allowMultiSelect: customDef != null ? false : rulesetAttribute?.allowMultiSelect,

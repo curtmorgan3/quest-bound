@@ -5,8 +5,30 @@ import type {
   ConditionalRenderLogic,
   ConditionalRenderOperator,
 } from '@/types';
+import { findEntityCustomPropertyDefById } from '@/utils/parse-entity-custom-properties-json';
 import type { ReactNode } from 'react';
 import { getComponentData } from '../../utils/node-conversion';
+
+function resolveConditionalRenderValue(
+  conditionAttribute: CharacterAttribute,
+  customPropertyId: string | null | undefined,
+): string | number | boolean {
+  if (!customPropertyId) {
+    return conditionAttribute.value;
+  }
+  const def = findEntityCustomPropertyDefById(
+    customPropertyId,
+    conditionAttribute.customProperties,
+  );
+  const stored = conditionAttribute.attributeCustomPropertyValues?.[customPropertyId];
+  if (stored !== undefined) {
+    return stored;
+  }
+  if (def) {
+    return def.defaultValue;
+  }
+  return conditionAttribute.value;
+}
 
 function evaluateLogic(
   attributeValue: string | number | boolean,
@@ -74,11 +96,16 @@ export function isComponentConditionallyVisible(
     return true;
   }
 
+  const resolvedValue = resolveConditionalRenderValue(
+    conditionAttribute,
+    data.conditionalRenderAttributeCustomPropertyId,
+  );
+
   if (logic) {
-    return evaluateLogic(conditionAttribute.value, logic);
+    return evaluateLogic(resolvedValue, logic);
   }
 
-  if (conditionAttribute.value === false) {
+  if (resolvedValue === false) {
     return false;
   }
 
