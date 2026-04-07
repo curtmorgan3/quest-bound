@@ -16,6 +16,8 @@ export interface CampaignCharacterSheetProps {
   campaignId?: string;
   /** When set (e.g. viewing character in a scene), action scripts get Scene accessor with advanceTurnOrder. */
   campaignSceneId?: string;
+  /** When false, sheet actions run locally (no joiner realtime relay). See CharacterPage. */
+  campaignPlayClientBootstrapEnabled?: boolean;
   /** Rendered above the character page inside the sheet panel (e.g. scene character shortcuts). */
   topBar?: ReactNode;
   /** Receive inventory/close handlers to render actions outside CharacterPage (e.g. top bar). */
@@ -32,6 +34,7 @@ export const CampaignCharacterSheet = ({
   forceFitSheetToViewport = false,
   campaignId,
   campaignSceneId,
+  campaignPlayClientBootstrapEnabled = true,
   topBar,
   onFloatingActionsApi,
 }: CampaignCharacterSheetProps = {}) => {
@@ -82,6 +85,7 @@ export const CampaignCharacterSheet = ({
                 id={characterId}
                 campaignId={campaignId}
                 campaignSceneId={campaignSceneId}
+                campaignPlayClientBootstrapEnabled={campaignPlayClientBootstrapEnabled}
                 lockByDefault
                 transparentBackground={transparentBackground}
                 onClose={handleClose}

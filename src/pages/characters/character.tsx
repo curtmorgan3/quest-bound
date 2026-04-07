@@ -61,6 +61,11 @@ interface CharacterPage {
   campaignId?: string;
   /** When set with campaignId (e.g. character sheet in a scene), action scripts get Scene with advanceTurnOrder. */
   campaignSceneId?: string;
+  /**
+   * When false with campaign play, do not join campaign realtime as a client (local script execution only).
+   * Campaign dashboard passes false while host realtime is off.
+   */
+  campaignPlayClientBootstrapEnabled?: boolean;
   lockByDefault?: boolean;
   /**
    * If provided, renders just this window in preview mode. Otherwise, it renders all character pages and windows.
@@ -87,6 +92,7 @@ export const CharacterPage = ({
   id,
   campaignId,
   campaignSceneId,
+  campaignPlayClientBootstrapEnabled = true,
   lockByDefault,
   editorWindowId,
   transparentBackground,
@@ -106,6 +112,7 @@ export const CharacterPage = ({
     propCampaignId: campaignId,
     propCampaignSceneId: campaignSceneId,
     realtimePlayEnabled: true,
+    campaignPlayClientBootstrapEnabled,
   });
   const effectiveCampaignId = playCampaignId;
   const effectiveCampaignSceneId = playCampaignSceneId;

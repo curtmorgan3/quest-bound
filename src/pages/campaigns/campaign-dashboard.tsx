@@ -524,6 +524,9 @@ export function CampaignDashboard() {
             hideGameLog
             campaignId={campaignId}
             campaignSceneId={sceneId ?? undefined}
+            campaignPlayClientBootstrapEnabled={
+              cloudSyncEnabled && !isCloudSyncEligibilityLoading && hostCampaignRealtimeEnabled
+            }
             characterId={sheetCharacterId ?? undefined}
             open={!!sheetCharacterId}
             transparentBackground={characterSheetTransparentBackground}

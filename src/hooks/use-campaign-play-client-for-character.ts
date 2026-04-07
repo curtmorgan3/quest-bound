@@ -12,6 +12,12 @@ export interface UseCampaignPlayClientForCharacterOptions {
   propCampaignId?: string;
   propCampaignSceneId?: string;
   realtimePlayEnabled: boolean;
+  /**
+   * When false, do not enter a client play session or subscribe to campaign realtime.
+   * Use for solo GM on the campaign dashboard while host realtime is off (scripts run locally).
+   * Default true (joiners and standalone character routes still relay when appropriate).
+   */
+  campaignPlayClientBootstrapEnabled?: boolean;
 }
 
 export interface UseCampaignPlayClientForCharacterResult {
@@ -32,6 +38,7 @@ export function useCampaignPlayClientForCharacter({
   propCampaignId,
   propCampaignSceneId,
   realtimePlayEnabled,
+  campaignPlayClientBootstrapEnabled = true,
 }: UseCampaignPlayClientForCharacterOptions): UseCampaignPlayClientForCharacterResult {
   const session = useCampaignPlaySessionStore((s) => s.session);
   const lastSyncedKeyRef = useRef<string | null>(null);
@@ -72,11 +79,12 @@ export function useCampaignPlayClientForCharacter({
   }, [propCampaignSceneId, campaignCharacterLink, playCampaignId]);
 
   const shouldBootstrapClient = Boolean(
-    realtimePlayEnabled &&
-    characterId &&
-    playCampaignId &&
-    campaignCharacterLink != null &&
-    !(session?.role === 'host' && session.campaignId === playCampaignId),
+    campaignPlayClientBootstrapEnabled &&
+      realtimePlayEnabled &&
+      characterId &&
+      playCampaignId &&
+      campaignCharacterLink != null &&
+      !(session?.role === 'host' && session.campaignId === playCampaignId),
   );
 
   useEffect(() => {
