@@ -112,7 +112,12 @@ export class QBScriptClient {
   /** When set, blocking UI for this worker execution is delegated via campaign realtime (host). */
   private delegatedHostByRequestId = new Map<
     string,
-    { campaignId: string; timeoutMs: number; delegationSurfaceCharacterId: string }
+    {
+      campaignId: string;
+      timeoutMs: number;
+      delegationSurfaceCharacterId: string;
+      initiatorCloudUserId?: string;
+    }
   >();
   private isReady = false;
   private readyCallbacks: Array<() => void> = [];
@@ -249,11 +254,33 @@ export class QBScriptClient {
   /** Realtime envelope `characterId` for joiner-delegated runs (vs per-call worker surface). */
   private envelopeCharacterIdForDelegatedUi(
     delegated:
-      | { delegationSurfaceCharacterId: string; campaignId: string; timeoutMs: number }
+      | {
+          delegationSurfaceCharacterId: string;
+          campaignId: string;
+          timeoutMs: number;
+          initiatorCloudUserId?: string;
+        }
       | undefined,
     surfaceCharacterId: string,
   ): string {
     return delegated?.delegationSurfaceCharacterId ?? surfaceCharacterId;
+  }
+
+  /** Joiner-originated runs: attach initiator + acting character so the client can route rolls without trusting local Dexie `userId`. */
+  private joinerDelegationForEnvelope(
+    delegated:
+      | {
+          delegationSurfaceCharacterId: string;
+          initiatorCloudUserId?: string;
+        }
+      | undefined,
+  ): { initiatorCloudUserId: string; actionCharacterId: string } | undefined {
+    const initiator = delegated?.initiatorCloudUserId?.trim();
+    if (!initiator || !delegated) return undefined;
+    return {
+      initiatorCloudUserId: initiator,
+      actionCharacterId: delegated.delegationSurfaceCharacterId,
+    };
   }
 
   private handleAttributesModifiedByScript(payload: {
@@ -285,16 +312,15 @@ export class QBScriptClient {
           campaignId: delegated.campaignId,
           executionRequestId: payload.executionRequestId,
           interactionId: payload.rollRequestId,
-          characterId: this.envelopeCharacterIdForDelegatedUi(
-            delegated,
-            payload.surfaceCharacterId,
-          ),
+          /** Per rolled character: PC → remote owner; NPC (no userId) → host localRunner. */
+          characterId: payload.surfaceCharacterId,
           body: {
             interactionType: 'roll',
             expression: payload.expression,
             rerollMessage: payload.rerollMessage,
           },
           timeoutMs: delegated.timeoutMs,
+          joinerDelegation: this.joinerDelegationForEnvelope(delegated),
           localRunner: () =>
             Promise.resolve(rollFn(payload.expression, payload.rerollMessage)).then((v) =>
               typeof v === 'number' ? v : Number(v),
@@ -337,16 +363,14 @@ export class QBScriptClient {
           campaignId: delegated.campaignId,
           executionRequestId: payload.executionRequestId,
           interactionId: payload.rollRequestId,
-          characterId: this.envelopeCharacterIdForDelegatedUi(
-            delegated,
-            payload.surfaceCharacterId,
-          ),
+          characterId: payload.surfaceCharacterId,
           body: {
             interactionType: 'roll_split',
             expression: payload.expression,
             rerollMessage: payload.rerollMessage,
           },
           timeoutMs: delegated.timeoutMs,
+          joinerDelegation: this.joinerDelegationForEnvelope(delegated),
           localRunner: () =>
             Promise.resolve(rollSplitFn(payload.expression, payload.rerollMessage)).then((v) =>
               Array.isArray(v) ? v : [],
@@ -397,6 +421,7 @@ export class QBScriptClient {
             choices: payload.choices,
           },
           timeoutMs: delegated.timeoutMs,
+          joinerDelegation: this.joinerDelegationForEnvelope(delegated),
           localRunner: () => usePromptModalStore.getState().show(payload.msg, payload.choices),
         })) as string;
       } else {
@@ -443,6 +468,7 @@ export class QBScriptClient {
             choices: payload.choices,
           },
           timeoutMs: delegated.timeoutMs,
+          joinerDelegation: this.joinerDelegationForEnvelope(delegated),
           localRunner: () =>
             usePromptModalStore.getState().showMultiple(payload.msg, payload.choices),
         })) as string[];
@@ -488,6 +514,7 @@ export class QBScriptClient {
             message: payload.msg,
           },
           timeoutMs: delegated.timeoutMs,
+          joinerDelegation: this.joinerDelegationForEnvelope(delegated),
           localRunner: () => usePromptModalStore.getState().showInput(payload.msg),
         })) as string;
       } else {
@@ -548,6 +575,7 @@ export class QBScriptClient {
               rosterPcs: rosterWire.rosterPcs,
             },
             timeoutMs: delegated.timeoutMs,
+            joinerDelegation: this.joinerDelegationForEnvelope(delegated),
             localRunner: async () => {
               const { characterIds: ids } = await useCharacterSelectModalStore.getState().show({
                 mode: 'single',
@@ -580,6 +608,7 @@ export class QBScriptClient {
               rosterPcs: rosterWire.rosterPcs,
             },
             timeoutMs: delegated.timeoutMs,
+            joinerDelegation: this.joinerDelegationForEnvelope(delegated),
             localRunner: () =>
               useCharacterSelectModalStore
                 .getState()
@@ -989,6 +1018,7 @@ export class QBScriptClient {
         campaignId: delegatedHostRun.campaignId,
         timeoutMs: delegatedHostRun.timeoutMs,
         delegationSurfaceCharacterId: delegatedHostRun.delegationSurfaceCharacterId,
+        initiatorCloudUserId: delegatedHostRun.initiatorCloudUserId,
       });
     }
     this.pendingRollHandlers.set(requestId, roll ?? defaultScriptDiceRoller);
@@ -1053,6 +1083,7 @@ export class QBScriptClient {
         campaignId: delegatedHostRun.campaignId,
         timeoutMs: delegatedHostRun.timeoutMs,
         delegationSurfaceCharacterId: delegatedHostRun.delegationSurfaceCharacterId,
+        initiatorCloudUserId: delegatedHostRun.initiatorCloudUserId,
       });
     }
     this.pendingRollHandlers.set(requestId, roll ?? defaultScriptDiceRoller);

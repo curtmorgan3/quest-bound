@@ -66,8 +66,19 @@ export type DelegatedUiCharacterSelectRosterPayloadV1 = {
 
 /** QBScript blocking UI delegated to another client (joiner rolls, prompts, etc.). */
 export type DelegatedUiRequestBodyV1 =
-  | { interactionType: 'roll'; expression: string; rerollMessage?: string }
-  | { interactionType: 'roll_split'; expression: string; rerollMessage?: string }
+  | {
+      interactionType: 'roll';
+      expression: string;
+      rerollMessage?: string;
+      /** Supabase auth uid (`users.cloudUserId`) for the character owner; not Dexie `characters.userId` (profile id). */
+      responderCloudUserId?: string;
+    }
+  | {
+      interactionType: 'roll_split';
+      expression: string;
+      rerollMessage?: string;
+      responderCloudUserId?: string;
+    }
   | { interactionType: 'prompt'; message: string; choices: string[] }
   | { interactionType: 'prompt_multiple'; message: string; choices: string[] }
   | { interactionType: 'prompt_input'; message: string }
@@ -103,6 +114,13 @@ export interface CampaignRealtimeDelegatedUiRequestEnvelopeV1 {
   characterId: string;
   body: DelegatedUiRequestBodyV1;
   sentAt: string;
+  /** Joiner-originated run: `action_request.initiatorUserId` (Supabase auth id). */
+  initiatorCloudUserId?: string;
+  /**
+   * Joiner-originated run: `action_request.body.characterId` (acting character).
+   * Matches `characterId` on this envelope for Owner rolls; used to route dice when Dexie `userId` differs across peers.
+   */
+  actionCharacterId?: string;
 }
 
 export interface CampaignRealtimeDelegatedUiResponseEnvelopeV1 {
@@ -294,9 +312,11 @@ function parseDelegatedUiRequestBodyV1(raw: unknown): DelegatedUiRequestBodyV1 |
     if (typeof raw.expression !== 'string') return null;
     const rerollMessage = raw.rerollMessage;
     if (rerollMessage !== undefined && typeof rerollMessage !== 'string') return null;
+    const responderCloudUserId = raw.responderCloudUserId;
+    if (responderCloudUserId !== undefined && typeof responderCloudUserId !== 'string') return null;
     return interactionType === 'roll'
-      ? { interactionType: 'roll', expression: raw.expression, rerollMessage }
-      : { interactionType: 'roll_split', expression: raw.expression, rerollMessage };
+      ? { interactionType: 'roll', expression: raw.expression, rerollMessage, responderCloudUserId }
+      : { interactionType: 'roll_split', expression: raw.expression, rerollMessage, responderCloudUserId };
   }
   if (interactionType === 'prompt' || interactionType === 'prompt_multiple') {
     if (typeof raw.message !== 'string' || !Array.isArray(raw.choices)) return null;
@@ -393,6 +413,10 @@ export function parseCampaignRealtimeEnvelope(raw: unknown): CampaignRealtimeEnv
     }
     const body = parseDelegatedUiRequestBodyV1(raw.body);
     if (!body) return null;
+    const initiatorCloudUserId = raw.initiatorCloudUserId;
+    if (initiatorCloudUserId !== undefined && typeof initiatorCloudUserId !== 'string') return null;
+    const actionCharacterId = raw.actionCharacterId;
+    if (actionCharacterId !== undefined && typeof actionCharacterId !== 'string') return null;
     return {
       v: CAMPAIGN_REALTIME_PROTOCOL_VERSION,
       kind: 'delegated_ui_request',
@@ -403,6 +427,8 @@ export function parseCampaignRealtimeEnvelope(raw: unknown): CampaignRealtimeEnv
       characterId: raw.characterId,
       body,
       sentAt: raw.sentAt,
+      initiatorCloudUserId,
+      actionCharacterId,
     };
   }
 

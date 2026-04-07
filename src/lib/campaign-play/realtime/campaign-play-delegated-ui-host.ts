@@ -9,6 +9,7 @@ import type {
   DelegatedUiRequestBodyV1,
 } from '@/lib/campaign-play/realtime/campaign-realtime-envelopes';
 import { CAMPAIGN_REALTIME_PROTOCOL_VERSION } from '@/lib/campaign-play/realtime/campaign-realtime-envelopes';
+import { resolveCharacterOwnerAuthUserId } from '@/lib/campaign-play/realtime/resolve-character-owner-auth-uid';
 import { db } from '@/stores';
 
 /**
@@ -22,12 +23,14 @@ export interface CampaignPlayDelegatedUiHostRunOptions {
   executionRequestId: string;
   timeoutMs: number;
   /**
-   * Joiner-originated action: the character whose sheet client receives **all** delegated blocking UI
-   * for this execution. Worker calls may use a different `surfaceCharacterId` (e.g. after
-   * `selectCharacter`); realtime envelopes must still target this id so the joiner is not asked to
-   * open a sheet for an NPC or another PC they are not viewing.
+   * Joiner-originated action: character whose sheet receives delegated **prompt/select** UI when the
+   * worker uses the acting surface (see `envelopeCharacterIdForDelegatedUi` in QBScriptClient).
+   * `roll` / `roll_split` use the rolled character id instead so PC rolls go to that character's
+   * owner and NPC rolls stay on the host.
    */
   delegationSurfaceCharacterId: string;
+  /** Copied from `action_request.initiatorUserId` for delegated envelope routing on the client. */
+  initiatorCloudUserId?: string;
 }
 
 type PendingEntry = {
@@ -60,11 +63,14 @@ function untrackInteraction(executionRequestId: string, interactionId: string): 
 
 /**
  * True when the character row has a seated controlling user (delegate UI to that player's client).
- * Missing / empty `userId` → host runs modals/dice locally (see joiner-rolls.md §3–4).
+ * NPCs always use the host machine (`localRunner`): they may still carry a `userId` (e.g. GM), and
+ * delegated dice would otherwise wait on an NPC sheet surface that is often not open → timeout.
+ * Missing / empty `userId` on a PC → host runs locally (see joiner-rolls.md §3–4).
  */
 export async function characterShouldUseRemoteDelegatedUi(characterId: string): Promise<boolean> {
   const ch = await db.characters.get(characterId);
   if (!ch) return false;
+  if (ch.isNpc === true) return false;
   return typeof ch.userId === 'string' && ch.userId.trim().length > 0;
 }
 
@@ -111,6 +117,11 @@ export async function hostAwaitDelegatedUiInteraction<T>(options: {
   body: DelegatedUiRequestBodyV1;
   timeoutMs: number;
   localRunner: () => Promise<T>;
+  /** Joiner-originated script: echoed on the envelope for client-side routing. */
+  joinerDelegation?: {
+    initiatorCloudUserId: string;
+    actionCharacterId: string;
+  };
 }): Promise<T> {
   const remote = await characterShouldUseRemoteDelegatedUi(options.characterId);
   const send = getCampaignPlaySender(options.campaignId);
@@ -119,9 +130,22 @@ export async function hostAwaitDelegatedUiInteraction<T>(options: {
     return options.localRunner();
   }
 
+  let body: DelegatedUiRequestBodyV1 = options.body;
+  if (body.interactionType === 'roll' || body.interactionType === 'roll_split') {
+    const ch = await db.characters.get(options.characterId);
+    const profileId = ch && typeof ch.userId === 'string' ? ch.userId.trim() : '';
+    if (profileId) {
+      const authUid = await resolveCharacterOwnerAuthUserId(profileId);
+      if (authUid) {
+        body = { ...body, responderCloudUserId: authUid };
+      }
+    }
+  }
+
   const responseToken = crypto.randomUUID();
   const sentAt = new Date().toISOString();
 
+  const jd = options.joinerDelegation;
   const request: CampaignRealtimeDelegatedUiRequestEnvelopeV1 = {
     v: CAMPAIGN_REALTIME_PROTOCOL_VERSION,
     kind: 'delegated_ui_request',
@@ -130,8 +154,14 @@ export async function hostAwaitDelegatedUiInteraction<T>(options: {
     interactionId: options.interactionId,
     responseToken,
     characterId: options.characterId,
-    body: options.body,
+    body,
     sentAt,
+    ...(jd
+      ? {
+          initiatorCloudUserId: jd.initiatorCloudUserId,
+          actionCharacterId: jd.actionCharacterId,
+        }
+      : {}),
   };
 
   return new Promise<T>((resolve, reject) => {

@@ -8,7 +8,13 @@ import type {
   CampaignRealtimeEnvelopeV1,
 } from '@/lib/campaign-play/realtime/campaign-realtime-envelopes';
 import { CAMPAIGN_REALTIME_PROTOCOL_VERSION } from '@/lib/campaign-play/realtime/campaign-realtime-envelopes';
-import { getCurrentRollHandlerForScripts, getCurrentRollSplitHandlerForScripts } from '@/lib/compass-logic/worker/current-roll-handler-ref';
+import { cloudClient } from '@/lib/cloud/client';
+import { resolveCharacterOwnerAuthUserId } from '@/lib/campaign-play/realtime/resolve-character-owner-auth-uid';
+import {
+  getCurrentRollHandlerForScripts,
+  getCurrentRollSplitHandlerForScripts,
+} from '@/lib/compass-logic/worker/current-roll-handler-ref';
+import { db } from '@/stores';
 import { useCharacterSelectModalStore } from '@/stores/character-select-modal-store';
 import { usePromptModalStore } from '@/stores/prompt-modal-store';
 import { defaultScriptDiceRoller, defaultScriptDiceRollerSplit } from '@/utils/dice-utils';
@@ -62,9 +68,48 @@ export function registerCampaignPlayDelegatedCharacterSurface(characterId: strin
 
 function delegatedUiSurfaceIsActive(envelopeCharacterId: string): boolean {
   if (activeCharacterSheetIds.has(envelopeCharacterId)) return true;
-  const routePath =
-    typeof window !== 'undefined' ? getCampaignPlayDelegatedUiRoutePath() : '';
+  const routePath = typeof window !== 'undefined' ? getCampaignPlayDelegatedUiRoutePath() : '';
   return surfaceCharacterIdMatchesEnvelope(routePath, envelopeCharacterId);
+}
+
+async function getCurrentCloudUserId(): Promise<string | null> {
+  if (!cloudClient) return null;
+  const { data: sessionWrap } = await cloudClient.auth.getSession();
+  const fromSession = sessionWrap.session?.user?.id?.trim();
+  if (fromSession) return fromSession;
+  const { data: userWrap } = await cloudClient.auth.getUser();
+  return userWrap.user?.id?.trim() ?? null;
+}
+
+/**
+ * Only the intended player should answer delegated dice (envelopes broadcast to every campaign client).
+ * Order: host `responderCloudUserId` (auth uid) → initiator + acting character (Owner rolls) → profile→auth via Dexie.
+ */
+async function delegatedRollShouldBeHandledByThisClient(
+  envelope: CampaignRealtimeDelegatedUiRequestEnvelopeV1,
+): Promise<boolean> {
+  const body = envelope.body;
+  if (body.interactionType !== 'roll' && body.interactionType !== 'roll_split') return false;
+
+  const uid = await getCurrentCloudUserId();
+  if (!uid) return false;
+
+  const fromHost = body.responderCloudUserId?.trim();
+  if (fromHost) return uid === fromHost;
+
+  const initiator = envelope.initiatorCloudUserId?.trim();
+  const actionChar = envelope.actionCharacterId;
+  if (initiator && actionChar && initiator === uid && actionChar === envelope.characterId) {
+    return true;
+  }
+
+  const ch = await db.characters.get(envelope.characterId);
+  if (!ch) return false;
+  const profileId = typeof ch.userId === 'string' ? ch.userId.trim() : '';
+  if (!profileId) return false;
+  const ownerAuth = await resolveCharacterOwnerAuthUserId(profileId);
+  if (ownerAuth) return ownerAuth === uid;
+  return profileId === uid;
 }
 
 async function fulfillDelegatedRequest(
@@ -74,7 +119,7 @@ async function fulfillDelegatedRequest(
   const effectiveCampaignIdForSelect =
     envelope.body.interactionType === 'select_character' ||
     envelope.body.interactionType === 'select_characters'
-      ? envelope.body.campaignId ?? envelope.campaignId
+      ? (envelope.body.campaignId ?? envelope.campaignId)
       : undefined;
   const send = getCampaignPlaySender(envelope.campaignId);
   if (!send) return;
@@ -95,20 +140,14 @@ async function fulfillDelegatedRequest(
     const { body } = envelope;
     switch (body.interactionType) {
       case 'roll': {
-        const roll =
-          getCurrentRollHandlerForScripts() ?? defaultScriptDiceRoller;
-        const value = await Promise.resolve(
-          roll(body.expression, body.rerollMessage),
-        );
+        const roll = getCurrentRollHandlerForScripts() ?? defaultScriptDiceRoller;
+        const value = await Promise.resolve(roll(body.expression, body.rerollMessage));
         await reply(typeof value === 'number' ? value : Number(value));
         break;
       }
       case 'roll_split': {
-        const rollSplit =
-          getCurrentRollSplitHandlerForScripts() ?? defaultScriptDiceRollerSplit;
-        const value = await Promise.resolve(
-          rollSplit(body.expression, body.rerollMessage),
-        );
+        const rollSplit = getCurrentRollSplitHandlerForScripts() ?? defaultScriptDiceRollerSplit;
+        const value = await Promise.resolve(rollSplit(body.expression, body.rerollMessage));
         await reply(Array.isArray(value) ? value : []);
         break;
       }
@@ -118,9 +157,7 @@ async function fulfillDelegatedRequest(
         break;
       }
       case 'prompt_multiple': {
-        const value = await usePromptModalStore
-          .getState()
-          .showMultiple(body.message, body.choices);
+        const value = await usePromptModalStore.getState().showMultiple(body.message, body.choices);
         await reply(value);
         break;
       }
@@ -215,18 +252,28 @@ export function flushDelegatedUiQueueForCharacter(characterId: string): void {
   })();
 }
 
-function onDelegatedUiRequest(
-  campaignId: string,
-  envelope: CampaignRealtimeEnvelopeV1,
-): void {
+function onDelegatedUiRequest(campaignId: string, envelope: CampaignRealtimeEnvelopeV1): void {
+  console.log('delegated ui', envelope);
   if (envelope.kind !== 'delegated_ui_request') return;
   if (envelope.campaignId !== campaignId) return;
 
-  if (delegatedUiSurfaceIsActive(envelope.characterId)) {
-    void fulfillDelegatedRequest(envelope);
-  } else {
-    enqueueDelegatedRequest(envelope);
-  }
+  void (async () => {
+    const body = envelope.body;
+    if (body.interactionType === 'roll' || body.interactionType === 'roll_split') {
+      const forMe = await delegatedRollShouldBeHandledByThisClient(envelope);
+      console.log('forMe: ', forMe);
+      if (!forMe) return;
+      /** Dice does not require an open sheet route; waiting on surface caused action timeouts from campaign UI. */
+      await fulfillDelegatedRequest(envelope);
+      return;
+    }
+
+    if (delegatedUiSurfaceIsActive(envelope.characterId)) {
+      await fulfillDelegatedRequest(envelope);
+    } else {
+      enqueueDelegatedRequest(envelope);
+    }
+  })();
 }
 
 export function startCampaignPlayDelegatedUiClient(campaignId: string): void {

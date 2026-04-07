@@ -96,6 +96,27 @@ describe('parseCampaignRealtimeEnvelope', () => {
     expect(parseCampaignRealtimeEnvelope(raw)).toEqual(raw);
   });
 
+  it('parses delegated_ui_request roll with joiner routing fields', () => {
+    const raw = {
+      v: 1,
+      kind: 'delegated_ui_request' as const,
+      campaignId: 'c1',
+      executionRequestId: 'ex1',
+      interactionId: 'int1',
+      responseToken: 'tok1',
+      characterId: 'char-acting',
+      sentAt: '2025-01-01T00:00:00.000Z',
+      initiatorCloudUserId: 'user-joiner',
+      actionCharacterId: 'char-acting',
+      body: {
+        interactionType: 'roll' as const,
+        expression: '1d20',
+        responderCloudUserId: 'user-joiner',
+      },
+    };
+    expect(parseCampaignRealtimeEnvelope(raw)).toEqual(raw);
+  });
+
   it('parses delegated_ui_request select_character with roster snapshot', () => {
     const raw = {
       v: 1,
