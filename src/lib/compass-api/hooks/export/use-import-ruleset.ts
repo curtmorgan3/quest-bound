@@ -462,9 +462,12 @@ export const useImportRuleset = () => {
           if (!item.label || typeof item.label !== 'string') {
             errors.push(`CustomProperty ${index + 1}: label is required and must be a string`);
           }
-          if (!item.type || !['string', 'number', 'boolean', 'color'].includes(item.type)) {
+          if (
+            !item.type ||
+            !['string', 'number', 'boolean', 'color', 'image'].includes(item.type)
+          ) {
             errors.push(
-              `CustomProperty ${index + 1}: type must be one of: string, number, boolean, color`,
+              `CustomProperty ${index + 1}: type must be one of: string, number, boolean, color, image`,
             );
           }
           break;
