@@ -13,6 +13,7 @@ import { cloudClient } from '@/lib/cloud/client';
 import {
   getCurrentRollHandlerForScripts,
   getCurrentRollSplitHandlerForScripts,
+  getDicePanelRollHandlersForCampaignHostQueue,
 } from '@/lib/compass-logic/worker/current-roll-handler-ref';
 import { db } from '@/stores';
 import { useCharacterSelectModalStore } from '@/stores/character-select-modal-store';
@@ -140,13 +141,16 @@ async function fulfillDelegatedRequest(
     const { body } = envelope;
     switch (body.interactionType) {
       case 'roll': {
-        const roll = getCurrentRollHandlerForScripts() ?? defaultScriptDiceRoller;
+        const { roll: panelRoll } = getDicePanelRollHandlersForCampaignHostQueue();
+        const roll = panelRoll ?? getCurrentRollHandlerForScripts() ?? defaultScriptDiceRoller;
         const value = await Promise.resolve(roll(body.expression, body.rerollMessage));
         await reply(typeof value === 'number' ? value : Number(value));
         break;
       }
       case 'roll_split': {
-        const rollSplit = getCurrentRollSplitHandlerForScripts() ?? defaultScriptDiceRollerSplit;
+        const { rollSplit: panelRollSplit } = getDicePanelRollHandlersForCampaignHostQueue();
+        const rollSplit =
+          panelRollSplit ?? getCurrentRollSplitHandlerForScripts() ?? defaultScriptDiceRollerSplit;
         const value = await Promise.resolve(rollSplit(body.expression, body.rerollMessage));
         await reply(Array.isArray(value) ? value : []);
         break;

@@ -1,8 +1,17 @@
 import { usePersistLogs, useUsers } from '@/lib/compass-api';
+import { setDicePanelRollHandlersForCampaignHostQueue } from '@/lib/compass-logic/worker/current-roll-handler-ref';
 import { useDddice } from '@/pages';
 import { CharacterContext, diceRollLogger, LogType, useEventLog } from '@/stores';
-import type { DiceResult, DiceRollOpts, IDiceContext, RollResult, SegmentResult } from '@/types';
-import { createContext, useContext, useRef, useState } from 'react';
+import type {
+  DiceResult,
+  DiceRollOpts,
+  IDiceContext,
+  RollFn,
+  RollResult,
+  RollSplitFn,
+  SegmentResult,
+} from '@/types';
+import { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { formatSegmentResult, rollDiceExpression } from '../../utils';
 
 interface DiceStateProps {
@@ -135,6 +144,20 @@ export const useDiceState = ({ canvasRef }: DiceStateProps): IDiceContext => {
       setDddiceRolling(false);
     }
   };
+
+  const rollDiceRef = useRef(rollDice);
+  rollDiceRef.current = rollDice;
+
+  useEffect(() => {
+    const roll: RollFn = (expression, rerollMessage) =>
+      rollDiceRef.current(expression, { rerollMessage }).then((r) => r.total);
+    const rollSplit: RollSplitFn = (expression, rerollMessage) =>
+      rollDiceRef
+        .current(expression, { rerollMessage })
+        .then((res) => res.segments.flatMap((s) => s.rolls.map((r) => r.value)));
+    setDicePanelRollHandlersForCampaignHostQueue(roll, rollSplit);
+    return () => setDicePanelRollHandlersForCampaignHostQueue(undefined, undefined);
+  }, []);
 
   const reset = () => {
     setLastResult(null);

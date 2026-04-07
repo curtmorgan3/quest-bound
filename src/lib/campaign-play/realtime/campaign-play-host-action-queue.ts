@@ -12,6 +12,7 @@ import type {
 } from '@/lib/campaign-play/realtime/campaign-realtime-envelopes';
 import { CAMPAIGN_REALTIME_PROTOCOL_VERSION } from '@/lib/campaign-play/realtime/campaign-realtime-envelopes';
 import { validateCampaignActionRequest } from '@/lib/campaign-play/realtime/validate-campaign-action-request';
+import { getDicePanelRollHandlersForCampaignHostQueue } from '@/lib/compass-logic/worker/current-roll-handler-ref';
 import { getQBScriptClient } from '@/lib/compass-logic/worker/client';
 import { db } from '@/stores';
 
@@ -94,17 +95,20 @@ export class CampaignPlayHostActionQueue {
         modifiedAttributeIds?: string[];
       };
 
+      const { roll: dicePanelRoll, rollSplit: dicePanelRollSplit } =
+        getDicePanelRollHandlersForCampaignHostQueue();
+
       if (request.body.type === 'execute_action') {
         exec = await client.executeActionEvent(
           request.body.actionId,
           request.body.characterId,
           request.body.targetId ?? null,
           request.body.eventType,
-          undefined,
+          dicePanelRoll,
           ACTION_SCRIPT_TIMEOUT_MS,
           this.campaignId,
           request.body.callerInventoryItemInstanceId,
-          undefined,
+          dicePanelRollSplit,
           request.campaignSceneId,
           delegatedHostRun,
         );
@@ -113,11 +117,11 @@ export class CampaignPlayHostActionQueue {
           request.body.itemId,
           request.body.characterId,
           request.body.eventType,
-          undefined,
+          dicePanelRoll,
           ACTION_SCRIPT_TIMEOUT_MS,
           this.campaignId,
           request.body.inventoryItemInstanceId,
-          undefined,
+          dicePanelRollSplit,
           request.campaignSceneId,
           delegatedHostRun,
         );
