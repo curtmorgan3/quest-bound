@@ -125,6 +125,10 @@ export type Character = BaseDetails & {
   pinnedSidebarDocuments: string[];
   pinnedSidebarCharts: string[];
   pinnedInventoryItemIds?: string[];
+  /**
+   * Character attribute row ids (`CharacterAttribute.id`) pinned to the top of the default character sheet view.
+   */
+  defaultSheetPinnedAttributeIds?: string[];
   /** Last viewed character page id (sheet viewer). */
   lastViewedPageId?: string | null;
   /** Whether the sheet viewer is locked (windows not draggable). */

@@ -8,6 +8,7 @@ import {
   Campaigns,
   CharacterChartViewer,
   CharacterPage,
+  DefaultCharacterSheet,
   Characters,
   DevTools,
   ErrorPage,
@@ -100,6 +101,10 @@ function CompassRoutes() {
 
             <Route path={`/characters`} element={<Characters />} />
             <Route path={`/characters/:characterId`} element={<CharacterPage lockByDefault />} />
+            <Route
+              path={`/characters/:characterId/default`}
+              element={<DefaultCharacterSheet />}
+            />
             <Route
               path={`/characters/:characterId/documents/:documentId`}
               element={<DocumentViewer />}
