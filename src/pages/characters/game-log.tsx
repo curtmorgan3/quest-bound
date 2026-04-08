@@ -1,6 +1,7 @@
 import { Checkbox, Label } from '@/components';
 import { Button } from '@/components/ui/button';
 import { useScriptLogs, useUsers } from '@/lib/compass-api';
+import { compareScriptLogsNewestFirst } from '@/lib/compass-logic/script-logs';
 import { cn } from '@/lib/utils';
 import { colorPrimary } from '@/palette';
 import type { ScriptLog } from '@/types';
@@ -51,7 +52,7 @@ export const GameLog = ({ className, characterId, docked = false }: GameLogProps
   const filteredLogs = showAutoEntries ? scriptLogs : scriptLogs.filter((l) => !isAutoEntry(l));
 
   const logs: { msg: string; time: string; isAuto: boolean }[] = [...filteredLogs]
-    .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+    .sort(compareScriptLogsNewestFirst)
     .map((l) => {
       try {
         const logArray = JSON.parse(l.argsJson) as unknown[];

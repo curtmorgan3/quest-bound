@@ -111,6 +111,7 @@ export const useScriptLogs = (
         createdAt: now,
         updatedAt: now,
         timestamp: data.timestamp ?? Date.now(),
+        sequence: data.sequence ?? 0,
       } as ScriptLog);
     } catch (e) {
       handleError(e as Error, {

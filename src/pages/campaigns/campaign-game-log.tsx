@@ -12,6 +12,7 @@ import {
   Label,
 } from '@/components';
 import { useCampaign, useCampaigns, useScriptLogs } from '@/lib/compass-api';
+import { compareScriptLogsNewestFirst } from '@/lib/compass-logic/script-logs';
 import { colorPrimary } from '@/palette';
 import type { ScriptLog } from '@/types';
 import { format } from 'date-fns';
@@ -64,7 +65,7 @@ export function CampaignGameLog({ campaignId, rulesetId, limit = 250 }: Campaign
   const filteredLogs = showAutoEntries ? scriptLogs : scriptLogs.filter((l) => !isAutoEntry(l));
 
   const logs: { msg: string; time: string; isAuto: boolean }[] = [...filteredLogs]
-    .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+    .sort(compareScriptLogsNewestFirst)
     .map((l) => {
       try {
         const logArray = JSON.parse(l.argsJson) as unknown[];

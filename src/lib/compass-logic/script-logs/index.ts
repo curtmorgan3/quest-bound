@@ -10,3 +10,4 @@ export {
   type PersistScriptLogsParams,
   type ScriptLogDb,
 } from './persist-script-logs';
+export { compareScriptLogsNewestFirst } from './script-log-sort';
