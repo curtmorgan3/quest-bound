@@ -15,6 +15,48 @@ function snakeToCamel(str: string): string {
   return str.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
 }
 
+/** Postgres float8 rejects `""`; map empty/invalid to NULL for nullable columns. */
+function normalizeOptionalDoubleForRemote(value: unknown): number | null {
+  if (value === null || value === '') return null;
+  if (typeof value === 'number') return Number.isFinite(value) ? value : null;
+  if (typeof value === 'string') {
+    const t = value.trim();
+    if (t === '') return null;
+    const n = Number(t);
+    return Number.isFinite(n) ? n : null;
+  }
+  return null;
+}
+
+function patchOptionalDoubleFields(record: Record<string, unknown>, keys: string[]): void {
+  for (const key of keys) {
+    if (key in record) record[key] = normalizeOptionalDoubleForRemote(record[key]);
+  }
+}
+
+function normalizeRequiredDoubleForRemote(value: unknown, fallback: number): number {
+  if (typeof value === 'number' && Number.isFinite(value)) return value;
+  if (typeof value === 'string') {
+    const t = value.trim();
+    if (t === '') return fallback;
+    const n = Number(t);
+    return Number.isFinite(n) ? n : fallback;
+  }
+  if (value === null || value === undefined) return fallback;
+  const n = Number(value);
+  return Number.isFinite(n) ? n : fallback;
+}
+
+function patchRequiredDoubleFields(
+  record: Record<string, unknown>,
+  keys: string[],
+  fallback: number,
+): void {
+  for (const key of keys) {
+    if (key in record) record[key] = normalizeRequiredDoubleForRemote(record[key], fallback);
+  }
+}
+
 export function toSnakeCaseKeys<T extends Record<string, unknown>>(obj: T): Record<string, unknown> {
   const out: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(obj)) {
@@ -68,6 +110,26 @@ export function prepareRecordForRemote(
     if (s.optionsChartRef != null && s.optionsChartRef !== '') {
       delete s.options;
     }
+    patchOptionalDoubleFields(stripped, ['min', 'max']);
+  }
+  if (tableName === 'pages' || tableName === 'characterPages') {
+    patchOptionalDoubleFields(stripped, ['backgroundOpacity']);
+  }
+  if (tableName === 'campaignCharacters') {
+    patchOptionalDoubleFields(stripped, ['mapHeight', 'mapWidth']);
+  }
+  if (tableName === 'characterWindows' || tableName === 'rulesetWindows') {
+    patchOptionalDoubleFields(stripped, ['displayScale']);
+    patchRequiredDoubleFields(stripped, ['x', 'y'], 0);
+  }
+  if (tableName === 'items') {
+    patchRequiredDoubleFields(stripped, ['weight'], 0);
+  }
+  if (tableName === 'components') {
+    patchRequiredDoubleFields(stripped, ['x', 'y', 'height', 'width', 'rotation'], 0);
+  }
+  if (tableName === 'inventoryItems') {
+    patchRequiredDoubleFields(stripped, ['x', 'y'], 0);
   }
   if (tableName === 'documents') {
     const d = stripped as { description?: unknown };

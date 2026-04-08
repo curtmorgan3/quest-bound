@@ -2,14 +2,19 @@ import { filterNotSoftDeleted, softDeletePatch } from '@/lib/data/soft-delete';
 import { useErrorHandler } from '@/hooks';
 import { executeArchetypeEvent } from '@/lib/compass-logic/reactive/event-handler-executor';
 import { db } from '@/stores';
-import type { Archetype, CharacterArchetype } from '@/types';
+import type { Archetype, CharacterArchetype, RollFn, RollSplitFn } from '@/types';
 import { useLiveQuery } from 'dexie-react-hooks';
 
 export type CharacterArchetypeWithArchetype = CharacterArchetype & { archetype: Archetype };
 
 export function useCharacterArchetypes(
   characterId: string | undefined,
-  options?: { campaignId?: string; campaignSceneId?: string },
+  options?: {
+    campaignId?: string;
+    campaignSceneId?: string;
+    roll?: RollFn;
+    rollSplit?: RollSplitFn;
+  },
 ) {
   const { handleError } = useErrorHandler();
 
@@ -70,9 +75,9 @@ export function useCharacterArchetypes(
         archetypeId,
         characterId,
         'on_add',
-        undefined,
+        options?.roll,
         options?.campaignId,
-        undefined,
+        options?.rollSplit,
         options?.campaignSceneId,
       );
       if (archetypeResult.error) {
@@ -95,9 +100,9 @@ export function useCharacterArchetypes(
         ca.archetypeId,
         ca.characterId,
         'on_remove',
-        undefined,
+        options?.roll,
         options?.campaignId,
-        undefined,
+        options?.rollSplit,
         options?.campaignSceneId,
       );
       if (archetypeResult.error) {

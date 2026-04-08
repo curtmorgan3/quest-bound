@@ -10,17 +10,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { useCampaignPlayClientForCharacter } from '@/hooks';
+import { useErrorHandler, useNotifications } from '@/hooks';
+import { useCharacter } from '@/lib/compass-api';
 import {
-  flushDelegatedUiQueueForCharacter,
-  registerCampaignPlayDelegatedCharacterSurface,
-} from '@/lib/campaign-play/realtime/campaign-play-delegated-ui-client';
+  executeArchetypeEvent,
+  executeCharacterLoader,
+} from '@/lib/compass-logic/reactive/event-handler-executor';
 import { cn } from '@/lib/utils';
-import { useCharacter, useCharacterAttributes } from '@/lib/compass-api';
+import { CharacterContext, DiceContext, db } from '@/stores';
 import type { CharacterAttribute } from '@/types';
-import { ArrowLeft, Pin, Search } from 'lucide-react';
-import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react';
+import { ArrowLeft, Loader2, Pin, Search } from 'lucide-react';
+import { useCallback, useContext, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useCharacterArchetypes } from './character-archetypes-panel/use-character-archetypes';
+import { CharacterPlayProviders } from './character-play-providers';
 
 function sortedAttributes(attrs: CharacterAttribute[]): CharacterAttribute[] {
   return [...attrs].sort((a, b) => a.title.localeCompare(b.title, undefined, { sensitivity: 'base' }));
@@ -28,42 +31,28 @@ function sortedAttributes(attrs: CharacterAttribute[]): CharacterAttribute[] {
 
 export function DefaultCharacterSheet() {
   const { characterId } = useParams<{ characterId: string }>();
+  if (!characterId) {
+    return null;
+  }
+  return (
+    <CharacterPlayProviders characterId={characterId}>
+      <DefaultCharacterSheetInner />
+    </CharacterPlayProviders>
+  );
+}
+
+function DefaultCharacterSheetInner() {
+  const { characterId } = useParams<{ characterId: string }>();
   const navigate = useNavigate();
 
-  const { playCampaignId, playCampaignSceneId } = useCampaignPlayClientForCharacter({
-    characterId,
-    propCampaignId: undefined,
-    propCampaignSceneId: undefined,
-    realtimePlayEnabled: true,
-    campaignPlayClientBootstrapEnabled: true,
-  });
-
-  useLayoutEffect(() => {
-    if (!characterId) return;
-    const unregister = registerCampaignPlayDelegatedCharacterSurface(characterId);
-    flushDelegatedUiQueueForCharacter(characterId);
-    return unregister;
-  }, [characterId]);
-
-  const { character, updateCharacter } = useCharacter(characterId);
-
-  const campaignPlayManualContext = useMemo(
-    () =>
-      playCampaignId
-        ? { campaignId: playCampaignId, campaignSceneId: playCampaignSceneId }
-        : undefined,
-    [playCampaignId, playCampaignSceneId],
-  );
-
-  const { characterAttributes, updateCharacterAttribute, syncWithRuleset } = useCharacterAttributes(
-    character?.id,
-    campaignPlayManualContext,
-  );
-
-  useEffect(() => {
-    if (!character?.id) return;
-    void syncWithRuleset();
-  }, [character?.id]);
+  const {
+    character,
+    characterAttributes,
+    updateCharacterAttribute,
+    campaignId,
+    campaignSceneId,
+  } = useContext(CharacterContext);
+  const { updateCharacter } = useCharacter(characterId);
 
   const ordered = useMemo(() => sortedAttributes(characterAttributes), [characterAttributes]);
 
@@ -76,8 +65,8 @@ export function DefaultCharacterSheet() {
   }, [ordered, filterQuery]);
 
   const pinnedSet = useMemo(
-    () => new Set(character?.defaultSheetPinnedAttributeIds ?? []),
-    [character?.defaultSheetPinnedAttributeIds],
+    () => new Set(character.defaultSheetPinnedAttributeIds ?? []),
+    [character.defaultSheetPinnedAttributeIds],
   );
 
   const { pinnedInView, unpinnedInView } = useMemo(() => {
@@ -92,7 +81,6 @@ export function DefaultCharacterSheet() {
 
   const toggleDefaultSheetPin = useCallback(
     (attrRowId: string) => {
-      if (!character?.id) return;
       const validIds = new Set(characterAttributes.map((a) => a.id));
       const current = (character.defaultSheetPinnedAttributeIds ?? []).filter((id) =>
         validIds.has(id),
@@ -107,15 +95,110 @@ export function DefaultCharacterSheet() {
     [character, characterAttributes, updateCharacter],
   );
 
-  const handleValueChange = useCallback((rowId: string, value: string | number | boolean) => {
-    void updateCharacterAttribute(rowId, { value });
-  }, [updateCharacterAttribute]);
+  const handleValueChange = useCallback(
+    (rowId: string, value: string | number | boolean) => {
+      void updateCharacterAttribute(rowId, { value });
+    },
+    [updateCharacterAttribute],
+  );
+
+  const diceContext = useContext(DiceContext);
+  const rollDice = diceContext?.rollDice;
+
+  const roll = useCallback(
+    async (diceString: string, rerollMessage?: string) =>
+      rollDice!(diceString, { rerollMessage }).then((res) => res.total),
+    [rollDice],
+  );
+
+  const rollSplit = useCallback(
+    async (diceString: string, rerollMessage?: string) =>
+      rollDice!(diceString, { rerollMessage }).then((res) =>
+        res.segments.flatMap((s) => s.rolls.map((r) => r.value)),
+      ),
+    [rollDice],
+  );
+
+  const { characterArchetypes } = useCharacterArchetypes(character.id, {
+    campaignId,
+    campaignSceneId,
+    roll,
+    rollSplit,
+  });
+
+  const { addNotification } = useNotifications();
+  const { handleError } = useErrorHandler();
+
+  const [pendingAction, setPendingAction] = useState<string | null>(null);
+  const busy = pendingAction !== null;
+
+  const handleResetToDefaults = useCallback(async () => {
+    if (characterAttributes.length === 0) return;
+    setPendingAction('reset');
+    try {
+      await Promise.all(
+        characterAttributes.map((attr) =>
+          updateCharacterAttribute(attr.id, { value: attr.defaultValue }),
+        ),
+      );
+    } catch (e) {
+      handleError(e as Error, {
+        component: 'DefaultCharacterSheet/resetToDefaults',
+        severity: 'medium',
+      });
+    } finally {
+      setPendingAction(null);
+    }
+  }, [characterAttributes, updateCharacterAttribute, handleError]);
+
+  const handleRunCharacterLoader = useCallback(async () => {
+    if (!character.rulesetId) return;
+    setPendingAction('loader');
+    try {
+      const result = await executeCharacterLoader(db, character.id, character.rulesetId, roll);
+      if (result.error) {
+        addNotification(`Character Loader failed | ${result.error.message}`, { type: 'error' });
+      }
+    } catch (e) {
+      handleError(e as Error, {
+        component: 'DefaultCharacterSheet/runCharacterLoader',
+        severity: 'medium',
+      });
+    } finally {
+      setPendingAction(null);
+    }
+  }, [character.id, character.rulesetId, roll, addNotification, handleError]);
+
+  const handleArchetypeOnAddClick = useCallback(
+    async (archetypeId: string) => {
+      setPendingAction(`archetype:${archetypeId}`);
+      try {
+        const result = await executeArchetypeEvent(
+          db,
+          archetypeId,
+          character.id,
+          'on_add',
+          roll,
+          campaignId,
+          rollSplit,
+          campaignSceneId,
+        );
+        if (result.error) {
+          addNotification(`Archetype on_add failed | ${result.error.message}`, { type: 'error' });
+        }
+      } catch (e) {
+        handleError(e as Error, {
+          component: 'DefaultCharacterSheet/archetypeOnAdd',
+          severity: 'medium',
+        });
+      } finally {
+        setPendingAction(null);
+      }
+    },
+    [character.id, roll, rollSplit, campaignId, campaignSceneId, addNotification, handleError],
+  );
 
   if (!characterId) {
-    return null;
-  }
-
-  if (!character) {
     return null;
   }
 
@@ -258,19 +341,74 @@ export function DefaultCharacterSheet() {
           />
         </div>
       </div>
-      <div className='min-h-0 flex-1 overflow-y-auto p-4'>
-        <div className='flex w-full max-w-2xl flex-col gap-6'>
-          {!hasAnyInView ? (
-            <p className='text-muted-foreground text-sm'>
-              {filterQuery ? 'No attributes match your filter.' : 'No attributes yet.'}
-            </p>
-          ) : null}
-          {pinnedInView.map((attr) => renderAttributeRow(attr))}
-          {pinnedInView.length > 0 && unpinnedInView.length > 0 ? (
-            <div className='border-border border-t' role='separator' />
-          ) : null}
-          {unpinnedInView.map((attr) => renderAttributeRow(attr))}
+      <div className='flex min-h-0 flex-1 flex-row'>
+        <div className='min-h-0 min-w-0 flex-1 overflow-y-auto p-4'>
+          <div className='flex w-full max-w-2xl flex-col gap-6'>
+            {!hasAnyInView ? (
+              <p className='text-muted-foreground text-sm'>
+                {filterQuery ? 'No attributes match your filter.' : 'No attributes yet.'}
+              </p>
+            ) : null}
+            {pinnedInView.map((attr) => renderAttributeRow(attr))}
+            {pinnedInView.length > 0 && unpinnedInView.length > 0 ? (
+              <div className='border-border border-t' role='separator' />
+            ) : null}
+            {unpinnedInView.map((attr) => renderAttributeRow(attr))}
+          </div>
         </div>
+        <aside className='border-border bg-muted/15 flex w-[min(18rem,40vw)] shrink-0 flex-col gap-3 overflow-y-auto border-l p-4'>
+          <p className='text-muted-foreground text-xs font-medium tracking-wide uppercase'>
+            Actions
+          </p>
+          <div className='flex flex-col gap-2'>
+            <Button
+              type='button'
+              variant='outline'
+              className='inline-flex h-auto min-h-9 w-full items-center justify-start gap-2 whitespace-normal px-3 py-2 text-left'
+              disabled={busy || characterAttributes.length === 0}
+              onClick={() => void handleResetToDefaults()}>
+              {pendingAction === 'reset' ? (
+                <Loader2 className='size-4 shrink-0 animate-spin' aria-hidden />
+              ) : null}
+              Reset to Defaults
+            </Button>
+            <Button
+              type='button'
+              variant='outline'
+              className='inline-flex h-auto min-h-9 w-full items-center justify-start gap-2 whitespace-normal px-3 py-2 text-left'
+              disabled={busy}
+              onClick={() => void handleRunCharacterLoader()}>
+              {pendingAction === 'loader' ? (
+                <Loader2 className='size-4 shrink-0 animate-spin' aria-hidden />
+              ) : null}
+              Run Character Loader
+            </Button>
+          </div>
+          {characterArchetypes.length > 0 ? (
+            <>
+              <div className='border-border border-t pt-3' role='separator' />
+              <p className='text-muted-foreground text-xs font-medium tracking-wide uppercase'>
+                Archetypes
+              </p>
+              <div className='flex flex-col gap-2'>
+                {characterArchetypes.map((ca) => (
+                  <Button
+                    key={ca.id}
+                    type='button'
+                    variant='secondary'
+                    className='inline-flex h-auto min-h-9 w-full items-center justify-start gap-2 whitespace-normal px-3 py-2 text-left text-sm'
+                    disabled={busy}
+                    onClick={() => void handleArchetypeOnAddClick(ca.archetype.id)}>
+                    {pendingAction === `archetype:${ca.archetype.id}` ? (
+                      <Loader2 className='size-4 shrink-0 animate-spin' aria-hidden />
+                    ) : null}
+                    Add {ca.archetype.name} Archetype
+                  </Button>
+                ))}
+              </div>
+            </>
+          ) : null}
+        </aside>
       </div>
     </div>
   );

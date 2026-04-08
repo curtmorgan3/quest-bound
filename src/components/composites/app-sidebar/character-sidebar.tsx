@@ -19,6 +19,7 @@ import {
 import { useLiveQuery } from 'dexie-react-hooks';
 import {
   ArrowLeft,
+  ClipboardList,
   FileSpreadsheet,
   FileText,
   Globe,
@@ -118,6 +119,19 @@ export function CharacterSidebar() {
                 <Link to={`/landing/${character.rulesetId}`} data-testid='nav-home'>
                   <Home className='w-4 h-4' />
                   <span>Home</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem
+              className={
+                location.pathname === `/characters/${character.id}/default` ? 'text-primary' : ''
+              }>
+              <SidebarMenuButton asChild>
+                <Link
+                  to={`/characters/${character.id}/default`}
+                  data-testid='nav-default-character-sheet'>
+                  <ClipboardList className='w-4 h-4' />
+                  <span>Default sheet</span>
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
