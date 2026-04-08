@@ -14,6 +14,11 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible';
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -34,9 +39,10 @@ import {
 } from '@/lib/compass-logic/reactive/event-handler-executor';
 import { cn } from '@/lib/utils';
 import { CharacterContext, DiceContext, db } from '@/stores';
-import type { Action, CharacterAttribute } from '@/types';
+import type { Action, CharacterAttribute, EntityCustomPropertyDef } from '@/types';
+import { parseEntityCustomPropertiesJson } from '@/utils/parse-entity-custom-properties-json';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { ArrowLeft, Loader2, Pin, Search } from 'lucide-react';
+import { ArrowLeft, ChevronDown, Loader2, Pin, Search } from 'lucide-react';
 import { useCallback, useContext, useMemo, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useCharacterArchetypes } from './character-archetypes-panel/use-character-archetypes';
@@ -186,6 +192,22 @@ function DefaultCharacterSheetInner() {
   const handleValueChange = useCallback(
     (rowId: string, value: string | number | boolean) => {
       void updateCharacterAttribute(rowId, { value });
+    },
+    [updateCharacterAttribute],
+  );
+
+  const [propertyPanelOpenByAttrId, setPropertyPanelOpenByAttrId] = useState<
+    Record<string, boolean>
+  >({});
+
+  const handleAttributePropertyValueChange = useCallback(
+    (attr: CharacterAttribute, propertyId: string, value: string | number | boolean) => {
+      void updateCharacterAttribute(attr.id, {
+        attributeCustomPropertyValues: {
+          ...(attr.attributeCustomPropertyValues ?? {}),
+          [propertyId]: value,
+        },
+      });
     },
     [updateCharacterAttribute],
   );
@@ -375,6 +397,101 @@ function DefaultCharacterSheetInner() {
     );
   };
 
+  const renderAttributePropertySection = (attr: CharacterAttribute) => {
+    const defs = parseEntityCustomPropertiesJson(attr.customProperties);
+    if (defs.length === 0) return null;
+
+    const open = propertyPanelOpenByAttrId[attr.id] ?? false;
+
+    const valueForDef = (def: EntityCustomPropertyDef) => {
+      const stored = attr.attributeCustomPropertyValues?.[def.id];
+      if (stored !== undefined) return stored;
+      return def.defaultValue;
+    };
+
+    return (
+      <Collapsible
+        open={open}
+        onOpenChange={(next) =>
+          setPropertyPanelOpenByAttrId((prev) => ({ ...prev, [attr.id]: next }))
+        }>
+        <CollapsibleTrigger asChild>
+          <Button
+            type='button'
+            variant='ghost'
+            size='sm'
+            className='text-muted-foreground hover:text-foreground h-auto w-full justify-between gap-2 px-2 py-1.5 font-normal'
+            aria-expanded={open}
+            aria-label={open ? 'Hide attribute properties' : 'Show attribute properties'}>
+            <span className='text-xs font-medium tracking-wide uppercase'>
+              Properties{' '}
+              <span className='text-muted-foreground/80 font-normal normal-case'>
+                ({defs.length})
+              </span>
+            </span>
+            <ChevronDown
+              className={cn('size-4 shrink-0 transition-transform', open && 'rotate-180')}
+              aria-hidden
+            />
+          </Button>
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          <div className='border-border space-y-3 border-l-2 py-2 pl-3'>
+            {defs.map((def) => {
+              const propControlId = `default-sheet-attr-${attr.id}-prop-${def.id}`;
+              const v = valueForDef(def);
+              if (def.type === 'boolean') {
+                const checked = v === true;
+                return (
+                  <div key={def.id} className='flex items-center gap-2'>
+                    <Checkbox
+                      id={propControlId}
+                      checked={checked}
+                      onCheckedChange={(next) =>
+                        handleAttributePropertyValueChange(attr, def.id, next === true)
+                      }
+                    />
+                    <Label htmlFor={propControlId} className='cursor-pointer text-sm font-normal'>
+                      {def.name}
+                    </Label>
+                  </div>
+                );
+              }
+              if (def.type === 'number') {
+                const num = typeof v === 'number' ? v : Number(v);
+                return (
+                  <div key={def.id} className='flex flex-col gap-1.5'>
+                    <Label htmlFor={propControlId}>{def.name}</Label>
+                    <NumberInput
+                      value={Number.isFinite(num) ? num : ''}
+                      onChange={(val) =>
+                        handleAttributePropertyValueChange(attr, def.id, val === '' ? 0 : val)
+                      }
+                      className='h-9 w-full rounded-md border border-input px-3'
+                    />
+                  </div>
+                );
+              }
+              return (
+                <div key={def.id} className='flex flex-col gap-1.5'>
+                  <Label htmlFor={propControlId}>{def.name}</Label>
+                  <Input
+                    id={propControlId}
+                    type='text'
+                    value={typeof v === 'string' ? v : String(v ?? '')}
+                    onChange={(e) =>
+                      handleAttributePropertyValueChange(attr, def.id, e.target.value)
+                    }
+                  />
+                </div>
+              );
+            })}
+          </div>
+        </CollapsibleContent>
+      </Collapsible>
+    );
+  };
+
   const renderAttributeRow = (attr: CharacterAttribute) => {
     const controlId = `default-sheet-attr-${attr.id}`;
     const pin = renderPinButton(attr);
@@ -392,6 +509,7 @@ function DefaultCharacterSheetInner() {
                 value={typeof attr.value === 'string' ? attr.value : ''}
                 onChange={(e) => handleValueChange(attr.id, e.target.value)}
               />
+              {renderAttributePropertySection(attr)}
             </div>
           </div>
         );
@@ -410,22 +528,28 @@ function DefaultCharacterSheetInner() {
                 onChange={(val) => handleValueChange(attr.id, val === '' ? 0 : val)}
                 className='h-9 w-full rounded-md border border-input px-3'
               />
+              {renderAttributePropertySection(attr)}
             </div>
           </div>
         );
       case 'boolean': {
         const checked = attr.value === true;
         return (
-          <div key={attr.id} className='flex items-center gap-2'>
+          <div key={attr.id} className='flex gap-2'>
             {pin}
-            <Checkbox
-              id={controlId}
-              checked={checked}
-              onCheckedChange={(next) => handleValueChange(attr.id, next === true)}
-            />
-            <Label htmlFor={controlId} className='cursor-pointer text-sm font-normal'>
-              {attr.title}
-            </Label>
+            <div className='flex min-w-0 flex-1 flex-col gap-2'>
+              <div className='flex items-center gap-2'>
+                <Checkbox
+                  id={controlId}
+                  checked={checked}
+                  onCheckedChange={(next) => handleValueChange(attr.id, next === true)}
+                />
+                <Label htmlFor={controlId} className='cursor-pointer text-sm font-normal'>
+                  {attr.title}
+                </Label>
+              </div>
+              {renderAttributePropertySection(attr)}
+            </div>
           </div>
         );
       }
@@ -458,6 +582,7 @@ function DefaultCharacterSheetInner() {
                   ))}
                 </SelectContent>
               </Select>
+              {renderAttributePropertySection(attr)}
             </div>
           </div>
         );
