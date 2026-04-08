@@ -171,6 +171,7 @@ export function prepareRecordForRemote(
     if (c.pinnedSidebarDocuments == null) c.pinnedSidebarDocuments = [];
     if (c.pinnedSidebarCharts == null) c.pinnedSidebarCharts = [];
     if (c.defaultSheetPinnedAttributeIds == null) c.defaultSheetPinnedAttributeIds = [];
+    if (c.defaultSheetPinnedActionIds == null) c.defaultSheetPinnedActionIds = [];
     if (c.componentData == null) c.componentData = {};
     // Remote JSONB columns are NOT NULL; Dexie may store null for optional fields.
     if (c.componentLayoutOverrides == null) c.componentLayoutOverrides = {};
@@ -178,6 +179,7 @@ export function prepareRecordForRemote(
     if (c['pinned_sidebar_documents'] == null) c['pinned_sidebar_documents'] = [];
     if (c['pinned_sidebar_charts'] == null) c['pinned_sidebar_charts'] = [];
     if (c['default_sheet_pinned_attribute_ids'] == null) c['default_sheet_pinned_attribute_ids'] = [];
+    if (c['default_sheet_pinned_action_ids'] == null) c['default_sheet_pinned_action_ids'] = [];
     if (c['component_data'] == null) c['component_data'] = {};
   }
   if (tableName === 'characterWindows') {

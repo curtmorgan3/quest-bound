@@ -129,6 +129,10 @@ export type Character = BaseDetails & {
    * Character attribute row ids (`CharacterAttribute.id`) pinned to the top of the default character sheet view.
    */
   defaultSheetPinnedAttributeIds?: string[];
+  /**
+   * Ruleset action ids (`Action.id`) pinned to the top of the default character sheet actions column.
+   */
+  defaultSheetPinnedActionIds?: string[];
   /** Last viewed character page id (sheet viewer). */
   lastViewedPageId?: string | null;
   /** Whether the sheet viewer is locked (windows not draggable). */

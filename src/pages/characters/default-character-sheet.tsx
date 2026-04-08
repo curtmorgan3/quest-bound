@@ -1,5 +1,15 @@
 import { Button } from '@/components';
 import { NumberInput } from '@/components/composites/number-input';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -10,8 +20,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  isCampaignPlayClientRelayForCampaign,
+  isCampaignPlayHostBroadcastForCampaign,
+} from '@/lib/campaign-play/campaign-play-action-relay';
+import { broadcastHostCharacterDataAfterHostReactives } from '@/lib/campaign-play/realtime/campaign-play-host-character-broadcast';
+import { sendCampaignPlayManualCharacterUpdate } from '@/lib/campaign-play/realtime/campaign-play-manual-broadcast';
 import { useErrorHandler, useNotifications } from '@/hooks';
-import { useCharacter } from '@/lib/compass-api';
+import { runInitialAttributeSyncSafe, useCharacter } from '@/lib/compass-api';
 import {
   executeArchetypeEvent,
   executeCharacterLoader,
@@ -19,15 +35,17 @@ import {
 import { cn } from '@/lib/utils';
 import { CharacterContext, DiceContext, db } from '@/stores';
 import type { Action, CharacterAttribute } from '@/types';
-import { ArrowLeft, Loader2, Pin, Search } from 'lucide-react';
 import { useLiveQuery } from 'dexie-react-hooks';
+import { ArrowLeft, Loader2, Pin, Search } from 'lucide-react';
 import { useCallback, useContext, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useCharacterArchetypes } from './character-archetypes-panel/use-character-archetypes';
 import { CharacterPlayProviders } from './character-play-providers';
 
 function sortedAttributes(attrs: CharacterAttribute[]): CharacterAttribute[] {
-  return [...attrs].sort((a, b) => a.title.localeCompare(b.title, undefined, { sensitivity: 'base' }));
+  return [...attrs].sort((a, b) =>
+    a.title.localeCompare(b.title, undefined, { sensitivity: 'base' }),
+  );
 }
 
 export function DefaultCharacterSheet() {
@@ -103,6 +121,21 @@ function DefaultCharacterSheetInner() {
     return sortedActions.filter((a) => a.title.toLowerCase().includes(filterQuery));
   }, [sortedActions, filterQuery]);
 
+  const actionPinnedSet = useMemo(
+    () => new Set(character.defaultSheetPinnedActionIds ?? []),
+    [character.defaultSheetPinnedActionIds],
+  );
+
+  const { pinnedActionsInView, unpinnedActionsInView } = useMemo(() => {
+    const pinned: Action[] = [];
+    const unpinned: Action[] = [];
+    for (const action of filteredActions) {
+      if (actionPinnedSet.has(action.id)) pinned.push(action);
+      else unpinned.push(action);
+    }
+    return { pinnedActionsInView: pinned, unpinnedActionsInView: unpinned };
+  }, [filteredActions, actionPinnedSet]);
+
   const toggleDefaultSheetPin = useCallback(
     (attrRowId: string) => {
       const validIds = new Set(characterAttributes.map((a) => a.id));
@@ -117,6 +150,22 @@ function DefaultCharacterSheetInner() {
       });
     },
     [character, characterAttributes, updateCharacter],
+  );
+
+  const toggleDefaultSheetActionPin = useCallback(
+    (actionId: string) => {
+      const validIds = new Set(rulesetActions.map((a) => a.id));
+      const current = (character.defaultSheetPinnedActionIds ?? []).filter((id) =>
+        validIds.has(id),
+      );
+      const next = new Set(current);
+      if (next.has(actionId)) next.delete(actionId);
+      else next.add(actionId);
+      void updateCharacter(character.id, {
+        defaultSheetPinnedActionIds: Array.from(next),
+      });
+    },
+    [character, rulesetActions, updateCharacter],
   );
 
   const handleValueChange = useCallback(
@@ -155,12 +204,14 @@ function DefaultCharacterSheetInner() {
 
   const [pendingAction, setPendingAction] = useState<string | null>(null);
   const busy = pendingAction !== null;
+  const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
+  const [loaderConfirmOpen, setLoaderConfirmOpen] = useState(false);
 
   const handleFireActionClick = useCallback(
     async (actionId: string) => {
       setPendingAction(`action:${actionId}`);
       try {
-        await (fireAction(actionId) as Promise<void>);
+        await fireAction(actionId);
       } finally {
         setPendingAction(null);
       }
@@ -170,13 +221,42 @@ function DefaultCharacterSheetInner() {
 
   const handleResetToDefaults = useCallback(async () => {
     if (characterAttributes.length === 0) return;
+    setResetConfirmOpen(false);
     setPendingAction('reset');
     try {
-      await Promise.all(
-        characterAttributes.map((attr) =>
-          updateCharacterAttribute(attr.id, { value: attr.defaultValue }),
-        ),
-      );
+      const now = new Date().toISOString();
+      const rows: CharacterAttribute[] = characterAttributes.map((attr) => ({
+        ...attr,
+        value: attr.defaultValue,
+        updatedAt: now,
+      }));
+      await db.characterAttributes.bulkPut(rows);
+
+      if (campaignId && rows.length > 0) {
+        const batches = [
+          {
+            table: 'characterAttributes' as const,
+            rows: rows.map((r) => ({ ...r }) as Record<string, unknown>),
+          },
+        ];
+        if (isCampaignPlayClientRelayForCampaign(campaignId)) {
+          await sendCampaignPlayManualCharacterUpdate({
+            campaignId,
+            campaignSceneId,
+            batches,
+          });
+        } else if (isCampaignPlayHostBroadcastForCampaign(campaignId)) {
+          await broadcastHostCharacterDataAfterHostReactives({
+            campaignId,
+            campaignSceneId,
+            batches,
+          });
+        }
+      }
+
+      if (character.rulesetId) {
+        await runInitialAttributeSyncSafe(character.id, character.rulesetId, addNotification);
+      }
     } catch (e) {
       handleError(e as Error, {
         component: 'DefaultCharacterSheet/resetToDefaults',
@@ -185,7 +265,15 @@ function DefaultCharacterSheetInner() {
     } finally {
       setPendingAction(null);
     }
-  }, [characterAttributes, updateCharacterAttribute, handleError]);
+  }, [
+    character.id,
+    character.rulesetId,
+    characterAttributes,
+    campaignId,
+    campaignSceneId,
+    addNotification,
+    handleError,
+  ]);
 
   const handleRunCharacterLoader = useCallback(async () => {
     if (!character.rulesetId) return;
@@ -237,6 +325,23 @@ function DefaultCharacterSheetInner() {
   if (!characterId) {
     return null;
   }
+
+  const renderActionPinButton = (action: Action) => {
+    const pinned = actionPinnedSet.has(action.id);
+    return (
+      <Button
+        type='button'
+        variant='ghost'
+        size='icon'
+        className='h-8 w-8 shrink-0'
+        onClick={() => toggleDefaultSheetActionPin(action.id)}
+        title={pinned ? 'Unpin from top' : 'Pin to top'}
+        aria-label={pinned ? `Unpin ${action.title} from top` : `Pin ${action.title} to top`}
+        aria-pressed={pinned}>
+        <Pin className={cn('size-4', pinned && 'fill-current')} />
+      </Button>
+    );
+  };
 
   const renderPinButton = (attr: CharacterAttribute) => {
     const pinned = pinnedSet.has(attr.id);
@@ -348,14 +453,34 @@ function DefaultCharacterSheetInner() {
   };
 
   const hasAnyInView = pinnedInView.length > 0 || unpinnedInView.length > 0;
+  const hasAnyActionsInView = pinnedActionsInView.length > 0 || unpinnedActionsInView.length > 0;
 
   return (
-    <div className='flex h-full min-h-0 flex-col'>
+    <div className='relative flex h-full min-h-0 flex-col'>
+      {pendingAction === 'reset' ? (
+        <div
+          className='bg-background/70 absolute inset-0 z-50 flex flex-col items-center justify-center gap-3 backdrop-blur-[1px]'
+          role='status'
+          aria-busy='true'
+          aria-live='polite'>
+          <Loader2 className='text-muted-foreground size-8 animate-spin' aria-hidden />
+          <p className='text-muted-foreground text-sm'>Resetting attributes…</p>
+        </div>
+      ) : null}
       <header className='flex shrink-0 items-center gap-4 border-b p-4'>
         <Button variant='ghost' size='sm' onClick={() => navigate(`/characters/${characterId}`)}>
           <ArrowLeft className='size-4' />
         </Button>
-        <div className='min-w-0'>
+        <div className='bg-muted size-12 shrink-0 overflow-hidden rounded-md border'>
+          {character.image ? (
+            <img src={character.image} alt={character.name} className='size-full object-cover' />
+          ) : (
+            <div className='text-muted-foreground flex size-full items-center justify-center text-lg font-medium'>
+              {(character.name?.trim() || '?').slice(0, 1).toUpperCase()}
+            </div>
+          )}
+        </div>
+        <div className='min-w-0 flex-1'>
           <h1 className='truncate text-xl font-semibold'>{character.name}</h1>
           <p className='text-muted-foreground text-sm'>Default sheet (all attributes)</p>
         </div>
@@ -397,41 +522,62 @@ function DefaultCharacterSheetInner() {
             Actions
           </p>
           <div className='flex flex-col gap-2'>
-            {filteredActions.length === 0 ? (
+            {!hasAnyActionsInView ? (
               <p className='text-muted-foreground text-sm'>
                 {rulesetActions.length === 0
                   ? 'No actions in this ruleset.'
                   : 'No actions match your filter.'}
               </p>
             ) : (
-              filteredActions.map((action) => (
-                <Button
-                  key={action.id}
-                  type='button'
-                  variant='secondary'
-                  className='inline-flex h-auto min-h-9 w-full items-center justify-start gap-2 whitespace-normal px-3 py-2 text-left text-sm'
-                  disabled={busy}
-                  onClick={() => void handleFireActionClick(action.id)}>
-                  {pendingAction === `action:${action.id}` ? (
-                    <Loader2 className='size-4 shrink-0 animate-spin' aria-hidden />
-                  ) : null}
-                  {action.title}
-                </Button>
-              ))
+              <>
+                {pinnedActionsInView.map((action) => (
+                  <div key={action.id} className='flex gap-2'>
+                    {renderActionPinButton(action)}
+                    <Button
+                      type='button'
+                      variant='secondary'
+                      className='inline-flex h-auto min-h-9 min-w-0 flex-1 items-center justify-start gap-2 whitespace-normal px-3 py-2 text-left text-sm'
+                      disabled={busy}
+                      onClick={() => void handleFireActionClick(action.id)}>
+                      {pendingAction === `action:${action.id}` ? (
+                        <Loader2 className='size-4 shrink-0 animate-spin' aria-hidden />
+                      ) : null}
+                      {action.title}
+                    </Button>
+                  </div>
+                ))}
+                {pinnedActionsInView.length > 0 && unpinnedActionsInView.length > 0 ? (
+                  <div className='border-border border-t' role='separator' />
+                ) : null}
+                {unpinnedActionsInView.map((action) => (
+                  <div key={action.id} className='flex gap-2'>
+                    {renderActionPinButton(action)}
+                    <Button
+                      type='button'
+                      variant='secondary'
+                      className='inline-flex h-auto min-h-9 min-w-0 flex-1 items-center justify-start gap-2 whitespace-normal px-3 py-2 text-left text-sm'
+                      disabled={busy}
+                      onClick={() => void handleFireActionClick(action.id)}>
+                      {pendingAction === `action:${action.id}` ? (
+                        <Loader2 className='size-4 shrink-0 animate-spin' aria-hidden />
+                      ) : null}
+                      {action.title}
+                    </Button>
+                  </div>
+                ))}
+              </>
             )}
           </div>
         </aside>
         <aside className='border-border bg-muted/15 flex w-[min(18rem,40vw)] shrink-0 flex-col gap-3 overflow-y-auto border-l p-4'>
-          <p className='text-muted-foreground text-xs font-medium tracking-wide uppercase'>
-            Reset
-          </p>
+          <p className='text-muted-foreground text-xs font-medium tracking-wide uppercase'>Reset</p>
           <div className='flex flex-col gap-2'>
             <Button
               type='button'
               variant='outline'
               className='inline-flex h-auto min-h-9 w-full items-center justify-start gap-2 whitespace-normal px-3 py-2 text-left'
               disabled={busy || characterAttributes.length === 0}
-              onClick={() => void handleResetToDefaults()}>
+              onClick={() => setResetConfirmOpen(true)}>
               {pendingAction === 'reset' ? (
                 <Loader2 className='size-4 shrink-0 animate-spin' aria-hidden />
               ) : null}
@@ -442,7 +588,7 @@ function DefaultCharacterSheetInner() {
               variant='outline'
               className='inline-flex h-auto min-h-9 w-full items-center justify-start gap-2 whitespace-normal px-3 py-2 text-left'
               disabled={busy}
-              onClick={() => void handleRunCharacterLoader()}>
+              onClick={() => setLoaderConfirmOpen(true)}>
               {pendingAction === 'loader' ? (
                 <Loader2 className='size-4 shrink-0 animate-spin' aria-hidden />
               ) : null}
@@ -467,7 +613,7 @@ function DefaultCharacterSheetInner() {
                     {pendingAction === `archetype:${ca.archetype.id}` ? (
                       <Loader2 className='size-4 shrink-0 animate-spin' aria-hidden />
                     ) : null}
-                    Add {ca.archetype.name} Archetype
+                    Re-add {ca.archetype.name} Archetype
                   </Button>
                 ))}
               </div>
@@ -475,6 +621,44 @@ function DefaultCharacterSheetInner() {
           ) : null}
         </aside>
       </div>
+
+      <AlertDialog open={resetConfirmOpen} onOpenChange={setResetConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Reset all attributes to defaults?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Every attribute value will be set to its ruleset default. This is not automatically
+              reversible.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={busy}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={busy || characterAttributes.length === 0}
+              onClick={() => void handleResetToDefaults()}>
+              Reset to defaults
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={loaderConfirmOpen} onOpenChange={setLoaderConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Run Character Loader?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This runs the ruleset&apos;s Character Loader script for this character. It may change
+              attributes, inventory, and other character data.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={busy}>Cancel</AlertDialogCancel>
+            <AlertDialogAction disabled={busy} onClick={() => void handleRunCharacterLoader()}>
+              Run loader
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

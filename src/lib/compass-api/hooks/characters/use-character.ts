@@ -1,4 +1,5 @@
 import { useErrorHandler, useNotifications } from '@/hooks';
+import type { NotificationOptions } from '@/hooks/use-notifications';
 import {
   executeArchetypeEvent,
   executeCharacterLoader,
@@ -15,6 +16,27 @@ import { useActiveRuleset } from '../rulesets';
 export type CharacterWithInventories = Character & {
   inventory: Inventory;
 };
+
+export async function runInitialAttributeSyncSafe(
+  characterId: string,
+  rulesetId: string,
+  addNotification?: (message: string, options?: NotificationOptions) => void,
+): Promise<void> {
+  try {
+    const client = getQBScriptClient();
+    await client.runInitialAttributeSync(characterId, rulesetId);
+  } catch (error) {
+    const err = error as Error & { scriptName?: string };
+    const scriptInfo = err.scriptName ? ` [script: ${err.scriptName}.qbs]` : '';
+    console.warn('Initial reactive script execution failed' + scriptInfo + ':', error);
+    const message = err.scriptName
+      ? `Failure in script ${err.scriptName}.qbs | ${error}`
+      : `Initial attribute sync failed | ${error}`;
+    addNotification?.(message, {
+      type: 'error',
+    });
+  }
+}
 
 /** Returns current user's characters for the given ruleset. */
 export const useCharacters = (rulesetId: string | undefined): Character[] => {
@@ -46,23 +68,6 @@ export const useCharacter = (_id?: string) => {
   const id = _id ?? characterId;
 
   const character = useLiveQuery(() => db.characters.get(id ?? ''), [id]);
-
-  const runInitialAttributeSyncSafe = async (characterId: string, rulesetId: string) => {
-    try {
-      const client = getQBScriptClient();
-      await client.runInitialAttributeSync(characterId, rulesetId);
-    } catch (error) {
-      const err = error as Error & { scriptName?: string };
-      const scriptInfo = err.scriptName ? ` [script: ${err.scriptName}.qbs]` : '';
-      console.warn('Initial reactive script execution failed' + scriptInfo + ':', error);
-      const message = err.scriptName
-        ? `Failure in script ${err.scriptName}.qbs | ${error}`
-        : `Initial attribute sync failed | ${error}`;
-      addNotification(message, {
-        type: 'error',
-      });
-    }
-  };
 
   const createCharacter = async (
     data: Partial<Character> & { archetypeIds?: string[]; variant?: string },
@@ -210,7 +215,7 @@ export const useCharacter = (_id?: string) => {
         });
       }
 
-      await runInitialAttributeSyncSafe(characterId, rulesetId);
+      await runInitialAttributeSyncSafe(characterId, rulesetId, addNotification);
 
       // Run archetype on_add scripts in sorted order
       for (const archetypeId of archetypeIds) {
