@@ -18,8 +18,9 @@ import {
 } from '@/lib/compass-logic/reactive/event-handler-executor';
 import { cn } from '@/lib/utils';
 import { CharacterContext, DiceContext, db } from '@/stores';
-import type { CharacterAttribute } from '@/types';
+import type { Action, CharacterAttribute } from '@/types';
 import { ArrowLeft, Loader2, Pin, Search } from 'lucide-react';
+import { useLiveQuery } from 'dexie-react-hooks';
 import { useCallback, useContext, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useCharacterArchetypes } from './character-archetypes-panel/use-character-archetypes';
@@ -51,13 +52,31 @@ function DefaultCharacterSheetInner() {
     updateCharacterAttribute,
     campaignId,
     campaignSceneId,
+    fireAction,
   } = useContext(CharacterContext);
   const { updateCharacter } = useCharacter(characterId);
 
   const ordered = useMemo(() => sortedAttributes(characterAttributes), [characterAttributes]);
 
-  const [attributeFilter, setAttributeFilter] = useState('');
-  const filterQuery = attributeFilter.trim().toLowerCase();
+  const rulesetActions =
+    useLiveQuery(
+      () =>
+        character.rulesetId
+          ? db.actions.where('rulesetId').equals(character.rulesetId).toArray()
+          : Promise.resolve([] as Action[]),
+      [character.rulesetId],
+    ) ?? [];
+
+  const sortedActions = useMemo(
+    () =>
+      [...rulesetActions].sort((a, b) =>
+        a.title.localeCompare(b.title, undefined, { sensitivity: 'base' }),
+      ),
+    [rulesetActions],
+  );
+
+  const [sheetFilter, setSheetFilter] = useState('');
+  const filterQuery = sheetFilter.trim().toLowerCase();
 
   const textFiltered = useMemo(() => {
     if (!filterQuery) return ordered;
@@ -78,6 +97,11 @@ function DefaultCharacterSheetInner() {
     }
     return { pinnedInView: pinned, unpinnedInView: unpinned };
   }, [textFiltered, pinnedSet]);
+
+  const filteredActions = useMemo(() => {
+    if (!filterQuery) return sortedActions;
+    return sortedActions.filter((a) => a.title.toLowerCase().includes(filterQuery));
+  }, [sortedActions, filterQuery]);
 
   const toggleDefaultSheetPin = useCallback(
     (attrRowId: string) => {
@@ -131,6 +155,18 @@ function DefaultCharacterSheetInner() {
 
   const [pendingAction, setPendingAction] = useState<string | null>(null);
   const busy = pendingAction !== null;
+
+  const handleFireActionClick = useCallback(
+    async (actionId: string) => {
+      setPendingAction(`action:${actionId}`);
+      try {
+        await (fireAction(actionId) as Promise<void>);
+      } finally {
+        setPendingAction(null);
+      }
+    },
+    [fireAction],
+  );
 
   const handleResetToDefaults = useCallback(async () => {
     if (characterAttributes.length === 0) return;
@@ -331,13 +367,13 @@ function DefaultCharacterSheetInner() {
             aria-hidden
           />
           <Input
-            id='default-sheet-attribute-filter'
+            id='default-sheet-filter'
             type='search'
-            placeholder='Filter attributes…'
-            value={attributeFilter}
-            onChange={(e) => setAttributeFilter(e.target.value)}
+            placeholder='Filter attributes and actions…'
+            value={sheetFilter}
+            onChange={(e) => setSheetFilter(e.target.value)}
             className='pl-9'
-            aria-label='Filter attributes'
+            aria-label='Filter attributes and actions'
           />
         </div>
       </div>
@@ -356,9 +392,38 @@ function DefaultCharacterSheetInner() {
             {unpinnedInView.map((attr) => renderAttributeRow(attr))}
           </div>
         </div>
-        <aside className='border-border bg-muted/15 flex w-[min(18rem,40vw)] shrink-0 flex-col gap-3 overflow-y-auto border-l p-4'>
+        <aside className='border-border bg-muted/10 flex w-[min(17rem,32vw)] shrink-0 flex-col gap-3 overflow-y-auto border-l p-4'>
           <p className='text-muted-foreground text-xs font-medium tracking-wide uppercase'>
             Actions
+          </p>
+          <div className='flex flex-col gap-2'>
+            {filteredActions.length === 0 ? (
+              <p className='text-muted-foreground text-sm'>
+                {rulesetActions.length === 0
+                  ? 'No actions in this ruleset.'
+                  : 'No actions match your filter.'}
+              </p>
+            ) : (
+              filteredActions.map((action) => (
+                <Button
+                  key={action.id}
+                  type='button'
+                  variant='secondary'
+                  className='inline-flex h-auto min-h-9 w-full items-center justify-start gap-2 whitespace-normal px-3 py-2 text-left text-sm'
+                  disabled={busy}
+                  onClick={() => void handleFireActionClick(action.id)}>
+                  {pendingAction === `action:${action.id}` ? (
+                    <Loader2 className='size-4 shrink-0 animate-spin' aria-hidden />
+                  ) : null}
+                  {action.title}
+                </Button>
+              ))
+            )}
+          </div>
+        </aside>
+        <aside className='border-border bg-muted/15 flex w-[min(18rem,40vw)] shrink-0 flex-col gap-3 overflow-y-auto border-l p-4'>
+          <p className='text-muted-foreground text-xs font-medium tracking-wide uppercase'>
+            Reset
           </p>
           <div className='flex flex-col gap-2'>
             <Button
