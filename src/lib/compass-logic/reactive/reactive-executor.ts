@@ -368,6 +368,7 @@ export class ReactiveExecutor {
         promptInput: options.promptInput,
         selectCharacter: options.selectCharacter,
         selectCharacters: options.selectCharacters,
+        enableScriptGameLogRolls: options.roll != null,
         ...(paramsHelper ? { params: paramsHelper } : {}),
       };
 
@@ -392,6 +393,7 @@ export class ReactiveExecutor {
         rulesetId,
         scriptId,
         characterId,
+        gameLogTimeline: result.gameLogTimeline,
         logMessages: result.logMessages,
         context: 'attribute_change',
         campaignId: options.campaignId ?? null,

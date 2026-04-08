@@ -1,5 +1,6 @@
 import type { PromptFn, PromptInputFn, PromptMultipleFn, RollFn, RollSplitFn, SelectCharacterFn, SelectCharactersFn } from '@/types';
 import { parseDiceExpression, rollDie } from '@/utils/dice-utils';
+import type { ScriptGameLogEntry } from '../runtime/script-game-log';
 import { AttributeProxy } from '../runtime/proxies/attribute-proxy';
 import { ItemInstanceProxy } from '../runtime/proxies/item-instance-proxy';
 import { prepareForStructuredClone } from '../runtime/structured-clone-safe';
@@ -81,8 +82,8 @@ export interface EvaluatorOptions {
   selectCharacter?: SelectCharacterFn;
   /** When set, used as the script built-in selectCharacters(title?, description?). */
   selectCharacters?: SelectCharactersFn;
-  /** When set, called after roll/rollSplit with an auto-generated log message (e.g. for game log). */
-  onRollComplete?: (message: string) => Promise<void>;
+  /** When true, built-in `roll` / `rollSplit` and Character.roll append roll lines to the script game log timeline. */
+  enableScriptGameLogRolls?: boolean;
   /** When set, QBScript `emit(name, payload?)` dispatches custom event listeners. */
   customEventEmit?: (eventName: string, payload: unknown) => Promise<void>;
 }
@@ -155,7 +156,7 @@ export class Evaluator {
   public globalEnv: Environment;
   private currentEnv: Environment;
   private announceMessages: string[];
-  private logMessages: any[][];
+  private scriptGameLog: ScriptGameLogEntry[];
   private isWorkerContext: boolean;
   private rollFn: RollFn | undefined;
   private rollSplitFn: RollSplitFn | undefined;
@@ -164,14 +165,14 @@ export class Evaluator {
   private promptInputFn: PromptInputFn | undefined;
   private selectCharacterFn: SelectCharacterFn | undefined;
   private selectCharactersFn: SelectCharactersFn | undefined;
-  private onRollComplete: ((message: string) => Promise<void>) | undefined;
+  private enableScriptGameLogRolls: boolean;
   private customEventEmitFn: ((eventName: string, payload: unknown) => Promise<void>) | undefined;
 
   constructor(options?: EvaluatorOptions) {
     this.globalEnv = new Environment(null);
     this.currentEnv = this.globalEnv;
     this.announceMessages = [];
-    this.logMessages = [];
+    this.scriptGameLog = [];
     this.rollFn = options?.roll;
     this.rollSplitFn = options?.rollSplit;
     this.promptFn = options?.prompt;
@@ -179,7 +180,7 @@ export class Evaluator {
     this.promptInputFn = options?.promptInput;
     this.selectCharacterFn = options?.selectCharacter;
     this.selectCharactersFn = options?.selectCharacters;
-    this.onRollComplete = options?.onRollComplete;
+    this.enableScriptGameLogRolls = options?.enableScriptGameLogRolls === true;
     this.customEventEmitFn = options?.customEventEmit;
     // Detect if we're running in a worker context
     this.isWorkerContext =
@@ -1125,14 +1126,19 @@ export class Evaluator {
     return values;
   }
 
-  /** Persist an auto-generated log for roll/rollSplit when onRollComplete is set. */
-  private async persistRollLog(total: number, rollerName?: string): Promise<void> {
-    if (!this.onRollComplete) return;
+  /** Append a roll summary to the script game log when roll logging is enabled. */
+  recordRollGameLogLine(message: string): void {
+    if (!this.enableScriptGameLogRolls) return;
+    this.scriptGameLog.push({ kind: 'roll', message });
+  }
+
+  private appendBuiltInRollGameLog(total: number, rollerName?: string): void {
+    if (!this.enableScriptGameLogRolls) return;
     try {
       const name = rollerName ?? this.currentEnv.get('Owner')?.name ?? 'Someone';
-      await this.onRollComplete(`${name} rolled a ${total}`);
+      this.recordRollGameLogLine(`${name} rolled a ${total}`);
     } catch {
-      // Owner not in env or other error; skip persisting
+      // Owner not in env or other error; skip line
     }
   }
 
@@ -1143,7 +1149,7 @@ export class Evaluator {
       async (expression: string, rerollMessage?: string): Promise<number> => {
         if (this.rollFn) {
           const result = await this.rollFn(expression, rerollMessage);
-          await this.persistRollLog(result);
+          this.appendBuiltInRollGameLog(result);
           return result;
         }
         return this.defaultLocalRoll(expression);
@@ -1157,7 +1163,7 @@ export class Evaluator {
         if (this.rollSplitFn) {
           const result = await this.rollSplitFn(expression, rerollMessage);
           const total = result.reduce((a, b) => a + b, 0);
-          await this.persistRollLog(total);
+          this.appendBuiltInRollGameLog(total);
           return result;
         }
         return this.defaultLocalRollSplit(expression);
@@ -1304,7 +1310,7 @@ export class Evaluator {
     });
 
     this.globalEnv.define('log', (...args: any[]): void => {
-      this.logMessages.push(args);
+      this.scriptGameLog.push({ kind: 'log', args });
 
       // If in worker context, send signal to main thread (serialize so proxies are cloneable)
       if (this.isWorkerContext) {
@@ -1341,12 +1347,18 @@ export class Evaluator {
   }
 
   getLogMessages(): any[][] {
-    return [...this.logMessages];
+    return this.scriptGameLog
+      .filter((e): e is { kind: 'log'; args: any[] } => e.kind === 'log')
+      .map((e) => e.args);
+  }
+
+  getScriptGameLog(): ScriptGameLogEntry[] {
+    return [...this.scriptGameLog];
   }
 
   clearMessages(): void {
     this.announceMessages = [];
-    this.logMessages = [];
+    this.scriptGameLog = [];
   }
 
   /** Append announce messages (e.g. from a turn callback) so they are included in script result. */
@@ -1356,6 +1368,13 @@ export class Evaluator {
 
   /** Append log message batches (e.g. from a turn callback) so they are included in script result. */
   addLogMessages(batches: any[][]): void {
-    this.logMessages.push(...batches);
+    for (const args of batches) {
+      this.scriptGameLog.push({ kind: 'log', args });
+    }
+  }
+
+  /** Merge another run's game log (e.g. turn callback or custom event) into this evaluator. */
+  appendScriptGameLogEntries(entries: ScriptGameLogEntry[]): void {
+    this.scriptGameLog.push(...entries);
   }
 }

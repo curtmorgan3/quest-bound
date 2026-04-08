@@ -21,6 +21,7 @@ import { CampaignSceneAccessor } from './accessors/campaign-scene-accessor';
 import type { CharacterAccessor } from './accessors/character-accessor';
 import type { OwnerAccessor } from './accessors/owner-accessor';
 import { RulesetAccessor } from './accessors/ruleset-accessor';
+import type { ScriptGameLogEntry } from './script-game-log';
 
 type AnyCharacterAccessor = CharacterAccessor | OwnerAccessor;
 
@@ -29,6 +30,7 @@ const TURN_CALLBACK_CONTEXT = 'turn_callback';
 export interface TurnCallbackResult {
   announceMessages: string[];
   logMessages: any[][];
+  gameLogTimeline?: ScriptGameLogEntry[];
 }
 
 /**
@@ -99,6 +101,7 @@ export async function executeTurnCallback(
       promptInput,
       selectCharacter: selectCharacterHost,
       selectCharacters: selectCharactersHost,
+      enableScriptGameLogRolls: roll != null,
     });
     evaluator.globalEnv.define('Scene', sceneAccessor);
     evaluator.globalEnv.define('Ruleset', ruleset);
@@ -132,6 +135,7 @@ export async function executeTurnCallback(
 
     const announceMessages = evaluator.getAnnounceMessages();
     const logMessages = evaluator.getLogMessages();
+    const gameLogTimeline = evaluator.getScriptGameLog();
 
     // Dispatch announce messages so UI toasts fire when running in main thread (e.g. tests)
     if (typeof window !== 'undefined') {
@@ -140,18 +144,19 @@ export async function executeTurnCallback(
       }
     }
 
-    if (logMessages.length > 0) {
+    if (logMessages.length > 0 || gameLogTimeline.length > 0) {
       await persistScriptLogs(db, {
         rulesetId: callback.rulesetId,
         scriptId: callback.scriptId,
         characterId: callback.ownerId,
+        gameLogTimeline,
         logMessages,
         context: TURN_CALLBACK_CONTEXT,
         campaignId: campaignId ?? null,
       });
     }
 
-    return { announceMessages, logMessages };
+    return { announceMessages, logMessages, gameLogTimeline };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     const stack = err instanceof Error ? (err.stack ?? null) : null;
@@ -159,12 +164,14 @@ export async function executeTurnCallback(
 
     // Persist any log() messages that were emitted before the error so they are not lost.
     const partialLogMessages = evaluator?.getLogMessages() ?? [];
-    if (partialLogMessages.length > 0) {
+    const partialTimeline = evaluator?.getScriptGameLog() ?? [];
+    if (partialLogMessages.length > 0 || partialTimeline.length > 0) {
       try {
         await persistScriptLogs(db, {
           rulesetId: callback.rulesetId,
           scriptId: callback.scriptId,
           characterId: callback.ownerId,
+          gameLogTimeline: partialTimeline,
           logMessages: partialLogMessages,
           context: TURN_CALLBACK_CONTEXT,
           campaignId: campaignId ?? null,
@@ -196,6 +203,7 @@ export async function executeTurnCallback(
     return {
       announceMessages: evaluator?.getAnnounceMessages() ?? [],
       logMessages: partialLogMessages,
+      gameLogTimeline: partialTimeline,
     };
   }
 }

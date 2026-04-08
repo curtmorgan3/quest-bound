@@ -700,6 +700,7 @@ export class QBScriptClient {
         value: payload.result,
         announceMessages: payload.announceMessages,
         logMessages: payload.logMessages,
+        gameLogTimeline: payload.gameLogTimeline,
         executionTime: payload.executionTime,
         modifiedAttributeIds: payload.modifiedAttributeIds,
         navigateTargets: payload.navigateTargets,
@@ -819,6 +820,7 @@ export class QBScriptClient {
     value: any;
     announceMessages: string[];
     logMessages: any[][];
+    gameLogTimeline?: Array<{ kind: 'log'; args: any[] } | { kind: 'roll'; message: string }>;
     executionTime: number;
   }> {
     const requestId = generateRequestId();

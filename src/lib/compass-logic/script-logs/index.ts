@@ -11,3 +11,4 @@ export {
   type ScriptLogDb,
 } from './persist-script-logs';
 export { compareScriptLogsNewestFirst } from './script-log-sort';
+export type { ScriptGameLogEntry } from '../runtime/script-game-log';

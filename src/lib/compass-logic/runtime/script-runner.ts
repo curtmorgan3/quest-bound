@@ -51,6 +51,7 @@ import { executeCustomEventListener } from './execute-custom-event-listener';
 import { executeTurnCallback } from './execute-turn-callback';
 import type { ScriptParamsHelper } from './params-helper';
 import type { ExecuteActionEventFn } from './proxies';
+import { logMessagesToGameLogTimeline, type ScriptGameLogEntry } from './script-game-log';
 import { SheetUiCoordinator } from './sheet-ui/sheet-ui-coordinator';
 
 const INVENTORY_COMPONENT_TYPE = 'inventory';
@@ -218,7 +219,12 @@ export interface ScriptExecutionContext {
   executeActionEvent?: ExecuteActionEventFn;
   /** Optional campaign id for associating script execution with a campaign (logging, context). */
   campaignId?: string;
-  /** When set, called after roll/rollSplit with an auto-generated log message for the game log. */
+  /**
+   * When true, roll summaries are recorded in the script game log timeline (persisted with `log()`).
+   * If omitted, legacy `onRollComplete` being set also enables roll lines.
+   */
+  enableScriptGameLogRolls?: boolean;
+  /** @deprecated Prefer `enableScriptGameLogRolls`. If set, roll lines are recorded in the game log timeline. */
   onRollComplete?: (message: string) => Promise<void>;
   /** When set (e.g. campaign scene events), identifies the CampaignScene whose active characters should be loaded into context. */
   campaignSceneId?: string;
@@ -249,6 +255,8 @@ export interface ScriptExecutionResult {
   value: any;
   announceMessages: string[];
   logMessages: any[][];
+  /** Interleaved `log()` args and roll summaries in execution order (for game log persistence). */
+  gameLogTimeline: ScriptGameLogEntry[];
   error?: Error;
   /** Attribute IDs (ruleset attribute ids) whose character values were updated. Used to trigger reactive scripts in the worker. */
   modifiedAttributeIds?: string[];
@@ -316,6 +324,9 @@ export class ScriptRunner {
   /** Per-`run()` sheet UI mutations (createComponent, …); flushed in `flushCache`. */
   private sheetUiCoordinator: SheetUiCoordinator | null = null;
 
+  /** Forwards Character.roll summaries into the evaluator timeline. */
+  private rollGameLogSink: ((message: string) => Promise<void>) | undefined;
+
   constructor(context: ScriptExecutionContext) {
     this.context = context;
     const selectCharacterHost =
@@ -340,6 +351,9 @@ export class ScriptRunner {
           }
         : undefined;
 
+    const enableRollGameLog =
+      context.enableScriptGameLogRolls === true || context.onRollComplete != null;
+
     this.evaluator = new Evaluator({
       roll: context.roll,
       rollSplit: context.rollSplit,
@@ -348,9 +362,16 @@ export class ScriptRunner {
       promptInput: context.promptInput,
       selectCharacter: selectCharacterHost,
       selectCharacters: selectCharactersHost,
-      onRollComplete: context.onRollComplete,
+      enableScriptGameLogRolls: enableRollGameLog,
       customEventEmit: (eventName, payload) => this.dispatchCustomEvent(eventName, payload),
     });
+
+    this.rollGameLogSink = enableRollGameLog
+      ? async (message: string) => {
+          this.evaluator.recordRollGameLogLine(message);
+        }
+      : undefined;
+
     this.pendingUpdates = new Map();
     this.characterAttributesCache = new Map();
     this.attributesCache = new Map();
@@ -564,7 +585,7 @@ export class ScriptRunner {
       this.registerComponentUpdate,
       charRoll,
       charRollSplit,
-      this.context.onRollComplete,
+      this.rollGameLogSink,
       this.refLabelToComponentId,
       this.sheetUiCoordinator,
     );
@@ -1205,7 +1226,9 @@ export class ScriptRunner {
         this.context.campaignId ?? null,
       );
       this.evaluator.addAnnounceMessages(result.announceMessages);
-      this.evaluator.addLogMessages(result.logMessages);
+      this.evaluator.appendScriptGameLogEntries(
+        result.gameLogTimeline ?? logMessagesToGameLogTimeline(result.logMessages),
+      );
       await this.flushCache();
     }
     sceneAccessor.setInsideCallbackRun(false);
@@ -1243,7 +1266,9 @@ export class ScriptRunner {
             (e, p) => this.dispatchCustomEvent(e, p),
           );
           this.evaluator.addAnnounceMessages(result.announceMessages);
-          this.evaluator.addLogMessages(result.logMessages);
+          this.evaluator.appendScriptGameLogEntries(
+            result.gameLogTimeline ?? logMessagesToGameLogTimeline(result.logMessages),
+          );
           await this.flushCache();
         } catch (e) {
           console.warn('[dispatchCustomEvent] unexpected listener failure', e);
@@ -1275,7 +1300,7 @@ export class ScriptRunner {
     runner.setupAccessors();
     await runner.dispatchCustomEvent(item.eventName, item.payload);
     this.evaluator.addAnnounceMessages(runner.getEvaluator().getAnnounceMessages());
-    this.evaluator.addLogMessages(runner.getEvaluator().getLogMessages());
+    this.evaluator.appendScriptGameLogEntries(runner.getEvaluator().getScriptGameLog());
     await this.flushCache();
   }
 
@@ -1383,7 +1408,7 @@ export class ScriptRunner {
       this.registerComponentUpdate,
       ownerRoll,
       ownerRollSplit,
-      this.context.onRollComplete,
+      this.rollGameLogSink,
       this.refLabelToComponentId,
       this.sheetUiCoordinator,
     );
@@ -1546,6 +1571,7 @@ export class ScriptRunner {
         value,
         announceMessages: this.evaluator.getAnnounceMessages(),
         logMessages: this.evaluator.getLogMessages(),
+        gameLogTimeline: this.evaluator.getScriptGameLog(),
         modifiedAttributeIds,
         navigateTargets,
         componentAnimations: componentUpdates.animations ?? [],
@@ -1556,6 +1582,7 @@ export class ScriptRunner {
         value: null,
         announceMessages: this.evaluator.getAnnounceMessages(),
         logMessages: this.evaluator.getLogMessages(),
+        gameLogTimeline: this.evaluator.getScriptGameLog(),
         error: error instanceof Error ? error : new Error(String(error)),
         componentAnimations: [],
       };

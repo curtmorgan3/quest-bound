@@ -6,3 +6,4 @@ export {
   type ScriptExecutionContext,
   type ScriptExecutionResult,
 } from './script-runner';
+export { logMessagesToGameLogTimeline, type ScriptGameLogEntry } from './script-game-log';

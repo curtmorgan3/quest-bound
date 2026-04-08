@@ -20,6 +20,7 @@ import { CampaignSceneAccessor } from './accessors/campaign-scene-accessor';
 import type { CharacterAccessor } from './accessors/character-accessor';
 import type { OwnerAccessor } from './accessors/owner-accessor';
 import { RulesetAccessor } from './accessors/ruleset-accessor';
+import type { ScriptGameLogEntry } from './script-game-log';
 import type { CustomEventListenerRecord } from './custom-event-registry';
 
 type AnyCharacterAccessor = CharacterAccessor | OwnerAccessor;
@@ -29,6 +30,7 @@ const CUSTOM_EVENT_CONTEXT = 'custom_event';
 export interface CustomEventListenerResult {
   announceMessages: string[];
   logMessages: any[][];
+  gameLogTimeline?: ScriptGameLogEntry[];
 }
 
 /**
@@ -96,6 +98,7 @@ export async function executeCustomEventListener(
       selectCharacter: selectCharacterHost,
       selectCharacters: selectCharactersHost,
       customEventEmit,
+      enableScriptGameLogRolls: roll != null,
     });
     evaluator.globalEnv.define('Scene', sceneAccessor);
     evaluator.globalEnv.define('Ruleset', ruleset);
@@ -127,6 +130,7 @@ export async function executeCustomEventListener(
 
     const announceMessages = evaluator.getAnnounceMessages();
     const logMessages = evaluator.getLogMessages();
+    const gameLogTimeline = evaluator.getScriptGameLog();
 
     if (typeof window !== 'undefined') {
       for (const message of announceMessages) {
@@ -134,30 +138,33 @@ export async function executeCustomEventListener(
       }
     }
 
-    if (logMessages.length > 0) {
+    if (logMessages.length > 0 || gameLogTimeline.length > 0) {
       await persistScriptLogs(db, {
         rulesetId: callback.rulesetId,
         scriptId: callback.scriptId,
         characterId: callback.ownerId,
+        gameLogTimeline,
         logMessages,
         context: CUSTOM_EVENT_CONTEXT,
         campaignId: campaignId ?? null,
       });
     }
 
-    return { announceMessages, logMessages };
+    return { announceMessages, logMessages, gameLogTimeline };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     const stack = err instanceof Error ? (err.stack ?? null) : null;
     console.warn('[executeCustomEventListener]', callback.scriptId, callback.rulesetId, err);
 
     const partialLogMessages = evaluator?.getLogMessages() ?? [];
-    if (partialLogMessages.length > 0) {
+    const partialTimeline = evaluator?.getScriptGameLog() ?? [];
+    if (partialLogMessages.length > 0 || partialTimeline.length > 0) {
       try {
         await persistScriptLogs(db, {
           rulesetId: callback.rulesetId,
           scriptId: callback.scriptId,
           characterId: callback.ownerId,
+          gameLogTimeline: partialTimeline,
           logMessages: partialLogMessages,
           context: CUSTOM_EVENT_CONTEXT,
           campaignId: campaignId ?? null,
@@ -189,6 +196,7 @@ export async function executeCustomEventListener(
     return {
       announceMessages: evaluator?.getAnnounceMessages() ?? [],
       logMessages: partialLogMessages,
+      gameLogTimeline: partialTimeline,
     };
   }
 }

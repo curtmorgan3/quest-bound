@@ -15,6 +15,7 @@ describe('EventHandlerExecutor', () => {
         value: null,
         announceMessages: [],
         logMessages: [],
+        gameLogTimeline: [],
         modifiedAttributeIds: ['attr-hp', 'attr-mp'],
       });
 
@@ -57,6 +58,7 @@ describe('EventHandlerExecutor', () => {
         value: null,
         announceMessages: [],
         logMessages: [],
+        gameLogTimeline: [],
         modifiedAttributeIds: ['attr-stamina'],
       });
 
@@ -96,6 +98,7 @@ describe('EventHandlerExecutor', () => {
         value: null,
         announceMessages: [],
         logMessages: [],
+        gameLogTimeline: [],
         // no modifiedAttributeIds
       });
 
@@ -133,6 +136,7 @@ describe('EventHandlerExecutor', () => {
         value: null,
         announceMessages: [],
         logMessages: [],
+        gameLogTimeline: [],
         error: new Error('script failed'),
         modifiedAttributeIds: ['attr-hp'],
       });

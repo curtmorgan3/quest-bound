@@ -421,6 +421,8 @@ export interface ScriptResultPayload {
   result: any;
   announceMessages: string[];
   logMessages: any[][];
+  /** Interleaved log + roll entries (clone-safe) when provided by the worker. */
+  gameLogTimeline?: Array<{ kind: 'log'; args: any[] } | { kind: 'roll'; message: string }>;
   executionTime: number;
   /** Ruleset attribute IDs modified by this script run (for UI animation). */
   modifiedAttributeIds?: string[];
@@ -452,6 +454,7 @@ export interface ScriptErrorPayload {
   scriptName?: string;
   announceMessages?: string[];
   logMessages?: any[][];
+  gameLogTimeline?: Array<{ kind: 'log'; args: any[] } | { kind: 'roll'; message: string }>;
 }
 
 // ============================================================================
