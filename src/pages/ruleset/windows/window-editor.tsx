@@ -22,9 +22,9 @@ import { db, WindowEditorProvider } from '@/stores';
 import type { Component } from '@/types';
 import { debugLog } from '@/utils';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { Eye, Library, Magnet, ScanSearch, ZoomIn, ZoomOut } from 'lucide-react';
+import { ClipboardList, Eye, Library, Magnet, ScanSearch, ZoomIn, ZoomOut } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import { ComponentEditPanel } from './component-edit-panel';
 import { CompositeLibrarySheet } from './composite-library-sheet';
 
@@ -437,19 +437,36 @@ export const WindowEditor = () => {
               </div>
             </div>
           ) : (
-            <Button
-              type='button'
-              variant='ghost'
-              size='icon'
-              aria-pressed={viewMode}
-              aria-label={viewMode ? 'Return to window editor' : 'Preview with test character'}
-              className='size-10 shrink-0 shadow-none hover:bg-white/15'
-              style={{
-                color: viewMode ? colorPrimary : colorWhite,
-              }}
-              onClick={() => setViewMode((prev) => !prev)}>
-              <Eye className='size-4' strokeWidth={2} aria-hidden />
-            </Button>
+            <div className='flex flex-row items-center gap-0.5'>
+              <Button
+                type='button'
+                variant='ghost'
+                size='icon'
+                aria-pressed={viewMode}
+                aria-label={viewMode ? 'Return to window editor' : 'Preview with test character'}
+                className='size-10 shrink-0 shadow-none hover:bg-white/15'
+                style={{
+                  color: viewMode ? colorPrimary : colorWhite,
+                }}
+                onClick={() => setViewMode((prev) => !prev)}>
+                <Eye className='size-4' strokeWidth={2} aria-hidden />
+              </Button>
+              {testCharacter?.id ? (
+                <Button
+                  asChild
+                  type='button'
+                  variant='ghost'
+                  size='icon'
+                  className='size-10 shrink-0 text-white shadow-none hover:bg-white/15 hover:text-white'
+                  title='Open default character sheet'>
+                  <Link
+                    to={`/characters/${testCharacter.id}/default?windowEditorReturn=${encodeURIComponent(windowId)}`}
+                    aria-label='Open default character sheet for test character'>
+                    <ClipboardList className='size-4' strokeWidth={2} aria-hidden />
+                  </Link>
+                </Button>
+              ) : null}
+            </div>
           )}
         </div>
         <ComponentEditPanel viewMode={viewMode} />

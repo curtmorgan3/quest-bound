@@ -20,13 +20,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { useErrorHandler, useNotifications } from '@/hooks';
 import {
   isCampaignPlayClientRelayForCampaign,
   isCampaignPlayHostBroadcastForCampaign,
 } from '@/lib/campaign-play/campaign-play-action-relay';
 import { broadcastHostCharacterDataAfterHostReactives } from '@/lib/campaign-play/realtime/campaign-play-host-character-broadcast';
 import { sendCampaignPlayManualCharacterUpdate } from '@/lib/campaign-play/realtime/campaign-play-manual-broadcast';
-import { useErrorHandler, useNotifications } from '@/hooks';
 import { runInitialAttributeSyncSafe, useCharacter } from '@/lib/compass-api';
 import {
   executeArchetypeEvent,
@@ -38,9 +38,12 @@ import type { Action, CharacterAttribute } from '@/types';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { ArrowLeft, Loader2, Pin, Search } from 'lucide-react';
 import { useCallback, useContext, useMemo, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useCharacterArchetypes } from './character-archetypes-panel/use-character-archetypes';
 import { CharacterPlayProviders } from './character-play-providers';
+
+/** Query key when opening default sheet from ruleset window editor; back uses it to return to that window. */
+const WINDOW_EDITOR_RETURN_QUERY = 'windowEditorReturn';
 
 function sortedAttributes(attrs: CharacterAttribute[]): CharacterAttribute[] {
   return [...attrs].sort((a, b) =>
@@ -63,6 +66,8 @@ export function DefaultCharacterSheet() {
 function DefaultCharacterSheetInner() {
   const { characterId } = useParams<{ characterId: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const windowEditorReturnWindowId = searchParams.get(WINDOW_EDITOR_RETURN_QUERY)?.trim() || null;
 
   const {
     character,
@@ -73,6 +78,16 @@ function DefaultCharacterSheetInner() {
     fireAction,
   } = useContext(CharacterContext);
   const { updateCharacter } = useCharacter(characterId);
+
+  const handleDefaultSheetBack = useCallback(() => {
+    if (windowEditorReturnWindowId && character.rulesetId) {
+      navigate(
+        `/rulesets/${character.rulesetId}/windows/${encodeURIComponent(windowEditorReturnWindowId)}`,
+      );
+      return;
+    }
+    navigate(`/characters/${characterId}`);
+  }, [windowEditorReturnWindowId, character.rulesetId, characterId, navigate]);
 
   const ordered = useMemo(() => sortedAttributes(characterAttributes), [characterAttributes]);
 
@@ -468,7 +483,7 @@ function DefaultCharacterSheetInner() {
         </div>
       ) : null}
       <header className='flex shrink-0 items-center gap-4 border-b p-4'>
-        <Button variant='ghost' size='sm' onClick={() => navigate(`/characters/${characterId}`)}>
+        <Button variant='ghost' size='sm' onClick={handleDefaultSheetBack}>
           <ArrowLeft className='size-4' />
         </Button>
         <div className='bg-muted size-12 shrink-0 overflow-hidden rounded-md border'>
@@ -482,7 +497,7 @@ function DefaultCharacterSheetInner() {
         </div>
         <div className='min-w-0 flex-1'>
           <h1 className='truncate text-xl font-semibold'>{character.name}</h1>
-          <p className='text-muted-foreground text-sm'>Default sheet (all attributes)</p>
+          <p className='text-muted-foreground text-sm'>Default Sheet</p>
         </div>
       </header>
       <div className='shrink-0 border-b px-4 py-3'>
