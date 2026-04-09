@@ -14,6 +14,7 @@ import type {
   ConditionalRenderLogic,
   ConditionalRenderOperator,
 } from '@/types';
+import { getNumberAttributeSchemaBindingOptions } from '@/utils/attribute-value-binding';
 import { parseEntityCustomPropertiesJson } from '@/utils/parse-entity-custom-properties-json';
 
 const CONDITIONAL_RENDER_CUSTOM_PROPERTY_NONE = '__none__';
@@ -90,12 +91,18 @@ export const ConditionalRenderEdit = ({
   const customPropertyDefs = selectedAttribute
     ? parseEntityCustomPropertiesJson(selectedAttribute.customProperties)
     : [];
+  const schemaBindingOpts = getNumberAttributeSchemaBindingOptions(selectedAttribute);
   const selectedCustomDef = conditionalRenderAttributeCustomPropertyId
     ? customPropertyDefs.find((d) => d.id === conditionalRenderAttributeCustomPropertyId)
     : undefined;
-  const attributeType: AttributeType | undefined = selectedCustomDef
-    ? (selectedCustomDef.type as AttributeType)
-    : selectedAttribute?.type;
+  const selectedSchemaBinding = conditionalRenderAttributeCustomPropertyId
+    ? schemaBindingOpts.find((o) => o.id === conditionalRenderAttributeCustomPropertyId)
+    : undefined;
+  const attributeType: AttributeType | undefined = selectedSchemaBinding
+    ? 'number'
+    : selectedCustomDef
+      ? (selectedCustomDef.type as AttributeType)
+      : selectedAttribute?.type;
 
   const logic = conditionalRenderLogic ?? { operator: 'eq', value: '' };
   const isBoolean = attributeType === 'boolean';
@@ -149,7 +156,7 @@ export const ConditionalRenderEdit = ({
       />
       {attributeId && (
         <>
-          {customPropertyDefs.length > 0 && (
+          {(customPropertyDefs.length > 0 || schemaBindingOpts.length > 0) && (
             <div className='flex flex-col gap-2'>
               <Label
                 htmlFor='conditional-render-attribute-custom-property'
@@ -159,7 +166,12 @@ export const ConditionalRenderEdit = ({
               <Select
                 value={
                   conditionalRenderAttributeCustomPropertyId &&
-                  customPropertyDefs.some((d) => d.id === conditionalRenderAttributeCustomPropertyId)
+                  (customPropertyDefs.some(
+                    (d) => d.id === conditionalRenderAttributeCustomPropertyId,
+                  ) ||
+                    schemaBindingOpts.some(
+                      (o) => o.id === conditionalRenderAttributeCustomPropertyId,
+                    ))
                     ? conditionalRenderAttributeCustomPropertyId
                     : CONDITIONAL_RENDER_CUSTOM_PROPERTY_NONE
                 }
@@ -180,6 +192,11 @@ export const ConditionalRenderEdit = ({
                   {customPropertyDefs.map((def) => (
                     <SelectItem key={def.id} value={def.id}>
                       {def.name}
+                    </SelectItem>
+                  ))}
+                  {schemaBindingOpts.map((opt) => (
+                    <SelectItem key={opt.id} value={opt.id}>
+                      {opt.name}
                     </SelectItem>
                   ))}
                 </SelectContent>

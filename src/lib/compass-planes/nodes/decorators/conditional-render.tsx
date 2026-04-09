@@ -5,6 +5,10 @@ import type {
   ConditionalRenderLogic,
   ConditionalRenderOperator,
 } from '@/types';
+import {
+  ATTRIBUTE_VALUE_BINDING_MAX_ID,
+  ATTRIBUTE_VALUE_BINDING_MIN_ID,
+} from '@/utils/attribute-value-binding';
 import { findEntityCustomPropertyDefById } from '@/utils/parse-entity-custom-properties-json';
 import type { ReactNode } from 'react';
 import { getComponentData } from '../../utils/node-conversion';
@@ -15,6 +19,12 @@ function resolveConditionalRenderValue(
 ): string | number | boolean {
   if (!customPropertyId) {
     return conditionAttribute.value;
+  }
+  if (customPropertyId === ATTRIBUTE_VALUE_BINDING_MIN_ID) {
+    return conditionAttribute.min ?? '';
+  }
+  if (customPropertyId === ATTRIBUTE_VALUE_BINDING_MAX_ID) {
+    return conditionAttribute.max ?? '';
   }
   const def = findEntityCustomPropertyDefById(
     customPropertyId,

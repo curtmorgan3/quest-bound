@@ -11,6 +11,7 @@ import {
 } from '@/lib/compass-planes/utils';
 import { CharacterContext, WindowEditorContext } from '@/stores';
 import type { Component, ComponentStyle } from '@/types';
+import { isAttributeSchemaValueBindingId } from '@/utils/attribute-value-binding';
 import { CheckIcon, SquareIcon } from 'lucide-react';
 import { memo, useContext } from 'react';
 import { ResizableNode } from '../../decorators';
@@ -54,6 +55,9 @@ const ViewCheckboxNodeComponent = ({
 
     const componentData = getComponentData(component);
     const propId = componentData.attributeCustomPropertyId;
+    if (propId && isAttributeSchemaValueBindingId(propId)) {
+      return;
+    }
     if (propId && data.characterAttributeId && component.attributeId) {
       const ca = characterContext.getCharacterAttribute(component.attributeId);
       if (ca) {

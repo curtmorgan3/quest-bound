@@ -20,7 +20,11 @@ import {
   useNodeData,
 } from '@/lib/compass-planes/utils';
 import { CharacterContext, WindowEditorContext } from '@/stores';
-import type { Component, TextComponentStyle } from '@/types';
+import type { CharacterAttribute, Component, TextComponentStyle } from '@/types';
+import {
+  ATTRIBUTE_VALUE_BINDING_MAX_ID,
+  ATTRIBUTE_VALUE_BINDING_MIN_ID,
+} from '@/utils/attribute-value-binding';
 import { memo, useContext, useState } from 'react';
 import { ResizableNode } from '../../decorators';
 
@@ -45,6 +49,10 @@ const ViewInputNodeComponent = ({
   editMode?: boolean;
 }) => {
   const data = useNodeData(component);
+  const componentData = getComponentData(component);
+  const attributeBindingPropId = componentData.attributeCustomPropertyId;
+  const bindsAttributeMin = attributeBindingPropId === ATTRIBUTE_VALUE_BINDING_MIN_ID;
+  const bindsAttributeMax = attributeBindingPropId === ATTRIBUTE_VALUE_BINDING_MAX_ID;
   const css = useComponentStyles(component) as TextComponentStyle;
   const characterContext = useContext(CharacterContext);
   const { widthStyle: cw, heightStyle: ch } = useComponentCanvasDimensions(component);
@@ -53,8 +61,28 @@ const ViewInputNodeComponent = ({
   const handleChange = (value: string | number) => {
     if (!characterContext) return;
 
-    const componentData = getComponentData(component);
     const propId = componentData.attributeCustomPropertyId;
+    if (
+      (propId === ATTRIBUTE_VALUE_BINDING_MIN_ID || propId === ATTRIBUTE_VALUE_BINDING_MAX_ID) &&
+      data.characterAttributeId &&
+      component.attributeId
+    ) {
+      if (value === '') return;
+      const n = typeof value === 'number' ? value : Number(value);
+      if (!Number.isFinite(n)) return;
+      const ca = characterContext.getCharacterAttribute(component.attributeId);
+      if (!ca) return;
+      let patch: Partial<CharacterAttribute>;
+      if (propId === ATTRIBUTE_VALUE_BINDING_MIN_ID) {
+        patch = { min: n };
+        if (ca.max !== undefined && n > ca.max) patch.max = n;
+      } else {
+        patch = { max: n };
+        if (ca.min !== undefined && n < ca.min) patch.min = n;
+      }
+      characterContext.updateCharacterAttribute(data.characterAttributeId, patch);
+      return;
+    }
     if (propId && data.characterAttributeId && component.attributeId) {
       const ca = characterContext.getCharacterAttribute(component.attributeId);
       if (ca) {
@@ -79,14 +107,30 @@ const ViewInputNodeComponent = ({
 
   const onNumberBlur = () => {
     if (!component.attributeId || !characterContext) return;
-    const { min, max } = data;
-    if (min == null && max == null) return;
 
     const raw = data.value;
     if (raw === '') return;
 
     const num = typeof raw === 'number' ? raw : Number(raw);
     if (!Number.isFinite(num)) return;
+
+    if (bindsAttributeMin) {
+      if (data.max != null) {
+        const clamped = Math.min(num, data.max);
+        if (!Object.is(clamped, num)) handleChange(clamped);
+      }
+      return;
+    }
+    if (bindsAttributeMax) {
+      if (data.min != null) {
+        const clamped = Math.max(num, data.min);
+        if (!Object.is(clamped, num)) handleChange(clamped);
+      }
+      return;
+    }
+
+    const { min, max } = data;
+    if (min == null && max == null) return;
 
     let clamped = num;
     if (min != null) clamped = Math.max(min, clamped);
@@ -226,8 +270,8 @@ const ViewInputNodeComponent = ({
           onChange={(value) => handleChange(value)}
           onBlur={onNumberBlur}
           style={{ ...inputStyle, ...interactiveFieldStyle }}
-          inputMin={data.min}
-          inputMax={data.max}
+          inputMin={bindsAttributeMax ? data.min : bindsAttributeMin ? undefined : data.min}
+          inputMax={bindsAttributeMin ? data.max : bindsAttributeMax ? undefined : data.max}
         />
       ) : (
         <input

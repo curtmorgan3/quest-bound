@@ -1,6 +1,10 @@
 import { useAttributes } from '@/lib/compass-api';
 import { CharacterContext } from '@/stores';
 import type { AttributeType, Component, ComponentData } from '@/types';
+import {
+  ATTRIBUTE_VALUE_BINDING_MAX_ID,
+  ATTRIBUTE_VALUE_BINDING_MIN_ID,
+} from '@/utils/attribute-value-binding';
 import { findEntityCustomPropertyDefById } from '@/utils/parse-entity-custom-properties-json';
 import { useContext, useMemo } from 'react';
 import { ComponentTypes } from '../nodes';
@@ -80,8 +84,15 @@ export const useNodeData = (component: Component): NodeData => {
       : null;
 
     const customPropertyId = componentData.attributeCustomPropertyId ?? null;
+    const schemaBinding =
+      customPropertyId === ATTRIBUTE_VALUE_BINDING_MIN_ID
+        ? ('min' as const)
+        : customPropertyId === ATTRIBUTE_VALUE_BINDING_MAX_ID
+          ? ('max' as const)
+          : null;
+
     const customDef =
-      attributeId && customPropertyId
+      attributeId && customPropertyId && schemaBinding == null
         ? findEntityCustomPropertyDefById(
             customPropertyId,
             rulesetAttribute?.customProperties,
@@ -89,19 +100,25 @@ export const useNodeData = (component: Component): NodeData => {
           )
         : null;
 
-    const attributeType: AttributeType = customDef
-      ? (customDef.type as AttributeType)
-      : (rulesetAttribute?.type ?? 'string');
+    const attributeType: AttributeType = schemaBinding
+      ? 'number'
+      : customDef
+        ? (customDef.type as AttributeType)
+        : (rulesetAttribute?.type ?? 'string');
 
     let value =
-      customDef != null && customPropertyId
-        ? (characterAttribute?.attributeCustomPropertyValues?.[customPropertyId] ??
-          customDef.defaultValue)
-        : (characterAttribute?.value ??
-          characterComponentDataValue ??
-          rulesetAttribute?.defaultValue ??
-          componentData.value ??
-          '');
+      schemaBinding === 'min'
+        ? (characterAttribute?.min ?? rulesetAttribute?.min ?? '')
+        : schemaBinding === 'max'
+          ? (characterAttribute?.max ?? rulesetAttribute?.max ?? '')
+          : customDef != null && customPropertyId
+            ? (characterAttribute?.attributeCustomPropertyValues?.[customPropertyId] ??
+              customDef.defaultValue)
+            : (characterAttribute?.value ??
+              characterComponentDataValue ??
+              rulesetAttribute?.defaultValue ??
+              componentData.value ??
+              '');
 
     value = coerceValueByComponentType(value, component, attributeType, componentData);
 
@@ -116,7 +133,11 @@ export const useNodeData = (component: Component): NodeData => {
     }
 
     let name = characterAttribute?.title ?? rulesetAttribute?.title;
-    if (customDef) {
+    if (schemaBinding) {
+      const base = characterAttribute?.title ?? rulesetAttribute?.title ?? '';
+      const suffix = schemaBinding === 'min' ? 'Min' : 'Max';
+      name = base ? `${base} · ${suffix}` : suffix;
+    } else if (customDef) {
       const base = characterAttribute?.title ?? rulesetAttribute?.title ?? '';
       name = base ? `${base} · ${customDef.name}` : customDef.name;
     }
@@ -145,10 +166,13 @@ export const useNodeData = (component: Component): NodeData => {
       attributeType,
       characterAttributeId: characterAttribute?.id,
       options:
-        customDef != null ? [] : (characterAttribute?.options ?? rulesetAttribute?.options ?? []),
+        customDef != null || schemaBinding != null
+          ? []
+          : (characterAttribute?.options ?? rulesetAttribute?.options ?? []),
       min: characterAttribute?.min ?? rulesetAttribute?.min,
       max: characterAttribute?.max ?? rulesetAttribute?.max,
-      allowMultiSelect: customDef != null ? false : rulesetAttribute?.allowMultiSelect,
+      allowMultiSelect:
+        customDef != null || schemaBinding != null ? false : rulesetAttribute?.allowMultiSelect,
     };
   }, [component, attributeId, attributes, character, getCharacterAttribute]);
 };

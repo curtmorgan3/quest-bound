@@ -11,6 +11,7 @@ import {
 } from '@/lib/compass-planes/utils';
 import { CharacterContext, WindowEditorContext } from '@/stores';
 import type { Component, ContentComponentData, TextComponentStyle } from '@/types';
+import { isAttributeSchemaValueBindingId } from '@/utils/attribute-value-binding';
 import { memo, useContext, useEffect, useRef, useState } from 'react';
 import { ResizableNode } from '../../decorators';
 
@@ -93,11 +94,20 @@ const ViewContentNodeComponent = ({
   const handleBlur = () => {
     if (textareaRef.current) {
       if (windowEditorMode) {
+        const componentData = getComponentData(component);
+        if (isAttributeSchemaValueBindingId(componentData.attributeCustomPropertyId)) {
+          setIsEditing(false);
+          return;
+        }
         handleComponentUpdate?.(textareaRef.current.value);
       } else if (characterContext) {
         const componentData = getComponentData(component);
         const propId = componentData.attributeCustomPropertyId;
         const raw = textareaRef.current.value;
+        if (propId && isAttributeSchemaValueBindingId(propId)) {
+          setIsEditing(false);
+          return;
+        }
         if (propId && characterAttributeId && component.attributeId) {
           const ca = characterContext.getCharacterAttribute(component.attributeId);
           if (ca) {

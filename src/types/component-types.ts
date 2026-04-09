@@ -215,6 +215,7 @@ export type ComponentData = ShapeComponentData &
     /**
      * When set, conditional render compares against this ruleset attribute custom property's value
      * (`CharacterAttribute.attributeCustomPropertyValues[id]`), not the main attribute value.
+     * Reserved ids `__questbound:attribute:min` / `__questbound:attribute:max` use the attribute schema min/max.
      */
     conditionalRenderAttributeCustomPropertyId?: string | null;
     conditionalRenderInverse?: boolean;
@@ -229,7 +230,10 @@ export type ComponentData = ShapeComponentData &
     animation?: string | null;
     tooltipValue?: string | null;
     tooltipAttributeId?: string | null;
-    /** When `component.attributeId` is set, optional ruleset attribute custom property id (`EntityCustomPropertyDef.id`). */
+    /**
+     * When `component.attributeId` is set, optional ruleset attribute custom property id (`EntityCustomPropertyDef.id`),
+     * or reserved `__questbound:attribute:min` / `__questbound:attribute:max` for number attribute schema bounds.
+     */
     attributeCustomPropertyId?: string | null;
     tooltipPlacement?: 'top' | 'right' | 'bottom' | 'left';
     childWindowX?: number;

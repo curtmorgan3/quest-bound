@@ -38,6 +38,7 @@ import {
 import { colorBlack } from '@/palette';
 import type { Component, ConditionalRenderLogic, TextComponentData } from '@/types';
 import { rgbToHex } from '@/utils';
+import { getNumberAttributeSchemaBindingOptions } from '@/utils/attribute-value-binding';
 import { parseEntityCustomPropertiesJson } from '@/utils/parse-entity-custom-properties-json';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { RGBColor } from 'react-color';
@@ -673,11 +674,15 @@ export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
                       const defs = boundAttr
                         ? parseEntityCustomPropertiesJson(boundAttr.customProperties)
                         : [];
-                      if (defs.length === 0) return null;
+                      const schemaBindingOpts = getNumberAttributeSchemaBindingOptions(boundAttr);
+                      if (defs.length === 0 && schemaBindingOpts.length === 0) return null;
                       const data = getComponentData(displayC);
                       const storedId = data.attributeCustomPropertyId;
+                      const isValidBindingId = (id: string) =>
+                        defs.some((d) => d.id === id) ||
+                        schemaBindingOpts.some((o) => o.id === id);
                       const current =
-                        storedId && defs.some((d) => d.id === storedId)
+                        storedId && isValidBindingId(storedId)
                           ? storedId
                           : ATTRIBUTE_CUSTOM_PROPERTY_NONE;
                       return (
@@ -712,6 +717,11 @@ export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
                               {defs.map((def) => (
                                 <SelectItem key={def.id} value={def.id}>
                                   {def.name}
+                                </SelectItem>
+                              ))}
+                              {schemaBindingOpts.map((opt) => (
+                                <SelectItem key={opt.id} value={opt.id}>
+                                  {opt.name}
                                 </SelectItem>
                               ))}
                             </SelectContent>
