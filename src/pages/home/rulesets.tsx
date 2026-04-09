@@ -28,6 +28,7 @@ import {
 } from '@/components/ui/dialog';
 import { officialRulesets } from '@/content/official-rulesets';
 import { isCloudConfigured } from '@/lib/cloud/client';
+import { pullEntireRulesetFromCloud } from '@/lib/cloud/sync/sync-service';
 import { useSyncStateStore } from '@/lib/cloud/sync/sync-state';
 import {
   useCloudRulesets,
@@ -35,9 +36,11 @@ import {
   useRulesets,
   type ImportRulesetResult,
 } from '@/lib/compass-api';
-import { useCloudAuthStore } from '@/stores/cloud-auth-store';
+import { compareVersion } from '@/lib/compass-api/hooks/export/utils';
+import { db, useCloudAuthStore, useCloudSyncSummaryPanelStore } from '@/stores';
+import type { DB } from '@/stores/db/hooks/types';
 import { AlertCircle, CheckCircle, Cloud, Download, Loader2, Plus, Upload, X } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
 const DELETE_SPINNER_DELAY_MS = 1000;
@@ -58,10 +61,15 @@ export const Rulesets = () => {
   const cloudSyncEnabled = useCloudAuthStore((s) => s.cloudSyncEnabled);
   const cloudSyncEligibilityLoading = useCloudAuthStore((s) => s.isCloudSyncEligibilityLoading);
   const isCloudSynced = useSyncStateStore((s) => s.isCloudSynced);
+  const isCloudSyncing = useSyncStateStore((s) => s.isSyncing);
   const showCloudBadge =
     isCloudConfigured && isAuthenticated && cloudSyncEnabled && !cloudSyncEligibilityLoading;
 
   const localIds = new Set(rulesets.map((r) => r.id));
+  const cloudRulesetById = useMemo(
+    () => new Map(cloudRulesets.map((c) => [c.id, c])),
+    [cloudRulesets],
+  );
   const cloudOnlyRulesets = cloudRulesets.filter((r) => !localIds.has(r.id));
   const sortedRulesets = [...rulesets].sort((a, b) => a.title.localeCompare(b.title));
   const sortedCloudOnly = [...cloudOnlyRulesets].sort((a, b) => a.title.localeCompare(b.title));
@@ -86,6 +94,7 @@ export const Rulesets = () => {
   const [deletingRulesetId, setDeletingRulesetId] = useState<string | null>(null);
   const [showDeletingSpinner, setShowDeletingSpinner] = useState(false);
   const [cloudDeleteError, setCloudDeleteError] = useState<string | null>(null);
+  const [cloudUpdateError, setCloudUpdateError] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const deleteSpinnerTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -124,6 +133,16 @@ export const Rulesets = () => {
     setCloudDeleteError(null);
     const result = await deleteFromCloud(id);
     if (result.error) setCloudDeleteError(result.error);
+  };
+
+  const handlePullUpdateFromCloud = async (rulesetId: string) => {
+    setCloudUpdateError(null);
+    const result = await pullEntireRulesetFromCloud(rulesetId, db as DB);
+    if (result.error) {
+      setCloudUpdateError(result.error);
+      return;
+    }
+    useCloudSyncSummaryPanelStore.getState().showSummary(result);
   };
 
   const handleCreate = async () => {
@@ -386,6 +405,16 @@ export const Rulesets = () => {
         {!hasNoRulesetsToShow &&
           sortedRulesets?.map((r) => {
             const doNotAsk = localStorage.getItem('qb.confirmOnDelete') === 'false';
+            const cloudSummary = cloudRulesetById.get(r.id);
+            const cloudHasNewerVersion =
+              !!cloudSummary &&
+              isCloudSynced(r.id) &&
+              compareVersion(cloudSummary.version, r.version ?? '') > 0;
+            const cloudUpdateBusy =
+              isCloudSyncing ||
+              isInstallingCloud ||
+              !!deletingRulesetId ||
+              !!deletingCloudRulesetId;
             return (
               <Card
                 key={r.id}
@@ -397,15 +426,54 @@ export const Rulesets = () => {
                 />
                 <div className='flex shrink-0 flex-col gap-2 border-t p-3'>
                   <div className='flex min-w-0 items-baseline justify-between gap-2'>
-                    <h2 className='flex min-w-0 items-center gap-1.5 truncate text-sm font-semibold'>
-                      <span className='truncate'>{r.title}</span>
-                      {showCloudBadge && isCloudSynced(r.id) && (
-                        <Cloud
-                          className='h-3.5 w-3.5 shrink-0 text-muted-foreground'
-                          aria-label='Synced with Quest Bound Cloud'
-                          data-testid='ruleset-cloud-badge'
-                        />
-                      )}
+                    <h2 className='flex min-w-0 items-center gap-1.5 text-sm font-semibold'>
+                      <span className='min-w-0 truncate'>{r.title}</span>
+                      {showCloudBadge && isCloudSynced(r.id) ? (
+                        <span className='flex shrink-0 items-center gap-1'>
+                          <Cloud
+                            className='h-3.5 w-3.5 text-muted-foreground'
+                            aria-label='Synced with Quest Bound Cloud'
+                            data-testid='ruleset-cloud-badge'
+                          />
+                          {cloudHasNewerVersion ? (
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button
+                                  type='button'
+                                  variant='link'
+                                  className='h-auto p-0 text-xs font-medium'
+                                  disabled={cloudUpdateBusy}
+                                  data-testid='ruleset-cloud-update'>
+                                  Update
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>{`Update ${r.title}?`}</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    This ruleset is on version {cloudSummary.version}. Your local
+                                    copy is v{r.version}. This will update the ruleset and replace
+                                    your local data. Characters and campaigns will not be deleted,
+                                    but may not work properly on the new version. This cannot be
+                                    undone.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel disabled={cloudUpdateBusy}>
+                                    Cancel
+                                  </AlertDialogCancel>
+                                  <AlertDialogAction
+                                    disabled={cloudUpdateBusy}
+                                    data-testid='ruleset-cloud-update-confirm'
+                                    onClick={() => void handlePullUpdateFromCloud(r.id)}>
+                                    Update from cloud
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          ) : null}
+                        </span>
+                      ) : null}
                     </h2>
                     <span className='shrink-0 text-xs text-muted-foreground'>v{r.version}</span>
                   </div>
@@ -674,6 +742,25 @@ export const Rulesets = () => {
               size='icon'
               className='h-6 w-6 shrink-0'
               onClick={() => setCloudDeleteError(null)}
+              aria-label='Dismiss'>
+              <X className='h-4 w-4' />
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {cloudUpdateError && (
+        <div className='fixed bottom-4 right-4 z-50 flex max-w-sm flex-col gap-2 rounded-lg border border-red-200 bg-red-50 p-3 text-red-800 shadow-lg'>
+          <div className='flex items-start justify-between gap-2'>
+            <div className='flex items-center gap-2'>
+              <AlertCircle className='h-4 w-4 shrink-0' />
+              <span className='text-sm font-medium'>{cloudUpdateError}</span>
+            </div>
+            <Button
+              variant='ghost'
+              size='icon'
+              className='h-6 w-6 shrink-0'
+              onClick={() => setCloudUpdateError(null)}
               aria-label='Dismiss'>
               <X className='h-4 w-4' />
             </Button>
