@@ -40,7 +40,17 @@ import {
 import { compareVersion } from '@/lib/compass-api/hooks/export/utils';
 import { db, useCloudAuthStore, useCloudSyncSummaryPanelStore } from '@/stores';
 import type { DB } from '@/stores/db/hooks/types';
-import { AlertCircle, CheckCircle, Cloud, Download, Loader2, Plus, Upload, X } from 'lucide-react';
+import {
+  AlertCircle,
+  Building2,
+  CheckCircle,
+  Cloud,
+  Download,
+  Loader2,
+  Plus,
+  Upload,
+  X,
+} from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
@@ -458,6 +468,13 @@ export const Rulesets = () => {
                       <span className='min-w-0 truncate'>{r.title}</span>
                       {showCloudBadge && isCloudSynced(r.id) ? (
                         <span className='flex shrink-0 items-center gap-1'>
+                          {cloudSummary?.linkedToAdministeredOrganization ? (
+                            <Building2
+                              className='h-3.5 w-3.5 text-muted-foreground'
+                              aria-label='Linked to organization you administer'
+                              data-testid='ruleset-org-badge'
+                            />
+                          ) : null}
                           <Cloud
                             className='h-3.5 w-3.5 text-muted-foreground'
                             aria-label='Synced with Quest Bound Cloud'
@@ -604,6 +621,13 @@ export const Rulesets = () => {
                 <div className='flex min-w-0 items-baseline justify-between gap-2'>
                   <h2 className='flex min-w-0 items-center gap-1.5 truncate text-sm font-semibold'>
                     <span className='truncate'>{r.title}</span>
+                    {r.linkedToAdministeredOrganization ? (
+                      <Building2
+                        className='h-3.5 w-3.5 shrink-0 text-muted-foreground'
+                        aria-label='Linked to organization you administer'
+                        data-testid='ruleset-org-badge'
+                      />
+                    ) : null}
                     <Cloud
                       className='h-3.5 w-3.5 shrink-0 text-muted-foreground'
                       aria-label='In Quest Bound Cloud'

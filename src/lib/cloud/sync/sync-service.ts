@@ -27,6 +27,10 @@ import {
   useSyncStateStore,
 } from './sync-state';
 import { filterSyncEntityCountsForUi, sumSyncEntityCounts } from './sync-entity-labels';
+import {
+  fetchOrganizationAsAdmin,
+  listOrganizationRulesetLinks,
+} from '@/lib/cloud/organizations/org-api';
 import { addNonOwnerCloudInstallRulesetId } from './non-owner-cloud-install-ids';
 import { prepareRemoteForLocal } from './sync-utils';
 
@@ -243,6 +247,8 @@ export interface CloudRulesetSummary {
   version: string;
   image?: string | null;
   ownedByCurrentUser: boolean;
+  /** Linked in `organization_rulesets` to an organization the current user administers. */
+  linkedToAdministeredOrganization: boolean;
 }
 
 /**
@@ -254,19 +260,29 @@ export async function listCloudRulesets(): Promise<CloudRulesetSummary[]> {
   const session = await getSession();
   if (!session?.user?.id) return [];
   const currentUserId = session.user.id;
-  const { data, error } = await cloudClient
-    .from('rulesets')
-    .select('id, title, version, asset_id, user_id');
+  const [{ data, error }, administeredOrg] = await Promise.all([
+    cloudClient.from('rulesets').select('id, title, version, asset_id, user_id'),
+    fetchOrganizationAsAdmin(currentUserId),
+  ]);
   if (error) throw error;
   const rows = (data ?? []) as Record<string, unknown>[];
+
+  let administeredOrgRulesetIds = new Set<string>();
+  if (administeredOrg) {
+    const links = await listOrganizationRulesetLinks(administeredOrg.id);
+    administeredOrgRulesetIds = new Set(links.map((l) => l.ruleset_id));
+  }
+
   return rows.map((row) => {
+    const id = String((row as { id: string }).id);
     const prepared = prepareRemoteForLocal(row) as unknown as Omit<
       CloudRulesetSummary,
-      'ownedByCurrentUser'
+      'linkedToAdministeredOrganization' | 'ownedByCurrentUser'
     >;
     return {
       ...prepared,
       ownedByCurrentUser: row.user_id === currentUserId,
+      linkedToAdministeredOrganization: administeredOrgRulesetIds.has(id),
     };
   });
 }
