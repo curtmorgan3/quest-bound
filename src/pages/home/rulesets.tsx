@@ -28,6 +28,7 @@ import {
 } from '@/components/ui/dialog';
 import { officialRulesets } from '@/content/official-rulesets';
 import { isCloudConfigured } from '@/lib/cloud/client';
+import { getNonOwnerCloudInstallRulesetIds } from '@/lib/cloud/sync/non-owner-cloud-install-ids';
 import { pullEntireRulesetFromCloud } from '@/lib/cloud/sync/sync-service';
 import { useSyncStateStore } from '@/lib/cloud/sync/sync-state';
 import {
@@ -50,8 +51,10 @@ export const Rulesets = () => {
   const { importRuleset, isImporting, importStep } = useImportRuleset();
   const {
     cloudRulesets,
+    cloudRulesetListFetchOk,
     installFromCloud,
     deleteFromCloud,
+    loading: cloudRulesetsLoading,
     isInstalling: isInstallingCloud,
     installingRulesetId,
     isDeletingCloud,
@@ -119,6 +122,31 @@ export const Rulesets = () => {
       }
     };
   }, [deletingRulesetId]);
+
+  useEffect(() => {
+    if (!showCloudBadge || cloudRulesetListFetchOk !== true || cloudRulesetsLoading) return;
+    let cancelled = false;
+    void (async () => {
+      const nonOwnerIds = await getNonOwnerCloudInstallRulesetIds();
+      if (cancelled) return;
+      const cloudIdSet = new Set(cloudRulesets.map((c) => c.id));
+      const staleLocal = rulesets.filter((r) => nonOwnerIds.has(r.id) && !cloudIdSet.has(r.id));
+      for (const r of staleLocal) {
+        if (cancelled) return;
+        await deleteRuleset(r.id);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    showCloudBadge,
+    cloudRulesetListFetchOk,
+    cloudRulesetsLoading,
+    cloudRulesets,
+    rulesets,
+    deleteRuleset,
+  ]);
 
   const handleDelete = async (id: string) => {
     setDeletingRulesetId(id);
@@ -628,7 +656,9 @@ export const Rulesets = () => {
                     size='sm'
                     className='h-8 flex-1 gap-1'
                     disabled={isInstallingCloud || !!deletingCloudRulesetId}
-                    onClick={() => installFromCloud(r.id)}
+                    onClick={() =>
+                      void installFromCloud(r.id, { ownedByCurrentUser: r.ownedByCurrentUser })
+                    }
                     data-testid='ruleset-card-install'>
                     {installingRulesetId === r.id ? (
                       <>

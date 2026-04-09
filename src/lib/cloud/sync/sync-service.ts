@@ -27,6 +27,7 @@ import {
   useSyncStateStore,
 } from './sync-state';
 import { filterSyncEntityCountsForUi, sumSyncEntityCounts } from './sync-entity-labels';
+import { addNonOwnerCloudInstallRulesetId } from './non-owner-cloud-install-ids';
 import { prepareRemoteForLocal } from './sync-utils';
 
 export type { PlanSyncPullOptions, StagedPullPayload };
@@ -273,8 +274,14 @@ export async function listCloudRulesets(): Promise<CloudRulesetSummary[]> {
 /**
  * Install a ruleset from the cloud (pull full data, then mark synced).
  * Use for rulesets that exist in the cloud but not locally.
+ * When `ownedByCurrentUser` is false, the install is recorded so we can drop the local copy if the
+ * ruleset later disappears from the cloud list (e.g. org access revoked).
  */
-export async function installFromCloud(rulesetId: string, db: DB): Promise<{ error?: string }> {
+export async function installFromCloud(
+  rulesetId: string,
+  db: DB,
+  options?: { ownedByCurrentUser?: boolean },
+): Promise<{ error?: string }> {
   if (!isCloudConfigured) return { error: 'Cloud not configured' };
   const { isAuthenticated } = useCloudAuthStore.getState();
   if (!isAuthenticated) return { error: 'Not signed in' };
@@ -290,6 +297,9 @@ export async function installFromCloud(rulesetId: string, db: DB): Promise<{ err
   const now = new Date().toISOString();
   useSyncStateStore.getState().setLastSyncedAt(rulesetId, now);
   await useSyncStateStore.getState().markRulesetSynced(rulesetId);
+  if (options?.ownedByCurrentUser === false) {
+    await addNonOwnerCloudInstallRulesetId(rulesetId);
+  }
   return {};
 }
 

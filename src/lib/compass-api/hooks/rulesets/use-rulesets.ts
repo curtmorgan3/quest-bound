@@ -1,4 +1,5 @@
 import { useErrorHandler } from '@/hooks/use-error-handler';
+import { removeNonOwnerCloudInstallRulesetId } from '@/lib/cloud/sync/non-owner-cloud-install-ids';
 import { useSyncStateStore } from '@/lib/cloud/sync/sync-state';
 import {
   db,
@@ -313,6 +314,7 @@ export const useRulesets = () => {
       await sync.removeLastSyncedAtEntry(id);
       await sync.removeSyncedRulesetId(id);
       sync.clearPendingPushRuleset(id);
+      await removeNonOwnerCloudInstallRulesetId(id).catch(() => {});
 
       if (activeRuleset?.id === id) {
         localStorage.removeItem('qb.lastEditedRulesetId');
