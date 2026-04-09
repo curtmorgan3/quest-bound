@@ -23,6 +23,7 @@ import {
   NodeNavigator,
   NodeScriptCaller,
   NodeStateDecorator,
+  NodeToggleBooleanAttribute,
   NodeTooltip,
 } from './decorators';
 import { NodeRotation } from './decorators/node-rotation';
@@ -155,15 +156,17 @@ function WrapDecorators({
         componentData={componentData}>
         <NodeScriptCaller component={component}>
           <NodeDiceClick component={component}>
-            <NodeAttributeEditPanelControl component={component}>
-              <NodeNavigator component={component} componentData={componentData} viewCtx={viewCtx}>
-                <NodeActionCaller component={component} componentData={componentData}>
-                  <NodeRotation rotation={position?.rotation} z={position?.z}>
-                    <NodeAnimation component={component}>{children}</NodeAnimation>
-                  </NodeRotation>
-                </NodeActionCaller>
-              </NodeNavigator>
-            </NodeAttributeEditPanelControl>
+            <NodeToggleBooleanAttribute component={component}>
+              <NodeAttributeEditPanelControl component={component}>
+                <NodeNavigator component={component} componentData={componentData} viewCtx={viewCtx}>
+                  <NodeActionCaller component={component} componentData={componentData}>
+                    <NodeRotation rotation={position?.rotation} z={position?.z}>
+                      <NodeAnimation component={component}>{children}</NodeAnimation>
+                    </NodeRotation>
+                  </NodeActionCaller>
+                </NodeNavigator>
+              </NodeAttributeEditPanelControl>
+            </NodeToggleBooleanAttribute>
           </NodeDiceClick>
         </NodeScriptCaller>
       </NodeTooltip>

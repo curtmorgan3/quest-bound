@@ -224,6 +224,8 @@ export type ComponentData = ShapeComponentData &
     href?: string;
     viewAttributeId?: string | null;
     viewAttributeReadOnly?: boolean;
+    /** Ruleset attribute id (`Attribute.id`); on click, flip that boolean attribute's value on the character. */
+    toggleBooleanAttributeId?: string | null;
     /** Per-component values for Script.parameters, keyed by ScriptParameterDefinition.id. */
     scriptParameterValues?: Record<string, ScriptParamValue>;
     animationColor?: string | null;

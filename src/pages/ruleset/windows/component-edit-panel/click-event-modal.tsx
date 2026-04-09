@@ -21,6 +21,7 @@ import {
   PageLookup,
   ScriptLookup,
   WindowLookup,
+  useAttributes,
   useComponents,
   type ComponentUpdate,
 } from '@/lib/compass-api';
@@ -51,6 +52,7 @@ function stripClickEventFieldsFromData(baseData: ComponentData) {
   delete baseData.pageId;
   delete baseData.viewAttributeId;
   delete baseData.viewAttributeReadOnly;
+  delete baseData.toggleBooleanAttributeId;
   delete baseData.childWindowX;
   delete baseData.childWindowY;
   delete baseData.childWindowCollapse;
@@ -76,7 +78,8 @@ type ClickEventType =
   | 'closeThisWindow'
   | 'fireAction'
   | 'fireScript'
-  | 'viewAttribute';
+  | 'viewAttribute'
+  | 'toggleBooleanAttribute';
 
 const CHILD_WINDOW_PLACEMENT_OPTIONS: { value: ChildWindowPlacementMode; label: string }[] = [
   { value: 'fixed', label: 'Fixed' },
@@ -114,6 +117,7 @@ export const ClickEventModal = ({
   const { pages } = useRulesetPages();
   const { windows } = useWindows();
   const { actions } = useActions();
+  const { attributes } = useAttributes();
   const editingBase = getEditorPreviewStateName(component) === 'base';
   const componentData = getComponentData(component);
   const effectiveChildWindowId = resolveEffectiveChildWindowId(component, componentData);
@@ -150,6 +154,7 @@ export const ClickEventModal = ({
     if (resolveEffectiveActionId(component, data)) return 'fireAction';
     if (data.closeCharacterWindowOnClick) return 'closeThisWindow';
     if (data.viewAttributeId) return 'viewAttribute';
+    if (data.toggleBooleanAttributeId) return 'toggleBooleanAttribute';
     if (scriptId && selectedScript) return 'fireScript';
     return null;
   };
@@ -182,6 +187,11 @@ export const ClickEventModal = ({
     }
     if (type === 'viewAttribute') {
       return 'View Attribute';
+    }
+    if (type === 'toggleBooleanAttribute') {
+      const attrId = data.toggleBooleanAttributeId ?? undefined;
+      const attr = attrId ? attributes.find((a) => a.id === attrId) : undefined;
+      return attr ? `Toggle Boolean: ${attr.title}` : 'Toggle Boolean Attribute';
     }
     return null;
   };
@@ -356,6 +366,32 @@ export const ClickEventModal = ({
     persist([{ id: component.id, data: JSON.stringify(baseData) }]);
   };
 
+  const handleSetToggleBooleanAttributeClick = (attributeId: string) => {
+    if (editingBase) {
+      const baseData = JSON.parse(component.data);
+      baseData.toggleBooleanAttributeId = attributeId;
+      persist([{ id: component.id, data: JSON.stringify(baseData) }]);
+      return;
+    }
+    const baseData = JSON.parse(component.data) as ComponentData;
+    stripClickEventFieldsFromData(baseData);
+    baseData.toggleBooleanAttributeId = attributeId;
+    clearInheritedClickRowIdsInMergedData(baseData);
+    persist([{ id: component.id, data: JSON.stringify(baseData) }]);
+  };
+
+  const handleClearToggleBooleanAttributeClick = () => {
+    if (editingBase) {
+      const baseData = JSON.parse(component.data);
+      delete baseData.toggleBooleanAttributeId;
+      persist([{ id: component.id, data: JSON.stringify(baseData) }]);
+      return;
+    }
+    const baseData = JSON.parse(component.data) as ComponentData;
+    baseData.toggleBooleanAttributeId = null;
+    persist([{ id: component.id, data: JSON.stringify(baseData) }]);
+  };
+
   const handleSetViewAttributeReadOnly = (readOnly: boolean) => {
     const baseData = JSON.parse(component.data);
     baseData.viewAttributeReadOnly = readOnly;
@@ -521,6 +557,7 @@ export const ClickEventModal = ({
                 </SelectItem>
                 <SelectItem value='fireScript'>Fire Script</SelectItem>
                 <SelectItem value='viewAttribute'>View Attribute</SelectItem>
+                <SelectItem value='toggleBooleanAttribute'>Toggle Boolean Attribute</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -844,6 +881,23 @@ export const ClickEventModal = ({
                     Read Only
                   </Label>
                 </div>
+              </div>
+            )}
+
+            {clickEventType === 'toggleBooleanAttribute' && (
+              <div className='flex flex-col gap-3'>
+                <AttributeLookup
+                  label='Boolean attribute'
+                  filterType='boolean'
+                  value={getComponentData(component).toggleBooleanAttributeId ?? null}
+                  onSelect={(attr) => handleSetToggleBooleanAttributeClick(attr.id)}
+                  onDelete={handleClearToggleBooleanAttributeClick}
+                  placeholder='Search boolean attributes...'
+                />
+                <p className='text-[0.7rem] text-muted-foreground'>
+                  On a character sheet, clicking this component toggles the selected attribute
+                  between true and false.
+                </p>
               </div>
             )}
           </div>

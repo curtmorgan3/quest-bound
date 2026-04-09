@@ -7,4 +7,5 @@ export * from './node-navigator';
 export * from './node-script-caller';
 export * from './node-tooltip';
 export * from './node-state-decorator';
+export * from './node-toggle-boolean-attribute';
 export * from './resizable-node';
