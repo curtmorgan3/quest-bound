@@ -17,13 +17,14 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import {
+  deleteRulesetFromCloud,
   pullEntireRulesetFromCloud,
   pushEntireRulesetToCloud,
 } from '@/lib/cloud/sync/sync-service';
 import { useSyncStateStore } from '@/lib/cloud/sync/sync-state';
 import { db, useCloudSyncReviewStore, useCloudSyncSummaryPanelStore } from '@/stores';
 import type { DB } from '@/stores/db/hooks/types';
-import { CloudDownload, CloudUpload, Loader2, RefreshCw } from 'lucide-react';
+import { CloudDownload, CloudUpload, Loader2, RefreshCw, Trash2 } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 
 export interface CloudSyncMenuDialogsProps {
@@ -34,7 +35,7 @@ export interface CloudSyncMenuDialogsProps {
   isOffline: boolean;
 }
 
-type ConfirmKind = 'push' | 'pull' | 'sync' | null;
+type ConfirmKind = 'push' | 'pull' | 'sync' | 'deleteCloud' | null;
 
 export function CloudSyncMenuDialogs({
   rulesetId,
@@ -50,6 +51,8 @@ export function CloudSyncMenuDialogs({
   const [pushing, setPushing] = useState(false);
   const [pulling, setPulling] = useState(false);
   const [syncing, setSyncing] = useState(false);
+  const [deletingFromCloud, setDeletingFromCloud] = useState(false);
+  const [deleteFromCloudError, setDeleteFromCloudError] = useState<string | null>(null);
 
   const openConfirm = useCallback(
     (kind: Exclude<ConfirmKind, null>) => {
@@ -101,6 +104,22 @@ export function CloudSyncMenuDialogs({
     }
   };
 
+  const handleDeleteFromCloudConfirm = async () => {
+    setDeleteFromCloudError(null);
+    setDeletingFromCloud(true);
+    try {
+      const result = await deleteRulesetFromCloud(rulesetId);
+      if (result.error) {
+        setDeleteFromCloudError(result.error);
+        return;
+      }
+      await loadSyncedRulesetIds();
+      closeConfirm();
+    } finally {
+      setDeletingFromCloud(false);
+    }
+  };
+
   const actionBusy = pushing || pulling || syncing;
   const pullSyncDisabled = busy || isOffline || !hasCloudCopy;
   const notOnCloudTitle = 'Push this ruleset to the cloud first';
@@ -145,6 +164,20 @@ export function CloudSyncMenuDialogs({
               data-testid='cloud-sync-menu-sync'>
               <RefreshCw className='h-4 w-4 shrink-0' />
               Sync
+            </Button>
+            <Button
+              type='button'
+              variant='outline'
+              className='w-full justify-start gap-2 text-destructive hover:bg-destructive/10 hover:text-destructive'
+              disabled={pullSyncDisabled}
+              title={!hasCloudCopy ? notOnCloudTitle : undefined}
+              onClick={() => {
+                setDeleteFromCloudError(null);
+                openConfirm('deleteCloud');
+              }}
+              data-testid='cloud-sync-menu-delete-from-cloud'>
+              <Trash2 className='h-4 w-4 shrink-0' />
+              Delete from Cloud
             </Button>
           </div>
         </DialogContent>
@@ -235,6 +268,53 @@ export function CloudSyncMenuDialogs({
                 </>
               ) : (
                 'Sync'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog
+        open={confirm === 'deleteCloud'}
+        onOpenChange={(v) => {
+          if (!v) {
+            setDeleteFromCloudError(null);
+            closeConfirm();
+          }
+        }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this ruleset from Quest Bound Cloud?</AlertDialogTitle>
+            <AlertDialogDescription className='space-y-2'>
+              <span className='block'>
+                This removes the cloud copy and all synced server data for this ruleset (campaigns,
+                characters, assets, and organization sharing). Your local ruleset on this device is
+                not deleted.
+              </span>
+              <span className='block font-medium text-destructive'>This cannot be undone.</span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          {deleteFromCloudError ? (
+            <p className='text-sm text-destructive' role='alert'>
+              {deleteFromCloudError}
+            </p>
+          ) : null}
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deletingFromCloud}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className='bg-destructive text-destructive-foreground hover:bg-destructive/90'
+              onClick={(e) => {
+                e.preventDefault();
+                void handleDeleteFromCloudConfirm();
+              }}
+              disabled={deletingFromCloud}>
+              {deletingFromCloud ? (
+                <>
+                  <Loader2 className='h-4 w-4 animate-spin' />
+                  Deleting…
+                </>
+              ) : (
+                'Delete from Cloud'
               )}
             </AlertDialogAction>
           </AlertDialogFooter>

@@ -327,6 +327,7 @@ export interface DeleteRemoteRulesetPayload {
 /**
  * Permanently remove a ruleset and all associated remote rows for the current user, then
  * delete referenced files from Supabase Storage (best-effort if storage fails).
+ * Local IndexedDB data is unchanged; cloud-sync flags and pull cursor for this ruleset are cleared.
  */
 export async function deleteRulesetFromCloud(rulesetId: string): Promise<{ error?: string }> {
   if (!isCloudConfigured || !cloudClient) return { error: 'Cloud not configured' };
@@ -364,6 +365,7 @@ export async function deleteRulesetFromCloud(rulesetId: string): Promise<{ error
   }
 
   await useSyncStateStore.getState().removeSyncedRulesetId(rulesetId);
+  await useSyncStateStore.getState().removeLastSyncedAtEntry(rulesetId);
 
   useCloudAuthStore.getState().touchCloudRulesetList();
 
