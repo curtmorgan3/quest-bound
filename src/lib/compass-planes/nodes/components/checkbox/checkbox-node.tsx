@@ -82,6 +82,10 @@ const ViewCheckboxNodeComponent = ({
 
   const clickDisabled = editMode || data.disabled;
 
+  const backgroundStyle = getBackgroundStyle(css);
+  const { boxShadow, ...backgroundWithoutShadow } = backgroundStyle;
+  const usesDefaultIcon = isChecked ? !checkedImageUrl : !uncheckedImageUrl;
+
   return (
     <section
       onClick={clickDisabled ? undefined : handleChange}
@@ -93,7 +97,7 @@ const ViewCheckboxNodeComponent = ({
         display: 'flex',
         justifyContent: css.textAlign ?? 'center',
         alignItems: css.verticalAlign ?? 'center',
-        ...getBackgroundStyle(css),
+        ...(usesDefaultIcon ? backgroundWithoutShadow : backgroundStyle),
         borderRadius: css.borderRadius,
         outline: css.outline,
         outlineColor: css.outlineColor,
@@ -102,9 +106,17 @@ const ViewCheckboxNodeComponent = ({
         ...(!editMode ? { userSelect: 'none', WebkitUserSelect: 'none' } : {}),
       }}>
       {isChecked ? (
-        <Checked url={checkedImageUrl} css={css} />
+        <Checked
+          url={checkedImageUrl}
+          css={css}
+          iconBoxShadow={!checkedImageUrl ? boxShadow : undefined}
+        />
       ) : (
-        <Unchecked url={uncheckedImageUrl} css={css} />
+        <Unchecked
+          url={uncheckedImageUrl}
+          css={css}
+          iconBoxShadow={!uncheckedImageUrl ? boxShadow : undefined}
+        />
       )}
     </section>
   );
@@ -117,7 +129,15 @@ export const ViewCheckboxNode = memo(
     prev.editMode === next.editMode,
 );
 
-function Checked({ url, css }: { url?: string; css: ComponentStyle }) {
+function Checked({
+  url,
+  css,
+  iconBoxShadow,
+}: {
+  url?: string;
+  css: ComponentStyle;
+  iconBoxShadow?: string;
+}) {
   const colorStyle = getColorStyle(css);
   if (url) {
     return (
@@ -143,12 +163,21 @@ function Checked({ url, css }: { url?: string; css: ComponentStyle }) {
         height: '100%',
         width: '100%',
         ...colorStyle,
+        ...(iconBoxShadow ? { boxShadow: iconBoxShadow } : {}),
       }}
     />
   );
 }
 
-function Unchecked({ url, css }: { url?: string; css: ComponentStyle }) {
+function Unchecked({
+  url,
+  css,
+  iconBoxShadow,
+}: {
+  url?: string;
+  css: ComponentStyle;
+  iconBoxShadow?: string;
+}) {
   const colorStyle = getColorStyle(css);
   if (url) {
     return (
@@ -174,6 +203,7 @@ function Unchecked({ url, css }: { url?: string; css: ComponentStyle }) {
         height: '100%',
         width: '100%',
         ...colorStyle,
+        ...(iconBoxShadow ? { boxShadow: iconBoxShadow } : {}),
       }}
     />
   );
