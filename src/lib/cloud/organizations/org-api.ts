@@ -477,6 +477,39 @@ export async function listMyActiveExternalRulesetGrants(): Promise<ExternalRules
   return (data ?? []) as ExternalRulesetGrantRow[];
 }
 
+/** Pending external ruleset grants for the session email (RPC; not visible via direct SELECT until accepted). */
+export type PendingExternalGrantRow = {
+  grant_id: string;
+  organization_id: string;
+  organization_name: string;
+  ruleset_id: string;
+  ruleset_title: string | null;
+  permission: 'read_only' | 'full';
+  created_at: string;
+};
+
+export async function listPendingExternalGrantsForInvitee(): Promise<PendingExternalGrantRow[]> {
+  const client = requireClient();
+  const session = await getSession();
+  if (!session?.user?.id) return [];
+
+  const { data, error } = await client.rpc('list_pending_external_grants_for_invitee');
+  if (error) throw error;
+  return (data ?? []) as PendingExternalGrantRow[];
+}
+
+export async function acceptRulesetExternalGrant(grantId: string): Promise<void> {
+  const client = requireClient();
+  const { error } = await client.rpc('accept_ruleset_external_grant', { p_grant_id: grantId });
+  if (error) throw error;
+}
+
+export async function rejectRulesetExternalGrant(grantId: string): Promise<void> {
+  const client = requireClient();
+  const { error } = await client.rpc('reject_ruleset_external_grant', { p_grant_id: grantId });
+  if (error) throw error;
+}
+
 export async function leaveOrganization(organizationId: string): Promise<void> {
   const client = requireClient();
   const session = await getSession();

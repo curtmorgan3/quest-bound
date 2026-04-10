@@ -3,6 +3,7 @@ import {
   CloudSyncReviewDialog,
   CloudSyncSummaryPanel,
   Loading,
+  PendingExternalGrantsDialog,
   PWAInstallPrompt,
 } from '@/components';
 import { CharacterSelectModal } from '@/components/character-select-modal';
@@ -259,6 +260,7 @@ export function Layout() {
                 zIndex: 1000,
                 maxWidth: 'calc(100vw - 400px)',
               }}></canvas>
+            <PendingExternalGrantsDialog />
             <CloudSyncOverlayDialog />
             <CloudSyncReviewDialog />
             <CloudSyncSummaryPanel />
