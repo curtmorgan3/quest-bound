@@ -1,5 +1,5 @@
 import { useErrorHandler } from '@/hooks';
-import { db } from '@/stores';
+import { db, useExternalRulesetGrantStore } from '@/stores';
 import type { Character, Campaign } from '@/types';
 import { useLiveQuery } from 'dexie-react-hooks';
 import JSZip from 'jszip';
@@ -250,6 +250,9 @@ export const useExportRuleset = (rulesetId: string) => {
   const exportRuleset = async (options?: ExportRulesetOptions): Promise<void> => {
     if (!ruleset || !rulesetId) {
       throw new Error('No ruleset found to export');
+    }
+    if (useExternalRulesetGrantStore.getState().permissionByRulesetId[rulesetId] === 'read_only') {
+      throw new Error('Export is not available for read-only playtest access.');
     }
 
     setIsExporting(true);

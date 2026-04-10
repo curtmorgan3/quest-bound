@@ -1,4 +1,5 @@
 import { useCharacter, useCharacterAttributes, useRulesets } from '@/lib/compass-api';
+import { useReadOnlyExternalGrantRedirect } from '@/lib/cloud/external-ruleset-grant-guard';
 import { RulesetPageEditor } from '@/lib/compass-planes';
 import { InventoryDragPreview } from '@/lib/compass-planes/nodes/components/inventory/inventory-drag-preview';
 import { CharacterProvider, InventoryDragProvider, type InventoryPanelConfig } from '@/stores';
@@ -15,6 +16,8 @@ export const RulesetPageEditorPage = () => {
   const { characterAttributes, updateCharacterAttribute } = useCharacterAttributes(character?.id);
   const [inventoryPanelConfig, setInventoryPanelConfig] = useState<InventoryPanelConfig>({});
 
+  const readOnlyRedirect = useReadOnlyExternalGrantRedirect(rulesetId);
+  if (readOnlyRedirect) return readOnlyRedirect;
   if (!rulesetId || !pageId || !character) return null;
 
   const handleUpdateCharacterAttribute = (id: string, update: Partial<CharacterAttribute>) => {

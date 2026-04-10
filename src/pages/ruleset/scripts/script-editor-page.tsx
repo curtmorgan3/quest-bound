@@ -14,6 +14,7 @@ import type { Script, ScriptParameterDefinition } from '@/types';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { AnimatePresence, motion } from 'framer-motion';
 import { AlertCircle, ChevronDown, ChevronUp, Terminal } from 'lucide-react';
+import { useReadOnlyExternalGrantRedirect } from '@/lib/cloud/external-ruleset-grant-guard';
 import { useCallback, useEffect, useState } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { AttributeControls } from './script-editor/attribute-controls';
@@ -38,6 +39,10 @@ export function ScriptEditorPage() {
 
   const { activeRuleset, testCharacter } = useActiveRuleset();
   const campaign = useCampaign(campaignId);
+
+  const readOnlyRedirect = useReadOnlyExternalGrantRedirect(
+    rulesetIdParam ?? activeRuleset?.id,
+  );
 
   const effectiveRulesetId = activeRuleset?.id ?? rulesetIdParam ?? campaign?.rulesetId ?? '';
 
@@ -209,6 +214,8 @@ export function ScriptEditorPage() {
   }, [isNew, entityType, paramEntityId]);
 
   const usesEvents = entityType === 'action' || entityType === 'item' || entityType === 'archetype';
+
+  if (readOnlyRedirect) return readOnlyRedirect;
 
   return (
     <div className='flex flex-col h-full min-h-0'>

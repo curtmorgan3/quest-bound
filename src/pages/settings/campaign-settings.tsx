@@ -6,6 +6,7 @@ import {
   Label,
 } from '@/components';
 import { useCampaigns, useExportCampaign } from '@/lib/compass-api';
+import { useExternalRulesetGrantStore } from '@/stores';
 import type { Campaign } from '@/types';
 import { Download } from 'lucide-react';
 import { useEffect, useState } from 'react';
@@ -17,6 +18,9 @@ interface CampaignSettingsProps {
 export const CampaignSettings = ({ activeCampaign }: CampaignSettingsProps) => {
   const { updateCampaign } = useCampaigns();
   const { exportCampaign, isExporting, isLoading } = useExportCampaign(activeCampaign.id);
+  const readOnlyPlaytestExport = useExternalRulesetGrantStore((s) =>
+    s.permissionByRulesetId[activeCampaign.rulesetId] === 'read_only',
+  );
   const [name, setName] = useState(activeCampaign.label ?? '');
   const [description, setDescription] = useState(activeCampaign.description ?? '');
 
@@ -66,7 +70,7 @@ export const CampaignSettings = ({ activeCampaign }: CampaignSettingsProps) => {
           type='button'
           className='gap-2 w-[50px]'
           variant='outline'
-          disabled={isExporting || isLoading}
+          disabled={isExporting || isLoading || readOnlyPlaytestExport}
           aria-label='Export campaign to zip'
           onClick={() => void exportCampaign()}>
           <Download className='h-4 w-4' />

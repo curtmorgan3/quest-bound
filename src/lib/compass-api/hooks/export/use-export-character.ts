@@ -1,5 +1,5 @@
 import { useErrorHandler } from '@/hooks';
-import { db } from '@/stores';
+import { db, useExternalRulesetGrantStore } from '@/stores';
 import { useLiveQuery } from 'dexie-react-hooks';
 import JSZip from 'jszip';
 import { useState } from 'react';
@@ -65,6 +65,13 @@ export const useExportCharacter = (characterId: string) => {
   const exportCharacter = async (): Promise<void> => {
     if (!character || !characterId) {
       throw new Error('No character found to export');
+    }
+    if (
+      character.rulesetId &&
+      useExternalRulesetGrantStore.getState().permissionByRulesetId[character.rulesetId] ===
+        'read_only'
+    ) {
+      throw new Error('Export is not available for read-only playtest access.');
     }
 
     const ruleset = character.rulesetId

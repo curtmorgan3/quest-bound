@@ -6,6 +6,7 @@ import {
   SidebarMenuItem,
 } from '@/components/ui/sidebar';
 import { useActiveRuleset, useCampaign, useCharacter } from '@/lib/compass-api';
+import { useExternalRulesetGrantStore } from '@/stores';
 import { Clapperboard, NotebookPen, User, UserRoundPen } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
@@ -22,6 +23,11 @@ export const Settings = () => {
 
   const isOnRulesetRoute = Boolean(rulesetId && rulesetId !== 'undefined');
   const isOnCampaignRoute = Boolean(campaignId && campaignId !== 'undefined');
+  const rulesetReadOnlyPlaytest = useExternalRulesetGrantStore((s) =>
+    rulesetId && rulesetId !== 'undefined'
+      ? s.permissionByRulesetId[rulesetId] === 'read_only'
+      : false,
+  );
 
   const [page, setPage] = useState<string>('user');
   const prevParamsRef = useRef({ rulesetId, campaignId });
@@ -39,13 +45,13 @@ export const Settings = () => {
         setPage('character');
       } else if (isOnCampaignRoute && campaign) {
         setPage('campaign');
-      } else if (isOnRulesetRoute && activeRuleset) {
+      } else if (isOnRulesetRoute && activeRuleset && !rulesetReadOnlyPlaytest) {
         setPage('ruleset');
       } else {
         setPage('user');
       }
     } else {
-      if (page === 'ruleset' && (!isOnRulesetRoute || !activeRuleset)) {
+      if (page === 'ruleset' && (!isOnRulesetRoute || !activeRuleset || rulesetReadOnlyPlaytest)) {
         setPage('user');
       } else if (page === 'character' && !character) {
         setPage('user');
@@ -62,6 +68,7 @@ export const Settings = () => {
     page,
     rulesetId,
     campaignId,
+    rulesetReadOnlyPlaytest,
   ]);
 
   return (
@@ -89,7 +96,7 @@ export const Settings = () => {
                 </SidebarMenuButton>
               </SidebarMenuItem>
             )}
-            {isOnRulesetRoute && activeRuleset && (
+            {isOnRulesetRoute && activeRuleset && !rulesetReadOnlyPlaytest && (
               <SidebarMenuItem className={`${page === 'ruleset' ? 'text-primary' : ''}`}>
                 <SidebarMenuButton asChild onClick={() => setPage('ruleset')}>
                   <div>
@@ -116,9 +123,10 @@ export const Settings = () => {
           {page === 'campaign' && isOnCampaignRoute && campaign && (
             <CampaignSettings activeCampaign={campaign} />
           )}
-          {page === 'ruleset' && isOnRulesetRoute && activeRuleset && (
-            <RulesetSettings activeRuleset={activeRuleset} />
-          )}
+          {page === 'ruleset' &&
+            isOnRulesetRoute &&
+            activeRuleset &&
+            !rulesetReadOnlyPlaytest && <RulesetSettings activeRuleset={activeRuleset} />}
           {page === 'character' && character && <CharacterSettings character={character} />}
         </div>
       </div>

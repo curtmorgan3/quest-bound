@@ -2,11 +2,15 @@ import { Card } from '@/components';
 import { MarkdownViewer, PageWrapper } from '@/components/composites';
 import { LogoIcon } from '@/components/ui/logo-icon';
 import { useActiveRuleset } from '@/lib/compass-api';
+import { useExternalRulesetGrantStore } from '@/stores';
 import { Map, Users } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export function RulesetLanding() {
   const { activeRuleset } = useActiveRuleset();
+  const readOnlyPlaytester = useExternalRulesetGrantStore((s) =>
+    activeRuleset?.id ? s.permissionByRulesetId[activeRuleset.id] === 'read_only' : false,
+  );
 
   if (!activeRuleset) {
     return (
@@ -42,11 +46,13 @@ export function RulesetLanding() {
             <span>Made with Quest Bound</span>
             <LogoIcon style={{ width: 24, height: 24 }} />
           </div>
-          <Link
-            to={`/rulesets/${activeRuleset.id}`}
-            className='text-xs text-muted-foreground hover:text-foreground transition-colors'>
-            Modify this Ruleset
-          </Link>
+          {!readOnlyPlaytester ? (
+            <Link
+              to={`/rulesets/${activeRuleset.id}`}
+              className='text-xs text-muted-foreground hover:text-foreground transition-colors'>
+              Modify this Ruleset
+            </Link>
+          ) : null}
         </div>
       }>
       <div

@@ -457,6 +457,26 @@ export async function dismissOrganizationInvite(inviteId: string): Promise<void>
 }
 
 /** Removes the current user from an organization. Fails via RLS if they are the org admin. */
+export type ExternalRulesetGrantRow = {
+  ruleset_id: string;
+  permission: 'read_only' | 'full';
+};
+
+/** Active resolved grants for the signed-in user (RLS: own rows only). Used for playtester cloud list + UI gates. */
+export async function listMyActiveExternalRulesetGrants(): Promise<ExternalRulesetGrantRow[]> {
+  const client = requireClient();
+  const session = await getSession();
+  if (!session?.user?.id) return [];
+
+  const { data, error } = await client
+    .from('ruleset_external_grants')
+    .select('ruleset_id, permission')
+    .eq('is_active', true)
+    .not('user_id', 'is', null);
+  if (error) throw error;
+  return (data ?? []) as ExternalRulesetGrantRow[];
+}
+
 export async function leaveOrganization(organizationId: string): Promise<void> {
   const client = requireClient();
   const session = await getSession();

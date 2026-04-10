@@ -36,6 +36,7 @@ import {
   useExportCharacter,
   useRulesets,
 } from '@/lib/compass-api';
+import { useExternalRulesetGrantStore } from '@/stores';
 import type { Character } from '@/types';
 import { Download } from 'lucide-react';
 import { useEffect, useState } from 'react';
@@ -53,6 +54,11 @@ export const CharacterSettings = ({ character }: CharacterSettingsProps) => {
   const { addNotification } = useNotifications();
   const navigate = useNavigate();
   const { exportCharacter, isExporting } = useExportCharacter(character.id);
+  const readOnlyPlaytestExport = useExternalRulesetGrantStore((s) =>
+    character.rulesetId
+      ? s.permissionByRulesetId[character.rulesetId] === 'read_only'
+      : false,
+  );
 
   const [name, setName] = useState(character.name);
   const [selectedRulesetId, setSelectedRulesetId] = useState(character.rulesetId);
@@ -123,7 +129,10 @@ export const CharacterSettings = ({ character }: CharacterSettingsProps) => {
           <Label htmlFor='character-name'>Name</Label>
           <Input id='character-name' value={name} onChange={(e) => setName(e.target.value)} />
         </div>
-        <Button variant='outline' onClick={exportCharacter} disabled={isExporting}>
+        <Button
+          variant='outline'
+          onClick={exportCharacter}
+          disabled={isExporting || readOnlyPlaytestExport}>
           <>
             Download
             <Download className='h-4 w-4' />

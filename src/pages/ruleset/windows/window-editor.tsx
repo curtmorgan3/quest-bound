@@ -23,6 +23,7 @@ import type { Component } from '@/types';
 import { debugLog } from '@/utils';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { ClipboardList, Eye, Library, Magnet, ScanSearch, ZoomIn, ZoomOut } from 'lucide-react';
+import { useReadOnlyExternalGrantRedirect } from '@/lib/cloud/external-ruleset-grant-guard';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { ComponentEditPanel } from './component-edit-panel';
@@ -79,7 +80,8 @@ function readStoredSnapToGrid(): boolean {
 }
 
 export const WindowEditor = () => {
-  const { windowId } = useParams();
+  const { windowId, rulesetId } = useParams<{ windowId: string; rulesetId: string }>();
+  const readOnlyRedirect = useReadOnlyExternalGrantRedirect(rulesetId);
   const { open } = useSidebar();
   const {
     components,
@@ -296,6 +298,7 @@ export const WindowEditor = () => {
   }, [windowId]);
 
   if (!windowId) return null;
+  if (readOnlyRedirect) return readOnlyRedirect;
 
   return (
     <WindowEditorProvider

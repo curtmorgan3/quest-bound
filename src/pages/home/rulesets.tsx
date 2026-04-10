@@ -446,6 +446,7 @@ export const Rulesets = () => {
             const cloudSummary = cloudRulesetById.get(r.id);
             const cloudHasNewerVersion =
               !!cloudSummary &&
+              !cloudSummary.externalGrantPermission &&
               isCloudSynced(r.id) &&
               compareVersion(cloudSummary.version, r.version ?? '') > 0;
             const cloudUpdateBusy =

@@ -7,6 +7,7 @@ export * from './context';
 export * from './current-user-store';
 export * from './db';
 export * from './event-log-store';
+export * from './external-ruleset-grant-store';
 export * from './loggers';
 export * from './onboarding-store';
 export * from './prompt-modal-store';

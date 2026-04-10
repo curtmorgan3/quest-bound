@@ -50,7 +50,10 @@ export function ComponentStatesEdit({ component, onStatesUpdated }: Props) {
   };
 
   const addBuiltin = (
-    name: typeof COMPONENT_STATE_HOVER | typeof COMPONENT_STATE_DISABLED | typeof COMPONENT_STATE_PRESSED,
+    name:
+      | typeof COMPONENT_STATE_HOVER
+      | typeof COMPONENT_STATE_DISABLED
+      | typeof COMPONENT_STATE_PRESSED,
   ) => {
     setAddError(null);
     if (!canAddState(entries)) {
@@ -109,9 +112,7 @@ export function ComponentStatesEdit({ component, onStatesUpdated }: Props) {
     <Accordion type='single' collapsible>
       <AccordionItem value='visual-states' className='border-none'>
         <AccordionTrigger className='py-2 text-xs text-muted-foreground hover:no-underline hover:text-foreground'>
-          <span className='min-w-0 flex-1 truncate text-left'>
-            State ({selectedStateLabel})
-          </span>
+          <span className='min-w-0 flex-1 truncate text-left'>State ({selectedStateLabel})</span>
         </AccordionTrigger>
         <AccordionContent className='flex flex-col gap-3 pb-2'>
           <Select value={previewTarget} onValueChange={setStateEditTarget}>

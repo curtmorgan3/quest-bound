@@ -7,7 +7,7 @@ import { isCloudConfigured } from '@/lib/cloud/client';
 import { useSyncStateStore } from '@/lib/cloud/sync/sync-state';
 import { Cloud, Loader2 } from 'lucide-react';
 import { forwardRef, useImperativeHandle, useState } from 'react';
-import { useCloudSyncReviewStore } from '@/stores';
+import { useCloudSyncReviewStore, useExternalRulesetGrantStore } from '@/stores';
 import { useCloudAuthStore } from '@/stores/cloud-auth-store';
 
 export interface CloudSyncActionsRef {
@@ -27,6 +27,9 @@ export const CloudSyncActions = forwardRef<CloudSyncActionsRef, CloudSyncActions
     const planning = useCloudSyncReviewStore((s) => s.planning);
     const committing = useCloudSyncReviewStore((s) => s.committing);
     const reviewOpen = useCloudSyncReviewStore((s) => s.open);
+    const externalGrantBlocksRemoteSync = useExternalRulesetGrantStore((s) =>
+      s.permissionByRulesetId[rulesetId] != null,
+    );
     const [menuOpen, setMenuOpen] = useState(false);
 
     useImperativeHandle(ref, () => ({
@@ -39,6 +42,10 @@ export const CloudSyncActions = forwardRef<CloudSyncActionsRef, CloudSyncActions
       !cloudSyncEnabled ||
       cloudSyncEligibilityLoading
     ) {
+      return null;
+    }
+
+    if (externalGrantBlocksRemoteSync) {
       return null;
     }
 

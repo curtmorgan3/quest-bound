@@ -16,7 +16,7 @@ import { isCloudConfigured } from '@/lib/cloud/client';
 import { useSyncStateStore } from '@/lib/cloud/sync/sync-state';
 import { useActiveRuleset, useUsers } from '@/lib/compass-api';
 import { Settings } from '@/pages';
-import { DiceContext, useCloudSyncReviewStore } from '@/stores';
+import { DiceContext, useCloudSyncReviewStore, useExternalRulesetGrantStore } from '@/stores';
 import { useCloudAuthStore } from '@/stores/cloud-auth-store';
 import {
   Building2,
@@ -121,12 +121,17 @@ export function AppSidebar() {
     cloudSyncEnabled &&
     !cloudSyncEligibilityLoading;
 
+  const externalGrantBlocksRemoteSync = useExternalRulesetGrantStore((s) =>
+    rulesetId ? s.permissionByRulesetId[rulesetId] != null : false,
+  );
+
   const showCloudSync =
     isCloudConfigured &&
     isAuthenticated &&
     cloudSyncEnabled &&
     !cloudSyncEligibilityLoading &&
     rulesetId &&
+    !externalGrantBlocksRemoteSync &&
     !isHomepage &&
     !isLandingRoute &&
     !isCharacterRoute &&

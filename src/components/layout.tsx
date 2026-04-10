@@ -12,6 +12,8 @@ import { PromptModal } from '@/components/prompt-modal';
 import { ScriptErrorNotificationsHost } from '@/components/script-error-notification';
 import { useCampaignPlayWorkerPolicySync, useNotifications } from '@/hooks';
 import { ensureEmailRegistered, isCloudEmailVerified } from '@/lib/cloud/auth';
+import { isCloudConfigured } from '@/lib/cloud/client';
+import { listMyActiveExternalRulesetGrants } from '@/lib/cloud/organizations/org-api';
 import { initSyncTriggers } from '@/lib/cloud/sync/sync-service';
 import { useSyncOnRulesetOpen } from '@/lib/cloud/sync/use-sync-on-ruleset-open';
 import { useFontLoader, useUsers } from '@/lib/compass-api';
@@ -25,6 +27,7 @@ import {
   DiceProvider,
   useCloudAuthStore,
   useDiceState,
+  useExternalRulesetGrantStore,
   useOnboardingStore,
 } from '@/stores';
 import type { DB } from '@/stores/db/hooks/types';
@@ -55,7 +58,35 @@ export function Layout() {
     currentUser && !onboardingLoading && (forceShowAgain || !hasCompleted);
 
   const { cloudUser, isAuthenticated } = useCloudAuthStore();
+  const cloudSyncEnabled = useCloudAuthStore((s) => s.cloudSyncEnabled);
+  const cloudSyncEligibilityLoading = useCloudAuthStore((s) => s.isCloudSyncEligibilityLoading);
+  const cloudRulesetListEpoch = useCloudAuthStore((s) => s.cloudRulesetListEpoch);
   const isRegisteringEmail = useRef(false);
+
+  useEffect(() => {
+    if (
+      !isCloudConfigured ||
+      !isAuthenticated ||
+      !cloudSyncEnabled ||
+      cloudSyncEligibilityLoading
+    ) {
+      return;
+    }
+    let cancelled = false;
+    void listMyActiveExternalRulesetGrants().then((rows) => {
+      if (!cancelled) {
+        useExternalRulesetGrantStore.getState().setPermissionsFromRows(rows);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    isAuthenticated,
+    cloudSyncEnabled,
+    cloudSyncEligibilityLoading,
+    cloudRulesetListEpoch,
+  ]);
 
   // Initialize cloud auth (session restore + auth state subscription)
   useEffect(() => {

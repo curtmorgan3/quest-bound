@@ -818,6 +818,7 @@ export class SheetUiCoordinator {
 
     const entries = parseComponentStatesList(found.row.states);
     const canonical = resolveSetStateTargetName(entries, normalized);
+
     if (canonical == null) {
       throw new Error(`setState: no state named "${requestedName}"`);
     }

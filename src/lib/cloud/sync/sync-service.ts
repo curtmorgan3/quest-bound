@@ -29,6 +29,7 @@ import {
 import { filterSyncEntityCountsForUi, sumSyncEntityCounts } from './sync-entity-labels';
 import {
   fetchOrganizationAsAdmin,
+  listMyActiveExternalRulesetGrants,
   listOrganizationRulesetLinks,
 } from '@/lib/cloud/organizations/org-api';
 import { addNonOwnerCloudInstallRulesetId } from './non-owner-cloud-install-ids';
@@ -249,6 +250,8 @@ export interface CloudRulesetSummary {
   ownedByCurrentUser: boolean;
   /** Linked in `organization_rulesets` to an organization the current user administers. */
   linkedToAdministeredOrganization: boolean;
+  /** Non-member playtester grant (read_only or full). Ongoing cloud sync to the owner's remote copy is disabled. */
+  externalGrantPermission?: 'read_only' | 'full';
 }
 
 /**
@@ -260,12 +263,17 @@ export async function listCloudRulesets(): Promise<CloudRulesetSummary[]> {
   const session = await getSession();
   if (!session?.user?.id) return [];
   const currentUserId = session.user.id;
-  const [{ data, error }, administeredOrg] = await Promise.all([
+  const [{ data, error }, administeredOrg, grantRows] = await Promise.all([
     cloudClient.from('rulesets').select('id, title, version, asset_id, user_id'),
     fetchOrganizationAsAdmin(currentUserId),
+    listMyActiveExternalRulesetGrants(),
   ]);
   if (error) throw error;
   const rows = (data ?? []) as Record<string, unknown>[];
+
+  const grantByRulesetId = new Map(
+    grantRows.map((g) => [g.ruleset_id, g.permission] as const),
+  );
 
   let administeredOrgRulesetIds = new Set<string>();
   if (administeredOrg) {
@@ -273,18 +281,24 @@ export async function listCloudRulesets(): Promise<CloudRulesetSummary[]> {
     administeredOrgRulesetIds = new Set(links.map((l) => l.ruleset_id));
   }
 
-  return rows.map((row) => {
+  const summaries = rows.map((row) => {
     const id = String((row as { id: string }).id);
     const prepared = prepareRemoteForLocal(row) as unknown as Omit<
       CloudRulesetSummary,
-      'linkedToAdministeredOrganization' | 'ownedByCurrentUser'
+      | 'linkedToAdministeredOrganization'
+      | 'ownedByCurrentUser'
+      | 'externalGrantPermission'
     >;
+    const externalGrantPermission = grantByRulesetId.get(id);
     return {
       ...prepared,
       ownedByCurrentUser: row.user_id === currentUserId,
       linkedToAdministeredOrganization: administeredOrgRulesetIds.has(id),
+      ...(externalGrantPermission ? { externalGrantPermission } : {}),
     };
   });
+
+  return summaries;
 }
 
 /**
