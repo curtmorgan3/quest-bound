@@ -11,6 +11,7 @@ import {
   type GridPage,
   type ListPage,
 } from '@/stores/ruleset-filters-store';
+import { PlaytestRulesetControls } from '@/components/composites/playtest/playtest-ruleset-controls';
 import {
   AppWindow,
   BookOpen,
@@ -116,6 +117,7 @@ export function RulesetSidebar() {
             );
           })}
         </SidebarMenu>
+        {rulesetId ? <PlaytestRulesetControls rulesetId={rulesetId} /> : null}
       </SidebarGroupContent>
     </SidebarGroup>
   );

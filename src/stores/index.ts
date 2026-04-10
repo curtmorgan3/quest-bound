@@ -10,6 +10,7 @@ export * from './event-log-store';
 export * from './external-ruleset-grant-store';
 export * from './loggers';
 export * from './onboarding-store';
+export * from './playtest-runtime-store';
 export * from './prompt-modal-store';
 export * from './pwa-install-store';
 export * from './ruleset-filters-store';

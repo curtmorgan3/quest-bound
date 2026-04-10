@@ -1,3 +1,4 @@
+import { reportPlaytestScriptError } from '@/lib/cloud/playtest/playtest-api';
 import { persistScriptLogs } from '@/lib/compass-logic/script-logs';
 import type { DB } from '@/stores/db/hooks/types';
 import type {
@@ -193,6 +194,7 @@ export async function executeCustomEventListener(
     } catch (persistErr) {
       console.warn('[executeCustomEventListener] Failed to persist script error', persistErr);
     }
+    void reportPlaytestScriptError(callback.rulesetId, callback.scriptId, message);
     return {
       announceMessages: evaluator?.getAnnounceMessages() ?? [],
       logMessages: partialLogMessages,

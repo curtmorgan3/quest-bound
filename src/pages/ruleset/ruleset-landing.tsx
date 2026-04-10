@@ -3,6 +3,7 @@ import { MarkdownViewer, PageWrapper } from '@/components/composites';
 import { LogoIcon } from '@/components/ui/logo-icon';
 import { useActiveRuleset } from '@/lib/compass-api';
 import { useExternalRulesetGrantStore } from '@/stores';
+import { usePlaytestRuntimeStore } from '@/stores/playtest-runtime-store';
 import { Map, Users } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
@@ -10,6 +11,9 @@ export function RulesetLanding() {
   const { activeRuleset } = useActiveRuleset();
   const readOnlyPlaytester = useExternalRulesetGrantStore((s) =>
     activeRuleset?.id ? s.permissionByRulesetId[activeRuleset.id] === 'read_only' : false,
+  );
+  const playtestRuntime = usePlaytestRuntimeStore((s) =>
+    activeRuleset?.id ? s.getActive(activeRuleset.id) : null,
   );
 
   if (!activeRuleset) {
@@ -66,7 +70,20 @@ export function RulesetLanding() {
               <span className='absolute right-4 top-4 text-xs text-muted-foreground'>
                 v{version}
               </span>
-              {description ? (
+              {playtestRuntime ? (
+                <div className='md-content text-muted-foreground'>
+                  {playtestRuntime.sessionName ? (
+                    <h3 className='mb-2 text-foreground text-lg font-semibold'>
+                      {playtestRuntime.sessionName}
+                    </h3>
+                  ) : null}
+                  {playtestRuntime.sessionInstructions ? (
+                    <MarkdownViewer value={playtestRuntime.sessionInstructions} />
+                  ) : (
+                    <p className='text-sm text-muted-foreground'>No instructions for this session.</p>
+                  )}
+                </div>
+              ) : description ? (
                 <div className='md-content text-muted-foreground'>
                   <MarkdownViewer value={description} />
                 </div>

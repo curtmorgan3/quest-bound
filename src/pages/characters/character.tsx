@@ -8,6 +8,7 @@ import {
 } from '@/lib/campaign-play/realtime/campaign-play-delegated-ui-client';
 import { useCharacter, useCharacterAttributes } from '@/lib/compass-api';
 import { useExecuteActionEvent } from '@/lib/compass-logic';
+import { reportPlaytestActionFired } from '@/lib/cloud/playtest/playtest-api';
 import {
   setCurrentCampaignIdForScripts,
   setCurrentCampaignSceneIdForScripts,
@@ -272,6 +273,7 @@ export const CharacterPage = ({
       rollSplit,
       effectiveCampaignSceneId,
     );
+    void reportPlaytestActionFired(character.rulesetId, actionId);
   };
 
   const fireActionFromItem = async (actionId: string, inventoryItemId: string) => {
@@ -295,7 +297,7 @@ export const CharacterPage = ({
       }
       return;
     }
-    executeActionEvent(
+    await executeActionEvent(
       actionId,
       character.id,
       null,
@@ -306,6 +308,7 @@ export const CharacterPage = ({
       rollSplit,
       effectiveCampaignSceneId,
     );
+    void reportPlaytestActionFired(character.rulesetId, actionId);
   };
 
   const onCloseRef = useRef(onClose);
