@@ -6,7 +6,7 @@ import {
 import { broadcastHostCharacterDataAfterHostReactives } from '@/lib/campaign-play/realtime/campaign-play-host-character-broadcast';
 import { sendCampaignPlayManualCharacterUpdate } from '@/lib/campaign-play/realtime/campaign-play-manual-broadcast';
 import { getQBScriptClient } from '@/lib/compass-logic/worker';
-import { filterNotSoftDeleted, softDeletePatch } from '@/lib/data/soft-delete';
+import { filterNotSoftDeleted, isNotSoftDeleted, softDeletePatch } from '@/lib/data/soft-delete';
 import { db } from '@/stores';
 import type { CharacterAttribute } from '@/types';
 import { mergeAttributeCustomPropertyValuesForSchemaJson } from '@/utils/attribute-custom-property-values';
@@ -233,6 +233,46 @@ export const useCharacterAttributes = (
 
         for (const { id, data } of toUpdate) {
           await db.characterAttributes.update(id, data);
+        }
+
+        const inventoryIds = new Set<string>([character.inventoryId]);
+        const inventoriesForCharacter = await db.inventories
+          .where('characterId')
+          .equals(character.id)
+          .toArray();
+        for (const inv of inventoriesForCharacter) {
+          inventoryIds.add(inv.id);
+        }
+
+        const rulesetItemIds = new Set(
+          (await db.items.where({ rulesetId: character.rulesetId }).toArray()).map((i) => i.id),
+        );
+
+        const inventoryItemRows = (
+          await Promise.all(
+            [...inventoryIds].map((invId) =>
+              db.inventoryItems.where('inventoryId').equals(invId).toArray(),
+            ),
+          )
+        ).flat();
+
+        const byCharacterId = await db.inventoryItems
+          .where('characterId')
+          .equals(character.id)
+          .toArray();
+
+        const inventoryItemsById = new Map<string, (typeof inventoryItemRows)[number]>();
+        for (const row of inventoryItemRows) {
+          inventoryItemsById.set(row.id, row);
+        }
+        for (const row of byCharacterId) {
+          inventoryItemsById.set(row.id, row);
+        }
+
+        for (const invItem of inventoryItemsById.values()) {
+          if (!isNotSoftDeleted(invItem) || invItem.type !== 'item') continue;
+          if (rulesetItemIds.has(invItem.entityId)) continue;
+          await db.inventoryItems.update(invItem.id, softDeletePatch());
         }
 
         const count = toAdd.length + toUpdate.length;
