@@ -31,6 +31,7 @@ import {
 } from 'lucide-react';
 import { useContext, useEffect, useState } from 'react';
 import { Link, useLocation, useParams } from 'react-router-dom';
+import { PlaytestRulesetControls } from '@/components/composites/playtest/playtest-ruleset-controls';
 import { JoinCampaignPanel } from './join-campaign-panel';
 
 export function CharacterSidebar() {
@@ -177,6 +178,7 @@ export function CharacterSidebar() {
               </SidebarMenuButton>
             </SidebarMenuItem>
           )}
+          <PlaytestRulesetControls rulesetId={character.rulesetId} />
         </SidebarGroupContent>
       </SidebarGroup>
 

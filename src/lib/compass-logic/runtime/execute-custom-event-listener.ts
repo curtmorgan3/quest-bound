@@ -1,4 +1,3 @@
-import { reportPlaytestScriptError } from '@/lib/cloud/playtest/playtest-api';
 import { persistScriptLogs } from '@/lib/compass-logic/script-logs';
 import type { DB } from '@/stores/db/hooks/types';
 import type {
@@ -27,6 +26,22 @@ import type { CustomEventListenerRecord } from './custom-event-registry';
 type AnyCharacterAccessor = CharacterAccessor | OwnerAccessor;
 
 const CUSTOM_EVENT_CONTEXT = 'custom_event';
+
+/** Playtest telemetry uses Supabase (window); QBScript worker has no `window` — load reporter only on main thread. */
+function reportPlaytestScriptErrorFromMainThread(
+  rulesetId: string,
+  scriptId: string,
+  errorMessage: string,
+): void {
+  if (typeof window === 'undefined') return;
+  void import('@/lib/cloud/playtest/playtest-api')
+    .then(({ reportPlaytestScriptError }) => {
+      void reportPlaytestScriptError(rulesetId, scriptId, errorMessage);
+    })
+    .catch(() => {
+      /* optional chunk / cloud off */
+    });
+}
 
 export interface CustomEventListenerResult {
   announceMessages: string[];
@@ -194,7 +209,7 @@ export async function executeCustomEventListener(
     } catch (persistErr) {
       console.warn('[executeCustomEventListener] Failed to persist script error', persistErr);
     }
-    void reportPlaytestScriptError(callback.rulesetId, callback.scriptId, message);
+    reportPlaytestScriptErrorFromMainThread(callback.rulesetId, callback.scriptId, message);
     return {
       announceMessages: evaluator?.getAnnounceMessages() ?? [],
       logMessages: partialLogMessages,

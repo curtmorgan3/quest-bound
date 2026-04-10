@@ -10,6 +10,7 @@ import {
 } from '@/components/ui/sidebar';
 import { useCampaign, useCampaigns, useCharts, useDocuments } from '@/lib/compass-api';
 import { Clapperboard, FileSpreadsheet, FileText, Home, Notebook, Pin, PinOff } from 'lucide-react';
+import { PlaytestRulesetControls } from '@/components/composites/playtest/playtest-ruleset-controls';
 import { Link, useLocation, useParams } from 'react-router-dom';
 
 export function CampaignSidebar() {
@@ -104,6 +105,7 @@ export function CampaignSidebar() {
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>
+          <PlaytestRulesetControls rulesetId={campaign.rulesetId} />
         </SidebarGroupContent>
       </SidebarGroup>
 

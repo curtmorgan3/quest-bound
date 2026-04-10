@@ -7,6 +7,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -197,40 +198,39 @@ export function PlaytestRulesetControls({ rulesetId }: { rulesetId: string }) {
 
   return (
     <>
-      <div className='flex flex-col gap-1 border-t border-sidebar-border px-2 py-2'>
-        <p className='text-sidebar-foreground/70 px-2 text-xs font-medium'>Playtest</p>
-        <div className='flex gap-1'>
-          <Button
+      <SidebarMenuItem>
+        <SidebarMenuButton
+          type='button'
+          onClick={() => {
+            setPickerOpen(true);
+            void refresh();
+          }}
+          disabled={loadingList}
+          data-testid='nav-playtest-sessions'>
+          {loadingList ? (
+            <Loader2 className='h-4 w-4 shrink-0 animate-spin' />
+          ) : (
+            <CirclePlay className='h-4 w-4 shrink-0' />
+          )}
+          <span>Playtest sessions</span>
+        </SidebarMenuButton>
+      </SidebarMenuItem>
+      {active ? (
+        <SidebarMenuItem>
+          <SidebarMenuButton
             type='button'
-            variant='ghost'
-            size='sm'
-            className='flex-1 justify-start gap-2'
-            onClick={() => {
-              setPickerOpen(true);
-              void refresh();
-            }}
-            disabled={loadingList}>
-            {loadingList ? <Loader2 className='size-4 animate-spin' /> : <CirclePlay className='size-4' />}
-            Sessions
-          </Button>
-          {active ? (
-            <Button
-              type='button'
-              variant='ghost'
-              size='sm'
-              className='flex-1 justify-start gap-2'
-              onClick={() => void handlePause()}
-              disabled={busySessionId !== null}>
-              {busySessionId === active.playtestSessionId ? (
-                <Loader2 className='size-4 animate-spin' />
-              ) : (
-                <CirclePause className='size-4' />
-              )}
-              Pause
-            </Button>
-          ) : null}
-        </div>
-      </div>
+            onClick={() => void handlePause()}
+            disabled={busySessionId !== null}
+            data-testid='nav-playtest-pause'>
+            {busySessionId === active.playtestSessionId ? (
+              <Loader2 className='h-4 w-4 shrink-0 animate-spin' />
+            ) : (
+              <CirclePause className='h-4 w-4 shrink-0' />
+            )}
+            <span>Pause playtest</span>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+      ) : null}
 
       <Dialog open={pickerOpen} onOpenChange={setPickerOpen}>
         <DialogContent className='max-w-md'>
