@@ -25,7 +25,7 @@ const qbscriptCompletions = [
   {
     label: 'Owner.Items',
     type: 'function',
-    info: "Get all instances of owner's items array by name",
+    info: "All item instances, or filter by item name; optional referenceLabel scopes to one inventory component",
   },
   {
     label: 'Owner.Action',

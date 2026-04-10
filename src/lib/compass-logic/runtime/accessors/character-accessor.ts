@@ -473,12 +473,27 @@ export class CharacterAccessor implements StructuredCloneSafe {
     );
   }
 
-  Items(name: string, referenceLabel?: string): ReturnType<typeof createItemInstanceProxy>[] {
-    const item = Array.from(this.itemsCache.values()).find((i) => i.title.trim() === name.trim());
-    if (!item) return [];
-    let matching = this.inventoryItems.filter(
-      (inv) => inv.entityId === item.id && inv.type === 'item',
-    );
+  /**
+   * Item instances in inventory. When `name` is omitted (or blank), returns every `type === 'item'`
+   * row; otherwise filters by ruleset item title. Optional `referenceLabel` scopes to one inventory component.
+   */
+  Items(name?: string, referenceLabel?: string): ReturnType<typeof createItemInstanceProxy>[] {
+    const nameFilter =
+      name != null && typeof name === 'string' && name.trim() !== '' ? name.trim() : null;
+
+    let matching: InventoryItem[];
+    if (nameFilter != null) {
+      const item = Array.from(this.itemsCache.values()).find(
+        (i) => i.title.trim() === nameFilter,
+      );
+      if (!item) return [];
+      matching = this.inventoryItems.filter(
+        (inv) => inv.entityId === item.id && inv.type === 'item',
+      );
+    } else {
+      matching = this.inventoryItems.filter((inv) => inv.type === 'item');
+    }
+
     if (referenceLabel != null && referenceLabel !== '') {
       if (this.refLabelToComponentId == null) {
         matching = [];
@@ -491,48 +506,14 @@ export class CharacterAccessor implements StructuredCloneSafe {
         }
       }
     }
-    return matching.map((inv) => {
-      const getMergedUpdate = (patch: Partial<InventoryItem>) => {
-        const existing = this.pendingUpdates.get(`inventoryUpdate:${inv.id}`) as
-          | Partial<InventoryItem>
-          | undefined;
-        return { ...existing, ...patch, updatedAt: new Date().toISOString() };
-      };
-      const onSetCustomProperty = (customPropertyId: string, value: string | number | boolean) => {
-        if (!inv.customProperties) inv.customProperties = {};
-        inv.customProperties[customPropertyId] = value;
-        this.pendingUpdates.set(
-          `inventoryUpdate:${inv.id}`,
-          getMergedUpdate({ customProperties: inv.customProperties }),
-        );
-      };
-      const onSetLabel = (label: string) => {
-        inv.label = label;
-        this.pendingUpdates.set(`inventoryUpdate:${inv.id}`, getMergedUpdate({ label }));
-      };
-      const onSetDescription = (description: string) => {
-        inv.description = description;
-        this.pendingUpdates.set(`inventoryUpdate:${inv.id}`, getMergedUpdate({ description }));
-      };
-      const onSetActionIds = (actionIds: string[]) => {
-        inv.actionIds = actionIds;
-        this.pendingUpdates.set(`inventoryUpdate:${inv.id}`, getMergedUpdate({ actionIds }));
-      };
-      const getActionIdByName = (actionName: string) =>
-        Array.from(this.actionsCache.values()).find((a) => a.title === actionName)?.id;
-      const onDestroy = () => this.removeItemByInstanceId(inv.id);
-      return createItemInstanceProxy(
-        inv,
-        item,
-        this.customProperties,
-        onSetCustomProperty,
-        onDestroy,
-        onSetLabel,
-        onSetDescription,
-        onSetActionIds,
-        getActionIdByName,
-      );
-    });
+
+    const out: ReturnType<typeof createItemInstanceProxy>[] = [];
+    for (const inv of matching) {
+      const itemDef = this.itemsCache.get(inv.entityId);
+      if (!itemDef) continue;
+      out.push(this.createItemInstanceProxyFor(inv, itemDef));
+    }
+    return out;
   }
 
   get name(): string {

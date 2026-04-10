@@ -727,6 +727,141 @@ Owner.setImage("nonexistent.png")
       expect(items[0].quantity).toBe(3);
     });
 
+    it('should return all item instances when Items() is called without a name', () => {
+      const swordItem: Item = {
+        id: 'item_sword',
+        rulesetId: 'ruleset1',
+        title: 'Sword',
+        description: '',
+        weight: 0,
+        defaultQuantity: 1,
+        stackSize: 1,
+        isContainer: false,
+        isStorable: true,
+        isConsumable: false,
+        isEquippable: false,
+        inventoryWidth: 1,
+        inventoryHeight: 1,
+        createdAt: '2024-01-01',
+        updatedAt: '2024-01-01',
+      };
+      const itemsCache = new Map<string, Item>();
+      itemsCache.set('item_potion', potionItem);
+      itemsCache.set('item_sword', swordItem);
+      const invPotion: InventoryItem = {
+        id: 'inv_p',
+        type: 'item',
+        entityId: 'item_potion',
+        inventoryId: 'inv1',
+        componentId: '',
+        quantity: 1,
+        x: 0,
+        y: 0,
+        createdAt: '2024-01-01',
+        updatedAt: '2024-01-01',
+      };
+      const invSword: InventoryItem = {
+        id: 'inv_s',
+        type: 'item',
+        entityId: 'item_sword',
+        inventoryId: 'inv1',
+        componentId: '',
+        quantity: 1,
+        x: 0,
+        y: 0,
+        createdAt: '2024-01-01',
+        updatedAt: '2024-01-01',
+      };
+      const invAction: InventoryItem = {
+        id: 'inv_a',
+        type: 'action',
+        entityId: 'act1',
+        inventoryId: 'inv1',
+        componentId: '',
+        quantity: 1,
+        x: 0,
+        y: 0,
+        createdAt: '2024-01-01',
+        updatedAt: '2024-01-01',
+      };
+      const owner = new OwnerAccessor(
+        'char1',
+        'Test',
+        'inv1',
+        null as any,
+        new Map(),
+        new Map(),
+        new Map(),
+        new Map(),
+        itemsCache,
+        [invPotion, invSword, invAction],
+      );
+      const all = owner.Items();
+      expect(all).toHaveLength(2);
+      const titles = all.map((i) => i.title).sort();
+      expect(titles).toEqual(['Potion', 'Sword']);
+    });
+
+    it('should scope Items() without name to inventory component when referenceLabel is set', () => {
+      const itemsCache = new Map<string, Item>();
+      itemsCache.set('item_potion', potionItem);
+      const compId = 'comp_bag';
+      const refMap = new Map([['bag', compId]]);
+      const invInBag: InventoryItem = {
+        id: 'inv_bag',
+        type: 'item',
+        entityId: 'item_potion',
+        inventoryId: 'inv1',
+        componentId: compId,
+        quantity: 2,
+        x: 0,
+        y: 0,
+        createdAt: '2024-01-01',
+        updatedAt: '2024-01-01',
+      };
+      const invElsewhere: InventoryItem = {
+        id: 'inv_other',
+        type: 'item',
+        entityId: 'item_potion',
+        inventoryId: 'inv1',
+        componentId: 'other_comp',
+        quantity: 5,
+        x: 0,
+        y: 0,
+        createdAt: '2024-01-01',
+        updatedAt: '2024-01-01',
+      };
+      const owner = new OwnerAccessor(
+        'char1',
+        'Test',
+        'inv1',
+        null as any,
+        new Map(),
+        new Map(),
+        new Map(),
+        new Map(),
+        itemsCache,
+        [invInBag, invElsewhere],
+        new Set(),
+        new Map(),
+        null,
+        undefined,
+        [],
+        {},
+        0,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        refMap,
+      );
+      const inBag = owner.Items(undefined, 'bag');
+      expect(inBag).toHaveLength(1);
+      expect(inBag[0].quantity).toBe(2);
+    });
+
     it('should add item via Owner.addItem and record in pendingUpdates', () => {
       const pendingUpdates = new Map<string, any>();
       const itemsCache = new Map<string, Item>();
