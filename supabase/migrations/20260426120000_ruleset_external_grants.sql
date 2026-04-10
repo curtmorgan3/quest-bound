@@ -188,6 +188,16 @@ CREATE POLICY ruleset_external_grants_delete_admin ON public.ruleset_external_gr
 -- =============================================================================
 -- Storage: org ruleset paths — allow external grantees read-only path access (SELECT policies only)
 -- =============================================================================
+-- Policies on storage.objects reference this function; drop them before removing the 2-arg overload.
+
+DROP POLICY IF EXISTS "User uploads to assets" ON storage.objects;
+DROP POLICY IF EXISTS "User reads own assets" ON storage.objects;
+DROP POLICY IF EXISTS "User updates own assets" ON storage.objects;
+DROP POLICY IF EXISTS "User deletes own assets" ON storage.objects;
+DROP POLICY IF EXISTS "User uploads to fonts" ON storage.objects;
+DROP POLICY IF EXISTS "User reads own fonts" ON storage.objects;
+DROP POLICY IF EXISTS "User updates own fonts" ON storage.objects;
+DROP POLICY IF EXISTS "User deletes own fonts" ON storage.objects;
 
 DROP FUNCTION IF EXISTS public.storage_org_ruleset_path_allowed(text, boolean);
 
@@ -270,7 +280,21 @@ $$;
 REVOKE ALL ON FUNCTION public.storage_org_ruleset_path_allowed(text, boolean, boolean) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.storage_org_ruleset_path_allowed(text, boolean, boolean) TO authenticated;
 
-DROP POLICY IF EXISTS "User reads own assets" ON storage.objects;
+-- INSERT/UPDATE/DELETE: 2-arg call uses default p_allow_external_grant_read=false (members/admins only).
+-- SELECT: third arg true allows read for active external grantees.
+
+CREATE POLICY "User uploads to assets"
+ON storage.objects FOR INSERT
+TO authenticated
+WITH CHECK (
+  bucket_id = 'assets'
+  AND (
+    (storage.foldername(name))[1] = (SELECT auth.uid())::text
+    OR public.storage_org_ruleset_path_allowed(name, false)
+    OR public.storage_org_logo_path_allowed(name, true)
+  )
+);
+
 CREATE POLICY "User reads own assets"
 ON storage.objects FOR SELECT
 TO authenticated
@@ -283,7 +307,41 @@ USING (
   )
 );
 
-DROP POLICY IF EXISTS "User reads own fonts" ON storage.objects;
+CREATE POLICY "User updates own assets"
+ON storage.objects FOR UPDATE
+TO authenticated
+USING (
+  bucket_id = 'assets'
+  AND (
+    (storage.foldername(name))[1] = (SELECT auth.uid())::text
+    OR public.storage_org_ruleset_path_allowed(name, false)
+    OR public.storage_org_logo_path_allowed(name, true)
+  )
+);
+
+CREATE POLICY "User deletes own assets"
+ON storage.objects FOR DELETE
+TO authenticated
+USING (
+  bucket_id = 'assets'
+  AND (
+    (storage.foldername(name))[1] = (SELECT auth.uid())::text
+    OR public.storage_org_ruleset_path_allowed(name, false)
+    OR public.storage_org_logo_path_allowed(name, true)
+  )
+);
+
+CREATE POLICY "User uploads to fonts"
+ON storage.objects FOR INSERT
+TO authenticated
+WITH CHECK (
+  bucket_id = 'fonts'
+  AND (
+    (storage.foldername(name))[1] = (SELECT auth.uid())::text
+    OR public.storage_org_ruleset_path_allowed(name, false)
+  )
+);
+
 CREATE POLICY "User reads own fonts"
 ON storage.objects FOR SELECT
 TO authenticated
@@ -292,6 +350,28 @@ USING (
   AND (
     (storage.foldername(name))[1] = (SELECT auth.uid())::text
     OR public.storage_org_ruleset_path_allowed(name, false, true)
+  )
+);
+
+CREATE POLICY "User updates own fonts"
+ON storage.objects FOR UPDATE
+TO authenticated
+USING (
+  bucket_id = 'fonts'
+  AND (
+    (storage.foldername(name))[1] = (SELECT auth.uid())::text
+    OR public.storage_org_ruleset_path_allowed(name, false)
+  )
+);
+
+CREATE POLICY "User deletes own fonts"
+ON storage.objects FOR DELETE
+TO authenticated
+USING (
+  bucket_id = 'fonts'
+  AND (
+    (storage.foldername(name))[1] = (SELECT auth.uid())::text
+    OR public.storage_org_ruleset_path_allowed(name, false)
   )
 );
 
