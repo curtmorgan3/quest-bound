@@ -31,6 +31,17 @@ import {
 import { ExportRulesetModal } from '@/components/export-ruleset-modal';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useNotifications } from '@/hooks/use-notifications';
+import { isCloudConfigured } from '@/lib/cloud/client';
+import {
+  fetchOrganizationAsAdmin,
+  formatOrgSaveError,
+  linkRulesetToOrganization,
+  listAllLinkedRulesetIds,
+  listOrganizationRulesetLinks,
+  listOwnCloudRulesetSummaries,
+  unlinkRulesetFromOrganization,
+  type OrganizationRow,
+} from '@/lib/cloud/organizations/org-api';
 import { useExportRuleset, useFonts, useImportRuleset, useRulesets } from '@/lib/compass-api';
 import { addModuleFromZip } from '@/lib/compass-api/hooks/export/add-module-from-zip';
 import { addModuleToRuleset } from '@/lib/compass-api/hooks/export/add-module-to-ruleset';
@@ -38,10 +49,22 @@ import {
   getDanglingReferencesForModuleRemoval,
   removeModuleFromRuleset,
 } from '@/lib/compass-api/hooks/export/remove-module-from-ruleset';
+import { useCloudAuthStore } from '@/stores';
 import type { Ruleset, RulesetModuleEntry } from '@/types';
 import { rgbToHex } from '@/utils';
-import { Download, FileText, Package, Plus, Sliders, Trash, Upload } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import {
+  Building2,
+  Download,
+  FileText,
+  Loader2,
+  Package,
+  Plus,
+  Sliders,
+  Trash,
+  Unlink,
+  Upload,
+} from 'lucide-react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 
 interface RulesetSettingsProps {
@@ -80,6 +103,125 @@ export const RulesetSettings = ({ activeRuleset }: RulesetSettingsProps) => {
     Array<{ id: string; title?: string }>
   > | null>(null);
   const [exportModalOpen, setExportModalOpen] = useState(false);
+
+  const cloudUser = useCloudAuthStore((s) => s.cloudUser);
+  const touchCloudRulesetList = useCloudAuthStore((s) => s.touchCloudRulesetList);
+  const cloudRulesetListEpoch = useCloudAuthStore((s) => s.cloudRulesetListEpoch);
+  const cloudUserId = cloudUser?.id;
+
+  const [orgAsAdmin, setOrgAsAdmin] = useState<OrganizationRow | null>(null);
+  const [orgRulesetLinkBusy, setOrgRulesetLinkBusy] = useState(false);
+  const [linkedRulesetIdsForMyOrg, setLinkedRulesetIdsForMyOrg] = useState<Set<string>>(
+    () => new Set(),
+  );
+  const [ownedCloudRulesetIds, setOwnedCloudRulesetIds] = useState<Set<string>>(() => new Set());
+  const [globallyLinkedRulesetIds, setGloballyLinkedRulesetIds] = useState<Set<string>>(
+    () => new Set(),
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!isCloudConfigured || !cloudUserId) {
+      setOrgAsAdmin(null);
+      setLinkedRulesetIdsForMyOrg(new Set());
+      setOwnedCloudRulesetIds(new Set());
+      setGloballyLinkedRulesetIds(new Set());
+      return;
+    }
+
+    void (async () => {
+      try {
+        const org = await fetchOrganizationAsAdmin(cloudUserId);
+        if (cancelled) return;
+        setOrgAsAdmin(org);
+        if (!org) {
+          setLinkedRulesetIdsForMyOrg(new Set());
+          setOwnedCloudRulesetIds(new Set());
+          setGloballyLinkedRulesetIds(new Set());
+          return;
+        }
+        const [links, owned, globalLinked] = await Promise.all([
+          listOrganizationRulesetLinks(org.id),
+          listOwnCloudRulesetSummaries(cloudUserId),
+          listAllLinkedRulesetIds(),
+        ]);
+        if (cancelled) return;
+        setLinkedRulesetIdsForMyOrg(new Set(links.map((l) => l.ruleset_id)));
+        setOwnedCloudRulesetIds(new Set(owned.map((r) => r.id)));
+        setGloballyLinkedRulesetIds(new Set(globalLinked));
+      } catch {
+        if (!cancelled) {
+          setOrgAsAdmin(null);
+          setLinkedRulesetIdsForMyOrg(new Set());
+          setOwnedCloudRulesetIds(new Set());
+          setGloballyLinkedRulesetIds(new Set());
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [cloudUserId, cloudRulesetListEpoch]);
+
+  const isRulesetLinkedToMyOrg = linkedRulesetIdsForMyOrg.has(activeRuleset.id);
+  const canLinkRulesetToMyOrg =
+    ownedCloudRulesetIds.has(activeRuleset.id) && !globallyLinkedRulesetIds.has(activeRuleset.id);
+  const showOrgRulesetLinkControls =
+    Boolean(orgAsAdmin) && (isRulesetLinkedToMyOrg || canLinkRulesetToMyOrg);
+
+  const handleLinkRulesetToOrganization = useCallback(async () => {
+    if (!orgAsAdmin || !cloudUserId || !canLinkRulesetToMyOrg) return;
+    setOrgRulesetLinkBusy(true);
+    try {
+      await linkRulesetToOrganization(orgAsAdmin.id, activeRuleset.id, cloudUserId);
+      const [links, globalLinked] = await Promise.all([
+        listOrganizationRulesetLinks(orgAsAdmin.id),
+        listAllLinkedRulesetIds(),
+      ]);
+      setLinkedRulesetIdsForMyOrg(new Set(links.map((l) => l.ruleset_id)));
+      setGloballyLinkedRulesetIds(new Set(globalLinked));
+      touchCloudRulesetList();
+      addNotification('Ruleset linked to your organization.', { type: 'success' });
+    } catch (e) {
+      addNotification(formatOrgSaveError(e), { type: 'error' });
+    } finally {
+      setOrgRulesetLinkBusy(false);
+    }
+  }, [
+    orgAsAdmin,
+    cloudUserId,
+    canLinkRulesetToMyOrg,
+    activeRuleset.id,
+    touchCloudRulesetList,
+    addNotification,
+  ]);
+
+  const handleUnlinkRulesetFromOrganization = useCallback(async () => {
+    if (!orgAsAdmin || !isRulesetLinkedToMyOrg) return;
+    setOrgRulesetLinkBusy(true);
+    try {
+      await unlinkRulesetFromOrganization(orgAsAdmin.id, activeRuleset.id);
+      const [links, globalLinked] = await Promise.all([
+        listOrganizationRulesetLinks(orgAsAdmin.id),
+        listAllLinkedRulesetIds(),
+      ]);
+      setLinkedRulesetIdsForMyOrg(new Set(links.map((l) => l.ruleset_id)));
+      setGloballyLinkedRulesetIds(new Set(globalLinked));
+      touchCloudRulesetList();
+      addNotification('Ruleset unlinked from your organization.', { type: 'success' });
+    } catch (e) {
+      addNotification(formatOrgSaveError(e), { type: 'error' });
+    } finally {
+      setOrgRulesetLinkBusy(false);
+    }
+  }, [
+    orgAsAdmin,
+    isRulesetLinkedToMyOrg,
+    activeRuleset.id,
+    touchCloudRulesetList,
+    addNotification,
+  ]);
 
   const [title, setTitle] = useState(activeRuleset.title);
   const [version, setVersion] = useState(activeRuleset.version);
@@ -329,7 +471,7 @@ export const RulesetSettings = ({ activeRuleset }: RulesetSettingsProps) => {
       <TabsContent
         value='details'
         className='mt-0 flex min-h-0 flex-1 flex-col gap-6 overflow-auto'>
-        <div className='flex items-end gap-4'>
+        <div className='flex flex-wrap items-end gap-4'>
           <div className='flex flex-col gap-2 max-w-sm flex-1'>
             <Label htmlFor='ruleset-title'>Title</Label>
             <Input id='ruleset-title' value={title} onChange={(e) => setTitle(e.target.value)} />
@@ -354,6 +496,37 @@ export const RulesetSettings = ({ activeRuleset }: RulesetSettingsProps) => {
               <Download className='h-4 w-4' />
             </>
           </Button>
+          {showOrgRulesetLinkControls ? (
+            isRulesetLinkedToMyOrg ? (
+              <Button
+                type='button'
+                className='gap-2 shrink-0'
+                variant='outline'
+                disabled={orgRulesetLinkBusy}
+                onClick={() => void handleUnlinkRulesetFromOrganization()}>
+                {orgRulesetLinkBusy ? (
+                  <Loader2 className='h-4 w-4 animate-spin' aria-hidden />
+                ) : (
+                  <Unlink className='h-4 w-4' aria-hidden />
+                )}
+                Unlink Organization
+              </Button>
+            ) : (
+              <Button
+                type='button'
+                className='gap-2 shrink-0'
+                variant='outline'
+                disabled={orgRulesetLinkBusy}
+                onClick={() => void handleLinkRulesetToOrganization()}>
+                {orgRulesetLinkBusy ? (
+                  <Loader2 className='h-4 w-4 animate-spin' aria-hidden />
+                ) : (
+                  <Building2 className='h-4 w-4' aria-hidden />
+                )}
+                Link to Organization
+              </Button>
+            )
+          ) : null}
           <ExportRulesetModal
             open={exportModalOpen}
             onOpenChange={setExportModalOpen}

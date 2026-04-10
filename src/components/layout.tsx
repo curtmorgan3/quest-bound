@@ -14,7 +14,7 @@ import { ScriptErrorNotificationsHost } from '@/components/script-error-notifica
 import { useCampaignPlayWorkerPolicySync, useNotifications } from '@/hooks';
 import { ensureEmailRegistered, isCloudEmailVerified } from '@/lib/cloud/auth';
 import { isCloudConfigured } from '@/lib/cloud/client';
-import { listMyActiveExternalRulesetGrants } from '@/lib/cloud/organizations/org-api';
+import { refreshExternalRulesetGrantPermissions } from '@/lib/cloud/refresh-external-ruleset-grants';
 import { initSyncTriggers } from '@/lib/cloud/sync/sync-service';
 import { useSyncOnRulesetOpen } from '@/lib/cloud/sync/use-sync-on-ruleset-open';
 import { useFontLoader, useUsers } from '@/lib/compass-api';
@@ -28,7 +28,6 @@ import {
   DiceProvider,
   useCloudAuthStore,
   useDiceState,
-  useExternalRulesetGrantStore,
   useOnboardingStore,
 } from '@/stores';
 import type { DB } from '@/stores/db/hooks/types';
@@ -69,24 +68,20 @@ export function Layout() {
       !isCloudConfigured ||
       !isAuthenticated ||
       !cloudSyncEnabled ||
-      cloudSyncEligibilityLoading
+      cloudSyncEligibilityLoading ||
+      !cloudUser?.id
     ) {
       return;
     }
-    let cancelled = false;
-    void listMyActiveExternalRulesetGrants().then((rows) => {
-      if (!cancelled) {
-        useExternalRulesetGrantStore.getState().setPermissionsFromRows(rows);
-      }
+    void refreshExternalRulesetGrantPermissions(cloudUser.id).catch(() => {
+      /* layout will retry on epoch / auth changes */
     });
-    return () => {
-      cancelled = true;
-    };
   }, [
     isAuthenticated,
     cloudSyncEnabled,
     cloudSyncEligibilityLoading,
     cloudRulesetListEpoch,
+    cloudUser?.id,
   ]);
 
   // Initialize cloud auth (session restore + auth state subscription)

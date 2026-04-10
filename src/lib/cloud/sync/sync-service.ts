@@ -283,16 +283,18 @@ export async function listCloudRulesets(): Promise<CloudRulesetSummary[]> {
 
   const summaries = rows.map((row) => {
     const id = String((row as { id: string }).id);
+    const rowUserId = (row as { user_id: string }).user_id;
+    const ownedByCurrentUser = rowUserId === currentUserId;
     const prepared = prepareRemoteForLocal(row) as unknown as Omit<
       CloudRulesetSummary,
       | 'linkedToAdministeredOrganization'
       | 'ownedByCurrentUser'
       | 'externalGrantPermission'
     >;
-    const externalGrantPermission = grantByRulesetId.get(id);
+    const externalGrantPermission = ownedByCurrentUser ? undefined : grantByRulesetId.get(id);
     return {
       ...prepared,
-      ownedByCurrentUser: row.user_id === currentUserId,
+      ownedByCurrentUser,
       linkedToAdministeredOrganization: administeredOrgRulesetIds.has(id),
       ...(externalGrantPermission ? { externalGrantPermission } : {}),
     };

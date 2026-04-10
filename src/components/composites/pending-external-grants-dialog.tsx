@@ -9,13 +9,13 @@ import {
 } from '@/components/ui/dialog';
 import { isCloudEmailVerified } from '@/lib/cloud/auth';
 import { isCloudConfigured } from '@/lib/cloud/client';
+import { refreshExternalRulesetGrantPermissions } from '@/lib/cloud/refresh-external-ruleset-grants';
 import {
   acceptRulesetExternalGrant,
-  listMyActiveExternalRulesetGrants,
   listPendingExternalGrantsForInvitee,
   rejectRulesetExternalGrant,
 } from '@/lib/cloud/organizations/org-api';
-import { useCloudAuthStore, useExternalRulesetGrantStore } from '@/stores';
+import { useCloudAuthStore } from '@/stores';
 import { Loader2 } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
@@ -58,14 +58,14 @@ export function PendingExternalGrantsDialog() {
   const actionBusy = action !== null;
 
   const refreshGrantsAfterResolution = useCallback(async () => {
+    if (!cloudUser?.id) return;
     try {
-      const rows = await listMyActiveExternalRulesetGrants();
-      useExternalRulesetGrantStore.getState().setPermissionsFromRows(rows);
+      await refreshExternalRulesetGrantPermissions(cloudUser.id);
     } catch {
       /* ignore; layout effect will retry */
     }
     touchCloudRulesetList();
-  }, [touchCloudRulesetList]);
+  }, [cloudUser?.id, touchCloudRulesetList]);
 
   const handleAccept = async () => {
     if (!current) return;
