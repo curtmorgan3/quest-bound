@@ -9,7 +9,7 @@ import type {
   RollSplitFn,
 } from '@/types';
 import type Dexie from 'dexie';
-import type { ExecuteActionEventFn } from '../proxies';
+import type { ExecuteActionEventFn, ExecuteItemEventFn } from '../proxies';
 import type { SheetUiCoordinator } from '../sheet-ui/sheet-ui-coordinator';
 import { CharacterAccessor } from './character-accessor';
 
@@ -33,6 +33,7 @@ export class OwnerAccessor extends CharacterAccessor {
     archetypeVariantByName: Map<string, string | undefined> = new Map(),
     targetId: string | null = null,
     executeActionEvent?: ExecuteActionEventFn,
+    executeItemEvent?: ExecuteItemEventFn,
     customProperties: CustomProperty[] = [],
     characterCustomProperties: Record<string, string | number | boolean> = {},
     turnOrder: number = 0,
@@ -65,6 +66,7 @@ export class OwnerAccessor extends CharacterAccessor {
       archetypeVariantByName,
       targetId,
       executeActionEvent,
+      executeItemEvent,
       customProperties,
       characterCustomProperties,
       turnOrder,

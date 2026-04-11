@@ -9,7 +9,7 @@ import type {
 } from '@/types';
 import type { DB } from '@/stores/db/hooks/types';
 import { persistScriptLogs } from '../script-logs';
-import type { ExecuteActionEventFn } from '../runtime/proxies';
+import type { ExecuteActionEventFn, ExecuteItemEventFn } from '../runtime/proxies';
 import type { ScriptExecutionContext } from '../runtime/script-runner';
 import { createParamsHelperFromRecord } from '../runtime/params-helper';
 import { ScriptRunner } from '../runtime/script-runner';
@@ -31,6 +31,8 @@ export interface ReactiveExecutionOptions {
   timeLimit?: number;
   /** When set, scripts can call Owner.Action('name').activate() / .deactivate() (e.g. from worker). */
   executeActionEvent?: ExecuteActionEventFn;
+  /** When set, scripts can call item.equip() / item.unequip() on inventory item proxies. */
+  executeItemEvent?: ExecuteItemEventFn;
   /** Optional roll function for script built-in roll(). */
   roll?: RollFn;
   /** Optional rollSplit function for script built-in rollSplit(). */
@@ -359,6 +361,7 @@ export class ReactiveExecutor {
         campaignSceneId: options.campaignSceneId,
         sheetPreviewRulesetWindowId: options.sheetPreviewRulesetWindowId,
         executeActionEvent: options.executeActionEvent,
+        executeItemEvent: options.executeItemEvent,
         roll: options.roll,
         rollSplit: options.rollSplit,
         createRollForCharacter: options.createRollForCharacter,

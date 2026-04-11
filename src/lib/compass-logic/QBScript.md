@@ -325,7 +325,7 @@ Use these to resolve entities by name:
 | `Owner.hasArchetype('archetype name')`   | Whether the character has the given archetype           |
 | `<Accessor>.Action('action name')`       | Action reference                                        |
 | `<Accessor>.Item('item name')`           | First matching item instance                            |
-| `<Accessor>.Items('item name')`          | Array of matching item instances                        |
+| `<Accessor>.Items('item name'?)`         | Array of item instances; omit name for all inventory items |
 | `Ruleset.Chart('chart name')`            | Chart reference                                         |
 | `getChart('chart name')`                 | Shorthand for `Ruleset.Chart('chart name')`             |
 
@@ -376,7 +376,7 @@ announce('Spawned {{spawned.name}} into the scene.')
 **Items:**
 
 - `Owner.Item('item name')` — first matching item
-- `Owner.Items('item name')` — array of matching items
+- `Owner.Items('item name'?)` — array of matching items; omit the name to list every item-type inventory row
 - `Owner.hasItem('item name')` — whether the character has at least one
 - `Owner.addItem('item name', quantity)` — add to inventory (quantity defaults to 1)
 - `Owner.addAction('action name', referenceLabel?)` — add an action as an inventory entry to the character's inventory; optional reference label targets a specific inventory component

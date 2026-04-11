@@ -35,8 +35,54 @@ import {
   syncRulesetContextFromApplication,
 } from '../runtime/custom-event-registry';
 import type { ScriptGameLogEntry } from '../runtime/script-game-log';
+import type { ExecuteItemEventFn } from '../runtime/proxies/action-proxy';
 import { ScriptRunner, type ScriptExecutionContext } from '../runtime/script-runner';
 import { prepareForStructuredClone } from '../runtime/structured-clone-safe';
+
+function createWorkerExecuteItemEventFn(
+  executor: EventHandlerExecutor,
+  rollFn: RollFn | undefined,
+  campaignId: string | undefined,
+  rollSplitFn: RollSplitFn | undefined,
+  promptFn: PromptFn | undefined,
+  selectCharacterFn: SelectCharacterFn | undefined,
+  selectCharactersFn: SelectCharactersFn | undefined,
+  campaignSceneId: string | undefined,
+  promptMultipleFn: PromptMultipleFn | undefined,
+  promptInputFn: PromptInputFn | undefined,
+  createRollForCharacter: ((characterId: string) => RollFn) | undefined,
+  createRollSplitForCharacter: ((characterId: string) => RollSplitFn) | undefined,
+  sheetPreviewRulesetWindowId: string | null | undefined,
+): ExecuteItemEventFn {
+  return async (itemId, ownerCharacterId, eventType, inventoryItemInstanceId) => {
+    const r = await executor.executeItemEvent(
+      itemId,
+      ownerCharacterId,
+      eventType,
+      rollFn,
+      campaignId,
+      inventoryItemInstanceId,
+      rollSplitFn,
+      promptFn,
+      selectCharacterFn,
+      selectCharactersFn,
+      campaignSceneId,
+      promptMultipleFn,
+      promptInputFn,
+      createRollForCharacter,
+      createRollSplitForCharacter,
+      sheetPreviewRulesetWindowId,
+    );
+    return {
+      success: r.success,
+      value: r.value,
+      announceMessages: r.announceMessages,
+      logMessages: r.logMessages,
+      error: r.error,
+      componentAnimations: r.componentAnimations,
+    };
+  };
+}
 
 function cloneGameLogTimelineForPostMessage(timeline: ScriptGameLogEntry[]): ScriptGameLogEntry[] {
   return timeline.map((e) =>
@@ -652,6 +698,21 @@ function createOnAttributesModified(
                 createRollSplitForCharacter,
                 sheetPreviewRulesetWindowId,
               ),
+            executeItemEvent: createWorkerExecuteItemEventFn(
+              executor,
+              rollFn,
+              campaignId,
+              rollSplitFn,
+              promptFn,
+              selectCharacterFn,
+              selectCharactersFn,
+              campaignSceneId,
+              promptMultipleFn,
+              promptInputFn,
+              createRollForCharacter,
+              createRollSplitForCharacter,
+              sheetPreviewRulesetWindowId,
+            ),
             sheetPreviewRulesetWindowId,
           },
         );
@@ -898,6 +959,21 @@ async function handleExecuteScript(payload: ExecuteScriptPayload): Promise<void>
         }
         return r;
       },
+      executeItemEvent: createWorkerExecuteItemEventFn(
+        executor,
+        rollFn,
+        payload.campaignId,
+        rollSplitFn,
+        promptFn,
+        selectCharacterFn,
+        selectCharactersFn,
+        payload.campaignSceneId,
+        promptMultipleFn,
+        promptInputFn,
+        createRollForCharacter,
+        createRollSplitForCharacter,
+        payload.sheetPreviewRulesetWindowId,
+      ),
       ...(payload.params ? { params: createParamsHelperFromRecord(payload.params) } : {}),
     };
 
@@ -967,6 +1043,21 @@ async function handleExecuteScript(payload: ExecuteScriptPayload): Promise<void>
               createRollSplitForCharacter,
               payload.sheetPreviewRulesetWindowId,
             ),
+          executeItemEvent: createWorkerExecuteItemEventFn(
+            executor,
+            rollFn,
+            undefined,
+            rollSplitFn,
+            promptFn,
+            selectCharacterFn,
+            selectCharactersFn,
+            payload.campaignSceneId,
+            promptMultipleFn,
+            promptInputFn,
+            createRollForCharacter,
+            createRollSplitForCharacter,
+            payload.sheetPreviewRulesetWindowId,
+          ),
           roll: rollFn,
           rollSplit: rollSplitFn,
           prompt: promptFn,
@@ -1184,6 +1275,21 @@ async function handleAttributeChanged(payload: AttributeChangedPayload): Promise
           createRollSplitForCharacter,
           payload.sheetPreviewRulesetWindowId,
         ),
+      executeItemEvent: createWorkerExecuteItemEventFn(
+        executor,
+        rollFn,
+        payload.campaignId,
+        rollSplitFn,
+        promptFn,
+        selectCharacterFn,
+        selectCharactersFn,
+        payload.campaignSceneId,
+        promptMultipleFn,
+        promptInputFn,
+        createRollForCharacter,
+        createRollSplitForCharacter,
+        payload.sheetPreviewRulesetWindowId,
+      ),
       roll: rollFn,
       rollSplit: rollSplitFn,
       prompt: promptFn,
@@ -1333,6 +1439,21 @@ async function handleInitialAttributeSync(payload: {
           createRollSplitForCharacter,
           payload.sheetPreviewRulesetWindowId,
         ),
+      executeItemEvent: createWorkerExecuteItemEventFn(
+        executor,
+        rollFn,
+        undefined,
+        rollSplitFn,
+        promptFn,
+        selectCharacterFn,
+        selectCharactersFn,
+        undefined,
+        promptMultipleFn,
+        promptInputFn,
+        createRollForCharacter,
+        createRollSplitForCharacter,
+        payload.sheetPreviewRulesetWindowId,
+      ),
       roll: rollFn,
       rollSplit: rollSplitFn,
       prompt: promptFn,

@@ -25,7 +25,7 @@ const qbscriptCompletions = [
   {
     label: 'Owner.Items',
     type: 'function',
-    info: "Get all instances of owner's items array by name",
+    info: "All item instances, or filter by item name; optional referenceLabel scopes to one inventory component",
   },
   {
     label: 'Owner.Action',
@@ -51,6 +51,16 @@ const qbscriptCompletions = [
     label: 'Owner.addAttribute',
     type: 'function',
     info: "Add an attribute as an inventory entry (e.g. Owner.addAttribute('Health', 'component-id')",
+  },
+  {
+    label: 'equip',
+    type: 'function',
+    info: "On inventory item refs (Owner.Item / Items / Self): run on_equip then set equipped. Async — use await (e.g. await Owner.Item('Sword').equip())",
+  },
+  {
+    label: 'unequip',
+    type: 'function',
+    info: "On inventory item refs: run on_unequip then clear equipped. Async — use await",
   },
   {
     label: 'Owner.navigateToPage',

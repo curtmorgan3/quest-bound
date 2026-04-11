@@ -282,8 +282,8 @@ living = chars.filter(isAlive)
 Iterates over each element; the loop variable holds the element value.
 
 ```javascript
-for item in Owner.items():
-  log(item.name)
+for item in Owner.Items():
+  log(item.title)
 ```
 
 ### for-in over a number
@@ -348,7 +348,7 @@ Use these on the appropriate accessor to get a **reference** (proxy) you can the
 | `<Accessor>.Attribute('attribute name')` | Attribute reference (character or ruleset definition)   |
 | `<Accessor>.Action('action name')`       | Action reference (use `.activate()` to run it)          |
 | `<Accessor>.Item('item name')`           | First matching item instance (or undefined)             |
-| `<Accessor>.Items('item name')`          | Array of matching item instances                        |
+| `<Accessor>.Items('item name'?)`         | Array of item instances; omit name for every item-type row |
 | `Ruleset.Chart('chart name')`            | Chart reference                                         |
 | `getAttr('attribute name')`              | Shorthand for `Owner.Attribute('attribute name').value` |
 | `getChart('chart name')`                 | Shorthand for `Ruleset.Chart('chart name')`             |
@@ -503,7 +503,7 @@ xp_needed = getChart('Level Table').rowWhere('Level', 5).valueInColumn('XP Requi
 
 ### Item instance proxy
 
-Obtained via `Owner.Item('item name')` (single instance) or `Owner.Items('item name')` (array). Represents one stack/instance of an item in a character’s inventory.
+Obtained via `Owner.Item('item name')` (single instance) or `Owner.Items('item name'?)` (array; omit the name for all item instances). Represents one stack/instance of an item in a character’s inventory.
 
 **Reading:**
 
