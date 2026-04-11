@@ -208,6 +208,45 @@ export class ItemInstanceProxy implements StructuredCloneSafe {
     return result;
   }
 
+  /**
+   * Run the item script's on_add handler (if any). Same pipeline as inventory `on_add` when a row is created.
+   * Async — use await (e.g. await Owner.Item('Potion').added()).
+   */
+  async added(): Promise<ExecuteActionEventResult> {
+    if (!this.executeItemEvent) {
+      throw new Error('Item added event is not available in this context');
+    }
+    const result = await this.executeItemEvent(
+      this.item.id,
+      this.ownerCharacterId,
+      'on_add',
+      this.inventoryItem.id,
+    );
+    if (!result.success) {
+      throw result.error ?? new Error('on_add failed');
+    }
+    return result;
+  }
+
+  /**
+   * Run the item script's on_remove handler (if any). Same pipeline as inventory `on_remove` before a row is removed.
+   */
+  async removed(): Promise<ExecuteActionEventResult> {
+    if (!this.executeItemEvent) {
+      throw new Error('Item remove event is not available in this context');
+    }
+    const result = await this.executeItemEvent(
+      this.item.id,
+      this.ownerCharacterId,
+      'on_remove',
+      this.inventoryItem.id,
+    );
+    if (!result.success) {
+      throw result.error ?? new Error('on_remove failed');
+    }
+    return result;
+  }
+
   private getDefaultValueForCustomProperty(
     customProperty: CustomProperty,
   ): string | number | boolean {

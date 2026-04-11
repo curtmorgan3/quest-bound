@@ -103,8 +103,8 @@ export const useInventory = (
 
   const addInventoryItem = async (
     data: Omit<InventoryItem, 'id' | 'createdAt' | 'updatedAt' | 'inventoryId'>,
-  ) => {
-    if (!inventory) return;
+  ): Promise<string | undefined> => {
+    if (!inventory) return undefined;
     const now = new Date().toISOString();
     try {
       let customProperties: Record<string, string | number | boolean> =
@@ -129,12 +129,14 @@ export const useInventory = (
       } as InventoryItem);
       const row = await db.inventoryItems.get(newId);
       if (row) broadcastInventoryRows([row]);
+      return newId;
     } catch (e) {
       handleError(e as Error, {
         component: 'useInventory/addInventoryItem',
         severity: 'medium',
       });
     }
+    return undefined;
   };
 
   const updateInventoryItem = async (id: string, data: Partial<InventoryItem>) => {

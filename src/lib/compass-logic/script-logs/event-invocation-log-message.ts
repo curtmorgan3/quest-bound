@@ -38,6 +38,12 @@ export function getEventInvocationLogMessage(
       case 'on_consume':
         verb = 'consumed';
         break;
+      case 'on_add':
+        verb = 'added';
+        break;
+      case 'on_remove':
+        verb = 'removed';
+        break;
       default:
         verb = 'used';
     }

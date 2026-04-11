@@ -47,7 +47,14 @@ on_activate():
 
 // runs when the item is activated
 on_activate():
-    announce('You get a bad feeling...')    
+    announce('You get a bad feeling...')
+
+on_add():
+    if Self.is_cursed:
+        Owner.Attribute('Cursed').set(true)
+
+on_remove():
+    Owner.Attribute('Weight').subtract(10)
 
 // runs when the item is equipped
 on_equip():

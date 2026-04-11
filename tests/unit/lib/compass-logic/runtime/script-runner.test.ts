@@ -930,6 +930,9 @@ Owner.setImage("nonexistent.png")
       await proxy!.unequip();
       expect(events).toEqual(['on_equip', 'on_unequip']);
       expect(invEntry.isEquipped).toBe(false);
+      await proxy!.added();
+      await proxy!.removed();
+      expect(events).toEqual(['on_equip', 'on_unequip', 'on_add', 'on_remove']);
     });
 
     it('should add item via Owner.addItem and record in pendingUpdates', () => {

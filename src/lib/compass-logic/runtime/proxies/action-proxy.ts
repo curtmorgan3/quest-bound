@@ -21,13 +21,13 @@ export type ExecuteActionEventFn = (
 ) => Promise<ExecuteActionEventResult>;
 
 /**
- * Runs on_equip / on_unequip for an inventory row (same pipeline as the inventory UI).
+ * Runs item script events for an inventory row (on_equip, on_unequip, on_add, on_remove — same pipeline as the inventory UI where applicable).
  * Implemented by ScriptRunner context (worker / EventHandlerExecutor).
  */
 export type ExecuteItemEventFn = (
   rulesetItemId: string,
   ownerCharacterId: string,
-  eventType: 'on_equip' | 'on_unequip',
+  eventType: 'on_equip' | 'on_unequip' | 'on_add' | 'on_remove',
   inventoryItemInstanceId: string,
 ) => Promise<ExecuteActionEventResult>;
 

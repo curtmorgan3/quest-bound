@@ -13,6 +13,8 @@ export interface ScriptAnalysis {
     on_consume?: string; // Source code of on_consume handler
     on_activate?: string; // Source code of on_activate handler
     on_deactivate?: string; // Source code of on_deactivate handler
+    on_add?: string; // Source code of on_add handler (item lifecycle)
+    on_remove?: string; // Source code of on_remove handler (item lifecycle)
   };
 }
 
@@ -124,7 +126,9 @@ export function extractEventHandlers(sourceCode: string): ScriptAnalysis['eventH
           funcName === 'on_unequip' ||
           funcName === 'on_consume' ||
           funcName === 'on_activate' ||
-          funcName === 'on_deactivate'
+          funcName === 'on_deactivate' ||
+          funcName === 'on_add' ||
+          funcName === 'on_remove'
         ) {
           // Reconstruct the function body as source code
           handlers[funcName as keyof ScriptAnalysis['eventHandlers']] = reconstructFunctionBody(

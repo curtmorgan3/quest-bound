@@ -63,6 +63,16 @@ const qbscriptCompletions = [
     info: "On inventory item refs: run on_unequip then clear equipped. Async — use await",
   },
   {
+    label: 'added',
+    type: 'function',
+    info: "On inventory item refs: run the item script on_add handler (also runs when a row is added via the sheet inventory). Async — use await",
+  },
+  {
+    label: 'removed',
+    type: 'function',
+    info: "On inventory item refs: run the item script on_remove handler (also runs before a row is removed from the sheet inventory). Async — use await",
+  },
+  {
     label: 'Owner.navigateToPage',
     type: 'function',
     info: "Navigate the character sheet to a page by label (e.g. Owner.navigateToPage('Spells'))",

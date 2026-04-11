@@ -55,6 +55,8 @@ const ITEM_INSTANCE_PROXY_RESERVED_PROPERTIES = new Set([
   'removeAction',
   'equip',
   'unequip',
+  'added',
+  'removed',
   'ownerCharacterId',
   'inventoryItem',
   'item',

@@ -16,7 +16,13 @@ import { useMemo } from 'react';
 import { toast } from 'sonner';
 import { findFirstEmptySlot } from '../character-inventory-panel';
 
-type ItemEvent = 'on_equip' | 'on_unequip' | 'on_consume' | 'on_activate';
+type ItemEvent =
+  | 'on_equip'
+  | 'on_unequip'
+  | 'on_consume'
+  | 'on_activate'
+  | 'on_add'
+  | 'on_remove';
 
 interface UseInventoryUpdateWrapperes {
   inventoryPanelConfig: InventoryPanelConfig;
@@ -100,7 +106,10 @@ export const useCharacterInventoryHandlers = ({
   const addItemAndFireEvent = async (
     data: Omit<InventoryItem, 'id' | 'createdAt' | 'updatedAt' | 'inventoryId'>,
   ) => {
-    await addInventoryItem(data);
+    const newId = await addInventoryItem(data);
+    if (data.type === 'item' && data.entityId && newId && character) {
+      await fireItemEvent(data.entityId, 'on_add', newId);
+    }
   };
 
   const updateItemAndFireEvent = async (invItemId: string, data: Partial<InventoryItem>) => {
@@ -153,6 +162,10 @@ export const useCharacterInventoryHandlers = ({
   };
 
   const removeItemAndFireEvent = async (id: string) => {
+    const row = inventoryItems.find((i) => i.id === id);
+    if (row?.type === 'item' && row.entityId && character) {
+      await fireItemEvent(row.entityId, 'on_remove', id);
+    }
     removeInventoryItem(id);
   };
 

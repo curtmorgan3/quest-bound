@@ -217,7 +217,7 @@ export interface ScriptExecutionContext {
   selectCharacters?: SelectCharactersFn;
   /** When set, Owner.Action('name').activate() / .deactivate() can run action event handlers (e.g. from worker or EventHandlerExecutor). */
   executeActionEvent?: ExecuteActionEventFn;
-  /** When set, inventory item proxies can run on_equip / on_unequip via equip() / unequip(). */
+  /** When set, inventory item proxies can run item events via equip() / unequip() / added() / removed(). */
   executeItemEvent?: ExecuteItemEventFn;
   /** Optional campaign id for associating script execution with a campaign (logging, context). */
   campaignId?: string;
