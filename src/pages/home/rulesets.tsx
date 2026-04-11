@@ -711,13 +711,22 @@ export const Rulesets = () => {
           <div className='fixed inset-0 z-50 bg-background'>
             <Loading />
             {(isImporting || createFlowBusy) && (
-              <p className='absolute inset-x-0 bottom-1/3 text-center text-sm text-muted-foreground'>
-                {isImporting && importStep
-                  ? `${importStep}...`
-                  : createFlowStatus
-                    ? `${createFlowStatus}...`
-                    : 'Working...'}
-              </p>
+              <div className='absolute inset-x-0 bottom-1/3 flex flex-col items-center gap-1 px-4 text-center'>
+                <p className='text-sm text-muted-foreground'>
+                  {isImporting && importStep
+                    ? `${importStep}...`
+                    : createFlowStatus
+                      ? `${createFlowStatus}...`
+                      : 'Working...'}
+                </p>
+                {createFlowBusy &&
+                createFlowStatus === 'Adding module' &&
+                !(isImporting && importStep) ? (
+                  <p className='max-w-sm text-xs text-muted-foreground'>
+                    This may take several minutes.
+                  </p>
+                ) : null}
+              </div>
             )}
             {isInstallingCloud &&
               !isImporting &&
