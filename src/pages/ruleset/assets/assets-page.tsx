@@ -152,11 +152,14 @@ export function AssetsPage() {
     }
   };
 
-  const doNotAskAgain = localStorage.getItem('qb.confirmOnDelete') === 'false';
-
   const handleDeleteClick = async (id: string, filename: string) => {
     const refCount = await getAssetReferenceCount(db, id);
-    if (doNotAskAgain && refCount === 0) {
+    // Read after await so we never use a stale value if React re-rendered during the async gap.
+    const skipConfirm = localStorage.getItem('qb.confirmOnDelete') === 'false';
+    if (skipConfirm) {
+      if (refCount > 0) {
+        await clearAssetReferences(db, id);
+      }
       await deleteAsset(id);
       return;
     }
@@ -538,7 +541,10 @@ export function AssetsPage() {
             <Checkbox
               id='asset-delete-do-not-ask'
               onCheckedChange={(checked) =>
-                localStorage.setItem('qb.confirmOnDelete', String(!checked))
+                localStorage.setItem(
+                  'qb.confirmOnDelete',
+                  checked === true ? 'false' : 'true',
+                )
               }
             />
             <Label htmlFor='asset-delete-do-not-ask' className='text-sm font-normal cursor-pointer'>

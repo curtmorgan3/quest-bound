@@ -16,7 +16,7 @@ import {
   useRulesets,
   type ComponentUpdate,
 } from '@/lib/compass-api';
-import { ComponentTypes } from '@/lib/compass-planes/nodes';
+import { ComponentTypes, isGroupLikeComponentType } from '@/lib/compass-planes/nodes';
 import {
   CheckboxDataEdit,
   ContentDataEdit,
@@ -496,7 +496,8 @@ export const ComponentEditPanel = ({ viewMode }: { viewMode: boolean }) => {
         c.type === ComponentTypes.CONTENT ||
         c.type === ComponentTypes.SHAPE ||
         c.type === ComponentTypes.GRAPH ||
-        c.type === ComponentTypes.IMAGE,
+        c.type === ComponentTypes.IMAGE ||
+        isGroupLikeComponentType(c.type),
     );
 
   const allAreShapes =

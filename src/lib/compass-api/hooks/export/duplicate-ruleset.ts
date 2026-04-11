@@ -11,6 +11,7 @@ import type {
   CharacterWindow,
   Chart,
   Component,
+  ComponentStateEntry,
   Composite,
   CompositeVariant,
   CustomProperty,
@@ -26,6 +27,125 @@ import type {
   Script,
   RulesetWindow,
 } from '@/types';
+
+/** Maps used to rewrite ids inside component `data` / `states` and top-level click/script fields. */
+type RulesetDuplicateIdMaps = {
+  pageIdMap: Map<string, string>;
+  attributeIdMap: Map<string, string>;
+  actionIdMap: Map<string, string>;
+  windowIdMap: Map<string, string>;
+  scriptIdMap: Map<string, string>;
+  assetIdMap: Map<string, string>;
+  itemIdMap: Map<string, string>;
+};
+
+function mapOptionalEntityId(
+  value: unknown,
+  map: Map<string, string>,
+): string | null | undefined {
+  if (value == null || value === '') return value as null | undefined;
+  if (typeof value !== 'string') return value as undefined;
+  return map.get(value) ?? value;
+}
+
+/**
+ * Remap ruleset entity ids in a parsed `ComponentData` object (base layer or state diff).
+ * Keeps `null` / explicit clears; only string ids are passed through maps.
+ */
+function remapComponentDataIds(data: Record<string, unknown>, m: RulesetDuplicateIdMaps): void {
+  if (typeof data.pageId === 'string' && data.pageId) {
+    data.pageId = m.pageIdMap.get(data.pageId) ?? data.pageId;
+  }
+
+  for (const key of [
+    'viewAttributeId',
+    'toggleBooleanAttributeId',
+    'tooltipAttributeId',
+    'conditionalRenderAttributeId',
+  ] as const) {
+    if (key in data && data[key] != null && data[key] !== '') {
+      data[key] = mapOptionalEntityId(data[key], m.attributeIdMap);
+    }
+  }
+
+  if ('clickActionId' in data) {
+    data.clickActionId = mapOptionalEntityId(data.clickActionId, m.actionIdMap);
+  }
+  if ('clickChildWindowId' in data) {
+    data.clickChildWindowId = mapOptionalEntityId(data.clickChildWindowId, m.windowIdMap);
+  }
+  if ('clickScriptId' in data) {
+    data.clickScriptId = mapOptionalEntityId(data.clickScriptId, m.scriptIdMap);
+  }
+
+  for (const key of ['assetId'] as const) {
+    if (key in data && typeof data[key] === 'string' && data[key]) {
+      data[key] = m.assetIdMap.get(data[key] as string) ?? data[key];
+    }
+  }
+
+  for (const key of ['checkedAssetId', 'uncheckedAssetId'] as const) {
+    if (key in data && typeof data[key] === 'string' && data[key]) {
+      data[key] = m.assetIdMap.get(data[key] as string) ?? data[key];
+    }
+  }
+
+  if (typeof data.itemRestrictionRef === 'string' && data.itemRestrictionRef) {
+    data.itemRestrictionRef = m.itemIdMap.get(data.itemRestrictionRef) ?? data.itemRestrictionRef;
+  }
+  if (typeof data.actionRestrictionRef === 'string' && data.actionRestrictionRef) {
+    data.actionRestrictionRef =
+      m.actionIdMap.get(data.actionRestrictionRef) ?? data.actionRestrictionRef;
+  }
+
+  for (const key of ['numeratorAttributeId', 'denominatorAttributeId'] as const) {
+    if (key in data && data[key] != null && data[key] !== '') {
+      data[key] = mapOptionalEntityId(data[key], m.attributeIdMap);
+    }
+  }
+}
+
+function remapComponentSerializedDataAndStates(
+  dataJson: string,
+  statesJson: string | null | undefined,
+  m: RulesetDuplicateIdMaps,
+): { data: string; states: string | null | undefined } {
+  let data = dataJson;
+  try {
+    const parsed = JSON.parse(dataJson) as Record<string, unknown>;
+    remapComponentDataIds(parsed, m);
+    data = JSON.stringify(parsed);
+  } catch {
+    // leave data unchanged if not valid JSON
+  }
+
+  let states = statesJson;
+  if (statesJson == null || statesJson === '') {
+    return { data, states: statesJson };
+  }
+  try {
+    const entries = JSON.parse(statesJson) as ComponentStateEntry[];
+    if (!Array.isArray(entries)) {
+      return { data, states };
+    }
+    for (const entry of entries) {
+      if (entry?.data && typeof entry.data === 'string' && entry.data.trim() !== '') {
+        try {
+          const partial = JSON.parse(entry.data) as Record<string, unknown>;
+          remapComponentDataIds(partial, m);
+          entry.data = JSON.stringify(partial);
+        } catch {
+          // keep state data string
+        }
+      }
+    }
+    states = JSON.stringify(entries);
+  } catch {
+    // keep states unchanged
+  }
+
+  return { data, states };
+}
 
 export interface DuplicateRulesetParams {
   /** Existing ruleset id to copy from */
@@ -70,7 +190,9 @@ export interface RulesetDuplicationCounts {
  * Duplicate a ruleset and its associated entities into an already-created target ruleset.
  *
  * This function:
- * - Clones ruleset-level entities (assets, fonts, charts, attributes, actions, items, documents, windows, components, scripts)
+ * - Clones ruleset-level entities (assets, fonts, charts, attributes, actions, items, documents, windows, pages, …)
+ * - Pre-assigns ids for window components and scripts, then inserts scripts before components so click `scriptId` remaps cleanly
+ * - Remaps component group trees (`parentComponentId` / `groupId`), merged click targets in `data` / `states`, and top-level click fields
  * - Clones the test character for the ruleset (if present) and its related entities
  * - Generates new IDs for all cloned entities and remaps cross-entity references
  * - Removes the auto-created test character for the target ruleset (created by Dexie hook)
@@ -165,6 +287,7 @@ export async function duplicateRuleset({
   const documentIdMap = new Map<string, string>();
   const windowIdMap = new Map<string, string>();
   const componentIdMap = new Map<string, string>();
+  const scriptIdMap = new Map<string, string>();
   const compositeIdMap = new Map<string, string>();
   const characterIdMap = new Map<string, string>();
   const characterPageIdMap = new Map<string, string>();
@@ -380,89 +503,12 @@ export async function duplicateRuleset({
     counts.windows++;
   }
 
-  // 9. Components (map windowId, attributeId, actionId, childWindowId, assetId)
-  for (const component of sourceComponents as Component[]) {
-    const newId = crypto.randomUUID();
-    componentIdMap.set(component.id, newId);
-
-    const {
-      id,
-      rulesetId,
-      createdAt,
-      updatedAt,
-      windowId,
-      attributeId,
-      actionId,
-      childWindowId,
-      parentComponentId,
-      groupId,
-      ...rest
-    } = component;
-
-    const mappedWindowId = windowIdMap.get(windowId) ?? windowId;
-    const mappedAttributeId = attributeId
-      ? (attributeIdMap.get(attributeId) ?? attributeId)
-      : attributeId;
-    const mappedActionId = actionId ? (actionIdMap.get(actionId) ?? actionId) : actionId;
-    const mappedChildWindowId = childWindowId
-      ? (windowIdMap.get(childWindowId) ?? childWindowId)
-      : childWindowId;
-    const mappedParentId =
-      parentComponentId && componentIdMap.has(parentComponentId)
-        ? componentIdMap.get(parentComponentId)!
-        : (parentComponentId ?? null);
-    const mappedGroupId =
-      groupId && componentIdMap.has(groupId) ? componentIdMap.get(groupId)! : (groupId ?? null);
-
-    await db.components.add({
-      ...rest,
-      id: newId,
-      rulesetId: targetRulesetId,
-      windowId: mappedWindowId,
-      attributeId: mappedAttributeId,
-      actionId: mappedActionId,
-      childWindowId: mappedChildWindowId,
-      parentComponentId: mappedParentId,
-      groupId: mappedGroupId,
-      createdAt: now,
-      updatedAt: now,
-    } as Component);
-    counts.components++;
+  // 9. Pre-assign new ids for window components and ruleset scripts so group trees and click remaps stay consistent.
+  for (const c of sourceComponents as Component[]) {
+    componentIdMap.set(c.id, crypto.randomUUID());
   }
-
-  // 9b. Composites and composite variants (map template roots via componentIdMap)
-  for (const comp of sourceComposites as Composite[]) {
-    const newRootId = componentIdMap.get(comp.rootComponentId);
-    if (!newRootId) continue;
-    const newId = crypto.randomUUID();
-    compositeIdMap.set(comp.id, newId);
-    const { id, rulesetId, createdAt, updatedAt, ...rest } = comp;
-    await db.composites.add({
-      ...rest,
-      id: newId,
-      rulesetId: targetRulesetId,
-      rootComponentId: newRootId,
-      createdAt: now,
-      updatedAt: now,
-    } as Composite);
-    counts.composites++;
-  }
-
-  for (const v of sourceCompositeVariants as CompositeVariant[]) {
-    const newCompositeId = compositeIdMap.get(v.compositeId);
-    const newGroupId = componentIdMap.get(v.groupComponentId);
-    if (!newCompositeId || !newGroupId) continue;
-    const { id, rulesetId, createdAt, updatedAt, ...rest } = v;
-    await db.compositeVariants.add({
-      ...rest,
-      id: crypto.randomUUID(),
-      rulesetId: targetRulesetId,
-      compositeId: newCompositeId,
-      groupComponentId: newGroupId,
-      createdAt: now,
-      updatedAt: now,
-    } as CompositeVariant);
-    counts.compositeVariants++;
+  for (const s of sourceScripts as Script[]) {
+    scriptIdMap.set(s.id, crypto.randomUUID());
   }
 
   // 10. Pages (ruleset templates; builds pageIdMap)
@@ -743,9 +789,10 @@ export async function duplicateRuleset({
     counts.itemCustomProperties++;
   }
 
-  // 13. Scripts (map entityId based on entityType)
+  // 13. Scripts (map entityId based on entityType; ids pre-assigned in step 9 for component click remaps)
   for (const script of sourceScripts as Script[]) {
-    const newId = crypto.randomUUID();
+    const newId = scriptIdMap.get(script.id);
+    if (!newId) continue;
 
     const { id, rulesetId, createdAt, updatedAt, entityId, entityType, ...rest } = script;
 
@@ -780,7 +827,119 @@ export async function duplicateRuleset({
     counts.scripts++;
   }
 
-  // 14. Clean up the auto-created test character and archetypes for the target ruleset
+  const componentRemapMaps: RulesetDuplicateIdMaps = {
+    pageIdMap,
+    attributeIdMap,
+    actionIdMap,
+    windowIdMap,
+    scriptIdMap,
+    assetIdMap,
+    itemIdMap,
+  };
+
+  // 14. Components (after scripts; remap merged click/script/page ids inside `data` and `states`)
+  for (const component of sourceComponents as Component[]) {
+    const newId = componentIdMap.get(component.id);
+    if (!newId) continue;
+
+    const {
+      id: _cid,
+      rulesetId: _crid,
+      createdAt: _cc,
+      updatedAt: _cu,
+      windowId,
+      attributeId,
+      actionId,
+      childWindowId,
+      scriptId,
+      parentComponentId,
+      groupId,
+      assetId: topLevelAssetId,
+      data,
+      states,
+      ...rest
+    } = component;
+
+    const { data: remappedData, states: remappedStates } = remapComponentSerializedDataAndStates(
+      data,
+      states ?? null,
+      componentRemapMaps,
+    );
+
+    const mappedWindowId = windowIdMap.get(windowId) ?? windowId;
+    const mappedAttributeId = attributeId
+      ? (attributeIdMap.get(attributeId) ?? attributeId)
+      : attributeId;
+    const mappedActionId = actionId ? (actionIdMap.get(actionId) ?? actionId) : actionId;
+    const mappedChildWindowId = childWindowId
+      ? (windowIdMap.get(childWindowId) ?? childWindowId)
+      : childWindowId;
+    const mappedScriptId = scriptId ? (scriptIdMap.get(scriptId) ?? scriptId) : scriptId;
+    const mappedParentId = parentComponentId
+      ? (componentIdMap.get(parentComponentId) ?? null)
+      : null;
+    const mappedGroupId = groupId ? (componentIdMap.get(groupId) ?? null) : null;
+    const mappedTopAssetId =
+      topLevelAssetId != null && topLevelAssetId !== ''
+        ? (assetIdMap.get(topLevelAssetId) ?? topLevelAssetId)
+        : topLevelAssetId;
+
+    await db.components.add({
+      ...rest,
+      id: newId,
+      rulesetId: targetRulesetId,
+      windowId: mappedWindowId,
+      attributeId: mappedAttributeId,
+      actionId: mappedActionId,
+      childWindowId: mappedChildWindowId,
+      scriptId: mappedScriptId ?? null,
+      parentComponentId: mappedParentId,
+      groupId: mappedGroupId,
+      assetId: mappedTopAssetId ?? null,
+      data: remappedData,
+      states: remappedStates ?? null,
+      createdAt: now,
+      updatedAt: now,
+    } as Component);
+    counts.components++;
+  }
+
+  // 15. Composites and composite variants (map template roots via componentIdMap)
+  for (const comp of sourceComposites as Composite[]) {
+    const newRootId = componentIdMap.get(comp.rootComponentId);
+    if (!newRootId) continue;
+    const newId = crypto.randomUUID();
+    compositeIdMap.set(comp.id, newId);
+    const { id, rulesetId, createdAt, updatedAt, ...restComp } = comp;
+    await db.composites.add({
+      ...restComp,
+      id: newId,
+      rulesetId: targetRulesetId,
+      rootComponentId: newRootId,
+      createdAt: now,
+      updatedAt: now,
+    } as Composite);
+    counts.composites++;
+  }
+
+  for (const v of sourceCompositeVariants as CompositeVariant[]) {
+    const newCompositeId = compositeIdMap.get(v.compositeId);
+    const newGroupId = componentIdMap.get(v.groupComponentId);
+    if (!newCompositeId || !newGroupId) continue;
+    const { id, rulesetId, createdAt, updatedAt, ...restV } = v;
+    await db.compositeVariants.add({
+      ...restV,
+      id: crypto.randomUUID(),
+      rulesetId: targetRulesetId,
+      compositeId: newCompositeId,
+      groupComponentId: newGroupId,
+      createdAt: now,
+      updatedAt: now,
+    } as CompositeVariant);
+    counts.compositeVariants++;
+  }
+
+  // 16. Clean up the auto-created test character and archetypes for the target ruleset
   if (autoTestCharacterId) {
     const clonedCharIds = new Set(characterIdMap.values());
     if (!clonedCharIds.has(autoTestCharacterId)) {
@@ -817,7 +976,7 @@ export async function duplicateRuleset({
     }
   }
 
-  // 15. Point the target ruleset row at cloned assets (cover + landing CTAs). Assets were remapped to new ids above;
+  // 17. Point the target ruleset row at cloned assets (cover + landing CTAs). Assets were remapped to new ids above;
   // createRuleset / import metadata still referenced source ids, so the new ruleset would otherwise miss CTA images.
   const sourceRulesetRow = await db.rulesets.get(sourceRulesetId);
   const targetRulesetRow = await db.rulesets.get(targetRulesetId);

@@ -8,11 +8,12 @@ import { Switch } from '@/components/ui/switch';
 import { useFeatureFlagList } from '@/hooks/use-feature-flag';
 import { cn } from '@/lib/utils';
 import { removeFeatureFlag, setFeatureFlag } from '@/utils/feature-flags';
-import { Bug, ChevronDown, ChevronRight, Code2, Flag, Trash2 } from 'lucide-react';
+import { Bug, ChevronDown, ChevronRight, Code2, Flag, Trash2, Wrench } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { DevToolsRulesetActionsPanel } from './dev-tools-ruleset-actions-panel';
 import { ScriptPlayground } from './script-playground';
 
-type ViewMode = 'script' | 'debug' | 'flags';
+type ViewMode = 'script' | 'debug' | 'flags' | 'actions';
 
 export const DevTools = () => {
   const [viewMode, setViewMode] = useState<ViewMode>('script');
@@ -117,6 +118,8 @@ export const DevTools = () => {
           <ScriptPlayground />
         ) : viewMode === 'flags' ? (
           <FeatureFlagsSection />
+        ) : viewMode === 'actions' ? (
+          <DevToolsRulesetActionsPanel />
         ) : (
           <div className='h-full overflow-auto p-6'>
             <div className='max-w-4xl mx-auto space-y-4'>
@@ -247,6 +250,15 @@ export const DevTools = () => {
             title='Feature Flags'>
             <Flag className='h-4 w-4' />
             <span className='hidden sm:inline'>Flags</span>
+          </Button>
+          <Button
+            variant={viewMode === 'actions' ? 'default' : 'ghost'}
+            size='sm'
+            onClick={() => setViewMode('actions')}
+            className={cn('gap-2', viewMode === 'actions' && 'shadow-sm')}
+            title='Ruleset bulk actions'>
+            <Wrench className='h-4 w-4' />
+            <span className='hidden sm:inline'>Actions</span>
           </Button>
         </div>
       </div>

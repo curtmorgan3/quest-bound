@@ -361,15 +361,16 @@ export const RulesetSettings = ({ activeRuleset }: RulesetSettingsProps) => {
   const availableModuleRulesets = rulesets.filter(
     (r) => r.isModule === true && r.id !== activeRuleset.id,
   );
+  const moduleAddInProgress = addingModule || addingModuleFromFile;
 
   const handleAddModule = async (sourceRulesetId: string) => {
+    setAddModuleOpen(false);
     setAddingModule(true);
     try {
       const result = await addModuleToRuleset({
         sourceRulesetId,
         targetRulesetId: activeRuleset.id,
       });
-      setAddModuleOpen(false);
       const totalSkipped = Object.values(result.skippedByConflict).reduce((a, b) => a + b, 0);
       if (totalSkipped > 0) {
         setConflictDetails(result.skippedDetails ?? null);
@@ -902,6 +903,26 @@ export const RulesetSettings = ({ activeRuleset }: RulesetSettingsProps) => {
             />
           </div>
         </div>
+
+        <Dialog open={moduleAddInProgress} onOpenChange={() => {}}>
+          <DialogContent
+            showCloseButton={false}
+            className='sm:max-w-sm'
+            onPointerDownOutside={(e) => e.preventDefault()}
+            onEscapeKeyDown={(e) => e.preventDefault()}>
+            <DialogHeader className='items-center text-center sm:text-center'>
+              <div className='flex justify-center py-2'>
+                <Loader2 className='h-10 w-10 animate-spin text-muted-foreground' aria-hidden />
+              </div>
+              <DialogTitle>
+                {addingModuleFromFile ? 'Adding module from file' : 'Adding module'}
+              </DialogTitle>
+              <DialogDescription>
+                Merging content into this ruleset. This may take a moment.
+              </DialogDescription>
+            </DialogHeader>
+          </DialogContent>
+        </Dialog>
 
         <AlertDialog open={removeDialogOpen} onOpenChange={setRemoveDialogOpen}>
           <AlertDialogContent>

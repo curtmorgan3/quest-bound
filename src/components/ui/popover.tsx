@@ -37,6 +37,10 @@ function PopoverContent({
           className
         )}
         {...props}
+        onWheel={(e) => {
+          props.onWheel?.(e);
+          e.stopPropagation();
+        }}
       />
     </PopoverPrimitive.Portal>
   )
