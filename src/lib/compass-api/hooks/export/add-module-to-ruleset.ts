@@ -66,8 +66,10 @@ export interface AddModuleResult {
 /**
  * Add a module (ruleset with isModule === true) to another ruleset by duplicating
  * the module's content into the target. Sets moduleId, moduleEntityId, moduleName
- * on duplicated entities. On ID conflict, skips the entity; on name conflict,
- * appends " (<module name>)" to the title.
+ * on duplicated entities. The module's default archetype and test character row are
+ * not copied; their character pages and character windows are cloned onto the target
+ * default test character (same remaps as other module sheet content). On ID conflict,
+ * skips the entity; on name conflict, appends " (<module name>)" to the title.
  */
 export async function addModuleToRuleset({
   sourceRulesetId,
@@ -231,17 +233,39 @@ export async function addModuleToRuleset({
     .where('rulesetId')
     .equals(sourceRulesetId)
     .sortBy('loadOrder');
-  const sourceCharacters = await db.characters.where('rulesetId').equals(sourceRulesetId).toArray();
-  const sourceTestCharacter = sourceCharacters.find((c: Character) => c.isTestCharacter);
+  /** Default archetype / test character row stay on the module only; sheet layout merges into target default TC. */
+  const archetypesToClone = sourceArchetypes.filter((a) => !a.isDefault);
   const testCharacterIds = [
-    ...new Set(
-      sourceArchetypes.length > 0
-        ? sourceArchetypes.map((a) => a.testCharacterId).filter(Boolean)
-        : sourceTestCharacter
-          ? [sourceTestCharacter.id]
-          : [],
-    ),
+    ...new Set(archetypesToClone.map((a) => a.testCharacterId).filter(Boolean)),
   ];
+  const testCharacterIdSet = new Set(testCharacterIds);
+
+  const targetArchetypesSnapshot = await db.archetypes
+    .where('rulesetId')
+    .equals(targetRulesetId)
+    .toArray();
+  const targetDefaultArchetype = targetArchetypesSnapshot.find((a) => a.isDefault);
+  const targetDefaultTestCharacterId = targetDefaultArchetype?.testCharacterId ?? null;
+
+  const sourceDefaultArchetype = sourceArchetypes.find((a) => a.isDefault);
+  const sourceDefaultTestCharacterId = sourceDefaultArchetype?.testCharacterId ?? null;
+
+  /** When false, the module default TC is already cloned as a non-default archetype's TC — skip duplicate layout merge. */
+  const mergeModuleDefaultTestCharacterLayout =
+    Boolean(
+      sourceDefaultTestCharacterId &&
+        targetDefaultTestCharacterId &&
+        !testCharacterIdSet.has(sourceDefaultTestCharacterId),
+    );
+
+  let defaultSourceCharacterPages: CharacterPage[] = [];
+  let defaultSourceCharacterWindows: CharacterWindow[] = [];
+  if (mergeModuleDefaultTestCharacterLayout) {
+    [defaultSourceCharacterPages, defaultSourceCharacterWindows] = await Promise.all([
+      db.characterPages.where('characterId').equals(sourceDefaultTestCharacterId!).toArray(),
+      db.characterWindows.where('characterId').equals(sourceDefaultTestCharacterId!).toArray(),
+    ]);
+  }
 
   let sourceCharacterAttributes: CharacterAttribute[] = [];
   let sourceCharacterPages: CharacterPage[] = [];
@@ -714,7 +738,7 @@ export async function addModuleToRuleset({
     counts.compositeVariants++;
   }
 
-  // 14. Test characters and archetypes
+  // 14. Test characters and non-default archetypes (target keeps its own default)
   for (const testCharId of testCharacterIds) {
     const srcChar = await db.characters.get(testCharId);
     if (!srcChar || !srcChar.isTestCharacter) continue;
@@ -889,11 +913,72 @@ export async function addModuleToRuleset({
     }
   }
 
+  // 14b. Module default test character → target default test character (pages + windows only)
+  if (
+    mergeModuleDefaultTestCharacterLayout &&
+    (defaultSourceCharacterPages.length > 0 || defaultSourceCharacterWindows.length > 0)
+  ) {
+    const targetTc = targetDefaultTestCharacterId
+      ? await db.characters.get(targetDefaultTestCharacterId)
+      : undefined;
+    const sourceTc = sourceDefaultTestCharacterId
+      ? await db.characters.get(sourceDefaultTestCharacterId)
+      : undefined;
+    if (targetTc?.isTestCharacter && sourceTc?.isTestCharacter) {
+      const defaultTcCharacterPageIdMap = new Map<string, string>();
+      for (const cp of defaultSourceCharacterPages as CharacterPage[]) {
+        const newCpId = crypto.randomUUID();
+        defaultTcCharacterPageIdMap.set(cp.id, newCpId);
+        const mappedTemplatePageId = pageIdMap.get(cp.pageId) ?? cp.pageId;
+        const { id: _cpid, createdAt: _cpc, updatedAt: _cpu, characterId: _cid2, ...cpRest } = cp;
+        await db.characterPages.add({
+          ...cpRest,
+          id: newCpId,
+          characterId: targetDefaultTestCharacterId!,
+          pageId: mappedTemplatePageId,
+          rulesetId: targetRulesetId,
+          moduleId: sourceRulesetId,
+          moduleEntityId: cp.id,
+          moduleName,
+          createdAt: now,
+          updatedAt: now,
+        } as CharacterPage & { moduleId: string; moduleEntityId: string; moduleName: string });
+        counts.characterPages++;
+      }
+      for (const cw of defaultSourceCharacterWindows as CharacterWindow[]) {
+        const newCwId = crypto.randomUUID();
+        const { id: _cwid, createdAt: _cwc, updatedAt: _cwu, characterId: _cwcId, characterPageId, windowId, ...rest } =
+          cw;
+        const mappedCharacterPageId = characterPageId
+          ? (defaultTcCharacterPageIdMap.get(characterPageId) ?? null)
+          : characterPageId;
+        const mappedWindowId = windowIdMap.get(windowId) ?? windowId;
+        await db.characterWindows.add({
+          ...rest,
+          id: newCwId,
+          characterId: targetDefaultTestCharacterId!,
+          characterPageId: mappedCharacterPageId,
+          windowId: mappedWindowId,
+          moduleId: sourceRulesetId,
+          moduleEntityId: cw.id,
+          moduleName,
+          createdAt: now,
+          updatedAt: now,
+        } as CharacterWindow & { moduleId: string; moduleEntityId: string; moduleName: string });
+        counts.characterWindows++;
+      }
+    }
+  }
+
   // Clone archetypes (with new testCharacterId, map variantsChartRef to new chart id)
-  for (const arch of sourceArchetypes as Archetype[]) {
+  for (const arch of archetypesToClone as Archetype[]) {
+    if (!characterIdMap.has(arch.testCharacterId)) {
+      pushSkipped('archetypes', arch.id, arch.name);
+      continue;
+    }
     const newArchId = crypto.randomUUID();
     archetypeIdMap.set(arch.id, newArchId);
-    const newTestCharId = characterIdMap.get(arch.testCharacterId) ?? arch.testCharacterId;
+    const newTestCharId = characterIdMap.get(arch.testCharacterId)!;
     const {
       id: _aid,
       rulesetId: _arid,
@@ -946,7 +1031,9 @@ export async function addModuleToRuleset({
           mappedEntityId = itemIdMap.get(entityId) ?? entityId;
           break;
         case 'archetype':
-          mappedEntityId = archetypeIdMap.get(entityId) ?? entityId;
+          mappedEntityId = archetypeIdMap.has(entityId)
+            ? archetypeIdMap.get(entityId)!
+            : null;
           break;
       }
     }

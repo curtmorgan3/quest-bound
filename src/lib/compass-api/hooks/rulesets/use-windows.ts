@@ -162,9 +162,15 @@ export const useWindows = () => {
     }
   };
 
+  const getWindow = (id?: string) => {
+    if (!id) return null;
+    return windows?.find((w) => w.id === id);
+  };
+
   return {
     windows: windows ?? [],
     isLoading,
+    getWindow,
     createWindow,
     updateWindow,
     deleteWindow,

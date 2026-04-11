@@ -1,6 +1,7 @@
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useSidebar } from '@/components/ui/sidebar';
+import { useReadOnlyExternalGrantRedirect } from '@/lib/cloud/external-ruleset-grant-guard';
 import { useComponents, useRulesets, type ComponentUpdate } from '@/lib/compass-api';
 import { repairOrphanCharacterWindowsForRulesetWindows } from '@/lib/compass-api/utils/default-archetype-test-character';
 import { SheetEditor } from '@/lib/compass-planes';
@@ -23,7 +24,6 @@ import type { Component } from '@/types';
 import { debugLog } from '@/utils';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { ClipboardList, Eye, Library, Magnet, ScanSearch, ZoomIn, ZoomOut } from 'lucide-react';
-import { useReadOnlyExternalGrantRedirect } from '@/lib/cloud/external-ruleset-grant-guard';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { ComponentEditPanel } from './component-edit-panel';
@@ -82,6 +82,7 @@ function readStoredSnapToGrid(): boolean {
 export const WindowEditor = () => {
   const { windowId, rulesetId } = useParams<{ windowId: string; rulesetId: string }>();
   const readOnlyRedirect = useReadOnlyExternalGrantRedirect(rulesetId);
+
   const { open } = useSidebar();
   const {
     components,

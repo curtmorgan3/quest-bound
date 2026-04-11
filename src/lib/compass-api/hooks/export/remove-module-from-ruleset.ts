@@ -31,8 +31,9 @@ async function getRemovedIds(
   scriptIds: Set<string>;
   assetIds: Set<string>;
   characterIds: Set<string>;
+  archetypeIds: Set<string>;
 }> {
-  const [attrs, actions, items, charts, docs, windows, pages, scripts, assets, characters] =
+  const [attrs, actions, items, charts, docs, windows, pages, scripts, assets, characters, archetypes] =
     await Promise.all([
       db.attributes
         .where('rulesetId')
@@ -76,6 +77,11 @@ async function getRemovedIds(
         .equals(targetRulesetId)
         .filter((c) => (c as { moduleId?: string }).moduleId === moduleIdToRemove)
         .primaryKeys(),
+      db.archetypes
+        .where('rulesetId')
+        .equals(targetRulesetId)
+        .filter((a) => (a as { moduleId?: string }).moduleId === moduleIdToRemove)
+        .primaryKeys(),
     ]);
 
   return {
@@ -89,6 +95,7 @@ async function getRemovedIds(
     scriptIds: new Set(scripts as string[]),
     assetIds: new Set(assets as string[]),
     characterIds: new Set(characters as string[]),
+    archetypeIds: new Set(archetypes as string[]),
   };
 }
 
@@ -159,10 +166,12 @@ export async function getDanglingReferencesForModuleRemoval(
     const modId = (s as { moduleId?: string }).moduleId;
     if (modId === moduleIdToRemove) continue;
     if (s.entityId && !s.isGlobal) {
+      const eid = s.entityId;
       if (
-        removed.attributeIds.has(s.entityId) ||
-        removed.actionIds.has(s.entityId) ||
-        removed.itemIds.has(s.entityId)
+        removed.attributeIds.has(eid) ||
+        removed.actionIds.has(eid) ||
+        removed.itemIds.has(eid) ||
+        (s.entityType === 'archetype' && removed.archetypeIds.has(eid))
       ) {
         summary.scripts++;
       }
@@ -317,11 +326,25 @@ export async function deleteModuleContentFromRuleset(
   // 4. Character windows (by moduleId)
   await db.characterWindows.where('moduleId').equals(moduleIdToRemove).delete();
 
+  // 4b. Character pages tagged with this module (e.g. merged onto the host default test character)
+  await db.characterPages
+    .where('rulesetId')
+    .equals(targetRulesetId)
+    .filter((cp) => (cp as { moduleId?: string }).moduleId === moduleIdToRemove)
+    .delete();
+
   // 5. Characters (by moduleId)
   await db.characters
     .where('rulesetId')
     .equals(targetRulesetId)
     .filter((c) => (c as { moduleId?: string }).moduleId === moduleIdToRemove)
+    .delete();
+
+  // 5b. Archetypes from module (after characters so archetype hook does not race bulk character cleanup)
+  await db.archetypes
+    .where('rulesetId')
+    .equals(targetRulesetId)
+    .filter((a) => (a as { moduleId?: string }).moduleId === moduleIdToRemove)
     .delete();
 
   // 6. Components whose window is being removed
