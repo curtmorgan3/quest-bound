@@ -11,6 +11,7 @@ const RULESET_BUNDLE_API_PROD = 'https://api.questbound.com/get-ruleset-bundle';
 const slugKeyMap = new Map([
   ['dnd', 'dnd'],
   ['d&d', 'dnd'],
+  ['dnd-module', 'dnd-module'],
 ]);
 
 /**

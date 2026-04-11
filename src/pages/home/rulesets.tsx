@@ -25,13 +25,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { systemModules } from '@/content/system-modules';
 import { isCloudConfigured } from '@/lib/cloud/client';
 import { getNonOwnerCloudInstallRulesetIds } from '@/lib/cloud/sync/non-owner-cloud-install-ids';
 import { pullEntireRulesetFromCloud } from '@/lib/cloud/sync/sync-service';
 import { useSyncStateStore } from '@/lib/cloud/sync/sync-state';
 import {
+  addModuleFromZip,
   useCloudRulesets,
   useImportRuleset,
+  useRulesetBundle,
   useRulesets,
   type ImportRulesetResult,
 } from '@/lib/compass-api';
@@ -59,6 +62,7 @@ const DELETE_SPINNER_DELAY_MS = 1000;
 export const Rulesets = () => {
   const { rulesets, createRuleset, deleteRuleset } = useRulesets();
   const { importRuleset, isImporting, importStep } = useImportRuleset();
+  const { getRulesetBundle } = useRulesetBundle();
   const {
     cloudRulesets,
     cloudRulesetListFetchOk,
@@ -111,6 +115,9 @@ export const Rulesets = () => {
   const [createRulesetDialogOpen, setCreateRulesetDialogOpen] = useState(false);
   const [createRulesetStep, setCreateRulesetStep] = useState<1 | 2>(1);
   const [selectedSystemModuleId, setSelectedSystemModuleId] = useState<string | null>(null);
+  const [createFlowBusy, setCreateFlowBusy] = useState(false);
+  const [createFlowStatus, setCreateFlowStatus] = useState<string | null>(null);
+  const [createFlowError, setCreateFlowError] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const deleteSpinnerTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -120,7 +127,9 @@ export const Rulesets = () => {
     if (!createRulesetDialogOpen) {
       setCreateRulesetStep(1);
       setSelectedSystemModuleId(null);
+      return;
     }
+    setCreateFlowError(null);
   }, [createRulesetDialogOpen]);
 
   useEffect(() => {
@@ -194,12 +203,55 @@ export const Rulesets = () => {
   };
 
   const handleCreate = async () => {
-    const id = await createRuleset({
-      title: title || 'New Ruleset',
-      description,
-    });
+    setCreateFlowError(null);
+    setCreateRulesetDialogOpen(false);
+    setCreateFlowBusy(true);
+    setCreateFlowStatus(null);
+    let newRulesetId: string | undefined;
+    try {
+      let moduleZip: File | null = null;
+      if (selectedSystemModuleId) {
+        const mod = systemModules[selectedSystemModuleId];
+        if (!mod?.slug?.trim()) {
+          throw new Error('Selected module has no bundle slug.');
+        }
+        setCreateFlowStatus('Fetching module');
+        const response = await getRulesetBundle(mod.slug.trim());
+        if (!response.ok) {
+          throw new Error(`Failed to fetch module: ${response.status} ${response.statusText}`);
+        }
+        const blob = await response.blob();
+        moduleZip = new File([blob], 'ruleset.zip', { type: 'application/zip' });
+      }
 
-    navigate(`/rulesets/${id}`);
+      setCreateFlowStatus('Creating ruleset');
+      newRulesetId = await createRuleset({
+        title: title || 'New Ruleset',
+        description,
+      });
+
+      if (moduleZip) {
+        setCreateFlowStatus('Adding module');
+        await addModuleFromZip({
+          file: moduleZip,
+          targetRulesetId: newRulesetId,
+          importRuleset,
+        });
+      }
+
+      navigate(`/rulesets/${newRulesetId}`);
+    } catch (err) {
+      console.error(err);
+      const message = err instanceof Error ? err.message : 'Something went wrong';
+      setCreateFlowError(
+        newRulesetId
+          ? `${message} Your ruleset was saved; you can open it from the list.`
+          : message,
+      );
+    } finally {
+      setCreateFlowBusy(false);
+      setCreateFlowStatus(null);
+    }
   };
 
   const handleImport = () => {
@@ -322,7 +374,7 @@ export const Rulesets = () => {
               size='sm'
               className='gap-1'
               data-testid='create-ruleset-button'
-              disabled={!!deletingRulesetId || !!deletingCloudRulesetId}
+              disabled={createFlowBusy || !!deletingRulesetId || !!deletingCloudRulesetId}
               onClick={() => setCreateRulesetDialogOpen(true)}>
               <Plus className='h-4 w-4' />
               Create Ruleset
@@ -383,7 +435,7 @@ export const Rulesets = () => {
               <Button
                 size='lg'
                 data-testid='empty-state-create-ruleset'
-                disabled={!!deletingRulesetId || !!deletingCloudRulesetId}
+                disabled={createFlowBusy || !!deletingRulesetId || !!deletingCloudRulesetId}
                 onClick={() => setCreateRulesetDialogOpen(true)}>
                 Start Building
               </Button>
@@ -651,29 +703,49 @@ export const Rulesets = () => {
             ))}
         </div>
 
-        {(isImporting || isInstallingCloud || showDeletingSpinner || isDeletingCloud) && (
+        {(isImporting ||
+          createFlowBusy ||
+          isInstallingCloud ||
+          showDeletingSpinner ||
+          isDeletingCloud) && (
           <div className='fixed inset-0 z-50 bg-background'>
             <Loading />
-            {isImporting && importStep && (
+            {(isImporting || createFlowBusy) && (
               <p className='absolute inset-x-0 bottom-1/3 text-center text-sm text-muted-foreground'>
-                {importStep}...
+                {isImporting && importStep
+                  ? `${importStep}...`
+                  : createFlowStatus
+                    ? `${createFlowStatus}...`
+                    : 'Working...'}
               </p>
             )}
-            {isInstallingCloud && !isImporting && !showDeletingSpinner && !isDeletingCloud && (
-              <p className='absolute inset-x-0 bottom-1/3 text-center text-sm text-muted-foreground'>
-                Installing from cloud...
-              </p>
-            )}
-            {showDeletingSpinner && !isImporting && !isInstallingCloud && !isDeletingCloud && (
-              <p className='absolute inset-x-0 bottom-1/3 text-center text-sm text-muted-foreground'>
-                Deleting ruleset...
-              </p>
-            )}
-            {isDeletingCloud && !isImporting && !isInstallingCloud && !showDeletingSpinner && (
-              <p className='absolute inset-x-0 bottom-1/3 text-center text-sm text-muted-foreground'>
-                Deleting from cloud...
-              </p>
-            )}
+            {isInstallingCloud &&
+              !isImporting &&
+              !createFlowBusy &&
+              !showDeletingSpinner &&
+              !isDeletingCloud && (
+                <p className='absolute inset-x-0 bottom-1/3 text-center text-sm text-muted-foreground'>
+                  Installing from cloud...
+                </p>
+              )}
+            {showDeletingSpinner &&
+              !isImporting &&
+              !createFlowBusy &&
+              !isInstallingCloud &&
+              !isDeletingCloud && (
+                <p className='absolute inset-x-0 bottom-1/3 text-center text-sm text-muted-foreground'>
+                  Deleting ruleset...
+                </p>
+              )}
+            {isDeletingCloud &&
+              !isImporting &&
+              !createFlowBusy &&
+              !isInstallingCloud &&
+              !showDeletingSpinner && (
+                <p className='absolute inset-x-0 bottom-1/3 text-center text-sm text-muted-foreground'>
+                  Deleting from cloud...
+                </p>
+              )}
           </div>
         )}
 
@@ -770,11 +842,30 @@ export const Rulesets = () => {
             </div>
           </div>
         )}
+
+        {createFlowError && (
+          <div className='fixed bottom-4 right-4 z-50 flex max-w-sm flex-col gap-2 rounded-lg border border-red-200 bg-red-50 p-3 text-red-800 shadow-lg'>
+            <div className='flex items-start justify-between gap-2'>
+              <div className='flex items-center gap-2'>
+                <AlertCircle className='h-4 w-4 shrink-0' />
+                <span className='text-sm font-medium'>{createFlowError}</span>
+              </div>
+              <Button
+                variant='ghost'
+                size='icon'
+                className='h-6 w-6 shrink-0'
+                onClick={() => setCreateFlowError(null)}
+                aria-label='Dismiss'>
+                <X className='h-4 w-4' />
+              </Button>
+            </div>
+          </div>
+        )}
       </PageWrapper>
 
       <DialogContent
         className={cn(
-          'flex max-h-[min(90vh,720px)] flex-col',
+          'flex max-h-[min(90vh,720px)] flex-col overflow-hidden',
           createRulesetStep === 1 ? 'sm:max-w-[425px]' : 'sm:max-w-2xl',
         )}>
         <form
@@ -845,11 +936,13 @@ export const Rulesets = () => {
                   data-testid='create-ruleset-back'>
                   Back
                 </Button>
-                <DialogClose asChild>
-                  <Button type='button' data-testid='create-ruleset-submit' onClick={handleCreate}>
-                    Create
-                  </Button>
-                </DialogClose>
+                <Button
+                  type='button'
+                  data-testid='create-ruleset-submit'
+                  disabled={!!deletingRulesetId || !!deletingCloudRulesetId}
+                  onClick={() => void handleCreate()}>
+                  Create
+                </Button>
               </>
             )}
           </DialogFooter>

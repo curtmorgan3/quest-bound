@@ -106,8 +106,15 @@ export async function addModuleFromZip({
       sourceRulesetId: moduleId,
       targetRulesetId,
     });
+    // Resolve to callers as soon as the merge finishes. Temp-ruleset deletion can take
+    // comparable time to import for large modules; awaiting it in `finally` delayed
+    // `return result` and made it look like the merge result never reached callers.
+    void deleteRulesetAndRelatedData(moduleId).catch((err) => {
+      console.error('Failed to delete temporary module ruleset after add-module', err);
+    });
     return result;
-  } finally {
+  } catch (err) {
     await deleteRulesetAndRelatedData(moduleId);
+    throw err;
   }
 }
