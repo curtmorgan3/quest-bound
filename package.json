@@ -1,7 +1,7 @@
 {
   "name": "quest-bound",
   "private": true,
-  "version": "2.1.64",
+  "version": "2.1.65",
   "type": "module",
   "scripts": {
     "dev": "vite",
