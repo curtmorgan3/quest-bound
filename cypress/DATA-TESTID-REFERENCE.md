@@ -13,7 +13,9 @@ This document lists all `data-testid` attributes used in the application for tes
 ## Rulesets
 
 - `create-ruleset-button` - Create new ruleset button
-- `create-ruleset-submit` - Submit button in create ruleset dialog
+- `create-ruleset-next` - Step 1 → step 2 in create ruleset dialog
+- `create-ruleset-back` - Step 2 → step 1 in create ruleset dialog
+- `create-ruleset-submit` - Final create button (step 2) in create ruleset dialog
 - `preview-card-title` - Ruleset card title (used for all preview cards)
 - `preview-card-delete` - Delete button on preview card
 - `preview-card-delete-confirm` - Confirm delete in alert dialog

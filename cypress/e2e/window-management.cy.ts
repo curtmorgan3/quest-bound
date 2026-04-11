@@ -13,6 +13,7 @@ describe('Window Management', () => {
       cy.get('[data-testid="create-ruleset-button"]').click();
       cy.get('#ruleset-title').type('Test Ruleset for Windows');
       cy.get('#ruleset-description').type('Ruleset for testing window management');
+      cy.get('[data-testid="create-ruleset-next"]').click();
       cy.get('[data-testid="create-ruleset-submit"]').click();
 
       // Wait for ruleset to be created and navigate to it
@@ -46,6 +47,7 @@ describe('Window Management', () => {
       cy.get('[data-testid="create-ruleset-button"]').click();
       cy.get('#ruleset-title').type('Window Category Ruleset');
       cy.get('#ruleset-description').type('Ruleset for testing window categories');
+      cy.get('[data-testid="create-ruleset-next"]').click();
       cy.get('[data-testid="create-ruleset-submit"]').click();
 
       // Navigate to the ruleset
@@ -79,6 +81,7 @@ describe('Window Management', () => {
       cy.get('[data-testid="create-ruleset-button"]').click();
       cy.get('#ruleset-title').type('Multiple Windows Ruleset');
       cy.get('#ruleset-description').type('Ruleset for testing multiple windows');
+      cy.get('[data-testid="create-ruleset-next"]').click();
       cy.get('[data-testid="create-ruleset-submit"]').click();
 
       // Navigate to the ruleset
@@ -123,6 +126,7 @@ describe('Window Management', () => {
       cy.get('[data-testid="create-ruleset-button"]').click();
       cy.get('#ruleset-title').type('Edit Window Title Ruleset');
       cy.get('#ruleset-description').type('Ruleset for testing window title editing');
+      cy.get('[data-testid="create-ruleset-next"]').click();
       cy.get('[data-testid="create-ruleset-submit"]').click();
 
       // Navigate to the ruleset
@@ -157,6 +161,7 @@ describe('Window Management', () => {
       cy.get('[data-testid="create-ruleset-button"]').click();
       cy.get('#ruleset-title').type('Edit Window Category Ruleset');
       cy.get('#ruleset-description').type('Ruleset for testing window category editing');
+      cy.get('[data-testid="create-ruleset-next"]').click();
       cy.get('[data-testid="create-ruleset-submit"]').click();
 
       // Navigate to the ruleset
@@ -199,6 +204,7 @@ describe('Window Management', () => {
       cy.get('[data-testid="create-ruleset-button"]').click();
       cy.get('#ruleset-title').type('Delete Window Ruleset');
       cy.get('#ruleset-description').type('Ruleset for testing window deletion');
+      cy.get('[data-testid="create-ruleset-next"]').click();
       cy.get('[data-testid="create-ruleset-submit"]').click();
 
       // Navigate to the ruleset
@@ -233,6 +239,7 @@ describe('Window Management', () => {
       cy.get('[data-testid="create-ruleset-button"]').click();
       cy.get('#ruleset-title').type('Open Window Ruleset');
       cy.get('#ruleset-description').type('Ruleset for testing window opening');
+      cy.get('[data-testid="create-ruleset-next"]').click();
       cy.get('[data-testid="create-ruleset-submit"]').click();
 
       // Navigate to the ruleset
@@ -299,6 +306,7 @@ describe('Window Management', () => {
       cy.get('[data-testid="create-ruleset-button"]').click();
       cy.get('#ruleset-title').type('Filter Window Category Ruleset');
       cy.get('#ruleset-description').type('Ruleset for testing window category filtering');
+      cy.get('[data-testid="create-ruleset-next"]').click();
       cy.get('[data-testid="create-ruleset-submit"]').click();
 
       // Navigate to the ruleset
@@ -348,6 +356,7 @@ describe('Window Management', () => {
       cy.get('[data-testid="create-ruleset-button"]').click();
       cy.get('#ruleset-title').type('Validation Window Ruleset');
       cy.get('#ruleset-description').type('Ruleset for testing window validation');
+      cy.get('[data-testid="create-ruleset-next"]').click();
       cy.get('[data-testid="create-ruleset-submit"]').click();
 
       // Navigate to the ruleset
@@ -385,6 +394,7 @@ describe('Window Management', () => {
       cy.get('[data-testid="create-ruleset-button"]').click();
       cy.get('#ruleset-title').type('No Category Window Ruleset');
       cy.get('#ruleset-description').type('Ruleset for testing window without category');
+      cy.get('[data-testid="create-ruleset-next"]').click();
       cy.get('[data-testid="create-ruleset-submit"]').click();
 
       // Navigate to the ruleset

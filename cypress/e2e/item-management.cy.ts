@@ -13,6 +13,7 @@ describe('Item Management', () => {
       cy.get('[data-testid="create-ruleset-button"]').click();
       cy.get('#ruleset-title').type('Basic Item Ruleset');
       cy.get('#ruleset-description').type('Ruleset for testing basic item creation');
+      cy.get('[data-testid="create-ruleset-next"]').click();
       cy.get('[data-testid="create-ruleset-submit"]').click();
 
       // Wait for ruleset to be created and navigate to it
@@ -47,6 +48,7 @@ describe('Item Management', () => {
       cy.get('[data-testid="create-ruleset-button"]').click();
       cy.get('#ruleset-title').type('Flag Item Ruleset');
       cy.get('#ruleset-description').type('Ruleset for testing item flags');
+      cy.get('[data-testid="create-ruleset-next"]').click();
       cy.get('[data-testid="create-ruleset-submit"]').click();
 
       // Navigate to the ruleset
@@ -89,6 +91,7 @@ describe('Item Management', () => {
       cy.get('[data-testid="create-ruleset-button"]').click();
       cy.get('#ruleset-title').type('Numeric Item Ruleset');
       cy.get('#ruleset-description').type('Ruleset for testing numeric item properties');
+      cy.get('[data-testid="create-ruleset-next"]').click();
       cy.get('[data-testid="create-ruleset-submit"]').click();
 
       // Navigate to the ruleset
@@ -130,6 +133,7 @@ describe('Item Management', () => {
       cy.get('[data-testid="create-ruleset-button"]').click();
       cy.get('#ruleset-title').type('Consumable Item Ruleset');
       cy.get('#ruleset-description').type('Ruleset for testing consumable items');
+      cy.get('[data-testid="create-ruleset-next"]').click();
       cy.get('[data-testid="create-ruleset-submit"]').click();
 
       // Navigate to the ruleset
@@ -174,6 +178,7 @@ describe('Item Management', () => {
       cy.get('[data-testid="create-ruleset-button"]').click();
       cy.get('#ruleset-title').type('Edit Item Ruleset');
       cy.get('#ruleset-description').type('Ruleset for testing item editing');
+      cy.get('[data-testid="create-ruleset-next"]').click();
       cy.get('[data-testid="create-ruleset-submit"]').click();
 
       // Navigate to the ruleset
@@ -231,6 +236,7 @@ describe('Item Management', () => {
       cy.get('[data-testid="create-ruleset-button"]').click();
       cy.get('#ruleset-title').type('Delete Item Ruleset');
       cy.get('#ruleset-description').type('Ruleset for testing item deletion');
+      cy.get('[data-testid="create-ruleset-next"]').click();
       cy.get('[data-testid="create-ruleset-submit"]').click();
 
       // Navigate to the ruleset
@@ -278,6 +284,7 @@ describe('Item Management', () => {
       cy.get('[data-testid="create-ruleset-button"]').click();
       cy.get('#ruleset-title').type('Cancel Delete Item Ruleset');
       cy.get('#ruleset-description').type('Ruleset for testing cancel item deletion');
+      cy.get('[data-testid="create-ruleset-next"]').click();
       cy.get('[data-testid="create-ruleset-submit"]').click();
 
       // Navigate to the ruleset
@@ -323,6 +330,7 @@ describe('Item Management', () => {
       cy.get('[data-testid="create-ruleset-button"]').click();
       cy.get('#ruleset-title').type('Validation Item Ruleset');
       cy.get('#ruleset-description').type('Ruleset for testing item validation');
+      cy.get('[data-testid="create-ruleset-next"]').click();
       cy.get('[data-testid="create-ruleset-submit"]').click();
 
       // Navigate to the ruleset
@@ -362,6 +370,7 @@ describe('Item Management', () => {
       cy.get('[data-testid="create-ruleset-button"]').click();
       cy.get('#ruleset-title').type('Inline Edit Item Ruleset');
       cy.get('#ruleset-description').type('Ruleset for testing inline item editing');
+      cy.get('[data-testid="create-ruleset-next"]').click();
       cy.get('[data-testid="create-ruleset-submit"]').click();
 
       // Navigate to the ruleset
@@ -407,6 +416,7 @@ describe('Item Management', () => {
       cy.get('[data-testid="create-ruleset-button"]').click();
       cy.get('#ruleset-title').type('Negative Value Item Ruleset');
       cy.get('#ruleset-description').type('Ruleset for testing negative values');
+      cy.get('[data-testid="create-ruleset-next"]').click();
       cy.get('[data-testid="create-ruleset-submit"]').click();
 
       // Navigate to the ruleset
@@ -448,6 +458,7 @@ describe('Item Management', () => {
       cy.get('[data-testid="create-ruleset-button"]').click();
       cy.get('#ruleset-title').type('Toggle Flags Item Ruleset');
       cy.get('#ruleset-description').type('Ruleset for testing flag toggles');
+      cy.get('[data-testid="create-ruleset-next"]').click();
       cy.get('[data-testid="create-ruleset-submit"]').click();
 
       // Navigate to the ruleset
