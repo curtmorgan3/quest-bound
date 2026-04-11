@@ -81,6 +81,10 @@ export const viteConfig = defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
+  /** Vite 7: default `iife` is invalid when the worker graph is code-split; ES module workers are fine for `type: 'module'`. */
+  worker: {
+    format: 'es',
+  },
   server: (() => {
     const certDir = path.resolve(process.cwd(), '.cert');
     const keyPath = path.join(certDir, 'key.pem');

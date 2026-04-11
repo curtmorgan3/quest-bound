@@ -11,7 +11,76 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import { useRegisterSW } from 'virtual:pwa-register/react';
+import { Workbox } from 'workbox-window';
+
+/**
+ * Prompt-mode SW registration (same behavior as vite-plugin-pwa's virtual:pwa-register/react)
+ * but without the virtual module. That import breaks Vite 7 production builds when Rollup also
+ * bundles code (e.g. worker graphs) where vite-plugin-pwa's resolveId hook is not applied.
+ *
+ * Must stay aligned with VitePWA options in vite.config.ts: default `filename: 'sw.js'`,
+ * `registerType: 'prompt'`, and scope derived from `base`.
+ */
+function useWorkboxPromptRegister(options: {
+  immediate?: boolean;
+  onRegisteredSW?: (
+    swScriptUrl: string,
+    registration: ServiceWorkerRegistration | undefined,
+  ) => void;
+}): {
+  needRefresh: boolean;
+  updateServiceWorker: () => Promise<void>;
+} {
+  const { immediate = true, onRegisteredSW } = options;
+  const [needRefresh, setNeedRefresh] = useState(false);
+  const wbRef = useRef<Workbox | undefined>(undefined);
+  const onRegisteredSWRef = useRef(onRegisteredSW);
+  onRegisteredSWRef.current = onRegisteredSW;
+
+  const updateServiceWorker = useCallback(async () => {
+    wbRef.current?.messageSkipWaiting();
+  }, []);
+
+  useEffect(() => {
+    if (!('serviceWorker' in navigator)) return;
+
+    const base = import.meta.env.BASE_URL;
+    const swScriptUrl = `${base}sw.js`;
+    const scope = base;
+
+    const wb = new Workbox(swScriptUrl, { scope, type: 'classic' });
+    wbRef.current = wb;
+
+    const showSkipWaitingPrompt = () => {
+      wb.addEventListener('controlling', (event) => {
+        if (event.isUpdate) window.location.reload();
+      });
+      setNeedRefresh(true);
+    };
+
+    wb.addEventListener('installed', (event) => {
+      if (typeof event.isUpdate === 'undefined' && typeof event.isExternal !== 'undefined') {
+        if (event.isExternal) showSkipWaitingPrompt();
+      }
+    });
+    wb.addEventListener('waiting', showSkipWaitingPrompt);
+
+    void wb
+      .register({ immediate })
+      .then((r) => {
+        onRegisteredSWRef.current?.(swScriptUrl, r);
+      })
+      .catch(() => {
+        /* ignore registration errors (e.g. no SW in dev) */
+      });
+
+    return () => {
+      wbRef.current = undefined;
+    };
+  }, [immediate]);
+
+  return { needRefresh, updateServiceWorker };
+}
 
 export interface PwaUpdateContextValue {
   /** True when a new service worker is waiting and the user should reload. */
@@ -86,10 +155,7 @@ function PwaUpdateToast() {
 export function PwaUpdateProvider({ children }: { children: ReactNode }) {
   const registrationRef = useRef<ServiceWorkerRegistration | undefined>(undefined);
 
-  const {
-    needRefresh: [needRefreshFlag],
-    updateServiceWorker,
-  } = useRegisterSW({
+  const { needRefresh, updateServiceWorker } = useWorkboxPromptRegister({
     immediate: true,
     onRegisteredSW(_url, registration) {
       registrationRef.current = registration;
@@ -104,17 +170,17 @@ export function PwaUpdateProvider({ children }: { children: ReactNode }) {
     await reg?.update();
   }, [swSupported]);
 
-  const wrappedUpdate = useCallback(() => updateServiceWorker(true), [updateServiceWorker]);
+  const wrappedUpdate = useCallback(() => updateServiceWorker(), [updateServiceWorker]);
 
   const value = useMemo<PwaUpdateContextValue>(
     () => ({
-      needRefresh: needRefreshFlag,
+      needRefresh,
       updateServiceWorker: wrappedUpdate,
       checkForUpdate,
       appVersion: import.meta.env.VITE_APP_VERSION,
       swSupported,
     }),
-    [needRefreshFlag, wrappedUpdate, checkForUpdate, swSupported],
+    [needRefresh, wrappedUpdate, checkForUpdate, swSupported],
   );
 
   return (
