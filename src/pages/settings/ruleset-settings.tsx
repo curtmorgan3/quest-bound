@@ -563,7 +563,12 @@ export const RulesetSettings = ({ activeRuleset }: RulesetSettingsProps) => {
                 <ImageUpload
                   image={activeRuleset.charactersCtaImage ?? undefined}
                   alt='Characters CTA'
-                  onRemove={() => updateRuleset(activeRuleset.id, { charactersCtaAssetId: null })}
+                  onRemove={() =>
+                    updateRuleset(activeRuleset.id, {
+                      charactersCtaAssetId: null,
+                      charactersCtaImage: null,
+                    })
+                  }
                   onUpload={(assetId) =>
                     updateRuleset(activeRuleset.id, { charactersCtaAssetId: assetId })
                   }
@@ -605,7 +610,12 @@ export const RulesetSettings = ({ activeRuleset }: RulesetSettingsProps) => {
                 <ImageUpload
                   image={activeRuleset.campaignsCtaImage ?? undefined}
                   alt='Campaigns CTA'
-                  onRemove={() => updateRuleset(activeRuleset.id, { campaignsCtaAssetId: null })}
+                  onRemove={() =>
+                    updateRuleset(activeRuleset.id, {
+                      campaignsCtaAssetId: null,
+                      campaignsCtaImage: null,
+                    })
+                  }
                   onUpload={(assetId) =>
                     updateRuleset(activeRuleset.id, { campaignsCtaAssetId: assetId })
                   }

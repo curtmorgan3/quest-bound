@@ -33,8 +33,13 @@ import {
 import { useContext, useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Avatar, AvatarFallback, AvatarImage } from '../../ui/avatar';
-import { DialogDescription } from '../../ui/dialog';
-import { Drawer, DrawerContent, DrawerTrigger } from '../../ui/drawer';
+import {
+  Drawer,
+  DrawerContent,
+  DrawerDescription,
+  DrawerTitle,
+  DrawerTrigger,
+} from '../../ui/drawer';
 import { CampaignSidebar } from './campaign-sidebar';
 import { CharacterSidebar } from './character-sidebar';
 import { RulesetSidebar } from './ruleset-sidebar';
@@ -179,7 +184,11 @@ export function AppSidebar() {
   );
 
   return (
-    <Drawer direction='bottom' open={settingsOpen} onOpenChange={setSettingsOpen}>
+    <Drawer
+      autoFocus
+      direction='bottom'
+      open={settingsOpen}
+      onOpenChange={setSettingsOpen}>
       <Sidebar collapsible='icon'>
         <SidebarGroup>
           <div className='flex items-center justify-left'>
@@ -300,7 +309,10 @@ export function AppSidebar() {
       </Sidebar>
 
       <DrawerContent className='w-[100vw]'>
-        <DialogDescription className='hidden'>Settings</DialogDescription>
+        <DrawerTitle className='sr-only'>Settings</DrawerTitle>
+        <DrawerDescription className='sr-only'>
+          Application, ruleset, campaign, and character settings.
+        </DrawerDescription>
         <Settings />
       </DrawerContent>
       {showCloudSync && rulesetId && (

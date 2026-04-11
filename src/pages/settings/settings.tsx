@@ -123,10 +123,9 @@ export const Settings = () => {
           {page === 'campaign' && isOnCampaignRoute && campaign && (
             <CampaignSettings activeCampaign={campaign} />
           )}
-          {page === 'ruleset' &&
-            isOnRulesetRoute &&
-            activeRuleset &&
-            !rulesetReadOnlyPlaytest && <RulesetSettings activeRuleset={activeRuleset} />}
+          {page === 'ruleset' && isOnRulesetRoute && activeRuleset && !rulesetReadOnlyPlaytest && (
+            <RulesetSettings activeRuleset={activeRuleset} />
+          )}
           {page === 'character' && character && <CharacterSettings character={character} />}
         </div>
       </div>
