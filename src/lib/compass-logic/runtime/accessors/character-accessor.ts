@@ -12,7 +12,8 @@ import type {
 } from '@/types';
 import { parseDiceExpression, rollDie } from '@/utils/dice-utils';
 import type Dexie from 'dexie';
-import type { ExecuteActionEventFn } from '../proxies';
+import type { ExecuteActionEventFn, ExecuteItemEventFn } from '../proxies';
+import type { SetItemEquippedFn } from '../proxies/item-instance-proxy';
 import { ActionProxy, AttributeProxy, createItemInstanceProxy } from '../proxies';
 import type { SheetComponentAccessor } from '../sheet-ui/sheet-component-accessor';
 import type { SheetUiCoordinator } from '../sheet-ui/sheet-ui-coordinator';
@@ -43,6 +44,7 @@ export class CharacterAccessor implements StructuredCloneSafe {
   protected characterCustomProperties: Record<string, string | number | boolean>;
   protected targetId: string | null;
   protected executeActionEvent: ExecuteActionEventFn | undefined;
+  protected executeItemEvent: ExecuteItemEventFn | undefined;
   /** Turn order in the current campaign scene (0 = unset). Only set when in campaign scene context. */
   protected turnOrderValue: number;
   /** True when this character's turn order is the active turn. Set by Scene.characters() in campaign scene context. */
@@ -79,6 +81,7 @@ export class CharacterAccessor implements StructuredCloneSafe {
     archetypeVariantByName: Map<string, string | undefined> = new Map(),
     targetId: string | null = null,
     executeActionEvent?: ExecuteActionEventFn,
+    executeItemEvent?: ExecuteItemEventFn,
     customProperties: CustomProperty[] = [],
     characterCustomProperties: Record<string, string | number | boolean> = {},
     turnOrder: number = 0,
@@ -110,6 +113,7 @@ export class CharacterAccessor implements StructuredCloneSafe {
     this.archetypeVariantByName = archetypeVariantByName;
     this.targetId = targetId;
     this.executeActionEvent = executeActionEvent;
+    this.executeItemEvent = executeItemEvent;
     this.customProperties = customProperties;
     this.characterCustomProperties = characterCustomProperties;
     this.turnOrderValue = turnOrder;
@@ -457,12 +461,20 @@ export class CharacterAccessor implements StructuredCloneSafe {
         getMergedUpdate({ actionIds }),
       );
     };
+    const onSetEquipped: SetItemEquippedFn = (isEquipped: boolean) => {
+      inventoryItem.isEquipped = isEquipped;
+      this.pendingUpdates.set(
+        `inventoryUpdate:${inventoryItem.id}`,
+        getMergedUpdate({ isEquipped }),
+      );
+    };
     const getActionIdByName = (actionName: string) =>
       Array.from(this.actionsCache.values()).find((a) => a.title === actionName)?.id;
     const onDestroy = () => this.removeItemByInstanceId(inventoryItem.id);
     return createItemInstanceProxy(
       inventoryItem,
       item,
+      this.id,
       this.customProperties,
       onSetCustomProperty,
       onDestroy,
@@ -470,6 +482,8 @@ export class CharacterAccessor implements StructuredCloneSafe {
       onSetDescription,
       onSetActionIds,
       getActionIdByName,
+      onSetEquipped,
+      this.executeItemEvent,
     );
   }
 

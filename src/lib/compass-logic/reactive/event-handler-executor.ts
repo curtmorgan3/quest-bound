@@ -17,6 +17,7 @@ import type { ASTNode } from '../interpreter/ast';
 import { functionDefToExecutableSource } from '../interpreter/ast-to-source';
 import { Lexer } from '../interpreter/lexer';
 import { Parser } from '../interpreter/parser';
+import type { ExecuteItemEventFn } from '../runtime/proxies/action-proxy';
 import type { ScriptExecutionContext, ScriptExecutionResult } from '../runtime/script-runner';
 import { ScriptRunner } from '../runtime/script-runner';
 import type { ScriptGameLogEntry } from '../runtime/script-game-log';
@@ -189,6 +190,53 @@ export class EventHandlerExecutor {
   }
 
   /**
+   * QBScript `item.equip()` / `item.unequip()` — runs the same item event pipeline as the UI.
+   */
+  private bindExecuteItemEventForScriptContext(
+    roll?: RollFn,
+    campaignId?: string,
+    rollSplit?: RollSplitFn,
+    prompt?: PromptFn,
+    selectCharacter?: SelectCharacterFn,
+    selectCharacters?: SelectCharactersFn,
+    campaignSceneId?: string,
+    promptMultiple?: PromptMultipleFn,
+    promptInput?: PromptInputFn,
+    createRollForCharacter?: (characterId: string) => RollFn,
+    createRollSplitForCharacter?: (characterId: string) => RollSplitFn,
+    sheetPreviewRulesetWindowId?: string | null,
+  ): ExecuteItemEventFn {
+    return async (itemId, ownerCharacterId, eventType, inventoryItemInstanceId) => {
+      const r = await this.executeItemEvent(
+        itemId,
+        ownerCharacterId,
+        eventType,
+        roll,
+        campaignId,
+        inventoryItemInstanceId,
+        rollSplit,
+        prompt,
+        selectCharacter,
+        selectCharacters,
+        campaignSceneId,
+        promptMultiple,
+        promptInput,
+        createRollForCharacter,
+        createRollSplitForCharacter,
+        sheetPreviewRulesetWindowId,
+      );
+      return {
+        success: r.success,
+        value: r.value,
+        announceMessages: r.announceMessages,
+        logMessages: r.logMessages,
+        error: r.error,
+        componentAnimations: r.componentAnimations,
+      };
+    };
+  }
+
+  /**
    * Wrap selectCharacter/selectCharacters to record selected character(s) for event invocation log.
    * Returns wrapped fns and a promise that resolves to their display names after script runs.
    */
@@ -353,6 +401,20 @@ export class EventHandlerExecutor {
           createRollSplitForCharacter,
           sheetPreviewRulesetWindowId,
         ),
+      executeItemEvent: this.bindExecuteItemEventForScriptContext(
+        roll,
+        campaignId,
+        rollSplit,
+        prompt,
+        selectCharacterWrapped,
+        selectCharactersWrapped,
+        campaignSceneId,
+        promptMultiple,
+        promptInput,
+        createRollForCharacter,
+        createRollSplitForCharacter,
+        sheetPreviewRulesetWindowId,
+      ),
     };
 
     const result = this.runScriptForTest
@@ -516,6 +578,20 @@ enableScriptGameLogRolls: true,
         callerInventoryItemInstanceId,
         campaignSceneId,
         sheetPreviewRulesetWindowId: sheetPreviewRulesetWindowId ?? undefined,
+        executeItemEvent: this.bindExecuteItemEventForScriptContext(
+          roll,
+          campaignId,
+          rollSplit,
+          prompt,
+          selectCharacterWrapped,
+          selectCharactersWrapped,
+          campaignSceneId,
+          promptMultiple,
+          promptInput,
+          createRollForCharacter,
+          createRollSplitForCharacter,
+          sheetPreviewRulesetWindowId,
+        ),
         // Only allow Owner.Action().activate() at top level to avoid infinite re-entrancy
         ...(actionEventDepth === 1 && {
           executeActionEvent: async (actionId, ownerId, targetIdForAction, eventTypeForAction) => {
@@ -780,6 +856,20 @@ enableScriptGameLogRolls: true,
           createRollSplitForCharacter,
           sheetPreviewRulesetWindowId,
         ),
+      executeItemEvent: this.bindExecuteItemEventForScriptContext(
+        roll,
+        campaignId,
+        rollSplit,
+        prompt,
+        selectCharacter,
+        selectCharacters,
+        campaignSceneId,
+        promptMultiple,
+        promptInput,
+        createRollForCharacter,
+        createRollSplitForCharacter,
+        sheetPreviewRulesetWindowId,
+      ),
     };
 
     const result = this.runScriptForTest
@@ -885,6 +975,20 @@ enableScriptGameLogRolls: true,
           createRollSplitForCharacter,
           undefined,
         ),
+      executeItemEvent: this.bindExecuteItemEventForScriptContext(
+        roll,
+        undefined,
+        rollSplit,
+        prompt,
+        selectCharacter,
+        selectCharacters,
+        undefined,
+        promptMultiple,
+        promptInput,
+        createRollForCharacter,
+        createRollSplitForCharacter,
+        undefined,
+      ),
     };
 
     const result = this.runScriptForTest
@@ -1027,6 +1131,20 @@ enableScriptGameLogRolls: true,
           createRollSplitForCharacter,
           undefined,
         ),
+      executeItemEvent: this.bindExecuteItemEventForScriptContext(
+        roll,
+        campaignEvent.campaignId,
+        rollSplit,
+        prompt,
+        selectCharacter,
+        selectCharacters,
+        (campaignEvent as CampaignEvent).sceneId ?? campaignSceneId,
+        promptMultiple,
+        promptInput,
+        createRollForCharacter,
+        createRollSplitForCharacter,
+        undefined,
+      ),
       params: paramsHelper,
     };
 

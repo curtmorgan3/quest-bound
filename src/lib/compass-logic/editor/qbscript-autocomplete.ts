@@ -53,6 +53,16 @@ const qbscriptCompletions = [
     info: "Add an attribute as an inventory entry (e.g. Owner.addAttribute('Health', 'component-id')",
   },
   {
+    label: 'equip',
+    type: 'function',
+    info: "On inventory item refs (Owner.Item / Items / Self): run on_equip then set equipped. Async — use await (e.g. await Owner.Item('Sword').equip())",
+  },
+  {
+    label: 'unequip',
+    type: 'function',
+    info: "On inventory item refs: run on_unequip then clear equipped. Async — use await",
+  },
+  {
     label: 'Owner.navigateToPage',
     type: 'function',
     info: "Navigate the character sheet to a page by label (e.g. Owner.navigateToPage('Spells'))",

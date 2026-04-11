@@ -2,6 +2,7 @@ import { Evaluator } from '@/lib/compass-logic/interpreter/evaluator';
 import { Lexer } from '@/lib/compass-logic/interpreter/lexer';
 import { Parser } from '@/lib/compass-logic/interpreter/parser';
 import { OwnerAccessor, RulesetAccessor } from '@/lib/compass-logic/runtime/accessors';
+import type { ExecuteItemEventFn } from '@/lib/compass-logic/runtime/proxies';
 import { ScriptRunner } from '@/lib/compass-logic/runtime/script-runner';
 import type { Attribute, Asset, Character, CharacterAttribute, Chart, InventoryItem, Item } from '@/types';
 import { describe, expect, it, vi } from 'vitest';
@@ -846,6 +847,7 @@ Owner.setImage("nonexistent.png")
         new Map(),
         null,
         undefined,
+        undefined,
         [],
         {},
         0,
@@ -860,6 +862,74 @@ Owner.setImage("nonexistent.png")
       const inBag = owner.Items(undefined, 'bag');
       expect(inBag).toHaveLength(1);
       expect(inBag[0].quantity).toBe(2);
+    });
+
+    it('equip() and unequip() run item events then persist isEquipped', async () => {
+      const swordItem: Item = {
+        id: 'item_sword',
+        rulesetId: 'ruleset1',
+        title: 'Sword',
+        description: '',
+        weight: 0,
+        defaultQuantity: 1,
+        stackSize: 1,
+        isContainer: false,
+        isStorable: true,
+        isEquippable: true,
+        isConsumable: false,
+        inventoryWidth: 1,
+        inventoryHeight: 1,
+        createdAt: '2024-01-01',
+        updatedAt: '2024-01-01',
+      };
+      const itemsCache = new Map<string, Item>();
+      itemsCache.set('item_sword', swordItem);
+      const invEntry: InventoryItem = {
+        id: 'inv_sword',
+        type: 'item',
+        entityId: 'item_sword',
+        inventoryId: 'inv1',
+        componentId: '',
+        quantity: 1,
+        x: 0,
+        y: 0,
+        createdAt: '2024-01-01',
+        updatedAt: '2024-01-01',
+      };
+      const pendingUpdates = new Map<string, any>();
+      const events: string[] = [];
+      const executeItemEvent: ExecuteItemEventFn = async (_item, _char, eventType) => {
+        events.push(eventType);
+        return { success: true, value: null, announceMessages: [], logMessages: [] };
+      };
+      const owner = new OwnerAccessor(
+        'char1',
+        'Test',
+        'inv1',
+        null as any,
+        pendingUpdates,
+        new Map(),
+        new Map(),
+        new Map(),
+        itemsCache,
+        [invEntry],
+        new Set(),
+        new Map(),
+        null,
+        undefined,
+        executeItemEvent,
+      );
+      const proxy = owner.Item('Sword');
+      expect(proxy).toBeDefined();
+      await proxy!.equip();
+      expect(events).toEqual(['on_equip']);
+      expect(invEntry.isEquipped).toBe(true);
+      expect(
+        (pendingUpdates.get('inventoryUpdate:inv_sword') as { isEquipped?: boolean }).isEquipped,
+      ).toBe(true);
+      await proxy!.unequip();
+      expect(events).toEqual(['on_equip', 'on_unequip']);
+      expect(invEntry.isEquipped).toBe(false);
     });
 
     it('should add item via Owner.addItem and record in pendingUpdates', () => {

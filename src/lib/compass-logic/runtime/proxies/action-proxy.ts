@@ -21,6 +21,17 @@ export type ExecuteActionEventFn = (
 ) => Promise<ExecuteActionEventResult>;
 
 /**
+ * Runs on_equip / on_unequip for an inventory row (same pipeline as the inventory UI).
+ * Implemented by ScriptRunner context (worker / EventHandlerExecutor).
+ */
+export type ExecuteItemEventFn = (
+  rulesetItemId: string,
+  ownerCharacterId: string,
+  eventType: 'on_equip' | 'on_unequip',
+  inventoryItemInstanceId: string,
+) => Promise<ExecuteActionEventResult>;
+
+/**
  * Proxy object for script-side action references from Owner.Action('name').
  * Exposes async activate() and deactivate() that run the action's event handlers
  * using the current execution's Owner and optional target character.

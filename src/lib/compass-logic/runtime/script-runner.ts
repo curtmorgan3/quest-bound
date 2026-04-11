@@ -50,7 +50,7 @@ import {
 import { executeCustomEventListener } from './execute-custom-event-listener';
 import { executeTurnCallback } from './execute-turn-callback';
 import type { ScriptParamsHelper } from './params-helper';
-import type { ExecuteActionEventFn } from './proxies';
+import type { ExecuteActionEventFn, ExecuteItemEventFn } from './proxies';
 import { logMessagesToGameLogTimeline, type ScriptGameLogEntry } from './script-game-log';
 import { SheetUiCoordinator } from './sheet-ui/sheet-ui-coordinator';
 
@@ -217,6 +217,8 @@ export interface ScriptExecutionContext {
   selectCharacters?: SelectCharactersFn;
   /** When set, Owner.Action('name').activate() / .deactivate() can run action event handlers (e.g. from worker or EventHandlerExecutor). */
   executeActionEvent?: ExecuteActionEventFn;
+  /** When set, inventory item proxies can run on_equip / on_unequip via equip() / unequip(). */
+  executeItemEvent?: ExecuteItemEventFn;
   /** Optional campaign id for associating script execution with a campaign (logging, context). */
   campaignId?: string;
   /**
@@ -577,6 +579,7 @@ export class ScriptRunner {
       archetypeVariantByName,
       null,
       this.context.executeActionEvent,
+      this.context.executeItemEvent,
       this.customPropertiesCache,
       character.customProperties ?? {},
       turnOrder,
@@ -1400,6 +1403,7 @@ export class ScriptRunner {
       this.ownerArchetypeVariantByName,
       null,
       this.context.executeActionEvent,
+      this.context.executeItemEvent,
       this.customPropertiesCache,
       this.ownerCharacterCustomProperties,
       ownerTurnOrder,

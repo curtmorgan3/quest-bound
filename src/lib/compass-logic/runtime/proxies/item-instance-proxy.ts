@@ -1,5 +1,6 @@
 import type { CustomProperty, InventoryItem, Item } from '@/types';
 import type { StructuredCloneSafe } from '../structured-clone-safe';
+import type { ExecuteActionEventResult, ExecuteItemEventFn } from './action-proxy';
 
 /**
  * Callback to persist a custom property change for an inventory item instance.
@@ -21,6 +22,9 @@ export type SetItemDescriptionFn = (description: string) => void;
 
 /** Callback to persist actionIds change for an inventory item instance. */
 export type SetItemActionIdsFn = (actionIds: string[]) => void;
+
+/** Callback to persist equipped flag after a successful on_equip / on_unequip run. */
+export type SetItemEquippedFn = (isEquipped: boolean) => void;
 
 /** Lookup to resolve action name -> action id for addAction/removeAction. */
 export type GetActionIdByNameFn = (name: string) => string | undefined;
@@ -66,18 +70,23 @@ export type ItemInstancePlain = {
 export class ItemInstanceProxy implements StructuredCloneSafe {
   readonly inventoryItem: InventoryItem;
   readonly item: Item;
+  /** Character that owns this inventory row (Owner when using Owner.Item / Items). */
+  readonly ownerCharacterId: string;
   private readonly customPropertyLookup: CustomPropertyLookup;
   private readonly customProperties: CustomProperty[];
   private readonly onSetCustomProperty?: SetItemCustomPropertyFn;
   private readonly onSetLabel?: SetItemLabelFn;
   private readonly onSetDescription?: SetItemDescriptionFn;
   private readonly onSetActionIds?: SetItemActionIdsFn;
+  private readonly onSetEquipped?: SetItemEquippedFn;
   private readonly getActionIdByName?: GetActionIdByNameFn;
   private readonly onDestroy?: DestroyItemInstanceFn;
+  private readonly executeItemEvent?: ExecuteItemEventFn;
 
   constructor(
     inventoryItem: InventoryItem,
     item: Item,
+    ownerCharacterId: string,
     customPropertyLookup: CustomPropertyLookup,
     customProperties: CustomProperty[],
     onSetCustomProperty?: SetItemCustomPropertyFn,
@@ -86,9 +95,12 @@ export class ItemInstanceProxy implements StructuredCloneSafe {
     onSetDescription?: SetItemDescriptionFn,
     onSetActionIds?: SetItemActionIdsFn,
     getActionIdByName?: GetActionIdByNameFn,
+    onSetEquipped?: SetItemEquippedFn,
+    executeItemEvent?: ExecuteItemEventFn,
   ) {
     this.inventoryItem = inventoryItem;
     this.item = item;
+    this.ownerCharacterId = ownerCharacterId;
     this.customPropertyLookup = customPropertyLookup;
     this.customProperties = customProperties;
     this.onSetCustomProperty = onSetCustomProperty;
@@ -96,7 +108,9 @@ export class ItemInstanceProxy implements StructuredCloneSafe {
     this.onSetLabel = onSetLabel;
     this.onSetDescription = onSetDescription;
     this.onSetActionIds = onSetActionIds;
+    this.onSetEquipped = onSetEquipped;
     this.getActionIdByName = getActionIdByName;
+    this.executeItemEvent = executeItemEvent;
   }
 
   /**
@@ -135,6 +149,63 @@ export class ItemInstanceProxy implements StructuredCloneSafe {
 
   get isEquipped(): boolean {
     return this.inventoryItem.isEquipped ?? false;
+  }
+
+  private emptyItemEventResult(): ExecuteActionEventResult {
+    return { success: true, value: null, announceMessages: [], logMessages: [] };
+  }
+
+  /**
+   * Mark equipped, run the item's on_equip handler (if any), then persist isEquipped.
+   * Matches inventory UI order: event first, then stored flag.
+   */
+  async equip(): Promise<ExecuteActionEventResult> {
+    if (!this.executeItemEvent) {
+      throw new Error('Item equip is not available in this context');
+    }
+    if (!this.item.isEquippable) {
+      throw new Error(`Item '${this.title}' is not equippable`);
+    }
+    if (this.inventoryItem.isEquipped) {
+      return this.emptyItemEventResult();
+    }
+    const result = await this.executeItemEvent(
+      this.item.id,
+      this.ownerCharacterId,
+      'on_equip',
+      this.inventoryItem.id,
+    );
+    if (!result.success) {
+      throw result.error ?? new Error('on_equip failed');
+    }
+    this.onSetEquipped?.(true);
+    return result;
+  }
+
+  /**
+   * Run on_unequip (if any), then clear isEquipped. No-op when already unequipped.
+   */
+  async unequip(): Promise<ExecuteActionEventResult> {
+    if (!this.executeItemEvent) {
+      throw new Error('Item unequip is not available in this context');
+    }
+    if (!this.item.isEquippable) {
+      throw new Error(`Item '${this.title}' is not equippable`);
+    }
+    if (!this.inventoryItem.isEquipped) {
+      return this.emptyItemEventResult();
+    }
+    const result = await this.executeItemEvent(
+      this.item.id,
+      this.ownerCharacterId,
+      'on_unequip',
+      this.inventoryItem.id,
+    );
+    if (!result.success) {
+      throw result.error ?? new Error('on_unequip failed');
+    }
+    this.onSetEquipped?.(false);
+    return result;
   }
 
   private getDefaultValueForCustomProperty(
@@ -266,6 +337,7 @@ export class ItemInstanceProxy implements StructuredCloneSafe {
 export function createItemInstanceProxy(
   inventoryItem: InventoryItem,
   item: Item,
+  ownerCharacterId: string,
   customProperties: CustomProperty[],
   onSetCustomProperty?: SetItemCustomPropertyFn,
   onDestroy?: DestroyItemInstanceFn,
@@ -273,11 +345,14 @@ export function createItemInstanceProxy(
   onSetDescription?: SetItemDescriptionFn,
   onSetActionIds?: SetItemActionIdsFn,
   getActionIdByName?: GetActionIdByNameFn,
+  onSetEquipped?: SetItemEquippedFn,
+  executeItemEvent?: ExecuteItemEventFn,
 ): ItemInstanceProxy {
   const lookup = createCustomPropertyLookup(customProperties);
   return new ItemInstanceProxy(
     inventoryItem,
     item,
+    ownerCharacterId,
     lookup,
     customProperties,
     onSetCustomProperty,
@@ -286,5 +361,7 @@ export function createItemInstanceProxy(
     onSetDescription,
     onSetActionIds,
     getActionIdByName,
+    onSetEquipped,
+    executeItemEvent,
   );
 }
