@@ -11,7 +11,6 @@ import type {
   CharacterWindow,
   Chart,
   Component,
-  ComponentStateEntry,
   Composite,
   CompositeVariant,
   CustomProperty,
@@ -23,129 +22,14 @@ import type {
   ItemCustomProperty,
   Page,
   Ruleset,
-  Window,
-  Script,
   RulesetWindow,
+  Script,
+  Window,
 } from '@/types';
-
-/** Maps used to rewrite ids inside component `data` / `states` and top-level click/script fields. */
-type RulesetDuplicateIdMaps = {
-  pageIdMap: Map<string, string>;
-  attributeIdMap: Map<string, string>;
-  actionIdMap: Map<string, string>;
-  windowIdMap: Map<string, string>;
-  scriptIdMap: Map<string, string>;
-  assetIdMap: Map<string, string>;
-  itemIdMap: Map<string, string>;
-};
-
-function mapOptionalEntityId(
-  value: unknown,
-  map: Map<string, string>,
-): string | null | undefined {
-  if (value == null || value === '') return value as null | undefined;
-  if (typeof value !== 'string') return value as undefined;
-  return map.get(value) ?? value;
-}
-
-/**
- * Remap ruleset entity ids in a parsed `ComponentData` object (base layer or state diff).
- * Keeps `null` / explicit clears; only string ids are passed through maps.
- */
-function remapComponentDataIds(data: Record<string, unknown>, m: RulesetDuplicateIdMaps): void {
-  if (typeof data.pageId === 'string' && data.pageId) {
-    data.pageId = m.pageIdMap.get(data.pageId) ?? data.pageId;
-  }
-
-  for (const key of [
-    'viewAttributeId',
-    'toggleBooleanAttributeId',
-    'tooltipAttributeId',
-    'conditionalRenderAttributeId',
-  ] as const) {
-    if (key in data && data[key] != null && data[key] !== '') {
-      data[key] = mapOptionalEntityId(data[key], m.attributeIdMap);
-    }
-  }
-
-  if ('clickActionId' in data) {
-    data.clickActionId = mapOptionalEntityId(data.clickActionId, m.actionIdMap);
-  }
-  if ('clickChildWindowId' in data) {
-    data.clickChildWindowId = mapOptionalEntityId(data.clickChildWindowId, m.windowIdMap);
-  }
-  if ('clickScriptId' in data) {
-    data.clickScriptId = mapOptionalEntityId(data.clickScriptId, m.scriptIdMap);
-  }
-
-  for (const key of ['assetId'] as const) {
-    if (key in data && typeof data[key] === 'string' && data[key]) {
-      data[key] = m.assetIdMap.get(data[key] as string) ?? data[key];
-    }
-  }
-
-  for (const key of ['checkedAssetId', 'uncheckedAssetId'] as const) {
-    if (key in data && typeof data[key] === 'string' && data[key]) {
-      data[key] = m.assetIdMap.get(data[key] as string) ?? data[key];
-    }
-  }
-
-  if (typeof data.itemRestrictionRef === 'string' && data.itemRestrictionRef) {
-    data.itemRestrictionRef = m.itemIdMap.get(data.itemRestrictionRef) ?? data.itemRestrictionRef;
-  }
-  if (typeof data.actionRestrictionRef === 'string' && data.actionRestrictionRef) {
-    data.actionRestrictionRef =
-      m.actionIdMap.get(data.actionRestrictionRef) ?? data.actionRestrictionRef;
-  }
-
-  for (const key of ['numeratorAttributeId', 'denominatorAttributeId'] as const) {
-    if (key in data && data[key] != null && data[key] !== '') {
-      data[key] = mapOptionalEntityId(data[key], m.attributeIdMap);
-    }
-  }
-}
-
-function remapComponentSerializedDataAndStates(
-  dataJson: string,
-  statesJson: string | null | undefined,
-  m: RulesetDuplicateIdMaps,
-): { data: string; states: string | null | undefined } {
-  let data = dataJson;
-  try {
-    const parsed = JSON.parse(dataJson) as Record<string, unknown>;
-    remapComponentDataIds(parsed, m);
-    data = JSON.stringify(parsed);
-  } catch {
-    // leave data unchanged if not valid JSON
-  }
-
-  let states = statesJson;
-  if (statesJson == null || statesJson === '') {
-    return { data, states: statesJson };
-  }
-  try {
-    const entries = JSON.parse(statesJson) as ComponentStateEntry[];
-    if (!Array.isArray(entries)) {
-      return { data, states };
-    }
-    for (const entry of entries) {
-      if (entry?.data && typeof entry.data === 'string' && entry.data.trim() !== '') {
-        try {
-          const partial = JSON.parse(entry.data) as Record<string, unknown>;
-          remapComponentDataIds(partial, m);
-          entry.data = JSON.stringify(partial);
-        } catch {
-          // keep state data string
-        }
-      }
-    }
-    states = JSON.stringify(entries);
-  } catch {
-    // keep states unchanged
-  }
-
-  return { data, states };
-}
+import {
+  type ComponentEntityIdMaps,
+  remapComponentSerializedDataAndStates,
+} from './remap-component-entity-ids';
 
 export interface DuplicateRulesetParams {
   /** Existing ruleset id to copy from */
@@ -467,8 +351,18 @@ export async function duplicateRuleset({
     const newId = crypto.randomUUID();
     documentIdMap.set(document.id, newId);
 
-    const { id, rulesetId, worldId, locationId, campaignId, createdAt, updatedAt, assetId, pdfAssetId, ...rest } =
-      document;
+    const {
+      id,
+      rulesetId,
+      worldId,
+      locationId,
+      campaignId,
+      createdAt,
+      updatedAt,
+      assetId,
+      pdfAssetId,
+      ...rest
+    } = document;
     const mappedAssetId = assetId ? (assetIdMap.get(assetId) ?? assetId) : (assetId ?? null);
     const mappedPdfAssetId = pdfAssetId
       ? (assetIdMap.get(pdfAssetId) ?? pdfAssetId)
@@ -648,7 +542,9 @@ export async function duplicateRuleset({
       if (type === 'attribute') mappedEntityId = attributeIdMap.get(entityId) ?? entityId;
       else if (type === 'item') mappedEntityId = itemIdMap.get(entityId) ?? entityId;
       else if (type === 'action') mappedEntityId = actionIdMap.get(entityId) ?? entityId;
-      const mappedCompId = componentId ? (componentIdMap.get(componentId) ?? componentId) : componentId;
+      const mappedCompId = componentId
+        ? (componentIdMap.get(componentId) ?? componentId)
+        : componentId;
       await db.inventoryItems.add({
         ...restInvItem,
         id: newInvItemId,
@@ -695,7 +591,15 @@ export async function duplicateRuleset({
 
     for (const cw of srcCharWindows as CharacterWindow[]) {
       const newCwId = crypto.randomUUID();
-      const { id: _cwid, createdAt: _cwc, updatedAt: _cwu, characterId: _cwCharId, characterPageId, windowId, ...restCw } = cw;
+      const {
+        id: _cwid,
+        createdAt: _cwc,
+        updatedAt: _cwu,
+        characterId: _cwCharId,
+        characterPageId,
+        windowId,
+        ...restCw
+      } = cw;
       const mappedCharPageId = characterPageId
         ? (characterPageIdMap.get(characterPageId) ?? characterPageId)
         : characterPageId;
@@ -827,7 +731,7 @@ export async function duplicateRuleset({
     counts.scripts++;
   }
 
-  const componentRemapMaps: RulesetDuplicateIdMaps = {
+  const componentRemapMaps: ComponentEntityIdMaps = {
     pageIdMap,
     attributeIdMap,
     actionIdMap,
@@ -858,7 +762,7 @@ export async function duplicateRuleset({
       data,
       states,
       ...rest
-    } = component;
+    }: Component & { assetId?: string | null } = component;
 
     const { data: remappedData, states: remappedStates } = remapComponentSerializedDataAndStates(
       data,

@@ -164,17 +164,17 @@ export interface RollSplitResponseSignal {
 
 export interface PromptResponseSignal {
   type: 'PROMPT_RESPONSE';
-  payload: { promptRequestId: string; value?: string; error?: string };
+  payload: { promptRequestId: string; value?: string | null; error?: string };
 }
 
 export interface PromptMultipleResponseSignal {
   type: 'PROMPT_MULTIPLE_RESPONSE';
-  payload: { promptRequestId: string; value?: string[]; error?: string };
+  payload: { promptRequestId: string; value?: string[] | null; error?: string };
 }
 
 export interface PromptInputResponseSignal {
   type: 'PROMPT_INPUT_RESPONSE';
-  payload: { promptRequestId: string; value?: string; error?: string };
+  payload: { promptRequestId: string; value?: string | null; error?: string };
 }
 
 export interface CharacterSelectResponseSignal {

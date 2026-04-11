@@ -40,14 +40,14 @@ export type RollSplitFn = (
   rerollMessage?: string,
 ) => number[] | Promise<number[]>;
 
-/** Prompt built-in: shows modal with message and choices; returns selected choice. Used by QBScript prompt(msg, choices). */
-export type PromptFn = (msg: string, choices: string[]) => Promise<string>;
+/** Prompt built-in: shows modal with message and choices; returns selected choice, or null if closed/canceled. Used by QBScript prompt(msg, choices). */
+export type PromptFn = (msg: string, choices: string[]) => Promise<string | null>;
 
-/** PromptMultiple built-in: shows modal with message and choices; returns array of selected choices. Used by QBScript promptMultiple(msg, choices). */
-export type PromptMultipleFn = (msg: string, choices: string[]) => Promise<string[]>;
+/** PromptMultiple built-in: shows modal with message and choices; returns selected choices, or null if closed/canceled. Used by QBScript promptMultiple(msg, choices). */
+export type PromptMultipleFn = (msg: string, choices: string[]) => Promise<string[] | null>;
 
-/** PromptInput built-in: shows modal with message and a text input; returns the submitted string. Used by QBScript promptInput(msg). */
-export type PromptInputFn = (msg: string) => Promise<string>;
+/** PromptInput built-in: shows modal with message and a text input; returns the submitted string, or null if closed/canceled. Used by QBScript promptInput(msg). */
+export type PromptInputFn = (msg: string) => Promise<string | null>;
 
 /**
  * Character selection host hook used by QBScript.

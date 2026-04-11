@@ -42,6 +42,7 @@ const ATTRIBUTE_PROXY_RESERVED_PROPERTIES = new Set([
 /** ItemInstanceProxy members that must not be routed to item custom `getProperty` / `setProperty`. */
 const ITEM_INSTANCE_PROXY_RESERVED_PROPERTIES = new Set([
   'title',
+  'originalTitle',
   'description',
   'quantity',
   'count',
@@ -1188,7 +1189,7 @@ export class Evaluator {
     );
 
     // Prompt: show modal with message and choices; returns selected choice (requires injected promptFn, e.g. from worker bridge)
-    this.globalEnv.define('prompt', async (msg: string, choices: string[]): Promise<string> => {
+    this.globalEnv.define('prompt', async (msg: string, choices: string[]): Promise<string | null> => {
       if (!this.promptFn) {
         throw new RuntimeError(
           'prompt(msg, choices) is not available in this context (no prompt handler)',
@@ -1201,7 +1202,7 @@ export class Evaluator {
     // PromptMultiple: show modal with message and choices; returns array of selected choices
     this.globalEnv.define(
       'promptMultiple',
-      async (msg: string, choices: string[]): Promise<string[]> => {
+      async (msg: string, choices: string[]): Promise<string[] | null> => {
         if (!this.promptMultipleFn) {
           throw new RuntimeError(
             'promptMultiple(msg, choices) is not available in this context (no promptMultiple handler)',
@@ -1215,7 +1216,7 @@ export class Evaluator {
     // PromptInput: show modal with message and text input; returns the submitted string
     this.globalEnv.define(
       'promptInput',
-      async (msg: string): Promise<string> => {
+      async (msg: string): Promise<string | null> => {
         if (!this.promptInputFn) {
           throw new RuntimeError(
             'promptInput(msg) is not available in this context (no promptInput handler)',

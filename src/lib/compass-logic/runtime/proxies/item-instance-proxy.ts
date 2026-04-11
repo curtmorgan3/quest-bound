@@ -54,6 +54,7 @@ function createCustomPropertyLookup(customProperties: CustomProperty[]): CustomP
  */
 export type ItemInstancePlain = {
   title: string;
+  originalTitle: string;
   description: string;
   quantity: number;
   isEquipped: boolean;
@@ -123,6 +124,11 @@ export class ItemInstanceProxy implements StructuredCloneSafe {
 
   get title(): string {
     return this.inventoryItem.label ?? this.item.title;
+  }
+
+  /** Ruleset definition title; not affected by inventory `label` / `setTitle`. */
+  get originalTitle(): string {
+    return this.item.title;
   }
 
   setTitle(value: string) {
@@ -353,6 +359,7 @@ export class ItemInstanceProxy implements StructuredCloneSafe {
   toStructuredCloneSafe(): ItemInstancePlain {
     const base: ItemInstancePlain = {
       title: this.title,
+      originalTitle: this.originalTitle,
       description: this.description,
       quantity: this.inventoryItem.quantity,
       isEquipped: this.inventoryItem.isEquipped ?? false,

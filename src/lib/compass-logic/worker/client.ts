@@ -405,9 +405,9 @@ export class QBScriptClient {
     const delegated = this.delegatedHostByRequestId.get(payload.executionRequestId);
     if (!this.worker) return;
     try {
-      let value: string;
+      let value: string | null;
       if (delegated) {
-        value = (await hostAwaitDelegatedUiInteraction({
+        value = await hostAwaitDelegatedUiInteraction<string | null>({
           campaignId: delegated.campaignId,
           executionRequestId: payload.executionRequestId,
           interactionId: payload.promptRequestId,
@@ -423,7 +423,7 @@ export class QBScriptClient {
           timeoutMs: delegated.timeoutMs,
           joinerDelegation: this.joinerDelegationForEnvelope(delegated),
           localRunner: () => usePromptModalStore.getState().show(payload.msg, payload.choices),
-        })) as string;
+        });
       } else {
         value = await usePromptModalStore.getState().show(payload.msg, payload.choices);
       }
@@ -452,9 +452,9 @@ export class QBScriptClient {
     const delegated = this.delegatedHostByRequestId.get(payload.executionRequestId);
     if (!this.worker) return;
     try {
-      let value: string[];
+      let value: string[] | null;
       if (delegated) {
-        value = (await hostAwaitDelegatedUiInteraction({
+        value = await hostAwaitDelegatedUiInteraction<string[] | null>({
           campaignId: delegated.campaignId,
           executionRequestId: payload.executionRequestId,
           interactionId: payload.promptRequestId,
@@ -471,7 +471,7 @@ export class QBScriptClient {
           joinerDelegation: this.joinerDelegationForEnvelope(delegated),
           localRunner: () =>
             usePromptModalStore.getState().showMultiple(payload.msg, payload.choices),
-        })) as string[];
+        });
       } else {
         value = await usePromptModalStore.getState().showMultiple(payload.msg, payload.choices);
       }
@@ -499,9 +499,9 @@ export class QBScriptClient {
     const delegated = this.delegatedHostByRequestId.get(payload.executionRequestId);
     if (!this.worker) return;
     try {
-      let value: string;
+      let value: string | null;
       if (delegated) {
-        value = (await hostAwaitDelegatedUiInteraction({
+        value = await hostAwaitDelegatedUiInteraction<string | null>({
           campaignId: delegated.campaignId,
           executionRequestId: payload.executionRequestId,
           interactionId: payload.promptRequestId,
@@ -516,7 +516,7 @@ export class QBScriptClient {
           timeoutMs: delegated.timeoutMs,
           joinerDelegation: this.joinerDelegationForEnvelope(delegated),
           localRunner: () => usePromptModalStore.getState().showInput(payload.msg),
-        })) as string;
+        });
       } else {
         value = await usePromptModalStore.getState().showInput(payload.msg);
       }

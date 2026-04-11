@@ -258,17 +258,17 @@ const qbscriptCompletions = [
   {
     label: 'prompt',
     type: 'function',
-    info: 'Show modal with message and choice buttons. Returns selected choice. E.g. choice = prompt("Pick one", ["A", "B", "C"])',
+    info: 'Show modal with message and choice buttons. Returns selected choice, or null if closed/canceled. E.g. choice = prompt("Pick one", ["A", "B", "C"])',
   },
   {
     label: 'promptInput',
     type: 'function',
-    info: 'Show modal with message and a text input. Returns the submitted string. E.g. name = promptInput("Enter your name")',
+    info: 'Show modal with message and a text input. Returns the submitted string, or null if closed/canceled. E.g. name = promptInput("Enter your name")',
   },
   {
     label: 'promptMultiple',
     type: 'function',
-    info: 'Show modal with message and choice buttons. Allows multi-select. Returns the submitted strings. E.g. selections = promptMultiple("Select colors" ["red", "blue", "yellow"])',
+    info: 'Show modal with message and choice buttons. Allows multi-select. Returns the submitted strings, or null if closed/canceled. E.g. selections = promptMultiple("Select colors" ["red", "blue", "yellow"])',
   },
   {
     label: 'rollSplit',

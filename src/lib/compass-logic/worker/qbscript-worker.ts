@@ -240,15 +240,18 @@ const rollBridge = {
 // ============================================================================
 
 const promptBridge = {
-  pending: new Map<string, { resolve: (value: string) => void; reject: (err: Error) => void }>(),
+  pending: new Map<
+    string,
+    { resolve: (value: string | null) => void; reject: (err: Error) => void }
+  >(),
   requestPrompt(
     msg: string,
     choices: string[],
     executionRequestId: string,
     surfaceCharacterId: string,
-  ): Promise<string> {
+  ): Promise<string | null> {
     const promptRequestId = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
-    return new Promise<string>((resolve, reject) => {
+    return new Promise<string | null>((resolve, reject) => {
       this.pending.set(promptRequestId, { resolve, reject });
       sendSignal({
         type: 'PROMPT_REQUEST',
@@ -256,14 +259,14 @@ const promptBridge = {
       });
     });
   },
-  resolvePrompt(promptRequestId: string, value?: string, error?: string): void {
+  resolvePrompt(promptRequestId: string, value?: string | null, error?: string): void {
     const entry = this.pending.get(promptRequestId);
     if (!entry) return;
     this.pending.delete(promptRequestId);
     if (error != null) {
       entry.reject(new Error(error));
     } else {
-      entry.resolve(value ?? '');
+      entry.resolve(value == null ? null : value);
     }
   },
 };
@@ -273,15 +276,18 @@ const promptBridge = {
 // ============================================================================
 
 const promptMultipleBridge = {
-  pending: new Map<string, { resolve: (value: string[]) => void; reject: (err: Error) => void }>(),
+  pending: new Map<
+    string,
+    { resolve: (value: string[] | null) => void; reject: (err: Error) => void }
+  >(),
   requestPromptMultiple(
     msg: string,
     choices: string[],
     executionRequestId: string,
     surfaceCharacterId: string,
-  ): Promise<string[]> {
+  ): Promise<string[] | null> {
     const promptRequestId = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
-    return new Promise<string[]>((resolve, reject) => {
+    return new Promise<string[] | null>((resolve, reject) => {
       this.pending.set(promptRequestId, { resolve, reject });
       sendSignal({
         type: 'PROMPT_MULTIPLE_REQUEST',
@@ -289,14 +295,14 @@ const promptMultipleBridge = {
       });
     });
   },
-  resolvePromptMultiple(promptRequestId: string, value?: string[], error?: string): void {
+  resolvePromptMultiple(promptRequestId: string, value?: string[] | null, error?: string): void {
     const entry = this.pending.get(promptRequestId);
     if (!entry) return;
     this.pending.delete(promptRequestId);
     if (error != null) {
       entry.reject(new Error(error));
     } else {
-      entry.resolve(value ?? []);
+      entry.resolve(value == null ? null : value);
     }
   },
 };
@@ -306,14 +312,17 @@ const promptMultipleBridge = {
 // ============================================================================
 
 const promptInputBridge = {
-  pending: new Map<string, { resolve: (value: string) => void; reject: (err: Error) => void }>(),
+  pending: new Map<
+    string,
+    { resolve: (value: string | null) => void; reject: (err: Error) => void }
+  >(),
   requestPromptInput(
     msg: string,
     executionRequestId: string,
     surfaceCharacterId: string,
-  ): Promise<string> {
+  ): Promise<string | null> {
     const promptRequestId = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
-    return new Promise<string>((resolve, reject) => {
+    return new Promise<string | null>((resolve, reject) => {
       this.pending.set(promptRequestId, { resolve, reject });
       sendSignal({
         type: 'PROMPT_INPUT_REQUEST',
@@ -321,14 +330,14 @@ const promptInputBridge = {
       });
     });
   },
-  resolvePromptInput(promptRequestId: string, value?: string, error?: string): void {
+  resolvePromptInput(promptRequestId: string, value?: string | null, error?: string): void {
     const entry = this.pending.get(promptRequestId);
     if (!entry) return;
     this.pending.delete(promptRequestId);
     if (error != null) {
       entry.reject(new Error(error));
     } else {
-      entry.resolve(value ?? '');
+      entry.resolve(value == null ? null : value);
     }
   },
 };
