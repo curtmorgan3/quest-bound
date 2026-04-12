@@ -448,6 +448,8 @@ export interface ScriptErrorPayload {
     column?: number;
     stackTrace?: string;
   };
+  /** Ruleset context for playtest telemetry and diagnostics (main thread). */
+  rulesetId?: string;
   /** ID of the script that failed (UI may resolve `name` from Dexie on the main thread). */
   scriptId?: string;
   /** @deprecated Prefer resolving display name from `scriptId` on the main thread. */

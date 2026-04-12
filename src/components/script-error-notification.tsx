@@ -1,6 +1,7 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
+import { queuePlaytestScriptErrorReport } from '@/lib/cloud/playtest/playtest-api';
 import { useScriptErrorLogs, type ScriptErrorEventDetail } from '@/lib/compass-logic';
 import { cn } from '@/lib/utils';
 import { X } from 'lucide-react';
@@ -92,6 +93,7 @@ export function ScriptErrorNotificationsHost() {
   const [errors, setErrors] = useState<QueuedScriptError[]>([]);
 
   const onScriptError = useCallback((detail: ScriptErrorEventDetail) => {
+    queuePlaytestScriptErrorReport(detail);
     setErrors((prev) => {
       const key = scriptErrorDedupeKey(detail);
       const idx = prev.findIndex((e) => scriptErrorDedupeKey(e) === key);

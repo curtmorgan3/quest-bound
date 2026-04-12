@@ -578,6 +578,8 @@ export function useScriptAnnouncements(onAnnounce?: (message: string) => void): 
 /** Detail payload for `qbscript:scriptError` (worker script failure surfaced on the main thread). */
 export interface ScriptErrorEventDetail {
   message: string;
+  /** When set (worker or custom-event dispatch), used for playtest script_error_reports routing. */
+  rulesetId?: string;
   /** Resolved on the main thread from `scriptId` when not inline/playground. */
   scriptName?: string;
   scriptId?: string;

@@ -1007,6 +1007,7 @@ async function handleExecuteScript(payload: ExecuteScriptPayload): Promise<void>
         type: 'SCRIPT_ERROR',
         payload: {
           requestId: payload.requestId,
+          rulesetId: payload.rulesetId,
           scriptId: payload.scriptId,
           error: {
             message: result.error.message,
@@ -1132,6 +1133,7 @@ async function handleExecuteScript(payload: ExecuteScriptPayload): Promise<void>
       type: 'SCRIPT_ERROR',
       payload: {
         requestId: payload.requestId,
+        rulesetId: payload.rulesetId,
         scriptId: payload.scriptId,
         error: {
           message: error instanceof Error ? error.message : String(error),
@@ -1350,6 +1352,7 @@ async function handleAttributeChanged(payload: AttributeChangedPayload): Promise
         type: 'SCRIPT_ERROR',
         payload: {
           requestId: payload.requestId,
+          rulesetId: payload.rulesetId,
           error: {
             message: chainResult.lastError?.message || 'Unknown error',
             stackTrace: chainResult.lastError?.stack,
@@ -1363,6 +1366,7 @@ async function handleAttributeChanged(payload: AttributeChangedPayload): Promise
       type: 'SCRIPT_ERROR',
       payload: {
         requestId: payload.requestId,
+        rulesetId: payload.rulesetId,
         error: {
           message: error instanceof Error ? error.message : String(error),
           stackTrace: error instanceof Error ? error.stack : undefined,
@@ -1507,6 +1511,7 @@ async function handleInitialAttributeSync(payload: {
         type: 'SCRIPT_ERROR',
         payload: {
           requestId: payload.requestId,
+          rulesetId: payload.rulesetId,
           error: {
             message: result.error?.message || 'Unknown error',
             stackTrace: result.error?.stack,
@@ -1520,6 +1525,7 @@ async function handleInitialAttributeSync(payload: {
       type: 'SCRIPT_ERROR',
       payload: {
         requestId: payload.requestId,
+        rulesetId: payload.rulesetId,
         error: {
           message: error instanceof Error ? error.message : String(error),
           stackTrace: error instanceof Error ? error.stack : undefined,
@@ -1544,12 +1550,15 @@ async function handleExecuteAction(payload: {
   }
 
   let scriptIdForError: string | undefined;
+  let rulesetIdForError: string | undefined;
   try {
     // Get the action from database
     const action = await db.actions.get(payload.actionId);
     if (!action) {
       throw new Error(`Action not found: ${payload.actionId}`);
     }
+
+    rulesetIdForError = action.rulesetId;
 
     // Get script for this action
     const script = await db.scripts
@@ -1580,6 +1589,7 @@ async function handleExecuteAction(payload: {
       type: 'SCRIPT_ERROR',
       payload: {
         requestId: payload.requestId,
+        rulesetId: rulesetIdForError,
         scriptId: scriptIdForError,
         error: {
           message: error instanceof Error ? error.message : String(error),
@@ -1609,6 +1619,7 @@ async function handleExecuteActionEvent(payload: {
   }
 
   let actionScriptIdForError: string | undefined;
+  let actionRulesetIdForError: string | undefined;
   try {
     const action = await db.actions.get(payload.actionId);
     if (!action) {
@@ -1616,6 +1627,7 @@ async function handleExecuteActionEvent(payload: {
     }
 
     actionScriptIdForError = action.scriptId ?? undefined;
+    actionRulesetIdForError = action.rulesetId;
 
     const {
       rollFn,
@@ -1688,6 +1700,7 @@ async function handleExecuteActionEvent(payload: {
         type: 'SCRIPT_ERROR',
         payload: {
           requestId: payload.requestId,
+          rulesetId: actionRulesetIdForError,
           scriptId: result.scriptId ?? actionScriptIdForError,
           error: {
             message: result.error?.message ?? 'Action event failed',
@@ -1733,6 +1746,7 @@ async function handleExecuteActionEvent(payload: {
       type: 'SCRIPT_ERROR',
       payload: {
         requestId: payload.requestId,
+        rulesetId: actionRulesetIdForError,
         scriptId: actionScriptIdForError,
         error: {
           message: error instanceof Error ? error.message : String(error),
@@ -1759,6 +1773,7 @@ async function handleExecuteItemEvent(payload: {
   }
 
   let itemScriptIdForError: string | undefined;
+  let itemRulesetIdForError: string | undefined;
   try {
     const item = await db.items.get(payload.itemId);
     if (!item) {
@@ -1766,6 +1781,7 @@ async function handleExecuteItemEvent(payload: {
     }
 
     itemScriptIdForError = item.scriptId ?? undefined;
+    itemRulesetIdForError = item.rulesetId;
 
     const {
       rollFn,
@@ -1858,6 +1874,7 @@ async function handleExecuteItemEvent(payload: {
         type: 'SCRIPT_ERROR',
         payload: {
           requestId: payload.requestId,
+          rulesetId: itemRulesetIdForError,
           scriptId: result.scriptId ?? itemScriptIdForError ?? script?.id,
           error: {
             message: result.error?.message ?? 'Item event failed',
@@ -1900,6 +1917,7 @@ async function handleExecuteItemEvent(payload: {
       type: 'SCRIPT_ERROR',
       payload: {
         requestId: payload.requestId,
+        rulesetId: itemRulesetIdForError,
         scriptId: itemScriptIdForError,
         error: {
           message: error instanceof Error ? error.message : String(error),
@@ -1925,6 +1943,7 @@ async function handleExecuteArchetypeEvent(payload: {
   }
 
   let archetypeScriptIdForError: string | undefined;
+  let archetypeRulesetIdForError: string | undefined;
   try {
     const archetype = await db.archetypes.get(payload.archetypeId);
     if (!archetype) {
@@ -1932,6 +1951,7 @@ async function handleExecuteArchetypeEvent(payload: {
     }
 
     archetypeScriptIdForError = archetype.scriptId ?? undefined;
+    archetypeRulesetIdForError = archetype.rulesetId;
 
     const {
       rollFn,
@@ -2005,6 +2025,7 @@ async function handleExecuteArchetypeEvent(payload: {
         type: 'SCRIPT_ERROR',
         payload: {
           requestId: payload.requestId,
+          rulesetId: archetypeRulesetIdForError,
           scriptId: result.scriptId ?? archetypeScriptIdForError,
           error: {
             message: result.error?.message ?? 'Archetype event failed',
@@ -2043,6 +2064,7 @@ async function handleExecuteArchetypeEvent(payload: {
       type: 'SCRIPT_ERROR',
       payload: {
         requestId: payload.requestId,
+        rulesetId: archetypeRulesetIdForError,
         scriptId: archetypeScriptIdForError,
         error: {
           message: error instanceof Error ? error.message : String(error),
@@ -2063,6 +2085,7 @@ async function handleExecuteCampaignEventEvent(payload: {
   requestId: string;
 }): Promise<void> {
   let campaignEventScriptIdForError: string | undefined;
+  let campaignRulesetIdForError: string | undefined;
   try {
     const campaignEvent = await db.campaignEvents.get(payload.campaignEventId);
     campaignEventScriptIdForError = campaignEvent?.scriptId;
@@ -2073,6 +2096,7 @@ async function handleExecuteCampaignEventEvent(payload: {
     }
     const campaign = campaignEvent ? await db.campaigns.get(campaignEvent.campaignId) : undefined;
     const rulesetId = campaign?.rulesetId ?? '';
+    campaignRulesetIdForError = rulesetId || undefined;
     const campaignId = campaignEvent?.campaignId;
 
     const actingCharacterId = payload.characterId ?? '';
@@ -2144,6 +2168,7 @@ async function handleExecuteCampaignEventEvent(payload: {
         type: 'SCRIPT_ERROR',
         payload: {
           requestId: payload.requestId,
+          rulesetId: campaignRulesetIdForError,
           scriptId: result.scriptId ?? campaignEventScriptIdForError,
           error: {
             message: result.error?.message ?? 'Campaign event script failed',
@@ -2182,6 +2207,7 @@ async function handleExecuteCampaignEventEvent(payload: {
       type: 'SCRIPT_ERROR',
       payload: {
         requestId: payload.requestId,
+        rulesetId: campaignRulesetIdForError,
         scriptId: campaignEventScriptIdForError,
         error: {
           message: error instanceof Error ? error.message : String(error),

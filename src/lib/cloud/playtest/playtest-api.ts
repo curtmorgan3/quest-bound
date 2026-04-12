@@ -177,6 +177,27 @@ export async function reportPlaytestScriptError(
   if (error) console.warn('[playtest] script error report failed', error);
 }
 
+/** Queue a script_error_reports row when a live playtest matches `rulesetId` (fire-and-forget). */
+export function queuePlaytestScriptErrorReport(detail: {
+  rulesetId?: string;
+  scriptId?: string;
+  message: string;
+  line?: number;
+  column?: number;
+}): void {
+  const rulesetId = detail.rulesetId?.trim();
+  if (!rulesetId) return;
+  const scriptId = detail.scriptId?.trim() ? detail.scriptId.trim() : 'unknown';
+  let errorMessage = detail.message;
+  const pos: string[] = [];
+  if (detail.line != null) pos.push(`line: ${detail.line}`);
+  if (detail.column != null) pos.push(`column: ${detail.column}`);
+  if (pos.length > 0) {
+    errorMessage = `${errorMessage}\n\n${pos.join(', ')}`;
+  }
+  void reportPlaytestScriptError(rulesetId, scriptId, errorMessage);
+}
+
 function inventoryComponentTitle(comp: Component): string {
   try {
     const data = parseComponentDataJson(comp);
@@ -191,11 +212,8 @@ function inventoryComponentTitle(comp: Component): string {
   return t;
 }
 
-/** Display title for snapshot: instance label, then ruleset entity title, then component slot label (not raw `type`). */
-async function resolveInventorySnapshotTitle(item: InventoryItem): Promise<string> {
-  if (typeof item.label === 'string' && item.label.trim()) {
-    return item.label.trim();
-  }
+/** Ruleset entity title for the snapshot row (Item / Action / Attribute `title`). Instance display name stays in `InventoryItem.label`. */
+async function resolveInventorySnapshotEntityTitle(item: InventoryItem): Promise<string> {
   const { type, entityId } = item;
   if (!entityId?.trim()) return '';
   try {
@@ -219,7 +237,7 @@ async function serializeInventorySnapshotWithTitles(items: InventoryItem[]): Pro
   const rows: Array<InventoryItem & { title: string }> = [];
   for (const item of items) {
     if (item.deleted) continue;
-    let title = await resolveInventorySnapshotTitle(item);
+    let title = await resolveInventorySnapshotEntityTitle(item);
     if (!title) {
       const comp = await db.components.get(item.componentId);
       if (comp) {

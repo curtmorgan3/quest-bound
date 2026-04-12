@@ -27,22 +27,6 @@ type AnyCharacterAccessor = CharacterAccessor | OwnerAccessor;
 
 const CUSTOM_EVENT_CONTEXT = 'custom_event';
 
-/** Playtest telemetry uses Supabase (window); QBScript worker has no `window` — load reporter only on main thread. */
-function reportPlaytestScriptErrorFromMainThread(
-  rulesetId: string,
-  scriptId: string,
-  errorMessage: string,
-): void {
-  if (typeof window === 'undefined') return;
-  void import('@/lib/cloud/playtest/playtest-api')
-    .then(({ reportPlaytestScriptError }) => {
-      void reportPlaytestScriptError(rulesetId, scriptId, errorMessage);
-    })
-    .catch(() => {
-      /* optional chunk / cloud off */
-    });
-}
-
 export interface CustomEventListenerResult {
   announceMessages: string[];
   logMessages: any[][];
@@ -209,7 +193,21 @@ export async function executeCustomEventListener(
     } catch (persistErr) {
       console.warn('[executeCustomEventListener] Failed to persist script error', persistErr);
     }
-    reportPlaytestScriptErrorFromMainThread(callback.rulesetId, callback.scriptId, message);
+    if (typeof window !== 'undefined') {
+      try {
+        window.dispatchEvent(
+          new CustomEvent('qbscript:scriptError', {
+            detail: {
+              message,
+              rulesetId: callback.rulesetId,
+              scriptId: callback.scriptId,
+            },
+          }),
+        );
+      } catch (e) {
+        console.warn('[executeCustomEventListener] Failed to dispatch qbscript:scriptError', e);
+      }
+    }
     return {
       announceMessages: evaluator?.getAnnounceMessages() ?? [],
       logMessages: partialLogMessages,

@@ -732,6 +732,7 @@ export class QBScriptClient {
           new CustomEvent('qbscript:scriptError', {
             detail: {
               message: payload.error.message,
+              rulesetId: payload.rulesetId,
               scriptId: payload.scriptId,
               line: payload.error.line,
               column: payload.error.column,
