@@ -28,22 +28,17 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { systemModules } from '@/content/system-modules';
-import { useFeatureFlag } from '@/hooks';
 import { isCloudConfigured } from '@/lib/cloud/client';
 import { getNonOwnerCloudInstallRulesetIds } from '@/lib/cloud/sync/non-owner-cloud-install-ids';
 import { pullEntireRulesetFromCloud } from '@/lib/cloud/sync/sync-service';
 import { useSyncStateStore } from '@/lib/cloud/sync/sync-state';
 import {
-  addModuleFromZip,
   useCloudRulesets,
   useImportRuleset,
-  useRulesetBundle,
   useRulesets,
   type ImportRulesetResult,
 } from '@/lib/compass-api';
 import { compareVersion } from '@/lib/compass-api/hooks/export/utils';
-import { cn } from '@/lib/utils';
 import { db, useCloudAuthStore, useCloudSyncSummaryPanelStore } from '@/stores';
 import type { DB } from '@/stores/db/hooks/types';
 import {
@@ -60,10 +55,6 @@ import {
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { EmptyModulesState } from './empty-modules-state';
-import { SelectSystemModuleStep } from './select-system-module-step';
-
-/** Feature flag (localStorage `feature.{name}`). When true, create ruleset includes the system module step. */
-export const RULESET_CREATE_SYSTEM_MODULE_STEP_FEATURE_FLAG = 'rulesetCreateSystemModuleStep';
 
 const DELETE_SPINNER_DELAY_MS = 1000;
 
@@ -72,7 +63,6 @@ type RulesetsListTab = 'rulesets' | 'modules';
 export const Rulesets = () => {
   const { rulesets, createRuleset, deleteRuleset } = useRulesets();
   const { importRuleset, isImporting, importStep } = useImportRuleset();
-  const { getRulesetBundle } = useRulesetBundle();
   const {
     cloudRulesets,
     cloudRulesetListFetchOk,
@@ -133,12 +123,6 @@ export const Rulesets = () => {
   const [cloudDeleteError, setCloudDeleteError] = useState<string | null>(null);
   const [cloudUpdateError, setCloudUpdateError] = useState<string | null>(null);
   const [createRulesetDialogOpen, setCreateRulesetDialogOpen] = useState(false);
-  const [createRulesetStep, setCreateRulesetStep] = useState<1 | 2>(1);
-  const [selectedSystemModuleId, setSelectedSystemModuleId] = useState<string | null>(null);
-  const systemModuleStepEnabled = useFeatureFlag(
-    RULESET_CREATE_SYSTEM_MODULE_STEP_FEATURE_FLAG,
-    false,
-  );
   const [createFlowBusy, setCreateFlowBusy] = useState(false);
   const [createFlowStatus, setCreateFlowStatus] = useState<string | null>(null);
   const [createFlowError, setCreateFlowError] = useState<string | null>(null);
@@ -148,12 +132,7 @@ export const Rulesets = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!createRulesetDialogOpen) {
-      setCreateRulesetStep(1);
-      setSelectedSystemModuleId(null);
-      return;
-    }
-    setCreateFlowError(null);
+    if (createRulesetDialogOpen) setCreateFlowError(null);
   }, [createRulesetDialogOpen]);
 
   useEffect(() => {
@@ -233,35 +212,11 @@ export const Rulesets = () => {
     setCreateFlowStatus(null);
     let newRulesetId: string | undefined;
     try {
-      let moduleZip: File | null = null;
-      if (selectedSystemModuleId) {
-        const mod = systemModules[selectedSystemModuleId];
-        if (!mod?.slug?.trim()) {
-          throw new Error('Selected module has no bundle slug.');
-        }
-        setCreateFlowStatus('Fetching module');
-        const response = await getRulesetBundle(mod.slug.trim());
-        if (!response.ok) {
-          throw new Error(`Failed to fetch module: ${response.status} ${response.statusText}`);
-        }
-        const blob = await response.blob();
-        moduleZip = new File([blob], 'ruleset.zip', { type: 'application/zip' });
-      }
-
       setCreateFlowStatus('Creating ruleset');
       newRulesetId = await createRuleset({
         title: title || 'New Ruleset',
         description,
       });
-
-      if (moduleZip) {
-        setCreateFlowStatus('Adding module');
-        await addModuleFromZip({
-          file: moduleZip,
-          targetRulesetId: newRulesetId,
-          importRuleset,
-        });
-      }
 
       navigate(`/rulesets/${newRulesetId}`);
     } catch (err) {
@@ -772,13 +727,6 @@ export const Rulesets = () => {
                         ? `${createFlowStatus}...`
                         : 'Working...'}
                   </p>
-                  {createFlowBusy &&
-                  createFlowStatus === 'Adding module' &&
-                  !(isImporting && importStep) ? (
-                    <p className='max-w-sm text-xs text-muted-foreground'>
-                      This may take several minutes.
-                    </p>
-                  ) : null}
                 </div>
               )}
               {isInstallingCloud &&
@@ -926,103 +874,51 @@ export const Rulesets = () => {
         </PageWrapper>
       </Tabs>
 
-      <DialogContent
-        className={cn(
-          'flex max-h-[min(90vh,720px)] flex-col overflow-hidden',
-          !systemModuleStepEnabled || createRulesetStep === 1 ? 'sm:max-w-[425px]' : 'sm:max-w-2xl',
-        )}>
+      <DialogContent className='flex max-h-[min(90vh,720px)] flex-col overflow-hidden sm:max-w-[425px]'>
         <form
           className='flex min-h-0 flex-1 flex-col gap-4'
           onSubmit={(e) => {
             e.preventDefault();
-            if (systemModuleStepEnabled && createRulesetStep === 1) {
-              setCreateRulesetStep(2);
-              return;
-            }
             void handleCreate();
           }}>
           <DialogHeader>
-            <DialogTitle>
-              {systemModuleStepEnabled && createRulesetStep === 2
-                ? 'Select a System Module'
-                : 'New Ruleset'}
-            </DialogTitle>
-            <DialogDescription>
-              {systemModuleStepEnabled && createRulesetStep === 2
-                ? 'Optionally start with a framework to bootstrap your ruleset.'
-                : 'Enter a title and description for your ruleset.'}
-            </DialogDescription>
+            <DialogTitle>New Ruleset</DialogTitle>
+            <DialogDescription>Enter a title and description for your ruleset.</DialogDescription>
           </DialogHeader>
 
-          {systemModuleStepEnabled && createRulesetStep === 2 ? (
-            <div className='min-h-0 flex-1 overflow-y-auto p-2'>
-              <SelectSystemModuleStep
-                selectedId={selectedSystemModuleId}
-                onSelect={setSelectedSystemModuleId}
+          <div className='grid gap-4'>
+            <div className='grid gap-3'>
+              <Label htmlFor='ruleset-title'>Title</Label>
+              <Input
+                id='ruleset-title'
+                name='title'
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
               />
             </div>
-          ) : (
-            <div className='grid gap-4'>
-              <div className='grid gap-3'>
-                <Label htmlFor='ruleset-title'>Title</Label>
-                <Input
-                  id='ruleset-title'
-                  name='title'
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                />
-              </div>
-              <div className='grid gap-3'>
-                <Label htmlFor='ruleset-description'>Description</Label>
-                <Textarea
-                  id='ruleset-description'
-                  name='username'
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                />
-              </div>
+            <div className='grid gap-3'>
+              <Label htmlFor='ruleset-description'>Description</Label>
+              <Textarea
+                id='ruleset-description'
+                name='username'
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+              />
             </div>
-          )}
+          </div>
 
           <DialogFooter className='mt-auto shrink-0 gap-2 sm:gap-2'>
-            {systemModuleStepEnabled && createRulesetStep === 2 ? (
-              <>
-                <Button
-                  type='button'
-                  variant='outline'
-                  onClick={() => setCreateRulesetStep(1)}
-                  data-testid='create-ruleset-back'>
-                  Back
-                </Button>
-                <Button
-                  type='button'
-                  data-testid='create-ruleset-submit'
-                  disabled={!!deletingRulesetId || !!deletingCloudRulesetId}
-                  onClick={() => void handleCreate()}>
-                  Create
-                </Button>
-              </>
-            ) : (
-              <>
-                <DialogClose asChild>
-                  <Button type='button' variant='outline'>
-                    Cancel
-                  </Button>
-                </DialogClose>
-                {systemModuleStepEnabled ? (
-                  <Button type='submit' data-testid='create-ruleset-next'>
-                    Next
-                  </Button>
-                ) : (
-                  <Button
-                    type='submit'
-                    data-testid='create-ruleset-submit'
-                    disabled={!!deletingRulesetId || !!deletingCloudRulesetId}>
-                    Create
-                  </Button>
-                )}
-              </>
-            )}
+            <DialogClose asChild>
+              <Button type='button' variant='outline'>
+                Cancel
+              </Button>
+            </DialogClose>
+            <Button
+              type='submit'
+              data-testid='create-ruleset-submit'
+              disabled={!!deletingRulesetId || !!deletingCloudRulesetId}>
+              Create
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>
