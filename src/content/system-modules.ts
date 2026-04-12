@@ -10,7 +10,7 @@ export type SystemModuleEntry = {
 };
 
 const dndModule: SystemModuleEntry = {
-  title: 'D&D 5e',
+  title: 'D&D 5e System Module',
   slug: 'dnd-module',
   description: `
 ### Dungeons & Dragons System Reference Document
@@ -31,3 +31,11 @@ Adds content from the 5th edition SRD v5.2.1
 export const systemModules: Record<string, SystemModuleEntry> = {
   dndModule,
 };
+
+/** Same entries as {@link systemModules}, as an array for grids and installers. */
+export const SYSTEM_MODULE_INSTALL_CARDS: ReadonlyArray<
+  SystemModuleEntry & { readonly id: string }
+> = (Object.entries(systemModules) as [string, SystemModuleEntry][]).map(([id, entry]) => ({
+  id,
+  ...entry,
+}));

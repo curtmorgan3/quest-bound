@@ -247,6 +247,8 @@ export interface CloudRulesetSummary {
   title: string;
   version: string;
   image?: string | null;
+  /** When true, this cloud ruleset is a module (attachable to other rulesets). */
+  isModule?: boolean;
   ownedByCurrentUser: boolean;
   /** Linked in `organization_rulesets` to an organization the current user administers. */
   linkedToAdministeredOrganization: boolean;
@@ -264,7 +266,7 @@ export async function listCloudRulesets(): Promise<CloudRulesetSummary[]> {
   if (!session?.user?.id) return [];
   const currentUserId = session.user.id;
   const [{ data, error }, administeredOrg, grantRows] = await Promise.all([
-    cloudClient.from('rulesets').select('id, title, version, asset_id, user_id'),
+    cloudClient.from('rulesets').select('id, title, version, asset_id, user_id, is_module'),
     fetchOrganizationAsAdmin(currentUserId),
     listMyActiveExternalRulesetGrants(),
   ]);
