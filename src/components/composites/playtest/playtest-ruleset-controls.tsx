@@ -7,26 +7,60 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { SidebarMenuButton, SidebarMenuItem, useSidebar } from '@/components/ui/sidebar';
 import {
-  insertPlaytestCharacterSnapshotIfNeeded,
   listMyPlaytestEnrollmentsForRuleset,
-  listPlaytestSurveyQuestions,
   type MyPlaytestEnrollment,
+  playtestCompleteFeedbackRpc,
   playtestPauseSessionRpc,
   playtestStartSessionRpc,
-  playtestSubmitSurveyRpc,
-  type SurveyQuestionCloudRow,
+  replacePlaytestCharacterSnapshot,
 } from '@/lib/cloud/playtest/playtest-api';
-import { usePlaytestRuntimeStore } from '@/stores/playtest-runtime-store';
 import { db } from '@/stores/db';
-import { useLiveQuery } from 'dexie-react-hooks';
+import { usePlaytestRuntimeStore } from '@/stores/playtest-runtime-store';
+import type { Character, CharacterAttribute, InventoryItem } from '@/types';
 import { CirclePause, CirclePlay, Loader2 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
+
+async function loadSnapshotCharacterState(
+  rulesetId: string,
+  options: { playCharacterIdFromRuntime: string | null | undefined; playCharacterIdProp?: string },
+): Promise<{
+  character: Character | null;
+  characterAttributes: CharacterAttribute[];
+  inventoryItems: InventoryItem[];
+}> {
+  let character: Character | null = null;
+  let characterAttributes: CharacterAttribute[] = [];
+  let inventoryItems: InventoryItem[] = [];
+
+  const preferredId = options.playCharacterIdFromRuntime ?? options.playCharacterIdProp ?? null;
+  if (preferredId) {
+    const ch = await db.characters.get(preferredId);
+    if (ch && ch.rulesetId === rulesetId) {
+      character = ch;
+      characterAttributes = (
+        await db.characterAttributes.where('characterId').equals(ch.id).toArray()
+      ).filter((a) => !a.deleted);
+      inventoryItems = await db.inventoryItems.where('inventoryId').equals(ch.inventoryId).toArray();
+    }
+  }
+
+  if (!character) {
+    const chars = await db.characters.where('rulesetId').equals(rulesetId).toArray();
+    const fallback = chars.find((c) => c.isTestCharacter) ?? chars[0] ?? null;
+    if (fallback) {
+      character = fallback;
+      characterAttributes = (
+        await db.characterAttributes.where('characterId').equals(fallback.id).toArray()
+      ).filter((a) => !a.deleted);
+      inventoryItems = await db.inventoryItems.where('inventoryId').equals(fallback.inventoryId).toArray();
+    }
+  }
+
+  return { character, characterAttributes, inventoryItems };
+}
 
 function visibleEnrollments(rows: MyPlaytestEnrollment[]): MyPlaytestEnrollment[] {
   return rows.filter((e) => {
@@ -36,37 +70,37 @@ function visibleEnrollments(rows: MyPlaytestEnrollment[]): MyPlaytestEnrollment[
   });
 }
 
-export function PlaytestRulesetControls({ rulesetId }: { rulesetId: string }) {
+export function PlaytestRulesetControls({
+  rulesetId,
+  playCharacterId: playCharacterIdProp,
+}: {
+  rulesetId: string;
+  /** When set (e.g. character sidebar), snapshots use this sheet instead of the ruleset test character. */
+  playCharacterId?: string;
+}) {
   const [enrollments, setEnrollments] = useState<MyPlaytestEnrollment[]>([]);
   const [loadingList, setLoadingList] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [busySessionId, setBusySessionId] = useState<string | null>(null);
 
+  const { isMobile, setOpenMobile } = useSidebar();
   const active = usePlaytestRuntimeStore((s) => s.getActive(rulesetId));
+  const activeRuntime = usePlaytestRuntimeStore((s) => s.activeByRulesetId[rulesetId]);
   const setActive = usePlaytestRuntimeStore((s) => s.setActive);
   const clearActive = usePlaytestRuntimeStore((s) => s.clearActive);
 
+  const closeMobileSidebarIfNeeded = useCallback(() => {
+    if (isMobile) setOpenMobile(false);
+  }, [isMobile, setOpenMobile]);
+
   const [feedbackFor, setFeedbackFor] = useState<MyPlaytestEnrollment | null>(null);
-  const [surveyQs, setSurveyQs] = useState<SurveyQuestionCloudRow[]>([]);
-  const [surveyAnswers, setSurveyAnswers] = useState<Record<string, string>>({});
-  const [surveyStep, setSurveyStep] = useState(0);
-  const [submittingSurvey, setSubmittingSurvey] = useState(false);
+  const [completingFeedback, setCompletingFeedback] = useState(false);
 
-  const testCharacter = useLiveQuery(async () => {
-    const chars = await db.characters.where('rulesetId').equals(rulesetId).toArray();
-    const test = chars.find((c) => c.isTestCharacter);
-    return test ?? chars[0] ?? null;
-  }, [rulesetId]);
-
-  const charAttrs = useLiveQuery(async () => {
-    if (!testCharacter?.id) return [];
-    return db.characterAttributes.where('characterId').equals(testCharacter.id).toArray();
-  }, [testCharacter?.id]);
-
-  const invItems = useLiveQuery(async () => {
-    if (!testCharacter?.inventoryId) return [];
-    return db.inventoryItems.where('inventoryId').equals(testCharacter.inventoryId).toArray();
-  }, [testCharacter?.inventoryId]);
+  useEffect(() => {
+    if (playCharacterIdProp === undefined || !activeRuntime) return;
+    if (activeRuntime.playCharacterId === playCharacterIdProp) return;
+    setActive(rulesetId, { ...activeRuntime, playCharacterId: playCharacterIdProp });
+  }, [playCharacterIdProp, activeRuntime, rulesetId, setActive]);
 
   const refresh = useCallback(async () => {
     if (!rulesetId) return;
@@ -74,6 +108,16 @@ export function PlaytestRulesetControls({ rulesetId }: { rulesetId: string }) {
     try {
       const list = await listMyPlaytestEnrollmentsForRuleset(rulesetId);
       setEnrollments(list);
+
+      const rt = usePlaytestRuntimeStore.getState().getActive(rulesetId);
+      if (rt?.isSessionLive) {
+        const mine = list.find(
+          (e) => e.sessionId === rt.playtestSessionId && e.playtesterId === rt.playtesterId,
+        );
+        if (!mine || mine.sessionStatus !== 'open' || mine.status !== 'active') {
+          usePlaytestRuntimeStore.getState().setActive(rulesetId, { ...rt, isSessionLive: false });
+        }
+      }
     } catch (e) {
       console.warn('[playtest] list enrollments', e);
       setEnrollments([]);
@@ -100,37 +144,6 @@ export function PlaytestRulesetControls({ rulesetId }: { rulesetId: string }) {
   const shown = useMemo(() => visibleEnrollments(enrollments), [enrollments]);
   const showPlayAffordance = shown.length > 0 || active !== null;
 
-  useEffect(() => {
-    if (!feedbackFor) return;
-    let cancelled = false;
-    void (async () => {
-      try {
-        const qs = await listPlaytestSurveyQuestions(feedbackFor.playtestId);
-        if (!cancelled) {
-          setSurveyQs(qs);
-          setSurveyStep(0);
-          setSurveyAnswers({});
-        }
-        try {
-          await insertPlaytestCharacterSnapshotIfNeeded({
-            playtestSessionId: feedbackFor.sessionId,
-            playtesterId: feedbackFor.playtesterId,
-            character: testCharacter ?? null,
-            characterAttributes: charAttrs ?? [],
-            inventoryItems: invItems ?? [],
-          });
-        } catch (snapErr) {
-          console.warn('[playtest] snapshot', snapErr);
-        }
-      } catch {
-        if (!cancelled) setSurveyQs([]);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [feedbackFor, testCharacter, charAttrs, invItems]);
-
   async function handlePlay(enrollment: MyPlaytestEnrollment) {
     if (enrollment.sessionStatus !== 'open') return;
     setBusySessionId(enrollment.sessionId);
@@ -142,6 +155,8 @@ export function PlaytestRulesetControls({ rulesetId }: { rulesetId: string }) {
         playtestId: enrollment.playtestId,
         sessionName: enrollment.sessionName,
         sessionInstructions: enrollment.sessionInstructions,
+        playCharacterId: playCharacterIdProp ?? null,
+        isSessionLive: true,
       });
       setPickerOpen(false);
       toast.success('Playtest started');
@@ -154,11 +169,25 @@ export function PlaytestRulesetControls({ rulesetId }: { rulesetId: string }) {
   }
 
   async function handlePause() {
-    if (!active) return;
-    setBusySessionId(active.playtestSessionId);
+    const rt = usePlaytestRuntimeStore.getState().getActive(rulesetId);
+    if (!rt?.isSessionLive) return;
+    setBusySessionId(rt.playtestSessionId);
     try {
-      await playtestPauseSessionRpc(active.playtestSessionId);
-      clearActive(rulesetId);
+      await playtestPauseSessionRpc(rt.playtestSessionId);
+      try {
+        const payload = await loadSnapshotCharacterState(rulesetId, {
+          playCharacterIdFromRuntime: rt.playCharacterId,
+          playCharacterIdProp,
+        });
+        await replacePlaytestCharacterSnapshot({
+          playtestSessionId: rt.playtestSessionId,
+          playtesterId: rt.playtesterId,
+          ...payload,
+        });
+      } catch (snapErr) {
+        console.warn('[playtest] snapshot on pause', snapErr);
+      }
+      setActive(rulesetId, { ...rt, isSessionLive: false });
       toast.success('Playtest paused');
       await refresh();
     } catch (e) {
@@ -168,25 +197,19 @@ export function PlaytestRulesetControls({ rulesetId }: { rulesetId: string }) {
     }
   }
 
-  async function submitSurvey() {
+  async function handleCompleteFeedback() {
     if (!feedbackFor) return;
-    for (const q of surveyQs) {
-      const v = surveyAnswers[q.id]?.trim() ?? '';
-      if (!v) {
-        toast.error('Please answer all questions');
-        return;
-      }
-    }
-    setSubmittingSurvey(true);
+    setCompletingFeedback(true);
     try {
-      await playtestSubmitSurveyRpc(feedbackFor.sessionId, surveyAnswers);
+      await playtestCompleteFeedbackRpc(feedbackFor.sessionId);
       toast.success('Thanks for your feedback');
       setFeedbackFor(null);
+      clearActive(rulesetId);
       await refresh();
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'Submit failed');
+      toast.error(e instanceof Error ? e.message : 'Could not complete feedback');
     } finally {
-      setSubmittingSurvey(false);
+      setCompletingFeedback(false);
     }
   }
 
@@ -194,28 +217,29 @@ export function PlaytestRulesetControls({ rulesetId }: { rulesetId: string }) {
     return null;
   }
 
-  const currentQuestion = surveyQs[surveyStep];
-
   return (
     <>
-      <SidebarMenuItem>
-        <SidebarMenuButton
-          type='button'
-          onClick={() => {
-            setPickerOpen(true);
-            void refresh();
-          }}
-          disabled={loadingList}
-          data-testid='nav-playtest-sessions'>
-          {loadingList ? (
-            <Loader2 className='h-4 w-4 shrink-0 animate-spin' />
-          ) : (
-            <CirclePlay className='h-4 w-4 shrink-0' />
-          )}
-          <span>Playtest sessions</span>
-        </SidebarMenuButton>
-      </SidebarMenuItem>
-      {active ? (
+      {!active || !active.isSessionLive ? (
+        <SidebarMenuItem>
+          <SidebarMenuButton
+            type='button'
+            onClick={() => {
+              closeMobileSidebarIfNeeded();
+              setPickerOpen(true);
+              void refresh();
+            }}
+            disabled={loadingList}
+            data-testid='nav-playtest-sessions'>
+            {loadingList ? (
+              <Loader2 className='h-4 w-4 shrink-0 animate-spin' />
+            ) : (
+              <CirclePlay className='h-4 w-4 shrink-0' />
+            )}
+            <span>Start Playtest</span>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+      ) : null}
+      {active?.isSessionLive ? (
         <SidebarMenuItem>
           <SidebarMenuButton
             type='button'
@@ -233,7 +257,7 @@ export function PlaytestRulesetControls({ rulesetId }: { rulesetId: string }) {
       ) : null}
 
       <Dialog open={pickerOpen} onOpenChange={setPickerOpen}>
-        <DialogContent className='max-w-md'>
+        <DialogContent className='z-[60] max-w-md' overlayClassName='z-[60]'>
           <DialogHeader>
             <DialogTitle>Playtest sessions</DialogTitle>
             <DialogDescription>
@@ -270,7 +294,13 @@ export function PlaytestRulesetControls({ rulesetId }: { rulesetId: string }) {
                       </Button>
                     ) : null}
                     {e.sessionStatus === 'closed' && e.status === 'feedback' ? (
-                      <Button type='button' size='sm' onClick={() => setFeedbackFor(e)}>
+                      <Button
+                        type='button'
+                        size='sm'
+                        onClick={() => {
+                          closeMobileSidebarIfNeeded();
+                          setFeedbackFor(e);
+                        }}>
                         Feedback
                       </Button>
                     ) : null}
@@ -283,84 +313,39 @@ export function PlaytestRulesetControls({ rulesetId }: { rulesetId: string }) {
       </Dialog>
 
       <Dialog open={feedbackFor !== null} onOpenChange={(o) => !o && setFeedbackFor(null)}>
-        <DialogContent className='max-w-lg'>
+        <DialogContent className='z-[60] max-w-lg' overlayClassName='z-[60]'>
           <DialogHeader>
             <DialogTitle>Session feedback</DialogTitle>
             <DialogDescription>
-              Question {surveyQs.length ? surveyStep + 1 : 0} of {surveyQs.length}
+              Complete the publisher&apos;s survey if one is linked, then mark your feedback as done here.
             </DialogDescription>
           </DialogHeader>
-          {currentQuestion ? (
-            <div className='space-y-3 py-2'>
-              <Label className='text-base'>{currentQuestion.question}</Label>
-              {currentQuestion.is_freeform ? (
-                <Input
-                  value={surveyAnswers[currentQuestion.id] ?? ''}
-                  onChange={(ev) =>
-                    setSurveyAnswers((a) => ({ ...a, [currentQuestion.id]: ev.target.value }))
-                  }
-                  placeholder='Your answer'
-                />
-              ) : (
-                <RadioGroup
-                  value={surveyAnswers[currentQuestion.id] ?? ''}
-                  onValueChange={(v) => setSurveyAnswers((a) => ({ ...a, [currentQuestion.id]: v }))}>
-                  {(currentQuestion.options ?? []).map((opt) => (
-                    <div key={opt} className='flex items-center gap-2'>
-                      <RadioGroupItem value={opt} id={`${currentQuestion.id}-${opt}`} />
-                      <Label htmlFor={`${currentQuestion.id}-${opt}`} className='font-normal'>
-                        {opt}
-                      </Label>
-                    </div>
-                  ))}
-                </RadioGroup>
-              )}
-            </div>
-          ) : (
-            <p className='text-muted-foreground text-sm'>No survey questions for this playtest.</p>
-          )}
-          <DialogFooter className='gap-2 sm:gap-0'>
-            {surveyStep > 0 ? (
-              <Button type='button' variant='outline' onClick={() => setSurveyStep((s) => s - 1)}>
-                Back
-              </Button>
-            ) : null}
-            {surveyQs.length === 0 ? (
-              <Button
-                type='button'
-                disabled={submittingSurvey}
-                onClick={() => {
-                  if (!feedbackFor) return;
-                  setSubmittingSurvey(true);
-                  void playtestSubmitSurveyRpc(feedbackFor.sessionId, {})
-                    .then(() => {
-                      toast.success('Thanks for your feedback');
-                      setFeedbackFor(null);
-                      void refresh();
-                    })
-                    .catch((e) => toast.error(e instanceof Error ? e.message : 'Submit failed'))
-                    .finally(() => setSubmittingSurvey(false));
-                }}>
-                {submittingSurvey ? <Loader2 className='size-4 animate-spin' /> : 'Submit'}
-              </Button>
-            ) : surveyStep < surveyQs.length - 1 ? (
-              <Button
-                type='button'
-                onClick={() => {
-                  const q = surveyQs[surveyStep];
-                  if (!(surveyAnswers[q.id]?.trim() ?? '')) {
-                    toast.error('Please answer before continuing');
-                    return;
-                  }
-                  setSurveyStep((s) => s + 1);
-                }}>
-                Next
-              </Button>
+          <div className='space-y-3 py-2 text-sm'>
+            {feedbackFor?.surveyUrl ? (
+              <>
+                <p className='text-muted-foreground'>
+                  Open the survey in your browser, submit it there, then return and tap the button below.
+                </p>
+                <a
+                  href={feedbackFor.surveyUrl}
+                  target='_blank'
+                  rel='noopener noreferrer'
+                  className='font-medium text-primary underline-offset-4 hover:underline'>
+                  Open feedback survey
+                </a>
+                <p className='break-all text-xs text-muted-foreground'>{feedbackFor.surveyUrl}</p>
+              </>
             ) : (
-              <Button type='button' disabled={submittingSurvey} onClick={() => void submitSurvey()}>
-                {submittingSurvey ? <Loader2 className='size-4 animate-spin' /> : 'Submit'}
-              </Button>
+              <p className='text-muted-foreground'>
+                This playtest does not have a survey link yet. You can still mark feedback complete when you are
+                finished.
+              </p>
             )}
+          </div>
+          <DialogFooter>
+            <Button type='button' disabled={completingFeedback} onClick={() => void handleCompleteFeedback()}>
+              {completingFeedback ? <Loader2 className='size-4 animate-spin' /> : 'Mark feedback complete'}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

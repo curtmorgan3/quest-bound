@@ -1,3 +1,4 @@
+import { PlaytestRulesetControls } from '@/components/composites/playtest/playtest-ruleset-controls';
 import { Button } from '@/components/ui/button';
 import {
   SidebarGroup,
@@ -31,7 +32,6 @@ import {
 } from 'lucide-react';
 import { useContext, useEffect, useState } from 'react';
 import { Link, useLocation, useParams } from 'react-router-dom';
-import { PlaytestRulesetControls } from '@/components/composites/playtest/playtest-ruleset-controls';
 import { JoinCampaignPanel } from './join-campaign-panel';
 
 export function CharacterSidebar() {
@@ -132,7 +132,7 @@ export function CharacterSidebar() {
                   to={`/characters/${character.id}/default`}
                   data-testid='nav-default-character-sheet'>
                   <ClipboardList className='w-4 h-4' />
-                  <span>Default sheet</span>
+                  <span>Default Sheet</span>
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
@@ -178,7 +178,7 @@ export function CharacterSidebar() {
               </SidebarMenuButton>
             </SidebarMenuItem>
           )}
-          <PlaytestRulesetControls rulesetId={character.rulesetId} />
+          <PlaytestRulesetControls rulesetId={character.rulesetId} playCharacterId={character.id} />
         </SidebarGroupContent>
       </SidebarGroup>
 

@@ -6,6 +6,13 @@ export type PlaytestRuntime = {
   playtestId: string;
   sessionName: string;
   sessionInstructions: string;
+  /** Local character sheet used for this playtest (Dexie id); drives snapshots at feedback. */
+  playCharacterId: string | null;
+  /**
+   * False after pause or when server says the tester is no longer actively playing.
+   * Kept separate from clearing the row so `playCharacterId` survives until feedback snapshot.
+   */
+  isSessionLive: boolean;
 };
 
 type State = {
