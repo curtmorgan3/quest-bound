@@ -1,3 +1,4 @@
+import { MarkdownPanel } from '@/components/composites/markdown-panel';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -19,7 +20,7 @@ import {
 import { db } from '@/stores/db';
 import { usePlaytestRuntimeStore } from '@/stores/playtest-runtime-store';
 import type { Character, CharacterAttribute, InventoryItem } from '@/types';
-import { CirclePause, CirclePlay, Loader2 } from 'lucide-react';
+import { CirclePause, CirclePlay, Loader2, ScrollText } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -43,7 +44,10 @@ async function loadSnapshotCharacterState(
       characterAttributes = (
         await db.characterAttributes.where('characterId').equals(ch.id).toArray()
       ).filter((a) => !a.deleted);
-      inventoryItems = await db.inventoryItems.where('inventoryId').equals(ch.inventoryId).toArray();
+      inventoryItems = await db.inventoryItems
+        .where('inventoryId')
+        .equals(ch.inventoryId)
+        .toArray();
     }
   }
 
@@ -55,7 +59,10 @@ async function loadSnapshotCharacterState(
       characterAttributes = (
         await db.characterAttributes.where('characterId').equals(fallback.id).toArray()
       ).filter((a) => !a.deleted);
-      inventoryItems = await db.inventoryItems.where('inventoryId').equals(fallback.inventoryId).toArray();
+      inventoryItems = await db.inventoryItems
+        .where('inventoryId')
+        .equals(fallback.inventoryId)
+        .toArray();
     }
   }
 
@@ -95,12 +102,17 @@ export function PlaytestRulesetControls({
 
   const [feedbackFor, setFeedbackFor] = useState<MyPlaytestEnrollment | null>(null);
   const [completingFeedback, setCompletingFeedback] = useState(false);
+  const [instructionsOpen, setInstructionsOpen] = useState(false);
 
   useEffect(() => {
     if (playCharacterIdProp === undefined || !activeRuntime) return;
     if (activeRuntime.playCharacterId === playCharacterIdProp) return;
     setActive(rulesetId, { ...activeRuntime, playCharacterId: playCharacterIdProp });
   }, [playCharacterIdProp, activeRuntime, rulesetId, setActive]);
+
+  useEffect(() => {
+    if (!active?.isSessionLive) setInstructionsOpen(false);
+  }, [active?.isSessionLive]);
 
   const refresh = useCallback(async () => {
     if (!rulesetId) return;
@@ -116,6 +128,19 @@ export function PlaytestRulesetControls({
         );
         if (!mine || mine.sessionStatus !== 'open' || mine.status !== 'active') {
           usePlaytestRuntimeStore.getState().setActive(rulesetId, { ...rt, isSessionLive: false });
+        } else {
+          // Keep name + instructions in sync with server (`playtests.instructions` via enrollment list).
+          const refreshed = {
+            ...rt,
+            sessionName: mine.sessionName,
+            sessionInstructions: mine.sessionInstructions ?? '',
+          };
+          if (
+            refreshed.sessionName !== rt.sessionName ||
+            refreshed.sessionInstructions !== rt.sessionInstructions
+          ) {
+            usePlaytestRuntimeStore.getState().setActive(rulesetId, refreshed);
+          }
         }
       }
     } catch (e) {
@@ -251,7 +276,22 @@ export function PlaytestRulesetControls({
             ) : (
               <CirclePause className='h-4 w-4 shrink-0' />
             )}
-            <span>Pause playtest</span>
+            <span>Pause Playtest</span>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+      ) : null}
+      {active?.isSessionLive && active.sessionInstructions?.trim() ? (
+        <SidebarMenuItem>
+          <SidebarMenuButton
+            type='button'
+            onClick={() => {
+              closeMobileSidebarIfNeeded();
+              setInstructionsOpen(true);
+            }}
+            data-testid='nav-playtest-instructions'
+            title='Session instructions'>
+            <ScrollText className='h-4 w-4 shrink-0' />
+            <span>Instructions</span>
           </SidebarMenuButton>
         </SidebarMenuItem>
       ) : null}
@@ -312,19 +352,35 @@ export function PlaytestRulesetControls({
         </DialogContent>
       </Dialog>
 
+      <Dialog open={instructionsOpen} onOpenChange={setInstructionsOpen}>
+        <DialogContent className='z-[60] flex max-h-[min(90vh,40rem)] max-w-lg flex-col' overlayClassName='z-[60]'>
+          <DialogHeader>
+            <DialogTitle>
+              {active?.sessionName?.trim() ? `${active.sessionName.trim()} — instructions` : 'Playtest instructions'}
+            </DialogTitle>
+            <DialogDescription className='sr-only'>Markdown instructions for this playtest session.</DialogDescription>
+          </DialogHeader>
+          <div className='min-h-0 flex-1 overflow-hidden rounded-md border border-border'>
+            <MarkdownPanel readOnly value={active?.sessionInstructions?.trim() ?? ''} className='max-h-[min(70vh,32rem)]' />
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={feedbackFor !== null} onOpenChange={(o) => !o && setFeedbackFor(null)}>
         <DialogContent className='z-[60] max-w-lg' overlayClassName='z-[60]'>
           <DialogHeader>
             <DialogTitle>Session feedback</DialogTitle>
             <DialogDescription>
-              Complete the publisher&apos;s survey if one is linked, then mark your feedback as done here.
+              Complete the publisher&apos;s survey if one is linked, then mark your feedback as done
+              here.
             </DialogDescription>
           </DialogHeader>
           <div className='space-y-3 py-2 text-sm'>
             {feedbackFor?.surveyUrl ? (
               <>
                 <p className='text-muted-foreground'>
-                  Open the survey in your browser, submit it there, then return and tap the button below.
+                  Open the survey in your browser, submit it there, then return and tap the button
+                  below.
                 </p>
                 <a
                   href={feedbackFor.surveyUrl}
@@ -337,14 +393,21 @@ export function PlaytestRulesetControls({
               </>
             ) : (
               <p className='text-muted-foreground'>
-                This playtest does not have a survey link yet. You can still mark feedback complete when you are
-                finished.
+                This playtest does not have a survey link yet. You can still mark feedback complete
+                when you are finished.
               </p>
             )}
           </div>
           <DialogFooter>
-            <Button type='button' disabled={completingFeedback} onClick={() => void handleCompleteFeedback()}>
-              {completingFeedback ? <Loader2 className='size-4 animate-spin' /> : 'Mark feedback complete'}
+            <Button
+              type='button'
+              disabled={completingFeedback}
+              onClick={() => void handleCompleteFeedback()}>
+              {completingFeedback ? (
+                <Loader2 className='size-4 animate-spin' />
+              ) : (
+                'Mark feedback complete'
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>

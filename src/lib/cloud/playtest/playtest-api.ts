@@ -15,6 +15,10 @@ export type MyPlaytestEnrollment = {
   status: string;
   sessionId: string;
   sessionName: string;
+  /**
+   * Markdown from `playtests.instructions` (playtest definition). Session rows no longer store
+   * instructions after playtest_sessions.instructions was dropped.
+   */
   sessionInstructions: string;
   sessionStatus: 'draft' | 'open' | 'closed';
   playtestId: string;
@@ -26,12 +30,18 @@ export type MyPlaytestEnrollment = {
 type PlaytestSessionEmbed = {
   id: string;
   name: string;
-  instructions: string;
   status: string;
   playtest_id: string;
-  playtests:
-    | { id: string; ruleset_id: string; name: string; survey_url: string | null }
-    | { id: string; ruleset_id: string; name: string; survey_url: string | null }[];
+  playtests: PlaytestEmbedRow | PlaytestEmbedRow[] | null;
+};
+
+type PlaytestEmbedRow = {
+  id: string;
+  ruleset_id: string;
+  name: string;
+  survey_url: string | null;
+  /** May be omitted by PostgREST if not selected; usually non-null string. */
+  instructions?: string | null;
 };
 
 type PlaytesterJoinRow = {
@@ -46,11 +56,17 @@ function firstEmbed<T>(v: T | T[] | null | undefined): T | null {
   return Array.isArray(v) ? (v[0] ?? null) : v;
 }
 
-function firstPlaytest(
-  v: PlaytestSessionEmbed['playtests'],
-): { id: string; ruleset_id: string; name: string; survey_url: string | null } | null {
+function firstPlaytest(v: PlaytestSessionEmbed['playtests']): PlaytestEmbedRow | null {
   if (v == null) return null;
   return Array.isArray(v) ? (v[0] ?? null) : v;
+}
+
+/** Read `instructions` from embedded `playtests` row (snake_case keys from PostgREST). */
+function instructionsFromPlaytestEmbed(pt: PlaytestEmbedRow | null): string {
+  if (pt == null) return '';
+  const raw = pt.instructions;
+  if (raw == null) return '';
+  return typeof raw === 'string' ? raw : String(raw);
 }
 
 export async function listMyPlaytestEnrollmentsForRuleset(
@@ -71,10 +87,9 @@ export async function listMyPlaytestEnrollmentsForRuleset(
       playtest_sessions (
         id,
         name,
-        instructions,
         status,
         playtest_id,
-        playtests ( id, ruleset_id, name, survey_url )
+        playtests ( id, ruleset_id, name, survey_url, instructions )
       )
     `,
     )
@@ -95,7 +110,7 @@ export async function listMyPlaytestEnrollmentsForRuleset(
       status: row.status,
       sessionId: ps.id,
       sessionName: ps.name,
-      sessionInstructions: ps.instructions,
+      sessionInstructions: instructionsFromPlaytestEmbed(pt),
       sessionStatus: ps.status as MyPlaytestEnrollment['sessionStatus'],
       playtestId: ps.playtest_id,
       rulesetId: pt.ruleset_id,
