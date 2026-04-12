@@ -23,7 +23,6 @@ describe('Ruleset Management', () => {
       cy.get('#ruleset-description').type('This is a test ruleset created by e2e test');
 
       // Submit the form
-      cy.get('[data-testid="create-ruleset-next"]').click();
       cy.get('[data-testid="create-ruleset-submit"]').click();
 
       // Verify the ruleset was created
@@ -38,7 +37,6 @@ describe('Ruleset Management', () => {
       cy.get('[data-testid="create-ruleset-button"]').click();
       cy.get('#ruleset-title').type('Persistent Ruleset');
       cy.get('#ruleset-description').type('This ruleset should persist after sign out');
-      cy.get('[data-testid="create-ruleset-next"]').click();
       cy.get('[data-testid="create-ruleset-submit"]').click();
 
       // Wait for the ruleset to appear
@@ -62,7 +60,6 @@ describe('Ruleset Management', () => {
       cy.get('[data-testid="create-ruleset-button"]').click();
       cy.get('#ruleset-title').type('Ruleset To Delete');
       cy.get('#ruleset-description').type('This ruleset will be deleted');
-      cy.get('[data-testid="create-ruleset-next"]').click();
       cy.get('[data-testid="create-ruleset-submit"]').click();
 
       // Wait for the ruleset to appear
@@ -86,7 +83,6 @@ describe('Ruleset Management', () => {
       cy.get('[data-testid="create-ruleset-button"]').click();
       cy.get('#ruleset-title').type('Ruleset To Open');
       cy.get('#ruleset-description').type('This ruleset will be opened');
-      cy.get('[data-testid="create-ruleset-next"]').click();
       cy.get('[data-testid="create-ruleset-submit"]').click();
 
       // Wait for the ruleset to appear

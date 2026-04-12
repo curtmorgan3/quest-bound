@@ -24,6 +24,7 @@ import type {
   Script,
   Window,
 } from '@/types';
+import { ensureRulesetDefaultTestCharacterAndArchetype } from '@/utils/ensure-ruleset-default-bootstrap';
 import { remapComponentSerializedDataAndStates } from './remap-component-entity-ids';
 import { deleteModuleContentFromRuleset } from './remove-module-from-ruleset';
 
@@ -90,6 +91,11 @@ export async function addModuleToRuleset({
   if (sourceRulesetId === targetRulesetId) {
     throw new Error('Cannot add a ruleset as a module to itself');
   }
+
+  await ensureRulesetDefaultTestCharacterAndArchetype(
+    targetRulesetId,
+    targetRuleset.createdBy || 'unknown',
+  );
 
   const existingModules =
     (targetRuleset as Ruleset & { modules?: { id: string; name: string; image: string | null }[] })
@@ -1052,6 +1058,52 @@ export async function addModuleToRuleset({
       updatedAt: now,
     } as Script & { moduleId: string; moduleEntityId: string; moduleName: string });
     counts.scripts++;
+  }
+
+  // Mirror Script.entityId → Attribute|Action|Item|Archetype.scriptId (new script ids; copied `...rest` still had source script ids)
+  const moduleScriptsWithEntity = await db.scripts
+    .where('rulesetId')
+    .equals(targetRulesetId)
+    .filter(
+      (s) =>
+        s.moduleId === sourceRulesetId && s.entityId != null && s.entityType !== 'global',
+    )
+    .toArray();
+
+  type BulkScriptLinkEntry = { key: string; changes: { scriptId: string } };
+  const attributeScriptLinks: BulkScriptLinkEntry[] = [];
+  const actionScriptLinks: BulkScriptLinkEntry[] = [];
+  const itemScriptLinks: BulkScriptLinkEntry[] = [];
+  const archetypeScriptLinks: BulkScriptLinkEntry[] = [];
+
+  for (const s of moduleScriptsWithEntity) {
+    if (!s.entityId) continue;
+    const entry = { key: s.entityId, changes: { scriptId: s.id } };
+    if (s.entityType === 'attribute') attributeScriptLinks.push(entry);
+    else if (s.entityType === 'action') actionScriptLinks.push(entry);
+    else if (s.entityType === 'item') itemScriptLinks.push(entry);
+    else if (s.entityType === 'archetype') archetypeScriptLinks.push(entry);
+  }
+
+  if (
+    attributeScriptLinks.length ||
+    actionScriptLinks.length ||
+    itemScriptLinks.length ||
+    archetypeScriptLinks.length
+  ) {
+    await db.transaction(
+      'rw',
+      db.attributes,
+      db.actions,
+      db.items,
+      db.archetypes,
+      async () => {
+        if (attributeScriptLinks.length) await db.attributes.bulkUpdate(attributeScriptLinks);
+        if (actionScriptLinks.length) await db.actions.bulkUpdate(actionScriptLinks);
+        if (itemScriptLinks.length) await db.items.bulkUpdate(itemScriptLinks);
+        if (archetypeScriptLinks.length) await db.archetypes.bulkUpdate(archetypeScriptLinks);
+      },
+    );
   }
 
   // Update ruleset.modules: append if new, or update name/image if refresh

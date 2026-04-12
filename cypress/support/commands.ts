@@ -130,7 +130,6 @@ Cypress.Commands.add('setupRuleset', (title?: string, description?: string) => {
   cy.get('[data-testid="create-ruleset-button"]').click();
   cy.get('#ruleset-title').type(title ?? 'Ruleset');
   cy.get('#ruleset-description').type(description ?? 'Ruleset for testing window filtering');
-  cy.get('[data-testid="create-ruleset-next"]').click();
   cy.get('[data-testid="create-ruleset-submit"]').click();
 
   return cy.wrap(null);

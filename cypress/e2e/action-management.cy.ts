@@ -13,7 +13,6 @@ describe('Action Management', () => {
       cy.get('[data-testid="create-ruleset-button"]').click();
       cy.get('#ruleset-title').type('Test Ruleset for Actions');
       cy.get('#ruleset-description').type('Ruleset for testing action management');
-      cy.get('[data-testid="create-ruleset-next"]').click();
       cy.get('[data-testid="create-ruleset-submit"]').click();
 
       // Wait for ruleset to be created and navigate to it
@@ -49,7 +48,6 @@ describe('Action Management', () => {
       cy.get('[data-testid="create-ruleset-button"]').click();
       cy.get('#ruleset-title').type('Action Category Ruleset');
       cy.get('#ruleset-description').type('Ruleset for testing action categories');
-      cy.get('[data-testid="create-ruleset-next"]').click();
       cy.get('[data-testid="create-ruleset-submit"]').click();
 
       // Navigate to the ruleset
@@ -85,7 +83,6 @@ describe('Action Management', () => {
       cy.get('[data-testid="create-ruleset-button"]').click();
       cy.get('#ruleset-title').type('Long Description Ruleset');
       cy.get('#ruleset-description').type('Ruleset for testing long descriptions');
-      cy.get('[data-testid="create-ruleset-next"]').click();
       cy.get('[data-testid="create-ruleset-submit"]').click();
 
       // Navigate to the ruleset
@@ -123,7 +120,6 @@ describe('Action Management', () => {
       cy.get('[data-testid="create-ruleset-button"]').click();
       cy.get('#ruleset-title').type('Edit Action Ruleset');
       cy.get('#ruleset-description').type('Ruleset for testing action editing');
-      cy.get('[data-testid="create-ruleset-next"]').click();
       cy.get('[data-testid="create-ruleset-submit"]').click();
 
       // Navigate to the ruleset
@@ -176,7 +172,6 @@ describe('Action Management', () => {
       cy.get('[data-testid="create-ruleset-button"]').click();
       cy.get('#ruleset-title').type('Delete Action Ruleset');
       cy.get('#ruleset-description').type('Ruleset for testing action deletion');
-      cy.get('[data-testid="create-ruleset-next"]').click();
       cy.get('[data-testid="create-ruleset-submit"]').click();
 
       // Navigate to the ruleset
@@ -221,7 +216,6 @@ describe('Action Management', () => {
       cy.get('[data-testid="create-ruleset-button"]').click();
       cy.get('#ruleset-title').type('Cancel Delete Ruleset');
       cy.get('#ruleset-description').type('Ruleset for testing cancel deletion');
-      cy.get('[data-testid="create-ruleset-next"]').click();
       cy.get('[data-testid="create-ruleset-submit"]').click();
 
       // Navigate to the ruleset
@@ -265,7 +259,6 @@ describe('Action Management', () => {
       cy.get('[data-testid="create-ruleset-button"]').click();
       cy.get('#ruleset-title').type('Validation Ruleset');
       cy.get('#ruleset-description').type('Ruleset for testing validation');
-      cy.get('[data-testid="create-ruleset-next"]').click();
       cy.get('[data-testid="create-ruleset-submit"]').click();
 
       // Navigate to the ruleset
@@ -303,7 +296,6 @@ describe('Action Management', () => {
       cy.get('[data-testid="create-ruleset-button"]').click();
       cy.get('#ruleset-title').type('Inline Edit Ruleset');
       cy.get('#ruleset-description').type('Ruleset for testing inline editing');
-      cy.get('[data-testid="create-ruleset-next"]').click();
       cy.get('[data-testid="create-ruleset-submit"]').click();
 
       // Navigate to the ruleset
@@ -345,7 +337,6 @@ describe('Action Management', () => {
       cy.get('[data-testid="create-ruleset-button"]').click();
       cy.get('#ruleset-title').type('Multiple Actions Ruleset');
       cy.get('#ruleset-description').type('Ruleset for testing multiple actions');
-      cy.get('[data-testid="create-ruleset-next"]').click();
       cy.get('[data-testid="create-ruleset-submit"]').click();
 
       // Navigate to the ruleset

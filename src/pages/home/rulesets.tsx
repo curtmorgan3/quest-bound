@@ -26,6 +26,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { systemModules } from '@/content/system-modules';
+import { useFeatureFlag } from '@/hooks';
 import { isCloudConfigured } from '@/lib/cloud/client';
 import { getNonOwnerCloudInstallRulesetIds } from '@/lib/cloud/sync/non-owner-cloud-install-ids';
 import { pullEntireRulesetFromCloud } from '@/lib/cloud/sync/sync-service';
@@ -56,6 +57,9 @@ import {
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { SelectSystemModuleStep } from './select-system-module-step';
+
+/** Feature flag (localStorage `feature.{name}`). When true, create ruleset includes the system module step. */
+export const RULESET_CREATE_SYSTEM_MODULE_STEP_FEATURE_FLAG = 'rulesetCreateSystemModuleStep';
 
 const DELETE_SPINNER_DELAY_MS = 1000;
 
@@ -115,6 +119,10 @@ export const Rulesets = () => {
   const [createRulesetDialogOpen, setCreateRulesetDialogOpen] = useState(false);
   const [createRulesetStep, setCreateRulesetStep] = useState<1 | 2>(1);
   const [selectedSystemModuleId, setSelectedSystemModuleId] = useState<string | null>(null);
+  const systemModuleStepEnabled = useFeatureFlag(
+    RULESET_CREATE_SYSTEM_MODULE_STEP_FEATURE_FLAG,
+    false,
+  );
   const [createFlowBusy, setCreateFlowBusy] = useState(false);
   const [createFlowStatus, setCreateFlowStatus] = useState<string | null>(null);
   const [createFlowError, setCreateFlowError] = useState<string | null>(null);
@@ -875,26 +883,41 @@ export const Rulesets = () => {
       <DialogContent
         className={cn(
           'flex max-h-[min(90vh,720px)] flex-col overflow-hidden',
-          createRulesetStep === 1 ? 'sm:max-w-[425px]' : 'sm:max-w-2xl',
+          !systemModuleStepEnabled || createRulesetStep === 1
+            ? 'sm:max-w-[425px]'
+            : 'sm:max-w-2xl',
         )}>
         <form
           className='flex min-h-0 flex-1 flex-col gap-4'
           onSubmit={(e) => {
             e.preventDefault();
-            if (createRulesetStep === 1) setCreateRulesetStep(2);
+            if (systemModuleStepEnabled && createRulesetStep === 1) {
+              setCreateRulesetStep(2);
+              return;
+            }
+            void handleCreate();
           }}>
           <DialogHeader>
             <DialogTitle>
-              {createRulesetStep === 1 ? 'New Ruleset' : 'Select a System Module'}
+              {systemModuleStepEnabled && createRulesetStep === 2
+                ? 'Select a System Module'
+                : 'New Ruleset'}
             </DialogTitle>
             <DialogDescription>
-              {createRulesetStep === 1
-                ? 'Enter a title and description for your ruleset.'
-                : 'Optionally start with a framework to bootstrap your ruleset.'}
+              {systemModuleStepEnabled && createRulesetStep === 2
+                ? 'Optionally start with a framework to bootstrap your ruleset.'
+                : 'Enter a title and description for your ruleset.'}
             </DialogDescription>
           </DialogHeader>
 
-          {createRulesetStep === 1 ? (
+          {systemModuleStepEnabled && createRulesetStep === 2 ? (
+            <div className='min-h-0 flex-1 overflow-y-auto p-2'>
+              <SelectSystemModuleStep
+                selectedId={selectedSystemModuleId}
+                onSelect={setSelectedSystemModuleId}
+              />
+            </div>
+          ) : (
             <div className='grid gap-4'>
               <div className='grid gap-3'>
                 <Label htmlFor='ruleset-title'>Title</Label>
@@ -915,28 +938,10 @@ export const Rulesets = () => {
                 />
               </div>
             </div>
-          ) : (
-            <div className='min-h-0 flex-1 overflow-y-auto p-2'>
-              <SelectSystemModuleStep
-                selectedId={selectedSystemModuleId}
-                onSelect={setSelectedSystemModuleId}
-              />
-            </div>
           )}
 
           <DialogFooter className='mt-auto shrink-0 gap-2 sm:gap-2'>
-            {createRulesetStep === 1 ? (
-              <>
-                <DialogClose asChild>
-                  <Button type='button' variant='outline'>
-                    Cancel
-                  </Button>
-                </DialogClose>
-                <Button type='submit' data-testid='create-ruleset-next'>
-                  Next
-                </Button>
-              </>
-            ) : (
+            {systemModuleStepEnabled && createRulesetStep === 2 ? (
               <>
                 <Button
                   type='button'
@@ -952,6 +957,26 @@ export const Rulesets = () => {
                   onClick={() => void handleCreate()}>
                   Create
                 </Button>
+              </>
+            ) : (
+              <>
+                <DialogClose asChild>
+                  <Button type='button' variant='outline'>
+                    Cancel
+                  </Button>
+                </DialogClose>
+                {systemModuleStepEnabled ? (
+                  <Button type='submit' data-testid='create-ruleset-next'>
+                    Next
+                  </Button>
+                ) : (
+                  <Button
+                    type='submit'
+                    data-testid='create-ruleset-submit'
+                    disabled={!!deletingRulesetId || !!deletingCloudRulesetId}>
+                    Create
+                  </Button>
+                )}
               </>
             )}
           </DialogFooter>

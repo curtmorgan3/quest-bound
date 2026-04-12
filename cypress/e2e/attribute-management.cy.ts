@@ -13,7 +13,6 @@ describe('Attribute Management', () => {
       cy.get('[data-testid="create-ruleset-button"]').click();
       cy.get('#ruleset-title').type('Test Ruleset for Attributes');
       cy.get('#ruleset-description').type('Ruleset for testing attribute management');
-      cy.get('[data-testid="create-ruleset-next"]').click();
       cy.get('[data-testid="create-ruleset-submit"]').click();
 
       // Wait for ruleset to be created and navigate to it
@@ -56,7 +55,6 @@ describe('Attribute Management', () => {
       cy.get('[data-testid="create-ruleset-button"]').click();
       cy.get('#ruleset-title').type('Text Attribute Ruleset');
       cy.get('#ruleset-description').type('Ruleset for testing text attributes');
-      cy.get('[data-testid="create-ruleset-next"]').click();
       cy.get('[data-testid="create-ruleset-submit"]').click();
 
       // Navigate to the ruleset
@@ -96,7 +94,6 @@ describe('Attribute Management', () => {
       cy.get('[data-testid="create-ruleset-button"]').click();
       cy.get('#ruleset-title').type('Boolean Attribute Ruleset');
       cy.get('#ruleset-description').type('Ruleset for testing boolean attributes');
-      cy.get('[data-testid="create-ruleset-next"]').click();
       cy.get('[data-testid="create-ruleset-submit"]').click();
 
       // Navigate to the ruleset
@@ -135,7 +132,6 @@ describe('Attribute Management', () => {
       cy.get('[data-testid="create-ruleset-button"]').click();
       cy.get('#ruleset-title').type('Enum Attribute Ruleset');
       cy.get('#ruleset-description').type('Ruleset for testing enum attributes');
-      cy.get('[data-testid="create-ruleset-next"]').click();
       cy.get('[data-testid="create-ruleset-submit"]').click();
 
       // Navigate to the ruleset
@@ -186,7 +182,6 @@ describe('Attribute Management', () => {
       cy.get('[data-testid="create-ruleset-button"]').click();
       cy.get('#ruleset-title').type('Edit Attribute Ruleset');
       cy.get('#ruleset-description').type('Ruleset for testing attribute editing');
-      cy.get('[data-testid="create-ruleset-next"]').click();
       cy.get('[data-testid="create-ruleset-submit"]').click();
 
       // Navigate to the ruleset
@@ -237,7 +232,6 @@ describe('Attribute Management', () => {
       cy.get('[data-testid="create-ruleset-button"]').click();
       cy.get('#ruleset-title').type('Delete Attribute Ruleset');
       cy.get('#ruleset-description').type('Ruleset for testing attribute deletion');
-      cy.get('[data-testid="create-ruleset-next"]').click();
       cy.get('[data-testid="create-ruleset-submit"]').click();
 
       // Navigate to the ruleset
@@ -280,7 +274,6 @@ describe('Attribute Management', () => {
       cy.get('[data-testid="create-ruleset-button"]').click();
       cy.get('#ruleset-title').type('Cancel Delete Ruleset');
       cy.get('#ruleset-description').type('Ruleset for testing cancel deletion');
-      cy.get('[data-testid="create-ruleset-next"]').click();
       cy.get('[data-testid="create-ruleset-submit"]').click();
 
       // Navigate to the ruleset
@@ -320,7 +313,6 @@ describe('Attribute Management', () => {
       cy.get('[data-testid="create-ruleset-button"]').click();
       cy.get('#ruleset-title').type('Validation Ruleset');
       cy.get('#ruleset-description').type('Ruleset for testing validation');
-      cy.get('[data-testid="create-ruleset-next"]').click();
       cy.get('[data-testid="create-ruleset-submit"]').click();
 
       // Navigate to the ruleset
@@ -354,7 +346,6 @@ describe('Attribute Management', () => {
       cy.get('[data-testid="create-ruleset-button"]').click();
       cy.get('#ruleset-title').type('Empty Enum Ruleset');
       cy.get('#ruleset-description').type('Ruleset for testing empty enum');
-      cy.get('[data-testid="create-ruleset-next"]').click();
       cy.get('[data-testid="create-ruleset-submit"]').click();
 
       // Navigate to the ruleset
@@ -389,7 +380,6 @@ describe('Attribute Management', () => {
       cy.get('[data-testid="create-ruleset-button"]').click();
       cy.get('#ruleset-title').type('Inline Edit Ruleset');
       cy.get('#ruleset-description').type('Ruleset for testing inline editing');
-      cy.get('[data-testid="create-ruleset-next"]').click();
       cy.get('[data-testid="create-ruleset-submit"]').click();
 
       // Navigate to the ruleset

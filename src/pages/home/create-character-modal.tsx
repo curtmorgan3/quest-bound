@@ -171,6 +171,7 @@ export function CreateCharacterModal({
                     <Input
                       id='character-name'
                       name='name'
+                      autoComplete='off'
                       value={name}
                       onChange={(e) => setName(e.target.value)}
                       placeholder='Enter character name'

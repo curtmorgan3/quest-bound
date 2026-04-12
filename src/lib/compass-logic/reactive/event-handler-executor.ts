@@ -18,9 +18,9 @@ import { functionDefToExecutableSource } from '../interpreter/ast-to-source';
 import { Lexer } from '../interpreter/lexer';
 import { Parser } from '../interpreter/parser';
 import type { ExecuteItemEventFn } from '../runtime/proxies/action-proxy';
+import type { ScriptGameLogEntry } from '../runtime/script-game-log';
 import type { ScriptExecutionContext, ScriptExecutionResult } from '../runtime/script-runner';
 import { ScriptRunner } from '../runtime/script-runner';
-import type { ScriptGameLogEntry } from '../runtime/script-game-log';
 import {
   getEventInvocationLogMessage,
   persistEventInvocationLog,
@@ -504,9 +504,9 @@ export class EventHandlerExecutor {
         error: new Error(`Action not found: ${actionId}`),
       };
     }
-
     // Check if action has a script
     if (!action.scriptId) {
+      console.warn(`Action ${action.title}:${action.id} does not have a script.`);
       return {
         success: true,
         value: null,
@@ -574,7 +574,7 @@ export class EventHandlerExecutor {
         promptInput,
         selectCharacter: selectCharacterWrapped,
         selectCharacters: selectCharactersWrapped,
-enableScriptGameLogRolls: true,
+        enableScriptGameLogRolls: true,
         callerInventoryItemInstanceId,
         campaignSceneId,
         sheetPreviewRulesetWindowId: sheetPreviewRulesetWindowId ?? undefined,

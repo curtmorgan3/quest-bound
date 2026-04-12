@@ -381,6 +381,7 @@ export const RulesetSettings = ({ activeRuleset }: RulesetSettingsProps) => {
       } else {
         addNotification('Module added successfully.', { type: 'success' });
       }
+      window.location.reload();
     } catch (e) {
       addNotification((e as Error).message, { type: 'error' });
     } finally {
@@ -424,6 +425,7 @@ export const RulesetSettings = ({ activeRuleset }: RulesetSettingsProps) => {
       } else {
         addNotification('Module added from file successfully.', { type: 'success' });
       }
+      window.location.reload();
     } catch (err) {
       addNotification((err as Error).message, { type: 'error' });
     } finally {
