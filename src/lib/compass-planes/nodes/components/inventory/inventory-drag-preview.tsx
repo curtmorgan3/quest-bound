@@ -6,8 +6,9 @@ export const InventoryDragPreview = () => {
 
   if (!activeDrag || !dragPosition) return null;
 
-  const { item } = activeDrag;
-  const image = item.image ?? null;
+  const { item, showItemAs } = activeDrag;
+  const imageUrl =
+    (showItemAs ?? 'image') === 'image' ? (item.image ?? null) : null;
 
   const previewWidth = item.inventoryWidth * 20;
   const previewHeight = item.inventoryHeight * 20;
@@ -32,9 +33,9 @@ export const InventoryDragPreview = () => {
     fontWeight: 500,
   };
 
-  const content = image ? (
+  const content = imageUrl ? (
     <img
-      src={image}
+      src={imageUrl}
       alt={item.title}
       style={{
         width: '100%',
@@ -43,7 +44,9 @@ export const InventoryDragPreview = () => {
       }}
     />
   ) : (
-    <span>{item.label ?? item.title}</span>
+    <span>
+      {(showItemAs ?? 'image') === 'title' ? item.title : (item.label ?? item.title)}
+    </span>
   );
 
   return createPortal(<div style={style}>{content}</div>, document.body);

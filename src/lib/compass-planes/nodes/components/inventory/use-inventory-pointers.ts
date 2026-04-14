@@ -1,6 +1,7 @@
 import { useComponentCanvasDimensions } from '@/lib/compass-planes/canvas/editor-item-layout-context';
+import { getComponentData } from '@/lib/compass-planes/utils';
 import { CharacterContext, type InventoryItemWithData, useInventoryDragContext } from '@/stores';
-import type { Component } from '@/types';
+import type { Component, InventoryComponentData } from '@/types';
 import { useContext, useEffect, useRef, useState } from 'react';
 import type { ContextMenuState } from './item-context-menu';
 import { useInventoryPlacement } from './use-inventory-placement';
@@ -193,8 +194,13 @@ export const useInventoryPointers = ({
           currentX: pointerX - offsetX,
           currentY: pointerY - offsetY,
         });
+        const invData = getComponentData(component) as InventoryComponentData;
         beginDrag(
-          { item, source: 'node' },
+          {
+            item,
+            source: 'node',
+            showItemAs: invData.showItemAs ?? 'image',
+          },
           { clientX, clientY },
         );
         updateDragPosition({ clientX, clientY });

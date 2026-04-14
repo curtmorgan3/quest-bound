@@ -34,6 +34,8 @@ type RegisteredTarget = {
 export type ActiveInventoryDrag = {
   item: InventoryItemWithData;
   source: DragSource;
+  /** When `'title'`, drag preview shows text even if the item has an image (matches grid). */
+  showItemAs?: 'image' | 'title';
 };
 
 export type ResolvedInventoryDrop = {
