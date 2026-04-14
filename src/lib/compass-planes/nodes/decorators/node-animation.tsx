@@ -118,6 +118,7 @@ export const NodeAnimation = ({ component, children }: NodeAnimationProps) => {
               }}
               from={ticRange.from}
               to={ticRange.to}
+              showSign={Boolean(data.showSign)}
             />
           </div>
         );
@@ -223,10 +224,18 @@ export const NodeAnimation = ({ component, children }: NodeAnimationProps) => {
   return content;
 };
 
+/** Match `use-node-data` sign formatting for TEXT number attributes with `showSign`. */
+function formatValueWithSign(n: number, showSign: boolean): string {
+  if (!showSign) return String(n);
+  if (n > 0) return `+${n}`;
+  return String(n);
+}
+
 interface TicOverlayProps {
   from: number;
   to: number;
   style: CSSProperties;
+  showSign?: boolean;
 }
 
 const MAX_TIC_STEPS = 1000;
@@ -237,7 +246,7 @@ function easeInOutCubic(t: number): number {
   return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
 }
 
-const TicOverlay = ({ from, to, style }: TicOverlayProps) => {
+const TicOverlay = ({ from, to, style, showSign = false }: TicOverlayProps) => {
   const [displayValue, setDisplayValue] = useState<number>(from);
 
   useEffect(() => {
@@ -287,7 +296,7 @@ const TicOverlay = ({ from, to, style }: TicOverlayProps) => {
         justifyContent: style.textAlign,
       }}
       aria-hidden>
-      {displayValue}
+      {formatValueWithSign(displayValue, showSign)}
     </span>
   );
 };
