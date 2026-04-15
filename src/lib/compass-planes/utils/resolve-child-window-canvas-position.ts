@@ -1,7 +1,4 @@
-import type {
-  ChildWindowAnchor,
-  ChildWindowPlacementMode,
-} from '@/types/component-types';
+import type { ChildWindowAnchor, ChildWindowPlacementMode } from '@/types';
 
 const DEFAULT_CHILD_W = 320;
 const DEFAULT_CHILD_H = 240;

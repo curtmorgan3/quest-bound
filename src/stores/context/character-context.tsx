@@ -1,5 +1,12 @@
-import type { Character, CharacterAttribute, InventoryItem } from '@/types';
+import type {
+  Character,
+  CharacterAttribute,
+  InventoryItem,
+  InventoryItemWithData,
+} from '@quest-bound/types';
 import { createContext } from 'react';
+
+export type { InventoryItemWithData } from '@quest-bound/types';
 
 export type InventoryPanelConfig = {
   open?: boolean;
@@ -16,23 +23,6 @@ export type InventoryPanelConfig = {
   cellHeight?: number;
   gridCols?: number;
   gridRows?: number;
-};
-
-export type InventoryItemWithData = InventoryItem & {
-  image?: string | null;
-  title: string;
-  description?: string;
-  /** Category inherited from the referenced item/action/attribute, when present. */
-  category?: string;
-  inventoryWidth: number;
-  inventoryHeight: number;
-  stackSize: number;
-  isEquippable: boolean;
-  isConsumable: boolean;
-  weight: number;
-  customProperties: Record<any, any>;
-  /** Present when type is 'attribute': the character's current value for this attribute. */
-  value?: string | number | boolean;
 };
 
 type CharacterContext = {

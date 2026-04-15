@@ -3,7 +3,7 @@ import { ensureRemoteUserRow } from '@/lib/cloud/ensure-remote-user';
 import { prepareRemoteForLocal } from '@/lib/cloud/sync/sync-utils';
 import { db, useCurrentUser } from '@/stores';
 import type { DB } from '@/stores/db/hooks/types';
-import type { User } from '@/types/data-model-types';
+import type { User } from '@/types';
 import { migrateOnboardingUserId } from '@/utils/onboarding-storage';
 
 /**

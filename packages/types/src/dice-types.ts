@@ -1,4 +1,5 @@
-import { ThreeDDice } from 'dddice-js';
+import type { ThreeDDice } from 'dddice-js';
+import type { Dispatch, SetStateAction } from 'react';
 
 export type IDiceContext = UseThreeDDice & LocalDiceContext;
 
@@ -160,7 +161,7 @@ export interface UseThreeDDice {
   displayingRoll: boolean;
   rollThreeDDice: (dice: Dice[]) => Promise<Dice[]>;
   removeDice: () => void;
-  setDisplayingRoll: React.Dispatch<React.SetStateAction<boolean>>;
+  setDisplayingRoll: Dispatch<SetStateAction<boolean>>;
   getThemes: () => Promise<any>;
   theme: DiceTheme;
   setTheme: (theme: DiceTheme) => void;

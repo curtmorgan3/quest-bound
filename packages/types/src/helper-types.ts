@@ -1,5 +1,3 @@
-import type { InventoryItemWithData } from '@/stores';
-
 export type BaseDetails = {
   id: string;
   createdAt: string;
@@ -17,12 +15,6 @@ export type Dimensions = {
 };
 
 export type InventoryItemType = 'item' | 'action' | 'attribute' | 'pinned';
-
-export type InventoryListRow = {
-  type: 'entry';
-  entry: InventoryItemWithData;
-  estimatedSize: number;
-};
 
 export type TutorialAction = {
   type: 'link';

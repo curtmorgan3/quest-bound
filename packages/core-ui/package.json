@@ -1,5 +1,5 @@
 {
-  "name": "@questbound/core-ui",
+  "name": "@quest-bound/core-ui",
   "version": "2.1.74",
   "private": true,
   "type": "module",
@@ -14,7 +14,7 @@
     "typecheck": "tsc -p tsconfig.json"
   },
   "dependencies": {
-    "@questbound/local-db": "2.1.74"
+    "@quest-bound/local-db": "2.1.74"
   },
   "peerDependencies": {
     "react": "^19.1.1",

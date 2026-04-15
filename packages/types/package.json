@@ -1,5 +1,5 @@
 {
-  "name": "@questbound/types",
+  "name": "@quest-bound/types",
   "version": "2.1.74",
   "private": true,
   "type": "module",
@@ -12,5 +12,17 @@
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json"
+  },
+  "peerDependencies": {
+    "dddice-js": "^0.19.34-974",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1"
+  },
+  "devDependencies": {
+    "@types/react": "^19.1.10",
+    "@types/react-dom": "^19.1.7",
+    "dddice-js": "^0.19.34-974",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1"
   }
 }

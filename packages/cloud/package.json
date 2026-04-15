@@ -1,5 +1,5 @@
 {
-  "name": "@questbound/cloud",
+  "name": "@quest-bound/cloud",
   "version": "2.1.74",
   "private": true,
   "type": "module",
@@ -14,9 +14,9 @@
     "typecheck": "tsc -p tsconfig.json"
   },
   "dependencies": {
-    "@questbound/core-ui": "2.1.74",
-    "@questbound/local-db": "2.1.74",
-    "@questbound/remote-db": "2.1.74"
+    "@quest-bound/core-ui": "2.1.74",
+    "@quest-bound/local-db": "2.1.74",
+    "@quest-bound/remote-db": "2.1.74"
   },
   "peerDependencies": {
     "react": "^19.1.1",
