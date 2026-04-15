@@ -32,7 +32,7 @@ const DEFAULT_GROUP_STYLES: ComponentStyle = {
   borderRadiusBottomRight: 4,
   outlineWidth: 1,
   outlineColor: 'rgba(148, 163, 184, 0.5)',
-  outline: 'dashed',
+  outline: 'solid',
   paddingTop: 0,
   paddingBottom: 0,
   paddingLeft: 0,
