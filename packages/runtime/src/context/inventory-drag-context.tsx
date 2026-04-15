@@ -1,4 +1,4 @@
-import { type InventoryItemWithData } from '@/stores';
+import type { InventoryItemWithData } from '@quest-bound/types';
 import {
   createContext,
   type PropsWithChildren,

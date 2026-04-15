@@ -1,7 +1,4 @@
-import { usePersistLogs, useUsers } from '@/lib/compass-api';
-import { setDicePanelRollHandlersForCampaignHostQueue } from '@/lib/compass-logic/worker/current-roll-handler-ref';
-import { useDddice } from '@/pages';
-import { CharacterContext, diceRollLogger, LogType, useEventLog } from '@/stores';
+import { usePersistLogs, useUsers } from '@quest-bound/local-db/api-hooks';
 import type {
   DiceResult,
   DiceRollOpts,
@@ -10,12 +7,18 @@ import type {
   RollResult,
   RollSplitFn,
   SegmentResult,
-} from '@/types';
+} from '@quest-bound/types';
+import { setDicePanelRollHandlersForCampaignHostQueue } from '@/lib/compass-logic/worker/current-roll-handler-ref';
+import { useDddice } from '@/pages/dice/dddice/use-dddice';
+import { diceRollLogger } from '@/stores/loggers/dice-roll-logger';
+import { LogType, useEventLog } from '@/stores/event-log-store';
+import { formatSegmentResult, rollDiceExpression } from '@/utils/dice-utils';
+import type { RefObject } from 'react';
 import { createContext, useContext, useEffect, useRef, useState } from 'react';
-import { formatSegmentResult, rollDiceExpression } from '../../utils';
+import { CharacterContext } from './character-context';
 
 interface DiceStateProps {
-  canvasRef?: React.RefObject<HTMLCanvasElement | null>;
+  canvasRef?: RefObject<HTMLCanvasElement | null>;
 }
 
 export const useDiceState = ({ canvasRef }: DiceStateProps): IDiceContext => {

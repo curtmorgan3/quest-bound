@@ -15,7 +15,8 @@
   },
   "dependencies": {
     "@quest-bound/remote-db": "2.1.74",
-    "@quest-bound/types": "2.1.74"
+    "@quest-bound/types": "2.1.74",
+    "lucide-react": "^0.543.0"
   },
   "peerDependencies": {
     "react": "^19.1.1",

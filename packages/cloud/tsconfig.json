@@ -4,6 +4,12 @@
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.tsbuildinfo",
     "noEmit": true,
     "paths": {
+      "@/pages/characters": ["../runtime/src/pages/characters"],
+      "@/pages/characters/*": ["../runtime/src/pages/characters/*"],
+      "@/pages/campaigns": ["../runtime/src/pages/campaigns"],
+      "@/pages/campaigns/*": ["../runtime/src/pages/campaigns/*"],
+      "@/pages/dice": ["../runtime/src/pages/dice"],
+      "@/pages/dice/*": ["../runtime/src/pages/dice/*"],
       "@/lib/cloud": ["./src"],
       "@/lib/cloud/*": ["./src/*"],
       "@/lib/campaign-play": ["../runtime/src"],

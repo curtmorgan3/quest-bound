@@ -15,7 +15,7 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet';
 import { useActions, useAssets, useAttributes, useItems } from '@/lib/compass-api';
-import { CharacterContext } from '@/stores';
+import { CharacterContext } from '@quest-bound/runtime/context';
 import type { Action, Attribute, Item } from '@/types';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { GaugeIcon, PackageIcon, SearchIcon, ZapIcon } from 'lucide-react';

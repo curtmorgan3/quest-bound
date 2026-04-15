@@ -27,7 +27,7 @@ import {
   DiceContext,
   InventoryDragProvider,
   type InventoryPanelConfig,
-} from '@/stores';
+} from '@quest-bound/runtime/context';
 import { type CharacterAttribute } from '@/types';
 import { Loader2 } from 'lucide-react';
 import {

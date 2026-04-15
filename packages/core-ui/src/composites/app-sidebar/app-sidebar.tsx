@@ -16,7 +16,8 @@ import { isCloudConfigured } from '@/lib/cloud/client';
 import { useSyncStateStore } from '@/lib/cloud/sync/sync-state';
 import { useActiveRuleset, useUsers } from '@/lib/compass-api';
 import { Settings } from '@/pages';
-import { DiceContext, useCloudSyncReviewStore, useExternalRulesetGrantStore } from '@/stores';
+import { DiceContext } from '@quest-bound/runtime/context';
+import { useCloudSyncReviewStore, useExternalRulesetGrantStore } from '@/stores';
 import { useCloudAuthStore } from '@/stores/cloud-auth-store';
 import {
   Building2,

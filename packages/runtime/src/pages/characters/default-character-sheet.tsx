@@ -38,7 +38,8 @@ import {
   executeCharacterLoader,
 } from '@/lib/compass-logic/reactive/event-handler-executor';
 import { cn } from '@/lib/utils';
-import { CharacterContext, DiceContext, db } from '@/stores';
+import { CharacterContext, DiceContext } from '@quest-bound/runtime/context';
+import { db } from '@/stores';
 import type { Action, CharacterAttribute, EntityCustomPropertyDef } from '@/types';
 import { parseEntityCustomPropertiesJson } from '@/utils/parse-entity-custom-properties-json';
 import { useLiveQuery } from 'dexie-react-hooks';

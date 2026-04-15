@@ -25,6 +25,11 @@
       "types": "./src/pages/index.ts",
       "import": "./src/pages/index.ts",
       "default": "./src/pages/index.ts"
+    },
+    "./context": {
+      "types": "./src/context/index.ts",
+      "import": "./src/context/index.ts",
+      "default": "./src/context/index.ts"
     }
   },
   "scripts": {
@@ -32,10 +37,12 @@
   },
   "dependencies": {
     "@quest-bound/cloud": "2.1.74",
+    "@quest-bound/local-db": "2.1.74",
     "@quest-bound/types": "2.1.74"
   },
   "peerDependencies": {
     "@quest-bound/cloud": "^2.1.74",
+    "@quest-bound/local-db": "^2.1.74",
     "@quest-bound/types": "^2.1.74",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",

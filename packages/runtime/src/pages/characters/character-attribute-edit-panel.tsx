@@ -10,7 +10,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
-import { CharacterContext } from '@/stores/context/character-context';
+import { CharacterContext } from '@quest-bound/runtime/context';
 import { PopoverScrollContainerContext } from '@/stores/context/popover-scroll-container-context';
 import { useContext, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';

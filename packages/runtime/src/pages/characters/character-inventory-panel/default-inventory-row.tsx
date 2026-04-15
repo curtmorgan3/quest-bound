@@ -1,7 +1,7 @@
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import type { InventoryItemWithData } from '@/stores';
 import { GaugeIcon, GripVertical, PackageIcon, PinIcon, ZapIcon } from 'lucide-react';
-import { useInventoryDragContext } from '@/stores';
+import { useInventoryDragContext } from '@quest-bound/runtime/context';
 import { useInventoryPlacement } from '@/lib/compass-planes/nodes/components/inventory/use-inventory-placement';
 import { useRef } from 'react';
 import { cn } from '@/lib/utils';

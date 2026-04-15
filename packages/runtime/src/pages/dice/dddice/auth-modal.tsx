@@ -9,7 +9,7 @@ import {
 import { Link } from '@/components/ui/link';
 import { Text } from '@/components/ui/text';
 import { colorWhite } from '@/palette';
-import { DiceContext } from '@/stores';
+import { DiceContext } from '@quest-bound/runtime/context';
 import { Loader2Icon, LogOut } from 'lucide-react';
 import { useContext, useEffect, useState } from 'react';
 import dddiceImg from '@/assets/dddice.png';

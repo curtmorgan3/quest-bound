@@ -9,7 +9,8 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
-import { DiceContext, PopoverScrollContainerContext } from '@/stores';
+import { DiceContext } from '@quest-bound/runtime/context';
+import { PopoverScrollContainerContext } from '@/stores/context/popover-scroll-container-context';
 import {
   buildDiceResultFromPhysicalRolls,
   getPhysicalRollSlots,

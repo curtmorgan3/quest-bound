@@ -3,7 +3,7 @@ import { Progress } from '@/components/ui/progress';
 import { Text } from '@/components/ui/text';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { colorWhite } from '@/palette';
-import { DiceContext } from '@/stores';
+import { DiceContext } from '@quest-bound/runtime/context';
 import type { DiceTheme } from '@/types';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
 import { useContext, useState } from 'react';

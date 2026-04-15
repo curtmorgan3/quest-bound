@@ -12,7 +12,7 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet';
 import { useDiceRolls, useUsers } from '@/lib/compass-api';
-import { DiceContext } from '@/stores';
+import { DiceContext } from '@quest-bound/runtime/context';
 import type { DiceRoll } from '@/types';
 import { formatSegmentResult } from '@/utils';
 import { useContext, useEffect, useState } from 'react';
@@ -67,7 +67,8 @@ export const DicePanel = () => {
         <SheetContent
           aria-description='Dice Panel'
           side='right'
-          className='flex flex-col p-[8px] z-[1000]'>
+          stackClassName='z-[900]'
+          className='flex flex-col p-[8px]'>
           <SheetHeader style={{ paddingBottom: 0 }}>
             <SheetTitle>
               <DddiceAuthModal />
