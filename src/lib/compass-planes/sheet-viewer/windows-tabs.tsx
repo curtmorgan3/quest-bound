@@ -25,44 +25,47 @@ import {
 } from '@/lib/compass-api';
 import { PageDetailsForm } from '@/lib/compass-planes/page-details-form';
 import { colorPrimary } from '@/palette';
-import type { CharacterPage, CharacterWindow, Window } from '@/types';
+import type { CharacterPage, Window } from '@/types';
 import { Maximize2, Pencil, Plus, Trash2 } from 'lucide-react';
-import { useState, type Ref } from 'react';
+import { useMemo, useState, type Ref } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
-interface WindowsTabsProps {
-  characterId?: string;
+export interface WindowsTabsProps {
   characterPages: CharacterPage[];
-  windows: CharacterWindow[];
-  toggleWindow: (id: string) => void;
-  openWindows: Set<string>;
-  /** Unlocked layout: scale sheet to viewport width; scroll vertically if needed. */
+  /** Scale sheet to viewport width; scroll vertically if needed. */
   sheetFitToViewport?: boolean;
   onSheetFitToViewportChange?: (next: boolean) => void;
   pageId?: string;
-  showHiddenWindows?: boolean;
-  /** Measure bottom bar height for sheet fit-to-viewport (tabs use absolute positioning). */
   bottomBarRef?: Ref<HTMLDivElement>;
+  /**
+   * When true (e.g. archetype default sheet editor), show add page/window and page options.
+   * Player character sheet keeps only fit-to-viewport + page dropdown.
+   */
+  allowManagePagesAndWindows?: boolean;
+  characterId?: string;
+  /** When true, ruleset windows hidden from player view still appear in the add-window list. */
+  showHiddenWindows?: boolean;
 }
 
 export const WindowsTabs = ({
-  characterId,
   characterPages,
-  windows,
-  toggleWindow,
-  openWindows,
   sheetFitToViewport = false,
   onSheetFitToViewportChange,
   pageId,
-  showHiddenWindows = false,
   bottomBarRef,
+  allowManagePagesAndWindows = false,
+  characterId,
+  showHiddenWindows = false,
 }: WindowsTabsProps) => {
-  const { character } = useCharacter(characterId);
+  const { character } = useCharacter(allowManagePagesAndWindows ? characterId : undefined);
   const rulesetPages = useRulesetPagesForRuleset(character?.rulesetId);
   const { windows: rulesetWindows } = useWindows();
-  const { createCharacterWindow } = useCharacterWindows(characterId);
-  const { createCharacterPage, updateCharacterPage, deleteCharacterPage } =
-    useCharacterPages(characterId);
+  const { createCharacterWindow, windows: allCharacterWindows } = useCharacterWindows(
+    allowManagePagesAndWindows ? characterId : undefined,
+  );
+  const { createCharacterPage, updateCharacterPage, deleteCharacterPage } = useCharacterPages(
+    allowManagePagesAndWindows ? characterId : undefined,
+  );
 
   const [searchParams, setSearchParams] = useSearchParams();
   const currentPageId = searchParams.get('pageId') ?? pageId ?? '';
@@ -78,8 +81,15 @@ export const WindowsTabs = ({
   const sortedRulesetWindows = [...rulesetWindows]
     .filter((w) => showHiddenWindows || !w.hideFromPlayerView)
     .sort((a, b) => a.title.localeCompare(b.title));
-  const sortedWindows = [...windows].sort((a, b) => a.title.localeCompare(b.title));
   const sortedPages = [...characterPages].sort((a, b) => a.label?.localeCompare(b.label));
+
+  const windowsOnPage = useMemo(
+    () =>
+      allowManagePagesAndWindows && currentPageId
+        ? allCharacterWindows.filter((w) => w.characterPageId === currentPageId)
+        : [],
+    [allowManagePagesAndWindows, allCharacterWindows, currentPageId],
+  );
 
   const existingTemplatePageIds = new Set(
     characterPages
@@ -124,9 +134,9 @@ export const WindowsTabs = ({
     setIsAddWindowModalOpen(false);
   };
 
-  const handleNavigate = (pageId: string) => {
+  const handleNavigate = (nextPageId: string) => {
     const next = new URLSearchParams(searchParams);
-    next.set('pageId', pageId);
+    next.set('pageId', nextPageId);
     setSearchParams(next);
   };
 
@@ -140,17 +150,17 @@ export const WindowsTabs = ({
     }
   };
 
-  const handleAddPageFromTemplate = async (pageId: string) => {
-    const newId = await createCharacterPage({ fromPageId: pageId });
+  const handleAddPageFromTemplate = async (templatePageId: string) => {
+    const newId = await createCharacterPage({ fromPageId: templatePageId });
     setIsAddPageModalOpen(false);
     if (newId) {
       handleNavigate(newId);
     }
   };
 
-  const handleDeletePage = async (pageId: string) => {
-    const remaining = characterPages.filter((p) => p.id !== pageId);
-    await deleteCharacterPage(pageId);
+  const handleDeletePage = async (deletePageId: string) => {
+    const remaining = characterPages.filter((p) => p.id !== deletePageId);
+    await deleteCharacterPage(deletePageId);
     handleNavigate(remaining[0]?.id ?? '');
   };
 
@@ -168,22 +178,6 @@ export const WindowsTabs = ({
     overflowX: 'auto' as const,
     alignItems: 'center',
   };
-
-  const tabButtonStyle = (selected: boolean) => ({
-    height: '30px',
-    minWidth: '60px',
-    backgroundColor: selected ? '#444' : '#333',
-    color: '#fff',
-    border: '1px solid #555',
-    borderRadius: 4,
-    cursor: 'pointer' as const,
-    whiteSpace: 'nowrap' as const,
-    fontSize: '0.7rem',
-    display: 'flex',
-    alignItems: 'center',
-    gap: 4,
-    padding: '0 6px',
-  });
 
   return (
     <>
@@ -215,17 +209,20 @@ export const WindowsTabs = ({
           </button>
         ) : null}
 
-        <Button
-          variant='outline'
-          size='sm'
-          className='h-8 shrink-0 gap-1 px-2 text-xs border-[#555] bg-[#333] text-white hover:bg-[#444]'
-          onClick={() => setIsAddPageModalOpen(true)}
-          title='Add page'
-          data-testid='sheet-add-page'>
-          <Plus size={14} />
-        </Button>
+        {allowManagePagesAndWindows ? (
+          <Button
+            variant='outline'
+            size='sm'
+            className='h-8 shrink-0 gap-1 px-2 text-xs border-[#555] bg-[#333] text-white hover:bg-[#444]'
+            onClick={() => setIsAddPageModalOpen(true)}
+            title='Add page'
+            data-testid='sheet-add-page'>
+            <Plus size={14} />
+          </Button>
+        ) : null}
 
         <select
+          data-testid='sheet-page-select'
           value={currentPageId ?? ''}
           onChange={(e) => {
             const next = e.target.value || null;
@@ -254,14 +251,17 @@ export const WindowsTabs = ({
           <option value='' disabled>
             {characterPages.length === 0 ? 'No pages' : 'Select page'}
           </option>
-          {sortedPages.map((page) => (
-            <option key={page.id} value={page.id}>
-              {page.label}
+          {sortedPages.map((p) => (
+            <option
+              key={p.id}
+              value={p.id}
+              data-testid={`sheet-page-option-${p.label?.toLowerCase().replace(/\s+/g, '-') ?? 'page'}`}>
+              {p.label}
             </option>
           ))}
         </select>
 
-        {currentPageId ? (
+        {allowManagePagesAndWindows && currentPageId ? (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
@@ -287,8 +287,9 @@ export const WindowsTabs = ({
           </DropdownMenu>
         ) : null}
 
-        {currentPageId ? (
+        {allowManagePagesAndWindows && currentPageId ? (
           <button
+            type='button'
             onClick={() => setIsAddWindowModalOpen(true)}
             style={{
               height: '30px',
@@ -307,189 +308,187 @@ export const WindowsTabs = ({
             <Plus size={16} />
           </button>
         ) : null}
-
-        {sortedWindows.map((window) => (
-          <button
-            key={window.id}
-            onClick={() => toggleWindow(window.id)}
-            style={tabButtonStyle(openWindows.has(window.id))}>
-            {window.title}
-          </button>
-        ))}
       </div>
 
-      <Dialog
-        open={isAddWindowModalOpen}
-        onOpenChange={(open) => {
-          setIsAddWindowModalOpen(open);
-          if (!open) {
-            setFilterText('');
-            setSelectedCategory('');
-          }
-        }}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Add Window</DialogTitle>
-            <DialogDescription>Add Window</DialogDescription>
-          </DialogHeader>
-          <div className='flex flex-col gap-2 mb-2'>
-            <select
-              value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
-              title='Category'
-              className='h-9 rounded-md border border-[#555] bg-[#333] px-3 py-1 text-white text-sm cursor-pointer appearance-none focus:outline-none focus:ring-2 focus:ring-[#555]'
-              style={{
-                backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")`,
-                backgroundRepeat: 'no-repeat',
-                backgroundPosition: 'right 8px center',
-                paddingRight: 28,
-              }}>
-              <option value=''>All categories</option>
-              {allCategories.map((cat) => (
-                <option key={cat} value={cat}>
-                  {cat}
-                </option>
-              ))}
-            </select>
-            <Input
-              placeholder='Filter by name'
-              value={filterText}
-              onChange={(e) => setFilterText(e.target.value)}
-              className='bg-[#333] border-[#555] text-white placeholder:text-[#888]'
-            />
-          </div>
-          <div
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 8,
-              maxHeight: '400px',
-              overflowY: 'auto',
+      {allowManagePagesAndWindows ? (
+        <>
+          <Dialog
+            open={isAddWindowModalOpen}
+            onOpenChange={(open) => {
+              setIsAddWindowModalOpen(open);
+              if (!open) {
+                setFilterText('');
+                setSelectedCategory('');
+              }
             }}>
-            {rulesetWindows.length === 0 ? (
-              <p className='text-center p-4 text-muted-foreground'>
-                No windows available in this ruleset.
-              </p>
-            ) : filteredRulesetWindows.length === 0 ? (
-              <p className='text-center p-4 text-muted-foreground'>No windows match your filter.</p>
-            ) : (
-              filteredRulesetWindows.map((rulesetWindow) => (
-                <button
-                  key={rulesetWindow.id}
-                  disabled={windows.some((cw) => cw.windowId === rulesetWindow.id)}
-                  onClick={() => handleCreateWindow(rulesetWindow)}
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Add Window</DialogTitle>
+                <DialogDescription>Add Window</DialogDescription>
+              </DialogHeader>
+              <div className='mb-2 flex flex-col gap-2'>
+                <select
+                  value={selectedCategory}
+                  onChange={(e) => setSelectedCategory(e.target.value)}
+                  title='Category'
+                  className='h-9 cursor-pointer appearance-none rounded-md border border-[#555] bg-[#333] px-3 py-1 text-sm text-white focus:outline-none focus:ring-2 focus:ring-[#555]'
                   style={{
-                    padding: '12px 16px',
-                    backgroundColor: '#333',
-                    color: '#fff',
-                    border: '1px solid #555',
-                    borderRadius: 4,
-                    cursor: 'pointer',
-                    textAlign: 'left',
-                    opacity: windows.some((cw) => cw.windowId === rulesetWindow.id) ? 0.5 : 1,
+                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")`,
+                    backgroundRepeat: 'no-repeat',
+                    backgroundPosition: 'right 8px center',
+                    paddingRight: 28,
                   }}>
-                  {rulesetWindow.title}
-                  {rulesetWindow.category && (
-                    <span style={{ color: '#888', marginLeft: 8, fontSize: '0.85em' }}>
-                      ({rulesetWindow.category})
-                    </span>
-                  )}
-                </button>
-              ))
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog
-        open={isAddPageModalOpen}
-        onOpenChange={(open) => {
-          setIsAddPageModalOpen(open);
-          if (!open) setNewPageLabel('');
-        }}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Add Page</DialogTitle>
-            <DialogDescription>Add Page</DialogDescription>
-          </DialogHeader>
-          {rulesetPages.length > 0 && (
-            <div className='flex flex-col gap-2'>
-              <Label className='text-muted-foreground text-xs'>From template</Label>
+                  <option value=''>All categories</option>
+                  {allCategories.map((cat) => (
+                    <option key={cat} value={cat}>
+                      {cat}
+                    </option>
+                  ))}
+                </select>
+                <Input
+                  placeholder='Filter by name'
+                  value={filterText}
+                  onChange={(e) => setFilterText(e.target.value)}
+                  className='border-[#555] bg-[#333] text-white placeholder:text-[#888]'
+                />
+              </div>
               <div
-                className='flex flex-col gap-1 max-h-[200px] overflow-y-auto rounded-md border border-[#555] bg-[#333] p-1'
-                role='list'>
-                {rulesetPages
-                  .filter((rp) => !rp.hideFromPlayerView)
-                  .map((rp) => (
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 8,
+                  maxHeight: '400px',
+                  overflowY: 'auto',
+                }}>
+                {rulesetWindows.length === 0 ? (
+                  <p className='text-muted-foreground p-4 text-center'>
+                    No windows available in this ruleset.
+                  </p>
+                ) : filteredRulesetWindows.length === 0 ? (
+                  <p className='text-muted-foreground p-4 text-center'>No windows match your filter.</p>
+                ) : (
+                  filteredRulesetWindows.map((rulesetWindow) => (
                     <button
-                      key={rp.id}
+                      key={rulesetWindow.id}
                       type='button'
-                      disabled={existingTemplatePageIds.has(rp.id)}
-                      onClick={() => {
-                        if (existingTemplatePageIds.has(rp.id)) return;
-                        handleAddPageFromTemplate(rp.id);
-                      }}
-                      className={`text-left px-3 py-2 rounded text-sm text-white transition-colors ${
-                        existingTemplatePageIds.has(rp.id)
-                          ? 'opacity-50 cursor-not-allowed'
-                          : 'hover:bg-[#444]'
-                      }`}
-                      data-testid={`add-page-option-${rp.label.toLowerCase().replace(/\s+/g, '-')}`}>
-                      {rp.label}
-                      {rp.category && (
-                        <span className='text-muted-foreground ml-1 text-xs'>({rp.category})</span>
+                      disabled={windowsOnPage.some((cw) => cw.windowId === rulesetWindow.id)}
+                      onClick={() => handleCreateWindow(rulesetWindow)}
+                      style={{
+                        padding: '12px 16px',
+                        backgroundColor: '#333',
+                        color: '#fff',
+                        border: '1px solid #555',
+                        borderRadius: 4,
+                        cursor: 'pointer',
+                        textAlign: 'left',
+                        opacity: windowsOnPage.some((cw) => cw.windowId === rulesetWindow.id)
+                          ? 0.5
+                          : 1,
+                      }}>
+                      {rulesetWindow.title}
+                      {rulesetWindow.category && (
+                        <span style={{ color: '#888', marginLeft: 8, fontSize: '0.85em' }}>
+                          ({rulesetWindow.category})
+                        </span>
                       )}
                     </button>
-                  ))}
+                  ))
+                )}
               </div>
-            </div>
-          )}
-          <div className='flex flex-col gap-2'>
-            <Label className='text-muted-foreground text-xs'>
-              {rulesetPages.length > 0 ? 'Or create blank page' : 'Page label'}
-            </Label>
-            <Input
-              placeholder='Page label'
-              value={newPageLabel}
-              onChange={(e) => setNewPageLabel(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleAddPage()}
-              className='bg-[#333] border-[#555] text-white placeholder:text-[#888]'
-            />
-          </div>
-          <DialogFooter>
-            <Button
-              variant='outline'
-              onClick={() => {
-                setIsAddPageModalOpen(false);
-                setNewPageLabel('');
-              }}>
-              Cancel
-            </Button>
-            <Button onClick={handleAddPage}>Add blank page</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+            </DialogContent>
+          </Dialog>
 
-      <Dialog open={editPageId !== null} onOpenChange={(open) => !open && setEditPageId(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Edit page details</DialogTitle>
-            <DialogDescription>Edit page details</DialogDescription>
-          </DialogHeader>
-          {editPageId && page && (
-            <PageDetailsForm
-              value={{
-                label: page.label,
-                image: backgroundImage ?? undefined,
-                backgroundColor: page.backgroundColor,
-                backgroundOpacity: page.backgroundOpacity,
-              }}
-              onUpdate={(data) => updateCharacterPage(editPageId, data)}
-              showLabel
-            />
-          )}
-        </DialogContent>
-      </Dialog>
+          <Dialog
+            open={isAddPageModalOpen}
+            onOpenChange={(open) => {
+              setIsAddPageModalOpen(open);
+              if (!open) setNewPageLabel('');
+            }}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Add Page</DialogTitle>
+                <DialogDescription>Add Page</DialogDescription>
+              </DialogHeader>
+              {rulesetPages.length > 0 && (
+                <div className='flex flex-col gap-2'>
+                  <Label className='text-muted-foreground text-xs'>From template</Label>
+                  <div
+                    className='flex max-h-[200px] flex-col gap-1 overflow-y-auto rounded-md border border-[#555] bg-[#333] p-1'
+                    role='list'>
+                    {rulesetPages
+                      .filter((rp) => !rp.hideFromPlayerView)
+                      .map((rp) => (
+                        <button
+                          key={rp.id}
+                          type='button'
+                          disabled={existingTemplatePageIds.has(rp.id)}
+                          onClick={() => {
+                            if (existingTemplatePageIds.has(rp.id)) return;
+                            void handleAddPageFromTemplate(rp.id);
+                          }}
+                          className={`rounded px-3 py-2 text-left text-sm text-white transition-colors ${
+                            existingTemplatePageIds.has(rp.id)
+                              ? 'cursor-not-allowed opacity-50'
+                              : 'hover:bg-[#444]'
+                          }`}
+                          data-testid={`add-page-option-${rp.label.toLowerCase().replace(/\s+/g, '-')}`}>
+                          {rp.label}
+                          {rp.category && (
+                            <span className='text-muted-foreground ml-1 text-xs'>({rp.category})</span>
+                          )}
+                        </button>
+                      ))}
+                  </div>
+                </div>
+              )}
+              <div className='flex flex-col gap-2'>
+                <Label className='text-muted-foreground text-xs'>
+                  {rulesetPages.length > 0 ? 'Or create blank page' : 'Page label'}
+                </Label>
+                <Input
+                  placeholder='Page label'
+                  value={newPageLabel}
+                  onChange={(e) => setNewPageLabel(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && void handleAddPage()}
+                  className='border-[#555] bg-[#333] text-white placeholder:text-[#888]'
+                />
+              </div>
+              <DialogFooter>
+                <Button
+                  variant='outline'
+                  onClick={() => {
+                    setIsAddPageModalOpen(false);
+                    setNewPageLabel('');
+                  }}>
+                  Cancel
+                </Button>
+                <Button onClick={() => void handleAddPage()}>Add blank page</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          <Dialog open={editPageId !== null} onOpenChange={(open) => !open && setEditPageId(null)}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Edit page details</DialogTitle>
+                <DialogDescription>Edit page details</DialogDescription>
+              </DialogHeader>
+              {editPageId && page && (
+                <PageDetailsForm
+                  value={{
+                    label: page.label,
+                    image: backgroundImage ?? undefined,
+                    backgroundColor: page.backgroundColor,
+                    backgroundOpacity: page.backgroundOpacity,
+                  }}
+                  onUpdate={(data) => void updateCharacterPage(editPageId, data)}
+                  showLabel
+                />
+              )}
+            </DialogContent>
+          </Dialog>
+        </>
+      ) : null}
     </>
   );
 };

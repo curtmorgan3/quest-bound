@@ -84,9 +84,13 @@ interface CharacterPage {
    */
   onFloatingActionsApi?: (api: CharacterPageFloatingActions | null) => void;
   hideGameLog?: boolean;
-  showHiddenWindows?: boolean;
   ignoreCharacterWindowCollapsedState?: boolean;
   forceFitSheetToViewport?: boolean;
+  /**
+   * When true (e.g. archetype default sheet editor), sheet bottom bar can add pages/windows and
+   * edit the current page (no window collapse tabs). Omitted on the player character sheet.
+   */
+  allowManagePagesAndWindows?: boolean;
 }
 
 export const CharacterPage = ({
@@ -100,9 +104,9 @@ export const CharacterPage = ({
   renderFloatingActions,
   onFloatingActionsApi,
   hideGameLog = false,
-  showHiddenWindows = false,
   ignoreCharacterWindowCollapsedState = false,
   forceFitSheetToViewport = false,
+  allowManagePagesAndWindows = false,
 }: CharacterPage) => {
   const { open } = useSidebar();
   const { characterId: routeCharacterId } = useParams<{ characterId: string }>();
@@ -369,9 +373,9 @@ export const CharacterPage = ({
           onWindowUpdated={handleUpdateWindow}
           editorWindowId={editorWindowId}
           transparentBackground={transparentBackground}
-          showHiddenWindows={showHiddenWindows}
           ignoreCharacterWindowCollapsedState={ignoreCharacterWindowCollapsedState}
           forceFitSheetToViewport={forceFitSheetToViewport}
+          allowManagePagesAndWindows={allowManagePagesAndWindows}
         />
 
         {!hideGameLog && (

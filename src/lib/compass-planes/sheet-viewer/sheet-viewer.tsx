@@ -21,11 +21,14 @@ interface SheetViewerProps {
   editorWindowId?: string;
   /** When true, no page background color/image is shown (e.g. character editor embed). */
   transparentBackground?: boolean;
-  /** When true, windows marked as hidden from player view are still shown in the add-window list. */
-  showHiddenWindows?: boolean;
   /** When true, character windows with `isCollapsed` still render on the canvas (e.g. ruleset window editor preview). */
   ignoreCharacterWindowCollapsedState?: boolean;
   forceFitSheetToViewport?: boolean;
+  /**
+   * When true (archetype default sheet editor), bottom bar includes add page/window and page edit.
+   * Player character sheet omits these.
+   */
+  allowManagePagesAndWindows?: boolean;
 }
 
 export const SheetViewer = ({
@@ -34,9 +37,9 @@ export const SheetViewer = ({
   initialCurrentPageId,
   editorWindowId,
   transparentBackground = false,
-  showHiddenWindows = false,
   ignoreCharacterWindowCollapsedState = false,
   forceFitSheetToViewport = false,
+  allowManagePagesAndWindows = false,
 }: SheetViewerProps) => {
   const { characterPages, updateCharacterPage } = useCharacterPages(characterId);
 
@@ -126,11 +129,6 @@ export const SheetViewer = ({
     return windowsForCurrentPage;
   }, [windowsForCurrentPage, editorWindowId, characterWindows, openedChildRulesetWindowIds]);
 
-  // Windows that are open
-  const openWindows = new Set(
-    windowsForCurrentPage.filter((cw) => !cw.isCollapsed).map((cw) => cw.id),
-  );
-
   // Sorting by createdAt ensures child windows appear at a higher z-index
   const openCharacterWindows = useMemo(
     () =>
@@ -219,16 +217,14 @@ export const SheetViewer = ({
       {!editorWindowId && (
         <WindowsTabs
           pageId={currentPageId}
-          characterId={characterId}
           characterPages={characterPages}
-          windows={windowsForCurrentPage}
-          openWindows={openWindows}
-          toggleWindow={(id: string) => onWindowUpdated?.({ id, isCollapsed: openWindows.has(id) })}
+          allowManagePagesAndWindows={allowManagePagesAndWindows}
+          characterId={characterId}
+          showHiddenWindows={allowManagePagesAndWindows}
           sheetFitToViewport={sheetFitToViewport}
           onSheetFitToViewportChange={
             characterId && currentPageId ? handleSheetFitToViewportChange : undefined
           }
-          showHiddenWindows={showHiddenWindows}
           bottomBarRef={sheetBottomBarRef}
         />
       )}

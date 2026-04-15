@@ -17,7 +17,11 @@ export const ArchetypeSheetEditor = () => {
 
   return (
     <>
-      <CharacterPage id={testCharacterId} hideGameLog showHiddenWindows />
+      <CharacterPage
+        id={testCharacterId}
+        hideGameLog
+        allowManagePagesAndWindows
+      />
       <p
         className='text-sm text-muted-foreground'
         style={{
