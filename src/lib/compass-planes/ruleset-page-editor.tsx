@@ -16,10 +16,34 @@ import {
 import { repairOrphanCharacterWindowsForRulesetWindows } from '@/lib/compass-api/utils/default-archetype-test-character';
 import { PageDetailsForm } from '@/lib/compass-planes/page-details-form';
 import type { RulesetWindow as RulesetWindowType } from '@/types';
-import { Pencil, Plus } from 'lucide-react';
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { GripVertical, Layers, Pencil, Plus } from 'lucide-react';
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type DragEvent,
+} from 'react';
 import { WindowCanvasHost } from './sheet-viewer/window-canvas-host';
 import { WindowNode } from './sheet-viewer/window-node';
+
+const WINDOW_LAYERS_DRAG_KEY = 'application/x-quest-bound-ruleset-page-window-layer-index';
+
+function readWindowLayersDragIndex(e: DragEvent): number | null {
+  const custom = e.dataTransfer.getData(WINDOW_LAYERS_DRAG_KEY);
+  const plain = e.dataTransfer.getData('text/plain');
+  const raw = custom || plain;
+  if (raw === '') return null;
+  try {
+    const n = Number(custom ? JSON.parse(custom) : plain);
+    return Number.isFinite(n) ? n : null;
+  } catch {
+    const n = Number(plain);
+    return Number.isFinite(n) ? n : null;
+  }
+}
 
 interface RulesetPageEditorProps {
   /** Page entity id (from route /rulesets/:rulesetId/pages/:pageId). */
@@ -40,6 +64,7 @@ export const RulesetPageEditor = ({ pageId }: RulesetPageEditorProps) => {
 
   const [editPageOpen, setEditPageOpen] = useState(false);
   const [addWindowOpen, setAddWindowOpen] = useState(false);
+  const [windowLayersOpen, setWindowLayersOpen] = useState(false);
   const [filterText, setFilterText] = useState('');
   const pageEditorBottomBarRef = useRef<HTMLDivElement>(null);
   const [pageEditorBottomInsetPx, setPageEditorBottomInsetPx] = useState(0);
@@ -50,6 +75,60 @@ export const RulesetPageEditor = ({ pageId }: RulesetPageEditorProps) => {
     w.title.toLowerCase().includes(filterText.toLowerCase()),
   );
   const existingWindowIds = new Set(templateWindows.map((w) => w.windowId));
+
+  const windowLayersModalList = useMemo(() => {
+    const list = [...templateWindows];
+    list.sort((a, b) => {
+      const la = typeof a.layer === 'number' && Number.isFinite(a.layer) ? a.layer : -Infinity;
+      const lb = typeof b.layer === 'number' && Number.isFinite(b.layer) ? b.layer : -Infinity;
+      if (la !== lb) return lb - la;
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    });
+    return list;
+  }, [templateWindows]);
+
+  useEffect(() => {
+    if (!windowLayersOpen || templateWindows.length === 0) return;
+    const allMissingLayer = templateWindows.every(
+      (w) => typeof w.layer !== 'number' || !Number.isFinite(w.layer),
+    );
+    if (!allMissingLayer) return;
+
+    const orderedByCreation = [...templateWindows].sort((a, b) => {
+      const ta = new Date(a.createdAt).getTime();
+      const tb = new Date(b.createdAt).getTime();
+      if (ta !== tb) return ta - tb;
+      return a.id.localeCompare(b.id);
+    });
+    for (let i = 0; i < orderedByCreation.length; i++) {
+      void updateRulesetWindow(orderedByCreation[i]!.id, { layer: i });
+    }
+  }, [windowLayersOpen, templateWindows, updateRulesetWindow]);
+
+  const handleWindowLayersDragOver = useCallback((e: DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  }, []);
+
+  const handleWindowLayersDrop = useCallback(
+    (e: DragEvent, dropDisplayIndex: number) => {
+      e.preventDefault();
+      const dragDisplayIndex = readWindowLayersDragIndex(e);
+      if (dragDisplayIndex == null || dragDisplayIndex === dropDisplayIndex) return;
+      const reordered = [...windowLayersModalList];
+      const [removed] = reordered.splice(dragDisplayIndex, 1);
+      reordered.splice(dropDisplayIndex, 0, removed);
+      const n = reordered.length;
+      for (let i = 0; i < n; i++) {
+        const w = reordered[i]!;
+        const newLayer = n - 1 - i;
+        if (w.layer !== newLayer) {
+          void updateRulesetWindow(w.id, { layer: newLayer });
+        }
+      }
+    },
+    [windowLayersModalList, updateRulesetWindow],
+  );
 
   const pageRulesetWindowIdsKey = useMemo(
     () => JSON.stringify([...new Set(templateWindows.map((tw) => tw.windowId))].sort()),
@@ -191,6 +270,17 @@ export const RulesetPageEditor = ({ pageId }: RulesetPageEditorProps) => {
             <Plus size={14} />
             Add window
           </Button>
+          <Button
+            variant='outline'
+            size='sm'
+            className='h-8 shrink-0 gap-1 px-2 text-xs border-[#555] bg-[#333] text-white hover:bg-[#444]'
+            onClick={() => setWindowLayersOpen(true)}
+            title='Change which windows draw in front'
+            disabled={templateWindows.length < 2}
+            data-testid='page-editor-window-layers'>
+            <Layers size={14} />
+            Window Layers
+          </Button>
         </div>
       )}
 
@@ -213,6 +303,48 @@ export const RulesetPageEditor = ({ pageId }: RulesetPageEditorProps) => {
               showLabel
             />
           )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={windowLayersOpen} onOpenChange={setWindowLayersOpen}>
+        <DialogContent className='max-w-md'>
+          <DialogHeader>
+            <DialogTitle>Window layers</DialogTitle>
+            <DialogDescription>Drag to change stacking order on this page.</DialogDescription>
+          </DialogHeader>
+          <div
+            className='flex max-h-[min(60vh,420px)] flex-col overflow-y-auto pr-1'
+            onDragOver={handleWindowLayersDragOver}>
+            {windowLayersModalList.length === 0 ? (
+              <p className='text-center text-sm text-muted-foreground py-6'>
+                No windows on this page.
+              </p>
+            ) : (
+              windowLayersModalList.map((w, displayIndex) => (
+                <div
+                  key={w.id}
+                  className='mb-1 flex min-h-10 items-stretch gap-2 rounded-md border border-border bg-muted/40 px-2 py-1.5 text-sm last:mb-0'
+                  onDragOver={handleWindowLayersDragOver}
+                  onDrop={(e) => handleWindowLayersDrop(e, displayIndex)}>
+                  <div
+                    role='button'
+                    tabIndex={0}
+                    draggable
+                    onDragStart={(e) => {
+                      const payload = JSON.stringify(displayIndex);
+                      e.dataTransfer.setData(WINDOW_LAYERS_DRAG_KEY, payload);
+                      e.dataTransfer.setData('text/plain', String(displayIndex));
+                      e.dataTransfer.effectAllowed = 'move';
+                    }}
+                    className='flex shrink-0 cursor-grab touch-none flex-col items-center justify-center self-stretch rounded border-0 bg-transparent px-0.5 text-muted-foreground hover:bg-muted/60 hover:text-foreground active:cursor-grabbing'
+                    aria-label={`Drag to reorder ${w.title}`}>
+                    <GripVertical className='size-4' aria-hidden />
+                  </div>
+                  <span className='min-w-0 flex-1 self-center truncate'>{w.title}</span>
+                </div>
+              ))
+            )}
+          </div>
         </DialogContent>
       </Dialog>
 

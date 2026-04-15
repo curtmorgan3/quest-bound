@@ -10,6 +10,7 @@ export type CharacterWindowUpdate = {
   y?: number;
   isCollapsed?: boolean;
   displayScale?: number;
+  layer?: number;
 };
 
 /**

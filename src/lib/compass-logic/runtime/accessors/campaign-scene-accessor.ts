@@ -539,6 +539,7 @@ export class CampaignSceneAccessor {
             y: (cw as any).y,
             isCollapsed: (cw as any).isCollapsed,
             displayScale: (cw as any).displayScale,
+            layer: (cw as any).layer,
             createdAt: now,
             updatedAt: now,
           } as any);

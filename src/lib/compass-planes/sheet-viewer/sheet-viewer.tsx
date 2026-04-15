@@ -129,15 +129,13 @@ export const SheetViewer = ({
     return windowsForCurrentPage;
   }, [windowsForCurrentPage, editorWindowId, characterWindows, openedChildRulesetWindowIds]);
 
-  // Sorting by createdAt ensures child windows appear at a higher z-index
+  // Stacking order is `CharacterWindow.layer` (and tie-breakers) inside `WindowCanvasHost`.
   const openCharacterWindows = useMemo(
     () =>
-      [
-        ...windowsToRenderAsNodes.filter((w) => {
-          if (editorWindowId || ignoreCharacterWindowCollapsedState) return true;
-          return !w.isCollapsed;
-        }),
-      ].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()),
+      windowsToRenderAsNodes.filter((w) => {
+        if (editorWindowId || ignoreCharacterWindowCollapsedState) return true;
+        return !w.isCollapsed;
+      }),
     [editorWindowId, ignoreCharacterWindowCollapsedState, windowsToRenderAsNodes],
   );
 
@@ -165,6 +163,13 @@ export const SheetViewer = ({
       rulesetWindowDefs.find((r) => r.id === childWindowId) ??
       (await db.windows.get(childWindowId));
     if (!w || !characterId) return;
+    const peers = characterWindows.filter(
+      (cw) => (cw.characterPageId ?? null) === (characterWindow.characterPageId ?? null),
+    );
+    const maxPeerLayer = peers.reduce(
+      (m, r) => Math.max(m, typeof r.layer === 'number' && Number.isFinite(r.layer) ? r.layer : -1),
+      -1,
+    );
     createCharacterWindow({
       windowId: w.id,
       characterId,
@@ -173,6 +178,7 @@ export const SheetViewer = ({
       x: resolved?.x ?? characterWindow.x + 200,
       y: resolved?.y ?? characterWindow.y + 150,
       isCollapsed: false,
+      layer: maxPeerLayer + 1,
     });
     if (editorWindowId) {
       setOpenedChildRulesetWindowIds((prev) => new Set(prev).add(childWindowId));

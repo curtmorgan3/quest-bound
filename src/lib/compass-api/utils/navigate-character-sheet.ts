@@ -64,6 +64,7 @@ export async function navigateCharacterToTemplatePage(
         y: rw.y,
         isCollapsed: rw.isCollapsed,
         displayScale: rw.displayScale,
+        layer: rw.layer,
         createdAt: now,
         updatedAt: now,
       });
@@ -171,6 +172,7 @@ export async function openCharacterSheetWindow(
   let y = openY ?? 100;
   let isCollapsed = false;
   let displayScale: number | undefined;
+  let layerFromTemplate: number | undefined;
 
   if (characterPage.pageId) {
     const rulesetWindow = (await db.rulesetWindows
@@ -185,6 +187,7 @@ export async function openCharacterSheetWindow(
       }
       isCollapsed = !!rulesetWindow.isCollapsed;
       displayScale = rulesetWindow.displayScale;
+      layerFromTemplate = rulesetWindow.layer;
     }
   }
 
@@ -198,6 +201,7 @@ export async function openCharacterSheetWindow(
     y,
     isCollapsed,
     displayScale,
+    layer: layerFromTemplate,
     createdAt: now,
     updatedAt: now,
   } as CharacterWindow);

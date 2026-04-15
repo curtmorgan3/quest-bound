@@ -25,7 +25,8 @@ import {
 } from '@/lib/compass-api';
 import { PageDetailsForm } from '@/lib/compass-planes/page-details-form';
 import { colorPrimary } from '@/palette';
-import type { CharacterPage, Window } from '@/types';
+import { db } from '@/stores';
+import type { CharacterPage, RulesetWindow, Window } from '@/types';
 import { Maximize2, Pencil, Plus, Trash2 } from 'lucide-react';
 import { useMemo, useState, type Ref } from 'react';
 import { useSearchParams } from 'react-router-dom';
@@ -121,6 +122,31 @@ export const WindowsTabs = ({
   const handleCreateWindow = async (rulesetWindow: Window) => {
     if (!characterId) return;
 
+    const currentPage = characterPages.find((p) => p.id === currentPageId);
+    let layer: number | undefined;
+    if (currentPage?.pageId) {
+      const templateRw = (await db.rulesetWindows
+        .where('pageId')
+        .equals(currentPage.pageId)
+        .filter((rw) => (rw as RulesetWindow).windowId === rulesetWindow.id)
+        .first()) as RulesetWindow | undefined;
+      if (
+        templateRw != null &&
+        typeof templateRw.layer === 'number' &&
+        Number.isFinite(templateRw.layer)
+      ) {
+        layer = templateRw.layer;
+      }
+    }
+    if (layer == null) {
+      const peers = allCharacterWindows.filter((w) => w.characterPageId === currentPageId);
+      const maxPeerLayer = peers.reduce(
+        (m, r) => Math.max(m, typeof r.layer === 'number' && Number.isFinite(r.layer) ? r.layer : -1),
+        -1,
+      );
+      layer = maxPeerLayer + 1;
+    }
+
     await createCharacterWindow({
       title: rulesetWindow.title,
       characterId,
@@ -129,6 +155,7 @@ export const WindowsTabs = ({
       x: 100,
       y: 100,
       isCollapsed: false,
+      layer,
     });
 
     setIsAddWindowModalOpen(false);

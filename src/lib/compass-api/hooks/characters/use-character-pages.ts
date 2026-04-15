@@ -63,6 +63,7 @@ export const useCharacterPages = (characterId?: string) => {
             y: rw.y,
             isCollapsed: rw.isCollapsed,
             displayScale: rw.displayScale,
+            layer: rw.layer,
             createdAt: now,
             updatedAt: now,
           });

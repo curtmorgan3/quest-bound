@@ -30,8 +30,19 @@ export const useRulesetWindows = (pageId?: string | null) => {
     if (!activeRuleset) return;
     const now = new Date().toISOString();
     try {
+      let nextLayer = data.layer;
+      if (nextLayer == null && data.pageId) {
+        const siblings = await db.rulesetWindows.where('pageId').equals(data.pageId).toArray();
+        const maxLayer = siblings.reduce(
+          (m, r) =>
+            Math.max(m, typeof r.layer === 'number' && Number.isFinite(r.layer) ? r.layer : -1),
+          -1,
+        );
+        nextLayer = maxLayer + 1;
+      }
       await db.rulesetWindows.add({
         ...data,
+        layer: nextLayer,
         id: crypto.randomUUID(),
         rulesetId: activeRuleset.id,
         createdAt: now,

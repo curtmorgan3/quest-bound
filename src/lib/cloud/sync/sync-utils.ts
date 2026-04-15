@@ -119,7 +119,7 @@ export function prepareRecordForRemote(
     patchOptionalDoubleFields(stripped, ['mapHeight', 'mapWidth']);
   }
   if (tableName === 'characterWindows' || tableName === 'rulesetWindows') {
-    patchOptionalDoubleFields(stripped, ['displayScale']);
+    patchOptionalDoubleFields(stripped, ['displayScale', 'layer']);
     patchRequiredDoubleFields(stripped, ['x', 'y'], 0);
   }
   if (tableName === 'items') {

@@ -72,6 +72,10 @@ export type WindowCanvasItem = {
   id: string;
   x: number;
   y: number;
+  /** Higher values paint in front; used as CSS `z-index` (with a small base offset). */
+  layer?: number;
+  /** Tie-break when `layer` is unset (older first = further back). */
+  createdAt?: string;
 };
 
 export type WindowCanvasHostProps<T extends WindowCanvasItem> = {
@@ -283,6 +287,21 @@ export function WindowCanvasHost<T extends WindowCanvasItem>({
         .join('|'),
     [windows, movePreviewById],
   );
+
+  /** Back-to-front: lower `layer` first; missing `layer` uses `createdAt` then `id` like legacy stacking. */
+  const sortedCanvasWindows = useMemo(() => {
+    return [...windows].sort((a, b) => {
+      const la = typeof a.layer === 'number' && Number.isFinite(a.layer) ? a.layer : null;
+      const lb = typeof b.layer === 'number' && Number.isFinite(b.layer) ? b.layer : null;
+      if (la !== null && lb !== null && la !== lb) return la - lb;
+      if (la !== null && lb === null) return -1;
+      if (la === null && lb !== null) return 1;
+      const ta = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const tb = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      if (ta !== tb) return ta - tb;
+      return a.id.localeCompare(b.id);
+    });
+  }, [windows]);
 
   const recomputeSheetFit = useCallback(() => {
     if (!sheetFitToViewport || showGridToolbar) {
@@ -612,11 +631,15 @@ export function WindowCanvasHost<T extends WindowCanvasItem>({
               </div>
             ) : null}
 
-            {windows.map((w, index) => {
+            {sortedCanvasWindows.map((w, sortedIndex) => {
               const pv = movePreviewById[w.id];
               const layoutX = pv?.x ?? w.x;
               const layoutY = pv?.y ?? w.y;
-              const z = index + 1;
+              const zPaint =
+                10 +
+                (typeof w.layer === 'number' && Number.isFinite(w.layer)
+                  ? Math.floor(w.layer)
+                  : sortedIndex);
 
               return (
                 <div
@@ -626,7 +649,7 @@ export function WindowCanvasHost<T extends WindowCanvasItem>({
                     else windowWrapperElByIdRef.current.delete(w.id);
                   }}
                   className='pointer-events-auto absolute'
-                  style={{ left: layoutX, top: layoutY, zIndex: z + 1 }}
+                  style={{ left: layoutX, top: layoutY, zIndex: zPaint }}
                   onPointerDown={(e) => {
                     if (!locked) {
                       setSelectedWindowId(w.id);
@@ -642,7 +665,7 @@ export function WindowCanvasHost<T extends WindowCanvasItem>({
                     }
                     beginMove(e, { id: w.id, x: layoutX, y: layoutY });
                   }}>
-                  {renderWindow(w, { x: layoutX, y: layoutY }, z)}
+                  {renderWindow(w, { x: layoutX, y: layoutY }, zPaint)}
                 </div>
               );
             })}

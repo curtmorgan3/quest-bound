@@ -1,7 +1,7 @@
 import { db } from '@/stores';
 
 /**
- * After a ruleset page template `RulesetWindow` row changes, copy `x`, `y`, `displayScale`,
+ * After a ruleset page template `RulesetWindow` row changes, copy `x`, `y`, `displayScale`, `layer`,
  * `isCollapsed`, and `title` to every `CharacterWindow` that was instantiated from that template
  * slot (same ruleset page template + window definition).
  */
@@ -24,6 +24,7 @@ export async function syncCharacterWindowsFromRulesetWindowRow(
         title: rw.title,
         isCollapsed: rw.isCollapsed,
         displayScale: rw.displayScale,
+        layer: rw.layer,
         updatedAt: now,
       });
     }

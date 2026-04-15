@@ -260,6 +260,8 @@ export type CharacterWindow = BaseDetails & {
   isCollapsed: boolean;
   /** Uniform scale for sheet / page layout (1 = design size). From template `RulesetWindow` when present. */
   displayScale?: number;
+  /** Stacking order on the sheet; copied from the page template `RulesetWindow.layer`. Used as CSS z-index when rendering. */
+  layer?: number;
   /** Module origin: ruleset id, source entity id, and module name. */
   moduleId?: string;
   moduleEntityId?: string;
@@ -290,6 +292,11 @@ export type RulesetWindow = BaseDetails & {
   isCollapsed: boolean;
   /** Uniform scale on page template and propagated to character windows (1 = design size). */
   displayScale?: number;
+  /**
+   * Stacking order for overlapping windows on this page (higher = in front). Rendered as CSS z-index
+   * on the sheet canvas; propagated to matching `CharacterWindow` rows.
+   */
+  layer?: number;
   /** Module origin: ruleset id, source entity id, and module name. */
   moduleId?: string;
   moduleEntityId?: string;
