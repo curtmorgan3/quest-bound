@@ -3,6 +3,9 @@
   "private": true,
   "version": "2.1.74",
   "type": "module",
+  "workspaces": [
+    "packages/*"
+  ],
   "scripts": {
     "dev": "vite",
     "dev:https-setup": "tsx scripts/dev-https-setup.ts",
