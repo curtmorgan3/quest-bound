@@ -3,11 +3,17 @@
   "version": "2.1.74",
   "private": true,
   "type": "module",
+  "files": ["src", "supabase"],
   "exports": {
     ".": {
       "types": "./src/index.ts",
       "import": "./src/index.ts",
       "default": "./src/index.ts"
+    },
+    "./client": {
+      "types": "./src/supabase-client.ts",
+      "import": "./src/supabase-client.ts",
+      "default": "./src/supabase-client.ts"
     }
   },
   "scripts": {

@@ -9,11 +9,11 @@ import {
   Input,
   Label,
 } from '@/components';
-import { SignInSignUpModal } from '@/pages/signin';
 import { signOut, updatePassword } from '@/lib/cloud/auth';
 import { isCloudConfigured } from '@/lib/cloud/client';
 import { linkLocalUserToCloudAuth } from '@/lib/cloud/link-local-user-to-cloud-auth';
 import { useCloudAuthStore } from '@/stores/cloud-auth-store';
+import { SignInSignUpModal } from '@quest-bound/core-ui/signin';
 import { AlertCircle } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';

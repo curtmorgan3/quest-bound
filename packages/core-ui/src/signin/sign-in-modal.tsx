@@ -18,6 +18,13 @@ function isValidEmail(value: string | null | undefined): boolean {
   return Boolean(value?.trim() && EMAIL_REGEX.test(value.trim()));
 }
 
+/** Autofill often updates the DOM without firing React `onChange`, so read native values at submit time. */
+function readInputValue(form: HTMLFormElement | null | undefined, name: string, fallback: string): string {
+  if (!form) return fallback;
+  const el = form.elements.namedItem(name);
+  return el instanceof HTMLInputElement ? el.value : fallback;
+}
+
 export interface SignInSignUpModalProps {
   open: boolean;
   onOpenChange?: (open: boolean) => void;
@@ -82,29 +89,34 @@ export function SignInSignUpModal({
     }
   }, [selectedUser?.id, mode]);
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (form?: HTMLFormElement | null) => {
     setSubmitting(true);
     try {
       setSubmitError(null);
-      const trimmed = email?.trim();
+      const emailRaw = readInputValue(form, 'email', email ?? '');
+      const passwordRaw = readInputValue(form, 'password', passwordValue);
+      const usernameRaw = readInputValue(form, 'username', usernameValue);
+      const trimmed = emailRaw.trim();
+      const passwordTrimmed = passwordRaw.trim();
+      const trimmedUsername = usernameRaw.trim();
 
       if (!trimmed) {
         setEmailError('Email is required');
         return;
       }
-      if (!isValidEmail(email)) {
+      if (!isValidEmail(trimmed)) {
         setEmailError('Please enter a valid email address');
         return;
       }
       setEmailError(null);
 
-      if (isCloudConfigured && !passwordValue.trim()) {
+      if (isCloudConfigured && !passwordTrimmed) {
         setSubmitError('Password is required');
         return;
       }
 
       if (isSignInForm) {
-        const result = await signIn(trimmed, passwordValue.trim());
+        const result = await signIn(trimmed, passwordTrimmed);
         if ('error' in result) {
           setSubmitError(result.error.message);
           return;
@@ -119,16 +131,18 @@ export function SignInSignUpModal({
         return;
       }
 
-      const trimmedUsername = usernameValue.trim();
-      if (!trimmedUsername) return;
+      if (!trimmedUsername) {
+        setSubmitError('Username is required');
+        return;
+      }
 
       let cloudUid: string | null = null;
 
       if (isCloudConfigured) {
         const hasCloudAccount = mode === 'sign-up-only' ? false : !needUser && userHasCloudUserId;
         const result = hasCloudAccount
-          ? await signIn(trimmed, passwordValue.trim())
-          : await signUp(trimmed, passwordValue.trim());
+          ? await signIn(trimmed, passwordTrimmed)
+          : await signUp(trimmed, passwordTrimmed);
 
         if ('error' in result) {
           setSubmitError(result.error.message);
@@ -225,7 +239,7 @@ export function SignInSignUpModal({
                 className='flex w-full flex-col gap-4'
                 onSubmit={(e) => {
                   e.preventDefault();
-                  void handleSubmit();
+                  void handleSubmit(e.currentTarget);
                 }}>
                 <div className='flex w-full flex-col items-center gap-3'>
                   <p className='text-center text-sm text-muted-foreground'>
@@ -261,6 +275,9 @@ export function SignInSignUpModal({
                     className='w-full'
                     placeholder='Email'
                     value={email ?? ''}
+                    onInput={(e) => {
+                      setEmail((e.target as HTMLInputElement).value);
+                    }}
                     onChange={(e) => {
                       setEmail(e.target.value);
                       if (emailError) setEmailError(null);
@@ -287,6 +304,9 @@ export function SignInSignUpModal({
                     className='w-full'
                     placeholder='Password'
                     value={passwordValue}
+                    onInput={(e) => {
+                      setPasswordValue((e.target as HTMLInputElement).value);
+                    }}
                     onChange={(e) => {
                       setPasswordValue(e.target.value);
                       if (submitError) setSubmitError(null);
@@ -306,6 +326,9 @@ export function SignInSignUpModal({
                     className='w-full'
                     placeholder='Username'
                     value={usernameValue}
+                    onInput={(e) => {
+                      setUsernameValue((e.target as HTMLInputElement).value);
+                    }}
                     onChange={(e) => setUsernameValue(e.target.value)}
                     autoComplete='username'
                     data-testid='username-input'

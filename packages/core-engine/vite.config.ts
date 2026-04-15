@@ -12,6 +12,8 @@ const packageJson = JSON.parse(
 
 // https://vite.dev/config/
 export const viteConfig = defineConfig({
+  /** Monorepo: keep a single `.env` at the repo root; default would only load `packages/core-engine/.env`. */
+  envDir: path.resolve(__dirname, '../..'),
   define: {
     'import.meta.env.VITE_APP_VERSION': JSON.stringify(packageJson.version),
   },

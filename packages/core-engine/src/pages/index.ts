@@ -8,4 +8,4 @@ export * from './organization';
 export * from './play';
 export * from './ruleset';
 export * from './settings';
-export * from './signin';
+export { SignIn, SignInSignUpModal, type SignInSignUpModalProps } from '@quest-bound/core-ui/signin';

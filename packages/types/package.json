@@ -3,11 +3,43 @@
   "version": "2.1.74",
   "private": true,
   "type": "module",
+  "files": ["src"],
+  "sideEffects": false,
   "exports": {
     ".": {
       "types": "./src/index.ts",
       "import": "./src/index.ts",
       "default": "./src/index.ts"
+    },
+    "./helper-types": {
+      "types": "./src/helper-types.ts",
+      "import": "./src/helper-types.ts",
+      "default": "./src/helper-types.ts"
+    },
+    "./data-model-types": {
+      "types": "./src/data-model-types.ts",
+      "import": "./src/data-model-types.ts",
+      "default": "./src/data-model-types.ts"
+    },
+    "./inventory-item-with-data": {
+      "types": "./src/inventory-item-with-data.ts",
+      "import": "./src/inventory-item-with-data.ts",
+      "default": "./src/inventory-item-with-data.ts"
+    },
+    "./component-types": {
+      "types": "./src/component-types.ts",
+      "import": "./src/component-types.ts",
+      "default": "./src/component-types.ts"
+    },
+    "./campaign-types": {
+      "types": "./src/campaign-types.ts",
+      "import": "./src/campaign-types.ts",
+      "default": "./src/campaign-types.ts"
+    },
+    "./dice-types": {
+      "types": "./src/dice-types.ts",
+      "import": "./src/dice-types.ts",
+      "default": "./src/dice-types.ts"
     }
   },
   "scripts": {

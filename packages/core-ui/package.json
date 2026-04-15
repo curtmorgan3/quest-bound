@@ -13,6 +13,11 @@
       "types": "./src/api-components/index.ts",
       "import": "./src/api-components/index.ts",
       "default": "./src/api-components/index.ts"
+    },
+    "./signin": {
+      "types": "./src/signin/index.ts",
+      "import": "./src/signin/index.ts",
+      "default": "./src/signin/index.ts"
     }
   },
   "scripts": {

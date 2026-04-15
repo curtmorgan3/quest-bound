@@ -21,7 +21,7 @@ import { tryBroadcastCampaignPlayerLeave } from '@/lib/campaign-play/realtime/br
 import { getSession } from '@/lib/cloud/auth';
 import { isCloudConfigured } from '@/lib/cloud/client';
 import { linkLocalUserToCloudAuth } from '@/lib/cloud/link-local-user-to-cloud-auth';
-import { SignInSignUpModal } from '@/pages/signin';
+import { SignInSignUpModal } from '../../signin';
 import { db, useCurrentUser } from '@/stores';
 import type { Character } from '@quest-bound/types';
 import { useLiveQuery } from 'dexie-react-hooks';
