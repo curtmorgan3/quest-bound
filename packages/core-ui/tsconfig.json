@@ -2,7 +2,15 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.tsbuildinfo",
-    "noEmit": true
+    "noEmit": true,
+    "paths": {
+      "@/components": ["./src"],
+      "@/components/*": ["./src/*"],
+      "@/lib/compass-logic": ["../qbscript/src"],
+      "@/lib/compass-logic/*": ["../qbscript/src/*"],
+      "@/*": ["../../src/*"]
+    },
+    "types": ["vite/client", "cypress", "node"]
   },
   "include": ["src/**/*.ts", "src/**/*.tsx"]
 }

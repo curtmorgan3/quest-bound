@@ -13,7 +13,7 @@ import { cn } from '@/lib/utils';
 import { filterNotSoftDeleted } from '@/lib/data/soft-delete';
 import { db } from '@/stores';
 import { useCharacterSelectModalStore } from '@/stores/character-select-modal-store';
-import type { CampaignCharacter, Character } from '@/types';
+import type { CampaignCharacter, Character } from '@quest-bound/types';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useMemo, useState } from 'react';
 

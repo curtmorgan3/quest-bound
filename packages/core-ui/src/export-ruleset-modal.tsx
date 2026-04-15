@@ -9,7 +9,7 @@ import {
   DialogTitle,
 } from '@/components';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import type { Campaign, Character } from '@/types';
+import type { Campaign, Character } from '@quest-bound/types';
 import { Download, Loader2 } from 'lucide-react';
 import { useState } from 'react';
 

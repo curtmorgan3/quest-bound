@@ -10,6 +10,8 @@
     "tests/**/*.tsx",
     "src/**/*.ts",
     "src/**/*.tsx",
+    "packages/core-ui/**/*.ts",
+    "packages/core-ui/**/*.tsx",
     "packages/qbscript/**/*.ts",
     "packages/qbscript/**/*.tsx",
     "packages/local-db/**/*.ts",

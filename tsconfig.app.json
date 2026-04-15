@@ -23,6 +23,8 @@
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true,
     "paths": {
+      "@/components": ["./packages/core-ui/src"],
+      "@/components/*": ["./packages/core-ui/src/*"],
       "@/lib/compass-logic": ["./packages/qbscript/src"],
       "@/lib/compass-logic/*": ["./packages/qbscript/src/*"],
       "@/*": ["./src/*"]

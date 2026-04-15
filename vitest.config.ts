@@ -8,6 +8,14 @@ export default defineConfig({
   resolve: {
     alias: [
       {
+        find: /^@\/components\/(.+)$/,
+        replacement: path.resolve(__dirname, 'packages/core-ui/src/$1'),
+      },
+      {
+        find: /^@\/components$/,
+        replacement: path.resolve(__dirname, 'packages/core-ui/src/index.ts'),
+      },
+      {
         find: /^@\/lib\/compass-logic\/(.+)$/,
         replacement: path.resolve(__dirname, 'packages/qbscript/src/$1'),
       },

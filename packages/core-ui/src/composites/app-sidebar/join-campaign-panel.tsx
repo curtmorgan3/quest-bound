@@ -23,7 +23,7 @@ import { isCloudConfigured } from '@/lib/cloud/client';
 import { linkLocalUserToCloudAuth } from '@/lib/cloud/link-local-user-to-cloud-auth';
 import { SignInSignUpModal } from '@/pages/signin';
 import { db, useCurrentUser } from '@/stores';
-import type { Character } from '@/types';
+import type { Character } from '@quest-bound/types';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { Globe } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';

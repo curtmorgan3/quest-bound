@@ -24,8 +24,8 @@ import {
   ScriptsIndex,
 } from '@/pages';
 import { HashRouter, Navigate, Route, Routes } from 'react-router-dom';
-import { ErrorBoundary } from './components';
-import { Layout } from './components/layout';
+import { ErrorBoundary } from '@/components';
+import { Layout } from '@/components/layout';
 import { DocumentViewer } from './pages/ruleset/documents';
 import { WindowEditor } from './pages/ruleset/windows/window-editor';
 

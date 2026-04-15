@@ -26,10 +26,11 @@
     "test:component:open": "cypress open --component",
     "test:all": "npm run test:e2e && npm run test:component",
     "build:robots": "node build-robots.js",
-    "qbs": "tsx src/lib/compass-logic/interpreter/cli.ts",
+    "qbs": "tsx packages/qbscript/src/interpreter/cli.ts",
     "prepare": "husky"
   },
   "dependencies": {
+    "@quest-bound/core-ui": "2.1.74",
     "@quest-bound/local-db": "2.1.74",
     "@quest-bound/qbscript": "2.1.74",
     "@quest-bound/remote-db": "2.1.74",

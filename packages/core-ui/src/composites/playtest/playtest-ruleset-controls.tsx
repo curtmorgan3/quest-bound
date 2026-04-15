@@ -19,7 +19,7 @@ import {
 } from '@/lib/cloud/playtest/playtest-api';
 import { db } from '@/stores/db';
 import { usePlaytestRuntimeStore } from '@/stores/playtest-runtime-store';
-import type { Character, CharacterAttribute, InventoryItem } from '@/types';
+import type { Character, CharacterAttribute, InventoryItem } from '@quest-bound/types';
 import { CirclePause, CirclePlay, Loader2, ScrollText } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';

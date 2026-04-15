@@ -1,4 +1,4 @@
-import type { Tutorial, TutorialAction } from '@/types';
+import type { Tutorial, TutorialAction } from '@quest-bound/types';
 
 interface BuildTutorial {
   tutorial: Tutorial;
