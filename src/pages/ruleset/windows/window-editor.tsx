@@ -17,7 +17,8 @@ import {
   remapGeometryUpdatesForEditorState,
   withMergedStateLayers,
 } from '@/lib/compass-planes/utils/component-states';
-import { CharacterPage, GameLog } from '@/pages/characters';
+import { GameLog } from '@/pages/characters';
+import { WindowPreview } from './window-preview';
 import { colorPrimary, colorWhite } from '@/palette';
 import { db, WindowEditorProvider } from '@/stores';
 import type { Component } from '@/types';
@@ -319,14 +320,9 @@ export const WindowEditor = () => {
       }}>
       <div className='relative flex h-full min-h-0 w-full flex-col overflow-hidden'>
         <div className='flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden'>
-          {viewMode ? (
-            <CharacterPage
-              id={testCharacter?.id}
-              editorWindowId={windowId}
-              hideGameLog
-              ignoreCharacterWindowCollapsedState
-            />
-          ) : (
+          {viewMode && testCharacter?.id ? (
+            <WindowPreview characterId={testCharacter.id} rulesetWindowId={windowId} />
+          ) : !viewMode ? (
             <SheetEditor
               components={components}
               onComponentsCreated={onComponentsCreated}
@@ -337,7 +333,7 @@ export const WindowEditor = () => {
               gridSize={editorGridSize > 0 ? editorGridSize : DEFAULT_GRID_SIZE}
               viewScale={canvasViewScale}
             />
-          )}
+          ) : null}
         </div>
         <div
           className='fixed bottom-4 z-40 flex flex-row flex-wrap items-end gap-2'
