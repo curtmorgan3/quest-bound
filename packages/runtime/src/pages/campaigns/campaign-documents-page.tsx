@@ -4,8 +4,8 @@ import { useCampaign } from '@/lib/compass-api';
 import { Loader2, Plus } from 'lucide-react';
 import { useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { BaseCreate } from '../ruleset/create';
-import { Documents } from '../ruleset/documents';
+import { BaseCreate } from '@/pages/ruleset/create';
+import { Documents } from '@/pages/ruleset/documents';
 
 export function CampaignDocumentsPage() {
   const { campaignId } = useParams<{ campaignId: string }>();

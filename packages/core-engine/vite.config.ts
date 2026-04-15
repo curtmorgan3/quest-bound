@@ -81,6 +81,30 @@ export const viteConfig = defineConfig({
   resolve: {
     alias: [
       {
+        find: /^@\/pages\/characters$/,
+        replacement: path.resolve(__dirname, '../runtime/src/pages/characters/index.ts'),
+      },
+      {
+        find: /^@\/pages\/characters\/(.+)$/,
+        replacement: path.resolve(__dirname, '../runtime/src/pages/characters/$1'),
+      },
+      {
+        find: /^@\/pages\/campaigns$/,
+        replacement: path.resolve(__dirname, '../runtime/src/pages/campaigns/index.ts'),
+      },
+      {
+        find: /^@\/pages\/campaigns\/(.+)$/,
+        replacement: path.resolve(__dirname, '../runtime/src/pages/campaigns/$1'),
+      },
+      {
+        find: /^@\/pages\/dice$/,
+        replacement: path.resolve(__dirname, '../runtime/src/pages/dice/index.ts'),
+      },
+      {
+        find: /^@\/pages\/dice\/(.+)$/,
+        replacement: path.resolve(__dirname, '../runtime/src/pages/dice/$1'),
+      },
+      {
         find: /^@\/components\/(.+)$/,
         replacement: path.resolve(__dirname, '../core-ui/src/$1'),
       },

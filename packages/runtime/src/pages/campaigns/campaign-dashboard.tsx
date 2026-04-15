@@ -18,7 +18,7 @@ import {
 import type { SheetViewerBackdropClickDetail } from '@/lib/compass-planes/sheet-viewer';
 import { SHEET_VIEWER_BACKDROP_CLICK } from '@/lib/compass-planes/sheet-viewer';
 import { cn } from '@/lib/utils';
-import type { CharacterPageFloatingActions } from '@/pages/characters';
+import type { CharacterPageFloatingActions } from '../characters';
 import { db, useCloudAuthStore } from '@/stores';
 import { useCampaignPlaySessionStore } from '@/stores/campaign-play-session-store';
 import type { Character } from '@/types';

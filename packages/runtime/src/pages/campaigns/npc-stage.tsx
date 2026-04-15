@@ -19,7 +19,7 @@ import {
 import { useArchetypes, useCampaignCharacters, useCharacter } from '@/lib/compass-api';
 import { ArchetypeLookup, SceneLookup } from '@quest-bound/core-ui/api-components';
 import { filterNotSoftDeleted } from '@/lib/data/soft-delete';
-import { useCharacterArchetypes } from '@/pages/characters/character-archetypes-panel/use-character-archetypes';
+import { useCharacterArchetypes } from '../characters/character-archetypes-panel/use-character-archetypes';
 import { db } from '@/stores';
 import type { Archetype, CampaignCharacter, Character } from '@/types';
 import { useLiveQuery } from 'dexie-react-hooks';

@@ -1,5 +1,5 @@
 import { useSidebar } from '@/components/ui/sidebar';
-import { CharacterPage, type CharacterPageFloatingActions } from '@/pages/characters';
+import { CharacterPage, type CharacterPageFloatingActions } from '../../characters';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useCallback, useState, type ReactNode } from 'react';
 

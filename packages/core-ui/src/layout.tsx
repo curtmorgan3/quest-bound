@@ -20,7 +20,7 @@ import { useSyncOnRulesetOpen } from '@/lib/cloud/sync/use-sync-on-ruleset-open'
 import { useFontLoader, useUsers } from '@/lib/compass-api';
 import { useCustomEventRulesetContextSync, useScriptAnnouncements } from '@/lib/compass-logic';
 import { SignIn } from '@/pages';
-import { DicePanel, PhysicalRollModal } from '@/pages/dice';
+import { DicePanel, PhysicalRollModal } from '@quest-bound/runtime/pages';
 import {
   CharacterArchetypesPanelContext,
   CharacterInventoryPanelContext,

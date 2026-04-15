@@ -20,6 +20,11 @@
       "types": "./src/join/index.ts",
       "import": "./src/join/index.ts",
       "default": "./src/join/index.ts"
+    },
+    "./pages": {
+      "types": "./src/pages/index.ts",
+      "import": "./src/pages/index.ts",
+      "default": "./src/pages/index.ts"
     }
   },
   "scripts": {
@@ -33,6 +38,7 @@
     "@quest-bound/cloud": "^2.1.74",
     "@quest-bound/types": "^2.1.74",
     "react": "^19.1.1",
-    "react-dom": "^19.1.1"
+    "react-dom": "^19.1.1",
+    "react-router-dom": "^7.8.2"
   }
 }

@@ -12,7 +12,7 @@ import { colorWhite } from '@/palette';
 import { DiceContext } from '@/stores';
 import { Loader2Icon, LogOut } from 'lucide-react';
 import { useContext, useEffect, useState } from 'react';
-import dddiceImg from '../../../assets/dddice.png';
+import dddiceImg from '@/assets/dddice.png';
 
 export const DddiceAuthModal = () => {
   const { createAuthCode, pollForAuth, clearPoll, username, logout } = useContext(DiceContext);

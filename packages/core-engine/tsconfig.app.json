@@ -23,6 +23,12 @@
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true,
     "paths": {
+      "@/pages/characters": ["../runtime/src/pages/characters"],
+      "@/pages/characters/*": ["../runtime/src/pages/characters/*"],
+      "@/pages/campaigns": ["../runtime/src/pages/campaigns"],
+      "@/pages/campaigns/*": ["../runtime/src/pages/campaigns/*"],
+      "@/pages/dice": ["../runtime/src/pages/dice"],
+      "@/pages/dice/*": ["../runtime/src/pages/dice/*"],
       "@/components": ["../core-ui/src"],
       "@/components/*": ["../core-ui/src/*"],
       "@/lib/compass-logic": ["../qbscript/src"],

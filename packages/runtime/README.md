@@ -21,6 +21,7 @@ You also need compatible versions of **`@quest-bound/types`** and **`@quest-boun
 | `@quest-bound/runtime` | Default barrel (currently re-exports realtime). |
 | `@quest-bound/runtime/realtime` | Realtime campaign play, roster sync, channels. |
 | `@quest-bound/runtime/join` | Join tokens, invite rows, joiner character helpers. |
+| `@quest-bound/runtime/pages` | Characters, campaigns, and dice route UI (sheet, scenes, 3D dice, etc.). |
 
 Source is shipped as TypeScript; consumers should compile these modules with their bundler (same pattern as other workspace packages in this repo).
 

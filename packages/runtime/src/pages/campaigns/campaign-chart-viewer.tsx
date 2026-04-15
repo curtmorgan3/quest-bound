@@ -2,7 +2,7 @@ import { Button } from '@/components';
 import { useCampaign, useCharts } from '@/lib/compass-api';
 import { ArrowLeft } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ChartEditor } from '../ruleset/charts/chart-editor';
+import { ChartEditor } from '@/pages/ruleset/charts/chart-editor';
 
 export function CampaignChartViewer() {
   const { campaignId, chartId } = useParams<{ campaignId: string; chartId: string }>();
