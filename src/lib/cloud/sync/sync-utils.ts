@@ -28,9 +28,28 @@ function normalizeOptionalDoubleForRemote(value: unknown): number | null {
   return null;
 }
 
+/** Postgres INTEGER (e.g. `layer` on ruleset_windows / character_windows). */
+function normalizeOptionalIntForRemote(value: unknown): number | null {
+  if (value === null || value === '') return null;
+  if (typeof value === 'number') return Number.isFinite(value) ? Math.trunc(value) : null;
+  if (typeof value === 'string') {
+    const t = value.trim();
+    if (t === '') return null;
+    const n = Number(t);
+    return Number.isFinite(n) ? Math.trunc(n) : null;
+  }
+  return null;
+}
+
 function patchOptionalDoubleFields(record: Record<string, unknown>, keys: string[]): void {
   for (const key of keys) {
     if (key in record) record[key] = normalizeOptionalDoubleForRemote(record[key]);
+  }
+}
+
+function patchOptionalIntFields(record: Record<string, unknown>, keys: string[]): void {
+  for (const key of keys) {
+    if (key in record) record[key] = normalizeOptionalIntForRemote(record[key]);
   }
 }
 
@@ -119,7 +138,8 @@ export function prepareRecordForRemote(
     patchOptionalDoubleFields(stripped, ['mapHeight', 'mapWidth']);
   }
   if (tableName === 'characterWindows' || tableName === 'rulesetWindows') {
-    patchOptionalDoubleFields(stripped, ['displayScale', 'layer']);
+    patchOptionalDoubleFields(stripped, ['displayScale']);
+    patchOptionalIntFields(stripped, ['layer']);
     patchRequiredDoubleFields(stripped, ['x', 'y'], 0);
   }
   if (tableName === 'items') {
