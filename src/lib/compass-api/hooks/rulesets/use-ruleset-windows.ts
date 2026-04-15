@@ -1,4 +1,5 @@
 import { useErrorHandler } from '@/hooks';
+import { syncCharacterWindowsFromRulesetWindowRow } from '@/lib/compass-api/utils/sync-character-windows-from-ruleset-window';
 import { db, useApiLoadingStore } from '@/stores';
 import type { RulesetWindow } from '@/types';
 import { useLiveQuery } from 'dexie-react-hooks';
@@ -51,6 +52,7 @@ export const useRulesetWindows = (pageId?: string | null) => {
         ...data,
         updatedAt: now,
       });
+      await syncCharacterWindowsFromRulesetWindowRow(id);
     } catch (e) {
       handleError(e as Error, {
         component: 'useRulesetWindows/updateRulesetWindow',
