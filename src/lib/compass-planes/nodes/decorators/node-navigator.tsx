@@ -55,8 +55,8 @@ export const NodeNavigator = ({ children, component, componentData, viewCtx }: N
   const handleProgrammaticNav = useCallback(
     async (e: React.MouseEvent) => {
       e.stopPropagation();
-      if (data.closeCharacterWindowOnClick && viewCtx?.closeThisCharacterWindow) {
-        viewCtx.closeThisCharacterWindow();
+      if (data.closeCharacterWindowOnClick) {
+        viewCtx?.closeThisCharacterWindow?.();
         return;
       }
       if (pageTemplateId) {
@@ -153,11 +153,7 @@ export const NodeNavigator = ({ children, component, componentData, viewCtx }: N
     return <>{children}</>;
   }
 
-  if (
-    pageTemplateId ||
-    childWindowId ||
-    (data.closeCharacterWindowOnClick && viewCtx?.closeThisCharacterWindow)
-  ) {
+  if (pageTemplateId || childWindowId || data.closeCharacterWindowOnClick) {
     return (
       <div
         role='button'

@@ -213,6 +213,9 @@ export const SheetViewer = ({
                 hideWindowChrome: true,
                 sheetTemplatePageId: !editorWindowId ? currentPage?.pageId : null,
                 window: wAt,
+                onClose: (id) => {
+                  void deleteCharacterWindow(id);
+                },
                 onChildWindowClick: (childWindowId, openResolved) =>
                   handleChildWindowClick(childWindowId, wAt, openResolved),
               }}

@@ -49,7 +49,7 @@ function pickCharacterWindowInstance(
 function WindowPreviewCanvas({ rulesetWindowId }: { rulesetWindowId: string }) {
   const characterContext = useContext(CharacterContext);
   const character = characterContext?.character ?? null;
-  const { windows: characterWindows } = useCharacterWindows(character?.id);
+  const { windows: characterWindows, deleteCharacterWindow } = useCharacterWindows(character?.id);
   const { components: templateComponents } = useComponents(rulesetWindowId);
 
   const characterWindowInstance = useMemo(
@@ -197,7 +197,12 @@ function WindowPreviewCanvas({ rulesetWindowId }: { rulesetWindowId: string }) {
       characterSheet: useCharacterWindowStates,
       componentActiveStatesById: useCharacterWindowStates ? activeStatesMap : undefined,
       sheetTemplatePageId: null,
-      closeThisCharacterWindow: undefined,
+      closeThisCharacterWindow:
+        characterWindowInstance != null
+          ? () => {
+              void deleteCharacterWindow(characterWindowInstance.id);
+            }
+          : undefined,
       getComponentCanvasRect: (componentId: string) => {
         const c = components.find((x) => x.id === componentId);
         if (!c) return null;
@@ -228,7 +233,9 @@ function WindowPreviewCanvas({ rulesetWindowId }: { rulesetWindowId: string }) {
       activeStatesMap,
       byId,
       characterContext?.characterAttributes,
+      characterWindowInstance,
       components,
+      deleteCharacterWindow,
       displayScale,
       effectiveLayout,
       frameX,
