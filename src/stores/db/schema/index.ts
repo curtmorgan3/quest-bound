@@ -1,1 +1,1 @@
-export * from './schema';
+export * from '@quest-bound/local-db/schema';

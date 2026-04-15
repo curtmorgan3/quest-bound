@@ -1,4 +1,4 @@
-import type { Archetype } from '@/types';
+import type { Archetype } from '@quest-bound/types';
 import { getSyncState } from '@/lib/cloud/sync/sync-state';
 import type { DB } from './types';
 

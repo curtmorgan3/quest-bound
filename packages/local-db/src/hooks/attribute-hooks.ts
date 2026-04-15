@@ -1,5 +1,5 @@
 import { softDeletePatch } from '@/lib/data/soft-delete';
-import type { Attribute } from '@/types';
+import type { Attribute } from '@quest-bound/types';
 import { mergeAttributeCustomPropertyValuesForSchemaJson } from '@/utils/attribute-custom-property-values';
 import { seedCharacterAttributeFromRulesetAttribute } from '@/utils/character-attribute-from-ruleset-attribute';
 import { getSyncState } from '@/lib/cloud/sync/sync-state';

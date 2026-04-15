@@ -1,1 +1,1 @@
-export const memoizedAssets: Record<string, string> = {};
+export { memoizedAssets } from '@quest-bound/local-db';

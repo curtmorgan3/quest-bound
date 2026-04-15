@@ -4,7 +4,7 @@ import type {
   Character,
   CustomProperty,
   CustomPropertyType,
-} from '@/types';
+} from '@quest-bound/types';
 import { getSyncState } from '@/lib/cloud/sync/sync-state';
 import type { DB } from './types';
 

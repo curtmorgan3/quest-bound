@@ -1,4 +1,4 @@
-import type { Attribute } from '@/types';
+import type { Attribute } from '@quest-bound/types';
 import type { DBCore, Middleware } from 'dexie';
 
 // Cache for parsed chart data - lazy-loaded on first use and updated on chart write

@@ -8,12 +8,23 @@
       "types": "./src/index.ts",
       "import": "./src/index.ts",
       "default": "./src/index.ts"
+    },
+    "./schema": {
+      "types": "./src/schema/index.ts",
+      "import": "./src/schema/index.ts",
+      "default": "./src/schema/index.ts"
+    },
+    "./db": {
+      "types": "./src/db.ts",
+      "import": "./src/db.ts",
+      "default": "./src/db.ts"
     }
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json"
   },
   "dependencies": {
-    "@quest-bound/types": "2.1.74"
+    "@quest-bound/types": "2.1.74",
+    "dexie": "^4.2.0"
   }
 }
