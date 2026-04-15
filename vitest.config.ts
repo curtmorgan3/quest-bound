@@ -4,7 +4,10 @@ import { defineConfig } from 'vitest/config';
 import tsconfigPaths from 'vite-tsconfig-paths';
 
 export default defineConfig({
-  plugins: [react(), tsconfigPaths()],
+  plugins: [
+    react(),
+    tsconfigPaths({ projects: ['./packages/core-engine/tsconfig.json'] }),
+  ],
   resolve: {
     alias: [
       {
@@ -39,7 +42,10 @@ export default defineConfig({
         find: /^@\/lib\/campaign-play$/,
         replacement: path.resolve(__dirname, 'packages/runtime/src/index.ts'),
       },
-      { find: '@', replacement: path.resolve(__dirname, './src') },
+      {
+        find: '@',
+        replacement: path.resolve(__dirname, 'packages/core-engine/src'),
+      },
     ],
   },
   test: {
@@ -60,7 +66,7 @@ export default defineConfig({
         '**/*.test.tsx',
         '**/*.config.ts',
         '**/types/',
-        'src/components/ui/**',
+        'packages/core-ui/src/ui/**',
       ],
     },
   },

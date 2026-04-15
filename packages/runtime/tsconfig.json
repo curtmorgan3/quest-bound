@@ -12,7 +12,7 @@
       "@/components/*": ["../core-ui/src/*"],
       "@/lib/compass-logic": ["../qbscript/src"],
       "@/lib/compass-logic/*": ["../qbscript/src/*"],
-      "@/*": ["../../src/*"]
+      "@/*": ["../core-engine/src/*"]
     },
     "types": ["vite/client"]
   },

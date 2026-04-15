@@ -49,6 +49,8 @@ Download and unzip or use git to clone the source code in this repo. From the ro
 npm install && npm run build
 ```
 
+The assembled PWA is emitted to `packages/core-engine/dist` (the root `npm run build` script typechecks the repo, then builds the `@quest-bound/core-engine` workspace package).
+
 You only need to run that command once to set up Quest Bound. After that, stat it with
 
 ```

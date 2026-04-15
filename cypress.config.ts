@@ -1,3 +1,4 @@
+import path from "node:path";
 import { defineConfig } from "cypress";
 
 export default defineConfig({
@@ -8,6 +9,9 @@ export default defineConfig({
     devServer: {
       framework: "react",
       bundler: "vite",
+      viteConfig: {
+        configFile: path.resolve(__dirname, "packages/core-engine/vite.config.ts"),
+      },
     },
     specPattern: "cypress/component/**/*.test.{js,jsx,ts,tsx}",
     supportFile: "cypress/support/component.tsx",

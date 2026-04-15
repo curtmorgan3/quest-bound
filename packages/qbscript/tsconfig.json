@@ -10,7 +10,7 @@
       "@/lib/compass-logic/*": ["./src/*"],
       "@/lib/campaign-play": ["../runtime/src"],
       "@/lib/campaign-play/*": ["../runtime/src/*"],
-      "@/*": ["../../src/*"]
+      "@/*": ["../core-engine/src/*"]
     },
     "types": ["vite/client", "cypress", "node"]
   },

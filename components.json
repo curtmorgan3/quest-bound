@@ -5,7 +5,7 @@
   "tsx": true,
   "tailwind": {
     "config": "",
-    "css": "src/index.css",
+    "css": "packages/core-engine/src/index.css",
     "baseColor": "zinc",
     "cssVariables": true,
     "prefix": ""

@@ -1,8 +1,8 @@
 {
-  "extends": "../../tsconfig.base.json",
+  "extends": "./tsconfig.app.json",
   "compilerOptions": {
-    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.tsbuildinfo",
-    "noEmit": true
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.core-engine.tsbuildinfo",
+    "types": ["vite/client", "cypress", "node"]
   },
-  "include": ["src/**/*.ts", "src/**/*.tsx"]
+  "include": ["src/**/*.ts", "src/**/*.tsx", "../../cypress.d.ts"]
 }

@@ -10,7 +10,7 @@
       "@/lib/compass-logic/*": ["../qbscript/src/*"],
       "@/lib/cloud": ["../cloud/src"],
       "@/lib/cloud/*": ["../cloud/src/*"],
-      "@/*": ["../../src/*"]
+      "@/*": ["../core-engine/src/*"]
     },
     "types": ["vite/client"]
   },

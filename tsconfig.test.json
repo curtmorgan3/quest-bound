@@ -1,5 +1,5 @@
 {
-  "extends": "./tsconfig.app.json",
+  "extends": "./packages/core-engine/tsconfig.app.json",
   "compilerOptions": {
     "composite": true,
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.test.tsbuildinfo",
@@ -8,8 +8,8 @@
   "include": [
     "tests/**/*.ts",
     "tests/**/*.tsx",
-    "src/**/*.ts",
-    "src/**/*.tsx",
+    "packages/core-engine/src/**/*.ts",
+    "packages/core-engine/src/**/*.tsx",
     "packages/core-ui/**/*.ts",
     "packages/core-ui/**/*.tsx",
     "packages/qbscript/**/*.ts",

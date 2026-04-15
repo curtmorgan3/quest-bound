@@ -80,35 +80,35 @@ export const viteConfig = defineConfig({
     alias: [
       {
         find: /^@\/components\/(.+)$/,
-        replacement: path.resolve(__dirname, 'packages/core-ui/src/$1'),
+        replacement: path.resolve(__dirname, '../core-ui/src/$1'),
       },
       {
         find: /^@\/components$/,
-        replacement: path.resolve(__dirname, 'packages/core-ui/src/index.ts'),
+        replacement: path.resolve(__dirname, '../core-ui/src/index.ts'),
       },
       {
         find: /^@\/lib\/compass-logic\/(.+)$/,
-        replacement: path.resolve(__dirname, 'packages/qbscript/src/$1'),
+        replacement: path.resolve(__dirname, '../qbscript/src/$1'),
       },
       {
         find: /^@\/lib\/compass-logic$/,
-        replacement: path.resolve(__dirname, 'packages/qbscript/src/index.ts'),
+        replacement: path.resolve(__dirname, '../qbscript/src/index.ts'),
       },
       {
         find: /^@\/lib\/cloud\/(.+)$/,
-        replacement: path.resolve(__dirname, 'packages/cloud/src/$1'),
+        replacement: path.resolve(__dirname, '../cloud/src/$1'),
       },
       {
         find: /^@\/lib\/cloud$/,
-        replacement: path.resolve(__dirname, 'packages/cloud/src/index.ts'),
+        replacement: path.resolve(__dirname, '../cloud/src/index.ts'),
       },
       {
         find: /^@\/lib\/campaign-play\/(.+)$/,
-        replacement: path.resolve(__dirname, 'packages/runtime/src/$1'),
+        replacement: path.resolve(__dirname, '../runtime/src/$1'),
       },
       {
         find: /^@\/lib\/campaign-play$/,
-        replacement: path.resolve(__dirname, 'packages/runtime/src/index.ts'),
+        replacement: path.resolve(__dirname, '../runtime/src/index.ts'),
       },
       { find: '@', replacement: path.resolve(__dirname, './src') },
     ],
@@ -118,7 +118,7 @@ export const viteConfig = defineConfig({
     format: 'es',
   },
   server: (() => {
-    const certDir = path.resolve(process.cwd(), '.cert');
+    const certDir = path.resolve(__dirname, '../../.cert');
     const keyPath = path.join(certDir, 'key.pem');
     const certPath = path.join(certDir, 'cert.pem');
     const useHttps = fs.existsSync(keyPath) && fs.existsSync(certPath);

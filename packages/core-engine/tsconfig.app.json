@@ -23,17 +23,17 @@
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true,
     "paths": {
-      "@/components": ["./packages/core-ui/src"],
-      "@/components/*": ["./packages/core-ui/src/*"],
-      "@/lib/compass-logic": ["./packages/qbscript/src"],
-      "@/lib/compass-logic/*": ["./packages/qbscript/src/*"],
-      "@/lib/cloud": ["./packages/cloud/src"],
-      "@/lib/cloud/*": ["./packages/cloud/src/*"],
-      "@/lib/campaign-play": ["./packages/runtime/src"],
-      "@/lib/campaign-play/*": ["./packages/runtime/src/*"],
+      "@/components": ["../core-ui/src"],
+      "@/components/*": ["../core-ui/src/*"],
+      "@/lib/compass-logic": ["../qbscript/src"],
+      "@/lib/compass-logic/*": ["../qbscript/src/*"],
+      "@/lib/cloud": ["../cloud/src"],
+      "@/lib/cloud/*": ["../cloud/src/*"],
+      "@/lib/campaign-play": ["../runtime/src"],
+      "@/lib/campaign-play/*": ["../runtime/src/*"],
       "@/*": ["./src/*"]
     },
     "types": ["cypress", "node"]
   },
-  "include": ["src", "cypress.d.ts", "cypress"]
+  "include": ["src", "../../cypress.d.ts"]
 }
