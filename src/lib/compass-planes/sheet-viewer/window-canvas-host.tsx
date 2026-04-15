@@ -78,6 +78,11 @@ export type WindowCanvasHostProps<T extends WindowCanvasItem> = {
   windows: readonly T[];
   /** When true, pointer drags do not move windows. */
   locked: boolean;
+  /**
+   * When true (character sheet), windows stay at persisted x/y and cannot be dragged.
+   * Ruleset page templates use `locked` + grid toolbar instead.
+   */
+  staticWindows?: boolean;
   /** Fires once per completed drag with the window row id and new canvas position. */
   onWindowPositionUpdate?: (id: string, x: number, y: number) => void;
   backgroundColor?: string;
@@ -116,6 +121,7 @@ export type WindowCanvasHostProps<T extends WindowCanvasItem> = {
 export function WindowCanvasHost<T extends WindowCanvasItem>({
   windows,
   locked,
+  staticWindows = false,
   onWindowPositionUpdate,
   backgroundColor,
   backgroundImage,
@@ -371,7 +377,7 @@ export function WindowCanvasHost<T extends WindowCanvasItem>({
     onDragEnd: ({ didCommit }) => {
       if (!didCommit) setMovePreviewById({});
     },
-    canDrag: () => !locked,
+    canDrag: () => !staticWindows && !locked,
   });
 
   useLayoutEffect(() => {

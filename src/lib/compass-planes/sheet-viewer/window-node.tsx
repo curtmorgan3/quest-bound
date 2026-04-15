@@ -47,6 +47,8 @@ export interface WindowNodeWindow {
 
 export interface WindowNodeData {
   window: WindowNodeWindow;
+  /** When true, never show floating title-bar controls (minimize, scale, close, edit link). */
+  hideWindowChrome?: boolean;
   onClose?: (id: string) => void;
   onMinimize?: (id: string) => void;
   onChildWindowClick: (
@@ -114,6 +116,7 @@ export const WindowNode = ({ data }: { data: WindowNodeData }) => {
   const canvasSelection = useWindowCanvasSelection();
   const {
     window: windowData,
+    hideWindowChrome = false,
     onClose,
     onMinimize,
     onChildWindowClick,
@@ -481,9 +484,11 @@ export const WindowNode = ({ data }: { data: WindowNodeData }) => {
     endScaleGesture();
   }, [endScaleGesture]);
 
-  const showScaleHandle = Boolean(onDisplayScaleChange && !locked);
+  const showScaleHandle = Boolean(onDisplayScaleChange && !locked && !hideWindowChrome);
   /** Hover reveals chrome; stay visible while scaling so leaving the top band does not cancel the gesture. */
-  const showChrome = Boolean(!locked && (windowHovered || scalePreview != null));
+  const showChrome = Boolean(
+    !hideWindowChrome && !locked && (windowHovered || scalePreview != null),
+  );
 
   useEffect(() => {
     if (!showChrome) {

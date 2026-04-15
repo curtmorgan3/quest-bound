@@ -68,7 +68,6 @@ interface CharacterPage {
    * Campaign dashboard passes false while host realtime is off.
    */
   campaignPlayClientBootstrapEnabled?: boolean;
-  lockByDefault?: boolean;
   /**
    * If provided, renders just this window in preview mode. Otherwise, it renders all character pages and windows.
    */
@@ -95,7 +94,6 @@ export const CharacterPage = ({
   campaignId,
   campaignSceneId,
   campaignPlayClientBootstrapEnabled = true,
-  lockByDefault,
   editorWindowId,
   transparentBackground,
   onClose,
@@ -189,10 +187,8 @@ export const CharacterPage = ({
     if (!character?.id) return;
     syncWithRuleset();
   }, [character?.id]);
-  const { handleUpdateWindow, handleDeleteWindow } = useCharacterWindowHandlers(
-    character?.id ?? '',
-  );
-  const { sheetViewerPersistence } = useSheetPersistence(character?.id);
+  const { handleUpdateWindow } = useCharacterWindowHandlers(character?.id ?? '');
+  useSheetPersistence(character?.id);
 
   const [inventoryPanelConfig, setInventoryPanelConfig] = useState<InventoryPanelConfig>({});
 
@@ -369,14 +365,8 @@ export const CharacterPage = ({
         <SheetViewer
           key={character.id}
           characterId={character.id}
-          lockByDefault={lockByDefault ?? false}
           initialCurrentPageId={character.lastViewedPageId ?? null}
-          initialLocked={
-            editorWindowId != null ? (character.sheetLocked ?? lockByDefault ?? false) : true
-          }
-          onLockedChange={sheetViewerPersistence?.onLockedChange}
           onWindowUpdated={handleUpdateWindow}
-          onWindowDeleted={handleDeleteWindow}
           editorWindowId={editorWindowId}
           transparentBackground={transparentBackground}
           showHiddenWindows={showHiddenWindows}

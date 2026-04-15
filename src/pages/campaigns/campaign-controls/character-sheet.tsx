@@ -86,7 +86,6 @@ export const CampaignCharacterSheet = ({
                 campaignId={campaignId}
                 campaignSceneId={campaignSceneId}
                 campaignPlayClientBootstrapEnabled={campaignPlayClientBootstrapEnabled}
-                lockByDefault
                 transparentBackground={transparentBackground}
                 onClose={handleClose}
                 hideGameLog={hideGameLog}

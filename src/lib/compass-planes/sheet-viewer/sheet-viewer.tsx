@@ -16,14 +16,8 @@ import { WindowsTabs } from './windows-tabs';
 interface SheetViewerProps {
   characterId?: string;
   onWindowUpdated?: (update: CharacterWindowUpdate) => void;
-  onWindowDeleted?: (id: string) => void;
-  lockByDefault?: boolean;
   /** Initial current page (e.g. from localStorage). SheetViewer may still reset to first page if this id is invalid. */
   initialCurrentPageId?: string | null;
-  /** Initial locked state (e.g. from localStorage). */
-  initialLocked?: boolean;
-  /** Called when the locked state changes (e.g. to persist). */
-  onLockedChange?: (locked: boolean) => void;
   editorWindowId?: string;
   /** When true, no page background color/image is shown (e.g. character editor embed). */
   transparentBackground?: boolean;
@@ -37,11 +31,7 @@ interface SheetViewerProps {
 export const SheetViewer = ({
   characterId,
   onWindowUpdated,
-  onWindowDeleted,
-  lockByDefault,
   initialCurrentPageId,
-  initialLocked,
-  onLockedChange,
   editorWindowId,
   transparentBackground = false,
   showHiddenWindows = false,
@@ -64,7 +54,6 @@ export const SheetViewer = ({
   const currentPageId =
     searchParams.get('pageId') ?? initialCurrentPageId ?? sortedCharacterPages[0]?.id;
 
-  const [locked, setLockedState] = useState<boolean>(initialLocked ?? lockByDefault ?? false);
   const sheetBottomBarRef = useRef<HTMLDivElement>(null);
   const [sheetFitBottomInsetPx, setSheetFitBottomInsetPx] = useState(0);
 
@@ -100,14 +89,6 @@ export const SheetViewer = ({
       sheetFitToViewport: !(page.sheetFitToViewport === true),
     });
   }, [characterId, characterPages, currentPageId, updateCharacterPage]);
-
-  const setLocked = (next: boolean | ((prev: boolean) => boolean)) => {
-    setLockedState((prev) => {
-      const value = typeof next === 'function' ? next(prev) : next;
-      onLockedChange?.(value);
-      return value;
-    });
-  };
 
   // Windows on the current page
   const windowsForCurrentPage = useMemo(() => {
@@ -205,7 +186,8 @@ export const SheetViewer = ({
       <WindowCanvasHost
         className='relative min-h-0 w-full flex-1 overflow-hidden'
         windows={openCharacterWindows}
-        locked={locked}
+        locked={false}
+        staticWindows
         sheetFitToViewport={sheetFitToViewport}
         sheetFitBottomInsetPx={sheetFitBottomInsetPx}
         onWindowPositionUpdate={(id, x, y) => onWindowUpdated?.({ id, x, y })}
@@ -223,25 +205,12 @@ export const SheetViewer = ({
           return (
             <WindowNode
               data={{
-                locked,
+                locked: false,
+                hideWindowChrome: true,
                 sheetTemplatePageId: !editorWindowId ? currentPage?.pageId : null,
                 window: wAt,
-                onMinimize: !editorWindowId
-                  ? (id: string) => {
-                      onWindowUpdated?.({ id, isCollapsed: true });
-                    }
-                  : undefined,
-                onClose: !editorWindowId
-                  ? (id: string) => {
-                      onWindowDeleted?.(id);
-                    }
-                  : undefined,
                 onChildWindowClick: (childWindowId, openResolved) =>
                   handleChildWindowClick(childWindowId, wAt, openResolved),
-                onDisplayScaleChange:
-                  !locked && onWindowUpdated
-                    ? (id, displayScale) => onWindowUpdated({ id, displayScale })
-                    : undefined,
               }}
             />
           );
@@ -255,8 +224,6 @@ export const SheetViewer = ({
           windows={windowsForCurrentPage}
           openWindows={openWindows}
           toggleWindow={(id: string) => onWindowUpdated?.({ id, isCollapsed: openWindows.has(id) })}
-          locked={locked}
-          onToggleLock={() => setLocked((prev) => !prev)}
           sheetFitToViewport={sheetFitToViewport}
           onSheetFitToViewportChange={
             characterId && currentPageId ? handleSheetFitToViewportChange : undefined

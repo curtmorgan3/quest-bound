@@ -100,7 +100,7 @@ function CompassRoutes() {
             />
 
             <Route path={`/characters`} element={<Characters />} />
-            <Route path={`/characters/:characterId`} element={<CharacterPage lockByDefault />} />
+            <Route path={`/characters/:characterId`} element={<CharacterPage />} />
             <Route
               path={`/characters/:characterId/default`}
               element={<DefaultCharacterSheet />}

@@ -26,7 +26,7 @@ import {
 import { PageDetailsForm } from '@/lib/compass-planes/page-details-form';
 import { colorPrimary } from '@/palette';
 import type { CharacterPage, CharacterWindow, Window } from '@/types';
-import { Lock, Maximize2, Pencil, Plus, Trash2 } from 'lucide-react';
+import { Maximize2, Pencil, Plus, Trash2 } from 'lucide-react';
 import { useState, type Ref } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
@@ -36,8 +36,6 @@ interface WindowsTabsProps {
   windows: CharacterWindow[];
   toggleWindow: (id: string) => void;
   openWindows: Set<string>;
-  locked?: boolean;
-  onToggleLock: () => void;
   /** Unlocked layout: scale sheet to viewport width; scroll vertically if needed. */
   sheetFitToViewport?: boolean;
   onSheetFitToViewportChange?: (next: boolean) => void;
@@ -53,8 +51,6 @@ export const WindowsTabs = ({
   windows,
   toggleWindow,
   openWindows,
-  locked = false,
-  onToggleLock,
   sheetFitToViewport = false,
   onSheetFitToViewportChange,
   pageId,
@@ -192,26 +188,7 @@ export const WindowsTabs = ({
   return (
     <>
       <div ref={bottomBarRef} className='window-tabs' style={tabBarStyle}>
-        <button
-          onClick={onToggleLock}
-          style={{
-            height: '30px',
-            width: '30px',
-            minWidth: '30px',
-            backgroundColor: '#333',
-            color: locked ? colorPrimary : '#fff',
-            border: '1px solid #555',
-            borderRadius: 4,
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-          title='Lock layout'>
-          <Lock size={16} />
-        </button>
-
-        {!locked && onSheetFitToViewportChange ? (
+        {onSheetFitToViewportChange ? (
           <button
             type='button'
             onClick={() => onSheetFitToViewportChange(!sheetFitToViewport)}
@@ -238,17 +215,15 @@ export const WindowsTabs = ({
           </button>
         ) : null}
 
-        {!locked && (
-          <Button
-            variant='outline'
-            size='sm'
-            className='h-8 shrink-0 gap-1 px-2 text-xs border-[#555] bg-[#333] text-white hover:bg-[#444]'
-            onClick={() => setIsAddPageModalOpen(true)}
-            title='Add page'
-            data-testid='sheet-add-page'>
-            <Plus size={14} />
-          </Button>
-        )}
+        <Button
+          variant='outline'
+          size='sm'
+          className='h-8 shrink-0 gap-1 px-2 text-xs border-[#555] bg-[#333] text-white hover:bg-[#444]'
+          onClick={() => setIsAddPageModalOpen(true)}
+          title='Add page'
+          data-testid='sheet-add-page'>
+          <Plus size={14} />
+        </Button>
 
         <select
           value={currentPageId ?? ''}
@@ -286,7 +261,7 @@ export const WindowsTabs = ({
           ))}
         </select>
 
-        {currentPageId && !locked && (
+        {currentPageId ? (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
@@ -310,9 +285,9 @@ export const WindowsTabs = ({
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-        )}
+        ) : null}
 
-        {!locked && currentPageId && (
+        {currentPageId ? (
           <button
             onClick={() => setIsAddWindowModalOpen(true)}
             style={{
@@ -331,7 +306,7 @@ export const WindowsTabs = ({
             title='Add window'>
             <Plus size={16} />
           </button>
-        )}
+        ) : null}
 
         {sortedWindows.map((window) => (
           <button

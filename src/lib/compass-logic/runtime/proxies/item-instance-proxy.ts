@@ -66,6 +66,7 @@ export type ItemInstancePlain = {
  * Wraps an InventoryItem and its ruleset Item definition. Exposes title, quantity,
  * isEquipped, and getProperty/setProperty for custom properties (aligned with CharacterAccessor).
  * Instance overrides in inventoryItem.customProperties take precedence over item definition defaults.
+ * Keys are ruleset customPropertyIds for defined properties; unknown labels from scripts are stored under the label string.
  * Implements toStructuredCloneSafe() so the worker can send it to the main thread.
  */
 export class ItemInstanceProxy implements StructuredCloneSafe {
@@ -273,11 +274,14 @@ export class ItemInstanceProxy implements StructuredCloneSafe {
 
   /**
    * Get an item instance custom property by label (e.g. item.getProperty('Armor Value')).
-   * Returns null if the property is not defined on the item or has no value.
+   * Returns null if the property is not defined on the item (and has no instance-only value) or has no value.
    */
   getProperty(name: string): string | number | boolean | null {
     const customPropertyId = this.customPropertyLookup.resolveLabelToId(name);
-    if (!customPropertyId) return null;
+    if (!customPropertyId) {
+      const adHoc = this.inventoryItem.customProperties?.[name];
+      return adHoc !== undefined ? (adHoc as string | number | boolean) : null;
+    }
     const current = this.inventoryItem.customProperties?.[customPropertyId];
     if (current !== undefined) {
       return current as string | number | boolean;
@@ -301,6 +305,7 @@ export class ItemInstanceProxy implements StructuredCloneSafe {
 
   /**
    * Set an item instance custom property by label (e.g. item.setProperty('Armor Value', 15)).
+   * Labels not defined on the ruleset item are still written to this instance's `customProperties` under the label string.
    * Throws if no setter was provided (e.g. read-only context).
    */
   setProperty(name: string, value: string | number | boolean): void {
@@ -310,7 +315,8 @@ export class ItemInstanceProxy implements StructuredCloneSafe {
       );
     }
     const customPropertyId = this.customPropertyLookup.resolveLabelToId(name);
-    if (customPropertyId) this.onSetCustomProperty(customPropertyId, value);
+    const storageKey = customPropertyId ?? name;
+    this.onSetCustomProperty(storageKey, value);
   }
 
   /**
@@ -368,7 +374,7 @@ export class ItemInstanceProxy implements StructuredCloneSafe {
     const byLabel: Record<string, string | number | boolean> = {};
     for (const [id, value] of Object.entries(instanceCustom)) {
       const label = this.customPropertyLookup.resolveIdToLabel(id);
-      if (label) byLabel[label] = value;
+      byLabel[label ?? id] = value;
     }
     return { ...base, ...byLabel };
   }
