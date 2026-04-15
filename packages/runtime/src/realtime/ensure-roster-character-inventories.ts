@@ -1,7 +1,7 @@
 import type { CampaignRealtimeBulkPutBatchV1 } from '@/lib/campaign-play/realtime/campaign-realtime-envelopes';
 import { isNotSoftDeleted } from '@/lib/data/soft-delete';
 import type { DB } from '@/stores/db/hooks/types';
-import type { Character } from '@/types';
+import type { Character } from '@quest-bound/types';
 
 function collectRosterLinkedCharacterIds(batches: CampaignRealtimeBulkPutBatchV1[]): Set<string> {
   const ids = new Set<string>();

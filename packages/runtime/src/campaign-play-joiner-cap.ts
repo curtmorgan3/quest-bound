@@ -1,4 +1,4 @@
-import type { CampaignCharacter, Character } from '@/types';
+import type { CampaignCharacter, Character } from '@quest-bound/types';
 
 /** Client-side cap for Phase 2 (1 host + 5 joiners); not enforced on the server. */
 export const CAMPAIGN_PLAY_MAX_JOINERS = 5;

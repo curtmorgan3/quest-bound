@@ -7,7 +7,7 @@ import type {
   PromptMultipleFn,
   SelectCharacterFn,
   SelectCharactersFn,
-} from '@/types';
+} from '@quest-bound/types';
 import {
   ScriptRunner,
   type ScriptExecutionContext,

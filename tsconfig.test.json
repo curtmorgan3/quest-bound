@@ -15,7 +15,11 @@
     "packages/qbscript/**/*.ts",
     "packages/qbscript/**/*.tsx",
     "packages/local-db/**/*.ts",
-    "packages/local-db/**/*.tsx"
+    "packages/local-db/**/*.tsx",
+    "packages/cloud/**/*.ts",
+    "packages/cloud/**/*.tsx",
+    "packages/runtime/**/*.ts",
+    "packages/runtime/**/*.tsx"
   ],
   "exclude": ["node_modules", "dist", "cypress"]
 }

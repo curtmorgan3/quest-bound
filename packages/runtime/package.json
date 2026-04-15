@@ -14,8 +14,8 @@
     "typecheck": "tsc -p tsconfig.json"
   },
   "dependencies": {
-    "@quest-bound/core-ui": "2.1.74",
-    "@quest-bound/local-db": "2.1.74"
+    "@quest-bound/cloud": "2.1.74",
+    "@quest-bound/types": "2.1.74"
   },
   "peerDependencies": {
     "react": "^19.1.1",

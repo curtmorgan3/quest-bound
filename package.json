@@ -30,8 +30,10 @@
     "prepare": "husky"
   },
   "dependencies": {
+    "@quest-bound/cloud": "2.1.74",
     "@quest-bound/core-ui": "2.1.74",
     "@quest-bound/local-db": "2.1.74",
+    "@quest-bound/runtime": "2.1.74",
     "@quest-bound/qbscript": "2.1.74",
     "@quest-bound/remote-db": "2.1.74",
     "@quest-bound/types": "2.1.74",

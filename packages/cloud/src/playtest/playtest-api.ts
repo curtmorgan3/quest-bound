@@ -3,7 +3,7 @@ import { getSession } from '@/lib/cloud/auth';
 import { cloudClient } from '@/lib/cloud/client';
 import { usePlaytestRuntimeStore } from '@/stores/playtest-runtime-store';
 import { db } from '@/stores/db';
-import type { Character, CharacterAttribute, Component, InventoryItem } from '@/types';
+import type { Character, CharacterAttribute, Component, InventoryItem } from '@quest-bound/types';
 
 function requireClient() {
   if (!cloudClient) throw new Error('Cloud is not configured');

@@ -1,4 +1,4 @@
 /**
- * Character sheets, campaigns, dice/inventory/archetypes, and realtime play UI.
+ * Campaign play: realtime transport, join flow, and host/client coordination.
  */
-export {};
+export * from './realtime/index';

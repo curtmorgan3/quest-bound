@@ -8,6 +8,8 @@
       "@/components/*": ["../core-ui/src/*"],
       "@/lib/compass-logic": ["../qbscript/src"],
       "@/lib/compass-logic/*": ["../qbscript/src/*"],
+      "@/lib/cloud": ["../cloud/src"],
+      "@/lib/cloud/*": ["../cloud/src/*"],
       "@/*": ["../../src/*"]
     },
     "types": ["vite/client"]

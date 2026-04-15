@@ -1,5 +1,5 @@
 import { db } from '@/stores';
-import type { Campaign, CampaignScene } from '@/types';
+import type { Campaign, CampaignScene } from '@quest-bound/types';
 
 /**
  * Ensures the joiner has a minimal local `Campaign` (and optional `CampaignScene`) so dashboard routes work

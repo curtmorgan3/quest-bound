@@ -94,6 +94,22 @@ export const viteConfig = defineConfig({
         find: /^@\/lib\/compass-logic$/,
         replacement: path.resolve(__dirname, 'packages/qbscript/src/index.ts'),
       },
+      {
+        find: /^@\/lib\/cloud\/(.+)$/,
+        replacement: path.resolve(__dirname, 'packages/cloud/src/$1'),
+      },
+      {
+        find: /^@\/lib\/cloud$/,
+        replacement: path.resolve(__dirname, 'packages/cloud/src/index.ts'),
+      },
+      {
+        find: /^@\/lib\/campaign-play\/(.+)$/,
+        replacement: path.resolve(__dirname, 'packages/runtime/src/$1'),
+      },
+      {
+        find: /^@\/lib\/campaign-play$/,
+        replacement: path.resolve(__dirname, 'packages/runtime/src/index.ts'),
+      },
       { find: '@', replacement: path.resolve(__dirname, './src') },
     ],
   },

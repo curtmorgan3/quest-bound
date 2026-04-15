@@ -24,6 +24,7 @@
     "typecheck": "tsc -p tsconfig.json"
   },
   "dependencies": {
+    "@quest-bound/cloud": "2.1.74",
     "@quest-bound/types": "2.1.74",
     "dexie": "^4.2.0"
   }

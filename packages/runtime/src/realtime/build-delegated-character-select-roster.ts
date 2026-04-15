@@ -1,7 +1,7 @@
 import type { DelegatedUiCharacterSelectRosterPayloadV1 } from '@/lib/campaign-play/realtime/campaign-realtime-envelopes';
 import { filterNotSoftDeleted } from '@/lib/data/soft-delete';
 import { db } from '@/stores';
-import type { Character } from '@/types';
+import type { Character } from '@quest-bound/types';
 
 export type CharacterSelectModalDelegatedRoster = {
   npcs: Array<{ character: Pick<Character, 'id' | 'name' | 'image' | 'isNpc'> }>;

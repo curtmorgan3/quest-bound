@@ -14,7 +14,7 @@ import type {
   CharacterArchetype,
   CharacterAttribute,
   InventoryItem,
-} from '@/types';
+} from '@quest-bound/types';
 
 function rowRecord<T extends object>(row: T): Record<string, unknown> {
   return { ...row } as Record<string, unknown>;

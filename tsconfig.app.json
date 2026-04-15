@@ -27,6 +27,10 @@
       "@/components/*": ["./packages/core-ui/src/*"],
       "@/lib/compass-logic": ["./packages/qbscript/src"],
       "@/lib/compass-logic/*": ["./packages/qbscript/src/*"],
+      "@/lib/cloud": ["./packages/cloud/src"],
+      "@/lib/cloud/*": ["./packages/cloud/src/*"],
+      "@/lib/campaign-play": ["./packages/runtime/src"],
+      "@/lib/campaign-play/*": ["./packages/runtime/src/*"],
       "@/*": ["./src/*"]
     },
     "types": ["cypress", "node"]

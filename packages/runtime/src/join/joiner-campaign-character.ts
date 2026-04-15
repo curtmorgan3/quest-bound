@@ -3,7 +3,7 @@ import { sendCampaignPlayManualCharacterUpdate } from '@/lib/campaign-play/realt
 import type { CampaignRealtimeBulkPutBatchV1 } from '@/lib/campaign-play/realtime/campaign-realtime-envelopes';
 import { filterNotSoftDeleted } from '@/lib/data/soft-delete';
 import { db } from '@/stores';
-import type { CampaignCharacter, Character, InventoryItem } from '@/types';
+import type { CampaignCharacter, Character, InventoryItem } from '@quest-bound/types';
 
 function rowRecord<T extends object>(row: T): Record<string, unknown> {
   return { ...row } as Record<string, unknown>;

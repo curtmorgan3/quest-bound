@@ -8,6 +8,8 @@
       "@/components/*": ["../core-ui/src/*"],
       "@/lib/compass-logic": ["./src"],
       "@/lib/compass-logic/*": ["./src/*"],
+      "@/lib/campaign-play": ["../runtime/src"],
+      "@/lib/campaign-play/*": ["../runtime/src/*"],
       "@/*": ["../../src/*"]
     },
     "types": ["vite/client", "cypress", "node"]

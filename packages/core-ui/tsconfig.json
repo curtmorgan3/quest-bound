@@ -8,6 +8,10 @@
       "@/components/*": ["./src/*"],
       "@/lib/compass-logic": ["../qbscript/src"],
       "@/lib/compass-logic/*": ["../qbscript/src/*"],
+      "@/lib/cloud": ["../cloud/src"],
+      "@/lib/cloud/*": ["../cloud/src/*"],
+      "@/lib/campaign-play": ["../runtime/src"],
+      "@/lib/campaign-play/*": ["../runtime/src/*"],
       "@/*": ["../../src/*"]
     },
     "types": ["vite/client", "cypress", "node"]

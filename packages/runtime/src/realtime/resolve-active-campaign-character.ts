@@ -1,6 +1,6 @@
 import { isNotSoftDeleted } from '@/lib/data/soft-delete';
 import type { DB } from '@/stores/db/hooks/types';
-import type { CampaignCharacter } from '@/types';
+import type { CampaignCharacter } from '@quest-bound/types';
 
 function firstActive(rows: CampaignCharacter[]): CampaignCharacter | undefined {
   return rows.find(isNotSoftDeleted);

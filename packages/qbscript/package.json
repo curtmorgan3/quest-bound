@@ -20,6 +20,7 @@
     "@codemirror/state": "^6.5.4",
     "@codemirror/view": "^6.39.14",
     "@lezer/highlight": "^1.2.3",
+    "@quest-bound/runtime": "2.1.74",
     "@quest-bound/types": "2.1.74",
     "dexie": "^4.2.0",
     "react": "^19.1.1",
