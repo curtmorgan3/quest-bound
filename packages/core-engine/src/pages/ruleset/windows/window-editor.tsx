@@ -3,7 +3,7 @@ import { Input } from '@/components/ui/input';
 import { useSidebar } from '@/components/ui/sidebar';
 import { useReadOnlyExternalGrantRedirect } from '@/lib/cloud/external-ruleset-grant-guard';
 import { useComponents, useRulesets, type ComponentUpdate } from '@/lib/compass-api';
-import { repairOrphanCharacterWindowsForRulesetWindows } from '@/lib/compass-api/utils/default-archetype-test-character';
+import { repairOrphanCharacterWindowsForRulesetWindows } from '@/utils/default-archetype-test-character';
 import { SheetEditor } from '@/lib/compass-planes';
 import { DEFAULT_GRID_SIZE } from '@/lib/compass-planes/editor-config';
 import {

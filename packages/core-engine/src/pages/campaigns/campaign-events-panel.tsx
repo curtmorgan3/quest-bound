@@ -6,7 +6,8 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet';
-import { ScriptLookup, useScripts } from '@/lib/compass-api';
+import { useScripts } from '@/lib/compass-api';
+import { ScriptLookup } from '@quest-bound/core-ui/api-components';
 import { shouldBlockCampaignOrchestration } from '@/lib/campaign-play/campaign-play-orchestration-gate';
 import { useQBScriptClient } from '@/lib/compass-logic/worker/hooks';
 import { activateButtonStyle } from '@/palette';

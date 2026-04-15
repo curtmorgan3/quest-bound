@@ -15,16 +15,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { useAttributes, useComponents, type ComponentUpdate } from '@/lib/compass-api';
 import {
   ActionLookup,
   AttributeLookup,
   PageLookup,
   ScriptLookup,
   WindowLookup,
-  useAttributes,
-  useComponents,
-  type ComponentUpdate,
-} from '@/lib/compass-api';
+} from '@quest-bound/core-ui/api-components';
 import { useActions } from '@/lib/compass-api/hooks/rulesets/use-actions';
 import { useRulesetPages } from '@/lib/compass-api/hooks/rulesets/use-ruleset-pages';
 import { useWindows } from '@/lib/compass-api/hooks/rulesets/use-windows';

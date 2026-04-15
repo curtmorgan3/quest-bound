@@ -13,7 +13,7 @@ import {
   useRulesetWindows,
   useWindows,
 } from '@/lib/compass-api';
-import { repairOrphanCharacterWindowsForRulesetWindows } from '@/lib/compass-api/utils/default-archetype-test-character';
+import { repairOrphanCharacterWindowsForRulesetWindows } from '@/utils/default-archetype-test-character';
 import { PageDetailsForm } from '@/lib/compass-planes/page-details-form';
 import type { RulesetWindow as RulesetWindowType } from '@/types';
 import { GripVertical, Layers, Pencil, Plus } from 'lucide-react';

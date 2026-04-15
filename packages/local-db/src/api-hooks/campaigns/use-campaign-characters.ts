@@ -1,0 +1,123 @@
+import { tryBroadcastCampaignRosterFromDexie } from '@/lib/campaign-play/realtime/broadcast-campaign-roster-update';
+import { filterNotSoftDeleted, softDeletePatch } from '@/lib/data/soft-delete';
+import { useErrorHandler } from '@/hooks';
+import { db } from '../../db';
+import type { CampaignCharacter } from '@/types';
+import { useLiveQuery } from 'dexie-react-hooks';
+import { useCharacter } from '../characters/use-character';
+
+export const useCampaignCharacters = (campaignId: string | undefined) => {
+  const { handleError } = useErrorHandler();
+  const { deleteCharacter } = useCharacter();
+
+  const campaignCharacters = useLiveQuery(
+    async (): Promise<CampaignCharacter[]> => {
+      if (!campaignId) return [];
+      const rows = await db.campaignCharacters.where('campaignId').equals(campaignId).toArray();
+      return filterNotSoftDeleted(rows);
+    },
+    [campaignId],
+  );
+
+  const createCampaignCharacter = async (
+    campaignId: string,
+    characterId: string,
+    data?: {
+      campaignSceneId?: string;
+      /** @deprecated World/location removed; ignored. */
+      currentLocationId?: string;
+      /** @deprecated World/location removed; ignored. */
+      currentTileId?: string;
+      active?: boolean;
+    },
+  ) => {
+    const now = new Date().toISOString();
+    const id = crypto.randomUUID();
+    try {
+      await db.campaignCharacters.add({
+        id,
+        campaignId,
+        characterId,
+        campaignSceneId: data?.campaignSceneId,
+        active: data?.active,
+        deleted: false,
+        createdAt: now,
+        updatedAt: now,
+      } as CampaignCharacter);
+      void tryBroadcastCampaignRosterFromDexie({
+        campaignId,
+        characterIds: [characterId],
+        campaignCharacterIds: [id],
+      }).catch(() => {});
+      return id;
+    } catch (e) {
+      handleError(e as Error, {
+        component: 'useCampaignCharacters/createCampaignCharacter',
+        severity: 'medium',
+      });
+    }
+  };
+
+  const updateCampaignCharacter = async (
+    id: string,
+    data: Partial<
+      Pick<CampaignCharacter, 'active' | 'campaignSceneId' | 'turnOrder' | 'pinnedTurnOrderAttributeIds'>
+    >,
+  ) => {
+    const now = new Date().toISOString();
+    try {
+      const existing = await db.campaignCharacters.get(id);
+      await db.campaignCharacters.update(id, {
+        ...data,
+        updatedAt: now,
+      });
+      const cid = existing?.campaignId ?? campaignId;
+      if (cid) {
+        void tryBroadcastCampaignRosterFromDexie({
+          campaignId: cid,
+          characterIds: [],
+          campaignCharacterIds: [id],
+        }).catch(() => {});
+      }
+    } catch (e) {
+      handleError(e as Error, {
+        component: 'useCampaignCharacters/updateCampaignCharacter',
+        severity: 'medium',
+      });
+    }
+  };
+
+  const deleteCampaignCharacter = async (id: string) => {
+    try {
+      const campaignCharacter = await db.campaignCharacters.get(id);
+      const characterId = campaignCharacter?.characterId;
+      const rosterCampaignId = campaignCharacter?.campaignId;
+      await db.campaignCharacters.update(id, softDeletePatch());
+      if (rosterCampaignId) {
+        void tryBroadcastCampaignRosterFromDexie({
+          campaignId: rosterCampaignId,
+          characterIds: [],
+          campaignCharacterIds: [id],
+        }).catch(() => {});
+      }
+      if (characterId) {
+        const character = await db.characters.get(characterId);
+        if (character?.isNpc) {
+          await deleteCharacter(characterId);
+        }
+      }
+    } catch (e) {
+      handleError(e as Error, {
+        component: 'useCampaignCharacters/deleteCampaignCharacter',
+        severity: 'medium',
+      });
+    }
+  };
+
+  return {
+    campaignCharacters: campaignCharacters ?? [],
+    createCampaignCharacter,
+    updateCampaignCharacter,
+    deleteCampaignCharacter,
+  };
+};

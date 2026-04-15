@@ -8,7 +8,7 @@ import {
   Label,
 } from '@/components';
 import { Checkbox } from '@/components/ui/checkbox';
-import { ScriptLookup } from '@/lib/compass-api';
+import { ScriptLookup } from '@quest-bound/core-ui/api-components';
 import type { ComponentUpdate } from '@/lib/compass-api/hooks/rulesets/use-components';
 import { useScripts } from '@/lib/compass-api/hooks/scripts/use-scripts';
 import { getComponentData } from '@/lib/compass-planes/utils';

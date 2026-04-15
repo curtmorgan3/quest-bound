@@ -2,7 +2,7 @@ import { useScripts } from '@/lib/compass-api/hooks/scripts/use-scripts';
 import {
   navigateCharacterToTemplatePage,
   openCharacterSheetWindow,
-} from '@/lib/compass-api/utils/navigate-character-sheet';
+} from '@/utils/navigate-character-sheet';
 import { useParentWindowFrame } from '@/lib/compass-planes/sheet-viewer/parent-window-frame-context';
 import { useSheetCanvasBounds } from '@/lib/compass-planes/sheet-viewer/sheet-canvas-bounds-context';
 import { useWindowRuntime } from '@/lib/compass-planes/sheet-viewer/window-runtime-context';

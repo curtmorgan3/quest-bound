@@ -18,14 +18,28 @@
       "types": "./src/db.ts",
       "import": "./src/db.ts",
       "default": "./src/db.ts"
+    },
+    "./api-hooks": {
+      "types": "./src/api-hooks/index.ts",
+      "import": "./src/api-hooks/index.ts",
+      "default": "./src/api-hooks/index.ts"
     }
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json"
   },
+  "devDependencies": {
+    "@types/react": "^19.1.10",
+    "@types/react-dom": "^19.1.7"
+  },
   "dependencies": {
     "@quest-bound/cloud": "2.1.74",
     "@quest-bound/types": "2.1.74",
-    "dexie": "^4.2.0"
+    "dexie": "^4.2.0",
+    "dexie-react-hooks": "^4.2.0",
+    "jszip": "^3.10.1",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
+    "react-router-dom": "^7.8.2"
   }
 }

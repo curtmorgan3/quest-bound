@@ -16,13 +16,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import {
-  ArchetypeLookup,
-  SceneLookup,
-  useArchetypes,
-  useCampaignCharacters,
-  useCharacter,
-} from '@/lib/compass-api';
+import { useArchetypes, useCampaignCharacters, useCharacter } from '@/lib/compass-api';
+import { ArchetypeLookup, SceneLookup } from '@quest-bound/core-ui/api-components';
 import { filterNotSoftDeleted } from '@/lib/data/soft-delete';
 import { useCharacterArchetypes } from '@/pages/characters/character-archetypes-panel/use-character-archetypes';
 import { db } from '@/stores';

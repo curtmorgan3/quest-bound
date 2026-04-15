@@ -10,12 +10,12 @@ import {
 } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
-  AttributeLookup,
   useAttributes,
   useComponents,
   useRulesets,
   type ComponentUpdate,
 } from '@/lib/compass-api';
+import { AttributeLookup } from '@quest-bound/core-ui/api-components';
 import { ComponentTypes, isGroupLikeComponentType } from '@/lib/compass-planes/nodes';
 import {
   CheckboxDataEdit,

@@ -12,7 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { AttributeLookup } from '@/lib/compass-api';
+import { AttributeLookup } from '@quest-bound/core-ui/api-components';
 import { getComponentData } from '@/lib/compass-planes/utils';
 import type { Component, ComponentData } from '@/types';
 

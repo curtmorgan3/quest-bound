@@ -7,7 +7,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components';
-import { AttributeLookup, useAttributes } from '@/lib/compass-api';
+import { useAttributes } from '@/lib/compass-api';
+import { AttributeLookup } from '@quest-bound/core-ui/api-components';
 import type {
   Attribute,
   AttributeType,

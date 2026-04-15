@@ -3,7 +3,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { CodeMirrorEditor } from '@/lib/compass-logic/editor';
+import { CodeMirrorEditor } from '@/pages/ruleset/scripts/editor';
 import { useCharacterAttributes } from '@/lib/compass-api';
 import { useExecuteScript } from '@/lib/compass-logic/worker';
 import { db } from '@/stores';

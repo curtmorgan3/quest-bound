@@ -9,7 +9,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { ImageUpload } from '@/components/composites';
-import { AttributeLookup, useAssets, useAttributes } from '@/lib/compass-api';
+import { useAssets, useAttributes } from '@/lib/compass-api';
+import { AttributeLookup } from '@quest-bound/core-ui/api-components';
 import {
   fireExternalComponentChangeEvent,
   getComponentData,

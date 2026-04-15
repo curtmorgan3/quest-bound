@@ -8,6 +8,8 @@
       "@/lib/cloud/*": ["./src/*"],
       "@/lib/campaign-play": ["../runtime/src"],
       "@/lib/campaign-play/*": ["../runtime/src/*"],
+      "@/lib/compass-api/hooks": ["../local-db/src/api-hooks"],
+      "@/lib/compass-api/hooks/*": ["../local-db/src/api-hooks/*"],
       "@/components": ["../core-ui/src"],
       "@/components/*": ["../core-ui/src/*"],
       "@/lib/compass-logic": ["../qbscript/src"],

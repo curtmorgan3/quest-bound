@@ -1,4 +1,5 @@
-import { AssetLookup, useAssets } from '@/lib/compass-api';
+import { useAssets } from '@/lib/compass-api';
+import { AssetLookup } from '../api-components';
 import { ImagePlus, Save, Trash } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '../ui/button';

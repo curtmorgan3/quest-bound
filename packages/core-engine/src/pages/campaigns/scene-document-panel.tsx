@@ -8,7 +8,8 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet';
-import { DocumentLookup, useDocuments } from '@/lib/compass-api';
+import { useDocuments } from '@/lib/compass-api';
+import { DocumentLookup } from '@quest-bound/core-ui/api-components';
 import type { Document } from '@/types';
 import { FileText, Loader2, Pencil, X } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';

@@ -43,6 +43,14 @@ export default defineConfig({
         replacement: path.resolve(__dirname, 'packages/runtime/src/index.ts'),
       },
       {
+        find: /^@\/lib\/compass-api\/hooks\/(.+)$/,
+        replacement: path.resolve(__dirname, 'packages/local-db/src/api-hooks/$1'),
+      },
+      {
+        find: /^@\/lib\/compass-api\/hooks$/,
+        replacement: path.resolve(__dirname, 'packages/local-db/src/api-hooks/index.ts'),
+      },
+      {
         find: '@',
         replacement: path.resolve(__dirname, 'packages/core-engine/src'),
       },

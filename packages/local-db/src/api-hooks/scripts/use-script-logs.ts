@@ -1,0 +1,220 @@
+import { filterNotSoftDeleted, softDeletePatch } from '@/lib/data/soft-delete';
+import { useErrorHandler } from '@/hooks';
+import { persistScriptLogs, type PersistScriptLogsParams } from '@/lib/compass-logic/script-logs';
+import { db } from '../../db';
+import type { ScriptLog } from '@/types';
+import { getGameLogResetAt, setGameLogResetAt } from '@/utils/game-log-reset-storage';
+import { useLiveQuery } from 'dexie-react-hooks';
+import { useCallback, useEffect, useState } from 'react';
+import { useParams } from 'react-router-dom';
+import { useCampaign } from '../campaigns/use-campaign';
+import { useActiveRuleset } from '../rulesets/use-active-ruleset';
+
+/**
+ * When characterId is set and campaignId is not, we're in "game log" mode: clear sets a
+ * reset timestamp (no delete); only logs with timestamp > resetAt are shown, capped at limit.
+ */
+function useGameLogResetAt(
+  rulesetId: string | undefined,
+  characterId: string | undefined,
+): [number | null | undefined, (resetAt: number) => Promise<void>] {
+  const [resetAt, setResetAt] = useState<number | null | undefined>(undefined);
+
+  useEffect(() => {
+    if (!rulesetId || !characterId) {
+      setResetAt(undefined);
+      return;
+    }
+    let cancelled = false;
+    getGameLogResetAt(rulesetId, characterId).then((value) => {
+      if (!cancelled) setResetAt(value);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [rulesetId, characterId]);
+
+  const setReset = useCallback(
+    async (ts: number) => {
+      if (!rulesetId || !characterId) return;
+      await setGameLogResetAt(rulesetId, characterId, ts);
+      setResetAt(ts);
+    },
+    [rulesetId, characterId],
+  );
+
+  return [resetAt, setReset];
+}
+
+/**
+ * @param limit Max number of log entries to return (newest first). When campaignId is set, no limit is applied (show all campaign logs).
+ * @param rulesetId Optional. When set (e.g. campaign's rulesetId), query logs for this ruleset instead of active ruleset.
+ * @param campaignId Optional. When set (e.g. campaign log), query and clear logs by campaign instead of ruleset.
+ * @param characterId Optional. When set and campaignId is not (game log on character page), clear only resets the view for this character (no delete); only logs after the last reset are shown.
+ */
+export const useScriptLogs = (
+  limit = 100,
+  rulesetId?: string,
+  campaignId?: string,
+  characterId?: string,
+) => {
+  const { activeRuleset } = useActiveRuleset();
+  const { handleError } = useErrorHandler();
+  const effectiveRulesetId = rulesetId ?? activeRuleset?.id;
+  const [gameLogResetAt, setGameLogResetAt] = useGameLogResetAt(
+    characterId && !campaignId ? effectiveRulesetId : undefined,
+    characterId,
+  );
+
+  const isGameLogMode = Boolean(characterId && !campaignId);
+
+  const logs = useLiveQuery(async (): Promise<ScriptLog[]> => {
+    if (campaignId) {
+      const raw = await db.scriptLogs.where('campaignId').equals(campaignId).reverse().toArray();
+      return filterNotSoftDeleted(raw);
+    }
+    if (effectiveRulesetId) {
+      if (isGameLogMode) {
+        if (gameLogResetAt === undefined) return [];
+        const minTimestamp = gameLogResetAt ?? 0;
+        const raw = await db.scriptLogs
+          .where('rulesetId')
+          .equals(effectiveRulesetId)
+          .reverse()
+          .limit(limit * 3)
+          .toArray();
+        return filterNotSoftDeleted(raw)
+          .filter((log) => log.timestamp > minTimestamp)
+          .slice(0, limit);
+      }
+      const raw = await db.scriptLogs
+        .where('rulesetId')
+        .equals(effectiveRulesetId)
+        .reverse()
+        .limit(limit)
+        .toArray();
+      return filterNotSoftDeleted(raw);
+    }
+    return [];
+  }, [effectiveRulesetId, limit, campaignId, isGameLogMode, gameLogResetAt]);
+
+  const logScriptLog = async (data: Omit<ScriptLog, 'id' | 'createdAt' | 'updatedAt'>) => {
+    const targetRulesetId = rulesetId ?? activeRuleset?.id;
+    if (!targetRulesetId) return;
+    const now = new Date().toISOString();
+    try {
+      await db.scriptLogs.add({
+        ...data,
+        id: crypto.randomUUID(),
+        rulesetId: targetRulesetId,
+        campaignId: data.campaignId ?? campaignId ?? null,
+        createdAt: now,
+        updatedAt: now,
+        timestamp: data.timestamp ?? Date.now(),
+        sequence: data.sequence ?? 0,
+      } as ScriptLog);
+    } catch (e) {
+      handleError(e as Error, {
+        component: 'useScriptLogs/logScriptLog',
+        severity: 'low',
+      });
+    }
+  };
+
+  const clearLogs = async () => {
+    try {
+      if (campaignId) {
+        const rows = await db.scriptLogs.where('campaignId').equals(campaignId).toArray();
+        const patch = softDeletePatch();
+        await Promise.all(
+          rows.filter((r) => r.deleted !== true).map((r) => db.scriptLogs.update(r.id, patch)),
+        );
+      } else if (isGameLogMode && effectiveRulesetId && characterId) {
+        await setGameLogResetAt(Date.now());
+      } else if (effectiveRulesetId) {
+        const rows = await db.scriptLogs.where('rulesetId').equals(effectiveRulesetId).toArray();
+        const patch = softDeletePatch();
+        await Promise.all(
+          rows.filter((r) => r.deleted !== true).map((r) => db.scriptLogs.update(r.id, patch)),
+        );
+      }
+    } catch (e) {
+      handleError(e as Error, {
+        component: 'useScriptLogs/clearLogs',
+        severity: 'low',
+      });
+    }
+  };
+
+  const deleteLog = async (id: string) => {
+    try {
+      await db.scriptLogs.update(id, softDeletePatch());
+    } catch (e) {
+      handleError(e as Error, {
+        component: 'useScriptLogs/deleteLog',
+        severity: 'low',
+      });
+    }
+  };
+
+  return {
+    logs: logs ?? [],
+    logScriptLog,
+    clearLogs,
+    deleteLog,
+  };
+};
+
+/** Params for persistLog from usePersistLogs; context-derived fields are optional. */
+export type PersistLogParams = Pick<
+  PersistScriptLogsParams,
+  'logMessages' | 'context' | 'scriptId' | 'autoGenerated'
+> &
+  Partial<
+    Pick<
+      PersistScriptLogsParams,
+      'rulesetId' | 'campaignId' | 'characterId' | 'scriptName' | 'gameLogTimeline'
+    >
+  >;
+
+/**
+ * Hook that holds the db and collects current character, campaign, and ruleset from
+ * context when available (URL params, campaign play context, active ruleset). Returns
+ * a persistLog function that persists script logs using that context; callers may
+ * override any of rulesetId, campaignId, characterId, or scriptName.
+ */
+export function usePersistLogs() {
+  const params = useParams<{ characterId?: string; campaignId?: string; rulesetId?: string }>();
+  const campaign = useCampaign(params.campaignId);
+  const { activeRuleset } = useActiveRuleset();
+
+  const rulesetId = campaign?.rulesetId ?? activeRuleset?.id ?? params.rulesetId;
+  const campaignId = params.campaignId ?? undefined;
+  const characterId = params.characterId ?? undefined;
+
+  const persistLog = useCallback(
+    async (partial: PersistLogParams) => {
+      const effectiveRulesetId = partial.rulesetId ?? rulesetId;
+      if (!effectiveRulesetId) {
+        console.warn(
+          '[usePersistLogs] No rulesetId available from context or params; skipping persist.',
+        );
+        return;
+      }
+      await persistScriptLogs(db, {
+        rulesetId: effectiveRulesetId,
+        scriptId: partial.scriptId,
+        characterId: partial.characterId ?? characterId ?? null,
+        logMessages: partial.logMessages,
+        gameLogTimeline: partial.gameLogTimeline,
+        context: partial.context,
+        campaignId: partial.campaignId ?? campaignId ?? null,
+        scriptName: partial.scriptName,
+        autoGenerated: partial.autoGenerated,
+      });
+    },
+    [rulesetId, campaignId, characterId],
+  );
+
+  return { persistLog };
+}

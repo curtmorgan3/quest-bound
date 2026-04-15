@@ -8,6 +8,11 @@
       "types": "./src/index.ts",
       "import": "./src/index.ts",
       "default": "./src/index.ts"
+    },
+    "./api-components": {
+      "types": "./src/api-components/index.ts",
+      "import": "./src/api-components/index.ts",
+      "default": "./src/api-components/index.ts"
     }
   },
   "scripts": {
@@ -19,6 +24,7 @@
     "@quest-bound/local-db": "2.1.74",
     "@quest-bound/runtime": "2.1.74",
     "@quest-bound/types": "2.1.74",
+    "@tanstack/react-virtual": "^3.13.18",
     "@radix-ui/react-accordion": "^1.2.12",
     "@radix-ui/react-alert-dialog": "^1.1.15",
     "@radix-ui/react-aspect-ratio": "^1.1.7",

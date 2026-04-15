@@ -14,12 +14,6 @@
     "typecheck": "tsc -p tsconfig.json"
   },
   "dependencies": {
-    "@codemirror/autocomplete": "^6.20.0",
-    "@codemirror/commands": "^6.10.2",
-    "@codemirror/language": "^6.12.1",
-    "@codemirror/state": "^6.5.4",
-    "@codemirror/view": "^6.39.14",
-    "@lezer/highlight": "^1.2.3",
     "@quest-bound/runtime": "2.1.74",
     "@quest-bound/types": "2.1.74",
     "dexie": "^4.2.0",

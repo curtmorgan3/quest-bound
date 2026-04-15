@@ -6,6 +6,8 @@
     "paths": {
       "@/lib/campaign-play": ["./src"],
       "@/lib/campaign-play/*": ["./src/*"],
+      "@/lib/compass-api/hooks": ["../local-db/src/api-hooks"],
+      "@/lib/compass-api/hooks/*": ["../local-db/src/api-hooks/*"],
       "@/lib/cloud": ["../cloud/src"],
       "@/lib/cloud/*": ["../cloud/src/*"],
       "@/components": ["../core-ui/src"],

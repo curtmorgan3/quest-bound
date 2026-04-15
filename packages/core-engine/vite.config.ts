@@ -110,6 +110,14 @@ export const viteConfig = defineConfig({
         find: /^@\/lib\/campaign-play$/,
         replacement: path.resolve(__dirname, '../runtime/src/index.ts'),
       },
+      {
+        find: /^@\/lib\/compass-api\/hooks\/(.+)$/,
+        replacement: path.resolve(__dirname, '../local-db/src/api-hooks/$1'),
+      },
+      {
+        find: /^@\/lib\/compass-api\/hooks$/,
+        replacement: path.resolve(__dirname, '../local-db/src/api-hooks/index.ts'),
+      },
       { find: '@', replacement: path.resolve(__dirname, './src') },
     ],
   },

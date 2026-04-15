@@ -22,7 +22,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components';
-import { ChartLookup, useActiveRuleset } from '@/lib/compass-api';
+import { useActiveRuleset } from '@/lib/compass-api';
+import { ChartLookup } from '@quest-bound/core-ui/api-components';
 import type { Archetype, Chart } from '@/types';
 import { ChevronDown, ChevronUp, FileCode, Pencil, Trash2 } from 'lucide-react';
 import { useMemo } from 'react';

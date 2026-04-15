@@ -7,7 +7,7 @@ import {
   useExecuteItemEvent,
   useReactiveScriptExecution,
 } from '@/lib/compass-logic';
-import { CodeMirrorEditor } from '@/lib/compass-logic/editor';
+import { CodeMirrorEditor } from '@/pages/ruleset/scripts/editor';
 import { colorPrimary } from '@/palette';
 import { db } from '@/stores';
 import type { Script, ScriptParameterDefinition } from '@/types';

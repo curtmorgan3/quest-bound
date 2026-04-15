@@ -1,200 +1,166 @@
+# QBScript Manual
+
+A comprehensive guide to QBScript, the scripting language for automating Quest Bound rulesets. QBScript is dynamically typed and interpreted, with Python-style structure (indentation-based blocks) and C-style operators.
+
 ---
-sidebar_position: 3
+
+## Table of contents
+
+1. [Primitives](#1-primitives)
+2. [Math](#2-math)
+3. [Variables](#3-variables)
+4. [Logical operators](#4-logical-operators)
+5. [Conditions](#5-conditions)
+6. [Arrays](#6-arrays)
+7. [Loops](#7-loops)
+8. [Functions](#8-functions)
+9. [Accessors](#9-accessors)
+10. [Proxies API](#10-proxies-api)
+11. [Sheet UI (character sheet)](#11-sheet-ui-character-sheet)
+
 ---
 
-# QBScript Reference
+## 1. Primitives
 
-QBScript is a dynamically typed, interpreted language for automating Quest Bound rulesets. It uses Python-like structure (indentation-based blocks, simple syntax) with C-like operators (`&&`, `||`, `//`, etc.), so it stays approachable for designers with some technical background.
+### Numbers
 
-## Script types
+Numeric literals are written as integers or decimals. No type declaration is needed.
 
-Scripts can be attached to:
-
-- **Attributes** — Reactive scripts that recompute values when dependencies change
-- **Actions** — Event-driven scripts that run when triggered from the UI
-- **Items** — Event handlers for equip, unequip, consume, etc.
-- **Archetypes** — Event handlers for `on_add` and `on_remove` when an archetype is added to or removed from a character
-- **Global** — Utility modules that provide shared functions and variables
-- **Game Manager** — Ruleset-level scripts that are not attached to a specific entity, can subscribe to attributes with `subscribe('Name')`, and run when those attributes change for any character (with `Owner` set to that character and no `Self`)
-
-## Basic syntax
+```javascript
+health = 100;
+ratio = 3.14;
+level = 5;
+```
 
 ### Strings
 
 Use single or double quotes. Prefer double quotes when the text contains apostrophes.
 
 ```javascript
-column_key = 'Spells';
-chart_name = 'Wizard Spells';
-shop_name = "Tabby's Tavern";
+name = 'Fireball';
+message = "Tabby's Tavern";
+empty = '';
 ```
 
 **String methods:**
 
-- `.toUpperCase()` — returns the string in upper case
-- `.toLowerCase()` — returns the string in lower case
+| Method           | Description                      |
+| ---------------- | -------------------------------- |
+| `.toUpperCase()` | Returns the string in upper case |
+| `.toLowerCase()` | Returns the string in lower case |
 
-**String interpolation:** Embed variables in any string with `{{variable}}`:
+**String interpolation:** Embed expressions in strings with `{{variable}}`. Interpolation uses the current script environment (variables in scope).
 
 ```javascript
+hp = 50;
 message = 'You have {{hp}} health';
 announce('Damage: {{damage}}');
 ```
 
-### Variables
+### Booleans
 
-No keyword is needed; assignment creates or updates a variable.
+The literals `true` and `false` represent boolean values.
 
 ```javascript
-hit_points = Owner.Attribute('Hit Points');
+alive = true;
+hidden = false;
+```
+
+### Truthiness
+
+In conditions and logical expressions, values are treated as truthy or falsy:
+
+- **Falsy:** `null`, `undefined`, `0`, empty string `''`, `false`
+- **Truthy:** Any other number (including negatives), non-empty string, `true`, non-empty arrays, objects
+
+---
+
+## 2. Math
+
+### Arithmetic operators
+
+| Operator | Meaning                   | Example      |
+| -------- | ------------------------- | ------------ |
+| `+`      | Addition                  | `a + b`      |
+| `-`      | Subtraction               | `a - b`      |
+| `*`      | Multiplication            | `a * b`      |
+| `/`      | Division (floating-point) | `a / b`      |
+| `**`     | Exponentiation            | `2 ** 3` → 8 |
+| `%`      | Modulo (remainder)        | `10 % 3` → 1 |
+
+Division is always floating-point. For integer division, use `floor(a / b)`.
+
+### Built-in math functions
+
+| Function    | Description           | Example          |
+| ----------- | --------------------- | ---------------- |
+| `floor(x)`  | Round down            | `floor(3.7)` → 3 |
+| `ceil(x)`   | Round up              | `ceil(3.2)` → 4  |
+| `round(x)`  | Round to nearest      | `round(3.5)` → 4 |
+| `abs(x)`    | Absolute value        | `abs(-5)` → 5    |
+| `min(a, b)` | Smaller of two values | `min(3, 7)` → 3  |
+| `max(a, b)` | Larger of two values  | `max(3, 7)` → 7  |
+
+### Type conversion
+
+| Function    | Description                                                              | Example                                                                |
+| ----------- | ------------------------------------------------------------------------ | ---------------------------------------------------------------------- |
+| `number(x)` | Parse to number. For strings, commas are removed first (e.g. thousands). | `number("42")` → 42, `number("1,000")` → 1000, `number("3.14")` → 3.14 |
+| `text(x)`   | Convert to string                                                        | `text(42)` → `"42"`                                                    |
+
+---
+
+## 3. Variables
+
+Variables are created by assignment. No keyword (e.g. `let` or `var`) is used.
+
+```javascript
+hit_points = Owner.Attribute('Hit Points').value;
 damage = 10;
 name = 'Fireball';
 ```
 
-### Comments
+- Assignment creates the variable in the current scope if it does not exist, or updates it if it does.
+- Variables are dynamically typed; the same variable can hold a number, string, or other value over time.
+
+---
+
+## 4. Logical operators
+
+| Operator | Meaning     | Example    |
+| -------- | ----------- | ---------- |
+| `&&`     | Logical AND | `a && b`   |
+| `\|\|`   | Logical OR  | `a \|\| b` |
+| `!`      | Logical NOT | `!flag`    |
+
+Short-circuit evaluation applies: in `a && b`, `b` is not evaluated if `a` is falsy; in `a || b`, `b` is not evaluated if `a` is truthy.
+
+### Comparison operators
+
+| Operator | Meaning               |
+| -------- | --------------------- |
+| `==`     | Equal (value)         |
+| `!=`     | Not equal             |
+| `>`      | Greater than          |
+| `<`      | Less than             |
+| `>=`     | Greater than or equal |
+| `<=`     | Less than or equal    |
+
+---
+
+## 5. Conditions
+
+Blocks are defined by indentation; there is no `end` keyword. Parentheses around the condition are optional.
 
 ```javascript
-// Single-line comment
+if condition:
+  // body when condition is truthy
 
-/*
-Multi-line
-comment
-*/
+if hp <= 0:
+  announce('You have fallen')
 ```
 
-### Operators
-
-**Math:** `+` `-` `*` `/` `**` (exponentiation, e.g. `2**3` = 8) `/` (integer division) `%` (modulo)
-
-**Comparison:** `>` `<` `>=` `<=` `==` `!=`
-
-**Boolean:** `&&` (and) `||` (or) `!` (not)
-
-### Objects
-
-```javascript
-dice_mod = {source: 'Blinded', duration: 3}
-```
-
-Keys must be bare identifiers. Values can be any expression, including other objects or arrays.
-
-**Property access:**
-
-```javascript
-dice_mod.source       // dot notation → 'Blinded'
-dice_mod['duration']  // bracket notation → 3
-```
-
-**Nested objects and objects in arrays:**
-
-```javascript
-effect = {name: 'Poison', stats: {damage: 5, turns: 2}}
-turns = effect.stats.turns
-
-modifiers = [{source: 'Blinded', duration: 3}, {source: 'Stunned', duration: 1}]
-first_mod = modifiers[0].source
-```
-
-### Arrays
-
-```javascript
-list = [];
-```
-
-**Array methods:**
-
-| Method                 | Return Value                                                                                           |
-| ---------------------- | ------------------------------------------------------------------------------------------------------ |
-| `list.count()`         | Number of items                                                                                        |
-| `list.first()`         | First item                                                                                             |
-| `list.last()`          | Last item                                                                                              |
-| `list.push(item)`      | Add item to end                                                                                        |
-| `list.pop()`           | Remove and return last item                                                                            |
-| `list.random()`        | Random element                                                                                         |
-| `list.filter()`          | New array with only truthy values                                                                      |
-| `list.filter(filterFn)`  | New array containing only elements for which `filterFn(item)` returns truthy                          |
-| `list.filterEmpty()`     | Copy with non-empty values (excludes `''`, `null`)                                                     |
-| `list.sort()`            | Sorts the array in place (mutates) using string comparison by default; returns the same array         |
-| `list.sort(compareFn)`   | Sorts the array in place using `compareFn(a, b)` (negative / zero / positive); returns the same array |
-| `list[index]`          | Access by zero-based index                                                                             |
-
-**Sorting examples:**
-
-```javascript
-compareNumeric(a, b):
-  return a - b
-
-scores = [10, 3, 25]
-
-// Default sort (string comparison)
-scores.sort() // → [10, 25, 3]
-
-// Numeric sort with comparator function
-scores.sort(compareNumeric)
-
-// Sorting objects, e.g. character accessors by name
-byName(a, b):
-  if text(a.name) < text(b.name):
-    return -1
-  else if text(a.name) > text(b.name):
-    return 1
-  return 0
-
-chars = await Scene.characters()
-chars.sort(byName)
-```
-
-**Filter examples:**
-
-```javascript
-values = [0, 1, '', 'hello', null, 42]
-
-// No argument: keep truthy values
-values.filter() // → [1, 'hello', 42]
-
-// With a filterFn: keep items matching a condition
-isPositive(n):
-  return n > 0
-
-scores = [-5, 10, 0, 3, -1]
-scores.filter(isPositive) // → [10, 3]
-
-// Filtering objects, e.g. only characters with HP > 0
-isAlive(char):
-  return char.hp > 0
-
-chars = await Scene.characters()
-living = chars.filter(isAlive)
-```
-
-### Loops
-
-**For-in over an array:**
-
-```javascript
-for arrow in arrows:
-  arrow.consume()
-```
-
-**For-in over a number (0 to N-1):**
-
-```javascript
-for i in 10:
-  do_something()
-```
-
-**While (condition-based loop):**
-
-```javascript
-while condition:
-  // body runs until condition is false
-```
-
-While loops are limited to 100,000 iterations to prevent infinite loops from freezing the app. If the limit is exceeded, a runtime error is thrown.
-
-### Control flow
-
-Indentation defines blocks; there is no `end` keyword. Parentheses around conditions are optional.
+### else and else if
 
 ```javascript
 if condition:
@@ -205,10 +171,144 @@ else:
   // body
 ```
 
-### Functions
+Example:
 
-Define with a name and parameters; there is no `function` keyword. Use `return` to provide a result
-or halt execution.
+```javascript
+if score >= 90:
+  grade = 'A'
+else if score >= 80:
+  grade = 'B'
+else:
+  grade = 'C'
+```
+
+---
+
+## 6. Arrays
+
+### Array literals
+
+Arrays are created with square brackets. Elements can be any type.
+
+```javascript
+list = [];
+numbers = [1, 2, 3];
+mixed = [1, 'two', true];
+```
+
+### Indexing
+
+Arrays are zero-based. Use `array[index]` to read an element.
+
+```javascript
+first = numbers[0];
+last = numbers[2];
+```
+
+Accessing an index out of bounds (negative or ≥ length) causes a runtime error.
+
+### Array methods
+
+| Method                  | Return value       | Notes                                                                   |
+| ----------------------- | ------------------ | ----------------------------------------------------------------------- |
+| `list.count()`          | Number of elements | Same as length                                                          |
+| `list.first()`          | First element      |                                                                         |
+| `list.last()`           | Last element       |                                                                         |
+| `list.push(item)`       | —                  | Adds item to the end (mutates)                                          |
+| `list.pop()`            | Last element       | Removes and returns last (mutates)                                      |
+| `list.random()`         | Random element     |                                                                         |
+| `list.filter()`         | New array          | Copy with only truthy values                                            |
+| `list.filter(filterFn)` | New array          | Copy containing only elements for which `filterFn(item)` returns truthy |
+| `list.filterEmpty()`    | New array          | Copy with non-empty values (excludes `''`, `null`)                      |
+| `list.sort()`           | Same array         | Sorts in place; default is string comparison                            |
+| `list.sort(compareFn)`  | Same array         | Sorts in place using comparator                                         |
+
+**Comparator for `sort(compareFn)`:** Pass a function `compareFn(a, b)`. Return a negative number if `a` should come before `b`, zero if equal, or a positive number if `a` should come after `b`.
+
+```javascript
+compareNumeric(a, b):
+  return a - b
+
+scores = [10, 3, 25]
+scores.sort()              // string order: [10, 25, 3]
+scores.sort(compareNumeric) // numeric order: [3, 10, 25]
+```
+
+Sorting by a property (e.g. character name):
+
+```javascript
+byName(a, b):
+  if text(a.name) < text(b.name):
+    return -1
+  else if text(a.name) > text(b.name):
+    return 1
+  return 0
+
+chars = Scene.characters()
+chars.sort(byName)
+```
+
+**Filter function for `filter(filterFn)`:** Pass a function `filterFn(item)`. Return any truthy value to keep the element, or a falsy value to exclude it. Returns a new array; the original is not mutated.
+
+```javascript
+// No argument: keep truthy values
+values = [0, 1, '', 'hello', null, 42]
+values.filter()  // → [1, 'hello', 42]
+
+// With a filterFn
+isPositive(n):
+  return n > 0
+
+scores = [-5, 10, 0, 3, -1]
+scores.filter(isPositive)  // → [10, 3]
+```
+
+Filtering objects (e.g. only living characters):
+
+```javascript
+isAlive(char):
+  return char.hp > 0
+
+chars = Scene.characters()
+living = chars.filter(isAlive)
+```
+
+---
+
+## 7. Loops
+
+### for-in over an array
+
+Iterates over each element; the loop variable holds the element value.
+
+```javascript
+for item in Owner.Items():
+  log(item.title)
+```
+
+### for-in over a number
+
+Iterates from `0` to `N - 1`; the loop variable is the index.
+
+```javascript
+for i in 10:
+  do_something()
+```
+
+### while
+
+Repeats while the condition is truthy. Limited to 100,000 iterations; exceeding that throws a runtime error to prevent infinite loops.
+
+```javascript
+while condition:
+  // body
+```
+
+---
+
+## 8. Functions
+
+Define a function by name and parameters. There is no `function` keyword. Use `return` to produce a value or exit early.
 
 ```javascript
 calculateModifier(score):
@@ -219,314 +319,373 @@ getMaxHP(con, level):
   return base + (con * 2) + (level * 5)
 ```
 
----
-
-## Built-in functions
-
-### Dice
-
-| Function               | Description                                                                                                                   |
-| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| `roll(expression)`     | Roll dice from a string (e.g. `'1d8'`, `'2d6+4'`). Returns a number. Uses the roll function registered by the script runner (e.g. dice panel, 3D dice). Expression can use interpolation: `roll('{{level}}d4')`. |
-| `rollQuiet(expression)` | Same as `roll()` but always uses the default local roll (no UI, no script-runner override). Use for hidden or internal rolls. Returns a number. |
-
-**Examples:**
-
-```javascript
-roll('1d8');
-roll('2d6+4');
-damage = roll('1d8');
-// Hidden roll, no dice panel or custom roll handler
-stealth = rollQuiet('1d20+5');
-```
-
-### Timing
-
-| Function        | Description                                                                 |
-| --------------- | --------------------------------------------------------------------------- |
-| `wait(seconds)` | Pause execution for the given number of seconds (integer or float). Use `await wait(2)` or `await wait(0.5)`. |
-
-**Examples:**
-
-```javascript
-announce('Starting in 3...')
-await wait(1)
-announce('2...')
-await wait(1)
-announce('1...')
-await wait(0.5)
-announce('Go!')
-```
-
-### Math
-
-| Function    | Description                              |
-| ----------- | ---------------------------------------- |
-| `floor(x)`  | Round down (e.g. `floor(3.7)` → 3)       |
-| `ceil(x)`   | Round up (e.g. `ceil(3.2)` → 4)          |
-| `round(x)`  | Round to nearest (e.g. `round(3.5)` → 4) |
-| `abs(x)`    | Absolute value                           |
-| `min(a, b)` | Smaller of two values                    |
-| `max(a, b)` | Larger of two values                     |
-
-### Type conversion
-
-| Function   | Description                                                                 |
-| ---------- | --------------------------------------------------------------------------- |
-| `number(x)` | Parse the argument to a number. If the argument is a string, any `,` characters are removed first (e.g. thousands separators), then the result is passed to the Number constructor. Periods are kept for decimals. e.g. `number("42")` → 42, `number("1,000")` → 1000, `number("3.14")` → 3.14 |
-| `text(x)`   | Convert the argument to a string. e.g. `text(42)` → `"42"`                  |
-
-### UI and debugging
-
-| Function            | Description                                                                                                            |
-| ------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| `announce(message)` | Show a message to the player. Arguments are joined with spaces.                                                        |
-| `log(...)`          | Send output to the debug console and game log. Multiple arguments supported; strings are wrapped in quotes in the log. |
-
-### Character selection
-
-The following built-ins let you select characters from the active campaign context (or, in ruleset tools, from the ruleset's characters). Results are character accessors you can use like `Owner`.
-
-| Function                                      | Description                                                                                                               |
-| --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| `selectCharacter(title?, description?)`       | Shows a dialog to pick a single character. Returns a character accessor or `null` if the user cancels or nothing is available. |
-| `selectCharacters(title?, description?)`      | Shows a dialog to pick one or more characters. Returns an array of character accessors (empty on cancel/none available). |
-
-**Notes:**
-
-- Both `title` and `description` are optional. When omitted or empty, the dialog titles default to **"Select Character"** or **"Select Characters"**.
-- In a campaign, the chooser lists **all player characters** plus **active NPCs** for that campaign, grouped and sorted alphabetically:
-  - Player characters in one section.
-  - Active NPCs in another section.
-- When there are **no eligible characters**, the dialog shows a message and both functions behave as if cancelled (`null` / `[]`).
-- In ruleset tools (no campaign), selection is limited to characters for that ruleset (player characters plus any active NPCs).
+- Parameters are positional.
+- Functions can call other functions and access variables from enclosing scope (closures).
+- Returning without a value (or reaching the end without `return`) yields `null`.
 
 ---
 
-## Accessing character and scene data
+## 9. Accessors
 
-### Accessors
+Accessors are top-level objects that represent the current context and give you access to ruleset and character data.
 
-| Accessor  | Meaning                                                                                    |
-| --------- | ------------------------------------------------------------------------------------------ |
-| `Owner`   | The character that initiated the script                                                    |
-| `Ruleset` | Ruleset-level entities (attributes, charts, items, actions)                                |
-| `Self`    | The entity to which the script is attached — same as `Owner.Attribute('<this attribute>')` |
-| `Scene`   | The active campaign scene when running in a campaign context (e.g. Game Manager events)    |
+### Available accessors
 
-### Getters
+| Accessor  | When available                           | Meaning                                                                                                                                             |
+| --------- | ---------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Owner`   | Script has a character context           | The character that initiated the script (e.g. the character whose attribute or action is running)                                                   |
+| `Ruleset` | Script has a ruleset                     | Ruleset-level definitions: attributes, charts, items, actions                                                                                       |
+| `Self`    | Script is attached to an entity          | The entity the script is attached to: same as `Owner.Attribute('…')`, `Owner.Action('…')`, or `Owner.Item('…')` for that entity                     |
+| `Scene`   | Script runs in a campaign with a scene   | The active campaign scene (for scene characters, spawning, turn order)                                                                              |
+| `Caller`  | Script runs in an action or item context | The entity that fired the action: when the action is run from an item’s context menu, `Caller` is that item instance; otherwise `Caller` is `Owner` |
 
-Use these to resolve entities by name:
+### Resolving entities by name
 
-| Call                                     | Returns                                                 |
-| ---------------------------------------- | ------------------------------------------------------- |
-| `<Accessor>.Attribute('attribute name')` | Attribute reference (character or ruleset)              |
-| `getAttr('attribute name)`               | Shorthand for `Owner.Attribute('attribute name').value` |
-| `Owner.hasArchetype('archetype name')`   | Whether the character has the given archetype           |
-| `<Accessor>.Action('action name')`       | Action reference                                        |
-| `<Accessor>.Item('item name')`           | First matching item instance                            |
-| `<Accessor>.Items('item name'?)`         | Array of item instances; omit name for all inventory items |
-| `Ruleset.Chart('chart name')`            | Chart reference                                         |
-| `getChart('chart name')`                 | Shorthand for `Ruleset.Chart('chart name')`             |
+Use these on the appropriate accessor to get a **reference** (proxy) you can then read or modify:
 
-**Examples:**
+| Call                                     | Returns                                                    |
+| ---------------------------------------- | ---------------------------------------------------------- |
+| `<Accessor>.Attribute('attribute name')` | Attribute reference (character or ruleset definition)      |
+| `<Accessor>.Action('action name')`       | Action reference (use `.activate()` to run it)             |
+| `<Accessor>.Item('item name')`           | First matching item instance (or undefined)                |
+| `<Accessor>.Items('item name'?)`         | Array of item instances; omit name for every item-type row |
+| `Ruleset.Chart('chart name')`            | Chart reference                                            |
+| `getAttr('attribute name')`              | Shorthand for `Owner.Attribute('attribute name').value`    |
+| `getChart('chart name')`                 | Shorthand for `Ruleset.Chart('chart name')`                |
+
+Examples:
 
 ```javascript
-Owner.Attribute('Hit Points'); // Character's Hit Points
-Owner.Action('Attack'); // Character's Attack action
-Ruleset.Attribute('Strength'); // Attribute definition (ruleset)
+Owner.Attribute('Hit Points');
+Owner.Action('Attack');
+Ruleset.Attribute('Strength');
+getAttr('Hit Points');
+getChart('Level Table');
 ```
 
-### Scene
+### Scene (campaign context)
 
-When a script runs in a campaign + scene context (for example, a Game Manager script
-triggered by a campaign event), QBScript exposes a top-level `Scene` accessor.
+When a script runs in a campaign with an active scene (e.g. Game Manager or campaign event), the `Scene` accessor is available.
 
 **Methods:**
 
-- `Scene.characters()` — returns an array of character accessors (player characters and active NPCs) in the current scene.
-- `Scene.spawnCharacter('Archetype Name')` — creates an active NPC in the scene from the given archetype and returns a character accessor for it.
+| Method                                   | Description                                                                                |
+| ---------------------------------------- | ------------------------------------------------------------------------------------------ |
+| `Scene.characters()`                     | Array of character accessors in the current scene (player characters and active NPCs)      |
+| `Scene.spawnCharacter('Archetype Name')` | Creates an active NPC in the scene from the archetype; returns a character accessor for it |
 
-Both methods are asynchronous and should be awaited:
+Example:
 
 ```javascript
-npcs = await Scene.characters()
-
+npcs = Scene.characters()
 for npc in npcs:
-  announce('{{npc.name}} is present in the scene.')
+  announce('{{npc.name}} is in the scene.')
 
-spawned = await Scene.spawnCharacter('Goblin')
-announce('Spawned {{spawned.name}} into the scene.')
+spawned = Scene.spawnCharacter('Goblin')
+announce('Spawned {{spawned.name}}.')
 ```
 
-### Character (Owner)
+**Turn Based Mode:**
 
-**Identity:**
+| Method / property            | Description                                                            |
+| ---------------------------- | ---------------------------------------------------------------------- |
+| `Scene.currentTurnCycle()`   | Current turn cycle (1-based). 0 when not in turn-based mode.           |
+| `Scene.currentStepInCycle()` | 0-based index of whose turn it is. 0 when not in turn-based mode.      |
+| `Scene.advanceTurnOrder()`   | Advance to the next character; runs cycle and onTurnAdvance callbacks. |
+| `Scene.startTurnBasedMode()` | Enable turn-based mode and assign default turn order.                  |
+| `Scene.stopTurnBasedMode()`  | Disable turn-based mode and clear callbacks.                           |
+| `Scene.inTurns(n):` …        | Register a block to run in `n` cycles (colon and indented block).      |
+| `Scene.onTurnAdvance():` …   | Register a block to run on every advance.                              |
 
-- `Owner.name` — character's name
-- `Owner.title` — same as `name`
+**Character in scene:**
 
-**Archetypes:**
-
-- `Owner.archetypes` - returns an array of all the character's archetype names
-- `Owner.hasArchetype('archetype name')` — whether the character has the given archetype
-- `Owner.addArchetype('archetype name')` - adds the archetype to the character
-- `Owner.removeArchetype('archetype name')` - removes the archetype from the character
-
-**Items:**
-
-- `Owner.Item('item name')` — first matching item
-- `Owner.Items('item name'?)` — array of matching items; omit the name to list every item-type inventory row
-- `Owner.hasItem('item name')` — whether the character has at least one
-- `Owner.addItem('item name', quantity)` — add to inventory (quantity defaults to 1)
-- `Owner.addAction('action name', referenceLabel?)` — add an action as an inventory entry to the character's inventory; optional reference label targets a specific inventory component
-- `Owner.addAttribute('attribute name', referenceLabel?)` — add an attribute as an inventory entry; optional reference label targets a specific inventory component
-- `Owner.removeItem('item name', quantity)` — remove from inventory
-- `Owner.setItem('item name', quantity)` — set total quantity (consolidates to one stack; 0 removes all)
-
-**Attributes:**
-
-- `Owner.Attribute('attribute name')` — character's attribute instance
-- `getAttr('attribute name')` — character's attribute instance's value, shorthand for `Owner.Attribute('attribute name').value`
-
-**Turn-based callbacks:**
-
-- `char.atStartOfNextTurn(): block` — one-shot; fires at the start of that character's next turn.
-- `char.atEndOfNextTurn(): block` — one-shot; fires at the end of that character's next turn.
-- `char.atStartOfTurn(n): block` — one-shot; fires at the start of that character's nth turn from now (`n=1` = next turn). Silently ignored if `n <= 0`.
-- `char.atEndOfTurn(n): block` — one-shot; fires at the end of that character's nth turn from now (`n=1` = next turn). Silently ignored if `n <= 0`.
-
-### Attribute API
-
-Attribute scripts are reactive: they re-run when subscribed dependencies change and must `return` a value to set the attribute.
-
-**Reading and writing:**
-
-| Member             | Description                               |
-| ------------------ | ----------------------------------------- |
-| `attr.value`       | Current value (use in expressions)        |
-| `attr.max`         | Maximum value                             |
-| `attr.min`         | Minimum value                             |
-| `attr.random`      | Returns a random option (list attributes) |
-| `attr.set(value)`  | Set value                                 |
-| `attr.add(n)`      | Add to current value (numeric)            |
-| `attr.subtract(n)` | Subtract (numeric)                        |
-| `attr.multiply(n)` | Multiply current value                    |
-| `attr.divide(n)`   | Divide current value                      |
-| `attr.setMax(n)`   | Set maximum value                         |
-| `attr.setMin(n)`   | Set min value                             |
-| `attr.setRandom()` | Sets to a random option (list attributes) |
-| `attr.next()`      | Set to next option (list)                 |
-| `attr.prev()`      | Set to previous option (list)             |
-
-**Entity custom properties (on the attribute definition):** Same as `getProperty` / `setProperty`, with sugar for dot, bracket, and assignment.
-
-| Syntax | Meaning |
-| ------ | ------- |
-| `attr.PropName` | `attr.getProperty('PropName')` |
-| `attr['prop name']` | `attr.getProperty('prop name')` (key must be a string) |
-| `attr.setProperty('name', value)` | Set by property name |
-| `attr.PropName = value` | `attr.setProperty('PropName', value)` |
-
-Built-in members (`value`, `max`, `set`, `add`, …) are not treated as custom property names.
-
-**Attribute subscriptions (attribute scripts only):** Declare dependencies so the script re-runs when they change. You can pass string literals or variables.
+- `char.turnOrder` — This character’s position in turn order (0 = unset). Read-only.
+- `char.setTurnOrder(num)` — Set this character’s turn order (0 = unset; gaps allowed).
+- `char.atStartOfNextTurn(): block` — One-shot; runs at the start of that character’s next turn.
+- `char.atEndOfNextTurn(): block` — One-shot; runs at the end of that character’s next turn.
+- `char.atStartOfTurn(n): block` — One-shot; runs at the start of that character’s nth turn from now. `n=1` is equivalent to `atStartOfNextTurn`. Silently ignored if `n <= 0`.
+- `char.atEndOfTurn(n): block` — One-shot; runs at the end of that character’s nth turn from now. `n=1` is equivalent to `atEndOfNextTurn`. Silently ignored if `n <= 0`.
 
 ```javascript
-subscribe('attribute one', 'attribute two'); // Re-run when these change
-subscribe('action name'); // Re-run when this action is activated
+// Apply a burn effect starting on the 3rd turn from now
+targ.atStartOfTurn(3):
+  targ.hp -= 5
 
-attr_name = 'Constitution';
-subscribe(attr_name, 'Level');
+// Expire a buff at the end of the caster’s 2nd turn from now
+Owner.atEndOfTurn(2):
+  Owner.strength -= 4
 ```
 
 ### Custom events (`on` / `emit`)
 
-Register handlers with **`on(expression):`** and an indented block. The event name is evaluated at registration time (string literals or variables). When a handler runs, the variable **`payload`** is set: use **`emit('name')`** for `null`, or **`emit('name', value)`** for any value. There is **at most one handler per script per event name** (including global scripts): registering again replaces the previous handler for that script. Different scripts can still listen to the same event. Listeners are **scoped by ruleset**, **in memory only**, and cleared when the user switches to another ruleset in the app (or on full reload). Emitting the **same** event name while that event is still being delivered throws a runtime error; emitting a **different** name is allowed. The main app can dispatch events with a JSON-serializable payload via the QBScript client.
+| Syntax                | Description                                                                                                                                                                                                                                                               |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `on(expr):` …         | Register a listener for the event name (`expr` evaluated to a string). Inside the block, **`payload`** is the value from `emit` (or `null` if omitted). One handler per **script** per event (re-running the script replaces it); global scripts use their own script id. |
+| `emit('name')`        | Dispatch with `payload == null`.                                                                                                                                                                                                                                          |
+| `emit('name', value)` | Dispatch with a payload (any value in-script).                                                                                                                                                                                                                            |
 
-```javascript
-on('long rest'):
-  announce('Rested; payload was {{payload}}')
-
-emit('long rest')
-emit('long rest', { kind: 'full' })
-```
-
-### Charts
-
-Get a chart with `getChart('chart name')`, then use:
-
-| Method                                                               | Description                                                                                                                                                        |
-| -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `chart.get('column name')`                                           | All values in that column (array)                                                                                                                                  |
-| `chart.randomColumn()`                                               | All values from a random column                                                                                                                                    |
-| `chart.randomCell()`                                                 | Value of a random cell                                                                                                                                             |
-| `chart.randomNonEmptyCell()`                                         | Value of a random non-empty cell                                                                                                                                   |
-| `chart.randomRow()`                                                  | A row proxy for a randomly selected data row; chain with `.valueInColumn('column name')` to read a value                                                           |
-| `chart.valueInColumn('column name')`                                 | Value from that column in the first data row (row immediately after the header row)                                                                                |
-| `chart.rowWhere('column name', value)`                               | A row proxy for the first row where the given column equals `value` (or an empty row if not found); chain with `.valueInColumn('other column')` to read a value.   |
-| `chart.rowWhere('column name', value).valueInColumn('other column')` | Convenience pattern: find a row by one column and read a value from another column in that same row (returns `''` if the row is empty or the column is not found). |
-
-**Examples:**
-
-```javascript
-spell_damage = getChart('Spells').rowWhere('Spell Name', 'Fireball').valueInColumn('Damage');
-
-xp_needed = getChart('Level Table').rowWhere('Level', 5).valueInColumn('XP Required');
-```
-
-### Items
-
-**Reading item data:**
-
-- `item.title` — item title
-- `item.description` — item description
-- `item.count()` — quantity
-- `item.isEquipped` — whether the item is equipped
-- `item.isConsumable` — whether the item is consumable
-
-**Custom properties (defined on the Item):** Use `getProperty(name)` and `setProperty(name, value)` (same as character custom properties). You can also use dot or bracket notation for reads and assignment, like attributes:
-
-```javascript
-armor = Owner.Item('Plate Mail');
-armor_value = armor.getProperty('Armor Value'); // Read (null if not defined on the item)
-armor_value = armor['Armor Value'];           // Same, when the key is a string
-bonus = armor.Durability;                     // Same when the label is a valid identifier
-armor.Durability = 12;                        // Same as setProperty('Durability', 12)
-Owner.Item('item name').setProperty('Armor Value', 15);
-```
-
-Built-in members (`title`, `quantity`, `getProperty`, …) are not routed to item custom properties.
-
-**Associated actions (per-instance):** Use `addAction('action name')` and `removeAction('action name')` to add or remove actions from the item's context menu. Only available when `Self` or `Caller` is an item instance (e.g. in item event scripts or when calling from an action fired from an item).
-
-```javascript
-Self.addAction('Heal');   // Add Heal action to this item's context menu
-Self.removeAction('Heal'); // Remove from context menu
-```
-
-### Actions
-
-- `Owner.Action('action name')` — get action reference
-- `action.activate()` — run the action’s `on_activate()`
+Listeners are stored **per ruleset** in memory and cleared when the active ruleset changes in the UI (or on full page reload). **Same-name** `emit` while that event is still running its listeners throws; **different** names may nest. From TypeScript, use `QBScriptClient.emitCustomEvent({ rulesetId, eventName, payload })` with a **JSON-serializable** payload; if a script is running in the worker, that call is queued until the run finishes.
 
 ---
 
-## Quick reference
+## 10. Proxies API
 
-**Ruleset:**
+Proxies are objects returned by accessor methods (e.g. `Owner.Attribute('HP')`, `Owner.Item('Sword')`, `getChart('Table')`). They wrap ruleset/character data and expose a script-friendly API.
 
-- `Ruleset.Chart('chart name')`
-- `Ruleset.Attribute('attribute name')`
-- `Ruleset.Item('item name')`
-- `Ruleset.Action('action name')`
+---
 
-**Attribute script:** Use `subscribe(...)` and `return <value>`.
+### Attribute proxy
 
-**Item events:** `on_activate`, `on_equip`, `on_unequip`, `on_consume` — each handler should end with `return`.
+Obtained via `Owner.Attribute('name')` (or `Ruleset.Attribute('name')` for the definition only). Character attributes support reading and writing; changes are applied when the script run completes.
 
-**Archetype events:** `on_add()` and `on_remove()` — run when the archetype is added to or removed from a character. Can alter attributes, add/remove items, etc.
+**Reading:**
 
-**Action events:** `on_activate()` and optionally `on_deactivate()`.
+| Member             | Description                         |
+| ------------------ | ----------------------------------- |
+| `attr.value`       | Current value                       |
+| `attr.max`         | Maximum (if defined)                |
+| `attr.min`         | Minimum (if defined)                |
+| `attr.options`     | Options list (list-type attributes) |
+| `attr.title`       | Attribute title                     |
+| `attr.description` | Attribute description               |
 
-**Global scripts:** Mark a script as global; its variables and functions are available to all other scripts in the ruleset.
+**Writing (character attributes):**
+
+| Method             | Description                                       |
+| ------------------ | ------------------------------------------------- |
+| `attr.set(value)`  | Set value                                         |
+| `attr.add(n)`      | Add to current value (numeric)                    |
+| `attr.subtract(n)` | Subtract (numeric)                                |
+| `attr.multiply(n)` | Multiply current value                            |
+| `attr.divide(n)`   | Divide current value                              |
+| `attr.setMax(n)`   | Set maximum                                       |
+| `attr.setMin(n)`   | Set minimum                                       |
+| `attr.setToMax()`  | Set value to max                                  |
+| `attr.setToMin()`  | Set value to min                                  |
+| `attr.flip()`      | Toggle boolean                                    |
+| `attr.setRandom()` | Set to a random option (list); returns that value |
+| `attr.next()`      | Set to next option (list); wraps                  |
+| `attr.prev()`      | Set to previous option (list); wraps              |
+
+**List attributes:**
+
+- `attr.random` — Returns (does not set) a random option.
+- `attr.setRandom()` — Sets to a random option and returns it.
+
+**Attribute scripts (reactive):** In an attribute or game manager script, use `subscribe('attribute one', 'attribute two')` so the script re-runs when those attributes change. End the script with `return <value>` to set the attribute’s value.
+
+---
+
+### Chart proxy
+
+Obtained via `getChart('chart name')` or `Ruleset.Chart('chart name')`.
+
+| Method                                 | Description                                                                                         |
+| -------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| `chart.columnWhere('column name')`     | All values in that column (array)                                                                   |
+| `chart.randomColumn()`                 | All values from a random column                                                                     |
+| `chart.randomCell()`                   | Value of a random cell                                                                              |
+| `chart.randomNonEmptyCell()`           | Value of a random non-empty cell                                                                    |
+| `chart.randomRow()`                    | Row proxy for a random data row; chain `.valueInColumn('column name')`                              |
+| `chart.valueInColumn('column name')`   | Value from that column in the **first data row**                                                    |
+| `chart.rowWhere('column name', value)` | Row proxy for the first row where the column equals `value`; chain `.valueInColumn('other column')` |
+
+Cell values are coerced: numbers and booleans (`'true'`/`'false'`) become number/boolean; otherwise string.
+
+Examples:
+
+```javascript
+spell_damage = getChart('Spells').rowWhere('Spell Name', 'Fireball').valueInColumn('Damage');
+xp_needed = getChart('Level Table').rowWhere('Level', 5).valueInColumn('XP Required');
+```
+
+---
+
+### Item instance proxy
+
+Obtained via `Owner.Item('item name')` (single instance) or `Owner.Items('item name'?)` (array; omit the name for all item instances). Represents one stack/instance of an item in a character’s inventory.
+
+**Reading:**
+
+| Member                              | Description                                       |
+| ----------------------------------- | ------------------------------------------------- |
+| `item.title`                        | Display name (instance label or definition title) |
+| `item.description`                  | Description                                       |
+| `item.count()` / `item.quantity`    | Quantity in this stack                            |
+| `item.isEquipped`                   | Whether equipped                                  |
+| `item.getProperty('property name')` | Custom property value (null if not found)         |
+
+**Writing (use a single instance from `Owner.Item('name')`; not on results of `Items()`):**
+
+| Method                             | Description                                                                                   |
+| ---------------------------------- | --------------------------------------------------------------------------------------------- |
+| `item.setProperty('name', value)`  | Set custom property                                                                           |
+| `item.setTitle(value)`             | Set display name                                                                              |
+| `item.setDescription(value)`       | Set description                                                                               |
+| `item.addAction('action name')`    | Add action to item’s context menu                                                             |
+| `item.removeAction('action name')` | Remove action from context menu                                                               |
+| `item.destroy()`                   | Remove this instance from inventory (e.g. in item event scripts when `Self` is this instance) |
+
+**Character item helpers:**
+
+| Call                                      | Description                                      |
+| ----------------------------------------- | ------------------------------------------------ |
+| `Owner.hasItem('item name')`              | Whether the character has at least one           |
+| `Owner.addItem('item name', quantity)`    | Add to inventory (quantity defaults to 1)        |
+| `Owner.removeItem('item name', quantity)` | Remove from inventory                            |
+| `Owner.setItem('item name', quantity)`    | Set total quantity (consolidates; 0 removes all) |
+
+---
+
+### Action proxy
+
+Obtained via `Owner.Action('action name')`.
+
+| Method              | Description                              |
+| ------------------- | ---------------------------------------- |
+| `action.activate()` | Run the action’s `on_activate()` handler |
+
+Example:
+
+```javascript
+Owner.Action('Attack').activate();
+```
+
+---
+
+### Character (Owner) summary
+
+**Identity:** `Owner.name`, `Owner.title` (same as name).
+
+**Archetypes:** `Owner.archetypes` (array of names), `Owner.hasArchetype('name')`, `Owner.addArchetype('name')`, `Owner.removeArchetype('name')`, `Owner.variant`.
+
+**Custom properties:** `Owner.getProperty('name')`, `Owner.setProperty('name', value)`.
+
+**Sheet — pages and windows:** `Owner.addPage('label')`, `Owner.removePage('label')`, `Owner.navigateToPage('label')`, `Owner.openWindow('label' | id, x?, y?, collapse?)`, `Owner.closeWindow('label' | id)`.
+
+**Sheet — components:** See [section 11 (Sheet UI)](#11-sheet-ui-character-sheet). Use `Owner.createComponent`, `Owner.getComponent`, and `Owner.getComponents` to build and change the current character’s sheet UI from script.
+
+**Image:** `Owner.setImage(urlOrAssetFilename)`.
+
+---
+
+## 11. Sheet UI (character sheet)
+
+These APIs let a character script create, find, update, reparent, and remove **components** on the **current character sheet page** (all windows on that page). They apply to **`Owner`** and to any other **character accessor** the same way (e.g. from `Scene.characters()`).
+
+Changes are **batched** with other character sheet updates and saved when the script run finishes. During the same run, **new components and edits are visible** to `getComponent` / `getComponents` and to accessors returned from those calls before flush.
+
+**No current sheet page** (no viewer context): `createComponent` returns `null` (does not throw). `getComponent` returns `null`; `getComponents` returns `[]`.
+
+---
+
+### Creating components: `Owner.createComponent(typeOrName, props)`
+
+| Argument     | Description                                                                                                                                                                                                                                                                                                                                                                 |
+| ------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `typeOrName` | **String.** Either a **primitive component type** (same spelling as the editor / `ComponentTypes`, e.g. `'text'`, `'group'`, `'comp-input'` for input fields) or the **name of a Composite** from the ruleset library. If the same string could match both a type and a composite name, the **primitive type wins**. Unknown type or unknown composite → **runtime error**. |
+| `props`      | **Object.** Must include **`window`**: the **title** of a **character window** on the **current page** (same idea as `openWindow`). If that title is missing or no window matches → **runtime error**. If several windows share the same title, the **first match** is used. Other keys are optional and are merged into layout, style, and data (see below).               |
+
+**Return value:** On success, a **sheet component accessor** (see [Sheet component accessor](#sheet-component-accessor)). On missing page context, `null`.
+
+**Layout keys** (stored on the component row): `x`, `y`, `z`, `width`, `height`, `rotation`. Any **style** or **data** field the editor supports can be set with the same flat key names; omitted fields use the **per-type defaults** from the ruleset editor. The reserved key **`window`** is only for choosing the target window; it is not written onto the component.
+
+**Root placement:** New primitives are created at the **window root** (not nested under a group via a parent key in v1).
+
+**Composites:** Cloning a composite **copies its whole subtree**. Only the **root group** receives the merged **`props`**; deeper nodes keep the template as cloned.
+
+**Ids and `referenceLabel`:** Component **ids** are always generated by the engine. Set **`referenceLabel`** in `props` (as a data field) if you want to find the node later with `getComponent` / `getComponents`.
+
+**Example:**
+
+```javascript
+c = Owner.createComponent('text', {
+  window: 'Stats',
+  x: 40,
+  y: 40,
+  referenceLabel: 'script_hp_label',
+  value: 'HP: {{getAttr("Hit Points")}}',
+});
+```
+
+---
+
+### Finding components
+
+| Call                                    | Returns            | Notes                                                                                                                             |
+| --------------------------------------- | ------------------ | --------------------------------------------------------------------------------------------------------------------------------- |
+| `Owner.getComponent('referenceLabel')`  | Accessor or `null` | Matches **`data.referenceLabel`** on the **current page** only. Windows are searched in **creation order**; **first** match wins. |
+| `Owner.getComponents('referenceLabel')` | Array of accessors | Same matching rules; **all** matches in that order. Empty array if none.                                                          |
+
+Neither call throws when nothing matches.
+
+---
+
+### Sheet component accessor
+
+Value returned by `createComponent` (on success) or `getComponent` (when found). **Not** the same object type as attribute/item proxies; it only exposes the methods below.
+
+| Method                 | Description                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `comp.delete()`        | Removes this component and **all nested** components under it. After delete, further calls on the **same** accessor do nothing (no error). While the script is still running, deleted nodes **disappear** from `getComponent` / `getComponents` immediately.                                                                                                                                                                                  |
+| `comp.set(key, value)` | **Flat** property name: updates **layout** (`x`, `y`, `z`, `width`, `height`, `rotation`), **style** JSON, or **data** JSON depending on the key. You cannot set whole `data` or `style` blobs, node-kind **`type`**, **`id`**, **`rulesetId`**, **`windowId`**, or timestamps. For **`type`** on **input** components only, the data field **`type`** (`'text'` / `'number'`) is allowed. Invalid keys or values are **ignored** (no error). |
+| `comp.get(key)`        | Reads using the same rules as `set`. Unknown or disallowed keys → **`null`**.                                                                                                                                                                                                                                                                                                                                                                 |
+| `comp.add(other)`      | **Parent must be a group.** Appends **`other`** as a child (at the end). If this node is not a group, **no-op**. If **`other`** already has a parent, it is **moved** (**reparent**), including **between windows** on the same page.                                                                                                                                                                                                         |
+
+If the player edits the sheet in the UI while a script is running, accessors may reflect **last-known state until the script’s updates are flushed**.
+
+---
+
+### v1 limitations
+
+- No **`parentReferenceLabel`** (or other parent hint) on `createComponent`; new nodes are window roots only.
+- No flat access to raw **`data`** / **`style`** strings, **`id`**, ruleset/window ids, or the component **kind** `type` (except input **`data.type`** as above).
+- Do not use the name **`openPage`** in docs; use **`navigateToPage`** and **`addPage`**.
+
+---
+
+## Built-in functions (quick reference)
+
+### Dice
+
+- `roll(expression, rerollMessage?)` — Roll dice (e.g. `'1d8'`, `'2d6+4'`). Uses the script runner’s roll (e.g. dice panel or 3D dice when available). Expression can use `{{variable}}`. Returns a number. Optional **rerollMessage**: when provided, this message is shown in a modal with inputs for entering rerolls.
+- `rollQuiet(expression)` — Same as `roll` but always uses the default local roll (no UI, no script-runner override). Use for hidden or internal rolls. Returns a number.
+- `rollSplit(expression, rerollMessage?)` — Like `roll` but returns an array of individual die values in dice syntax order (e.g. `'1d6,2d20'` → `[d6, d20_1, d20_2]`). Optional **rerollMessage** has the same meaning as for `roll`.
+
+### UI and debugging
+
+- `announce(message)` — Show a toast notification to the player. Multiple arguments are joined with spaces.
+- `log(...)` — Send output to the debug console and game log.
+
+### Character selection
+
+- `selectCharacter(title?, description?)` — Dialog to pick one active character in the Scene. Returns a character accessor or `null`.
+- `selectCharacters(title?, description?)` — Dialog to pick one or more active characters in the Scene. Returns an array of character accessors (empty on cancel).
+
+### Prompt
+
+- `prompt(msg, choices)` — Show a modal with message and choice buttons. Returns the selected choice string.
+
+---
+
+## Script types and events
+
+- **Attributes** — Reactive scripts: use `subscribe('…')` and `return <value>`.
+- **Actions** — Event handlers: `on_activate()`, optionally `on_deactivate()`.
+- **Items** — Event handlers: `on_activate`, `on_equip`, `on_unequip`, `on_consume`; end with `return`.
+- **Archetypes** — `on_add()` and `on_remove()` when the archetype is added/removed from a character.
+- **Global** — Shared functions and variables for the ruleset.
+- **Game Manager** — Ruleset-level; can use `subscribe('Name')` and run when those attributes change for any character (with `Owner` set, no `Self`).
+
+---
+
+## Comments
+
+```javascript
+// Single-line comment
+
+/*
+  Multi-line
+  comment
+*/
+```

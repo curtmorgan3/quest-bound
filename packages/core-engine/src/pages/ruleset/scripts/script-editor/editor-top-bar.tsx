@@ -20,14 +20,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { useRulesets, useScripts } from '@/lib/compass-api';
 import {
   ActionLookup,
   ArchetypeLookup,
   AttributeLookup,
   ItemLookup,
-  useRulesets,
-  useScripts,
-} from '@/lib/compass-api';
+} from '@quest-bound/core-ui/api-components';
 import { type UseReactiveScriptExecutionResult } from '@/lib/compass-logic';
 import { activateButtonStyle } from '@/palette';
 import type {

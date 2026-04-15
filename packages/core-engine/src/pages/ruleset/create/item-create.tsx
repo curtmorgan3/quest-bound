@@ -1,5 +1,6 @@
 import { ImageUpload, Input, Label } from '@/components';
-import { ActionLookup, useActions, useAssets } from '@/lib/compass-api';
+import { useActions, useAssets } from '@/lib/compass-api';
+import { ActionLookup } from '@quest-bound/core-ui/api-components';
 import { Drumstick, Shirt, X } from 'lucide-react';
 import { type Dispatch, type SetStateAction } from 'react';
 import { useParams } from 'react-router-dom';

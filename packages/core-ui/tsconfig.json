@@ -12,6 +12,8 @@
       "@/lib/cloud/*": ["../cloud/src/*"],
       "@/lib/campaign-play": ["../runtime/src"],
       "@/lib/campaign-play/*": ["../runtime/src/*"],
+      "@/lib/compass-api/hooks": ["../local-db/src/api-hooks"],
+      "@/lib/compass-api/hooks/*": ["../local-db/src/api-hooks/*"],
       "@/*": ["../core-engine/src/*"]
     },
     "types": ["vite/client", "cypress", "node"]

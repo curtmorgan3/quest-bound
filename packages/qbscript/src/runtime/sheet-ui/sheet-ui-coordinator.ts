@@ -1,4 +1,4 @@
-import { cloneComponentSubtreeForWindow } from '@/lib/compass-api/utils/composite-subtree';
+import { cloneComponentSubtreeForWindow } from '@/utils/composite-subtree';
 import { ComponentTypes, isGroupLikeComponentType } from '@/lib/compass-planes/nodes/node-types';
 import { parseComponentDataJson } from '@/lib/compass-planes/utils/component-data-json';
 import {

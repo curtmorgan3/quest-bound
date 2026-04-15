@@ -6,7 +6,8 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet';
-import { ArchetypeLookup, useArchetypes, useAssets, useCharacter } from '@/lib/compass-api';
+import { useArchetypes, useAssets, useCharacter } from '@/lib/compass-api';
+import { ArchetypeLookup } from '@quest-bound/core-ui/api-components';
 import { CharacterContext } from '@/stores/context/character-context';
 import type { ArchetypeWithVariantOptions } from '@/types';
 import { Trash2 } from 'lucide-react';

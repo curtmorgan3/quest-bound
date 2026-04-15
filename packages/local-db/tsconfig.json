@@ -10,6 +10,10 @@
       "@/lib/compass-logic/*": ["../qbscript/src/*"],
       "@/lib/cloud": ["../cloud/src"],
       "@/lib/cloud/*": ["../cloud/src/*"],
+      "@/lib/campaign-play": ["../runtime/src"],
+      "@/lib/campaign-play/*": ["../runtime/src/*"],
+      "@/lib/compass-api/hooks": ["./src/api-hooks"],
+      "@/lib/compass-api/hooks/*": ["./src/api-hooks/*"],
       "@/*": ["../core-engine/src/*"]
     },
     "types": ["vite/client"]
