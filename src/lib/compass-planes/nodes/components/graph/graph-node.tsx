@@ -1,6 +1,10 @@
 import { useAssets } from '@/lib/compass-api';
 import { CharacterContext, WindowEditorContext } from '@/stores';
 import type { CharacterAttribute, Component, GraphComponentData, GraphVariant } from '@/types';
+import {
+  ATTRIBUTE_VALUE_BINDING_MAX_ID,
+  ATTRIBUTE_VALUE_BINDING_MIN_ID,
+} from '@/utils/attribute-value-binding';
 import { useEditorItemId } from '@/lib/compass-planes/canvas/editor-item-context';
 import { useComponentCanvasDimensions } from '@/lib/compass-planes/canvas/editor-item-layout-context';
 import { memo, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
@@ -45,6 +49,12 @@ function resolveBoundNumeric(
   if (!attributeId || !getCharacterAttribute) return 0;
   const ca = getCharacterAttribute(attributeId);
   if (!ca) return 0;
+  if (customPropertyId === ATTRIBUTE_VALUE_BINDING_MIN_ID) {
+    return toNumber(ca.min ?? 0);
+  }
+  if (customPropertyId === ATTRIBUTE_VALUE_BINDING_MAX_ID) {
+    return toNumber(ca.max ?? 0);
+  }
   if (customPropertyId) {
     const v = ca.attributeCustomPropertyValues?.[customPropertyId];
     if (v !== undefined && v !== null) return toNumber(v);

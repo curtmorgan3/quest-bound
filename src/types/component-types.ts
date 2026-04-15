@@ -148,10 +148,10 @@ export type GraphComponentData = {
   /** Cached image URL for the fill (e.g. synced from the asset); used when the asset is not in memory. */
   assetUrl?: string | null;
   numeratorAttributeId?: string | null;
-  /** When set, numerator is read from this ruleset attribute custom field (number) instead of the main attribute value. */
+  /** When set, numerator is read from a number custom field or attribute schema min/max instead of the main value. */
   numeratorAttributeCustomPropertyId?: string | null;
   denominatorAttributeId?: string | null;
-  /** When set, denominator is read from this ruleset attribute custom field (number) instead of the main attribute value. */
+  /** When set, denominator is read from a number custom field or attribute schema min/max instead of the main value. */
   denominatorAttributeCustomPropertyId?: string | null;
   denominatorValue?: number | null;
   /** When set with segmentCount, this node shows only segment segmentIndex of segmentCount (1-based). */

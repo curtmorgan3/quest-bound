@@ -17,6 +17,7 @@ import {
 } from '@/lib/compass-planes/utils';
 import { db, deleteAssetIfUnreferenced } from '@/stores';
 import type { Component, GraphComponentData, GraphVariant } from '@/types';
+import { getNumberAttributeSchemaBindingOptions } from '@/utils/attribute-value-binding';
 import { parseEntityCustomPropertiesJson } from '@/utils/parse-entity-custom-properties-json';
 import { useEffect, useMemo } from 'react';
 
@@ -74,6 +75,41 @@ export const GraphDataEdit = ({ components, updateComponents }: GraphDataEditPro
         : [],
     [denominatorAttr],
   );
+
+  const numeratorSchemaBindingOpts = useMemo(
+    () => getNumberAttributeSchemaBindingOptions(numeratorAttr),
+    [numeratorAttr],
+  );
+  const denominatorSchemaBindingOpts = useMemo(
+    () => getNumberAttributeSchemaBindingOptions(denominatorAttr),
+    [denominatorAttr],
+  );
+
+  const numeratorBindingSelectValue = useMemo(() => {
+    const storedId = firstData?.numeratorAttributeCustomPropertyId;
+    if (!storedId) return GRAPH_ATTR_CUSTOM_PROPERTY_NONE;
+    const isValidBindingId = (id: string) =>
+      numeratorNumberCustomDefs.some((d) => d.id === id) ||
+      numeratorSchemaBindingOpts.some((o) => o.id === id);
+    return isValidBindingId(storedId) ? storedId : GRAPH_ATTR_CUSTOM_PROPERTY_NONE;
+  }, [
+    firstData?.numeratorAttributeCustomPropertyId,
+    numeratorNumberCustomDefs,
+    numeratorSchemaBindingOpts,
+  ]);
+
+  const denominatorBindingSelectValue = useMemo(() => {
+    const storedId = firstData?.denominatorAttributeCustomPropertyId;
+    if (!storedId) return GRAPH_ATTR_CUSTOM_PROPERTY_NONE;
+    const isValidBindingId = (id: string) =>
+      denominatorNumberCustomDefs.some((d) => d.id === id) ||
+      denominatorSchemaBindingOpts.some((o) => o.id === id);
+    return isValidBindingId(storedId) ? storedId : GRAPH_ATTR_CUSTOM_PROPERTY_NONE;
+  }, [
+    firstData?.denominatorAttributeCustomPropertyId,
+    denominatorNumberCustomDefs,
+    denominatorSchemaBindingOpts,
+  ]);
 
   const fillAsset =
     firstData?.assetId != null ? assets.find((a) => a.id === firstData.assetId) : undefined;
@@ -296,20 +332,16 @@ export const GraphDataEdit = ({ components, updateComponents }: GraphDataEditPro
         onDelete={() => setNumeratorAttributeId(null)}
         filterType='number'
       />
-      {numeratorNumberCustomDefs.length > 0 && firstData?.numeratorAttributeId ? (
+      {firstData?.numeratorAttributeId &&
+      (numeratorNumberCustomDefs.length > 0 || numeratorSchemaBindingOpts.length > 0) ? (
         <div className='flex flex-col gap-2'>
           <Label
             htmlFor='graph-numerator-custom-property'
             className='text-xs text-muted-foreground'>
-            Numerator custom property (optional)
+            Custom property (optional)
           </Label>
           <Select
-            value={
-              firstData.numeratorAttributeCustomPropertyId &&
-              numeratorNumberCustomDefs.some((d) => d.id === firstData.numeratorAttributeCustomPropertyId)
-                ? firstData.numeratorAttributeCustomPropertyId
-                : GRAPH_ATTR_CUSTOM_PROPERTY_NONE
-            }
+            value={numeratorBindingSelectValue}
             onValueChange={(v) =>
               setNumeratorCustomPropertyId(
                 v === GRAPH_ATTR_CUSTOM_PROPERTY_NONE ? null : v,
@@ -327,6 +359,11 @@ export const GraphDataEdit = ({ components, updateComponents }: GraphDataEditPro
                   {def.name}
                 </SelectItem>
               ))}
+              {numeratorSchemaBindingOpts.map((opt) => (
+                <SelectItem key={opt.id} value={opt.id}>
+                  {opt.name}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
@@ -338,22 +375,16 @@ export const GraphDataEdit = ({ components, updateComponents }: GraphDataEditPro
         onDelete={() => setDenominatorAttributeId(null)}
         filterType='number'
       />
-      {denominatorNumberCustomDefs.length > 0 && firstData?.denominatorAttributeId ? (
+      {firstData?.denominatorAttributeId &&
+      (denominatorNumberCustomDefs.length > 0 || denominatorSchemaBindingOpts.length > 0) ? (
         <div className='flex flex-col gap-2'>
           <Label
             htmlFor='graph-denominator-custom-property'
             className='text-xs text-muted-foreground'>
-            Denominator custom property (optional)
+            Custom property (optional)
           </Label>
           <Select
-            value={
-              firstData.denominatorAttributeCustomPropertyId &&
-              denominatorNumberCustomDefs.some(
-                (d) => d.id === firstData.denominatorAttributeCustomPropertyId,
-              )
-                ? firstData.denominatorAttributeCustomPropertyId
-                : GRAPH_ATTR_CUSTOM_PROPERTY_NONE
-            }
+            value={denominatorBindingSelectValue}
             onValueChange={(v) =>
               setDenominatorCustomPropertyId(
                 v === GRAPH_ATTR_CUSTOM_PROPERTY_NONE ? null : v,
@@ -369,6 +400,11 @@ export const GraphDataEdit = ({ components, updateComponents }: GraphDataEditPro
               {denominatorNumberCustomDefs.map((def) => (
                 <SelectItem key={def.id} value={def.id}>
                   {def.name}
+                </SelectItem>
+              ))}
+              {denominatorSchemaBindingOpts.map((opt) => (
+                <SelectItem key={opt.id} value={opt.id}>
+                  {opt.name}
                 </SelectItem>
               ))}
             </SelectContent>
