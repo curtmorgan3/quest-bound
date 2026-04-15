@@ -5,6 +5,15 @@
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.test.tsbuildinfo",
     "types": ["vitest/globals", "@testing-library/jest-dom", "node"]
   },
-  "include": ["tests/**/*.ts", "tests/**/*.tsx", "src/**/*.ts", "src/**/*.tsx"],
+  "include": [
+    "tests/**/*.ts",
+    "tests/**/*.tsx",
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "packages/qbscript/**/*.ts",
+    "packages/qbscript/**/*.tsx",
+    "packages/local-db/**/*.ts",
+    "packages/local-db/**/*.tsx"
+  ],
   "exclude": ["node_modules", "dist", "cypress"]
 }

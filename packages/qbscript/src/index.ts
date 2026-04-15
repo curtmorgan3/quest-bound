@@ -1,4 +1,8 @@
 /**
- * QBScript runtime, web worker, and interpreter (extracted from the main app over time).
+ * @quest-bound/qbscript — QBScript interpreter, web worker bridge, reactive execution, and editor.
+ * Prefer importing from this entry or subpaths mapped in the host app; internal modules use `@/…` for app-layer dependencies.
  */
-export {};
+export * from './reactive/event-handler-executor';
+export * from './worker';
+export * from './editor';
+export * from './script-logs';

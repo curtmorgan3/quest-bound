@@ -23,6 +23,8 @@
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true,
     "paths": {
+      "@/lib/compass-logic": ["./packages/qbscript/src"],
+      "@/lib/compass-logic/*": ["./packages/qbscript/src/*"],
       "@/*": ["./src/*"]
     },
     "types": ["cypress", "node"]

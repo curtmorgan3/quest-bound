@@ -31,6 +31,7 @@
   },
   "dependencies": {
     "@quest-bound/local-db": "2.1.74",
+    "@quest-bound/qbscript": "2.1.74",
     "@quest-bound/remote-db": "2.1.74",
     "@quest-bound/types": "2.1.74",
     "@codemirror/autocomplete": "^6.20.0",

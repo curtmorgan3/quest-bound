@@ -77,9 +77,17 @@ export const viteConfig = defineConfig({
     }),
   ],
   resolve: {
-    alias: {
-      '@': path.resolve(__dirname, './src'),
-    },
+    alias: [
+      {
+        find: /^@\/lib\/compass-logic\/(.+)$/,
+        replacement: path.resolve(__dirname, 'packages/qbscript/src/$1'),
+      },
+      {
+        find: /^@\/lib\/compass-logic$/,
+        replacement: path.resolve(__dirname, 'packages/qbscript/src/index.ts'),
+      },
+      { find: '@', replacement: path.resolve(__dirname, './src') },
+    ],
   },
   /** Vite 7: default `iife` is invalid when the worker graph is code-split; ES module workers are fine for `type: 'module'`. */
   worker: {

@@ -6,9 +6,17 @@ import tsconfigPaths from 'vite-tsconfig-paths';
 export default defineConfig({
   plugins: [react(), tsconfigPaths()],
   resolve: {
-    alias: {
-      '@': path.resolve(__dirname, './src'),
-    },
+    alias: [
+      {
+        find: /^@\/lib\/compass-logic\/(.+)$/,
+        replacement: path.resolve(__dirname, 'packages/qbscript/src/$1'),
+      },
+      {
+        find: /^@\/lib\/compass-logic$/,
+        replacement: path.resolve(__dirname, 'packages/qbscript/src/index.ts'),
+      },
+      { find: '@', replacement: path.resolve(__dirname, './src') },
+    ],
   },
   test: {
     globals: true,

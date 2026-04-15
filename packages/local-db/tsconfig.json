@@ -4,6 +4,8 @@
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.tsbuildinfo",
     "noEmit": true,
     "paths": {
+      "@/lib/compass-logic": ["../qbscript/src"],
+      "@/lib/compass-logic/*": ["../qbscript/src/*"],
       "@/*": ["../../src/*"]
     },
     "types": ["vite/client"]
