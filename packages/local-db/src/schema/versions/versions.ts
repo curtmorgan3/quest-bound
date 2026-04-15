@@ -41,10 +41,7 @@ export const dbSchema = {
   campaignEventLocations: `${common}, campaignEventId, locationId, tileId, [campaignEventId], [locationId]`,
 };
 
-/**
- * Phase 8: add type to campaignEvents (default on_activate), tileId on campaignEventLocations.
- * Schema for v33 adds the `type` index to campaignEvents.
- */
+/** Schema for v33 (historical): adds `type` index to campaignEvents. */
 export const dbSchemaV33 = {
   ...dbSchema,
   campaignEvents: `${dbSchema.campaignEvents}, type`,

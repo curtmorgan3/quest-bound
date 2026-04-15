@@ -151,7 +151,7 @@ items.length;
 Run tests:
 
 ```bash
-npm run test:unit -- tests/unit/lib/compass-logic/interpreter/
+npm run test:unit -- packages/qbscript/src/interpreter/
 ```
 
 ## Examples
@@ -218,20 +218,18 @@ The interpreter is designed to integrate with Quest Bound:
 ## Files
 
 ```
-src/lib/compass-logic/interpreter/
+packages/qbscript/src/interpreter/
 ├── lexer.ts           # Tokenizer
 ├── parser.ts          # Parser
 ├── ast.ts             # AST node definitions
 ├── evaluator.ts       # Evaluator/runtime
+├── lexer.test.ts      # Lexer tests (co-located)
+├── parser.test.ts     # Parser tests
+├── evaluator.test.ts  # Evaluator tests
+├── performance.test.ts # Performance benchmarks
 ├── cli.ts             # Command-line interface
 ├── README.md          # This file
 └── CLI.md             # CLI documentation
-
-tests/unit/lib/compass-logic/interpreter/
-├── lexer.test.ts      # Lexer tests
-├── parser.test.ts     # Parser tests
-├── evaluator.test.ts  # Evaluator tests
-└── performance.test.ts # Performance benchmarks
 
 examples/qbscript/
 ├── hello.qbs

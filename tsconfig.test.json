@@ -8,6 +8,8 @@
   "include": [
     "tests/**/*.ts",
     "tests/**/*.tsx",
+    "packages/**/*.test.ts",
+    "packages/**/*.test.tsx",
     "packages/core-engine/src/**/*.ts",
     "packages/core-engine/src/**/*.tsx",
     "packages/core-ui/**/*.ts",
