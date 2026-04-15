@@ -9,6 +9,7 @@ import {
   ATTRIBUTE_COLUMNS,
   ITEM_COLUMNS,
   type ActionWithAssetFilename,
+  type AttributeWithAssetFilename,
   type ItemWithAssetFilename,
 } from './types';
 import { buildAssetFilenameMap, convertToTsv } from './utils';
@@ -450,7 +451,11 @@ export const useExportRuleset = (rulesetId: string) => {
 
       // Create individual content files (attributes, actions, items as TSV at root level)
       if (attributes && attributes.length > 0) {
-        zip.file('attributes.tsv', convertToTsv(attributes, ATTRIBUTE_COLUMNS));
+        const attributesWithFilenames: AttributeWithAssetFilename[] = attributes.map((attr) => ({
+          ...attr,
+          assetFilename: attr.assetId ? assetFilenameMap[attr.assetId] : undefined,
+        }));
+        zip.file('attributes.tsv', convertToTsv(attributesWithFilenames, ATTRIBUTE_COLUMNS));
       }
 
       if (actions && actions.length > 0) {

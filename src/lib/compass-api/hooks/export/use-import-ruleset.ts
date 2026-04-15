@@ -1094,28 +1094,34 @@ export const useImportRuleset = () => {
           const rows = parseTsv(attributesText);
           const parsedAttributes = tsvToObjects(rows, ATTRIBUTE_FIELD_TYPES);
 
-          // Convert to proper Attribute objects
-          const attributes: Attribute[] = parsedAttributes.map((item) => ({
-            id: item.id as string,
-            title: item.title as string,
-            description: (item.description as string) ?? '',
-            category: item.category as string | undefined,
-            type: item.type as Attribute['type'],
-            options: item.options as string[] | undefined,
-            defaultValue: convertAttributeDefaultValue(item),
-            optionsChartRef: item.optionsChartRef as number | undefined,
-            optionsChartColumnHeader: item.optionsChartColumnHeader as string | undefined,
-            min: item.min as number | undefined,
-            max: item.max as number | undefined,
-            image: (item.image as string)?.trim() || null,
-            customProperties:
-              item.customProperties != null && String(item.customProperties).trim() !== ''
-                ? String(item.customProperties)
-                : undefined,
-            rulesetId: newRulesetId,
-            createdAt: now,
-            updatedAt: now,
-          }));
+          // Convert to proper Attribute objects, resolving assetFilename → assetId (same as actions/items)
+          const attributes: Attribute[] = parsedAttributes.map((item) => {
+            const assetFilename = item.assetFilename as string | undefined;
+            const resolvedAssetId = assetFilename ? assetFilenameToIdMap[assetFilename] : undefined;
+
+            return {
+              id: item.id as string,
+              title: item.title as string,
+              description: (item.description as string) ?? '',
+              category: item.category as string | undefined,
+              type: item.type as Attribute['type'],
+              options: item.options as string[] | undefined,
+              defaultValue: convertAttributeDefaultValue(item),
+              optionsChartRef: item.optionsChartRef as number | undefined,
+              optionsChartColumnHeader: item.optionsChartColumnHeader as string | undefined,
+              min: item.min as number | undefined,
+              max: item.max as number | undefined,
+              assetId: resolvedAssetId || null,
+              image: (item.image as string)?.trim() || null,
+              customProperties:
+                item.customProperties != null && String(item.customProperties).trim() !== ''
+                  ? String(item.customProperties)
+                  : undefined,
+              rulesetId: newRulesetId,
+              createdAt: now,
+              updatedAt: now,
+            };
+          });
 
           const validation = validateData(attributes, 'attributes');
           if (validation.isValid) {

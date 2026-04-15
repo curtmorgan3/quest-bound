@@ -178,12 +178,32 @@ export function convertToTsv<T extends Record<string, unknown>>(
 }
 
 /**
- * Helper to build a map of asset IDs to filenames (filename-only per v44; directory no longer used).
+ * Relative path for an asset inside the export zip, matching `use-import-ruleset` keys for
+ * `assetFilenameToIdMap` (directory + basename when `directory` is set; else basename).
+ * Basename matches zip file naming when `filename` is missing.
  */
+export function assetZipRelativePath(
+  asset: Pick<Asset, 'id' | 'filename' | 'directory' | 'type'>,
+): string {
+  const fileExtension = asset.type.split('/')[1] || 'bin';
+  const basename =
+    asset.filename && String(asset.filename).trim() !== ''
+      ? asset.filename
+      : `asset_${asset.id}.${fileExtension}`;
+  if (asset.directory) {
+    const directoryPath = String(asset.directory).replace(/^\/+|\/+$/g, '');
+    if (directoryPath) {
+      return `${directoryPath}/${basename}`;
+    }
+  }
+  return basename;
+}
+
+/** Map asset id → path string stored in TSV `assetFilename` and used on import to resolve `assetId`. */
 export function buildAssetFilenameMap(assets: Asset[]): Record<string, string> {
   const map: Record<string, string> = {};
   for (const asset of assets) {
-    map[asset.id] = asset.filename;
+    map[asset.id] = assetZipRelativePath(asset);
   }
   return map;
 }

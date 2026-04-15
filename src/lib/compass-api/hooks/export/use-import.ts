@@ -192,6 +192,8 @@ export const useImport = (type: 'attributes' | 'items' | 'actions') => {
               }
             });
 
+            delete updateData.assetFilename;
+
             if (id) {
               switch (type) {
                 case 'attributes':
@@ -246,6 +248,8 @@ export const useImport = (type: 'attributes' | 'items' | 'actions') => {
                 delete newRecord[key];
               }
             });
+
+            delete newRecord.assetFilename;
 
             switch (type) {
               case 'attributes':

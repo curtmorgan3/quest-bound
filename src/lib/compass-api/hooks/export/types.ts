@@ -19,9 +19,12 @@ export const ATTRIBUTE_FIELD_TYPES: Record<string, FieldType> = {
   inventoryWidth: 'number',
   image: 'string',
   customProperties: 'string',
+  assetFilename: 'string',
 };
 
-export const ATTRIBUTE_COLUMNS: (keyof Attribute)[] = [
+export type AttributeWithAssetFilename = Attribute & { assetFilename?: string };
+
+export const ATTRIBUTE_COLUMNS: (keyof AttributeWithAssetFilename)[] = [
   'id',
   'title',
   'description',
@@ -37,7 +40,12 @@ export const ATTRIBUTE_COLUMNS: (keyof Attribute)[] = [
   'inventoryHeight',
   'image',
   'customProperties',
+  'assetFilename',
 ];
+
+/** TSV export/import: links rows to `application data/assets.json` + `assets/` paths. */
+export type ItemWithAssetFilename = Item & { assetFilename?: string };
+export type ActionWithAssetFilename = Action & { assetFilename?: string };
 
 export const ITEM_FIELD_TYPES: Record<string, FieldType> = {
   id: 'string',
@@ -55,9 +63,10 @@ export const ITEM_FIELD_TYPES: Record<string, FieldType> = {
   inventoryHeight: 'number',
   image: 'string',
   actionIds: 'array',
+  assetFilename: 'string',
 };
 
-export const ITEM_COLUMNS: (keyof Item)[] = [
+export const ITEM_COLUMNS: (keyof ItemWithAssetFilename)[] = [
   'id',
   'title',
   'description',
@@ -73,6 +82,7 @@ export const ITEM_COLUMNS: (keyof Item)[] = [
   'inventoryHeight',
   'image',
   'actionIds',
+  'assetFilename',
 ];
 
 export const ACTION_FIELD_TYPES: Record<string, FieldType> = {
@@ -84,9 +94,10 @@ export const ACTION_FIELD_TYPES: Record<string, FieldType> = {
   inventoryWidth: 'number',
   image: 'string',
   customProperties: 'string',
+  assetFilename: 'string',
 };
 
-export const ACTION_COLUMNS: (keyof Action)[] = [
+export const ACTION_COLUMNS: (keyof ActionWithAssetFilename)[] = [
   'id',
   'title',
   'description',
@@ -95,8 +106,5 @@ export const ACTION_COLUMNS: (keyof Action)[] = [
   'inventoryWidth',
   'image',
   'customProperties',
+  'assetFilename',
 ];
-
-// Extended types that include assetFilename for export
-export type ItemWithAssetFilename = Item & { assetFilename?: string };
-export type ActionWithAssetFilename = Action & { assetFilename?: string };

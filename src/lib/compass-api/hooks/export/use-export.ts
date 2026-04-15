@@ -2,7 +2,14 @@ import { useActiveRuleset } from '@/lib/compass-api';
 import { db } from '@/stores';
 import { type Action, type Attribute, type Item } from '@/types';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { ACTION_COLUMNS, ATTRIBUTE_COLUMNS, ITEM_COLUMNS } from './types';
+import {
+  ACTION_COLUMNS,
+  ATTRIBUTE_COLUMNS,
+  ITEM_COLUMNS,
+  type ActionWithAssetFilename,
+  type AttributeWithAssetFilename,
+  type ItemWithAssetFilename,
+} from './types';
 import { convertToTsv } from './utils';
 
 export const useExport = (type: 'attributes' | 'items' | 'actions') => {
@@ -33,11 +40,11 @@ export const useExport = (type: 'attributes' | 'items' | 'actions') => {
 
     switch (type) {
       case 'attributes':
-        return convertToTsv(data as Attribute[], ATTRIBUTE_COLUMNS);
+        return convertToTsv(data as AttributeWithAssetFilename[], ATTRIBUTE_COLUMNS);
       case 'items':
-        return convertToTsv(data as Item[], ITEM_COLUMNS);
+        return convertToTsv(data as ItemWithAssetFilename[], ITEM_COLUMNS);
       case 'actions':
-        return convertToTsv(data as Action[], ACTION_COLUMNS);
+        return convertToTsv(data as ActionWithAssetFilename[], ACTION_COLUMNS);
       default:
         return null;
     }
