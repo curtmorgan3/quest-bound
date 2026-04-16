@@ -52,7 +52,7 @@ export function SceneCharacterAvatarGrid({
                 data-active-npc-avatar='true'
                 data-current-turn={isCurrentTurn ? 'true' : undefined}
                 onClick={() => character?.id && onAvatarClick?.(character.id)}
-                className={`size-26 shrink-0 overflow-hidden rounded-md border bg-muted transition-shadow duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                className={`size-[100px] shrink-0 overflow-hidden rounded-md border bg-muted transition-shadow duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
                   showRing ? 'ring-2 ring-primary shadow-[0_0_12px] shadow-primary/50' : ''
                 }`}
                 title={character?.name ?? 'Unnamed'}
@@ -64,7 +64,7 @@ export function SceneCharacterAvatarGrid({
                     className='size-full object-cover'
                   />
                 ) : (
-                  <div className='flex size-full items-center justify-center text-xl font-medium text-muted-foreground'>
+                  <div className='flex size-full items-center justify-center text-3xl font-medium text-muted-foreground'>
                     {(character?.name ?? '?').slice(0, 1).toUpperCase()}
                   </div>
                 )}

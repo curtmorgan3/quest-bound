@@ -1,6 +1,7 @@
 @import 'tailwindcss';
-/* Monorepo: UI lives in `@quest-bound/core-ui`; Tailwind’s default scan is this package only. */
+/* Monorepo: scan shared UI, runtime pages (Vite aliases `@/pages/...` → `packages/runtime`), and this app. */
 @source '../../core-ui/src';
+@source '../../runtime/src';
 @import 'tw-animate-css';
 
 @custom-variant dark (&:is(.dark *));
