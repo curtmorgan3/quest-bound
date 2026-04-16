@@ -36,12 +36,16 @@ export function parseCharacterIdFromAppPathname(pathname: string): string | null
 
 /**
  * Path segment the app router matches against (e.g. `/characters/:id`).
- * With {@link HashRouter}, the active route is in `location.hash` (`#/characters/...`);
- * `window.location.pathname` is often just `/`, so delegated UI must read the hash.
+ * With {@link BrowserRouter}, the active route is on `pathname`. If `pathname` is still `/`
+ * (e.g. legacy bookmark), fall back to `location.hash` (`#/characters/...`).
  */
 export function getCampaignPlayDelegatedUiRoutePath(): string {
   if (typeof window === 'undefined') return '';
   const { hash, pathname } = window.location;
+  const pathOnly = pathname.split('?')[0] ?? pathname;
+  if (pathOnly && pathOnly !== '/') {
+    return pathOnly;
+  }
   if (hash.startsWith('#/')) {
     return hash.slice(1).split('?')[0] ?? '';
   }
@@ -49,7 +53,7 @@ export function getCampaignPlayDelegatedUiRoutePath(): string {
     const rest = hash.slice(1).split('?')[0] ?? '';
     return rest.startsWith('/') ? rest : `/${rest}`;
   }
-  return pathname.split('?')[0] ?? pathname;
+  return pathOnly || '/';
 }
 
 function surfaceCharacterIdMatchesEnvelope(routePath: string, characterId: string): boolean {
@@ -229,7 +233,7 @@ function enqueueDelegatedRequest(envelope: CampaignRealtimeDelegatedUiRequestEnv
     return true;
   };
 
-  /** Surface registration (layout effect) or hash updates may lag one frame behind this enqueue. */
+  /** Surface registration (layout effect) or route updates may lag one frame behind this enqueue. */
   queueMicrotask(() => {
     if (tryFlushIfSurfaceReady()) return;
     window.setTimeout(() => {

@@ -28,7 +28,7 @@ export function PlayPage() {
   const [duplicateVersion, setDuplicateVersion] = useState('');
 
   const navigateToRuleset = (rulesetId: string) => {
-    window.location.replace(`/#/landing/${rulesetId}`);
+    window.location.replace(`/landing/${rulesetId}`);
     window.location.reload();
   };
 

@@ -20,7 +20,6 @@ import { DiceContext } from '@quest-bound/runtime/context';
 import { useCloudSyncReviewStore, useExternalRulesetGrantStore } from '@/stores';
 import { useCloudAuthStore } from '@/stores/cloud-auth-store';
 import {
-  Building2,
   CloudAlert,
   CloudCheck,
   CloudUpload,
@@ -74,7 +73,6 @@ export function AppSidebar() {
   const { activeRuleset } = useActiveRuleset();
 
   const isLandingRoute = location.pathname.startsWith('/landing/');
-  const isOrganizationRoute = location.pathname.startsWith('/organization');
   const isHomepage =
     location.pathname === '/rulesets' ||
     location.pathname === '/characters' ||
@@ -88,11 +86,7 @@ export function AppSidebar() {
     location.pathname.startsWith('/campaigns/') && location.pathname !== '/campaigns/new';
 
   const title =
-    location.pathname === '/rulesets' ||
-    isOrganizationRoute ||
-    !activeRuleset?.title
-      ? 'Quest Bound'
-      : activeRuleset.title;
+    location.pathname === '/rulesets' || !activeRuleset?.title ? 'Quest Bound' : activeRuleset.title;
 
   useEffect(() => {
     const storedState = localStorage.getItem('qb.sidebarCollapsed');
@@ -121,12 +115,6 @@ export function AppSidebar() {
   const committing = useCloudSyncReviewStore((s) => s.committing);
   const reviewOpen = useCloudSyncReviewStore((s) => s.open);
 
-  const showOrganizationNav =
-    isCloudConfigured &&
-    isAuthenticated &&
-    cloudSyncEnabled &&
-    !cloudSyncEligibilityLoading;
-
   const externalGrantBlocksRemoteSync = useExternalRulesetGrantStore((s) =>
     rulesetId ? s.permissionByRulesetId[rulesetId] != null : false,
   );
@@ -142,8 +130,7 @@ export function AppSidebar() {
     !isLandingRoute &&
     !isCharacterRoute &&
     !isCampaignsRoute &&
-    !isDevTools &&
-    !isOrganizationRoute;
+    !isDevTools;
   const synced = rulesetId ? isCloudSynced(rulesetId) : false;
   const busy = isSyncing || planning || committing || reviewOpen;
   const isOffline = !navigator.onLine;
@@ -180,7 +167,7 @@ export function AppSidebar() {
     <CharacterSidebar />
   ) : isCampaignsRoute ? (
     <CampaignSidebar />
-  ) : isDevTools || isOrganizationRoute ? null : (
+  ) : isDevTools ? null : (
     <RulesetSidebar />
   );
 
@@ -229,16 +216,6 @@ export function AppSidebar() {
                 <SidebarMenuButton onClick={() => setDicePanelOpen(true)} data-testid='nav-dice'>
                   <Dices />
                   <span>Dice</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            )}
-            {showOrganizationNav && (
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild>
-                  <Link to='/organization/details' data-testid='nav-organization'>
-                    <Building2 className='h-4 w-4' />
-                    <span>Organization</span>
-                  </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             )}

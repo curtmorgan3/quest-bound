@@ -238,7 +238,7 @@ export const Rulesets = () => {
   };
 
   const navigateToLandingWithReload = (rulesetId: string) => {
-    window.location.replace(`/#/landing/${rulesetId}`);
+    window.location.replace(`/landing/${rulesetId}`);
     window.location.reload();
   };
 
@@ -428,7 +428,7 @@ export const Rulesets = () => {
                 isImporting={isImporting}
                 installDisabled={createFlowBusy || !!deletingRulesetId || !!deletingCloudRulesetId}
                 onInstalled={(rulesetId) => {
-                  window.location.replace(`/#/landing/${rulesetId}`);
+                  window.location.replace(`/landing/${rulesetId}`);
                   window.location.reload();
                 }}
               />

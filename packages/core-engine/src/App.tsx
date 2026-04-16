@@ -13,8 +13,6 @@ import {
   DevTools,
   ErrorPage,
   ManageCustomProperties,
-  OrganizationIndexRedirect,
-  OrganizationPage,
   PlayPage,
   Ruleset,
   RulesetLanding,
@@ -23,7 +21,7 @@ import {
   ScriptEditorPage,
   ScriptsIndex,
 } from '@/pages';
-import { HashRouter, Navigate, Route, Routes } from 'react-router-dom';
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { ErrorBoundary } from '@/components';
 import { Layout } from '@/components/layout';
 import { DocumentViewer } from './pages/ruleset/documents';
@@ -32,7 +30,7 @@ import { WindowEditor } from './pages/ruleset/windows/window-editor';
 function CompassRoutes() {
   return (
     <ErrorBoundary showDetails>
-      <HashRouter>
+      <BrowserRouter>
         <Routes>
           <Route element={<Layout />}>
             <Route index element={<Navigate to='/rulesets' replace />} />
@@ -116,13 +114,10 @@ function CompassRoutes() {
 
             <Route path={`/dev-tools`} element={<DevTools />} />
 
-            <Route path='/organization' element={<OrganizationIndexRedirect />} />
-            <Route path='/organization/:section' element={<OrganizationPage />} />
-
             <Route path='*' element={<ErrorPage type='404' />} />
           </Route>
         </Routes>
-      </HashRouter>
+      </BrowserRouter>
     </ErrorBoundary>
   );
 }
