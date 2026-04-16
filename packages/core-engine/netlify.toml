@@ -4,3 +4,9 @@
   from = "/*"
   to = "/index.html"
   status = 200
+
+# Service worker must be revalidated or browsers may never fetch a new sw.js after deploys.
+[[headers]]
+  for = "/sw.js"
+  [headers.values]
+    Cache-Control = "no-cache, no-store, must-revalidate"

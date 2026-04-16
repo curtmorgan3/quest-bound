@@ -164,6 +164,17 @@ export function PwaUpdateProvider({ children }: { children: ReactNode }) {
 
   const swSupported = typeof navigator !== 'undefined' && 'serviceWorker' in navigator;
 
+  /** Browsers may not re-check sw.js until a navigation; nudge when the tab becomes visible. */
+  useEffect(() => {
+    if (!swSupported) return;
+    const onVisible = () => {
+      if (document.visibilityState !== 'visible') return;
+      void registrationRef.current?.update();
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
+  }, [swSupported]);
+
   const checkForUpdate = useCallback(async () => {
     if (!swSupported) return;
     const reg = registrationRef.current ?? (await navigator.serviceWorker.getRegistration());

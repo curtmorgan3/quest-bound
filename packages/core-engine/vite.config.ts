@@ -22,6 +22,8 @@ export const viteConfig = defineConfig({
     tailwindcss(),
     tsconfigPaths(),
     VitePWA({
+      /** Custom registration in `PwaUpdateProvider` (workbox-window). Do not inject `registerSW.js` — it only calls `register()` on `load` with no update listeners and can prevent the prompt toast from firing. */
+      injectRegister: false,
       registerType: 'prompt',
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
       manifest: {
