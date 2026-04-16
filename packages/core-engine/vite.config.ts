@@ -51,7 +51,8 @@ export const viteConfig = defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2,mp4}'],
-        navigateFallback: '/offline.html',
+        /** SPA shell for navigations (incl. deep links / refresh). Never use `offline.html` here — Workbox serves it for every document request, so non-root routes looked "offline" even online. */
+        navigateFallback: 'index.html',
         maximumFileSizeToCacheInBytes: 8 * 1024 * 1024, // 6 MiB
         runtimeCaching: [
           {
