@@ -16,7 +16,6 @@ Record pass/fail, build version, and date on each run.
 
 - [ ] App loads without a blank screen; no unhandled error overlay.
 - [ ] Root URL redirects to **`/rulesets`**.
-- [ ] Sidebar shows **Rulesets**, **Characters**, and **Campaigns**.
 - [ ] **Settings** (gear) opens the settings panel; closing it returns focus sensibly.
 - [ ] **Dice** control opens the dice panel; rolls complete and UI updates.
 - [ ] **Help** opens documentation in a new tab with a URL that matches the current area (rulesets vs characters vs campaigns).
@@ -181,7 +180,7 @@ Requires cloud, authenticated user, sync enabled, and host choosing to enable re
 
 ## Cloud sync
 
- Preconditions: cloud configured; sign in; enable **Quest Bound Cloud** / sync in user settings where required.
+Preconditions: cloud configured; sign in; enable **Quest Bound Cloud** / sync in user settings where required.
 
 - [ ] **User settings → Cloud** (or equivalent): sign in, sign out, enable sync, email verification messaging if applicable.
 - [ ] On a ruleset sub-route (not homepage/characters/campaigns): sidebar **cloud sync** control reflects state (synced / syncing / error / offline).
@@ -278,18 +277,18 @@ Path: **`/dev-tools`**
 
 ## Suggested order for a full pass
 
-1. Home and navigation  
-2. Rulesets (home) → pick one ruleset  
-3. Ruleset content (attributes → … → assets, as deep as time allows)  
-4. Characters  
-5. Campaigns (including dashboard + documents + charts)  
-6. Cloud sync + file sharing / external grants  
-7. Real time (if applicable)  
-8. Play link + landing + read-only grant (if applicable)  
-9. Settings (user, then context-specific)  
-10. Dice / overlays / modals  
-11. Dev tools  
-12. Errors / offline / 404  
+1. Home and navigation
+2. Rulesets (home) → pick one ruleset
+3. Ruleset content (attributes → … → assets, as deep as time allows)
+4. Characters
+5. Campaigns (including dashboard + documents + charts)
+6. Cloud sync + file sharing / external grants
+7. Real time (if applicable)
+8. Play link + landing + read-only grant (if applicable)
+9. Settings (user, then context-specific)
+10. Dice / overlays / modals
+11. Dev tools
+12. Errors / offline / 404
 
 ---
 
