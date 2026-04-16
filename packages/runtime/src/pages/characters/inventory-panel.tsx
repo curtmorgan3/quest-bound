@@ -346,7 +346,7 @@ export const InventoryPanel = ({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side='right' className='flex flex-col p-[8px]'>
+      <SheetContent side='right' className='flex flex-col'>
         <SheetHeader>
           <SheetTitle>
             {type === 'item'

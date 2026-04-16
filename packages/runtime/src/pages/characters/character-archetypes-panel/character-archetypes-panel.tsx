@@ -88,7 +88,7 @@ export const CharacterArchetypesPanel = ({ open, onOpenChange }: CharacterArchet
       <SheetContent
         ref={sheetContentRef}
         side='left'
-        className='flex flex-col p-[8px]'
+        className='flex flex-col'
         data-testid='character-archetypes-panel'>
         <SheetHeader>
           <SheetTitle>Character Archetypes</SheetTitle>

@@ -68,7 +68,7 @@ export const DicePanel = () => {
           aria-description='Dice Panel'
           side='right'
           stackClassName='z-[900]'
-          className='flex flex-col p-[8px]'>
+          className='flex flex-col'>
           <SheetHeader style={{ paddingBottom: 0 }}>
             <SheetTitle>
               <DddiceAuthModal />

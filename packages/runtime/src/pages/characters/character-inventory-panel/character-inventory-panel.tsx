@@ -126,7 +126,7 @@ export const CharacterInventoryPanel = ({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent ref={sheetContentRef} side='left' className='flex flex-col p-[8px]'>
+      <SheetContent ref={sheetContentRef} side='left' className='flex flex-col'>
         <PopoverScrollContainerContext.Provider value={sheetContentRef}>
           <SheetHeader>
             <SheetTitle>Character Inventory</SheetTitle>
