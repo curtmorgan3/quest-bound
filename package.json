@@ -34,6 +34,7 @@
     "build:robots": "node build-robots.js",
     "qbs": "tsx packages/qbscript/src/interpreter/cli.ts",
     "prepare": "husky",
+    "sync-versions": "node scripts/sync-workspace-versions.mjs",
     "db:push": "npm run db:push -w @quest-bound/remote-db",
     "db:start": "npm run db:start -w @quest-bound/remote-db",
     "db:stop": "npm run db:stop -w @quest-bound/remote-db",

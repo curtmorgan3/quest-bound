@@ -2,6 +2,7 @@
 set -e
 
 # Bump patch version before pushing branch updates (skips tag-only / delete pushes).
+# Syncs every packages/*/package.json version and @quest-bound/* semver pins to match root.
 REPO_ROOT=$(git rev-parse --show-toplevel)
 cd "$REPO_ROOT"
 
@@ -19,7 +20,12 @@ done
 [ "$bump" = 0 ] && exit 0
 
 npm version patch --no-git-tag-version
+node scripts/sync-workspace-versions.mjs
+npm install --package-lock-only --ignore-scripts
 git add package.json package-lock.json
+for pkg in packages/*/package.json; do
+  [ -f "$pkg" ] && git add "$pkg"
+done
 
 if git diff --cached --quiet; then
   exit 0

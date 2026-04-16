@@ -1,6 +1,6 @@
 {
   "name": "@quest-bound/core-ui",
-  "version": "2.1.74",
+  "version": "2.1.77",
   "private": true,
   "type": "module",
   "exports": {
@@ -25,10 +25,10 @@
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.1",
-    "@quest-bound/cloud": "2.1.74",
-    "@quest-bound/local-db": "2.1.74",
-    "@quest-bound/runtime": "2.1.74",
-    "@quest-bound/types": "2.1.74",
+    "@quest-bound/cloud": "2.1.77",
+    "@quest-bound/local-db": "2.1.77",
+    "@quest-bound/runtime": "2.1.77",
+    "@quest-bound/types": "2.1.77",
     "@tanstack/react-virtual": "^3.13.18",
     "@radix-ui/react-accordion": "^1.2.12",
     "@radix-ui/react-alert-dialog": "^1.1.15",
