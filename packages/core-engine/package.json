@@ -1,6 +1,6 @@
 {
   "name": "@quest-bound/core-engine",
-  "version": "2.1.78",
+  "version": "2.1.79",
   "private": true,
   "type": "module",
   "exports": {
@@ -17,13 +17,13 @@
     "typecheck": "tsc -p tsconfig.json"
   },
   "dependencies": {
-    "@quest-bound/cloud": "2.1.78",
-    "@quest-bound/core-ui": "2.1.78",
-    "@quest-bound/local-db": "2.1.78",
-    "@quest-bound/qbscript": "2.1.78",
-    "@quest-bound/remote-db": "2.1.78",
-    "@quest-bound/runtime": "2.1.78",
-    "@quest-bound/types": "2.1.78",
+    "@quest-bound/cloud": "2.1.79",
+    "@quest-bound/core-ui": "2.1.79",
+    "@quest-bound/local-db": "2.1.79",
+    "@quest-bound/qbscript": "2.1.79",
+    "@quest-bound/remote-db": "2.1.79",
+    "@quest-bound/runtime": "2.1.79",
+    "@quest-bound/types": "2.1.79",
     "@codemirror/autocomplete": "^6.20.0",
     "@codemirror/commands": "^6.10.2",
     "@codemirror/language": "^6.12.1",
