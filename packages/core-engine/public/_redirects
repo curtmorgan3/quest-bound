@@ -1,0 +1,3 @@
+# Netlify SPA fallback (copied to dist/ by Vite). Without this, deep links and
+# refresh on client routes return 404 when the config file is not applied.
+/*    /index.html   200
