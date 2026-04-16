@@ -53,10 +53,11 @@ export function NewCampaignModal({ open, onOpenChange }: NewCampaignModalProps) 
         </DialogHeader>
         <div className='flex flex-col gap-4 py-2'>
           <div className='grid gap-2'>
-            <Label htmlFor='campaign-label'>Title (optional)</Label>
+            <Label htmlFor='campaign-label'>Title</Label>
             <Input
               id='campaign-label'
               value={label}
+              autoComplete='off'
               onChange={(e) => setLabel(e.target.value)}
               placeholder='e.g. Summer campaign'
             />
