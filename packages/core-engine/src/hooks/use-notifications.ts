@@ -1,3 +1,4 @@
+import { useCallback } from 'react';
 import { toast } from 'sonner';
 
 export type NotificationType = 'default' | 'success' | 'error' | 'warning' | 'info' | 'loading';
@@ -14,10 +15,7 @@ export interface NotificationOptions {
 }
 
 export function useNotifications() {
-  const addNotification = (
-    message: string,
-    options?: NotificationOptions
-  ) => {
+  const addNotification = useCallback((message: string, options?: NotificationOptions) => {
     const { type = 'default', description, duration, action } = options || {};
 
     const toastOptions = {
@@ -41,15 +39,15 @@ export function useNotifications() {
       default:
         return toast(message, toastOptions);
     }
-  };
+  }, []);
 
-  const dismissNotification = (toastId?: string | number) => {
+  const dismissNotification = useCallback((toastId?: string | number) => {
     toast.dismiss(toastId);
-  };
+  }, []);
 
-  const dismissAllNotifications = () => {
+  const dismissAllNotifications = useCallback(() => {
     toast.dismiss();
-  };
+  }, []);
 
   return {
     addNotification,
