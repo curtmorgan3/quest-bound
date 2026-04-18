@@ -86,9 +86,7 @@ export const AttributeControls = ({
         const listOptions = rulesetAttributes.find((r) => r.id === attr.attributeId)?.options ?? [];
         const currentOption = (attr.value as string) ?? '';
         const selectedIndex =
-          currentOption === ''
-            ? -1
-            : listOptions.findIndex((opt) => opt === currentOption);
+          currentOption === '' ? -1 : listOptions.findIndex((opt) => opt === currentOption);
         const selectValue = selectedIndex >= 0 ? String(selectedIndex) : '';
         return (
           <div className='flex flex-col gap-1'>

@@ -7,9 +7,10 @@
 @custom-variant dark (&:is(.dark *));
 @font-face {
   font-family: 'CygniRoMonoPro';
-  src: url('assets/CygnitoMonoPro-BoldR.otf');
+  src: url('assets/CygnitoMonoPro-BoldR.otf') format('opentype');
   font-weight: normal;
   font-style: normal;
+  font-display: optional;
 }
 
 @theme inline {
