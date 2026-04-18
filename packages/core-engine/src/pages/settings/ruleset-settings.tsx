@@ -29,6 +29,7 @@ import {
   type RulesetColorPickerValue,
 } from '@/components/composites/ruleset-color-picker';
 import { ExportRulesetModal } from '@/components/export-ruleset-modal';
+import { BackupRuleset } from './backup-ruleset';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useNotifications } from '@/hooks/use-notifications';
 import { isCloudConfigured } from '@/lib/cloud/client';
@@ -495,10 +496,15 @@ export const RulesetSettings = ({ activeRuleset }: RulesetSettingsProps) => {
             variant='outline'
             onClick={() => setExportModalOpen(true)}>
             <>
-              Download
               <Download className='h-4 w-4' />
+              Download
             </>
           </Button>
+          <BackupRuleset
+            activeRuleset={activeRuleset}
+            exportRuleset={exportRuleset}
+            isExporting={isExporting}
+          />
           {showOrgRulesetLinkControls ? (
             isRulesetLinkedToMyOrg ? (
               <Button

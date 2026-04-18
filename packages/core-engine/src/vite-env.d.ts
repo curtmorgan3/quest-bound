@@ -34,5 +34,22 @@ declare namespace Cypress {
     mount: typeof import('cypress/react18').mount;
   }
 }
+
+declare global {
+  /** File System Access API — directory permissions and picker (Chromium). */
+  interface FileSystemDirectoryHandle {
+    queryPermission(descriptor?: { mode?: 'read' | 'readwrite' }): Promise<PermissionState>;
+    requestPermission(descriptor?: { mode?: 'read' | 'readwrite' }): Promise<PermissionState>;
+  }
+
+  interface Window {
+    showDirectoryPicker(options?: {
+      id?: string;
+      mode?: 'read' | 'readwrite';
+      startIn?: FileSystemHandle | FileSystemDirectoryHandle;
+    }): Promise<FileSystemDirectoryHandle>;
+  }
+}
+
 // Export the types to make them available globally
 export {};

@@ -134,8 +134,8 @@ export const CharacterSettings = ({ character }: CharacterSettingsProps) => {
           onClick={exportCharacter}
           disabled={isExporting || readOnlyPlaytestExport}>
           <>
-            Download
             <Download className='h-4 w-4' />
+            Download
           </>
         </Button>
       </div>

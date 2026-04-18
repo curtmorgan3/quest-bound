@@ -21,6 +21,11 @@ export interface ExportRulesetOptions {
   characterIds?: string[];
   /** Campaign IDs to include in the export. */
   campaignIds?: string[];
+  /**
+   * When true, skip the browser download and return the zip blob (e.g. File System Access API).
+   * Default characters/campaigns selection matches exporting with none selected from the modal.
+   */
+  returnBlob?: boolean;
 }
 
 export const useExportRuleset = (rulesetId: string) => {
@@ -249,7 +254,7 @@ export const useExportRuleset = (rulesetId: string) => {
     pages === undefined ||
     inventoryItems === undefined;
 
-  const exportRuleset = async (options?: ExportRulesetOptions): Promise<void> => {
+  const exportRuleset = async (options?: ExportRulesetOptions): Promise<void | Blob> => {
     if (!ruleset || !rulesetId) {
       throw new Error('No ruleset found to export');
     }
@@ -801,6 +806,10 @@ For more information about Quest Bound, visit the application documentation.
 
       // Generate the zip file
       const zipBlob = await zip.generateAsync({ type: 'blob' });
+
+      if (options?.returnBlob) {
+        return zipBlob;
+      }
 
       // Create download link
       const url = URL.createObjectURL(zipBlob);
