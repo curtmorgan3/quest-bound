@@ -1,5 +1,5 @@
-import type { Attribute, CharacterAttribute } from '@quest-bound/types';
 import { parseEntityCustomPropertiesJson } from '@/utils/parse-entity-custom-properties-json';
+import type { Attribute, CharacterAttribute } from '@quest-bound/types';
 import type { StructuredCloneSafe } from '../structured-clone-safe';
 
 type EntityCustomPropsPending = {
@@ -113,8 +113,7 @@ export class AttributeProxy implements StructuredCloneSafe {
     newValue: unknown,
   ): string | number | boolean {
     if (type === 'number') {
-      const n =
-        typeof newValue === 'string' ? parseFloat(newValue) : Number(newValue);
+      const n = typeof newValue === 'string' ? parseFloat(newValue) : Number(newValue);
       return Number.isFinite(n) ? n : 0;
     }
     if (type === 'boolean') {
@@ -205,16 +204,14 @@ export class AttributeProxy implements StructuredCloneSafe {
 
   setMax(newValue: any): void {
     const key = `characterAttributeMax:${this.characterAttribute.id}`;
-    const typedValue =
-      typeof newValue === 'string' ? parseFloat(newValue) : Number(newValue);
+    const typedValue = typeof newValue === 'string' ? parseFloat(newValue) : Number(newValue);
     this.pendingUpdates.set(key, typedValue);
     this.characterAttribute.max = typedValue;
   }
 
   setMin(newValue: any): void {
     const key = `characterAttributeMin:${this.characterAttribute.id}`;
-    const typedValue =
-      typeof newValue === 'string' ? parseFloat(newValue) : Number(newValue);
+    const typedValue = typeof newValue === 'string' ? parseFloat(newValue) : Number(newValue);
     this.pendingUpdates.set(key, typedValue);
     this.characterAttribute.min = typedValue;
   }

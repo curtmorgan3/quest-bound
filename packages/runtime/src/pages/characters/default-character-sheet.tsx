@@ -213,6 +213,18 @@ function DefaultCharacterSheetInner() {
     [updateCharacterAttribute],
   );
 
+  const handleAttributeMinMaxChange = useCallback(
+    (attrId: string, field: 'min' | 'max', val: number | '') => {
+      void updateCharacterAttribute(
+        attrId,
+        (val === ''
+          ? { [field]: undefined }
+          : { [field]: val }) as Partial<CharacterAttribute>,
+      );
+    },
+    [updateCharacterAttribute],
+  );
+
   const diceContext = useContext(DiceContext);
   const rollDice = diceContext?.rollDice;
 
@@ -438,6 +450,30 @@ function DefaultCharacterSheetInner() {
         </CollapsibleTrigger>
         <CollapsibleContent>
           <div className='border-border space-y-3 border-l-2 py-2 pl-3'>
+            {attr.type === 'number' ? (
+              <div className='grid grid-cols-1 gap-3 sm:grid-cols-2'>
+                <div className='flex flex-col gap-1.5'>
+                  <Label className='text-sm'>Min</Label>
+                  <NumberInput
+                    value={
+                      attr.min !== undefined && Number.isFinite(attr.min) ? attr.min : ''
+                    }
+                    onChange={(val) => handleAttributeMinMaxChange(attr.id, 'min', val)}
+                    className='h-9 w-full rounded-md border border-input px-3'
+                  />
+                </div>
+                <div className='flex flex-col gap-1.5'>
+                  <Label className='text-sm'>Max</Label>
+                  <NumberInput
+                    value={
+                      attr.max !== undefined && Number.isFinite(attr.max) ? attr.max : ''
+                    }
+                    onChange={(val) => handleAttributeMinMaxChange(attr.id, 'max', val)}
+                    className='h-9 w-full rounded-md border border-input px-3'
+                  />
+                </div>
+              </div>
+            ) : null}
             {defs.map((def) => {
               const propControlId = `default-sheet-attr-${attr.id}-prop-${def.id}`;
               const v = valueForDef(def);

@@ -107,38 +107,44 @@ export const useCharacterAttributes = (
     async (id: string, data: Partial<CharacterAttribute>) => {
       const now = new Date().toISOString();
 
-      const newMin = data.min;
-      const newMax = data.max;
-      const newDefaultValue = data.defaultValue;
-
-      if (newMin !== undefined && newMax !== undefined && newMin > newMax) {
-        console.warn('Min cannot be greater than Max. Adjusting Max to match Min.');
-        data.max = newMin;
-      }
-
-      if (newDefaultValue !== undefined) {
-        if (
-          newMin !== undefined &&
-          typeof newDefaultValue === 'number' &&
-          newDefaultValue < newMin
-        ) {
-          console.warn('Default value is less than Min. Adjusting Default value to match Min.');
-          data.defaultValue = newMin;
-        } else if (
-          newMax !== undefined &&
-          typeof newDefaultValue === 'number' &&
-          newDefaultValue > newMax
-        ) {
-          console.warn('Default value is greater than Max. Adjusting Default value to match Max.');
-          data.max = newDefaultValue;
-        }
-      }
-
       try {
-        await db.characterAttributes.update(id, {
-          ...data,
-          updatedAt: now,
-        });
+        const current = await db.characterAttributes.get(id);
+        if (!current) return;
+
+        const merged: CharacterAttribute = { ...current, ...data };
+        if (Object.hasOwn(data, 'min') && data.min === undefined) {
+          delete merged.min;
+        }
+        if (Object.hasOwn(data, 'max') && data.max === undefined) {
+          delete merged.max;
+        }
+
+        if (merged.min !== undefined && merged.max !== undefined && merged.min > merged.max) {
+          console.warn('Min cannot be greater than Max. Adjusting Max to match Min.');
+          merged.max = merged.min;
+        }
+
+        if (data.defaultValue !== undefined) {
+          const newDefaultValue = data.defaultValue;
+          if (
+            merged.min !== undefined &&
+            typeof newDefaultValue === 'number' &&
+            newDefaultValue < merged.min
+          ) {
+            console.warn('Default value is less than Min. Adjusting Default value to match Min.');
+            merged.defaultValue = merged.min;
+          } else if (
+            merged.max !== undefined &&
+            typeof newDefaultValue === 'number' &&
+            newDefaultValue > merged.max
+          ) {
+            console.warn('Default value is greater than Max. Adjusting Default value to match Max.');
+            merged.max = newDefaultValue;
+          }
+        }
+
+        merged.updatedAt = now;
+        await db.characterAttributes.put(merged);
         const row = await db.characterAttributes.get(id);
         if (row) broadcastAttributeRows([row]);
       } catch (e) {

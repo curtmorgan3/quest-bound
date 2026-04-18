@@ -37,6 +37,15 @@ const valueTypes = {
   List: 'list',
 };
 
+function optionalIntFromCellValue(value: unknown): number | undefined {
+  if (value === '' || value === null || value === undefined) return undefined;
+  if (typeof value === 'number' && Number.isFinite(value)) return Math.trunc(value);
+  const s = String(value).trim();
+  if (s === '') return undefined;
+  const n = parseInt(s, 10);
+  return Number.isNaN(n) ? undefined : n;
+}
+
 export const AttributeChart = () => {
   const { activeRuleset } = useActiveRuleset();
   const { attributes, deleteAttribute, updateAttribute } = useAttributes();
@@ -175,6 +184,8 @@ export const AttributeChart = () => {
       ...data,
       defaultValue: newType === 'number' ? Number(data.defaultValue) : data.defaultValue,
       type: newType,
+      min: optionalIntFromCellValue(data.min),
+      max: optionalIntFromCellValue(data.max),
     });
   };
 
@@ -225,7 +236,9 @@ export const AttributeChart = () => {
       onCellValueChanged={handleUpdate}
       onFilterChanged={handleFilterChanged}
       onSortChanged={handleSortChanged}
-      onGridReady={(api) => { gridApiRef.current = api; }}
+      onGridReady={(api) => {
+        gridApiRef.current = api;
+      }}
     />
   );
 };
