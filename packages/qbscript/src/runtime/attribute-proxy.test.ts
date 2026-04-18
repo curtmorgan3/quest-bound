@@ -77,9 +77,51 @@ describe('AttributeProxy', () => {
       expect(proxy.value).toBe(100);
     });
 
+    it('should prefer character max over ruleset max for setToMax', () => {
+      const char = { ...characterAttribute, max: 80 };
+      const p = new AttributeProxy(char, numericAttribute, pendingUpdates);
+      p.setToMax();
+      expect(p.value).toBe(80);
+    });
+
+    it('should use ruleset max for setToMax when character max is undefined', () => {
+      const char = { ...characterAttribute };
+      delete char.max;
+      const p = new AttributeProxy(char, numericAttribute, pendingUpdates);
+      p.setToMax();
+      expect(p.value).toBe(100);
+    });
+
+    it('should use pending character max for setToMax after setMax', () => {
+      proxy.setMax(72);
+      proxy.setToMax();
+      expect(proxy.value).toBe(72);
+    });
+
     it('should set to min value', () => {
       proxy.setToMin();
       expect(proxy.value).toBe(0);
+    });
+
+    it('should prefer character min over ruleset min for setToMin', () => {
+      const char = { ...characterAttribute, min: 5 };
+      const p = new AttributeProxy(char, numericAttribute, pendingUpdates);
+      p.setToMin();
+      expect(p.value).toBe(5);
+    });
+
+    it('should use ruleset min for setToMin when character min is undefined', () => {
+      const char = { ...characterAttribute };
+      delete char.min;
+      const p = new AttributeProxy(char, numericAttribute, pendingUpdates);
+      p.setToMin();
+      expect(p.value).toBe(0);
+    });
+
+    it('should use pending character min for setToMin after setMin', () => {
+      proxy.setMin(12);
+      proxy.setToMin();
+      expect(proxy.value).toBe(12);
     });
 
     it('should get description', () => {

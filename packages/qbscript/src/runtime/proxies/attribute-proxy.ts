@@ -288,26 +288,57 @@ export class AttributeProxy implements StructuredCloneSafe {
     this.set(current / divisor);
   }
 
+  /** Effective numeric bound: pending character override, then character row, then ruleset attribute. */
+  private getEffectiveMax(): number | undefined {
+    const pendingKey = `characterAttributeMax:${this.characterAttribute.id}`;
+    if (this.pendingUpdates.has(pendingKey)) {
+      const v = this.pendingUpdates.get(pendingKey);
+      if (typeof v === 'number' && Number.isFinite(v)) return v;
+    }
+    const c = this.characterAttribute.max;
+    if (c !== undefined && Number.isFinite(c)) return c;
+    const a = this.attribute.max;
+    if (a !== undefined && Number.isFinite(a)) return a;
+    return undefined;
+  }
+
+  private getEffectiveMin(): number | undefined {
+    const pendingKey = `characterAttributeMin:${this.characterAttribute.id}`;
+    if (this.pendingUpdates.has(pendingKey)) {
+      const v = this.pendingUpdates.get(pendingKey);
+      if (typeof v === 'number' && Number.isFinite(v)) return v;
+    }
+    const c = this.characterAttribute.min;
+    if (c !== undefined && Number.isFinite(c)) return c;
+    const a = this.attribute.min;
+    if (a !== undefined && Number.isFinite(a)) return a;
+    return undefined;
+  }
+
   /**
    * Set the attribute to its maximum value.
-   * Throws an error if the attribute has no max value defined.
+   * Uses the character attribute max when set, otherwise the ruleset attribute max.
+   * Throws an error if neither defines a max.
    */
   setToMax(): void {
-    if (this.attribute.max === undefined) {
+    const max = this.getEffectiveMax();
+    if (max === undefined) {
       throw new Error(`Attribute '${this.attribute.title}' has no max value defined`);
     }
-    this.set(this.attribute.max);
+    this.set(max);
   }
 
   /**
    * Set the attribute to its minimum value.
-   * Throws an error if the attribute has no min value defined.
+   * Uses the character attribute min when set, otherwise the ruleset attribute min.
+   * Throws an error if neither defines a min.
    */
   setToMin(): void {
-    if (this.attribute.min === undefined) {
+    const min = this.getEffectiveMin();
+    if (min === undefined) {
       throw new Error(`Attribute '${this.attribute.title}' has no min value defined`);
     }
-    this.set(this.attribute.min);
+    this.set(min);
   }
 
   /**
