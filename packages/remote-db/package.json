@@ -1,6 +1,6 @@
 {
   "name": "@quest-bound/remote-db",
-  "version": "2.2.2",
+  "version": "2.2.3",
   "private": true,
   "type": "module",
   "files": [
@@ -27,7 +27,7 @@
     "db:reset": "supabase db reset"
   },
   "dependencies": {
-    "@quest-bound/types": "2.2.2",
+    "@quest-bound/types": "2.2.3",
     "@supabase/supabase-js": "^2.99.1"
   }
 }
