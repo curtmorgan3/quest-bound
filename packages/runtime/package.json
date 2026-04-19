@@ -1,7 +1,6 @@
 {
   "name": "@quest-bound/runtime",
   "version": "2.2.4",
-  "private": true,
   "type": "module",
   "files": [
     "src",
