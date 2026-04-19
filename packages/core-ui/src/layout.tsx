@@ -41,6 +41,8 @@ import { Toaster } from './ui/sonner';
 
 const DEV_TOOLS_STORAGE_KEY = 'dev.tools';
 
+const isQbBundler = import.meta.env.VITE_QB_BUNDLE === '1';
+
 export function Layout() {
   useCampaignPlayWorkerPolicySync();
   const [searchParams] = useSearchParams();
@@ -194,6 +196,7 @@ export function Layout() {
 
   const isPlayPage = location.pathname.startsWith('/play/');
   const isSignInRequiredRoute =
+    isQbBundler ||
     location.pathname.startsWith('/rulesets/') ||
     (location.pathname.startsWith('/campaigns/') &&
       !location.pathname.startsWith('/campaigns/new'));

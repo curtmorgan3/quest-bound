@@ -58,6 +58,27 @@ function filenameFromUrlForImport(url: string): string {
   return crypto.randomUUID();
 }
 
+/**
+ * Coerce imported `sheetFitToViewport` to boolean or omit it.
+ * Zip JSON may use JSON null, legacy 0/1, or string booleans from other exporters.
+ */
+function normalizeImportedSheetFitToViewport(value: unknown): boolean | undefined {
+  if (value === undefined || value === null) return undefined;
+  if (typeof value === 'boolean') return value;
+  if (typeof value === 'number') {
+    if (value === 1) return true;
+    if (value === 0) return false;
+    return undefined;
+  }
+  if (typeof value === 'string') {
+    const s = value.trim().toLowerCase();
+    if (s === 'true' || s === '1') return true;
+    if (s === 'false' || s === '0') return false;
+    return undefined;
+  }
+  return undefined;
+}
+
 /** Chunk size for bulk IndexedDB writes. Smaller = more yields, less lock risk; larger = fewer round-trips. */
 const BULK_CHUNK_SIZE = 1000;
 /** Smaller chunk for large records (assets, fonts, documents with embedded data). */
@@ -1852,7 +1873,21 @@ export const useImportRuleset = () => {
       if (characterPagesFile) {
         try {
           const characterPagesText = await characterPagesFile.async('text');
-          const characterPagesToImport: CharacterPage[] = JSON.parse(characterPagesText);
+          const characterPagesParsed = JSON.parse(characterPagesText) as unknown;
+          if (Array.isArray(characterPagesParsed)) {
+            for (const item of characterPagesParsed) {
+              if (item !== null && typeof item === 'object') {
+                const cp = item as Record<string, unknown>;
+                const fit = normalizeImportedSheetFitToViewport(cp.sheetFitToViewport);
+                if (fit === undefined) {
+                  delete cp.sheetFitToViewport;
+                } else {
+                  cp.sheetFitToViewport = fit;
+                }
+              }
+            }
+          }
+          const characterPagesToImport = characterPagesParsed as CharacterPage[];
 
           const validation = validateData(characterPagesToImport, 'characterPages');
           if (validation.isValid) {

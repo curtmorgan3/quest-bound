@@ -2,6 +2,8 @@
 /// <reference types="cypress" />
 
 interface ImportMetaEnv {
+  /** Set to `"1"` in qb-bundler static builds (trimmed app shell). */
+  readonly VITE_QB_BUNDLE?: string;
   readonly VITE_APP_VERSION: string;
   readonly VITE_PLAUSIBLE_DOMAIN?: string;
   readonly VITE_SUPABASE_URL?: string;

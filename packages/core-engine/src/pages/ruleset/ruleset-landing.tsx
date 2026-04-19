@@ -7,6 +7,8 @@ import { usePlaytestRuntimeStore } from '@/stores/playtest-runtime-store';
 import { Map, Users } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
+const isQbBundler = import.meta.env.VITE_QB_BUNDLE === '1';
+
 export function RulesetLanding() {
   const { activeRuleset } = useActiveRuleset();
   const readOnlyPlaytester = useExternalRulesetGrantStore((s) =>
@@ -50,7 +52,7 @@ export function RulesetLanding() {
             <span>Made with Quest Bound</span>
             <LogoIcon style={{ width: 24, height: 24 }} />
           </div>
-          {!readOnlyPlaytester ? (
+          {!readOnlyPlaytester && !isQbBundler ? (
             <Link
               to={`/rulesets/${activeRuleset.id}`}
               className='text-xs text-muted-foreground hover:text-foreground transition-colors'>

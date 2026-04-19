@@ -2,6 +2,11 @@
 /* Monorepo: scan shared UI, runtime pages (Vite aliases `@/pages/...` → `packages/runtime`), and this app. */
 @source '../../core-ui/src';
 @source '../../runtime/src';
+/* Shell routes in this package (landing, settings) and linked layers — required when the app entry is outside the repo (e.g. qb-bundler). */
+@source '.';
+@source '../../local-db/src';
+@source '../../cloud/src';
+@source '../../qbscript/src';
 @import 'tw-animate-css';
 
 @custom-variant dark (&:is(.dark *));

@@ -15,6 +15,8 @@ import { CharacterSettings } from './character-settings';
 import { RulesetSettings } from './ruleset-settings';
 import { UserSettings } from './user-settings';
 
+const isQbBundler = import.meta.env.VITE_QB_BUNDLE === '1';
+
 export const Settings = () => {
   const { rulesetId, campaignId, characterId } = useParams();
   const { activeRuleset } = useActiveRuleset();
@@ -28,6 +30,9 @@ export const Settings = () => {
       ? s.permissionByRulesetId[rulesetId] === 'read_only'
       : false,
   );
+
+  const showRulesetSettings =
+    !isQbBundler && isOnRulesetRoute && Boolean(activeRuleset) && !rulesetReadOnlyPlaytest;
 
   const [page, setPage] = useState<string>('user');
   const prevParamsRef = useRef({ rulesetId, campaignId, characterId });
@@ -52,13 +57,13 @@ export const Settings = () => {
         setPage('character');
       } else if (isOnCampaignRoute && campaign) {
         setPage('campaign');
-      } else if (isOnRulesetRoute && activeRuleset && !rulesetReadOnlyPlaytest) {
+      } else if (showRulesetSettings) {
         setPage('ruleset');
       } else {
         setPage('user');
       }
     } else {
-      if (page === 'ruleset' && (!isOnRulesetRoute || !activeRuleset || rulesetReadOnlyPlaytest)) {
+      if (page === 'ruleset' && !showRulesetSettings) {
         setPage('user');
       } else if (page === 'character' && !character) {
         setPage('user');
@@ -72,11 +77,10 @@ export const Settings = () => {
     character,
     characterId,
     isOnCampaignRoute,
-    isOnRulesetRoute,
     page,
     rulesetId,
     campaignId,
-    rulesetReadOnlyPlaytest,
+    showRulesetSettings,
   ]);
 
   // Character / campaign / ruleset often resolve after first paint (Dexie live queries). Promote off User once ready.
@@ -86,7 +90,7 @@ export const Settings = () => {
       setPage('character');
     } else if (isOnCampaignRoute && campaign) {
       setPage('campaign');
-    } else if (isOnRulesetRoute && activeRuleset && !rulesetReadOnlyPlaytest) {
+    } else if (showRulesetSettings) {
       setPage('ruleset');
     }
   }, [
@@ -94,9 +98,7 @@ export const Settings = () => {
     character,
     campaign,
     isOnCampaignRoute,
-    isOnRulesetRoute,
-    activeRuleset,
-    rulesetReadOnlyPlaytest,
+    showRulesetSettings,
   ]);
 
   return (
@@ -124,12 +126,12 @@ export const Settings = () => {
                 </SidebarMenuButton>
               </SidebarMenuItem>
             )}
-            {isOnRulesetRoute && activeRuleset && !rulesetReadOnlyPlaytest && (
+            {showRulesetSettings && (
               <SidebarMenuItem className={`${page === 'ruleset' ? 'text-primary' : ''}`}>
                 <SidebarMenuButton asChild onClick={() => setPage('ruleset')}>
                   <div>
                     <NotebookPen />
-                    <span>{activeRuleset.title}</span>
+                    <span>{activeRuleset!.title}</span>
                   </div>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -156,8 +158,8 @@ export const Settings = () => {
           {page === 'campaign' && isOnCampaignRoute && campaign && (
             <CampaignSettings activeCampaign={campaign} />
           )}
-          {page === 'ruleset' && isOnRulesetRoute && activeRuleset && !rulesetReadOnlyPlaytest && (
-            <RulesetSettings activeRuleset={activeRuleset} />
+          {page === 'ruleset' && showRulesetSettings && (
+            <RulesetSettings activeRuleset={activeRuleset!} />
           )}
           {page === 'character' && character && <CharacterSettings character={character} />}
         </div>

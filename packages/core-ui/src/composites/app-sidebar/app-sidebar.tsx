@@ -25,6 +25,7 @@ import {
   CloudUpload,
   Dices,
   FolderOpen,
+  Home,
   HelpCircle,
   Settings as SettingsIcon,
   User,
@@ -65,6 +66,9 @@ function docsPageFromRoute(path: string): string {
   return 'rulesets';
 }
 
+/** qb-bundler static build: sidebar “Home” goes to `/` → ruleset landing (see qb-bundler `BundledApp`). */
+const isQbBundler = import.meta.env.VITE_QB_BUNDLE === '1';
+
 export function AppSidebar() {
   const { currentUser } = useUsers();
   const { open, setOpen } = useSidebar();
@@ -84,6 +88,10 @@ export function AppSidebar() {
 
   const isCampaignsRoute =
     location.pathname.startsWith('/campaigns/') && location.pathname !== '/campaigns/new';
+
+  /** Bundler: CharacterSidebar / CampaignSidebar already include Home; skip duplicate in footer. */
+  const showFooterHomeOrOpen =
+    !isQbBundler || (!isCharacterRoute && !isCampaignsRoute);
 
   const title =
     location.pathname === '/rulesets' || !activeRuleset?.title ? 'Quest Bound' : activeRuleset.title;
@@ -202,14 +210,20 @@ export function AppSidebar() {
         <SidebarContent>{sidebarContent}</SidebarContent>
         <SidebarFooter>
           <SidebarMenu>
-            <SidebarMenuItem>
-              <SidebarMenuButton asChild>
-                <Link to={`/rulesets`} data-testid='nav-home'>
-                  <FolderOpen className='w-4 h-4' />
-                  <span>Open</span>
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
+            {showFooterHomeOrOpen && (
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <Link to={isQbBundler ? '/' : '/rulesets'} data-testid='nav-home'>
+                    {isQbBundler ? (
+                      <Home className='w-4 h-4' />
+                    ) : (
+                      <FolderOpen className='w-4 h-4' />
+                    )}
+                    <span>{isQbBundler ? 'Home' : 'Open'}</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            )}
 
             {!isHomepage && (
               <SidebarMenuItem>
