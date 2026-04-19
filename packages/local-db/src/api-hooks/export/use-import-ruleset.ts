@@ -191,6 +191,7 @@ interface ImportedMetadata {
   exportInfo: {
     exportedAt: string;
     exportedBy: string;
+    /** Quest Bound app version at export time. */
     version: string;
   };
   counts: {

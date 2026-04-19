@@ -402,7 +402,7 @@ export const useExportRuleset = (rulesetId: string) => {
         exportInfo: {
           exportedAt: new Date().toISOString(),
           exportedBy: 'Quest Bound',
-          version: '2.0.0',
+          version: import.meta.env.VITE_APP_VERSION,
         },
         counts: {
           attributes: attributes?.length || 0,
@@ -796,7 +796,7 @@ When you re-import the ruleset, your changes will be preserved.
 
 - Ruleset Version: ${ruleset.version}
 - Exported: ${new Date().toISOString()}
-- Quest Bound Version: 2.0.0
+- Quest Bound Version: ${import.meta.env.VITE_APP_VERSION}
 - Scripts Exported: ${scriptExportResult.files.length}
 
 For more information about Quest Bound, visit the application documentation.
