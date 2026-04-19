@@ -26,8 +26,8 @@ import {
   useState,
   type DragEvent,
 } from 'react';
-import { WindowCanvasHost } from './sheet-viewer/window-canvas-host';
-import { WindowNode } from './sheet-viewer/window-node';
+import { WindowCanvasHost } from '@/pages/characters/sheet-viewer/window-canvas-host';
+import { WindowNode } from '@/pages/characters/sheet-viewer/window-node';
 
 const WINDOW_LAYERS_DRAG_KEY = 'application/x-quest-bound-ruleset-page-window-layer-index';
 

@@ -1,4 +1,4 @@
-import { useSheetGroupPointer } from '@/lib/compass-planes/sheet-viewer/sheet-group-pointer-context';
+import { useSheetGroupPointer } from '@/pages/characters/sheet-viewer/sheet-group-pointer-context';
 import { getGroupPointerAffinityIds } from '@/lib/compass-planes/sheet-editor/component-world-geometry';
 import type { Component, ComponentData } from '@/types';
 import type { ReactNode } from 'react';

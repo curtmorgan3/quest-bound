@@ -15,8 +15,8 @@ import {
   startSceneTurnBasedMode,
   stopSceneTurnBasedMode,
 } from '@/lib/compass-logic/runtime/advance-turn-order';
-import type { SheetViewerBackdropClickDetail } from '@/lib/compass-planes/sheet-viewer';
-import { SHEET_VIEWER_BACKDROP_CLICK } from '@/lib/compass-planes/sheet-viewer';
+import type { SheetViewerBackdropClickDetail } from '@/pages/characters/sheet-viewer';
+import { SHEET_VIEWER_BACKDROP_CLICK } from '@/pages/characters/sheet-viewer';
 import { cn } from '@/lib/utils';
 import type { CharacterPageFloatingActions } from '../characters';
 import { db, useCloudAuthStore } from '@/stores';

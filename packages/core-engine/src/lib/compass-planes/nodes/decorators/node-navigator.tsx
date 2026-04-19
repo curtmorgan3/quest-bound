@@ -3,9 +3,9 @@ import {
   navigateCharacterToTemplatePage,
   openCharacterSheetWindow,
 } from '@/utils/navigate-character-sheet';
-import { useParentWindowFrame } from '@/lib/compass-planes/sheet-viewer/parent-window-frame-context';
-import { useSheetCanvasBounds } from '@/lib/compass-planes/sheet-viewer/sheet-canvas-bounds-context';
-import { useWindowRuntime } from '@/lib/compass-planes/sheet-viewer/window-runtime-context';
+import { useParentWindowFrame } from '@/pages/characters/sheet-viewer/parent-window-frame-context';
+import { useSheetCanvasBounds } from '@/pages/characters/sheet-viewer/sheet-canvas-bounds-context';
+import { useWindowRuntime } from '@/pages/characters/sheet-viewer/window-runtime-context';
 import { resolveChildWindowCanvasPosition } from '@/lib/compass-planes/utils/resolve-child-window-canvas-position';
 import { CharacterContext } from '@/stores';
 import type { ChildWindowAnchor, Component, ComponentData } from '@/types';

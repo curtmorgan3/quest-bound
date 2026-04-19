@@ -7,10 +7,10 @@ import {
   worldTopLeftWithEffective,
 } from '@/lib/compass-planes/sheet-editor/component-world-geometry';
 import { isCanvasRootComponent } from '@/lib/compass-planes/sheet-editor/group-flex-utils';
-import { ParentWindowFrameProvider } from '@/lib/compass-planes/sheet-viewer/parent-window-frame-context';
-import { SheetComponentWithStates, sheetComponentLayoutData } from '@/lib/compass-planes/sheet-viewer/sheet-component-with-states';
-import { SheetGroupPointerProvider } from '@/lib/compass-planes/sheet-viewer/sheet-group-pointer-context';
-import { WindowRuntimeProvider } from '@/lib/compass-planes/sheet-viewer/window-runtime-context';
+import { ParentWindowFrameProvider } from '@/pages/characters/sheet-viewer/parent-window-frame-context';
+import { SheetComponentWithStates, sheetComponentLayoutData } from '@/pages/characters/sheet-viewer/sheet-component-with-states';
+import { SheetGroupPointerProvider } from '@/pages/characters/sheet-viewer/sheet-group-pointer-context';
+import { WindowRuntimeProvider } from '@/pages/characters/sheet-viewer/window-runtime-context';
 import { useComponentPositionMap } from '@/lib/compass-planes/utils';
 import { parseComponentActiveStatesMap } from '@/lib/compass-planes/utils/component-states';
 import { mergeCharacterWindowComponents } from '@/lib/compass-planes/utils/merge-character-window-components';

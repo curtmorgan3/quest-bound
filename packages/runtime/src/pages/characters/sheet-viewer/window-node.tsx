@@ -11,17 +11,17 @@ import {
   useState,
 } from 'react';
 import { Link } from 'react-router-dom';
-import { DRAG_THRESHOLD_PX } from '../canvas';
-import { isComponentConditionallyVisible, type ViewRenderContext } from '../nodes';
+import { DRAG_THRESHOLD_PX } from '@/lib/compass-planes/canvas';
+import { isComponentConditionallyVisible, type ViewRenderContext } from '@/lib/compass-planes/nodes';
 import {
   buildEffectiveLayoutMap,
   componentByIdMap,
   worldTopLeftWithEffective,
-} from '../sheet-editor/component-world-geometry';
-import { isCanvasRootComponent } from '../sheet-editor/group-flex-utils';
-import { useComponentPositionMap } from '../utils';
-import { parseComponentActiveStatesMap } from '../utils/component-states';
-import { mergeCharacterWindowComponents } from '../utils/merge-character-window-components';
+} from '@/lib/compass-planes/sheet-editor/component-world-geometry';
+import { isCanvasRootComponent } from '@/lib/compass-planes/sheet-editor/group-flex-utils';
+import { useComponentPositionMap } from '@/lib/compass-planes/utils';
+import { parseComponentActiveStatesMap } from '@/lib/compass-planes/utils/component-states';
+import { mergeCharacterWindowComponents } from '@/lib/compass-planes/utils/merge-character-window-components';
 import { ParentWindowFrameProvider } from './parent-window-frame-context';
 import { SheetComponentWithStates, sheetComponentLayoutData } from './sheet-component-with-states';
 import { SheetGroupPointerProvider } from './sheet-group-pointer-context';

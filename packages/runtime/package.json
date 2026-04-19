@@ -32,6 +32,11 @@
       "types": "./src/context/index.ts",
       "import": "./src/context/index.ts",
       "default": "./src/context/index.ts"
+    },
+    "./sheet-viewer": {
+      "types": "./src/pages/characters/sheet-viewer/index.ts",
+      "import": "./src/pages/characters/sheet-viewer/index.ts",
+      "default": "./src/pages/characters/sheet-viewer/index.ts"
     }
   },
   "scripts": {

@@ -14,8 +14,8 @@ import {
   type ReactNode,
 } from 'react';
 
-import { CanvasGridBackground, usePointerDrag } from '../canvas';
-import { DEFAULT_GRID_SIZE } from '../editor-config';
+import { CanvasGridBackground, usePointerDrag } from '@/lib/compass-planes/canvas';
+import { DEFAULT_GRID_SIZE } from '@/lib/compass-planes/editor-config';
 import { WindowCanvasSelectionContext } from './window-canvas-selection-context';
 import {
   SheetCanvasBoundsProvider,
