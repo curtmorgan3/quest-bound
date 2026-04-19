@@ -39,7 +39,8 @@
     "db:start": "npm run db:start -w @quest-bound/remote-db",
     "db:stop": "npm run db:stop -w @quest-bound/remote-db",
     "db:reset": "npm run db:reset -w @quest-bound/remote-db",
-    "publish:packages": "node scripts/publish-workspaces.mjs"
+    "publish:packages": "node scripts/publish-workspaces.mjs",
+    "deploy": "sh scripts/deploy.sh"
   },
   "devDependencies": {
     "@cypress/react": "^9.0.1",

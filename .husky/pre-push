@@ -19,6 +19,9 @@ done
 
 [ "$bump" = 0 ] && exit 0
 
+# scripts/deploy.sh bumps before publish; skip second patch bump on the follow-up push.
+[ -n "$QUEST_BOUND_SKIP_PRE_PUSH_VERSION_BUMP" ] && exit 0
+
 npm version patch --no-git-tag-version
 node scripts/sync-workspace-versions.mjs
 npm install --package-lock-only --ignore-scripts
