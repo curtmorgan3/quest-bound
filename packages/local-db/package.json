@@ -1,6 +1,6 @@
 {
   "name": "@quest-bound/local-db",
-  "version": "2.2.4",
+  "version": "2.2.5",
   "type": "module",
   "exports": {
     ".": {
@@ -32,8 +32,8 @@
     "@types/react-dom": "^19.1.7"
   },
   "dependencies": {
-    "@quest-bound/cloud": "2.2.4",
-    "@quest-bound/types": "2.2.4",
+    "@quest-bound/cloud": "2.2.5",
+    "@quest-bound/types": "2.2.5",
     "dexie": "^4.2.0",
     "dexie-react-hooks": "^4.2.0",
     "jszip": "^3.10.1",
