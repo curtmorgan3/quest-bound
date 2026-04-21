@@ -1,4 +1,6 @@
+import { filterNotSoftDeleted } from '@/lib/data/soft-delete';
 import type { DB } from '@/stores/db/hooks/types';
+import { seedCharacterAttributeFromRulesetAttribute } from '@/utils/character-attribute-from-ruleset-attribute';
 import type {
   Archetype,
   Attribute,
@@ -10,8 +12,6 @@ import type {
   RollFn,
   SceneTurnCallback,
 } from '@quest-bound/types';
-import { filterNotSoftDeleted } from '@/lib/data/soft-delete';
-import { seedCharacterAttributeFromRulesetAttribute } from '@/utils/character-attribute-from-ruleset-attribute';
 import type Dexie from 'dexie';
 import {
   executeArchetypeEvent,
@@ -25,6 +25,8 @@ type AnyCharacterAccessor = CharacterAccessor | OwnerAccessor;
 
 interface SpawnCharacterOptions {
   archetypeName: string;
+  /** Optional archetype variant (same as CharacterArchetype.variant / UI create flow). */
+  variant?: string;
 }
 
 type GetCharacterAccessorByIdFn = (characterId: string) => Promise<AnyCharacterAccessor | null>;
@@ -48,7 +50,7 @@ export type ExecuteTurnCallbacksFn = (callbacks: SceneTurnCallback[]) => Promise
  *
  * Provides:
  * - .characters(): active characters in the scene as character accessors
- * - .spawnCharacter('Archetype Name'): create an active NPC in the scene
+ * - .spawnCharacter('Archetype Name', optionalVariant): create an active NPC in the scene
  */
 export class CampaignSceneAccessor {
   private db: DB;
@@ -413,13 +415,20 @@ export class CampaignSceneAccessor {
    * Create a new NPC character from the given archetype and attach it
    * as an active CampaignCharacter in this scene.
    *
+   * @param variant - Optional second argument; persisted on `CharacterArchetype` and `Character`
+   *   (same semantics as creating a character with a variant in the app).
+   *
    * Returns a character accessor for the spawned NPC.
    *
    * This helper fully initializes the character by running the Character Loader
    * and the archetype's on_add event (when present) before resolving.
    */
-  async spawnCharacter(archetypeName: string): Promise<AnyCharacterAccessor> {
-    const options: SpawnCharacterOptions = { archetypeName: archetypeName.trim() };
+  async spawnCharacter(archetypeName: string, variant?: string): Promise<AnyCharacterAccessor> {
+    const trimmedVariant = variant?.trim();
+    const options: SpawnCharacterOptions = {
+      archetypeName: archetypeName.trim(),
+      ...(trimmedVariant ? { variant: trimmedVariant } : {}),
+    };
     if (!options.archetypeName) {
       throw new Error('spawnCharacter requires a non-empty archetype name');
     }
@@ -472,6 +481,7 @@ export class CampaignSceneAccessor {
       moduleId: archetype.moduleId,
       moduleEntityId: archetype.moduleEntityId,
       moduleName: archetype.moduleName,
+      ...(options.variant != null ? { variant: options.variant } : {}),
     };
 
     await this.db.characters.add(character as any);
@@ -594,6 +604,7 @@ export class CampaignSceneAccessor {
       loadOrder: 0,
       createdAt: now,
       updatedAt: now,
+      ...(options.variant != null ? { variant: options.variant } : {}),
     } as any);
 
     const rollForSpawn = this.createRollForCharacter?.(characterId) ?? this.roll;

@@ -110,7 +110,7 @@ const qbscriptCompletions = [
   {
     label: 'Scene',
     type: 'variable',
-    info: 'Active campaign scene in campaign context; use Scene.characters(), Scene.spawnCharacter(name), and turn-based APIs',
+    info: 'Active campaign scene in campaign context; use Scene.characters(), Scene.spawnCharacter(name, optionalVariant), and turn-based APIs',
   },
   {
     label: 'Scene.characters',

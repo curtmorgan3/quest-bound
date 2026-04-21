@@ -372,7 +372,7 @@ When a script runs in a campaign with an active scene (e.g. Game Manager or camp
 | Method                                   | Description                                                                                |
 | ---------------------------------------- | ------------------------------------------------------------------------------------------ |
 | `Scene.characters()`                     | Array of character accessors in the current scene (player characters and active NPCs)      |
-| `Scene.spawnCharacter('Archetype Name')` | Creates an active NPC in the scene from the archetype; returns a character accessor for it |
+| `Scene.spawnCharacter('Archetype Name', optionalVariant)` | Creates an active NPC in the scene from the archetype; optional second argument sets the archetype variant (persisted like the character creator). Returns a character accessor for it |
 
 Example:
 
@@ -381,7 +381,7 @@ npcs = Scene.characters()
 for npc in npcs:
   announce('{{npc.name}} is in the scene.')
 
-spawned = Scene.spawnCharacter('Goblin')
+spawned = Scene.spawnCharacter('Goblin', 'Elite')
 announce('Spawned {{spawned.name}}.')
 ```
 
