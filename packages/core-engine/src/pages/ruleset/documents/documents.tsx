@@ -64,7 +64,9 @@ export const Documents = ({ onEditDetails, campaignId }: DocumentChartProps) => 
     return [...set].sort((a, b) => a.localeCompare(b));
   }, [documents]);
 
-  const sortedDocuments = [...documents].sort((a, b) => a.title.localeCompare(b.title));
+  const sortedDocuments = [...documents].sort(
+    (a, b) => (a.order ?? 0) - (b.order ?? 0) || a.title.localeCompare(b.title),
+  );
   const filteredDocuments = sortedDocuments.filter((d) => {
     const matchesText = d.title.toLowerCase().includes(filterValue.toLowerCase());
     const matchesCategory =

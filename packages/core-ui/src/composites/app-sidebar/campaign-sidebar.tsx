@@ -55,7 +55,9 @@ export function CampaignSidebar() {
     });
   };
 
-  const sortedDocuments = [...documents].sort((a, b) => a.title.localeCompare(b.title));
+  const sortedDocuments = [...documents].sort(
+    (a, b) => (a.order ?? 0) - (b.order ?? 0) || a.title.localeCompare(b.title),
+  );
   const sortedCharts = [...charts].sort((a, b) => a.title.localeCompare(b.title));
 
   const documentId = location.pathname.match(/\/documents\/([^/]+)/)?.[1];

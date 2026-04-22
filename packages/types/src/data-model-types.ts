@@ -402,6 +402,8 @@ export type Document = BaseDetails & {
   campaignSceneId?: string | null;
   title: string;
   description: string;
+  /** Sort position in document lists (lower first). Synced to Postgres as `sort_order`. */
+  order?: number;
   category?: string;
   assetId?: string | null;
   image?: string | null;

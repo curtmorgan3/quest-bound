@@ -12,8 +12,8 @@ import {
   updateMemoizedAssetsForRecords,
 } from '@/lib/cloud/sync/sync-assets';
 import { syncRecordsDeepEqual } from '@/lib/cloud/sync/sync-conflict-equality';
-import type { SyncMergeConflict } from '@/lib/cloud/sync/sync-merge-conflict-types';
 import { addSyncEntityCount, sumSyncEntityCounts } from '@/lib/cloud/sync/sync-entity-labels';
+import type { SyncMergeConflict } from '@/lib/cloud/sync/sync-merge-conflict-types';
 import {
   getStoredLastSyncedAt,
   getSuppressedPullDeletes,
@@ -25,7 +25,11 @@ import {
   getSyncTableConfigByRemote,
   SYNC_TABLE_ORDER,
 } from '@/lib/cloud/sync/sync-tables';
-import { formatSyncError, prepareRemoteForLocal, toSnakeCaseKeys } from '@/lib/cloud/sync/sync-utils';
+import {
+  formatSyncError,
+  prepareRemoteForLocal,
+  toSnakeCaseKeys,
+} from '@/lib/cloud/sync/sync-utils';
 import { isSoftDeleteSyncTable } from '@/lib/data/soft-delete';
 import type { DB } from '@/stores/db/hooks/types';
 import type { SupabaseClient } from '@supabase/supabase-js';
@@ -177,8 +181,10 @@ async function mergeTablePlanWithConflicts(
         prepared.deleted = prepared.deleted === true;
       }
       if (tableName === 'users' && localRecord) {
-        if (localRecord.emailVerified !== undefined) prepared.emailVerified = localRecord.emailVerified;
-        if (localRecord.cloudEnabled !== undefined) prepared.cloudEnabled = localRecord.cloudEnabled;
+        if (localRecord.emailVerified !== undefined)
+          prepared.emailVerified = localRecord.emailVerified;
+        if (localRecord.cloudEnabled !== undefined)
+          prepared.cloudEnabled = localRecord.cloudEnabled;
       }
       toPut.push(prepared);
     }
@@ -374,7 +380,10 @@ export async function planSyncPull(
           }
         }
         if (config.parentTable === 'composites') {
-          const localComposites = await db.composites.where('rulesetId').equals(rulesetId).toArray();
+          const localComposites = await db.composites
+            .where('rulesetId')
+            .equals(rulesetId)
+            .toArray();
           const localIds = localComposites.map((c) => c.id);
           parentIds = [...new Set([...parentIds, ...localIds])];
         }
@@ -410,9 +419,7 @@ export async function planSyncPull(
     for (const entry of deleteEntries) {
       const config = getSyncTableConfigByRemote(entry.table_name);
       if (!config) continue;
-      if (
-        isPullDeleteSuppressed(suppressedDeletes, rulesetId, config.tableName, entry.entity_id)
-      ) {
+      if (isPullDeleteSuppressed(suppressedDeletes, rulesetId, config.tableName, entry.entity_id)) {
         continue;
       }
       const delTable = (db as unknown as Record<string, DexieMergeTable | undefined>)[
@@ -518,6 +525,12 @@ export async function applyStagedPull(
 
   for (const name of SYNC_TABLE_ORDER) {
     const rows = payload.upsertsByTable[name];
+    if (name === 'charts') {
+      console.log(name);
+      console.log(rows);
+      console.log(payload.deletes);
+      console.log('==============');
+    }
     if (!rows?.length) continue;
     const table = dbTables[name];
     if (!table?.bulkPut) continue;

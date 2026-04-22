@@ -271,5 +271,11 @@ export const dbSchemaV68 = {
   syncMergeConflicts: 'id, rulesetId, tableName, entityId, createdAt, resolvedAt',
 };
 
+/** Schema for v69: documents get optional `order` for list/sidebar sorting. */
+export const dbSchemaV69 = {
+  ...dbSchemaV68,
+  documents: `${common}, rulesetId, campaignId, campaignSceneId, title, description, category, order, assetId, image, pdfAssetId, pdfData, markdownData, moduleId, [campaignSceneId]`,
+};
+
 // latestDbSchema should always be used for the worker thread db instance
-export const latestDbSchema = { ...dbSchemaV68 };
+export const latestDbSchema = { ...dbSchemaV69 };

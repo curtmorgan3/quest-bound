@@ -74,14 +74,17 @@ export const DocumentLookup = ({
 
   const searchLower = search.toLowerCase().trim();
   const groupedDocuments = useMemo(() => {
+    const ordered = [...documents].sort(
+      (a, b) => (a.order ?? 0) - (b.order ?? 0) || a.title.localeCompare(b.title),
+    );
     const filtered = searchLower
-      ? documents.filter(
+      ? ordered.filter(
           (doc) =>
             doc.title.toLowerCase().includes(searchLower) ||
             (doc.description?.toLowerCase().includes(searchLower) ?? false) ||
             (doc.category?.toLowerCase().includes(searchLower) ?? false),
         )
-      : documents;
+      : ordered;
 
     return filtered.reduce(
       (acc, doc) => {

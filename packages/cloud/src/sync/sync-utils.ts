@@ -152,10 +152,16 @@ export function prepareRecordForRemote(
     patchRequiredDoubleFields(stripped, ['x', 'y'], 0);
   }
   if (tableName === 'documents') {
-    const d = stripped as { description?: unknown };
+    const d = stripped as { description?: unknown; order?: unknown; sortOrder?: unknown };
     if (d.description == null) {
       d.description = '';
     }
+    const rawOrder = d.order ?? d.sortOrder;
+    const n = typeof rawOrder === 'number' ? rawOrder : Number(rawOrder);
+    const sortOrderVal = Number.isFinite(n) ? Math.trunc(n) : 0;
+    delete d.order;
+    delete d.sortOrder;
+    d.sortOrder = sortOrderVal;
   }
   if (tableName === 'archetypes') {
     const a = stripped as { description?: unknown; variantsChartRef?: unknown };
@@ -243,7 +249,14 @@ export function prepareRemoteForLocal(
     if (authUid != null) out.cloudUserId = authUid;
     return out;
   }
-  return toCamelCaseKeys(record);
+  const out = toCamelCaseKeys(record);
+  if (tableName === 'documents') {
+    const raw = out.sortOrder;
+    const n = typeof raw === 'number' ? raw : Number(raw);
+    out.order = Number.isFinite(n) ? Math.trunc(n) : 0;
+    delete out.sortOrder;
+  }
+  return out;
 }
 
 /**

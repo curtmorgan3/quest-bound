@@ -615,8 +615,23 @@ export const Rulesets = () => {
                   </Card>
                 );
               })}
+            {showCloudBadge && cloudRulesetsLoading ? (
+              <Card
+                role='status'
+                aria-live='polite'
+                aria-busy='true'
+                className='flex aspect-square w-[min(100%,280px)] flex-col items-center justify-center gap-2 border-dashed p-4'
+                data-testid='ruleset-card-cloud-loading'>
+                <Loader2
+                  className='h-8 w-8 animate-spin text-muted-foreground'
+                  aria-hidden
+                />
+                <p className='text-center text-xs text-muted-foreground'>Loading cloud rulesets…</p>
+              </Card>
+            ) : null}
             {!hasNoRulesetsToShow &&
               showCloudBadge &&
+              !cloudRulesetsLoading &&
               visibleCloudOnly.map((r) => (
                 <Card
                   key={r.id}

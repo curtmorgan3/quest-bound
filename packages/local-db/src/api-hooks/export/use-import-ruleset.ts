@@ -610,6 +610,9 @@ export const useImportRuleset = () => {
           if (!item.title || typeof item.title !== 'string') {
             errors.push(`Document ${index + 1}: title is required and must be a string`);
           }
+          if (item.order != null && typeof item.order !== 'number') {
+            errors.push(`Document ${index + 1}: order must be a number when present`);
+          }
           break;
 
         case 'characterAttributes':

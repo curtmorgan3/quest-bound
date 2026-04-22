@@ -96,7 +96,9 @@ export function CharacterSidebar() {
     });
   };
 
-  const sortedDocuments = [...documents].sort((a, b) => a.title.localeCompare(b.title));
+  const sortedDocuments = [...documents].sort(
+    (a, b) => (a.order ?? 0) - (b.order ?? 0) || a.title.localeCompare(b.title),
+  );
   const sortedCharts = [...charts].sort((a, b) => a.title.localeCompare(b.title));
 
   return (

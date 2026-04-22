@@ -1,7 +1,7 @@
-import { Button, ImageUpload, Label } from '@/components';
+import { Button, ImageUpload, Input, Label } from '@/components';
 import { useAssets } from '@/lib/compass-api';
 import { FileText, Trash, Upload } from 'lucide-react';
-import { type Dispatch, type SetStateAction, useRef, useState } from 'react';
+import { type Dispatch, type SetStateAction, useEffect, useRef, useState } from 'react';
 
 interface DocumentCreateProps {
   image: string | null;
@@ -12,6 +12,8 @@ interface DocumentCreateProps {
   setAssetId: Dispatch<SetStateAction<string | null>>;
   setPdfAssetId: Dispatch<SetStateAction<string | null>>;
   setPdfData: Dispatch<SetStateAction<string | null>>;
+  order: number;
+  setOrder: Dispatch<SetStateAction<number>>;
   rulesetId?: string;
 }
 
@@ -24,12 +26,19 @@ export const DocumentCreate = ({
   setAssetId,
   setPdfAssetId,
   setPdfData,
+  order,
+  setOrder,
   rulesetId,
 }: DocumentCreateProps) => {
   const { assets, createAsset, deleteAsset } = useAssets(rulesetId);
   const pdfInputRef = useRef<HTMLInputElement>(null);
   const [pdfFilename, setPdfFilename] = useState<string | null>(null);
   const [uploadingPdf, setUploadingPdf] = useState(false);
+  const [orderDraft, setOrderDraft] = useState(() => String(order));
+
+  useEffect(() => {
+    setOrderDraft(String(order));
+  }, [order]);
 
   const getImageFromAssetId = (id: string | null) => {
     if (!id) return null;
@@ -85,6 +94,36 @@ export const DocumentCreate = ({
 
   return (
     <div className='flex flex-col gap-6'>
+      <div className='grid max-w-xs gap-2'>
+        <Label htmlFor='document-order'>Order</Label>
+        <Input
+          id='document-order'
+          type='number'
+          inputMode='numeric'
+          value={orderDraft}
+          onChange={(e) => {
+            const t = e.target.value;
+            setOrderDraft(t);
+            if (t === '' || t === '-') return;
+            const v = Number.parseInt(t, 10);
+            if (Number.isFinite(v)) setOrder(v);
+          }}
+          onBlur={() => {
+            const v = Number.parseInt(orderDraft, 10);
+            if (Number.isFinite(v)) {
+              setOrder(v);
+              setOrderDraft(String(v));
+            } else {
+              setOrder(0);
+              setOrderDraft('0');
+            }
+          }}
+          aria-describedby='document-order-hint'
+        />
+        <p id='document-order-hint' className='text-xs text-muted-foreground'>
+          Lower numbers appear first in the documents list and character sidebar.
+        </p>
+      </div>
       <div className='flex flex-row gap-6'>
         <div className='flex flex-col gap-2'>
           <Label>Cover Image</Label>
