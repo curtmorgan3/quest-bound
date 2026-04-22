@@ -27,6 +27,7 @@ import { AttributeChart } from './attributes/attribute-chart';
 import { ChartSelect } from './charts';
 import { ChartImport, Export, Import } from './components';
 import { BaseCreate } from './create';
+import { parseChartTsv } from './create/chart-create';
 import { Documents } from './documents';
 import { ItemChart } from './items/item-chart';
 import { ManageItemCustomPropertiesModal } from './items/manage-item-custom-properties-modal';
@@ -64,9 +65,12 @@ export const Ruleset = ({
   const [isImporting, setIsImporting] = useState(false);
   const [documentUploadModalOpen, setDocumentUploadModalOpen] = useState(false);
   const [uploadingDocuments, setUploadingDocuments] = useState(false);
+  const [chartUploadModalOpen, setChartUploadModalOpen] = useState(false);
+  const [uploadingCharts, setUploadingCharts] = useState(false);
   const documentFileInputRef = useRef<HTMLInputElement>(null);
+  const chartTsvFileInputRef = useRef<HTMLInputElement>(null);
   const { exportChartAsTSV } = useExportChart();
-  const { charts } = useCharts();
+  const { charts, createChart } = useCharts();
   const { createDocument } = useDocuments();
   const { createAsset } = useAssets(activeRuleset?.id);
 
@@ -124,6 +128,41 @@ export const Ruleset = ({
       setDocumentUploadModalOpen(false);
     } finally {
       setUploadingDocuments(false);
+    }
+  };
+
+  const handleChartUploadClick = () => {
+    setChartUploadModalOpen(true);
+  };
+
+  const handleChartTsvSelectFilesClick = () => {
+    chartTsvFileInputRef.current?.click();
+  };
+
+  const handleChartTsvFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files?.length) return;
+    const fileList = Array.from(files);
+    e.target.value = '';
+    setUploadingCharts(true);
+    try {
+      for (const file of fileList) {
+        if (!/\.tsv$/i.test(file.name)) continue;
+        const text = await file.text();
+        const rows = parseChartTsv(text);
+        if (rows.length === 0) continue;
+        const title = file.name.replace(/\.tsv$/i, '');
+        await createChart({
+          title,
+          description: '',
+          data: JSON.stringify(rows),
+          image: null,
+          assetId: null,
+        });
+      }
+      setChartUploadModalOpen(false);
+    } finally {
+      setUploadingCharts(false);
     }
   };
 
@@ -197,6 +236,31 @@ export const Ruleset = ({
               <Plus className='h-4 w-4' />
               {`Create ${(pageToLabel.get(page) ?? '').slice(0, -1)}`}
             </Button>
+          )}
+          {page === 'charts' && !chartId && (
+            <Button
+              size='sm'
+              variant='outline'
+              onClick={handleChartUploadClick}
+              disabled={uploadingCharts || readOnlyPlaytest}
+              data-testid='charts-upload-button'>
+              {uploadingCharts ? (
+                <Loader2 className='h-4 w-4 animate-spin' />
+              ) : (
+                <Upload className='h-4 w-4' />
+              )}
+              {uploadingCharts ? 'Uploading…' : 'Upload'}
+            </Button>
+          )}
+          {page === 'charts' && !chartId && (
+            <input
+              ref={chartTsvFileInputRef}
+              type='file'
+              accept='.tsv,text/tab-separated-values'
+              multiple
+              className='hidden'
+              onChange={handleChartTsvFileChange}
+            />
           )}
           {page === 'documents' && (
             <Button
@@ -323,6 +387,40 @@ export const Ruleset = ({
                 variant='secondary'
                 onClick={() => setDocumentUploadModalOpen(false)}
                 disabled={uploadingDocuments}>
+                Cancel
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
+      {page === 'charts' && !chartId && (
+        <Dialog open={chartUploadModalOpen} onOpenChange={setChartUploadModalOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Upload charts</DialogTitle>
+              <DialogDescription>
+                Select one or more .tsv files. Each file will be added as a chart with its filename
+                (without extension) as the title.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button
+                onClick={handleChartTsvSelectFilesClick}
+                disabled={uploadingCharts || readOnlyPlaytest}
+                data-testid='charts-upload-select-files'>
+                {uploadingCharts ? (
+                  <>
+                    <Loader2 className='h-4 w-4 animate-spin' />
+                    Uploading…
+                  </>
+                ) : (
+                  'Select Files'
+                )}
+              </Button>
+              <Button
+                variant='secondary'
+                onClick={() => setChartUploadModalOpen(false)}
+                disabled={uploadingCharts}>
                 Cancel
               </Button>
             </DialogFooter>

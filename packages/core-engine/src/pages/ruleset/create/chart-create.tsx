@@ -13,7 +13,7 @@ interface ChartCreateProps {
   rulesetId?: string;
 }
 
-function parseTSV(tsvString: string): string[][] {
+export function parseChartTsv(tsvString: string): string[][] {
   const lines = tsvString.split('\n');
   const data = lines.map((line) => line.replace(/\r/g, '').split('\t'));
   return data;
@@ -73,7 +73,7 @@ export const ChartCreate = ({
 
       reader.onload = (event) => {
         if (event.target?.result && typeof event.target.result === 'string') {
-          const fileData = parseTSV(event.target.result);
+          const fileData = parseChartTsv(event.target.result);
           setChartData(fileData);
         }
         setUploadingTsv(false);

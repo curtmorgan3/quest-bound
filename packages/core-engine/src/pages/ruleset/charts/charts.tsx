@@ -17,8 +17,12 @@ export const ChartSelect = ({ onEditDetails }: ChartSelectProps) => {
   const { activeRuleset } = useActiveRuleset();
   const { charts, deleteChart, updateChart } = useCharts();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { title: filterValue, category: categoryFilter, setTitle: setFilterValue, setCategory: setCategoryFilter } =
-    useListFilterParams();
+  const {
+    title: filterValue,
+    category: categoryFilter,
+    setTitle: setFilterValue,
+    setCategory: setCategoryFilter,
+  } = useListFilterParams();
   const setListFilters = useRulesetFiltersStore((s) => s.setListFilters);
 
   const rulesetId = activeRuleset?.id;
@@ -38,7 +42,8 @@ export const ChartSelect = ({ onEditDetails }: ChartSelectProps) => {
 
   const handleCategoryChange = (value: string) => {
     setCategoryFilter(value);
-    if (rulesetId) setListFilters(rulesetId, 'charts', { category: value === ALL_CATEGORIES ? null : value });
+    if (rulesetId)
+      setListFilters(rulesetId, 'charts', { category: value === ALL_CATEGORIES ? null : value });
   };
 
   const categories = useMemo(() => {
@@ -68,6 +73,7 @@ export const ChartSelect = ({ onEditDetails }: ChartSelectProps) => {
       <div className='flex flex-wrap items-center gap-2'>
         <Input
           className='max-w-md'
+          data-testid='preview-filter'
           placeholder='Filter by title'
           value={filterValue}
           onChange={(e) => handleTitleChange(e.target.value)}
@@ -96,12 +102,12 @@ export const ChartSelect = ({ onEditDetails }: ChartSelectProps) => {
             existingCategories={categories}
             onDelete={() => deleteChart(c.id)}
             onOpen={() =>
-            setSearchParams((prev) => {
-              const p = new URLSearchParams(prev);
-              p.set('chart', c.id);
-              return p;
-            })
-          }
+              setSearchParams((prev) => {
+                const p = new URLSearchParams(prev);
+                p.set('chart', c.id);
+                return p;
+              })
+            }
             onEdit={(title, category) => updateChart(c.id, { title, category })}
             onEditDetails={onEditDetails ? () => onEditDetails(c.id) : undefined}
           />
