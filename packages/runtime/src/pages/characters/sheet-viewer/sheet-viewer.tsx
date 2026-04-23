@@ -43,9 +43,14 @@ export const SheetViewer = ({
 }: SheetViewerProps) => {
   const { characterPages, updateCharacterPage } = useCharacterPages(characterId);
 
-  const sortedCharacterPages = [
-    ...characterPages.sort((a, b) => a.label?.localeCompare(b.label ?? '')),
-  ];
+  /** Copy before sort — `characterPages` comes from Dexie liveQuery; in-place `.sort()` mutates cached rows and churns layout. */
+  const sortedCharacterPages = useMemo(
+    () =>
+      [...characterPages].sort((a, b) =>
+        (a.label ?? '').localeCompare(b.label ?? '', undefined, { sensitivity: 'base' }),
+      ),
+    [characterPages],
+  );
   const {
     windows: characterWindows,
     createCharacterWindow,

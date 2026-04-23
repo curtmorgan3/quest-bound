@@ -7,7 +7,7 @@ import { colorPrimary } from '@/palette';
 import type { ScriptLog } from '@/types';
 import { format } from 'date-fns';
 import { CircleOff, ScrollText, X } from 'lucide-react';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 
 const GAME_LOG_LIMIT = 200;
 
@@ -49,28 +49,29 @@ export const GameLog = ({ className, characterId, docked = false }: GameLogProps
     });
   };
 
-  const filteredLogs = showAutoEntries ? scriptLogs : scriptLogs.filter((l) => !isAutoEntry(l));
-
-  const logs: { msg: string; time: string; isAuto: boolean }[] = [...filteredLogs]
-    .sort(compareScriptLogsNewestFirst)
-    .map((l) => {
-      try {
-        const logArray = JSON.parse(l.argsJson) as unknown[];
-        const msg = Array.isArray(logArray) ? logArray.join(', ') : String(logArray);
-        return {
-          msg,
-          time: format(new Date(l.timestamp), 'MM/dd HH:mm'),
-          isAuto: isAutoEntry(l),
-        };
-      } catch {
-        return {
-          msg: l.argsJson,
-          time: format(new Date(l.timestamp), 'MM/dd HH:mm'),
-          isAuto: isAutoEntry(l),
-        };
-      }
-    })
-    .filter((log) => !!log.msg);
+  const logs: { msg: string; time: string; isAuto: boolean }[] = useMemo(() => {
+    const filtered = showAutoEntries ? scriptLogs : scriptLogs.filter((l) => !isAutoEntry(l));
+    return [...filtered]
+      .sort(compareScriptLogsNewestFirst)
+      .map((l) => {
+        try {
+          const logArray = JSON.parse(l.argsJson) as unknown[];
+          const msg = Array.isArray(logArray) ? logArray.join(', ') : String(logArray);
+          return {
+            msg,
+            time: format(new Date(l.timestamp), 'MM/dd HH:mm'),
+            isAuto: isAutoEntry(l),
+          };
+        } catch {
+          return {
+            msg: l.argsJson,
+            time: format(new Date(l.timestamp), 'MM/dd HH:mm'),
+            isAuto: isAutoEntry(l),
+          };
+        }
+      })
+      .filter((log) => !!log.msg);
+  }, [scriptLogs, showAutoEntries]);
 
   const toggleButton = (
     <Button

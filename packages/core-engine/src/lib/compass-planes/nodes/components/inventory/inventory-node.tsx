@@ -1,3 +1,6 @@
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { useEditorItemId } from '@/lib/compass-planes/canvas/editor-item-context';
+import { useComponentCanvasDimensions } from '@/lib/compass-planes/canvas/editor-item-layout-context';
 import { editorNodeComponentVisualEqual } from '@/lib/compass-planes/nodes/editor-node-memo';
 import {
   getBackgroundStyle,
@@ -7,9 +10,6 @@ import {
 } from '@/lib/compass-planes/utils';
 import { CharacterContext, WindowEditorContext, useInventoryDragContext } from '@/stores';
 import type { Component, InventoryComponentData } from '@/types';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { useEditorItemId } from '@/lib/compass-planes/canvas/editor-item-context';
-import { useComponentCanvasDimensions } from '@/lib/compass-planes/canvas/editor-item-layout-context';
 import { Fragment, memo, useContext, useEffect, useState } from 'react';
 import { ResizableNode } from '../../decorators';
 import { ItemContextMenu, type ContextMenuState } from './item-context-menu';
@@ -80,13 +80,16 @@ const ViewInventoryNodeComponent = ({ component }: { component: Component }) => 
 
   const cellWidth = (data.cellWidth ?? 1) * 20;
   const cellHeight = (data.cellHeight ?? 1) * 20;
-  const { width, height, widthStyle: cw, heightStyle: ch } =
-    useComponentCanvasDimensions(component);
+  const {
+    width,
+    height,
+    widthStyle: cw,
+    heightStyle: ch,
+  } = useComponentCanvasDimensions(component);
   const gridCols = Math.floor(width / cellWidth);
   const gridRows = Math.floor(height / cellHeight);
   const showItemAs = data.showItemAs ?? 'image';
-  const showLabelTooltip =
-    showItemAs === 'image' && data.showLabelTooltip === true;
+  const showLabelTooltip = showItemAs === 'image' && data.showLabelTooltip === true;
   const typeRestriction = data.typeRestriction;
   const categoryRestriction = data.categoryRestriction;
 
@@ -219,20 +222,14 @@ const ViewInventoryNodeComponent = ({ component }: { component: Component }) => 
               onPointerDown={inventoryDisabled ? undefined : (e) => handlePointerDown(e, invItem)}
               tabIndex={inventoryDisabled ? -1 : 0}
               role={inventoryDisabled ? undefined : 'button'}
-              aria-label={
-                inventoryDisabled ? undefined : `${invItem.title} - drag to move`
-              }
+              aria-label={inventoryDisabled ? undefined : `${invItem.title} - drag to move`}
               style={{
                 position: 'absolute',
                 left: pos.left,
                 top: pos.top,
                 width: 20 * invItem.inventoryWidth,
                 height: 20 * invItem.inventoryHeight,
-                cursor: inventoryDisabled
-                  ? 'default'
-                  : isDragging
-                    ? 'grabbing'
-                    : 'grab',
+                cursor: inventoryDisabled ? 'default' : isDragging ? 'grabbing' : 'grab',
                 // Hide the in-grid item while dragging so only the
                 // global drag preview is visible.
                 opacity: isDragging ? 0 : 1,
@@ -261,6 +258,7 @@ const ViewInventoryNodeComponent = ({ component }: { component: Component }) => 
                     fontSize: css.fontSize,
                     fontStyle: css.fontStyle,
                     fontWeight: css.fontWeight,
+                    textWrap: 'nowrap',
                   }}>
                   {invItem.title}
                 </span>
@@ -329,7 +327,6 @@ const ViewInventoryNodeComponent = ({ component }: { component: Component }) => 
   );
 };
 
-export const ViewInventoryNode = memo(
-  ViewInventoryNodeComponent,
-  (prev, next) => editorNodeComponentVisualEqual(prev.component, next.component),
+export const ViewInventoryNode = memo(ViewInventoryNodeComponent, (prev, next) =>
+  editorNodeComponentVisualEqual(prev.component, next.component),
 );

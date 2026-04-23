@@ -16,11 +16,8 @@ import {
 
 import { CanvasGridBackground, usePointerDrag } from '@/lib/compass-planes/canvas';
 import { DEFAULT_GRID_SIZE } from '@/lib/compass-planes/editor-config';
+import { SheetCanvasBoundsProvider, type SheetCanvasBounds } from './sheet-canvas-bounds-context';
 import { WindowCanvasSelectionContext } from './window-canvas-selection-context';
-import {
-  SheetCanvasBoundsProvider,
-  type SheetCanvasBounds,
-} from './sheet-canvas-bounds-context';
 
 const FALLBACK_WINDOW_DRAG_W = 320;
 const FALLBACK_WINDOW_DRAG_H = 240;
@@ -408,8 +405,17 @@ export function WindowCanvasHost<T extends WindowCanvasItem>({
     const vp = viewportRef.current;
     if (!vp) return;
 
+    let roRaf: number | null = null;
+    const scheduleFitFromObserver = () => {
+      if (roRaf != null) return;
+      roRaf = requestAnimationFrame(() => {
+        roRaf = null;
+        recomputeSheetFit();
+      });
+    };
+
     const ro = new ResizeObserver(() => {
-      recomputeSheetFit();
+      scheduleFitFromObserver();
     });
     ro.observe(vp);
     for (const el of windowWrapperElByIdRef.current.values()) {
@@ -420,6 +426,7 @@ export function WindowCanvasHost<T extends WindowCanvasItem>({
     const raf = requestAnimationFrame(() => recomputeSheetFit());
 
     return () => {
+      if (roRaf != null) cancelAnimationFrame(roRaf);
       cancelAnimationFrame(raf);
       ro.disconnect();
     };
@@ -594,82 +601,85 @@ export function WindowCanvasHost<T extends WindowCanvasItem>({
               ref={canvasRootRef}
               className='relative min-h-full min-w-full'
               style={mergedCanvasStyle}>
-            <SheetCanvasBoundsProvider value={sheetPlacementCanvasBounds}>
-            {showBg && backgroundColor != null && (
-              <div
-                aria-hidden
-                style={{
-                  position: 'absolute',
-                  inset: 0,
-                  zIndex: 0,
-                  backgroundColor,
-                  opacity: bgOpacity,
-                  pointerEvents: 'none',
-                }}
-              />
-            )}
-            {showBg && backgroundImage != null && (
-              <div
-                aria-hidden
-                style={{
-                  position: 'absolute',
-                  inset: 0,
-                  zIndex: 0,
-                  backgroundImage: `url(${backgroundImage})`,
-                  backgroundSize: 'cover',
-                  backgroundPosition: 'center',
-                  backgroundRepeat: 'no-repeat',
-                  opacity: bgOpacity,
-                  pointerEvents: 'none',
-                }}
-              />
-            )}
+              <SheetCanvasBoundsProvider value={sheetPlacementCanvasBounds}>
+                {showBg && backgroundColor != null && (
+                  <div
+                    aria-hidden
+                    style={{
+                      position: 'absolute',
+                      inset: 0,
+                      zIndex: 0,
+                      backgroundColor,
+                      opacity: bgOpacity,
+                      pointerEvents: 'none',
+                    }}
+                  />
+                )}
+                {showBg && backgroundImage != null && (
+                  <div
+                    aria-hidden
+                    style={{
+                      position: 'absolute',
+                      inset: 0,
+                      zIndex: 0,
+                      backgroundImage: `url(${backgroundImage})`,
+                      backgroundSize: 'cover',
+                      backgroundPosition: 'center',
+                      backgroundRepeat: 'no-repeat',
+                      opacity: bgOpacity,
+                      pointerEvents: 'none',
+                    }}
+                  />
+                )}
 
-            {showGridToolbar && snapToGrid ? (
-              <div className='pointer-events-none absolute inset-0 z-[1]'>
-                <CanvasGridBackground gridSize={resolvedGridSize} style={{ opacity: bgOpacity }} />
-              </div>
-            ) : null}
+                {showGridToolbar && snapToGrid ? (
+                  <div className='pointer-events-none absolute inset-0 z-[1]'>
+                    <CanvasGridBackground
+                      gridSize={resolvedGridSize}
+                      style={{ opacity: bgOpacity }}
+                    />
+                  </div>
+                ) : null}
 
-            {sortedCanvasWindows.map((w, sortedIndex) => {
-              const pv = movePreviewById[w.id];
-              const layoutX = pv?.x ?? w.x;
-              const layoutY = pv?.y ?? w.y;
-              const zPaint =
-                10 +
-                (typeof w.layer === 'number' && Number.isFinite(w.layer)
-                  ? Math.floor(w.layer)
-                  : sortedIndex);
+                {sortedCanvasWindows.map((w, sortedIndex) => {
+                  const pv = movePreviewById[w.id];
+                  const layoutX = pv?.x ?? w.x;
+                  const layoutY = pv?.y ?? w.y;
+                  const zPaint =
+                    10 +
+                    (typeof w.layer === 'number' && Number.isFinite(w.layer)
+                      ? Math.floor(w.layer)
+                      : sortedIndex);
 
-              return (
-                <div
-                  key={w.id}
-                  ref={(el) => {
-                    if (el) windowWrapperElByIdRef.current.set(w.id, el);
-                    else windowWrapperElByIdRef.current.delete(w.id);
-                  }}
-                  className='pointer-events-auto absolute'
-                  style={{ left: layoutX, top: layoutY, zIndex: zPaint }}
-                  onPointerDown={(e) => {
-                    if (!locked) {
-                      setSelectedWindowId(w.id);
-                    }
-                    if (locked) return;
-                    const t = e.target as HTMLElement;
-                    if (
-                      t.closest(
-                        'a, button, input, textarea, select, label, [contenteditable="true"], [role="menuitem"], [role="option"], [role="tab"], [data-window-chrome-control]',
-                      )
-                    ) {
-                      return;
-                    }
-                    beginMove(e, { id: w.id, x: layoutX, y: layoutY });
-                  }}>
-                  {renderWindow(w, { x: layoutX, y: layoutY }, zPaint)}
-                </div>
-              );
-            })}
-            </SheetCanvasBoundsProvider>
+                  return (
+                    <div
+                      key={w.id}
+                      ref={(el) => {
+                        if (el) windowWrapperElByIdRef.current.set(w.id, el);
+                        else windowWrapperElByIdRef.current.delete(w.id);
+                      }}
+                      className='pointer-events-auto absolute'
+                      style={{ left: layoutX, top: layoutY, zIndex: zPaint }}
+                      onPointerDown={(e) => {
+                        if (!locked) {
+                          setSelectedWindowId(w.id);
+                        }
+                        if (locked) return;
+                        const t = e.target as HTMLElement;
+                        if (
+                          t.closest(
+                            'a, button, input, textarea, select, label, [contenteditable="true"], [role="menuitem"], [role="option"], [role="tab"], [data-window-chrome-control]',
+                          )
+                        ) {
+                          return;
+                        }
+                        beginMove(e, { id: w.id, x: layoutX, y: layoutY });
+                      }}>
+                      {renderWindow(w, { x: layoutX, y: layoutY }, zPaint)}
+                    </div>
+                  );
+                })}
+              </SheetCanvasBoundsProvider>
             </div>
           </div>
         </div>
