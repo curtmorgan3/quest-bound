@@ -113,6 +113,12 @@ html {
   font-size: 10px;
 }
 
+/* Preflight zeroes margins on all elements; without this, separate markdown paragraphs
+   (blank line in source) render flush against each other. */
+.md-content :where(p + p) {
+  margin-top: 1em;
+}
+
 .md-content pre,
 code {
   background-color: grey;

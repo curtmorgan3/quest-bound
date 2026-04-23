@@ -1,4 +1,5 @@
 import type { DB } from '@/stores/db/hooks/types';
+import { parseDiceExpression, rollDie } from '@/utils/dice-utils';
 import type {
   Action,
   Attribute,
@@ -10,11 +11,10 @@ import type {
   RollFn,
   RollSplitFn,
 } from '@quest-bound/types';
-import { parseDiceExpression, rollDie } from '@/utils/dice-utils';
 import type Dexie from 'dexie';
 import type { ExecuteActionEventFn, ExecuteItemEventFn } from '../proxies';
-import type { SetItemEquippedFn } from '../proxies/item-instance-proxy';
 import { ActionProxy, AttributeProxy, createItemInstanceProxy } from '../proxies';
+import type { SetItemEquippedFn } from '../proxies/item-instance-proxy';
 import type { SheetComponentAccessor } from '../sheet-ui/sheet-component-accessor';
 import type { SheetUiCoordinator } from '../sheet-ui/sheet-ui-coordinator';
 import type { StructuredCloneSafe } from '../structured-clone-safe';
@@ -497,9 +497,7 @@ export class CharacterAccessor implements StructuredCloneSafe {
 
     let matching: InventoryItem[];
     if (nameFilter != null) {
-      const item = Array.from(this.itemsCache.values()).find(
-        (i) => i.title.trim() === nameFilter,
-      );
+      const item = Array.from(this.itemsCache.values()).find((i) => i.title.trim() === nameFilter);
       if (!item) return [];
       matching = this.inventoryItems.filter(
         (inv) => inv.entityId === item.id && inv.type === 'item',

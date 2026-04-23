@@ -1,4 +1,6 @@
+import { filterNotSoftDeleted } from '@/lib/data/soft-delete';
 import type { DB } from '@/stores/db/hooks/types';
+import { buildItemCustomProperties } from '@/utils/custom-property-utils';
 import type {
   Action,
   Attribute,
@@ -24,8 +26,6 @@ import type {
   SelectCharactersFn,
   Window,
 } from '@quest-bound/types';
-import { filterNotSoftDeleted } from '@/lib/data/soft-delete';
-import { buildItemCustomProperties } from '@/utils/custom-property-utils';
 import { Evaluator } from '../interpreter/evaluator';
 import { Lexer } from '../interpreter/lexer';
 import { Parser } from '../interpreter/parser';
@@ -39,9 +39,9 @@ import {
 import { getSceneTurnOrderCharacters } from './advance-turn-order';
 import {
   beginCustomEventDispatch,
+  beginCustomEventScriptRun,
   drainMainThreadCustomEventQueue,
   endCustomEventDispatch,
-  beginCustomEventScriptRun,
   endCustomEventScriptRun,
   getCustomEventListeners,
   getCustomEventScriptRunDepth,
@@ -448,10 +448,7 @@ export class ScriptRunner {
       this.ownerCharacterCustomProperties = ownerCharacter?.customProperties ?? {};
       if (ownerCharacter?.inventoryId) {
         this.ownerInventoryItems = filterNotSoftDeleted(
-          await db.inventoryItems
-            .where('inventoryId')
-            .equals(ownerCharacter.inventoryId)
-            .toArray(),
+          await db.inventoryItems.where('inventoryId').equals(ownerCharacter.inventoryId).toArray(),
         );
       }
 
@@ -895,13 +892,15 @@ export class ScriptRunner {
             .first();
           const archetypeNow = new Date().toISOString();
           const activeRows = filterNotSoftDeleted(
-            await db.characterArchetypes.where('characterId').equals(characterId).sortBy('loadOrder'),
+            await db.characterArchetypes
+              .where('characterId')
+              .equals(characterId)
+              .sortBy('loadOrder'),
           );
           const maxOrder =
             activeRows.length > 0 ? (activeRows[activeRows.length - 1]!.loadOrder ?? 0) : -1;
           if (existing && existing.deleted !== true) continue;
 
-          let runOnAdd = false;
           if (existing && existing.deleted === true) {
             await db.characterArchetypes.update(existing.id, {
               deleted: false,
@@ -918,22 +917,20 @@ export class ScriptRunner {
               updatedAt: archetypeNow,
               deleted: false,
             });
-            runOnAdd = true;
           }
-          if (runOnAdd) {
-            const result = await executeArchetypeEvent(
-              db,
-              archetype.id,
-              characterId,
-              'on_add',
-              this.context.roll,
-              this.context.campaignId,
-              this.context.rollSplit,
-              this.context.campaignSceneId,
-            );
-            if (result.error) {
-              console.warn('Archetype on_add script failed:', result.error);
-            }
+
+          const result = await executeArchetypeEvent(
+            db,
+            archetype.id,
+            characterId,
+            'on_add',
+            this.context.roll,
+            this.context.campaignId,
+            this.context.rollSplit,
+            this.context.campaignSceneId,
+          );
+          if (result.error) {
+            console.warn('Archetype on_add script failed:', result.error);
           }
         }
       } else if (type === 'archetypeRemove') {

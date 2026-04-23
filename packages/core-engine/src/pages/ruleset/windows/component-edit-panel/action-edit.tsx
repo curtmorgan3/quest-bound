@@ -10,7 +10,11 @@ import {
 import type { ComponentUpdate } from '@/lib/compass-api';
 import { useComponents, useComposites } from '@/lib/compass-api';
 import { ComponentTypes, isGroupLikeComponentType } from '@/lib/compass-planes/nodes';
-import { expandDeleteIds } from '@/lib/compass-planes/sheet-editor/component-world-geometry';
+import {
+  expandDeleteIds,
+  expandSelectedComponentsWithDescendants,
+  remapCopiedComponentsForPaste,
+} from '@/lib/compass-planes/sheet-editor/component-world-geometry';
 import { colorPrimary } from '@/palette';
 import { WindowEditorContext } from '@/stores';
 import type { Component } from '@/types';
@@ -93,14 +97,10 @@ export const ActionEdit = ({ components, handleUpdate }: Props) => {
   };
 
   const handleCopy = () => {
-    createComponents(
-      components.map((c) => ({
-        ...c,
-        id: undefined,
-        x: c.x + 20,
-        y: c.y + 20,
-      })),
-    );
+    if (components.length === 0) return;
+    const expanded = expandSelectedComponentsWithDescendants(allComponents, components);
+    if (expanded.length === 0) return;
+    void createComponents(remapCopiedComponentsForPaste(expanded, 20, 20));
   };
 
   const handleDelete = () => {
