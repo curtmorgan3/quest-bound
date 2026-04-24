@@ -1,6 +1,6 @@
 {
   "name": "@quest-bound/qbscript",
-  "version": "2.2.12",
+  "version": "2.2.13",
   "type": "module",
   "exports": {
     ".": {
@@ -13,8 +13,8 @@
     "typecheck": "tsc -p tsconfig.json"
   },
   "dependencies": {
-    "@quest-bound/runtime": "2.2.12",
-    "@quest-bound/types": "2.2.12",
+    "@quest-bound/runtime": "2.2.13",
+    "@quest-bound/types": "2.2.13",
     "dexie": "^4.2.0",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
