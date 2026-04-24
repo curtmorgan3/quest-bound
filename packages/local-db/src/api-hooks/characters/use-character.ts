@@ -2,14 +2,14 @@ import { useErrorHandler, useNotifications } from '@/hooks';
 import type { NotificationOptions } from '@/hooks/use-notifications';
 import { executeCharacterLoader } from '@/lib/compass-logic/reactive/event-handler-executor';
 import { getQBScriptClient } from '@/lib/compass-logic/worker';
-import { db } from '../../db';
-import { deleteAssetIfUnreferenced } from '../../hooks/asset-hooks';
 import { useCurrentUser } from '@/stores/current-user-store';
 import type { Archetype, Character, Inventory } from '@/types';
 import { duplicateCharacterFromTemplate } from '@/utils/duplicate-character-from-template';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useMemo } from 'react';
 import { useParams } from 'react-router-dom';
+import { db } from '../../db';
+import { deleteAssetIfUnreferenced } from '../../hooks/asset-hooks';
 import { useActiveRuleset } from '../rulesets';
 
 export type CharacterWithInventories = Character & {

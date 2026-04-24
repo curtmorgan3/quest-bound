@@ -25,8 +25,8 @@ import { useCharacterSelectModalStore } from '@/stores/character-select-modal-st
 import { usePromptModalStore } from '@/stores/prompt-modal-store';
 import { useScriptComponentAnimationStore } from '@/stores/script-component-animation-store';
 import { useScriptModifiedAttributesStore } from '@/stores/script-modified-attributes-store';
-import type { RollFn, RollSplitFn } from '@quest-bound/types';
 import { defaultScriptDiceRoller, defaultScriptDiceRollerSplit } from '@/utils/dice-utils';
+import type { RollFn, RollSplitFn } from '@quest-bound/types';
 import type {
   AttributeChangedPayload,
   ExecuteScriptPayload,
@@ -844,9 +844,7 @@ export class QBScriptClient {
       campaignId: options.campaignId ?? getCurrentCampaignIdForScripts(),
       campaignSceneId: options.campaignSceneId ?? getCurrentCampaignSceneIdForScripts(),
       ...(options.params ? { params: options.params } : {}),
-      ...(sheetPreviewRulesetWindowId
-        ? { sheetPreviewRulesetWindowId }
-        : {}),
+      ...(sheetPreviewRulesetWindowId ? { sheetPreviewRulesetWindowId } : {}),
     };
 
     try {
@@ -882,9 +880,7 @@ export class QBScriptClient {
         maxPerScript: options.maxPerScript,
         timeLimit: options.timeLimit,
       },
-      ...(sheetPreviewRulesetWindowId
-        ? { sheetPreviewRulesetWindowId }
-        : {}),
+      ...(sheetPreviewRulesetWindowId ? { sheetPreviewRulesetWindowId } : {}),
     };
 
     try {
@@ -926,9 +922,7 @@ export class QBScriptClient {
             rulesetId,
             requestId,
             campaignId: getCurrentCampaignIdForScripts(),
-            ...(sheetPreviewRulesetWindowId
-              ? { sheetPreviewRulesetWindowId }
-              : {}),
+            ...(sheetPreviewRulesetWindowId ? { sheetPreviewRulesetWindowId } : {}),
           },
         },
         requestId,
@@ -979,9 +973,7 @@ export class QBScriptClient {
           requestId,
           campaignId: getCurrentCampaignIdForScripts(),
           campaignSceneId: getCurrentCampaignSceneIdForScripts(),
-          ...(sheetPreviewRulesetWindowId
-            ? { sheetPreviewRulesetWindowId }
-            : {}),
+          ...(sheetPreviewRulesetWindowId ? { sheetPreviewRulesetWindowId } : {}),
         },
       },
       requestId,
@@ -1040,9 +1032,7 @@ export class QBScriptClient {
             campaignId: campaignId ?? getCurrentCampaignIdForScripts(),
             campaignSceneId: campaignSceneId ?? getCurrentCampaignSceneIdForScripts(),
             callerInventoryItemInstanceId,
-            ...(sheetPreviewRulesetWindowId
-              ? { sheetPreviewRulesetWindowId }
-              : {}),
+            ...(sheetPreviewRulesetWindowId ? { sheetPreviewRulesetWindowId } : {}),
           },
         },
         requestId,
@@ -1104,9 +1094,7 @@ export class QBScriptClient {
             campaignId: campaignId ?? getCurrentCampaignIdForScripts(),
             campaignSceneId: campaignSceneId ?? getCurrentCampaignSceneIdForScripts(),
             inventoryItemInstanceId,
-            ...(sheetPreviewRulesetWindowId
-              ? { sheetPreviewRulesetWindowId }
-              : {}),
+            ...(sheetPreviewRulesetWindowId ? { sheetPreviewRulesetWindowId } : {}),
           },
         },
         requestId,
@@ -1154,9 +1142,7 @@ export class QBScriptClient {
             requestId,
             campaignId: campaignId ?? getCurrentCampaignIdForScripts(),
             campaignSceneId: campaignSceneId ?? getCurrentCampaignSceneIdForScripts(),
-            ...(sheetPreviewRulesetWindowId
-              ? { sheetPreviewRulesetWindowId }
-              : {}),
+            ...(sheetPreviewRulesetWindowId ? { sheetPreviewRulesetWindowId } : {}),
           },
         },
         requestId,

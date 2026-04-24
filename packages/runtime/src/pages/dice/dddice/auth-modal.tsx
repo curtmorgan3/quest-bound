@@ -67,7 +67,7 @@ export const DddiceAuthModal = () => {
       </div>
 
       <Dialog open={open} onOpenChange={handleOpenChange}>
-        <DialogContent>
+        <DialogContent className='z-[950]' overlayClassName='z-[950]'>
           <DialogHeader>
             <DialogTitle>Connect to dddice</DialogTitle>
             <DialogDescription asChild>
