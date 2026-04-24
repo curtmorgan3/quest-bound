@@ -199,6 +199,8 @@ interface ImportedMetadata {
     createdAt: string;
     updatedAt: string;
     details: Record<string, any>;
+    /** Cover image asset id (file- or URL-backed); preserved across export/import. */
+    assetId?: string | null;
     image: string | null;
     isModule: boolean;
     palette?: string[];
@@ -256,6 +258,27 @@ function stripInjectedRulesetReadFields(r: Ruleset): Ruleset {
   return o as Ruleset;
 }
 
+function pickImportedMetadataField(
+  o: Record<string, unknown>,
+  canonical: string,
+): unknown {
+  if (canonical in o) return o[canonical];
+  const lower = canonical.toLowerCase();
+  for (const k of Object.keys(o)) {
+    if (k.toLowerCase() === lower) return o[k];
+  }
+  return undefined;
+}
+
+function trimmedStringOrNull(v: unknown): string | null {
+  if (v === undefined || v === null) return null;
+  if (typeof v === 'string') {
+    const t = v.trim();
+    return t !== '' ? t : null;
+  }
+  return null;
+}
+
 /**
  * Landing-page CTA fields from metadata.json `ruleset` (case-insensitive keys; trims asset ids).
  * Export may duplicate keys or use injected `*CtaImage` blobs on the same object — we only read id/title fields.
@@ -283,24 +306,6 @@ function landingCtaFromImportedMetadata(
 
   const o = rs as Record<string, unknown>;
 
-  const pick = (canonical: string): unknown => {
-    if (canonical in o) return o[canonical];
-    const lower = canonical.toLowerCase();
-    for (const k of Object.keys(o)) {
-      if (k.toLowerCase() === lower) return o[k];
-    }
-    return undefined;
-  };
-
-  const assetId = (v: unknown): string | null => {
-    if (v === undefined || v === null) return null;
-    if (typeof v === 'string') {
-      const t = v.trim();
-      return t !== '' ? t : null;
-    }
-    return null;
-  };
-
   const text = (v: unknown): string | null => {
     if (v === undefined || v === null) return null;
     if (typeof v === 'string') return v;
@@ -309,17 +314,17 @@ function landingCtaFromImportedMetadata(
 
   return {
     charactersCtaAssetId:
-      assetId(pick('charactersCtaAssetId')) ??
-      assetId(pick('characterCtaAssetId')) ??
-      assetId(pick('characters_cta_asset_id')),
+      trimmedStringOrNull(pickImportedMetadataField(o, 'charactersCtaAssetId')) ??
+      trimmedStringOrNull(pickImportedMetadataField(o, 'characterCtaAssetId')) ??
+      trimmedStringOrNull(pickImportedMetadataField(o, 'characters_cta_asset_id')),
     campaignsCtaAssetId:
-      assetId(pick('campaignsCtaAssetId')) ??
-      assetId(pick('campaignCtaAssetId')) ??
-      assetId(pick('campaigns_cta_asset_id')),
-    characterCtaTitle: text(pick('characterCtaTitle')),
-    characterCtaDescription: text(pick('characterCtaDescription')),
-    campaignsCtaTitle: text(pick('campaignsCtaTitle')),
-    campaignCtaDescription: text(pick('campaignCtaDescription')),
+      trimmedStringOrNull(pickImportedMetadataField(o, 'campaignsCtaAssetId')) ??
+      trimmedStringOrNull(pickImportedMetadataField(o, 'campaignCtaAssetId')) ??
+      trimmedStringOrNull(pickImportedMetadataField(o, 'campaigns_cta_asset_id')),
+    characterCtaTitle: text(pickImportedMetadataField(o, 'characterCtaTitle')),
+    characterCtaDescription: text(pickImportedMetadataField(o, 'characterCtaDescription')),
+    campaignsCtaTitle: text(pickImportedMetadataField(o, 'campaignsCtaTitle')),
+    campaignCtaDescription: text(pickImportedMetadataField(o, 'campaignCtaDescription')),
   };
 }
 
@@ -856,11 +861,19 @@ export const useImportRuleset = () => {
         }
       }
 
+      const rulesetMetaObj =
+        metadata.ruleset && typeof metadata.ruleset === 'object'
+          ? (metadata.ruleset as Record<string, unknown>)
+          : null;
+      const rulesetCoverFromMetadataId = rulesetMetaObj
+        ? trimmedStringOrNull(pickImportedMetadataField(rulesetMetaObj, 'assetId'))
+        : null;
       const rulesetImage = metadata.ruleset.image as string | null | undefined;
       const rulesetCoverAssetId =
-        rulesetImage && isUrl(rulesetImage.trim())
+        rulesetCoverFromMetadataId ??
+        (rulesetImage && isUrl(rulesetImage.trim())
           ? await getOrCreateUrlAssetId(rulesetImage.trim(), newRulesetId, urlToAssetIdMap)
-          : null;
+          : null);
 
       const landingCta = landingCtaFromImportedMetadata(metadata.ruleset);
 
