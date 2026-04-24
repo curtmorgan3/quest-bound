@@ -29,7 +29,7 @@ import { db } from '@/stores';
 import type { CharacterPage, RulesetWindow, Window } from '@/types';
 import { Maximize2, Pencil, Plus, Trash2 } from 'lucide-react';
 import { useMemo, useState, type Ref } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 
 export interface WindowsTabsProps {
   characterPages: CharacterPage[];
@@ -68,8 +68,8 @@ export const WindowsTabs = ({
     allowManagePagesAndWindows ? characterId : undefined,
   );
 
-  const [searchParams, setSearchParams] = useSearchParams();
-  const currentPageId = searchParams.get('pageId') ?? pageId ?? '';
+  const currentPageId = pageId ?? '';
+  const navigate = useNavigate();
 
   const { assets } = useAssets();
   const [isAddWindowModalOpen, setIsAddWindowModalOpen] = useState(false);
@@ -141,7 +141,8 @@ export const WindowsTabs = ({
     if (layer == null) {
       const peers = allCharacterWindows.filter((w) => w.characterPageId === currentPageId);
       const maxPeerLayer = peers.reduce(
-        (m, r) => Math.max(m, typeof r.layer === 'number' && Number.isFinite(r.layer) ? r.layer : -1),
+        (m, r) =>
+          Math.max(m, typeof r.layer === 'number' && Number.isFinite(r.layer) ? r.layer : -1),
         -1,
       );
       layer = maxPeerLayer + 1;
@@ -162,9 +163,7 @@ export const WindowsTabs = ({
   };
 
   const handleNavigate = (nextPageId: string) => {
-    const next = new URLSearchParams(searchParams);
-    next.set('pageId', nextPageId);
-    setSearchParams(next);
+    navigate(`/characters/${characterId}?pageId=${nextPageId}`);
   };
 
   const handleAddPage = async () => {
@@ -392,7 +391,9 @@ export const WindowsTabs = ({
                     No windows available in this ruleset.
                   </p>
                 ) : filteredRulesetWindows.length === 0 ? (
-                  <p className='text-muted-foreground p-4 text-center'>No windows match your filter.</p>
+                  <p className='text-muted-foreground p-4 text-center'>
+                    No windows match your filter.
+                  </p>
                 ) : (
                   filteredRulesetWindows.map((rulesetWindow) => (
                     <button
@@ -461,7 +462,9 @@ export const WindowsTabs = ({
                           data-testid={`add-page-option-${rp.label.toLowerCase().replace(/\s+/g, '-')}`}>
                           {rp.label}
                           {rp.category && (
-                            <span className='text-muted-foreground ml-1 text-xs'>({rp.category})</span>
+                            <span className='text-muted-foreground ml-1 text-xs'>
+                              ({rp.category})
+                            </span>
                           )}
                         </button>
                       ))}

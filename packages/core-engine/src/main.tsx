@@ -3,8 +3,8 @@ import { createRoot } from 'react-dom/client';
 
 import { PwaUpdateProvider } from '@/pwa/pwa-update-provider';
 import App from './App.tsx';
-import { initAnalytics } from './lib/analytics';
 import './index.css';
+import { initAnalytics } from './lib/analytics';
 import './stores/loggers/global-error-handler';
 
 initAnalytics();

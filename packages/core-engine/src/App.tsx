@@ -1,3 +1,5 @@
+import { ErrorBoundary } from '@/components';
+import { Layout } from '@/components/layout';
 import {
   ArchetypeSheetEditor,
   AssetsPage,
@@ -8,8 +10,8 @@ import {
   Campaigns,
   CharacterChartViewer,
   CharacterPage,
-  DefaultCharacterSheet,
   Characters,
+  DefaultCharacterSheet,
   DevTools,
   ErrorPage,
   ManageCustomProperties,
@@ -22,8 +24,6 @@ import {
   ScriptsIndex,
 } from '@/pages';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
-import { ErrorBoundary } from '@/components';
-import { Layout } from '@/components/layout';
 import { DocumentViewer } from './pages/ruleset/documents';
 import { WindowEditor } from './pages/ruleset/windows/window-editor';
 
@@ -99,10 +99,7 @@ function CompassRoutes() {
 
             <Route path={`/characters`} element={<Characters />} />
             <Route path={`/characters/:characterId`} element={<CharacterPage />} />
-            <Route
-              path={`/characters/:characterId/default`}
-              element={<DefaultCharacterSheet />}
-            />
+            <Route path={`/characters/:characterId/default`} element={<DefaultCharacterSheet />} />
             <Route
               path={`/characters/:characterId/documents/:documentId`}
               element={<DocumentViewer />}

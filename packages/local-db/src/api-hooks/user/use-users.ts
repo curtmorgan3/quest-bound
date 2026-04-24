@@ -3,7 +3,7 @@ import { deleteAssetIfUnreferenced } from '../../hooks/asset-hooks';
 import { useCurrentUser } from '@/stores/current-user-store';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useEffect, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useRulesets } from '../rulesets';
 
 const LAST_LOGGED_IN_KEY = 'qb.lastLoggedInUsername';
@@ -28,14 +28,12 @@ type UpdateUser = {
 export const useUsers = () => {
   const { currentUser, setCurrentUser } = useCurrentUser();
   const { deleteRuleset } = useRulesets();
-  const [, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
 
   const [loading, setLoading] = useState(false);
   const users = useLiveQuery(() => db.users.toArray(), []);
 
   const signOut = () => {
-    setSearchParams({});
     setCurrentUser(null);
     navigate('/');
   };

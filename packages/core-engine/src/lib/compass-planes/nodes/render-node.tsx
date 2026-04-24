@@ -1,6 +1,5 @@
 import type { CharacterAttribute, Component, ComponentData } from '@/types';
 import type { ReactNode } from 'react';
-import type { PositionValues } from '../utils';
 import { ComponentTypes } from '../nodes';
 import {
   ViewCheckboxNode,
@@ -14,6 +13,7 @@ import {
   ViewShapeNode,
   ViewTextNode,
 } from '../nodes/components';
+import type { PositionValues } from '../utils';
 import {
   NodeActionCaller,
   NodeAnimation,
@@ -64,13 +64,9 @@ export function renderViewComponent(
 ): ReactNode {
   switch (component.type) {
     case ComponentTypes.TEXT:
-      return renderDecoratedViewBranch(
-        component,
-        characterAttributes,
-        position,
-        ctx,
-        (c) => <ViewTextNode key={c.id} component={c} />,
-      );
+      return renderDecoratedViewBranch(component, characterAttributes, position, ctx, (c) => (
+        <ViewTextNode key={c.id} component={c} />
+      ));
     case ComponentTypes.SHAPE:
       return renderDecoratedViewBranch(component, characterAttributes, position, ctx, (c) => (
         <ViewShapeNode component={c} />
@@ -151,14 +147,15 @@ function WrapDecorators({
       component={component}
       componentData={componentData}
       characterAttributes={characterAttributes}>
-      <NodeTooltip
-        component={component}
-        componentData={componentData}>
+      <NodeTooltip component={component} componentData={componentData}>
         <NodeScriptCaller component={component}>
           <NodeDiceClick component={component}>
             <NodeToggleBooleanAttribute component={component}>
               <NodeAttributeEditPanelControl component={component}>
-                <NodeNavigator component={component} componentData={componentData} viewCtx={viewCtx}>
+                <NodeNavigator
+                  component={component}
+                  componentData={componentData}
+                  viewCtx={viewCtx}>
                   <NodeActionCaller component={component} componentData={componentData}>
                     <NodeRotation rotation={position?.rotation} z={position?.z}>
                       <NodeAnimation component={component}>{children}</NodeAnimation>

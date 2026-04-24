@@ -64,7 +64,7 @@ export const useCharacter = (_id?: string) => {
           .where('rulesetId')
           .equals(activeRuleset?.id ?? '')
           .toArray(),
-      [currentUser, activeRuleset?.id],
+      [currentUser?.id, activeRuleset?.id],
     ) ?? [];
 
   const id = _id ?? characterId;

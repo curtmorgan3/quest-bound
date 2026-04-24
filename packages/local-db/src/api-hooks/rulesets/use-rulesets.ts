@@ -10,9 +10,8 @@ import type { Archetype, Character, Inventory, Ruleset } from '@/types';
 import { seedCharacterAttributeFromRulesetAttribute } from '@/utils/character-attribute-from-ruleset-attribute';
 import { duplicateCharacterFromTemplate } from '@/utils/duplicate-character-from-template';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { useCharacter } from '../characters';
 
 async function isArchetypeTestCharacterValid(
   rulesetId: string,
@@ -113,15 +112,29 @@ export const useRulesets = () => {
   const { handleError } = useErrorHandler();
 
   const { rulesetId, characterId } = useParams();
-  const { character } = useCharacter(characterId);
+
+  const [characterRulesetId, setCharacterRulesetId] = useState<string | undefined>(undefined);
+  const prevCharIdRef = useRef<string | undefined>(undefined);
+  useEffect(() => {
+    if (!characterId) {
+      setCharacterRulesetId(undefined);
+      prevCharIdRef.current = undefined;
+      return;
+    }
+    if (characterId === prevCharIdRef.current) return;
+    prevCharIdRef.current = characterId;
+    db.characters.get(characterId).then((c) => {
+      setCharacterRulesetId(c?.rulesetId);
+    });
+  }, [characterId]);
 
   const lastEditedRulesetId = localStorage.getItem('qb.lastEditedRulesetId');
 
   const rulesetIdToUse =
     rulesetId && rulesetId !== 'undefined'
       ? rulesetId
-      : character
-        ? character.rulesetId
+      : characterRulesetId
+        ? characterRulesetId
         : lastEditedRulesetId;
 
   const activeRuleset = rulesetIdToUse ? rulesets?.find((r) => r.id === rulesetIdToUse) : null;

@@ -20,21 +20,17 @@ import { useSyncOnRulesetOpen } from '@/lib/cloud/sync/use-sync-on-ruleset-open'
 import { useFontLoader, useUsers } from '@/lib/compass-api';
 import { useCustomEventRulesetContextSync, useScriptAnnouncements } from '@/lib/compass-logic';
 import { SignIn } from '@/pages';
-import { DicePanel, PhysicalRollModal } from '@quest-bound/runtime/pages';
+import { db, useCloudAuthStore, useOnboardingStore } from '@/stores';
+import type { DB } from '@/stores/db/hooks/types';
 import {
   CharacterArchetypesPanelContext,
   CharacterInventoryPanelContext,
   DiceProvider,
   useDiceState,
 } from '@quest-bound/runtime/context';
-import {
-  db,
-  useCloudAuthStore,
-  useOnboardingStore,
-} from '@/stores';
-import type { DB } from '@/stores/db/hooks/types';
+import { DicePanel, PhysicalRollModal } from '@quest-bound/runtime/pages';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Outlet, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { AppSidebar } from './composites/app-sidebar';
 import { SidebarProvider } from './ui/sidebar';
 import { Toaster } from './ui/sonner';
@@ -44,8 +40,8 @@ const DEV_TOOLS_STORAGE_KEY = 'dev.tools';
 const isQbBundler = import.meta.env.VITE_QB_BUNDLE === '1';
 
 export function Layout() {
+  console.log('layout');
   useCampaignPlayWorkerPolicySync();
-  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const location = useLocation();
   const { currentUser, updateUser, loading } = useUsers();
@@ -61,7 +57,8 @@ export function Layout() {
   const wouldShowOnAttributes =
     currentUser && !onboardingLoading && (forceShowAgain || !hasCompleted);
 
-  const { cloudUser, isAuthenticated } = useCloudAuthStore();
+  const cloudUser = useCloudAuthStore((s) => s.cloudUser);
+  const isAuthenticated = useCloudAuthStore((s) => s.isAuthenticated);
   const cloudSyncEnabled = useCloudAuthStore((s) => s.cloudSyncEnabled);
   const cloudSyncEligibilityLoading = useCloudAuthStore((s) => s.isCloudSyncEligibilityLoading);
   const cloudRulesetListEpoch = useCloudAuthStore((s) => s.cloudRulesetListEpoch);
@@ -149,12 +146,14 @@ export function Layout() {
     }
   }, [diceState.dicePanelOpen]);
 
+  const [, setDevToolsToggled] = useState(0);
+  const devSearchParam = new URLSearchParams(location.search).get('dev');
   useEffect(() => {
-    if (searchParams.get('dev') === 'true') {
+    if (devSearchParam === 'true') {
       localStorage.setItem(DEV_TOOLS_STORAGE_KEY, 'true');
       setDevToolsToggled((n) => n + 1);
     }
-  }, [searchParams]);
+  }, [devSearchParam]);
 
   // Listen for script-driven sheet navigation (Owner.navigateToPage)
   useEffect(() => {
@@ -177,7 +176,6 @@ export function Layout() {
   const { addNotification } = useNotifications();
   useScriptAnnouncements(addNotification);
 
-  const [, setDevToolsToggled] = useState(0);
   const [characterInventoryPanelOpen, setCharacterInventoryPanelOpen] = useState(false);
   const [characterArchetypesPanelOpen, setCharacterArchetypesPanelOpen] = useState(false);
 
@@ -202,9 +200,7 @@ export function Layout() {
       !location.pathname.startsWith('/campaigns/new'));
 
   const showSignInModal =
-    isOnline &&
-    isSignInRequiredRoute &&
-    (!currentUser?.cloudUserId || !isAuthenticated);
+    isOnline && isSignInRequiredRoute && (!currentUser?.cloudUserId || !isAuthenticated);
 
   return loading ? (
     <Loading />
