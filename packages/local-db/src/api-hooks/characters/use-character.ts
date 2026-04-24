@@ -1,9 +1,6 @@
 import { useErrorHandler, useNotifications } from '@/hooks';
 import type { NotificationOptions } from '@/hooks/use-notifications';
-import {
-  executeArchetypeEvent,
-  executeCharacterLoader,
-} from '@/lib/compass-logic/reactive/event-handler-executor';
+import { executeCharacterLoader } from '@/lib/compass-logic/reactive/event-handler-executor';
 import { getQBScriptClient } from '@/lib/compass-logic/worker';
 import { db } from '../../db';
 import { deleteAssetIfUnreferenced } from '../../hooks/asset-hooks';
@@ -220,17 +217,14 @@ export const useCharacter = (_id?: string) => {
       await runInitialAttributeSyncSafe(characterId, rulesetId, addNotification);
 
       // Run archetype on_add scripts in sorted order
+      const client = getQBScriptClient();
       for (const archetypeId of archetypeIds) {
         const archetype = await db.archetypes.get(archetypeId);
         if (archetype?.scriptId) {
-          const archetypeResult = await executeArchetypeEvent(
-            db,
-            archetype.id,
-            characterId,
-            'on_add',
-          );
-          if (archetypeResult.error) {
-            console.warn('Archetype on_add script failed:', archetypeResult.error);
+          try {
+            await client.executeArchetypeEvent(archetype.id, characterId, 'on_add');
+          } catch (scriptError) {
+            console.warn('Archetype on_add script failed:', scriptError);
           }
         }
       }

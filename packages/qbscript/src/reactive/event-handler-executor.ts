@@ -902,7 +902,9 @@ export class EventHandlerExecutor {
       gameLogTimeline: result.gameLogTimeline,
       error: result.error,
       scriptId: script.id,
+      modifiedAttributeIds: result.modifiedAttributeIds,
       navigateTargets: result.navigateTargets,
+      componentAnimations: result.componentAnimations,
     };
   }
 

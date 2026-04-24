@@ -100,8 +100,7 @@ export class ReactiveExecutor {
   async loadGraph(rulesetId: string): Promise<void> {
     this.graph = await loadDependencyGraph(rulesetId, this.db);
     if (!this.graph) {
-      // No graph exists yet - create an empty one
-      this.graph = new DependencyGraph(rulesetId, this.db);
+      this.graph = await buildDependencyGraph(rulesetId, this.db);
     }
   }
 

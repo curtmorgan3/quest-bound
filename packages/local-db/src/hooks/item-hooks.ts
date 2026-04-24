@@ -1,5 +1,6 @@
 import { buildDependencyGraph } from '@/lib/compass-logic/reactive/dependency-graph';
 import { getSyncState } from '@/lib/cloud/sync/sync-state';
+import { getQBScriptClient } from '@/lib/compass-logic/worker';
 import { deleteAssetIfUnreferenced } from './asset-hooks';
 import type { DB } from './types';
 
@@ -9,9 +10,15 @@ export function registerItemDbHooks(db: DB) {
     if (getSyncState().isSyncing) return;
     const mods = modifications as { scriptId?: string | null };
     if (mods.scriptId !== undefined && obj.rulesetId) {
-      buildDependencyGraph(obj.rulesetId!, db).catch((error) =>
-        console.error('Failed to rebuild dependency graph:', error),
-      );
+      buildDependencyGraph(obj.rulesetId!, db)
+        .then(() => {
+          try {
+            getQBScriptClient().clearGraph(obj.rulesetId!);
+          } catch {
+            // Worker may not be initialized yet
+          }
+        })
+        .catch((error) => console.error('Failed to rebuild dependency graph:', error));
     }
   });
 

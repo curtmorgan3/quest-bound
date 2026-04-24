@@ -638,7 +638,10 @@ export class ScriptRunner {
   /**
    * Write all pending changes back to the database.
    */
-  async flushCache(): Promise<{ navigateTargets: { characterId: string; pageId: string }[] }> {
+  async flushCache(): Promise<{
+    navigateTargets: { characterId: string; pageId: string }[];
+    subExecutionModifiedAttributeIds: string[];
+  }> {
     const { db, rulesetId } = this.context;
     const now = new Date().toISOString();
 
@@ -706,6 +709,7 @@ export class ScriptRunner {
     };
 
     const navigateTargets: { characterId: string; pageId: string }[] = [];
+    const subExecutionModifiedAttributeIds: string[] = [];
 
     // Process all pending updates
     for (const [key, value] of this.pendingUpdates.entries()) {
@@ -932,6 +936,9 @@ export class ScriptRunner {
           if (result.error) {
             console.warn('Archetype on_add script failed:', result.error);
           }
+          if (result.modifiedAttributeIds?.length) {
+            subExecutionModifiedAttributeIds.push(...result.modifiedAttributeIds);
+          }
         }
       } else if (type === 'archetypeRemove') {
         const entries = value as { characterId: string; archetypeName: string }[];
@@ -955,6 +962,9 @@ export class ScriptRunner {
           );
           if (result.error) {
             console.warn('Archetype on_remove script failed:', result.error);
+          }
+          if (result.modifiedAttributeIds?.length) {
+            subExecutionModifiedAttributeIds.push(...result.modifiedAttributeIds);
           }
           await db.characterArchetypes.update(ca.id, {
             deleted: true,
@@ -1200,7 +1210,7 @@ export class ScriptRunner {
     // Clear pending updates
     this.pendingUpdates.clear();
 
-    return { navigateTargets };
+    return { navigateTargets, subExecutionModifiedAttributeIds };
   }
 
   /**
@@ -1569,7 +1579,12 @@ export class ScriptRunner {
       const componentUpdates = this.getComponentUpdates();
 
       // Flush changes to database and capture any navigation targets
-      const { navigateTargets } = await this.flushCache();
+      const { navigateTargets, subExecutionModifiedAttributeIds } = await this.flushCache();
+
+      const allModifiedAttributeIds =
+        subExecutionModifiedAttributeIds.length > 0
+          ? [...new Set([...modifiedAttributeIds, ...subExecutionModifiedAttributeIds])]
+          : modifiedAttributeIds;
 
       const rb = this.context.sharedRosterBroadcasts;
       return {
@@ -1577,7 +1592,7 @@ export class ScriptRunner {
         announceMessages: this.evaluator.getAnnounceMessages(),
         logMessages: this.evaluator.getLogMessages(),
         gameLogTimeline: this.evaluator.getScriptGameLog(),
-        modifiedAttributeIds,
+        modifiedAttributeIds: allModifiedAttributeIds,
         navigateTargets,
         componentAnimations: componentUpdates.animations ?? [],
         ...(rb && rb.length > 0 ? { rosterBroadcasts: rb } : {}),

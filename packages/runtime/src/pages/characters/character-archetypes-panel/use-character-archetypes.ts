@@ -1,6 +1,6 @@
 import { filterNotSoftDeleted, softDeletePatch } from '@/lib/data/soft-delete';
 import { useErrorHandler } from '@/hooks';
-import { executeArchetypeEvent } from '@/lib/compass-logic/reactive/event-handler-executor';
+import { getQBScriptClient } from '@/lib/compass-logic/worker/client';
 import { db } from '@/stores';
 import type { Archetype, CharacterArchetype, RollFn, RollSplitFn } from '@/types';
 import { useLiveQuery } from 'dexie-react-hooks';
@@ -70,18 +70,19 @@ export function useCharacterArchetypes(
         deleted: false,
       });
 
-      const archetypeResult = await executeArchetypeEvent(
-        db,
-        archetypeId,
-        characterId,
-        'on_add',
-        options?.roll,
-        options?.campaignId,
-        options?.rollSplit,
-        options?.campaignSceneId,
-      );
-      if (archetypeResult.error) {
-        console.warn('Archetype on_add script failed:', archetypeResult.error);
+      try {
+        await getQBScriptClient().executeArchetypeEvent(
+          archetypeId,
+          characterId,
+          'on_add',
+          options?.roll,
+          undefined,
+          options?.campaignId,
+          options?.rollSplit,
+          options?.campaignSceneId,
+        );
+      } catch (scriptError) {
+        console.warn('Archetype on_add script failed:', scriptError);
       }
     } catch (e) {
       handleError(e as Error, {
@@ -95,18 +96,19 @@ export function useCharacterArchetypes(
     const ca = await db.characterArchetypes.get(characterArchetypeId);
     if (!ca || ca.characterId !== characterId) return;
     try {
-      const archetypeResult = await executeArchetypeEvent(
-        db,
-        ca.archetypeId,
-        ca.characterId,
-        'on_remove',
-        options?.roll,
-        options?.campaignId,
-        options?.rollSplit,
-        options?.campaignSceneId,
-      );
-      if (archetypeResult.error) {
-        console.warn('Archetype on_remove script failed:', archetypeResult.error);
+      try {
+        await getQBScriptClient().executeArchetypeEvent(
+          ca.archetypeId,
+          ca.characterId,
+          'on_remove',
+          options?.roll,
+          undefined,
+          options?.campaignId,
+          options?.rollSplit,
+          options?.campaignSceneId,
+        );
+      } catch (scriptError) {
+        console.warn('Archetype on_remove script failed:', scriptError);
       }
       await db.characterArchetypes.update(characterArchetypeId, softDeletePatch());
     } catch (e) {

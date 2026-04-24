@@ -1,5 +1,6 @@
 import { buildDependencyGraph } from '@/lib/compass-logic/reactive/dependency-graph';
 import { getSyncState } from '@/lib/cloud/sync/sync-state';
+import { getQBScriptClient } from '@/lib/compass-logic/worker';
 import type { DB } from './types';
 
 const DEPENDENCY_GRAPH_DEBOUNCE_MS = 400;
@@ -16,6 +17,11 @@ function createDebouncedRebuild(db: DB) {
       timeoutsByRuleset.delete(rulesetId);
       try {
         await buildDependencyGraph(rulesetId, db);
+        try {
+          getQBScriptClient().clearGraph(rulesetId);
+        } catch {
+          // Worker may not be initialized yet
+        }
       } catch (error) {
         console.error('Failed to rebuild dependency graph:', error);
       }

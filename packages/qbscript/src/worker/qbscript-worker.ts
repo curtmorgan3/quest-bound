@@ -665,75 +665,71 @@ function createOnAttributesModified(
     if (collector) {
       attributeIds.forEach((id) => collector.add(id));
     }
-    if (!reactiveExecutor) {
-      reactiveExecutor = new ReactiveExecutor(db);
-    }
     const executor = getExecutor();
-    for (const attributeId of attributeIds) {
-      try {
-        const reactiveResult = await reactiveExecutor.onAttributeChange(
-          attributeId,
-          characterId,
-          rulesetId,
-          {
-            roll: rollFn,
-            rollSplit: rollSplitFn,
-            createRollForCharacter,
-            createRollSplitForCharacter,
-            prompt: promptFn,
-            promptMultiple: promptMultipleFn,
-            promptInput: promptInputFn,
-            selectCharacter: selectCharacterFn,
-            selectCharacters: selectCharactersFn,
-            campaignId,
-            campaignSceneId,
-            executeActionEvent: (actionId, cId, targetId, eventType) =>
-              executor.executeActionEvent(
-                actionId,
-                cId,
-                targetId,
-                eventType,
-                rollFn,
-                campaignId,
-                undefined,
-                rollSplitFn,
-                promptFn,
-                selectCharacterFn,
-                selectCharactersFn,
-                campaignSceneId,
-                promptMultipleFn,
-                promptInputFn,
-                createRollForCharacter,
-                createRollSplitForCharacter,
-                sheetPreviewRulesetWindowId,
-              ),
-            executeItemEvent: createWorkerExecuteItemEventFn(
-              executor,
-              rollFn,
-              campaignId,
-              rollSplitFn,
-              promptFn,
-              selectCharacterFn,
-              selectCharactersFn,
-              campaignSceneId,
-              promptMultipleFn,
-              promptInputFn,
-              createRollForCharacter,
-              createRollSplitForCharacter,
-              sheetPreviewRulesetWindowId,
-            ),
-            sheetPreviewRulesetWindowId,
-          },
-        );
-        if (collector && reactiveResult.modifiedAttributeIds?.length) {
-          reactiveResult.modifiedAttributeIds.forEach((id) => collector.add(id));
-        }
-        if (animationsCollector && reactiveResult.componentAnimations?.length) {
-          reactiveResult.componentAnimations.forEach((entry) => animationsCollector.push(entry));
-        }
-      } catch (e) {
-        console.warn('[QBScript] Reactive execution failed for attribute', attributeId, e);
+    const reactiveOptions = {
+      roll: rollFn,
+      rollSplit: rollSplitFn,
+      createRollForCharacter,
+      createRollSplitForCharacter,
+      prompt: promptFn,
+      promptMultiple: promptMultipleFn,
+      promptInput: promptInputFn,
+      selectCharacter: selectCharacterFn,
+      selectCharacters: selectCharactersFn,
+      campaignId,
+      campaignSceneId,
+      executeActionEvent: (actionId: string, cId: string, targetId: string | null, eventType: 'on_activate' | 'on_deactivate') =>
+        executor.executeActionEvent(
+          actionId,
+          cId,
+          targetId,
+          eventType,
+          rollFn,
+          campaignId,
+          undefined,
+          rollSplitFn,
+          promptFn,
+          selectCharacterFn,
+          selectCharactersFn,
+          campaignSceneId,
+          promptMultipleFn,
+          promptInputFn,
+          createRollForCharacter,
+          createRollSplitForCharacter,
+          sheetPreviewRulesetWindowId,
+        ),
+      executeItemEvent: createWorkerExecuteItemEventFn(
+        executor,
+        rollFn,
+        campaignId,
+        rollSplitFn,
+        promptFn,
+        selectCharacterFn,
+        selectCharactersFn,
+        campaignSceneId,
+        promptMultipleFn,
+        promptInputFn,
+        createRollForCharacter,
+        createRollSplitForCharacter,
+        sheetPreviewRulesetWindowId,
+      ),
+      sheetPreviewRulesetWindowId,
+    };
+    try {
+      const chainResult = await runReactiveChainForModifiedAttributes(
+        attributeIds,
+        characterId,
+        rulesetId,
+        reactiveOptions,
+      );
+      if (collector) {
+        chainResult.allModifiedIds.forEach((id) => collector.add(id));
       }
+      if (animationsCollector) {
+        chainResult.componentAnimations.forEach((entry) => animationsCollector.push(entry));
+      }
+    } catch (e) {
+      console.warn('[QBScript] Reactive execution failed for attributes', attributeIds, e);
     }
   };
 }
@@ -1040,7 +1036,7 @@ async function handleExecuteScript(payload: ExecuteScriptPayload): Promise<void>
               targetId,
               eventType,
               rollFn,
-              undefined,
+              payload.campaignId,
               undefined,
               rollSplitFn,
               promptFn,
@@ -1056,7 +1052,7 @@ async function handleExecuteScript(payload: ExecuteScriptPayload): Promise<void>
           executeItemEvent: createWorkerExecuteItemEventFn(
             executor,
             rollFn,
-            undefined,
+            payload.campaignId,
             rollSplitFn,
             promptFn,
             selectCharacterFn,
@@ -1075,6 +1071,8 @@ async function handleExecuteScript(payload: ExecuteScriptPayload): Promise<void>
           promptInput: promptInputFn,
           selectCharacter: selectCharacterFn,
           selectCharacters: selectCharactersFn,
+          campaignId: payload.campaignId,
+          campaignSceneId: payload.campaignSceneId,
           sheetPreviewRulesetWindowId: payload.sheetPreviewRulesetWindowId,
         };
         const chainResult = await runReactiveChainForModifiedAttributes(
@@ -2036,6 +2034,7 @@ async function handleExecuteArchetypeEvent(payload: {
         },
       });
     } else {
+      (result.modifiedAttributeIds ?? []).forEach((id) => allModifiedIds.add(id));
       const modifiedAttributeIds = Array.from(allModifiedIds);
       if (modifiedAttributeIds.length > 0) {
         sendSignal({
@@ -2055,6 +2054,8 @@ async function handleExecuteArchetypeEvent(payload: {
           logMessages: result.logMessages.map((args) => prepareForStructuredClone(args)),
           gameLogTimeline: cloneGameLogTimelineForPostMessage(result.gameLogTimeline ?? []),
           executionTime: 0,
+          modifiedAttributeIds,
+          characterId: payload.characterId,
           componentAnimations: [...(result.componentAnimations ?? []), ...allReactiveAnimations],
         },
       });

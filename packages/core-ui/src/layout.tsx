@@ -40,7 +40,6 @@ const DEV_TOOLS_STORAGE_KEY = 'dev.tools';
 const isQbBundler = import.meta.env.VITE_QB_BUNDLE === '1';
 
 export function Layout() {
-  console.log('layout');
   useCampaignPlayWorkerPolicySync();
   const navigate = useNavigate();
   const location = useLocation();
