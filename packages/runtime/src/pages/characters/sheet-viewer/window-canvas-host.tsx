@@ -25,7 +25,7 @@ const FALLBACK_WINDOW_DRAG_H = 240;
 /** Shared with `window-editor` so sheet and page canvas preferences stay aligned. */
 const WINDOW_EDITOR_GRID_STORAGE_KEY = 'qb.windowEditor.gridSize';
 const WINDOW_EDITOR_SNAP_STORAGE_KEY = 'qb.windowEditor.snapToGrid';
-const WINDOW_EDITOR_GRID_MIN = 4;
+const WINDOW_EDITOR_GRID_MIN = 0;
 const WINDOW_EDITOR_GRID_MAX = 200;
 const CANVAS_VIEW_ZOOM_STEP = 1.12;
 
@@ -62,6 +62,12 @@ function readStoredSnapToGrid(): boolean {
   } catch {
     return true;
   }
+}
+
+function readInitialSnapToGrid(): boolean {
+  const grid = readStoredWindowEditorGrid();
+  if (grid <= 0) return false;
+  return readStoredSnapToGrid();
 }
 
 /** Minimal shape for draggable windows on the native canvas (character or ruleset page). */
@@ -154,7 +160,7 @@ export function WindowCanvasHost<T extends WindowCanvasItem>({
   } | null>(null);
 
   const [editorGridSize, setEditorGridSize] = useState(readStoredWindowEditorGrid);
-  const [snapToGrid, setSnapToGrid] = useState(readStoredSnapToGrid);
+  const [snapToGrid, setSnapToGrid] = useState(readInitialSnapToGrid);
   const [canvasViewScale, setCanvasViewScale] = useState(1);
 
   const sheetPlacementCanvasBounds = useMemo((): SheetCanvasBounds | null => {
@@ -182,11 +188,13 @@ export function WindowCanvasHost<T extends WindowCanvasItem>({
     return () => ro.disconnect();
   }, []);
 
-  const resolvedGridSize = useMemo(() => {
+  /** Pixel spacing when snap is on and grid size > 0 (matches `window-editor` / `SheetEditor`). */
+  const snapGridPixels = useMemo(() => {
+    if (!showGridToolbar || !snapToGrid || editorGridSize <= 0) return null;
     const n = Math.round(Number(editorGridSize));
-    if (!Number.isFinite(n) || n < 1) return DEFAULT_GRID_SIZE;
-    return Math.min(WINDOW_EDITOR_GRID_MAX, Math.max(WINDOW_EDITOR_GRID_MIN, n));
-  }, [editorGridSize]);
+    if (!Number.isFinite(n) || n < 1) return null;
+    return Math.min(WINDOW_EDITOR_GRID_MAX, Math.max(1, n));
+  }, [editorGridSize, showGridToolbar, snapToGrid]);
 
   const resolvedViewScale = useMemo(() => {
     if (!showGridToolbar) return 1;
@@ -194,19 +202,6 @@ export function WindowCanvasHost<T extends WindowCanvasItem>({
     if (!Number.isFinite(n) || n <= 0) return 1;
     return Math.min(3, Math.max(0.25, n));
   }, [canvasViewScale, showGridToolbar]);
-
-  const persistEditorGridSize = useCallback((n: number) => {
-    const clamped = Math.min(
-      WINDOW_EDITOR_GRID_MAX,
-      Math.max(WINDOW_EDITOR_GRID_MIN, Math.round(n)),
-    );
-    setEditorGridSize(clamped);
-    try {
-      localStorage.setItem(WINDOW_EDITOR_GRID_STORAGE_KEY, String(clamped));
-    } catch {
-      /* ignore */
-    }
-  }, []);
 
   const persistSnapToGrid = useCallback((next: boolean) => {
     setSnapToGrid(next);
@@ -216,6 +211,27 @@ export function WindowCanvasHost<T extends WindowCanvasItem>({
       /* ignore */
     }
   }, []);
+
+  const persistEditorGridSize = useCallback(
+    (n: number) => {
+      const clamped = Math.min(
+        WINDOW_EDITOR_GRID_MAX,
+        Math.max(WINDOW_EDITOR_GRID_MIN, Math.round(n)),
+      );
+      if (clamped <= 0) {
+        persistSnapToGrid(false);
+      } else if (editorGridSize <= 0) {
+        persistSnapToGrid(true);
+      }
+      setEditorGridSize(clamped);
+      try {
+        localStorage.setItem(WINDOW_EDITOR_GRID_STORAGE_KEY, String(clamped));
+      } catch {
+        /* ignore */
+      }
+    },
+    [editorGridSize, persistSnapToGrid],
+  );
 
   const zoomCanvasIn = useCallback(() => {
     setCanvasViewScale((s) => Math.min(3, Math.round(s * CANVAS_VIEW_ZOOM_STEP * 1000) / 1000));
@@ -381,7 +397,7 @@ export function WindowCanvasHost<T extends WindowCanvasItem>({
 
   const { beginMove } = usePointerDrag({
     containerRef: canvasRootRef,
-    gridSize: showGridToolbar && snapToGrid ? resolvedGridSize : null,
+    gridSize: snapGridPixels,
     getItemDimensions: getWindowDragDimensions,
     viewScale: resolvedViewScale,
     sheetViewportRef: sheetFitToViewport && !showGridToolbar ? viewportRef : undefined,
@@ -466,7 +482,7 @@ export function WindowCanvasHost<T extends WindowCanvasItem>({
     setSelectedWindowId(id);
   }, []);
 
-  const layoutGridSnapPx = showGridToolbar && snapToGrid ? resolvedGridSize : null;
+  const layoutGridSnapPx = snapGridPixels;
 
   const selectionContextValue = useMemo(
     () => ({ selectedWindowId, selectWindow, layoutGridSnapPx }),
@@ -521,10 +537,9 @@ export function WindowCanvasHost<T extends WindowCanvasItem>({
             <div className='pointer-events-auto flex flex-row flex-wrap items-center gap-2 p-1.5'>
               <Input
                 type='number'
-                min={WINDOW_EDITOR_GRID_MIN}
-                max={WINDOW_EDITOR_GRID_MAX}
                 step={1}
-                value={resolvedGridSize}
+                min={0}
+                value={editorGridSize}
                 onChange={(e) => {
                   const n = parseInt(e.target.value, 10);
                   if (!Number.isFinite(n)) return;
@@ -537,11 +552,23 @@ export function WindowCanvasHost<T extends WindowCanvasItem>({
                 type='button'
                 variant='ghost'
                 size='icon'
+                disabled={editorGridSize <= 0}
                 aria-pressed={snapToGrid}
-                aria-label={snapToGrid ? 'Turn snap to grid off' : 'Turn snap to grid on'}
-                className='size-8 shrink-0 text-white hover:bg-white/15 hover:text-white'
-                style={{ opacity: snapToGrid ? 1 : 0.45 }}
-                onClick={() => persistSnapToGrid(!snapToGrid)}>
+                aria-label={
+                  editorGridSize <= 0
+                    ? 'Snap to grid (set grid size above 0 to enable)'
+                    : snapToGrid
+                      ? 'Turn snap to grid off'
+                      : 'Turn snap to grid on'
+                }
+                className='size-8 shrink-0 text-white hover:bg-white/15 hover:text-white disabled:opacity-30'
+                style={{
+                  opacity: snapToGrid && editorGridSize > 0 ? 1 : 0.45,
+                }}
+                onClick={() => {
+                  if (editorGridSize <= 0) return;
+                  persistSnapToGrid(!snapToGrid);
+                }}>
                 <Magnet className='size-4' strokeWidth={2} aria-hidden />
               </Button>
               <div className='flex flex-row items-center gap-0.5'>
@@ -632,10 +659,10 @@ export function WindowCanvasHost<T extends WindowCanvasItem>({
                   />
                 )}
 
-                {showGridToolbar && snapToGrid ? (
+                {showGridToolbar && snapGridPixels != null ? (
                   <div className='pointer-events-none absolute inset-0 z-[1]'>
                     <CanvasGridBackground
-                      gridSize={resolvedGridSize}
+                      gridSize={snapGridPixels}
                       style={{ opacity: bgOpacity }}
                     />
                   </div>
