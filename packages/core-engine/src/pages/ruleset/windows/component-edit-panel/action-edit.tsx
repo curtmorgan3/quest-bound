@@ -12,7 +12,7 @@ import { useComponents, useComposites } from '@/lib/compass-api';
 import { ComponentTypes, isGroupLikeComponentType } from '@/lib/compass-planes/nodes';
 import {
   expandDeleteIds,
-  expandSelectedComponentsWithDescendants,
+  expandSelectedComponentsForCopy,
   remapCopiedComponentsForPaste,
 } from '@/lib/compass-planes/sheet-editor/component-world-geometry';
 import { colorPrimary } from '@/palette';
@@ -54,6 +54,11 @@ export const ActionEdit = ({ components, handleUpdate }: Props) => {
   } = useContext(WindowEditorContext);
 
   const locked = valueIfAllAreEqual(components, 'locked') as string | boolean;
+
+  const canDuplicateSelection = useMemo(
+    () => expandSelectedComponentsForCopy(allComponents, components).length > 0,
+    [allComponents, components],
+  );
 
   const { hasGroupedSelection, canSelectGroup, parentGroupId } = useMemo(() => {
     const unlocked = components.filter((c) => !c.locked);
@@ -98,7 +103,7 @@ export const ActionEdit = ({ components, handleUpdate }: Props) => {
 
   const handleCopy = () => {
     if (components.length === 0) return;
-    const expanded = expandSelectedComponentsWithDescendants(allComponents, components);
+    const expanded = expandSelectedComponentsForCopy(allComponents, components);
     if (expanded.length === 0) return;
     void createComponents(remapCopiedComponentsForPaste(expanded, 20, 20));
   };
@@ -119,7 +124,14 @@ export const ActionEdit = ({ components, handleUpdate }: Props) => {
       <p className='text-sm'>Actions</p>
 
       <div className='w-full flex flex-row gap-4 items-end'>
-        <Copy className={`text-xs h-[18px] w-[18px] cursor-pointer`} onClick={handleCopy} />
+        <Copy
+          aria-label='Duplicate selection'
+          className={`text-xs h-[18px] w-[18px] cursor-${canDuplicateSelection ? 'pointer' : 'not-allowed'}`}
+          style={{ opacity: canDuplicateSelection ? 1 : 0.45 }}
+          onClick={() => {
+            if (canDuplicateSelection) handleCopy();
+          }}
+        />
 
         {hasGroupedSelection ? (
           <ArrowUpFromDot

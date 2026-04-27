@@ -233,6 +233,42 @@ export function expandSelectedComponentsWithDescendants(
   return components.filter((c) => allIds.has(c.id));
 }
 
+/**
+ * Like {@link expandSelectedComponentsWithDescendants}, but for copy/duplicate/paste:
+ * locked selected roots are skipped, and locked nodes (and their descendants) are never included.
+ */
+export function expandSelectedComponentsForCopy(
+  components: Component[],
+  selected: Component[],
+): Component[] {
+  if (selected.length === 0) return [];
+  const byId = componentByIdMap(components);
+  const allIds = new Set<string>();
+  for (const sel of selected) {
+    if (sel.locked) continue;
+    const queue = [sel.id];
+    while (queue.length) {
+      const id = queue.shift()!;
+      if (allIds.has(id)) continue;
+      const node = byId.get(id);
+      if (!node || node.locked) continue;
+      allIds.add(id);
+      for (const c of components) {
+        if (c.parentComponentId === id) queue.push(c.id);
+      }
+    }
+  }
+  return components.filter((c) => allIds.has(c.id));
+}
+
+/** Drop locked roots and locked subtrees from a clipboard snapshot before paste. */
+export function sanitizedClipboardForPaste(snapshot: Component[]): Component[] {
+  if (snapshot.length === 0) return [];
+  const inSnap = new Set(snapshot.map((c) => c.id));
+  const roots = snapshot.filter((c) => !c.parentComponentId || !inSnap.has(c.parentComponentId));
+  return expandSelectedComponentsForCopy(snapshot, roots);
+}
+
 function depthWithinCopiedSubtree(
   c: Component,
   byId: Map<string, Component>,

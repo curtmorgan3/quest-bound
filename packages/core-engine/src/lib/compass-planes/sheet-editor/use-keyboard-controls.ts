@@ -5,8 +5,9 @@ import { useState } from 'react';
 import { fireExternalComponentChangeEvent } from '../utils';
 import {
   expandDeleteIds,
-  expandSelectedComponentsWithDescendants,
+  expandSelectedComponentsForCopy,
   remapCopiedComponentsForPaste,
+  sanitizedClipboardForPaste,
 } from './component-world-geometry';
 
 interface UseKeyboardControls {
@@ -30,7 +31,7 @@ export const useKeyboardControls = ({
   const [copiedComponents, setCopiedComponents] = useState<Component[]>([]);
 
   const copy = (shouldCut?: boolean) => {
-    const clipboard = expandSelectedComponentsWithDescendants(components, selectedComponents);
+    const clipboard = expandSelectedComponentsForCopy(components, selectedComponents);
     setCopiedComponents(clipboard.map((c) => ({ ...c })));
     if (shouldCut) {
       const ids = selectedComponents.filter((c) => !c.locked).map((c) => c.id);
@@ -39,7 +40,9 @@ export const useKeyboardControls = ({
   };
 
   const paste = () => {
-    onComponentsCreated(remapCopiedComponentsForPaste(copiedComponents, 20, 20));
+    const source = sanitizedClipboardForPaste(copiedComponents);
+    if (source.length === 0) return;
+    onComponentsCreated(remapCopiedComponentsForPaste(source, 20, 20));
     onComponentsUpdated(
       selectedComponents.map((c) => ({
         id: c.id,

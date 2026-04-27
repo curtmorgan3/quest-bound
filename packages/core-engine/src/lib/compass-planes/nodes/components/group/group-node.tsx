@@ -78,16 +78,14 @@ export const EditGroupNode = () => {
                       data-canvas-item={child.id}
                       className={
                         child.locked
-                          ? 'pointer-events-none relative flex-shrink-0 [&_*]:pointer-events-none'
+                          ? 'pointer-events-auto relative flex-shrink-0 [&_*]:pointer-events-none'
                           : 'pointer-events-auto relative flex-shrink-0'
                       }
                       style={{
                         width: viewMode && childData.takeFullWidth ? '100%' : eff.width,
                         height: viewMode && childData.takeFullHeight ? '100%' : eff.height,
                       }}
-                      onPointerDown={
-                        child.locked ? undefined : (e) => canvasLayout.onItemPointerDown(e, child)
-                      }>
+                      onPointerDown={(e) => canvasLayout.onItemPointerDown(e, child)}>
                       <EditorItemLayoutProvider value={{ width: eff.width, height: eff.height }}>
                         <EditorItemIdProvider id={child.id}>
                           <Edit />
@@ -136,7 +134,7 @@ export const EditGroupNode = () => {
                   data-canvas-item={child.id}
                   className={
                     child.locked
-                      ? 'pointer-events-none absolute [&_*]:pointer-events-none'
+                      ? 'pointer-events-auto absolute [&_*]:pointer-events-none'
                       : 'pointer-events-auto absolute'
                   }
                   style={{
@@ -146,9 +144,7 @@ export const EditGroupNode = () => {
                     height: viewMode && childData.takeFullHeight ? '100%' : eff.height,
                     zIndex: child.z,
                   }}
-                  onPointerDown={
-                    child.locked ? undefined : (e) => canvasLayout.onItemPointerDown(e, child)
-                  }>
+                  onPointerDown={(e) => canvasLayout.onItemPointerDown(e, child)}>
                   <EditorItemLayoutProvider value={{ width: eff.width, height: eff.height }}>
                     <EditorItemIdProvider id={child.id}>
                       <Edit />

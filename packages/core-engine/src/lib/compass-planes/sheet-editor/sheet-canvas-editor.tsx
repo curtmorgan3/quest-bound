@@ -600,7 +600,7 @@ export function SheetCanvasEditor({
                     data-canvas-item={c.id}
                     className={
                       c.locked
-                        ? 'pointer-events-none absolute [&_*]:pointer-events-none'
+                        ? 'pointer-events-auto absolute [&_*]:pointer-events-none'
                         : 'pointer-events-auto absolute'
                     }
                     style={{
@@ -610,7 +610,7 @@ export function SheetCanvasEditor({
                       height: layout.height,
                       zIndex: c.z,
                     }}
-                    onPointerDown={c.locked ? undefined : (e) => onItemPointerDown(e, c)}>
+                    onPointerDown={(e) => onItemPointerDown(e, c)}>
                     {compositeTemplateRootIds.has(c.id) ? (
                       <span
                         role='img'
