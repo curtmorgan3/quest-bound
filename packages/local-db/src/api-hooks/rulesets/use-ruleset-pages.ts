@@ -88,7 +88,10 @@ export const useRulesetPages = () => {
         | 'image'
         | 'hideFromPlayerView'
       >
-    >,
+    > & {
+      /** When set explicitly to `null`, clears `order` on the stored row (Dexie does not omit `undefined`). */
+      order?: number | null;
+    },
   ) => {
     const now = new Date().toISOString();
     try {
@@ -123,10 +126,24 @@ export const useRulesetPages = () => {
         }
       }
 
-      await db.pages.update(id, {
-        ...data,
-        updatedAt: now,
-      });
+      const existingPage = await db.pages.get(id);
+      if (!existingPage) return;
+
+      const patch = { ...data } as Partial<Page> & { order?: number | null };
+      if ('order' in patch) {
+        delete (patch as { order?: unknown }).order;
+      }
+      let nextRow: Page = { ...existingPage, ...patch, updatedAt: now };
+      if ('order' in data) {
+        const o = data.order;
+        if (typeof o === 'number' && Number.isFinite(o)) {
+          nextRow.order = Math.trunc(o);
+        } else {
+          delete nextRow.order;
+        }
+      }
+
+      await db.pages.put(nextRow);
     } catch (e) {
       handleError(e as Error, {
         component: 'useRulesetPages/updatePage',

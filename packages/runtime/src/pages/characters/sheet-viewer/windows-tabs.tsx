@@ -82,7 +82,14 @@ export const WindowsTabs = ({
   const sortedRulesetWindows = [...rulesetWindows]
     .filter((w) => showHiddenWindows || !w.hideFromPlayerView)
     .sort((a, b) => a.title.localeCompare(b.title));
-  const sortedPages = [...characterPages].sort((a, b) => a.label?.localeCompare(b.label));
+  const sortedPages = [...characterPages].sort((a, b) => {
+    const oa =
+      typeof a.order === 'number' && Number.isFinite(a.order) ? a.order : Number.POSITIVE_INFINITY;
+    const ob =
+      typeof b.order === 'number' && Number.isFinite(b.order) ? b.order : Number.POSITIVE_INFINITY;
+    if (oa !== ob) return oa - ob;
+    return (a.label ?? '').localeCompare(b.label ?? '');
+  });
 
   const windowsOnPage = useMemo(
     () =>

@@ -697,6 +697,9 @@ export const useImportRuleset = () => {
           if (!item.label || typeof item.label !== 'string') {
             errors.push(`Page ${index + 1}: label is required and must be a string`);
           }
+          if (item.order !== undefined && typeof item.order !== 'number') {
+            errors.push(`Page ${index + 1}: order must be a number when present`);
+          }
           break;
 
         case 'inventoryItems':

@@ -134,6 +134,11 @@ export function prepareRecordForRemote(
   if (tableName === 'pages' || tableName === 'characterPages') {
     patchOptionalDoubleFields(stripped, ['backgroundOpacity']);
   }
+  if (tableName === 'pages') {
+    const p = stripped as { order?: unknown; pageOrder?: unknown };
+    p.pageOrder = normalizeOptionalIntForRemote(p.order);
+    delete p.order;
+  }
   if (tableName === 'campaignCharacters') {
     patchOptionalDoubleFields(stripped, ['mapHeight', 'mapWidth']);
   }
@@ -255,6 +260,17 @@ export function prepareRemoteForLocal(
     const n = typeof raw === 'number' ? raw : Number(raw);
     out.order = Number.isFinite(n) ? Math.trunc(n) : 0;
     delete out.sortOrder;
+  }
+  if (tableName === 'pages') {
+    const p = out as { order?: unknown; pageOrder?: unknown };
+    const raw = p.pageOrder ?? p.order;
+    const n = typeof raw === 'number' ? raw : Number(raw);
+    if (raw != null && raw !== '' && Number.isFinite(n)) {
+      p.order = Math.trunc(n);
+    } else {
+      delete p.order;
+    }
+    delete p.pageOrder;
   }
   return out;
 }

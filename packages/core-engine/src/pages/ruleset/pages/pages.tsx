@@ -3,6 +3,7 @@ import { useActiveRuleset, useRulesetPages } from '@/lib/compass-api';
 import { useEffect, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useRulesetFiltersStore } from '@/stores/ruleset-filters-store';
+import type { Page } from '@/types';
 import { PreviewCard } from '../components';
 import { useListFilterParams } from '../utils/list-filter-query-params';
 
@@ -11,6 +12,15 @@ interface PageSelectProps {
 }
 
 const ALL_CATEGORIES = 'all';
+
+function compareRulesetPagesByOrderThenLabel(a: Page, b: Page): number {
+  const oa =
+    typeof a.order === 'number' && Number.isFinite(a.order) ? a.order : Number.POSITIVE_INFINITY;
+  const ob =
+    typeof b.order === 'number' && Number.isFinite(b.order) ? b.order : Number.POSITIVE_INFINITY;
+  if (oa !== ob) return oa - ob;
+  return a.label.localeCompare(b.label);
+}
 
 export const PageSelect = ({ onEditDetails }: PageSelectProps) => {
   const { pages, updatePage, removePageFromRuleset } = useRulesetPages();
@@ -49,15 +59,13 @@ export const PageSelect = ({ onEditDetails }: PageSelectProps) => {
     return [...set].sort((a, b) => a.localeCompare(b));
   }, [pages]);
 
-  const sortedPages = [...pages].sort((a, b) => a.label.localeCompare(b.label));
-  const filteredPages = sortedPages
-    .filter((p) => {
+  const sortedPages = [...pages].sort(compareRulesetPagesByOrderThenLabel);
+  const filteredPages = sortedPages.filter((p) => {
       const matchesText = p.label.toLowerCase().includes(filterValue.toLowerCase());
       const matchesCategory =
         categoryFilter === ALL_CATEGORIES || p.category?.trim() === categoryFilter;
       return matchesText && matchesCategory;
-    })
-    .sort((a, b) => a.label.localeCompare(b.label));
+    });
 
   const handleDelete = (id: string) => {
     removePageFromRuleset(id);

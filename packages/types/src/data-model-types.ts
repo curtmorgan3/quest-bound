@@ -233,6 +233,8 @@ export type Page = BaseDetails & {
   image?: string | null;
   /** When true, this page template is hidden from the player-facing sheet viewer. */
   hideFromPlayerView?: boolean;
+  /** Sort order among ruleset sheet page templates (lower first; omit for alphabetical fallback). */
+  order?: number;
   /** Module origin: ruleset id, source entity id, and module name. */
   moduleId?: string;
   moduleEntityId?: string;

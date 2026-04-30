@@ -9,6 +9,8 @@ export interface PageDetailsValue {
   image?: string | null;
   backgroundColor?: string;
   backgroundOpacity?: number;
+  /** Ruleset template pages only — sheet tab sort order when set. */
+  order?: number;
 }
 
 export interface PageDetailsUpdate {
@@ -19,6 +21,8 @@ export interface PageDetailsUpdate {
   image?: string | null;
   backgroundColor?: string;
   backgroundOpacity?: number;
+  /** Use `null` to clear sort order on the saved record. */
+  order?: number | null;
 }
 
 interface PageDetailsFormProps {
@@ -28,6 +32,8 @@ interface PageDetailsFormProps {
   rulesetId?: string;
   /** Whether to show the name/label field. Default true. */
   showLabel?: boolean;
+  /** Ruleset sheet template editor: editable numeric sort order. */
+  showOrder?: boolean;
 }
 
 export function PageDetailsForm({
@@ -35,9 +41,11 @@ export function PageDetailsForm({
   onUpdate,
   rulesetId,
   showLabel = true,
+  showOrder = false,
 }: PageDetailsFormProps) {
   const opacityPct = Math.round((value.backgroundOpacity ?? 1) * 100);
   const opacityId = useId();
+  const orderId = useId();
 
   return (
     <div className='flex flex-col gap-4'>
@@ -50,6 +58,35 @@ export function PageDetailsForm({
             onChange={(e) => onUpdate({ label: e.target.value })}
             className='bg-[#333] border-[#555] text-white'
           />
+        </div>
+      )}
+      {showOrder && (
+        <div className='flex flex-col gap-2'>
+          <Label htmlFor={orderId}>Order</Label>
+          <Input
+            id={orderId}
+            type='number'
+            inputMode='numeric'
+            placeholder='Automatic (by name)'
+            value={
+              typeof value.order === 'number' && Number.isFinite(value.order) ? String(value.order) : ''
+            }
+            onChange={(e) => {
+              const raw = e.target.value.trim();
+              if (raw === '') {
+                onUpdate({ order: null });
+                return;
+              }
+              const n = Number(raw);
+              if (Number.isFinite(n)) {
+                onUpdate({ order: Math.trunc(n) });
+              }
+            }}
+            className='max-w-[12rem] bg-[#333] border-[#555] text-white'
+          />
+          <p className='text-xs text-muted-foreground'>
+            Lower numbers list first among pages. Leave empty to sort by name only.
+          </p>
         </div>
       )}
       <div className='w-full flex justify-between'>

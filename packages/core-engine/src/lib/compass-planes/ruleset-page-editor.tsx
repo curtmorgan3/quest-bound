@@ -297,10 +297,12 @@ export const RulesetPageEditor = ({ pageId }: RulesetPageEditorProps) => {
                 image: currentPage.image,
                 backgroundColor: currentPage.backgroundColor,
                 backgroundOpacity: currentPage.backgroundOpacity,
+                order: currentPage.order,
               }}
               onUpdate={(data) => updatePage(currentPage.id, data)}
               rulesetId={activeRuleset?.id}
               showLabel
+              showOrder
             />
           )}
         </DialogContent>
