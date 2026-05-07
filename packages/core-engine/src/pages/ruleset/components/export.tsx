@@ -1,6 +1,5 @@
 import { Button } from '@/components/ui/button';
-import { useActiveRuleset, useExport } from '@/lib/compass-api';
-import { useExternalRulesetGrantStore } from '@/stores';
+import { useExport } from '@/lib/compass-api';
 import { ArrowDownToLine } from 'lucide-react';
 
 interface ExportProps {
@@ -8,14 +7,9 @@ interface ExportProps {
 }
 
 export const Export = ({ type }: ExportProps) => {
-  const { activeRuleset } = useActiveRuleset();
-  const readOnlyPlaytest = useExternalRulesetGrantStore((s) =>
-    activeRuleset?.id ? s.permissionByRulesetId[activeRuleset.id] === 'read_only' : false,
-  );
   const { exportData, isLoading } = useExport(type);
 
   const handleExport = () => {
-    if (readOnlyPlaytest) return;
     const tsvData = exportData();
 
     if (!tsvData) {
@@ -41,7 +35,7 @@ export const Export = ({ type }: ExportProps) => {
       variant='outline'
       size='sm'
       onClick={handleExport}
-      disabled={isLoading || readOnlyPlaytest}
+      disabled={isLoading}
       className='gap-2'>
       <ArrowDownToLine className='h-4 w-4' />
     </Button>

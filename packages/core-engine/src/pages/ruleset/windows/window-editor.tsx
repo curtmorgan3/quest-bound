@@ -1,7 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useSidebar } from '@/components/ui/sidebar';
-import { useReadOnlyExternalGrantRedirect } from '@/lib/cloud/external-ruleset-grant-guard';
 import { useComponents, useRulesets, type ComponentUpdate } from '@/lib/compass-api';
 import { repairOrphanCharacterWindowsForRulesetWindows } from '@/utils/default-archetype-test-character';
 import { SheetEditor } from '@/lib/compass-planes';
@@ -81,8 +80,7 @@ function readStoredSnapToGrid(): boolean {
 }
 
 export const WindowEditor = () => {
-  const { windowId, rulesetId } = useParams<{ windowId: string; rulesetId: string }>();
-  const readOnlyRedirect = useReadOnlyExternalGrantRedirect(rulesetId);
+  const { windowId } = useParams<{ windowId: string; rulesetId: string }>();
 
   const { open } = useSidebar();
   const {
@@ -300,7 +298,6 @@ export const WindowEditor = () => {
   }, [windowId]);
 
   if (!windowId) return null;
-  if (readOnlyRedirect) return readOnlyRedirect;
 
   return (
     <WindowEditorProvider

@@ -15,7 +15,6 @@ export * from './markdown-viewer';
 export * from './markdown-panel';
 export * from './number-input';
 export * from './page-wrapper';
-export * from './pending-external-grants-dialog';
 export * from './ruleset-color-picker';
 export * from './splash-card';
 export * from './sprite-stack';

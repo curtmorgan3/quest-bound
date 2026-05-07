@@ -24,7 +24,6 @@ import {
 } from '@/components';
 import { CategoryField, ImageUpload, PageWrapper } from '@/components/composites';
 import { useAssets } from '@/lib/compass-api';
-import { useReadOnlyExternalGrantRedirect } from '@/lib/cloud/external-ruleset-grant-guard';
 import { clearAssetReferences, db, getAssetReferenceCount } from '@/stores';
 import { useRulesetFiltersStore } from '@/stores/ruleset-filters-store';
 import type { Asset } from '@/types';
@@ -58,7 +57,6 @@ const ALL_CATEGORIES = 'all';
 
 export function AssetsPage() {
   const { rulesetId } = useParams<{ rulesetId: string }>();
-  const readOnlyRedirect = useReadOnlyExternalGrantRedirect(rulesetId);
   const { assets, createAsset, updateAsset, deleteAsset } = useAssets(rulesetId ?? undefined);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
@@ -316,8 +314,6 @@ export function AssetsPage() {
       </div>
     </div>
   );
-
-  if (readOnlyRedirect) return readOnlyRedirect;
 
   return (
     <PageWrapper

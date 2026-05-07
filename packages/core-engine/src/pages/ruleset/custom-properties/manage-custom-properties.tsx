@@ -27,7 +27,6 @@ import {
   SelectValue,
 } from '@/components';
 import { useCustomProperties } from '@/lib/compass-api';
-import { useReadOnlyExternalGrantRedirect } from '@/lib/cloud/external-ruleset-grant-guard';
 import type { CustomPropertyType } from '@/types';
 import { rgbToHex } from '@/utils';
 import { Plus, Search, Trash } from 'lucide-react';
@@ -39,7 +38,6 @@ const PROP_TYPES: CustomPropertyType[] = ['string', 'number', 'boolean', 'color'
 
 export function ManageCustomProperties() {
   const { rulesetId } = useParams<{ rulesetId: string }>();
-  const readOnlyRedirect = useReadOnlyExternalGrantRedirect(rulesetId);
   const { customProperties, updateCustomProperty, deleteCustomProperty } =
     useCustomProperties(rulesetId);
 
@@ -106,8 +104,6 @@ export function ManageCustomProperties() {
   const handleDelete = (id: string) => {
     deleteCustomProperty(id);
   };
-
-  if (readOnlyRedirect) return readOnlyRedirect;
 
   return (
     <PageWrapper

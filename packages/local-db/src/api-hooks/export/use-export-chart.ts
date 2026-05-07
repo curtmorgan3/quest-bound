@@ -1,6 +1,5 @@
 import { useErrorHandler } from '@/hooks/use-error-handler';
 import { db } from '../../db';
-import { useExternalRulesetGrantStore } from '@/stores/external-ruleset-grant-store';
 
 export const useExportChart = () => {
   const { handleError } = useErrorHandler();
@@ -12,13 +11,6 @@ export const useExportChart = () => {
 
       if (!chart) {
         throw new Error(`Chart with ID ${chartId} not found`);
-      }
-      if (
-        chart.rulesetId &&
-        useExternalRulesetGrantStore.getState().permissionByRulesetId[chart.rulesetId] ===
-          'read_only'
-      ) {
-        throw new Error('Export is not available for read-only playtest access.');
       }
 
       // Parse the chart data (assuming it's stored as JSON string)

@@ -3,7 +3,6 @@ import {
   CloudSyncReviewDialog,
   CloudSyncSummaryPanel,
   Loading,
-  PendingExternalGrantsDialog,
   PWAInstallPrompt,
 } from '@/components';
 import { CharacterSelectModal } from '@/components/character-select-modal';
@@ -13,8 +12,6 @@ import { PromptModal } from '@/components/prompt-modal';
 import { ScriptErrorNotificationsHost } from '@/components/script-error-notification';
 import { useCampaignPlayWorkerPolicySync, useNotifications } from '@/hooks';
 import { ensureEmailRegistered, isCloudEmailVerified } from '@/lib/cloud/auth';
-import { isCloudConfigured } from '@/lib/cloud/client';
-import { refreshExternalRulesetGrantPermissions } from '@/lib/cloud/refresh-external-ruleset-grants';
 import { initSyncTriggers } from '@/lib/cloud/sync/sync-service';
 import { useSyncOnRulesetOpen } from '@/lib/cloud/sync/use-sync-on-ruleset-open';
 import { useFontLoader, useUsers } from '@/lib/compass-api';
@@ -58,31 +55,7 @@ export function Layout() {
 
   const cloudUser = useCloudAuthStore((s) => s.cloudUser);
   const isAuthenticated = useCloudAuthStore((s) => s.isAuthenticated);
-  const cloudSyncEnabled = useCloudAuthStore((s) => s.cloudSyncEnabled);
-  const cloudSyncEligibilityLoading = useCloudAuthStore((s) => s.isCloudSyncEligibilityLoading);
-  const cloudRulesetListEpoch = useCloudAuthStore((s) => s.cloudRulesetListEpoch);
   const isRegisteringEmail = useRef(false);
-
-  useEffect(() => {
-    if (
-      !isCloudConfigured ||
-      !isAuthenticated ||
-      !cloudSyncEnabled ||
-      cloudSyncEligibilityLoading ||
-      !cloudUser?.id
-    ) {
-      return;
-    }
-    void refreshExternalRulesetGrantPermissions(cloudUser.id).catch(() => {
-      /* layout will retry on epoch / auth changes */
-    });
-  }, [
-    isAuthenticated,
-    cloudSyncEnabled,
-    cloudSyncEligibilityLoading,
-    cloudRulesetListEpoch,
-    cloudUser?.id,
-  ]);
 
   // Initialize cloud auth (session restore + auth state subscription)
   useEffect(() => {
@@ -255,7 +228,6 @@ export function Layout() {
                 zIndex: 1000,
                 maxWidth: 'calc(100vw - 400px)',
               }}></canvas>
-            <PendingExternalGrantsDialog />
             <CloudSyncOverlayDialog />
             <CloudSyncReviewDialog />
             <CloudSyncSummaryPanel />

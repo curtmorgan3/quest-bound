@@ -15,8 +15,6 @@ import {
   useDocuments,
   useExportChart,
 } from '@/lib/compass-api';
-import { useReadOnlyExternalGrantRedirect } from '@/lib/cloud/external-ruleset-grant-guard';
-import { useExternalRulesetGrantStore } from '@/stores';
 import { ArrowDownToLine, Loader2, Pencil, Plus, Upload } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { Navigate, useParams, useSearchParams } from 'react-router-dom';
@@ -78,12 +76,6 @@ export const Ruleset = ({
   const activeChart = chartId ? charts?.find((c) => c.id === chartId) : undefined;
   const pageLabel =
     page === 'charts' && activeChart ? activeChart.title : (pageToLabel.get(page ?? '') ?? '');
-
-  const readOnlyRedirect = useReadOnlyExternalGrantRedirect(rulesetId);
-  const readOnlyPlaytest = useExternalRulesetGrantStore((s) =>
-    rulesetId ? s.permissionByRulesetId[rulesetId] === 'read_only' : false,
-  );
-  if (readOnlyRedirect) return readOnlyRedirect;
 
   if (!page) {
     const target =
@@ -242,7 +234,7 @@ export const Ruleset = ({
               size='sm'
               variant='outline'
               onClick={handleChartUploadClick}
-              disabled={uploadingCharts || readOnlyPlaytest}
+              disabled={uploadingCharts}
               data-testid='charts-upload-button'>
               {uploadingCharts ? (
                 <Loader2 className='h-4 w-4 animate-spin' />
@@ -302,8 +294,7 @@ export const Ruleset = ({
               <Button
                 onClick={() => exportChartAsTSV(chartId)}
                 variant='outline'
-                size='sm'
-                disabled={readOnlyPlaytest}>
+                size='sm'>
                 <ArrowDownToLine className='h-4 w-4' />
               </Button>
               <ChartImport chartId={chartId} onLoadingChange={setIsImporting} />
@@ -406,7 +397,7 @@ export const Ruleset = ({
             <DialogFooter>
               <Button
                 onClick={handleChartTsvSelectFilesClick}
-                disabled={uploadingCharts || readOnlyPlaytest}
+                disabled={uploadingCharts}
                 data-testid='charts-upload-select-files'>
                 {uploadingCharts ? (
                   <>

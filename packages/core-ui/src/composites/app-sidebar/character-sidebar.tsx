@@ -1,4 +1,3 @@
-import { PlaytestRulesetControls } from '@/components/composites/playtest/playtest-ruleset-controls';
 import { Button } from '@/components/ui/button';
 import {
   SidebarGroup,
@@ -179,7 +178,6 @@ export function CharacterSidebar() {
               </SidebarMenuButton>
             </SidebarMenuItem>
           )}
-          <PlaytestRulesetControls rulesetId={character.rulesetId} playCharacterId={character.id} />
         </SidebarGroupContent>
       </SidebarGroup>
 

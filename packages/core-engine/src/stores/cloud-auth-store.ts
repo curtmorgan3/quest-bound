@@ -3,8 +3,6 @@ import { isCloudConfigured } from '@/lib/cloud/client';
 import type { Session, User } from '@supabase/supabase-js';
 import { create } from 'zustand';
 
-import { useExternalRulesetGrantStore } from './external-ruleset-grant-store';
-
 interface CloudAuthState {
   cloudUser: User | null;
   session: Session | null;
@@ -104,9 +102,6 @@ export const useCloudAuthStore = create<CloudAuthState>((set) => ({
       set((state) => {
         const prevUserId = state.cloudUser?.id ?? null;
         const userChanged = prevUserId !== nextUserId;
-        if (userChanged) {
-          useExternalRulesetGrantStore.getState().clear();
-        }
         return {
           session: session ?? null,
           cloudUser: session?.user ?? null,

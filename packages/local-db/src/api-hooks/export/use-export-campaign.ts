@@ -1,6 +1,5 @@
 import { useErrorHandler } from '@/hooks';
 import { db } from '../../db';
-import { useExternalRulesetGrantStore } from '@/stores/external-ruleset-grant-store';
 import type {
   Asset,
   Campaign,
@@ -75,11 +74,6 @@ export const useExportCampaign = (campaignId: string) => {
 
     try {
       const rulesetId = c.rulesetId;
-      if (
-        useExternalRulesetGrantStore.getState().permissionByRulesetId[rulesetId] === 'read_only'
-      ) {
-        throw new Error('Export is not available for read-only playtest access.');
-      }
 
       const [scenes, campaignCharacters, documents, allScripts] = await Promise.all([
         db.campaignScenes.where('campaignId').equals(campaignId).toArray(),

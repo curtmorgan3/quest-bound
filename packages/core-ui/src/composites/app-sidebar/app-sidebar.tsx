@@ -17,7 +17,7 @@ import { useSyncStateStore } from '@/lib/cloud/sync/sync-state';
 import { useActiveRuleset, useUsers } from '@/lib/compass-api';
 import { Settings } from '@/pages';
 import { DiceContext } from '@quest-bound/runtime/context';
-import { useCloudSyncReviewStore, useExternalRulesetGrantStore } from '@/stores';
+import { useCloudSyncReviewStore } from '@/stores';
 import { useCloudAuthStore } from '@/stores/cloud-auth-store';
 import {
   CloudAlert,
@@ -123,17 +123,12 @@ export function AppSidebar() {
   const committing = useCloudSyncReviewStore((s) => s.committing);
   const reviewOpen = useCloudSyncReviewStore((s) => s.open);
 
-  const externalGrantBlocksRemoteSync = useExternalRulesetGrantStore((s) =>
-    rulesetId ? s.permissionByRulesetId[rulesetId] != null : false,
-  );
-
   const showCloudSync =
     isCloudConfigured &&
     isAuthenticated &&
     cloudSyncEnabled &&
     !cloudSyncEligibilityLoading &&
     rulesetId &&
-    !externalGrantBlocksRemoteSync &&
     !isHomepage &&
     !isLandingRoute &&
     !isCharacterRoute &&

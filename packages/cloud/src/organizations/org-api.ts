@@ -456,60 +456,6 @@ export async function dismissOrganizationInvite(inviteId: string): Promise<void>
   if (error) throw error;
 }
 
-/** Removes the current user from an organization. Fails via RLS if they are the org admin. */
-export type ExternalRulesetGrantRow = {
-  ruleset_id: string;
-  permission: 'read_only' | 'full';
-};
-
-/** Active resolved grants for the signed-in user (RLS: own rows only). Used for playtester cloud list + UI gates. */
-export async function listMyActiveExternalRulesetGrants(): Promise<ExternalRulesetGrantRow[]> {
-  const client = requireClient();
-  const session = await getSession();
-  if (!session?.user?.id) return [];
-
-  const { data, error } = await client
-    .from('ruleset_external_grants')
-    .select('ruleset_id, permission')
-    .eq('is_active', true)
-    .not('user_id', 'is', null);
-  if (error) throw error;
-  return (data ?? []) as ExternalRulesetGrantRow[];
-}
-
-/** Pending external ruleset grants for the session email (RPC; not visible via direct SELECT until accepted). */
-export type PendingExternalGrantRow = {
-  grant_id: string;
-  organization_id: string;
-  organization_name: string;
-  ruleset_id: string;
-  ruleset_title: string | null;
-  permission: 'read_only' | 'full';
-  created_at: string;
-};
-
-export async function listPendingExternalGrantsForInvitee(): Promise<PendingExternalGrantRow[]> {
-  const client = requireClient();
-  const session = await getSession();
-  if (!session?.user?.id) return [];
-
-  const { data, error } = await client.rpc('list_pending_external_grants_for_invitee');
-  if (error) throw error;
-  return (data ?? []) as PendingExternalGrantRow[];
-}
-
-export async function acceptRulesetExternalGrant(grantId: string): Promise<void> {
-  const client = requireClient();
-  const { error } = await client.rpc('accept_ruleset_external_grant', { p_grant_id: grantId });
-  if (error) throw error;
-}
-
-export async function rejectRulesetExternalGrant(grantId: string): Promise<void> {
-  const client = requireClient();
-  const { error } = await client.rpc('reject_ruleset_external_grant', { p_grant_id: grantId });
-  if (error) throw error;
-}
-
 export async function leaveOrganization(organizationId: string): Promise<void> {
   const client = requireClient();
   const session = await getSession();

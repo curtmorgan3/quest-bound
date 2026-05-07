@@ -1,7 +1,6 @@
 import { Button } from '@/components';
 import { DocumentMarkdownContent } from '@/components/composites/document-markdown-content';
 import { useIsMobileDevice } from '@/hooks/use-mobile-device';
-import { useReadOnlyExternalGrantRedirect } from '@/lib/cloud/external-ruleset-grant-guard';
 import { useCampaign, useCharacter, useDocuments } from '@/lib/compass-api';
 import { ArrowLeft, Download } from 'lucide-react';
 import { useEffect, useState } from 'react';
@@ -32,8 +31,7 @@ const base64ToBlobUrl = (base64Data: string): string | null => {
 };
 
 export const DocumentViewer = () => {
-  const { documentId, characterId, worldId, campaignId, rulesetId } = useParams();
-  const readOnlyRedirect = useReadOnlyExternalGrantRedirect(rulesetId);
+  const { documentId, characterId, worldId, campaignId } = useParams();
   const { character } = useCharacter(characterId);
   const campaign = useCampaign(campaignId);
   const { documents: campaignDocuments } = useDocuments(
@@ -75,8 +73,6 @@ export const DocumentViewer = () => {
       setBlobUrl(null);
     }
   }, [document?.pdfData]);
-
-  if (readOnlyRedirect) return readOnlyRedirect;
 
   if (!document) {
     return (
