@@ -87,7 +87,7 @@ export async function registerEmail(email: string): Promise<{ error?: Error }> {
     const response = await fetch(REGISTER_EMAIL_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: trimmed, tag: 'app' }),
+      body: JSON.stringify({ email: trimmed, tags: ['app'] }),
     });
     if (!response.ok) {
       return { error: new Error(`Failed to register email: ${response.statusText}`) };
