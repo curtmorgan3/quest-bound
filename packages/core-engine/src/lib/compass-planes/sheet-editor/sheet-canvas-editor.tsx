@@ -49,6 +49,7 @@ import {
   isCanvasRootComponent,
   outermostGroupRoot,
 } from './group-flex-utils';
+import { applyContainerReparenting } from './reparent-on-drop';
 import {
   canonicalizeMarqueeHitIds,
   computeClickSelectionWithDrill,
@@ -209,14 +210,15 @@ export function SheetCanvasEditor({
     shouldClampItem: (id) => !getComponent(id)?.parentComponentId,
     viewScale: resolvedViewScale,
     onCommit: (updates) => {
+      const reparented = applyContainerReparenting(updates, components, byId, effectiveLayout);
       const next: Record<string, { x: number; y: number }> = {};
-      for (const u of updates) {
+      for (const u of reparented) {
         if (u.id != null && typeof u.x === 'number' && typeof u.y === 'number') {
           next[u.id] = { x: u.x, y: u.y };
         }
       }
       setMovePreviewById(next);
-      onComponentsUpdated(updates);
+      onComponentsUpdated(reparented);
     },
     onTransientPositions: (items) => {
       setMovePreviewById(Object.fromEntries(items.map((i) => [i.id, { x: i.x, y: i.y }])));
