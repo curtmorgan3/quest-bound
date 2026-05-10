@@ -1,6 +1,8 @@
+import { CharacterContext } from '@/stores';
 import type { CharacterAttribute, Component, ComponentData } from '@/types';
-import type { ReactNode } from 'react';
+import { useContext, type ReactNode } from 'react';
 import { ComponentTypes } from '../nodes';
+import { useRotationTransitionCSS } from '../utils/use-component-transition-css';
 import {
   ViewCheckboxNode,
   ViewContentNode,
@@ -142,6 +144,11 @@ function WrapDecorators({
   position?: PositionValues;
   viewCtx?: ViewRenderContext;
 }) {
+  const characterContext = useContext(CharacterContext);
+  const rotationTransition = useRotationTransitionCSS(
+    characterContext?.character?.id,
+    component.id,
+  );
   return (
     <NodeConditionalRender
       component={component}
@@ -157,7 +164,10 @@ function WrapDecorators({
                   componentData={componentData}
                   viewCtx={viewCtx}>
                   <NodeActionCaller component={component} componentData={componentData}>
-                    <NodeRotation rotation={position?.rotation} z={position?.z}>
+                    <NodeRotation
+                      rotation={position?.rotation}
+                      z={position?.z}
+                      transition={rotationTransition}>
                       <NodeAnimation component={component}>{children}</NodeAnimation>
                     </NodeRotation>
                   </NodeActionCaller>

@@ -9,6 +9,8 @@ import {
   useMemo,
   useRef,
   useState,
+  type CSSProperties,
+  type ReactNode,
 } from 'react';
 import { Link } from 'react-router-dom';
 import { DRAG_THRESHOLD_PX } from '@/lib/compass-planes/canvas';
@@ -20,6 +22,7 @@ import {
 } from '@/lib/compass-planes/sheet-editor/component-world-geometry';
 import { isCanvasRootComponent } from '@/lib/compass-planes/sheet-editor/group-flex-utils';
 import { useComponentPositionMap } from '@/lib/compass-planes/utils';
+import { useLayoutTransitionCSS } from '@/lib/compass-planes/utils/use-component-transition-css';
 import { parseComponentActiveStatesMap } from '@/lib/compass-planes/utils/component-states';
 import { mergeCharacterWindowComponents } from '@/lib/compass-planes/utils/merge-character-window-components';
 import { ParentWindowFrameProvider } from './parent-window-frame-context';
@@ -62,6 +65,25 @@ export interface WindowNodeData {
   onDisplayScaleChange?: (id: string, scale: number) => void;
   /** Ruleset page template id — child-window open uses it for displayScale and layout lookups. */
   sheetTemplatePageId?: string | null;
+}
+
+function CanvasRootComponentWrapper({
+  characterId,
+  componentId,
+  style,
+  children,
+}: {
+  characterId: string | undefined;
+  componentId: string;
+  style: CSSProperties;
+  children: ReactNode;
+}) {
+  const layoutTransition = useLayoutTransitionCSS(characterId, componentId);
+  return (
+    <div style={layoutTransition ? { ...style, transition: layoutTransition } : style}>
+      {children}
+    </div>
+  );
 }
 
 const MIN_DISPLAY_SCALE = 0.25;
@@ -648,8 +670,10 @@ export const WindowNode = ({ data }: { data: WindowNodeData }) => {
                     useCharacterWindowStates,
                   );
                   return (
-                    <div
+                    <CanvasRootComponentWrapper
                       key={component.id}
+                      characterId={characterContext?.character?.id}
+                      componentId={component.id}
                       style={{
                         position: 'absolute',
                         left: compData.takeFullWidth ? viewportEdgeInSheetPx.left : tl.x - minX,
@@ -664,7 +688,7 @@ export const WindowNode = ({ data }: { data: WindowNodeData }) => {
                         position={pos}
                         viewRenderContext={viewRenderContext}
                       />
-                    </div>
+                    </CanvasRootComponentWrapper>
                   );
                 })}
               </SheetGroupPointerProvider>

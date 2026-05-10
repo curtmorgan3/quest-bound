@@ -2,6 +2,7 @@ import { CharacterContext } from '@/stores';
 import type { Component, ComponentData, ComponentStyle } from '@/types';
 import { useContext, useMemo } from 'react';
 import { parseComponentDataJson } from './component-data-json';
+import { useStyleTransitionCSS } from './use-component-transition-css';
 import {
   type PositionValues,
   STYLE_KEYS,
@@ -138,6 +139,7 @@ export function useComponentStyles(component: Component | null): ComponentStyle 
   const styleValues = useStyleValues(component ? [component] : []);
   const characterContext = useContext(CharacterContext);
   const character = characterContext?.character ?? null;
+  const styleTransition = useStyleTransitionCSS(character?.id, component?.id);
 
   return useMemo(() => {
     if (!component) return {} as ComponentStyle;
@@ -149,8 +151,12 @@ export function useComponentStyles(component: Component | null): ComponentStyle 
     if (referenceLabel && character?.componentStyleOverrides?.[referenceLabel]) {
       Object.assign(styles, character.componentStyleOverrides[referenceLabel]);
     }
-    return applyStyleEnrichment(styles);
-  }, [component, styleValues, character]);
+    const enriched = applyStyleEnrichment(styles);
+    if (styleTransition) {
+      (enriched as Record<string, unknown>).transition = styleTransition;
+    }
+    return enriched;
+  }, [component, styleValues, character, styleTransition]);
 }
 
 export function useComponentPosition(component?: Component): PositionValues {

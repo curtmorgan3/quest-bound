@@ -61,6 +61,14 @@ export interface EventHandlerResult {
   navigateTargets?: { characterId: string; pageId: string }[];
   /** Component animations to trigger in the sheet viewer (by referenceLabel). */
   componentAnimations?: Array<{ characterId: string; referenceLabel: string; animation: string }>;
+  /** Per-key CSS-transition specs queued by `comp.animate(...)` during this run. */
+  componentTransitions?: Array<{
+    characterId: string;
+    componentId: string;
+    key: string;
+    durationMs: number;
+    cubicBezier: string;
+  }>;
   /**
    * When set, item_event user log() rows should use this same `batchTimestamp` (and sequence ≥ 1)
    * as the invocation auto-log so both sort as one run in the game log.
@@ -232,6 +240,7 @@ export class EventHandlerExecutor {
         logMessages: r.logMessages,
         error: r.error,
         componentAnimations: r.componentAnimations,
+        componentTransitions: r.componentTransitions,
       };
     };
   }
@@ -459,6 +468,7 @@ export class EventHandlerExecutor {
       modifiedAttributeIds: result.modifiedAttributeIds,
       navigateTargets: result.navigateTargets,
       componentAnimations: result.componentAnimations,
+      componentTransitions: result.componentTransitions,
       scriptLogBatchTimestamp: batchTimestamp,
     };
   }
@@ -678,6 +688,7 @@ export class EventHandlerExecutor {
         modifiedAttributeIds: result.modifiedAttributeIds,
         navigateTargets: result.navigateTargets,
         componentAnimations: [...(result.componentAnimations ?? []), ...nestedAnimations],
+        componentTransitions: result.componentTransitions,
       };
     } finally {
       actionEventDepth--;
@@ -905,6 +916,7 @@ export class EventHandlerExecutor {
       modifiedAttributeIds: result.modifiedAttributeIds,
       navigateTargets: result.navigateTargets,
       componentAnimations: result.componentAnimations,
+      componentTransitions: result.componentTransitions,
     };
   }
 

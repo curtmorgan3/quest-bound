@@ -266,6 +266,17 @@ export interface ScriptExecutionResult {
   navigateTargets?: { characterId: string; pageId: string }[];
   /** Component animations to trigger in the sheet viewer (by referenceLabel). */
   componentAnimations?: Array<{ characterId: string; referenceLabel: string; animation: string }>;
+  /**
+   * Per-component, per-flat-key transition specs queued by `comp.animate(...)` and applied to
+   * `comp.set(...)` calls during this run. Renderer maps these to CSS `transition` declarations.
+   */
+  componentTransitions?: Array<{
+    characterId: string;
+    componentId: string;
+    key: string;
+    durationMs: number;
+    cubicBezier: string;
+  }>;
   /** NPCs spawned via Scene.spawnCharacter during this run (for campaign play roster realtime). */
   rosterBroadcasts?: Array<{
     campaignId: string;
@@ -1577,6 +1588,7 @@ export class ScriptRunner {
       // Collect modified attribute IDs and component updates before flush (flush clears pendingUpdates)
       const modifiedAttributeIds = this.getModifiedAttributeIds();
       const componentUpdates = this.getComponentUpdates();
+      const componentTransitions = this.sheetUiCoordinator?.drainPendingTransitions() ?? [];
 
       // Flush changes to database and capture any navigation targets
       const { navigateTargets, subExecutionModifiedAttributeIds } = await this.flushCache();
@@ -1595,6 +1607,7 @@ export class ScriptRunner {
         modifiedAttributeIds: allModifiedAttributeIds,
         navigateTargets,
         componentAnimations: componentUpdates.animations ?? [],
+        ...(componentTransitions.length > 0 ? { componentTransitions } : {}),
         ...(rb && rb.length > 0 ? { rosterBroadcasts: rb } : {}),
       };
     } catch (error) {

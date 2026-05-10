@@ -80,6 +80,7 @@ function createWorkerExecuteItemEventFn(
       logMessages: r.logMessages,
       error: r.error,
       componentAnimations: r.componentAnimations,
+      componentTransitions: r.componentTransitions,
     };
   };
 }
@@ -657,11 +658,20 @@ function createOnAttributesModified(
   createRollForCharacter?: (characterId: string) => RollFn,
   createRollSplitForCharacter?: (characterId: string) => RollSplitFn,
   sheetPreviewRulesetWindowId?: string | null,
+  /** When provided, collect per-key CSS-transition specs queued by reactive scripts. */
+  getComponentTransitionsCollector?: () => Array<{
+    characterId: string;
+    componentId: string;
+    key: string;
+    durationMs: number;
+    cubicBezier: string;
+  }>,
 ): OnAttributesModifiedFn {
   return async (attributeIds: string[], characterId: string, rulesetId: string) => {
     if (attributeIds.length === 0) return;
     const collector = getModifiedIdsCollector?.();
     const animationsCollector = getComponentAnimationsCollector?.();
+    const transitionsCollector = getComponentTransitionsCollector?.();
     if (collector) {
       attributeIds.forEach((id) => collector.add(id));
     }
@@ -728,6 +738,9 @@ function createOnAttributesModified(
       if (animationsCollector) {
         chainResult.componentAnimations.forEach((entry) => animationsCollector.push(entry));
       }
+      if (transitionsCollector) {
+        chainResult.componentTransitions.forEach((entry) => transitionsCollector.push(entry));
+      }
     } catch (e) {
       console.warn('[QBScript] Reactive execution failed for attributes', attributeIds, e);
     }
@@ -763,6 +776,13 @@ async function runReactiveChainForModifiedAttributes(
   scriptsExecuted: string[];
   executionCount: number;
   componentAnimations: Array<{ characterId: string; referenceLabel: string; animation: string }>;
+  componentTransitions: Array<{
+    characterId: string;
+    componentId: string;
+    key: string;
+    durationMs: number;
+    cubicBezier: string;
+  }>;
   lastError?: ReactiveExecutionResult['error'];
   truncated?: boolean;
 }> {
@@ -775,6 +795,13 @@ async function runReactiveChainForModifiedAttributes(
     characterId: string;
     referenceLabel: string;
     animation: string;
+  }> = [];
+  const componentTransitions: Array<{
+    characterId: string;
+    componentId: string;
+    key: string;
+    durationMs: number;
+    cubicBezier: string;
   }> = [];
   let executionCount = 0;
   const queue = [...initialAttributeIds];
@@ -820,6 +847,7 @@ async function runReactiveChainForModifiedAttributes(
           scriptsExecuted,
           executionCount,
           componentAnimations,
+          componentTransitions,
           lastError: result.error as Error | undefined,
         };
       }
@@ -827,6 +855,9 @@ async function runReactiveChainForModifiedAttributes(
       executionCount += result.executionCount ?? 0;
       for (const entry of result.componentAnimations ?? []) {
         componentAnimations.push(entry);
+      }
+      for (const entry of result.componentTransitions ?? []) {
+        componentTransitions.push(entry);
       }
       for (const id of result.modifiedAttributeIds ?? []) {
         allModifiedIds.add(id);
@@ -846,6 +877,7 @@ async function runReactiveChainForModifiedAttributes(
     scriptsExecuted,
     executionCount,
     componentAnimations,
+    componentTransitions,
     ...(truncated ? { truncated: true } : {}),
   };
 }
@@ -909,6 +941,13 @@ async function handleExecuteScript(payload: ExecuteScriptPayload): Promise<void>
     referenceLabel: string;
     animation: string;
   }> = [];
+  const reactiveComponentTransitions: Array<{
+    characterId: string;
+    componentId: string;
+    key: string;
+    durationMs: number;
+    cubicBezier: string;
+  }> = [];
 
   try {
     const sharedRosterBroadcasts: Array<{
@@ -961,6 +1000,9 @@ async function handleExecuteScript(payload: ExecuteScriptPayload): Promise<void>
         );
         for (const entry of r.componentAnimations ?? []) {
           reactiveComponentAnimations.push(entry);
+        }
+        for (const entry of r.componentTransitions ?? []) {
+          reactiveComponentTransitions.push(entry);
         }
         return r;
       },
@@ -1085,6 +1127,9 @@ async function handleExecuteScript(payload: ExecuteScriptPayload): Promise<void>
         for (const entry of chainResult.componentAnimations) {
           reactiveComponentAnimations.push(entry);
         }
+        for (const entry of chainResult.componentTransitions) {
+          reactiveComponentTransitions.push(entry);
+        }
       }
 
       const modifiedAttributeIds = Array.from(allModifiedIds);
@@ -1102,6 +1147,10 @@ async function handleExecuteScript(payload: ExecuteScriptPayload): Promise<void>
         ...(result.componentAnimations ?? []),
         ...reactiveComponentAnimations,
       ];
+      const allComponentTransitions = [
+        ...(result.componentTransitions ?? []),
+        ...reactiveComponentTransitions,
+      ];
       sendSignal({
         type: 'SCRIPT_RESULT',
         payload: {
@@ -1115,6 +1164,9 @@ async function handleExecuteScript(payload: ExecuteScriptPayload): Promise<void>
           characterId: payload.characterId,
           navigateTargets: result.navigateTargets,
           componentAnimations: allComponentAnimations,
+          ...(allComponentTransitions.length > 0
+            ? { componentTransitions: allComponentTransitions }
+            : {}),
           ...(result.rosterBroadcasts && result.rosterBroadcasts.length > 0
             ? { rosterBroadcasts: result.rosterBroadcasts }
             : {}),
@@ -1339,6 +1391,9 @@ async function handleAttributeChanged(payload: AttributeChangedPayload): Promise
           executionTime: 0,
           characterId: payload.characterId,
           componentAnimations: chainResult.componentAnimations,
+          ...(chainResult.componentTransitions.length > 0
+            ? { componentTransitions: chainResult.componentTransitions }
+            : {}),
         },
       });
     } else {
@@ -1498,6 +1553,9 @@ async function handleInitialAttributeSync(payload: {
           logMessages: [],
           executionTime: 0,
           componentAnimations: result.componentAnimations,
+          ...(result.componentTransitions && result.componentTransitions.length > 0
+            ? { componentTransitions: result.componentTransitions }
+            : {}),
         },
       });
     } else {
@@ -1650,8 +1708,16 @@ async function handleExecuteActionEvent(payload: {
       referenceLabel: string;
       animation: string;
     }> = [];
+    const allReactiveTransitions: Array<{
+      characterId: string;
+      componentId: string;
+      key: string;
+      durationMs: number;
+      cubicBezier: string;
+    }> = [];
     const getCollector = () => allModifiedIds;
     const getAnimationsCollector = () => allReactiveAnimations;
+    const getTransitionsCollector = () => allReactiveTransitions;
     let executor: EventHandlerExecutor;
     executor = new EventHandlerExecutor(
       db,
@@ -1671,6 +1737,7 @@ async function handleExecuteActionEvent(payload: {
         createRollForCharacter,
         createRollSplitForCharacter,
         payload.sheetPreviewRulesetWindowId,
+        getTransitionsCollector,
       ),
     );
     const result = await executor.executeActionEvent(
@@ -1736,6 +1803,14 @@ async function handleExecuteActionEvent(payload: {
           modifiedAttributeIds,
           navigateTargets: result.navigateTargets,
           componentAnimations: [...(result.componentAnimations ?? []), ...allReactiveAnimations],
+          ...((result.componentTransitions?.length ?? 0) + allReactiveTransitions.length > 0
+            ? {
+                componentTransitions: [
+                  ...(result.componentTransitions ?? []),
+                  ...allReactiveTransitions,
+                ],
+              }
+            : {}),
         },
       });
     }
@@ -1804,8 +1879,16 @@ async function handleExecuteItemEvent(payload: {
       referenceLabel: string;
       animation: string;
     }> = [];
+    const allReactiveTransitions: Array<{
+      characterId: string;
+      componentId: string;
+      key: string;
+      durationMs: number;
+      cubicBezier: string;
+    }> = [];
     const getCollector = () => allModifiedIds;
     const getAnimationsCollector = () => allReactiveAnimations;
+    const getTransitionsCollector = () => allReactiveTransitions;
     let executor: EventHandlerExecutor;
     executor = new EventHandlerExecutor(
       db,
@@ -1825,6 +1908,7 @@ async function handleExecuteItemEvent(payload: {
         createRollForCharacter,
         createRollSplitForCharacter,
         payload.sheetPreviewRulesetWindowId,
+        getTransitionsCollector,
       ),
     );
     const result = await executor.executeItemEvent(
@@ -1907,6 +1991,14 @@ async function handleExecuteItemEvent(payload: {
           modifiedAttributeIds,
           navigateTargets: result.navigateTargets,
           componentAnimations: [...(result.componentAnimations ?? []), ...allReactiveAnimations],
+          ...((result.componentTransitions?.length ?? 0) + allReactiveTransitions.length > 0
+            ? {
+                componentTransitions: [
+                  ...(result.componentTransitions ?? []),
+                  ...allReactiveTransitions,
+                ],
+              }
+            : {}),
         },
       });
     }
@@ -1974,8 +2066,16 @@ async function handleExecuteArchetypeEvent(payload: {
       referenceLabel: string;
       animation: string;
     }> = [];
+    const allReactiveTransitions: Array<{
+      characterId: string;
+      componentId: string;
+      key: string;
+      durationMs: number;
+      cubicBezier: string;
+    }> = [];
     const getCollector = () => allModifiedIds;
     const getAnimationsCollector = () => allReactiveAnimations;
+    const getTransitionsCollector = () => allReactiveTransitions;
     let executor: EventHandlerExecutor;
     executor = new EventHandlerExecutor(
       db,
@@ -1995,6 +2095,7 @@ async function handleExecuteArchetypeEvent(payload: {
         createRollForCharacter,
         createRollSplitForCharacter,
         payload.sheetPreviewRulesetWindowId,
+        getTransitionsCollector,
       ),
     );
     const result = await executor.executeArchetypeEvent(
@@ -2057,6 +2158,14 @@ async function handleExecuteArchetypeEvent(payload: {
           modifiedAttributeIds,
           characterId: payload.characterId,
           componentAnimations: [...(result.componentAnimations ?? []), ...allReactiveAnimations],
+          ...((result.componentTransitions?.length ?? 0) + allReactiveTransitions.length > 0
+            ? {
+                componentTransitions: [
+                  ...(result.componentTransitions ?? []),
+                  ...allReactiveTransitions,
+                ],
+              }
+            : {}),
         },
       });
     }
@@ -2124,8 +2233,16 @@ async function handleExecuteCampaignEventEvent(payload: {
       referenceLabel: string;
       animation: string;
     }> = [];
+    const allReactiveTransitions: Array<{
+      characterId: string;
+      componentId: string;
+      key: string;
+      durationMs: number;
+      cubicBezier: string;
+    }> = [];
     const getCollector = () => allModifiedIds;
     const getAnimationsCollector = () => allReactiveAnimations;
+    const getTransitionsCollector = () => allReactiveTransitions;
     let executor: EventHandlerExecutor;
     executor = new EventHandlerExecutor(
       db,
@@ -2145,6 +2262,7 @@ async function handleExecuteCampaignEventEvent(payload: {
         createRollForCharacter,
         createRollSplitForCharacter,
         undefined,
+        getTransitionsCollector,
       ),
     );
     const result = await executor.executeCampaignEventEvent(
@@ -2200,6 +2318,14 @@ async function handleExecuteCampaignEventEvent(payload: {
           gameLogTimeline: cloneGameLogTimelineForPostMessage(result.gameLogTimeline ?? []),
           executionTime: 0,
           componentAnimations: [...(result.componentAnimations ?? []), ...allReactiveAnimations],
+          ...((result.componentTransitions?.length ?? 0) + allReactiveTransitions.length > 0
+            ? {
+                componentTransitions: [
+                  ...(result.componentTransitions ?? []),
+                  ...allReactiveTransitions,
+                ],
+              }
+            : {}),
         },
       });
     }

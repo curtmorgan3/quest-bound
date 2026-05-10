@@ -73,6 +73,14 @@ export interface ReactiveExecutionResult {
   modifiedAttributeIds?: string[];
   /** Component animations to trigger in the sheet viewer (from Owner.animateComponent in scripts). */
   componentAnimations?: Array<{ characterId: string; referenceLabel: string; animation: string }>;
+  /** Per-key CSS-transition specs queued by `comp.animate(...)` during the chain. */
+  componentTransitions?: Array<{
+    characterId: string;
+    componentId: string;
+    key: string;
+    durationMs: number;
+    cubicBezier: string;
+  }>;
 }
 
 /**
@@ -126,6 +134,7 @@ export class ReactiveExecutor {
         rollbackPerformed: false,
         modifiedAttributeIds: [],
         componentAnimations: [],
+        componentTransitions: [],
       };
     }
     if (this.graph.isEmpty()) {
@@ -140,6 +149,7 @@ export class ReactiveExecutor {
         rollbackPerformed: false,
         modifiedAttributeIds: [],
         componentAnimations: [],
+        componentTransitions: [],
       };
     }
 
@@ -154,13 +164,8 @@ export class ReactiveExecutor {
     }
 
     try {
-      const { modifiedAttributeIds, componentAnimations } = await this.executeScriptChain(
-        scriptIds,
-        characterId,
-        rulesetId,
-        executionId,
-        options,
-      );
+      const { modifiedAttributeIds, componentAnimations, componentTransitions } =
+        await this.executeScriptChain(scriptIds, characterId, rulesetId, executionId, options);
       this.transactionManager.commit(executionId);
       this.executionTracker.endExecution(executionId);
       return {
@@ -170,6 +175,7 @@ export class ReactiveExecutor {
         rollbackPerformed: false,
         modifiedAttributeIds,
         componentAnimations,
+        componentTransitions,
       };
     } catch (error) {
       let rollbackPerformed = false;
@@ -190,6 +196,7 @@ export class ReactiveExecutor {
         rollbackPerformed,
         modifiedAttributeIds: [],
         componentAnimations: [],
+        componentTransitions: [],
       };
     }
   }
@@ -235,6 +242,7 @@ export class ReactiveExecutor {
         rollbackPerformed: false,
         modifiedAttributeIds: [],
         componentAnimations: [],
+        componentTransitions: [],
       };
     }
 
@@ -260,13 +268,8 @@ export class ReactiveExecutor {
 
     try {
       // Execute script chain
-      const { modifiedAttributeIds, componentAnimations } = await this.executeScriptChain(
-        scriptIds,
-        characterId,
-        rulesetId,
-        executionId,
-        options,
-      );
+      const { modifiedAttributeIds, componentAnimations, componentTransitions } =
+        await this.executeScriptChain(scriptIds, characterId, rulesetId, executionId, options);
 
       // Commit transaction
       this.transactionManager.commit(executionId);
@@ -279,6 +282,7 @@ export class ReactiveExecutor {
         rollbackPerformed: false,
         modifiedAttributeIds,
         componentAnimations,
+        componentTransitions,
       };
     } catch (error) {
       // Rollback on error
@@ -306,6 +310,7 @@ export class ReactiveExecutor {
         rollbackPerformed,
         modifiedAttributeIds: [],
         componentAnimations: [],
+        componentTransitions: [],
       };
     }
   }
@@ -327,12 +332,26 @@ export class ReactiveExecutor {
   ): Promise<{
     modifiedAttributeIds: string[];
     componentAnimations: Array<{ characterId: string; referenceLabel: string; animation: string }>;
+    componentTransitions: Array<{
+      characterId: string;
+      componentId: string;
+      key: string;
+      durationMs: number;
+      cubicBezier: string;
+    }>;
   }> {
     const allModifiedIds: string[] = [];
     const allComponentAnimations: Array<{
       characterId: string;
       referenceLabel: string;
       animation: string;
+    }> = [];
+    const allComponentTransitions: Array<{
+      characterId: string;
+      componentId: string;
+      key: string;
+      durationMs: number;
+      cubicBezier: string;
     }> = [];
     const paramsHelper = options.params
       ? createParamsHelperFromRecord(options.params)
@@ -391,6 +410,11 @@ export class ReactiveExecutor {
         allComponentAnimations.push(entry);
       }
 
+      const transitions = result.componentTransitions ?? [];
+      for (const entry of transitions) {
+        allComponentTransitions.push(entry);
+      }
+
       await persistScriptLogs(this.db, {
         rulesetId,
         scriptId,
@@ -408,6 +432,7 @@ export class ReactiveExecutor {
     return {
       modifiedAttributeIds: allModifiedIds,
       componentAnimations: allComponentAnimations,
+      componentTransitions: allComponentTransitions,
     };
   }
 

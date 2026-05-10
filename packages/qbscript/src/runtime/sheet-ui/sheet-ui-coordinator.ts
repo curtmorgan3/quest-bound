@@ -22,6 +22,7 @@ import type {
 } from '@quest-bound/types';
 import { SheetComponentAccessor } from './sheet-component-accessor';
 import { defaultPartialForComponentType, isComponentTypesValue } from './sheet-component-defaults';
+import type { TransitionSpec } from './easings';
 import { classifyFlatKey } from './sheet-flat-keys';
 
 type LayoutPatch = Partial<Pick<Component, 'x' | 'y' | 'z' | 'width' | 'height' | 'rotation'>>;
@@ -48,6 +49,12 @@ interface CharacterSheetState {
   baseAttributeIdOverrides: Record<string, string | null>;
   /** Deltas for template `Component.attributeId` (overlay rows mutate in place). */
   attributeIdDelta: Map<string, string | null>;
+  /**
+   * Per-component, per-flat-key transition specs queued by `comp.animate(...)` followed by
+   * `comp.set(...)` during this script run. Drained into `ScriptExecutionResult.componentTransitions`
+   * by the runner; used by the renderer to emit a CSS `transition` declaration for the matching key.
+   */
+  transitionsByComponentId: Map<string, Map<string, TransitionSpec>>;
 }
 
 function collectPreOrder(components: Component[]): Component[] {
@@ -281,6 +288,7 @@ export class SheetUiCoordinator {
       activeStatesByCharWindowId,
       baseAttributeIdOverrides: baseAttrId,
       attributeIdDelta: new Map(),
+      transitionsByComponentId: new Map(),
     };
     this.charState.set(characterId, state);
     return state;
@@ -718,6 +726,7 @@ export class SheetUiCoordinator {
     hintCharWindowId: string,
     key: string,
     value: unknown,
+    transition?: TransitionSpec,
   ): void {
     const state = this.charState.get(characterId);
     if (!state) return;
@@ -728,6 +737,15 @@ export class SheetUiCoordinator {
     const { row, source, cw } = found;
     const t = classifyFlatKey(key, row);
     if (t === 'ignore') return;
+
+    if (transition && (t === 'layout' || t === 'style')) {
+      let perKey = state.transitionsByComponentId.get(componentId);
+      if (!perKey) {
+        perKey = new Map();
+        state.transitionsByComponentId.set(componentId, perKey);
+      }
+      perKey.set(key, transition);
+    }
 
     if (source === 'overlay') {
       const overlay = state.overlayByCharWindowId.get(cw.id) ?? [];
@@ -758,6 +776,41 @@ export class SheetUiCoordinator {
     const cur = state.dataDelta.get(componentId) ?? {};
     state.dataDelta.set(componentId, { ...cur, [key]: value });
     this.markTouched(characterId);
+  }
+
+  /**
+   * Drain queued per-key transition specs from this run. Called by the script runner before
+   * `flushAll` so the result payload includes them; the renderer uses them to emit CSS transitions.
+   */
+  drainPendingTransitions(): Array<{
+    characterId: string;
+    componentId: string;
+    key: string;
+    durationMs: number;
+    cubicBezier: string;
+  }> {
+    const out: Array<{
+      characterId: string;
+      componentId: string;
+      key: string;
+      durationMs: number;
+      cubicBezier: string;
+    }> = [];
+    for (const [characterId, state] of this.charState) {
+      for (const [componentId, perKey] of state.transitionsByComponentId) {
+        for (const [key, spec] of perKey) {
+          out.push({
+            characterId,
+            componentId,
+            key,
+            durationMs: spec.durationMs,
+            cubicBezier: spec.cubicBezier,
+          });
+        }
+      }
+      state.transitionsByComponentId.clear();
+    }
+    return out;
   }
 
   getOnComponent(

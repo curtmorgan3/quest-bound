@@ -432,6 +432,14 @@ export interface ScriptResultPayload {
   navigateTargets?: { characterId: string; pageId: string }[];
   /** Component animations to trigger in the sheet viewer (by referenceLabel). */
   componentAnimations?: Array<{ characterId: string; referenceLabel: string; animation: string }>;
+  /** Per-key CSS-transition specs queued by `comp.animate(...)` during this run. */
+  componentTransitions?: Array<{
+    characterId: string;
+    componentId: string;
+    key: string;
+    durationMs: number;
+    cubicBezier: string;
+  }>;
   /** Scene.spawnCharacter during script run; main thread loads Dexie rows and broadcasts roster. */
   rosterBroadcasts?: Array<{
     campaignId: string;

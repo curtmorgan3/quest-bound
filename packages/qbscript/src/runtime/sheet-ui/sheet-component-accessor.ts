@@ -1,11 +1,19 @@
 import type { ScriptParamValue } from '@quest-bound/types';
 import type { StructuredCloneSafe } from '../structured-clone-safe';
+import { DEFAULT_TRANSITION_DURATION_MS, resolveEasing, type TransitionSpec } from './easings';
 import type { SheetUiCoordinator } from './sheet-ui-coordinator';
 
 /**
  * Script handle for one sheet component (template or script overlay) on a character page.
  */
 export class SheetComponentAccessor implements StructuredCloneSafe {
+  /**
+   * Sticky transition spec for this handle. Once `animate()` is called, every subsequent `set()`
+   * on this accessor records a transition for the keys it writes. Scoped to this accessor instance
+   * — a fresh handle from `getComponent()` does not inherit it.
+   */
+  private stickyTransition: TransitionSpec | null = null;
+
   constructor(
     private readonly coordinator: SheetUiCoordinator,
     readonly characterId: string,
@@ -18,6 +26,22 @@ export class SheetComponentAccessor implements StructuredCloneSafe {
     this.coordinator.deleteComponent(this.characterId, this.componentId, this.characterWindowInstanceId);
   }
 
+  /**
+   * Make subsequent `set(...)` calls on this handle animate the changed property with the given
+   * easing. Sticky for the rest of the script run on this accessor instance.
+   *
+   * @param easing one of `linear`, `ease`, `easeIn`, `easeOut`, `easeInOut`
+   * @param durationMs optional duration in milliseconds (default 300)
+   */
+  animate(easing: string, durationMs?: number): void {
+    const cubicBezier = resolveEasing(easing);
+    const dur =
+      typeof durationMs === 'number' && Number.isFinite(durationMs) && durationMs >= 0
+        ? durationMs
+        : DEFAULT_TRANSITION_DURATION_MS;
+    this.stickyTransition = { durationMs: dur, cubicBezier };
+  }
+
   set(updates: Record<string, unknown>): void;
   set(key: string, value: unknown): void;
   set(keyOrUpdates: string | Record<string, unknown>, value?: unknown): void {
@@ -28,6 +52,7 @@ export class SheetComponentAccessor implements StructuredCloneSafe {
         this.characterWindowInstanceId,
         keyOrUpdates,
         value,
+        this.stickyTransition ?? undefined,
       );
       return;
     }
@@ -39,6 +64,7 @@ export class SheetComponentAccessor implements StructuredCloneSafe {
         this.characterWindowInstanceId,
         key,
         val,
+        this.stickyTransition ?? undefined,
       );
     }
   }

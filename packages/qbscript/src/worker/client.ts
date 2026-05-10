@@ -24,6 +24,7 @@ import { getSheetPreviewRulesetWindowIdForScripts } from '@/lib/compass-logic/wo
 import { useCharacterSelectModalStore } from '@/stores/character-select-modal-store';
 import { usePromptModalStore } from '@/stores/prompt-modal-store';
 import { useScriptComponentAnimationStore } from '@/stores/script-component-animation-store';
+import { useScriptComponentTransitionStore } from '@/stores/script-component-transition-store';
 import { useScriptModifiedAttributesStore } from '@/stores/script-modified-attributes-store';
 import { defaultScriptDiceRoller, defaultScriptDiceRollerSplit } from '@/utils/dice-utils';
 import type { RollFn, RollSplitFn } from '@quest-bound/types';
@@ -671,6 +672,10 @@ export class QBScriptClient {
       for (const { characterId, referenceLabel, animation } of payload.componentAnimations) {
         store.add(characterId, referenceLabel, animation);
       }
+    }
+
+    if (payload.componentTransitions?.length) {
+      useScriptComponentTransitionStore.getState().add(payload.componentTransitions);
     }
 
     // Handle page navigation requests by dispatching an event that the app shell can consume.

@@ -11,6 +11,14 @@ export interface ExecuteActionEventResult {
   error?: Error;
   /** Component animations triggered by the action's on_activate/on_deactivate handler. */
   componentAnimations?: Array<{ characterId: string; referenceLabel: string; animation: string }>;
+  /** Per-key CSS-transition specs queued by `comp.animate(...)` during the run. */
+  componentTransitions?: Array<{
+    characterId: string;
+    componentId: string;
+    key: string;
+    durationMs: number;
+    cubicBezier: string;
+  }>;
 }
 
 export type ExecuteActionEventFn = (
