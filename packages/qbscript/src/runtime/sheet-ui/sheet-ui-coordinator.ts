@@ -10,7 +10,16 @@ import {
 } from '@/lib/compass-planes/utils/component-states';
 import { filterNotSoftDeleted } from '@/lib/data/soft-delete';
 import type { DB } from '@/stores/db/hooks/types';
-import type { Attribute, Character, CharacterWindow, Component, Composite } from '@quest-bound/types';
+import type {
+  Action,
+  Attribute,
+  Character,
+  CharacterWindow,
+  Component,
+  Composite,
+  Script,
+  ScriptParamValue,
+} from '@quest-bound/types';
 import { SheetComponentAccessor } from './sheet-component-accessor';
 import { defaultPartialForComponentType, isComponentTypesValue } from './sheet-component-defaults';
 import { classifyFlatKey } from './sheet-flat-keys';
@@ -827,6 +836,106 @@ export class SheetUiCoordinator {
     map[componentId] = canonical;
     sheet.activeStatesByCharWindowId.set(found.cw.id, map);
     this.markTouched(characterId);
+  }
+
+  /**
+   * Configure this component's click event to fire a ruleset action (by title) or script (by name).
+   * `params` keys are matched against `Script.parameters[].label` (case-insensitive, trimmed).
+   * Throws if the action/script cannot be found in the character's ruleset.
+   */
+  async setComponentClickEvent(
+    characterId: string,
+    componentId: string,
+    hintCharWindowId: string,
+    kind: 'fireAction' | 'fireScript',
+    name: string,
+    params?: Record<string, ScriptParamValue>,
+  ): Promise<void> {
+    const state = this.charState.get(characterId);
+    if (!state) {
+      throw new Error('setClickEvent: character sheet is not loaded');
+    }
+    const found = this.findStateRow(state, componentId, hintCharWindowId);
+    if (!found) {
+      throw new Error(`setClickEvent: component "${componentId}" not found on this sheet`);
+    }
+
+    const character = (await this.db.characters.get(characterId)) as Character | undefined;
+    const rulesetId = character?.rulesetId ?? this.rulesetId;
+
+    const trimmedName = name.trim();
+    if (trimmedName === '') {
+      throw new Error('setClickEvent: name is required');
+    }
+
+    const patches: Record<string, unknown> = {
+      clickActionId: null,
+      clickScriptId: null,
+      scriptParameterValues: null,
+    };
+
+    if (kind === 'fireAction') {
+      const actions = (await this.db.actions
+        .where('rulesetId')
+        .equals(rulesetId)
+        .toArray()) as Action[];
+      const hit = actions.find((a) => a.title.trim() === trimmedName);
+      if (!hit) {
+        throw new Error(`setClickEvent: Action '${name}' not found`);
+      }
+      patches.clickActionId = hit.id;
+    } else {
+      const scripts = (await this.db.scripts
+        .where('rulesetId')
+        .equals(rulesetId)
+        .toArray()) as Script[];
+      const hit = scripts.find((s) => s.name.trim() === trimmedName);
+      if (!hit) {
+        throw new Error(`setClickEvent: Script '${name}' not found`);
+      }
+      patches.clickScriptId = hit.id;
+
+      if (params && Object.keys(params).length > 0) {
+        const defs = hit.parameters ?? [];
+        const labelToId = new Map<string, string>();
+        for (const def of defs) {
+          const label = (def.label ?? '').trim().toLowerCase();
+          if (label) labelToId.set(label, def.id);
+        }
+        const mapped: Record<string, ScriptParamValue> = {};
+        for (const [k, v] of Object.entries(params)) {
+          const id = labelToId.get(k.trim().toLowerCase());
+          if (!id) continue;
+          mapped[id] = v;
+        }
+        if (Object.keys(mapped).length > 0) {
+          patches.scriptParameterValues = mapped;
+        }
+      }
+    }
+
+    this.applyDataPatches(state, found, patches);
+    this.markTouched(characterId);
+  }
+
+  private applyDataPatches(
+    state: CharacterSheetState,
+    found: { row: Component; cw: CharacterWindow; source: 'overlay' | 'template' },
+    patches: Record<string, unknown>,
+  ): void {
+    if (found.source === 'overlay') {
+      const overlay = state.overlayByCharWindowId.get(found.cw.id) ?? [];
+      const idx = overlay.findIndex((c) => c.id === found.row.id);
+      if (idx === -1) return;
+      const live = { ...overlay[idx]! };
+      const data = { ...parseRowData(live), ...patches };
+      live.data = JSON.stringify(data);
+      overlay[idx] = live;
+      state.overlayByCharWindowId.set(found.cw.id, overlay);
+      return;
+    }
+    const cur = state.dataDelta.get(found.row.id) ?? {};
+    state.dataDelta.set(found.row.id, { ...cur, ...patches });
   }
 
   addChild(characterId: string, parentId: string, childId: string): void {

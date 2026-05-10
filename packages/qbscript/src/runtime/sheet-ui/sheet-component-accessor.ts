@@ -1,3 +1,4 @@
+import type { ScriptParamValue } from '@quest-bound/types';
 import type { StructuredCloneSafe } from '../structured-clone-safe';
 import type { SheetUiCoordinator } from './sheet-ui-coordinator';
 
@@ -45,6 +46,27 @@ export class SheetComponentAccessor implements StructuredCloneSafe {
   /** Sets the component `data` flag `disabled` (same as `set('disabled', disabled)`). */
   setDisabled(disabled: boolean): void {
     this.set('disabled', disabled);
+  }
+
+  /**
+   * Configure this component's click event. `kind` is `'fireAction'` (matches `Action.title`) or
+   * `'fireScript'` (matches `Script.name`) within the character's ruleset. Optional `params` is
+   * keyed by the script's parameter labels (case-insensitive); unmatched keys are ignored.
+   * Throws if the named action/script is not found.
+   */
+  async setClickEvent(
+    kind: 'fireAction' | 'fireScript',
+    name: string,
+    params?: Record<string, ScriptParamValue>,
+  ): Promise<void> {
+    await this.coordinator.setComponentClickEvent(
+      this.characterId,
+      this.componentId,
+      this.characterWindowInstanceId,
+      kind,
+      name,
+      params,
+    );
   }
 
   /**
