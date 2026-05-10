@@ -1,6 +1,6 @@
 {
   "name": "@quest-bound/cloud",
-  "version": "2.2.16",
+  "version": "2.2.17",
   "type": "module",
   "exports": {
     ".": {
@@ -13,8 +13,8 @@
     "typecheck": "tsc -p tsconfig.json"
   },
   "dependencies": {
-    "@quest-bound/remote-db": "2.2.16",
-    "@quest-bound/types": "2.2.16",
+    "@quest-bound/remote-db": "2.2.17",
+    "@quest-bound/types": "2.2.17",
     "lucide-react": "^0.543.0"
   },
   "peerDependencies": {
