@@ -390,7 +390,7 @@ export function ScriptsPage() {
       </div>
 
       {/* Body: tree | editor | tools */}
-      <div className='flex flex-1 min-h-0'>
+      <div className='flex flex-1 min-h-0 min-w-0 overflow-hidden'>
         <FileTree
           scripts={scripts}
           activeId={script?.id ?? null}

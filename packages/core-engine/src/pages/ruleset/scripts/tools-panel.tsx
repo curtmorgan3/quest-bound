@@ -64,28 +64,28 @@ export function ToolsPanel({
   }
 
   return (
-    <aside className='w-[360px] shrink-0 border-l bg-muted/20 flex flex-col min-h-0'>
+    <aside className='w-[360px] shrink-0 border-l bg-muted/20 flex flex-col min-h-0 overflow-hidden'>
       <Tabs
         value={activeTab}
         onValueChange={(v) => onActiveTabChange(v as Tab)}
-        className='flex-1 flex flex-col min-h-0'>
-        <div className='flex items-center border-b shrink-0'>
-          <TabsList className='flex-1 h-auto bg-transparent p-0 rounded-none justify-start'>
+        className='flex-1 flex flex-col min-h-0 min-w-0'>
+        <div className='flex items-center border-b shrink-0 min-w-0'>
+          <TabsList className='flex-1 min-w-0 h-auto bg-transparent p-0 rounded-none justify-start'>
             <TabsTrigger
               value='output'
-              className='gap-1.5 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary text-xs uppercase tracking-wider px-3 py-2.5'>
+              className='gap-1 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary text-xs uppercase tracking-wider px-2 py-2.5'>
               <Terminal className='h-3 w-3' />
               Output
             </TabsTrigger>
             <TabsTrigger
               value='context'
-              className='gap-1.5 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary text-xs uppercase tracking-wider px-3 py-2.5'>
+              className='gap-1 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary text-xs uppercase tracking-wider px-2 py-2.5'>
               <Layers className='h-3 w-3' />
               Context
             </TabsTrigger>
             <TabsTrigger
               value='reference'
-              className='gap-1.5 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary text-xs uppercase tracking-wider px-3 py-2.5'>
+              className='gap-1 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary text-xs uppercase tracking-wider px-2 py-2.5'>
               <BookOpen className='h-3 w-3' />
               Reference
             </TabsTrigger>
@@ -93,7 +93,7 @@ export function ToolsPanel({
           <Button
             variant='ghost'
             size='icon'
-            className='h-8 w-8 mr-1 shrink-0'
+            className='h-8 w-7 shrink-0'
             onClick={onToggleCollapsed}
             title='Collapse tools panel'
             aria-label='Collapse tools panel'>
