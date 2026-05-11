@@ -32,7 +32,7 @@ import { db } from '@/stores';
 import type { Script, ScriptParameterDefinition } from '@/types';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { AlertCircle, FileCode, Trash2 } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { ContextTab } from './context-tab';
 import { FileTree, UNCATEGORIZED } from './file-tree';
@@ -173,11 +173,21 @@ export function ScriptsPage() {
   // ---------- Auto-create script when route is /scripts/new ----------
   // Mirrors old behavior: support ?type=&entityId=&entityName= query params from
   // other pages linking to "new script for this <entity>".
+  // The ref guards against re-firing: createScript's reference changes every
+  // render (it's not memoized), so without this guard we'd loop and create
+  // a new script on each re-render until the navigate replace finally lands.
+  // We wait for activeRuleset to load before firing because createScript
+  // internally requires activeRuleset.id and silently no-ops without it.
+  const newScriptStartedRef = useRef(false);
   useEffect(() => {
-    if (!isNew) return;
-    if (!effectiveRulesetId) return;
+    if (!isNew) {
+      newScriptStartedRef.current = false;
+      return;
+    }
+    if (!activeRuleset) return;
+    if (newScriptStartedRef.current) return;
+    newScriptStartedRef.current = true;
 
-    let cancelled = false;
     void (async () => {
       const desiredType: Script['entityType'] = paramType ?? defaultEntityType;
       const baseTemplate = SCRIPT_TEMPLATES[desiredType];
@@ -202,7 +212,6 @@ export function ScriptsPage() {
           // ignore
         }
       }
-      if (cancelled) return;
 
       const id = await createScript({
         name: sanitizedParamName || 'Untitled',
@@ -218,19 +227,16 @@ export function ScriptsPage() {
         enabled: true,
         campaignId,
       });
-      if (!cancelled && id) {
+      if (id) {
         navigate(
           `/${campaignId ? 'campaigns' : 'rulesets'}/${campaignId ?? effectiveRulesetId}/scripts/${id}`,
           { replace: true },
         );
       }
     })();
-
-    return () => {
-      cancelled = true;
-    };
   }, [
     isNew,
+    activeRuleset,
     effectiveRulesetId,
     campaignId,
     paramType,
