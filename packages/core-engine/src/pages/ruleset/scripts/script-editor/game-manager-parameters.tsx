@@ -55,7 +55,7 @@ export function GameManagerParameters({ parameters, onChange }: GameManagerParam
   };
 
   return (
-    <div className='rounded-md border bg-muted/20 flex flex-col w-[30%] min-w-[280px] p-2 gap-3 overflow-y-auto'>
+    <div className='rounded-md border bg-muted/20 flex flex-col w-full p-2 gap-3 overflow-y-auto'>
       <div className='flex items-center justify-between'>
         <Label className='text-sm'>Parameters</Label>
         <Button

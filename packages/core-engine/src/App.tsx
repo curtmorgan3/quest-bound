@@ -20,8 +20,7 @@ import {
   RulesetLanding,
   RulesetPageEditorPage,
   Rulesets,
-  ScriptEditorPage,
-  ScriptsIndex,
+  ScriptsPage,
 } from '@/pages';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { DocumentViewer } from './pages/ruleset/documents';
@@ -71,9 +70,9 @@ function CompassRoutes() {
               element={<ArchetypeSheetEditor />}
             />
 
-            <Route path={`/rulesets/:rulesetId/scripts`} element={<ScriptsIndex />} />
+            <Route path={`/rulesets/:rulesetId/scripts`} element={<ScriptsPage />} />
 
-            <Route path={`/rulesets/:rulesetId/scripts/:scriptId`} element={<ScriptEditorPage />} />
+            <Route path={`/rulesets/:rulesetId/scripts/:scriptId`} element={<ScriptsPage />} />
 
             <Route
               path={`/rulesets/:rulesetId/custom-properties`}

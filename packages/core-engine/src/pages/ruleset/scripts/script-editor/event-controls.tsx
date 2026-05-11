@@ -72,7 +72,7 @@ export const EventControls = ({
   };
 
   return (
-    <div className='items-center rounded-md border bg-muted/20 flex flex-col w-[20%] min-w-[200px] p-2 gap-3 overflow-y-auto'>
+    <div className='items-center rounded-md border bg-muted/20 flex flex-col w-full p-2 gap-3 overflow-y-auto'>
       {!entityId && (
         <span className='text-sm text-muted-foreground italic'>{`Attach an ${entityType} to test events`}</span>
       )}

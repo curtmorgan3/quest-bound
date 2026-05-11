@@ -136,7 +136,7 @@ export const AttributeControls = ({
   };
 
   return (
-    <div className='rounded-md border bg-muted/20 flex flex-col w-[30%] min-w-[265px] p-2 gap-3 overflow-y-auto'>
+    <div className='rounded-md border bg-muted/20 flex flex-col w-full p-2 gap-3 overflow-y-auto'>
       {associatedAttribute ? renderControl(associatedAttribute) : null}
       {usedAttributes.length === 0 ? (
         <span className='text-sm text-muted-foreground italic'>No dependent attributes</span>
