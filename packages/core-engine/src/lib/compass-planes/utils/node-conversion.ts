@@ -160,7 +160,10 @@ export function useComponentStyles(component: Component | null): ComponentStyle 
     if (!component) return {} as ComponentStyle;
     const styles = JSON.parse(component.style) as ComponentStyle;
     for (const key of STYLE_KEYS) {
-      (styles as Record<string, unknown>)[key] = styleValues[key].resolved;
+      const resolved = styleValues[key].resolved;
+      if (resolved !== '-') {
+        (styles as Record<string, unknown>)[key] = resolved;
+      }
     }
     const referenceLabel = getComponentData(component).referenceLabel;
     if (referenceLabel && character?.componentStyleOverrides?.[referenceLabel]) {

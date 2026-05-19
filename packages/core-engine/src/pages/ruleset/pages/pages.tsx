@@ -23,7 +23,7 @@ function compareRulesetPagesByOrderThenLabel(a: Page, b: Page): number {
 }
 
 export const PageSelect = ({ onEditDetails }: PageSelectProps) => {
-  const { pages, updatePage, removePageFromRuleset } = useRulesetPages();
+  const { pages, updatePage, removePageFromRuleset, duplicatePage } = useRulesetPages();
   const { activeRuleset } = useActiveRuleset();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -108,6 +108,7 @@ export const PageSelect = ({ onEditDetails }: PageSelectProps) => {
             existingCategories={categories}
             hideFromPlayerView={p.hideFromPlayerView}
             onDelete={() => handleDelete(p.id)}
+            onDuplicate={() => duplicatePage(p.id)}
             onOpen={() => navigate(`/rulesets/${activeRuleset?.id}/pages/${p.id}`)}
             onEdit={(label, category) => updatePage(p.id, { label, category })}
             onEditDetails={onEditDetails ? () => onEditDetails(p.id) : undefined}

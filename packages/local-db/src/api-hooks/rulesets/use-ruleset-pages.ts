@@ -164,11 +164,50 @@ export const useRulesetPages = () => {
     }
   };
 
+  const duplicatePage = async (id: string) => {
+    if (!activeRuleset) return;
+    const now = new Date().toISOString();
+    try {
+      const source = await db.pages.get(id);
+      if (!source) return;
+      const sourceWindows = await db.rulesetWindows.where('pageId').equals(id).toArray();
+
+      const newPageId = crypto.randomUUID();
+      const { id: _omitId, createdAt: _omitCreated, updatedAt: _omitUpdated, ...rest } = source;
+      await db.pages.add({
+        ...rest,
+        id: newPageId,
+        rulesetId: activeRuleset.id,
+        label: `${source.label} (copy)`,
+        createdAt: now,
+        updatedAt: now,
+      });
+
+      if (sourceWindows.length > 0) {
+        await db.rulesetWindows.bulkAdd(
+          sourceWindows.map((w) => ({
+            ...w,
+            id: crypto.randomUUID(),
+            pageId: newPageId,
+            createdAt: now,
+            updatedAt: now,
+          })),
+        );
+      }
+    } catch (e) {
+      handleError(e as Error, {
+        component: 'useRulesetPages/duplicatePage',
+        severity: 'medium',
+      });
+    }
+  };
+
   return {
     pages: list,
     isLoading,
     createPage,
     updatePage,
     removePageFromRuleset,
+    duplicatePage,
   };
 };

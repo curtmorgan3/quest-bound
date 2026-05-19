@@ -29,7 +29,7 @@ import { db } from '@/stores';
 import type { CharacterPage, RulesetWindow, Window } from '@/types';
 import { Maximize2, Pencil, Plus, Trash2 } from 'lucide-react';
 import { useMemo, useState, type Ref } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 
 export interface WindowsTabsProps {
   characterPages: CharacterPage[];
@@ -70,6 +70,8 @@ export const WindowsTabs = ({
 
   const currentPageId = pageId ?? '';
   const navigate = useNavigate();
+  const location = useLocation();
+  const [, setSearchParams] = useSearchParams();
 
   const { assets } = useAssets();
   const [isAddWindowModalOpen, setIsAddWindowModalOpen] = useState(false);
@@ -170,7 +172,14 @@ export const WindowsTabs = ({
   };
 
   const handleNavigate = (nextPageId: string) => {
-    navigate(`/characters/${characterId}?pageId=${nextPageId}`);
+    if (location.pathname.startsWith('/characters/')) {
+      navigate(`/characters/${characterId}?pageId=${nextPageId}`);
+    } else {
+      setSearchParams((prev) => {
+        prev.set('pageId', nextPageId);
+        return prev;
+      });
+    }
   };
 
   const handleAddPage = async () => {
