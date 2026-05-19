@@ -1,4 +1,9 @@
-import { useActiveRuleset, useAssets, useCustomProperties } from '@/lib/compass-api';
+import {
+  useActiveRuleset,
+  useAssets,
+  useCharacter,
+  useCustomProperties,
+} from '@/lib/compass-api';
 import { useEditorItemId } from '@/lib/compass-planes/canvas/editor-item-context';
 import {
   canvasDimensionToCss,
@@ -12,7 +17,7 @@ import {
 } from '@/lib/compass-planes/utils';
 import { CharacterContext, WindowEditorContext } from '@/stores';
 import type { Component, ImageComponentData } from '@/types';
-import { memo, useContext } from 'react';
+import { memo, useContext, useRef, type ChangeEvent } from 'react';
 import { ResizableNode } from '../../decorators';
 
 export const EditImageNode = () => {
@@ -97,15 +102,16 @@ const ViewImageNodeComponent = ({ component }: { component: Component }) => {
   const css = useComponentStyles(component);
   const { widthStyle: cw, heightStyle: ch } = useComponentCanvasDimensions(component);
   const data = getComponentData(component) as ImageComponentData;
-  const { assets } = useAssets();
+  const { assets, createAsset } = useAssets();
   const characterContext = useContext(CharacterContext);
   const { activeRuleset } = useActiveRuleset();
   const { customProperties } = useCustomProperties(activeRuleset?.id);
+  const character = characterContext?.character ?? null;
+  const { updateCharacter } = useCharacter(character?.id);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const asset = assets.find((a) => a.id === data.assetId);
   const componentImageSrc = asset?.data ?? data.assetUrl;
-
-  const character = characterContext?.character ?? null;
 
   let imageSrc: string | undefined;
 
@@ -129,28 +135,95 @@ const ViewImageNodeComponent = ({ component }: { component: Component }) => {
     imageSrc = componentImageSrc;
   }
 
+  const canEditCharacterImage = !!(data.useCharacterImage && character);
+
+  const handleFileChange = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file && character) {
+      const assetId = await createAsset(
+        file,
+        undefined,
+        character.rulesetId ?? undefined,
+      );
+      await updateCharacter(character.id, { assetId });
+    }
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const handleClick = canEditCharacterImage
+    ? () => fileInputRef.current?.click()
+    : undefined;
+
   if (!imageSrc) {
-    return null;
+    if (!canEditCharacterImage) return null;
+    return (
+      <>
+        <button
+          type='button'
+          onClick={handleClick}
+          aria-label='Set character image'
+          style={{
+            height: canvasDimensionToCss(ch),
+            width: canvasDimensionToCss(cw),
+            maxWidth: '100%',
+            maxHeight: '100%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer',
+            border: '2px dashed #ccc',
+            color: '#999',
+            fontSize: '12px',
+            textAlign: 'center',
+            padding: '8px',
+            overflow: 'hidden',
+            ...css,
+            ...getBackgroundStyle(css),
+          }}>
+          Set image
+        </button>
+        <input
+          ref={fileInputRef}
+          type='file'
+          accept='image/*'
+          hidden
+          onChange={handleFileChange}
+        />
+      </>
+    );
   }
 
   return (
-    <img
-      src={imageSrc}
-      alt={data.altText ?? ''}
-      draggable={false}
-      onDragStart={(e) => e.preventDefault()}
-      style={{
-        height: canvasDimensionToCss(ch),
-        width: canvasDimensionToCss(cw),
-        maxWidth: '100%',
-        maxHeight: '100%',
-        objectFit: 'cover',
-        userSelect: 'none',
-        WebkitUserSelect: 'none',
-        ...css,
-        ...(imageSrc ? { backgroundColor: 'transparent' } : getBackgroundStyle(css)),
-      }}
-    />
+    <>
+      <img
+        src={imageSrc}
+        alt={data.altText ?? ''}
+        draggable={false}
+        onDragStart={(e) => e.preventDefault()}
+        onClick={handleClick}
+        style={{
+          height: canvasDimensionToCss(ch),
+          width: canvasDimensionToCss(cw),
+          maxWidth: '100%',
+          maxHeight: '100%',
+          objectFit: 'cover',
+          userSelect: 'none',
+          WebkitUserSelect: 'none',
+          cursor: canEditCharacterImage ? 'pointer' : undefined,
+          ...css,
+          ...(imageSrc ? { backgroundColor: 'transparent' } : getBackgroundStyle(css)),
+        }}
+      />
+      {canEditCharacterImage && (
+        <input
+          ref={fileInputRef}
+          type='file'
+          accept='image/*'
+          hidden
+          onChange={handleFileChange}
+        />
+      )}
+    </>
   );
 };
 
