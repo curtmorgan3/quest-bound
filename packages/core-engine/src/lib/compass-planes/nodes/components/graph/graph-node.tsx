@@ -10,6 +10,7 @@ import { useComponentCanvasDimensions } from '@/lib/compass-planes/canvas/editor
 import { memo, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import {
   getBackgroundStyle,
+  getBorderStyle,
   getComponentData,
   getFillStyle,
   getSolidFallback,
@@ -168,9 +169,7 @@ function GraphEditPlaceholder({
     height: heightStyle,
     ...getBackgroundStyle(css),
     borderRadius: css.borderRadius,
-    outline: css.outline,
-    outlineColor: css.outlineColor,
-    outlineWidth: css.outlineWidth,
+    ...getBorderStyle(css),
     overflow: 'hidden' as const,
   };
 
@@ -189,9 +188,7 @@ function GraphEditPlaceholder({
           width: widthStyle,
           height: heightStyle,
           borderRadius: css.borderRadius,
-          outline: css.outline,
-          outlineColor: css.outlineColor,
-          outlineWidth: css.outlineWidth,
+          ...getBorderStyle(css),
           overflow: 'hidden',
         }}>
         <svg
@@ -354,9 +351,7 @@ const ViewGraphNodeLive = memo(function ViewGraphNodeLive({
     height: heightStyle,
     ...bgStyle,
     borderRadius: css.borderRadius,
-    outline: css.outline,
-    outlineColor: css.outlineColor,
-    outlineWidth: css.outlineWidth,
+    ...getBorderStyle(css),
     overflow: 'hidden' as const,
   };
 

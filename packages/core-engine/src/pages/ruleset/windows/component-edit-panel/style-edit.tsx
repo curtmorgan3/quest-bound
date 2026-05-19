@@ -78,6 +78,24 @@ export const StyleEdit = ({ components, handleUpdate, handleDataUpdate }: Props)
   const outlineWidth = style.outlineWidth.raw;
   const outlineColor = style.outlineColor.raw as string;
   const outlineColorResolved = style.outlineColor.resolved as string;
+  const borderWidthTopRaw = style.borderTopWidth.raw;
+  const borderWidthRightRaw = style.borderRightWidth.raw;
+  const borderWidthBottomRaw = style.borderBottomWidth.raw;
+  const borderWidthLeftRaw = style.borderLeftWidth.raw;
+  // Back-compat: when every per-side field is missing (MIXED) and outlineWidth is uniform,
+  // show outlineWidth so legacy components don't read as "unset".
+  const allPerSideMissing =
+    borderWidthTopRaw === MIXED_VALUE_LABEL &&
+    borderWidthRightRaw === MIXED_VALUE_LABEL &&
+    borderWidthBottomRaw === MIXED_VALUE_LABEL &&
+    borderWidthLeftRaw === MIXED_VALUE_LABEL;
+  const fallback = allPerSideMissing ? outlineWidth : MIXED_VALUE_LABEL;
+  const fallbackOr = (raw: string | number) =>
+    raw === MIXED_VALUE_LABEL && fallback !== MIXED_VALUE_LABEL ? fallback : raw;
+  const borderWidthTop = fallbackOr(borderWidthTopRaw);
+  const borderWidthRight = fallbackOr(borderWidthRightRaw);
+  const borderWidthBottom = fallbackOr(borderWidthBottomRaw);
+  const borderWidthLeft = fallbackOr(borderWidthLeftRaw);
   const paddingTop = style.paddingTop.raw;
   const paddingRight = style.paddingRight.raw;
   const paddingBottom = style.paddingBottom.raw;
@@ -106,8 +124,20 @@ export const StyleEdit = ({ components, handleUpdate, handleDataUpdate }: Props)
 
   const paddingAll = allPaddingsEqual ? paddingTop : MIXED_VALUE_LABEL;
 
+  const allBordersEqual =
+    borderWidthTop !== MIXED_VALUE_LABEL &&
+    borderWidthRight !== MIXED_VALUE_LABEL &&
+    borderWidthBottom !== MIXED_VALUE_LABEL &&
+    borderWidthLeft !== MIXED_VALUE_LABEL &&
+    borderWidthTop === borderWidthRight &&
+    borderWidthRight === borderWidthBottom &&
+    borderWidthBottom === borderWidthLeft;
+
+  const borderWidthAll = allBordersEqual ? borderWidthTop : MIXED_VALUE_LABEL;
+
   const [isCornersOpen, setIsCornersOpen] = useState(false);
   const [isPaddingsOpen, setIsPaddingsOpen] = useState(false);
+  const [isBordersOpen, setIsBordersOpen] = useState(false);
 
   const singleSelectedGroup =
     components.length === 1 &&
@@ -135,6 +165,14 @@ export const StyleEdit = ({ components, handleUpdate, handleDataUpdate }: Props)
   const handleAllPaddingsChange = (val: string | number) => {
     const parsedVal = Math.min(200, Math.max(0, parseValue(val)));
     handleUpdate(['paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft'], parsedVal);
+  };
+
+  const handleAllBorderWidthsChange = (val: string | number) => {
+    const parsedVal = Math.min(50, Math.max(0, parseValue(val)));
+    handleUpdate(
+      ['borderTopWidth', 'borderRightWidth', 'borderBottomWidth', 'borderLeftWidth'],
+      parsedVal,
+    );
   };
 
   return (
@@ -256,17 +294,83 @@ export const StyleEdit = ({ components, handleUpdate, handleDataUpdate }: Props)
         <div className='w-full flex flex-col gap-2'>
           <p className='text-xs text-muted-foreground'>Border</p>
           <div className='w-full flex flex-row gap-2 items-end flex-wrap'>
-            <EditPanelInput
-              number
-              label='Width'
-              value={displayNumeric(outlineWidth)}
-              styleKeyForCustomProperty='outlineWidth'
-              width='80px'
-              step={1}
-              onChange={(val) =>
-                handleUpdate('outlineWidth', Math.min(50, Math.max(0, parseValue(val))))
-              }
-            />
+            <Collapsible open={isBordersOpen} onOpenChange={setIsBordersOpen} className='w-full'>
+              <div className='w-full flex flex-row gap-2 items-end flex-wrap'>
+                <EditPanelInput
+                  number
+                  label='Width'
+                  value={displayNumeric(borderWidthAll)}
+                  width='80px'
+                  step={1}
+                  onChange={handleAllBorderWidthsChange}
+                />
+                <div className='flex flex-row gap-2 items-end'>
+                  <CollapsibleTrigger
+                    title='Individual border widths'
+                    className='flex items-center justify-center h-[18px] w-[18px] text-muted-foreground hover:text-foreground transition-colors cursor-pointer'>
+                    <SquareRoundCorner
+                      className={`h-[18px] w-[18px] transition-transform ${isBordersOpen ? 'rotate-180' : ''}`}
+                    />
+                  </CollapsibleTrigger>
+                </div>
+              </div>
+              <CollapsibleContent className='pt-2'>
+                <div className='w-full grid grid-cols-2 gap-2'>
+                  <EditPanelInput
+                    number
+                    label='Top'
+                    styleKeyForCustomProperty='borderTopWidth'
+                    value={displayNumeric(borderWidthTop)}
+                    step={1}
+                    onChange={(val) =>
+                      handleUpdate(
+                        'borderTopWidth',
+                        Math.min(50, Math.max(0, parseValue(val))),
+                      )
+                    }
+                  />
+                  <EditPanelInput
+                    number
+                    label='Right'
+                    styleKeyForCustomProperty='borderRightWidth'
+                    value={displayNumeric(borderWidthRight)}
+                    step={1}
+                    onChange={(val) =>
+                      handleUpdate(
+                        'borderRightWidth',
+                        Math.min(50, Math.max(0, parseValue(val))),
+                      )
+                    }
+                  />
+                  <EditPanelInput
+                    number
+                    label='Bottom'
+                    styleKeyForCustomProperty='borderBottomWidth'
+                    value={displayNumeric(borderWidthBottom)}
+                    step={1}
+                    onChange={(val) =>
+                      handleUpdate(
+                        'borderBottomWidth',
+                        Math.min(50, Math.max(0, parseValue(val))),
+                      )
+                    }
+                  />
+                  <EditPanelInput
+                    number
+                    label='Left'
+                    styleKeyForCustomProperty='borderLeftWidth'
+                    value={displayNumeric(borderWidthLeft)}
+                    step={1}
+                    onChange={(val) =>
+                      handleUpdate(
+                        'borderLeftWidth',
+                        Math.min(50, Math.max(0, parseValue(val))),
+                      )
+                    }
+                  />
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
             <EditPanelInput
               number
               label='Radius'

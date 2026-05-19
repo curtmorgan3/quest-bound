@@ -5,6 +5,7 @@ import { useComponentCanvasDimensions } from '@/lib/compass-planes/canvas/editor
 import {
   fireExternalComponentChangeEvent,
   getBackgroundStyle,
+  getBorderStyle,
   getComponentData,
   useComponentStyles,
   useNodeData,
@@ -190,9 +191,7 @@ const ViewContentNodeComponent = ({
         alignItems: css.verticalAlign ?? 'start',
         ...getBackgroundStyle(css),
         borderRadius: css.borderRadius,
-        outline: css.outline,
-        outlineColor: css.outlineColor,
-        outlineWidth: css.outlineWidth,
+        ...getBorderStyle(css),
         overflow: 'auto',
         userSelect: 'none',
         WebkitUserSelect: 'none',

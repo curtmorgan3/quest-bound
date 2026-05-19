@@ -81,11 +81,26 @@ function toStyleShadowDistancePx(value: unknown): number {
 function applyStyleEnrichment(styles: ComponentStyle): ComponentStyle {
   const out = { ...styles } as ComponentStyle & Record<string, unknown>;
 
-  if (out.outlineWidth === 0) {
-    out.outline = undefined;
+  const legacyWidth = out.outlineWidth ?? 0;
+  if (out.borderTopWidth === undefined) out.borderTopWidth = legacyWidth;
+  if (out.borderRightWidth === undefined) out.borderRightWidth = legacyWidth;
+  if (out.borderBottomWidth === undefined) out.borderBottomWidth = legacyWidth;
+  if (out.borderLeftWidth === undefined) out.borderLeftWidth = legacyWidth;
+
+  const anyBorder =
+    out.borderTopWidth > 0 ||
+    out.borderRightWidth > 0 ||
+    out.borderBottomWidth > 0 ||
+    out.borderLeftWidth > 0;
+  if (anyBorder) {
+    out.borderStyle = 'solid';
+    out.borderColor = out.outlineColor;
+    out.boxSizing = 'border-box';
   } else {
-    out.outline = `${out.outlineWidth}px solid ${out.outlineColor}`;
+    out.borderStyle = undefined;
+    out.borderColor = undefined;
   }
+  out.outline = undefined;
 
   out.borderRadius = `${out.borderRadiusTopLeft}px ${out.borderRadiusTopRight}px ${out.borderRadiusBottomRight}px ${out.borderRadiusBottomLeft}px`;
 

@@ -4,6 +4,7 @@ import { editorNodeComponentVisualEqual } from '@/lib/compass-planes/nodes/edito
 import {
   fireExternalComponentChangeEvent,
   getBackgroundStyle,
+  getBorderStyle,
   getColorStyle,
   getComponentData,
   useComponentStyles,
@@ -105,9 +106,7 @@ export const EditTextNode = () => {
               alignItems: css.verticalAlign ?? 'start',
               ...getBackgroundStyle(css),
               borderRadius: css.borderRadius,
-              outline: css.outline,
-              outlineColor: css.outlineColor,
-              outlineWidth: css.outlineWidth,
+              ...getBorderStyle(css),
               overflow: 'hidden',
             }}>
             <input
@@ -174,9 +173,7 @@ const ViewTextNodeComponent = ({
           alignItems: css.verticalAlign ?? 'start',
           ...getBackgroundStyle(css),
           borderRadius: css.borderRadius,
-          outline: css.outline,
-          outlineColor: css.outlineColor,
-          outlineWidth: css.outlineWidth,
+          ...getBorderStyle(css),
           // overflow: 'hidden',
           ...noSelect,
         }}>
@@ -185,9 +182,8 @@ const ViewTextNodeComponent = ({
           style={{
             ...css,
             ...getColorStyle(css),
-            outline: 'none',
-            outlineColor: 'unset',
-            outlineWidth: 'unset',
+            border: 'none',
+            boxSizing: undefined,
             ...noSelect,
           }}>
           {data?.interpolatedValue}

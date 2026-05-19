@@ -4,6 +4,7 @@ import { useComponentCanvasDimensions } from '@/lib/compass-planes/canvas/editor
 import { editorNodeComponentVisualEqual } from '@/lib/compass-planes/nodes/editor-node-memo';
 import {
   getBackgroundStyle,
+  getBorderStyle,
   getColorStyle,
   getComponentData,
   useComponentStyles,
@@ -99,9 +100,7 @@ const ViewCheckboxNodeComponent = ({
         alignItems: css.verticalAlign ?? 'center',
         ...(usesDefaultIcon ? backgroundWithoutShadow : backgroundStyle),
         borderRadius: css.borderRadius,
-        outline: css.outline,
-        outlineColor: css.outlineColor,
-        outlineWidth: css.outlineWidth,
+        ...getBorderStyle(css),
         cursor: clickDisabled ? 'default' : 'pointer',
         ...(!editMode ? { userSelect: 'none', WebkitUserSelect: 'none' } : {}),
       }}>

@@ -13,6 +13,31 @@ export function getBackgroundStyle(css: {
   return out;
 }
 
+/** Returns per-side border styles plus `box-sizing: border-box` when any side has width. */
+export function getBorderStyle(css: {
+  borderTopWidth?: number;
+  borderRightWidth?: number;
+  borderBottomWidth?: number;
+  borderLeftWidth?: number;
+  borderStyle?: string;
+  borderColor?: string;
+}): Record<string, string | number> {
+  const top = css.borderTopWidth ?? 0;
+  const right = css.borderRightWidth ?? 0;
+  const bottom = css.borderBottomWidth ?? 0;
+  const left = css.borderLeftWidth ?? 0;
+  if (top === 0 && right === 0 && bottom === 0 && left === 0) return {};
+  return {
+    borderStyle: css.borderStyle ?? 'solid',
+    borderColor: css.borderColor ?? 'transparent',
+    borderTopWidth: `${top}px`,
+    borderRightWidth: `${right}px`,
+    borderBottomWidth: `${bottom}px`,
+    borderLeftWidth: `${left}px`,
+    boxSizing: 'border-box',
+  };
+}
+
 /** Returns the color style: gradient text styles or solid color. */
 export function getColorStyle(css: {
   color?: string;

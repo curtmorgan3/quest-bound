@@ -14,6 +14,7 @@ import { useComponentCanvasDimensions } from '@/lib/compass-planes/canvas/editor
 import { editorNodeComponentVisualEqual } from '@/lib/compass-planes/nodes/editor-node-memo';
 import {
   getBackgroundStyle,
+  getBorderStyle,
   getColorStyle,
   getComponentData,
   useComponentStyles,
@@ -182,9 +183,7 @@ const ViewInputNodeComponent = ({
     alignItems: css.verticalAlign ?? 'start',
     ...getBackgroundStyle(css),
     borderRadius: css.borderRadius,
-    outline: css.outline,
-    outlineColor: css.outlineColor,
-    outlineWidth: css.outlineWidth,
+    ...getBorderStyle(css),
     opacity: css.opacity,
     ...(!editMode ? { userSelect: 'none', WebkitUserSelect: 'none' } : {}),
   } as React.CSSProperties;

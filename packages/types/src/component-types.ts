@@ -18,10 +18,21 @@ type BaseComponentStyle = {
   borderRadiusTopRight: number;
   borderRadiusBottomLeft: number;
   borderRadiusBottomRight: number;
+  /** Legacy unified border width; per-side fields override. Kept for back-compat and migration. */
   outlineWidth: number;
   outlineColor: string;
   /** When outlineColor is a custom-prop reference, opacity to apply (0–1). */
   outlineColorCustomPropOpacity?: number;
+  borderTopWidth?: number;
+  borderRightWidth?: number;
+  borderBottomWidth?: number;
+  borderLeftWidth?: number;
+  /** Computed in applyStyleEnrichment when any per-side border width is non-zero. */
+  borderStyle?: string;
+  /** Computed in applyStyleEnrichment from outlineColor. */
+  borderColor?: string;
+  /** Computed in applyStyleEnrichment to 'border-box' when any border width is non-zero. */
+  boxSizing?: 'border-box' | 'content-box';
   /** Computed CSS `box-shadow` from `boxShadowOffsetX` etc. (set in applyStyleEnrichment). */
   boxShadow?: string;
   boxShadowOffsetX?: number;
