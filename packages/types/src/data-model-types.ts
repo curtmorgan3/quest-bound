@@ -487,6 +487,20 @@ export type RulesetModuleEntry = {
   image: string | null;
 };
 
+/** A named color in the ruleset palette. */
+export type PaletteColor = {
+  color: string;
+  name?: string;
+};
+
+/** Stored palette entry. Legacy entries are plain hex strings; new entries are PaletteColor objects. */
+export type PaletteEntry = string | PaletteColor;
+
+/** Normalize a palette entry to the object form. */
+export function normalizePaletteEntry(entry: PaletteEntry): PaletteColor {
+  return typeof entry === 'string' ? { color: entry } : entry;
+}
+
 export type Ruleset = BaseDetails & {
   version: string;
   createdBy: string;
@@ -512,7 +526,7 @@ export type Ruleset = BaseDetails & {
   charactersCtaImage?: string | null;
   /** Injected from asset.data when campaignsCtaAssetId is set; do not persist on entity. */
   campaignsCtaImage?: string | null;
-  palette: string[];
+  palette: PaletteEntry[];
   /** When true, this ruleset can be added as a module to other rulesets. */
   isModule?: boolean;
   /** Modules that have been added to this ruleset (source id, name, image). */

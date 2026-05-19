@@ -168,7 +168,9 @@ function GraphEditPlaceholder({
     height: heightStyle,
     ...getBackgroundStyle(css),
     borderRadius: css.borderRadius,
-    border: '1px solid ' + (css.outlineColor || 'transparent'),
+    outline: css.outline,
+    outlineColor: css.outlineColor,
+    outlineWidth: css.outlineWidth,
     overflow: 'hidden' as const,
   };
 
@@ -187,6 +189,9 @@ function GraphEditPlaceholder({
           width: widthStyle,
           height: heightStyle,
           borderRadius: css.borderRadius,
+          outline: css.outline,
+          outlineColor: css.outlineColor,
+          outlineWidth: css.outlineWidth,
           overflow: 'hidden',
         }}>
         <svg
@@ -349,6 +354,9 @@ const ViewGraphNodeLive = memo(function ViewGraphNodeLive({
     height: heightStyle,
     ...bgStyle,
     borderRadius: css.borderRadius,
+    outline: css.outline,
+    outlineColor: css.outlineColor,
+    outlineWidth: css.outlineWidth,
     overflow: 'hidden' as const,
   };
 

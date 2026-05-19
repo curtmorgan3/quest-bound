@@ -203,7 +203,7 @@ interface ImportedMetadata {
     assetId?: string | null;
     image: string | null;
     isModule: boolean;
-    palette?: string[];
+    palette?: Array<string | { color: string; name?: string }>;
     charactersCtaAssetId?: string | null;
     campaignsCtaAssetId?: string | null;
     characterCtaTitle?: string | null;

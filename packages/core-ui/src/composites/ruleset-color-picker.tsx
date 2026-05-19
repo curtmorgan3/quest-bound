@@ -9,6 +9,7 @@ import {
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
 import { useActiveRuleset, useCustomProperties } from '@/lib/compass-api';
+import { normalizePaletteEntry } from '@/types';
 import { ComponentEditPanelContext } from '@/pages/ruleset/windows/component-edit-panel/component-edit-panel-context';
 import { CustomPropertiesListModal } from '@/pages/ruleset/windows/component-edit-panel/custom-properties-list-modal';
 import { SlidersHorizontal, X } from 'lucide-react';
@@ -78,6 +79,37 @@ function hexAndAlphaToCssColor(hex: string, alpha: number): string {
   const g = parseInt(m[2], 16);
   const b = parseInt(m[3], 16);
   return `rgba(${r},${g},${b},${Math.min(1, Math.max(0, alpha))})`;
+}
+
+function PaletteSwatchRow({
+  palette,
+  onPick,
+  ariaPrefix,
+}: {
+  palette: Array<{ color: string; name?: string }>;
+  onPick: (hex: string) => void;
+  ariaPrefix?: string;
+}) {
+  if (palette.length === 0) return null;
+  return (
+    <div className='flex flex-wrap gap-1.5'>
+      {palette.map((swatch, i) => {
+        const hex = colorToHex(swatch.color);
+        const tooltip = swatch.name ? `${swatch.name} (${hex})` : hex;
+        return (
+          <button
+            key={`${hex}-${i}`}
+            type='button'
+            className='size-8 shrink-0 rounded border border-border shadow-sm transition-transform hover:scale-110'
+            style={{ backgroundColor: hex }}
+            title={tooltip}
+            aria-label={`${ariaPrefix ?? 'Pick'} ${tooltip}`}
+            onClick={() => onPick(hex)}
+          />
+        );
+      })}
+    </div>
+  );
 }
 
 function hexToRgb(hex: string, a = 1): RGBColor {
@@ -186,7 +218,7 @@ export const RulesetColorPicker = ({
 }: RulesetColorPicker) => {
   const { activeRuleset } = useActiveRuleset();
   const { customProperties } = useCustomProperties(activeRuleset?.id);
-  const palette = activeRuleset?.palette ?? [];
+  const palette = (activeRuleset?.palette ?? []).map(normalizePaletteEntry);
   const [customPropsModalOpen, setCustomPropsModalOpen] = useState(false);
   const [gradientCustomPropSlot, setGradientCustomPropSlot] = useState<1 | 2 | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -541,6 +573,11 @@ export const RulesetColorPicker = ({
                       />
                     </div>
                   )}
+                  <PaletteSwatchRow
+                    palette={palette}
+                    onPick={handleGradientColor1Change}
+                    ariaPrefix='Pick gradient color 1'
+                  />
                 </>
               )}
             </div>
@@ -620,27 +657,18 @@ export const RulesetColorPicker = ({
                       />
                     </div>
                   )}
+                  <PaletteSwatchRow
+                    palette={palette}
+                    onPick={handleGradientColor2Change}
+                    ariaPrefix='Pick gradient color 2'
+                  />
                 </>
               )}
             </div>
           </div>
         )}
-        {mode === 'solid' && palette.length > 0 && (
-          <div className='flex flex-wrap gap-1.5'>
-            {palette.map((swatch, i) => {
-              const hex = colorToHex(swatch);
-              return (
-                <button
-                  key={`${hex}-${i}`}
-                  type='button'
-                  className='size-8 shrink-0 rounded border border-border shadow-sm transition-transform hover:scale-110'
-                  style={{ backgroundColor: hex }}
-                  aria-label={`Pick ${hex}`}
-                  onClick={() => handleColorChange(hex)}
-                />
-              );
-            })}
-          </div>
+        {mode === 'solid' && (
+          <PaletteSwatchRow palette={palette} onPick={handleColorChange} />
         )}
       </div>
     </div>

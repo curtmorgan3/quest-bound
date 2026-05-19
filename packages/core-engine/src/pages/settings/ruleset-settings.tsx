@@ -51,7 +51,7 @@ import {
   removeModuleFromRuleset,
 } from '@/lib/compass-api/hooks/export/remove-module-from-ruleset';
 import { useCloudAuthStore } from '@/stores';
-import type { Ruleset, RulesetModuleEntry } from '@/types';
+import { normalizePaletteEntry, type PaletteColor, type Ruleset, type RulesetModuleEntry } from '@/types';
 import { rgbToHex } from '@/utils';
 import {
   Building2,
@@ -67,6 +67,102 @@ import {
 } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
+
+interface PaletteSwatchProps {
+  color: string;
+  name?: string;
+  onUpdate: (next: PaletteColor) => void;
+  onRemove: () => void;
+}
+
+function PaletteSwatch({ color, name, onUpdate, onRemove }: PaletteSwatchProps) {
+  const [open, setOpen] = useState(false);
+  const [editColor, setEditColor] = useState<string>(color);
+  const [editName, setEditName] = useState<string>(name ?? '');
+
+  useEffect(() => {
+    if (open) {
+      setEditColor(color);
+      setEditName(name ?? '');
+    }
+  }, [open, color, name]);
+
+  const handlePickerUpdate = (value: RulesetColorPickerValue) => {
+    if (typeof value === 'string') return;
+    setEditColor(rgbToHex(value.r, value.g, value.b));
+  };
+
+  const trimmedName = editName.trim();
+  const normalizedExistingName = name ?? '';
+  const changed = editColor !== color || trimmedName !== normalizedExistingName;
+
+  const handleSave = () => {
+    if (!changed) {
+      setOpen(false);
+      return;
+    }
+    onUpdate(trimmedName ? { color: editColor, name: trimmedName } : { color: editColor });
+    setOpen(false);
+  };
+
+  const tooltip = name ? `${name} (${color})` : color;
+
+  return (
+    <div className='group flex items-center gap-0.5 rounded-md border border-border overflow-hidden bg-muted'>
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <button
+            type='button'
+            className='h-8 w-8 shrink-0 border-r border-border cursor-pointer'
+            style={{ backgroundColor: color }}
+            title={tooltip}
+            aria-label={`Edit ${tooltip}`}
+          />
+        </PopoverTrigger>
+        <PopoverContent className='w-auto p-0 border-0' align='start'>
+          <div className='p-2 flex flex-col gap-2'>
+            <RulesetColorPicker
+              color={editColor}
+              disableAlpha
+              onUpdate={handlePickerUpdate}
+            />
+            <div className='flex flex-col gap-1'>
+              <Label className='text-xs'>Name</Label>
+              <Input
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+                placeholder='Optional name'
+                className='h-8'
+              />
+            </div>
+            <Button
+              className='w-full'
+              size='sm'
+              disabled={!changed}
+              onClick={handleSave}>
+              Save
+            </Button>
+          </div>
+        </PopoverContent>
+      </Popover>
+      {name && (
+        <span
+          className='px-2 text-xs text-muted-foreground truncate max-w-[120px]'
+          title={name}>
+          {name}
+        </span>
+      )}
+      <Button
+        variant='ghost'
+        size='sm'
+        onClick={onRemove}
+        className='h-8 w-6 p-0 opacity-70 hover:opacity-100'
+        aria-label={`Remove ${tooltip}`}>
+        <Trash className='h-3.5 w-3.5 text-destructive' />
+      </Button>
+    </div>
+  );
+}
 
 interface RulesetSettingsProps {
   activeRuleset: Ruleset;
@@ -238,9 +334,10 @@ export const RulesetSettings = ({ activeRuleset }: RulesetSettingsProps) => {
 
   const [fontLoading, setFontLoading] = useState(false);
   const [paletteAddColor, setPaletteAddColor] = useState<string | undefined>(undefined);
+  const [paletteAddName, setPaletteAddName] = useState<string>('');
   const fontInputRef = useRef<HTMLInputElement>(null);
 
-  const palette = activeRuleset.palette ?? [];
+  const palette: PaletteColor[] = (activeRuleset.palette ?? []).map(normalizePaletteEntry);
 
   const handleUpdateTitle = async () => {
     await updateRuleset(activeRuleset.id, { title });
@@ -331,13 +428,23 @@ export const RulesetSettings = ({ activeRuleset }: RulesetSettingsProps) => {
 
   const handleConfirmAddPaletteColor = async () => {
     if (!paletteAddColor) return;
-    const next = [...palette, paletteAddColor];
+    const trimmed = paletteAddName.trim();
+    const entry: PaletteColor = trimmed
+      ? { color: paletteAddColor, name: trimmed }
+      : { color: paletteAddColor };
+    const next = [...palette, entry];
     await updateRuleset(activeRuleset.id, { palette: next });
     setPaletteAddColor(undefined);
+    setPaletteAddName('');
   };
 
   const handleRemovePaletteColor = async (index: number) => {
     const next = palette.filter((_, i) => i !== index);
+    await updateRuleset(activeRuleset.id, { palette: next });
+  };
+
+  const handleUpdatePaletteColor = async (index: number, entry: PaletteColor) => {
+    const next = palette.map((c, i) => (i === index ? entry : c));
     await updateRuleset(activeRuleset.id, { palette: next });
   };
 
@@ -718,41 +825,46 @@ export const RulesetSettings = ({ activeRuleset }: RulesetSettingsProps) => {
           <Label>Palette</Label>
           <div className='flex flex-col gap-4'>
             <div className='flex flex-wrap items-center gap-2'>
-              {palette.map((color, index) => (
-                <div
-                  key={`${color}-${index}`}
-                  className='group flex items-center gap-0.5 rounded-md border border-border overflow-hidden bg-muted'>
-                  <div
-                    className='h-8 w-8 shrink-0 border-r border-border'
-                    style={{ backgroundColor: color }}
-                    title={color}
-                  />
-                  <Button
-                    variant='ghost'
-                    size='sm'
-                    onClick={() => handleRemovePaletteColor(index)}
-                    className='h-8 w-6 p-0 opacity-70 hover:opacity-100'
-                    aria-label={`Remove ${color}`}>
-                    <Trash className='h-3.5 w-3.5 text-destructive' />
-                  </Button>
-                </div>
+              {palette.map((entry, index) => (
+                <PaletteSwatch
+                  key={`${entry.color}-${index}`}
+                  color={entry.color}
+                  name={entry.name}
+                  onUpdate={(next) => handleUpdatePaletteColor(index, next)}
+                  onRemove={() => handleRemovePaletteColor(index)}
+                />
               ))}
             </div>
-            <Popover>
+            <Popover
+              onOpenChange={(open) => {
+                if (!open) {
+                  setPaletteAddColor(undefined);
+                  setPaletteAddName('');
+                }
+              }}>
               <PopoverTrigger asChild>
                 <Button variant='outline' size='sm' className='gap-2 h-8 w-[50px]'>
                   <Plus className='h-4 w-4' />
                 </Button>
               </PopoverTrigger>
               <PopoverContent className='w-auto p-0 border-0' align='start'>
-                <div className='p-2'>
+                <div className='p-2 flex flex-col gap-2'>
                   <RulesetColorPicker
                     color={paletteAddColor}
                     disableAlpha
                     onUpdate={handleAddPaletteColor}
                   />
+                  <div className='flex flex-col gap-1'>
+                    <Label className='text-xs'>Name</Label>
+                    <Input
+                      value={paletteAddName}
+                      onChange={(e) => setPaletteAddName(e.target.value)}
+                      placeholder='Optional name'
+                      className='h-8'
+                    />
+                  </div>
                   <Button
-                    className='w-full mt-2'
+                    className='w-full'
                     size='sm'
                     disabled={!paletteAddColor}
                     onClick={handleConfirmAddPaletteColor}>
